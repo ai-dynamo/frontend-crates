@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Based on https://github.com/64bit/async-openai/ by Himanshu Neema
+# Original Copyright (c) 2022 Himanshu Neema
+# Licensed under MIT License (see ATTRIBUTIONS-Rust.md)
+#
+# Modifications Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
+# Licensed under Apache 2.0
+
+[package]
+name = "dynamo-protocols"
+version = "0.1.0"
+edition = "2024"
+description = "Protocol types for OpenAI-compatible inference APIs with inference-serving extensions."
+authors = ["NVIDIA Inc. <sw-dl-dynamo@nvidia.com>"]
+license = "Apache-2.0 AND MIT"
+homepage = "https://github.com/ai-dynamo/frontend-crates"
+repository = "https://github.com/ai-dynamo/frontend-crates.git"
+keywords = ["llm", "genai", "inference", "openai", "anthropic"]
+
+[dependencies]
+# Upstream OpenAI types (types-only, no HTTP client)
+async-openai = { version = "0.34", default-features = false, features = [
+    "chat-completion-types",
+    "response-types",
+    "completion-types",
+    "embedding-types",
+    "image-types",
+] }
+
+# Serialization
+serde = { version = "1", features = ["derive", "rc"] }
+serde_json = "1"
+derive_builder = "0.20"
+
+# Type support
+thiserror = "2.0.17"
+tracing = "0.1"
+url = { version = "2.5", features = ["serde"] }
+uuid = { version = "1.18.1", features = ["v4", "serde"] }
+futures = "0.3"
+
+[dev-dependencies]
+tokio = { version = "=1.48.0", features = ["full"] }
+tokio-test = "0.4.4"
+serde_json = "1"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
