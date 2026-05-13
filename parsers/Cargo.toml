@@ -20,6 +20,7 @@ edition = "2024"
 description = "Reasoning and tool-calling parsers for OpenAI-compatible inference output."
 authors = ["NVIDIA Inc. <sw-dl-dynamo@nvidia.com>"]
 license = "Apache-2.0"
+readme = "README.md"
 homepage = "https://github.com/ai-dynamo/frontend-crates"
 repository = "https://github.com/ai-dynamo/frontend-crates.git"
 keywords = ["llm", "parser", "tool-calling", "reasoning", "inference"]
