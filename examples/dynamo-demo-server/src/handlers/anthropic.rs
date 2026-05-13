@@ -6,7 +6,10 @@
 use std::convert::Infallible;
 
 use axum::Json;
-use axum::response::{IntoResponse, Response, sse::{Event, KeepAlive, Sse}};
+use axum::response::{
+    IntoResponse, Response,
+    sse::{Event, KeepAlive, Sse},
+};
 use futures::stream::Stream;
 
 use dynamo_protocols::types::anthropic::*;
@@ -21,7 +24,9 @@ pub async fn handler(Json(req): Json<AnthropicCreateMessageRequest>) -> Response
 
     if req.stream {
         let stream = make_stream(id, model, echo_text);
-        Sse::new(stream).keep_alive(KeepAlive::default()).into_response()
+        Sse::new(stream)
+            .keep_alive(KeepAlive::default())
+            .into_response()
     } else {
         let resp = AnthropicMessageResponse {
             id,

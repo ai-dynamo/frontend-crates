@@ -8,7 +8,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use axum::Json;
 use axum::extract::State;
-use axum::response::{IntoResponse, Response, sse::{Event, KeepAlive, Sse}};
+use axum::response::{
+    IntoResponse, Response,
+    sse::{Event, KeepAlive, Sse},
+};
 use futures::stream::Stream;
 
 use dynamo_protocols::types::*;
@@ -62,7 +65,9 @@ pub async fn handler(
 
     if req.stream == Some(true) {
         let stream = make_stream(id, model, created, text, tool_call_result);
-        Sse::new(stream).keep_alive(KeepAlive::default()).into_response()
+        Sse::new(stream)
+            .keep_alive(KeepAlive::default())
+            .into_response()
     } else {
         let tool_calls = tool_call_result.map(|calls| {
             calls

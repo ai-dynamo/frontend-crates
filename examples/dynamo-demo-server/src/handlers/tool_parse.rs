@@ -4,13 +4,12 @@
 //! This is NOT part of any standard API -- it exists to showcase dynamo-parsers directly.
 
 use axum::Json;
-use axum::response::{IntoResponse, Response};
 use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
 use serde::{Deserialize, Serialize};
 
 use dynamo_parsers::tool_calling::{
-    ToolDefinition, detect_and_parse_tool_call,
-    parsers::get_available_tool_parsers,
+    ToolDefinition, detect_and_parse_tool_call, parsers::get_available_tool_parsers,
 };
 
 #[derive(Deserialize)]

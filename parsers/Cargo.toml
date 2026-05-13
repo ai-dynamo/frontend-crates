@@ -5,27 +5,28 @@
 name = "dynamo-parsers"
 readme = "README.md"
 version = "0.1.0"
-edition = "2024"
+edition.workspace = true
+rust-version.workspace = true
 description = "Reasoning and tool-calling parsers for OpenAI-compatible inference output."
-authors = ["NVIDIA Inc. <sw-dl-dynamo@nvidia.com>"]
+authors.workspace = true
 license = "Apache-2.0"
-homepage = "https://github.com/ai-dynamo/frontend-crates"
-repository = "https://github.com/ai-dynamo/frontend-crates.git"
+homepage.workspace = true
+repository.workspace = true
 keywords = ["llm", "parser", "tool-calling", "reasoning", "inference"]
 
 [dependencies]
-anyhow = "1"
-dynamo-protocols = { path = "../protocols", version = "0.1" }
-serde = { version = "1", features = ["derive", "rc"] }
-serde_json = "1"
-tokio = { version = "=1.48.0", features = ["full"] }
-tracing = "0.1"
-uuid = { version = "1.18.1", features = ["v4", "serde"] }
+anyhow.workspace = true
+dynamo-protocols.workspace = true
+serde = { workspace = true, features = ["derive", "rc"] }
+serde_json.workspace = true
+tokio = { workspace = true, features = ["full"] }
+tracing.workspace = true
+uuid = { workspace = true, features = ["v4", "serde"] }
 
-regex = "1"
-openai-harmony = "0.0.3"
-rustpython-parser = "0.4.0"
-num-traits = "0.2"
+regex.workspace = true
+openai-harmony.workspace = true
+rustpython-parser.workspace = true
+num-traits.workspace = true
 
 [dev-dependencies]
-rstest = "0.25"
+rstest.workspace = true

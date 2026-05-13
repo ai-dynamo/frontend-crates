@@ -1,0 +1,50 @@
+[workspace]
+resolver = "3"
+members = [
+    "protocols",
+    "parsers",
+    "tokenizers",
+    "examples/dynamo-demo-server",
+]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.93.1"
+authors = ["NVIDIA Inc. <sw-dl-dynamo@nvidia.com>"]
+homepage = "https://github.com/ai-dynamo/frontend-crates"
+repository = "https://github.com/ai-dynamo/frontend-crates.git"
+
+[workspace.dependencies]
+anyhow = "1"
+async-openai = { version = "0.34", default-features = false }
+async-stream = "0.3"
+axum = "0.8"
+base64 = "0.22"
+clap = "4"
+derive_builder = "0.20"
+dynamo-parsers = { path = "parsers", version = "0.1.0" }
+dynamo-protocols = { path = "protocols", version = "0.1.0" }
+dynamo-tokenizers = { path = "tokenizers", version = "0.1.0" }
+fastokens = "0.1.0"
+futures = "0.3"
+hf-hub = { version = "0.4", default-features = false }
+num-traits = "0.2"
+openai-harmony = "0.0.3"
+rayon = "1"
+regex = "1"
+rstest = "0.25"
+rustc-hash = "1.1"
+rustpython-parser = "0.4.0"
+serde = "1"
+serde_json = "1"
+strum = "0.27"
+tempfile = "3"
+thiserror = "2.0.17"
+tiktoken-rs = { version = "0.9", default-features = false }
+tokio = "=1.48.0"
+tokio-test = "0.4.4"
+tokenizers = { version = "0.21.4", default-features = false }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+url = "2.5"
+uuid = "1.18.1"

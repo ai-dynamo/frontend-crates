@@ -8,7 +8,7 @@ Three standalone Rust crates for building OpenAI/Anthropic-compatible inference 
 | [`dynamo-tokenizers`](./tokenizers/) | HuggingFace + tiktoken + FastTokenizer wrappers with fast incremental detokenization. |
 | [`dynamo-parsers`](./parsers/)       | Reasoning + tool-calling parsers across 18+ model families (DeepSeek R1/V4, Qwen3, GPT-OSS, Kimi K2, Gemma 4, Llama, Hermes, ...). Streaming-first. |
 
-Each crate is independently published to crates.io and can be adopted on its own. `dynamo-parsers` depends on `dynamo-protocols`; the other two have no internal deps.
+Each crate is independently published to crates.io and can be adopted on its own. `dynamo-parsers` depends on `dynamo-protocols`; the other two have no internal deps. The repository itself is a Cargo workspace so shared dependency versions, CI checks, and the demo build stay consistent.
 
 ## Layout
 
@@ -25,18 +25,32 @@ frontend-crates/
 
 ## Building
 
-Each crate builds standalone:
+This repo pins Rust with [`rust-toolchain.toml`](./rust-toolchain.toml). Use the workspace commands from the repository root:
 
 ```bash
-cd protocols   && cargo build
-cd tokenizers  && cargo build
-cd parsers     && cargo build
+cargo check --workspace --all-targets --locked
+cargo test --workspace --all-targets --locked
+cargo test --workspace --doc --locked
+cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 ```
 
-The demo server pulls all three via path deps:
+The root [`Cargo.lock`](./Cargo.lock) is committed for reproducible CI and demo-server builds. Library crates still publish normally; consumers resolve their own lockfiles.
+
+Each crate can still be built or tested directly:
 
 ```bash
-cd examples/dynamo-demo-server && cargo build --release
+cargo build -p dynamo-protocols
+cargo build -p dynamo-tokenizers
+cargo build -p dynamo-parsers
+cargo build -p dynamo-demo-server --release
+```
+
+Repository hygiene checks:
+
+```bash
+cargo fmt --all -- --check
+cargo machete
+cargo deny --all-features check bans licenses
 ```
 
 ## Where the code lives
