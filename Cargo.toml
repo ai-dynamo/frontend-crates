@@ -9,7 +9,6 @@ members = [
 
 [workspace.package]
 edition = "2024"
-rust-version = "1.93.1"
 authors = ["NVIDIA Inc. <sw-dl-dynamo@nvidia.com>"]
 homepage = "https://github.com/ai-dynamo/frontend-crates"
 repository = "https://github.com/ai-dynamo/frontend-crates.git"

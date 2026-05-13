@@ -6,7 +6,6 @@ name = "dynamo-tokenizers"
 readme = "README.md"
 version = "0.1.0"
 edition.workspace = true
-rust-version.workspace = true
 description = "Standalone tokenizer implementations (HuggingFace, tiktoken, FastTokenizers) for LLM inference serving."
 authors.workspace = true
 license = "Apache-2.0"
