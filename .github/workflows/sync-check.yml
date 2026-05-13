@@ -1,0 +1,45 @@
+name: sync-check
+
+# Runs the dry-run sync against ai-dynamo/dynamo main and fails if dynamo's
+# lib/{protocols,tokenizers,parsers}/{src,tests} have drifted from this repo's
+# copies. Auto-pings on schedule so we don't fall behind silently.
+
+on:
+  schedule:
+    - cron: '17 13 * * *'   # daily ~13:17 UTC
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  sync-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout frontend-crates
+        uses: actions/checkout@v4
+
+      - name: Clone ai-dynamo/dynamo (shallow)
+        run: |
+          git clone --depth 1 --branch main https://github.com/ai-dynamo/dynamo.git "$RUNNER_TEMP/dynamo"
+          echo "dynamo HEAD: $(git -C "$RUNNER_TEMP/dynamo" rev-parse HEAD)"
+
+      - name: Run sync check
+        id: check
+        run: |
+          set +e
+          out=$(scripts/sync-from-dynamo.sh "$RUNNER_TEMP/dynamo" 2>&1)
+          rc=$?
+          echo "$out"
+          {
+            echo "## Sync check vs ai-dynamo/dynamo main"
+            echo ""
+            echo "dynamo HEAD: \`$(git -C "$RUNNER_TEMP/dynamo" rev-parse --short HEAD)\`"
+            echo ""
+            echo '```'
+            echo "$out"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $rc
