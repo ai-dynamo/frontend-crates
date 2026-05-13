@@ -20,6 +20,18 @@ jobs:
       - name: Install Rust
         run: rustup toolchain install
 
+      - name: Cache cargo registry and tools
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ~/.cargo/bin/cargo-deny
+            ~/.cargo/bin/cargo-machete
+            ~/.cargo/registry/
+            ~/.cargo/git/
+          key: ${{ runner.os }}-cargo-tools-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml', '.github/workflows/ci.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-tools-
+
       - name: Check formatting
         run: cargo fmt --all -- --check
 
@@ -36,7 +48,9 @@ jobs:
         run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 
       - name: Install cargo tools
-        run: cargo install cargo-deny@0.19.4 cargo-machete@0.9.2 --locked
+        run: |
+          cargo-deny --version 2>/dev/null | grep -qF '0.19.4' || cargo install cargo-deny@0.19.4 --locked
+          cargo-machete --version 2>/dev/null | grep -qF '0.9.2' || cargo install cargo-machete@0.9.2 --locked
 
       - name: Check unused dependencies
         run: cargo machete
