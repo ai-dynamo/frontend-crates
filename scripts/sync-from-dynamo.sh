@@ -61,12 +61,16 @@ for c in "${CRATES[@]}"; do
   echo "--- $c ---"
 
   # Sync src/ and tests/ subdirs only. These are pure code.
+  # --checksum compares by content hash, not size+mtime — important for CI,
+  # where a freshly-cloned dynamo gives every file a "now" timestamp.
   for sub in src tests; do
     [ -d "$src/$sub" ] || continue
     if [ "$APPLY" = "1" ]; then
-      rsync -a --delete "$src/$sub/" "$dst/$sub/"
+      rsync -a --delete --checksum "$src/$sub/" "$dst/$sub/"
     else
-      out=$(rsync -a --delete --dry-run --itemize-changes "$src/$sub/" "$dst/$sub/" | grep -vE '^\.[fd]\.\.\.\.\.\.\.\.' || true)
+      # Only flag real content changes (lines starting with > < c *), not
+      # metadata-only attribute drift (lines starting with .).
+      out=$(rsync -a --delete --checksum --dry-run --itemize-changes "$src/$sub/" "$dst/$sub/" | grep -E '^[<>c*]' || true)
       if [ -n "$out" ]; then
         echo "  $sub/ would change:"
         echo "$out" | sed 's/^/    /'
