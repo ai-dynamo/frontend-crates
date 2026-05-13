@@ -13,6 +13,9 @@ jobs:
   rust:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      CARGO_DENY_VERSION: "0.19.4"
+      CARGO_MACHETE_VERSION: "0.9.2"
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -28,7 +31,7 @@ jobs:
             ~/.cargo/bin/cargo-machete
             ~/.cargo/registry/
             ~/.cargo/git/
-          key: ${{ runner.os }}-cargo-tools-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml', '.github/workflows/ci.yml') }}
+          key: ${{ runner.os }}-cargo-tools-deny-${{ env.CARGO_DENY_VERSION }}-machete-${{ env.CARGO_MACHETE_VERSION }}-${{ hashFiles('rust-toolchain.toml') }}
           restore-keys: |
             ${{ runner.os }}-cargo-tools-
 
@@ -49,8 +52,8 @@ jobs:
 
       - name: Install cargo tools
         run: |
-          cargo-deny --version 2>/dev/null | grep -qF '0.19.4' || cargo install cargo-deny@0.19.4 --locked
-          cargo-machete --version 2>/dev/null | grep -qF '0.9.2' || cargo install cargo-machete@0.9.2 --locked
+          cargo-deny --version 2>/dev/null | grep -qF "${CARGO_DENY_VERSION}" || cargo install "cargo-deny@${CARGO_DENY_VERSION}" --locked
+          cargo-machete --version 2>/dev/null | grep -qF "${CARGO_MACHETE_VERSION}" || cargo install "cargo-machete@${CARGO_MACHETE_VERSION}" --locked
 
       - name: Check unused dependencies
         run: cargo machete
