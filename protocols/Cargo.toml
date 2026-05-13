@@ -10,12 +10,12 @@
 
 [package]
 name = "dynamo-protocols"
+readme = "README.md"
 version = "0.1.0"
 edition = "2024"
 description = "Protocol types for OpenAI-compatible inference APIs with inference-serving extensions."
 authors = ["NVIDIA Inc. <sw-dl-dynamo@nvidia.com>"]
 license = "Apache-2.0 AND MIT"
-readme = "README.md"
 homepage = "https://github.com/ai-dynamo/frontend-crates"
 repository = "https://github.com/ai-dynamo/frontend-crates.git"
 keywords = ["llm", "genai", "inference", "openai", "anthropic"]
