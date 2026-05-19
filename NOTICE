@@ -1,0 +1,29 @@
+frontend-crates
+Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This product is distributed under the Apache License, Version 2.0
+(see the LICENSE file for the full license text).
+
+================================================================================
+
+This product includes software developed by third parties:
+
+--------------------------------------------------------------------------------
+async-openai
+--------------------------------------------------------------------------------
+The `dynamo-protocols` crate in this repository is a derivative work of
+async-openai (https://github.com/64bit/async-openai), originally authored by
+Himanshu Neema and licensed under the MIT License.
+
+  Copyright (c) 2022 Himanshu Neema
+
+The full upstream MIT license text and a description of NVIDIA's modifications
+are reproduced in ATTRIBUTIONS-Rust.md.
+
+================================================================================
+
+For attribution and license information covering all third-party Rust crates
+consumed by this repository as Cargo dependencies (rather than vendored into
+the source tree), see each crate's published metadata on crates.io. Standard
+Cargo-ecosystem tooling (`cargo about`, `cargo deny`, `cargo license`) can be
+used to enumerate the full dependency-tree license set locally.
