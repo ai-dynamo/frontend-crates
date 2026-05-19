@@ -17,7 +17,7 @@ keywords = ["llm", "parser", "tool-calling", "reasoning", "inference"]
 anyhow = "1"
 dynamo-protocols = { path = "../protocols", version = "0.1" }
 serde = { version = "1", features = ["derive", "rc"] }
-serde_json = "1"
+serde_json = { version = "1", features = ["raw_value"] }
 tokio = { version = "=1.48.0", features = ["full"] }
 tracing = "0.1"
 uuid = { version = "1.18.1", features = ["v4", "serde"] }
