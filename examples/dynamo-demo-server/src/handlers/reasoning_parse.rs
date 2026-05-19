@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 //! POST /v1/reasoning-parse -- dynamo-parsers reasoning demo endpoint
 //!
 //! Splits raw model output into reasoning vs normal text using one of the

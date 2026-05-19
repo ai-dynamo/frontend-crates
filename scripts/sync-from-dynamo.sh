@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 # Check (or apply) a one-way sync from a local ai-dynamo/dynamo checkout into this repo.
 #
 # Sources:  $DYNAMO_SRC/lib/{protocols,tokenizers,parsers}/

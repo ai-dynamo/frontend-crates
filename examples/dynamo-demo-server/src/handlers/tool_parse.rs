@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 //! POST /v1/tool-parse -- Dedicated dynamo-parsers demo endpoint
 //!
 //! Accepts raw text + optional parser name + tool definitions, returns parsed tool calls.
