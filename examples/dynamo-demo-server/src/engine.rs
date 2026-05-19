@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 //! Shared server state -- the integration point for the three Dynamo crates.
 //!
 //! Holds an optional tokenizer loaded at startup. Handlers use it for accurate

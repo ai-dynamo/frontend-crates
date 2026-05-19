@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 //! POST /v1/tokenize, /v1/detokenize -- dynamo-tokenizers demo endpoints
 //!
 //! Round-trip text <-> token IDs using the tokenizer loaded at startup.

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 //! Dummy echo backend -- the pluggable inference point.
 //!
 //! This module extracts text from incoming requests and echoes it back.

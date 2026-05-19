@@ -17,7 +17,7 @@ keywords = ["llm", "parser", "tool-calling", "reasoning", "inference"]
 anyhow.workspace = true
 dynamo-protocols.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }
-serde_json.workspace = true
+serde_json = { workspace = true, features = ["raw_value"] }
 tokio = { workspace = true, features = ["full"] }
 tracing.workspace = true
 uuid = { workspace = true, features = ["v4", "serde"] }
