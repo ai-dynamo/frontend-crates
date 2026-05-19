@@ -1,0 +1,60 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CARGO_DENY_VERSION: "0.19.4"
+      CARGO_MACHETE_VERSION: "0.9.2"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Install Rust
+        run: rustup toolchain install
+
+      - name: Cache cargo tools
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ~/.cargo/bin/cargo-deny
+            ~/.cargo/bin/cargo-machete
+          key: ${{ runner.os }}-cargo-tools-deny-${{ env.CARGO_DENY_VERSION }}-machete-${{ env.CARGO_MACHETE_VERSION }}-${{ hashFiles('rust-toolchain.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-tools-
+
+      - name: Install cargo tools
+        run: |
+          cargo-deny --version 2>/dev/null | grep -qF "${CARGO_DENY_VERSION}" || cargo install "cargo-deny@${CARGO_DENY_VERSION}" --locked
+          cargo-machete --version 2>/dev/null | grep -qF "${CARGO_MACHETE_VERSION}" || cargo install "cargo-machete@${CARGO_MACHETE_VERSION}" --locked
+
+      - name: Check unused dependencies
+        run: cargo machete
+
+      - name: Check dependency policy
+        run: cargo deny --all-features check bans licenses
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Check workspace
+        run: cargo check --workspace --all-targets --locked
+
+      - name: Run tests
+        run: cargo test --workspace --all-targets --locked
+
+      - name: Run doctests
+        run: cargo test --workspace --doc --locked
+
+      - name: Run clippy
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings

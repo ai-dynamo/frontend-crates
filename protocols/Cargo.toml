@@ -12,17 +12,17 @@
 name = "dynamo-protocols"
 readme = "README.md"
 version = "0.1.0"
-edition = "2024"
+edition.workspace = true
 description = "Protocol types for OpenAI-compatible inference APIs with inference-serving extensions."
-authors = ["NVIDIA Inc. <sw-dl-dynamo@nvidia.com>"]
+authors.workspace = true
 license = "Apache-2.0 AND MIT"
-homepage = "https://github.com/ai-dynamo/frontend-crates"
-repository = "https://github.com/ai-dynamo/frontend-crates.git"
+homepage.workspace = true
+repository.workspace = true
 keywords = ["llm", "genai", "inference", "openai", "anthropic"]
 
 [dependencies]
 # Upstream OpenAI types (types-only, no HTTP client)
-async-openai = { version = "0.34", default-features = false, features = [
+async-openai = { workspace = true, features = [
     "chat-completion-types",
     "response-types",
     "completion-types",
@@ -31,21 +31,21 @@ async-openai = { version = "0.34", default-features = false, features = [
 ] }
 
 # Serialization
-serde = { version = "1", features = ["derive", "rc"] }
-serde_json = "1"
-derive_builder = "0.20"
+serde = { workspace = true, features = ["derive", "rc"] }
+serde_json.workspace = true
+derive_builder.workspace = true
 
 # Type support
-thiserror = "2.0.17"
-tracing = "0.1"
-url = { version = "2.5", features = ["serde"] }
-uuid = { version = "1.18.1", features = ["v4", "serde"] }
-futures = "0.3"
+thiserror.workspace = true
+tracing.workspace = true
+url = { workspace = true, features = ["serde"] }
+uuid = { workspace = true, features = ["v4", "serde"] }
+futures.workspace = true
 
 [dev-dependencies]
-tokio = { version = "=1.48.0", features = ["full"] }
-tokio-test = "0.4.4"
-serde_json = "1"
+tokio = { workspace = true, features = ["full"] }
+tokio-test.workspace = true
+serde_json.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true

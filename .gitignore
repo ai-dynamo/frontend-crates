@@ -2,11 +2,12 @@
 debug
 target
 
-# Library Cargo.lock files are not committed (libraries don't ship a lock;
-# the binary in examples/ commits its own lock for reproducible builds).
+# The workspace Cargo.lock is committed for reproducible CI and demo builds.
+# Nested crate/demo lockfiles are not used.
 /protocols/Cargo.lock
 /tokenizers/Cargo.lock
 /parsers/Cargo.lock
+/examples/*/Cargo.lock
 
 # rustfmt backups
 **/*.rs.bk

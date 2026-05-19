@@ -4,33 +4,34 @@
 [package]
 name = "dynamo-demo-server"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true
+license = "Apache-2.0"
+publish = false
 
 [dependencies]
 # Three sibling crates from this repo.
-dynamo-protocols  = { path = "../../protocols" }
-dynamo-parsers    = { path = "../../parsers" }
-dynamo-tokenizers = { path = "../../tokenizers" }
+dynamo-protocols.workspace = true
+dynamo-parsers.workspace = true
+dynamo-tokenizers.workspace = true
 
 # Web framework
-axum = "0.8"
-tokio = { version = "1", features = ["full"] }
-tokio-stream = "0.1"
+axum.workspace = true
+tokio = { workspace = true, features = ["full"] }
 
 # Serialization
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
 
 # SSE streaming
-futures = "0.3"
-async-stream = "0.3"
+futures.workspace = true
+async-stream.workspace = true
 
 # Utilities
-uuid = { version = "1", features = ["v4"] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { workspace = true, features = ["v4"] }
+tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
 # CLI + HF Hub fetch (downloads tokenizer.json on demand via --model)
-clap = { version = "4", features = ["derive", "env"] }
-hf-hub = { version = "0.4", default-features = false, features = ["tokio", "rustls-tls"] }
-anyhow = "1"
+clap = { workspace = true, features = ["derive", "env"] }
+hf-hub = { workspace = true, features = ["tokio", "rustls-tls"] }
+anyhow.workspace = true

@@ -11,7 +11,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response, sse::{Event, KeepAlive, Sse}};
+use axum::response::{
+    IntoResponse, Response,
+    sse::{Event, KeepAlive, Sse},
+};
 use futures::stream::Stream;
 
 use dynamo_protocols::types::*;
@@ -37,7 +40,9 @@ pub async fn handler(
 
     if req.stream == Some(true) {
         let stream = make_stream(id, model, created, text);
-        Sse::new(stream).keep_alive(KeepAlive::default()).into_response()
+        Sse::new(stream)
+            .keep_alive(KeepAlive::default())
+            .into_response()
     } else {
         let echo_text = format!("[echo] {text}");
         let resp = CreateCompletionResponse {

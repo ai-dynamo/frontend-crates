@@ -22,15 +22,19 @@ pub async fn handler(Json(req): Json<serde_json::Value>) -> Response {
                         let content = item.get("content")?;
                         match content {
                             serde_json::Value::String(s) => Some(s.clone()),
-                            serde_json::Value::Array(parts) => {
-                                Some(parts.iter().filter_map(|p| {
-                                    if p.get("type")?.as_str()? == "input_text" {
-                                        p.get("text")?.as_str().map(String::from)
-                                    } else {
-                                        None
-                                    }
-                                }).collect::<Vec<_>>().join(" "))
-                            }
+                            serde_json::Value::Array(parts) => Some(
+                                parts
+                                    .iter()
+                                    .filter_map(|p| {
+                                        if p.get("type")?.as_str()? == "input_text" {
+                                            p.get("text")?.as_str().map(String::from)
+                                        } else {
+                                            None
+                                        }
+                                    })
+                                    .collect::<Vec<_>>()
+                                    .join(" "),
+                            ),
                             _ => None,
                         }
                     } else {
@@ -43,10 +47,7 @@ pub async fn handler(Json(req): Json<serde_json::Value>) -> Response {
         _ => "(no input)".to_string(),
     };
 
-    let model = req
-        .get("model")
-        .and_then(|v| v.as_str())
-        .unwrap_or("echo");
+    let model = req.get("model").and_then(|v| v.as_str()).unwrap_or("echo");
     let echo_text = format!("[echo] {input_text}");
     let id = format!("resp_{}", uuid::Uuid::new_v4().simple());
 

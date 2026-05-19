@@ -7,7 +7,10 @@ mod handlers;
 
 use std::path::PathBuf;
 
-use axum::{Router, routing::{get, post}};
+use axum::{
+    Router,
+    routing::{get, post},
+};
 use clap::Parser;
 
 use crate::engine::AppState;
@@ -43,8 +46,7 @@ struct Cli {
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "info".into()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
         )
         .init();
 
@@ -70,7 +72,10 @@ async fn main() -> anyhow::Result<()> {
         .route("/v1/tokenize", post(handlers::tokenize::encode))
         .route("/v1/detokenize", post(handlers::tokenize::decode))
         .route("/v1/tool-parse", post(handlers::tool_parse::handler))
-        .route("/v1/reasoning-parse", post(handlers::reasoning_parse::handler))
+        .route(
+            "/v1/reasoning-parse",
+            post(handlers::reasoning_parse::handler),
+        )
         .route("/health", get(|| async { "ok" }))
         .with_state(state);
 
@@ -89,7 +94,11 @@ async fn main() -> anyhow::Result<()> {
 async fn fetch_hf_tokenizer(repo_id: &str, revision: &str) -> anyhow::Result<PathBuf> {
     use hf_hub::{Repo, RepoType, api::tokio::ApiBuilder};
 
-    tracing::info!(repo = repo_id, revision, "fetching tokenizer.json from HF Hub");
+    tracing::info!(
+        repo = repo_id,
+        revision,
+        "fetching tokenizer.json from HF Hub"
+    );
     let api = ApiBuilder::new().with_progress(true).build()?;
     let repo = api.repo(Repo::with_revision(
         repo_id.to_string(),
