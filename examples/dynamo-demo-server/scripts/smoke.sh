@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 # Smoke tests for dynamo-demo-server. Hits each endpoint and prints a one-line summary.
 # Usage: scripts/smoke.sh [http://127.0.0.1:3000]
 
