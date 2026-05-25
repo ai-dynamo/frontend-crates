@@ -19,7 +19,9 @@ async-openai = { version = "0.34", default-features = false }
 async-stream = "0.3"
 axum = "0.8"
 base64 = "0.22"
+blake3 = "1"
 clap = "4"
+dashmap = "6.1"
 derive_builder = "0.20"
 dynamo-parsers = { path = "parsers", version = "0.1.0" }
 dynamo-protocols = { path = "protocols", version = "0.1.0" }
