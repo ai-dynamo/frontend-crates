@@ -1,0 +1,71 @@
+name: post-merge
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: post-merge-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  post-merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write       # push the release commit + tags
+      pull-requests: write  # release-plz may interact with PRs
+      id-token: write       # OIDC for crates.io trusted publishing
+    # Recursion guard: skip the run triggered by our own "chore: release" push.
+    # workflow_dispatch bypasses the guard so a partial publish can be re-run.
+    if: ${{ github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'chore: release') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PLZ_TOKEN }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "release-plz[bot]"
+          git config user.email "release-plz[bot]@users.noreply.github.com"
+
+      - name: Install Rust
+        run: rustup toolchain install
+
+      - name: Install release-plz CLI
+        uses: taiki-e/install-action@ec28e287910af896fd98e04056d31fa68607e7ad # v2.77.4
+        with:
+          tool: release-plz
+
+      - name: Bump versions and changelogs
+        run: release-plz update
+
+      - name: Commit and push version bumps (if any)
+        id: bump
+        run: |
+          if git diff --quiet; then
+            echo "No version bumps proposed."
+            echo "bumped=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git add .
+          git commit -s -m "chore: release"
+          git push origin HEAD:main
+          echo "bumped=true" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to crates.io (trusted publishing)
+        if: steps.bump.outputs.bumped == 'true' || github.event_name == 'workflow_dispatch'
+        uses: release-plz/action@064f4d1e36c843611ddf013be726beaa4ad804db # v0.5.129
+        with:
+          command: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          # No CARGO_REGISTRY_TOKEN — trusted publishing via OIDC is used
+          # instead. release-plz exchanges the GitHub OIDC token for a
+          # short-lived crates.io token automatically.

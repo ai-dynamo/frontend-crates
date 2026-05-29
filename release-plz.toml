@@ -1,0 +1,69 @@
+# release-plz configuration. See https://release-plz.dev/docs/config
+
+[workspace]
+# Validate proposed bumps against the public API diff via cargo-semver-checks.
+# If a `fix:` or `chore:` commit actually removed/renamed a pub item, the
+# release fails before anything is published.
+semver_check = true
+
+# Only commits matching this regex count toward "is there anything to release".
+# Excludes chore:/ci:/build:/test:/docs: from triggering bumps. (Excluded
+# commits still appear in the changelog if their parser group is configured
+# below — they just don't drive a release on their own.)
+release_commits = "^(feat|fix|perf|refactor|sync)(\\(.+\\))?!?:"
+
+# Default tag format: per-crate, e.g. dynamo-protocols-v0.1.1
+git_tag_name = "{{ package }}-v{{ version }}"
+
+# Create a GitHub Release per crate alongside the git tag.
+git_release_enable = true
+
+# Defaults we accept explicitly for clarity:
+# changelog_update = true
+# publish = true
+
+# `dynamo-demo-server` is `publish = false` in its Cargo.toml, but spell out
+# the release skip here too for legibility.
+[[package]]
+name = "dynamo-demo-server"
+release = false
+
+[changelog]
+header = """# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+"""
+
+body = """
+## [{{ version | trim_start_matches(pat="v") }}]\
+    {%- if release_link -%}\
+        ({{ release_link }})\
+    {% endif %} \
+    - {{ timestamp | date(format="%Y-%m-%d") }}
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
+{% for commit in commits %}
+- {% if commit.scope %}*({{ commit.scope }})* {% endif %}\
+    {% if commit.breaking %}[**breaking**] {% endif %}\
+    {{ commit.message | upper_first }}\
+{% endfor %}
+{% endfor %}
+"""
+
+# Group commits in changelogs. Skipped categories don't render at all (so
+# CI/test/build noise stays out of the user-facing changelog).
+commit_parsers = [
+    { message = "^feat", group = "Features" },
+    { message = "^fix", group = "Bug fixes" },
+    { message = "^perf", group = "Performance" },
+    { message = "^refactor", group = "Refactoring" },
+    { message = "^doc", group = "Documentation" },
+    { message = "^sync", group = "Upstream sync" },
+    { message = "^chore", skip = true },
+    { message = "^ci", skip = true },
+    { message = "^build", skip = true },
+    { message = "^test", skip = true },
+]
