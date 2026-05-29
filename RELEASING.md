@@ -85,21 +85,32 @@ All three crate names are already owned, and trusted publishing works as
 soon as it's configured (crates.io only requires the crate to *exist* on
 the registry, which all three do — even a reservation counts).
 
-1. **Configure trusted publishing on crates.io.** For each crate, go to
+1. **Create the `automated-release` GitHub Environment.** Repo Settings →
+   Environments → New environment → name `automated-release`. Configure:
+   - **Deployment branches:** Selected branches → `main` only. Prevents
+     publishes from PR branches even if a workflow file is added there.
+   - **Required reviewers:** leave empty. (Adding reviewers would force a
+     manual click on every release, defeating the direct-release flow.)
+   - **Wait timer:** leave at 0.
+   - **Environment secrets:** the `RELEASE_PLZ_TOKEN` provisioned in step
+     5 below should live here, not in repo-level secrets, so other
+     workflows can't read it.
+
+2. **Configure trusted publishing on crates.io.** For each crate, go to
    crates.io → crate Settings → Trusted Publishers → add a GitHub trusted
    publisher with:
    - Repository: `ai-dynamo/frontend-crates`
    - Workflow filename: `post-merge.yml`
-   - Environment: leave empty (or set a GitHub Environment for extra
-     gating)
+   - **Environment: `automated-release`** — binds the OIDC claim to this
+     environment so requests from anywhere else are rejected.
 
-2. **Wait for dynamo 1.2.0 to ship.** Don't activate the workflow until
+3. **Wait for dynamo 1.2.0 to ship.** Don't activate the workflow until
    `dynamo-protocols`, `dynamo-parsers`, and `dynamo-tokenizers` are all
    on crates.io at 1.2.0. release-plz compares local Cargo.toml versions
    against the crates.io registry, so the registry needs to be at the
    "previous" version before this repo's first publish.
 
-3. **Seed baseline release tags at the 1.2.0-sync commit.** release-plz
+4. **Seed baseline release tags at the 1.2.0-sync commit.** release-plz
    uses per-crate git tags to scope "what commits are new since the last
    release" when generating the changelog. Tag the commit in this repo's
    history that corresponds to the 1.2.0 sync state from dynamo (i.e. the
@@ -118,7 +129,8 @@ the registry, which all three do — even a reservation counts).
    include a small amount of extra context. Don't tag at HEAD — that
    would suppress the 1.3.0 release entirely.
 
-4. **Provision a `RELEASE_PLZ_TOKEN` secret.** The default `GITHUB_TOKEN`
+5. **Provision a `RELEASE_PLZ_TOKEN` secret (in the `automated-release`
+   environment).** The default `GITHUB_TOKEN`
    cannot push to a protected branch nor trigger downstream workflows
    (CI on the release commit). Two options:
    - **GitHub App (preferred for a public repo):** create a small app with
@@ -129,12 +141,12 @@ the registry, which all three do — even a reservation counts).
    - **Classic PAT:** scope `repo` + `workflow`, owned by a service
      account, stored as `RELEASE_PLZ_TOKEN`. Rotate periodically.
 
-5. **Branch protection on `main`:** require CI status checks, require
+6. **Branch protection on `main`:** require CI status checks, require
    linear history, require DCO. Add the bot identity to the bypass list so
    it can push the `chore: release` commit directly. Human commits still
    go through PRs.
 
-6. **Tag protection:** add a tag protection rule matching `*-v*` to
+7. **Tag protection:** add a tag protection rule matching `*-v*` to
    prevent updates and deletes.
 
 ## Recovery: partial publish failure

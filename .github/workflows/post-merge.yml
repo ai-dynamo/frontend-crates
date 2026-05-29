@@ -16,6 +16,11 @@ jobs:
   post-merge:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Scope OIDC + secrets to a protected environment. crates.io trusted
+    # publishing entries should reference this environment so the OIDC
+    # claim is bound to it — a misconfigured workflow elsewhere can't
+    # publish even if it lands on main.
+    environment: automated-release
     permissions:
       contents: write       # push the release commit + tags
       pull-requests: write  # release-plz may interact with PRs
