@@ -12,6 +12,7 @@ license = "Apache-2.0"
 homepage.workspace = true
 repository.workspace = true
 keywords = ["llm", "tokenizer", "huggingface", "tiktoken", "inference"]
+include = ["src/**/*", "Cargo.toml", "README.md"]
 
 [dependencies]
 anyhow.workspace = true

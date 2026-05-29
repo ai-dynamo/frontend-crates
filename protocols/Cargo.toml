@@ -19,6 +19,7 @@ license = "Apache-2.0 AND MIT"
 homepage.workspace = true
 repository.workspace = true
 keywords = ["llm", "genai", "inference", "openai", "anthropic"]
+include = ["src/**/*", "Cargo.toml", "README.md"]
 
 [dependencies]
 # Upstream OpenAI types (types-only, no HTTP client)
