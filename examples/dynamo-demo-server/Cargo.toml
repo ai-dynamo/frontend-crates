@@ -9,9 +9,10 @@ license = "Apache-2.0"
 publish = false
 
 [dependencies]
-# Three sibling crates from this repo.
+# Sibling crates from this repo.
 dynamo-protocols.workspace = true
 dynamo-parsers.workspace = true
+dynamo-renderer.workspace = true
 dynamo-tokenizers.workspace = true
 
 # Web framework

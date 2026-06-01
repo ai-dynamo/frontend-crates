@@ -51,6 +51,19 @@ check "tool-parse (hermes)" -H 'Content-Type: application/json' -X POST "$BASE/v
 check "reasoning-parse (deepseek_r1)" -H 'Content-Type: application/json' -X POST "$BASE/v1/reasoning-parse" \
   -d '{"text":"<think>let me think</think>the answer is 42","parser":"deepseek_r1"}'
 
+# /v1/render needs a chat template (server started with --model or
+# --chat-template-config). A 503 "no chat template loaded" means the route is
+# wired but unconfigured -- treat it as a soft skip, not a failure, so the smoke
+# run is meaningful whether or not a model was provided.
+render_code=$(curl -s -o /dev/null -w '%{http_code}' \
+  -H 'Content-Type: application/json' -X POST "$BASE/v1/render" \
+  -d '{"model":"echo","messages":[{"role":"user","content":"hello"}]}')
+case "$render_code" in
+  200) echo "  PASS  render"; PASS=$((PASS+1)) ;;
+  503) echo "  SKIP  render (no chat template; start with --model)" ;;
+  *)   echo "  FAIL  render (HTTP $render_code)"; FAIL=$((FAIL+1)) ;;
+esac
+
 echo
 echo "== $PASS passed, $FAIL failed =="
 [ "$FAIL" -eq 0 ]

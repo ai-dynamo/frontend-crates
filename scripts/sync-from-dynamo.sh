@@ -4,8 +4,8 @@
 
 # Check (or apply) a one-way sync from a local ai-dynamo/dynamo checkout into this repo.
 #
-# Sources:  $DYNAMO_SRC/lib/{protocols,tokenizers,parsers}/
-# Targets:  ./{protocols,tokenizers,parsers}/
+# Sources:  $DYNAMO_SRC/lib/{protocols,tokenizers,parsers,renderer}/
+# Targets:  ./{protocols,tokenizers,parsers,renderer}/
 #
 # Usage:
 #   scripts/sync-from-dynamo.sh                 # check, against $DYNAMO_SRC (default /ephemeral/dynamo)
@@ -47,7 +47,7 @@ if [ ! -d "$DYNAMO_SRC/lib" ]; then
 fi
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
-CRATES=(protocols tokenizers parsers)
+CRATES=(protocols tokenizers parsers renderer)
 
 # Files we own locally that we don't want overwritten by a sync.
 MANUAL_REVIEW=(Cargo.toml README.md CLAUDE.md AGENTS.md)
@@ -65,6 +65,17 @@ for c in "${CRATES[@]}"; do
   src="$DYNAMO_SRC/lib/$c"
   dst="$HERE/$c"
   echo "--- $c ---"
+
+  # TODO(renderer): drop this guard once PR ai-dynamo/dynamo#9946 lands
+  # lib/renderer on dynamo main. Until then `renderer` exists in this repo
+  # but not upstream, so the hourly sync-check (which runs against dynamo
+  # main) has nothing to diff against. Skip it explicitly — rather than
+  # silently comparing nothing — so the temporary state is visible in the
+  # output and intentional.
+  if [ ! -d "$src" ]; then
+    echo "  SKIP: lib/$c not present in $DYNAMO_SRC (not yet on dynamo main); skipping until upstream lands."
+    continue
+  fi
 
   # Sync src/ and tests/ subdirs only. These are pure code.
   # --checksum compares by content hash, not size+mtime — important for CI,

@@ -869,6 +869,7 @@ dependencies = [
  "clap",
  "dynamo-parsers",
  "dynamo-protocols",
+ "dynamo-renderer",
  "dynamo-tokenizers",
  "futures",
  "hf-hub",
@@ -915,6 +916,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "dynamo-renderer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "dynamo-protocols",
+ "dynamo-tokenizers",
+ "either",
+ "minijinja",
+ "minijinja-contrib",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tracing",
+]
+
+[[package]]
 name = "dynamo-tokenizers"
 version = "0.1.0"
 dependencies = [
@@ -939,6 +957,9 @@ name = "either"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "encode_unicode"
@@ -1994,6 +2015,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
 
 [[package]]
+name = "memo-map"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38d1115007560874e373613744c6fba374c17688327a71c1476d1a5954cc857b"
+
+[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2007,6 +2034,26 @@ checksum = "f7c44f8e672c00fe5308fa235f821cb4198414e1c77935c1ab6948d3fd78550e"
 dependencies = [
  "mime",
  "unicase",
+]
+
+[[package]]
+name = "minijinja"
+version = "2.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2929e494b2280e1e18959bb2e121da03347ae896896fdfaceaab43c88a02803f"
+dependencies = [
+ "memo-map",
+ "serde",
+]
+
+[[package]]
+name = "minijinja-contrib"
+version = "2.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "99df5123c54391e2a228014c1dbbd85a3dab08a25e776c810526f2f47542b3de"
+dependencies = [
+ "minijinja",
+ "serde",
 ]
 
 [[package]]
