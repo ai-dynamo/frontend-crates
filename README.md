@@ -9,7 +9,7 @@ Standalone Rust crates for building OpenAI/Anthropic-compatible inference server
 | [`dynamo-parsers`](./parsers/)       | Reasoning + tool-calling parsers across 18+ model families (DeepSeek R1/V4, Qwen3, GPT-OSS, Kimi K2, Gemma 4, Llama, Hermes, ...). Streaming-first. The *decode* side. |
 | [`dynamo-renderer`](./renderer/)     | Chat-template / prompt rendering: OpenAI chat requests → model-ready prompt strings via HF `chat_template` (minijinja), plus native DeepSeek formatters. The *encode* side. |
 
-Each crate is independently published to crates.io and can be adopted on its own. `dynamo-parsers` and `dynamo-renderer` depend on `dynamo-protocols` (`dynamo-renderer` also re-exports `dynamo-tokenizers` for convenience); the leaf crates have no internal deps. The repository itself is a Cargo workspace so shared dependency versions, CI checks, and the demo build stay consistent.
+Each crate is independently published to crates.io and can be adopted on its own. Only `dynamo-renderer` has internal deps — it depends on `dynamo-protocols` and re-exports `dynamo-tokenizers` for convenience; `dynamo-protocols`, `dynamo-tokenizers`, and `dynamo-parsers` are leaf crates with no internal deps. The repository itself is a Cargo workspace so shared dependency versions, CI checks, and the demo build stay consistent.
 
 ## Layout
 
@@ -17,7 +17,7 @@ Each crate is independently published to crates.io and can be adopted on its own
 frontend-crates/
 ├── protocols/              # dynamo-protocols
 ├── tokenizers/             # dynamo-tokenizers
-├── parsers/                # dynamo-parsers (deps protocols)
+├── parsers/                # dynamo-parsers
 ├── renderer/               # dynamo-renderer (deps protocols, tokenizers)
 ├── examples/
 │   └── dynamo-demo-server/ # axum server wiring them together
