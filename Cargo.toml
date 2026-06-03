@@ -5,6 +5,7 @@ members = [
     "parsers",
     "renderer",
     "tokenizers",
+    "conformance",
     "examples/dynamo-demo-server",
 ]
 

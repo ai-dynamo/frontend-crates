@@ -1,0 +1,190 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+//! Tool-calling parity: run every vendored `batch` fixture through
+//! `dynamo-parsers` and assert the result matches `expected.dynamo`.
+//!
+//! The fixture `family` field IS the parser name — passed straight to
+//! `detect_and_parse_tool_call_with_recovery`, exactly like dynamo's own
+//! `parse_tool_calls_batch` PyO3 binding (see tests/parity/toolcalling/dynamo.py).
+//!
+//! Scope: batch mode only. Streaming parity lives with the per-parser streaming
+//! work (the jail is in lib/llm, not in this crate). Stream-mode fixtures and the
+//! cross-family placeholder cases (no model_text / no expected) are skipped.
+
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
+
+use dynamo_parsers::tool_calling::ToolDefinition;
+use dynamo_parsers::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
+use serde::Deserialize;
+use serde_json::Value;
+
+#[derive(Deserialize)]
+struct Fixture {
+    family: String,
+    mode: String,
+    #[serde(default)]
+    cases: BTreeMap<String, Case>,
+}
+#[derive(Deserialize)]
+struct Case {
+    #[serde(default)]
+    model_text: Option<String>,
+    #[serde(default)]
+    tools: Option<Vec<RawTool>>,
+    #[serde(default)]
+    expected: Option<Expected>,
+}
+// ToolDefinition does not derive Deserialize, so deserialize into this and build it.
+#[derive(Deserialize)]
+struct RawTool {
+    name: String,
+    #[serde(default)]
+    parameters: Option<Value>,
+    #[serde(default)]
+    strict: Option<bool>,
+}
+#[derive(Deserialize)]
+struct Expected {
+    dynamo: EngineExpected,
+}
+#[derive(Deserialize)]
+struct EngineExpected {
+    #[serde(default)]
+    calls: Vec<ExpCall>,
+    #[serde(default)]
+    normal_text: Option<String>,
+}
+#[derive(Deserialize)]
+struct ExpCall {
+    name: String,
+    #[serde(default)]
+    arguments: Value,
+}
+
+fn collect_yaml(dir: &Path, out: &mut Vec<PathBuf>) {
+    let Ok(rd) = std::fs::read_dir(dir) else {
+        return;
+    };
+    for entry in rd.flatten() {
+        let p = entry.path();
+        if p.is_dir() {
+            collect_yaml(&p, out);
+        } else if p.extension().is_some_and(|x| x == "yaml") {
+            out.push(p);
+        }
+    }
+}
+
+/// Mirror of dynamo's `decode_arguments`: a tool call's `arguments` is a JSON
+/// string; parse it to a value, or keep it raw (malformed-body cases expect the
+/// raw string back).
+fn decode_args(s: &str) -> Value {
+    serde_json::from_str::<Value>(s).unwrap_or_else(|_| Value::String(s.to_string()))
+}
+
+/// `normal_text` parity: None / empty / whitespace are equivalent (matches
+/// common.py's normalization), so compare trimmed with None treated as "".
+fn norm_text(s: Option<&str>) -> String {
+    s.unwrap_or("").trim().to_string()
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn toolcalling_batch_parity() {
+    let root = concat!(env!("CARGO_MANIFEST_DIR"), "/parity/toolcalling/fixtures");
+    let mut files = Vec::new();
+    collect_yaml(Path::new(root), &mut files);
+    files.sort();
+    assert!(!files.is_empty(), "no fixtures found under {root}");
+
+    let mut total = 0usize;
+    let mut failures: Vec<String> = Vec::new();
+
+    for path in &files {
+        let yaml = std::fs::read_to_string(path).unwrap();
+        let fx: Fixture = match serde_yaml::from_str(&yaml) {
+            Ok(f) => f,
+            Err(e) => {
+                failures.push(format!("{}: YAML parse error: {e}", path.display()));
+                continue;
+            }
+        };
+        if fx.mode != "batch" {
+            continue;
+        }
+        for (cid, case) in &fx.cases {
+            let (Some(text), Some(expected)) = (case.model_text.as_ref(), case.expected.as_ref())
+            else {
+                continue; // placeholder / non-batch case
+            };
+            total += 1;
+
+            let tools: Vec<ToolDefinition> = case
+                .tools
+                .as_ref()
+                .map(|ts| {
+                    ts.iter()
+                        .map(|t| ToolDefinition {
+                            name: t.name.clone(),
+                            parameters: t.parameters.clone(),
+                            strict: t.strict,
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            let tools_opt = (!tools.is_empty()).then_some(tools.as_slice());
+
+            let (got_calls, got_normal) =
+                match detect_and_parse_tool_call_with_recovery(text, Some(&fx.family), tools_opt)
+                    .await
+                {
+                    Ok(v) => v,
+                    Err(e) => {
+                        failures.push(format!("{} [{cid}]: parser error: {e}", fx.family));
+                        continue;
+                    }
+                };
+
+            let got: Vec<(String, Value)> = got_calls
+                .iter()
+                .map(|c| (c.function.name.clone(), decode_args(&c.function.arguments)))
+                .collect();
+            let want: Vec<(String, Value)> = expected
+                .dynamo
+                .calls
+                .iter()
+                .map(|c| (c.name.clone(), c.arguments.clone()))
+                .collect();
+
+            let calls_ok = got == want;
+            let normal_ok = norm_text(got_normal.as_deref())
+                == norm_text(expected.dynamo.normal_text.as_deref());
+
+            if !calls_ok || !normal_ok {
+                failures.push(format!(
+                    "{family} [{cid}]\n        got  calls={got:?}\n        got  normal={got_n:?}\n        want calls={want:?}\n        want normal={want_n:?}",
+                    family = fx.family,
+                    got_n = norm_text(got_normal.as_deref()),
+                    want_n = norm_text(expected.dynamo.normal_text.as_deref()),
+                ));
+            }
+        }
+    }
+
+    eprintln!(
+        "toolcalling batch parity: {}/{} cases passed",
+        total.saturating_sub(failures.len()),
+        total
+    );
+    if !failures.is_empty() {
+        for f in &failures {
+            eprintln!("FAIL {f}");
+        }
+        panic!(
+            "{} of {} batch cases diverged from expected.dynamo",
+            failures.len(),
+            total
+        );
+    }
+}
