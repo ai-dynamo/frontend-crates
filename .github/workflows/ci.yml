@@ -58,3 +58,6 @@ jobs:
 
       - name: Run clippy
         run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+
+      - name: Verify crates are publishable
+        run: cargo publish --workspace --dry-run --locked
