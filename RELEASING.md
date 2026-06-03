@@ -5,8 +5,8 @@ SPDX-License-Identifier: Apache-2.0
 
 # Releasing
 
-Releases of `dynamo-protocols`, `dynamo-parsers`, and `dynamo-tokenizers` to
-crates.io are automated by `.github/workflows/post-merge.yml`. This document
+Releases of `dynamo-protocols`, `dynamo-parsers`, `dynamo-tokenizers`, and
+`dynamo-renderer` to crates.io are automated by `.github/workflows/post-merge.yml`. This document
 covers what the workflow does, what one-time setup it requires, and how to
 recover when it goes wrong.
 
@@ -26,28 +26,41 @@ recover when it goes wrong.
    `refactor:`, or `sync:`. That filter keeps `chore:` / `ci:` / `build:` /
    `test:` / `docs:` commits — including dependabot's `chore(deps):` bumps
    that only touch `Cargo.lock` — from triggering releases.
-3. If any bumps were proposed, the workflow commits them as
-   `chore: release` (with `Signed-off-by:` for DCO), pushes to `main`, then
-   runs `release-plz release` to publish to crates.io and create per-crate
-   git tags + GitHub Releases.
+3. If any bumps were proposed, the workflow commits them with an informative
+   subject listing every crate whose version changed this run — e.g.
+   `chore: release dynamo-protocols v1.4.0, dynamo-renderer v0.1.1` (with
+   `Signed-off-by:` for DCO) — pushes to `main`, then runs `release-plz
+   release` to publish to crates.io and create per-crate git tags. GitHub
+   Releases are disabled (`git_release_enable = false`); the per-crate
+   `CHANGELOG.md` files plus the `*-v*` tags are the release record.
 4. The push from step 3 retriggers the workflow. A recursion guard on the
    `chore: release` commit message short-circuits the second run.
 
-## Bump policy (pre-1.0)
+## Bump policy
 
-While crates are at `0.x.y`, release-plz applies these rules from the
-Conventional Commits since the last tag:
+release-plz applies SemVer to the Conventional Commits since each crate's last
+tag. SemVer treats `0.x` versions specially (the minor slot is the de-facto
+breaking position), so the bump depends on whether a crate has reached `1.0.0`.
 
-| Commit                          | Bump from 0.1.0 |
+`dynamo-protocols`, `dynamo-parsers`, and `dynamo-tokenizers` are at `1.x`
+(standard SemVer):
+
+| Commit                          | Bump from 1.3.0 |
 | ------------------------------- | --------------- |
-| `feat:`                         | 0.1.1 (patch)   |
-| `fix:`                          | 0.1.1 (patch)   |
-| `perf:`, `refactor:`            | 0.1.1 (patch)   |
-| `feat!:` / `BREAKING CHANGE:`   | 0.2.0 (minor)   |
+| `fix:`, `perf:`, `refactor:`    | 1.3.1 (patch)   |
+| `feat:`                         | 1.4.0 (minor)   |
+| `feat!:` / `BREAKING CHANGE:`   | 2.0.0 (major)   |
 | `chore:`, `ci:`, `build:`, etc. | no bump         |
 
-Switch to standard semver (`feat:` → minor, `feat!:` → major) when we bump
-any crate to `1.0.0`.
+`dynamo-renderer` is still at `0.x` (pre-1.0 rules):
+
+| Commit                                | Bump from 0.1.0 |
+| ------------------------------------- | --------------- |
+| `feat:`, `fix:`, `perf:`, `refactor:` | 0.1.1 (patch)   |
+| `feat!:` / `BREAKING CHANGE:`         | 0.2.0 (minor)   |
+| `chore:`, `ci:`, `build:`, etc.       | no bump         |
+
+`renderer` moves to the standard-SemVer column once it's bumped to `1.0.0`.
 
 ### What `cargo-semver-checks` validates
 
@@ -72,18 +85,19 @@ workflow run will pick up the right bump.
 
 These admin actions must be done before the workflow can run end-to-end.
 
-Coordination with the upstream `ai-dynamo/dynamo` monorepo: dynamo is
-about to release **1.2.0**, which will publish `dynamo-protocols` 1.2.0,
-`dynamo-parsers` 1.2.0, and `dynamo-tokenizers` 1.2.0 from the monorepo.
-This repo's local Cargo.toml versions are **1.3.0**, matching upstream
-`main`. Activation of the workflow here is deferred until dynamo 1.2.0
-has shipped to crates.io; the first publish from this repo will then be
-1.3.0 (a clean minor bump from the 1.2.0 baseline that dynamo just put on
-crates.io).
+Coordination with the upstream `ai-dynamo/dynamo` monorepo: dynamo has
+**already published 1.2.0** of `dynamo-protocols`, `dynamo-parsers`, and
+`dynamo-tokenizers` to crates.io. This repo's local Cargo.toml versions are
+**1.3.0**, so the first publish from this repo is a clean minor bump over that
+1.2.0 baseline. Going forward, **the monorepo must stop publishing these crate
+names** — once this repo is the publisher, two publishers would collide on the
+same names/versions.
 
-All three crate names are already owned, and trusted publishing works as
-soon as it's configured (crates.io only requires the crate to *exist* on
-the registry, which all three do — even a reservation counts).
+Crate-existence note for trusted publishing: `dynamo-protocols`,
+`dynamo-parsers`, and `dynamo-tokenizers` already exist on crates.io, so trusted
+publishing works for them as soon as it's configured. **`dynamo-renderer` does
+NOT yet exist on crates.io**, and trusted publishing cannot create a brand-new
+crate — it must be first-published manually (see step 3a).
 
 1. **Create the `automated-release` GitHub Environment.** Repo Settings →
    Environments → New environment → name `automated-release`. Configure:
@@ -96,7 +110,9 @@ the registry, which all three do — even a reservation counts).
      5 below should live here, not in repo-level secrets, so other
      workflows can't read it.
 
-2. **Configure trusted publishing on crates.io.** For each crate, go to
+2. **Configure trusted publishing on crates.io.** For each of the four crates
+   (`dynamo-protocols`, `dynamo-parsers`, `dynamo-tokenizers`, and —
+   after its manual first publish, step 3a — `dynamo-renderer`), go to
    crates.io → crate Settings → Trusted Publishers → add a GitHub trusted
    publisher with:
    - Repository: `ai-dynamo/frontend-crates`
@@ -104,11 +120,26 @@ the registry, which all three do — even a reservation counts).
    - **Environment: `automated-release`** — binds the OIDC claim to this
      environment so requests from anywhere else are rejected.
 
-3. **Wait for dynamo 1.2.0 to ship.** Don't activate the workflow until
-   `dynamo-protocols`, `dynamo-parsers`, and `dynamo-tokenizers` are all
-   on crates.io at 1.2.0. release-plz compares local Cargo.toml versions
-   against the crates.io registry, so the registry needs to be at the
-   "previous" version before this repo's first publish.
+3. **1.2.0 baseline (already satisfied).** release-plz compares local
+   Cargo.toml versions against the crates.io registry, so the registry must be
+   at the "previous" version before this repo's first publish. dynamo has
+   already published `dynamo-protocols`/`dynamo-parsers`/`dynamo-tokenizers` at
+   1.2.0, so this prerequisite is met and the first publish here will be 1.3.0.
+
+3a. **Bootstrap `dynamo-renderer` (manual first publish).** renderer is new to
+   crates.io and stays at `0.1.0` (not bumped). Trusted publishing can't create
+   a new crate, so publish it once by hand, then wire its trusted publisher:
+   - Ensure `dynamo-protocols@1.3.0` and `dynamo-tokenizers@1.3.0` are live
+     first — renderer's published manifest pins them at `^1.3.0`, so its verify
+     build needs them present. (They publish via OIDC on the first automated
+     run, or publish them manually up front.)
+   - `cargo publish -p dynamo-renderer` with a crates.io token that has the
+     `publish-new` scope.
+   - Add renderer's trusted publisher (same fields as step 2).
+   - To keep the *first* automated run from failing on the not-yet-published
+     renderer, either finish this bootstrap before the pipeline runs, **or**
+     temporarily add `[[package]]` / `name = "dynamo-renderer"` /
+     `release = false` to `release-plz.toml` for that run and remove it after.
 
 4. **Seed baseline release tags at the 1.2.0-sync commit.** release-plz
    uses per-crate git tags to scope "what commits are new since the last
