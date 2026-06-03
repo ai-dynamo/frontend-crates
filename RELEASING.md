@@ -6,13 +6,13 @@ SPDX-License-Identifier: Apache-2.0
 # Releasing
 
 Releases of `dynamo-protocols`, `dynamo-parsers`, `dynamo-tokenizers`, and
-`dynamo-renderer` to crates.io are automated by `.github/workflows/post-merge.yml`. This document
+`dynamo-renderer` to crates.io are automated by `.github/workflows/release.yml`. This document
 covers what the workflow does, what one-time setup it requires, and how to
 recover when it goes wrong.
 
 ## What happens on every push to `main`
 
-1. The `post-merge` workflow runs.
+1. The `release` workflow runs.
 2. `release-plz update` inspects commits since the last per-crate release tag
    (e.g. `dynamo-protocols-v0.1.0`) and proposes version bumps for any crate
    whose **packaged contents** changed. Packaged contents are spelled out
@@ -102,7 +102,7 @@ These admin actions must be done before the workflow can run end-to-end.
    crates.io → crate Settings → Trusted Publishers → add a GitHub trusted
    publisher with:
    - Repository: `ai-dynamo/frontend-crates`
-   - Workflow filename: `post-merge.yml`
+   - Workflow filename: `release.yml`
    - **Environment: `automated-release`** — binds the OIDC claim to this
      environment so requests from anywhere else are rejected.
 
@@ -134,7 +134,7 @@ late-failing `cargo-semver-checks`):
 
 1. The `chore: release` commit is already on `main` and the
    `dynamo-protocols-v<version>` tag exists.
-2. Rerun the workflow via **Actions → post-merge → Run workflow**. The
+2. Rerun the workflow via **Actions → release → Run workflow**. The
    `workflow_dispatch` trigger bypasses the recursion guard. `release-plz
    release` is idempotent: it checks crates.io and skips already-published
    crates, then retries the failed one.

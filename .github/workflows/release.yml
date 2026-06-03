@@ -1,4 +1,4 @@
-name: post-merge
+name: release
 
 on:
   push:
@@ -9,11 +9,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: post-merge-${{ github.ref }}
+  group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  post-merge:
+  release:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Scope OIDC + secrets to a protected environment. crates.io trusted
