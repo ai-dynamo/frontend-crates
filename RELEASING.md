@@ -28,7 +28,7 @@ recover when it goes wrong.
    that only touch `Cargo.lock` — from triggering releases.
 3. If any bumps were proposed, the workflow commits them with an informative
    subject listing every crate whose version changed this run — e.g.
-   `chore: release dynamo-protocols v1.4.0, dynamo-renderer v0.1.1` (with
+   `chore: release dynamo-protocols v1.4.0, dynamo-renderer v1.3.1` (with
    `Signed-off-by:` for DCO) — pushes to `main`, then runs `release-plz
    release` to publish to crates.io and create per-crate git tags. GitHub
    Releases are disabled (`git_release_enable = false`); the per-crate
@@ -42,8 +42,8 @@ release-plz applies SemVer to the Conventional Commits since each crate's last
 tag. SemVer treats `0.x` versions specially (the minor slot is the de-facto
 breaking position), so the bump depends on whether a crate has reached `1.0.0`.
 
-`dynamo-protocols`, `dynamo-parsers`, and `dynamo-tokenizers` are at `1.x`
-(standard SemVer):
+`dynamo-protocols`, `dynamo-parsers`, `dynamo-tokenizers`, and
+`dynamo-renderer` are all at `1.x` (standard SemVer):
 
 | Commit                          | Bump from 1.3.0 |
 | ------------------------------- | --------------- |
@@ -51,16 +51,6 @@ breaking position), so the bump depends on whether a crate has reached `1.0.0`.
 | `feat:`                         | 1.4.0 (minor)   |
 | `feat!:` / `BREAKING CHANGE:`   | 2.0.0 (major)   |
 | `chore:`, `ci:`, `build:`, etc. | no bump         |
-
-`dynamo-renderer` is still at `0.x` (pre-1.0 rules):
-
-| Commit                                | Bump from 0.1.0 |
-| ------------------------------------- | --------------- |
-| `feat:`, `fix:`, `perf:`, `refactor:` | 0.1.1 (patch)   |
-| `feat!:` / `BREAKING CHANGE:`         | 0.2.0 (minor)   |
-| `chore:`, `ci:`, `build:`, etc.       | no bump         |
-
-`renderer` moves to the standard-SemVer column once it's bumped to `1.0.0`.
 
 ### What `cargo-semver-checks` validates
 
