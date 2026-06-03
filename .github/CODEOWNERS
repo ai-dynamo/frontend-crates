@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Require review from ai-dynamo/devops for CI/CD, supply-chain config,
+# and changes to this CODEOWNERS file itself.
+/.github/        @ai-dynamo/devops
+CONTRIBUTING.md  @ai-dynamo/devops
+deny.toml        @ai-dynamo/devops
+LICENSE          @ai-dynamo/devops
+release-plz.toml @ai-dynamo/devops
+RELEASING.md     @ai-dynamo/devops
+SECURITY.md      @ai-dynamo/devops
