@@ -16,7 +16,6 @@ include = ["src/**/*", "Cargo.toml", "README.md"]
 
 [dependencies]
 anyhow.workspace = true
-dynamo-protocols.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true, features = ["raw_value"] }
 tokio = { workspace = true, features = ["full"] }

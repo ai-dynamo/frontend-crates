@@ -4,8 +4,8 @@
 
 # Check (or apply) a one-way sync from a local ai-dynamo/dynamo checkout into this repo.
 #
-# Sources:  $DYNAMO_SRC/lib/{protocols,tokenizers,parsers}/
-# Targets:  ./{protocols,tokenizers,parsers}/
+# Sources:  $DYNAMO_SRC/lib/{protocols,tokenizers,parsers,renderer}/
+# Targets:  ./{protocols,tokenizers,parsers,renderer}/
 #
 # Usage:
 #   scripts/sync-from-dynamo.sh                 # check, against $DYNAMO_SRC (default /ephemeral/dynamo)
@@ -16,6 +16,9 @@
 # What gets synced:
 #   src/        — code (always synced in --apply mode)
 #   tests/      — tests (always synced in --apply mode)
+#   llm/tests/data/sample-models/ — tokenizer fixtures the synced tests load
+#                 via "$CARGO_MANIFEST_DIR/../llm/tests/data/..." paths. Mirrored
+#                 verbatim so synced tests run offline without path edits.
 #
 # What does NOT get synced (flagged for manual review in check mode):
 #   Cargo.toml  — local copy is inlined for standalone publishing.
@@ -44,7 +47,7 @@ if [ ! -d "$DYNAMO_SRC/lib" ]; then
 fi
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
-CRATES=(protocols tokenizers parsers)
+CRATES=(protocols tokenizers parsers renderer)
 
 # Files we own locally that we don't want overwritten by a sync.
 MANUAL_REVIEW=(Cargo.toml README.md CLAUDE.md AGENTS.md)
@@ -92,6 +95,27 @@ for c in "${CRATES[@]}"; do
     fi
   done
 done
+
+# Test fixtures live outside the three crates (dynamo's lib/llm/tests/data) but
+# are loaded by the synced tests via relative paths. Mirror them so the
+# standalone repo is self-contained and fixture drift is caught like code drift.
+FIXTURE_REL="llm/tests/data/sample-models"
+fsrc="$DYNAMO_SRC/lib/$FIXTURE_REL"
+fdst="$HERE/$FIXTURE_REL"
+if [ -d "$fsrc" ]; then
+  echo "--- test fixtures ($FIXTURE_REL) ---"
+  if [ "$APPLY" = "1" ]; then
+    mkdir -p "$fdst"
+    rsync -a --delete --checksum "$fsrc/" "$fdst/"
+  else
+    out=$(rsync -a --delete --checksum --dry-run --itemize-changes "$fsrc/" "$fdst/" | grep -E '^[<>c*]' || true)
+    if [ -n "$out" ]; then
+      echo "  would change:"
+      echo "$out" | sed 's/^/    /'
+      CODE_CHANGED=1
+    fi
+  fi
+fi
 
 if [ "$APPLY" = "1" ]; then
   echo

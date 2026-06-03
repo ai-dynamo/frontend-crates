@@ -59,6 +59,7 @@ pub async fn handler(Json(req): Json<ToolParseRequest>) -> Response {
             .map(|t| ToolDefinition {
                 name: t.name,
                 parameters: t.parameters,
+                strict: None,
             })
             .collect()
     });

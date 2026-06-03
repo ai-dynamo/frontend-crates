@@ -29,6 +29,7 @@ async-openai = { workspace = true, features = [
     "completion-types",
     "embedding-types",
     "image-types",
+    "realtime-types",
 ] }
 
 # Serialization

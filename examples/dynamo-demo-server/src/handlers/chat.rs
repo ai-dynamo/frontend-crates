@@ -47,6 +47,7 @@ pub async fn handler(
                 .map(|t| dynamo_parsers::tool_calling::ToolDefinition {
                     name: t.function.name.clone(),
                     parameters: t.function.parameters.clone(),
+                    strict: None,
                 })
                 .collect();
             match dynamo_parsers::tool_calling::detect_and_parse_tool_call(

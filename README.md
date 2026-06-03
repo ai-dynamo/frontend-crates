@@ -1,14 +1,15 @@
 # frontend-crates
 
-Three standalone Rust crates for building OpenAI/Anthropic-compatible inference servers, plus a small demo wiring them together.
+Standalone Rust crates for building OpenAI/Anthropic-compatible inference servers, plus a small demo wiring them together.
 
 | Crate | What it does |
 | -- | -- |
 | [`dynamo-protocols`](./protocols/)   | Request/response types for OpenAI Chat / Completions / Responses + Anthropic Messages. Built on `async-openai` v0.34 with inference-serving extensions. |
-| [`dynamo-tokenizers`](./tokenizers/) | HuggingFace + tiktoken + FastTokenizer wrappers with fast incremental detokenization. |
-| [`dynamo-parsers`](./parsers/)       | Reasoning + tool-calling parsers across 18+ model families (DeepSeek R1/V4, Qwen3, GPT-OSS, Kimi K2, Gemma 4, Llama, Hermes, ...). Streaming-first. |
+| [`dynamo-tokenizers`](./tokenizers/) | HuggingFace + tiktoken + FastTokenizer wrappers with fast incremental detokenization and prefix-caching for shared-prefix workloads. |
+| [`dynamo-parsers`](./parsers/)       | Reasoning + tool-calling parsers across 18+ model families (DeepSeek R1/V4, Qwen3, GPT-OSS, Kimi K2, Gemma 4, Llama, Hermes, ...). Streaming-first. The *decode* side. |
+| [`dynamo-renderer`](./renderer/)     | Chat-template / prompt rendering: OpenAI chat requests → model-ready prompt strings via HF `chat_template` (minijinja), plus native DeepSeek formatters. The *encode* side. |
 
-Each crate is independently published to crates.io and can be adopted on its own. `dynamo-parsers` depends on `dynamo-protocols`; the other two have no internal deps. The repository itself is a Cargo workspace so shared dependency versions, CI checks, and the demo build stay consistent.
+Each crate is independently published to crates.io and can be adopted on its own. `dynamo-parsers` and `dynamo-renderer` depend on `dynamo-protocols` (`dynamo-renderer` also re-exports `dynamo-tokenizers` for convenience); the leaf crates have no internal deps. The repository itself is a Cargo workspace so shared dependency versions, CI checks, and the demo build stay consistent.
 
 ## Layout
 
@@ -17,8 +18,9 @@ frontend-crates/
 ├── protocols/              # dynamo-protocols
 ├── tokenizers/             # dynamo-tokenizers
 ├── parsers/                # dynamo-parsers (deps protocols)
+├── renderer/               # dynamo-renderer (deps protocols, tokenizers)
 ├── examples/
-│   └── dynamo-demo-server/ # axum server wiring all three together
+│   └── dynamo-demo-server/ # axum server wiring them together
 └── scripts/
     └── sync-from-dynamo.sh # check / pull changes from ai-dynamo/dynamo
 ```
@@ -42,6 +44,7 @@ Each crate can still be built or tested directly:
 cargo build -p dynamo-protocols
 cargo build -p dynamo-tokenizers
 cargo build -p dynamo-parsers
+cargo build -p dynamo-renderer
 cargo build -p dynamo-demo-server --release
 ```
 
@@ -55,4 +58,6 @@ cargo deny --all-features check bans licenses
 
 ## Where the code lives
 
-These crates currently mirror `lib/{protocols,tokenizers,parsers}/` from [ai-dynamo/dynamo](https://github.com/ai-dynamo/dynamo). The sync is **one-way (dynamo → frontend-crates) and manual** for now — see [`scripts/sync-from-dynamo.sh`](./scripts/sync-from-dynamo.sh) to check for upstream changes.
+These crates currently mirror `lib/{protocols,tokenizers,parsers,renderer}/` from [ai-dynamo/dynamo](https://github.com/ai-dynamo/dynamo). The sync is **one-way (dynamo → frontend-crates) and manual** for now — see [`scripts/sync-from-dynamo.sh`](./scripts/sync-from-dynamo.sh) to check for upstream changes.
+
+> **Heads up:** this mirroring is temporary. Over the next few weeks we plan to **remove the sync entirely and make this repository the source of truth** for these crates — dynamo will then depend on the published crates rather than the other way around. Until that cutover lands, treat dynamo as upstream and land crate changes there first.

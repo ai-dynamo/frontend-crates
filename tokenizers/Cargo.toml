@@ -16,6 +16,8 @@ include = ["src/**/*", "Cargo.toml", "README.md"]
 
 [dependencies]
 anyhow.workspace = true
+blake3.workspace = true
+dashmap.workspace = true
 fastokens.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json.workspace = true

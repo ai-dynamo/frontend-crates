@@ -7,6 +7,7 @@ target
 /protocols/Cargo.lock
 /tokenizers/Cargo.lock
 /parsers/Cargo.lock
+/renderer/Cargo.lock
 /examples/*/Cargo.lock
 
 # rustfmt backups
