@@ -49,6 +49,12 @@ jobs:
             | tar xz -C /usr/local/bin release-plz
           release-plz --version
 
+      - name: Install cargo-semver-checks
+        run: |
+          curl -sSLf https://github.com/obi1kenobi/cargo-semver-checks/releases/download/v0.48.0/cargo-semver-checks-x86_64-unknown-linux-gnu.tar.gz \
+            | tar xz -C /usr/local/bin
+          cargo-semver-checks --version
+
       - name: Bump versions and changelogs
         run: release-plz update
 
