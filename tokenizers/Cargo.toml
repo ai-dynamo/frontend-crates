@@ -14,9 +14,10 @@ repository.workspace = true
 keywords = ["llm", "tokenizer", "huggingface", "tiktoken", "inference"]
 
 [dependencies]
+aho-corasick.workspace = true
 anyhow.workspace = true
 blake3.workspace = true
-dashmap.workspace = true
+moka = { workspace = true, features = ["sync"] }
 fastokens.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json.workspace = true
