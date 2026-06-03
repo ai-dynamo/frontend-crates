@@ -92,7 +92,7 @@ fn norm_text(s: Option<&str>) -> String {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn toolcalling_batch_parity() {
-    let root = concat!(env!("CARGO_MANIFEST_DIR"), "/parity/toolcalling/fixtures");
+    let root = concat!(env!("CARGO_MANIFEST_DIR"), "/toolcalling/fixtures");
     let mut files = Vec::new();
     collect_yaml(Path::new(root), &mut files);
     files.sort();

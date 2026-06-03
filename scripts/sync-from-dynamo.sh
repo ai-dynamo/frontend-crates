@@ -124,7 +124,7 @@ fi
 # fixtures/ dirs are pure YAML, so no excludes are needed.
 for fam in toolcalling reasoning; do
   pfx_src="$DYNAMO_SRC/tests/parity/$fam/fixtures"
-  pfx_dst="$HERE/conformance/parity/$fam/fixtures"
+  pfx_dst="$HERE/conformance/$fam/fixtures"
   [ -d "$pfx_src" ] || continue
   echo "--- parity fixtures ($fam) ---"
   if [ "$APPLY" = "1" ]; then
