@@ -13,10 +13,11 @@ semver_check = true
 release_commits = "^(feat|fix|perf|refactor|sync)(\\(.+\\))?!?:"
 
 # Default tag format: per-crate, e.g. dynamo-protocols-v0.1.1
+git_tag_enable = true
 git_tag_name = "{{ package }}-v{{ version }}"
 
-# Create a GitHub Release per crate alongside the git tag.
-git_release_enable = true
+# Do NOT create GitHub Releases (git tags + CHANGELOG only).
+git_release_enable = false
 
 # Defaults we accept explicitly for clarity:
 # changelog_update = true

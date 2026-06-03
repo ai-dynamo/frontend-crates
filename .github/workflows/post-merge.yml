@@ -27,7 +27,7 @@ jobs:
       id-token: write       # OIDC for crates.io trusted publishing
     # Recursion guard: skip the run triggered by our own "chore: release" push.
     # workflow_dispatch bypasses the guard so a partial publish can be re-run.
-    if: ${{ github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'chore: release') }}
+    if: "${{ github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'chore: release') }}"
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -59,8 +59,24 @@ jobs:
             echo "bumped=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          git add .
-          git commit -s -m "chore: release"
+          # Informative subject listing every crate whose [package] version
+          # changed this run, e.g. "chore: release dynamo-protocols v1.4.0,
+          # dynamo-renderer v0.1.1". Comparing the package version (not the
+          # changelog) also catches dependency-cascade bumps, which re-release
+          # a dependent without adding a changelog entry. The name + literal
+          # version guard skips the workspace root. The "chore: release" prefix
+          # is mandatory — the recursion guard above keys off it.
+          git add -A
+          summary=$(for toml in $(git ls-files | grep -E '(^|/)Cargo\.toml$'); do
+            name=$(grep -m1 '^name *=' "$toml" | sed -E 's/.*"([^"]+)".*/\1/')
+            newver=$(grep -m1 '^version *=' "$toml" | sed -E 's/.*"([^"]+)".*/\1/')
+            oldver=$(git show "HEAD:$toml" 2>/dev/null | grep -m1 '^version *=' | sed -E 's/.*"([^"]+)".*/\1/')
+            if [ -n "$name" ] && [ -n "$newver" ] && [ "$newver" != "$oldver" ]; then
+              printf '%s v%s, ' "$name" "$newver"
+            fi
+          done | sed 's/, $//')
+          [ -z "$summary" ] && summary="version bumps"
+          git commit -s -m "chore: release $summary"
           git push origin HEAD:main
           echo "bumped=true" >> "$GITHUB_OUTPUT"
 
