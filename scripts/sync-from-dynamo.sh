@@ -117,6 +117,29 @@ if [ -d "$fsrc" ]; then
   fi
 fi
 
+# Parity fixture corpus. Lives at the dynamo repo root (tests/parity/), NOT under
+# lib/, so the per-crate sync above misses it. Mirror the fixtures/ subdir only —
+# the .py harness, parity_table.html.j2, __pycache__, and the large rendered
+# PARITY.html all sit at the parent level and must stay out of this repo. The
+# fixtures/ dirs are pure YAML, so no excludes are needed.
+for fam in toolcalling reasoning; do
+  pfx_src="$DYNAMO_SRC/tests/parity/$fam/fixtures"
+  pfx_dst="$HERE/conformance/$fam/fixtures"
+  [ -d "$pfx_src" ] || continue
+  echo "--- parity fixtures ($fam) ---"
+  if [ "$APPLY" = "1" ]; then
+    mkdir -p "$pfx_dst"
+    rsync -a --delete --checksum "$pfx_src/" "$pfx_dst/"
+  else
+    out=$(rsync -a --delete --checksum --dry-run --itemize-changes "$pfx_src/" "$pfx_dst/" | grep -E '^[<>c*]' || true)
+    if [ -n "$out" ]; then
+      echo "  $fam/fixtures would change:"
+      echo "$out" | sed 's/^/    /'
+      CODE_CHANGED=1
+    fi
+  fi
+done
+
 if [ "$APPLY" = "1" ]; then
   echo
   echo "done. review with: git -C $HERE status"
