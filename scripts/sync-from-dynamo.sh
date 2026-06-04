@@ -4,8 +4,12 @@
 
 # Check (or apply) a one-way sync from a local ai-dynamo/dynamo checkout into this repo.
 #
-# Sources:  $DYNAMO_SRC/lib/{protocols,tokenizers,parsers,renderer}/
-# Targets:  ./{protocols,tokenizers,parsers,renderer}/
+# Sources:  $DYNAMO_SRC/lib/{protocols,tokenizers,renderer}/
+# Targets:  ./{protocols,tokenizers,renderer}/
+#
+# NOTE: parsers/ and parity-harness/ are NOT synced by this script.
+# They are permanently detached from dynamo and updated manually.
+# See PARSERS-SYNC.md for the exact mapping and instructions.
 #
 # Usage:
 #   scripts/sync-from-dynamo.sh                 # check, against $DYNAMO_SRC (default /ephemeral/dynamo)
@@ -47,7 +51,7 @@ if [ ! -d "$DYNAMO_SRC/lib" ]; then
 fi
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
-CRATES=(protocols tokenizers parsers renderer)
+CRATES=(protocols tokenizers renderer)
 
 # Files we own locally that we don't want overwritten by a sync.
 MANUAL_REVIEW=(Cargo.toml README.md CLAUDE.md AGENTS.md)
@@ -139,6 +143,7 @@ for fam in toolcalling reasoning; do
     fi
   fi
 done
+
 
 if [ "$APPLY" = "1" ]; then
   echo
