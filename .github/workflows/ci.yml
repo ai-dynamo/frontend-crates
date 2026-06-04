@@ -61,3 +61,23 @@ jobs:
 
       - name: Verify crates are publishable
         run: cargo publish --workspace --dry-run --locked
+
+  # Render-smoke for the vendored parity-table generator. Catches generator/fixture
+  # breakage. Python + pyyaml/jinja2 only — no engines (vLLM/SGLang parity runs in
+  # dynamo's CI lanes; here the engine lanes are on-demand/local).
+  parity-table:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Render parity matrix (no engines)
+        run: |
+          python3 -m venv /tmp/pvenv
+          /tmp/pvenv/bin/pip install --quiet pyyaml jinja2
+          PATH="/tmp/pvenv/bin:$PATH" parity-harness/run.sh table
+          test -s parity-harness/PARITY.html
+          grep -q "TOOLCALLING.batch" parity-harness/PARITY.html
+          grep -q "REASONING.batch" parity-harness/PARITY.html
+          echo "parity matrix rendered: $(wc -c < parity-harness/PARITY.html) bytes"
