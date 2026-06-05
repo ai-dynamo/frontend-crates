@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: llama3_json
+model_label: 'Llama 3 (JSON fmt)'
+mode: stream
+cases:
+  TOOLCALLING.stream.2:
+    description: 'Multiple tool calls split across multiple content chunks'
+    ref: 'derived from TOOLCALLING.batch.2.a'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo TC streaming not yet implemented for this family. Text-based; token-id path is harmony-only for now.'
+    chunks:
+    - delta_text: '<|python_'
+    - delta_text: 'tag|>{"'
+    - delta_text: 'name": "get_w'
+    - delta_text: 'eathe'
+    - delta_text: 'r", "arguments": '
+    - delta_text: '{"l'
+    - delta_text: 'ocation":'
+    - delta_text: ' "NYC"}'
+    - delta_text: '};{"name": "g'
+    - delta_text: 'et_ti'
+    - delta_text: 'me", "arguments":'
+    - delta_text: ' {"'
+    - delta_text: 'timezone"'
+    - delta_text: ': "EST"'
+    - delta_text: '}}'
+    - delta_text: ''
+      finish_reason: tool_calls

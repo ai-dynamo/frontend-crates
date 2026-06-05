@@ -1,0 +1,43 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: deepseek_v3_1
+model_label: 'DeepSeek V3.1'
+mode: stream
+cases:
+  TOOLCALLING.stream.3:
+    description: 'Complete single tool call with a grammar token split across chunk boundaries'
+    ref: 'derived from TOOLCALLING.batch.1'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo TC streaming not yet implemented for this family. Text-based; token-id path is harmony-only for now.'
+    chunks:
+    - delta_text: '<｜'
+    - delta_text: 'too'
+    - delta_text: 'l▁cal'
+    - delta_text: 'ls▁begin｜><'
+    - delta_text: '｜tool▁call▁begin｜>g'
+    - delta_text: 'et'
+    - delta_text: '_we'
+    - delta_text: 'ather'
+    - delta_text: '<｜tool▁sep｜'
+    - delta_text: '>{"location":"NYC"}'
+    - delta_text: '<｜'
+    - delta_text: 'too'
+    - delta_text: 'l▁cal'
+    - delta_text: 'l▁end｜><｜to'
+    - delta_text: 'ol▁calls▁end｜>'
+    - delta_text: ''
+      finish_reason: tool_calls
