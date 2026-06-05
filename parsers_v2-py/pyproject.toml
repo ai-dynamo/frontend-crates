@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+[build-system]
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "dynamo-parsers-v2"
+version = "0.1.0"
+description = "Token-incremental Harmony tool-call streaming parser"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+
+[tool.maturin]
+module-name = "dynamo_parsers_v2"
+features = []

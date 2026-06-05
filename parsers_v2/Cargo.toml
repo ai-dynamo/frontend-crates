@@ -1,17 +1,17 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 [package]
-name = "dynamo-conformance-fixtures-v2"
+name = "dynamo-parsers-v2"
 version = "0.1.0"
 edition.workspace = true
 license = "Apache-2.0"
-description = "Runs the vendored Dynamo parity fixtures against dynamo-parsers"
-publish = false
+description = "Token-incremental Harmony (gpt-oss) tool-call streaming parser"
 
-[dev-dependencies]
+[dependencies]
 dynamo-parsers = { workspace = true }
-dynamo-parsers-v2 = { path = "../parsers_v2", version = "0.1.0" }
+openai-harmony = { workspace = true }
+anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 serde_yaml = "0.9"
-tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tracing = { workspace = true }
