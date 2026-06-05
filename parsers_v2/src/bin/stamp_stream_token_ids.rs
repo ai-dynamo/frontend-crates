@@ -3,11 +3,11 @@
 
 //! Stamp `delta_token_ids` into every chunk of every harmony stream fixture.
 //!
-//! Reads conformance/toolcalling/fixtures/harmony/TOOLCALLING.stream.*.yaml,
+//! Reads conformance/toolcalling/fixtures-stream-v2/harmony/TOOLCALLING.stream.*.yaml,
 //! encodes the FULL concatenated delta_text per case with the gpt-oss harmony
 //! tokenizer, then aligns those tokens back to individual chunks by tracking the
 //! decoded byte cursor. The resulting per-chunk token ids form a valid token
-//! sequence — special tokens like <|message|> that span a character-split boundary
+//! sequence: special tokens like <|message|> that span a character-split boundary
 //! are assigned to the earlier chunk rather than encoded as broken fragments.
 //!
 //! Usage (from repo root):
@@ -19,8 +19,6 @@ use std::path::PathBuf;
 
 use dynamo_parsers_v2::{decode_harmony, encode_harmony};
 use serde::Deserialize;
-
-// ── YAML schema (read-only) ──────────────────────────────────────────────────
 
 #[derive(Deserialize)]
 struct Fixture {
@@ -43,8 +41,6 @@ struct Chunk {
     #[serde(default)]
     delta_text: String,
 }
-
-// ── Main ─────────────────────────────────────────────────────────────────────
 
 fn main() -> anyhow::Result<()> {
     let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -86,8 +82,6 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-// ── Stamping logic ───────────────────────────────────────────────────────────
-
 /// Encode the full text for each case, align tokens to chunk boundaries, and
 /// insert `delta_token_ids: [...]` lines after each `- delta_text:` line.
 fn stamp_token_ids(src: &str) -> anyhow::Result<String> {
@@ -96,8 +90,8 @@ fn stamp_token_ids(src: &str) -> anyhow::Result<String> {
 
     // Build a flat, ordered list of per-chunk token id vectors — one entry per
     // `- delta_text:` line in the YAML, in document order.
-    // serde_yaml preserves BTreeMap insertion order (alphabetical by key), which
-    // matches the document order for these fixtures.
+    // BTreeMap sorts case ids by key, which matches the document order for these
+    // fixtures.
     let mut all_chunk_ids: Vec<Vec<u32>> = Vec::new();
     for case in fixture.cases.values() {
         let chunk_ids = align_tokens_to_chunks(&case.chunks)?;
@@ -146,7 +140,7 @@ fn stamp_token_ids(src: &str) -> anyhow::Result<String> {
 /// Each token is assigned to the chunk whose cumulative byte boundary it first
 /// crosses. A token that spans a chunk boundary (common for character-split
 /// fixtures) is assigned entirely to the earlier chunk, giving that chunk a
-/// slightly longer token span — but the total token sequence is valid.
+/// slightly longer token span, but the total token sequence is valid.
 fn align_tokens_to_chunks(chunks: &[Chunk]) -> anyhow::Result<Vec<Vec<u32>>> {
     // Cumulative byte lengths for each chunk.
     let cumulative_bytes: Vec<usize> = chunks

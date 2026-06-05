@@ -22,13 +22,13 @@ Reads every `tests/parity/toolcalling/fixtures/<family>/TOOLCALLING.batch*.yaml`
 the conformance table.
 
 Cell markers (per peer, vllm + sglang):
-  =     peer block is `*d_<case>` anchor ref to dynamo (matches)
+  =     peer block matches the local-parser block (`expected.dynamo`)
   V/S   peer is a concrete inline block AND has `reason:` (intentional)
   V?/S? peer is a concrete inline block AND has no `reason:` yet
         (research-needed; we observed it but haven't classified it)
   V!/S! peer has `error: <substring>` (expected to crash)
   VS, V?S, VS!, etc. — combinations
-  ·     Dynamo-only fixture; both peer blocks are `unavailable`
+  ·     local-parser-only fixture; both peer blocks are `unavailable`
   n/a   family/case doesn't apply
   —     no fixture entry exists for this family/case yet
 
@@ -42,13 +42,13 @@ Run:
     python3 tests/parity/generate_conformance_table_v2.py toolcalling --mode stream \
         > tests/parity/toolcalling/CONFORMANCE.stream.md
 
-    # HTML table with tabs, clickable YAML links, and hover tooltips. Write next
-    # to this script so `<a href="fixtures/<family>/TOOLCALLING.batch.N.yaml">`
-    # resolves when opened in a browser.
+    # HTML table with tabs, clickable YAML links, and hover tooltips. Prefer
+    # conformance/utils/render_table_v2.sh so links are computed for the output
+    # location.
     python3 tests/parity/generate_conformance_table_v2.py toolcalling --html \
-        > tests/parity/toolcalling/CONFORMANCE.html
+        > tests/parity/toolcalling/CONFORMANCE_v2.html
 
-CONFORMANCE.{md,html} are for local viewing only; don't check them in.
+CONFORMANCE_v2.html is for local viewing only; don't check it in.
 """
 
 from __future__ import annotations
@@ -92,10 +92,11 @@ _TOOL_CALLING_LABEL_OVERRIDES = {
 # nemotron_nano: an alias for qwen3_coder, hide to avoid duplicate row
 # nemotron_deci: for older v2 nemotron models, hide to avoid confusion with nemotron v3 models
 _HIDDEN_TOOL_CALLING_FAMILIES = {"nemotron_deci", "nemotron_nano"}
-_V2_TOP_N_TOOL_CALLING_FAMILIES = [
-    *TOP_N_FAMILIES,
-    "harmony_text",
-]
+_V2_TOP_N_TOOL_CALLING_FAMILIES = []
+for family in TOP_N_FAMILIES:
+    _V2_TOP_N_TOOL_CALLING_FAMILIES.append(family)
+    if family == "harmony":
+        _V2_TOP_N_TOOL_CALLING_FAMILIES.append("harmony_text")
 
 
 def _model_label_html(model: str) -> str:
@@ -790,7 +791,7 @@ def _derive_stream_expected(case: dict) -> dict:
                 parsed = raw
             calls.append({"name": names.get(idx, ""), "arguments": parsed})
         block = {"calls": calls, "normal_text": normal}
-        # Peer (vllm/sglang) divergence from Dynamo in streaming is captured
+        # Peer (vllm/sglang) divergence from frontend-crate in streaming is captured
         # ground truth, not an un-triaged gap — text vs token streaming differ by
         # design. Tag peer blocks with a reason so the cell shows `S`/`V` (known
         # divergence), never `S?`/`V?` (research-needed). The per-chunk `expected`
@@ -798,7 +799,7 @@ def _derive_stream_expected(case: dict) -> dict:
         if impl in ("vllm", "sglang"):
             block["reason"] = (
                 f"Captured from the {impl} streaming parser. Streaming output differs "
-                "from Dynamo's token-incremental parser by design (text vs token "
+                "from frontend-crate's token-incremental parser by design (text vs token "
                 "streaming); see per-chunk `expected` in the fixture."
             )
         derived[impl] = block
@@ -1014,9 +1015,9 @@ def cell_for(case: dict | None) -> str:
     dyn = case.get("expected", {}).get("dynamo")
     if not isinstance(dyn, dict):
         return "n/a"
-    # Dynamo unavailable for this case: distinguish "not yet implemented" (TODO,
-    # the whole family) from a structural n/a (e.g. a token parser can't consume
-    # a character-split fixture per-chunk). Don't compare an empty Dynamo to peers.
+    # Local parser unavailable for this case: distinguish "not yet implemented"
+    # (TODO, the whole family) from a structural n/a (e.g. a token parser can't
+    # consume a character-split fixture per-chunk).
     if "unavailable" in dyn:
         return "…" if _is_todo_unavailable(dyn) else "n/a"
     v_kind, v_unknown = peer_status(case, dyn, "vllm")
@@ -1032,9 +1033,9 @@ def cell_for(case: dict | None) -> str:
     elif s_kind == "err":
         parts.append("S!")
 
-    # `reason:` on the `expected.dynamo` block flags Dynamo's own output as
-    # leaking tool call markup only when Dynamo also leaves residual
-    # `normal_text`. Dynamo can have non-leak reasons for dropped malformed
+    # `reason:` on the `expected.dynamo` block flags local-parser output as
+    # leaking tool call markup only when it also leaves residual
+    # `normal_text`. The local parser can have non-leak reasons for dropped malformed
     # markup, so don't mark those as `↯`.
     if isinstance(dyn, dict) and _dynamo_tool_call_leak(dyn):
         if v_kind == "unavail" and s_kind == "unavail":
@@ -1066,14 +1067,14 @@ def render_row(
 
 _LEGEND_MD = (
     "**Legend:** "
-    "`=` all captured peers match Dynamo · "
-    "`·` Dynamo-only fixture (both peers unavailable) · "
+    "`=` all captured peers match the local parser (`expected.dynamo`) · "
+    "`·` local-parser-only fixture (both peers unavailable) · "
     "`V`/`S` divergence (V = vLLM, S = SGLang; intentional, has `reason:`) · "
     "`?` research-needed suffix (e.g. V?, S? — diverges with no `reason:` yet) · "
-    "`↯` Dynamo leaks tool call markup into `normal_text` "
+    "`↯` local parser leaks tool call markup into `normal_text` "
     "(`expected.dynamo.reason:` carries the explanation) · "
     "`!` expected-error suffix (e.g. V!, S! — engine crashes by design) · "
-    "`…` Dynamo streaming not yet implemented (TODO) · "
+    "`…` local parser not yet implemented for this row (TODO) · "
     "`n/a` not applicable · "
     "`—` missing fixture coverage · "
     "`†` (tool calling parser column) = no vLLM peer parser for this family · "
@@ -1112,7 +1113,7 @@ def render_markdown(
     return "\n".join(lines)
 
 
-_IMPL_DISPLAY = {"dynamo": "Dynamo", "vllm": "vLLM", "sglang": "SGLang"}
+_IMPL_DISPLAY = {"dynamo": "Local parser", "vllm": "vLLM", "sglang": "SGLang"}
 
 
 def _format_output_block_html(block, family: str | None = None) -> str:
@@ -1223,7 +1224,7 @@ def _build_tooltip_html(case: dict, dyn) -> str:
         # the separate per-engine output blocks would be redundant — drop them.
         output_sections=None if chart else output_sections,
         divergent_reasons=reasons or None,
-        leak_label="↯ Dynamo tool call leaks",
+        leak_label="↯ local parser tool call leaks",
         leak_text=str(dyn_leak) if dyn_leak else None,
         chart=chart,
         refs=[("Ref", case.get("ref")), ("Spec ref", case.get("spec_ref"))],
@@ -1264,7 +1265,7 @@ def _render_chunk_deltas(deltas: list, normal_text: str) -> str:
 
 def _per_chunk_chart_html(case: dict) -> tuple[str, str] | None:
     """Per-chunk breakdown as a compact table: one row per chunk, first column the
-    input delta_text, then one column per available impl (Dynamo, vLLM, SGLang)
+    input delta_text, then one column per available impl (local parser, vLLM, SGLang)
     showing what it emitted at that chunk. Returns (label, table_html), or None for
     non per-chunk stream cases. No inter-tag whitespace (keeps the markup tight)."""
     chunks = case.get("chunks")
@@ -1595,11 +1596,41 @@ def _parser_cell_html(
     no_vllm: set[str],
     no_sglang: set[str],
     inheritance: dict[str, dict],
+    stream_context: str | None = None,
 ) -> str:
     suff = family_suffix(family, no_vllm, no_sglang)
     row_label = html_lib.escape(family)
     if suff:
         row_label += f'<span class="parser-suffix">{html_lib.escape(suff)}</span>'
+    if family == "harmony" and stream_context == "stream":
+        return _v2_harmony_parser_cell_html(
+            row_label,
+            family,
+            "HarmonyToolStreamParser token-id path",
+            "parse_tool_call_streaming_incremental",
+            "v2 stream fixtures",
+            "TC stream token-id row. It consumes `delta_token_ids` from v2 stream fixtures directly.",
+        )
+    if family == "harmony" and stream_context == "batch_on_stream":
+        return _v2_harmony_parser_cell_html(
+            row_label,
+            family,
+            "HarmonyToolStreamParser text path",
+            "parse_tool_call_streaming_text",
+            "v1 batch fixtures",
+            "TC batch-on-stream row. It feeds each v1 batch fixture's full text through the v2 streaming parser.",
+        )
+    if family == "harmony_text":
+        return _v2_harmony_parser_cell_html(
+            row_label,
+            family,
+            "HarmonyToolStreamParser text path",
+            "parse_tool_call_streaming_text",
+            "v2 stream fixtures",
+            "Synthetic v2 row for gpt-oss text streaming. The text path re-tokenizes a held suffix, then feeds the same token-incremental Harmony stream parser used by the token-id row.",
+        )
+    if stream_context == "stream":
+        return _v2_missing_stream_parser_cell_html(family)
     ref = refs.get(family)
     info = inheritance.get(family)
     ttip = (
@@ -1639,6 +1670,45 @@ def _parser_cell_html(
     )
 
 
+def _v2_harmony_parser_cell_html(
+    row_label: str,
+    family: str,
+    backend: str,
+    entrypoint: str,
+    fixtures: str,
+    note: str,
+) -> str:
+    tooltip = (
+        '<div class="ttip">'
+        f'<div class="ttip-head">`{html_lib.escape(family)}` (v2 stream)</div>'
+        '<pre class="ttip-pre">'
+        f"Fixtures: {html_lib.escape(fixtures)}.\n"
+        f"Tool calling parser row: {html_lib.escape(family)}\n"
+        f"Effective parser/backend: {html_lib.escape(backend)}\n"
+        'frontend-crate implementation: parsers_v2/src/lib.rs -> '
+        f'<a href="../../../parsers_v2/src/lib.rs">{html_lib.escape(entrypoint)}</a>\n'
+        f"Note: {html_lib.escape(note)}"
+        "</pre></div>"
+    )
+    return (
+        f'<td class="parser" data-col-hide-group="parser">'
+        f'<a href="../../../parsers_v2/src/lib.rs">{row_label}</a>{tooltip}</td>'
+    )
+
+
+def _v2_missing_stream_parser_cell_html(family: str) -> str:
+    label = html_lib.escape(family)
+    tooltip = (
+        '<div class="ttip">'
+        f'<div class="ttip-head">`{label}` (v2 stream)</div>'
+        '<pre class="ttip-pre">'
+        "No frontend-crate v2 streaming parser is implemented for this family yet.\n"
+        "This row is inventory only; no v1 parser code runs on this tab."
+        "</pre></div>"
+    )
+    return f'<td class="parser" data-col-hide-group="parser">{label}{tooltip}</td>'
+
+
 def render_row_html(
     model: str,
     family: str,
@@ -1653,7 +1723,14 @@ def render_row_html(
     cells = [
         f'<tr><td class="model" data-col-hide-group="model">{_model_label_html(model)}</td>',
         _column_placeholder_html("model"),
-        _parser_cell_html(family, refs, no_vllm, no_sglang, inheritance),
+        _parser_cell_html(
+            family,
+            refs,
+            no_vllm,
+            no_sglang,
+            inheritance,
+            stream_context=mode,
+        ),
         _column_placeholder_html("parser"),
     ]
     # A family with no parser implemented for this mode (every cell is the `…`
@@ -2040,7 +2117,7 @@ def build_stream_on_batch_panel(
     letters of the engines that diverge (D / V / S, e.g. `DV`). The tooltip lists all
     three (stream parser vs batch parser). Stream results come from
     harmony_batch_stream.json (the generator can't run the engines). Every other
-    family is a blank row — no Dynamo streaming parser yet (the v2 parser follow-up)."""
+    family is a blank row — no frontend-crate v2 streaming parser yet."""
     cases, labels = load_all_cases("batch")
     harmony_cases = {k: v for k, v in cases.items() if k[0] == "harmony"}
     sub_cases = _discover_sub_cases("batch", harmony_cases)
@@ -2060,8 +2137,8 @@ def build_stream_on_batch_panel(
     group_headers = _subcase_group_headers_html("batch", sub_cases)
     sub_headers = _subcase_headers_html("batch", sub_cases, descriptions)
 
-    # Stats track the Dynamo baseline (the default-selected parser); the captured
-    # note carries the per-engine breakdown. Todo families count as n/a (no parser).
+    # Stats track the local-parser baseline (the default-selected parser); the
+    # captured note carries the per-engine breakdown. Todo families count as n/a.
     stats = {
         "families": 1 + n_todo,
         "sub_cases": len(sub_cases),
@@ -2093,7 +2170,14 @@ def build_stream_on_batch_panel(
         cells = [
             '<tr><td class="model" data-col-hide-group="model">gpt-oss</td>',
             _column_placeholder_html("model"),
-            _parser_cell_html("harmony", refs, no_vllm, no_sglang, inheritance),
+            _parser_cell_html(
+                "harmony",
+                refs,
+                no_vllm,
+                no_sglang,
+                inheritance,
+                stream_context="batch_on_stream",
+            ),
             _column_placeholder_html("parser"),
         ]
         for run in _subcase_runs("batch", sub_cases):
@@ -2112,13 +2196,21 @@ def build_stream_on_batch_panel(
                     if mk in ("=", "≠"):
                         sections.append(
                             (
-                                f"{disp} stream",
+                                (
+                                    "frontend-crate v2 stream"
+                                    if engine == "dynamo"
+                                    else f"{disp} stream"
+                                ),
                                 _format_output_block_html(block, "harmony"),
                             )
                         )
                         sections.append(
                             (
-                                f"{disp} batch",
+                                (
+                                    "Dynamo v1 batch"
+                                    if engine == "dynamo"
+                                    else f"{disp} batch"
+                                ),
                                 _format_output_block_html(
                                     case["expected"][engine], "harmony"
                                 ),
@@ -2192,13 +2284,13 @@ def build_stream_on_batch_panel(
         return "".join(cells)
 
     def _todo_row(label: str, family: str) -> str:
-        # Whole-family TODO: Dynamo has no streaming parser for this family yet.
+        # Whole-family TODO: frontend-crate v2 has no streaming parser yet.
         # Listed for inventory (family name in the Model column) but cells are left
         # blank — a full row of `…` glyphs was too noisy.
         cells = [
             f'<tr><td class="model" data-col-hide-group="model">{_model_label_html(label)}</td>',
             _column_placeholder_html("model"),
-            _parser_cell_html(family, refs, no_vllm, no_sglang, inheritance),
+            _v2_missing_stream_parser_cell_html(family),
             _column_placeholder_html("parser"),
         ]
         for run in _subcase_runs("batch", sub_cases):
@@ -2230,12 +2322,13 @@ def build_stream_on_batch_panel(
         "id": "tab-toolcalling-stream-on-batch",
         "mode": "stream_on_batch",
         "label": "TC batch-on-stream (v2)",
-        "tab_title": "Batch fixture text run through the v2 streaming parser",
+        "tab_title": "Batch-on-stream: frontend-crate v2 code on v1 batch fixtures",
         "toolbar_desc": (
-            "Batch fixture text → <strong>v2</strong> streaming parser "
-            f'(<a href="{hrefs["streaming_src"]}">parsers_v2/src/lib.rs</a>), '
-            "compared to each engine’s batch parser. v2 is <em>not</em> the original v1 "
-            "(jail.rs → batch parser, in the dynamo repo)."
+            f'frontend-crate code: <strong>v2</strong> streaming parser '
+            f'(<a href="{hrefs["streaming_src"]}">parsers_v2/src/lib.rs</a>). '
+            f'Fixtures: <strong>v1</strong> batch fixtures '
+            f'(<a href="{hrefs["toolcalling_fixtures"]}">conformance/toolcalling/fixtures/</a>). '
+            "Each complete batch fixture text is fed through the v2 streaming parser, then assembled and compared to batch output."
         ),
         "active": active,
         "group_headers": group_headers,
@@ -2248,19 +2341,19 @@ def build_stream_on_batch_panel(
         "case_prefix": "TOOLCALLING.batch.",
         "case_section_id": "toolcalling-stream-on-batch",
         "captured_note": (
-            "Batch-on-stream = batch data on the streaming parser: each batch "
-            "fixture's full text is fed to that engine's STREAMING parser (Dynamo's "
+            "Batch-on-stream = v1 batch data on the v2 streaming parser: each batch "
+            "fixture's full text is fed to that engine's STREAMING parser (frontend-crate's "
             "is the v2 token-incremental parser, parsers_v2/src/lib.rs), and "
             "the assembled result is compared to that engine's own BATCH parser. It "
             "answers: does streaming a complete output reconstruct what batch parsing "
             "gives? = consistent · letters name the engines that diverge "
-            "(D=Dynamo, V=vLLM, S=SGLang). "
-            "Dynamo & vLLM diverge on the truncation/EOF-recovery cases (the batch "
+            "(D=local parser fixture key, V=vLLM, S=SGLang). "
+            "The local parser and vLLM diverge on the truncation/EOF-recovery cases (the batch "
             "parser recovers, the token-incremental stream doesn't); SGLang's gpt-oss "
             "streaming detector instead diverges on channel-first samples where its "
             "batch parser leaks the markup. Harmony captured against vLLM 0.22.0 / "
-            f"SGLang 0.5.12.post1. {n_todo} other families (blank rows) have no Dynamo "
-            "streaming parser yet — the v2 parser follow-up."
+            f"SGLang 0.5.12.post1. {n_todo} other families (blank rows) have no frontend-crate "
+            "v2 streaming parser yet."
         ),
     }
 
@@ -2314,18 +2407,18 @@ def render_html(modes: list[str], family_filter: str | None = None) -> str:
         else "Dynamo Tool Calling Parser - Conformance Table"
     )
     command = "python3 tests/parity/generate_conformance_table_v2.py toolcalling --html"
-    output = "tests/parity/toolcalling/CONFORMANCE.html"
+    output = "tests/parity/toolcalling/CONFORMANCE_v2.html"
     if family_filter:
         command += f" --family {family_filter}"
-        output = f"tests/parity/toolcalling/CONFORMANCE.{family_filter}.html"
+        output = f"tests/parity/toolcalling/CONFORMANCE_v2.{family_filter}.html"
 
     sha = _commit_sha()
 
     if len(modes) == 1:
         command += f" --mode {modes[0]}"
-        output = f"tests/parity/toolcalling/CONFORMANCE.{modes[0]}.html"
+        output = f"tests/parity/toolcalling/CONFORMANCE_v2.{modes[0]}.html"
         if family_filter:
-            output = f"tests/parity/toolcalling/CONFORMANCE.{family_filter}.{modes[0]}.html"
+            output = f"tests/parity/toolcalling/CONFORMANCE_v2.{family_filter}.{modes[0]}.html"
 
     tabs = []
     for i, (mode, _panel, _has_cases) in enumerate(panels):
@@ -2366,7 +2459,7 @@ def _rewrite_panel_paths(
     fixture_href_root: str,
     hrefs: dict[str, str],
 ) -> dict[str, Any]:
-    """Adjust links from stage-local CONFORMANCE.html paths to the generated CONFORMANCE.html.
+    """Adjust links from stage-local fixture paths to the generated output HTML.
 
     Panels emit fixture links in two shapes (`fixtures/...` and
     `{stage_dir}/fixtures/...`) depending on whether the underlying renderer was
@@ -2388,6 +2481,10 @@ def _rewrite_panel_paths(
                 f'href="{hrefs["toolcalling_src"]}',
             )
             .replace(
+                'href="../../../parsers_v2/src/lib.rs"',
+                f'href="{hrefs["streaming_src"]}"',
+            )
+            .replace(
                 'href="../../../lib/parsers/TOOLCALLING_CASES.md"',
                 f'href="{hrefs["toolcalling_cases"]}"',
             )
@@ -2405,6 +2502,22 @@ def _rewrite_panel_paths(
     rewritten["sub_headers"] = rewrite(str(rewritten["sub_headers"]))
     rewritten["body_rows"] = [rewrite(str(row)) for row in rewritten["body_rows"]]
     return rewritten
+
+
+def _scope_intro_html(hrefs: dict[str, str]) -> str:
+    return (
+        '<p class="scope-line">'
+        "<strong>Tab scope:</strong> "
+        f'TC batch (v1): <a href="{hrefs["toolcalling_src"]}">v1 Dynamo tool-calling code</a> + '
+        f'<a href="{hrefs["toolcalling_fixtures"]}">v1 batch fixtures</a> · '
+        f'TC batch-on-stream (v2): <a href="{hrefs["streaming_src"]}">frontend-crate v2 stream code</a> + '
+        f'<a href="{hrefs["toolcalling_fixtures"]}">v1 batch fixtures</a> · '
+        f'TC stream (v2): <a href="{hrefs["streaming_src"]}">frontend-crate v2 stream code</a> + '
+        f'<a href="{hrefs["toolcalling_stream_fixtures"]}">v2 stream fixtures</a> · '
+        f'Reasoning (v1): <a href="{hrefs["reasoning_src"]}">v1 Dynamo reasoning code</a> + '
+        f'<a href="{hrefs["reasoning_fixtures"]}">v1 reasoning fixtures</a>.'
+        "</p>"
+    )
 
 
 def _tab_button(panel: dict[str, Any]) -> str:
@@ -2436,13 +2549,16 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
     }
     _toolbar_desc = {
         "batch": (
-            "Dynamo column = batch tool-calling parser → "
-            f'<a href="{hrefs["toolcalling_src"]}">parsers/src/tool_calling/</a>'
+            f'Dynamo code: <strong>v1</strong> batch tool-calling parser '
+            f'(<a href="{hrefs["toolcalling_src"]}">parsers/src/tool_calling/</a>). '
+            f'Fixtures: <strong>v1</strong> batch fixtures '
+            f'(<a href="{hrefs["toolcalling_fixtures"]}">conformance/toolcalling/fixtures/</a>).'
         ),
         "stream": (
-            "Dynamo column = <strong>v2</strong> token-incremental streaming parser "
-            f'→ <a href="{hrefs["streaming_src"]}">parsers_v2/src/lib.rs</a>. '
-            "v2 is <em>not</em> the original v1 (jail.rs → batch parser, in the dynamo repo)."
+            f'frontend-crate code: <strong>v2</strong> token-incremental streaming parser '
+            f'(<a href="{hrefs["streaming_src"]}">parsers_v2/src/lib.rs</a>). '
+            f'Fixtures: <strong>v2</strong> stream fixtures '
+            f'(<a href="{hrefs["toolcalling_stream_fixtures"]}">conformance/toolcalling/fixtures-stream-v2/</a>).'
         ),
     }
     for mode in ("batch", "stream"):
@@ -2455,8 +2571,12 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
         panel.update(
             {
                 "id": f"tab-toolcalling-{mode}",
-                "label": "TC stream (v2)" if mode == "stream" else f"TC {mode}",
-                "tab_title": f"Tool Calling {mode}",
+                "label": "TC stream (v2)" if mode == "stream" else "TC batch (v1)",
+                "tab_title": (
+                    "Tool Calling stream: frontend-crate v2 code on v2 stream fixtures"
+                    if mode == "stream"
+                    else "Tool Calling batch: v1 code on v1 batch fixtures"
+                ),
                 "active": False,
                 "case_docs_href": hrefs["toolcalling_cases"],
                 "case_docs_label": "lib/parsers/TOOLCALLING_CASES.md",
@@ -2469,7 +2589,14 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
         # After the batch panel, insert "Stream parser on batch" — the streaming
         # parser run over the batch samples, compared to the batch parser.
         if mode == "batch":
-            panels.append(build_stream_on_batch_panel(hrefs))
+            stream_on_batch = build_stream_on_batch_panel(hrefs)
+            stream_on_batch = _rewrite_panel_paths(
+                stream_on_batch,
+                "toolcalling",
+                fixture_href_root=hrefs["toolcalling_fixtures"],
+                hrefs=hrefs,
+            )
+            panels.append(stream_on_batch)
     return panels
 
 
@@ -2497,11 +2624,13 @@ def _combined_reasoning_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
         panel.update(
             {
                 "id": f"tab-reasoning-{mode}",
-                "label": f"Reasoning {mode}",
-                "tab_title": f"Reasoning {mode}",
+                "label": f"Reasoning {mode} (v1)",
+                "tab_title": f"Reasoning {mode}: v1 code on v1 fixtures",
                 "toolbar_desc": (
-                    "Dynamo column = reasoning parser → "
-                    f'<a href="{hrefs["reasoning_src"]}">parsers/src/reasoning/</a>'
+                    f'Dynamo code: <strong>v1</strong> reasoning parser '
+                    f'(<a href="{hrefs["reasoning_src"]}">parsers/src/reasoning/</a>). '
+                    f'Fixtures: <strong>v1</strong> reasoning fixtures '
+                    f'(<a href="{hrefs["reasoning_fixtures"]}">conformance/reasoning/fixtures/</a>).'
                 ),
                 "active": False,
                 "case_docs_href": hrefs["reasoning_cases"],
@@ -2523,7 +2652,7 @@ def render_combined_html(
     resolved_output_path = _resolve_output_path(
         output_path,
         artifact_root,
-        "tests/parity/CONFORMANCE.html",
+        "tests/parity/CONFORMANCE_v2.html",
     )
     hrefs = _hrefs_for_output(resolved_output_path, artifact_root)
     panels = [
@@ -2548,6 +2677,7 @@ def render_combined_html(
             output=_display_path(resolved_output_path, artifact_root),
             tabs=[_tab_button(panel) for panel in panels],
             panels=panels,
+            intro_html=_scope_intro_html(hrefs),
             peer_versions=_peer_version_items(
                 _peer_versions()
             ),

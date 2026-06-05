@@ -2,6 +2,8 @@
 
 This file documents the manual sync boundary for the temporary v1 Dynamo mirror. The migration plan and v1/v2 ownership model live in [`conformance/README.md`](conformance/README.md).
 
+Terminology: `v1` means Dynamo-synced code and fixtures. `v2` means frontend-crate-owned code and fixtures. Do not call v2 parser code "Dynamo code"; the fixture key `expected.dynamo` and helper subcommand `check_v2.sh dynamo` are compatibility labels for the local parser output, not ownership.
+
 ## Sync Boundary
 
 The syncable v1 files are resettable to Dynamo content. Do not put frontend-crates v2 parser or renderer work in those paths.
@@ -50,13 +52,20 @@ These have no upstream counterpart. Never overwrite during a sync.
 | File | Purpose |
 |---|---|
 | `conformance/utils/_common.sh` | Shared stage builder for the conformance scripts |
-| `conformance/utils/check_v2.sh` | Runs Dynamo, vLLM, and SGLang checks against staged fixtures |
+| `conformance/utils/check_v2.sh` | Runs local-parser, vLLM, and SGLang checks against staged fixtures; v2 local-parser checks run frontend-crate code |
 | `conformance/utils/render_table_v2.sh` | Renders `conformance/CONFORMANCE_v2.html` with the v2 conformance generator |
 | `conformance/utils/render_parity_v1.sh` | Renders `.stage/tests/parity/PARITY_v1.html` with old Dynamo `generate_parity_table.py` |
-| `conformance/utils/record_v2.sh` | Records Dynamo v2 stream fixture data |
+| `conformance/utils/record_v2.sh` | Records frontend-crate v2 stream fixture data |
 | `conformance/utils/validate.py` | Cross-impl validation via `docker exec` or pip |
+| `conformance/utils/build_stream_fixtures.py` | Builds v2 per-chunk stream fixtures from source cases and captured engine output |
+| `conformance/utils/capture_stream.py` | Captures vLLM/SGLang per-chunk stream output inside engine containers |
+| `conformance/utils/capture_all_families.sh` and `capture_all_families_driver.py` | Batch-captures vLLM/SGLang stream output for non-Harmony families |
+| `conformance/utils/capture_harmony_batch_stream.py` | Captures engine streaming parsers on Harmony batch samples for the batch-on-stream tab |
+| `conformance/utils/capture_vllm_harmony.py` | Captures vLLM's token-native Harmony stream path for one stream fixture |
+| `conformance/utils/merge_batch_stream.py` | Merges per-engine batch-on-stream captures into `harmony_batch_stream.json` |
+| `conformance/utils/harmony_batch_stream.json` | Recorded batch-on-stream comparison data consumed by the v2 table |
 | `conformance/utils/README.md` | Usage docs |
-| `conformance/utils/.gitignore` | Excludes `.stage*/`, old local `CONFORMANCE*.html` outputs, and Python bytecode |
+| `conformance/utils/.gitignore` | Excludes `.stage*/`, local `CONFORMANCE*.html` outputs, and Python bytecode |
 | `conformance/utils/tests/__init__.py` | Empty package root for `.stage/` imports |
 | `conformance/utils/generate_conformance_table_v2.py` | frontend-crates-owned conformance renderer; staged into `tests/parity/` at render time |
 | `conformance/utils/conformance_table_v2.html.j2` | frontend-crates-owned conformance HTML template; staged into `tests/parity/` at render time |

@@ -8,8 +8,9 @@
 //!   - token path  (parse_tool_call_streaming_incremental) when a chunk carries
 //!     delta_token_ids
 //!   - text path   (parse_tool_call_streaming_text) otherwise
-//!     and prints the per-chunk emitted deltas as JSON so they can be written into
-//!     `chunks[].expected.dynamo`.
+//!
+//! Prints the per-chunk emitted deltas as JSON so they can be written into
+//! `chunks[].expected.dynamo`.
 //!
 //! Output JSON: {case_id: [[{index,id,name,arguments}, ...], ...]}
 //! Usage:

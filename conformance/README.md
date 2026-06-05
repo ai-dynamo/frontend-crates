@@ -7,6 +7,14 @@ SPDX-License-Identifier: Apache-2.0
 
 Parser conformance fixtures, fixture-based Rust tests, and HTML renderers for frontend-crates.
 
+## Terminology
+
+`v1` means Dynamo-synced code and fixtures. In this bridge period, `parsers/src/`, `conformance/toolcalling/fixtures/`, `conformance/reasoning/fixtures/`, and the old parity renderer are the Dynamo view.
+
+`v2` means frontend-crate-owned code and fixtures. Do not call v2 parser code "Dynamo code"; the v2 parser lives in frontend-crates under `parsers_v2/`, and its stream fixtures live under `conformance/toolcalling/fixtures-stream-v2/`.
+
+Some fixture fields and commands still use `dynamo` as the local-parser key, for example `expected.dynamo` and `check_v2.sh dynamo`. That is a compatibility label in the conformance schema, not ownership. In docs and HTML copy, say "Dynamo code" only for v1 and "frontend-crate code" for v2.
+
 ## Migration Plan
 
 Why: the current v1/v2 split exists because v1 parser source, fixtures, and the old parity renderer still mirror Dynamo during the bridge period, while new streaming parser work is owned in frontend-crates under `parsers_v2/` and `conformance/toolcalling/fixtures-stream-v2/`.
@@ -48,7 +56,7 @@ conformance/
 | Output | Command | Source view |
 |---|---|---|
 | v1 parity HTML | `conformance/utils/render_parity_v1.sh` | Dynamo-synced v1 fixtures and old Dynamo `generate_parity_table.py`; output stays under `conformance/utils/.stage/tests/parity/PARITY_v1.html` so old relative links resolve. |
-| v2 conformance HTML | `conformance/utils/render_table_v2.sh` | v1 batch/reasoning fixtures plus v2 stream fixtures; output is `conformance/CONFORMANCE_v2.html`. |
+| v2 conformance HTML | `conformance/utils/render_table_v2.sh` | Mixed bridge table: `TC batch (v1)` is Dynamo code on v1 batch fixtures; `TC batch-on-stream (v2)` is frontend-crate v2 code on v1 batch fixtures; `TC stream (v2)` is frontend-crate v2 code on v2 stream fixtures; reasoning tabs are v1 Dynamo code on v1 reasoning fixtures. Output is `conformance/CONFORMANCE_v2.html`. |
 
 ## Running the tests
 
@@ -65,7 +73,15 @@ cargo test --locked -p dynamo-conformance-fixtures-v2 --test parity_toolcalling 
 cargo test --workspace
 ```
 
-Each `batch` case's `model_text` is fed through `detect_and_parse_tool_call_with_recovery(text, Some(family), tools)` and the result (`calls` + `normal_text`) is compared to `expected.dynamo`. The fixture `family` field is the parser name, the same value dynamo's `parse_tool_calls_batch` binding takes.
+The test package is named `dynamo-conformance-fixtures-v2` for historical compatibility, but the code ownership still follows the v1/v2 split.
+
+| Test | Code under test | Fixtures | Notes |
+|---|---|---|---|
+| `parity_toolcalling` | v1 Dynamo-synced batch parser in `parsers/src/tool_calling/` | v1 batch fixtures in `conformance/toolcalling/fixtures/` | Each `batch` case's `model_text` is fed through `detect_and_parse_tool_call_with_recovery(text, Some(family), tools)` and compared to `expected.dynamo`. |
+| `parity_toolcalling_batch_via_stream` | frontend-crate v2 stream parser in `parsers_v2/src/lib.rs` | v1 Harmony batch fixtures in `conformance/toolcalling/fixtures/harmony/` | Feeds complete batch text into the v2 stream parser and compares assembled calls to the v1 batch expected output. |
+| `parity_toolcalling_stream` | frontend-crate v2 stream parser in `parsers_v2/src/lib.rs` | v2 stream fixtures in `conformance/toolcalling/fixtures-stream-v2/` | Checks token-id and text streaming paths per chunk, then checks assembled calls. |
+
+The fixture `family` field is the parser name, the same value Dynamo's `parse_tool_calls_batch` binding takes for v1. The `expected.dynamo` fixture key remains the local-parser output key even when the local parser is frontend-crate v2 code.
 
 Reasoning fixtures are Dynamo-synced and rendered in the v2 HTML table; a Rust fixture harness for reasoning is still a follow-up.
 

@@ -37,12 +37,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
+from tests.parity.common import ParseResult, canonical
+
 PH = Path(__file__).resolve().parent
 PKG = PH / "tests" / "parity"
 STUB = PH / "pyproject.stub.toml"
-
-# Lets us import the vendored package (tests.parity.common, adapters) on the host.
-sys.path.insert(0, str(PH))
 
 # Minimal worker shipped into the engine container. Imports the adapter once
 # (heavy), then maps stdin JSONL requests to result JSONL written to --out.
@@ -81,7 +82,6 @@ def collect_cases(fixtures_dir: Path, impl: str) -> list[dict]:
     """Runnable cases for ``impl``: those with an expected.<impl> block that isn't
     'unavailable' and that carry an input (model_text for batch / chunks for
     stream). Each carries its expected spec for host-side comparison."""
-    import yaml
 
     out: list[dict] = []
     for fp in sorted(fixtures_dir.glob("*/*.yaml")):
@@ -196,8 +196,6 @@ def engine_version(impl: str, container: str | None) -> str | None:
 
 
 def compare(impl: str, spec: dict, got: dict | None) -> tuple[str, str]:
-    from tests.parity.common import ParseResult, canonical
-
     if got is None:
         return ("fail", "no result returned by engine")
     got_err = got.get("error")

@@ -46,10 +46,12 @@ tr.section td { background: #eef; font-weight: bold; text-align: left; }
 .stats span { font-family: ui-monospace, monospace; font-weight: bold; }
 .generated { color: #888; font-size: 12px; margin-top: -0.5em; }
 .versions { color: #555; font-size: 12px; margin-top: 0.2em; }
+.scope-line { color: #333; font-size: 13px; margin: 0.7em 0; line-height: 1.35; }
+.scope-line a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .table-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0.7em 0 0.8em; }
-/* Per-tab parser description, inline to the right of the controls — no box, just
-   muted text that blends into the page. JS swaps it per active tab. */
-.toolbar-desc { flex: 1 1 320px; min-width: 220px; color: #57606a; font-size: 12px; line-height: 1.35; }
+/* Per-tab source scope. JS swaps it per active tab. */
+.toolbar-desc { display: block; margin: -0.7em 0 0.85em; padding: 7px 9px; border: 1px solid #f2c94c; background: #fff4b8; color: #3f3100; font-size: 12px; line-height: 1.35; max-width: 1200px; }
+.toolbar-desc a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .radio-group { display: flex; align-items: center; gap: 8px; border: 1px solid #d0d7de; background: #f8fafc; border-radius: 6px; padding: 6px 8px; }
 .radio-group-label { font-size: 13px; font-weight: 600; }
 .radio-option { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; cursor: pointer; }
@@ -177,7 +179,7 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 .ttip-head { font-weight: bold; margin-bottom: 4px; color: #fbbf24; }
 .ttip-section { font-weight: bold; margin-top: 6px; color: #93c5fd; }
 .ttip-pre { margin: 2px 0 0 0; white-space: pre-wrap; word-break: break-word; font-family: inherit; color: #e5e7eb; }
-/* Per-chunk emit chart: input | Dynamo | vLLM | SGLang, one row per chunk. */
+/* Per-chunk emit chart: input | local parser | vLLM | SGLang, one row per chunk. */
 .ttip-chunks { border-collapse: collapse; margin: 3px 0 0 0; font-size: 11px; width: 100%; }
 .ttip-chunks th, .ttip-chunks td { border: 1px solid #475569; padding: 2px 5px; text-align: left; vertical-align: top; }
 .ttip-chunks th { background: #1e293b; color: #93c5fd; font-weight: 600; }
@@ -212,7 +214,7 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 <body class="view-overview parser-dynamo">
 <h1>{{ title|e }}</h1>
 <p class="generated">
-  Auto-generated on {{ stamp|e }}{% if sha %} on commit <a href="https://github.com/ai-dynamo/dynamo/commit/{{ sha|e }}"><code>{{ short_sha|e }}</code></a>{% endif %}:
+  Auto-generated on {{ stamp|e }}{% if sha %} on commit <a href="https://github.com/ai-dynamo/frontend-crates/commit/{{ sha|e }}"><code>{{ short_sha|e }}</code></a>{% endif %}:
   <code>{{ command|e }} &gt; {{ output|e }}</code>
 </p>
 {% if intro_html is defined and intro_html %}
@@ -225,6 +227,7 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 {% endfor %}
 </div>
 {% endif %}
+<span id="toolbar-desc" class="toolbar-desc"></span>
 <div class="table-toolbar">
   <div class="radio-group" role="radiogroup" aria-label="Conformance table view">
     <span class="radio-group-label">View:</span>
@@ -233,12 +236,11 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
   </div>
   <div class="radio-group" role="radiogroup" aria-label="Parser implementation">
     <span class="radio-group-label">Parser:</span>
-    <label class="radio-option"><input type="radio" name="parity-parser" value="dynamo" data-parser-toggle checked> Dynamo</label>
+    <label class="radio-option"><input type="radio" name="parity-parser" value="dynamo" data-parser-toggle checked> Local parser</label>
     <label class="radio-option"><input type="radio" name="parity-parser" value="vllm" data-parser-toggle> vLLM</label>
     <label class="radio-option"><input type="radio" name="parity-parser" value="sglang" data-parser-toggle> SGLang</label>
   </div>
   <label class="checkbox-option parity-option"><input type="checkbox" data-parity-toggle> Conformance</label>
-  <span id="toolbar-desc" class="toolbar-desc"></span>
 </div>
 {% for panel in panels %}
 <section id="{{ panel.id|e }}" class="tab-panel{% if panel.active %} active{% endif %}" role="tabpanel"{% if tabs|length > 1 %} aria-labelledby="{{ panel.id|e }}-button"{% endif %}>
@@ -265,14 +267,14 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
   {{ legend_html|safe }}
 {% else %}
   <strong>Legend:</strong>
-  <span style="color:#0a7d2c">=</span> all captured peers match Dynamo ·
-  <span style="color:#8b949e">·</span> Dynamo-only fixture
+  <span style="color:#0a7d2c">=</span> all captured peers match the local parser ·
+  <span style="color:#8b949e">·</span> local-parser-only fixture
   (both peers unavailable) ·
   <span style="color:#555">V/S</span> divergence
   (V = vLLM, S = SGLang; intentional, has <code>reason:</code>) ·
   <span style="color:#b00">?</span> more research needed
   (e.g. V?, S? — diverges with no <code>reason:</code> yet) ·
-  <span style="color:#b00">↯</span> Dynamo leaks tool call markup into <code>normal_text</code>
+  <span style="color:#b00">↯</span> local parser leaks tool call markup into <code>normal_text</code>
   (<code>expected.dynamo.reason:</code> carries the explanation) ·
   <span style="color:#b00">!</span> expected-error suffix
   (e.g. V!, S! — engine crashes by design) ·
@@ -302,7 +304,7 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 <p class="legend details-only parity-explainer">
   <strong>Conformance:</strong>
   <span style="color:#0a7d2c">=</span> all three outputs match ·
-  <span style="color:#555">D</span>/<span style="color:#555">V</span>/<span style="color:#555">S</span> names parser output that differs from the selected parser ·
+  <span style="color:#555">D</span>/<span style="color:#555">V</span>/<span style="color:#555">S</span> names parser output that differs from the selected parser (<span style="color:#555">D</span> = local parser fixture key) ·
   multiple letters mean multiple peer outputs differ from the selected parser.
 </p>
 <p class="stats details-only">
@@ -310,7 +312,7 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
   = {{ panel.stats.slots }} grid slots ({{ panel.stats.na }} n/a, {{ panel.stats.missing }} missing).
   <strong>{{ panel.stats.real }}</strong> real cases:
   <span style="color:#0a7d2c">{{ panel.stats.parity }} captured-peer conformance</span> ·
-  <span style="color:#555">{{ panel.stats.dynamo_only }} Dynamo-only</span> ·
+  <span style="color:#555">{{ panel.stats.dynamo_only }} local-parser-only</span> ·
   <span style="color:#555">{{ panel.stats.documented }} documented divergences</span>
   (have <code>reason:</code>) ·
   <span style="color:#b00">{{ panel.stats.research }} research-needed</span>

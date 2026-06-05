@@ -4,7 +4,7 @@ Per-chunk streaming fixtures for the TC stream conformance tab. These are the fr
 
 ## Why a separate overlay
 
-The Dynamo-synced `conformance/` corpus stays unchanged from Dynamo. Streaming is different: vLLM/SGLang stream on text, Dynamo's harmony parser streams on tokens, and each emits different per-chunk deltas by design. Recording that lives here, not in the synced corpus.
+The Dynamo-synced `conformance/` corpus stays unchanged from Dynamo. Streaming is different: vLLM/SGLang stream on text, the frontend-crate v2 Harmony parser has token-id and text-entry paths, and each implementation emits different per-chunk deltas by design. Recording that lives here, not in the synced corpus.
 
 ## Per-chunk format
 
@@ -35,15 +35,15 @@ A delta is `{index, id?, name?, arguments?}`; `id: true` means an id was emitted
 
 - `harmony/` uses the gpt-oss harmony parser through the token-id path (`parse_tool_call_streaming_incremental`). Label: "gpt-oss (harmony, token-id)".
 - `harmony_text/` uses the same parser through the text path (`parse_tool_call_streaming_text`). Label: "gpt-oss (harmony, text)". The text path re-tokenizes a held suffix so character-split Harmony markers can settle before token commit. It is incremental, but it can lag by a small suffix on tiny chunks.
-- All other families have no Dynamo TC streaming implementation yet, so `expected.dynamo` is `unavailable` (TODO). They render as `...` in the table. Their vLLM/SGLang behavior is the target to match when streaming is implemented.
+- All other families have no frontend-crate v2 TC streaming implementation yet, so `expected.dynamo` is `unavailable` (TODO). The fixture key remains `dynamo` because it is the local-parser key in the shared schema. These rows render as `...` in the table. Their vLLM/SGLang behavior is the target to match when streaming is implemented.
 
 ## Tooling
 
-- `build_stream_fixtures.py` assembles a fixture from source chunks and captured per-implementation per-chunk data (`--dynamo/--vllm/--sglang` JSON, `--unavailable`, `--captured`, `--family/--label`).
-- `record_dynamo_stream` records Dynamo's per-chunk emit through the token path, or through the text path with `--text`.
+- `build_stream_fixtures.py` assembles a fixture from source chunks and captured per-implementation per-chunk data (`--dynamo/--vllm/--sglang` JSON, `--unavailable`, `--captured`, `--family/--label`). The `--dynamo` flag is the local-parser fixture key.
+- `record_dynamo_stream` records frontend-crate v2 per-chunk emit through the token path, or through the text path with `--text`. The binary name is legacy.
 - `stamp_stream_token_ids` stamps token-aligned `delta_token_ids` into the harmony overlay fixtures. It updates the overlay only, never the Dynamo-synced corpus.
 - `capture_stream.py` / `capture_all_families.sh` captures vLLM/SGLang per-chunk output inside the engine containers (`docker exec`) and records the engine version. Use this when a family's streaming gets implemented and you need peer comparison data.
 
 ## Conformance test
 
-`conformance/tests/parity_toolcalling_stream.rs` drives the Dynamo harmony parser over both `harmony/` (token) and `harmony_text/` (text), asserts the per-chunk emit matches, and checks the assembled result. It should run in less than one second; if it hangs, that is a bug, not slowness.
+`conformance/tests/parity_toolcalling_stream.rs` drives the frontend-crate v2 Harmony parser over both `harmony/` (token) and `harmony_text/` (text), asserts the per-chunk emit matches, and checks the assembled result. It should run in less than one second; if it hangs, that is a bug, not slowness.

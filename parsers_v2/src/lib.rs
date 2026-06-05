@@ -199,97 +199,95 @@ impl HarmonyToolStreamParser {
         &mut self,
         delta_token_ids: &[u32],
     ) -> ToolStreamResult {
-        // Prepend <|start|>assistant preamble when:
-        //   (a) we're at the start of a new turn (between messages), AND
-        //   (b) the chunk doesn't already carry the preamble (first token != <|start|>)
-        // For all subsequent chunks within the same message, at_turn_start is false
-        // so no preamble is added.
-        let owned;
-        let delta_token_ids = if !delta_token_ids.is_empty()
-            && self.at_turn_start
-            && delta_token_ids.first() != Some(&self.start_token)
-        {
-            self.at_turn_start = false;
-            owned = self
-                .preamble_tokens
-                .iter()
-                .chain(delta_token_ids.iter())
-                .copied()
-                .collect::<Vec<_>>();
-            &owned
-        } else {
-            if !delta_token_ids.is_empty() {
-                self.at_turn_start = false;
-            }
-            delta_token_ids
-        };
-
         let mut chunks = Vec::new();
         for token in delta_token_ids {
-            let prev = current_function_recipient(&self.parser);
-            if let Err(e) = self.parser.process(*token) {
-                tracing::warn!("harmony parse error for token {token}: {e}");
-                break;
-            }
-            if *token == self.start_token {
-                self.at_turn_start = false;
-            }
-            let recipient = current_function_recipient(&self.parser);
-
-            match (&prev, &recipient) {
-                // entered a new commentary->functions message
-                (None, Some(_)) => {
-                    self.in_tool_call = true;
-                    self.header_emitted = false;
-                }
-                // left the tool-call message: advance index for the next call.
-                // The stop token (<|call|>) also returns the inner parser to
-                // ExpectStart, so the next message needs the preamble again.
-                (Some(_), None) => {
-                    if self.in_tool_call {
-                        self.current_index += 1;
+            if self.at_turn_start && *token != self.start_token {
+                let preamble_tokens = self.preamble_tokens.clone();
+                for preamble_token in preamble_tokens {
+                    if !self.process_tool_call_token(preamble_token, &mut chunks) {
+                        return ToolStreamResult {
+                            tool_call_chunks: chunks,
+                        };
                     }
-                    self.in_tool_call = false;
-                    self.at_turn_start = true;
                 }
-                _ => {}
             }
 
-            if let Some(name) = recipient {
-                if !self.header_emitted {
-                    let id = self.gen_id();
-                    chunks.push(ToolCallResponseChunk {
-                        index: self.current_index,
-                        id: Some(id),
-                        tp: Some(ToolCallType::Function),
-                        function: Some(CalledFunctionStream {
-                            name: Some(name),
-                            arguments: None,
-                        }),
-                    });
-                    self.header_emitted = true;
-                }
-                // The header (channel/recipient/constrain) is metadata, not content,
-                // so `last_content_delta` only starts returning fragments once the
-                // `<|message|>` body begins — i.e. the JSON arguments.
-                if let Some(delta) = self.parser.last_content_delta().unwrap_or_default()
-                    && !delta.is_empty()
-                {
-                    chunks.push(ToolCallResponseChunk {
-                        index: self.current_index,
-                        id: None,
-                        tp: None,
-                        function: Some(CalledFunctionStream {
-                            name: None,
-                            arguments: Some(delta),
-                        }),
-                    });
-                }
+            if !self.process_tool_call_token(*token, &mut chunks) {
+                break;
             }
         }
         ToolStreamResult {
             tool_call_chunks: chunks,
         }
+    }
+
+    fn process_tool_call_token(
+        &mut self,
+        token: u32,
+        chunks: &mut Vec<ToolCallResponseChunk>,
+    ) -> bool {
+        let prev = current_function_recipient(&self.parser);
+        if let Err(e) = self.parser.process(token) {
+            tracing::warn!("harmony parse error for token {token}: {e}");
+            return false;
+        }
+        if token == self.start_token {
+            self.at_turn_start = false;
+        }
+        let recipient = current_function_recipient(&self.parser);
+
+        match (&prev, &recipient) {
+            // entered a new commentary->functions message
+            (None, Some(_)) => {
+                self.in_tool_call = true;
+                self.header_emitted = false;
+            }
+            // left the tool-call message: advance index for the next call.
+            // The stop token (<|call|>) also returns the inner parser to
+            // ExpectStart, so the next message needs the preamble again.
+            (Some(_), None) => {
+                if self.in_tool_call {
+                    self.current_index += 1;
+                }
+                self.in_tool_call = false;
+                self.at_turn_start = true;
+            }
+            _ => {}
+        }
+
+        if let Some(name) = recipient {
+            if !self.header_emitted {
+                let id = self.gen_id();
+                chunks.push(ToolCallResponseChunk {
+                    index: self.current_index,
+                    id: Some(id),
+                    tp: Some(ToolCallType::Function),
+                    function: Some(CalledFunctionStream {
+                        name: Some(name),
+                        arguments: None,
+                    }),
+                });
+                self.header_emitted = true;
+            }
+            // The header (channel/recipient/constrain) is metadata, not content,
+            // so `last_content_delta` only starts returning fragments once the
+            // `<|message|>` body begins - i.e. the JSON arguments.
+            if let Some(delta) = self.parser.last_content_delta().unwrap_or_default()
+                && !delta.is_empty()
+            {
+                chunks.push(ToolCallResponseChunk {
+                    index: self.current_index,
+                    id: None,
+                    tp: None,
+                    function: Some(CalledFunctionStream {
+                        name: None,
+                        arguments: Some(delta),
+                    }),
+                });
+            }
+        }
+
+        true
     }
 
     /// Stream EOF. For the text path, flush the held-back suffix (no more text is
@@ -362,35 +360,6 @@ pub fn assemble_tool_calls(chunks: &[ToolCallResponseChunk]) -> Vec<(String, Str
         .collect()
 }
 
-// ----- token-based fixture schema (shared by the generator bin and the test) -----
-
-/// One streaming chunk, carrying the gpt-oss `delta_token_ids` that drive the
-/// parser plus the decoded `delta_text` for human readability.
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-pub struct TokenChunk {
-    #[serde(default)]
-    pub delta_text: String,
-    pub delta_token_ids: Vec<u32>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub finish_reason: Option<String>,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-pub struct ExpectedCall {
-    pub name: String,
-    /// Arguments as a JSON object (compared after canonicalizing both sides).
-    pub arguments: serde_json::Value,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-pub struct TokenFixture {
-    pub family: String,
-    pub model_label: String,
-    pub description: String,
-    pub chunks: Vec<TokenChunk>,
-    pub expected_calls: Vec<ExpectedCall>,
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -434,6 +403,32 @@ mod tests {
             first_named.is_some() && first_named <= first_args,
             "name must stream before arguments (got name={first_named:?}, args={first_args:?})"
         );
+    }
+
+    #[test]
+    fn adjacent_channel_first_tool_calls_in_one_token_chunk() {
+        let combined = concat!(
+            "<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{\"location\":\"NYC\"}<|call|>",
+            "<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{\"location\":\"LA\"}<|call|>"
+        );
+        let tokens = encode_harmony(combined).expect("encode");
+        let mut parser = HarmonyToolStreamParser::new().expect("new");
+
+        let mut all = parser
+            .parse_tool_call_streaming_incremental(&tokens)
+            .tool_call_chunks;
+        all.extend(parser.finish_tool_call_stream().tool_call_chunks);
+
+        let calls = assemble_tool_calls(&all);
+        assert_eq!(calls.len(), 2, "expected two tool calls, got {calls:?}");
+        assert_eq!(calls[0].0, "get_weather");
+        assert_eq!(calls[1].0, "get_weather");
+        let first_args: serde_json::Value =
+            serde_json::from_str(&calls[0].1).expect("first args json");
+        let second_args: serde_json::Value =
+            serde_json::from_str(&calls[1].1).expect("second args json");
+        assert_eq!(first_args, serde_json::json!({"location": "NYC"}));
+        assert_eq!(second_args, serde_json::json!({"location": "LA"}));
     }
 
     #[test]
