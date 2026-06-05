@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "dynamo-parsers-v2-py"
+version = "0.1.0"
+edition.workspace = true
+license = "Apache-2.0"
+description = "Python bindings for dynamo-parsers-v2 (PyO3 / maturin)"
+
+# cdylib only — this crate exists solely to produce the Python extension module.
+# The pure-Rust API lives in dynamo-parsers-v2 (rlib).
+[lib]
+# name sets both the cdylib filename and the Python module name.
+# The #[pymodule] entry-point function is named init_module in src/lib.rs
+# to avoid the collision with the dynamo_parsers_v2 crate import.
+name = "dynamo_parsers_v2"
+crate-type = ["cdylib"]
+
+[dependencies]
+dynamo-parsers-v2 = { path = "../parsers_v2", version = "0.1.0" }
+dynamo-parsers = { workspace = true }
+pyo3 = { workspace = true }

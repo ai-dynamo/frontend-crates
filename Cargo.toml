@@ -6,6 +6,8 @@ members = [
     "renderer",
     "tokenizers",
     "conformance",
+    "parsers_v2",
+    "parsers_v2-py",
     "examples/dynamo-demo-server",
 ]
 
@@ -45,6 +47,7 @@ minijinja-contrib = { version = "2.20.0" }
 moka = { version = "0.12" }
 num-traits = "0.2"
 openai-harmony = "0.0.3"
+pyo3 = { version = "0.22", features = ["extension-module"] }
 rayon = "1"
 regex = "1"
 rstest = "0.25"

@@ -9,8 +9,8 @@
 #
 # NOTE: parsers/ and conformance/utils/ are NOT synced by this script.
 # Parser v1 mirror updates are temporary/manual while the frontend-crates parser
-# crate is being prepared for release. See PARSERS-SYNC.md for the mapping and
-# post-release migration plan.
+# crate is being prepared for release. See PARSERS-V2-MIGRATION-PLAN.md for the
+# mapping and post-release migration plan.
 #
 # Usage:
 #   scripts/sync-from-dynamo.sh                 # check, against $DYNAMO_SRC (default /ephemeral/dynamo)
