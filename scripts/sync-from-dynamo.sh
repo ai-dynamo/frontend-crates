@@ -8,8 +8,9 @@
 # Targets:  ./{protocols,tokenizers,renderer}/
 #
 # NOTE: parsers/ and conformance/utils/ are NOT synced by this script.
-# They are permanently detached from dynamo and updated manually.
-# See PARSERS-SYNC.md for the exact mapping and instructions.
+# Parser v1 mirror updates are temporary/manual while the frontend-crates parser
+# crate is being prepared for release. See PARSERS-SYNC.md for the mapping and
+# post-release migration plan.
 #
 # Usage:
 #   scripts/sync-from-dynamo.sh                 # check, against $DYNAMO_SRC (default /ephemeral/dynamo)
@@ -121,11 +122,11 @@ if [ -d "$fsrc" ]; then
   fi
 fi
 
-# Parity fixture corpus. Lives at the dynamo repo root (tests/parity/), NOT under
-# lib/, so the per-crate sync above misses it. Mirror the fixtures/ subdir only —
-# the .py harness, parity_table.html.j2, __pycache__, and the large rendered
-# PARITY.html all sit at the parent level and must stay out of this repo. The
-# fixtures/ dirs are pure YAML, so no excludes are needed.
+# Parser fixture corpus. Lives at the Dynamo repo root (tests/parity/), NOT under
+# lib/, so the per-crate sync above misses it. Mirror the fixtures/ subdir only.
+# The Python harness, template, bytecode, and rendered HTML all sit at the parent
+# level and must stay out of this repo. The fixtures/ dirs are pure YAML, so no
+# excludes are needed.
 for fam in toolcalling reasoning; do
   pfx_src="$DYNAMO_SRC/tests/parity/$fam/fixtures"
   pfx_dst="$HERE/conformance/$fam/fixtures"
