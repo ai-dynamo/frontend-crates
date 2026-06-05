@@ -5,7 +5,7 @@ name = "dynamo-conformance"
 version = "0.1.0"
 edition.workspace = true
 license = "Apache-2.0"
-description = "Runs the vendored Dynamo parity fixtures against dynamo-parsers (DIS-2159)"
+description = "Runs the vendored Dynamo parity fixtures against dynamo-parsers"
 publish = false
 
 [dev-dependencies]

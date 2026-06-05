@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Conformance harness for the vendored Dynamo parity fixtures (DIS-2159).
+//! Conformance harness for the vendored Dynamo parity fixtures.
 //!
 //! No library code lives here — the work is in the integration tests under
 //! `tests/`, which load `conformance/parity/**` and run it through

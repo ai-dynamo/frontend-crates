@@ -4,7 +4,7 @@
 
 # MANUAL SYNC ONLY — do not call from CI or automation.
 #
-# parsers/ and parity-harness/ are permanently detached from the automated
+# parsers/ and conformance/utils/ are permanently detached from the automated
 # sync-check pipeline because dynamo depends on this repo's parsers crate as an
 # upstream library. Auto-syncing dynamo/lib/parsers/ back in would create a
 # circular dependency: dynamo → frontend-crates/parsers → synced from dynamo → dynamo.
@@ -85,7 +85,7 @@ if [ -d "$DYNAMO_SRC/lib/parsers/tests" ]; then
   fi
 fi
 
-# --- parity-harness/tests/parity/ (whitelisted files only) ---
+# --- conformance/utils/tests/parity/ (whitelisted files only) ---
 PH_FILTER=(
   --include='/__init__.py' --include='/common.py' --include='/markup.py'
   --include='/generate_parity_table.py' --include='/parity_table.html.j2'
@@ -96,14 +96,14 @@ PH_FILTER=(
   --include='/reasoning/vllm.py' --include='/reasoning/sglang.py' --include='/reasoning/dynamo.py'
   --exclude='*'
 )
-echo "--- parity-harness/tests/parity/ ---"
+echo "--- conformance/utils/tests/parity/ ---"
 if [ "$APPLY" = "1" ]; then
-  mkdir -p "$HERE/parity-harness/tests/parity"
+  mkdir -p "$HERE/conformance/utils/tests/parity"
   rsync -a --delete --checksum "${PH_FILTER[@]}" \
-    "$DYNAMO_SRC/tests/parity/" "$HERE/parity-harness/tests/parity/"
+    "$DYNAMO_SRC/tests/parity/" "$HERE/conformance/utils/tests/parity/"
 else
   out=$(rsync -a --delete --checksum --dry-run --itemize-changes "${PH_FILTER[@]}" \
-    "$DYNAMO_SRC/tests/parity/" "$HERE/parity-harness/tests/parity/" | grep -E '^[<>c*]' || true)
+    "$DYNAMO_SRC/tests/parity/" "$HERE/conformance/utils/tests/parity/" | grep -E '^[<>c*]' || true)
   if [ -n "$out" ]; then
     echo "$out" | sed 's/^/  /'
     CHANGED=1
@@ -112,11 +112,11 @@ else
   fi
 fi
 
-# --- parity-harness/lib/parsers/*_CASES.md ---
-echo "--- parity-harness/lib/parsers/ ---"
+# --- conformance/utils/lib/parsers/*_CASES.md ---
+echo "--- conformance/utils/lib/parsers/ ---"
 for cm in TOOLCALLING_CASES.md REASONING_CASES.md; do
   src="$DYNAMO_SRC/lib/parsers/$cm"
-  dst="$HERE/parity-harness/lib/parsers/$cm"
+  dst="$HERE/conformance/utils/lib/parsers/$cm"
   [ -f "$src" ] || continue
   if [ "$APPLY" = "1" ]; then
     mkdir -p "$(dirname "$dst")"
@@ -133,7 +133,7 @@ echo
 
 if [ "$APPLY" = "1" ]; then
   echo "done. review with: git -C $HERE diff --stat"
-  echo "then verify:       parity-harness/run.sh table"
+  echo "then verify:       conformance/utils/run.sh table"
 elif [ "$CHANGED" = "1" ]; then
   echo "changes detected. re-run with --apply to apply."
   exit 1

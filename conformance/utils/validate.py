@@ -21,7 +21,7 @@ version and warns when it differs from the version dynamo pinned (the fixtures'
 ``expected.<impl>`` columns were captured against that pin — a mismatch makes
 diffs version drift, not parser bugs). Exits non-zero on any real mismatch.
 
-Run via ``parity-harness/run.sh vllm|sglang``; it builds the staged fixtures dir
+Run via ``conformance/utils/run.sh vllm|sglang``; it builds the staged fixtures dir
 and passes --fixtures. Direct use:
     validate.py --impl sglang --container sglang-localdev --fixtures <dir>
     validate.py --impl vllm   --pip                       --fixtures <dir>

@@ -12,15 +12,15 @@
 #   run.sh all     [--container-vllm N --container-sglang M]   dynamo + vllm + sglang + table
 #
 # The Python generator/adapters are vendored verbatim from dynamo (under
-# parity-harness/tests/parity) and hard-code dynamo's repo layout. We build an
+# conformance/utils/tests/parity) and hard-code dynamo's repo layout. We build an
 # ephemeral .stage/ that presents that layout — the package is COPIED (so
 # Path(__file__).resolve() stays inside the stage) and the data (fixtures, rust
 # parser source, case docs, pyproject) is symlinked to this repo's real paths.
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"   # frontend-crates repo root
-PH="$ROOT/parity-harness"
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"   # frontend-crates repo root
+PH="$ROOT/conformance/utils"
 STAGE="$PH/.stage"
 
 build_stage() {

@@ -1,4 +1,4 @@
-# parity-harness
+# conformance/utils
 
 Run the parser parity matrix and conformance lanes against the vendored fixtures (`conformance/{toolcalling,reasoning}/fixtures`). Three impls, two languages:
 
@@ -15,14 +15,14 @@ Run the parser parity matrix and conformance lanes against the vendored fixtures
 Orchestrator for all lanes. Builds the ephemeral `.stage/` layout before each Python run, then delegates to `cargo test` or `validate.py`.
 
 ```
-parity-harness/run.sh <lane> [options]
+conformance/utils/run.sh <lane> [options]
 ```
 
 **Lanes**
 
 | Lane | What runs |
 |---|---|
-| `table` | Renders `parity-harness/PARITY.html` — the full parity matrix. No engines needed. |
+| `table` | Renders `conformance/utils/PARITY.html` — the full parity matrix. No engines needed. |
 | `dynamo` | `cargo test -p dynamo-conformance --test parity_toolcalling` — Rust parser vs fixtures. |
 | `vllm` | `validate.py --impl vllm` against the toolcalling fixtures. |
 | `sglang` | `validate.py --impl sglang` against the toolcalling fixtures. |
@@ -40,12 +40,12 @@ parity-harness/run.sh <lane> [options]
 **Examples**
 
 ```bash
-parity-harness/run.sh table
-parity-harness/run.sh dynamo
-parity-harness/run.sh sglang --container sglang-localdev
-parity-harness/run.sh vllm   --container vllm-localdev
-parity-harness/run.sh vllm   --pip
-parity-harness/run.sh all --container-vllm vllm-localdev --container-sglang sglang-localdev
+conformance/utils/run.sh table
+conformance/utils/run.sh dynamo
+conformance/utils/run.sh sglang --container sglang-localdev
+conformance/utils/run.sh vllm   --container vllm-localdev
+conformance/utils/run.sh vllm   --pip
+conformance/utils/run.sh all --container-vllm vllm-localdev --container-sglang sglang-localdev
 ```
 
 **Dependencies**
@@ -56,7 +56,7 @@ parity-harness/run.sh all --container-vllm vllm-localdev --container-sglang sgla
 
 **Output**
 
-- `table` writes `parity-harness/PARITY.html` (gitignored). Open in a browser.
+- `table` writes `conformance/utils/PARITY.html` (gitignored). Open in a browser.
 - `dynamo` prints cargo test output; exits non-zero on any failure.
 - `vllm` / `sglang` print a per-case pass/fail summary and a final count line, e.g. `vllm parity: 624/624 cases passed`. Exits non-zero on any mismatch.
 
@@ -105,7 +105,7 @@ Exits 0 if all cases pass, 1 if any fail.
 
 ```bash
 validate.py --impl sglang --container sglang-localdev \
-  --fixtures parity-harness/.stage/tests/parity/toolcalling/fixtures
+  --fixtures conformance/utils/.stage/tests/parity/toolcalling/fixtures
 ```
 
 ---
