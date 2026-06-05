@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! POC: a token-incremental Harmony (gpt-oss) tool-call streaming parser.
+//! Token-incremental Harmony (gpt-oss) tool-call streaming parser.
 //!
 //! This is the *token path*. It consumes `delta_token_ids` — not text — and wraps
 //! `openai-harmony`'s `StreamableParser`, emitting per-chunk `ToolCallResponseChunk`
@@ -9,10 +9,10 @@
 //! `commentary to=functions.NAME` channel. That's the vLLM wire shape, produced
 //! incrementally as tokens arrive, with no jail and no buffer-then-release.
 //!
-//! Why harmony for the pilot: it's the one family where tokens genuinely drive
+//! Why harmony first: it's the one family where tokens genuinely drive
 //! the parse (channel/recipient/content come straight out of the token stream),
 //! and `StreamableParser` is a real incremental token parser — so this proves the
-//! crate can stream on tokens the way vLLM's parsers do. The reasoning gpt_oss
+//! crate streams on tokens the way vLLM's parsers do. The reasoning gpt_oss
 //! parser already wraps the same `StreamableParser` for the `analysis`/`final`
 //! channels; this is the tool-call half over the `commentary` channel.
 //!

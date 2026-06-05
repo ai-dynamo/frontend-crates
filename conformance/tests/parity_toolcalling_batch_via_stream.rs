@@ -83,7 +83,7 @@ fn toolcalling_batch_via_stream_parity() {
 
     // Batch samples where the streaming parser legitimately differs from the
     // batch parser. The batch parser (detect_and_parse_tool_call_with_recovery)
-    // repairs truncated/malformed output via EOF recovery; the streaming POC does
+    // repairs truncated/malformed output via EOF recovery; the streaming parser does
     // not. batch.5.* and 8.* are the truncation/malformed/recovery cases:
     //   - batch parser recovers a call where the stream emits nothing, OR
     //   - the stream emits optimistically where the batch parser rejects.
