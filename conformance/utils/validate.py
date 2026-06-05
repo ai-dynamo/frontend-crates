@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Validate a Python engine's tool-call parser (vLLM or SGLang) against the
-vendored parity fixtures' ``expected.<impl>`` blocks.
+vendored conformance fixtures' ``expected.<impl>`` blocks.
 
 The engines are Python and cannot run inside the Rust conformance crate, so this
 crosses the language barrier two ways:
@@ -21,7 +21,7 @@ version and warns when it differs from the version dynamo pinned (the fixtures'
 ``expected.<impl>`` columns were captured against that pin — a mismatch makes
 diffs version drift, not parser bugs). Exits non-zero on any real mismatch.
 
-Run via ``conformance/utils/run.sh vllm|sglang``; it builds the staged fixtures dir
+Run via ``conformance/utils/check_v2.sh vllm|sglang``; it builds the staged fixtures dir
 and passes --fixtures. Direct use:
     validate.py --impl sglang --container sglang-localdev --fixtures <dir>
     validate.py --impl vllm   --pip                       --fixtures <dir>
@@ -220,7 +220,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--impl", required=True, choices=("vllm", "sglang"))
     ap.add_argument("--fixtures", required=True, type=Path,
-                    help="toolcalling fixtures dir (staged by run.sh)")
+                    help="toolcalling fixtures dir staged by check_v2.sh")
     mode = ap.add_mutually_exclusive_group(required=True)
     mode.add_argument("--container", help="run the engine in this docker container")
     mode.add_argument("--pip", action="store_true", help="run the engine in-process")
@@ -233,7 +233,7 @@ def main() -> int:
 
     live = engine_version(args.impl, args.container)
     pin = pinned_version(args.impl)
-    print(f"=== {args.impl} parity ({'container ' + args.container if args.container else 'pip in-process'}) ===")
+    print(f"=== {args.impl} conformance ({'container ' + args.container if args.container else 'pip in-process'}) ===")
     print(f"engine version: {live or 'unknown'}   pinned (fixtures captured against): {pin or 'unknown'}")
     if live and pin and live != pin:
         print(f"WARNING: engine {live} != pin {pin} — diffs below may be version drift, not parser bugs.")
@@ -252,7 +252,7 @@ def main() -> int:
             fails.append(f"FAIL {c['key']} [{c['mode']}]{detail}")
     for f in fails:
         print(f)
-    print(f"\n{args.impl} parity: {npass}/{npass + nfail} cases passed"
+    print(f"\n{args.impl} conformance: {npass}/{npass + nfail} cases passed"
           + (f", {nfail} failed" if nfail else ""))
     return 1 if nfail else 0
 

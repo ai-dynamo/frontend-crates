@@ -1,0 +1,67 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: deepseek_v3
+model_label: 'DeepSeek V3'
+mode: stream
+cases:
+  TOOLCALLING.stream.2:
+    description: 'Multiple tool calls split across multiple content chunks'
+    ref: 'derived from TOOLCALLING.batch.2.a'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo TC streaming not yet implemented for this family. Text-based; token-id path is harmony-only for now.'
+    chunks:
+    - delta_text: '<｜tool▁ca'
+    - delta_text: 'lls▁beg'
+    - delta_text: 'in｜><｜tool▁ca'
+    - delta_text: 'll▁be'
+    - delta_text: 'gin｜>function<｜to'
+    - delta_text: 'ol▁'
+    - delta_text: 'sep｜>get_'
+    - delta_text: 'weather'
+    - delta_text: '
+```json
+{"lo'
+    - delta_text: 'catio'
+    - delta_text: 'n": "NYC"}
+```<｜t'
+    - delta_text: 'ool'
+    - delta_text: '▁call▁end'
+    - delta_text: '｜><｜too'
+    - delta_text: 'l▁call▁begin｜'
+    - delta_text: '>func'
+    - delta_text: 'tion<｜tool▁sep｜>g'
+    - delta_text: 'et_'
+    - delta_text: 'time
+```j'
+    - delta_text: 'son
+{"t'
+    - delta_text: 'imezone": "ES'
+    - delta_text: 'T"}
+`'
+    - delta_text: '``<｜tool▁call▁end'
+    - delta_text: '｜><'
+    - delta_text: '｜tool▁cal'
+    - delta_text: 'ls▁end｜'
+    - delta_text: '>'
+    - delta_text: ''
+      finish_reason: tool_calls

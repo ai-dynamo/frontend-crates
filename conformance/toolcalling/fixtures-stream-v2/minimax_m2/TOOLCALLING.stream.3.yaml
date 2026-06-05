@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: minimax_m2
+model_label: 'MiniMax 2.7'
+mode: stream
+cases:
+  TOOLCALLING.stream.3:
+    description: 'Complete single tool call with a grammar token split across chunk boundaries'
+    ref: 'derived from TOOLCALLING.batch.1'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo TC streaming not yet implemented for this family. Text-based; token-id path is harmony-only for now.'
+    chunks:
+    - delta_text: '<m'
+    - delta_text: 'ini'
+    - delta_text: 'max:t'
+    - delta_text: 'ool_call>
+<'
+    - delta_text: 'invoke name="get_we'
+    - delta_text: 'at'
+    - delta_text: 'her'
+    - delta_text: '">
+<p'
+    - delta_text: 'arameter na'
+    - delta_text: 'me="location">NYC</'
+    - delta_text: 'pa'
+    - delta_text: 'ram'
+    - delta_text: 'eter>'
+    - delta_text: '
+</invoke>
+'
+    - delta_text: '</minimax:tool_call'
+    - delta_text: '>'
+    - delta_text: ''
+      finish_reason: tool_calls

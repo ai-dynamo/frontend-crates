@@ -1,0 +1,129 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: harmony
+model_label: 'gpt-oss (harmony, token-id)'
+mode: stream
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
+cases:
+  TOOLCALLING.stream.4.a:
+    description: 'Truncated stream terminates after a complete in-flight tool-call body'
+    ref: 'derived from TOOLCALLING.batch.5.a'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}'
+      delta_token_ids: [200006, 173781, 200005, 12606, 815, 316, 28, 44580, 775, 170154, 220, 200003, 4108, 200008, 10848, 7693, 7534, 24202, 34, 18583]
+      expected:
+        dynamo:
+        - {index: 0, id: true, name: 'get_weather'}
+        - {index: 0, arguments: '{"'}
+        - {index: 0, arguments: 'location'}
+        - {index: 0, arguments: '":"'}
+        - {index: 0, arguments: 'NY'}
+        - {index: 0, arguments: 'C'}
+        - {index: 0, arguments: '"}'}
+        vllm:
+        - {index: 0, id: true, name: 'get_weather', arguments: ''}
+        - {index: 0, arguments: '{"'}
+        - {index: 0, arguments: 'location'}
+        - {index: 0, arguments: '":"'}
+        - {index: 0, arguments: 'NY'}
+        - {index: 0, arguments: 'C'}
+        - {index: 0, arguments: '"}'}
+        sglang: []
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: stop
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+  TOOLCALLING.stream.4.b:
+    description: 'Stream terminates mid-call body before the in-flight argument payload is complete'
+    ref: 'derived from TOOLCALLING.batch.5.c'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '<|start|>assistant<|channel|>commentary to=functi'
+      delta_token_ids: [200006, 173781, 200005, 12606, 815, 316, 28]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: 'ons.get_weather <|constrain|>json<|message|>{"loc'
+      delta_token_ids: [44580, 775, 170154, 220, 200003, 4108, 200008, 10848, 9453]
+      expected:
+        dynamo:
+        - {index: 0, id: true, name: 'get_weather'}
+        - {index: 0, arguments: '{"'}
+        - {index: 0, arguments: 'loc'}
+        vllm:
+        - {index: 0, id: true, name: 'get_weather', arguments: ''}
+        - {index: 0, arguments: '{"'}
+        - {index: 0, arguments: 'loc'}
+        sglang: []
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: stop
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+  TOOLCALLING.stream.4.c:
+    description: 'Stream reaches length after a valid inner tool-call body without the required outer wrapper, followed by repeated close markers'
+    ref: 'derived from nemotron-ultra-preview-tool-call-leak-repro/repro_tool_call_leak.py'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|call|><|call|>'
+      delta_token_ids: [200005, 12606, 815, 316, 28, 44580, 775, 170154, 220, 200003, 4108, 200008, 10848, 7693, 7534, 24202, 34, 18583, 200012, 200012, 200012]
+      expected:
+        dynamo:
+        - {index: 0, id: true, name: 'get_weather'}
+        - {index: 0, arguments: '{"'}
+        - {index: 0, arguments: 'location'}
+        - {index: 0, arguments: '":"'}
+        - {index: 0, arguments: 'NY'}
+        - {index: 0, arguments: 'C'}
+        - {index: 0, arguments: '"}'}
+        vllm:
+        - {index: 0, id: true, name: 'get_weather', arguments: ''}
+        - {index: 0, arguments: '{"'}
+        - {index: 0, arguments: 'location'}
+        - {index: 0, arguments: '":"'}
+        - {index: 0, arguments: 'NY'}
+        - {index: 0, arguments: 'C'}
+        - {index: 0, arguments: '"}'}
+        sglang:
+        - {index: 0, name: 'get_weather', arguments: '{"location": "NYC"}'}
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: length
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []

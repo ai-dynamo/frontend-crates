@@ -2,19 +2,21 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-# MANUAL SYNC ONLY — do not call from CI or automation.
+# TEMPORARY V1 SYNC ONLY — do not call from CI or automation.
 #
-# parsers/ and conformance/utils/ are permanently detached from the automated
-# sync-check pipeline because dynamo depends on this repo's parsers crate as an
-# upstream library. Auto-syncing dynamo/lib/parsers/ back in would create a
-# circular dependency: dynamo → frontend-crates/parsers → synced from dynamo → dynamo.
-# A human or AI runs this script deliberately, reviews the diff, and commits.
+# This bridge script keeps the old Dynamo parser source and v1 parity renderer
+# available while the frontend-crates parser crate is being prepared for release.
+# It is deliberately manual because v2 work lives outside this mirror in
+# parsers_v2* and conformance/utils/generate_conformance_table_v2.py.
+#
+# After Dynamo consumes the released frontend-crates parser crate directly, stop
+# using this script for parsers and merge the v1/v2 renderers in this repo.
 #
 # Usage:
 #   scripts/manual-sync-parsers.sh /path/to/dynamo         # dry-run: shows what would change
 #   scripts/manual-sync-parsers.sh --apply /path/to/dynamo # apply changes
 #
-# See PARSERS-SYNC.md for background and the full file mapping.
+# See PARSERS-SYNC.md for background, excluded v2 files, and the migration plan.
 
 set -euo pipefail
 
@@ -133,7 +135,7 @@ echo
 
 if [ "$APPLY" = "1" ]; then
   echo "done. review with: git -C $HERE diff --stat"
-  echo "then verify:       conformance/utils/run.sh table"
+  echo "then verify:       conformance/utils/render_table_v2.sh"
 elif [ "$CHANGED" = "1" ]; then
   echo "changes detected. re-run with --apply to apply."
   exit 1

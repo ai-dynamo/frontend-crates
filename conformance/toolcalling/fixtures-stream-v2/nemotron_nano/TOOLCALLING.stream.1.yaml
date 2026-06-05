@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: nemotron_nano
+model_label: 'Nemotron Nano v3'
+mode: stream
+cases:
+  TOOLCALLING.stream.1.a:
+    description: 'Complete tool-call payload delivered in one content chunk'
+    ref: 'derived from TOOLCALLING.batch.1'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo TC streaming not yet implemented for this family. Text-based; token-id path is harmony-only for now.'
+    chunks:
+    - delta_text: '<tool_call>
+<function=get_weather>
+<parameter=location>
+NYC
+</parameter>
+</function>
+</tool_call>'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.stream.1.b:
+    description: 'Complete tool call split across parser-significant boundaries'
+    ref: 'derived from TOOLCALLING.batch.1'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo TC streaming not yet implemented for this family. Text-based; token-id path is harmony-only for now.'
+    chunks:
+    - delta_text: '<tool_call>
+'
+    - delta_text: '<function=get_weather>
+'
+    - delta_text: '<parameter=location>
+'
+    - delta_text: 'NYC
+'
+    - delta_text: '</parameter>
+'
+    - delta_text: '</function>
+'
+    - delta_text: '</tool_call>'
+    - delta_text: ''
+      finish_reason: tool_calls
