@@ -7,7 +7,7 @@
 # Sources:  $DYNAMO_SRC/lib/{protocols,tokenizers,renderer}/
 # Targets:  ./{protocols,tokenizers,renderer}/
 #
-# NOTE: parsers/ and parity-harness/ are NOT synced by this script.
+# NOTE: parsers/ and conformance/utils/ are NOT synced by this script.
 # They are permanently detached from dynamo and updated manually.
 # See PARSERS-SYNC.md for the exact mapping and instructions.
 #

@@ -1,10 +1,10 @@
-# parsers and parity-harness: manual sync
+# parsers and conformance/utils: manual sync
 
-`parsers/` and `parity-harness/` are permanently detached from the automated `sync-check` CI pipeline. Updates are manual only.
+`parsers/` and `conformance/utils/` are permanently detached from the automated `sync-check` CI pipeline. Updates are manual only.
 
 ## Why
 
-`dynamo` depends on this repo's `parsers` crate as an upstream library. Auto-syncing `dynamo/lib/parsers/` back into `parsers/` would create a circular dependency: dynamo → frontend-crates/parsers → synced from dynamo → dynamo. Cutting the rsync breaks the cycle. `parsers/` is now an independent crate that dynamo consumes; changes originate here and flow outward, not inward. `parity-harness/` is detached for the same reason — parser test expectations evolve on this repo's schedule.
+`dynamo` depends on this repo's `parsers` crate as an upstream library. Auto-syncing `dynamo/lib/parsers/` back into `parsers/` would create a circular dependency: dynamo → frontend-crates/parsers → synced from dynamo → dynamo. Cutting the rsync breaks the cycle. `parsers/` is now an independent crate that dynamo consumes; changes originate here and flow outward, not inward. `conformance/utils/` is detached for the same reason — parser test expectations evolve on this repo's schedule.
 
 ## How to sync
 
@@ -13,7 +13,7 @@ scripts/manual-sync-parsers.sh /path/to/dynamo          # dry-run: shows what wo
 scripts/manual-sync-parsers.sh --apply /path/to/dynamo  # apply
 ```
 
-The script covers `parsers/src/`, `parsers/tests/` (when present), the 15 Python files under `parity-harness/tests/parity/`, and the two `*_CASES.md` docs. After applying, verify with `parity-harness/run.sh table`.
+The script covers `parsers/src/`, `parsers/tests/` (when present), the 15 Python files under `conformance/utils/tests/parity/`, and the two `*_CASES.md` docs. After applying, verify with `conformance/utils/run.sh table`.
 
 ## What the script does NOT touch
 
@@ -25,9 +25,9 @@ These have no upstream counterpart. Never overwrite during a sync.
 
 | File | Purpose |
 |---|---|
-| `parity-harness/run.sh` | Orchestrator — builds `.stage/`, routes lanes |
-| `parity-harness/validate.py` | Cross-impl validation via `docker exec` or pip |
-| `parity-harness/README.md` | Usage docs |
-| `parity-harness/.gitignore` | Excludes `.stage/` and `PARITY.html` |
-| `parity-harness/tests/__init__.py` | Empty package root for `.stage/` imports |
+| `conformance/utils/run.sh` | Orchestrator — builds `.stage/`, routes lanes |
+| `conformance/utils/validate.py` | Cross-impl validation via `docker exec` or pip |
+| `conformance/utils/README.md` | Usage docs |
+| `conformance/utils/.gitignore` | Excludes `.stage/` and `PARITY.html` |
+| `conformance/utils/tests/__init__.py` | Empty package root for `.stage/` imports |
 | `parsers/Cargo.toml` | Inlined for standalone publishing |

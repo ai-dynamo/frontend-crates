@@ -1,6 +1,6 @@
 ---
 name: sync-from-dynamo
-description: Resolve sync drift between frontend-crates and ai-dynamo/dynamo. Pulls lib/{protocols,tokenizers,renderer} src+tests (and tokenizer test fixtures) up to dynamo main, fixes the diverged-Cargo.toml / fixture breakage the new code introduces, verifies the full CI gate, and opens a sync PR. Use when sync-check fails, a `sync-drift` issue is open, or someone asks to "sync from dynamo". NOTE: parsers/ and parity-harness/ are NOT in scope — see PARSERS-SYNC.md.
+description: Resolve sync drift between frontend-crates and ai-dynamo/dynamo. Pulls lib/{protocols,tokenizers,renderer} src+tests (and tokenizer test fixtures) up to dynamo main, fixes the diverged-Cargo.toml / fixture breakage the new code introduces, verifies the full CI gate, and opens a sync PR. Use when sync-check fails, a `sync-drift` issue is open, or someone asks to "sync from dynamo". NOTE: parsers/ and conformance/utils/ are NOT in scope — see PARSERS-SYNC.md.
 ---
 
 # Skill: Sync from dynamo
@@ -9,14 +9,14 @@ description: Resolve sync drift between frontend-crates and ai-dynamo/dynamo. Pu
 
 `frontend-crates` mirrors three dynamo library crates (`lib/protocols`, `lib/tokenizers`, `lib/renderer`). An hourly `sync-check` workflow opens a `sync-drift` issue when dynamo `main` advances past what this repo mirrors. This skill restores the mirror: apply the sync, fix whatever the new upstream code needs to build/test standalone, prove the CI gate passes, and open a PR.
 
-**`parsers/` and `parity-harness/` are permanently detached from this automated sync.** Do not include them here. For manual parser/harness sync, follow `PARSERS-SYNC.md`.
+**`parsers/` and `conformance/utils/` are not part of this automated sync.** Do not include them here. For the temporary v1 parser/harness sync and the post-release migration plan, follow `PARSERS-SYNC.md`.
 
 ## When to Use
 
 - The `sync-check` CI job is red, or a `sync-drift` issue is open.
 - Someone asks to "sync from dynamo" / "fix the sync" / "pull latest dynamo into frontend-crates".
 
-**Not this skill:** someone asks to sync the parser crate or parity-harness → use `PARSERS-SYNC.md` instead.
+**Not this skill:** someone asks to sync the parser crate or conformance/utils → use `PARSERS-SYNC.md` instead.
 
 ## Key facts
 
