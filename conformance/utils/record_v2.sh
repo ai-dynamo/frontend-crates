@@ -7,7 +7,7 @@
 #     stream <fixture.yaml> [--text]   print per-chunk expected.dynamo JSON for one
 #                                      stream fixture (paste into chunks[].expected.dynamo)
 #     batch                            print the Dynamo parser v2 stream-on-batch result JSON
-#                                      (merge via merge_batch_stream.py -> harmony_batch_stream.json)
+#                                      (merge via capture_driver.py --mode merge -> harmony_batch_stream.json)
 #     tokens                           stamp delta_token_ids into the harmony stream fixtures
 #
 #   Needs a cargo that can build the workspace (edition 2024). If the default cargo
