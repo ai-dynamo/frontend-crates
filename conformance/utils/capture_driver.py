@@ -307,11 +307,19 @@ def main():
     ap.add_argument("-o", "--output")
     args = ap.parse_args()
 
+    # Per-mode required args (argparse can't express "required only for some modes").
     if args.mode == "merge":
+        missing = [n for n in ("dynamo", "vllm", "sglang", "output") if not getattr(args, n)]
+        if missing:
+            ap.error("--mode merge requires --dynamo --vllm --sglang -o/--output")
         _run_merge(args)
         return
-    if args.work:
-        os.makedirs(args.work, exist_ok=True)
+    if not args.root or not args.work:
+        ap.error(f"--mode {args.mode} requires --root and --work")
+    if args.mode == "stream" and not args.dynamo_todo:
+        ap.error("--mode stream requires --dynamo-todo")
+
+    os.makedirs(args.work, exist_ok=True)
     if args.mode == "stream":
         _run_stream(args)
     else:
