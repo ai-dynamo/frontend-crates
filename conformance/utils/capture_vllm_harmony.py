@@ -6,7 +6,7 @@
 vLLM has no pluggable ToolParser for harmony — it parses harmony in a dedicated
 serving path. This drives that path's core function,
 `extract_harmony_streaming_delta`, directly: feed each chunk's delta_token_ids to
-an openai_harmony StreamableParser (token-native, like the frontend-crate v2 Harmony parser),
+an openai_harmony StreamableParser (token-native, like the Dynamo parser v2 Harmony parser),
 then call the function to get vLLM's DeltaMessage. Mirrors the per-token loop in
 vllm/entrypoints/openai/chat_completion/serving.py.
 
@@ -29,7 +29,7 @@ from vllm.entrypoints.openai.chat_completion.stream_harmony import (
 #   <|start|> = 200006, assistant = 173781.
 # The StreamableParser is created in ExpectStart mode (role=None) so it accepts a
 # leading <|start|>. For channel-first inputs (no <|start|>) we prepend
-# <|start|>assistant — exactly the normalization the frontend-crate v2 Harmony parser does — so
+# <|start|>assistant — exactly the normalization the Dynamo parser v2 Harmony parser does — so
 # both parsers process the identical token stream (a fair comparison).
 START_TOKEN = 200006
 PREAMBLE = [200006, 173781]

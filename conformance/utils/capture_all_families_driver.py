@@ -16,7 +16,7 @@ import sys
 VLLM = {
     "deepseek_v3": "deepseek_v3", "deepseek_v3_1": "deepseek_v31",
     "deepseek_v3_2": "deepseek_v32", "deepseek_v4": "deepseek_v4",
-    "gemma4": "gemma4", "glm47": "glm47", "jamba": "jamba",
+    "gemma4": "gemma4", "glm47": "glm47", "hermes": "hermes", "jamba": "jamba",
     "kimi_k2": "kimi_k2", "llama3_json": "llama3_json",
     "minimax_m2": "minimax_m2", "mistral": "mistral",
     "nemotron_deci": "hermes", "nemotron_nano": "hermes",
@@ -26,7 +26,7 @@ VLLM = {
 SGLANG = {
     "deepseek_v3": "deepseekv3", "deepseek_v3_1": "deepseekv31",
     "deepseek_v3_2": "deepseekv32", "deepseek_v4": "deepseekv4",
-    "gemma4": "gemma4", "glm47": "glm47", "jamba": None,
+    "gemma4": "gemma4", "glm47": "glm47", "hermes": "hermes", "jamba": None,
     "kimi_k2": "kimi_k2", "llama3_json": "llama3",
     "minimax_m2": "minimax-m2", "mistral": "mistral",
     "nemotron_deci": None, "nemotron_nano": None,

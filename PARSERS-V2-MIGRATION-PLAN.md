@@ -8,11 +8,11 @@ This is the single source of truth for the parser v1/v2 bridge, the temporary Dy
 
 `v2` means frontend-crate-owned parser code, Python binding code, stream fixtures, and conformance renderer behavior. During the bridge period, v2 lives in `parsers_v2/`, `parsers_v2-py/`, `conformance/toolcalling/fixtures-stream-v2/`, `conformance/utils/generate_conformance_table_v2.py`, and `conformance/utils/conformance_table_v2.html.j2`.
 
-Do not call v2 parser code "Dynamo code". The fixture key `expected.dynamo` and helper subcommand `check_v2.sh dynamo` are compatibility labels for the local parser output, not ownership.
+Use `Dynamo parser v2` as the parser label. The fixture key `expected.dynamo` and helper subcommand `check_v2.sh dynamo` are compatibility labels for local parser output; ownership during the bridge is still described separately as frontend-crates-owned.
 
 ## Why The Bridge Exists
 
-The current split exists because frontend-crates still needs to show and validate the old Dynamo view while building the new frontend-crate parser implementation. v1 stays resettable to Dynamo so `PARITY_v1.html` can show what old Dynamo would have generated. v2 stays outside the sync target so new streaming parser work cannot be clobbered by a Dynamo rsync.
+The current split exists because frontend-crates still needs to show and validate the old Dynamo view while building Dynamo parser v2. v1 stays resettable to Dynamo so `PARITY_v1.html` can show what old Dynamo would have generated. v2 stays outside the sync target so new streaming parser work cannot be clobbered by a Dynamo rsync.
 
 Do not move v2 parser code into `parsers/src/` until Dynamo consumes the released frontend-crates parser crate directly and parser-source rsync stops. Until then, `parsers/src/` is a v1 mirror.
 
@@ -105,10 +105,10 @@ These files have no upstream Dynamo counterpart. Never overwrite them during a s
 | `parsers_v2-py/` | Temporary PyO3 binding crate/package for v2 streaming work. |
 | `conformance/toolcalling/fixtures-stream-v2/` | v2 stream fixtures. |
 | `conformance/utils/_common.sh` | Shared stage builder for conformance scripts. |
-| `conformance/utils/check_v2.sh` | Runs local-parser, vLLM, and SGLang checks against staged fixtures; v2 local-parser checks run frontend-crate code. |
+| `conformance/utils/check_v2.sh` | Runs local-parser, vLLM, and SGLang checks against staged fixtures; v2 local-parser checks run Dynamo parser v2 code. |
 | `conformance/utils/render_table_v2.sh` | Renders `conformance/CONFORMANCE_v2.html` with the v2 conformance generator. |
 | `conformance/utils/render_parity_v1.sh` | Renders `.stage/tests/parity/PARITY_v1.html` with old Dynamo `generate_parity_table.py`. |
-| `conformance/utils/record_v2.sh` | Records frontend-crate v2 stream fixture data. |
+| `conformance/utils/record_v2.sh` | Records Dynamo parser v2 stream fixture data. |
 | `conformance/utils/validate.py` | Cross-implementation validation via `docker exec` or pip. |
 | `conformance/utils/build_stream_fixtures.py` | Builds v2 per-chunk stream fixtures from source cases and captured engine output. |
 | `conformance/utils/capture_stream.py` | Captures vLLM/SGLang per-chunk stream output inside engine containers. |

@@ -4,7 +4,7 @@
 #
 # Capture per-chunk vLLM + SGLang streaming deltas for every non-harmony family
 # and build the new-format conformance/toolcalling/fixtures-stream-v2/<family>/TOOLCALLING.stream.*.yaml.
-# Dynamo is marked unavailable (TODO) for all of these — no Rust streaming
+# Dynamo parser v2 is marked unavailable (TODO) for all of these — no Dynamo parser v2 Rust streaming
 # parser exists yet; vLLM/SGLang per-chunk data is the target to match.
 #
 # Runs the engine parsers INSIDE the containers (docker exec), version-matched.
@@ -19,7 +19,7 @@ VLLM_C="${1:-vllm-localdev}"
 SGLANG_C="${2:-sglang-localdev}"
 CONF="$ROOT/conformance/toolcalling/fixtures"
 WORK="${TMPDIR:-/tmp}/streamcap_families"
-DYNAMO_TODO="Dynamo TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match."
+DYNAMO_TODO="Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match."
 
 rm -rf "$WORK"; mkdir -p "$WORK"
 
