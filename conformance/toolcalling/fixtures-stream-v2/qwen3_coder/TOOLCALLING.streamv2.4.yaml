@@ -120,8 +120,8 @@ echo'
       expected:
         vllm: []
         sglang:
-        - {index: -1, arguments: '{'}
-        - {index: -1, arguments: '}'}
+        - {index: 0, arguments: '{'}
+        - {index: 0, arguments: '}'}
     - delta_text: ''
       finish_reason: stop
       expected:
