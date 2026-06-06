@@ -10,6 +10,9 @@
 family: qwen25
 model_label: 'Qwen 2.5'
 mode: stream
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
 cases:
   TOOLCALLING.stream.3:
     description: 'Complete single tool call with a grammar token split across chunk boundaries'
@@ -22,17 +25,68 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo TC streaming not yet implemented for this family. Text-based; token-id path is harmony-only for now.'
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '<t'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'ool'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: '_call'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: '>{"name": "'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: '<tool_call>{"name": "'
     - delta_text: 'get_weather", "argu'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather'}
+        sglang: []
+      normal_text:
+        sglang: 'get_weather", "argu'
     - delta_text: 'me'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'me'
     - delta_text: 'nts'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'nts'
     - delta_text: '": {"'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"'}
+        sglang: []
+      normal_text:
+        sglang: '": {"'
     - delta_text: 'location": '
+      expected:
+        vllm:
+        - {index: 0, arguments: 'location":'}
+        sglang: []
+      normal_text:
+        sglang: 'location": '
     - delta_text: '"NYC"}}</tool_call>'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' "NYC"}'}
+        sglang: []
+      normal_text:
+        sglang: '"NYC"}}'
     - delta_text: ''
       finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []

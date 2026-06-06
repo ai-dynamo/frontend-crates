@@ -10,6 +10,9 @@
 family: pythonic
 model_label: 'Llama 4 (pythonic fmt)'
 mode: stream
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
 cases:
   TOOLCALLING.stream.2:
     description: 'Multiple tool calls split across multiple content chunks'
@@ -28,14 +31,43 @@ cases:
           timezone:
             type: string
     unavailable:
-      dynamo: 'Dynamo TC streaming not yet implemented for this family. Text-based; token-id path is harmony-only for now.'
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '[get_weat'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'her(loc'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'ation="NYC"),'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather', arguments: '{"location": "NYC"}'}
+        sglang: []
     - delta_text: ' get_'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'time(timezone="ES'
+      expected:
+        vllm:
+        - {index: 1, id: true, name: 'get_time', arguments: '{"timezone": "ES'}
+        sglang: []
     - delta_text: 'T")'
+      expected:
+        vllm:
+        - {index: 1, arguments: 'T"}'}
+        sglang: []
     - delta_text: ']'
+      expected:
+        vllm: []
+        sglang:
+        - {index: 0, name: 'get_weather', arguments: '{"location": "NYC"}'}
+        - {index: 1, name: 'get_time', arguments: '{"timezone": "EST"}'}
     - delta_text: ''
       finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []

@@ -10,6 +10,9 @@
 family: deepseek_v3_2
 model_label: 'DeepSeek V3.2'
 mode: stream
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
 cases:
   TOOLCALLING.stream.3:
     description: 'Complete single tool call with a grammar token split across chunk boundaries'
@@ -22,33 +25,106 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo TC streaming not yet implemented for this family. Text-based; token-id path is harmony-only for now.'
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '<｜'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'DSM'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'L｜fun'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'ction_calls'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: '>
 <｜DSML｜invoke nam'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'e='
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: '"ge'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 't_wea'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'ther">
 <｜DS'
+      expected:
+        vllm: []
+        sglang:
+        - {index: 0, name: 'get_weather'}
     - delta_text: 'ML｜parameter name="'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'lo'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'cat'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'ion" '
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'string="tru'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'e">NYC</｜DSML｜param'
+      expected:
+        vllm: []
+        sglang:
+        - {index: 0, arguments: '{'}
     - delta_text: 'et'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'er>'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: '
 </｜D'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'SML｜invoke>'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather', arguments: '{"location": "NYC"}'}
+        sglang:
+        - {index: 0, arguments: '"location": "NYC"}'}
     - delta_text: '
 </｜DSML｜function_c'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'al'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'ls>'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: ''
       finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []

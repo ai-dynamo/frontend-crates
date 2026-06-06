@@ -1,0 +1,54 @@
+family: harmony
+mode: batch-on-stream
+captured_with:
+  vllm: 0.22.0
+  sglang: 0.5.12.post1
+  dynamo: Dynamo parser v2
+cases:
+  TOOLCALLING.batch.4.a:
+    dynamo:
+      calls:
+      - name: get_weather
+        arguments: not json at all
+    vllm:
+      calls:
+      - name: get_weather
+        arguments: not json at all
+    sglang:
+      calls: []
+      normal_text: ''
+  TOOLCALLING.batch.4.b:
+    dynamo:
+      calls:
+      - name: get_weather
+        arguments: '{"location":"NYC'
+    vllm:
+      calls:
+      - name: get_weather
+        arguments: '{"location":"NYC'
+    sglang:
+      calls: []
+      normal_text: ''
+  TOOLCALLING.batch.4.c:
+    dynamo:
+      calls: []
+    vllm:
+      calls: []
+    sglang:
+      calls: []
+      normal_text: ''
+  TOOLCALLING.batch.4.d:
+    vllm:
+      unavailable: No batch model_text for this case.
+    sglang:
+      unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.4.e:
+    vllm:
+      unavailable: No batch model_text for this case.
+    sglang:
+      unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.4.f:
+    vllm:
+      unavailable: No batch model_text for this case.
+    sglang:
+      unavailable: No batch model_text for this case.

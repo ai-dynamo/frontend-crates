@@ -10,6 +10,9 @@
 family: hermes
 model_label: 'Hermes-3 / Llama variants'
 mode: stream
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
 cases:
   TOOLCALLING.stream.2:
     description: 'Multiple tool calls split across multiple content chunks'
@@ -28,24 +31,91 @@ cases:
           timezone:
             type: string
     unavailable:
-      dynamo: 'Dynamo TC streaming not yet implemented for this family. Text-based; token-id path is harmony-only for now.'
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '<tool_cal'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'l>{"nam'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'e": "get_weat'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'her",'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather'}
+        sglang:
+        - {index: 0, name: 'get_weather'}
     - delta_text: ' "arguments": {"l'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"l'}
+        sglang: []
     - delta_text: 'oca'
+      expected:
+        vllm:
+        - {index: 0, arguments: 'oca'}
+        sglang: []
     - delta_text: 'tion": "N'
+      expected:
+        vllm:
+        - {index: 0, arguments: 'tion": "N'}
+        sglang: []
     - delta_text: 'YC"}}</'
+      expected:
+        vllm:
+        - {index: 0, arguments: 'YC"}'}
+        sglang:
+        - {index: 0, arguments: '{"location": "NYC"}'}
     - delta_text: 'tool_call><to'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'ol_ca'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'll>{"name": "get_'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'tim'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'e", "argu'
+      expected:
+        vllm:
+        - {index: 1, id: true, name: 'get_time'}
+        sglang:
+        - {index: 1, name: 'get_time'}
     - delta_text: 'ments":'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: ' {"timezone":'
+      expected:
+        vllm:
+        - {index: 1, arguments: '{"timezone":'}
+        sglang: []
     - delta_text: ' "EST'
+      expected:
+        vllm:
+        - {index: 1, arguments: ' "EST'}
+        sglang: []
     - delta_text: '"}}</tool_call>'
+      expected:
+        vllm:
+        - {index: 1, arguments: '"}'}
+        sglang:
+        - {index: 1, arguments: '{"timezone": "EST"}'}
     - delta_text: ''
       finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []

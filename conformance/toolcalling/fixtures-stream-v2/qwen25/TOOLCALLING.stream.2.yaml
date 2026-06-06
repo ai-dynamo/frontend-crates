@@ -10,6 +10,9 @@
 family: qwen25
 model_label: 'Qwen 2.5'
 mode: stream
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
 cases:
   TOOLCALLING.stream.2:
     description: 'Multiple tool calls split across multiple content chunks'
@@ -28,24 +31,115 @@ cases:
           timezone:
             type: string
     unavailable:
-      dynamo: 'Dynamo TC streaming not yet implemented for this family. Text-based; token-id path is harmony-only for now.'
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '<tool_cal'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'l>{"nam'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: '<tool_call>{"nam'
     - delta_text: 'e": "get_weat'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'e": "get_weat'
     - delta_text: 'her",'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather'}
+        sglang: []
+      normal_text:
+        sglang: 'her",'
     - delta_text: ' "arguments": {"l'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"l'}
+        sglang: []
+      normal_text:
+        sglang: ' "arguments": {"l'
     - delta_text: 'oca'
+      expected:
+        vllm:
+        - {index: 0, arguments: 'oca'}
+        sglang: []
+      normal_text:
+        sglang: 'oca'
     - delta_text: 'tion": "N'
+      expected:
+        vllm:
+        - {index: 0, arguments: 'tion": "N'}
+        sglang: []
+      normal_text:
+        sglang: 'tion": "N'
     - delta_text: 'YC"}}</'
+      expected:
+        vllm:
+        - {index: 0, arguments: 'YC"}'}
+        sglang: []
+      normal_text:
+        sglang: 'YC"}}'
     - delta_text: 'tool_call><to'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'ol_ca'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'll>{"name": "get_'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: '<tool_call>{"name": "get_'
     - delta_text: 'tim'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'tim'
     - delta_text: 'e", "argu'
+      expected:
+        vllm:
+        - {index: 1, id: true, name: 'get_time'}
+        sglang: []
+      normal_text:
+        sglang: 'e", "argu'
     - delta_text: 'ments":'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'ments":'
     - delta_text: ' {"timezone":'
+      expected:
+        vllm:
+        - {index: 1, arguments: '{"timezone":'}
+        sglang: []
+      normal_text:
+        sglang: ' {"timezone":'
     - delta_text: ' "EST'
+      expected:
+        vllm:
+        - {index: 1, arguments: ' "EST'}
+        sglang: []
+      normal_text:
+        sglang: ' "EST'
     - delta_text: '"}}</tool_call>'
+      expected:
+        vllm:
+        - {index: 1, arguments: '"}'}
+        sglang: []
+      normal_text:
+        sglang: '"}}'
     - delta_text: ''
       finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []

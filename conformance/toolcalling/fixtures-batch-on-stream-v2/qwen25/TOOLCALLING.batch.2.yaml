@@ -1,0 +1,51 @@
+family: qwen25
+mode: batch-on-stream
+captured_with:
+  vllm: 0.22.0
+  sglang: 0.5.12.post1
+cases:
+  TOOLCALLING.batch.2.a:
+    vllm:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+    sglang:
+      calls: []
+      normal_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}<tool_call>{"name":
+        "get_time", "arguments": {"timezone": "EST"}}'
+  TOOLCALLING.batch.2.c:
+    vllm:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: 'Both: '
+    sglang:
+      calls: []
+      normal_text: 'Both: <tool_call>{"name": "get_weather", "arguments": {"location":
+        "NYC"}}<tool_call>{"name": "get_time", "arguments": {"timezone": "EST"}} Done.'
+  TOOLCALLING.batch.2.d:
+    vllm:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+    sglang:
+      calls: []
+      normal_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}<tool_call>{"name":
+        "get_weather", "arguments": {"location": "LA"}}'
+  TOOLCALLING.batch.2.b:
+    vllm:
+      unavailable: No batch model_text for this case.
+    sglang:
+      unavailable: No batch model_text for this case.

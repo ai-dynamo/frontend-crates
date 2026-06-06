@@ -1,0 +1,76 @@
+family: glm47
+mode: batch-on-stream
+captured_with:
+  vllm: 0.22.0
+  sglang: 0.5.12.post1
+cases:
+  TOOLCALLING.batch.1:
+    vllm:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+    sglang:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  TOOLCALLING.batch.3:
+    vllm:
+      calls: []
+      normal_text: Hello, how can I help you today?
+    sglang:
+      calls: []
+      normal_text: Hello, how can I help you today?
+  TOOLCALLING.batch.9.a:
+    vllm:
+      calls: []
+    sglang:
+      calls: []
+  TOOLCALLING.batch.13.c:
+    vllm:
+      unavailable: No batch model_text for this case.
+    sglang:
+      unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.9.b:
+    vllm:
+      calls: []
+      normal_text: '   '
+    sglang:
+      calls: []
+      normal_text: '   '
+  TOOLCALLING.batch.10:
+    vllm:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+    sglang:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  TOOLCALLING.batch.30:
+    vllm:
+      unavailable: No batch model_text for this case.
+    sglang:
+      unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.31:
+    vllm:
+      unavailable: No batch model_text for this case.
+    sglang:
+      unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.13:
+    vllm:
+      calls:
+      - name: unknown_tool
+        arguments:
+          location: NYC
+    sglang:
+      calls:
+      - name: unknown_tool
+        arguments:
+          location: NYC

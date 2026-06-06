@@ -10,6 +10,9 @@
 family: gemma4
 model_label: 'Gemma 4'
 mode: stream
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
 cases:
   TOOLCALLING.stream.3:
     description: 'Complete single tool call with a grammar token split across chunk boundaries'
@@ -22,17 +25,56 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo TC streaming not yet implemented for this family. Text-based; token-id path is harmony-only for now.'
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '<|'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'too'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'l_cal'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'l>call:get_'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'weather{location:<|'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather', arguments: ''}
+        sglang:
+        - {index: 0, name: 'get_weather'}
     - delta_text: '"|'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: '>NY'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"location": "NY'}
+        sglang: []
     - delta_text: 'C<|"|'
+      expected:
+        vllm:
+        - {index: 0, arguments: 'C'}
+        sglang: []
     - delta_text: '>}<tool_cal'
+      expected:
+        vllm: []
+        sglang:
+        - {index: 0, arguments: '{"location": "NYC"}'}
     - delta_text: 'l|>'
+      expected:
+        vllm:
+        - {index: 0, arguments: '"}'}
+        sglang: []
     - delta_text: ''
       finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []

@@ -1,0 +1,73 @@
+family: gemma4
+mode: batch-on-stream
+captured_with:
+  vllm: 0.22.0
+  sglang: 0.5.12.post1
+cases:
+  TOOLCALLING.batch.5.a:
+    vllm:
+      calls:
+      - name: get_weather
+        arguments: {}
+    sglang:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  TOOLCALLING.batch.5.b:
+    vllm:
+      calls: []
+      normal_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+    sglang:
+      calls: []
+      normal_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+  TOOLCALLING.batch.5.c:
+    vllm:
+      calls:
+      - name: get_weather
+        arguments: {}
+    sglang:
+      calls:
+      - name: get_weather
+        arguments: {}
+  TOOLCALLING.batch.5.d:
+    vllm:
+      calls:
+      - name: ''
+        arguments:
+          location: Boston
+    sglang:
+      calls:
+      - name: get_weatherget_weather
+        arguments: '{"location": "Boston"}{"location": "New York"}'
+      normal_text: I'll start by fetching the weather for both Boston and New York
+        at the same time!
+  TOOLCALLING.batch.5.e:
+    vllm:
+      calls:
+      - name: ''
+        arguments:
+          location: Boston
+    sglang:
+      calls:
+      - name: get_weatherget_weather
+        arguments:
+          location: Boston
+      normal_text: I'll start by fetching the weather for both Boston and New York
+        at the same time!
+  TOOLCALLING.batch.5.f:
+    vllm:
+      calls: []
+    sglang:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      normal_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+  TOOLCALLING.batch.5.g:
+    vllm:
+      calls: []
+      normal_text: I will check that. call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+    sglang:
+      calls: []
+      normal_text: I will check that. call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>

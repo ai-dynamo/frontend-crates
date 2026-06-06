@@ -10,6 +10,9 @@
 family: mistral
 model_label: 'Mistral series'
 mode: stream
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
 cases:
   TOOLCALLING.stream.2:
     description: 'Multiple tool calls split across multiple content chunks'
@@ -28,23 +31,76 @@ cases:
           timezone:
             type: string
     unavailable:
-      dynamo: 'Dynamo TC streaming not yet implemented for this family. Text-based; token-id path is harmony-only for now.'
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '[TOOL_CAL'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '[TOOL_CAL'
     - delta_text: 'LS][{"n'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'ame": "get_we'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'ather'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: '", "arguments": {'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: '"lo'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'cation": '
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: '"NYC"}}'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: ', {"name": "g'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'et_ti'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'me", "arguments":'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: ' {"'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'timezone"'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: ': "EST"'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: '}}][/TOOL_CAL'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: 'LS]'
+      expected:
+        vllm: []
+        sglang: []
     - delta_text: ''
       finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []

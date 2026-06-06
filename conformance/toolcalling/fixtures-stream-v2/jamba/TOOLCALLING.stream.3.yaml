@@ -10,6 +10,8 @@
 family: jamba
 model_label: 'AI21 Jamba'
 mode: stream
+captured_with:
+  vllm: '0.22.0'
 cases:
   TOOLCALLING.stream.3:
     description: 'Complete single tool call with a grammar token split across chunk boundaries'
@@ -22,19 +24,54 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo TC streaming not yet implemented for this family. Text-based; token-id path is harmony-only for now.'
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''jamba''.'
     chunks:
     - delta_text: '<t'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '<t'
     - delta_text: 'ool'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: 'ool'
     - delta_text: '_call'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '_call'
     - delta_text: 's>[{"name":'
+      expected:
+        vllm: []
     - delta_text: ' "get_weather", "ar'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather'}
     - delta_text: 'gu'
+      expected:
+        vllm: []
     - delta_text: 'men'
+      expected:
+        vllm: []
     - delta_text: 'ts": '
+      expected:
+        vllm: []
     - delta_text: '{"location"'
+      expected:
+        vllm: []
     - delta_text: ': "NYC"}}]</tool_ca'
+      expected:
+        vllm: []
     - delta_text: 'll'
+      expected:
+        vllm: []
     - delta_text: 's>'
+      expected:
+        vllm: []
     - delta_text: ''
       finish_reason: tool_calls
+      expected:
+        vllm:
+        - {index: 0, arguments: ''}
