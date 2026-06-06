@@ -22,10 +22,7 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 struct Fixture {
-    #[allow(dead_code)]
-    family: String,
-    #[allow(dead_code)]
-    mode: Option<String>,
+    // Only `cases` is read; serde ignores the other fixture keys (family, mode).
     #[serde(default)]
     cases: BTreeMap<String, Case>,
 }
