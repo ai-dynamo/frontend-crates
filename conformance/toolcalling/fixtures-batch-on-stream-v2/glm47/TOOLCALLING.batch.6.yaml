@@ -1,0 +1,25 @@
+family: glm47
+mode: batch-on-stream
+captured_with:
+  vllm: 0.22.0
+  sglang: 0.5.12.post1
+cases:
+  TOOLCALLING.batch.6.a:
+    vllm:
+      calls: []
+    sglang:
+      calls:
+      - name: get_time
+        arguments: {}
+  TOOLCALLING.batch.6.b:
+    vllm:
+      calls: []
+    sglang:
+      calls:
+      - name: get_time
+        arguments: {}
+  TOOLCALLING.batch.6.c:
+    vllm:
+      unavailable: No batch model_text for this case.
+    sglang:
+      unavailable: No batch model_text for this case.

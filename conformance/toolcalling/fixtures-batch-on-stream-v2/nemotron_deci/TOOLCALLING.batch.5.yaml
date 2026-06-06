@@ -1,0 +1,40 @@
+family: nemotron_deci
+mode: batch-on-stream
+captured_with:
+  vllm: 0.22.0
+  sglang: 0.5.12.post1
+cases:
+  TOOLCALLING.batch.5.a:
+    vllm:
+      calls: []
+      normal_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}]'
+    sglang:
+      unavailable: No SGLang parser for family 'nemotron_deci'.
+  TOOLCALLING.batch.5.b:
+    vllm:
+      calls: []
+      normal_text: '[{"name": "get_weather", "arguments": {"location": "NYC"}}]</TOOLCALL>'
+    sglang:
+      unavailable: No SGLang parser for family 'nemotron_deci'.
+  TOOLCALLING.batch.5.c:
+    vllm:
+      calls: []
+      normal_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"loc'
+    sglang:
+      unavailable: No SGLang parser for family 'nemotron_deci'.
+  TOOLCALLING.batch.5.d:
+    vllm:
+      calls: []
+      normal_text: 'I''ll start by fetching the weather for both Boston and New York
+        at the same time!<TOOLCALL>[{"name": "get_weather", "arguments": {"location":
+        "Boston"}}, {"name": "get_weather", "arguments": {"location": "New York"}}]'
+    sglang:
+      unavailable: No SGLang parser for family 'nemotron_deci'.
+  TOOLCALLING.batch.5.e:
+    vllm:
+      calls: []
+      normal_text: 'I''ll start by fetching the weather for both Boston and New York
+        at the same time!<TOOLCALL>[{"name": "get_weather", "arguments": {"location":
+        "Boston"}}, {"name": "get_weather", "arguments": {"location": "New York'
+    sglang:
+      unavailable: No SGLang parser for family 'nemotron_deci'.

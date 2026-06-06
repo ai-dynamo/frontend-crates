@@ -1,0 +1,187 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: deepseek_v3_1
+model_label: 'DeepSeek V3.1'
+mode: stream
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
+cases:
+  TOOLCALLING.stream.2:
+    description: 'Multiple tool calls split across multiple content chunks'
+    ref: 'derived from TOOLCALLING.batch.2.a'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '<｜tool▁ca'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '<｜tool▁ca'
+        sglang: '<｜tool▁ca'
+    - delta_text: 'lls▁beg'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'lls▁beg'
+        sglang: 'lls▁beg'
+    - delta_text: 'in｜><｜tool▁ca'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'in｜><｜tool▁ca'
+        sglang: 'in｜><｜tool▁ca'
+    - delta_text: 'll▁be'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'll▁be'
+        sglang: 'll▁be'
+    - delta_text: 'gin｜>get_weather<'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'gin｜>get_weather<'
+        sglang: 'gin｜>get_weather<'
+    - delta_text: '｜to'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '｜to'
+        sglang: '｜to'
+    - delta_text: 'ol▁sep｜>{'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'ol▁sep｜>{'
+        sglang: 'ol▁sep｜>{'
+    - delta_text: '"locati'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '"locati'
+        sglang: '"locati'
+    - delta_text: 'on":"NYC"}<｜t'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'on":"NYC"}<｜t'
+        sglang: 'on":"NYC"}<｜t'
+    - delta_text: 'ool▁c'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'ool▁c'
+        sglang: 'ool▁c'
+    - delta_text: 'all▁end｜><｜tool▁c'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'all▁end｜><｜tool▁c'
+        sglang: 'all▁end｜><｜tool▁c'
+    - delta_text: 'all'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'all'
+        sglang: 'all'
+    - delta_text: '▁begin｜>g'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '▁begin｜>g'
+        sglang: '▁begin｜>g'
+    - delta_text: 'et_time'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'et_time'
+        sglang: 'et_time'
+    - delta_text: '<｜tool▁sep｜>{'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '<｜tool▁sep｜>{'
+        sglang: '<｜tool▁sep｜>{'
+    - delta_text: '"time'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '"time'
+        sglang: '"time'
+    - delta_text: 'zone":"EST"}<｜too'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'zone":"EST"}<｜too'
+        sglang: 'zone":"EST"}<｜too'
+    - delta_text: 'l▁c'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'l▁c'
+        sglang: 'l▁c'
+    - delta_text: 'all▁end｜>'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'all▁end｜>'
+        sglang: 'all▁end｜>'
+    - delta_text: '<｜tool▁'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '<｜tool▁'
+        sglang: '<｜tool▁'
+    - delta_text: 'calls▁end｜>'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'calls▁end｜>'
+        sglang: 'calls▁end｜>'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []

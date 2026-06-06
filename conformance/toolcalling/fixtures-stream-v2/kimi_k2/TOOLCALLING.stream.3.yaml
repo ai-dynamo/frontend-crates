@@ -1,0 +1,157 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: kimi_k2
+model_label: 'Kimi K2.6'
+mode: stream
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
+cases:
+  TOOLCALLING.stream.3:
+    description: 'Complete single tool call with a grammar token split across chunk boundaries'
+    ref: 'derived from TOOLCALLING.batch.1'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '<|'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: '<|'
+    - delta_text: 'too'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'too'
+    - delta_text: 'l_cal'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'l_cal'
+    - delta_text: 'ls_section_'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'ls_section_'
+    - delta_text: 'begin|><|tool_call_'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'begin|><|tool_call_'
+    - delta_text: 'be'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'be'
+    - delta_text: 'gin'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'gin'
+    - delta_text: '|>fun'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: '|>fun'
+    - delta_text: 'ctions.get_'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'ctions.get_'
+    - delta_text: 'weather:0<|tool_cal'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'weather:0<|tool_cal'
+    - delta_text: 'l_'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'l_'
+    - delta_text: 'arg'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'arg'
+    - delta_text: 'ument'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'ument'
+    - delta_text: '_begin|>{"l'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather'}
+        - {index: 0, arguments: '{"l'}
+        sglang: []
+      normal_text:
+        sglang: '_begin|>{"l'
+    - delta_text: 'ocation":"NYC"}<|to'
+      expected:
+        vllm:
+        - {index: 0, arguments: 'ocation":"NYC"}'}
+        sglang: []
+      normal_text:
+        sglang: 'ocation":"NYC"}<|to'
+    - delta_text: 'ol'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'ol'
+    - delta_text: '_ca'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: '_ca'
+    - delta_text: 'll_en'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'll_en'
+    - delta_text: 'd|><|tool_c'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'd|><|tool_c'
+    - delta_text: 'alls_section_end|>'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'alls_section_end|>'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []

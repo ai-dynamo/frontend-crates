@@ -1,0 +1,96 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: hermes
+model_label: 'Hermes-3 / Llama variants'
+mode: stream
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
+cases:
+  TOOLCALLING.stream.4.a:
+    description: 'Truncated stream terminates after a complete in-flight tool-call body'
+    ref: 'derived from TOOLCALLING.batch.5.a'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather'}
+        - {index: 0, arguments: '{"location": "NYC"}'}
+        sglang:
+        - {index: 0, name: 'get_weather'}
+    - delta_text: ''
+      finish_reason: stop
+      expected:
+        vllm: []
+        sglang:
+        - {index: 0, arguments: '{"location": "NYC"}'}
+  TOOLCALLING.stream.4.b:
+    description: 'Stream terminates mid-call body before the in-flight argument payload is complete'
+    ref: 'derived from TOOLCALLING.batch.5.c'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '<tool_call>{"name": "get_w'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: 'eather", "arguments": {"loc'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather'}
+        - {index: 0, arguments: '{"loc'}
+        sglang:
+        - {index: 0, name: 'get_weather'}
+    - delta_text: ''
+      finish_reason: stop
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.stream.4.c:
+    description: 'Stream reaches length after a valid inner tool-call body without the required outer wrapper, followed by repeated close markers'
+    ref: 'derived from nemotron-ultra-preview-tool-call-leak-repro/repro_tool_call_leak.py'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call></tool_call></tool_call>'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call></tool_call></tool_call>'
+        sglang: '{"name": "get_weather", "arguments": {"location": "NYC"}}'
+    - delta_text: ''
+      finish_reason: length
+      expected:
+        vllm: []
+        sglang: []

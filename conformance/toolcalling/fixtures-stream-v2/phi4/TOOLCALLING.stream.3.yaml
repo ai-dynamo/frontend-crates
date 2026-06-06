@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: phi4
+model_label: 'Phi-4'
+mode: stream
+captured_with:
+  vllm: '0.22.0'
+cases:
+  TOOLCALLING.stream.3:
+    description: 'Complete single tool call with a grammar token split across chunk boundaries'
+    ref: 'derived from TOOLCALLING.batch.1'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''phi4''.'
+    chunks:
+    - delta_text: 'fu'
+      expected:
+        vllm: []
+    - delta_text: 'nct'
+      expected:
+        vllm: []
+    - delta_text: 'ools['
+      expected:
+        vllm: []
+    - delta_text: '{"name": "g'
+      expected:
+        vllm: []
+    - delta_text: 'et_weather", "argum'
+      expected:
+        vllm: []
+    - delta_text: 'en'
+      expected:
+        vllm: []
+    - delta_text: 'ts"'
+      expected:
+        vllm: []
+    - delta_text: ': {"l'
+      expected:
+        vllm: []
+    - delta_text: 'ocation": "'
+      expected:
+        vllm: []
+    - delta_text: 'NYC"}}]'
+      expected:
+        vllm: []
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []

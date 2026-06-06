@@ -1,0 +1,175 @@
+family: harmony
+mode: batch-on-stream
+captured_with:
+  vllm: 0.22.0
+  sglang: 0.5.12.post1
+  dynamo: Dynamo parser v2
+cases:
+  TOOLCALLING.batch.7.a:
+    dynamo:
+      calls:
+      - name: book_flight
+        arguments:
+          destination: Paris
+          passengers: 2
+          first_class: true
+    vllm:
+      calls:
+      - name: book_flight
+        arguments:
+          destination: Paris
+          passengers: 2
+          first_class: true
+    sglang:
+      calls:
+      - name: book_flight
+        arguments:
+          destination: Paris
+          passengers: 2
+          first_class: true
+      normal_text: ''
+  TOOLCALLING.batch.7.b:
+    dynamo:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Tōkyō "central"
+    vllm:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Tōkyō "central"
+    sglang:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Tōkyō "central"
+      normal_text: ''
+  TOOLCALLING.batch.7.c:
+    dynamo:
+      calls:
+      - name: set_temperature
+        arguments:
+          celsius: '20'
+    vllm:
+      calls:
+      - name: set_temperature
+        arguments:
+          celsius: '20'
+    sglang:
+      calls:
+      - name: set_temperature
+        arguments:
+          celsius: '20'
+      normal_text: ''
+  TOOLCALLING.batch.7.d:
+    dynamo:
+      calls:
+      - name: process_data
+        arguments:
+          items:
+          - 1
+          - 2
+          - 3
+          config:
+            nested: true
+    vllm:
+      calls:
+      - name: process_data
+        arguments:
+          items:
+          - 1
+          - 2
+          - 3
+          config:
+            nested: true
+    sglang:
+      calls:
+      - name: process_data
+        arguments:
+          items:
+          - 1
+          - 2
+          - 3
+          config:
+            nested: true
+      normal_text: ''
+  TOOLCALLING.batch.7.e:
+    dynamo:
+      calls:
+      - name: process_data
+        arguments:
+          payload:
+            regions:
+            - name: west
+              scores:
+              - 1
+              - 2
+              - 3
+            - name: east
+              scores:
+              - 4
+              - 5
+              - 6
+            flags:
+              enabled: true
+              retry: null
+            empty: {}
+    vllm:
+      calls:
+      - name: process_data
+        arguments:
+          payload:
+            regions:
+            - name: west
+              scores:
+              - 1
+              - 2
+              - 3
+            - name: east
+              scores:
+              - 4
+              - 5
+              - 6
+            flags:
+              enabled: true
+              retry: null
+            empty: {}
+    sglang:
+      calls:
+      - name: process_data
+        arguments:
+          payload:
+            regions:
+            - name: west
+              scores:
+              - 1
+              - 2
+              - 3
+            - name: east
+              scores:
+              - 4
+              - 5
+              - 6
+            flags:
+              enabled: true
+              retry: null
+            empty: {}
+      normal_text: ''
+  TOOLCALLING.batch.7.f:
+    dynamo:
+      calls:
+      - name: set_limit
+        arguments:
+          count: 9007199254740993
+    vllm:
+      calls:
+      - name: set_limit
+        arguments:
+          count: 9007199254740993
+    sglang:
+      calls:
+      - name: set_limit
+        arguments:
+          count: 9007199254740993
+      normal_text: ''

@@ -1,0 +1,58 @@
+family: glm47
+mode: batch-on-stream
+captured_with:
+  vllm: 0.22.0
+  sglang: 0.5.12.post1
+cases:
+  TOOLCALLING.batch.7.a:
+    vllm:
+      calls:
+      - name: book_flight
+        arguments:
+          destination: Paris
+          passengers: 2
+          first_class: true
+    sglang:
+      calls:
+      - name: book_flight
+        arguments:
+          destination: Paris
+          passengers: 2
+          first_class: true
+  TOOLCALLING.batch.7.b:
+    vllm:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Tōkyō central
+    sglang:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Tōkyō central
+  TOOLCALLING.batch.7.c:
+    vllm:
+      unavailable: No batch model_text for this case.
+    sglang:
+      unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.7.d:
+    vllm:
+      unavailable: No batch model_text for this case.
+    sglang:
+      unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.7.e:
+    vllm:
+      unavailable: No batch model_text for this case.
+    sglang:
+      unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.7.f:
+    vllm:
+      calls:
+      - name: set_limit
+        arguments:
+          count: 9007199254740993
+    sglang:
+      calls:
+      - name: set_limit
+        arguments:
+          count: 9007199254740993

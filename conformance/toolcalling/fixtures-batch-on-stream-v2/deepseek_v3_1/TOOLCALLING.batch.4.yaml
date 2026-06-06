@@ -1,0 +1,45 @@
+family: deepseek_v3_1
+mode: batch-on-stream
+captured_with:
+  vllm: 0.22.0
+  sglang: 0.5.12.post1
+cases:
+  TOOLCALLING.batch.4.a:
+    vllm:
+      calls: []
+      normal_text: nonsense
+    sglang:
+      calls: []
+  TOOLCALLING.batch.4.b:
+    vllm:
+      calls: []
+    sglang:
+      calls:
+      - name: get_weather
+        arguments: {}
+  TOOLCALLING.batch.4.c:
+    vllm:
+      calls: []
+    sglang:
+      calls:
+      - name: ''
+        arguments: {}
+  TOOLCALLING.batch.4.d:
+    vllm:
+      calls:
+      - name: get_weather
+        arguments: {}
+    sglang:
+      calls:
+      - name: get_weather
+        arguments: {}
+  TOOLCALLING.batch.4.e:
+    vllm:
+      unavailable: No batch model_text for this case.
+    sglang:
+      unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.4.f:
+    vllm:
+      unavailable: No batch model_text for this case.
+    sglang:
+      unavailable: No batch model_text for this case.

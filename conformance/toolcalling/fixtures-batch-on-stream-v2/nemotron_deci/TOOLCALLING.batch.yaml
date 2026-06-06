@@ -1,0 +1,58 @@
+family: nemotron_deci
+mode: batch-on-stream
+captured_with:
+  vllm: 0.22.0
+  sglang: 0.5.12.post1
+cases:
+  TOOLCALLING.batch.1:
+    vllm:
+      calls: []
+      normal_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}]</TOOLCALL>'
+    sglang:
+      unavailable: No SGLang parser for family 'nemotron_deci'.
+  TOOLCALLING.batch.13.c:
+    vllm:
+      unavailable: No batch model_text for this case.
+    sglang:
+      unavailable: No SGLang parser for family 'nemotron_deci'.
+  TOOLCALLING.batch.3:
+    vllm:
+      calls: []
+      normal_text: Hello, how can I help you today?
+    sglang:
+      unavailable: No SGLang parser for family 'nemotron_deci'.
+  TOOLCALLING.batch.9.a:
+    vllm:
+      calls: []
+    sglang:
+      unavailable: No SGLang parser for family 'nemotron_deci'.
+  TOOLCALLING.batch.9.b:
+    vllm:
+      calls: []
+      normal_text: '   '
+    sglang:
+      unavailable: No SGLang parser for family 'nemotron_deci'.
+  TOOLCALLING.batch.10:
+    vllm:
+      calls: []
+      normal_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}},
+        {"name": "get_weather", "arguments": {"location": "LA"}}]</TOOLCALL>'
+    sglang:
+      unavailable: No SGLang parser for family 'nemotron_deci'.
+  TOOLCALLING.batch.30:
+    vllm:
+      unavailable: No batch model_text for this case.
+    sglang:
+      unavailable: No SGLang parser for family 'nemotron_deci'.
+  TOOLCALLING.batch.31:
+    vllm:
+      unavailable: No batch model_text for this case.
+    sglang:
+      unavailable: No SGLang parser for family 'nemotron_deci'.
+  TOOLCALLING.batch.13:
+    vllm:
+      calls: []
+      normal_text: '<TOOLCALL>[{"name": "unknown_tool", "arguments": {"location":
+        "NYC"}}]</TOOLCALL>'
+    sglang:
+      unavailable: No SGLang parser for family 'nemotron_deci'.

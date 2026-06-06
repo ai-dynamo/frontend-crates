@@ -1,0 +1,222 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: minimax_m2
+model_label: 'MiniMax 2.7'
+mode: stream
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
+cases:
+  TOOLCALLING.stream.2:
+    description: 'Multiple tool calls split across multiple content chunks'
+    ref: 'derived from TOOLCALLING.batch.2.a'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '<minimax:'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '<minimax:'
+        sglang: '<minimax:'
+    - delta_text: 'tool_ca'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'tool_ca'
+        sglang: 'tool_ca'
+    - delta_text: 'll>
+<invoke n'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'll>
+<invoke n'
+        sglang: 'll>
+<invoke n'
+    - delta_text: 'ame="'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'ame="'
+        sglang: 'ame="'
+    - delta_text: 'get_weather">
+<pa'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'get_weather">
+<pa'
+        sglang: 'get_weather">
+<pa'
+    - delta_text: 'ram'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'ram'
+        sglang: 'ram'
+    - delta_text: 'eter name'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'eter name'
+        sglang: 'eter name'
+    - delta_text: '="locat'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '="locat'
+        sglang: '="locat'
+    - delta_text: 'ion">NYC</par'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'ion">NYC</par'
+        sglang: 'ion">NYC</par'
+    - delta_text: 'amete'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'amete'
+        sglang: 'amete'
+    - delta_text: 'r>
+</invoke>
+<inv'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'r>
+</invoke>
+<inv'
+        sglang: 'r>
+</invoke>
+<inv'
+    - delta_text: 'oke'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'oke'
+        sglang: 'oke'
+    - delta_text: ' name="ge'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' name="ge'
+        sglang: ' name="ge'
+    - delta_text: 't_time"'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 't_time"'
+        sglang: 't_time"'
+    - delta_text: '>
+<parameter '
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '>
+<parameter '
+        sglang: '>
+<parameter '
+    - delta_text: 'name='
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'name='
+        sglang: 'name='
+    - delta_text: '"timezone">EST</p'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '"timezone">EST</p'
+        sglang: '"timezone">EST</p'
+    - delta_text: 'ara'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'ara'
+        sglang: 'ara'
+    - delta_text: 'meter>
+</'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'meter>
+</'
+        sglang: 'meter>
+</'
+    - delta_text: 'invoke>'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'invoke>'
+        sglang: 'invoke>'
+    - delta_text: '
+</minimax:to'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '
+</minimax:to'
+        sglang: '
+</minimax:to'
+    - delta_text: 'ol_ca'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'ol_ca'
+        sglang: 'ol_ca'
+    - delta_text: 'll>'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'll>'
+        sglang: 'll>'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []

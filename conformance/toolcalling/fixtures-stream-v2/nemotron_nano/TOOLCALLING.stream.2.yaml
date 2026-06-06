@@ -1,0 +1,118 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: nemotron_nano
+model_label: 'Nemotron Nano v3'
+mode: stream
+captured_with:
+  vllm: '0.22.0'
+cases:
+  TOOLCALLING.stream.2:
+    description: 'Multiple tool calls split across multiple content chunks'
+    ref: 'derived from TOOLCALLING.batch.2.a'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_nano''.'
+    chunks:
+    - delta_text: '<tool_cal'
+      expected:
+        vllm: []
+    - delta_text: 'l>
+<fun'
+      expected:
+        vllm: []
+    - delta_text: 'ction=get_wea'
+      expected:
+        vllm: []
+    - delta_text: 'ther>'
+      expected:
+        vllm: []
+    - delta_text: '
+<parameter=locat'
+      expected:
+        vllm: []
+    - delta_text: 'ion'
+      expected:
+        vllm: []
+    - delta_text: '>
+NYC
+</p'
+      expected:
+        vllm: []
+    - delta_text: 'aramete'
+      expected:
+        vllm: []
+    - delta_text: 'r>
+</function'
+      expected:
+        vllm: []
+    - delta_text: '>
+</t'
+      expected:
+        vllm: []
+    - delta_text: 'ool_call>
+<tool_c'
+      expected:
+        vllm: []
+    - delta_text: 'all'
+      expected:
+        vllm: []
+    - delta_text: '>
+<functi'
+      expected:
+        vllm: []
+    - delta_text: 'on=get_'
+      expected:
+        vllm: []
+    - delta_text: 'time>
+<parame'
+      expected:
+        vllm: []
+    - delta_text: 'ter=t'
+      expected:
+        vllm: []
+    - delta_text: 'imezone>
+EST
+</pa'
+      expected:
+        vllm: []
+    - delta_text: 'ram'
+      expected:
+        vllm: []
+    - delta_text: 'eter>
+</f'
+      expected:
+        vllm: []
+    - delta_text: 'unction'
+      expected:
+        vllm: []
+    - delta_text: '>
+</tool_call'
+      expected:
+        vllm: []
+    - delta_text: '>'
+      expected:
+        vllm: []
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []

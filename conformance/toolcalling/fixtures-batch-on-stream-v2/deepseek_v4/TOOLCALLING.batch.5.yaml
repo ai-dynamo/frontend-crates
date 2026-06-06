@@ -1,0 +1,124 @@
+family: deepseek_v4
+mode: batch-on-stream
+captured_with:
+  vllm: 0.22.0
+  sglang: 0.5.12.post1
+cases:
+  TOOLCALLING.batch.5.a:
+    vllm:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+    sglang:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  TOOLCALLING.batch.5.b:
+    vllm:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: '<｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜tool_calls>'
+    sglang:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+  TOOLCALLING.batch.5.c:
+    vllm:
+      calls: []
+    sglang:
+      calls:
+      - name: get_weather
+        arguments: {}
+  TOOLCALLING.batch.5.d:
+    vllm:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      - name: get_weather
+        arguments:
+          location: New York
+      normal_text: 'I''ll start by fetching the weather for both Boston and New York
+        at the same time!
+
+        '
+    sglang:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      - name: get_weather
+        arguments:
+          location: New York
+  TOOLCALLING.batch.5.e:
+    vllm:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      normal_text: 'I''ll start by fetching the weather for both Boston and New York
+        at the same time!
+
+        '
+    sglang:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      - name: get_weather
+        arguments: {}
+  TOOLCALLING.batch.5.f:
+    vllm:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: Boston
+      normal_text: '<｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜tool_calls>
+
+        '
+    sglang:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: Boston
+  TOOLCALLING.batch.5.g:
+    vllm:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check that. <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜tool_calls>'
+    sglang:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC

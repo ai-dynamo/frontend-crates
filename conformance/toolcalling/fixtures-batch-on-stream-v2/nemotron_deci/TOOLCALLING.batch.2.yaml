@@ -1,0 +1,35 @@
+family: nemotron_deci
+mode: batch-on-stream
+captured_with:
+  vllm: 0.22.0
+  sglang: 0.5.12.post1
+cases:
+  TOOLCALLING.batch.2.a:
+    vllm:
+      calls: []
+      normal_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}},
+        {"name": "get_time", "arguments": {"timezone": "EST"}}]</TOOLCALL>'
+    sglang:
+      unavailable: No SGLang parser for family 'nemotron_deci'.
+  TOOLCALLING.batch.2.b:
+    vllm:
+      calls: []
+      normal_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}]</TOOLCALL><TOOLCALL>[{"name":
+        "get_time", "arguments": {"timezone": "EST"}}]</TOOLCALL>'
+    sglang:
+      unavailable: No SGLang parser for family 'nemotron_deci'.
+  TOOLCALLING.batch.2.c:
+    vllm:
+      calls: []
+      normal_text: 'Both: <TOOLCALL>[{"name": "get_weather", "arguments": {"location":
+        "NYC"}}, {"name": "get_time", "arguments": {"timezone": "EST"}}]</TOOLCALL>
+        Done.'
+    sglang:
+      unavailable: No SGLang parser for family 'nemotron_deci'.
+  TOOLCALLING.batch.2.d:
+    vllm:
+      calls: []
+      normal_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}},
+        {"name": "get_weather", "arguments": {"location": "LA"}}]</TOOLCALL>'
+    sglang:
+      unavailable: No SGLang parser for family 'nemotron_deci'.

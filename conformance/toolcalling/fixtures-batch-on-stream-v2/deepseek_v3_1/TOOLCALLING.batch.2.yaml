@@ -1,0 +1,34 @@
+family: deepseek_v3_1
+mode: batch-on-stream
+captured_with:
+  vllm: 0.22.0
+  sglang: 0.5.12.post1
+cases:
+  TOOLCALLING.batch.2.a:
+    vllm:
+      calls: []
+    sglang:
+      calls:
+      - name: get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_time
+        arguments: {}
+  TOOLCALLING.batch.2.b:
+    vllm:
+      calls: []
+    sglang:
+      calls:
+      - name: get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time
+        arguments: {}
+  TOOLCALLING.batch.2.c:
+    vllm:
+      calls: []
+    sglang:
+      calls:
+      - name: get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_time
+        arguments: {}
+  TOOLCALLING.batch.2.d:
+    vllm:
+      calls: []
+    sglang:
+      calls:
+      - name: get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather
+        arguments: {}

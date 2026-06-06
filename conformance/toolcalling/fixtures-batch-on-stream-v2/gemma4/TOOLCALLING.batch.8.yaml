@@ -1,0 +1,41 @@
+family: gemma4
+mode: batch-on-stream
+captured_with:
+  vllm: 0.22.0
+  sglang: 0.5.12.post1
+cases:
+  TOOLCALLING.batch.8.a:
+    vllm:
+      calls: []
+    sglang:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
+  TOOLCALLING.batch.8.b:
+    vllm:
+      calls: []
+    sglang:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ' Let me know if you need more.'
+  TOOLCALLING.batch.8.c:
+    vllm:
+      calls: []
+    sglang:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: I will check the weather.  Let me know if you need more.
+  TOOLCALLING.batch.8.d:
+    vllm:
+      calls: []
+    sglang:
+      calls:
+      - name: get_weatherget_weather
+        arguments: '{"location": "NYC"}{"location": "LA"}'
+      normal_text: 'I will check the weather.  Then check LA weather. '

@@ -1,0 +1,83 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: nemotron_deci
+model_label: 'Nemotron (DeciLM) v1/v2'
+mode: stream
+captured_with:
+  vllm: '0.22.0'
+cases:
+  TOOLCALLING.stream.3:
+    description: 'Complete single tool call with a grammar token split across chunk boundaries'
+    ref: 'derived from TOOLCALLING.batch.1'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_deci''.'
+    chunks:
+    - delta_text: '<T'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '<T'
+    - delta_text: 'OOL'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: 'OOL'
+    - delta_text: 'CALL>'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: 'CALL>'
+    - delta_text: '[{"name": "'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '[{"name": "'
+    - delta_text: 'get_weather", "argu'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: 'get_weather", "argu'
+    - delta_text: 'me'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: 'me'
+    - delta_text: 'nts'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: 'nts'
+    - delta_text: '": {"'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '": {"'
+    - delta_text: 'location": '
+      expected:
+        vllm: []
+      normal_text:
+        vllm: 'location": '
+    - delta_text: '"NYC"}}]</TOOLCALL>'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '"NYC"}}]</TOOLCALL>'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
