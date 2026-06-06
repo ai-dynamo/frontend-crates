@@ -23,7 +23,7 @@ DYNAMO_TODO="Dynamo parser v2 TC streaming not yet implemented for this family; 
 
 rm -rf "$WORK"; mkdir -p "$WORK"
 
-python3 "$PH/capture_all_families_driver.py" \
+python3 "$PH/capture_driver.py" --mode stream \
   --root "$ROOT" --work "$WORK" \
   --vllm-container "$VLLM_C" --sglang-container "$SGLANG_C" \
   --dynamo-todo "$DYNAMO_TODO"

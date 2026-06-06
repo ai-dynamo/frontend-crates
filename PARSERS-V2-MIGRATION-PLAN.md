@@ -111,11 +111,8 @@ These files have no upstream Dynamo counterpart. Never overwrite them during a s
 | `conformance/utils/record_v2.sh` | Records Dynamo parser v2 stream fixture data. |
 | `conformance/utils/validate.py` | Cross-implementation validation via `docker exec` or pip. |
 | `conformance/utils/build_stream_fixtures.py` | Builds v2 per-chunk stream fixtures from source cases and captured engine output. |
-| `conformance/utils/capture_stream.py` | Captures vLLM/SGLang per-chunk stream output inside engine containers. |
-| `conformance/utils/capture_all_families.sh` and `capture_all_families_driver.py` | Batch-captures vLLM/SGLang stream output for non-Harmony families. |
-| `conformance/utils/capture_harmony_batch_stream.py` | Captures engine streaming parsers on Harmony batch samples for the batch-on-stream tab. |
-| `conformance/utils/capture_vllm_harmony.py` | Captures vLLM token-native Harmony stream path for one stream fixture. |
-| `conformance/utils/merge_batch_stream.py` | Merges per-engine batch-on-stream captures into `harmony_batch_stream.json`. |
+| `conformance/utils/capture.py` | In-container worker for an engine's tool-call parser: `--mode stream` (per-chunk), `--mode batch-on-stream` (batch text through the streaming parser), `--mode harmony-batch` (Harmony batch samples), `--mode harmony-chunk` (vLLM token-native Harmony). |
+| `conformance/utils/capture_driver.py` and `capture_all_families.sh` | Host orchestrator: `--mode stream` batch-captures non-Harmony stream fixtures, `--mode batch-on-stream` rewrites the overlays, `--mode merge` builds `harmony_batch_stream.json`. |
 | `conformance/utils/harmony_batch_stream.json` | Recorded batch-on-stream comparison data consumed by the v2 table. |
 | `conformance/utils/generate_conformance_table_v2.py` | frontend-crate-owned conformance renderer; staged into `tests/parity/` at render time. |
 | `conformance/utils/conformance_table_v2.html.j2` | frontend-crate-owned conformance HTML template; staged into `tests/parity/` at render time. |

@@ -54,17 +54,17 @@ Use this when a `TC stream (v2)` fixture exists for a family but the Dynamo pars
 For one fixture, copy the capture helper and fixture into the engine containers:
 
 ```bash
-docker cp conformance/utils/capture_stream.py vllm-localdev:/tmp/capture_stream.py
-docker cp conformance/utils/capture_stream.py sglang-localdev:/tmp/capture_stream.py
+docker cp conformance/utils/capture.py vllm-localdev:/tmp/capture.py
+docker cp conformance/utils/capture.py sglang-localdev:/tmp/capture.py
 docker cp conformance/toolcalling/fixtures-stream-v2/deepseek_v4/TOOLCALLING.stream.1.yaml vllm-localdev:/tmp/TOOLCALLING.stream.1.yaml
 docker cp conformance/toolcalling/fixtures-stream-v2/deepseek_v4/TOOLCALLING.stream.1.yaml sglang-localdev:/tmp/TOOLCALLING.stream.1.yaml
 ```
 
-Capture peer parser output. Use the parser names from `capture_all_families_driver.py` for the family; for DeepSeek V4 they are `deepseek_v4` for vLLM and `deepseekv4` for SGLang.
+Capture peer parser output. Use the parser names from the `VLLM` / `SGLANG` maps in `capture_driver.py` for the family; for DeepSeek V4 they are `deepseek_v4` for vLLM and `deepseekv4` for SGLang.
 
 ```bash
-docker exec vllm-localdev python3 /tmp/capture_stream.py --impl vllm --fixture /tmp/TOOLCALLING.stream.1.yaml --parser deepseek_v4 > /tmp/deepseek_v4.stream.1.vllm.json
-docker exec sglang-localdev python3 /tmp/capture_stream.py --impl sglang --fixture /tmp/TOOLCALLING.stream.1.yaml --parser deepseekv4 > /tmp/deepseek_v4.stream.1.sglang.json
+docker exec vllm-localdev python3 /tmp/capture.py --mode stream --impl vllm --fixture /tmp/TOOLCALLING.stream.1.yaml --parser deepseek_v4 > /tmp/deepseek_v4.stream.1.vllm.json
+docker exec sglang-localdev python3 /tmp/capture.py --mode stream --impl sglang --fixture /tmp/TOOLCALLING.stream.1.yaml --parser deepseekv4 > /tmp/deepseek_v4.stream.1.sglang.json
 ```
 
 Extract the case maps that `build_stream_fixtures.py` consumes, and note the printed versions for `--captured`.
@@ -128,7 +128,7 @@ Use this when refreshing the `TC batch-on-stream (v2)` tab. It mirrors every v1 
 
 ```bash
 conformance/utils/record_v2.sh batch > /tmp/harmony_batch_on_stream_dynamo.json
-python3 conformance/utils/capture_batch_on_stream_all.py \
+python3 conformance/utils/capture_driver.py --mode batch-on-stream \
   --root "$PWD" \
   --work /tmp/batch_on_stream_capture \
   --vllm-container vllm-localdev \
@@ -142,10 +142,9 @@ python3 conformance/utils/capture_batch_on_stream_all.py \
 | `render_parity_v1.sh` | Builds the v1 `.stage/` and writes `.stage/tests/parity/PARITY_v1.html` with old Dynamo `generate_parity_table.py`. |
 | `check_v2.sh` | Runs local-parser, vLLM, and SGLang checks against staged fixtures. |
 | `record_v2.sh` | Records Dynamo parser v2 streaming fixture data. |
-| `capture_stream.py` | Captures vLLM/SGLang per-chunk streaming output inside an engine container. |
-| `capture_all_families.sh` | Captures and rewrites v2 stream fixtures for all non-Harmony families. |
-| `capture_batch_on_stream.py` | Captures one engine's streaming parser over batch fixture text inside an engine container. |
-| `capture_batch_on_stream_all.py` | Captures and rewrites all batch-on-stream overlay YAMLs for vLLM/SGLang, plus Dynamo parser v2 Harmony when provided. |
+| `capture.py` | In-container worker: captures an engine's tool-call parser. `--mode {stream,batch-on-stream,harmony-batch,harmony-chunk}`. |
+| `capture_driver.py` | Host orchestrator: `--mode stream` (v2 stream fixtures for all non-Harmony families), `--mode batch-on-stream` (batch-on-stream overlays), `--mode merge` (per-engine captures → `harmony_batch_stream.json`). |
+| `capture_all_families.sh` | Thin wrapper for `capture_driver.py --mode stream`. |
 | `build_stream_fixtures.py` | Rebuilds one v2 stream fixture from source chunks, captured peer output, and unavailable markers. |
 
 ---
