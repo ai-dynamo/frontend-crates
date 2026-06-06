@@ -2730,11 +2730,40 @@ def _rewrite_panel_paths(
     return rewritten
 
 
+def _tab_label(
+    prefix: str, data: str, parser: str | None, v2: bool, data_word: bool = True
+) -> tuple[str, str]:
+    """Build a tab label as `<prefix> (<data> data on <parser>-parser)[ (v2)]`.
+    Returns (plain, html); the html form wraps the parenthetical in a smaller-font
+    span (`tab-sub`) and color-codes the words "batch"/"stream" (`w-batch`/`w-stream`)
+    so the two axes are distinguishable. `data` is "batch" or "stream". `parser` is
+    "batch"/"stream", or None for a bare "parser" (reasoning has a single parser, not
+    a batch/stream split). `data_word=False` drops the literal " data" word, e.g.
+    reasoning renders `(batch on parser)`."""
+    suffix = " (v2)" if v2 else ""
+    dword = " data" if data_word else ""
+
+    def _w(word: str) -> str:
+        return f'<span class="w-{word}">{word}</span>'
+
+    parser_plain = f"{parser}-parser" if parser else "parser"
+    parser_html = f"{_w(parser)}-parser" if parser else "parser"
+    plain = f"{prefix} ({data}{dword} on {parser_plain}){suffix}"
+    sub_html = f"({_w(data)}{dword} on {parser_html}){suffix}"
+    return plain, f'{prefix} <span class="tab-sub">{sub_html}</span>'
+
+
 def _tab_button(panel: dict[str, Any]) -> str:
     active = " active" if panel["active"] else ""
     selected = "true" if panel["active"] else "false"
     panel_id = html_lib.escape(str(panel["id"]))
-    label = html_lib.escape(str(panel["label"]))
+    # label_html (when set) carries the smaller-font parenthetical; fall back to the
+    # plain, escaped label otherwise.
+    label = (
+        str(panel["label_html"])
+        if panel.get("label_html")
+        else html_lib.escape(str(panel["label"]))
+    )
     title = html_lib.escape(str(panel.get("tab_title", panel["label"])))
     # toolbar_desc is HTML (link + emphasis), rendered via innerHTML on tab switch.
     # Escape only the attribute-breaking chars so the inner tags survive.
@@ -2778,10 +2807,13 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
             fixture_href_root=_fixture_href_roots[mode],
             hrefs=hrefs,
         )
+        _tc_kind = "stream" if mode == "streamv2" else "batch"
+        _tc_label, _tc_label_html = _tab_label("TC", _tc_kind, _tc_kind, mode == "streamv2")
         panel.update(
             {
                 "id": f"tab-toolcalling-{mode}",
-                "label": "TC stream (v2)" if mode == "streamv2" else "TC batch (v1)",
+                "label": _tc_label,
+                "label_html": _tc_label_html,
                 "tab_title": (
                     "Tool Calling stream: Dynamo parser v2 on v2 stream fixtures"
                     if mode == "streamv2"
@@ -2814,10 +2846,12 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
             # mirrors), so rewriting against the batch-on-stream fixture root points
             # each link at the overlay sample.
             stream_on_batch = build_stream_on_batch_panel()
+            _sob_label, _sob_label_html = _tab_label("TC", "batch", "stream", True)
             stream_on_batch.update(
                 {
                     "id": "tab-toolcalling-stream-on-batch",
-                    "label": "TC batch-on-stream (v2)",
+                    "label": _sob_label,
+                    "label_html": _sob_label_html,
                     "tab_title": "Batch-on-stream: Dynamo parser v2 on v1 batch fixtures",
                     "toolbar_desc": (
                         "This runs the batch examples through each engine's "
@@ -2883,10 +2917,14 @@ def _combined_reasoning_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
             fixture_href_root=hrefs["reasoning_fixtures"],
             hrefs=hrefs,
         )
+        # Reasoning has a single parser (not a batch/stream split), so the parser
+        # axis renders as a bare "parser"; only the data axis varies.
+        _r_label, _r_label_html = _tab_label("Reasoning", mode, None, False, data_word=False)
         panel.update(
             {
                 "id": f"tab-reasoning-{mode}",
-                "label": f"Reasoning {mode} (v1)",
+                "label": _r_label,
+                "label_html": _r_label_html,
                 "tab_title": f"Reasoning {mode}: v1 code on v1 fixtures",
                 "toolbar_desc": (
                     f'Reasoning parser version: <strong>v1</strong> Dynamo-synced parser '
