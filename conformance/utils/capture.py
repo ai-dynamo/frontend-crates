@@ -183,6 +183,11 @@ def _stream_sglang(parser_name, cases):
         ]
         det = detector_cls()
         per_chunk = []
+        # SGLang uses tool_index = -1 before it has assigned a stable index. The
+        # fixture schema (and cross-engine compare) needs a real u32 index, so
+        # track a running index: a -1 delta carrying a name starts a new tool
+        # (advance), a -1 delta with only arguments continues the current one.
+        cur_index = -1
         for chunk in case.get("chunks", []):
             delta = chunk.get("delta_text", "")
             try:
@@ -192,7 +197,14 @@ def _stream_sglang(parser_name, cases):
                 continue
             deltas = []
             for c in (r.calls or []):
-                d = {"index": c.tool_index}
+                idx = c.tool_index
+                if idx is None or idx < 0:
+                    if c.name:
+                        cur_index += 1
+                    idx = cur_index if cur_index >= 0 else 0
+                else:
+                    cur_index = max(cur_index, idx)
+                d = {"index": idx}
                 if c.name:
                     d["name"] = c.name
                 if c.parameters:
