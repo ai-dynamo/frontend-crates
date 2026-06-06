@@ -1,0 +1,247 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: nemotron_deci
+model_label: 'Nemotron (DeciLM) v1/v2'
+mode: streamv2
+captured_with:
+  vllm: '0.22.0'
+cases:
+  TOOLCALLING.streamv2.2.a:
+    description: 'Parallel calls in JSON array'
+    ref: 'derived from TOOLCALLING.batch.2.a'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_deci''.'
+    chunks:
+    - delta_text: '<TOOLCALL>[{"name":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '<TOOLCALL>[{"name":'
+    - delta_text: ' "get_weather",'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "get_weather",'
+    - delta_text: ' "arguments": {"location": "NYC"}},'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "arguments": {"location": "NYC"}},'
+    - delta_text: ' {"name": "get_time",'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' {"name": "get_time",'
+    - delta_text: ' "arguments":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "arguments":'
+    - delta_text: ' {"timezone": "EST"}}]'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' {"timezone": "EST"}}]'
+    - delta_text: '</TOOLCALL>'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '</TOOLCALL>'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.2.b:
+    description: 'Two back-to-back TOOLCALL wrappers'
+    ref: 'derived from TOOLCALLING.batch.2.b'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_deci''.'
+    chunks:
+    - delta_text: '<TOOLCALL>[{"name":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '<TOOLCALL>[{"name":'
+    - delta_text: ' "get_weather",'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "get_weather",'
+    - delta_text: ' "arguments": {"location": "NYC"}}]'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "arguments": {"location": "NYC"}}]'
+    - delta_text: '</TOOLCALL><TOOLCALL>'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '</TOOLCALL><TOOLCALL>'
+    - delta_text: '[{"name":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '[{"name":'
+    - delta_text: ' "get_time", "arguments":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "get_time", "arguments":'
+    - delta_text: ' {"timezone": "EST"}}]</TOOLCALL>'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' {"timezone": "EST"}}]</TOOLCALL>'
+    - delta_text: ''
+      finish_reason: stop
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.2.c:
+    description: 'With surrounding narration'
+    ref: 'derived from TOOLCALLING.batch.2.c'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_deci''.'
+    chunks:
+    - delta_text: 'Both: <TOOLCALL>'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: 'Both: <TOOLCALL>'
+    - delta_text: '[{"name":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '[{"name":'
+    - delta_text: ' "get_weather", "arguments": {"location":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "get_weather", "arguments": {"location":'
+    - delta_text: ' "NYC"}}, {"name":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "NYC"}}, {"name":'
+    - delta_text: ' "get_time",'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "get_time",'
+    - delta_text: ' "arguments": {"timezone":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "arguments": {"timezone":'
+    - delta_text: ' "EST"}}]</TOOLCALL> Done.'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "EST"}}]</TOOLCALL> Done.'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.2.d:
+    description: 'Same-name twice'
+    ref: 'derived from TOOLCALLING.batch.2.d'
+    tools:
+    - &id001
+      name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - *id001
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_deci''.'
+    chunks:
+    - delta_text: '<TOOLCALL>[{"name":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '<TOOLCALL>[{"name":'
+    - delta_text: ' "get_weather",'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "get_weather",'
+    - delta_text: ' "arguments": {"location": "NYC"}},'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "arguments": {"location": "NYC"}},'
+    - delta_text: ' {"name": "get_weather",'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' {"name": "get_weather",'
+    - delta_text: ' "arguments":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "arguments":'
+    - delta_text: ' {"location": "LA"}}]'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' {"location": "LA"}}]'
+    - delta_text: '</TOOLCALL>'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '</TOOLCALL>'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []

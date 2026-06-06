@@ -1,0 +1,186 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: phi4
+model_label: 'Phi-4'
+mode: streamv2
+captured_with:
+  vllm: '0.22.0'
+cases:
+  TOOLCALLING.streamv2.8.a:
+    description: 'Narration before tool call only'
+    ref: 'derived from TOOLCALLING.batch.8.a'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''phi4''.'
+    chunks:
+    - delta_text: 'I will'
+      expected:
+        vllm: []
+    - delta_text: ' check'
+      expected:
+        vllm: []
+    - delta_text: ' the weather. functools[{"name":'
+      expected:
+        vllm: []
+    - delta_text: ' "get_weather", "arguments":'
+      expected:
+        vllm: []
+    - delta_text: ' {"location":'
+      expected:
+        vllm: []
+    - delta_text: ' "NYC"}}]'
+      expected:
+        vllm: []
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.8.b:
+    description: 'Narration after tool call only'
+    ref: 'derived from TOOLCALLING.batch.8.b'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''phi4''.'
+    chunks:
+    - delta_text: 'functools[{"name": "get_weather",'
+      expected:
+        vllm: []
+    - delta_text: ' "arguments":'
+      expected:
+        vllm: []
+    - delta_text: ' {"location": "NYC"}}] Let'
+      expected:
+        vllm: []
+    - delta_text: ' me know'
+      expected:
+        vllm: []
+    - delta_text: ' if'
+      expected:
+        vllm: []
+    - delta_text: ' you need'
+      expected:
+        vllm: []
+    - delta_text: ' more.'
+      expected:
+        vllm: []
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.8.c:
+    description: 'Narration both before and after (sandwich)'
+    ref: 'derived from TOOLCALLING.batch.8.c'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''phi4''.'
+    chunks:
+    - delta_text: 'I will'
+      expected:
+        vllm: []
+    - delta_text: ' check'
+      expected:
+        vllm: []
+    - delta_text: ' the weather. functools[{"name":'
+      expected:
+        vllm: []
+    - delta_text: ' "get_weather", "arguments":'
+      expected:
+        vllm: []
+    - delta_text: ' {"location":'
+      expected:
+        vllm: []
+    - delta_text: ' "NYC"}}] Let'
+      expected:
+        vllm: []
+    - delta_text: ' me know if'
+      expected:
+        vllm: []
+    - delta_text: ' you'
+      expected:
+        vllm: []
+    - delta_text: ' need more.'
+      expected:
+        vllm: []
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.8.d:
+    description: 'Narration between multiple tool calls'
+    ref: 'derived from TOOLCALLING.batch.8.d'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''phi4''.'
+    chunks:
+    - delta_text: 'I will'
+      expected:
+        vllm: []
+    - delta_text: ' check'
+      expected:
+        vllm: []
+    - delta_text: ' the weather. functools[{"name":'
+      expected:
+        vllm: []
+    - delta_text: ' "get_weather", "arguments":'
+      expected:
+        vllm: []
+    - delta_text: ' {"location":'
+      expected:
+        vllm: []
+    - delta_text: ' "NYC"}}] Then'
+      expected:
+        vllm: []
+    - delta_text: ' check LA weather.'
+      expected:
+        vllm: []
+    - delta_text: ' functools[{"name":'
+      expected:
+        vllm: []
+    - delta_text: ' "get_weather", "arguments":'
+      expected:
+        vllm: []
+    - delta_text: ' {"location":'
+      expected:
+        vllm: []
+    - delta_text: ' "LA"}}]'
+      expected:
+        vllm: []
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []

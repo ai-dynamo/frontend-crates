@@ -1,0 +1,151 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: gemma4
+model_label: 'Gemma 4'
+mode: streamv2
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
+cases:
+  TOOLCALLING.streamv2.30.a:
+    description: 'Call/body delimiters `,`, `:`, and `{}` inside one argument string value'
+    ref: 'derived from TOOLCALLING.batch.30.a'
+    tools:
+    - name: run_query
+      parameters:
+        type: object
+        properties:
+          sql:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '<|tool_call>call:run_query{sql:<|"|>'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'run_query', arguments: ''}
+        sglang:
+        - {index: 0, name: 'run_query'}
+    - delta_text: 'SELECT'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"sql": "SELECT'}
+        sglang: []
+    - delta_text: ' a,b:and{brace}<|"|>}<tool_call|>'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' a,b:and{brace}"}'}
+        sglang:
+        - {index: 0, arguments: '{"sql": "SELECT a,b:and{brace}"}'}
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.30.b:
+    description: 'Structural delimiters `}` and `]` inside one argument string value'
+    ref: 'derived from TOOLCALLING.batch.30.b'
+    tools:
+    - name: run_query
+      parameters:
+        type: object
+        properties:
+          sql:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '<|tool_call>call:run_query{sql:<|"|>'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'run_query', arguments: ''}
+        sglang:
+        - {index: 0, name: 'run_query'}
+    - delta_text: 'SELECT'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"sql": "SELECT'}
+        sglang: []
+    - delta_text: ' value WHERE note'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' value WHERE note'}
+        sglang: []
+    - delta_text: ' has brace'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' has brace'}
+        sglang: []
+    - delta_text: ' }'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' '}
+        sglang: []
+    - delta_text: ' and bracket'
+      expected:
+        vllm:
+        - {index: 0, arguments: '} and bracket'}
+        sglang: []
+    - delta_text: ' ]<|"|>}<tool_call|>'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' ]"}'}
+        sglang:
+        - {index: 0, arguments: '{"sql": "SELECT value WHERE note has brace } and bracket ]"}'}
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.30.c:
+    description: 'Tool-call marker `<|tool_call>` text inside one argument string value'
+    ref: 'derived from TOOLCALLING.batch.30.c'
+    tools:
+    - name: run_query
+      parameters:
+        type: object
+        properties:
+          sql:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '<|tool_call>call:run_query{sql:<|"|>'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'run_query', arguments: ''}
+        sglang:
+        - {index: 0, name: 'run_query'}
+    - delta_text: 'literal'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"sql": "literal'}
+        sglang: []
+    - delta_text: ' <|tool_call marker> call:get_time{}'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' <|tool_call marker> call:get_time{'}
+        sglang: []
+    - delta_text: ' stays text<|"|>'
+      expected:
+        vllm:
+        - {index: 0, arguments: '} stays text'}
+        sglang: []
+    - delta_text: '}<tool_call|>'
+      expected:
+        vllm:
+        - {index: 0, arguments: '"}'}
+        sglang:
+        - {index: 0, arguments: '{"sql": "literal <|tool_call marker> call:get_time{} stays text"}'}
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []

@@ -1,0 +1,291 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: nemotron_deci
+model_label: 'Nemotron (DeciLM) v1/v2'
+mode: streamv2
+captured_with:
+  vllm: '0.22.0'
+cases:
+  TOOLCALLING.streamv2.7.a:
+    description: 'Standard scalar types'
+    ref: 'derived from TOOLCALLING.batch.7.a'
+    tools:
+    - name: book_flight
+      parameters:
+        type: object
+        properties:
+          destination:
+            type: string
+          passengers:
+            type: integer
+          first_class:
+            type: boolean
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_deci''.'
+    chunks:
+    - delta_text: '<TOOLCALL>[{"name":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '<TOOLCALL>[{"name":'
+    - delta_text: ' "book_flight",'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "book_flight",'
+    - delta_text: ' "arguments": {"destination": "Paris",'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "arguments": {"destination": "Paris",'
+    - delta_text: ' "passengers": 2,'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "passengers": 2,'
+    - delta_text: ' "first_class":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "first_class":'
+    - delta_text: ' true}}]</TOOLCALL>'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' true}}]</TOOLCALL>'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.7.b:
+    description: 'Unicode + escaped chars'
+    ref: 'derived from TOOLCALLING.batch.7.b'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_deci''.'
+    chunks:
+    - delta_text: '<TOOLCALL>[{"name":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '<TOOLCALL>[{"name":'
+    - delta_text: ' "get_weather",'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "get_weather",'
+    - delta_text: ' "arguments": {"location": "Tōkyō'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "arguments": {"location": "Tōkyō'
+    - delta_text: ' \"central\""}}]</TOOLCALL>'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' \"central\""}}]</TOOLCALL>'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.7.c:
+    description: 'Schema mismatch — string value where schema declares integer'
+    ref: 'derived from TOOLCALLING.batch.7.c'
+    tools:
+    - name: set_temperature
+      parameters:
+        type: object
+        properties:
+          celsius:
+            type: integer
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_deci''.'
+    chunks:
+    - delta_text: '<TOOLCALL>[{"name":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '<TOOLCALL>[{"name":'
+    - delta_text: ' "set_temperature",'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "set_temperature",'
+    - delta_text: ' "arguments": {"celsius": "20"}}]'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "arguments": {"celsius": "20"}}]'
+    - delta_text: '</TOOLCALL>'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '</TOOLCALL>'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.7.d:
+    description: 'Nested object + array (existing)'
+    ref: 'derived from TOOLCALLING.batch.7.d'
+    tools:
+    - name: process_data
+      parameters:
+        type: object
+        properties:
+          items:
+            type: array
+          config:
+            type: object
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_deci''.'
+    chunks:
+    - delta_text: '<TOOLCALL>[{"name":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '<TOOLCALL>[{"name":'
+    - delta_text: ' "process_data",'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "process_data",'
+    - delta_text: ' "arguments": {"items": [1,2,3]'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "arguments": {"items": [1,2,3]'
+    - delta_text: ', "config":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ', "config":'
+    - delta_text: ' {"nested":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' {"nested":'
+    - delta_text: ' true}}}]</TOOLCALL>'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' true}}}]</TOOLCALL>'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.7.e:
+    description: 'Large / deep JSON-edge argument payload'
+    ref: 'derived from TOOLCALLING.batch.7.e'
+    tools:
+    - name: process_data
+      parameters:
+        type: object
+        properties:
+          payload:
+            type: object
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_deci''.'
+    chunks:
+    - delta_text: '<TOOLCALL>[{"name":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '<TOOLCALL>[{"name":'
+    - delta_text: ' "process_data",'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "process_data",'
+    - delta_text: ' "arguments": {"payload": {"regions":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "arguments": {"payload": {"regions":'
+    - delta_text: ' [{"name": "west",'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' [{"name": "west",'
+    - delta_text: ' "scores":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "scores":'
+    - delta_text: ' [1, 2,'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' [1, 2,'
+    - delta_text: ' 3]}, {"name":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' 3]}, {"name":'
+    - delta_text: ' "east",'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "east",'
+    - delta_text: ' "scores": [4,'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "scores": [4,'
+    - delta_text: ' 5,'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' 5,'
+    - delta_text: ' 6]}]'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' 6]}]'
+    - delta_text: ','
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ','
+    - delta_text: ' "flags": {"enabled": true,'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "flags": {"enabled": true,'
+    - delta_text: ' "retry": null},'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "retry": null},'
+    - delta_text: ' "empty":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "empty":'
+    - delta_text: ' {}}}}]</TOOLCALL>'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' {}}}}]</TOOLCALL>'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []

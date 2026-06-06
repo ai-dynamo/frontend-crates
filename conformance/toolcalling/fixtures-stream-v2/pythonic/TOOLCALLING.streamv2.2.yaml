@@ -1,0 +1,122 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: pythonic
+model_label: 'Llama 4 (pythonic fmt)'
+mode: streamv2
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
+cases:
+  TOOLCALLING.streamv2.2.a:
+    description: 'Parallel calls in single bracket'
+    ref: 'derived from TOOLCALLING.batch.2.a'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '[get_weather(location="NYC"), get_time(timezone="EST")]'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather', arguments: '{"location": "NYC"}'}
+        - {index: 1, id: true, name: 'get_time', arguments: '{"timezone": "EST"}'}
+        sglang:
+        - {index: 0, name: 'get_weather', arguments: '{"location": "NYC"}'}
+        - {index: 1, name: 'get_time', arguments: '{"timezone": "EST"}'}
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.2.c:
+    description: 'With surrounding narration'
+    ref: 'derived from TOOLCALLING.batch.2.c'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: 'Both: [get_weather(location="NYC"),'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'Both: [get_weather(location="NYC"),'
+        sglang: 'Both: '
+    - delta_text: ' get_time(timezone="EST")]'
+      expected:
+        vllm: []
+        sglang:
+        - {index: 0, name: 'get_weather', arguments: '{"location": "NYC"}'}
+        - {index: 1, name: 'get_time', arguments: '{"timezone": "EST"}'}
+      normal_text:
+        vllm: ' get_time(timezone="EST")]'
+    - delta_text: ' Done.'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' Done.'
+        sglang: ' Done.'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.2.d:
+    description: 'Same-name twice'
+    ref: 'derived from TOOLCALLING.batch.2.d'
+    tools:
+    - &id001
+      name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - *id001
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '[get_weather(location="NYC"), get_weather(location="LA")]'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather', arguments: '{"location": "NYC"}'}
+        - {index: 1, id: true, name: 'get_weather', arguments: '{"location": "LA"}'}
+        sglang:
+        - {index: 0, name: 'get_weather', arguments: '{"location": "NYC"}'}
+        - {index: 1, name: 'get_weather', arguments: '{"location": "LA"}'}
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
