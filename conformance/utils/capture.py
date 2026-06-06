@@ -529,6 +529,16 @@ def main():
     ap.add_argument("--input", help="JSON {cid:{model_text,tools}} (harmony-batch)")
     args = ap.parse_args()
 
+    # Per-mode required args (argparse can't express "required only for some modes").
+    if args.mode in ("stream", "batch-on-stream", "harmony-batch") and not args.impl:
+        ap.error(f"--mode {args.mode} requires --impl {{vllm,sglang}}")
+    if args.mode in ("stream", "batch-on-stream") and not (args.fixture or args.batch):
+        ap.error(f"--mode {args.mode} requires --fixture or --batch")
+    if args.mode == "harmony-batch" and not args.input:
+        ap.error("--mode harmony-batch requires --input")
+    if args.mode == "harmony-chunk" and not args.fixture:
+        ap.error("--mode harmony-chunk requires --fixture")
+
     if args.mode == "stream":
         _run_stream(args)
     elif args.mode == "batch-on-stream":
