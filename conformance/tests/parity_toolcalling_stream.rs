@@ -189,7 +189,7 @@ fn toolcalling_stream_parity() {
                 continue;
             }
         };
-        // Both harmony families have a frontend-crate v2 streaming parser: `harmony`
+        // Both harmony families use Dynamo parser v2: `harmony`
         // (token-id path) and `harmony_text` (text path). All other families are
         // local-parser-unavailable (TODO) and carry no expected.dynamo to assert.
         if !(fx.family == "harmony" || fx.family == "harmony_text")

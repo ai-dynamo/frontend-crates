@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Record frontend-crate v2 per-chunk streaming emit into harmony stream fixtures.
+//! Record Dynamo parser v2 per-chunk streaming emit into harmony stream fixtures.
 //!
 //! Reads conformance/toolcalling/fixtures-stream-v2/harmony/TOOLCALLING.stream.*.yaml, runs
 //! HarmonyToolStreamParser over each case's chunks via BOTH input paths:
@@ -16,7 +16,7 @@
 //! Usage:
 //!   cargo run -p dynamo-parsers-v2 --bin record_dynamo_stream -- <fixture.yaml>
 //!
-//! The binary name is legacy; the code under test is frontend-crate v2.
+//! The binary name is legacy; the code under test is Dynamo parser v2.
 
 use std::collections::BTreeMap;
 

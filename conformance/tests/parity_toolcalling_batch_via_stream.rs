@@ -7,7 +7,7 @@
 //! consistency check — the stream parser, given the complete output, must land on
 //! the same calls as the batch parser.
 //!
-//! Harmony only (the first family with a frontend-crate v2 streaming parser). Reads the
+//! Harmony only (the first family with Dynamo parser v2). Reads the
 //! dynamo-synced batch corpus directly (no overlay needed — model_text is input,
 //! expected.dynamo is the batch reference).
 

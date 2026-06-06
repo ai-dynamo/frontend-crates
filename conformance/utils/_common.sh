@@ -29,8 +29,12 @@ _build_stage_base() {
   \cp -Rf "$TOOLS/tests/parity" "$STAGE/tests/parity"
   \cp -f "$TOOLS/tests/__init__.py" "$STAGE/tests/__init__.py"
   ln -s "$ROOT/conformance/reasoning/fixtures"   "$STAGE/tests/parity/reasoning/fixtures"
-  # Recorded frontend-crate v2 stream-on-batch results for the batch-on-stream tab.
-  [ -f "$TOOLS/harmony_batch_stream.json" ] && \cp -f "$TOOLS/harmony_batch_stream.json" "$STAGE/harmony_batch_stream.json"
+  # Recorded Dynamo parser v2 stream-on-batch fixture overlay.
+  if [ -d "$ROOT/conformance/toolcalling/fixtures-batch-on-stream-v2" ]; then
+    mkdir -p "$STAGE/tests/parity/toolcalling"
+    \cp -Rf "$ROOT/conformance/toolcalling/fixtures-batch-on-stream-v2" \
+      "$STAGE/tests/parity/toolcalling/fixtures-batch-on-stream-v2"
+  fi
   ln -s "$ROOT/parsers/src/tool_calling"         "$STAGE/lib/parsers/src/tool_calling"
   ln -s "$TOOLS/lib/parsers/TOOLCALLING_CASES.md"   "$STAGE/lib/parsers/TOOLCALLING_CASES.md"
   ln -s "$TOOLS/lib/parsers/REASONING_CASES.md"     "$STAGE/lib/parsers/REASONING_CASES.md"

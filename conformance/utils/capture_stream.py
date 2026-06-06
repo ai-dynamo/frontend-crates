@@ -17,36 +17,74 @@ import sys
 import yaml
 
 
+_SPECIAL_TOKEN_IDS = {
+    "[TOOL_CALLS]": 100,
+    "<｜tool▁calls▁begin｜>": 101,
+    "<｜tool▁calls▁end｜>": 102,
+    "<｜tool▁call▁begin｜>": 103,
+    "<｜tool▁call▁end｜>": 104,
+    "<|python_tag|>": 105,
+    "<|tool_call>": 106,
+    "<tool_call|>": 107,
+    "<tool_calls>": 108,
+    "</tool_calls>": 109,
+    "<minimax:tool_call>": 110,
+    "</minimax:tool_call>": 111,
+    "<tool_call>": 112,
+    "</tool_call>": 113,
+    '<|"|>': 114,
+}
+_SPECIAL_TOKENS_BY_LENGTH = sorted(_SPECIAL_TOKEN_IDS, key=len, reverse=True)
+
+
+def _synthetic_token_ids(text):
+    ids = []
+    pos = 0
+    while pos < len(text):
+        matches = [
+            (text.find(token, pos), token)
+            for token in _SPECIAL_TOKENS_BY_LENGTH
+            if text.find(token, pos) != -1
+        ]
+        if not matches:
+            break
+        start, token = min(matches)
+        ids.append(_SPECIAL_TOKEN_IDS[token])
+        pos = start + len(token)
+    return ids
+
+
 def capture_vllm(parser_name, cases):
     from vllm.tool_parsers import ToolParserManager
     from vllm.entrypoints.openai.chat_completion.protocol import ChatCompletionRequest
 
     parser_cls = ToolParserManager.get_tool_parser(parser_name)
 
-    # Minimal tokenizer stub with an empty vocab. Pure-text vLLM tool parsers
-    # construct and stream fine on this (they regex over accumulated text).
-    # Parsers that REQUIRE the model's special tool tokens raise at init — we let
-    # that propagate so the driver marks them unavailable rather than capturing
-    # wrong output (a fake vocab makes such parsers emit garbage). Accurate
-    # capture for those needs the real model tokenizer.
+    # Minimal tokenizer stub. Most vLLM tool parsers regex over accumulated text,
+    # but DeepSeek V3/V3.1 streaming also counts special marker token IDs. Give
+    # those markers stable synthetic IDs so capture can exercise the parser
+    # without a model tokenizer.
     class MockTok:
-        all_special_tokens = []
-        vocab_size = 0
+        all_special_tokens = list(_SPECIAL_TOKEN_IDS)
+        vocab_size = len(_SPECIAL_TOKEN_IDS)
 
         def get_vocab(self):
-            return {}
+            return _SPECIAL_TOKEN_IDS
 
         def convert_ids_to_tokens(self, ids, **kw):
-            return []
+            by_id = {v: k for k, v in _SPECIAL_TOKEN_IDS.items()}
+            return [by_id.get(i, "") for i in ids]
 
         def convert_tokens_to_ids(self, tokens):
-            return None
+            if isinstance(tokens, str):
+                return _SPECIAL_TOKEN_IDS.get(tokens)
+            return [_SPECIAL_TOKEN_IDS.get(token) for token in tokens]
 
         def decode(self, ids, **kw):
             return ""
 
         def encode(self, text, **kw):
-            return []
+            return _synthetic_token_ids(text)
 
     out = {}
     for cid, case in cases.items():
@@ -58,16 +96,21 @@ def capture_vllm(parser_name, cases):
         req = ChatCompletionRequest(model="x", messages=[], tools=tools)
         parser = parser_cls(MockTok())
         prev = ""
+        prev_token_ids = []
         per_chunk = []
         for chunk in case.get("chunks", []):
             delta = chunk.get("delta_text", "")
             cur = prev + delta
+            delta_token_ids = chunk.get("delta_token_ids") or _synthetic_token_ids(delta)
+            current_token_ids = prev_token_ids + delta_token_ids
             try:
                 r = parser.extract_tool_calls_streaming(
-                    prev, cur, delta, [], [], [], req)
+                    prev, cur, delta, prev_token_ids, current_token_ids,
+                    delta_token_ids, req)
             except Exception as e:
                 per_chunk.append({"deltas": [], "normal_text": "", "error": str(e)})
                 prev = cur
+                prev_token_ids = current_token_ids
                 continue
             deltas = []
             normal = ""
@@ -87,6 +130,7 @@ def capture_vllm(parser_name, cases):
                     deltas.append(d)
             per_chunk.append({"deltas": deltas, "normal_text": normal})
             prev = cur
+            prev_token_ids = current_token_ids
         out[cid] = per_chunk
     return out
 

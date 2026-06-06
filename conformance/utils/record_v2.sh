@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # record_v2.sh <stream <fixture.yaml> [--text] | batch | tokens> [--dry-run]
-#   Regenerate fixture data with the frontend-crate v2 Rust parser; you then commit the YAML.
+#   Regenerate fixture data with the Dynamo parser v2 Rust parser; you then commit the YAML.
 #     stream <fixture.yaml> [--text]   print per-chunk expected.dynamo JSON for one
 #                                      stream fixture (paste into chunks[].expected.dynamo)
-#     batch                            print the frontend-crate v2 stream-on-batch result JSON
+#     batch                            print the Dynamo parser v2 stream-on-batch result JSON
 #                                      (merge via merge_batch_stream.py -> harmony_batch_stream.json)
 #     tokens                           stamp delta_token_ids into the harmony stream fixtures
 #
