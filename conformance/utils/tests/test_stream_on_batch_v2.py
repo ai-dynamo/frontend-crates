@@ -9,11 +9,15 @@ Contract pinned here:
     empty when clean, `↯` when the engine leaks tool-call markup, plus
     `…`/`n/a`/`·`/`!`/`—`. NEVER `=` or a divergence letter.
   * CONFORMANCE view (toggle ON):
-      - batch / stream tabs: cross-engine `=`/`D`/`V`/`S`.
-      - batch-on-stream tab: each engine's STREAM parse vs its OWN BATCH parse
-        (`=` consistent; `D`/`V`/`S` + status "problem"/red on divergence).
+      - batch tab: cross-engine `=`/`D`/`V`/`S`.
+      - stream tabs (batch-on-stream + TC stream v2): two dimensions per cell —
+        COLOR (`data-status`) is each engine's STREAM parse vs its OWN BATCH parse
+        (green consistent, red "problem" on divergence); MARKER
+        (`data-marker-parity`) concatenates an own-batch token (`Xᵦ` when the
+        engine's stream differs from its own batch) and cross-engine STREAM
+        tokens (`Yₛ` for other engines whose stream differs), `=` when all agree.
 
-The batch-on-stream tab flows through the same render_cell_html/render_row_html/
+The stream tabs flow through the same render_cell_html/render_row_html/
 render_html_panel pipeline as the others; only the `comparison` strategy differs.
 """
 
@@ -108,11 +112,15 @@ def test_parser_marker_never_emits_equals_or_divergence_letters() -> None:
 
 
 # --------------------------------------------------------------------------- #
-# batch-on-stream: stream-vs-own-batch comparison
+# stream tabs: 2-D cell — COLOR = stream-vs-own-batch, MARKER = cross-engine streams
 # --------------------------------------------------------------------------- #
-def test_sob_marker_dynamo_diverges_from_its_batch() -> None:
-    # dynamo stream emits nothing; its batch recovered a call -> diverge -> D + red.
-    # vllm stream == vllm batch -> '='. sglang stream != sglang batch -> S.
+def test_sob_cell_two_dimensions_color_and_cross_engine_marker() -> None:
+    # Stream outputs: dynamo got nothing, vllm/sglang each got [f].
+    # Batch refs:     dynamo recovered [f], vllm [f], sglang got nothing.
+    # COLOR (stream-vs-own-batch): dynamo stream([]) != batch([f]) -> problem;
+    #   vllm stream([f]) == batch([f]) -> ok; sglang stream([f]) != batch([]) -> problem.
+    # MARKER (cross-engine streams): dynamo([]) differs from vllm & sglang -> VₛSₛ;
+    #   vllm([f]) differs only from dynamo -> Dₛ; sglang([f]) differs only from dynamo -> Dₛ.
     case = _sobcase(
         stream={
             "dynamo": _calls(),  # stream got nothing
@@ -131,14 +139,17 @@ def test_sob_marker_dynamo_diverges_from_its_batch() -> None:
     assert m["data-marker-dynamo"] == ""
     assert m["data-marker-vllm"] == ""
     assert m["data-marker-sglang"] == ""
-    # CONFORMANCE: stream-vs-batch divergence
-    assert m["data-marker-parity-dynamo"] == "D"
-    assert m["data-marker-parity-vllm"] == "="
-    assert m["data-marker-parity-sglang"] == "S"
-    # divergence is red (status=problem); agreement is green (ok)
+    # COLOR: stream-vs-own-batch divergence is red (problem); agreement is green (ok)
     assert m["data-status-dynamo"] == "problem"
     assert m["data-status-vllm"] == "ok"
     assert m["data-status-sglang"] == "problem"
+    # MARKER (Conformance): own-batch token (Xᵦ when stream != own batch) +
+    # cross-engine streams (Yₛ). dynamo: diverges from its batch (Dᵦ) and from both
+    # peer streams (VₛSₛ). vllm: matches its batch, differs only from dynamo (Dₛ).
+    # sglang: diverges from its batch (Sᵦ), differs only from dynamo stream (Dₛ).
+    assert m["data-marker-parity-dynamo"] == "DᵦVₛSₛ"
+    assert m["data-marker-parity-vllm"] == "Dₛ"
+    assert m["data-marker-parity-sglang"] == "SᵦDₛ"
 
 
 def test_sob_marker_all_consistent_is_equals_and_green() -> None:
@@ -163,9 +174,10 @@ def test_sob_dynamo_todo_when_no_v2_parser() -> None:
         batch={i: _calls("f") for i in ("dynamo", "vllm", "sglang")},
     )
     assert g._sob_status(case, "dynamo") == "todo"
-    assert g._sob_conformance_marker(case, "dynamo") == "…"
-    # peers still compared stream-vs-batch
-    assert g._sob_conformance_marker(case, "vllm") == "="
+    # dynamo unavailable -> marker falls back to the per-engine status (…)
+    assert g._stream_xeng_marker(case, "dynamo") == "…"
+    # vllm/sglang streams both present and agree -> cross-engine '='
+    assert g._stream_xeng_marker(case, "vllm") == "="
 
 
 def test_sob_leak_marks_red_and_lightning() -> None:
@@ -251,6 +263,8 @@ def test_build_cases_carries_stream_and_batch(monkeypatch) -> None:
     assert built["model_text"] == "x"
     assert g._is_todo_unavailable(built["expected"]["dynamo"])  # dynamo absent -> todo
     assert built["batch_expected"]["vllm"] == _calls("f")  # batch reference carried
-    # vllm: stream calls=[] vs batch calls=[f] -> diverge
-    assert g._sob_conformance_marker(built, "vllm") == "V"
+    # COLOR: vllm stream calls=[] vs batch calls=[f] -> diverge -> problem (red)
     assert g._sob_status(built, "vllm") == "problem"
+    # MARKER: vllm diverges from its own batch (Vᵦ); dynamo todo, sglang stream also
+    # empty so no cross-engine token.
+    assert g._stream_xeng_marker(built, "vllm") == "Vᵦ"

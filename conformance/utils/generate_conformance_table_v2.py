@@ -83,6 +83,9 @@ FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures"
 # v1 batch taxonomy/input but renders these stream outputs as `expected`.
 STREAM_ON_BATCH_FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures-batch-on-stream-v2"
 TOOLCALLING_CASES_MD = REPO_ROOT / "lib/parsers/TOOLCALLING_CASES.md"
+# Streaming cases use our own doc (renumbered to the batch+10 taxonomy), not the
+# dynamo-synced TOOLCALLING_CASES.md.
+TOOLCALLING_STREAMING_V2_CASES_MD = REPO_ROOT / "lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"
 PYPROJECT_TOML = REPO_ROOT / "pyproject.toml"
 TEMPLATE_DIR = REPO_ROOT / "tests/parity"
 
@@ -138,6 +141,7 @@ def _build_conformance_tooltip_html(
     extra_sections: list[tuple[str, str]] | None = None,
     chart: tuple[str, str] | None = None,
     refs: list[tuple[str, Any]] | None = None,
+    html_section_labels: bool = False,
 ) -> str:
     parts = ['<div class="ttip">']
     if head:
@@ -146,7 +150,10 @@ def _build_conformance_tooltip_html(
         parts.append(f'<pre class="ttip-pre">{html_lib.escape(description)}</pre>')
 
     def add_section(label: str, body_html: str) -> None:
-        parts.append(f'<div class="ttip-section">{html_lib.escape(label)}:</div>')
+        # `html_section_labels` callers pass safe HTML (e.g. `D<sub>s</sub>`); all
+        # such labels are generator-controlled, never user input.
+        shown = label if html_section_labels else html_lib.escape(label)
+        parts.append(f'<div class="ttip-section">{shown}:</div>')
         parts.append(f'<pre class="ttip-pre">{body_html}</pre>')
 
     if input_label and input_html is not None:
@@ -234,6 +241,11 @@ def _hrefs_for_output(output_path: Path, artifact_root: Path) -> dict[str, str]:
             output_path,
             artifact_root,
             "conformance/utils/lib/parsers/TOOLCALLING_CASES.md",
+        ),
+        "toolcalling_streaming_cases": _href_from_output(
+            output_path,
+            artifact_root,
+            "conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md",
         ),
         "reasoning_cases": _href_from_output(
             output_path,
@@ -548,16 +560,17 @@ SPLIT_PARENT_SUBCASES = {
     "13": ("13.a",),
 }
 
-STREAM_SUB_CASE_GROUPS = [
-    ("Single-call", ("1.a", "1.b")),
-    ("Multi-call", ("2",)),
-    ("Partial-token", ("3",)),
-    ("Termination", ("4.a", "4.b", "4.c")),
+# Streaming taxonomy: TOOLCALLING.streamv2.<batch#> mirrors the batch taxonomy
+# 1:1 (streamv2.1 == batch.1, etc.), so the columns group exactly like the batch
+# tab. Only sub-cases that actually exist in fixtures become columns; the rest
+# fill in over time. Streaming-only cases with no batch analog use the >=50 band.
+STREAM_SUB_CASE_GROUPS = BATCH_SUB_CASE_GROUPS + [
+    ("Partial-token", ("50",)),
 ]
 
 SUB_CASE_GROUPS_BY_MODE = {
     "batch": BATCH_SUB_CASE_GROUPS,
-    "stream": STREAM_SUB_CASE_GROUPS,
+    "streamv2": STREAM_SUB_CASE_GROUPS,
 }
 
 _SUB_CASE_GROUP_KEY_BY_LABEL_BY_MODE = {
@@ -747,11 +760,33 @@ def load_all_cases(mode: str) -> tuple[dict[tuple[str, str], dict], dict[str, st
             # Derive a case-level `expected` (assembled calls + normal_text per
             # impl, or {unavailable}) so the rest of the generator — which expects
             # the batch-style {calls, normal_text} shape — works unchanged.
-            if mode == "stream":
+            if mode == "streamv2":
                 case["expected"] = _derive_stream_expected(case)
             cases[(family, sub)] = case
     _CAPTURED_WITH_BY_MODE[mode] = captured_with
+    if mode == "streamv2":
+        _attach_streamv2_batch_expected(cases)
     return _normalize_split_parent_cases(cases), labels
+
+
+def _attach_streamv2_batch_expected(cases: dict) -> None:
+    """For each streamv2 case, attach `batch_expected[impl]` from the matching batch
+    case (same family + sub), so the stream tab can color each engine's stream
+    against its own batch (streamv2.<sub> mirrors batch.<sub>)."""
+    batch_exp: dict[tuple[str, str], dict] = {}
+    for fp in sorted(FIXTURES.glob("*/TOOLCALLING.batch*.yaml")):
+        doc = yaml.safe_load(fp.read_text()) or {}
+        if doc.get("mode") != "batch":
+            continue
+        family = doc["family"]
+        for cid, c in (doc.get("cases") or {}).items():
+            sub = cid.replace("TOOLCALLING.batch.", "")
+            exp = c.get("expected")
+            if isinstance(exp, dict):
+                batch_exp[(family, sub)] = exp
+    for (family, sub), case in cases.items():
+        if isinstance(case, dict):
+            case["batch_expected"] = batch_exp.get((family, sub), {})
 
 
 def _is_per_chunk_stream(case: dict) -> bool:
@@ -944,8 +979,9 @@ def _selected_parity_marker(case: dict | None, impl: str) -> str | None:
     """Cross-engine conformance marker (batch / stream tabs): the letters of the
     other engines whose canonical output differs from the selected one (`=` when
     all three agree). Returns None — the caller falls back to the per-engine status
-    marker — when any engine lacks output. (Batch-on-stream does NOT use this; it
-    compares stream-vs-own-batch instead, see `_sob_conformance_marker`.)
+    marker — when any engine lacks output. (The stream tabs do NOT use this; their
+    color carries stream-vs-own-batch (`_sob_status`) and their marker carries
+    cross-engine STREAM agreement (`_stream_xeng_marker`).)
     """
     if case is None or "expected" not in case:
         return None
@@ -1309,7 +1345,28 @@ def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str,
     impls = [i for i in ("dynamo", "vllm", "sglang") if i not in unavailable]
 
     chunk_html = colorize_stream_deltas(chunks, family)
-    header = "".join(f"<th>{_IMPL_DISPLAY[i]} {output_kind}</th>" for i in impls)
+    # Baseline column: the Dynamo BATCH result (no chunks — just the result),
+    # placed immediately left of the stream columns as a fixed reference. The
+    # streaming parser's job is to reconstruct this batch parse, so it sits beside
+    # the per-chunk emit for a direct side-by-side. One cell spans every row.
+    dyn_batch = (case.get("batch_expected") or {}).get("dynamo")
+    show_baseline = isinstance(dyn_batch, dict) and (
+        "calls" in dyn_batch or "normal_text" in dyn_batch
+    )
+    n_body_rows = sum(1 for c in chunks if isinstance(c, dict)) + 1  # + assembled
+    baseline_td = ""
+    base_header = ""
+    if show_baseline:
+        base_header = '<th class="cbase-h">baseline<br>D<sub>b</sub> Dynamo batch</th>'
+        baseline_body = _format_output_block_html(dyn_batch, family).replace(
+            chr(10), "<br>"
+        )
+        baseline_td = (
+            f'<td class="cbase" rowspan="{n_body_rows}">{baseline_body}</td>'
+        )
+    header = base_header + "".join(
+        f"<th>{_IMPL_DISPLAY[i]} {output_kind}</th>" for i in impls
+    )
     rows = []
     for i, chunk in enumerate(chunks):
         if not isinstance(chunk, dict):
@@ -1333,18 +1390,19 @@ def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str,
             f"<td>{_render_chunk_deltas(exp.get(i2) or [], nt.get(i2) or '')}</td>"
             for i2 in impls
         )
-        rows.append(f'<tr><td class="cin">{inp}</td>{cells}</tr>')
+        # The baseline cell (rowspan) is emitted once, on the first body row.
+        rows.append(f'<tr><td class="cin">{inp}</td>{baseline_td}{cells}</tr>')
+        baseline_td = ""
     # Final row: each impl's assembled result (calls + normal_text), derived by
-    # concatenating its per-chunk deltas. Folds what used to be the separate
-    # per-engine output blocks into the chart so the chunk stream and the result
-    # it builds to read top-to-bottom in one table.
+    # concatenating its per-chunk deltas. Compare each column here against the
+    # baseline column on the left (assembled X_s vs Dynamo batch).
     derived = case.get("expected", {}) or {}
     final_cells = "".join(
         f"<td>{_format_output_block_html(derived.get(i2), family).replace(chr(10), '<br>')}</td>"
         for i2 in impls
     )
     rows.append(
-        f'<tr class="ttip-final"><td class="cin">assembled</td>{final_cells}</tr>'
+        f'<tr class="ttip-final"><td class="cin">assembled</td>{baseline_td}{final_cells}</tr>'
     )
     table = (
         '<table class="ttip-chunks"><thead><tr><th>input</th>'
@@ -1651,7 +1709,7 @@ def _parser_cell_html(
     row_label = html_lib.escape(family)
     if suff:
         row_label += f'<span class="parser-suffix">{html_lib.escape(suff)}</span>'
-    if family == "harmony" and stream_context == "stream":
+    if family == "harmony" and stream_context == "streamv2":
         return _v2_harmony_parser_cell_html(
             row_label,
             family,
@@ -1678,7 +1736,7 @@ def _parser_cell_html(
             "v2 stream fixtures",
             "Synthetic v2 row for gpt-oss text streaming. The text path re-tokenizes a held suffix, then feeds the same token-incremental Harmony stream parser used by the token-id row.",
         )
-    if stream_context in ("stream", "batch_on_stream"):
+    if stream_context in ("streamv2", "batch_on_stream"):
         # No Dynamo parser v2 stream parser for this family yet (only harmony,
         # handled above). Inventory-only row; don't link the v1 batch parser.
         return _v2_missing_stream_parser_cell_html(family)
@@ -1851,13 +1909,16 @@ def _parse_subcase_descriptions(mode: str) -> dict[str, str]:
     wrap across indented continuation lines. Returns
     `{"1": "...", "2.a": "...", ...}`.
     """
-    if not TOOLCALLING_CASES_MD.exists():
+    # Streaming descriptions come from our own renumbered doc; batch/others from
+    # the dynamo-synced TOOLCALLING_CASES.md.
+    cases_md = TOOLCALLING_STREAMING_V2_CASES_MD if mode == "streamv2" else TOOLCALLING_CASES_MD
+    if not cases_md.exists():
         return {}
     pat = re.compile(
         rf"\*\*`TOOLCALLING\.{re.escape(mode)}" rf"\.([0-9]+(?:\.[a-z])?)`\*\*\s+(.+)"
     )
     out: dict[str, str] = {}
-    lines = TOOLCALLING_CASES_MD.read_text(encoding="utf-8").splitlines()
+    lines = cases_md.read_text(encoding="utf-8").splitlines()
     i = 0
     while i < len(lines):
         m = pat.search(lines[i])
@@ -1886,7 +1947,11 @@ def _parse_subcase_descriptions(mode: str) -> dict[str, str]:
 
 def _subcase_header_html(mode: str, sub: str, descriptions: dict[str, str]) -> str:
     desc = descriptions.get(sub) or descriptions.get(sub.split(".")[0]) or ""
-    href = "../../../lib/parsers/TOOLCALLING_CASES.md"
+    href = (
+        "../../../lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"
+        if mode == "streamv2"
+        else "../../../lib/parsers/TOOLCALLING_CASES.md"
+    )
     title = html_lib.escape(desc) if desc else ""
     band_cls = _subcase_band_class(mode, sub)
     col_group = html_lib.escape(_subcase_group_key(mode, sub))
@@ -2065,8 +2130,8 @@ def _compute_stats(
 def _mode_label(mode: str) -> str:
     if mode == "batch":
         return "TOOLCALLING.batch.*"
-    if mode == "stream":
-        return "TOOLCALLING.stream.*"
+    if mode == "streamv2":
+        return "TOOLCALLING.streamv2.*"
     return mode
 
 
@@ -2167,7 +2232,7 @@ def render_html_panel(
             f"Peer streaming output captured against: {pairs}. "
             "A divergence is relative to these versions; re-capture when bumping."
         )
-    return {
+    panel = {
         "id": panel_id,
         "mode": mode,
         "label": _mode_label(mode),
@@ -2179,6 +2244,11 @@ def render_html_panel(
         "glossary_groups": _glossary_groups(taxonomy_mode, descriptions, sub_cases),
         "captured_note": captured_note,
     }
+    if comparison == "stream_vs_batch":
+        # The stream tabs encode two dimensions per cell, so the cross-engine
+        # explainer for the batch tab does not describe them. Override it.
+        panel["parity_explainer_html"] = _STREAM_PARITY_EXPLAINER_HTML
+    return panel
 
 
 _ENGINE_LETTER = {"dynamo": "D", "vllm": "V", "sglang": "S"}
@@ -2194,12 +2264,41 @@ def _norm_calls(calls: list) -> list[tuple]:
     return out
 
 
-# --- Batch-on-stream comparison: each engine's STREAM parse vs its OWN BATCH parse.
-# This is the tab's purpose (does streaming a complete output reconstruct what the
-# batch parser gives?) and mirrors the `parity_toolcalling_batch_via_stream` Rust
-# test. Divergence on calls -> status "problem" (red cell) + the engine's letter in
-# the Conformance marker (D/V/S). The default marker stays leak-only, like every
-# other tab. Cross-engine comparison (`_selected_parity_marker`) is NOT used here.
+# --- Stream-tab comparison (TC stream v2 + batch-on-stream), two dimensions per cell:
+#   COLOR (data-status): each engine's STREAM parse vs its OWN BATCH parse — green if
+#     the stream reconstructs the batch result, red if it diverges (mirrors the
+#     `parity_toolcalling_batch_via_stream` Rust test).
+#   MARKER (Conformance toggle): each engine's stream vs the OTHER engines' streams —
+#     `=` when the available streams agree, else the differing engines' letters with a
+#     subscript-s (Vₛ/Sₛ). The default marker (toggle off) stays leak-only.
+_SUB_S = "ₛ"  # ₛ subscript small s, for the stream cross-engine marker
+# Unicode has no Latin subscript "b"; ᵦ (U+1D66, subscript beta) is the closest
+# glyph and renders inside the CSS `content: attr(...)` cell marker, where real
+# <sub> can't. Used for the own-batch divergence token (Dᵦ) in the grid.
+_SUB_B = "ᵦ"
+
+# The stream tabs (batch-on-stream + TC stream v2) pack two comparisons into one
+# cell, so they replace the batch tab's cross-engine explainer with this.
+_STREAM_PARITY_EXPLAINER_HTML = (
+    "<strong>Conformance (stream):</strong> two comparisons per cell. "
+    '<strong>Color</strong> = each engine\'s <em>stream</em> parse vs its own '
+    '<em>batch</em> parse — <span style="color:#0a7d2c">green</span> when the '
+    "stream reconstructs the batch result, "
+    '<span style="color:#b00">red</span> when it diverges from its own batch '
+    "(X<sub>s</sub> vs X<sub>b</sub>; see the tooltip for both sides). "
+    "<strong>Marker</strong> (Conformance on): "
+    '<span style="color:#0a7d2c">=</span> stream matches its own batch and all '
+    "available streams agree · "
+    '<span style="color:#b00">X<sub>b</sub></span> '
+    "(e.g. <span style=\"color:#b00\">D<sub>b</sub></span>) the selected engine's "
+    "own batch differs from its stream (subscript b = batch; the same divergence "
+    "that reddens the cell) · "
+    '<span style="color:#555">Y<sub>s</sub></span> '
+    "(<span style=\"color:#555\">D<sub>s</sub></span>/V<sub>s</sub>/S<sub>s</sub>) "
+    "another engine's <em>stream</em> differs from the selected engine's stream "
+    "(subscript s = stream) · "
+    '<span style="color:#b00">↯</span> the selected stream leaks markup.'
+)
 
 
 def _sob_calls_consistent(case: dict, impl: str) -> bool | None:
@@ -2228,21 +2327,6 @@ def _sob_status(case: dict | None, impl: str) -> str:
     return "ok" if consistent else "problem"
 
 
-def _sob_conformance_marker(case: dict | None, impl: str) -> str:
-    if case is None:
-        return "—"
-    stream = case.get("expected", {}).get(impl)
-    if not isinstance(stream, dict) or "unavailable" in stream:
-        return "…" if (impl == "dynamo" and _is_todo_unavailable(stream)) else "n/a"
-    if "error" in stream:
-        return "!"
-    leak = "↯" if _block_tool_call_leaks(stream) else ""
-    consistent = _sob_calls_consistent(case, impl)
-    if consistent is None or consistent:
-        return leak + "="
-    return leak + _ENGINE_LETTER[impl]
-
-
 def _sob_status_attrs(case: dict | None) -> str:
     return " ".join(
         f'data-status-{impl}="{_sob_status(case, impl)}"'
@@ -2250,28 +2334,74 @@ def _sob_status_attrs(case: dict | None) -> str:
     )
 
 
+def _stream_xeng_marker(case: dict | None, impl: str) -> str:
+    """Conformance marker for the stream tabs, two parts concatenated:
+      - own-batch: `Xᵦ` when this engine's stream diverges from its OWN batch parse
+        (the same condition that reddens the cell — e.g. `Dᵦ` for Dynamo).
+      - cross-engine: the OTHER engines' letters with a subscript-s (`Vₛ`, `Sₛ`)
+        for engines whose stream differs from this one (needs >=2 streams).
+    Returns the `↯` leak prefix + own-batch token + cross-engine tokens, `=` when
+    none, or the per-engine status marker (`…`/`n/a`) when this engine has no
+    stream output."""
+    if case is None:
+        return "—"
+    expected = case.get("expected", {})
+    sel_block = expected.get(impl)
+    if not isinstance(sel_block, dict) or "unavailable" in sel_block:
+        return _parser_marker(case, impl)
+    leak = "↯" if _block_tool_call_leaks(sel_block) else ""
+    # own-batch divergence (Xᵦ): this engine's stream != its own batch parse.
+    own = (
+        _ENGINE_LETTER[impl] + _SUB_B
+        if _sob_calls_consistent(case, impl) is False
+        else ""
+    )
+    # cross-engine (Yₛ): other engines whose stream differs from this one.
+    outputs = {
+        e: _canonical_tool_output(expected.get(e)) for e in ("dynamo", "vllm", "sglang")
+    }
+    available = {e: o for e, o in outputs.items() if o is not None}
+    selected = available.get(impl)
+    cross = ""
+    if selected is not None and len(available) >= 2:
+        cross = "".join(
+            _ENGINE_LETTER[e] + _SUB_S
+            for e in ("dynamo", "vllm", "sglang")
+            if e in available and e != impl and available[e] != selected
+        )
+    return leak + (own + cross or "=")
+
+
 def _sob_marker_attrs(case: dict | None) -> str:
     # Default marker (Conformance OFF) = leak-only, same as every tab. Conformance
-    # marker (Conformance ON) = stream-vs-own-batch divergence letter.
+    # marker (Conformance ON) = cross-engine stream agreement (Vₛ/Sₛ); the color
+    # (data-status) carries the stream-vs-batch result.
     attrs = [
         f'data-marker-{impl}="{html_lib.escape(_parser_marker(case, impl))}"'
         for impl in ("dynamo", "vllm", "sglang")
     ]
     attrs.extend(
-        f'data-marker-parity-{impl}="{html_lib.escape(_sob_conformance_marker(case, impl))}"'
+        f'data-marker-parity-{impl}="{html_lib.escape(_stream_xeng_marker(case, impl))}"'
         for impl in ("dynamo", "vllm", "sglang")
     )
     return " ".join(attrs)
 
 
 def _sob_cell_text(case: dict | None) -> str:
-    """Static/overview cell text: the Dynamo stream-vs-batch result (=, D, …, n/a)."""
-    return _sob_conformance_marker(case, "dynamo")
+    """Static/overview cell text: the Dynamo cross-engine stream marker (=, Vₛ, …)."""
+    return _stream_xeng_marker(case, "dynamo")
 
 
 def _build_sob_tooltip(case: dict) -> str:
-    """Tooltip for a batch-on-stream cell: each engine's STREAM output beside its
-    BATCH reference, so a divergence (and which side recovered) is legible."""
+    """Tooltip for a stream-tab cell (TC stream v2 + batch-on-stream).
+
+    Two comparisons, both shown:
+      - COLOR is stream-vs-own-batch, so the BATCH reference (X_b) is shown for
+        every engine.
+      - The STREAM side (X_s) is shown either as the per-chunk chart (TC stream v2
+        cases carry `chunks:`; its final `assembled` row IS X_s) or, when there is
+        no per-chunk breakdown (batch-on-stream overlay), as a plain X_s block.
+    """
     family = case.get("__family")
     cid = case.get("__case_id", "")
     head = f"{cid} — {family}" if family else cid
@@ -2284,16 +2414,24 @@ def _build_sob_tooltip(case: dict) -> str:
     )
     expected = case.get("expected") or {}
     batch = case.get("batch_expected") or {}
+    # The per-chunk chart (chunk-by-chunk emit + an assembled X_s row + a batch X_b
+    # row) is the heart of the streaming tab; only TC stream v2 cases carry
+    # `chunks:`. When it's present it already shows both X_s and X_b, so the
+    # separate per-engine blocks below would be redundant — skip them.
+    chart = _per_chunk_chart_html(case, "stream")
     sections: list[tuple[str, str]] = []
-    for impl in ("dynamo", "vllm", "sglang"):
-        sections.append(
-            (f"{_IMPL_DISPLAY[impl]} stream", _format_output_block_html(expected.get(impl), family))
-        )
-        sections.append(
-            (f"{_IMPL_DISPLAY[impl]} batch", _format_output_block_html(batch.get(impl), family))
-        )
+    if not chart:
+        for impl in ("dynamo", "vllm", "sglang"):
+            L = _ENGINE_LETTER[impl]
+            sections.append(
+                (f"{L}<sub>s</sub> {_IMPL_DISPLAY[impl]} stream", _format_output_block_html(expected.get(impl), family))
+            )
+            sections.append(
+                (f"{L}<sub>b</sub> {_IMPL_DISPLAY[impl]} batch", _format_output_block_html(batch.get(impl), family))
+            )
+    # Color reasons: stream diverged from its own batch (X_s != X_b -> red cell).
     reason_parts = [
-        f"{_IMPL_DISPLAY[impl]}: stream calls diverge from batch calls"
+        f"{_ENGINE_LETTER[impl]}{_SUB_S} stream diverges from its own batch parse (cell is red)"
         for impl in ("dynamo", "vllm", "sglang")
         if _sob_calls_consistent(case, impl) is False
     ]
@@ -2304,7 +2442,9 @@ def _build_sob_tooltip(case: dict) -> str:
         input_html=input_html,
         output_sections=sections,
         divergent_reasons="\n".join(reason_parts) or None,
+        chart=chart,
         refs=[("Ref", case.get("ref"))],
+        html_section_labels=True,
     )
 
 
@@ -2402,9 +2542,11 @@ def build_stream_on_batch_panel(active: bool = False) -> dict[str, object]:
 
     It reuses the v1 batch taxonomy (`taxonomy_mode="batch"`) and the v2 stream
     parser column (`parser_stream_context="batch_on_stream"`) through the shared
-    panel pipeline. Its markers use the `stream_vs_batch` comparison: default mode
-    shows only the leak marker; the Conformance toggle shows each engine's stream
-    parse vs its own batch parse (`=` consistent, `D`/`V`/`S` + red on divergence).
+    panel pipeline. Its markers use the `stream_vs_batch` comparison (two
+    dimensions per cell): default mode shows only the leak marker; the cell COLOR
+    is each engine's stream parse vs its own batch parse (green consistent, red
+    divergent), and the Conformance toggle shows cross-engine stream agreement
+    (`=`, or `Dₛ`/`Vₛ`/`Sₛ` for the streams that differ).
     """
     batch_cases, labels = load_all_cases("batch")
     cases = _build_stream_on_batch_cases(batch_cases)
@@ -2450,10 +2592,14 @@ def _load_html_panel(
     sub_cases = _discover_sub_cases(mode, cases)
     no_vllm, no_sglang = _derive_no_peer_sets(cases)
     top_n, others = _build_display_groups(cases, labels)
+    # The streamv2 tab uses the stream comparison: color = stream-vs-own-batch,
+    # conformance marker = cross-engine stream agreement.
+    comparison = "stream_vs_batch" if mode == "streamv2" else "cross_engine"
     return (
         mode,
         render_html_panel(
-            mode, cases, sub_cases, no_vllm, no_sglang, top_n, others, active
+            mode, cases, sub_cases, no_vllm, no_sglang, top_n, others, active,
+            comparison=comparison,
         ),
         has_cases,
     )
@@ -2561,6 +2707,10 @@ def _rewrite_panel_paths(
                 f'href="{hrefs["streaming_src"]}"',
             )
             .replace(
+                'href="../../../lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"',
+                f'href="{hrefs["toolcalling_streaming_cases"]}"',
+            )
+            .replace(
                 'href="../../../lib/parsers/TOOLCALLING_CASES.md"',
                 f'href="{hrefs["toolcalling_cases"]}"',
             )
@@ -2605,7 +2755,7 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
     panels = []
     _fixture_href_roots = {
         "batch": hrefs["toolcalling_fixtures"],
-        "stream": hrefs["toolcalling_stream_fixtures"],
+        "streamv2": hrefs["toolcalling_stream_fixtures"],
     }
     _toolbar_desc = {
         "batch": (
@@ -2614,14 +2764,14 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
             f'Tool Calling fixture version: <strong>v1</strong> batch fixtures '
             f'(<a href="{hrefs["toolcalling_fixtures"]}">conformance/toolcalling/fixtures/</a>)'
         ),
-        "stream": (
+        "streamv2": (
             f'Tool Calling parser version: <strong>v2</strong> Dynamo parser v2 token-incremental streaming '
             f'(<a href="{hrefs["streaming_src"]}">parsers_v2/src/tool_calling/*</a>)<br>'
             f'Tool Calling fixture version: <strong>v2</strong> stream fixtures '
             f'(<a href="{hrefs["toolcalling_stream_fixtures"]}">conformance/toolcalling/fixtures-stream-v2/</a>)'
         ),
     }
-    for mode in ("batch", "stream"):
+    for mode in ("batch", "streamv2"):
         _mode, panel, _has_cases = _load_html_panel(mode)
         panel = _rewrite_panel_paths(
             panel, "toolcalling",
@@ -2631,15 +2781,23 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
         panel.update(
             {
                 "id": f"tab-toolcalling-{mode}",
-                "label": "TC stream (v2)" if mode == "stream" else "TC batch (v1)",
+                "label": "TC stream (v2)" if mode == "streamv2" else "TC batch (v1)",
                 "tab_title": (
                     "Tool Calling stream: Dynamo parser v2 on v2 stream fixtures"
-                    if mode == "stream"
+                    if mode == "streamv2"
                     else "Tool Calling batch: v1 code on v1 batch fixtures"
                 ),
                 "active": False,
-                "case_docs_href": hrefs["toolcalling_cases"],
-                "case_docs_label": "lib/parsers/TOOLCALLING_CASES.md",
+                "case_docs_href": (
+                    hrefs["toolcalling_streaming_cases"]
+                    if mode == "streamv2"
+                    else hrefs["toolcalling_cases"]
+                ),
+                "case_docs_label": (
+                    "lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"
+                    if mode == "streamv2"
+                    else "lib/parsers/TOOLCALLING_CASES.md"
+                ),
                 "case_prefix": f"TOOLCALLING.{mode}.",
                 "case_section_id": f"toolcalling-{mode}",
             }

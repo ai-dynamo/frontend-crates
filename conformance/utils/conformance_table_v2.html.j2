@@ -195,6 +195,10 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 .ttip-chunks td.cin { color: #cbd5e1; max-width: 22em; word-break: break-word; }
 .ttip-chunks tr.ttip-final td { border-top: 2px solid #64748b; background: #0b1220; }
 .ttip-chunks tr.ttip-final td.cin { color: #93c5fd; font-weight: 600; }
+/* Baseline column (Dynamo batch): a fixed reference left of the stream columns,
+   set off with a thicker right border and a tinted background. */
+.ttip-chunks th.cbase-h { background: #1e293b; color: #fbbf24; border-right: 2px solid #64748b; }
+.ttip-chunks td.cbase { background: #0b1220; border-right: 2px solid #64748b; max-width: 16em; word-break: break-word; vertical-align: bottom; }
 .ttip-chunks .fr { color: #f59e0b; }
 .ttip-unavail { margin-top: 3px; color: #94a3b8; font-style: normal; font-size: 11px; }
 /* Paired-tag palette: each distinct tag name gets a unique color (cycles
@@ -308,10 +312,14 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 {% endif %}
 </p>
 <p class="legend details-only parity-explainer">
+{% if panel.parity_explainer_html is defined and panel.parity_explainer_html %}
+  {{ panel.parity_explainer_html|safe }}
+{% else %}
   <strong>Conformance:</strong>
   <span style="color:#0a7d2c">=</span> all three outputs match ·
   <span style="color:#555">D</span>/<span style="color:#555">V</span>/<span style="color:#555">S</span> names parser output that differs from the selected parser (<span style="color:#555">D</span> = Dynamo fixture key) ·
   multiple letters mean multiple peer outputs differ from the selected parser.
+{% endif %}
 </p>
 <p class="stats details-only">
   Stats: {{ panel.stats.families }} families × {{ panel.stats.sub_cases }} sub-cases

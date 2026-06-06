@@ -37,6 +37,7 @@ _build_stage_base() {
   fi
   ln -s "$ROOT/parsers/src/tool_calling"         "$STAGE/lib/parsers/src/tool_calling"
   ln -s "$TOOLS/lib/parsers/TOOLCALLING_CASES.md"   "$STAGE/lib/parsers/TOOLCALLING_CASES.md"
+  ln -s "$TOOLS/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md" "$STAGE/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"
   ln -s "$TOOLS/lib/parsers/REASONING_CASES.md"     "$STAGE/lib/parsers/REASONING_CASES.md"
   ln -s "$TOOLS/pyproject.stub.toml"                "$STAGE/pyproject.toml"
   [ -e "$ROOT/.git" ] && ln -s "$ROOT/.git" "$STAGE/.git" || true
