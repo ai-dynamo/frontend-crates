@@ -187,7 +187,7 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 .ttip-head { font-weight: bold; margin-bottom: 4px; color: #fbbf24; }
 .ttip-section { font-weight: bold; margin-top: 6px; color: #93c5fd; }
 .ttip-pre { margin: 2px 0 0 0; white-space: pre-wrap; word-break: break-word; font-family: inherit; color: #e5e7eb; }
-/* Per-chunk emit chart: input | Dynamo parser v2 | vLLM | SGLang, one row per chunk. */
+/* Per-chunk emit chart: input | Dynamo | vLLM | SGLang, one row per chunk. */
 .ttip-chunks { border-collapse: collapse; margin: 3px 0 0 0; font-size: 11px; width: 100%; }
 .ttip-chunks th, .ttip-chunks td { border: 1px solid #475569; padding: 2px 5px; text-align: left; vertical-align: top; }
 .ttip-chunks th { background: #1e293b; color: #93c5fd; font-weight: 600; }
@@ -241,7 +241,7 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
   </div>
   <div class="radio-group" role="radiogroup" aria-label="Parser implementation">
     <span class="radio-group-label">Parser:</span>
-    <label class="radio-option"><input type="radio" name="parity-parser" value="dynamo" data-parser-toggle checked> Dynamo parser v2</label>
+    <label class="radio-option"><input type="radio" name="parity-parser" value="dynamo" data-parser-toggle checked> Dynamo</label>
     <label class="radio-option"><input type="radio" name="parity-parser" value="vllm" data-parser-toggle> vLLM</label>
     <label class="radio-option"><input type="radio" name="parity-parser" value="sglang" data-parser-toggle> SGLang</label>
   </div>
@@ -263,7 +263,7 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 <p class="legend summary-only">
   <span class="summary-key ok" aria-hidden="true"></span>green(<span data-overview-count="ok">0</span>) = selected implementation output is clean ·
   <span class="summary-key problem" aria-hidden="true"></span>red(<span data-overview-count="problem">0</span>) = leaks parser markup or has an expected error ·
-  <span class="summary-key todo" aria-hidden="true"></span>orange(<span data-overview-count="todo">0</span>) = Dynamo parser v2 is not implemented yet ·
+  <span class="summary-key todo" aria-hidden="true"></span>gray(<span data-overview-count="todo">0</span>) = Dynamo parser is not implemented yet ·
   <span class="summary-key na" aria-hidden="true"></span>gray(<span data-overview-count="na">0</span>) = not applicable, unavailable, or missing fixture.
 </p>
 <p class="legend details-only">
@@ -273,8 +273,8 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
   {{ legend_html|safe }}
 {% else %}
   <strong>Legend:</strong>
-  <span style="color:#0a7d2c">=</span> all captured peers match Dynamo parser v2 ·
-  <span style="color:#8b949e">·</span> Dynamo-parser-v2-only fixture
+  <span style="color:#0a7d2c">=</span> all captured peers match Dynamo ·
+  <span style="color:#8b949e">·</span> Dynamo-only fixture
   (both peers unavailable) ·
   <span style="color:#555">V/S</span> divergence
   (V = vLLM, S = SGLang; intentional, has <code>reason:</code>) ·
@@ -310,7 +310,7 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 <p class="legend details-only parity-explainer">
   <strong>Conformance:</strong>
   <span style="color:#0a7d2c">=</span> all three outputs match ·
-  <span style="color:#555">D</span>/<span style="color:#555">V</span>/<span style="color:#555">S</span> names parser output that differs from the selected parser (<span style="color:#555">D</span> = Dynamo parser v2 fixture key) ·
+  <span style="color:#555">D</span>/<span style="color:#555">V</span>/<span style="color:#555">S</span> names parser output that differs from the selected parser (<span style="color:#555">D</span> = Dynamo fixture key) ·
   multiple letters mean multiple peer outputs differ from the selected parser.
 </p>
 <p class="stats details-only">
@@ -318,7 +318,7 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
   = {{ panel.stats.slots }} grid slots ({{ panel.stats.todo|default(0) }} TODO, {{ panel.stats.na }} n/a, {{ panel.stats.missing }} missing).
   <strong>{{ panel.stats.real }}</strong> real cases:
   <span style="color:#0a7d2c">{{ panel.stats.parity }} captured-peer conformance</span> ·
-  <span style="color:#555">{{ panel.stats.dynamo_only }} Dynamo-parser-v2-only</span> ·
+  <span style="color:#555">{{ panel.stats.dynamo_only }} Dynamo-only</span> ·
   <span style="color:#555">{{ panel.stats.documented }} documented divergences</span>
   (have <code>reason:</code>) ·
   <span style="color:#b00">{{ panel.stats.research }} research-needed</span>
