@@ -1,0 +1,169 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: mistral
+model_label: 'Mistral series'
+mode: streamv2
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
+cases:
+  TOOLCALLING.streamv2.31.a:
+    description: 'Multi-call JSON array with call separator `,` inside the first argument string'
+    ref: 'derived from TOOLCALLING.batch.31.a'
+    tools:
+    - name: run_query
+      parameters:
+        type: object
+        properties:
+          sql:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '[TOOL_CALLS][{"name":'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ' "run_query",'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'run_query'}
+        sglang: []
+    - delta_text: ' "arguments": {"sql": "SELECT'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"sql": "SELECT'}
+        sglang: []
+    - delta_text: ' a, SELECT'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' a, SELECT'}
+        sglang: []
+    - delta_text: ' b"}},'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' b"}'}
+        sglang: []
+    - delta_text: ' {"name": "get_time",'
+      expected:
+        vllm:
+        - {index: 1, id: true, name: 'get_time'}
+        sglang: []
+    - delta_text: ' "arguments": {"timezone": "EST"}}]'
+      expected:
+        vllm:
+        - {index: 1, arguments: '{"timezone": "EST"}'}
+        sglang: []
+    - delta_text: '[/TOOL_CALLS]'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '[/TOOL_CALLS]'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.31.b:
+    description: 'Multi-call response with structural delimiters inside one argument string value'
+    ref: 'derived from TOOLCALLING.batch.31.b'
+    tools:
+    - name: run_query
+      parameters:
+        type: object
+        properties:
+          sql:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '[TOOL_CALLS][{"name":'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ' "run_query",'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'run_query'}
+        sglang: []
+    - delta_text: ' "arguments": {"sql": "SELECT'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"sql": "SELECT'}
+        sglang: []
+    - delta_text: ' value WHERE'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' value WHERE'}
+        sglang: []
+    - delta_text: ' note'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' note'}
+        sglang: []
+    - delta_text: ' has brace'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' has brace'}
+        sglang: []
+    - delta_text: ' } and bracket'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' } and bracket'}
+        sglang: []
+    - delta_text: ' ]'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' ]'}
+        sglang: []
+    - delta_text: '"}}, {"name":'
+      expected:
+        vllm:
+        - {index: 0, arguments: '"}'}
+        sglang: []
+    - delta_text: ' "get_time",'
+      expected:
+        vllm:
+        - {index: 0, name: 'get_time'}
+        sglang: []
+    - delta_text: ' "arguments": {"timezone":'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"timezone":'}
+        sglang: []
+    - delta_text: ' "EST"}}]'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' "EST"}'}
+        sglang: []
+    - delta_text: '[/TOOL_CALLS]'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '[/TOOL_CALLS]'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []

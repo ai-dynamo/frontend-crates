@@ -1,0 +1,317 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: nemotron_nano
+model_label: 'Nemotron Nano v3'
+mode: streamv2
+captured_with:
+  vllm: '0.22.0'
+cases:
+  TOOLCALLING.streamv2.5.a:
+    description: 'Missing </tool_call> end marker'
+    ref: 'derived from TOOLCALLING.batch.5.a'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_nano''.'
+    chunks:
+    - delta_text: '<tool_call>
+<function=get_weather>'
+      expected:
+        vllm: []
+    - delta_text: '
+<parameter=location>'
+      expected:
+        vllm: []
+    - delta_text: '
+NYC
+</parameter>
+</function>'
+      expected:
+        vllm: []
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.5.b:
+    description: 'Closing </tool_call> without matching <tool_call> open'
+    ref: 'derived from TOOLCALLING.batch.5.b'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_nano''.'
+    chunks:
+    - delta_text: '<function=get_weather>
+<parameter=location>'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '<function=get_weather>
+<parameter=location>'
+    - delta_text: '
+NYC'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '
+NYC'
+    - delta_text: '
+</parameter>
+</function>
+</tool_call>'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '
+</parameter>
+</function>
+</tool_call>'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.5.c:
+    description: 'Truncation mid-parameter value'
+    ref: 'derived from TOOLCALLING.batch.5.c'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_nano''.'
+    chunks:
+    - delta_text: '<tool_call>
+<function=get_weather>'
+      expected:
+        vllm: []
+    - delta_text: '
+<parameter=location>'
+      expected:
+        vllm: []
+    - delta_text: '
+NY'
+      expected:
+        vllm: []
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.5.d:
+    description: 'Multi-call, last call missing only end marker (body complete)'
+    ref: 'derived from TOOLCALLING.batch.5.d'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_nano''.'
+    chunks:
+    - delta_text: 'I''ll start'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: 'I''ll start'
+    - delta_text: ' by'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' by'
+    - delta_text: ' fetching the weather'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' fetching the weather'
+    - delta_text: ' for both'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' for both'
+    - delta_text: ' Boston'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' Boston'
+    - delta_text: ' and New'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' and New'
+    - delta_text: ' York at the'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' York at the'
+    - delta_text: ' same'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' same'
+    - delta_text: ' time!
+<tool_call>'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' time!
+'
+    - delta_text: '
+<function=get_weather>'
+      expected:
+        vllm: []
+    - delta_text: '
+<parameter=location>
+Boston'
+      expected:
+        vllm: []
+    - delta_text: '
+</parameter>'
+      expected:
+        vllm: []
+    - delta_text: '
+</function>
+</tool_call>
+<tool_call>'
+      expected:
+        vllm: []
+    - delta_text: '
+<function=get_weather>
+<parameter=location>'
+      expected:
+        vllm: []
+    - delta_text: '
+New'
+      expected:
+        vllm: []
+    - delta_text: ' York
+</parameter>'
+      expected:
+        vllm: []
+    - delta_text: '
+</function>'
+      expected:
+        vllm: []
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.5.e:
+    description: 'Multi-call, last call truncated mid-arg-value'
+    ref: 'derived from TOOLCALLING.batch.5.e'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_nano''.'
+    chunks:
+    - delta_text: 'I''ll start'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: 'I''ll start'
+    - delta_text: ' by'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' by'
+    - delta_text: ' fetching the weather'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' fetching the weather'
+    - delta_text: ' for both'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' for both'
+    - delta_text: ' Boston'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' Boston'
+    - delta_text: ' and New'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' and New'
+    - delta_text: ' York at the'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' York at the'
+    - delta_text: ' same'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' same'
+    - delta_text: ' time!
+<tool_call>'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' time!
+'
+    - delta_text: '
+<function=get_weather>'
+      expected:
+        vllm: []
+    - delta_text: '
+<parameter=location>
+Boston'
+      expected:
+        vllm: []
+    - delta_text: '
+</parameter>'
+      expected:
+        vllm: []
+    - delta_text: '
+</function>
+</tool_call>
+<tool_call>'
+      expected:
+        vllm: []
+    - delta_text: '
+<function=get_weather>
+<parameter=location>'
+      expected:
+        vllm: []
+    - delta_text: '
+New'
+      expected:
+        vllm: []
+    - delta_text: ' York'
+      expected:
+        vllm: []
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []

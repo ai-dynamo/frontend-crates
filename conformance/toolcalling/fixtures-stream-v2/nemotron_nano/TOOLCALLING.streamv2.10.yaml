@@ -1,0 +1,67 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: nemotron_nano
+model_label: 'Nemotron Nano v3'
+mode: streamv2
+captured_with:
+  vllm: '0.22.0'
+cases:
+  TOOLCALLING.streamv2.10:
+    description: 'Duplicate calls (same name twice)'
+    ref: 'derived from TOOLCALLING.batch.10'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_nano''.'
+    chunks:
+    - delta_text: '<tool_call>
+<function=get_weather>'
+      expected:
+        vllm: []
+    - delta_text: '
+<parameter=location>'
+      expected:
+        vllm: []
+    - delta_text: '
+NYC
+</parameter>
+</function>'
+      expected:
+        vllm: []
+    - delta_text: '
+</tool_call>
+<tool_call>'
+      expected:
+        vllm: []
+    - delta_text: '
+<function=get_weather>'
+      expected:
+        vllm: []
+    - delta_text: '
+<parameter=location>
+LA'
+      expected:
+        vllm: []
+    - delta_text: '
+</parameter>
+</function>
+</tool_call>'
+      expected:
+        vllm: []
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []

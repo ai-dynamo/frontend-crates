@@ -1,0 +1,322 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: mistral
+model_label: 'Mistral series'
+mode: streamv2
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
+cases:
+  TOOLCALLING.streamv2.7.a:
+    description: 'Standard scalar types'
+    ref: 'derived from TOOLCALLING.batch.7.a'
+    tools:
+    - name: book_flight
+      parameters:
+        type: object
+        properties:
+          destination:
+            type: string
+          passengers:
+            type: integer
+          first_class:
+            type: boolean
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '[TOOL_CALLS][{"name":'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ' "book_flight",'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'book_flight'}
+        sglang: []
+    - delta_text: ' "arguments": {"destination": "Paris",'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"destination": "Paris",'}
+        sglang: []
+    - delta_text: ' "passengers": 2,'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' "passengers": 2,'}
+        sglang: []
+    - delta_text: ' "first_class":'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' "first_class":'}
+        sglang: []
+    - delta_text: ' true}}][/TOOL_CALLS]'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.7.b:
+    description: 'Unicode + escaped chars'
+    ref: 'derived from TOOLCALLING.batch.7.b'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '[TOOL_CALLS][{"name":'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ' "get_weather",'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather'}
+        sglang: []
+    - delta_text: ' "arguments": {"location": "Tōkyō'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"location": "Tōkyō'}
+        sglang: []
+    - delta_text: ' \"central\""}}][/TOOL_CALLS]'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.7.c:
+    description: 'Schema mismatch — string value where schema declares integer'
+    ref: 'derived from TOOLCALLING.batch.7.c'
+    tools:
+    - name: set_temperature
+      parameters:
+        type: object
+        properties:
+          celsius:
+            type: integer
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '[TOOL_CALLS][{"name":'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ' "set_temperature",'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'set_temperature'}
+        sglang: []
+    - delta_text: ' "arguments": {"celsius": "20"}}]'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"celsius": "20"}'}
+        sglang: []
+    - delta_text: '[/TOOL_CALLS]'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '[/TOOL_CALLS]'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.7.d:
+    description: 'Nested object + array'
+    ref: 'derived from TOOLCALLING.batch.7.d'
+    tools:
+    - name: process_data
+      parameters:
+        type: object
+        properties:
+          items:
+            type: array
+          config:
+            type: object
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '[TOOL_CALLS][{"name":'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ' "process_data",'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'process_data'}
+        sglang: []
+    - delta_text: ' "arguments": {"items": [1,2,3]'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"items": [1,2,3]'}
+        sglang: []
+    - delta_text: ', "config":'
+      expected:
+        vllm:
+        - {index: 0, arguments: ', "config":'}
+        sglang: []
+    - delta_text: ' {"nested":'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' {"nested":'}
+        sglang: []
+    - delta_text: ' true}}}][/TOOL_CALLS]'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.7.e:
+    description: 'Large / deep JSON-edge argument payload'
+    ref: 'derived from TOOLCALLING.batch.7.e'
+    tools:
+    - name: process_data
+      parameters:
+        type: object
+        properties:
+          payload:
+            type: object
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '[TOOL_CALLS][{"name":'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ' "process_data",'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'process_data'}
+        sglang: []
+    - delta_text: ' "arguments": {"payload": {"regions":'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"payload": {"regions":'}
+        sglang: []
+    - delta_text: ' [{"name": "west",'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' [{"name": "west",'}
+        sglang: []
+    - delta_text: ' "scores":'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' "scores":'}
+        sglang: []
+    - delta_text: ' [1, 2,'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' [1, 2,'}
+        sglang: []
+    - delta_text: ' 3]}, {"name":'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' 3]}, {"name":'}
+        sglang: []
+    - delta_text: ' "east",'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' "east",'}
+        sglang: []
+    - delta_text: ' "scores": [4,'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' "scores": [4,'}
+        sglang: []
+    - delta_text: ' 5,'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' 5,'}
+        sglang: []
+    - delta_text: ' 6]}]'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' 6]}]'}
+        sglang: []
+    - delta_text: ','
+      expected:
+        vllm:
+        - {index: 0, arguments: ','}
+        sglang: []
+    - delta_text: ' "flags": {"enabled": true,'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' "flags": {"enabled": true,'}
+        sglang: []
+    - delta_text: ' "retry": null},'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' "retry": null},'}
+        sglang: []
+    - delta_text: ' "empty":'
+      expected:
+        vllm:
+        - {index: 0, arguments: ' "empty":'}
+        sglang: []
+    - delta_text: ' {}}}}][/TOOL_CALLS]'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.7.f:
+    description: 'Numeric precision edge preserves integer-like number literal'
+    ref: 'derived from TOOLCALLING.batch.7.f'
+    tools:
+    - name: set_limit
+      parameters:
+        type: object
+        properties:
+          count:
+            type: number
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '[TOOL_CALLS][{"name":'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ' "set_limit",'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'set_limit'}
+        sglang: []
+    - delta_text: ' "arguments": {"count": 9007199254740993}}]'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"count": 9007199254740993}'}
+        sglang: []
+    - delta_text: '[/TOOL_CALLS]'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '[/TOOL_CALLS]'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []

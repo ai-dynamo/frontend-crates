@@ -1,0 +1,166 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: gemma4
+model_label: 'Gemma 4'
+mode: streamv2
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
+cases:
+  TOOLCALLING.streamv2.2.a:
+    description: 'Parallel calls (back-to-back sentinels)'
+    ref: 'derived from TOOLCALLING.batch.2.a'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '<|tool_call>call:get_weather{location:<|"|>'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather', arguments: ''}
+        sglang:
+        - {index: 0, name: 'get_weather'}
+    - delta_text: 'NYC<|"|>'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"location": "NYC'}
+        sglang: []
+    - delta_text: '}<tool_call|><|tool_call>call:get_time{timezone:<|"|>'
+      expected:
+        vllm: []
+        sglang:
+        - {index: 0, arguments: '{"location": "NYC"}'}
+        - {index: 1, name: 'get_time'}
+    - delta_text: 'EST<|"|>}<tool_call|>'
+      expected:
+        vllm:
+        - {index: 1, arguments: '{"timezone": "EST"}'}
+        sglang:
+        - {index: 1, arguments: '{"timezone": "EST"}'}
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.2.c:
+    description: 'With surrounding narration'
+    ref: 'derived from TOOLCALLING.batch.2.c'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: 'Both: <|tool_call>'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'Both: '
+    - delta_text: 'call:get_weather{location:<|"|>'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather', arguments: ''}
+        sglang:
+        - {index: 0, name: 'get_weather'}
+    - delta_text: 'NYC<|"|>}<tool_call|><|tool_call>'
+      expected:
+        vllm: []
+        sglang:
+        - {index: 0, arguments: '{"location": "NYC"}'}
+    - delta_text: 'call:get_time{timezone:<|"|>EST<|"|>'
+      expected:
+        vllm:
+        - {index: 1, id: true, name: 'get_time', arguments: ''}
+        sglang:
+        - {index: 1, name: 'get_time'}
+    - delta_text: '}<tool_call|>'
+      expected:
+        vllm:
+        - {index: 1, arguments: '{"timezone": "EST"}'}
+        sglang:
+        - {index: 1, arguments: '{"timezone": "EST"}'}
+    - delta_text: ' Done.'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' Done.'
+        sglang: ' Done.'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.2.d:
+    description: 'Same-name twice'
+    ref: 'derived from TOOLCALLING.batch.2.d'
+    tools:
+    - &id001
+      name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - *id001
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '<|tool_call>call:get_weather{location:<|"|>'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather', arguments: ''}
+        sglang:
+        - {index: 1, name: 'get_weather'}
+    - delta_text: 'NYC<|"|>'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"location": "NYC'}
+        sglang: []
+    - delta_text: '}<tool_call|><|tool_call>call:get_weather{location:<|"|>'
+      expected:
+        vllm: []
+        sglang:
+        - {index: 1, arguments: '{"location": "NYC"}'}
+        - {index: 1, name: 'get_weather'}
+    - delta_text: 'LA<|"|>}<tool_call|>'
+      expected:
+        vllm:
+        - {index: 1, arguments: '{"location": "LA"}'}
+        sglang:
+        - {index: 1, arguments: '{"location": "LA"}'}
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []

@@ -1,0 +1,260 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: harmony
+model_label: 'gpt-oss (harmony, token-id)'
+mode: streamv2
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
+cases:
+  TOOLCALLING.streamv2.4.a:
+    description: 'Channel envelope with garbage body'
+    ref: 'derived from TOOLCALLING.batch.4.a'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '<|start|>assistant'
+      delta_token_ids: [200006, 173781]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: '<|channel|>comment'
+      delta_token_ids: [200005, 12606]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: 'ary to'
+      delta_token_ids: [815, 316]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: '=functions'
+      delta_token_ids: [28, 44580]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: '.get_weather'
+      delta_token_ids: [775, 170154]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: ' <|constrain|>'
+      delta_token_ids: [220, 200003]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: 'json<|message|>'
+      delta_token_ids: [4108, 200008]
+      expected:
+        dynamo:
+        - {index: 0, id: true, name: 'get_weather'}
+        vllm:
+        - {index: 0, id: true, name: 'get_weather', arguments: ''}
+        sglang: []
+    - delta_text: 'not json'
+      delta_token_ids: [2878, 5701]
+      expected:
+        dynamo:
+        - {index: 0, arguments: 'not'}
+        - {index: 0, arguments: ' json'}
+        vllm:
+        - {index: 0, arguments: 'not'}
+        - {index: 0, arguments: ' json'}
+        sglang: []
+    - delta_text: ' at all'
+      delta_token_ids: [540, 722]
+      expected:
+        dynamo:
+        - {index: 0, arguments: ' at'}
+        - {index: 0, arguments: ' all'}
+        vllm:
+        - {index: 0, arguments: ' at'}
+        - {index: 0, arguments: ' all'}
+        sglang: []
+    - delta_text: '<|call|>'
+      delta_token_ids: [200012]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: tool_calls
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.4.b:
+    description: 'Unterminated JSON in message body'
+    ref: 'derived from TOOLCALLING.batch.4.b'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '<|start|>assistant'
+      delta_token_ids: [200006, 173781]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: '<|channel|>comment'
+      delta_token_ids: [200005, 12606]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: 'ary to'
+      delta_token_ids: [815, 316]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: '=functions'
+      delta_token_ids: [28, 44580]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: '.get_weather'
+      delta_token_ids: [775, 170154]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: ' <|constrain|>'
+      delta_token_ids: [220, 200003]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: 'json<|message|>'
+      delta_token_ids: [4108, 200008]
+      expected:
+        dynamo:
+        - {index: 0, id: true, name: 'get_weather'}
+        vllm:
+        - {index: 0, id: true, name: 'get_weather', arguments: ''}
+        sglang: []
+    - delta_text: '{"location'
+      delta_token_ids: [10848, 7693]
+      expected:
+        dynamo:
+        - {index: 0, arguments: '{"'}
+        - {index: 0, arguments: 'location'}
+        vllm:
+        - {index: 0, arguments: '{"'}
+        - {index: 0, arguments: 'location'}
+        sglang: []
+    - delta_text: '":"NY'
+      delta_token_ids: [7534, 24202]
+      expected:
+        dynamo:
+        - {index: 0, arguments: '":"'}
+        - {index: 0, arguments: 'NY'}
+        vllm:
+        - {index: 0, arguments: '":"'}
+        - {index: 0, arguments: 'NY'}
+        sglang: []
+    - delta_text: 'C<|call|>'
+      delta_token_ids: [34, 200012]
+      expected:
+        dynamo:
+        - {index: 0, arguments: 'C'}
+        vllm:
+        - {index: 0, arguments: 'C'}
+        sglang: []
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: tool_calls
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.4.c:
+    description: 'No to=functions.X recipient'
+    ref: 'derived from TOOLCALLING.batch.4.c'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '<|start|>assistant'
+      delta_token_ids: [200006, 173781]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: '<|channel|>comment'
+      delta_token_ids: [200005, 12606]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: 'ary '
+      delta_token_ids: [815, 220]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: '<|constrain|>json'
+      delta_token_ids: [200003, 4108]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: '<|message|>{"'
+      delta_token_ids: [200008, 10848]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: 'location":"'
+      delta_token_ids: [7693, 7534]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: 'NYC'
+      delta_token_ids: [24202, 34]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: '"}<|call|>'
+      delta_token_ids: [18583, 200012]
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: stop
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []

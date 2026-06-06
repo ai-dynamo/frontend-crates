@@ -1,0 +1,139 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: deepseek_v3_1
+model_label: 'DeepSeek V3.1'
+mode: streamv2
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
+cases:
+  TOOLCALLING.streamv2.4.a:
+    description: 'Garbage between calls fences (no tool_sep / args)'
+    ref: 'derived from TOOLCALLING.batch.4.a'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '<｜tool▁calls▁begin｜>nonsense<｜tool▁calls▁end｜>'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'nonsense'
+    - delta_text: ''
+      finish_reason: stop
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.4.b:
+    description: 'Unterminated JSON string in args'
+    ref: 'derived from TOOLCALLING.batch.4.b'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: 'get_weather<｜tool▁sep｜>'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather'}
+        sglang:
+        - {index: 0, name: 'get_weather'}
+    - delta_text: '{"location":"NYC<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+      expected:
+        vllm: []
+        sglang:
+        - {index: 0, arguments: '{"location":"NYC'}
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.4.c:
+    description: 'Missing function name (no token before tool_sep)'
+    ref: 'derived from TOOLCALLING.batch.4.c'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: '<｜tool▁sep｜>'
+      expected:
+        vllm: []
+        sglang:
+        - {index: 0}
+    - delta_text: '{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+      expected:
+        vllm: []
+        sglang:
+        - {index: 0, arguments: '{"location":"NYC"}'}
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.4.d:
+    description: 'Mismatched fences (calls_end without call_end)'
+    ref: 'derived from TOOLCALLING.batch.4.d'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: 'get_weather<｜tool▁sep｜>'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather'}
+        sglang:
+        - {index: 0, name: 'get_weather'}
+    - delta_text: '{"location":"NYC"}<｜tool▁calls▁end｜>'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"location":"NYC"}<｜tool▁calls▁end｜>'}
+        sglang:
+        - {index: 0, arguments: '{"location":"NYC"}<｜tool▁calls▁end｜>'}
+    - delta_text: ''
+      finish_reason: stop
+      expected:
+        vllm: []
+        sglang: []

@@ -1,0 +1,162 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: pythonic
+model_label: 'Llama 4 (pythonic fmt)'
+mode: streamv2
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
+cases:
+  TOOLCALLING.streamv2.7.a:
+    description: 'Standard scalar types'
+    ref: 'derived from TOOLCALLING.batch.7.a'
+    tools:
+    - name: book_flight
+      parameters:
+        type: object
+        properties:
+          destination:
+            type: string
+          passengers:
+            type: integer
+          first_class:
+            type: boolean
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '[book_flight(destination="Paris", passengers=2,'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ' first_class=True)]'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'book_flight', arguments: '{"destination": "Paris", "passengers": 2, "first_class": true}'}
+        sglang:
+        - {index: 0, name: 'book_flight', arguments: '{"destination": "Paris", "passengers": 2, "first_class": true}'}
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.7.b:
+    description: 'Unicode + escaped chars'
+    ref: 'derived from TOOLCALLING.batch.7.b'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '[get_weather(location="Tōkyō \"central\"")]'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather', arguments: '{"location": "Tōkyō \"central\""}'}
+        sglang:
+        - {index: 0, name: 'get_weather', arguments: '{"location": "Tōkyō \"central\""}'}
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.7.c:
+    description: 'Schema mismatch — string value where schema declares integer'
+    ref: 'derived from TOOLCALLING.batch.7.c'
+    tools:
+    - name: set_temperature
+      parameters:
+        type: object
+        properties:
+          celsius:
+            type: integer
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '[set_temperature(celsius="20")]'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'set_temperature', arguments: '{"celsius": "20"}'}
+        sglang:
+        - {index: 0, name: 'set_temperature', arguments: '{"celsius": "20"}'}
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.7.d:
+    description: 'Nested dict + array (existing)'
+    ref: 'derived from TOOLCALLING.batch.7.d'
+    tools:
+    - name: process_data
+      parameters:
+        type: object
+        properties:
+          items:
+            type: array
+          config:
+            type: object
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '[process_data(items=[1, 2,'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ' 3]'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ', config={"nested": True})]'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'process_data', arguments: '{"items": [1, 2, 3], "config": {"nested": true}}'}
+        sglang:
+        - {index: 0, name: 'process_data', arguments: '{"items": [1, 2, 3], "config": {"nested": true}}'}
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.7.e:
+    description: 'Large / deep JSON-edge argument payload'
+    ref: 'derived from TOOLCALLING.batch.7.e'
+    tools:
+    - name: process_data
+      parameters:
+        type: object
+        properties:
+          payload:
+            type: object
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '[process_data(payload={"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: '}]'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ',"flags":{"enabled":True,"retry":None},"empty":{}})]'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'process_data', arguments: '{"payload": {"regions": [{"name": "west", "scores": [1, 2, 3]}, {"name": "east", "scores": [4, 5, 6]}], "flags": {"enabled": true, "retry": null}, "empty": {}}}'}
+        sglang:
+        - {index: 0, name: 'process_data', arguments: '{"payload": {"regions": [{"name": "west", "scores": [1, 2, 3]}, {"name": "east", "scores": [4, 5, 6]}], "flags": {"enabled": true, "retry": null}, "empty": {}}}'}
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []

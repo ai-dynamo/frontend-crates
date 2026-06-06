@@ -1,0 +1,217 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: harmony_text
+model_label: 'gpt-oss (harmony, text)'
+mode: streamv2
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
+cases:
+  TOOLCALLING.streamv2.2:
+    description: 'Multiple tool calls split across multiple content chunks'
+    ref: 'derived from TOOLCALLING.batch.2.a'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    chunks:
+    - delta_text: '<|start|>'
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: 'assista'
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: 'nt<|channel|>'
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: 'comme'
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: 'ntary to=function'
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: 's.g'
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: 'et_weathe'
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: 'r <|con'
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: 'strain|>json<'
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: '|mess'
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: 'age|>{"location":'
+      expected:
+        dynamo: []
+        vllm:
+        - {index: 0, id: true, name: 'get_weather', arguments: ''}
+        - {index: 0, arguments: '{"'}
+        - {index: 0, arguments: 'location'}
+        sglang: []
+    - delta_text: '"NY'
+      expected:
+        dynamo: []
+        vllm:
+        - {index: 0, arguments: '":"'}
+        - {index: 0, arguments: 'NY'}
+        sglang: []
+    - delta_text: 'C"}<|call'
+      expected:
+        dynamo:
+        - {index: 0, id: true, name: 'get_weather'}
+        - {index: 0, arguments: '{"'}
+        vllm:
+        - {index: 0, arguments: 'C'}
+        - {index: 0, arguments: '"}'}
+        sglang: []
+    - delta_text: '|><|sta'
+      expected:
+        dynamo:
+        - {index: 0, arguments: 'location'}
+        - {index: 0, arguments: '":"'}
+        - {index: 0, arguments: 'NY'}
+        vllm: []
+        sglang:
+        - {index: 0, name: 'get_weather', arguments: '{"location": "NYC"}'}
+    - delta_text: 'rt|>assistant'
+      expected:
+        dynamo:
+        - {index: 0, arguments: 'C'}
+        - {index: 0, arguments: '"}'}
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'rt|>assistant'
+    - delta_text: '<|cha'
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: '<|cha'
+    - delta_text: 'nnel|>commentary '
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'nnel|>commentary '
+    - delta_text: 'to='
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'to='
+    - delta_text: 'functions'
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'functions'
+    - delta_text: '.get_ti'
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: '.get_ti'
+    - delta_text: 'me <|constrai'
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'me <|constrai'
+    - delta_text: 'n|>js'
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+      normal_text:
+        sglang: 'n|>js'
+    - delta_text: 'on<|message|>{"ti'
+      expected:
+        dynamo: []
+        vllm:
+        - {index: 1, id: true, name: 'get_time', arguments: ''}
+        - {index: 1, arguments: '{"'}
+        sglang: []
+    - delta_text: 'mez'
+      expected:
+        dynamo: []
+        vllm: []
+        sglang: []
+    - delta_text: 'one":"EST'
+      expected:
+        dynamo:
+        - {index: 1, id: true, name: 'get_time'}
+        vllm:
+        - {index: 1, arguments: 'timezone'}
+        - {index: 1, arguments: '":"'}
+        - {index: 1, arguments: 'EST'}
+        sglang: []
+    - delta_text: '"}<|cal'
+      expected:
+        dynamo:
+        - {index: 1, arguments: '{"'}
+        vllm:
+        - {index: 1, arguments: '"}'}
+        sglang: []
+    - delta_text: 'l|>'
+      expected:
+        dynamo:
+        - {index: 1, arguments: 'timezone'}
+        vllm: []
+        sglang: []
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        dynamo:
+        - {index: 1, arguments: '":"'}
+        - {index: 1, arguments: 'EST'}
+        - {index: 1, arguments: '"}'}
+        vllm: []
+        sglang: []

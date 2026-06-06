@@ -1,0 +1,64 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: pythonic
+model_label: 'Llama 4 (pythonic fmt)'
+mode: streamv2
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
+cases:
+  TOOLCALLING.streamv2.13.a:
+    description: 'Unknown-only call under default behavior'
+    ref: 'derived from TOOLCALLING.batch.13.a'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '[unknown_tool(location="NYC")]'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'unknown_tool', arguments: '{"location": "NYC"}'}
+        sglang: []
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.13.c:
+    description: 'Mixed known and unknown calls in one response'
+    ref: 'derived from TOOLCALLING.batch.13.c'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '[get_weather(location="NYC"), unknown_tool(location="LA")]'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather', arguments: '{"location": "NYC"}'}
+        - {index: 1, id: true, name: 'unknown_tool', arguments: '{"location": "LA"}'}
+        sglang:
+        - {index: 0, name: 'get_weather', arguments: '{"location": "NYC"}'}
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []

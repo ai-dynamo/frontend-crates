@@ -1,0 +1,216 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: phi4
+model_label: 'Phi-4'
+mode: streamv2
+captured_with:
+  vllm: '0.22.0'
+cases:
+  TOOLCALLING.streamv2.5.a:
+    description: 'No explicit end (truncation)'
+    ref: 'derived from TOOLCALLING.batch.5.a'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''phi4''.'
+    chunks:
+    - delta_text: 'functools[{"name": "get_weather",'
+      expected:
+        vllm: []
+    - delta_text: ' "arguments":'
+      expected:
+        vllm: []
+    - delta_text: ' {"location": "NYC"}}'
+      expected:
+        vllm: []
+    - delta_text: ''
+      finish_reason: stop
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.5.b:
+    description: 'Closing `]` without matching `functools[` open'
+    ref: 'derived from TOOLCALLING.batch.5.b'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''phi4''.'
+    chunks:
+    - delta_text: 'functools{"name": "get_weather",'
+      expected:
+        vllm: []
+    - delta_text: ' "arguments":'
+      expected:
+        vllm: []
+    - delta_text: ' {"location": "NYC"}}]'
+      expected:
+        vllm: []
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.5.c:
+    description: 'Truncation mid-arguments JSON'
+    ref: 'derived from TOOLCALLING.batch.5.c'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''phi4''.'
+    chunks:
+    - delta_text: 'functools[{"name": "get_weather",'
+      expected:
+        vllm: []
+    - delta_text: ' "arguments":'
+      expected:
+        vllm: []
+    - delta_text: ' {"loc'
+      expected:
+        vllm: []
+    - delta_text: ''
+      finish_reason: stop
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.5.d:
+    description: 'Multi-call, last call missing only end marker (body complete)'
+    ref: 'derived from TOOLCALLING.batch.5.d'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''phi4''.'
+    chunks:
+    - delta_text: 'I''ll start'
+      expected:
+        vllm: []
+    - delta_text: ' by'
+      expected:
+        vllm: []
+    - delta_text: ' fetching the weather'
+      expected:
+        vllm: []
+    - delta_text: ' for both'
+      expected:
+        vllm: []
+    - delta_text: ' Boston'
+      expected:
+        vllm: []
+    - delta_text: ' and New'
+      expected:
+        vllm: []
+    - delta_text: ' York at the'
+      expected:
+        vllm: []
+    - delta_text: ' same'
+      expected:
+        vllm: []
+    - delta_text: ' time!functools[{"name": "get_weather",'
+      expected:
+        vllm: []
+    - delta_text: ' "arguments":'
+      expected:
+        vllm: []
+    - delta_text: ' {"location": "Boston"}},'
+      expected:
+        vllm: []
+    - delta_text: ' {"name":'
+      expected:
+        vllm: []
+    - delta_text: ' "get_weather", "arguments": {"location":'
+      expected:
+        vllm: []
+    - delta_text: ' "New York"}}'
+      expected:
+        vllm: []
+    - delta_text: ''
+      finish_reason: stop
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.5.e:
+    description: 'Multi-call, last call truncated mid-arg-value'
+    ref: 'derived from TOOLCALLING.batch.5.e'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''phi4''.'
+    chunks:
+    - delta_text: 'I''ll start'
+      expected:
+        vllm: []
+    - delta_text: ' by'
+      expected:
+        vllm: []
+    - delta_text: ' fetching the weather'
+      expected:
+        vllm: []
+    - delta_text: ' for both'
+      expected:
+        vllm: []
+    - delta_text: ' Boston'
+      expected:
+        vllm: []
+    - delta_text: ' and New'
+      expected:
+        vllm: []
+    - delta_text: ' York at the'
+      expected:
+        vllm: []
+    - delta_text: ' same'
+      expected:
+        vllm: []
+    - delta_text: ' time!functools[{"name": "get_weather",'
+      expected:
+        vllm: []
+    - delta_text: ' "arguments":'
+      expected:
+        vllm: []
+    - delta_text: ' {"location": "Boston"}},'
+      expected:
+        vllm: []
+    - delta_text: ' {"name":'
+      expected:
+        vllm: []
+    - delta_text: ' "get_weather", "arguments": {"location":'
+      expected:
+        vllm: []
+    - delta_text: ' "New York'
+      expected:
+        vllm: []
+    - delta_text: ''
+      finish_reason: stop
+      expected:
+        vllm: []

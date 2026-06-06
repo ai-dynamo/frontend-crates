@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: deepseek_v3
+model_label: 'DeepSeek V3'
+mode: streamv2
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
+cases:
+  TOOLCALLING.streamv2.9.a:
+    description: 'Empty model text'
+    ref: 'derived from TOOLCALLING.batch.9.a'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: ''
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ''
+      finish_reason: stop
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.9.b:
+    description: 'Blank / whitespace-only model text'
+    ref: 'derived from TOOLCALLING.batch.9.b'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '   '
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '   '
+        sglang: '   '
+    - delta_text: ''
+      finish_reason: stop
+      expected:
+        vllm: []
+        sglang: []

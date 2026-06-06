@@ -1,0 +1,309 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: mistral
+model_label: 'Mistral series'
+mode: streamv2
+captured_with:
+  vllm: '0.22.0'
+  sglang: '0.5.12.post1'
+cases:
+  TOOLCALLING.streamv2.8.a:
+    description: 'Narration before tool call only'
+    ref: 'derived from TOOLCALLING.batch.8.a'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: 'I will'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'I will'
+        sglang: 'I will'
+    - delta_text: ' check'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' check'
+        sglang: ' check'
+    - delta_text: ' the weather. [TOOL_CALLS]'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' the weather. '
+        sglang: ' the weather. '
+    - delta_text: '[{"name": "get_weather",'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather'}
+        sglang: []
+    - delta_text: ' "arguments":'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ' {"location": "NYC"}}]'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"location": "NYC"}'}
+        sglang: []
+    - delta_text: '[/TOOL_CALLS]'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '[/TOOL_CALLS]'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.8.b:
+    description: 'Narration after tool call only'
+    ref: 'derived from TOOLCALLING.batch.8.b'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: '[TOOL_CALLS][{"name":'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ' "get_weather",'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather'}
+        sglang: []
+    - delta_text: ' "arguments": {"location": "NYC"}}]'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"location": "NYC"}'}
+        sglang: []
+    - delta_text: '[/TOOL_CALLS] Let'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '[/TOOL_CALLS] Let'
+    - delta_text: ' me'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' me'
+    - delta_text: ' know if'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' know if'
+    - delta_text: ' you need more.'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' you need more.'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.8.c:
+    description: 'Narration both before and after (sandwich)'
+    ref: 'derived from TOOLCALLING.batch.8.c'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: 'I will'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'I will'
+        sglang: 'I will'
+    - delta_text: ' check'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' check'
+        sglang: ' check'
+    - delta_text: ' the weather. [TOOL_CALLS]'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' the weather. '
+        sglang: ' the weather. '
+    - delta_text: '[{"name": "get_weather",'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather'}
+        sglang: []
+    - delta_text: ' "arguments":'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ' {"location": "NYC"}}]'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"location": "NYC"}'}
+        sglang: []
+    - delta_text: '[/TOOL_CALLS] Let me'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '[/TOOL_CALLS] Let me'
+    - delta_text: ' know'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' know'
+    - delta_text: ' if you'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' if you'
+    - delta_text: ' need'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' need'
+    - delta_text: ' more.'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' more.'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+        sglang: []
+  TOOLCALLING.streamv2.8.d:
+    description: 'Narration between multiple tool calls'
+    ref: 'derived from TOOLCALLING.batch.8.d'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+    chunks:
+    - delta_text: 'I will'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: 'I will'
+        sglang: 'I will'
+    - delta_text: ' check'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' check'
+        sglang: ' check'
+    - delta_text: ' the weather. [TOOL_CALLS]'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' the weather. '
+        sglang: ' the weather. '
+    - delta_text: '[{"name": "get_weather",'
+      expected:
+        vllm:
+        - {index: 0, id: true, name: 'get_weather'}
+        sglang: []
+    - delta_text: ' "arguments":'
+      expected:
+        vllm: []
+        sglang: []
+    - delta_text: ' {"location": "NYC"}}]'
+      expected:
+        vllm:
+        - {index: 0, arguments: '{"location": "NYC"}'}
+        sglang: []
+    - delta_text: '[/TOOL_CALLS] Then check'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '[/TOOL_CALLS] Then check'
+    - delta_text: ' LA'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' LA'
+    - delta_text: ' weather. [TOOL_CALLS]'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' weather. '
+    - delta_text: '[{"name":'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: '[{"name":'
+    - delta_text: ' "get_weather", "arguments":'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' "get_weather", "arguments":'
+    - delta_text: ' {"location":'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' {"location":'
+    - delta_text: ' "LA"}}][/TOOL_CALLS]'
+      expected:
+        vllm: []
+        sglang: []
+      normal_text:
+        vllm: ' "LA"}}][/TOOL_CALLS]'
+    - delta_text: ''
+      finish_reason: stop
+      expected:
+        vllm: []
+        sglang: []

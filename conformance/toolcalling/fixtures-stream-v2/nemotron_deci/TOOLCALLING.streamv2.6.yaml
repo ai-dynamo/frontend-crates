@@ -1,0 +1,113 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
+family: nemotron_deci
+model_label: 'Nemotron (DeciLM) v1/v2'
+mode: streamv2
+captured_with:
+  vllm: '0.22.0'
+cases:
+  TOOLCALLING.streamv2.6.a:
+    description: 'Canonical "arguments": {}'
+    ref: 'derived from TOOLCALLING.batch.6.a'
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_deci''.'
+    chunks:
+    - delta_text: '<TOOLCALL>[{"name":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '<TOOLCALL>[{"name":'
+    - delta_text: ' "get_time",'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "get_time",'
+    - delta_text: ' "arguments": {}}]</TOOLCALL>'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "arguments": {}}]</TOOLCALL>'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.6.b:
+    description: 'Whitespace inside arguments {}'
+    ref: 'derived from TOOLCALLING.batch.6.b'
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_deci''.'
+    chunks:
+    - delta_text: '<TOOLCALL>[{"name":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '<TOOLCALL>[{"name":'
+    - delta_text: ' "get_time",'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "get_time",'
+    - delta_text: ' "arguments": { }}]'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "arguments": { }}]'
+    - delta_text: '</TOOLCALL>'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '</TOOLCALL>'
+    - delta_text: ''
+      finish_reason: tool_calls
+      expected:
+        vllm: []
+  TOOLCALLING.streamv2.6.c:
+    description: 'No arguments key'
+    ref: 'derived from TOOLCALLING.batch.6.c'
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    unavailable:
+      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang: 'No SGLang parser for family ''nemotron_deci''.'
+    chunks:
+    - delta_text: '<TOOLCALL>[{"name":'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '<TOOLCALL>[{"name":'
+    - delta_text: ' "get_time"}]'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: ' "get_time"}]'
+    - delta_text: '</TOOLCALL>'
+      expected:
+        vllm: []
+      normal_text:
+        vllm: '</TOOLCALL>'
+    - delta_text: ''
+      finish_reason: stop
+      expected:
+        vllm: []
