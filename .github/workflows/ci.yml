@@ -61,3 +61,44 @@ jobs:
 
       - name: Verify crates are publishable
         run: cargo publish --workspace --dry-run --locked
+
+  # Render-smoke for the vendored conformance-table generator. Catches generator/fixture
+  # breakage. Python + pyyaml/jinja2 only — no engines (vLLM/SGLang conformance runs in
+  # dynamo's CI lanes; here the engine lanes are on-demand/local).
+  conformance-table:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Render conformance matrix (no engines)
+        run: |
+          python3 -m venv /tmp/pvenv
+          /tmp/pvenv/bin/pip install --quiet pyyaml jinja2
+          PATH="/tmp/pvenv/bin:$PATH" conformance/utils/render_parity_v1.sh
+          OUT=conformance/utils/.stage/tests/parity/PARITY_v1.html
+          test -s "$OUT"
+          grep -q "TOOLCALLING.batch" "$OUT"
+          grep -q "REASONING.batch" "$OUT"
+          echo "conformance matrix rendered: $(wc -c < "$OUT") bytes"
+          cp "$OUT" conformance/utils/CONFORMITY.html
+
+      - name: Upload conformance matrix
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: conformity-html
+          path: conformance/utils/CONFORMITY.html
+          retention-days: 14
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --edit-last --create-if-none \
+            --body "📊 **Conformance matrix** rendered — [view in CI summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"

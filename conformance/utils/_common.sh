@@ -15,6 +15,7 @@ set -euo pipefail
 
 # conformance/utils/ is two levels below the repo root.
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+export FRONTEND_CRATES_ROOT="$ROOT"
 TOOLS="$ROOT/conformance/utils"
 STAGE="${STAGE:-$TOOLS/.stage-v2}"
 # Override when the default cargo can't build the workspace (edition 2024 /
