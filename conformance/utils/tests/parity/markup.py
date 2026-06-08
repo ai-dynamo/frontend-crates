@@ -14,30 +14,21 @@ from typing import Any
 # (e.g. `[{...}]`, `[1, 2]`) don't get false-matched as tags.
 _TAG_RE = re.compile(r"<[^<>]+>|\[/?[A-Z][A-Z0-9_]*\]")
 
-# Two coloring schemes share one cycling palette:
-#   * Paired open/close: every matched pair gets a *fresh* palette index, so
-#     two `<tool_call>...</tool_call>` instances in the same input render as
-#     two different colors.
-#   * Singletons (e.g. harmony's `<|channel|>` section markers): stable
-#     by-role color so all `<|channel|>` tokens share one class everywhere.
+# Paired tags and singletons use a stable color derived from the tag identity.
+# This keeps the same tag type visually aligned across side-by-side outputs in
+# one tooltip, instead of assigning colors by render order.
 _PAIRED_PALETTE_SIZE = 8
-_color_seq = 0
-_singleton_classes: dict[str, str] = {}
 
 
-def _next_color_class() -> str:
-    global _color_seq
-    cls = f"tt-c{_color_seq % _PAIRED_PALETTE_SIZE}"
-    _color_seq += 1
-    return cls
+def _stable_color_class(name: str) -> str:
+    acc = 0
+    for i, ch in enumerate(name):
+        acc += (i + 1) * ord(ch)
+    return f"tt-c{acc % _PAIRED_PALETTE_SIZE}"
 
 
 def _singleton_class_for(name: str) -> str:
-    cls = _singleton_classes.get(name)
-    if cls is None:
-        cls = _next_color_class()
-        _singleton_classes[name] = cls
-    return cls
+    return _stable_color_class(name)
 
 
 _PIPES = ("|", "｜")  # ASCII and FULLWIDTH VERTICAL LINE (U+FF5C)
@@ -207,7 +198,7 @@ def _colorize_xml(text: str) -> str:
                         unmatched_idx
                     ] = f'<span class="tt-orphan">{pieces[unmatched_idx]}</span>'
                 open_idx = stack[match_at][1]
-                cls = _next_color_class()
+                cls = _stable_color_class(pair_id)
                 pieces[open_idx] = f'<span class="{cls}">{pieces[open_idx]}</span>'
                 pieces.append(f'<span class="{cls}">{esc}</span>')
                 del stack[match_at:]
@@ -226,13 +217,7 @@ def _colorize_xml(text: str) -> str:
                         unmatched_idx
                     ] = f'<span class="tt-orphan">{pieces[unmatched_idx]}</span>'
                 open_idx = stack[match_at][1]
-                # Per-instance color: every matched pair gets a fresh palette
-                # index, so two `<tool_call>...</tool_call>` (or two
-                # `<|start|>...<|call|>`) blocks in the same input render as
-                # different colors. (color_override unused on the paired
-                # path — kept on the singleton-flavor branch only.)
-                _ = color_override
-                cls = _next_color_class()
+                cls = _stable_color_class(color_override or pair_id)
                 pieces[open_idx] = f'<span class="{cls}">{pieces[open_idx]}</span>'
                 pieces.append(f'<span class="{cls}">{esc}</span>')
                 del stack[match_at:]
@@ -270,7 +255,7 @@ def _xml_token_intervals(text: str) -> list[dict[str, Any]]:
             if match_at >= 0:
                 for _, unmatched_idx in stack[match_at + 1 :]:
                     intervals[unmatched_idx]["class"] = "tt-orphan"
-                cls = _next_color_class()
+                cls = _stable_color_class(pair_id)
                 intervals[stack[match_at][1]]["class"] = cls
                 intervals[idx]["class"] = cls
                 del stack[match_at:]
@@ -285,7 +270,7 @@ def _xml_token_intervals(text: str) -> list[dict[str, Any]]:
             if match_at >= 0:
                 for _, unmatched_idx in stack[match_at + 1 :]:
                     intervals[unmatched_idx]["class"] = "tt-orphan"
-                cls = _next_color_class()
+                cls = _stable_color_class(_color_override or pair_id)
                 intervals[stack[match_at][1]]["class"] = cls
                 intervals[idx]["class"] = cls
                 del stack[match_at:]

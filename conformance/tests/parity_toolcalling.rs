@@ -77,6 +77,13 @@ fn collect_yaml(dir: &Path, out: &mut Vec<PathBuf>) {
     }
 }
 
+fn fixture_name(path: &Path) -> String {
+    path.strip_prefix(env!("CARGO_MANIFEST_DIR"))
+        .unwrap_or(path)
+        .display()
+        .to_string()
+}
+
 /// Mirror of dynamo's `decode_arguments`: a tool call's `arguments` is a JSON
 /// string; parse it to a value, or keep it raw (malformed-body cases expect the
 /// raw string back).
@@ -113,6 +120,7 @@ async fn toolcalling_batch_parity() {
         if fx.mode != "batch" {
             continue;
         }
+        eprintln!("fixture {}", fixture_name(path));
         for (cid, case) in &fx.cases {
             let (Some(text), Some(expected)) = (case.model_text.as_ref(), case.expected.as_ref())
             else {
