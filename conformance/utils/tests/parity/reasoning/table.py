@@ -10,6 +10,7 @@ import argparse
 import datetime
 import html as html_lib
 import json
+import os
 import re
 import subprocess
 import zoneinfo
@@ -31,7 +32,18 @@ from tests.parity.markup import colorize_markup
 REPO_ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = REPO_ROOT / "tests/parity/reasoning/fixtures"
 PARSER_FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures"
-REASONING_CASES_MD = REPO_ROOT / "lib/parsers/REASONING_CASES.md"
+_fc_env = os.environ.get("FRONTEND_CRATES_ROOT")
+if _fc_env:
+    PARSERS_ROOT = Path(_fc_env) / "parsers"
+else:
+    # walk up from REPO_ROOT until we find parsers/Cargo.toml (repo root marker)
+    _p = REPO_ROOT
+    while _p.parent != _p:
+        if (_p / "parsers" / "Cargo.toml").exists():
+            break
+        _p = _p.parent
+    PARSERS_ROOT = _p / "parsers"
+REASONING_CASES_MD = PARSERS_ROOT / "REASONING_CASES.md"
 SCRIPT_DIR = Path(__file__).resolve().parent
 TEMPLATE_DIR = REPO_ROOT / "tests/parity"
 
@@ -2244,7 +2256,7 @@ def _html(
             intro_html="",
             legend_html=_legend_html(rows, columns),
             case_docs_href="../../../lib/parsers/REASONING_CASES.md",
-            case_docs_label="lib/parsers/REASONING_CASES.md",
+            case_docs_label="parsers/REASONING_CASES.md",
             case_prefix="REASONING.",
         )
     )
