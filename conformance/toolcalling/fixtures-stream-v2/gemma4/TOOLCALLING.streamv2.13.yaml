@@ -32,7 +32,7 @@ cases:
         vllm:
         - {index: 0, id: true, name: 'unknown_tool', arguments: ''}
         sglang:
-        - {index: -1, name: 'unknown_tool'}
+        - {index: 0, name: 'unknown_tool'}
     - delta_text: 'NYC<|"|>'
       expected:
         vllm:
@@ -43,7 +43,7 @@ cases:
         vllm:
         - {index: 0, arguments: '"}'}
         sglang:
-        - {index: -1, arguments: '{"location": "NYC"}'}
+        - {index: 0, arguments: '{"location": "NYC"}'}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
@@ -78,13 +78,13 @@ cases:
         vllm: []
         sglang:
         - {index: 0, arguments: '{"location": "NYC"}'}
-        - {index: -1, name: 'unknown_tool'}
+        - {index: 1, name: 'unknown_tool'}
     - delta_text: 'LA<|"|>}<tool_call|>'
       expected:
         vllm:
         - {index: 1, arguments: '{"location": "LA"}'}
         sglang:
-        - {index: -1, arguments: '{"location": "LA"}'}
+        - {index: 1, arguments: '{"location": "LA"}'}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
