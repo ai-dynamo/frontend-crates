@@ -10,7 +10,6 @@ import argparse
 import datetime
 import html as html_lib
 import json
-import os
 import re
 import subprocess
 import zoneinfo
@@ -32,18 +31,7 @@ from tests.parity.markup import colorize_markup
 REPO_ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = REPO_ROOT / "tests/parity/reasoning/fixtures"
 PARSER_FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures"
-_fc_env = os.environ.get("FRONTEND_CRATES_ROOT")
-if _fc_env:
-    PARSERS_ROOT = Path(_fc_env) / "parsers"
-else:
-    # walk up from REPO_ROOT until we find parsers/Cargo.toml (repo root marker)
-    _p = REPO_ROOT
-    while _p.parent != _p:
-        if (_p / "parsers" / "Cargo.toml").exists():
-            break
-        _p = _p.parent
-    PARSERS_ROOT = _p / "parsers"
-REASONING_CASES_MD = PARSERS_ROOT / "REASONING_CASES.md"
+REASONING_CASES_MD = REPO_ROOT / "lib/parsers/REASONING_CASES.md"
 SCRIPT_DIR = Path(__file__).resolve().parent
 TEMPLATE_DIR = REPO_ROOT / "tests/parity"
 
@@ -157,9 +145,9 @@ _FAMILY_METADATA = {
     },
     "nemotron_deci": {
         "models": [
-            "Nemotron-Super / -Ultra / -Deci",
+            "Nemotron-Super-v1 / Nemotron-Ultra-v1 / Nemotron-Deci-v1",
             "Llama-Nemotron",
-            "GLM-4.5 / GLM-4.7 via glm45 alias",
+            "GLM-4.5 / GLM-4.6 via glm45 alias",
         ],
         "rust_enum": "ReasoningParserType::NemotronDeci",
         "implementation": "BasicReasoningParser `<think>` / `</think>`",
@@ -477,10 +465,16 @@ def _reasoning_markup_re(family: str | None) -> re.Pattern[str]:
 
 
 def _is_gpt_oss_tool_handoff(family: str | None, field: str, value: str) -> bool:
+    # Both `commentary to=functions.X` and `analysis to=functions.X` are
+    # tool-call handoffs after PR #10366: the recipient is the signal, not
+    # the channel label. Either lands in normal_text as the jail's input.
     return (
         family == "gpt_oss"
         and field == "normal_text"
-        and "<|channel|>commentary to=functions." in value
+        and (
+            "<|channel|>commentary to=functions." in value
+            or "<|channel|>analysis to=functions." in value
+        )
         and "<|call|>" in value
     )
 
@@ -2256,7 +2250,7 @@ def _html(
             intro_html="",
             legend_html=_legend_html(rows, columns),
             case_docs_href="../../../lib/parsers/REASONING_CASES.md",
-            case_docs_label="parsers/REASONING_CASES.md",
+            case_docs_label="lib/parsers/REASONING_CASES.md",
             case_prefix="REASONING.",
         )
     )

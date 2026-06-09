@@ -58,7 +58,6 @@ import copy
 import datetime
 import html as html_lib
 import json
-import os
 import re
 import subprocess
 import zoneinfo
@@ -77,22 +76,11 @@ from tests.parity.markup import colorize_markup, colorize_stream_deltas
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures"
-_fc_env = os.environ.get("FRONTEND_CRATES_ROOT")
-if _fc_env:
-    PARSERS_ROOT = Path(_fc_env) / "parsers"
-else:
-    # walk up from REPO_ROOT until we find parsers/Cargo.toml (repo root marker)
-    _p = REPO_ROOT
-    while _p.parent != _p:
-        if (_p / "parsers" / "Cargo.toml").exists():
-            break
-        _p = _p.parent
-    PARSERS_ROOT = _p / "parsers"
-TOOLCALLING_CASES_MD = PARSERS_ROOT / "TOOLCALLING_CASES.md"
+TOOLCALLING_CASES_MD = REPO_ROOT / "lib/parsers/TOOLCALLING_CASES.md"
 PYPROJECT_TOML = REPO_ROOT / "pyproject.toml"
 TEMPLATE_DIR = REPO_ROOT / "tests/parity"
 
-RUST_TOOL_CALLING_DIR = PARSERS_ROOT / "src/tool_calling"
+RUST_TOOL_CALLING_DIR = REPO_ROOT / "lib/parsers/src/tool_calling"
 
 # Row-label / visibility overrides keyed by tool calling family; ‡ is explained
 # by the legend note in parity_table.html.j2.
