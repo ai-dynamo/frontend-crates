@@ -95,10 +95,10 @@ Reasoning parsers:
 
 3. **For reasoning**, prefer aliasing to `BasicReasoningParser` unless the grammar truly diverges (append-think, Harmony channels). Most new models use plain `<think>...</think>` and can share.
 
-4. **Write tests.** Minimum viable set is in [`PARSER_CASES.md`](./PARSER_CASES.md) (`PARSER.*` taxonomy). At minimum: `PARSER.1`/`PARSER.2`/`PARSER.3` for correctness, `PARSER.5` for truncation behavior, `PARSER.8`/`PARSER.9` for streaming with reasoning, and `PARSER.13` for interleaved text. `N/A` categories should be explicitly called out in a comment rather than silently skipped.
+4. **Write tests.** Use the conformance case docs as the source of truth: [`TOOLCALLING_CASES.md`](../conformance/utils/lib/parsers/TOOLCALLING_CASES.md) for tool-call parser cases and [`REASONING_CASES.md`](../conformance/utils/lib/parsers/REASONING_CASES.md) for reasoning parser cases. At minimum, cover `TOOLCALLING.batch.1`/`.2`/`.3` for correctness, `TOOLCALLING.batch.5` for truncation behavior, and the relevant reasoning cases when reasoning parsing is involved. `N/A` categories should be explicitly called out in a comment rather than silently skipped.
 
 ## Related docs
 
-- [`PARSER_CASES.md`](./PARSER_CASES.md) — corner-case taxonomy. What every parser should be tested against, what's N/A per family, what's a universal gap today.
-- [`REASONING_CASES.md`](./REASONING_CASES.md) — same idea for reasoning parsers.
-- [`PIPELINE_CASES.md`](./PIPELINE_CASES.md) — end-to-end (reasoning → tool-call) test scenarios.
+- [`../conformance/utils/lib/parsers/TOOLCALLING_CASES.md`](../conformance/utils/lib/parsers/TOOLCALLING_CASES.md) — tool-call parser case taxonomy used by conformance fixtures and HTML generation.
+- [`../conformance/utils/lib/parsers/REASONING_CASES.md`](../conformance/utils/lib/parsers/REASONING_CASES.md) — reasoning parser case taxonomy used by conformance fixtures and HTML generation.
+- [`../parsers_v2/README.md`](../parsers_v2/README.md) — streaming parser v2 contract, fixture files, and capture workflow.

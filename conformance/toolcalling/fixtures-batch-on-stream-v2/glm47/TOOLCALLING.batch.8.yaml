@@ -1,49 +1,68 @@
 family: glm47
 mode: batch-on-stream
 captured_with:
-  vllm: 0.22.0
-  sglang: 0.5.12.post1
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.batch.8.a:
-    vllm:
+    vllm_python:
       calls:
       - name: get_weather
         arguments:
           location: NYC
       normal_text: 'I will check the weather. '
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
           location: NYC
+      normal_text: 'I will check the weather. '
+    vllm_rust:
+      calls:
+      - arguments:
+          location: NYC
+        name: get_weather
       normal_text: 'I will check the weather. '
   TOOLCALLING.batch.8.b:
-    vllm:
+    vllm_python:
       calls:
       - name: get_weather
         arguments:
           location: NYC
       normal_text: ' Let me know if you need more.'
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
           location: NYC
+    vllm_rust:
+      calls:
+      - arguments:
+          location: NYC
+        name: get_weather
+      normal_text: ''
   TOOLCALLING.batch.8.c:
-    vllm:
+    vllm_python:
       calls:
       - name: get_weather
         arguments:
           location: NYC
       normal_text: I will check the weather.  Let me know if you need more.
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
           location: NYC
       normal_text: 'I will check the weather. '
+    vllm_rust:
+      calls:
+      - arguments:
+          location: NYC
+        name: get_weather
+      normal_text: 'I will check the weather. '
   TOOLCALLING.batch.8.d:
-    vllm:
+    vllm_python:
       calls:
       - name: get_weather
         arguments:
@@ -52,9 +71,15 @@ cases:
         arguments:
           location: LA
       normal_text: 'I will check the weather.  Then check LA weather. '
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
           location: NYC
+      normal_text: 'I will check the weather. '
+    vllm_rust:
+      calls:
+      - arguments:
+          location: NYC
+        name: get_weather
       normal_text: 'I will check the weather. '

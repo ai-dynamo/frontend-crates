@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-# Shared helpers for the conformance/utils scripts (check_v2.sh / render_table_v2.sh /
-# record_v2.sh). Sourced, not executed. Each caller strips --dry-run (sets DRY=1)
+# Shared helpers for the conformance/utils scripts. Sourced, not executed.
+# Each caller strips --dry-run (sets DRY=1)
 # before sourcing this file.
 #
 # The vendored Python generator/adapters hard-code dynamo's repo layout, so the
@@ -17,9 +17,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 export FRONTEND_CRATES_ROOT="$ROOT"
 TOOLS="$ROOT/conformance/utils"
-STAGE="${STAGE:-$TOOLS/.stage-v2}"
+STAGE="${STAGE:-$TOOLS/.stage}"
 # Override when the default cargo can't build the workspace (edition 2024 /
-# resolver "3" needs >= 1.85): CARGO='cargo +1.93.1' conformance/utils/check_v2.sh ...
+# resolver "3" needs >= 1.85): CARGO='cargo +1.93.1' conformance/utils/check.sh ...
 CARGO="${CARGO:-cargo}"
 : "${DRY:=0}"
 
@@ -80,8 +80,8 @@ build_stage_v2() {
   _build_stage_base
   # Keep v2 owned by conformance/utils while presenting it in Dynamo's staged
   # tests/parity layout for imports and template lookup.
-  \cp -f "$TOOLS/generate_conformance_table_v2.py" "$STAGE/tests/parity/generate_conformance_table_v2.py"
-  \cp -f "$TOOLS/conformance_table_v2.html.j2" "$STAGE/tests/parity/conformance_table_v2.html.j2"
+  \cp -f "$TOOLS/generate_conformance_table.py" "$STAGE/tests/parity/generate_conformance_table.py"
+  \cp -f "$TOOLS/conformance_table.html.j2" "$STAGE/tests/parity/conformance_table.html.j2"
   _copy_toolcalling_v2_fixtures
 }
 

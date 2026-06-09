@@ -21,7 +21,7 @@ version and warns when it differs from the version dynamo pinned (the fixtures'
 ``expected.<impl>`` columns were captured against that pin — a mismatch makes
 diffs version drift, not parser bugs). Exits non-zero on any real mismatch.
 
-Run via ``conformance/utils/check_v2.sh vllm|sglang``; it builds the staged fixtures dir
+Run via ``conformance/utils/check.sh vllm|sglang``; it builds the staged fixtures dir
 and passes --fixtures. Direct use:
     validate.py --impl sglang --container sglang-localdev --fixtures <dir>
     validate.py --impl vllm   --pip                       --fixtures <dir>
@@ -44,6 +44,10 @@ from tests.parity.common import ParseResult, canonical
 PH = Path(__file__).resolve().parent
 PKG = PH / "tests" / "parity"
 STUB = PH / "pyproject.stub.toml"
+FIXTURE_IMPL_ALIASES = {
+    "vllm": "vllm_python",
+    "sglang": "sglang_python",
+}
 
 # Minimal worker shipped into the engine container. Imports the adapter once
 # (heavy), then maps stdin JSONL requests to result JSONL written to --out.
@@ -83,6 +87,7 @@ def collect_cases(fixtures_dir: Path, impl: str) -> list[dict]:
     'unavailable' and that carry an input (model_text for batch / chunks for
     stream). Each carries its expected spec for host-side comparison."""
 
+    fixture_impl = FIXTURE_IMPL_ALIASES.get(impl, impl)
     out: list[dict] = []
     for fp in sorted(fixtures_dir.glob("*/*.yaml")):
         doc = yaml.safe_load(fp.read_text())
@@ -90,7 +95,9 @@ def collect_cases(fixtures_dir: Path, impl: str) -> list[dict]:
         for cid, case in (doc.get("cases") or {}).items():
             if not isinstance(case, dict) or "expected" not in case:
                 continue
-            spec = (case.get("expected") or {}).get(impl)
+            spec = (case.get("expected") or {}).get(fixture_impl)
+            if spec is None and fixture_impl != impl:
+                spec = (case.get("expected") or {}).get(impl)
             if not isinstance(spec, dict) or "unavailable" in spec:
                 continue
             payload = (
@@ -218,7 +225,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--impl", required=True, choices=("vllm", "sglang"))
     ap.add_argument("--fixtures", required=True, type=Path,
-                    help="toolcalling fixtures dir staged by check_v2.sh")
+                    help="toolcalling fixtures dir staged by check.sh")
     mode = ap.add_mutually_exclusive_group(required=True)
     mode.add_argument("--container", help="run the engine in this docker container")
     mode.add_argument("--pip", action="store_true", help="run the engine in-process")

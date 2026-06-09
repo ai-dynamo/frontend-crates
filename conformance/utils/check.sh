@@ -2,11 +2,11 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-# check_v2.sh <dynamo|vllm|sglang|all> [batch|stream|all] [--container N|--pip] [--dry-run]
+# check.sh <dynamo|vllm|sglang|all> [batch|stream|all] [--container N|--pip] [--dry-run]
 #   Run a parser against the committed fixtures and report pass/fail (read-only).
-#     dynamo [batch|stream|all]  Rust parser vs expected.dynamo (cargo test)
-#     vllm   [--container N|--pip]   vLLM parser vs expected.vllm
-#     sglang [--container N|--pip]   SGLang parser vs expected.sglang
+#     dynamo [batch|stream|all]  Dynamo Rust parser vs expected.dynamo_rust / expected.dynamo (cargo test)
+#     vllm   [--container N|--pip]   vLLM Python parser vs expected.vllm_python / expected.vllm
+#     sglang [--container N|--pip]   SGLang Python parser vs expected.sglang_python
 #     all    [--container-vllm N --container-sglang M]   dynamo(all) + vllm + sglang
 
 DRY=0; args=()
@@ -14,7 +14,7 @@ while [ $# -gt 0 ]; do case "$1" in --dry-run|--dryrun) DRY=1; shift;; *) args+=
 set -- ${args+"${args[@]}"}
 source "$(dirname "$0")/_common.sh"
 
-usage() { echo "usage: conformance/utils/check_v2.sh <dynamo|vllm|sglang|all> [batch|stream|all] [--container N|--pip]" >&2; exit 2; }
+usage() { echo "usage: conformance/utils/check.sh <dynamo|vllm|sglang|all> [batch|stream|all] [--container N|--pip]" >&2; exit 2; }
 
 run_dynamo() {  # $1 = batch|stream|all
   local targets=()
@@ -32,7 +32,7 @@ run_dynamo() {  # $1 = batch|stream|all
 
 run_engine() {  # $1=vllm|sglang  $2..=passthrough (--container N|--pip)
   local impl="$1"; shift
-  if [ "$DRY" = 1 ]; then echo "[dry-run] build v2 .stage-v2, then validate $impl against staged toolcalling fixtures $*"; return; fi
+  if [ "$DRY" = 1 ]; then echo "[dry-run] build .stage, then validate $impl against staged toolcalling fixtures $*"; return; fi
   build_stage_v2
   PYTHONPATH="$STAGE" python3 "$TOOLS/validate.py" --impl "$impl" \
     --fixtures "$STAGE/tests/parity/toolcalling/fixtures" "$@"
@@ -53,9 +53,9 @@ case "$engine" in
       esac; done
     run_dynamo all
     if [ -n "$cv" ]; then run_engine vllm --container "$cv" || true
-    else echo "(skipped vllm: pass --container-vllm NAME or 'check_v2.sh vllm --pip')"; fi
+    else echo "(skipped vllm: pass --container-vllm NAME or 'check.sh vllm --pip')"; fi
     if [ -n "$cs" ]; then run_engine sglang --container "$cs" || true
-    else echo "(skipped sglang: pass --container-sglang NAME or 'check_v2.sh sglang --pip')"; fi
+    else echo "(skipped sglang: pass --container-sglang NAME or 'check.sh sglang --pip')"; fi
     ;;
   *) usage ;;
 esac

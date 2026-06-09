@@ -1,48 +1,48 @@
 family: pythonic
 mode: batch-on-stream
 captured_with:
-  vllm: 0.22.0
-  sglang: 0.5.12.post1
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
 cases:
   TOOLCALLING.batch.5.a:
-    vllm:
+    vllm_python:
       calls:
       - name: get_weather
         arguments:
           location: NYC
-    sglang:
+    sglang_python:
       calls: []
   TOOLCALLING.batch.5.b:
-    vllm:
+    vllm_python:
       calls: []
       normal_text: get_weather(location="NYC")]
-    sglang:
+    sglang_python:
       calls: []
       normal_text: get_weather(location="NYC")]
   TOOLCALLING.batch.5.c:
-    vllm:
+    vllm_python:
       calls:
       - name: get_weather
         arguments: '{"location": "N'
-    sglang:
+    sglang_python:
       calls: []
   TOOLCALLING.batch.5.d:
-    vllm:
+    vllm_python:
       calls: []
       normal_text: I'll start by fetching the weather for both Boston and New York
         at the same time![get_weather(location="Boston"), get_weather(location="New
         York")
-    sglang:
+    sglang_python:
       calls: []
       normal_text: I'll start by fetching the weather for both Boston and New York
         at the same time!
   TOOLCALLING.batch.5.e:
-    vllm:
+    vllm_python:
       calls: []
       normal_text: I'll start by fetching the weather for both Boston and New York
         at the same time![get_weather(location="Boston"), get_weather(location="New
         York
-    sglang:
+    sglang_python:
       calls: []
       normal_text: I'll start by fetching the weather for both Boston and New York
         at the same time!

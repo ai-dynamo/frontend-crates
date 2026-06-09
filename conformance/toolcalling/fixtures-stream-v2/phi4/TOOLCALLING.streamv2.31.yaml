@@ -11,7 +11,7 @@ family: phi4
 model_label: 'Phi-4'
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
+  vllm_python: '0.22.0'
 cases:
   TOOLCALLING.streamv2.31.a:
     description: 'Multi-call JSON array with call separator `,` inside the first argument string'
@@ -30,34 +30,34 @@ cases:
           timezone:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''phi4''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''phi4''.'
     chunks:
     - delta_text: 'functools[{"name": "run_query",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' {"sql": "SELECT a,'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' SELECT b"}},'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' {"name":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "get_time", "arguments":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' {"timezone": "EST"}}]'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
+        vllm_python: []
   TOOLCALLING.streamv2.31.b:
     description: 'Multi-call response with structural delimiters inside one argument string value'
     ref: 'derived from TOOLCALLING.batch.31.b'
@@ -75,43 +75,43 @@ cases:
           timezone:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''phi4''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''phi4''.'
     chunks:
     - delta_text: 'functools[{"name": "run_query",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' {"sql": "SELECT value'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' WHERE note'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' has'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' brace }'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' and bracket ]'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: '"}},'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' {"name": "get_time",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' {"timezone": "EST"}}]'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
+        vllm_python: []

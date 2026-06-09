@@ -1,20 +1,19 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Stream parser on BATCH samples (harmony): feed each batch fixture's full
+//! Stream parser on BATCH samples: feed each batch fixture's full
 //! `model_text` to the streaming parser and assert the assembled tool calls match
 //! the BATCH parser's `expected.dynamo`. This is the streaming-vs-batch
 //! consistency check — the stream parser, given the complete output, must land on
 //! the same calls as the batch parser.
-//!
-//! Harmony only (the first family with Dynamo parser v2). Reads the
-//! dynamo-synced batch corpus directly (no overlay needed — model_text is input,
-//! expected.dynamo is the batch reference).
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use dynamo_parsers_v2::{HarmonyToolStreamParser, assemble_tool_calls};
+use dynamo_parsers_v2::{
+    HarmonyToolStreamParser, ToolCallDelta, ToolParseResult, assemble_tool_calls,
+    create_tool_parser_for_family,
+};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -43,6 +42,8 @@ struct Expected {
 struct EngineExpected {
     #[serde(default)]
     calls: Vec<ExpCall>,
+    #[serde(default)]
+    normal_text: String,
 }
 
 #[derive(Deserialize)]
@@ -75,29 +76,19 @@ fn fixture_name(path: &Path) -> String {
 
 #[test]
 fn toolcalling_batch_via_stream_parity() {
-    // Harmony batch fixtures live in the dynamo-synced corpus.
-    let root = concat!(env!("CARGO_MANIFEST_DIR"), "/toolcalling/fixtures/harmony");
+    let root = concat!(env!("CARGO_MANIFEST_DIR"), "/toolcalling/fixtures");
     let mut files = Vec::new();
     collect_yaml(Path::new(root), &mut files);
     files.sort();
 
-    // Batch samples where the streaming parser legitimately differs from the
-    // batch parser. The batch parser (detect_and_parse_tool_call_with_recovery)
-    // repairs truncated/malformed output via EOF recovery; the streaming parser does
-    // not. batch.5.* and 8.* are the truncation/malformed/recovery cases:
-    //   - batch parser recovers a call where the stream emits nothing, OR
-    //   - the stream emits optimistically where the batch parser rejects.
-    // Listed here so the test stays green while documenting the gap. Removing an
-    // entry asserts that stream and batch now agree on that sample.
+    // Batch samples where the streaming parser deliberately differs from the
+    // strict batch parser. Removing an entry asserts that stream and batch now
+    // agree on that sample.
     let known_divergences: std::collections::BTreeSet<&str> = [
-        "TOOLCALLING.batch.2.c",
-        "TOOLCALLING.batch.5.a",
-        "TOOLCALLING.batch.5.c",
-        "TOOLCALLING.batch.5.d",
-        "TOOLCALLING.batch.5.e",
-        "TOOLCALLING.batch.8.a",
-        "TOOLCALLING.batch.8.c",
-        "TOOLCALLING.batch.8.d",
+        "deepseek_v4:TOOLCALLING.batch.5.a",
+        "deepseek_v4:TOOLCALLING.batch.5.d",
+        "deepseek_v4:TOOLCALLING.batch.5.e",
+        "deepseek_v4:TOOLCALLING.batch.5.g",
     ]
     .into_iter()
     .collect();
@@ -117,7 +108,7 @@ fn toolcalling_batch_via_stream_parity() {
                 continue;
             }
         };
-        if fx.family != "harmony" || fx.mode != "batch" {
+        if !(fx.family == "harmony" || fx.family == "deepseek_v4") || fx.mode != "batch" {
             continue;
         }
         eprintln!("fixture {}", fixture_name(path));
@@ -129,38 +120,31 @@ fn toolcalling_batch_via_stream_parity() {
             };
             total += 1;
 
-            // Feed the full batch text to the stream parser (text path), finish,
-            // assemble.
-            let mut parser = HarmonyToolStreamParser::new().unwrap();
-            let mut all = parser.parse_tool_call_streaming_text(text).tool_call_chunks;
-            all.extend(parser.finish_tool_call_stream().tool_call_chunks);
+            let got = parse_stream_result(&fx.family, text).unwrap();
+            let want = EngineResult {
+                calls: expected
+                    .dynamo
+                    .calls
+                    .iter()
+                    .map(|c| (c.name.clone(), c.arguments.clone()))
+                    .collect(),
+                normal_text: expected.dynamo.normal_text.clone(),
+            };
 
-            let got: Vec<(String, Value)> = assemble_tool_calls(&all)
-                .into_iter()
-                .map(|(n, a)| {
-                    let v = serde_json::from_str(&a).unwrap_or(Value::String(a));
-                    (n, v)
-                })
-                .collect();
-            let want: Vec<(String, Value)> = expected
-                .dynamo
-                .calls
-                .iter()
-                .map(|c| (c.name.clone(), c.arguments.clone()))
-                .collect();
-
-            let known = known_divergences.contains(cid.as_str());
+            let known_id = format!("{}:{cid}", fx.family);
+            let known = known_divergences.contains(known_id.as_str());
             if got == want {
                 consistent += 1;
                 if known {
                     // It now agrees — the allowlist entry is stale.
-                    unexpected_match.push(cid.clone());
+                    unexpected_match.push(known_id);
                 }
             } else {
                 diverged += 1;
                 if !known {
                     failures.push(format!(
-                        "{cid}:\n        stream got {got:?}\n        batch want {want:?}"
+                        "{} {cid}:\n        stream got {got:?}\n        batch want {want:?}",
+                        fx.family
                     ));
                 }
             }
@@ -168,7 +152,7 @@ fn toolcalling_batch_via_stream_parity() {
     }
 
     eprintln!(
-        "harmony stream-on-batch: {consistent}/{total} consistent, {diverged} diverged \
+        "Dynamo stream-on-batch: {consistent}/{total} consistent, {diverged} diverged \
          ({} are known/documented)",
         diverged - failures.len(),
     );
@@ -189,4 +173,65 @@ fn toolcalling_batch_via_stream_parity() {
         "{} allowlist entries now agree — remove them",
         unexpected_match.len()
     );
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct EngineResult {
+    calls: Vec<(String, Value)>,
+    normal_text: String,
+}
+
+fn parse_stream_result(
+    family: &str,
+    text: &str,
+) -> Result<EngineResult, Box<dyn std::error::Error>> {
+    if family == "harmony" {
+        let mut parser = HarmonyToolStreamParser::new()?;
+        let mut result = parser.parse_tool_call_streaming_text(text);
+        let finish = parser.finish_tool_call_stream();
+        result.normal_text.push_str(&finish.normal_text);
+        result.tool_call_chunks.extend(finish.tool_call_chunks);
+        return Ok(EngineResult {
+            calls: assemble_tool_calls(&result.tool_call_chunks)
+                .into_iter()
+                .map(|(n, a)| {
+                    let v = serde_json::from_str(&a).unwrap_or(Value::String(a));
+                    (n, v)
+                })
+                .collect(),
+            normal_text: result.normal_text,
+        });
+    }
+
+    let mut parser = create_tool_parser_for_family(family, &[])?;
+    let mut result = parser.push(text)?;
+    result.append(parser.finish()?);
+    Ok(EngineResult {
+        normal_text: result.normal_text.clone(),
+        calls: assemble_trait_calls(result),
+    })
+}
+
+fn assemble_trait_calls(result: ToolParseResult) -> Vec<(String, Value)> {
+    let mut names = BTreeMap::<usize, String>::new();
+    let mut args = BTreeMap::<usize, String>::new();
+    for ToolCallDelta {
+        tool_index,
+        name,
+        arguments,
+    } in result.calls
+    {
+        if let Some(name) = name {
+            names.entry(tool_index).or_default().push_str(&name);
+        }
+        args.entry(tool_index).or_default().push_str(&arguments);
+    }
+    names
+        .into_iter()
+        .map(|(idx, name)| {
+            let raw = args.remove(&idx).unwrap_or_default();
+            let value = serde_json::from_str(&raw).unwrap_or(Value::String(raw));
+            (name, value)
+        })
+        .collect()
 }

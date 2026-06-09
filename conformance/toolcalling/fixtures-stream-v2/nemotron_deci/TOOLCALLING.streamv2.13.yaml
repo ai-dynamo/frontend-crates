@@ -1,21 +1,13 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-
-# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
-# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
-# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
-# here). Assembled result is derived by concatenating per index. A delta:
-# {index, id?, name?, arguments?}; id:true = an id was emitted.
-
 family: nemotron_deci
-model_label: 'Nemotron (DeciLM) v1/v2'
+model_label: Nemotron (DeciLM) v1/v2
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
+  vllm_python: 0.22.0
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.streamv2.13:
-    description: 'Unknown tool name absent from supplied tools'
-    ref: 'derived from TOOLCALLING.batch.13'
+    description: Unknown tool name absent from supplied tools
+    ref: derived from TOOLCALLING.batch.13
     tools:
     - name: get_weather
       parameters:
@@ -24,30 +16,40 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''nemotron_deci''.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
+      sglang_python: No SGLang parser for family 'nemotron_deci'.
     chunks:
     - delta_text: '<TOOLCALL>[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '<TOOLCALL>[{"name":'
+        vllm_python: '<TOOLCALL>[{"name":'
+        vllm_rust: '<TOOLCALL>[{"name":'
     - delta_text: ' "unknown_tool",'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "unknown_tool",'
+        vllm_python: ' "unknown_tool",'
+        vllm_rust: ' "unknown_tool",'
     - delta_text: ' "arguments": {"location": "NYC"}}]'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "arguments": {"location": "NYC"}}]'
-    - delta_text: '</TOOLCALL>'
+        vllm_python: ' "arguments": {"location": "NYC"}}]'
+        vllm_rust: ' "arguments": {"location": "NYC"}}]'
+    - delta_text: </TOOLCALL>
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '</TOOLCALL>'
+        vllm_python: </TOOLCALL>
+        vllm_rust: </TOOLCALL>
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []

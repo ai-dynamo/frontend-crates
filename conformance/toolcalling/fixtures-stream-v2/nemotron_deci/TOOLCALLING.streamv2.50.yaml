@@ -1,21 +1,14 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-
-# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
-# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
-# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
-# here). Assembled result is derived by concatenating per index. A delta:
-# {index, id?, name?, arguments?}; id:true = an id was emitted.
-
 family: nemotron_deci
-model_label: 'Nemotron (DeciLM) v1/v2'
+model_label: Nemotron (DeciLM) v1/v2
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
+  vllm_python: 0.22.0
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.streamv2.50:
-    description: 'Complete single tool call with a grammar token split across chunk boundaries'
-    ref: 'derived from TOOLCALLING.batch.1'
+    description: Complete single tool call with a grammar token split across chunk
+      boundaries
+    ref: derived from TOOLCALLING.batch.1
     tools:
     - name: get_weather
       parameters:
@@ -24,60 +17,82 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''nemotron_deci''.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
+      sglang_python: No SGLang parser for family 'nemotron_deci'.
     chunks:
-    - delta_text: '<T'
+    - delta_text: <T
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '<T'
-    - delta_text: 'OOL'
+        vllm_python: <T
+        vllm_rust: <T
+    - delta_text: OOL
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'OOL'
-    - delta_text: 'CALL>'
+        vllm_python: OOL
+        vllm_rust: OOL
+    - delta_text: CALL>
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'CALL>'
+        vllm_python: CALL>
+        vllm_rust: CALL>
     - delta_text: '[{"name": "'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '[{"name": "'
-    - delta_text: 'get_weather", "argu'
+        vllm_python: '[{"name": "'
+        vllm_rust: '[{"name": "'
+    - delta_text: get_weather", "argu
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'get_weather", "argu'
-    - delta_text: 'me'
+        vllm_python: get_weather", "argu
+        vllm_rust: get_weather", "argu
+    - delta_text: me
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'me'
-    - delta_text: 'nts'
+        vllm_python: me
+        vllm_rust: me
+    - delta_text: nts
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'nts'
+        vllm_python: nts
+        vllm_rust: nts
     - delta_text: '": {"'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '": {"'
+        vllm_python: '": {"'
+        vllm_rust: '": {"'
     - delta_text: 'location": '
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'location": '
+        vllm_python: 'location": '
+        vllm_rust: 'location": '
     - delta_text: '"NYC"}}]</TOOLCALL>'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '"NYC"}}]</TOOLCALL>'
+        vllm_python: '"NYC"}}]</TOOLCALL>'
+        vllm_rust: '"NYC"}}]</TOOLCALL>'
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []

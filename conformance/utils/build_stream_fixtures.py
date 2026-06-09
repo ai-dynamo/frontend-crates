@@ -11,9 +11,10 @@ New format (per-chunk, per-impl):
 
 Inputs (all per-case, keyed by case id):
   --source       the source fixture (chunks/tools/metadata; expected.* ignored)
-  --dynamo JSON  {case: [[delta,...], ...]}            (from record_dynamo_stream)
-  --sglang JSON  {case: [{deltas, normal_text}, ...]}  (from container probe)
-  --vllm JSON    {case: [{deltas, normal_text}, ...]}  (from container probe)
+  --dynamo-rust JSON  {case: [[delta,...], ...]}       (from record_dynamo_stream)
+  --vllm-rust JSON    {case: [{deltas, normal_text}, ...]}  (from vLLM Rust probe)
+  --vllm-python JSON  {case: [{deltas, normal_text}, ...]}  (from vLLM Python probe)
+  --sglang JSON  {case: [{deltas, normal_text}, ...]}  (from SGLang Python container probe)
   --unavailable impl=reason   case-level unavailable (repeatable)
   --na impl                   mark impl not-applicable per-chunk (omit from expected)
 
@@ -21,16 +22,37 @@ A delta: {index, id?, name?, arguments?}.  id:true = an id was emitted.
 """
 import argparse
 import json
+import os
+import subprocess
 import sys
+from pathlib import Path
 
 import yaml
 
+IMPL_KEYS = ("dynamo_rust", "vllm_rust", "vllm_python", "sglang_python")
+LEGACY_IMPL_ALIASES = {
+    "dynamo": "dynamo_rust",
+    "vllm": "vllm_python",
+    "sglang": "sglang_python",
+}
+VLLM_RUST_UNAVAILABLE = (
+    "vLLM Rust capture not implemented yet; source checkout is available for the Rust probe."
+)
+
+
+def _canonical_impl_key(impl: str) -> str:
+    return LEGACY_IMPL_ALIASES.get(impl, impl)
+
 
 def _norm_dynamo(raw):
-    # recorder: {case: [[delta,...], ...]} -> {case: [{deltas, normal_text}, ...]}
+    # recorder accepts both legacy {case: [[delta,...], ...]} and the current
+    # {case: [{deltas, normal_text}, ...]} shape from record_dynamo_stream.
     out = {}
     for cid, chunks in raw.items():
-        out[cid] = [{"deltas": deltas, "normal_text": ""} for deltas in chunks]
+        if chunks and isinstance(chunks[0], dict) and "deltas" in chunks[0]:
+            out[cid] = chunks
+        else:
+            out[cid] = [{"deltas": deltas, "normal_text": ""} for deltas in chunks]
     return out
 
 
@@ -38,6 +60,40 @@ def _load(path):
     if not path:
         return {}
     return json.load(open(path))
+
+
+def _vllm_rust_source_version(source):
+    if not source:
+        return None
+    root = Path(source).expanduser().resolve()
+    crate = root / "rust/src/tool-parser/Cargo.toml"
+    if not crate.exists():
+        raise SystemExit(
+            f"vLLM Rust source path {root} does not contain rust/src/tool-parser/Cargo.toml"
+        )
+    try:
+        sha = subprocess.check_output(
+            ["git", "-C", str(root), "rev-parse", "HEAD"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+    except subprocess.CalledProcessError:
+        sha = "unknown"
+    try:
+        tag = subprocess.check_output(
+            ["git", "-C", str(root), "describe", "--tags", "--exact-match"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+    except subprocess.CalledProcessError:
+        tag = "untagged"
+    return f"{tag} {sha}"
+
+
+def _vllm_rust_unavailable(source_version):
+    if source_version:
+        return f"{VLLM_RUST_UNAVAILABLE} Source: {source_version}."
+    return "vLLM Rust source not available; set VLLM_RUST_SOURCE or pass --vllm-rust-source."
 
 
 def _q(s) -> str:
@@ -59,9 +115,13 @@ def _delta_flow(d: dict) -> str:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source", required=True)
-    ap.add_argument("--dynamo")
+    ap.add_argument("--dynamo", dest="dynamo_rust")
+    ap.add_argument("--dynamo-rust")
+    ap.add_argument("--vllm-rust")
+    ap.add_argument("--vllm-rust-source", help="vLLM source checkout root; defaults to VLLM_RUST_SOURCE")
+    ap.add_argument("--vllm", dest="vllm_python")
+    ap.add_argument("--vllm-python")
     ap.add_argument("--sglang")
-    ap.add_argument("--vllm")
     ap.add_argument("--unavailable", action="append", default=[])
     ap.add_argument("--na", action="append", default=[])
     ap.add_argument("--captured", action="append", default=[],
@@ -76,13 +136,30 @@ def main():
     model_label = args.label or src.get("model_label", family)
 
     caps = {
-        "dynamo": _norm_dynamo(_load(args.dynamo)),
-        "sglang": _load(args.sglang),
-        "vllm": _load(args.vllm),
+        "dynamo_rust": _norm_dynamo(_load(args.dynamo_rust)),
+        "vllm_rust": _load(args.vllm_rust),
+        "vllm_python": _load(args.vllm_python),
+        "sglang_python": _load(args.sglang),
     }
-    unavail = dict(u.split("=", 1) for u in args.unavailable)
-    na_impls = set(args.na)
-    captured_versions = dict(c.split("=", 1) for c in args.captured)
+    unavail = {
+        _canonical_impl_key(k): v
+        for k, v in (u.split("=", 1) for u in args.unavailable)
+    }
+    vllm_rust_source_version = _vllm_rust_source_version(
+        args.vllm_rust_source or os.environ.get("VLLM_RUST_SOURCE")
+    )
+    if not caps["vllm_rust"]:
+        unavail.setdefault(
+            "vllm_rust",
+            _vllm_rust_unavailable(vllm_rust_source_version),
+        )
+    na_impls = {_canonical_impl_key(impl) for impl in args.na}
+    captured_versions = {
+        _canonical_impl_key(k): v
+        for k, v in (c.split("=", 1) for c in args.captured)
+    }
+    if vllm_rust_source_version:
+        captured_versions.setdefault("vllm_rust", vllm_rust_source_version)
 
     L = []
     L.append("# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.")
@@ -97,11 +174,11 @@ def main():
     L.append(f"family: {family}")
     L.append(f"model_label: {_q(model_label)}")
     L.append("mode: stream")
-    # Engine versions the vLLM/SGLang per-chunk data was captured against. A
+    # Engine versions the peer per-chunk data was captured against. A
     # divergence is only meaningful relative to these — re-capture when bumping.
     if captured_versions:
         L.append("captured_with:")
-        for impl in ("vllm", "sglang"):
+        for impl in IMPL_KEYS:
             if impl in captured_versions:
                 L.append(f"  {impl}: {_q(captured_versions[impl])}")
     L.append("cases:")
@@ -136,7 +213,7 @@ def main():
             # expected deltas per impl
             exp_lines = []
             nt_lines = []
-            for impl in ("dynamo", "vllm", "sglang"):
+            for impl in IMPL_KEYS:
                 if impl in case_unavail or impl in na_impls:
                     continue
                 cap = caps.get(impl, {}).get(cid)

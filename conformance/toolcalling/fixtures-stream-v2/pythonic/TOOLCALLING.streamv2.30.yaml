@@ -11,8 +11,8 @@ family: pythonic
 model_label: 'Llama 4 (pythonic fmt)'
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
-  sglang: '0.5.12.post1'
+  vllm_python: '0.22.0'
+  sglang_python: '0.5.12.post1'
 cases:
   TOOLCALLING.streamv2.30.a:
     description: 'Pythonic call separator `,` inside one argument string value'
@@ -25,29 +25,29 @@ cases:
           sql:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '[run_query(sql="SELECT a,'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'run_query', arguments: '{"sql": "SELECT a'}
-        sglang: []
+        sglang_python: []
     - delta_text: ' SELECT'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ', SELECT'}
-        sglang: []
+        sglang_python: []
     - delta_text: ' b")]'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ' b"}'}
-        sglang:
+        sglang_python:
         - {index: 0, name: 'run_query', arguments: '{"sql": "SELECT a, SELECT b"}'}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
   TOOLCALLING.streamv2.30.b:
     description: 'Pythonic/list structural delimiters `}` and `]` inside one argument string value'
     ref: 'derived from TOOLCALLING.batch.30.b'
@@ -59,44 +59,44 @@ cases:
           sql:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '[run_query(sql="SELECT value'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'run_query', arguments: '{"sql": "SELECT value'}
-        sglang: []
+        sglang_python: []
     - delta_text: ' WHERE'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ' WHERE'}
-        sglang: []
+        sglang_python: []
     - delta_text: ' note has brace'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ' note has brace'}
-        sglang: []
+        sglang_python: []
     - delta_text: ' } and'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ' bracket'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ' ]")]'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
       normal_text:
-        sglang: '[run_query(sql="SELECT value WHERE note has brace } and bracket ]'
+        sglang_python: '[run_query(sql="SELECT value WHERE note has brace } and bracket ]'
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
       normal_text:
-        sglang: '")]'
+        sglang_python: '")]'
   TOOLCALLING.streamv2.30.c:
     description: 'Tool-call marker-looking `[get_time ...]` text inside one argument string value'
     ref: 'derived from TOOLCALLING.batch.30.c'
@@ -108,25 +108,25 @@ cases:
           sql:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '[run_query(sql="literal [get_time'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ' marker]'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'run_query', arguments: '{"sql": "literal [get_time marker]'}
-        sglang: []
+        sglang_python: []
     - delta_text: ' stays text")]'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ' stays text"}'}
-        sglang:
+        sglang_python:
         - {index: 0, name: 'run_query', arguments: '{"sql": "literal [get_time marker] stays text"}'}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []

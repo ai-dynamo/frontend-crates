@@ -11,7 +11,7 @@ family: phi4
 model_label: 'Phi-4'
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
+  vllm_python: '0.22.0'
 cases:
   TOOLCALLING.streamv2.4.a:
     description: 'functools[ wrapper with garbage'
@@ -24,22 +24,22 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''phi4''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''phi4''.'
     chunks:
     - delta_text: 'functools[not a'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' json'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' array]'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
+        vllm_python: []
   TOOLCALLING.streamv2.4.b:
     description: 'Missing close brace'
     ref: 'derived from TOOLCALLING.batch.4.b'
@@ -51,22 +51,22 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''phi4''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''phi4''.'
     chunks:
     - delta_text: 'functools[{"name": "get_weather",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' {"location": "NYC"]'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
+        vllm_python: []
   TOOLCALLING.streamv2.4.c:
     description: 'Missing name key'
     ref: 'derived from TOOLCALLING.batch.4.c'
@@ -78,19 +78,19 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''phi4''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''phi4''.'
     chunks:
     - delta_text: 'functools[{"arguments": {"location":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "NYC"}}]'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
+        vllm_python: []
   TOOLCALLING.streamv2.4.d:
     description: 'Missing closing ]'
     ref: 'derived from TOOLCALLING.batch.4.d'
@@ -102,19 +102,19 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''phi4''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''phi4''.'
     chunks:
     - delta_text: 'functools[{"name": "get_weather",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' {"location": "NYC"}}'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
+        vllm_python: []

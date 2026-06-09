@@ -11,8 +11,8 @@ family: pythonic
 model_label: 'Llama 4 (pythonic fmt)'
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
-  sglang: '0.5.12.post1'
+  vllm_python: '0.22.0'
+  sglang_python: '0.5.12.post1'
 cases:
   TOOLCALLING.streamv2.6.a:
     description: 'Empty parens (no args)'
@@ -23,19 +23,19 @@ cases:
         type: object
         properties: {}
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '[get_time()]'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'get_time', arguments: '{}'}
-        sglang:
+        sglang_python:
         - {index: 0, name: 'get_time', arguments: '{}'}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
   TOOLCALLING.streamv2.6.b:
     description: 'Whitespace inside parens'
     ref: 'derived from TOOLCALLING.batch.6.b'
@@ -45,17 +45,17 @@ cases:
         type: object
         properties: {}
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '[get_time( )]'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'get_time', arguments: '{}'}
-        sglang: []
+        sglang_python: []
       normal_text:
-        sglang: '[get_time( )]'
+        sglang_python: '[get_time( )]'
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []

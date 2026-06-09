@@ -1,22 +1,15 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-
-# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
-# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
-# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
-# here). Assembled result is derived by concatenating per index. A delta:
-# {index, id?, name?, arguments?}; id:true = an id was emitted.
-
 family: deepseek_v4
-model_label: 'DeepSeek V4'
+model_label: DeepSeek V4
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
-  sglang: '0.5.12.post1'
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.streamv2.4.a:
-    description: 'Tool_calls wrapper with garbage'
-    ref: 'derived from TOOLCALLING.batch.4.a'
+    description: Tool_calls wrapper with garbage
+    ref: derived from TOOLCALLING.batch.4.a
     tools:
     - name: get_weather
       parameters:
@@ -25,30 +18,32 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: '
     chunks:
-    - delta_text: '<｜DSML｜tool_calls>
-not'
+    - delta_text: <｜DSML｜tool_calls> not
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        dynamo_rust: []
     - delta_text: ' a'
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: ' valid invoke
-</｜DSML｜tool_calls>'
+        vllm_python: []
+        sglang_python: []
+        dynamo_rust: []
+    - delta_text: ' valid invoke </｜DSML｜tool_calls>'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        dynamo_rust: []
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        dynamo_rust: []
   TOOLCALLING.streamv2.4.c:
-    description: 'Invoke without name attribute'
-    ref: 'derived from TOOLCALLING.batch.4.c'
+    description: Invoke without name attribute
+    ref: derived from TOOLCALLING.batch.4.c
     tools:
     - name: get_weather
       parameters:
@@ -57,36 +52,37 @@ not'
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: '
     chunks:
-    - delta_text: '<｜DSML｜tool_calls>
-<｜DSML｜invoke>'
+    - delta_text: <｜DSML｜tool_calls> <｜DSML｜invoke>
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: '
-<｜DSML｜parameter'
+        vllm_python: []
+        sglang_python: []
+        dynamo_rust: []
+    - delta_text: ' <｜DSML｜parameter'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        dynamo_rust: []
     - delta_text: ' name="location" string="true">NYC</｜DSML｜parameter>'
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: '
-</｜DSML｜invoke>
-</｜DSML｜tool_calls>'
+        vllm_python: []
+        sglang_python: []
+        dynamo_rust: []
+    - delta_text: ' </｜DSML｜invoke> </｜DSML｜tool_calls>'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        dynamo_rust: []
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        dynamo_rust: []
   TOOLCALLING.streamv2.4.d:
-    description: 'Missing </｜DSML｜parameter> end tag'
-    ref: 'derived from TOOLCALLING.batch.4.d'
+    description: Missing </｜DSML｜parameter> end tag
+    ref: derived from TOOLCALLING.batch.4.d
     tools:
     - name: get_weather
       parameters:
@@ -95,37 +91,47 @@ not'
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: '
     chunks:
-    - delta_text: '<｜DSML｜tool_calls>
-<｜DSML｜invoke'
+    - delta_text: <｜DSML｜tool_calls> <｜DSML｜invoke
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        dynamo_rust: []
     - delta_text: ' name="get_weather">'
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, name: 'get_weather'}
-    - delta_text: '
-<｜DSML｜parameter name="location" string="true">'
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          name: get_weather
+        dynamo_rust: []
+    - delta_text: ' <｜DSML｜parameter name="location" string="true">'
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: 'NYC
-</｜DSML｜invoke>'
+        vllm_python: []
+        sglang_python: []
+        dynamo_rust: []
+    - delta_text: NYC </｜DSML｜invoke>
       expected:
-        vllm:
-        - {index: 0, id: true, name: 'get_weather', arguments: '{}'}
-        sglang:
-        - {index: 0, arguments: '{}'}
-    - delta_text: '
-</｜DSML｜tool_calls>'
+        vllm_python:
+        - index: 0
+          id: true
+          name: get_weather
+          arguments: '{}'
+        sglang_python:
+        - index: 0
+          arguments: '{}'
+        dynamo_rust:
+        - index: 0
+          name: get_weather
+          arguments: '{}'
+    - delta_text: ' </｜DSML｜tool_calls>'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        dynamo_rust: []
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        dynamo_rust: []

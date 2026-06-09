@@ -1,19 +1,23 @@
 family: qwen3_coder
 mode: batch-on-stream
 captured_with:
-  vllm: 0.22.0
-  sglang: 0.5.12.post1
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.batch.5.a:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
           location: NYC
+    vllm_rust:
+      unavailable: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
+        Qwen Coder tool call'
   TOOLCALLING.batch.5.b:
-    vllm:
+    vllm_python:
       calls: []
       normal_text: '<function=get_weather>
 
@@ -26,7 +30,7 @@ cases:
         </function>
 
         </tool_call>'
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
@@ -36,21 +40,37 @@ cases:
 
 
         '
-  TOOLCALLING.batch.5.c:
-    vllm:
+    vllm_rust:
       calls: []
-    sglang:
+      normal_text: '<function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+  TOOLCALLING.batch.5.c:
+    vllm_python:
+      calls: []
+    sglang_python:
       calls:
       - name: get_weather
         arguments: {}
+    vllm_rust:
+      unavailable: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
+        Qwen Coder tool call'
   TOOLCALLING.batch.5.d:
-    vllm:
+    vllm_python:
       calls: []
       normal_text: 'I''ll start by fetching the weather for both Boston and New York
         at the same time!
 
         '
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
@@ -63,14 +83,17 @@ cases:
 
 
         '
+    vllm_rust:
+      unavailable: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
+        Qwen Coder tool call'
   TOOLCALLING.batch.5.e:
-    vllm:
+    vllm_python:
       calls: []
       normal_text: 'I''ll start by fetching the weather for both Boston and New York
         at the same time!
 
         '
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
@@ -82,8 +105,11 @@ cases:
 
 
         '
+    vllm_rust:
+      unavailable: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
+        Qwen Coder tool call'
   TOOLCALLING.batch.5.f:
-    vllm:
+    vllm_python:
       calls: []
       normal_text: '<function=get_weather>
 
@@ -98,7 +124,7 @@ cases:
         </tool_call>
 
         '
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
@@ -112,8 +138,26 @@ cases:
 
 
         '
+    vllm_rust:
+      calls:
+      - arguments:
+          location: Boston
+        name: get_weather
+      normal_text: '<function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>
+
+        '
   TOOLCALLING.batch.5.g:
-    vllm:
+    vllm_python:
       calls: []
       normal_text: 'I will check that. <function=get_weather>
 
@@ -126,9 +170,22 @@ cases:
         </function>
 
         </tool_call>'
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
           location: NYC
       normal_text: "I will check that. \n\n\n"
+    vllm_rust:
+      calls: []
+      normal_text: 'I will check that. <function=get_weather>
+
+        <parameter=location>
+
+        NYC
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'

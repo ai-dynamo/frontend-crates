@@ -11,7 +11,7 @@ family: phi4
 model_label: 'Phi-4'
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
+  vllm_python: '0.22.0'
 cases:
   TOOLCALLING.streamv2.9.a:
     description: 'Empty model text'
@@ -24,16 +24,16 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''phi4''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''phi4''.'
     chunks:
     - delta_text: ''
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
+        vllm_python: []
   TOOLCALLING.streamv2.9.b:
     description: 'Blank / whitespace-only model text'
     ref: 'derived from TOOLCALLING.batch.9.b'
@@ -45,13 +45,13 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''phi4''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''phi4''.'
     chunks:
     - delta_text: '   '
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
+        vllm_python: []

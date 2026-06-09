@@ -11,7 +11,7 @@ family: jamba
 model_label: 'AI21 Jamba'
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
+  vllm_python: '0.22.0'
 cases:
   TOOLCALLING.streamv2.6.a:
     description: 'Canonical "arguments": {}'
@@ -22,23 +22,23 @@ cases:
         type: object
         properties: {}
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "get_time",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments": {}}]</tool_calls>'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'get_time'}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
+        vllm_python: []
   TOOLCALLING.streamv2.6.b:
     description: 'Whitespace inside arguments {}'
     ref: 'derived from TOOLCALLING.batch.6.b'
@@ -48,26 +48,26 @@ cases:
         type: object
         properties: {}
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "get_time",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments": { }}]'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'get_time'}
     - delta_text: '</tool_calls>'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
+        vllm_python: []
   TOOLCALLING.streamv2.6.c:
     description: 'No arguments key'
     ref: 'derived from TOOLCALLING.batch.6.c'
@@ -77,20 +77,20 @@ cases:
         type: object
         properties: {}
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "get_time"}]'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: '</tool_calls>'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'get_time'}
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
+        vllm_python: []

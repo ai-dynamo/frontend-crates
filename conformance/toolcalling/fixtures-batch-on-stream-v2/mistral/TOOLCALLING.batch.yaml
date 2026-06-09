@@ -1,70 +1,117 @@
 family: mistral
 mode: batch-on-stream
 captured_with:
-  vllm: 0.22.0
-  sglang: 0.5.12.post1
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.batch.1:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       calls: []
+    vllm_rust:
+      calls: []
+      normal_text: '[TOOL_CALLS][{"name": "get_weather", "arguments": {"location":
+        "NYC"}}][/TOOL_CALLS]'
   TOOLCALLING.batch.3:
-    vllm:
+    vllm_python:
       calls: []
       normal_text: Hello, how can I help you today?
-    sglang:
+    sglang_python:
+      calls: []
+      normal_text: Hello, how can I help you today?
+    vllm_rust:
       calls: []
       normal_text: Hello, how can I help you today?
   TOOLCALLING.batch.9.a:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       calls: []
+    vllm_rust:
+      calls: []
+      normal_text: ''
   TOOLCALLING.batch.9.b:
-    vllm:
+    vllm_python:
       calls: []
       normal_text: '   '
-    sglang:
+    sglang_python:
+      calls: []
+      normal_text: '   '
+    vllm_rust:
       calls: []
       normal_text: '   '
   TOOLCALLING.batch.10:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       calls: []
+    vllm_rust:
+      calls: []
+      normal_text: '[TOOL_CALLS][{"name": "get_weather", "arguments": {"location":
+        "NYC"}}, {"name": "get_weather", "arguments": {"location": "LA"}}][/TOOL_CALLS]'
   TOOLCALLING.batch.30.a:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       calls: []
+    vllm_rust:
+      calls: []
+      normal_text: '[TOOL_CALLS][{"name": "run_query", "arguments": {"sql": "SELECT
+        a, SELECT b"}}][/TOOL_CALLS]'
   TOOLCALLING.batch.30.b:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       calls: []
+    vllm_rust:
+      calls: []
+      normal_text: '[TOOL_CALLS][{"name": "run_query", "arguments": {"sql": "SELECT
+        value WHERE note has brace } and bracket ]"}}][/TOOL_CALLS]'
   TOOLCALLING.batch.30.c:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       calls: []
+    vllm_rust:
+      calls: []
+      normal_text: '[TOOL_CALLS][{"name": "run_query", "arguments": {"sql": "literal
+        [TOOL_CALLS marker][][/TOOL_CALLS marker] stays text"}}][/TOOL_CALLS]'
   TOOLCALLING.batch.31.a:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       calls: []
+    vllm_rust:
+      calls: []
+      normal_text: '[TOOL_CALLS][{"name": "run_query", "arguments": {"sql": "SELECT
+        a, SELECT b"}}, {"name": "get_time", "arguments": {"timezone": "EST"}}][/TOOL_CALLS]'
   TOOLCALLING.batch.31.b:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       calls: []
+    vllm_rust:
+      calls: []
+      normal_text: '[TOOL_CALLS][{"name": "run_query", "arguments": {"sql": "SELECT
+        value WHERE note has brace } and bracket ]"}}, {"name": "get_time", "arguments":
+        {"timezone": "EST"}}][/TOOL_CALLS]'
   TOOLCALLING.batch.13.a:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       calls: []
+    vllm_rust:
+      calls: []
+      normal_text: '[TOOL_CALLS][{"name": "unknown_tool", "arguments": {"location":
+        "NYC"}}][/TOOL_CALLS]'
   TOOLCALLING.batch.13.c:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       calls: []
+    vllm_rust:
+      calls: []
+      normal_text: '[TOOL_CALLS][{"name": "get_weather", "arguments": {"location":
+        "NYC"}}, {"name": "unknown_tool", "arguments": {"location": "LA"}}][/TOOL_CALLS]'

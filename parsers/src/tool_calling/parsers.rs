@@ -116,7 +116,7 @@ pub async fn try_tool_call_parse(
 }
 
 /// Same as [`detect_and_parse_tool_call`] but flips `allow_eof_recovery=true`
-/// on the JSON / XML configs so finalize / non-streaming aggregate paths
+/// on parser configs with EOF recovery so finalize / non-streaming aggregate paths
 /// recover from missing-end-token / truncated-JSON instead of silently
 /// dropping the call. Streaming jails MUST keep using the non-recovery
 /// variant — otherwise `should_exit_jail_early` fires before the end-token
@@ -171,6 +171,11 @@ async fn detect_and_parse_tool_call_with_recovery_options(
             let mut c = c.clone();
             c.allow_eof_recovery = true;
             ParserConfig::Xml(c)
+        }
+        ParserConfig::Harmony(c) => {
+            let mut c = c.clone();
+            c.allow_eof_recovery = true;
+            ParserConfig::Harmony(c)
         }
         ParserConfig::Dsml(c) if recover_dsml_eof => {
             let mut c = c.clone();

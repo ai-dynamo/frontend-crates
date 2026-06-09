@@ -1,108 +1,131 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-
-# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
-# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
-# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
-# here). Assembled result is derived by concatenating per index. A delta:
-# {index, id?, name?, arguments?}; id:true = an id was emitted.
-
 family: kimi_k2
-model_label: 'Kimi K2.6'
+model_label: Kimi K2.6
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
-  sglang: '0.5.12.post1'
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.streamv2.6.a:
-    description: 'Canonical empty {} arguments'
-    ref: 'derived from TOOLCALLING.batch.6.a'
+    description: Canonical empty {} arguments
+    ref: derived from TOOLCALLING.batch.6.a
     tools:
     - name: get_time
       parameters:
         type: object
         properties: {}
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
     chunks:
-    - delta_text: '<|tool_calls_section_begin|><|tool_call_begin|>'
+    - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: 'functions.get_time:0<|tool_call_argument_begin|>'
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
+    - delta_text: functions.get_time:0<|tool_call_argument_begin|>
       expected:
-        vllm:
-        - {index: 0, id: true, name: 'get_time'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          id: true
+          name: get_time
+        sglang_python: []
+        vllm_rust:
+        - index: 0
+          name: get_time
     - delta_text: '{}<|tool_call_end|><|tool_calls_section_end|>'
       expected:
-        vllm:
-        - {index: 0, arguments: '{}'}
-        sglang:
-        - {index: 0, name: 'get_time'}
+        vllm_python:
+        - index: 0
+          arguments: '{}'
+        sglang_python:
+        - index: 0
+          name: get_time
+        vllm_rust:
+        - arguments: '{}'
+          index: 0
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, arguments: '{}'}
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          arguments: '{}'
+        vllm_rust: []
   TOOLCALLING.streamv2.6.b:
-    description: 'Whitespace inside empty {}'
-    ref: 'derived from TOOLCALLING.batch.6.b'
+    description: Whitespace inside empty {}
+    ref: derived from TOOLCALLING.batch.6.b
     tools:
     - name: get_time
       parameters:
         type: object
         properties: {}
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
     chunks:
-    - delta_text: '<|tool_calls_section_begin|><|tool_call_begin|>'
+    - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: 'functions.get_time:0<|tool_call_argument_begin|>'
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
+    - delta_text: functions.get_time:0<|tool_call_argument_begin|>
       expected:
-        vllm:
-        - {index: 0, id: true, name: 'get_time'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          id: true
+          name: get_time
+        sglang_python: []
+        vllm_rust:
+        - index: 0
+          name: get_time
     - delta_text: '{ }<|tool_call_end|><|tool_calls_section_end|>'
       expected:
-        vllm:
-        - {index: 0, arguments: '{ }'}
-        sglang:
-        - {index: 0, name: 'get_time'}
+        vllm_python:
+        - index: 0
+          arguments: '{ }'
+        sglang_python:
+        - index: 0
+          name: get_time
+        vllm_rust:
+        - arguments: '{ }'
+          index: 0
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, arguments: '{ }'}
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          arguments: '{ }'
+        vllm_rust: []
   TOOLCALLING.streamv2.6.c:
-    description: 'No argument body (skip argument_begin → end)'
-    ref: 'derived from TOOLCALLING.batch.6.c'
+    description: No argument body (skip argument_begin → end)
+    ref: derived from TOOLCALLING.batch.6.c
     tools:
     - name: get_time
       parameters:
         type: object
         properties: {}
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
+      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
+        Kimi K2 tool call'
     chunks:
-    - delta_text: '<|tool_calls_section_begin|><|tool_call_begin|>'
+    - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: 'functions.get_time:0<|tool_call_end|>'
+        vllm_python: []
+        sglang_python: []
+    - delta_text: functions.get_time:0<|tool_call_end|>
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: '<|tool_calls_section_end|>'
+        vllm_python: []
+        sglang_python: []
+    - delta_text: <|tool_calls_section_end|>
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []

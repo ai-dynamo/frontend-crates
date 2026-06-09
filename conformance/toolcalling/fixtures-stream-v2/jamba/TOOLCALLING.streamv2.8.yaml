@@ -11,7 +11,7 @@ family: jamba
 model_label: 'AI21 Jamba'
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
+  vllm_python: '0.22.0'
 cases:
   TOOLCALLING.streamv2.8.a:
     description: 'Narration before tool call only'
@@ -24,39 +24,39 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''jamba''.'
     chunks:
     - delta_text: 'I will'
       expected:
-        vllm: []
+        vllm_python: []
       normal_text:
-        vllm: 'I will'
+        vllm_python: 'I will'
     - delta_text: ' check'
       expected:
-        vllm: []
+        vllm_python: []
       normal_text:
-        vllm: ' check'
+        vllm_python: ' check'
     - delta_text: ' the weather. <tool_calls>'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: '[{"name": "get_weather",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments":'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'get_weather'}
     - delta_text: ' {"location": "NYC"}}]'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: '</tool_calls>'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
   TOOLCALLING.streamv2.8.b:
     description: 'Narration after tool call only'
@@ -69,39 +69,39 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "get_weather",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments": {"location": "NYC"}}]'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'get_weather'}
     - delta_text: '</tool_calls> Let'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
     - delta_text: ' me'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
     - delta_text: ' know if'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
     - delta_text: ' you need more.'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
   TOOLCALLING.streamv2.8.c:
     description: 'Narration both before and after (sandwich)'
@@ -114,51 +114,51 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''jamba''.'
     chunks:
     - delta_text: 'I will'
       expected:
-        vllm: []
+        vllm_python: []
       normal_text:
-        vllm: 'I will'
+        vllm_python: 'I will'
     - delta_text: ' check'
       expected:
-        vllm: []
+        vllm_python: []
       normal_text:
-        vllm: ' check'
+        vllm_python: ' check'
     - delta_text: ' the weather. <tool_calls>'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: '[{"name": "get_weather",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments":'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'get_weather'}
     - delta_text: ' {"location": "NYC"}}]'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: '</tool_calls> Let me'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' know'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' if you'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' need'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' more.'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
   TOOLCALLING.streamv2.8.d:
     description: 'Narration between multiple tool calls'
@@ -171,55 +171,55 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''jamba''.'
     chunks:
     - delta_text: 'I will'
       expected:
-        vllm: []
+        vllm_python: []
       normal_text:
-        vllm: 'I will'
+        vllm_python: 'I will'
     - delta_text: ' check'
       expected:
-        vllm: []
+        vllm_python: []
       normal_text:
-        vllm: ' check'
+        vllm_python: ' check'
     - delta_text: ' the weather. <tool_calls>'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: '[{"name": "get_weather",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments":'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'get_weather'}
     - delta_text: ' {"location": "NYC"}}]'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: '</tool_calls> Then check'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' LA'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' weather. <tool_calls>'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: '[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "get_weather", "arguments":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' {"location":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "LA"}}]</tool_calls>'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}

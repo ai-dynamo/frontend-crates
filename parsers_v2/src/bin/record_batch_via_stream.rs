@@ -1,25 +1,28 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Record the harmony STREAM parser's result on every harmony BATCH sample, so the
+//! Record Dynamo Rust stream parser results on BATCH samples, so the
 //! parity generator (Python, can't run the Rust parser) can render the
 //! "Stream parser on batch" tab. Feeds each batch fixture's full `model_text`
 //! through the streaming parser (text path) + finish, and emits the assembled
 //! calls per case as JSON.
 //!
-//! Output: {case_id: {"calls": [{"name", "arguments": <json|string>}, ...]}}
-//! This is the DYNAMO layer only. Merge it with the per-engine vLLM/SGLang captures
-//! (conformance/utils/capture_harmony_batch_stream.py) via merge_batch_stream.py to
-//! produce the nested conformance/utils/harmony_batch_stream.json the table consumes.
+//! Output:
+//! - `--family <family>`: {case_id: {"calls": [...], "normal_text": "..."}}
+//! - no `--family`: {family: {case_id: {"calls": [...], "normal_text": "..."}}}
+//!
 //! Usage:
-//!   cargo run -p dynamo-parsers-v2 --bin record_batch_via_stream \
-//!     > /tmp/dynamo_batch_stream.json   # then: see merge_batch_stream.py
+//!   cargo run -p dynamo-parsers-v2 --bin record_batch_via_stream -- --family deepseek_v4
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-use dynamo_parsers_v2::{HarmonyToolStreamParser, assemble_tool_calls};
-use serde::Deserialize;
+use dynamo_parsers_v2::{
+    HarmonyToolStreamParser, ToolCallDelta, ToolParseResult, assemble_tool_calls,
+    create_tool_parser_for_family,
+};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Deserialize)]
 struct Fixture {
@@ -36,11 +39,43 @@ struct Case {
 }
 
 fn main() -> anyhow::Result<()> {
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let family = args
+        .windows(2)
+        .find(|pair| pair[0] == "--family")
+        .map(|pair| pair[1].clone());
+    let families = family
+        .as_ref()
+        .map(|f| vec![f.as_str()])
+        .unwrap_or_else(|| vec!["harmony", "deepseek_v4"]);
+
+    let fixture_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .unwrap()
-        .join("conformance/toolcalling/fixtures/harmony");
+        .join("conformance/toolcalling/fixtures");
 
+    let mut nested = BTreeMap::new();
+    for family in families {
+        nested.insert(
+            family.to_string(),
+            record_family(&fixture_root, family)
+                .map_err(|e| anyhow::anyhow!("record {family}: {e}"))?,
+        );
+    }
+
+    if let Some(family) = family {
+        println!("{}", serde_json::to_string_pretty(&nested[&family])?);
+    } else {
+        println!("{}", serde_json::to_string_pretty(&nested)?);
+    }
+    Ok(())
+}
+
+fn record_family(
+    root: &std::path::Path,
+    family: &str,
+) -> anyhow::Result<BTreeMap<String, CaseOut>> {
+    let dir = root.join(family);
     let mut files: Vec<_> = std::fs::read_dir(&dir)?
         .flatten()
         .map(|e| e.path())
@@ -53,39 +88,94 @@ fn main() -> anyhow::Result<()> {
         .collect();
     files.sort();
 
-    let mut entries: Vec<String> = Vec::new();
+    let mut out = BTreeMap::new();
     for path in &files {
         let fx: Fixture = serde_yaml::from_str(&std::fs::read_to_string(path)?)?;
-        if fx.family != "harmony" || fx.mode != "batch" {
+        if fx.family != family || fx.mode != "batch" {
             continue;
         }
         for (cid, case) in &fx.cases {
             let Some(text) = case.model_text.as_ref() else {
                 continue;
             };
-            let mut parser = HarmonyToolStreamParser::new()?;
-            let mut all = parser.parse_tool_call_streaming_text(text).tool_call_chunks;
-            all.extend(parser.finish_tool_call_stream().tool_call_chunks);
-            let calls: Vec<String> = assemble_tool_calls(&all)
-                .iter()
-                .map(|(name, args)| {
-                    // arguments: emit parsed JSON when valid, else the raw string.
-                    let args_json = serde_json::from_str::<serde_json::Value>(args)
-                        .unwrap_or_else(|_| serde_json::Value::String(args.clone()));
-                    format!(
-                        "{{\"name\": {}, \"arguments\": {}}}",
-                        serde_json::to_string(name).unwrap(),
-                        serde_json::to_string(&args_json).unwrap()
-                    )
-                })
-                .collect();
-            entries.push(format!(
-                "  {}: {{\"calls\": [{}]}}",
-                serde_json::to_string(cid).unwrap(),
-                calls.join(", ")
-            ));
+            out.insert(
+                cid.clone(),
+                CaseOut {
+                    result: parse_result(family, text)?,
+                },
+            );
         }
     }
-    println!("{{\n{}\n}}", entries.join(",\n"));
-    Ok(())
+    Ok(out)
+}
+
+fn parse_result(family: &str, text: &str) -> anyhow::Result<CaseOutInner> {
+    if family == "harmony" {
+        let mut parser = HarmonyToolStreamParser::new()?;
+        let mut result = parser.parse_tool_call_streaming_text(text);
+        let finish = parser.finish_tool_call_stream();
+        result.normal_text.push_str(&finish.normal_text);
+        result.tool_call_chunks.extend(finish.tool_call_chunks);
+        return Ok(CaseOutInner {
+            calls: assemble_tool_calls(&result.tool_call_chunks)
+                .into_iter()
+                .map(|(name, arguments)| call_out(name, arguments))
+                .collect(),
+            normal_text: result.normal_text,
+        });
+    }
+
+    let mut parser = create_tool_parser_for_family(family, &[])?;
+    let mut result = parser.push(text)?;
+    result.append(parser.finish()?);
+    Ok(CaseOutInner {
+        calls: calls_from_parse_result(result.clone())
+            .into_iter()
+            .map(|(name, arguments)| call_out(name, arguments))
+            .collect(),
+        normal_text: result.normal_text,
+    })
+}
+
+fn calls_from_parse_result(result: ToolParseResult) -> Vec<(String, String)> {
+    let mut names = BTreeMap::<usize, String>::new();
+    let mut args = BTreeMap::<usize, String>::new();
+    for ToolCallDelta {
+        tool_index,
+        name,
+        arguments,
+    } in result.calls
+    {
+        if let Some(name) = name {
+            names.entry(tool_index).or_default().push_str(&name);
+        }
+        args.entry(tool_index).or_default().push_str(&arguments);
+    }
+    names
+        .into_iter()
+        .map(|(idx, name)| (name, args.remove(&idx).unwrap_or_default()))
+        .collect()
+}
+
+fn call_out(name: String, arguments: String) -> CallOut {
+    let arguments = serde_json::from_str::<Value>(&arguments).unwrap_or(Value::String(arguments));
+    CallOut { name, arguments }
+}
+
+#[derive(Serialize)]
+struct CaseOut {
+    #[serde(flatten)]
+    result: CaseOutInner,
+}
+
+#[derive(Serialize)]
+struct CaseOutInner {
+    calls: Vec<CallOut>,
+    normal_text: String,
+}
+
+#[derive(Serialize)]
+struct CallOut {
+    name: String,
+    arguments: Value,
 }

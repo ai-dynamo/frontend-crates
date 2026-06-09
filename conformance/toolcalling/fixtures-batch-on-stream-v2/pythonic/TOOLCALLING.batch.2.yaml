@@ -1,11 +1,11 @@
 family: pythonic
 mode: batch-on-stream
 captured_with:
-  vllm: 0.22.0
-  sglang: 0.5.12.post1
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
 cases:
   TOOLCALLING.batch.2.a:
-    vllm:
+    vllm_python:
       calls:
       - name: get_weather
         arguments:
@@ -13,7 +13,7 @@ cases:
       - name: get_time
         arguments:
           timezone: EST
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
@@ -22,11 +22,11 @@ cases:
         arguments:
           timezone: EST
   TOOLCALLING.batch.2.c:
-    vllm:
+    vllm_python:
       calls: []
       normal_text: 'Both: [get_weather(location="NYC"), get_time(timezone="EST")]
         Done.'
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
@@ -36,7 +36,7 @@ cases:
           timezone: EST
       normal_text: 'Both: '
   TOOLCALLING.batch.2.d:
-    vllm:
+    vllm_python:
       calls:
       - name: get_weather
         arguments:
@@ -44,7 +44,7 @@ cases:
       - name: get_weather
         arguments:
           location: LA
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
@@ -53,7 +53,7 @@ cases:
         arguments:
           location: LA
   TOOLCALLING.batch.2.b:
-    vllm:
+    vllm_python:
       unavailable: No batch model_text for this case.
-    sglang:
+    sglang_python:
       unavailable: No batch model_text for this case.

@@ -1,7 +1,7 @@
 # Ephemeral staging trees built by the conformance/utils scripts (copies of vendored python + symlinks
 # to this repo's fixtures/parser source). Never committed.
 .stage*/
-# Rendered conformance matrix — a local artifact, regenerate with `render_table_v2.sh`.
+# Rendered conformance matrix — a local artifact, regenerate with `render_table.sh`.
 CONFORMANCE*.html
 # Python bytecode from running the vendored generator / validate.py
 __pycache__/

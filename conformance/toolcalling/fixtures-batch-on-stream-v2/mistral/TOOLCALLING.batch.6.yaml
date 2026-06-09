@@ -1,24 +1,34 @@
 family: mistral
 mode: batch-on-stream
 captured_with:
-  vllm: 0.22.0
-  sglang: 0.5.12.post1
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.batch.6.a:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       calls: []
+    vllm_rust:
+      calls: []
+      normal_text: '[TOOL_CALLS][{"name": "get_time", "arguments": {}}][/TOOL_CALLS]'
   TOOLCALLING.batch.6.b:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       calls: []
+    vllm_rust:
+      calls: []
+      normal_text: '[TOOL_CALLS][{"name": "get_time", "arguments": { }}][/TOOL_CALLS]'
   TOOLCALLING.batch.6.c:
-    vllm:
+    vllm_python:
       calls:
       - name: get_time
         arguments: {}
       normal_text: '[/TOOL_CALLS]'
-    sglang:
+    sglang_python:
       calls: []
+    vllm_rust:
+      calls: []
+      normal_text: '[TOOL_CALLS][{"name": "get_time"}][/TOOL_CALLS]'

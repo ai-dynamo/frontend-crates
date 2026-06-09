@@ -1,21 +1,13 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-
-# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
-# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
-# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
-# here). Assembled result is derived by concatenating per index. A delta:
-# {index, id?, name?, arguments?}; id:true = an id was emitted.
-
 family: nemotron_deci
-model_label: 'Nemotron (DeciLM) v1/v2'
+model_label: Nemotron (DeciLM) v1/v2
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
+  vllm_python: 0.22.0
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.streamv2.2.a:
-    description: 'Parallel calls in JSON array'
-    ref: 'derived from TOOLCALLING.batch.2.a'
+    description: Parallel calls in JSON array
+    ref: derived from TOOLCALLING.batch.2.a
     tools:
     - name: get_weather
       parameters:
@@ -30,51 +22,67 @@ cases:
           timezone:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''nemotron_deci''.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
+      sglang_python: No SGLang parser for family 'nemotron_deci'.
     chunks:
     - delta_text: '<TOOLCALL>[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '<TOOLCALL>[{"name":'
+        vllm_python: '<TOOLCALL>[{"name":'
+        vllm_rust: '<TOOLCALL>[{"name":'
     - delta_text: ' "get_weather",'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "get_weather",'
+        vllm_python: ' "get_weather",'
+        vllm_rust: ' "get_weather",'
     - delta_text: ' "arguments": {"location": "NYC"}},'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "arguments": {"location": "NYC"}},'
+        vllm_python: ' "arguments": {"location": "NYC"}},'
+        vllm_rust: ' "arguments": {"location": "NYC"}},'
     - delta_text: ' {"name": "get_time",'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' {"name": "get_time",'
+        vllm_python: ' {"name": "get_time",'
+        vllm_rust: ' {"name": "get_time",'
     - delta_text: ' "arguments":'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "arguments":'
+        vllm_python: ' "arguments":'
+        vllm_rust: ' "arguments":'
     - delta_text: ' {"timezone": "EST"}}]'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' {"timezone": "EST"}}]'
-    - delta_text: '</TOOLCALL>'
+        vllm_python: ' {"timezone": "EST"}}]'
+        vllm_rust: ' {"timezone": "EST"}}]'
+    - delta_text: </TOOLCALL>
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '</TOOLCALL>'
+        vllm_python: </TOOLCALL>
+        vllm_rust: </TOOLCALL>
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
   TOOLCALLING.streamv2.2.b:
-    description: 'Two back-to-back TOOLCALL wrappers'
-    ref: 'derived from TOOLCALLING.batch.2.b'
+    description: Two back-to-back TOOLCALL wrappers
+    ref: derived from TOOLCALLING.batch.2.b
     tools:
     - name: get_weather
       parameters:
@@ -89,51 +97,67 @@ cases:
           timezone:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''nemotron_deci''.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
+      sglang_python: No SGLang parser for family 'nemotron_deci'.
     chunks:
     - delta_text: '<TOOLCALL>[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '<TOOLCALL>[{"name":'
+        vllm_python: '<TOOLCALL>[{"name":'
+        vllm_rust: '<TOOLCALL>[{"name":'
     - delta_text: ' "get_weather",'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "get_weather",'
+        vllm_python: ' "get_weather",'
+        vllm_rust: ' "get_weather",'
     - delta_text: ' "arguments": {"location": "NYC"}}]'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "arguments": {"location": "NYC"}}]'
-    - delta_text: '</TOOLCALL><TOOLCALL>'
+        vllm_python: ' "arguments": {"location": "NYC"}}]'
+        vllm_rust: ' "arguments": {"location": "NYC"}}]'
+    - delta_text: </TOOLCALL><TOOLCALL>
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '</TOOLCALL><TOOLCALL>'
+        vllm_python: </TOOLCALL><TOOLCALL>
+        vllm_rust: </TOOLCALL><TOOLCALL>
     - delta_text: '[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '[{"name":'
+        vllm_python: '[{"name":'
+        vllm_rust: '[{"name":'
     - delta_text: ' "get_time", "arguments":'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "get_time", "arguments":'
+        vllm_python: ' "get_time", "arguments":'
+        vllm_rust: ' "get_time", "arguments":'
     - delta_text: ' {"timezone": "EST"}}]</TOOLCALL>'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' {"timezone": "EST"}}]</TOOLCALL>'
+        vllm_python: ' {"timezone": "EST"}}]</TOOLCALL>'
+        vllm_rust: ' {"timezone": "EST"}}]</TOOLCALL>'
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
   TOOLCALLING.streamv2.2.c:
-    description: 'With surrounding narration'
-    ref: 'derived from TOOLCALLING.batch.2.c'
+    description: With surrounding narration
+    ref: derived from TOOLCALLING.batch.2.c
     tools:
     - name: get_weather
       parameters:
@@ -148,51 +172,67 @@ cases:
           timezone:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''nemotron_deci''.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
+      sglang_python: No SGLang parser for family 'nemotron_deci'.
     chunks:
     - delta_text: 'Both: <TOOLCALL>'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'Both: <TOOLCALL>'
+        vllm_python: 'Both: <TOOLCALL>'
+        vllm_rust: 'Both: <TOOLCALL>'
     - delta_text: '[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '[{"name":'
+        vllm_python: '[{"name":'
+        vllm_rust: '[{"name":'
     - delta_text: ' "get_weather", "arguments": {"location":'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "get_weather", "arguments": {"location":'
+        vllm_python: ' "get_weather", "arguments": {"location":'
+        vllm_rust: ' "get_weather", "arguments": {"location":'
     - delta_text: ' "NYC"}}, {"name":'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "NYC"}}, {"name":'
+        vllm_python: ' "NYC"}}, {"name":'
+        vllm_rust: ' "NYC"}}, {"name":'
     - delta_text: ' "get_time",'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "get_time",'
+        vllm_python: ' "get_time",'
+        vllm_rust: ' "get_time",'
     - delta_text: ' "arguments": {"timezone":'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "arguments": {"timezone":'
+        vllm_python: ' "arguments": {"timezone":'
+        vllm_rust: ' "arguments": {"timezone":'
     - delta_text: ' "EST"}}]</TOOLCALL> Done.'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "EST"}}]</TOOLCALL> Done.'
+        vllm_python: ' "EST"}}]</TOOLCALL> Done.'
+        vllm_rust: ' "EST"}}]</TOOLCALL> Done.'
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
   TOOLCALLING.streamv2.2.d:
-    description: 'Same-name twice'
-    ref: 'derived from TOOLCALLING.batch.2.d'
+    description: Same-name twice
+    ref: derived from TOOLCALLING.batch.2.d
     tools:
     - &id001
       name: get_weather
@@ -203,45 +243,61 @@ cases:
             type: string
     - *id001
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''nemotron_deci''.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
+      sglang_python: No SGLang parser for family 'nemotron_deci'.
     chunks:
     - delta_text: '<TOOLCALL>[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '<TOOLCALL>[{"name":'
+        vllm_python: '<TOOLCALL>[{"name":'
+        vllm_rust: '<TOOLCALL>[{"name":'
     - delta_text: ' "get_weather",'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "get_weather",'
+        vllm_python: ' "get_weather",'
+        vllm_rust: ' "get_weather",'
     - delta_text: ' "arguments": {"location": "NYC"}},'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "arguments": {"location": "NYC"}},'
+        vllm_python: ' "arguments": {"location": "NYC"}},'
+        vllm_rust: ' "arguments": {"location": "NYC"}},'
     - delta_text: ' {"name": "get_weather",'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' {"name": "get_weather",'
+        vllm_python: ' {"name": "get_weather",'
+        vllm_rust: ' {"name": "get_weather",'
     - delta_text: ' "arguments":'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "arguments":'
+        vllm_python: ' "arguments":'
+        vllm_rust: ' "arguments":'
     - delta_text: ' {"location": "LA"}}]'
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' {"location": "LA"}}]'
-    - delta_text: '</TOOLCALL>'
+        vllm_python: ' {"location": "LA"}}]'
+        vllm_rust: ' {"location": "LA"}}]'
+    - delta_text: </TOOLCALL>
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '</TOOLCALL>'
+        vllm_python: </TOOLCALL>
+        vllm_rust: </TOOLCALL>
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
+        vllm_python: []
+        vllm_rust: []

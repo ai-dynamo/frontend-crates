@@ -28,7 +28,7 @@ th a:hover { background: #ffd; }
 td.model, td.parser { white-space: nowrap; }
 td.parser a { color: inherit; text-decoration: none; }
 td.parser a:hover { background: #ffd; }
-td.cell { text-align: center; min-width: 24px; font-weight: 400; }
+td.cell { text-align: center; width: 64px; min-width: 64px; max-width: 64px; font-weight: 400; }
 td.cell.ok         { color: #0a7d2c; }
 td.cell.donly      { color: #8b949e; }
 td.cell.documented { color: #555; }
@@ -46,10 +46,16 @@ tr.section td { background: #eef; font-weight: bold; text-align: left; }
 .stats span { font-family: ui-monospace, monospace; font-weight: bold; }
 .generated { color: #888; font-size: 12px; margin-top: -0.5em; }
 .title-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-.versions { color: #555; font-size: 12px; margin-top: 0.2em; }
+.versions { color: #555; font-size: 12px; margin-top: 0.6em; }
+.legend-note { border-left: 3px solid #d0d7de; padding: 6px 10px; max-width: 1200px; line-height: 1.35; }
+.legend-note p { margin: 0 0 6px; }
+.legend-note p:last-child { margin-bottom: 0; }
+.marker-defs { margin: 4px 0 6px 18px; padding: 0; }
+.marker-defs li { margin: 2px 0; }
+.marker-defs span { font-family: ui-monospace, monospace; font-weight: 600; }
 .table-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0.7em 0 0.8em; }
 /* Per-tab source scope. JS swaps it per active tab. */
-.toolbar-desc { display: block; margin: -0.7em 0 0.85em; padding: 7px 9px; border: 1px solid #f2c94c; background: #fff4b8; color: #3f3100; font-size: 12px; line-height: 1.35; max-width: 1200px; }
+.toolbar-desc { display: block; margin: 0.85em 0; padding: 7px 9px; border: 1px solid #f2c94c; background: #fff4b8; color: #3f3100; font-size: 12px; line-height: 1.35; max-width: 1200px; }
 .toolbar-desc a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .radio-group { display: flex; align-items: center; gap: 8px; border: 1px solid #d0d7de; background: #f8fafc; border-radius: 6px; padding: 6px 8px; }
 .radio-group-label { font-size: 13px; font-weight: 600; }
@@ -69,6 +75,83 @@ tr.section td { background: #eef; font-weight: bold; text-align: left; }
 .summary-key.na   { background: #d3d8de; }
 .summary-key.todo { background: #d3d8de; }
 .view-overview td.cell, .view-details td.cell { box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04); }
+.view-overview.parser-dynamo_rust td.cell[data-status-dynamo_rust="ok"],
+.view-overview.parser-vllm_rust td.cell[data-status-vllm_rust="ok"],
+.view-overview.parser-vllm_python td.cell[data-status-vllm_python="ok"],
+.view-overview.parser-sglang_python td.cell[data-status-sglang_python="ok"] { background: #76b884; color: #76b884; }
+.view-overview.parser-dynamo_rust td.cell[data-status-dynamo_rust="problem"],
+.view-overview.parser-vllm_rust td.cell[data-status-vllm_rust="problem"],
+.view-overview.parser-vllm_python td.cell[data-status-vllm_python="problem"],
+.view-overview.parser-sglang_python td.cell[data-status-sglang_python="problem"] { background: #db7777; color: #db7777; }
+.view-overview.parser-dynamo_rust td.cell[data-status-dynamo_rust="na"],
+.view-overview.parser-vllm_rust td.cell[data-status-vllm_rust="na"],
+.view-overview.parser-vllm_python td.cell[data-status-vllm_python="na"],
+.view-overview.parser-sglang_python td.cell[data-status-sglang_python="na"] { background: #d3d8de; color: #d3d8de; }
+.view-overview.parser-dynamo_rust td.cell[data-status-dynamo_rust="todo"],
+.view-overview.parser-vllm_rust td.cell[data-status-vllm_rust="todo"],
+.view-overview.parser-vllm_python td.cell[data-status-vllm_python="todo"],
+.view-overview.parser-sglang_python td.cell[data-status-sglang_python="todo"] { background: #d3d8de; color: #d3d8de; }
+.view-details.parser-dynamo_rust td.cell[data-status-dynamo_rust="ok"],
+.view-details.parser-vllm_rust td.cell[data-status-vllm_rust="ok"],
+.view-details.parser-vllm_python td.cell[data-status-vllm_python="ok"],
+.view-details.parser-sglang_python td.cell[data-status-sglang_python="ok"] { background: #bfe3c6; }
+.view-details.parser-dynamo_rust td.cell[data-status-dynamo_rust="problem"],
+.view-details.parser-vllm_rust td.cell[data-status-vllm_rust="problem"],
+.view-details.parser-vllm_python td.cell[data-status-vllm_python="problem"],
+.view-details.parser-sglang_python td.cell[data-status-sglang_python="problem"] { background: #efb3b3; }
+.view-details.parser-dynamo_rust td.cell[data-status-dynamo_rust="na"],
+.view-details.parser-vllm_rust td.cell[data-status-vllm_rust="na"],
+.view-details.parser-vllm_python td.cell[data-status-vllm_python="na"],
+.view-details.parser-sglang_python td.cell[data-status-sglang_python="na"] { background: #e4e8ec; }
+.view-details.parser-dynamo_rust td.cell[data-status-dynamo_rust="todo"],
+.view-details.parser-vllm_rust td.cell[data-status-vllm_rust="todo"],
+.view-details.parser-vllm_python td.cell[data-status-vllm_python="todo"],
+.view-details.parser-sglang_python td.cell[data-status-sglang_python="todo"] { background: #e4e8ec; }
+.view-overview td.cell { font-size: 0; line-height: 0; }
+.view-overview td.cell > a { color: inherit; height: 16px; overflow: hidden; white-space: nowrap; }
+.view-overview td.cell > a:hover { background: transparent; }
+.view-overview td.cell:hover { filter: brightness(0.98); }
+.view-overview td.cell .cell-marker { display: none; }
+.view-overview td.cell .ttip { font-size: 12px; line-height: 1.4; }
+.view-details td.cell { color: transparent; }
+/* Clamp the transparent anchor like overview does (line above): in details view the
+   visible marker is the absolutely-positioned .cell-marker, but the underlying <a>
+   still sits in normal flow — long marker strings (e.g. `VPB?SRB?`) wrap in the 24px
+   cell and stretch the whole row to two lines. Clamp height/overflow so hidden anchor
+   text never drives row height; the <a> stays the hover/click target. */
+.view-details td.cell > a { height: 16px; overflow: hidden; white-space: nowrap; }
+.view-details td.cell::before { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #111; pointer-events: none; }
+.view-details td.cell .cell-marker { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; color: #111; pointer-events: none; padding: 0 4px; box-sizing: border-box; }
+.view-details td.cell .cell-marker .marker-text { display: inline-block; color: inherit; white-space: nowrap; }
+.view-details td.cell .cell-marker sub { font-size: 0.65em; line-height: 0; vertical-align: -0.35em; }
+.view-details.parser-dynamo_rust td.cell[data-status-dynamo_rust="na"]::before,
+.view-details.parser-vllm_rust td.cell[data-status-vllm_rust="na"]::before,
+.view-details.parser-vllm_python td.cell[data-status-vllm_python="na"]::before,
+.view-details.parser-sglang_python td.cell[data-status-sglang_python="na"]::before { color: #aeb6bf; }
+.view-details.parser-dynamo_rust td.cell[data-status-dynamo_rust="na"] .cell-marker,
+.view-details.parser-vllm_rust td.cell[data-status-vllm_rust="na"] .cell-marker,
+.view-details.parser-vllm_python td.cell[data-status-vllm_python="na"] .cell-marker,
+.view-details.parser-sglang_python td.cell[data-status-sglang_python="na"] .cell-marker { color: #aeb6bf; }
+.view-details.parser-dynamo_rust td.cell[data-status-dynamo_rust="todo"]::before,
+.view-details.parser-vllm_rust td.cell[data-status-vllm_rust="todo"]::before,
+.view-details.parser-vllm_python td.cell[data-status-vllm_python="todo"]::before,
+.view-details.parser-sglang_python td.cell[data-status-sglang_python="todo"]::before { color: #6b7280; }
+.view-details.parser-dynamo_rust td.cell[data-status-dynamo_rust="todo"] .cell-marker,
+.view-details.parser-vllm_rust td.cell[data-status-vllm_rust="todo"] .cell-marker,
+.view-details.parser-vllm_python td.cell[data-status-vllm_python="todo"] .cell-marker,
+.view-details.parser-sglang_python td.cell[data-status-sglang_python="todo"] .cell-marker { color: #6b7280; }
+.view-details td.cell.donly::before { color: #8b949e; }
+.view-details td.cell.donly .cell-marker { color: #8b949e; }
+.view-details.parser-dynamo_rust td.cell .marker-dynamo_rust { display: flex; }
+.view-details.parser-vllm_rust td.cell .marker-vllm_rust { display: flex; }
+.view-details.parser-vllm_python td.cell .marker-vllm_python { display: flex; }
+.view-details.parser-sglang_python td.cell .marker-sglang_python { display: flex; }
+.view-details.parity-mode td.cell .cell-marker { display: none; }
+.view-details.parity-mode.parser-dynamo_rust td.cell .marker-parity-dynamo_rust { display: flex; }
+.view-details.parity-mode.parser-vllm_rust td.cell .marker-parity-vllm_rust { display: flex; }
+.view-details.parity-mode.parser-vllm_python td.cell .marker-parity-vllm_python { display: flex; }
+.view-details.parity-mode.parser-sglang_python td.cell .marker-parity-sglang_python { display: flex; }
+/* Reasoning panels still use the v1 implementation keys. JS toggles these alias classes with the new selector values. */
 .view-overview.parser-dynamo td.cell[data-status-dynamo="ok"],
 .view-overview.parser-vllm td.cell[data-status-vllm="ok"],
 .view-overview.parser-sglang td.cell[data-status-sglang="ok"] { background: #76b884; color: #76b884; }
@@ -77,7 +160,7 @@ tr.section td { background: #eef; font-weight: bold; text-align: left; }
 .view-overview.parser-sglang td.cell[data-status-sglang="problem"] { background: #db7777; color: #db7777; }
 .view-overview.parser-dynamo td.cell[data-status-dynamo="na"],
 .view-overview.parser-vllm td.cell[data-status-vllm="na"],
-.view-overview.parser-sglang td.cell[data-status-sglang="na"] { background: #d3d8de; color: #d3d8de; }
+.view-overview.parser-sglang td.cell[data-status-sglang="na"],
 .view-overview.parser-dynamo td.cell[data-status-dynamo="todo"],
 .view-overview.parser-vllm td.cell[data-status-vllm="todo"],
 .view-overview.parser-sglang td.cell[data-status-sglang="todo"] { background: #d3d8de; color: #d3d8de; }
@@ -89,28 +172,22 @@ tr.section td { background: #eef; font-weight: bold; text-align: left; }
 .view-details.parser-sglang td.cell[data-status-sglang="problem"] { background: #efb3b3; }
 .view-details.parser-dynamo td.cell[data-status-dynamo="na"],
 .view-details.parser-vllm td.cell[data-status-vllm="na"],
-.view-details.parser-sglang td.cell[data-status-sglang="na"] { background: #e4e8ec; }
+.view-details.parser-sglang td.cell[data-status-sglang="na"],
 .view-details.parser-dynamo td.cell[data-status-dynamo="todo"],
 .view-details.parser-vllm td.cell[data-status-vllm="todo"],
 .view-details.parser-sglang td.cell[data-status-sglang="todo"] { background: #e4e8ec; }
-.view-overview td.cell > a { color: inherit; }
-.view-overview td.cell > a:hover { background: transparent; }
-.view-overview td.cell:hover { filter: brightness(0.98); }
-.view-details td.cell { color: transparent; }
-.view-details td.cell::before { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #111; pointer-events: none; }
 .view-details.parser-dynamo td.cell[data-status-dynamo="na"]::before,
 .view-details.parser-vllm td.cell[data-status-vllm="na"]::before,
 .view-details.parser-sglang td.cell[data-status-sglang="na"]::before { color: #aeb6bf; }
 .view-details.parser-dynamo td.cell[data-status-dynamo="todo"]::before,
 .view-details.parser-vllm td.cell[data-status-vllm="todo"]::before,
 .view-details.parser-sglang td.cell[data-status-sglang="todo"]::before { color: #6b7280; }
-.view-details td.cell.donly::before { color: #8b949e; }
-.view-details.parser-dynamo td.cell::before { content: attr(data-marker-dynamo); }
-.view-details.parser-vllm td.cell::before { content: attr(data-marker-vllm); }
-.view-details.parser-sglang td.cell::before { content: attr(data-marker-sglang); }
-.view-details.parity-mode.parser-dynamo td.cell::before { content: attr(data-marker-parity-dynamo); }
-.view-details.parity-mode.parser-vllm td.cell::before { content: attr(data-marker-parity-vllm); }
-.view-details.parity-mode.parser-sglang td.cell::before { content: attr(data-marker-parity-sglang); }
+.view-details.parser-dynamo td.cell:not([data-marker-dynamo_rust])::before { content: attr(data-marker-dynamo); }
+.view-details.parser-vllm td.cell:not([data-marker-vllm_python])::before { content: attr(data-marker-vllm); }
+.view-details.parser-sglang td.cell:not([data-marker-sglang_python])::before { content: attr(data-marker-sglang); }
+.view-details.parity-mode.parser-dynamo td.cell:not([data-marker-parity-dynamo_rust])::before { content: attr(data-marker-parity-dynamo); }
+.view-details.parity-mode.parser-vllm td.cell:not([data-marker-parity-vllm_python])::before { content: attr(data-marker-parity-vllm); }
+.view-details.parity-mode.parser-sglang td.cell:not([data-marker-parity-sglang_python])::before { content: attr(data-marker-parity-sglang); }
 .view-details td.cell a { color: transparent; }
 .view-details td.cell a:hover { background: rgba(255,255,255,0.35); }
 .view-details td.cell .ttip { font-weight: 400; }
@@ -192,7 +269,7 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 .ttip-head { font-weight: bold; margin-bottom: 4px; color: #fbbf24; }
 .ttip-section { font-weight: bold; margin-top: 6px; color: #93c5fd; }
 .ttip-pre { margin: 2px 0 0 0; white-space: pre-wrap; word-break: break-word; font-family: inherit; color: #e5e7eb; }
-/* Per-chunk emit chart: input | Dynamo | vLLM | SGLang, one row per chunk. */
+/* Per-chunk emit chart: input | Dynamo Rust | vLLM Rust | vLLM Python | SGLang, one row per chunk. */
 .ttip-chunks { border-collapse: collapse; margin: 3px 0 0 0; font-size: 11px; width: 100%; }
 .ttip-chunks th, .ttip-chunks td { border: 1px solid #475569; padding: 2px 5px; text-align: left; vertical-align: top; }
 .ttip-chunks th { background: #1e293b; color: #93c5fd; font-weight: 600; }
@@ -200,7 +277,7 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 .ttip-chunks td.cin { color: #cbd5e1; max-width: 22em; word-break: break-word; }
 .ttip-chunks tr.ttip-final td { border-top: 2px solid #64748b; background: #0b1220; }
 .ttip-chunks tr.ttip-final td.cin { color: #93c5fd; font-weight: 600; }
-/* Baseline column (Dynamo batch): a fixed reference left of the stream columns,
+/* Baseline column (Dynamo Rust batch): a fixed reference left of the stream columns,
    set off with a thicker right border and a tinted background. */
 .ttip-chunks th.cbase-h { background: #1e293b; color: #fbbf24; border-right: 2px solid #64748b; }
 .ttip-chunks td.cbase { background: #0b1220; border-right: 2px solid #64748b; max-width: 16em; word-break: break-word; vertical-align: bottom; }
@@ -228,7 +305,7 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 .tt-h-other { color: #22d3ee; }
 </style>
 </head>
-<body class="view-overview parser-dynamo">
+<body class="view-overview parser-dynamo_rust">
 <h1>{% if title_html is defined and title_html %}{{ title_html|safe }}{% else %}{{ title|e }}{% endif %}</h1>
 <p class="generated">
   Auto-generated on {{ stamp|e }}{% if sha %} on commit <a href="https://github.com/ai-dynamo/frontend-crates/commit/{{ sha|e }}"><code>{{ short_sha|e }}</code></a>{% endif %}:
@@ -241,7 +318,6 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 {% endfor %}
 </div>
 {% endif %}
-<span id="toolbar-desc" class="toolbar-desc"></span>
 <div class="table-toolbar">
   <div class="radio-group" role="radiogroup" aria-label="Conformance table view">
     <span class="radio-group-label">View:</span>
@@ -250,14 +326,15 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
   </div>
   <div class="radio-group" role="radiogroup" aria-label="Parser implementation">
     <span class="radio-group-label">Parser:</span>
-    <label class="radio-option"><input type="radio" name="parity-parser" value="dynamo" data-parser-toggle checked> Dynamo</label>
-    <label class="radio-option"><input type="radio" name="parity-parser" value="vllm" data-parser-toggle> vLLM</label>
-    <label class="radio-option"><input type="radio" name="parity-parser" value="sglang" data-parser-toggle> SGLang</label>
+    <label class="radio-option" data-parser-option="dynamo_rust"><input type="radio" name="parity-parser" value="dynamo_rust" data-parser-toggle checked> Dynamo Rust</label>
+    <label class="radio-option" data-parser-option="vllm_rust"><input type="radio" name="parity-parser" value="vllm_rust" data-parser-toggle> vLLM Rust</label>
+    <label class="radio-option" data-parser-option="vllm_python"><input type="radio" name="parity-parser" value="vllm_python" data-parser-toggle> vLLM Python</label>
+    <label class="radio-option" data-parser-option="sglang_python"><input type="radio" name="parity-parser" value="sglang_python" data-parser-toggle> SGLang Python</label>
   </div>
   <label class="checkbox-option parity-option"><input type="checkbox" data-parity-toggle> Conformance</label>
 </div>
 {% for panel in panels %}
-<section id="{{ panel.id|e }}" class="tab-panel{% if panel.active %} active{% endif %}" role="tabpanel"{% if tabs|length > 1 %} aria-labelledby="{{ panel.id|e }}-button"{% endif %}>
+<section id="{{ panel.id|e }}" class="tab-panel{% if panel.active %} active{% endif %}" role="tabpanel"{% if tabs|length > 1 %} aria-labelledby="{{ panel.id|e }}-button"{% endif %} data-parser-options="{{ panel.parser_options|default(['dynamo_rust', 'vllm_rust', 'vllm_python', 'sglang_python'])|join(',')|e }}">
 <table data-parity-table>
 <thead>
 <tr>{{ panel.group_headers|safe }}</tr>
@@ -269,33 +346,42 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 {% endfor %}
 </tbody>
 </table>
+{% if panel.toolbar_desc %}
+<div class="toolbar-desc">{{ panel.toolbar_desc|safe }}</div>
+{% endif %}
 <p class="legend summary-only">
   <span class="summary-key ok" aria-hidden="true"></span>green(<span data-overview-count="ok">0</span>) = selected implementation output is clean ·
-  <span class="summary-key problem" aria-hidden="true"></span>red(<span data-overview-count="problem">0</span>) = leaks parser markup or has an expected error ·
-  <span class="summary-key todo" aria-hidden="true"></span>gray(<span data-overview-count="todo">0</span>) = Dynamo parser is not implemented yet ·
+  <span class="summary-key problem" aria-hidden="true"></span>red(<span data-overview-count="problem">0</span>) = leaks parser markup, has an expected error, or the engine parser failed to parse (<span style="font-family:ui-monospace,monospace">✗</span>) ·
+  <span class="summary-key todo" aria-hidden="true"></span>gray(<span data-overview-count="todo">0</span>) = selected parser is not implemented yet ·
   <span class="summary-key na" aria-hidden="true"></span>gray(<span data-overview-count="na">0</span>) = not applicable, unavailable, or missing fixture.
 </p>
-<p class="legend details-only">
+<div class="legend details-only">
 {% if panel.legend_html is defined and panel.legend_html %}
   {{ panel.legend_html|safe }}
 {% elif legend_html is defined and legend_html %}
   {{ legend_html|safe }}
 {% else %}
   <strong>Legend:</strong>
-  <span style="color:#0a7d2c">=</span> all captured peers match Dynamo ·
-  <span style="color:#8b949e">·</span> Dynamo-only fixture
-  (both peers unavailable) ·
-  <span style="color:#555">V/S</span> divergence
-  (V = vLLM, S = SGLang; intentional, has <code>reason:</code>) ·
+  <span style="color:#0a7d2c">=</span> all captured peers match Dynamo Rust ·
+  <span style="color:#8b949e">·</span> Dynamo Rust-only fixture
+  (peers unavailable or not captured) ·
+  <span style="color:#555">D<sub>RB</sub></span> (Dynamo Rust batch parser) ·
+  <span style="color:#555">D<sub>RS</sub></span> (Dynamo Rust stream parser) ·
+  <span style="color:#555">V<sub>PB</sub></span> (vLLM Python batch parser) ·
+  <span style="color:#555">V<sub>PS</sub></span> (vLLM Python stream parser) ·
+  <span style="color:#555">V<sub>RS</sub></span> (vLLM Rust stream parser); no <code>V_rb</code> exists ·
+  <span style="color:#555">S<sub>RB</sub></span> (SGLang batch parser) ·
+  <span style="color:#555">S<sub>RS</sub></span> (SGLang stream parser) ·
+  a marker means that implementation diverges from the selected parser output; intentional divergences have <code>reason:</code> ·
   <span style="color:#b00">?</span> more research needed
-  (e.g. V?, S? — diverges with no <code>reason:</code> yet) ·
+  (e.g. V<sub>PB</sub>?, S<sub>RS</sub>? — diverges with no <code>reason:</code> yet) ·
   <span style="color:#b00">↯</span> selected parser leaks tool call markup into <code>normal_text</code>
   (captured peer output can legitimately show imperfect engine behavior) ·
   <span style="color:#b00">!</span> expected-error suffix
-  (e.g. V!, S! — engine crashes by design) ·
+  (e.g. V<sub>PB</sub>!, S<sub>RS</sub>! — engine crashes by design) ·
   <span style="color:#aaa">n/a</span> not applicable ·
   <span style="color:#8a6d3b">—</span> missing fixture coverage ·
-  <span class="parser-suffix">†</span> = no vLLM peer tool calling parser for this family ·
+  <span class="parser-suffix">†</span> = no vLLM Python peer tool calling parser for this family ·
   <span class="parser-suffix">§</span> = no SGLang peer tool calling parser for this family.
   <br>
   <span class="parser-suffix">‡</span> Nemotron V3 (Ultra) reuses the qwen3_coder tool calling parser;
@@ -315,15 +401,18 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
   {% for name, version in peer_versions %}{% if not loop.first %} · {% endif %}{{ name|e }} <code>{{ version|e }}</code>{% endfor %}.
   {% endif %}
 {% endif %}
-</p>
+{% if panel.captured_note|default("") %}
+  <p class="versions">{{ panel.captured_note|e }}</p>
+{% endif %}
+</div>
 <p class="legend details-only parity-explainer">
 {% if panel.parity_explainer_html is defined and panel.parity_explainer_html %}
   {{ panel.parity_explainer_html|safe }}
 {% else %}
   <strong>Conformance:</strong>
-  <span style="color:#0a7d2c">=</span> all three outputs match ·
-  <span style="color:#555">D</span>/<span style="color:#555">V</span>/<span style="color:#555">S</span> names parser output that differs from the selected parser (<span style="color:#555">D</span> = Dynamo fixture key) ·
-  multiple letters mean multiple peer outputs differ from the selected parser.
+  <span style="color:#0a7d2c">=</span> all available outputs match ·
+  <span style="color:#555">D<sub>RB</sub></span> (Dynamo Rust batch parser) / <span style="color:#555">V<sub>PB</sub></span> (vLLM Python batch parser) / <span style="color:#555">S<sub>RB</sub></span> (SGLang batch parser) names output that differs from the selected parser ·
+  multiple markers mean multiple peer outputs differ from the selected parser.
 {% endif %}
 </p>
 <p class="stats details-only">
@@ -331,12 +420,12 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
   = {{ panel.stats.slots }} grid slots ({{ panel.stats.todo|default(0) }} TODO, {{ panel.stats.na }} n/a, {{ panel.stats.missing }} missing).
   <strong>{{ panel.stats.real }}</strong> real cases:
   <span style="color:#0a7d2c">{{ panel.stats.parity }} captured-peer conformance</span> ·
-  <span style="color:#555">{{ panel.stats.dynamo_only }} Dynamo-only</span> ·
+  <span style="color:#555">{{ panel.stats.dynamo_only }} Dynamo Rust-only</span> ·
   <span style="color:#555">{{ panel.stats.documented }} documented divergences</span>
   (have <code>reason:</code>) ·
   <span style="color:#b00">{{ panel.stats.research }} research-needed</span>
   (no <code>reason:</code> yet) ·
-  <span style="color:#b00">{{ panel.stats.errors }} expected-errors</span>.
+  <span style="color:#b00">{{ panel.stats.errors }} parser errors</span>.
 </p>
 {% if panel.glossary_groups %}
 <div class="details-only">
@@ -390,6 +479,11 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
   const parserKeys = new Set(parserRadios.map(function (radio) {
     return radio.value;
   }));
+  const legacyParserAliases = {
+    dynamo_rust: 'dynamo',
+    vllm_python: 'vllm',
+    sglang_python: 'sglang'
+  };
   const parityToggle = document.querySelector('[data-parity-toggle]');
 
   function readActiveView() {
@@ -400,7 +494,7 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
   function readActiveParser() {
     const params = new URLSearchParams(window.location.search);
     const requested = params.get('parser') || params.get('perspective');
-    return parserKeys.has(requested) ? requested : 'dynamo';
+    return parserKeys.has(requested) ? requested : 'dynamo_rust';
   }
 
   function readParityMode() {
@@ -421,7 +515,7 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
     const url = new URL(window.location.href);
     url.searchParams.delete('parser');
     url.searchParams.delete('perspective');
-    if (parser !== 'dynamo') {
+    if (parser !== 'dynamo_rust') {
       url.searchParams.set('parser', parser);
     }
     window.history.replaceState(null, '', url.toString());
@@ -440,7 +534,7 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
     const checked = parserRadios.find(function (radio) {
       return radio.checked;
     });
-    return checked ? checked.value : 'dynamo';
+    return checked ? checked.value : 'dynamo_rust';
   }
 
   function updateOverviewStats() {
@@ -448,7 +542,8 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
     document.querySelectorAll('.tab-panel').forEach(function (panel) {
       const counts = {ok: 0, problem: 0, todo: 0, na: 0};
       panel.querySelectorAll('td.cell').forEach(function (cell) {
-        const status = cell.getAttribute('data-status-' + parser) || 'na';
+        const alias = legacyParserAliases[parser];
+        const status = cell.getAttribute('data-status-' + parser) || (alias ? cell.getAttribute('data-status-' + alias) : null) || 'na';
         counts[status] = (counts[status] || 0) + 1;
       });
       panel.querySelectorAll('[data-overview-count]').forEach(function (el) {
@@ -470,9 +565,12 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
   }
 
   function applyParser(parser, shouldUpdateUrl) {
-    const active = parserKeys.has(parser) ? parser : 'dynamo';
+    const active = parserKeys.has(parser) ? parser : 'dynamo_rust';
     parserKeys.forEach(function (key) {
       document.body.classList.toggle('parser-' + key, active === key);
+    });
+    Object.keys(legacyParserAliases).forEach(function (key) {
+      document.body.classList.toggle('parser-' + legacyParserAliases[key], active === key);
     });
     parserRadios.forEach(function (radio) {
       radio.checked = radio.value === active;
@@ -636,6 +734,37 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 
   const tabButtons = Array.from(document.querySelectorAll('.tab-button'));
   const tabPanels = Array.from(document.querySelectorAll('.tab-panel'));
+
+  function activePanelParserOptions() {
+    const activePanel = tabPanels.find(function (panel) {
+      return panel.classList.contains('active');
+    });
+    const raw = activePanel ? activePanel.dataset.parserOptions || '' : '';
+    const options = raw.split(',').filter(function (key) {
+      return parserKeys.has(key);
+    });
+    return options.length > 0 ? options : Array.from(parserKeys);
+  }
+
+  function syncParserOptions(shouldUpdateUrl) {
+    const allowed = new Set(activePanelParserOptions());
+    parserRadios.forEach(function (radio) {
+      const isAllowed = allowed.has(radio.value);
+      radio.disabled = !isAllowed;
+      const label = radio.closest('[data-parser-option]');
+      if (label) {
+        label.hidden = !isAllowed;
+      }
+    });
+    const current = activeParser();
+    if (!allowed.has(current)) {
+      const fallback = allowed.has('dynamo_rust') ? 'dynamo_rust' : Array.from(allowed)[0];
+      applyParser(fallback, shouldUpdateUrl);
+    } else {
+      updateOverviewStats();
+    }
+  }
+
   function readActiveTab() {
     const params = new URLSearchParams(window.location.search);
     const requested = params.get('tab');
@@ -657,18 +786,17 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
     window.history.replaceState(null, '', url.toString());
   }
 
-  const toolbarDesc = document.getElementById('toolbar-desc');
   function activateTab(id, shouldUpdateUrl) {
     if (!id) return;
     tabButtons.forEach(function (button) {
       const selected = button.dataset.tabTarget === id;
       button.classList.toggle('active', selected);
       button.setAttribute('aria-selected', selected ? 'true' : 'false');
-      if (selected && toolbarDesc) toolbarDesc.innerHTML = button.dataset.desc || '';
     });
     tabPanels.forEach(function (panel) {
       panel.classList.toggle('active', panel.id === id);
     });
+    syncParserOptions(shouldUpdateUrl);
     if (shouldUpdateUrl) {
       updateTabUrl(id);
     }

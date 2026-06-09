@@ -1,22 +1,14 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-
-# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
-# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
-# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
-# here). Assembled result is derived by concatenating per index. A delta:
-# {index, id?, name?, arguments?}; id:true = an id was emitted.
-
 family: deepseek_v3
-model_label: 'DeepSeek V3'
+model_label: DeepSeek V3
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
-  sglang: '0.5.12.post1'
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.streamv2.7.a:
-    description: 'Standard scalar types'
-    ref: 'derived from TOOLCALLING.batch.7.a'
+    description: Standard scalar types
+    ref: derived from TOOLCALLING.batch.7.a
     tools:
     - name: book_flight
       parameters:
@@ -29,53 +21,60 @@ cases:
           first_class:
             type: boolean
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
+      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
+        DeepSeek V3 tool call'
     chunks:
-    - delta_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>'
+    - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: 'function<｜tool▁sep｜>'
+        vllm_python: []
+        sglang_python: []
+    - delta_text: function<｜tool▁sep｜>
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: 'book_flight
-```json
-{"destination":'
+        vllm_python: []
+        sglang_python: []
+    - delta_text: 'book_flight ```json {"destination":'
       expected:
-        vllm:
-        - {index: 0, id: true, name: 'book_flight'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          id: true
+          name: book_flight
+        sglang_python: []
     - delta_text: ' "Paris", "passengers":'
       expected:
-        vllm:
-        - {index: 0, arguments: '{"destination": "Paris", "passengers":'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: '{"destination": "Paris", "passengers":'
+        sglang_python: []
     - delta_text: ' 2,'
       expected:
-        vllm:
-        - {index: 0, arguments: ' 2,'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: ' 2,'
+        sglang_python: []
     - delta_text: ' "first_class": true}'
       expected:
-        vllm:
-        - {index: 0, arguments: ' "first_class": true}'}
-        sglang: []
-    - delta_text: '
-```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+        vllm_python:
+        - index: 0
+          arguments: ' "first_class": true}'
+        sglang_python: []
+    - delta_text: ' ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, name: 'book_flight'}
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          name: book_flight
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, arguments: '{"destination": "Paris", "passengers": 2, "first_class": true}'}
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          arguments: '{"destination": "Paris", "passengers": 2, "first_class": true}'
   TOOLCALLING.streamv2.7.b:
-    description: 'Unicode + escaped chars'
-    ref: 'derived from TOOLCALLING.batch.7.b'
+    description: Unicode + escaped chars
+    ref: derived from TOOLCALLING.batch.7.b
     tools:
     - name: get_weather
       parameters:
@@ -84,47 +83,52 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
+      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
+        DeepSeek V3 tool call'
     chunks:
-    - delta_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>'
+    - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: 'function<｜tool▁sep｜>'
+        vllm_python: []
+        sglang_python: []
+    - delta_text: function<｜tool▁sep｜>
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: 'get_weather
-```json
-{"location":'
+        vllm_python: []
+        sglang_python: []
+    - delta_text: 'get_weather ```json {"location":'
       expected:
-        vllm:
-        - {index: 0, id: true, name: 'get_weather'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          id: true
+          name: get_weather
+        sglang_python: []
     - delta_text: ' "Tōkyō \"central\""}'
       expected:
-        vllm:
-        - {index: 0, arguments: '{"location": "Tōkyō \"central\""}'}
-        sglang: []
-    - delta_text: '
-```<｜tool▁call▁end｜>'
+        vllm_python:
+        - index: 0
+          arguments: '{"location": "Tōkyō \"central\""}'
+        sglang_python: []
+    - delta_text: ' ```<｜tool▁call▁end｜>'
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, name: 'get_weather'}
-    - delta_text: '<｜tool▁calls▁end｜>'
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          name: get_weather
+    - delta_text: <｜tool▁calls▁end｜>
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, arguments: '{"location": "Tōkyō \"central\""}'}
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          arguments: '{"location": "Tōkyō \"central\""}'
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
   TOOLCALLING.streamv2.7.c:
-    description: 'Schema mismatch — string value where schema declares integer'
-    ref: 'derived from TOOLCALLING.batch.7.c'
+    description: Schema mismatch — string value where schema declares integer
+    ref: derived from TOOLCALLING.batch.7.c
     tools:
     - name: set_temperature
       parameters:
@@ -133,42 +137,46 @@ cases:
           celsius:
             type: integer
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
+      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
+        DeepSeek V3 tool call'
     chunks:
-    - delta_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>'
+    - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: 'function<｜tool▁sep｜>'
+        vllm_python: []
+        sglang_python: []
+    - delta_text: function<｜tool▁sep｜>
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: 'set_temperature
-```json
-{"celsius":'
+        vllm_python: []
+        sglang_python: []
+    - delta_text: 'set_temperature ```json {"celsius":'
       expected:
-        vllm:
-        - {index: 0, id: true, name: 'set_temperature'}
-        sglang: []
-    - delta_text: ' "20"}
-```<｜tool▁call▁end｜>'
+        vllm_python:
+        - index: 0
+          id: true
+          name: set_temperature
+        sglang_python: []
+    - delta_text: ' "20"} ```<｜tool▁call▁end｜>'
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, name: 'set_temperature'}
-    - delta_text: '<｜tool▁calls▁end｜>'
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          name: set_temperature
+    - delta_text: <｜tool▁calls▁end｜>
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, arguments: '{"celsius": "20"}'}
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          arguments: '{"celsius": "20"}'
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
   TOOLCALLING.streamv2.7.d:
-    description: 'Nested object + array (existing)'
-    ref: 'derived from TOOLCALLING.batch.7.d'
+    description: Nested object + array (existing)
+    ref: derived from TOOLCALLING.batch.7.d
     tools:
     - name: process_data
       parameters:
@@ -179,57 +187,64 @@ cases:
           config:
             type: object
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
+      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
+        DeepSeek V3 tool call'
     chunks:
-    - delta_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>'
+    - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: 'function<｜tool▁sep｜>'
+        vllm_python: []
+        sglang_python: []
+    - delta_text: function<｜tool▁sep｜>
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: 'process_data
-```json
-{"items":'
+        vllm_python: []
+        sglang_python: []
+    - delta_text: 'process_data ```json {"items":'
       expected:
-        vllm:
-        - {index: 0, id: true, name: 'process_data'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          id: true
+          name: process_data
+        sglang_python: []
     - delta_text: ' [1, 2,'
       expected:
-        vllm:
-        - {index: 0, arguments: '{"items": [1, 2,'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: '{"items": [1, 2,'
+        sglang_python: []
     - delta_text: ' 3]'
       expected:
-        vllm:
-        - {index: 0, arguments: ' 3]'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: ' 3]'
+        sglang_python: []
     - delta_text: ', "config":'
       expected:
-        vllm:
-        - {index: 0, arguments: ', "config":'}
-        sglang: []
-    - delta_text: ' {"nested": true}}
-```<｜tool▁call▁end｜>'
+        vllm_python:
+        - index: 0
+          arguments: ', "config":'
+        sglang_python: []
+    - delta_text: ' {"nested": true}} ```<｜tool▁call▁end｜>'
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, name: 'process_data'}
-    - delta_text: '<｜tool▁calls▁end｜>'
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          name: process_data
+    - delta_text: <｜tool▁calls▁end｜>
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, arguments: '{"items": [1, 2, 3], "config": {"nested": true}}'}
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          arguments: '{"items": [1, 2, 3], "config": {"nested": true}}'
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
   TOOLCALLING.streamv2.7.e:
-    description: 'Large / deep JSON-edge argument payload'
-    ref: 'derived from TOOLCALLING.batch.7.e'
+    description: Large / deep JSON-edge argument payload
+    ref: derived from TOOLCALLING.batch.7.e
     tools:
     - name: process_data
       parameters:
@@ -238,103 +253,122 @@ cases:
           payload:
             type: object
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
+      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
+        DeepSeek V3 tool call'
     chunks:
-    - delta_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>'
+    - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: 'function<｜tool▁sep｜>'
+        vllm_python: []
+        sglang_python: []
+    - delta_text: function<｜tool▁sep｜>
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: 'process_data
-```json
-{"payload":'
+        vllm_python: []
+        sglang_python: []
+    - delta_text: 'process_data ```json {"payload":'
       expected:
-        vllm:
-        - {index: 0, id: true, name: 'process_data'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          id: true
+          name: process_data
+        sglang_python: []
     - delta_text: ' {"regions": [{"name":'
       expected:
-        vllm:
-        - {index: 0, arguments: '{"payload": {"regions": [{"name":'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: '{"payload": {"regions": [{"name":'
+        sglang_python: []
     - delta_text: ' "west",'
       expected:
-        vllm:
-        - {index: 0, arguments: ' "west",'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: ' "west",'
+        sglang_python: []
     - delta_text: ' "scores": [1,'
       expected:
-        vllm:
-        - {index: 0, arguments: ' "scores": [1,'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: ' "scores": [1,'
+        sglang_python: []
     - delta_text: ' 2, 3]},'
       expected:
-        vllm:
-        - {index: 0, arguments: ' 2, 3]},'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: ' 2, 3]},'
+        sglang_python: []
     - delta_text: ' {"name":'
       expected:
-        vllm:
-        - {index: 0, arguments: ' {"name":'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: ' {"name":'
+        sglang_python: []
     - delta_text: ' "east", "scores":'
       expected:
-        vllm:
-        - {index: 0, arguments: ' "east", "scores":'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: ' "east", "scores":'
+        sglang_python: []
     - delta_text: ' [4,'
       expected:
-        vllm:
-        - {index: 0, arguments: ' [4,'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: ' [4,'
+        sglang_python: []
     - delta_text: ' 5, 6]'
       expected:
-        vllm:
-        - {index: 0, arguments: ' 5, 6]'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: ' 5, 6]'
+        sglang_python: []
     - delta_text: '}]'
       expected:
-        vllm:
-        - {index: 0, arguments: '}]'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: '}]'
+        sglang_python: []
     - delta_text: ', "flags": {"enabled":'
       expected:
-        vllm:
-        - {index: 0, arguments: ', "flags": {"enabled":'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: ', "flags": {"enabled":'
+        sglang_python: []
     - delta_text: ' true, "retry":'
       expected:
-        vllm:
-        - {index: 0, arguments: ' true, "retry":'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: ' true, "retry":'
+        sglang_python: []
     - delta_text: ' null},'
       expected:
-        vllm:
-        - {index: 0, arguments: ' null},'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: ' null},'
+        sglang_python: []
     - delta_text: ' "empty": {}}}'
       expected:
-        vllm:
-        - {index: 0, arguments: ' "empty": {}}}'}
-        sglang: []
-    - delta_text: '
-```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+        vllm_python:
+        - index: 0
+          arguments: ' "empty": {}}}'
+        sglang_python: []
+    - delta_text: ' ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, name: 'process_data'}
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          name: process_data
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, arguments: '{"payload": {"regions": [{"name": "west", "scores": [1, 2, 3]}, {"name": "east", "scores": [4, 5, 6]}], "flags": {"enabled": true, "retry": null}, "empty": {}}}'}
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          arguments: '{"payload": {"regions": [{"name": "west", "scores": [1, 2, 3]},
+            {"name": "east", "scores": [4, 5, 6]}], "flags": {"enabled": true, "retry":
+            null}, "empty": {}}}'
   TOOLCALLING.streamv2.7.f:
-    description: 'Numeric precision edge preserves integer-like number literal'
-    ref: 'derived from TOOLCALLING.batch.7.f'
+    description: Numeric precision edge preserves integer-like number literal
+    ref: derived from TOOLCALLING.batch.7.f
     tools:
     - name: set_limit
       parameters:
@@ -343,32 +377,36 @@ cases:
           count:
             type: number
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
+      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
+        DeepSeek V3 tool call'
     chunks:
-    - delta_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>'
+    - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: 'function<｜tool▁sep｜>'
+        vllm_python: []
+        sglang_python: []
+    - delta_text: function<｜tool▁sep｜>
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: 'set_limit
-```json
-{"count":9007199254740993}'
+        vllm_python: []
+        sglang_python: []
+    - delta_text: set_limit ```json {"count":9007199254740993}
       expected:
-        vllm:
-        - {index: 0, id: true, name: 'set_limit'}
-        sglang: []
-    - delta_text: '
-```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+        vllm_python:
+        - index: 0
+          id: true
+          name: set_limit
+        sglang_python: []
+    - delta_text: ' ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, name: 'set_limit'}
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          name: set_limit
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, arguments: '{"count":9007199254740993}'}
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          arguments: '{"count":9007199254740993}'

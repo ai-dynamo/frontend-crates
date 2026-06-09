@@ -6,24 +6,19 @@ engine containers, runs one batched capture per engine (one import per engine),
 then assembles fixtures. Runs on the HOST (docker exec), not inside a container.
 
 Modes (`--mode`):
-  stream           Per-chunk vLLM + SGLang streaming for every non-harmony family;
+  stream           Per-chunk vLLM Python + vLLM Rust + SGLang Python streaming for configured families;
                    builds conformance/toolcalling/fixtures-stream-v2/<family>/TOOLCALLING.stream.*.yaml
                    (Dynamo parser v2 marked unavailable/TODO). Calls build_stream_fixtures.py.
   batch-on-stream  Each family's batch text through each engine's streaming parser;
                    writes conformance/toolcalling/fixtures-batch-on-stream-v2/<family>/TOOLCALLING.batch*.yaml
-                   overlay (optionally with the Dynamo harmony recorder JSON).
+                   overlay (optionally with Dynamo Rust recorder JSON).
   merge            Merge the three per-engine flat stream-on-batch captures
-                   (--dynamo/--vllm/--sglang JSON) into the nested
-                   harmony_batch_stream.json the older harmony flow consumes.
+                   (--dynamo-rust/--vllm-python/--sglang JSON) into the nested
+                   harmony_batch_stream.json the older flow consumes.
 
 Recipes:
-  conformance/utils/capture_all_families.sh                # mode stream (wrapper)
-  python3 conformance/utils/capture_driver.py --mode batch-on-stream \
-      --root <repo> --work /tmp/bos [--dynamo-harmony-json /tmp/dynamo_bs.json]
-  cargo run -p dynamo-parsers-v2 --bin record_batch_via_stream > /tmp/dynamo_bs.json
-  python3 conformance/utils/capture_driver.py --mode merge \
-      --dynamo /tmp/dynamo_bs.json --vllm /tmp/vllm_bs.json --sglang /tmp/sglang_bs.json \
-      -o conformance/utils/harmony_batch_stream.json
+  Prefer conformance/utils/capture.sh for normal fixture refreshes.
+  This module is the lower-level orchestrator used by that wrapper.
 """
 import argparse
 import glob
@@ -31,6 +26,7 @@ import json
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 import yaml
 
@@ -46,6 +42,15 @@ VLLM = {
     "phi4": "phi4_mini_json", "pythonic": "pythonic",
     "qwen25": "hermes", "qwen3_coder": "qwen3_coder",
 }
+VLLM_RUST = {
+    "deepseek_v3": "deepseek_v3", "deepseek_v3_1": "deepseek_v31",
+    "deepseek_v3_2": "deepseek_v32", "deepseek_v4": "deepseek_v4",
+    "gemma4": "gemma4", "glm47": "glm47", "hermes": "hermes",
+    "kimi_k2": "kimi_k2", "llama3_json": "llama3_json",
+    "minimax_m2": "minimax_m2", "mistral": "mistral",
+    "nemotron_deci": "hermes", "nemotron_nano": "hermes",
+    "qwen25": "hermes", "qwen3_coder": "qwen3_coder",
+}
 SGLANG = {
     "deepseek_v3": "deepseekv3", "deepseek_v3_1": "deepseekv31",
     "deepseek_v3_2": "deepseekv32", "deepseek_v4": "deepseekv4",
@@ -56,10 +61,55 @@ SGLANG = {
     "phi4": None, "pythonic": "pythonic",
     "qwen25": "qwen25", "qwen3_coder": "qwen3_coder",
 }
+VLLM_RUST_UNAVAILABLE = (
+    "vLLM Rust capture not implemented yet; source checkout is available for the Rust probe."
+)
 
 
 def run(cmd, **kw):
     return subprocess.run(cmd, check=True, capture_output=True, text=True, **kw)
+
+
+def _vllm_rust_source_arg(args):
+    return args.vllm_rust_source or os.environ.get("VLLM_RUST_SOURCE")
+
+
+def _vllm_rust_source_version(source):
+    if not source:
+        return None
+    root = Path(source).expanduser().resolve()
+    crate = root / "rust/src/tool-parser/Cargo.toml"
+    if not crate.exists():
+        raise SystemExit(
+            f"vLLM Rust source path {root} does not contain rust/src/tool-parser/Cargo.toml"
+        )
+    try:
+        sha = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "HEAD"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).stdout.strip()
+    except subprocess.CalledProcessError:
+        sha = "unknown"
+    try:
+        tag = subprocess.run(
+            ["git", "-C", str(root), "describe", "--tags", "--exact-match"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).stdout.strip()
+    except subprocess.CalledProcessError:
+        tag = "untagged"
+    return f"{tag} {sha}"
+
+
+def _vllm_rust_unavailable(source_version):
+    if source_version:
+        return f"{VLLM_RUST_UNAVAILABLE} Source: {source_version}."
+    return "vLLM Rust source not available; set VLLM_RUST_SOURCE or pass --vllm-rust-source."
 
 
 def _copy_worker(containers):
@@ -95,6 +145,33 @@ def _container_capture(container, impl, mode, jobs, work):
     return data["version"], by_src
 
 
+def _vllm_rust_capture(source, mode, jobs, work):
+    if not source:
+        return None, {}
+    here = os.path.dirname(os.path.abspath(__file__))
+    batch = json.dumps([{"fixture": j["src"], "parser": j["parser"]} for j in jobs])
+    proc = subprocess.run(
+        [
+            "python3",
+            os.path.join(here, "capture_vllm_rust.py"),
+            "--mode",
+            mode,
+            "--vllm-rust-source",
+            source,
+            "--batch",
+            batch,
+            "--work",
+            work,
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode:
+        raise RuntimeError(proc.stderr[-1000:] or proc.stdout[-1000:])
+    data = json.loads(proc.stdout)
+    return data["version"], {j["src"]: data["fixtures"].get(j["src"], {}) for j in jobs}
+
+
 def _cpath(fp, mode):
     family = os.path.basename(os.path.dirname(fp))
     tag = "bos" if mode == "batch-on-stream" else "cap"
@@ -102,19 +179,24 @@ def _cpath(fp, mode):
 
 
 # --------------------------------------------------------------------------- #
-# mode=stream (was capture_all_families_driver.py)
+# mode=stream
 # --------------------------------------------------------------------------- #
 def _impl_args(impl, family, parser, entry, version, work, tag, src):
     """Build build_stream_fixtures.py args for one impl: pass captured data, or an
     accurate `unavailable` reason (no parser registered vs. capture error)."""
-    engine = "vLLM" if impl == "vllm" else "SGLang"
+    engine = {
+        "vllm_rust": "vLLM Rust",
+        "vllm_python": "vLLM Python",
+        "sglang_python": "SGLang Python",
+    }[impl]
     if parser is None:
         return ["--unavailable",
                 f"{impl}=No {engine} parser for family '{family}'."]
     if "cases" in entry:
         f = os.path.join(work, f"{tag}_{impl}.json")
         json.dump(entry["cases"], open(f, "w"))
-        return [f"--{impl}", f, "--captured", f"{impl}={version}"]
+        flag = "--sglang" if impl == "sglang_python" else f"--{impl.replace('_', '-')}"
+        return [flag, f, "--captured", f"{impl}={version}"]
     # Parser exists but capture errored (typically: requires the model tokenizer's
     # special tool tokens, which a stub tokenizer can't supply).
     err = (entry.get("error") or "capture failed").splitlines()[-1][:160]
@@ -126,9 +208,11 @@ def _run_stream(args):
     here = os.path.dirname(os.path.abspath(__file__))
     conf = os.path.join(args.root, "conformance/toolcalling/fixtures")
     _copy_worker((args.vllm_container, args.sglang_container))
+    vllm_rust_source_version = _vllm_rust_source_version(_vllm_rust_source_arg(args))
+    vllm_rust_source = _vllm_rust_source_arg(args)
 
     families = sorted(VLLM.keys())
-    vllm_jobs, sglang_jobs = [], []
+    vllm_jobs, vllm_rust_jobs, sglang_jobs = [], [], []
     family_fixtures = {}
     for family in families:
         fixtures = sorted(glob.glob(f"{conf}/{family}/TOOLCALLING.stream.*.yaml"))
@@ -136,11 +220,16 @@ def _run_stream(args):
         for fp in fixtures:
             if VLLM[family]:
                 vllm_jobs.append({"src": fp, "container_path": _cpath(fp, "stream"), "parser": VLLM[family]})
+            if VLLM_RUST.get(family):
+                vllm_rust_jobs.append({"src": fp, "parser": VLLM_RUST[family]})
             if SGLANG[family]:
                 sglang_jobs.append({"src": fp, "container_path": _cpath(fp, "stream"), "parser": SGLANG[family]})
 
     print(f"capturing vllm ({len(vllm_jobs)} fixtures, 1 import)...", file=sys.stderr)
     vllm_ver, vllm_caps = _container_capture(args.vllm_container, "vllm", "stream", vllm_jobs, args.work)
+    print(f"capturing vllm rust ({len(vllm_rust_jobs)} fixtures)...", file=sys.stderr)
+    vllm_rust_ver, vllm_rust_caps = _vllm_rust_capture(
+        vllm_rust_source, "stream", vllm_rust_jobs, args.work)
     print(f"capturing sglang ({len(sglang_jobs)} fixtures, 1 import)...", file=sys.stderr)
     sglang_ver, sglang_caps = _container_capture(args.sglang_container, "sglang", "stream", sglang_jobs, args.work)
 
@@ -156,12 +245,19 @@ def _run_stream(args):
 
             cmd = ["python3", os.path.join(here, "build_stream_fixtures.py"),
                    "--source", fp, "--out", outfp,
-                   "--unavailable", f"dynamo={args.dynamo_todo}"]
+                   "--unavailable", f"dynamo_rust={args.dynamo_todo}"]
+            if vllm_rust_source:
+                cmd += _impl_args(
+                    "vllm_rust", family, VLLM_RUST.get(family),
+                    vllm_rust_caps.get(fp, {}), vllm_rust_ver or vllm_rust_source_version,
+                    args.work, f"{family}_{base}", fp)
+            else:
+                cmd += ["--unavailable", f"vllm_rust={_vllm_rust_unavailable(vllm_rust_source_version)}"]
             cmd += _impl_args(
-                "vllm", family, VLLM[family], vllm_caps.get(fp, {}), vllm_ver,
+                "vllm_python", family, VLLM[family], vllm_caps.get(fp, {}), vllm_ver,
                 args.work, f"{family}_{base}", fp)
             cmd += _impl_args(
-                "sglang", family, SGLANG[family], sglang_caps.get(fp, {}), sglang_ver,
+                "sglang_python", family, SGLANG[family], sglang_caps.get(fp, {}), sglang_ver,
                 args.work, f"{family}_{base}", fp)
             run(cmd)
             print(f"  built {family}/{base}", file=sys.stderr)
@@ -177,7 +273,11 @@ def _parser_for(impl, family):
 
 
 def _block_for(impl, family, parser, entry):
-    engine = "vLLM" if impl == "vllm" else "SGLang"
+    engine = {
+        "vllm_rust": "vLLM Rust",
+        "vllm_python": "vLLM Python",
+        "sglang_python": "SGLang Python",
+    }[impl]
     if parser is None:
         return {"unavailable": f"No {engine} parser for family '{family}'."}
     if "cases" in entry:
@@ -185,44 +285,71 @@ def _block_for(impl, family, parser, entry):
     return {}
 
 
-def _load_harmony_dynamo(path):
+def _load_dynamo_rust(path):
     if not path:
         return {}
     with open(path) as f:
         return json.load(f)
 
 
-def _write_overlay(src, outfp, vllm_entry, sglang_entry, versions, dynamo_harmony):
+def _dynamo_cases_for_family(data, family):
+    if not data:
+        return {}
+    if family in data and isinstance(data[family], dict):
+        return data[family]
+    return data
+
+
+def _write_overlay(src, outfp, vllm_entry, vllm_rust_entry, sglang_entry, versions, dynamo_rust):
     doc = yaml.safe_load(open(src))
     family = doc["family"]
+    dynamo_cases = _dynamo_cases_for_family(dynamo_rust, family)
     out = {
         "family": family,
         "mode": "batch-on-stream",
         "captured_with": {
-            "vllm": versions["vllm"],
-            "sglang": versions["sglang"],
+            "vllm_python": versions["vllm_python"],
+            "sglang_python": versions["sglang_python"],
         },
         "cases": {},
     }
-    if family == "harmony":
-        out["captured_with"]["dynamo"] = "Dynamo parser v2"
+    if versions.get("vllm_rust"):
+        out["captured_with"]["vllm_rust"] = versions["vllm_rust"]
+    if dynamo_cases:
+        out["captured_with"]["dynamo_rust"] = "Dynamo parser v2"
 
     vllm_parser = _parser_for("vllm", family)
+    vllm_rust_parser = VLLM_RUST.get(family)
     sglang_parser = _parser_for("sglang", family)
-    vllm_cases = _block_for("vllm", family, vllm_parser, vllm_entry)
-    sglang_cases = _block_for("sglang", family, sglang_parser, sglang_entry)
+    vllm_cases = _block_for("vllm_python", family, vllm_parser, vllm_entry)
+    vllm_rust_cases = _block_for("vllm_rust", family, vllm_rust_parser, vllm_rust_entry)
+    sglang_cases = _block_for("sglang_python", family, sglang_parser, sglang_entry)
 
     for cid, case in (doc.get("cases") or {}).items():
         row = {}
-        if family == "harmony" and cid in dynamo_harmony:
-            row["dynamo"] = dynamo_harmony[cid]
+        if cid in dynamo_cases:
+            row["dynamo_rust"] = dynamo_cases[cid]
+        if not versions.get("vllm_rust"):
+            row["vllm_rust"] = {
+                "unavailable": _vllm_rust_unavailable(None)
+            }
+        elif vllm_rust_parser is None:
+            row["vllm_rust"] = {
+                "unavailable": f"No vLLM Rust parser for family '{family}'."
+            }
+        elif cid in vllm_rust_cases:
+            row["vllm_rust"] = vllm_rust_cases[cid]
+        elif "model_text" not in case:
+            row["vllm_rust"] = {"unavailable": "No batch model_text for this case."}
+        else:
+            row["vllm_rust"] = {"unavailable": "Capture did not return this case."}
         for impl, parser, cases in (
-            ("vllm", vllm_parser, vllm_cases),
-            ("sglang", sglang_parser, sglang_cases),
+            ("vllm_python", vllm_parser, vllm_cases),
+            ("sglang_python", sglang_parser, sglang_cases),
         ):
             if parser is None:
                 row[impl] = {
-                    "unavailable": f"No {'vLLM' if impl == 'vllm' else 'SGLang'} parser for family '{family}'."
+                    "unavailable": f"No {'vLLM Python' if impl == 'vllm_python' else 'SGLang'} parser for family '{family}'."
                 }
             elif cid in cases:
                 row[impl] = cases[cid]
@@ -239,9 +366,11 @@ def _write_overlay(src, outfp, vllm_entry, sglang_entry, versions, dynamo_harmon
 
 def _run_batch_on_stream(args):
     _copy_worker((args.vllm_container, args.sglang_container))
+    vllm_rust_source_version = _vllm_rust_source_version(_vllm_rust_source_arg(args))
+    vllm_rust_source = _vllm_rust_source_arg(args)
     fixture_root = os.path.join(args.root, "conformance/toolcalling/fixtures")
     sources = sorted(glob.glob(f"{fixture_root}/*/TOOLCALLING.batch*.yaml"))
-    jobs = {"vllm": [], "sglang": []}
+    jobs = {"vllm": [], "vllm_rust": [], "sglang": []}
     for src in sources:
         family = os.path.basename(os.path.dirname(src))
         cpath = _cpath(src, "batch-on-stream")
@@ -249,23 +378,32 @@ def _run_batch_on_stream(args):
             parser = _parser_for(impl, family)
             if parser:
                 jobs[impl].append({"src": src, "container_path": cpath, "parser": parser})
+        parser = VLLM_RUST.get(family)
+        if parser:
+            jobs["vllm_rust"].append({"src": src, "parser": parser})
 
     print(f"capturing vllm ({len(jobs['vllm'])} batch fixtures)...", file=sys.stderr)
     vllm_ver, vllm_caps = _container_capture(
         args.vllm_container, "vllm", "batch-on-stream", jobs["vllm"], args.work)
+    print(f"capturing vllm rust ({len(jobs['vllm_rust'])} batch fixtures)...", file=sys.stderr)
+    vllm_rust_ver, vllm_rust_caps = _vllm_rust_capture(
+        vllm_rust_source, "batch-on-stream", jobs["vllm_rust"], args.work)
     print(f"capturing sglang ({len(jobs['sglang'])} batch fixtures)...", file=sys.stderr)
     sglang_ver, sglang_caps = _container_capture(
         args.sglang_container, "sglang", "batch-on-stream", jobs["sglang"], args.work)
 
-    dynamo_harmony = _load_harmony_dynamo(args.dynamo_harmony_json)
-    versions = {"vllm": vllm_ver, "sglang": sglang_ver}
+    dynamo_rust = _load_dynamo_rust(args.dynamo_rust_json)
+    versions = {"vllm_python": vllm_ver, "sglang_python": sglang_ver}
+    if vllm_rust_ver or vllm_rust_source_version:
+        versions["vllm_rust"] = vllm_rust_ver or vllm_rust_source_version
     out_root = os.path.join(args.root, "conformance/toolcalling/fixtures-batch-on-stream-v2")
     for src in sources:
         family = os.path.basename(os.path.dirname(src))
         outfp = os.path.join(out_root, family, os.path.basename(src))
         _write_overlay(
-            src, outfp, vllm_caps.get(src, {}), sglang_caps.get(src, {}),
-            versions, dynamo_harmony)
+            src, outfp, vllm_caps.get(src, {}), vllm_rust_caps.get(src, {}),
+            sglang_caps.get(src, {}),
+            versions, dynamo_rust)
         print(f"  wrote {family}/{os.path.basename(src)}", file=sys.stderr)
 
 
@@ -274,9 +412,9 @@ def _run_batch_on_stream(args):
 # --------------------------------------------------------------------------- #
 def _run_merge(args):
     layers = {
-        "dynamo": json.load(open(args.dynamo)),
-        "vllm": json.load(open(args.vllm)),
-        "sglang": json.load(open(args.sglang)),
+        "dynamo_rust": json.load(open(args.dynamo_rust)),
+        "vllm_python": json.load(open(args.vllm_python)),
+        "sglang_python": json.load(open(args.sglang)),
     }
     cids = sorted({cid for layer in layers.values() for cid in layer})
     nested = {
@@ -298,20 +436,24 @@ def main():
     ap.add_argument("--work")
     ap.add_argument("--vllm-container", default="vllm-localdev")
     ap.add_argument("--sglang-container", default="sglang-localdev")
+    ap.add_argument("--vllm-rust-source", help="vLLM source checkout root; defaults to VLLM_RUST_SOURCE")
     ap.add_argument("--dynamo-todo", help="stream: Dynamo unavailable/TODO reason")
-    ap.add_argument("--dynamo-harmony-json", help="batch-on-stream: recorder JSON")
+    ap.add_argument("--dynamo-rust-json", help="batch-on-stream: Dynamo Rust recorder JSON")
+    ap.add_argument("--dynamo-harmony-json", dest="dynamo_rust_json", help=argparse.SUPPRESS)
     # merge
-    ap.add_argument("--dynamo")
-    ap.add_argument("--vllm")
+    ap.add_argument("--dynamo", dest="dynamo_rust")
+    ap.add_argument("--dynamo-rust")
+    ap.add_argument("--vllm", dest="vllm_python")
+    ap.add_argument("--vllm-python")
     ap.add_argument("--sglang")
     ap.add_argument("-o", "--output")
     args = ap.parse_args()
 
     # Per-mode required args (argparse can't express "required only for some modes").
     if args.mode == "merge":
-        missing = [n for n in ("dynamo", "vllm", "sglang", "output") if not getattr(args, n)]
+        missing = [n for n in ("dynamo_rust", "vllm_python", "sglang", "output") if not getattr(args, n)]
         if missing:
-            ap.error("--mode merge requires --dynamo --vllm --sglang -o/--output")
+            ap.error("--mode merge requires --dynamo-rust --vllm-python --sglang -o/--output")
         _run_merge(args)
         return
     if not args.root or not args.work:

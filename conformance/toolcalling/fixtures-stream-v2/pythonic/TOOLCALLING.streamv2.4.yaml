@@ -11,8 +11,8 @@ family: pythonic
 model_label: 'Llama 4 (pythonic fmt)'
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
-  sglang: '0.5.12.post1'
+  vllm_python: '0.22.0'
+  sglang_python: '0.5.12.post1'
 cases:
   TOOLCALLING.streamv2.4.a:
     description: 'Bracket form with garbage call'
@@ -25,27 +25,27 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '[not a'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ' valid'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ' python call]'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
       normal_text:
-        sglang: '[not a valid python call]'
+        sglang_python: '[not a valid python call]'
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
   TOOLCALLING.streamv2.4.b:
     description: 'Missing closing bracket'
     ref: 'derived from TOOLCALLING.batch.4.b'
@@ -57,17 +57,17 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '[get_weather(location="NYC"'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
   TOOLCALLING.streamv2.4.d:
     description: 'Mismatched paren / bracket'
     ref: 'derived from TOOLCALLING.batch.4.d'
@@ -79,16 +79,16 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '[get_weather(location="NYC"]'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
       normal_text:
-        sglang: '[get_weather(location="NYC"]'
+        sglang_python: '[get_weather(location="NYC"]'
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
