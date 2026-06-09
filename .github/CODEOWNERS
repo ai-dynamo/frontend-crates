@@ -10,3 +10,9 @@ LICENSE          @ai-dynamo/devops
 release-plz.toml @ai-dynamo/devops
 RELEASING.md     @ai-dynamo/devops
 SECURITY.md      @ai-dynamo/devops
+
+# Tool-calling / reasoning parser crates and their conformance tests.
+/parsers/       @ai-dynamo/contributors-frontend-crates
+/parsers_v2/    @ai-dynamo/contributors-frontend-crates
+/parsers_v2-py/ @ai-dynamo/contributors-frontend-crates
+/conformance/   @ai-dynamo/contributors-frontend-crates
