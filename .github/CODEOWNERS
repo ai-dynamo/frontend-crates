@@ -10,3 +10,9 @@ LICENSE          @ai-dynamo/devops
 release-plz.toml @ai-dynamo/devops
 RELEASING.md     @ai-dynamo/devops
 SECURITY.md      @ai-dynamo/devops
+
+# Tool-calling / reasoning parser crates and their conformance tests.
+/parsers/       @keivenchang @rmccormick @indrajit96 @KrishnanPrash @Chokoyo @zhongdaor-nv
+/parsers_v2/    @keivenchang @rmccormick @indrajit96 @KrishnanPrash @Chokoyo @zhongdaor-nv
+/parsers_v2-py/ @keivenchang @rmccormick @indrajit96 @KrishnanPrash @Chokoyo @zhongdaor-nv
+/conformance/   @keivenchang @rmccormick @indrajit96 @KrishnanPrash @Chokoyo @zhongdaor-nv
