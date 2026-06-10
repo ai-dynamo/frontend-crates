@@ -1,0 +1,216 @@
+/* SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. */
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Conformance matrix styles (audit B7). Inlined at render by generate_conformance_table.py;
+   the per-impl status/marker rules are appended from _impl_status_css() (B6). */
+body { font-family: -apple-system, system-ui, sans-serif; margin: 1.5em; }
+table { border-collapse: collapse; font-family: ui-monospace, monospace; font-size: 13px; }
+th, td { border: 1px solid #ccc; padding: 3px 4px; }
+th { background: #f5f5f5; }
+th.case-group { font-family: -apple-system, system-ui, sans-serif; font-size: 12px; }
+th.case-group.case-band-0 { background: #f1f3f5; }
+th.case-group.case-band-1 { background: #ffffff; }
+th.case-sub.case-band-0, td.cell.case-band-0 { background: #f8f9fa; }
+th.case-sub.case-band-1, td.cell.case-band-1 { background: #ffffff; }
+.parser-base   { color: #888;    font-size: 11px; margin-left: 4px; }
+.parser-suffix { color: #007acc; font-weight: bold; vertical-align: super; font-size: 0.75em; }
+/* Per-delta argument fragments within one merged chunk cell — each consecutive
+   fragment gets a distinct color (cycled) so a merged multi-delta chunk shows its
+   boundaries, without a ×N count. Render only inside the dark tooltip; all are
+   bright accents, none the default text gray, so every merged piece stands out. */
+.frag0 { color: #7dd3fc; }  /* sky */
+.frag1 { color: #fbbf24; }  /* amber */
+.frag2 { color: #86efac; }  /* green */
+.frag3 { color: #f0abfc; }  /* pink */
+th a { color: inherit; text-decoration: none; }
+th a:hover { background: #ffd; }
+td.model, td.parser { white-space: nowrap; }
+td.parser a { color: inherit; text-decoration: none; }
+td.parser a:hover { background: #ffd; }
+td.cell { text-align: center; width: 64px; min-width: 64px; max-width: 64px; font-weight: 400; }
+td.cell.ok         { color: #0a7d2c; }
+td.cell.donly      { color: #8b949e; }
+td.cell.documented { color: #555; }
+td.cell.research   { color: #b00; }
+td.cell.leak       { color: #b00; }
+td.cell.err        { color: #b00; }
+td.cell.na         { color: #aeb6bf; }
+td.cell.todo       { color: #e07000; }
+td.cell.missing    { color: #8a6d3b; }
+td.cell a { color: inherit; text-decoration: none; display: block; }
+td.cell a:hover { background: #ffd; }
+tr.section td { background: #eef; font-weight: bold; text-align: left; }
+.legend span { font-family: ui-monospace, monospace; }
+.stats { font-size: 13px; margin-top: 0.4em; }
+.stats span { font-family: ui-monospace, monospace; font-weight: bold; }
+.generated { color: #888; font-size: 12px; margin-top: -0.5em; }
+.title-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.versions { color: #555; font-size: 12px; margin-top: 0.6em; }
+.legend-note { border-left: 3px solid #d0d7de; padding: 6px 10px; max-width: 1200px; line-height: 1.35; }
+.legend-note p { margin: 0 0 6px; }
+.legend-note p:last-child { margin-bottom: 0; }
+.marker-defs { margin: 4px 0 6px 18px; padding: 0; }
+.marker-defs li { margin: 2px 0; }
+.marker-defs span { font-family: ui-monospace, monospace; font-weight: 600; }
+.table-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0.7em 0 0.8em; }
+/* Per-tab source scope. JS swaps it per active tab. */
+.toolbar-desc { display: block; margin: 0.85em 0; padding: 7px 9px; border: 1px solid #f2c94c; background: #fff4b8; color: #3f3100; font-size: 12px; line-height: 1.35; max-width: 1200px; }
+.toolbar-desc a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.radio-group { display: flex; align-items: center; gap: 8px; border: 1px solid #d0d7de; background: #f8fafc; border-radius: 6px; padding: 6px 8px; }
+.radio-group-label { font-size: 13px; font-weight: 600; }
+.radio-option { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; cursor: pointer; }
+/* The parser-radio JS hides options the active tab doesn't support via `hidden`;
+   the explicit display above would otherwise override the default [hidden] rule
+   (e.g. vLLM Rust must vanish on Reasoning, which has no vLLM Rust column). */
+.radio-option[hidden] { display: none; }
+.radio-option input { margin: 0; }
+.checkbox-option { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #d0d7de; background: #f8fafc; border-radius: 6px; padding: 6px 8px; font-size: 13px; cursor: pointer; }
+.checkbox-option input { margin: 0; }
+.view-overview .parity-option { display: none; }
+.view-overview .details-only { display: none; }
+.view-details .summary-only { display: none; }
+.parity-explainer { display: none; }
+.view-details.parity-mode .parity-explainer { display: block; }
+.summary-key { display: inline-block; width: 12px; height: 12px; border: 1px solid rgba(0,0,0,0.22); margin: 0 4px 0 10px; vertical-align: -2px; }
+.summary-key:first-of-type { margin-left: 0; }
+.summary-key.ok { background: #76b884; }
+.summary-key.problem { background: #db7777; }
+.summary-key.na   { background: #d3d8de; }
+.summary-key.todo { background: #d3d8de; }
+.view-overview td.cell, .view-details td.cell { box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04); }
+.view-overview td.cell { font-size: 0; line-height: 0; }
+.view-overview td.cell > a { color: inherit; height: 16px; overflow: hidden; white-space: nowrap; }
+.view-overview td.cell > a:hover { background: transparent; }
+.view-overview td.cell:hover { filter: brightness(0.98); }
+.view-overview td.cell .cell-marker { display: none; }
+.view-overview td.cell .ttip { font-size: 12px; line-height: 1.4; }
+.view-details td.cell { color: transparent; }
+/* Clamp the transparent anchor like overview does (line above): in details view the
+   visible marker is the absolutely-positioned .cell-marker, but the underlying <a>
+   still sits in normal flow — long marker strings (e.g. `VPB?SRB?`) wrap in the 24px
+   cell and stretch the whole row to two lines. Clamp height/overflow so hidden anchor
+   text never drives row height; the <a> stays the hover/click target. */
+.view-details td.cell > a { height: 16px; overflow: hidden; white-space: nowrap; }
+.view-details td.cell::before { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #111; pointer-events: none; }
+.view-details td.cell .cell-marker { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; color: #111; pointer-events: none; padding: 0 4px; box-sizing: border-box; }
+.view-details td.cell .cell-marker .marker-text { display: inline-block; color: inherit; white-space: nowrap; }
+.view-details td.cell .cell-marker sub { font-size: 0.65em; line-height: 0; vertical-align: -0.35em; }
+.view-details td.cell.donly::before { color: #8b949e; }
+.view-details td.cell.donly .cell-marker { color: #8b949e; }
+/* The .view-details.parity-mode hide-marker rule is emitted by _impl_status_css()
+   (generate_conformance_table.py), not here: it must be ordered right after the
+   per-engine status-marker show rules to win the specificity tie. See audit B7. */
+.view-details td.cell a { color: transparent; }
+.view-details td.cell a:hover { background: rgba(255,255,255,0.35); }
+.view-details td.cell .ttip { font-weight: 400; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid #ccc; margin: 1em 0; }
+.tab-button { appearance: none; border: 1px solid #ccc; border-bottom: 0; background: #f5f5f5; color: #222; padding: 6px 10px; font: inherit; cursor: pointer; border-radius: 4px 4px 0 0; }
+.tab-button.active { background: #fff; font-weight: 600; position: relative; top: 1px; }
+/* Smaller-font parenthetical in tab labels, with "batch"/"stream" color-coded so the
+   data axis and parser axis read at a glance. */
+.tab-button .tab-sub { font-size: 0.82em; font-weight: 400; }
+.tab-button .w-batch { color: #7c3aed; }
+.tab-button .w-stream { color: #15803d; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.column-control { padding: 2px; }
+.column-control.col-collapsed { background: #eef2f7; min-width: 20px; width: 20px; }
+.col-toggle { border: 1px solid transparent; background: transparent; color: inherit; padding: 2px 5px; border-radius: 4px; font: inherit; cursor: pointer; }
+.col-toggle-symbol::before { content: "−"; color: #666; margin-right: 4px; }
+.col-toggle[aria-pressed="false"] { min-width: 18px; width: 18px; padding: 1px 0; }
+.col-toggle[aria-pressed="false"] .col-toggle-symbol::before { content: "+"; margin-right: 0; }
+.col-toggle[aria-pressed="false"] .col-toggle-label { display: none; }
+.col-toggle[aria-pressed="true"] { background: #e7f0ff; border-color: #6b9bd6; color: #174a86; }
+.col-toggle[aria-pressed="false"] { background: #fff; border-color: #bbb; color: #555; }
+.col-toggle:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+.col-placeholder { min-width: 20px; width: 20px; padding: 0; background: #f8fafc; }
+.col-hidden { display: none; }
+table.glossary { margin-top: 0.5em; }
+table.glossary td.sub { white-space: nowrap; font-weight: bold; }
+table.glossary tr.category td { background: #eef; font-family: -apple-system, system-ui, sans-serif; font-weight: bold; }
+.info-panel { border: 1px solid #d0d7de; background: #f8fafc; padding: 12px 14px; margin: 1em 0; border-radius: 6px; max-width: 1200px; }
+.info-panel h2 { margin: 0 0 0.35em 0; font-size: 18px; }
+.info-panel h3 { margin: 0.9em 0 0.35em 0; font-size: 14px; color: #174a86; }
+.info-panel p { margin: 0 0 0.8em 0; font-size: 13px; color: #333; }
+.info-panel ul { margin: 0.35em 0 0 1.2em; padding: 0; font-size: 12px; color: #333; }
+.info-panel li { margin: 0.18em 0; }
+.flow-grid { display: grid; grid-template-columns: repeat(5, minmax(130px, 1fr)); gap: 8px; }
+.flow-step { position: relative; border: 1px solid #ccd6e0; background: #fff; padding: 8px 10px; border-radius: 4px; font-size: 12px; color: #333; }
+.flow-step-title { font-weight: 700; color: #174a86; margin-bottom: 3px; }
+.flow-step:not(:last-child)::after { content: "→"; position: absolute; right: -9px; top: 50%; transform: translateY(-50%); color: #667085; font-weight: 700; }
+@media (max-width: 900px) {
+    .flow-grid { grid-template-columns: 1fr; }
+    .flow-step:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -12px; transform: translateX(50%); }
+}
+
+/* JS-managed hover tooltip on cells (replaces native title= for cells).
+ * 750ms delay on appear; 750ms grace period before hiding after the cursor leaves.
+ * `td.parser` participates so parser metadata tooltips use the same styling
+ * as data-cell tooltips. */
+td.cell, td.parser { position: relative; }
+td.cell:hover, td.parser:hover, td.cell:focus-within, td.parser:focus-within { z-index: 2000; }
+.ttip {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    left: 0;
+    top: 100%;
+    z-index: 3000;
+    background: #1f2937;
+    color: #e5e7eb;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    max-width: 80vw;
+    min-width: 280px;
+    width: max-content;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+    text-align: left;
+    pointer-events: auto;
+    white-space: normal;
+    transition: opacity 120ms ease;
+}
+.ttip-visible {
+    visibility: visible;
+    opacity: 1;
+}
+td.cell .ttip a, td.parser .ttip a { color: #bfdbfe; text-decoration: none; border-bottom: 1.5px solid currentColor; padding-bottom: 1px; display: inline; }
+td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: transparent; }
+.ttip-head { font-weight: bold; margin-bottom: 4px; color: #fbbf24; }
+.ttip-section { font-weight: bold; margin-top: 6px; color: #93c5fd; }
+.ttip-pre { margin: 2px 0 0 0; white-space: pre-wrap; word-break: break-word; font-family: inherit; color: #e5e7eb; }
+/* Per-chunk emit chart: input | Dynamo Rust | vLLM Rust | vLLM Python | SGLang, one row per chunk. */
+.ttip-chunks { border-collapse: collapse; margin: 3px 0 0 0; font-size: 11px; width: 100%; }
+.ttip-chunks th, .ttip-chunks td { border: 1px solid #475569; padding: 2px 5px; text-align: left; vertical-align: top; }
+.ttip-chunks th { background: #1e293b; color: #93c5fd; font-weight: 600; }
+.ttip-chunks td { color: #e5e7eb; }
+.ttip-chunks td.cin { color: #cbd5e1; max-width: 22em; word-break: break-word; }
+.ttip-chunks tr.ttip-final td { border-top: 2px solid #64748b; background: #0b1220; }
+.ttip-chunks tr.ttip-final td.cin { color: #93c5fd; font-weight: 600; }
+/* Baseline column (Dynamo Rust batch): a fixed reference left of the stream columns,
+   set off with a thicker right border and a tinted background. */
+.ttip-chunks th.cbase-h { background: #1e293b; color: #fbbf24; border-right: 2px solid #64748b; }
+.ttip-chunks td.cbase { background: #0b1220; border-right: 2px solid #64748b; max-width: 16em; word-break: break-word; vertical-align: bottom; }
+.ttip-chunks .fr { color: #f59e0b; }
+.ttip-unavail { margin-top: 3px; color: #94a3b8; font-style: normal; font-size: 11px; }
+/* Paired-tag palette: each distinct tag name gets a unique color (cycles
+ * if more names than colors). Orphans get the red-background treatment. */
+.tt-c0 { color: #34d399; }
+.tt-c1 { color: #60a5fa; }
+.tt-c2 { color: #fbbf24; }
+.tt-c3 { color: #f472b6; }
+.tt-c4 { color: #a78bfa; }
+.tt-c5 { color: #fb923c; }
+.tt-c6 { color: #22d3ee; }
+.tt-c7 { color: #f87171; }
+.tt-orphan { background: #7f1d1d; color: #fecaca; padding: 0 2px; border-radius: 2px; }
+.tt-h { padding: 0 1px; border-radius: 2px; }
+.tt-h-token { font-weight: 700; }
+.tt-h-start { color: #fbbf24; }
+.tt-h-channel { color: #60a5fa; }
+.tt-h-constrain { color: #a78bfa; }
+.tt-h-message { color: #34d399; }
+.tt-h-call { color: #fb923c; }
+.tt-h-stop { color: #f87171; }
+.tt-h-other { color: #22d3ee; }

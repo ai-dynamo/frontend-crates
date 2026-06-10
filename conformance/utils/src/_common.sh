@@ -13,10 +13,12 @@
 
 set -euo pipefail
 
-# conformance/utils/ is two levels below the repo root.
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# conformance/utils/src/ (internal modules) is three levels below the repo root.
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 export FRONTEND_CRATES_ROOT="$ROOT"
-TOOLS="$ROOT/conformance/utils"
+# tests/ and lib/ stay at conformance/utils/ (Dynamo-sync targets); the rest is in src/.
+UTILS="$ROOT/conformance/utils"
+TOOLS="$ROOT/conformance/utils/src"
 STAGE="${STAGE:-$TOOLS/.stage}"
 # Override when the default cargo can't build the workspace (edition 2024 /
 # resolver "3" needs >= 1.85): CARGO='cargo +1.93.1' conformance/utils/check.sh ...
@@ -27,8 +29,8 @@ _build_stage_base() {
   rm -rf "$STAGE"
   mkdir -p "$STAGE/tests" "$STAGE/lib/parsers/src"
   # COPY the vendored python package so resolved __file__ -> REPO_ROOT == $STAGE.
-  \cp -Rf "$TOOLS/tests/parity" "$STAGE/tests/parity"
-  \cp -f "$TOOLS/tests/__init__.py" "$STAGE/tests/__init__.py"
+  \cp -Rf "$UTILS/tests/parity" "$STAGE/tests/parity"
+  \cp -f "$UTILS/tests/__init__.py" "$STAGE/tests/__init__.py"
   ln -s "$ROOT/conformance/reasoning/fixtures"   "$STAGE/tests/parity/reasoning/fixtures"
   # Recorded Dynamo parser v2 stream-on-batch fixture overlay.
   if [ -d "$ROOT/conformance/toolcalling/fixtures-batch-on-stream-v2" ]; then
@@ -37,9 +39,9 @@ _build_stage_base() {
       "$STAGE/tests/parity/toolcalling/fixtures-batch-on-stream-v2"
   fi
   ln -s "$ROOT/parsers/src/tool_calling"         "$STAGE/lib/parsers/src/tool_calling"
-  ln -s "$TOOLS/lib/parsers/TOOLCALLING_CASES.md"   "$STAGE/lib/parsers/TOOLCALLING_CASES.md"
-  ln -s "$TOOLS/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md" "$STAGE/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"
-  ln -s "$TOOLS/lib/parsers/REASONING_CASES.md"     "$STAGE/lib/parsers/REASONING_CASES.md"
+  ln -s "$UTILS/lib/parsers/TOOLCALLING_CASES.md"   "$STAGE/lib/parsers/TOOLCALLING_CASES.md"
+  ln -s "$UTILS/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md" "$STAGE/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"
+  ln -s "$UTILS/lib/parsers/REASONING_CASES.md"     "$STAGE/lib/parsers/REASONING_CASES.md"
   ln -s "$TOOLS/pyproject.stub.toml"                "$STAGE/pyproject.toml"
   [ -e "$ROOT/.git" ] && ln -s "$ROOT/.git" "$STAGE/.git" || true
 }
@@ -76,16 +78,23 @@ build_stage_v1() {
   _copy_toolcalling_v1_fixtures
 }
 
-build_stage_v2() {
+build_stage_conformance() {
   _build_stage_base
-  # Keep v2 owned by conformance/utils while presenting it in Dynamo's staged
-  # tests/parity layout for imports and template lookup.
+  # Keep the current conformance harness owned by conformance/utils while presenting
+  # it in Dynamo's staged tests/parity layout for imports and template lookup.
   \cp -f "$TOOLS/generate_conformance_table.py" "$STAGE/tests/parity/generate_conformance_table.py"
+  \cp -f "$TOOLS/impls.py" "$STAGE/tests/parity/impls.py"
+  \cp -f "$TOOLS/markers.py" "$STAGE/tests/parity/markers.py"
+  \cp -f "$TOOLS/fixtures.py" "$STAGE/tests/parity/fixtures.py"
   \cp -f "$TOOLS/conformance_table.html.j2" "$STAGE/tests/parity/conformance_table.html.j2"
+  # Static CSS/JS (audit B7) inlined into the page at render time.
+  mkdir -p "$STAGE/tests/parity/assets"
+  \cp -f "$TOOLS/assets/conformance.css" "$STAGE/tests/parity/assets/conformance.css"
+  \cp -f "$TOOLS/assets/conformance.js" "$STAGE/tests/parity/assets/conformance.js"
   _copy_toolcalling_v2_fixtures
 }
 
 build_stage() {
-  echo "build_stage is ambiguous; use build_stage_v1 or build_stage_v2" >&2
+  echo "build_stage is ambiguous; use build_stage_v1 or build_stage_conformance" >&2
   return 2
 }

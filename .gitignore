@@ -3,7 +3,7 @@ debug
 target
 
 # Generated conformance reports are local review artifacts.
-/conformance/CONFORMANCE*.html
+/conformance/**/*.html
 
 # The workspace Cargo.lock is committed for reproducible CI and demo builds.
 # Nested crate/demo lockfiles are not used.

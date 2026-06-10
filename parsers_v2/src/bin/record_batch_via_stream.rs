@@ -18,7 +18,7 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use dynamo_parsers_v2::{
-    HarmonyToolStreamParser, ToolCallDelta, ToolParseResult, assemble_tool_calls,
+    HarmonyToolStreamParser, ToolCallDelta, ToolParseResult, ToolParserInput, assemble_tool_calls,
     create_tool_parser_for_family,
 };
 use serde::{Deserialize, Serialize};
@@ -126,7 +126,9 @@ fn parse_result(family: &str, text: &str) -> anyhow::Result<CaseOutInner> {
     }
 
     let mut parser = create_tool_parser_for_family(family, &[])?;
-    let mut result = parser.push(text)?;
+    // B9: batch text fed through the shared push_input abstraction (always Text for
+    // a complete batch sample) instead of the bare push() call.
+    let mut result = parser.push_input(ToolParserInput::Text(text))?;
     result.append(parser.finish()?);
     Ok(CaseOutInner {
         calls: calls_from_parse_result(result.clone())

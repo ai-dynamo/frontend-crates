@@ -44,10 +44,7 @@ from tests.parity.common import ParseResult, canonical
 PH = Path(__file__).resolve().parent
 PKG = PH / "tests" / "parity"
 STUB = PH / "pyproject.stub.toml"
-FIXTURE_IMPL_ALIASES = {
-    "vllm": "vllm_python",
-    "sglang": "sglang_python",
-}
+from impls import FIXTURE_IMPL_ALIASES  # noqa: E402  (identity table; see impls.py)
 
 # Minimal worker shipped into the engine container. Imports the adapter once
 # (heavy), then maps stdin JSONL requests to result JSONL written to --out.

@@ -1,6 +1,6 @@
 # conformance/toolcalling/fixtures-stream-v2
 
-Per-chunk streaming fixtures for the `TC stream (v2)` conformance tab. These are frontend-crate-owned v2 overlays; `render_table.sh` stages them together with the Dynamo-synced `conformance/toolcalling/fixtures/` batch corpus when building the HTML matrix.
+Per-chunk streaming fixtures for the `TC stream (v2)` conformance tab. These are frontend-crate-owned v2 overlays; `render_table_v2.sh` stages them together with the Dynamo-synced `conformance/toolcalling/fixtures/` batch corpus when building the HTML matrix.
 
 ## Why A Separate Overlay Exists
 
@@ -88,5 +88,5 @@ Use `capture.sh stream` for all-family captures; do not add a second wrapper for
 ```bash
 cargo test --locked -p dynamo-conformance-fixtures-v2 -- --nocapture
 python3 -m pytest conformance/utils/tests/test_stream_on_batch.py
-conformance/utils/render_table.sh
+conformance/utils/render_table_v2.sh
 ```

@@ -22,7 +22,8 @@ use std::collections::BTreeMap;
 
 use dynamo_parsers::tool_calling::ToolCallResponseChunk;
 use dynamo_parsers_v2::{
-    HarmonyToolStreamParser, Tool, ToolCallDelta, ToolParseResult, create_tool_parser_for_family,
+    HarmonyToolStreamParser, Tool, ToolCallDelta, ToolParseResult, ToolParserInput,
+    create_tool_parser_for_family,
 };
 use serde::{Deserialize, Serialize};
 
@@ -128,7 +129,14 @@ fn record_trait_parser(family: &str, case: &Case) -> anyhow::Result<Vec<ChunkEmi
     let mut parser = create_tool_parser_for_family(family, &case.tools)?;
     let mut per_chunk = Vec::new();
     for chunk in &case.chunks {
-        let mut result = parser.push(&chunk.delta_text)?;
+        // B9: data-driven input — a token-native parser consumes token ids, others
+        // text, via the shared push_input abstraction (no family-name branch).
+        let input = if parser.prefers_tokens() {
+            ToolParserInput::Tokens(&chunk.delta_token_ids)
+        } else {
+            ToolParserInput::Text(&chunk.delta_text)
+        };
+        let mut result = parser.push_input(input)?;
         if chunk.finish_reason.is_some() {
             result.append(parser.finish()?);
         }

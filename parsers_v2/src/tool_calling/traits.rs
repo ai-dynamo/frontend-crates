@@ -132,6 +132,14 @@ pub trait ToolParser: Send {
         false
     }
 
+    /// Data-driven input preference (audit B9): token-native families (Harmony)
+    /// return `true` so runners feed `ToolParserInput::Tokens` via `push_input`
+    /// instead of branching on the family name. Text-format parsers keep the
+    /// default; the canonical per-family value also lives in `parser_families.yaml`.
+    fn prefers_tokens(&self) -> bool {
+        false
+    }
+
     /// Feed one decoded text delta into the parser.
     fn push(&mut self, chunk: &str) -> Result<ToolParseResult>;
 

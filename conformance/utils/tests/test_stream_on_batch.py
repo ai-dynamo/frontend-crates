@@ -26,26 +26,29 @@ from __future__ import annotations
 import itertools
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 import yaml
 
 UTILS = Path(__file__).resolve().parents[1]
-if str(UTILS) not in sys.path:
-    sys.path.insert(0, str(UTILS))
+SRC = UTILS / "src"  # internal modules moved under conformance/utils/src/
+REPO = UTILS.parents[1]
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
 
 import build_stream_fixtures as b  # noqa: E402
 import capture_vllm_rust as r  # noqa: E402
 import generate_conformance_table as g  # noqa: E402
+import impls  # noqa: E402
+import validate_fixtures as vf  # noqa: E402
 from tests.parity.reasoning import table as reasoning_table  # noqa: E402
 
 _TODO_MSG = "Dynamo parser v2 stream parser not yet implemented for this family"
-D = "dynamo_rust"
-R = "vllm_rust"
-V = "vllm_python"
-S = "sglang_python"
-IMPLS = (D, R, V, S)
+# Identity comes from impls.py via the generator's re-export (audit B1).
+D, R, V, S = g.IMPL_KEYS
+IMPLS = g.IMPL_KEYS
 
 
 def test_reasoning_python_exceptions_render_as_x() -> None:
@@ -110,7 +113,7 @@ def test_readme_documents_vllm_rust_capture_flow() -> None:
         "capture_vllm_rust.py",
         "captured_with.vllm_rust",
         "expected.vllm_rust",
-        "conformance/utils/render_table.sh",
+        "conformance/utils/render_table_v2.sh",
         "The verification-only path reads committed YAML and reports mismatches",
         "it does not run vLLM Rust",
         "conformance/utils/check.sh dynamo stream",
@@ -632,18 +635,22 @@ def test_build_cases_carries_stream_and_batch(monkeypatch) -> None:
 
 
 def test_template_legacy_alias_selectors_do_not_override_canonical_markers() -> None:
-    template = (UTILS / "conformance_table.html.j2").read_text()
+    template = (SRC / "conformance_table.html.j2").read_text()
     assert "value=\"dynamo_rust\"" in template
     assert "value=\"vllm_python\"" in template
     assert "value=\"vllm_rust\"" in template
     assert "data-parser-options" in template
     assert "data-parser-option=\"vllm_rust\"" in template
-    assert "radio.disabled = !isAllowed" in template
-    assert "label.hidden = !isAllowed" in template
-    assert ".view-details.parity-mode.parser-dynamo td.cell:not([data-marker-parity-dynamo_rust])::before" in template
-    assert ".view-details.parity-mode.parser-vllm td.cell:not([data-marker-parity-vllm_python])::before" in template
-    assert ".view-details.parity-mode.parser-sglang td.cell:not([data-marker-parity-sglang_python])::before" in template
-    assert ".view-details.parity-mode.parser-dynamo_rust td.cell .marker-parity-dynamo_rust" in template
+    # The toolbar wiring is now in the static JS asset (audit B7).
+    js = (SRC / "assets" / "conformance.js").read_text()
+    assert "radio.disabled = !isAllowed" in js
+    assert "label.hidden = !isAllowed" in js
+    # The per-impl status/marker rules are generated from the impl table (audit B6).
+    css = g._impl_status_css()
+    assert ".view-details.parity-mode.parser-dynamo td.cell:not([data-marker-parity-dynamo_rust])::before" in css
+    assert ".view-details.parity-mode.parser-vllm td.cell:not([data-marker-parity-vllm_python])::before" in css
+    assert ".view-details.parity-mode.parser-sglang td.cell:not([data-marker-parity-sglang_python])::before" in css
+    assert ".view-details.parity-mode.parser-dynamo_rust td.cell .marker-parity-dynamo_rust" in css
     hrefs = {
         "reasoning_fixtures": "#",
         "reasoning_cases": "#",
@@ -662,18 +669,45 @@ def test_template_legacy_alias_selectors_do_not_override_canonical_markers() -> 
 
 
 def test_template_overview_cells_do_not_expand_from_hidden_marker_text() -> None:
-    template = (UTILS / "conformance_table.html.j2").read_text()
-    assert "td.cell { text-align: center; width: 64px; min-width: 64px; max-width: 64px;" in template
-    assert ".view-overview td.cell { font-size: 0; line-height: 0; }" in template
-    assert ".view-overview td.cell .cell-marker { display: none; }" in template
-    assert ".view-overview td.cell .ttip { font-size: 12px; line-height: 1.4; }" in template
-    assert ".view-details td.cell > a { height: 16px; overflow: hidden; white-space: nowrap; }" in template
+    # Static styles now live in the CSS asset, inlined at render (audit B7).
+    css = (SRC / "assets" / "conformance.css").read_text()
+    assert "td.cell { text-align: center; width: 64px; min-width: 64px; max-width: 64px;" in css
+    assert ".view-overview td.cell { font-size: 0; line-height: 0; }" in css
+    assert ".view-overview td.cell .cell-marker { display: none; }" in css
+    assert ".view-overview td.cell .ttip { font-size: 12px; line-height: 1.4; }" in css
+    assert ".view-details td.cell > a { height: 16px; overflow: hidden; white-space: nowrap; }" in css
 
 
 def test_template_detail_cells_fit_conformance_markers() -> None:
-    template = (UTILS / "conformance_table.html.j2").read_text()
-    assert ".view-details td.cell { color: transparent; }" in template
-    assert ".view-details td.cell .cell-marker .marker-text { display: inline-block; color: inherit; white-space: nowrap; }" in template
+    css = (SRC / "assets" / "conformance.css").read_text()
+    assert ".view-details td.cell { color: transparent; }" in css
+    assert ".view-details td.cell .cell-marker .marker-text { display: inline-block; color: inherit; white-space: nowrap; }" in css
+
+
+def test_conformance_marker_hide_rule_ordered_after_status_show() -> None:
+    """In Conformance mode the per-engine status markers and the cross-engine parity
+    markers are absolutely positioned in the same cell box. The rule that hides the
+    status marker (`.view-details.parity-mode td.cell .cell-marker { display: none }`)
+    has equal specificity to the status-marker show rules, so it MUST appear after
+    them and before the parity-marker show rules, or both render and visibly overlap.
+    Regression guard for the B7 asset-extraction reorder. The rule lives in the
+    generated CSS (one source of truth), not the static asset."""
+    css = g._impl_status_css()
+    lines = css.splitlines()
+    hide = [i for i, l in enumerate(lines)
+            if l.strip() == ".view-details.parity-mode td.cell .cell-marker { display: none; }"]
+    status_show = [i for i, l in enumerate(lines)
+                   if ".marker-" in l and "parity" not in l and "display: flex" in l]
+    parity_show = [i for i, l in enumerate(lines)
+                   if "marker-parity-" in l and "display: flex" in l]
+    assert hide, "hide-in-parity rule must be emitted by _impl_status_css()"
+    assert max(status_show) < hide[0] < min(parity_show), (
+        "hide-in-parity rule must sit after the status-show rules and before the parity-show rules"
+    )
+    # One source of truth: the static asset must NOT also carry this rule (it would
+    # inline before the generated block and lose the specificity tie).
+    asset = (SRC / "assets" / "conformance.css").read_text()
+    assert ".parity-mode td.cell .cell-marker { display: none; }" not in asset
 
 
 def test_tab_labels_put_version_after_family() -> None:
@@ -696,14 +730,122 @@ def test_common_legend_defines_v1_v2() -> None:
 
 
 def test_template_cells_do_not_clip_hover_tooltips() -> None:
-    template = (UTILS / "conformance_table.html.j2").read_text()
-    cell_rule = re.search(r"td\.cell \{([^}]*)\}", template)
+    # CSS and JS now live in static assets, inlined at render (audit B7).
+    css = (SRC / "assets" / "conformance.css").read_text()
+    js = (SRC / "assets" / "conformance.js").read_text()
+    cell_rule = re.search(r"td\.cell \{([^}]*)\}", css)
     assert cell_rule is not None
     assert "overflow: hidden" not in cell_rule.group(1)
-    assert ".ttip-visible" in template
-    assert "cell.addEventListener('pointerenter', scheduleShow);" in template
+    assert ".ttip-visible" in css
+    assert "cell.addEventListener('pointerenter', scheduleShow);" in js
 
 
 def test_toolcalling_parser_options_are_mode_specific() -> None:
     assert g._impl_keys_for_output_kind("batch") == (D, V, S)
     assert g._impl_keys_for_output_kind("stream") == (D, R, V, S)
+
+
+_DOC_FILES = (
+    UTILS / "README.md",
+    REPO / "parsers_v2" / "README.md",
+    REPO / "conformance" / "README.md",
+    REPO / "conformance" / "toolcalling" / "fixtures-stream-v2" / "README.md",
+)
+_STALE_COMMAND_NAMES = (
+    "capture_v2.sh", "check_v2.sh",
+    "test_stream_on_batch_v2.py", "record_v2.sh", "capture_all_families.sh",
+)
+
+
+def test_readme_fixture_paths_exist() -> None:
+    """D1: every concrete conformance/*.yaml path in the doc set resolves (A2 regression)."""
+    for doc in _DOC_FILES:
+        if not doc.exists():
+            continue
+        for ref in re.findall(r"conformance/[\w./*<>-]+\.yaml", doc.read_text()):
+            if "<" in ref or "*" in ref:  # placeholder/glob, not a concrete path
+                continue
+            assert (REPO / ref).exists(), f"{doc.name}: missing fixture path {ref}"
+
+
+def test_repo_docs_have_no_stale_command_names() -> None:
+    """D1/A5: removed *_v2 / old command names must not reappear in the doc set."""
+    for doc in _DOC_FILES:
+        if not doc.exists():
+            continue
+        text = doc.read_text()
+        for name in _STALE_COMMAND_NAMES:
+            assert name not in text, f"{doc.name}: stale command name {name}"
+
+
+def test_check_sh_dry_run_all_covers_every_parser() -> None:
+    """D2: `check.sh all --dry-run` exercises all three Dynamo targets and the
+    peer engines, and the peer-failure opt-out flag exists."""
+    out = subprocess.run(
+        ["bash", str(UTILS / "check.sh"), "all", "--dry-run"],
+        capture_output=True, text=True,
+    )
+    txt = out.stdout + out.stderr
+    for target in ("parity_toolcalling", "parity_toolcalling_stream", "parity_toolcalling_batch_via_stream"):
+        assert target in txt, f"check.sh all dry-run missing {target}"
+    assert "vllm" in txt and "sglang" in txt
+    assert "--allow-peer-failures" in (UTILS / "check.sh").read_text()
+
+
+def test_check_sh_all_does_not_suppress_failures() -> None:
+    """D2: the `all` block fails on parser failures (no `|| true`) and exits with rc
+    unless --allow-peer-failures is set."""
+    all_block = (UTILS / "check.sh").read_text().split("\n  all)\n", 1)[1].split("\n  *)", 1)[0]
+    assert "|| true" not in all_block
+    assert "run_dynamo all || rc=1" in all_block
+    assert "|| peer_rc=1" in all_block
+    assert 'exit "$rc"' in all_block
+
+
+def test_structured_error_block_marks_x_string_error_marks_bang() -> None:
+    """B11: a structured (dict) `error` = a peer parser ran and threw -> `✗`; a
+    plain-string `error` is a declared expected-error -> `!`. The failure marker the
+    capture stamps is the shared PARSER_NOT_CAPTURED contract, not a private regex."""
+    failed = {"expected": {"vllm_rust": {"error": {"kind": "parse_error", "message": "boom"}}}}
+    assert g._parser_marker(failed, "vllm_rust") == "✗"
+    expected_err = {"expected": {"vllm_rust": {"error": "KeyError: name"}}}
+    assert g._parser_marker(expected_err, "vllm_rust") == "!"
+    # the renderer detects the shared contract the capture stamps (not a private guess)
+    assert g._PARSER_ERROR_RE.search(f"vLLM Rust '{impls.PARSER_NOT_CAPTURED}': boom")
+
+
+def test_v2_overlays_are_canonical_only() -> None:
+    """D3: the v2 overlays carry no legacy impl keys and stamp captured_with — locks
+    the canonical-key migration (the renderer's legacy aliases exist only for the
+    Dynamo-synced v1 corpus, so legacy keys here are silent drift)."""
+    assert vf.validate_overlays() == []
+
+
+def test_every_stream_family_has_registry_row_and_fixtures() -> None:
+    """D6: each fixtures-stream-v2/<family> has a parser_families.yaml row, and each
+    Dynamo-v2 family in the registry has at least one stream fixture."""
+    registry = yaml.safe_load((SRC / "parser_families.yaml").read_text())["families"]
+    stream_root = REPO / "conformance" / "toolcalling" / "fixtures-stream-v2"
+    for fam_dir in sorted(p for p in stream_root.iterdir() if p.is_dir()):
+        assert fam_dir.name in registry, f"family {fam_dir.name} has no parser_families.yaml row"
+    for fam, spec in registry.items():
+        if spec.get("dynamo_v2"):
+            assert list((stream_root / fam).glob("*.yaml")), f"dynamo_v2 family {fam} has no stream fixtures"
+
+
+def test_impl_spec_is_single_identity_source() -> None:
+    """D5: ImplSpec is the one identity table; the generator's derived dicts match
+    it, every spec is complete, markers/displays are unique, and vLLM Rust has no
+    batch (`V_rb`) parser option. Catches the marker/legend/alias drift class."""
+    assert tuple(s.key for s in impls.IMPL_SPECS) == g.IMPL_KEYS
+    for s in impls.IMPL_SPECS:
+        assert s.display and s.marker_letter and s.marker_lang and s.engine and s.language
+        assert g.IMPL_DISPLAY[s.key] == s.display
+        assert g.ENGINE_LETTER[s.key] == s.marker_letter
+        assert g.IMPL_LANG_MARKER[s.key] == s.marker_lang
+        assert s.legacy_key is None or impls.LEGACY_IMPL_ALIASES[s.legacy_key] == s.key
+    assert len({s.marker_letter for s in impls.IMPL_SPECS}) == len(impls.IMPL_SPECS)
+    assert len({s.display for s in impls.IMPL_SPECS}) == len(impls.IMPL_SPECS)
+    # vLLM Rust is stream-only: no `V_rb` batch parser option exists anywhere.
+    assert "vllm_rust" not in g.BATCH_IMPL_KEYS
+    assert "vllm_rust" in g.STREAM_IMPL_KEYS

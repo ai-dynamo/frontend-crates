@@ -29,12 +29,8 @@ from pathlib import Path
 
 import yaml
 
-IMPL_KEYS = ("dynamo_rust", "vllm_rust", "vllm_python", "sglang_python")
-LEGACY_IMPL_ALIASES = {
-    "dynamo": "dynamo_rust",
-    "vllm": "vllm_python",
-    "sglang": "sglang_python",
-}
+from impls import IMPL_KEYS, LEGACY_IMPL_ALIASES  # noqa: E402  (identity table; see impls.py)
+
 VLLM_RUST_UNAVAILABLE = (
     "vLLM Rust capture not implemented yet; source checkout is available for the Rust probe."
 )

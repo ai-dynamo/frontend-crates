@@ -30,37 +30,19 @@ from pathlib import Path
 
 import yaml
 
-# family -> parser/detector name per engine. None = no parser for this engine
-# (the family's tool format isn't supported there) -> marked unavailable.
-VLLM = {
-    "deepseek_v3": "deepseek_v3", "deepseek_v3_1": "deepseek_v31",
-    "deepseek_v3_2": "deepseek_v32", "deepseek_v4": "deepseek_v4",
-    "gemma4": "gemma4", "glm47": "glm47", "hermes": "hermes", "jamba": "jamba",
-    "kimi_k2": "kimi_k2", "llama3_json": "llama3_json",
-    "minimax_m2": "minimax_m2", "mistral": "mistral",
-    "nemotron_deci": "hermes", "nemotron_nano": "hermes",
-    "phi4": "phi4_mini_json", "pythonic": "pythonic",
-    "qwen25": "hermes", "qwen3_coder": "qwen3_coder",
-}
-VLLM_RUST = {
-    "deepseek_v3": "deepseek_v3", "deepseek_v3_1": "deepseek_v31",
-    "deepseek_v3_2": "deepseek_v32", "deepseek_v4": "deepseek_v4",
-    "gemma4": "gemma4", "glm47": "glm47", "hermes": "hermes",
-    "kimi_k2": "kimi_k2", "llama3_json": "llama3_json",
-    "minimax_m2": "minimax_m2", "mistral": "mistral",
-    "nemotron_deci": "hermes", "nemotron_nano": "hermes",
-    "qwen25": "hermes", "qwen3_coder": "qwen3_coder",
-}
-SGLANG = {
-    "deepseek_v3": "deepseekv3", "deepseek_v3_1": "deepseekv31",
-    "deepseek_v3_2": "deepseekv32", "deepseek_v4": "deepseekv4",
-    "gemma4": "gemma4", "glm47": "glm47", "hermes": "hermes", "jamba": None,
-    "kimi_k2": "kimi_k2", "llama3_json": "llama3",
-    "minimax_m2": "minimax-m2", "mistral": "mistral",
-    "nemotron_deci": None, "nemotron_nano": None,
-    "phi4": None, "pythonic": "pythonic",
-    "qwen25": "qwen25", "qwen3_coder": "qwen3_coder",
-}
+from impls import PARSER_NOT_CAPTURED  # noqa: E402  (shared failure-marker contract, B11)
+
+# family -> parser/detector name per engine, loaded from parser_families.yaml (B2 —
+# single source of truth). None = no parser for this engine -> marked unavailable.
+# Peer-capture families are those with a vLLM Python parser (the 18 text-format
+# families); Harmony is captured via its own token flow and is excluded here.
+_FAMILIES = yaml.safe_load(
+    (Path(__file__).resolve().parent / "parser_families.yaml").read_text()
+)["families"]
+_PEER_FAMILIES = [f for f, s in _FAMILIES.items() if s.get("vllm_python")]
+VLLM = {f: _FAMILIES[f]["vllm_python"] for f in _PEER_FAMILIES}
+VLLM_RUST = {f: _FAMILIES[f]["vllm_rust"] for f in _PEER_FAMILIES if _FAMILIES[f].get("vllm_rust")}
+SGLANG = {f: _FAMILIES[f].get("sglang_python") for f in _PEER_FAMILIES}
 VLLM_RUST_UNAVAILABLE = (
     "vLLM Rust capture not implemented yet; source checkout is available for the Rust probe."
 )
@@ -201,21 +183,47 @@ def _impl_args(impl, family, parser, entry, version, work, tag, src):
     # special tool tokens, which a stub tokenizer can't supply).
     err = (entry.get("error") or "capture failed").splitlines()[-1][:160]
     return ["--unavailable",
-            f"{impl}={engine} '{parser}' parser not captured with a stub tokenizer: {err}"]
+            f"{impl}={engine} '{parser}' {PARSER_NOT_CAPTURED} with a stub tokenizer: {err}"]
+
+
+def _select_families(families, args):
+    """B4: narrow an all-family list to a single `--family` for a tight capture
+    loop. Errors if the family is unknown so a typo fails loudly."""
+    fam = getattr(args, "family", None)
+    if not fam:
+        return families
+    if fam not in families:
+        raise SystemExit(f"--family {fam!r} not in capture set: {', '.join(families)}")
+    return [fam]
+
+
+def _select_fixtures(fixtures, args):
+    """B4: narrow a family's fixtures to a single `--fixture <path>` when set."""
+    target = getattr(args, "fixture", None)
+    if not target:
+        return fixtures
+    target = os.path.abspath(target)
+    return [fp for fp in fixtures if os.path.abspath(fp) == target]
 
 
 def _run_stream(args):
     here = os.path.dirname(os.path.abspath(__file__))
+    # A3: stream-capture SEEDS are the v1 batch corpus's stream files
+    # (`conformance/toolcalling/fixtures/<family>/TOOLCALLING.stream.*.yaml`) — the
+    # chunking derives from the same model_text. Captured per-chunk output is WRITTEN
+    # to the frontend-crate-owned `fixtures-stream-v2/<family>/`. To add a new family's
+    # stream case, add its `TOOLCALLING.stream.*.yaml` seed under `fixtures/` first.
     conf = os.path.join(args.root, "conformance/toolcalling/fixtures")
     _copy_worker((args.vllm_container, args.sglang_container))
     vllm_rust_source_version = _vllm_rust_source_version(_vllm_rust_source_arg(args))
     vllm_rust_source = _vllm_rust_source_arg(args)
 
-    families = sorted(VLLM.keys())
+    families = _select_families(sorted(VLLM.keys()), args)
     vllm_jobs, vllm_rust_jobs, sglang_jobs = [], [], []
     family_fixtures = {}
     for family in families:
         fixtures = sorted(glob.glob(f"{conf}/{family}/TOOLCALLING.stream.*.yaml"))
+        fixtures = _select_fixtures(fixtures, args)
         family_fixtures[family] = fixtures
         for fp in fixtures:
             if VLLM[family]:
@@ -370,6 +378,9 @@ def _run_batch_on_stream(args):
     vllm_rust_source = _vllm_rust_source_arg(args)
     fixture_root = os.path.join(args.root, "conformance/toolcalling/fixtures")
     sources = sorted(glob.glob(f"{fixture_root}/*/TOOLCALLING.batch*.yaml"))
+    if getattr(args, "family", None):
+        sources = [s for s in sources if os.path.basename(os.path.dirname(s)) == args.family]
+    sources = _select_fixtures(sources, args)
     jobs = {"vllm": [], "vllm_rust": [], "sglang": []}
     for src in sources:
         family = os.path.basename(os.path.dirname(src))
@@ -434,6 +445,8 @@ def main():
     # stream / batch-on-stream
     ap.add_argument("--root")
     ap.add_argument("--work")
+    ap.add_argument("--family", help="B4: capture only this family (default: all)")
+    ap.add_argument("--fixture", help="B4: capture only this fixture path (default: all)")
     ap.add_argument("--vllm-container", default="vllm-localdev")
     ap.add_argument("--sglang-container", default="sglang-localdev")
     ap.add_argument("--vllm-rust-source", help="vLLM source checkout root; defaults to VLLM_RUST_SOURCE")

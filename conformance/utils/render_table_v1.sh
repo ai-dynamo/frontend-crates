@@ -2,14 +2,14 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-# render_parity_v1.sh [--dry-run]
+# render_table_v1.sh [--dry-run]
 #   Render old Dynamo parity HTML to conformance/utils/.stage/tests/parity/PARITY_v1.html.
 #   No engines needed.
 
 DRY=0; args=()
 while [ $# -gt 0 ]; do case "$1" in --dry-run|--dryrun) DRY=1; shift;; *) args+=("$1"); shift;; esac; done
 set -- ${args+"${args[@]}"}
-source "$(dirname "$0")/_common.sh"
+source "$(dirname "$0")/src/_common.sh"
 
 STAGE="$TOOLS/.stage"
 OUT="$STAGE/tests/parity/PARITY_v1.html"

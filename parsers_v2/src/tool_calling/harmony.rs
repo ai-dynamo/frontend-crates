@@ -24,18 +24,13 @@ use dynamo_parsers::tool_calling::{CalledFunctionStream, ToolCallResponseChunk, 
 
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
 use openai_harmony::{HarmonyEncoding, HarmonyEncodingName, load_harmony_encoding};
-use regex::{Captures, Regex};
-use serde_json::Value;
+
+use super::harmony_grammar::{HarmonySnapshot, extract_calls_via_regex};
+use super::harmony_recovery::{
+    normal_text_after_parse_failure, strip_harmony_protocol_from_normal_text,
+};
 
 static GLOBAL_HARMONY_ENCODING: OnceLock<Result<HarmonyEncoding, anyhow::Error>> = OnceLock::new();
-static COMMENTARY_BLOCK_REGEX: OnceLock<Regex> = OnceLock::new();
-static COMMENTARY_BLOCK_CLEANUP_REGEX: OnceLock<Regex> = OnceLock::new();
-static COMMENTARY_HEADER_CLEANUP_REGEX: OnceLock<Regex> = OnceLock::new();
-static ANALYSIS_BLOCK_CLEANUP_REGEX: OnceLock<Regex> = OnceLock::new();
-static FINAL_BLOCK_CLEANUP_REGEX: OnceLock<Regex> = OnceLock::new();
-static MESSAGE_CALL_CLEANUP_REGEX: OnceLock<Regex> = OnceLock::new();
-static SPECIAL_TOKEN_REGEX: OnceLock<Regex> = OnceLock::new();
-static COMMENTARY_BLOCK_EOF_REGEX: OnceLock<Regex> = OnceLock::new();
 
 /// Load (once) the gpt-oss harmony encoding.
 ///
@@ -206,18 +201,6 @@ impl HarmonyToolStreamParser {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct CompleteHarmonyCall {
-    name: String,
-    arguments: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct HarmonySnapshot {
-    calls: Vec<CompleteHarmonyCall>,
-    normal_text: String,
-}
-
 fn parse_harmony_snapshot(text: &str, allow_eof_recovery: bool) -> HarmonySnapshot {
     let (calls, residual) = extract_calls_via_regex(text, allow_eof_recovery);
     let normal_text = if calls.is_empty() {
@@ -226,235 +209,6 @@ fn parse_harmony_snapshot(text: &str, allow_eof_recovery: bool) -> HarmonySnapsh
         strip_harmony_protocol_from_normal_text(&residual, "regex_recovery_residual")
     };
     HarmonySnapshot { calls, normal_text }
-}
-
-fn commentary_block_regex() -> &'static Regex {
-    COMMENTARY_BLOCK_REGEX.get_or_init(|| {
-        Regex::new(
-            r"(?s)(?:<\|start\|>assistant)?<\|channel\|>commentary to=functions\.(?P<name>[\w.\-]+).*?<\|message\|>(?P<args>.*?)<\|call\|>",
-        )
-        .expect("commentary block regex")
-    })
-}
-
-fn commentary_block_eof_regex() -> &'static Regex {
-    COMMENTARY_BLOCK_EOF_REGEX.get_or_init(|| {
-        Regex::new(
-            r"(?s)(?:<\|start\|>assistant)?<\|channel\|>commentary to=functions\.(?P<name>[\w.\-]+).*?<\|message\|>(?P<args>.*?)(?:<\|call\|>|(?P<eof>\z))",
-        )
-        .expect("commentary block EOF regex")
-    })
-}
-
-fn commentary_block_cleanup_regex() -> &'static Regex {
-    COMMENTARY_BLOCK_CLEANUP_REGEX.get_or_init(|| {
-        Regex::new(
-            r"(?s)(?:<\|start\|>assistant)?<\|channel\|>commentary(?:\s+to=functions\.(?P<name>[\w.\-]+))?.*?<\|message\|>.*?(?:<\|call\|>|\z)",
-        )
-        .expect("commentary block cleanup regex")
-    })
-}
-
-fn commentary_header_cleanup_regex() -> &'static Regex {
-    COMMENTARY_HEADER_CLEANUP_REGEX.get_or_init(|| {
-        Regex::new(
-            r"(?s)(?:<\|start\|>assistant)?<\|channel\|>commentary(?:\s+to=functions\.(?P<name>[\w.\-]+))?.*\z",
-        )
-        .expect("commentary header cleanup regex")
-    })
-}
-
-fn analysis_block_cleanup_regex() -> &'static Regex {
-    ANALYSIS_BLOCK_CLEANUP_REGEX.get_or_init(|| {
-        Regex::new(
-            r"(?s)(?:<\|start\|>assistant)?<\|channel\|>analysis<\|message\|>.*?(?:<\|end\|>|\z)",
-        )
-        .expect("analysis block cleanup regex")
-    })
-}
-
-fn final_block_cleanup_regex() -> &'static Regex {
-    FINAL_BLOCK_CLEANUP_REGEX.get_or_init(|| {
-        Regex::new(
-            r"(?s)(?:<\|start\|>assistant)?<\|channel\|>final<\|message\|>(?P<body>.*?)(?:<\|return\|>|<\|end\|>|\z)",
-        )
-        .expect("final block cleanup regex")
-    })
-}
-
-fn message_call_cleanup_regex() -> &'static Regex {
-    MESSAGE_CALL_CLEANUP_REGEX.get_or_init(|| {
-        Regex::new(r"(?s)<\|message\|>.*?(?:<\|call\|>|\z)").expect("message call cleanup regex")
-    })
-}
-
-fn special_token_regex() -> &'static Regex {
-    SPECIAL_TOKEN_REGEX.get_or_init(|| {
-        Regex::new(r"<\|(?:start|channel|constrain|message|call|end|return)\|>")
-            .expect("special token cleanup regex")
-    })
-}
-
-fn push_unique(items: &mut Vec<String>, item: String) {
-    if !items.iter().any(|existing| existing == &item) {
-        items.push(item);
-    }
-}
-
-fn record_special_tokens(text: &str, items: &mut Vec<String>) {
-    for matched in special_token_regex().find_iter(text) {
-        push_unique(items, format!("special_token:{}", matched.as_str()));
-    }
-}
-
-fn strip_harmony_protocol_from_normal_text(text: &str, reason: &'static str) -> String {
-    let mut stripped = Vec::new();
-
-    let cleaned = commentary_block_cleanup_regex()
-        .replace_all(text, |caps: &Captures<'_>| {
-            record_special_tokens(&caps[0], &mut stripped);
-            let item = match caps.name("name").map(|m| m.as_str()) {
-                Some(name) => format!("commentary_tool_call:functions.{name}"),
-                None => "commentary_tool_call:missing_recipient".to_string(),
-            };
-            push_unique(&mut stripped, item);
-            ""
-        })
-        .into_owned();
-
-    let cleaned = commentary_header_cleanup_regex()
-        .replace_all(&cleaned, |caps: &Captures<'_>| {
-            record_special_tokens(&caps[0], &mut stripped);
-            let item = match caps.name("name").map(|m| m.as_str()) {
-                Some(name) => format!("commentary_tool_call_without_message:functions.{name}"),
-                None => "commentary_tool_call_without_message:missing_recipient".to_string(),
-            };
-            push_unique(&mut stripped, item);
-            ""
-        })
-        .into_owned();
-
-    let cleaned = analysis_block_cleanup_regex()
-        .replace_all(&cleaned, |caps: &Captures<'_>| {
-            record_special_tokens(&caps[0], &mut stripped);
-            push_unique(&mut stripped, "analysis_envelope".to_string());
-            ""
-        })
-        .into_owned();
-
-    let cleaned = final_block_cleanup_regex()
-        .replace_all(&cleaned, |caps: &Captures<'_>| {
-            record_special_tokens(&caps[0], &mut stripped);
-            push_unique(&mut stripped, "final_envelope".to_string());
-            caps.name("body")
-                .map(|m| m.as_str())
-                .unwrap_or_default()
-                .to_string()
-        })
-        .into_owned();
-
-    let cleaned = message_call_cleanup_regex()
-        .replace_all(&cleaned, |caps: &Captures<'_>| {
-            record_special_tokens(&caps[0], &mut stripped);
-            push_unique(&mut stripped, "message_call_payload".to_string());
-            ""
-        })
-        .into_owned();
-
-    let cleaned = special_token_regex()
-        .replace_all(&cleaned, |caps: &Captures<'_>| {
-            push_unique(&mut stripped, format!("special_token:{}", &caps[0]));
-            ""
-        })
-        .into_owned();
-
-    if stripped.is_empty() {
-        return text.to_string();
-    }
-
-    let cleaned = cleaned.trim().to_string();
-    tracing::warn!(
-        family = "harmony",
-        reason,
-        stripped = ?stripped,
-        original_len = text.len(),
-        cleaned_len = cleaned.len(),
-        "stripped harmony protocol content from normal_text"
-    );
-    cleaned
-}
-
-fn normal_text_after_parse_failure(text: &str, reason: &'static str) -> String {
-    let cleaned = strip_harmony_protocol_from_normal_text(text, reason);
-    if cleaned.trim().is_empty() {
-        return String::new();
-    }
-    if cleaned == text && !text.trim().is_empty() {
-        tracing::warn!(
-            family = "harmony",
-            reason,
-            original_len = text.len(),
-            "dropped bare text without a Harmony final/commentary message"
-        );
-        String::new()
-    } else {
-        cleaned
-    }
-}
-
-fn serialize_harmony_arguments(raw_args: &str) -> String {
-    let trimmed = raw_args.trim();
-    match serde_json::from_str::<Value>(trimmed) {
-        Ok(value) => serde_json::to_string(&value).unwrap_or_else(|_| trimmed.to_string()),
-        Err(_) => trimmed.to_string(),
-    }
-}
-
-fn args_are_complete_json(raw_args: &str) -> bool {
-    serde_json::from_str::<Value>(raw_args.trim()).is_ok()
-}
-
-fn extract_calls_via_regex(
-    text: &str,
-    allow_eof_recovery: bool,
-) -> (Vec<CompleteHarmonyCall>, String) {
-    let mut out = Vec::new();
-    let mut residual = String::new();
-    let mut cursor = 0;
-    let regex = if allow_eof_recovery {
-        commentary_block_eof_regex()
-    } else {
-        commentary_block_regex()
-    };
-    for cap in regex.captures_iter(text) {
-        let matched = cap.get(0).expect("regex match has full span");
-        residual.push_str(&text[cursor..matched.start()]);
-        cursor = matched.end();
-
-        let name = cap.name("name").map(|x| x.as_str()).unwrap_or("");
-        let raw_args = cap.name("args").map(|x| x.as_str().trim()).unwrap_or("{}");
-        if name.is_empty() {
-            continue;
-        }
-        if cap.name("eof").is_some() {
-            if !args_are_complete_json(raw_args) {
-                continue;
-            }
-            tracing::warn!(
-                family = "harmony",
-                reason = "eof_recovered_complete_call_without_call_marker",
-                function = name,
-                recovered_bytes = raw_args.len(),
-                "recovered complete Harmony tool call at EOF"
-            );
-        }
-        out.push(CompleteHarmonyCall {
-            name: name.to_string(),
-            arguments: serialize_harmony_arguments(raw_args),
-        });
-    }
-    residual.push_str(&text[cursor..]);
-    (out, residual.trim().to_string())
 }
 
 /// Convert a `ToolStreamResult` to the trait's `ToolParseResult`.
@@ -511,6 +265,10 @@ impl ToolParser for HarmonyToolStreamParser {
         Self: Sized + 'static,
     {
         Ok(Box::new(Self::new()?))
+    }
+
+    fn prefers_tokens(&self) -> bool {
+        true
     }
 
     fn push(&mut self, chunk: &str) -> anyhow::Result<ToolParseResult> {

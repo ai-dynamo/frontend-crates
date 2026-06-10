@@ -2,14 +2,14 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-# render_table.sh [--dry-run] [--output PATH]
+# render_table_v2.sh [--dry-run] [--output PATH]
 #   Render the conformance matrix to an HTML file
 #   (all four tabs: TC batch / TC stream / TC batch-on-stream / Reasoning).
 #   No engines needed.
 
 usage() {
   cat <<'EOF'
-usage: conformance/utils/render_table.sh [--dry-run] [--output PATH]
+usage: conformance/utils/render_table_v2.sh [--dry-run] [--output PATH]
 
 Render the v2 conformance matrix to an HTML file.
 
@@ -48,7 +48,7 @@ while [ $# -gt 0 ]; do
       ;;
   esac
 done
-source "$(dirname "$0")/_common.sh"
+source "$(dirname "$0")/src/_common.sh"
 
 OUT="$ROOT/conformance/CONFORMANCE.html"
 if [ -n "$OUT_ARG" ]; then
@@ -61,7 +61,7 @@ if [ "$DRY" = 1 ]; then
   echo "[dry-run] build .stage, then render the conformance table > $OUT"
   exit 0
 fi
-build_stage_v2
+build_stage_conformance
 mkdir -p "$(dirname "$OUT")"
 ( cd "$STAGE" && PYTHONPATH="$STAGE" python3 tests/parity/generate_conformance_table.py all --html --output-path "$OUT" --artifact-root "$ROOT" ) > "$OUT"
 echo "wrote $OUT"

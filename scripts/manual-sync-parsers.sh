@@ -135,8 +135,8 @@ echo
 
 if [ "$APPLY" = "1" ]; then
   echo "done. review with: git -C $HERE diff --stat"
-  echo "then verify:       conformance/utils/render_parity_v1.sh"
-  echo "                   conformance/utils/render_table.sh"
+  echo "then verify:       conformance/utils/render_table_v1.sh"
+  echo "                   conformance/utils/render_table_v2.sh"
 elif [ "$CHANGED" = "1" ]; then
   echo "changes detected. re-run with --apply to apply."
   exit 1

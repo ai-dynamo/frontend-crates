@@ -20,7 +20,10 @@
 //! the fixtures is captured from the engines in their containers, not re-run here.
 
 use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+
+mod common;
+use common::{collect_yaml, fixture_name};
 
 use dynamo_parsers::tool_calling::ToolCallResponseChunk;
 use dynamo_parsers_v2::{
@@ -81,27 +84,6 @@ struct FixtureDelta {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-fn collect_yaml(dir: &Path, out: &mut Vec<PathBuf>) {
-    let Ok(rd) = std::fs::read_dir(dir) else {
-        return;
-    };
-    for entry in rd.flatten() {
-        let p = entry.path();
-        if p.is_dir() {
-            collect_yaml(&p, out);
-        } else if p.extension().is_some_and(|x| x == "yaml") {
-            out.push(p);
-        }
-    }
-}
-
-fn fixture_name(path: &Path) -> String {
-    path.strip_prefix(env!("CARGO_MANIFEST_DIR"))
-        .unwrap_or(path)
-        .display()
-        .to_string()
-}
 
 /// Compare emitted deltas for one chunk against the fixture's expected list.
 struct ChunkDiff<'a> {

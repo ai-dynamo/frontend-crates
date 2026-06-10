@@ -3,6 +3,8 @@
 
 pub mod dsml;
 pub mod harmony;
+mod harmony_grammar;
+mod harmony_recovery;
 pub mod traits;
 
 use traits::{Tool, ToolParser};

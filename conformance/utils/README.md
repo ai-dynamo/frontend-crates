@@ -1,6 +1,6 @@
 # Conformance/Utils
 
-This directory is for checking parser behavior and generating an HTML conformance matrix. By default `render_table.sh` writes `conformance/CONFORMANCE.html`, but you can write another file such as `index.html`.
+This directory is for checking parser behavior and generating an HTML conformance matrix. By default `render_table_v2.sh` writes `conformance/CONFORMANCE.html`, but you can write another file such as `index.html`.
 
 Most work has three steps:
 
@@ -79,7 +79,7 @@ cargo fmt
 git diff --check
 ```
 
-If you only changed docs or the HTML generator, the Python regression test and `conformance/utils/render_table.sh` are usually enough.
+If you only changed docs or the HTML generator, the Python regression test and `conformance/utils/render_table_v2.sh` are usually enough.
 
 ## 2. Update Code Or Fixtures
 
@@ -96,7 +96,7 @@ Harmony fixture paths below are examples only. Harmony is not the intended scope
 ```bash
 # Example: capture one Dynamo v2 Rust stream fixture into JSON for manual fixture editing.
 conformance/utils/capture.sh dynamo-stream \
-  --fixture conformance/toolcalling/fixtures-stream-v2/harmony/TOOLCALLING.stream.1.yaml \
+  --fixture conformance/toolcalling/fixtures-stream-v2/harmony/TOOLCALLING.streamv2.1.yaml \
   --output /tmp/dynamo_stream.json
 
 # Example: capture all vLLM Python, vLLM Rust, and SGLang Python stream behavior, then refresh `fixtures-stream-v2/`.
@@ -152,16 +152,16 @@ Run this after updating code or fixture YAML.
 
 ```bash
 # Generates an HTML matrix at the default example path: `conformance/CONFORMANCE.html`.
-conformance/utils/render_table.sh
+conformance/utils/render_table_v2.sh
 
 # Generates the same matrix at a custom path, for example `index.html`.
-conformance/utils/render_table.sh --output index.html
+conformance/utils/render_table_v2.sh --output index.html
 
 # Prints the render command without writing the table.
-conformance/utils/render_table.sh --dry-run
+conformance/utils/render_table_v2.sh --dry-run
 ```
 
-Open the generated HTML file in a browser. The table is generated from the committed fixture directories plus the staged v2 fixture view built by `render_table.sh`.
+Open the generated HTML file in a browser. The table is generated from the committed fixture directories plus the staged v2 fixture view built by `render_table_v2.sh`.
 
 Use the generated matrix to inspect vLLM Python vs vLLM Rust behavior. `check.sh vllm` runs the live vLLM Python parser against committed YAML; it does not run vLLM Rust. vLLM Python vs Rust is a committed fixture comparison in the `TC stream (v2)` and `TC batch-on-stream (v2)` tabs.
 
@@ -189,18 +189,19 @@ vLLM shorthand:
 
 ## Scripts
 
-| Script | Purpose |
+Run these from `conformance/utils/`:
+
+| Command | Purpose |
 |---|---|
-| `render_table.sh` | Builds `.stage/` and writes an HTML matrix. The default example path is `conformance/CONFORMANCE.html`. |
+| `render_table_v2.sh` | Builds `.stage/` and writes the v2 conformance HTML matrix. The default example path is `conformance/CONFORMANCE.html`. |
+| `render_table_v1.sh` | Renders the legacy v1 Dynamo parity table into `.stage/`. |
 | `check.sh` | Runs Dynamo, vLLM Python, and SGLang checks against staged fixtures. |
 | `capture.sh` | Consistent entry point for capturing parser behavior and refreshing v2 fixtures. |
-| `capture.py` | In-container worker for vLLM Python or SGLang captures. |
-| `capture_vllm_rust.py` | Host Rust probe that builds a temporary binary against `VLLM_RUST_SOURCE/rust/src/tool-parser`. |
-| `capture_driver.py` | Host orchestrator for stream capture, batch-on-stream capture, and capture merge. |
-| `build_stream_fixtures.py` | Rebuilds one v2 stream fixture from source chunks, captured peer output, and unavailable markers. |
+
+The implementation lives under `src/` — don't run these directly unless you're developing the harness: `_common.sh`, the renderer (`generate_conformance_table.py` + `impls.py` / `markers.py` / `fixtures.py`, `conformance_table.html.j2` + `assets/`), the capture chain (`capture_cli.py` / `capture_driver.py` / `capture.py` / `capture_vllm_rust.py`), the fixture builders (`build_stream_fixtures.py` / `fill_streamv2.py` / `gen_harmony_text_fixtures.py`), the validators (`validate.py` / `validate_fixtures.py`), and the data files (`parser_families.yaml`, `pyproject.stub.toml`). `tests/` and `lib/` stay at the top level because they are Dynamo-sync targets.
 
 ## Notes
 
-Peer parser versions for vLLM Python and SGLang are pinned in `pyproject.stub.toml`; the table currently reports vLLM Python `0.22.0` and SGLang `0.5.12.post1`. vLLM Rust is captured from a local source checkout and recorded in YAML under `captured_with.vllm_rust`.
+Peer parser versions for vLLM Python and SGLang are pinned in `src/pyproject.stub.toml`; the table currently reports vLLM Python `0.22.0` and SGLang `0.5.12.post1`. vLLM Rust is captured from a local source checkout and recorded in YAML under `captured_with.vllm_rust`.
 
 The scripts build an ephemeral `.stage/` tree because the vendored Dynamo Python table code assumes Dynamo's repo layout. `.stage*/` is gitignored.

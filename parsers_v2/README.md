@@ -88,6 +88,8 @@ Rules:
 - Keep parser recovery from leaking tool markers into `normal_text` when the grammar can recover or safely suppress malformed tool syntax.
 - Text and token input should not be mixed for one parser run. Use all text chunks or all token chunks for a fixture capture.
 
+**Do not drift from vLLM Rust here.** These four types intentionally mirror the vLLM Rust `ToolParser` contract, not vLLM Python wire deltas — vLLM Rust may later depend on this frontend crate, so Dynamo keeps a small duplicated contract that stays shaped like vLLM Rust. The one allowed Dynamo-only extension is token input (`push_tokens` / `push_input` / `prefers_tokens`), which token-native parsers like Harmony need; everything else should match vLLM Rust field-for-field.
+
 ## Fixture Files To Add
 
 For a new streaming parser family, add or update these files:
@@ -136,17 +138,51 @@ Rules:
 - Every `X` or `✗` parser-failure marker in generated HTML must have the exact error text in YAML and in the pop-out.
 - Put source versions under `captured_with.*`; do not write local checkout paths into YAML.
 
-## Adding A V2 Parser
+## Adding A Day-0 Tool-Calling Parser
 
-1. Start from the closest existing family. Use `harmony.rs` for token/channel-based grammars and `dsml.rs` for a text incremental state-machine example.
-2. Define the parser under `parsers_v2/src/tool_calling/<family>.rs` and return `ToolParseResult` from every chunk.
-3. Register the family in `create_tool_parser_for_family` in `parsers_v2/src/tool_calling/mod.rs`.
-4. Add focused Rust unit tests in the parser module for one complete call, malformed recovery, multi-call behavior, and `normal_text`.
-5. Capture one fixture first with `conformance/utils/capture.sh dynamo-stream --fixture ... --output /tmp/<family>.json` and inspect the output.
-6. Capture all stream and batch-on-stream fixture overlays for that family or all families with `conformance/utils/capture.sh stream ...` and `conformance/utils/capture.sh batch-on-stream ...`.
-7. Run Rust parser tests, Rust fixture tests, Python table regression tests, and render the HTML matrix.
+In order:
 
-Harmony is only the first example. DS4 and the other streaming parser families should follow the same file layout, fixture schema, capture flow, and validation flow.
+1. Read the model's tool-call output spec and its tokenizer / special-token behavior — token boundaries decide whether the parser is text- or token-native.
+2. Inspect the vLLM **Rust** parser first: `Tool`, `ToolCallDelta`, `ToolParseResult`, and `ToolParser` are the API target (Rust vs. Rust). Do not shape the parser like vLLM Python wire deltas.
+3. Inspect vLLM **Python** and **SGLang** for behavior and coverage — they are the peer references the matrix compares against.
+4. Decide the parser family id and peer parser names; add a row to `conformance/utils/src/parser_families.yaml` (`vllm_python` / `vllm_rust` / `sglang_python` / `dynamo_v2` / `preferred_input`).
+5. Implement `parsers_v2/src/tool_calling/<family>.rs`, returning `ToolParseResult` from every chunk; start from `harmony.rs` (token/channel grammar) or `dsml.rs` (text incremental state machine).
+6. Register the family in `create_tool_parser_for_family` in `parsers_v2/src/tool_calling/mod.rs`; override `prefers_tokens()` if the parser is token-native.
+7. Add Rust unit tests for: one call, multiple calls, partial chunks, malformed recovery, `normal_text`, and EOF.
+8. Add or update fixture files (see "Which Fixture Do I Edit?").
+9. Capture one case (`conformance/utils/capture.sh dynamo-stream --fixture … --output …`), inspect, fix the parser, then capture all peer behavior (`capture.sh stream` / `capture.sh batch-on-stream`, optionally `--family <family>`).
+10. Verify (`conformance/utils/check.sh`), render the HTML matrix (`conformance/utils/render_table_v2.sh`), and record any intentional divergence (see "How To Record Divergences").
+
+Harmony is only the first example; DS4 and the other streaming families follow the same file layout, fixture schema, capture flow, and validation flow.
+
+## Which Fixture Do I Edit?
+
+- `conformance/toolcalling/fixtures/<family>/TOOLCALLING.batch*.yaml` — Dynamo-synced v1 batch input and the current batch baseline. Do not hand-edit for v2 work (it syncs from upstream Dynamo); it is also the seed for stream capture.
+- `conformance/toolcalling/fixtures-stream-v2/<family>/TOOLCALLING.streamv2.*.yaml` — per-chunk streaming behavior (the TC stream tab). Edit/capture here for streaming parser work.
+- `conformance/toolcalling/fixtures-batch-on-stream-v2/<family>/TOOLCALLING.batch*.yaml` — each batch sample's full text run through the stream parser (the batch-on-stream tab).
+
+Decision rule for a new model: add the stream cases under `fixtures-stream-v2/`, capture peers, and let the batch-on-stream overlay derive from the v1 batch corpus.
+
+## How To Record Divergences
+
+Every cell in the matrix must be backed by exact YAML — the renderer infers nothing:
+
+- `reason:` — an **intentional** output difference (the parser deliberately differs; the cell shows the divergence marker without `?`).
+- `expected.<impl>.error` — the parser **ran and threw**. A structured `{kind, message}` renders `✗`; a plain string is a declared expected-error and renders `!`.
+- `unavailable.<impl>` — the parser **did not run** or cannot exist (no model_text, no parser for the family, source not set up). Renders neutral `n/a`.
+- `captured_with:` — the engine version each peer block was captured against; required whenever a peer has captured output.
+
+A divergent peer block with no `reason:` renders `?` (research needed) — never leave one unexplained.
+
+## Done Means
+
+For a new parser family, done means:
+
+- Rust parser unit tests pass and the Dynamo fixture tests pass.
+- vLLM Python / SGLang live checks pass, or each failure is explicitly recorded (`error`/`unavailable` with exact text).
+- vLLM Rust captures include the source tag/commit in `captured_with` when available.
+- The HTML matrix is regenerated locally and has no unexplained `?` and no accidental tool-call markup leaks (`↯`).
+- Case descriptions exist for every new sub-case.
 
 ## Commands
 
@@ -192,7 +228,7 @@ conformance/utils/capture.sh batch-on-stream \
 Generate the HTML matrix after code or fixture changes:
 
 ```bash
-conformance/utils/render_table.sh
+conformance/utils/render_table_v2.sh
 ```
 
 Run the table and marker regression tests:
