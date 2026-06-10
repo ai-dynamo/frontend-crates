@@ -6,6 +6,7 @@ captured_with:
   dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.batch.5.a:
+    dynamo_note: 'No recovery by design (dynamo #10366: https://github.com/ai-dynamo/dynamo/pull/10366): a Harmony commentary/analysis tool call must carry the <|call|> terminator to be recovered. <|call|> is also the gpt-oss EOS/commit token, so a call missing it was cut off before the model committed; the incomplete envelope is dropped, not recovered or leaked into content.'
     dynamo_rust:
       calls: []
       normal_text: ''
@@ -45,6 +46,7 @@ cases:
       calls: []
       normal_text: ''
   TOOLCALLING.batch.5.d:
+    dynamo_note: 'Trailing call dropped by design (dynamo #10366: https://github.com/ai-dynamo/dynamo/pull/10366): only the commentary call carrying <|call|> (Boston) is recovered; the unterminated trailing call (New York) is dropped, since <|call|> is also the gpt-oss EOS/commit token and its absence means the model was cut off before committing that call.'
     dynamo_rust:
       calls:
       - name: get_weather
