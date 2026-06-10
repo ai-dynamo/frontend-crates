@@ -7,10 +7,7 @@ captured_with:
 cases:
   TOOLCALLING.batch.5.a:
     dynamo_rust:
-      calls:
-      - name: get_weather
-        arguments:
-          location: NYC
+      calls: []
       normal_text: ''
     vllm_python:
       calls:
@@ -53,9 +50,6 @@ cases:
       - name: get_weather
         arguments:
           location: Boston
-      - name: get_weather
-        arguments:
-          location: New York
       normal_text: I'll start by fetching the weather for both Boston and New York
         at the same time!
     vllm_python:
