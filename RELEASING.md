@@ -19,8 +19,8 @@ recover when it goes wrong.
    via `include = [...]` in each crate's `Cargo.toml`: `src/**/*`,
    `Cargo.toml`, and `README.md`. Anything outside that list — `tests/`,
    root `README.md`, `.github/`, `scripts/`, `deny.toml`, the
-   `examples/dynamo-demo-server/` crate (`publish = false`), and contributor
-   docs outside the packaged crate include list — does not trigger a
+   `examples/dynamo-demo-server/` crate (`publish = false`), and per-crate
+   contributor docs like `CLAUDE.md` / `PARSER_CASES.md` — does not trigger a
    release. A second filter, `release_commits` in `release-plz.toml`, only
    considers commits whose messages start with `feat:`, `fix:`, `perf:`,
    `refactor:`, or `sync:`. That filter keeps `chore:` / `ci:` / `build:` /

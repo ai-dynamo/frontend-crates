@@ -79,7 +79,7 @@ jobs:
         run: |
           python3 -m venv /tmp/pvenv
           /tmp/pvenv/bin/pip install --quiet pyyaml jinja2
-          PATH="/tmp/pvenv/bin:$PATH" conformance/utils/render_table_v1.sh
+          PATH="/tmp/pvenv/bin:$PATH" conformance/utils/render_parity_v1.sh
           OUT=conformance/utils/.stage/tests/parity/PARITY_v1.html
           test -s "$OUT"
           grep -q "TOOLCALLING.batch" "$OUT"
