@@ -66,17 +66,8 @@ fn toolcalling_batch_via_stream_parity() {
     // Batch samples where the streaming parser deliberately differs from the
     // strict batch parser. Removing an entry asserts that stream and batch now
     // agree on that sample.
-    let known_divergences: std::collections::BTreeSet<&str> = [
-        "deepseek_v4:TOOLCALLING.batch.5.g",
-        // fc's v2 stream parser recovers Harmony tool calls at EOF that the
-        // dynamo-synced v1 batch parser no longer emits — dynamo #10366 moved
-        // analysis-channel tool-call recovery to the reasoning parser, so the
-        // v1 batch mirror drops these while v2 keeps recovering them.
-        "harmony:TOOLCALLING.batch.5.a",
-        "harmony:TOOLCALLING.batch.5.d",
-    ]
-    .into_iter()
-    .collect();
+    let known_divergences: std::collections::BTreeSet<&str> =
+        ["deepseek_v4:TOOLCALLING.batch.5.g"].into_iter().collect();
 
     let mut total = 0usize;
     let mut consistent = 0usize;

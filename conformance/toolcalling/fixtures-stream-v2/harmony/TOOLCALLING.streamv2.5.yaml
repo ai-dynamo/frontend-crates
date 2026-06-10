@@ -97,9 +97,7 @@ cases:
       delta_token_ids: []
       finish_reason: stop
       expected:
-        dynamo_rust:
-        - {index: 0, id: true, name: 'get_weather'}
-        - {index: 0, arguments: '{"location":"NYC"}'}
+        dynamo_rust: []
         vllm_python: []
         sglang_python: []
   TOOLCALLING.streamv2.5.b:
@@ -469,9 +467,7 @@ cases:
       delta_token_ids: []
       finish_reason: tool_calls
       expected:
-        dynamo_rust:
-        - {index: 1, id: true, name: 'get_weather'}
-        - {index: 1, arguments: '{"location":"New York"}'}
+        dynamo_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
