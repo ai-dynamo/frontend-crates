@@ -7,7 +7,7 @@
 # This bridge script keeps the old Dynamo parser source and v1 parity renderer
 # available while the frontend-crates parser crate is being prepared for release.
 # It is deliberately manual because v2 work lives outside this mirror in
-# parsers_v2* and conformance/utils/generate_conformance_table_v2.py.
+# parsers_v2* and conformance/utils/generate_conformance_table.py.
 #
 # After Dynamo consumes the released frontend-crates parser crate directly, stop
 # using this script for parsers and merge the v1/v2 renderers in this repo.
@@ -135,7 +135,7 @@ echo
 
 if [ "$APPLY" = "1" ]; then
   echo "done. review with: git -C $HERE diff --stat"
-  echo "then verify:       conformance/utils/render_parity_v1.sh"
+  echo "then verify:       conformance/utils/render_table_v1.sh"
   echo "                   conformance/utils/render_table_v2.sh"
 elif [ "$CHANGED" = "1" ]; then
   echo "changes detected. re-run with --apply to apply."

@@ -36,7 +36,7 @@ import capture_driver as cd  # noqa: E402  (parser maps + container-capture help
 
 DYNAMO_TODO = (
     "Dynamo parser v2 TC streaming not yet implemented for this family; "
-    "vLLM/SGLang per-chunk output is the target to match."
+    "vLLM Python/SGLang per-chunk output is the target to match."
 )
 
 # Deterministic ~1-3 "token" chunker. A real model tokenizer emits special tool
@@ -79,7 +79,7 @@ def chunk_text(text):
 
 def _expects_calls(case):
     exp = case.get("expected") or {}
-    for impl in ("dynamo", "vllm", "sglang"):
+    for impl in ("dynamo_rust", "vllm_rust", "vllm_python", "sglang"):
         b = exp.get(impl)
         if isinstance(b, dict) and b.get("calls"):
             return True
@@ -129,6 +129,7 @@ def main():
                     help="repo root (default: two levels above this script)")
     ap.add_argument("--vllm-container", default="vllm-localdev")
     ap.add_argument("--sglang-container", default="sglang-localdev")
+    ap.add_argument("--vllm-rust-source", help="vLLM source checkout root; defaults to VLLM_RUST_SOURCE")
     ap.add_argument("--work", help="work dir (default: a fresh temp dir)")
     args = ap.parse_args()
 
@@ -140,7 +141,7 @@ def main():
     families = args.families or sorted(cd.VLLM.keys())
 
     # 1. build source fixtures, collect capture jobs
-    family_sources, vllm_jobs, sglang_jobs = {}, [], []
+    family_sources, vllm_jobs, vllm_rust_jobs, sglang_jobs = {}, [], [], []
     for family in families:
         srcs = build_sources(family, fixtures_root, srcdir)
         family_sources[family] = srcs
@@ -148,6 +149,8 @@ def main():
             if cd.VLLM.get(family):
                 vllm_jobs.append({"src": fp, "container_path": cd._cpath(fp, "stream"),
                                   "parser": cd.VLLM[family]})
+            if cd.VLLM_RUST.get(family):
+                vllm_rust_jobs.append({"src": fp, "parser": cd.VLLM_RUST[family]})
             if cd.SGLANG.get(family):
                 sglang_jobs.append({"src": fp, "container_path": cd._cpath(fp, "stream"),
                                     "parser": cd.SGLANG[family]})
@@ -160,8 +163,13 @@ def main():
     cd._copy_worker((args.vllm_container, args.sglang_container))
     print(f"capturing vllm ({len(vllm_jobs)} fixtures)...", file=sys.stderr)
     vllm_ver, vllm_caps = cd._container_capture(args.vllm_container, "vllm", "stream", vllm_jobs, work)
+    vllm_rust_source = cd._vllm_rust_source_arg(args)
+    print(f"capturing vllm rust ({len(vllm_rust_jobs)} fixtures)...", file=sys.stderr)
+    vllm_rust_ver, vllm_rust_caps = cd._vllm_rust_capture(
+        vllm_rust_source, "stream", vllm_rust_jobs, work)
     print(f"capturing sglang ({len(sglang_jobs)} fixtures)...", file=sys.stderr)
     sglang_ver, sglang_caps = cd._container_capture(args.sglang_container, "sglang", "stream", sglang_jobs, work)
+    vllm_rust_source_version = vllm_rust_ver or cd._vllm_rust_source_version(vllm_rust_source)
 
     # 3. assemble each fixture
     for family, srcs in family_sources.items():
@@ -172,8 +180,14 @@ def main():
             outfp = os.path.join(outdir, base)
             cmd = ["python3", os.path.join(HERE, "build_stream_fixtures.py"),
                    "--source", fp, "--out", outfp,
-                   "--unavailable", f"dynamo={DYNAMO_TODO}"]
-            cmd += cd._impl_args("vllm", family, cd.VLLM.get(family),
+                   "--unavailable", f"dynamo_rust={DYNAMO_TODO}"]
+            if vllm_rust_source:
+                cmd += cd._impl_args("vllm_rust", family, cd.VLLM_RUST.get(family),
+                                     vllm_rust_caps.get(fp, {}),
+                                     vllm_rust_source_version, work, f"{family}_{num}", fp)
+            else:
+                cmd += ["--unavailable", f"vllm_rust={cd._vllm_rust_unavailable(vllm_rust_source_version)}"]
+            cmd += cd._impl_args("vllm_python", family, cd.VLLM.get(family),
                                  vllm_caps.get(fp, {}), vllm_ver, work, f"{family}_{num}", fp)
             cmd += cd._impl_args("sglang", family, cd.SGLANG.get(family),
                                  sglang_caps.get(fp, {}), sglang_ver, work, f"{family}_{num}", fp)

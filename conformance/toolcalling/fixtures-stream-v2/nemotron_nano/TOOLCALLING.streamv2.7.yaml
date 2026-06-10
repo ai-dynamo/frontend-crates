@@ -1,21 +1,13 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-
-# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
-# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
-# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
-# here). Assembled result is derived by concatenating per index. A delta:
-# {index, id?, name?, arguments?}; id:true = an id was emitted.
-
 family: nemotron_nano
-model_label: 'Nemotron Nano v3'
+model_label: Nemotron Nano v3
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
+  vllm_python: 0.22.0
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.streamv2.7.a:
-    description: 'Multiple parameters'
-    ref: 'derived from TOOLCALLING.batch.7.a'
+    description: Multiple parameters
+    ref: derived from TOOLCALLING.batch.7.a
     tools:
     - name: book_flight
       parameters:
@@ -28,49 +20,40 @@ cases:
           first_class:
             type: boolean
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''nemotron_nano''.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
+      sglang_python: No SGLang parser for family 'nemotron_nano'.
+      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: invalid
+        Hermes'
     chunks:
-    - delta_text: '<tool_call>
-<function=book_flight>'
+    - delta_text: <tool_call> <function=book_flight>
       expected:
-        vllm: []
-    - delta_text: '
-<parameter=destination>'
+        vllm_python: []
+    - delta_text: ' <parameter=destination>'
       expected:
-        vllm: []
-    - delta_text: '
-Paris
-</parameter>
-<parameter=passengers>'
+        vllm_python: []
+    - delta_text: ' Paris </parameter> <parameter=passengers>'
       expected:
-        vllm: []
-    - delta_text: '
-2
-</parameter>'
+        vllm_python: []
+    - delta_text: ' 2 </parameter>'
       expected:
-        vllm: []
-    - delta_text: '
-<parameter=first_class>'
+        vllm_python: []
+    - delta_text: ' <parameter=first_class>'
       expected:
-        vllm: []
-    - delta_text: '
-true
-</parameter>'
+        vllm_python: []
+    - delta_text: ' true </parameter>'
       expected:
-        vllm: []
-    - delta_text: '
-</function>
-</tool_call>'
+        vllm_python: []
+    - delta_text: ' </function> </tool_call>'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
+        vllm_python: []
   TOOLCALLING.streamv2.7.b:
-    description: 'Unicode in parameter'
-    ref: 'derived from TOOLCALLING.batch.7.b'
+    description: Unicode in parameter
+    ref: derived from TOOLCALLING.batch.7.b
     tools:
     - name: get_weather
       parameters:
@@ -79,34 +62,31 @@ true
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''nemotron_nano''.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
+      sglang_python: No SGLang parser for family 'nemotron_nano'.
+      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: invalid
+        Hermes'
     chunks:
-    - delta_text: '<tool_call>
-<function=get_weather>'
+    - delta_text: <tool_call> <function=get_weather>
       expected:
-        vllm: []
-    - delta_text: '
-<parameter=location>'
+        vllm_python: []
+    - delta_text: ' <parameter=location>'
       expected:
-        vllm: []
-    - delta_text: '
-Tōkyō central
-</parameter>'
+        vllm_python: []
+    - delta_text: ' Tōkyō central </parameter>'
       expected:
-        vllm: []
-    - delta_text: '
-</function>
-</tool_call>'
+        vllm_python: []
+    - delta_text: ' </function> </tool_call>'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
+        vllm_python: []
   TOOLCALLING.streamv2.7.f:
-    description: 'Numeric precision edge preserves integer-like number literal'
-    ref: 'derived from TOOLCALLING.batch.7.f'
+    description: Numeric precision edge preserves integer-like number literal
+    ref: derived from TOOLCALLING.batch.7.f
     tools:
     - name: set_limit
       parameters:
@@ -115,28 +95,25 @@ Tōkyō central
           count:
             type: number
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''nemotron_nano''.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
+      sglang_python: No SGLang parser for family 'nemotron_nano'.
+      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: invalid
+        Hermes'
     chunks:
-    - delta_text: '<tool_call>
-<function=set_limit>'
+    - delta_text: <tool_call> <function=set_limit>
       expected:
-        vllm: []
-    - delta_text: '
-<parameter=count>'
+        vllm_python: []
+    - delta_text: ' <parameter=count>'
       expected:
-        vllm: []
-    - delta_text: '
-9007199254740993
-</parameter>
-</function>'
+        vllm_python: []
+    - delta_text: ' 9007199254740993 </parameter> </function>'
       expected:
-        vllm: []
-    - delta_text: '
-</tool_call>'
+        vllm_python: []
+    - delta_text: ' </tool_call>'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
+        vllm_python: []

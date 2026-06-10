@@ -132,11 +132,17 @@ for fam in toolcalling reasoning; do
   pfx_dst="$HERE/conformance/$fam/fixtures"
   [ -d "$pfx_src" ] || continue
   echo "--- parity fixtures ($fam) ---"
+  fixture_excludes=()
+  if [ "$fam" = "toolcalling" ]; then
+    # frontend-crates carries Harmony EOF recovery for batch case 5 ahead of
+    # the Dynamo mirror. Remove this once Dynamo's fixture has the same output.
+    fixture_excludes+=(--exclude "harmony/TOOLCALLING.batch.5.yaml")
+  fi
   if [ "$APPLY" = "1" ]; then
     mkdir -p "$pfx_dst"
-    rsync -a --delete --checksum "$pfx_src/" "$pfx_dst/"
+    rsync -a --delete --checksum "${fixture_excludes[@]}" "$pfx_src/" "$pfx_dst/"
   else
-    out=$(rsync -a --delete --checksum --dry-run --itemize-changes "$pfx_src/" "$pfx_dst/" | grep -E '^[<>c*]' || true)
+    out=$(rsync -a --delete --checksum --dry-run --itemize-changes "${fixture_excludes[@]}" "$pfx_src/" "$pfx_dst/" | grep -E '^[<>c*]' || true)
     if [ -n "$out" ]; then
       echo "  $fam/fixtures would change:"
       echo "$out" | sed 's/^/    /'

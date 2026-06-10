@@ -11,7 +11,7 @@ family: jamba
 model_label: 'AI21 Jamba'
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
+  vllm_python: '0.22.0'
 cases:
   TOOLCALLING.streamv2.13.a:
     description: 'Unknown-only call under default behavior'
@@ -24,27 +24,27 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "unknown_tool",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments": {"location": "NYC"}}]'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'unknown_tool'}
     - delta_text: '</tool_calls>'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
   TOOLCALLING.streamv2.13.c:
     description: 'Mixed known and unknown calls in one response'
@@ -57,35 +57,35 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "get_weather",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments": {"location": "NYC"}},'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'get_weather'}
     - delta_text: ' {"name": "unknown_tool",'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: '{"location": "NYC"}'}
     - delta_text: ' "arguments":'
       expected:
-        vllm:
+        vllm_python:
         - {index: 1, id: true, name: 'unknown_tool'}
     - delta_text: ' {"location": "LA"}}]'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: '</tool_calls>'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm:
+        vllm_python:
         - {index: 1, arguments: ''}

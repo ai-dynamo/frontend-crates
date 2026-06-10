@@ -1,12 +1,12 @@
 family: harmony
 mode: batch-on-stream
 captured_with:
-  vllm: 0.22.0
-  sglang: 0.5.12.post1
-  dynamo: Dynamo parser v2
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
+  dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.batch.2.a:
-    dynamo:
+    dynamo_rust:
       calls:
       - name: get_weather
         arguments:
@@ -14,7 +14,7 @@ cases:
       - name: get_time
         arguments:
           timezone: EST
-    vllm:
+    vllm_python:
       calls:
       - name: get_weather
         arguments:
@@ -22,7 +22,7 @@ cases:
       - name: get_time
         arguments:
           timezone: EST
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
@@ -32,11 +32,18 @@ cases:
           timezone: EST
       normal_text: ''
   TOOLCALLING.batch.2.c:
-    dynamo:
+    dynamo_rust:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: I need both.  Done.
+    vllm_python:
       calls: []
-    vllm:
-      calls: []
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
@@ -46,7 +53,7 @@ cases:
           timezone: EST
       normal_text: I need both.  Done.
   TOOLCALLING.batch.2.d:
-    dynamo:
+    dynamo_rust:
       calls:
       - name: get_weather
         arguments:
@@ -54,7 +61,7 @@ cases:
       - name: get_weather
         arguments:
           location: LA
-    vllm:
+    vllm_python:
       calls:
       - name: get_weather
         arguments:
@@ -62,7 +69,7 @@ cases:
       - name: get_weather
         arguments:
           location: LA
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
@@ -72,7 +79,7 @@ cases:
           location: LA
       normal_text: ''
   TOOLCALLING.batch.2.b:
-    vllm:
+    vllm_python:
       unavailable: No batch model_text for this case.
-    sglang:
+    sglang_python:
       unavailable: No batch model_text for this case.

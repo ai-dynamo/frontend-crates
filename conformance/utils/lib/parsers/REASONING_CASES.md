@@ -7,7 +7,7 @@ DeepSeek V3 think-tag, etc.). Sibling files cover adjacent stages:
 - **Tool-call parsers** (`src/tool_calling/`): see `TOOLCALLING_CASES.md`.
 - **Frontend gating**: see
   `components/src/dynamo/frontend/tests/FRONTEND_CASES.md`.
-- **Pipeline boundary**: see `PIPELINE_CASES.md`.
+- **Pipeline boundary**: tracked in the conformance fixtures and HTML matrix, not a separate local Markdown file.
 
 The reasoning taxonomy mirrors the parser taxonomy on stage / mode /
 format axes:
@@ -187,8 +187,7 @@ carry both `REASONING.batch.2.a` and `TOOLCALLING.harmony.1`.
   call).
 - `FRONTEND.tool_choice` — request-time gating, see
   `FRONTEND_CASES.md`.
-- `PIPELINE.finish_reason` — pipeline-boundary contract, see
-  `PIPELINE_CASES.md`.
+- `PIPELINE.finish_reason` — pipeline-boundary contract, tracked in the conformance fixtures and HTML matrix.
 
 ---
 

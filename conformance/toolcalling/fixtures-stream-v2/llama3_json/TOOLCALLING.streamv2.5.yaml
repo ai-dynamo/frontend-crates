@@ -1,22 +1,14 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-
-# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
-# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
-# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
-# here). Assembled result is derived by concatenating per index. A delta:
-# {index, id?, name?, arguments?}; id:true = an id was emitted.
-
 family: llama3_json
-model_label: 'Llama 3 (JSON fmt)'
+model_label: Llama 3 (JSON fmt)
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
-  sglang: '0.5.12.post1'
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.streamv2.5.a:
-    description: 'No explicit end (truncation)'
-    ref: 'derived from TOOLCALLING.batch.5.a'
+    description: No explicit end (truncation)
+    ref: derived from TOOLCALLING.batch.5.a
     tools:
     - name: get_weather
       parameters:
@@ -25,30 +17,45 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
     chunks:
     - delta_text: '<|python_tag|>{"name":'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
+      normal_text:
+        vllm_rust: '<|python_tag|>{"name":'
     - delta_text: ' "get_weather",'
       expected:
-        vllm:
-        - {index: 0, id: true, name: 'get_weather'}
-        sglang:
-        - {index: 0, name: 'get_weather'}
+        vllm_python:
+        - index: 0
+          id: true
+          name: get_weather
+        sglang_python:
+        - index: 0
+          name: get_weather
+        vllm_rust: []
+      normal_text:
+        vllm_rust: ' "get_weather",'
     - delta_text: ' "arguments": {"location": "NYC"}'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
+      normal_text:
+        vllm_rust: ' "arguments": {"location": "NYC"}'
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
   TOOLCALLING.streamv2.5.c:
-    description: 'Truncation deeper inside arguments JSON (vs .a which truncates at the closing brace)'
-    ref: 'derived from TOOLCALLING.batch.5.c'
+    description: Truncation deeper inside arguments JSON (vs .a which truncates at
+      the closing brace)
+    ref: derived from TOOLCALLING.batch.5.c
     tools:
     - name: get_weather
       parameters:
@@ -57,30 +64,44 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
     chunks:
     - delta_text: '<|python_tag|>{"name":'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
+      normal_text:
+        vllm_rust: '<|python_tag|>{"name":'
     - delta_text: ' "get_weather",'
       expected:
-        vllm:
-        - {index: 0, id: true, name: 'get_weather'}
-        sglang:
-        - {index: 0, name: 'get_weather'}
+        vllm_python:
+        - index: 0
+          id: true
+          name: get_weather
+        sglang_python:
+        - index: 0
+          name: get_weather
+        vllm_rust: []
+      normal_text:
+        vllm_rust: ' "get_weather",'
     - delta_text: ' "arguments": {"loc'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
+      normal_text:
+        vllm_rust: ' "arguments": {"loc'
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
   TOOLCALLING.streamv2.5.d:
-    description: 'Multi-call, last call missing only end marker (body complete)'
-    ref: 'derived from TOOLCALLING.batch.5.d'
+    description: Multi-call, last call missing only end marker (body complete)
+    ref: derived from TOOLCALLING.batch.5.d
     tools:
     - name: get_weather
       parameters:
@@ -89,111 +110,144 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
     chunks:
-    - delta_text: 'I''ll start'
+    - delta_text: I'll start
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'I''ll start'
-        sglang: 'I''ll start'
+        vllm_python: I'll start
+        sglang_python: I'll start
+        vllm_rust: I'll start
     - delta_text: ' by'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' by'
-        sglang: ' by'
+        vllm_python: ' by'
+        sglang_python: ' by'
+        vllm_rust: ' by'
     - delta_text: ' fetching the weather'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' fetching the weather'
-        sglang: ' fetching the weather'
+        vllm_python: ' fetching the weather'
+        sglang_python: ' fetching the weather'
+        vllm_rust: ' fetching the weather'
     - delta_text: ' for both'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' for both'
-        sglang: ' for both'
+        vllm_python: ' for both'
+        sglang_python: ' for both'
+        vllm_rust: ' for both'
     - delta_text: ' Boston'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' Boston'
-        sglang: ' Boston'
+        vllm_python: ' Boston'
+        sglang_python: ' Boston'
+        vllm_rust: ' Boston'
     - delta_text: ' and New'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' and New'
-        sglang: ' and New'
+        vllm_python: ' and New'
+        sglang_python: ' and New'
+        vllm_rust: ' and New'
     - delta_text: ' York at the'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' York at the'
-        sglang: ' York at the'
+        vllm_python: ' York at the'
+        sglang_python: ' York at the'
+        vllm_rust: ' York at the'
     - delta_text: ' same'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' same'
-        sglang: ' same'
+        vllm_python: ' same'
+        sglang_python: ' same'
+        vllm_rust: ' same'
     - delta_text: ' time!<|python_tag|>{"name":'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' time!<|python_tag|>{"name":'
+        vllm_python: ' time!<|python_tag|>{"name":'
+        vllm_rust: ' time!<|python_tag|>{"name":'
     - delta_text: ' "get_weather",'
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, name: 'get_weather'}
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          name: get_weather
+        vllm_rust: []
       normal_text:
-        vllm: ' "get_weather",'
+        vllm_python: ' "get_weather",'
+        vllm_rust: ' "get_weather",'
     - delta_text: ' "arguments": {"location":'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "arguments": {"location":'
+        vllm_python: ' "arguments": {"location":'
+        vllm_rust: ' "arguments": {"location":'
     - delta_text: ' "Boston"}};{"name":'
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, arguments: '{"location": "Boston"}'}
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          arguments: '{"location": "Boston"}'
+        vllm_rust: []
       normal_text:
-        vllm: ' "Boston"}};{"name":'
+        vllm_python: ' "Boston"}};{"name":'
+        vllm_rust: ' "Boston"}};{"name":'
     - delta_text: ' "get_weather", "arguments": {"location":'
       expected:
-        vllm: []
-        sglang:
-        - {index: 1, name: 'get_weather'}
+        vllm_python: []
+        sglang_python:
+        - index: 1
+          name: get_weather
+        vllm_rust: []
       normal_text:
-        vllm: ' "get_weather", "arguments": {"location":'
+        vllm_python: ' "get_weather", "arguments": {"location":'
+        vllm_rust: ' "get_weather", "arguments": {"location":'
     - delta_text: ' "New York"}'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "New York"}'
+        vllm_python: ' "New York"}'
+        vllm_rust: ' "New York"}'
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
   TOOLCALLING.streamv2.5.e:
-    description: 'Multi-call, last call truncated mid-arg-value'
-    ref: 'derived from TOOLCALLING.batch.5.e'
+    description: Multi-call, last call truncated mid-arg-value
+    ref: derived from TOOLCALLING.batch.5.e
     tools:
     - name: get_weather
       parameters:
@@ -202,105 +256,138 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
     chunks:
-    - delta_text: 'I''ll start'
+    - delta_text: I'll start
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'I''ll start'
-        sglang: 'I''ll start'
+        vllm_python: I'll start
+        sglang_python: I'll start
+        vllm_rust: I'll start
     - delta_text: ' by'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' by'
-        sglang: ' by'
+        vllm_python: ' by'
+        sglang_python: ' by'
+        vllm_rust: ' by'
     - delta_text: ' fetching the weather'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' fetching the weather'
-        sglang: ' fetching the weather'
+        vllm_python: ' fetching the weather'
+        sglang_python: ' fetching the weather'
+        vllm_rust: ' fetching the weather'
     - delta_text: ' for both'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' for both'
-        sglang: ' for both'
+        vllm_python: ' for both'
+        sglang_python: ' for both'
+        vllm_rust: ' for both'
     - delta_text: ' Boston'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' Boston'
-        sglang: ' Boston'
+        vllm_python: ' Boston'
+        sglang_python: ' Boston'
+        vllm_rust: ' Boston'
     - delta_text: ' and New'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' and New'
-        sglang: ' and New'
+        vllm_python: ' and New'
+        sglang_python: ' and New'
+        vllm_rust: ' and New'
     - delta_text: ' York at the'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' York at the'
-        sglang: ' York at the'
+        vllm_python: ' York at the'
+        sglang_python: ' York at the'
+        vllm_rust: ' York at the'
     - delta_text: ' same'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' same'
-        sglang: ' same'
+        vllm_python: ' same'
+        sglang_python: ' same'
+        vllm_rust: ' same'
     - delta_text: ' time!<|python_tag|>{"name":'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' time!<|python_tag|>{"name":'
+        vllm_python: ' time!<|python_tag|>{"name":'
+        vllm_rust: ' time!<|python_tag|>{"name":'
     - delta_text: ' "get_weather",'
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, name: 'get_weather'}
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          name: get_weather
+        vllm_rust: []
       normal_text:
-        vllm: ' "get_weather",'
+        vllm_python: ' "get_weather",'
+        vllm_rust: ' "get_weather",'
     - delta_text: ' "arguments": {"location":'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "arguments": {"location":'
+        vllm_python: ' "arguments": {"location":'
+        vllm_rust: ' "arguments": {"location":'
     - delta_text: ' "Boston"}};{"name":'
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, arguments: '{"location": "Boston"}'}
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          arguments: '{"location": "Boston"}'
+        vllm_rust: []
       normal_text:
-        vllm: ' "Boston"}};{"name":'
+        vllm_python: ' "Boston"}};{"name":'
+        vllm_rust: ' "Boston"}};{"name":'
     - delta_text: ' "get_weather", "arguments": {"location":'
       expected:
-        vllm: []
-        sglang:
-        - {index: 1, name: 'get_weather'}
+        vllm_python: []
+        sglang_python:
+        - index: 1
+          name: get_weather
+        vllm_rust: []
       normal_text:
-        vllm: ' "get_weather", "arguments": {"location":'
+        vllm_python: ' "get_weather", "arguments": {"location":'
+        vllm_rust: ' "get_weather", "arguments": {"location":'
     - delta_text: ' "New York'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: ' "New York'
+        vllm_python: ' "New York'
+        vllm_rust: ' "New York'
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []

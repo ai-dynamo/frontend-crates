@@ -1,22 +1,14 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-
-# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
-# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
-# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
-# here). Assembled result is derived by concatenating per index. A delta:
-# {index, id?, name?, arguments?}; id:true = an id was emitted.
-
 family: mistral
-model_label: 'Mistral series'
+model_label: Mistral series
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
-  sglang: '0.5.12.post1'
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.streamv2.4.a:
-    description: 'TOOL_CALLS wrapper with garbage'
-    ref: 'derived from TOOLCALLING.batch.4.a'
+    description: TOOL_CALLS wrapper with garbage
+    ref: derived from TOOLCALLING.batch.4.a
     tools:
     - name: get_weather
       parameters:
@@ -25,28 +17,39 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
     chunks:
     - delta_text: '[TOOL_CALLS]not'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
+      normal_text:
+        vllm_rust: '[TOOL_CALLS]not'
     - delta_text: ' a'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
+      normal_text:
+        vllm_rust: ' a'
     - delta_text: ' json array[/TOOL_CALLS]'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
+      normal_text:
+        vllm_rust: ' json array[/TOOL_CALLS]'
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
   TOOLCALLING.streamv2.4.b:
-    description: 'Missing close brace in JSON'
-    ref: 'derived from TOOLCALLING.batch.4.b'
+    description: Missing close brace in JSON
+    ref: derived from TOOLCALLING.batch.4.b
     tools:
     - name: get_weather
       parameters:
@@ -55,33 +58,49 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
     chunks:
     - delta_text: '[TOOL_CALLS][{"name":'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
+      normal_text:
+        vllm_rust: '[TOOL_CALLS][{"name":'
     - delta_text: ' "get_weather",'
       expected:
-        vllm:
-        - {index: 0, id: true, name: 'get_weather'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          id: true
+          name: get_weather
+        sglang_python: []
+        vllm_rust: []
+      normal_text:
+        vllm_rust: ' "get_weather",'
     - delta_text: ' "arguments": {"location": "NYC"]'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
+      normal_text:
+        vllm_rust: ' "arguments": {"location": "NYC"]'
     - delta_text: '[/TOOL_CALLS]'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
+      normal_text:
+        vllm_rust: '[/TOOL_CALLS]'
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
   TOOLCALLING.streamv2.4.c:
-    description: 'Missing name key'
-    ref: 'derived from TOOLCALLING.batch.4.c'
+    description: Missing name key
+    ref: derived from TOOLCALLING.batch.4.c
     tools:
     - name: get_weather
       parameters:
@@ -90,29 +109,42 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
     chunks:
     - delta_text: '[TOOL_CALLS][{"arguments":'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
+      normal_text:
+        vllm_rust: '[TOOL_CALLS][{"arguments":'
     - delta_text: ' {"location":'
       expected:
-        vllm:
-        - {index: 0, id: true, arguments: '{"location":'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          id: true
+          arguments: '{"location":'
+        sglang_python: []
+        vllm_rust: []
+      normal_text:
+        vllm_rust: ' {"location":'
     - delta_text: ' "NYC"}}][/TOOL_CALLS]'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
+      normal_text:
+        vllm_rust: ' "NYC"}}][/TOOL_CALLS]'
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
   TOOLCALLING.streamv2.4.d:
-    description: 'Missing [/TOOL_CALLS] close'
-    ref: 'derived from TOOLCALLING.batch.4.d'
+    description: Missing [/TOOL_CALLS] close
+    ref: derived from TOOLCALLING.batch.4.d
     tools:
     - name: get_weather
       parameters:
@@ -121,24 +153,38 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
     chunks:
     - delta_text: '[TOOL_CALLS][{"name":'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
+      normal_text:
+        vllm_rust: '[TOOL_CALLS][{"name":'
     - delta_text: ' "get_weather",'
       expected:
-        vllm:
-        - {index: 0, id: true, name: 'get_weather'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          id: true
+          name: get_weather
+        sglang_python: []
+        vllm_rust: []
+      normal_text:
+        vllm_rust: ' "get_weather",'
     - delta_text: ' "arguments": {"location": "NYC"}}]'
       expected:
-        vllm:
-        - {index: 0, arguments: '{"location": "NYC"}'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: '{"location": "NYC"}'
+        sglang_python: []
+        vllm_rust: []
+      normal_text:
+        vllm_rust: ' "arguments": {"location": "NYC"}}]'
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []

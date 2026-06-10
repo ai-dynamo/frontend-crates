@@ -11,7 +11,7 @@ family: jamba
 model_label: 'AI21 Jamba'
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
+  vllm_python: '0.22.0'
 cases:
   TOOLCALLING.streamv2.50:
     description: 'Complete single tool call with a grammar token split across chunk boundaries'
@@ -24,54 +24,54 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''jamba''.'
     chunks:
     - delta_text: '<t'
       expected:
-        vllm: []
+        vllm_python: []
       normal_text:
-        vllm: '<t'
+        vllm_python: '<t'
     - delta_text: 'ool'
       expected:
-        vllm: []
+        vllm_python: []
       normal_text:
-        vllm: 'ool'
+        vllm_python: 'ool'
     - delta_text: '_call'
       expected:
-        vllm: []
+        vllm_python: []
       normal_text:
-        vllm: '_call'
+        vllm_python: '_call'
     - delta_text: 's>[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "get_weather", "ar'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'get_weather'}
     - delta_text: 'gu'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: 'men'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: 'ts": '
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: '{"location"'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ': "NYC"}}]</tool_ca'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: 'll'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: 's>'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}

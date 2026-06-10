@@ -1,22 +1,14 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-
-# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
-# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
-# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
-# here). Assembled result is derived by concatenating per index. A delta:
-# {index, id?, name?, arguments?}; id:true = an id was emitted.
-
 family: minimax_m2
-model_label: 'MiniMax 2.7'
+model_label: MiniMax 2.7
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
-  sglang: '0.5.12.post1'
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.streamv2.4.a:
-    description: 'Tool_call wrapper with garbage body'
-    ref: 'derived from TOOLCALLING.batch.4.a'
+    description: Tool_call wrapper with garbage body
+    ref: derived from TOOLCALLING.batch.4.a
     tools:
     - name: get_weather
       parameters:
@@ -25,30 +17,30 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
+      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: '
     chunks:
-    - delta_text: '<minimax:tool_call>
-not'
+    - delta_text: <minimax:tool_call> not
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ' a'
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: ' valid invoke
-</minimax:tool_call>'
+        vllm_python: []
+        sglang_python: []
+    - delta_text: ' valid invoke </minimax:tool_call>'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
   TOOLCALLING.streamv2.4.c:
-    description: 'Invoke without name attribute'
-    ref: 'derived from TOOLCALLING.batch.4.c'
+    description: Invoke without name attribute
+    ref: derived from TOOLCALLING.batch.4.c
     tools:
     - name: get_weather
       parameters:
@@ -57,36 +49,34 @@ not'
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
+      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: '
     chunks:
-    - delta_text: '<minimax:tool_call>
-<invoke>'
+    - delta_text: <minimax:tool_call> <invoke>
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: '
-<parameter'
+        vllm_python: []
+        sglang_python: []
+    - delta_text: ' <parameter'
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: ' name="location">NYC</parameter>
-</invoke>'
+        vllm_python: []
+        sglang_python: []
+    - delta_text: ' name="location">NYC</parameter> </invoke>'
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: '
-</minimax:tool_call>'
+        vllm_python: []
+        sglang_python: []
+    - delta_text: ' </minimax:tool_call>'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ''
       finish_reason: stop
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
   TOOLCALLING.streamv2.4.d:
-    description: 'Missing closing </invoke>'
-    ref: 'derived from TOOLCALLING.batch.4.d'
+    description: Missing closing </invoke>
+    ref: derived from TOOLCALLING.batch.4.d
     tools:
     - name: get_weather
       parameters:
@@ -95,31 +85,32 @@ not'
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
+      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: '
     chunks:
-    - delta_text: '<minimax:tool_call>
-<invoke'
+    - delta_text: <minimax:tool_call> <invoke
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ' name="get_weather">'
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, name: 'get_weather'}
-    - delta_text: '
-<parameter name="location">NYC</parameter>'
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          name: get_weather
+    - delta_text: ' <parameter name="location">NYC</parameter>'
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, arguments: '{"location": "NYC"'}
-    - delta_text: '
-</minimax:tool_call>'
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          arguments: '{"location": "NYC"'
+    - delta_text: ' </minimax:tool_call>'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []

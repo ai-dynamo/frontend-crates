@@ -11,7 +11,7 @@ family: jamba
 model_label: 'AI21 Jamba'
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
+  vllm_python: '0.22.0'
 cases:
   TOOLCALLING.streamv2.7.a:
     description: 'Standard scalar types'
@@ -28,35 +28,35 @@ cases:
           first_class:
             type: boolean
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "book_flight",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments": {"destination": "Paris",'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'book_flight'}
     - delta_text: ' "passengers": 2,'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ', "passengers": 2'}
     - delta_text: ' "first_class":'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
     - delta_text: ' true}}]</tool_calls>'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ', "first_class": true'}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
   TOOLCALLING.streamv2.7.b:
     description: 'Unicode + escaped chars'
@@ -69,26 +69,26 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "get_weather",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments": {"location": "Tōkyō'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'get_weather'}
     - delta_text: ' \"central\""}}]</tool_calls>'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
   TOOLCALLING.streamv2.7.c:
     description: 'Schema mismatch — string value where schema declares integer'
@@ -101,27 +101,27 @@ cases:
           celsius:
             type: integer
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "set_temperature",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments": {"celsius": "20"}}]'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'set_temperature'}
     - delta_text: '</tool_calls>'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
   TOOLCALLING.streamv2.7.d:
     description: 'Nested object + array'
@@ -136,35 +136,35 @@ cases:
           config:
             type: object
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "process_data",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments": {"items": [1,2,3]'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'process_data'}
     - delta_text: ', "config":'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
     - delta_text: ' {"nested":'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ', "config": {}'}
     - delta_text: ' true}}}]</tool_calls>'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: '"nested": true'}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
   TOOLCALLING.streamv2.7.e:
     description: 'Large / deep JSON-edge argument payload'
@@ -177,75 +177,75 @@ cases:
           payload:
             type: object
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "process_data",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments": {"payload": {"regions":'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'process_data'}
     - delta_text: ' [{"name": "west",'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: '"regions": [{"name": "west"}]'}
     - delta_text: ' "scores":'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
     - delta_text: ' [1, 2,'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ', "scores": [1, 2]'}
     - delta_text: ' 3]}, {"name":'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ', 3]}, {'}
     - delta_text: ' "east",'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: '"name": "east"'}
     - delta_text: ' "scores": [4,'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ', "scores": [4]'}
     - delta_text: ' 5,'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ', 5'}
     - delta_text: ' 6]}]'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ', 6'}
     - delta_text: ','
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
     - delta_text: ' "flags": {"enabled": true,'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ', "flags": {"enabled": true}'}
     - delta_text: ' "retry": null},'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ', "retry": null'}
     - delta_text: ' "empty":'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
     - delta_text: ' {}}}}]</tool_calls>'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: '}, "empty": {'}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
   TOOLCALLING.streamv2.7.f:
     description: 'Numeric precision edge preserves integer-like number literal'
@@ -258,25 +258,25 @@ cases:
           count:
             type: number
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "set_limit",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments": {"count": 9007199254740993}}]'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, id: true, name: 'set_limit'}
     - delta_text: '</tool_calls>'
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm:
+        vllm_python:
         - {index: 0, arguments: ''}

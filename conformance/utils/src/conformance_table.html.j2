@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ title|e }}</title>
+<style>
+{{ conformance_css|safe }}
+{{ impl_status_css|safe }}
+</style>
+</head>
+<body class="view-overview parser-dynamo_rust">
+<h1>{% if title_html is defined and title_html %}{{ title_html|safe }}{% else %}{{ title|e }}{% endif %}</h1>
+<p class="generated">
+  Auto-generated on {{ stamp|e }}{% if sha %} on commit <a href="https://github.com/ai-dynamo/frontend-crates/commit/{{ sha|e }}"><code>{{ short_sha|e }}</code></a>{% endif %}:
+  <code>{{ command|e }} &gt; {{ output|e }}</code>
+</p>
+{% if tabs|length > 1 %}
+<div class="tabs" role="tablist">
+{% for tab in tabs %}
+{{ tab|safe }}
+{% endfor %}
+</div>
+{% endif %}
+<div class="table-toolbar">
+  <div class="radio-group" role="radiogroup" aria-label="Conformance table view">
+    <span class="radio-group-label">View:</span>
+    <label class="radio-option"><input type="radio" name="parity-view" value="overview" data-view-toggle checked> Overview</label>
+    <label class="radio-option"><input type="radio" name="parity-view" value="details" data-view-toggle> Details</label>
+  </div>
+  <div class="radio-group" role="radiogroup" aria-label="Parser implementation">
+    <span class="radio-group-label">Parser:</span>
+    <label class="radio-option" data-parser-option="dynamo_rust"><input type="radio" name="parity-parser" value="dynamo_rust" data-parser-toggle checked> Dynamo Rust</label>
+    <label class="radio-option" data-parser-option="vllm_rust"><input type="radio" name="parity-parser" value="vllm_rust" data-parser-toggle> vLLM Rust</label>
+    <label class="radio-option" data-parser-option="vllm_python"><input type="radio" name="parity-parser" value="vllm_python" data-parser-toggle> vLLM Python</label>
+    <label class="radio-option" data-parser-option="sglang_python"><input type="radio" name="parity-parser" value="sglang_python" data-parser-toggle> SGLang Python</label>
+  </div>
+  <label class="checkbox-option parity-option"><input type="checkbox" data-parity-toggle> Conformance</label>
+</div>
+{% for panel in panels %}
+<section id="{{ panel.id|e }}" class="tab-panel{% if panel.active %} active{% endif %}" role="tabpanel"{% if tabs|length > 1 %} aria-labelledby="{{ panel.id|e }}-button"{% endif %} data-parser-options="{{ panel.parser_options|default(['dynamo_rust', 'vllm_rust', 'vllm_python', 'sglang_python'])|join(',')|e }}">
+<table data-parity-table>
+<thead>
+<tr>{{ panel.group_headers|safe }}</tr>
+<tr>{{ panel.sub_headers|safe }}</tr>
+</thead>
+<tbody>
+{% for row in panel.body_rows %}
+{{ row|safe }}
+{% endfor %}
+</tbody>
+</table>
+{% if panel.toolbar_desc %}
+<div class="toolbar-desc">{{ panel.toolbar_desc|safe }}</div>
+{% endif %}
+<p class="legend summary-only">
+  <span class="summary-key ok" aria-hidden="true"></span>green(<span data-overview-count="ok">0</span>) = selected implementation output is clean ·
+  <span class="summary-key problem" aria-hidden="true"></span>red(<span data-overview-count="problem">0</span>) = leaks parser markup, has an expected error, or the engine parser failed to parse (<span style="font-family:ui-monospace,monospace">✗</span>) ·
+  <span class="summary-key todo" aria-hidden="true"></span>gray(<span data-overview-count="todo">0</span>) = selected parser is not implemented yet ·
+  <span class="summary-key na" aria-hidden="true"></span>gray(<span data-overview-count="na">0</span>) = not applicable, unavailable, or missing fixture.
+</p>
+<div class="legend details-only">
+{% if panel.legend_html is defined and panel.legend_html %}
+  {{ panel.legend_html|safe }}
+{% elif legend_html is defined and legend_html %}
+  {{ legend_html|safe }}
+{% else %}
+  <strong>Legend:</strong>
+  <span style="color:#0a7d2c">=</span> all captured peers match Dynamo Rust ·
+  <span style="color:#8b949e">·</span> Dynamo Rust-only fixture
+  (peers unavailable or not captured) ·
+  <span style="color:#555">D<sub>RB</sub></span> (Dynamo Rust batch parser) ·
+  <span style="color:#555">D<sub>RS</sub></span> (Dynamo Rust stream parser) ·
+  <span style="color:#555">V<sub>PB</sub></span> (vLLM Python batch parser) ·
+  <span style="color:#555">V<sub>PS</sub></span> (vLLM Python stream parser) ·
+  <span style="color:#555">V<sub>RS</sub></span> (vLLM Rust stream parser); no <code>V_rb</code> exists ·
+  <span style="color:#555">S<sub>RB</sub></span> (SGLang batch parser) ·
+  <span style="color:#555">S<sub>RS</sub></span> (SGLang stream parser) ·
+  a marker means that implementation diverges from the selected parser output; intentional divergences have <code>reason:</code> ·
+  <span style="color:#b00">?</span> more research needed
+  (e.g. V<sub>PB</sub>?, S<sub>RS</sub>? — diverges with no <code>reason:</code> yet) ·
+  <span style="color:#b00">↯</span> selected parser leaks tool call markup into <code>normal_text</code>
+  (captured peer output can legitimately show imperfect engine behavior) ·
+  <span style="color:#b00">!</span> expected-error suffix
+  (e.g. V<sub>PB</sub>!, S<sub>RS</sub>! — engine crashes by design) ·
+  <span style="color:#aaa">n/a</span> not applicable ·
+  <span style="color:#8a6d3b">—</span> missing fixture coverage ·
+  <span class="parser-suffix">†</span> = no vLLM Python peer tool calling parser for this family ·
+  <span class="parser-suffix">§</span> = no SGLang peer tool calling parser for this family.
+  <br>
+  <span class="parser-suffix">‡</span> Nemotron V3 (Ultra) reuses the qwen3_coder tool calling parser;
+  Nemotron V1 / V2 (DeciLM) is removed from the chart for being an older generation, but the
+  nemotron_deci parser is still supported.
+  <br><br>
+  <strong>Tooltip fields:</strong>
+  <code>input_text</code>=raw model output fed into the tool calling parser ·
+  <code>normal_text</code>=the <em>residual</em> prose left after stripping tool calls and reasoning blocks
+  (<em>not</em> all of the model's output — "normal" as in "non-structured", to distinguish it from the structured
+  <code>calls</code> and reasoning_content) ·
+  <code>calls</code>=extracted tool calls.
+  {% if peer_versions %}
+  <br><br>
+  <strong>Peer parser versions</strong> pinned in
+  <a href="{{ peer_versions_href|default('../../../pyproject.toml') }}">pyproject.toml</a>:
+  {% for name, version in peer_versions %}{% if not loop.first %} · {% endif %}{{ name|e }} <code>{{ version|e }}</code>{% endfor %}.
+  {% endif %}
+{% endif %}
+{% if panel.captured_note|default("") %}
+  <p class="versions">{{ panel.captured_note|e }}</p>
+{% endif %}
+</div>
+<p class="legend details-only parity-explainer">
+{% if panel.parity_explainer_html is defined and panel.parity_explainer_html %}
+  {{ panel.parity_explainer_html|safe }}
+{% else %}
+  <strong>Conformance:</strong>
+  <span style="color:#0a7d2c">=</span> all available outputs match ·
+  <span style="color:#555">D<sub>RB</sub></span> (Dynamo Rust batch parser) / <span style="color:#555">V<sub>PB</sub></span> (vLLM Python batch parser) / <span style="color:#555">S<sub>RB</sub></span> (SGLang batch parser) names output that differs from the selected parser ·
+  multiple markers mean multiple peer outputs differ from the selected parser.
+{% endif %}
+</p>
+<p class="stats details-only">
+  Stats: {{ panel.stats.families }} families × {{ panel.stats.sub_cases }} sub-cases
+  = {{ panel.stats.slots }} grid slots ({{ panel.stats.todo|default(0) }} TODO, {{ panel.stats.na }} n/a, {{ panel.stats.missing }} missing).
+  <strong>{{ panel.stats.real }}</strong> real cases:
+  <span style="color:#0a7d2c">{{ panel.stats.parity }} captured-peer conformance</span> ·
+  <span style="color:#555">{{ panel.stats.dynamo_only }} Dynamo Rust-only</span> ·
+  <span style="color:#555">{{ panel.stats.documented }} documented divergences</span>
+  (have <code>reason:</code>) ·
+  <span style="color:#b00">{{ panel.stats.research }} research-needed</span>
+  (no <code>reason:</code> yet) ·
+  <span style="color:#b00">{{ panel.stats.errors }} parser errors</span>.
+</p>
+{% if panel.glossary_groups %}
+<div class="details-only">
+<h2 id="case-descriptions-{{ panel.case_section_id|default(panel.mode)|e }}">Case descriptions</h2>
+<p>Full case definitions:
+{% if panel.case_docs_href is defined %}
+{% set panel_case_docs_href = panel.case_docs_href %}
+{% else %}
+{% set panel_case_docs_href = case_docs_href|default('../../../lib/parsers/TOOLCALLING_CASES.md') %}
+{% endif %}
+{% if panel.case_docs_label is defined %}
+{% set panel_case_docs_label = panel.case_docs_label %}
+{% else %}
+{% set panel_case_docs_label = case_docs_label|default('lib/parsers/TOOLCALLING_CASES.md') %}
+{% endif %}
+<a href="{{ panel_case_docs_href }}">{{ panel_case_docs_label }}</a>.</p>
+<table class="glossary">
+<tbody>
+{% for group in panel.glossary_groups %}
+<tr class="category"><td colspan="2">{{ group.label|e }}</td></tr>
+{% for sub, desc in group.rows %}
+{% if panel.case_prefix is defined and panel.case_prefix %}
+<tr><td class="sub">{{ panel.case_prefix|e }}{{ sub|e }}</td><td>{{ desc|e }}</td></tr>
+{% elif case_prefix is defined and case_prefix %}
+<tr><td class="sub">{{ case_prefix|e }}{{ sub|e }}</td><td>{{ desc|e }}</td></tr>
+{% else %}
+<tr><td class="sub">TOOLCALLING.{{ panel.mode|e }}.{{ sub|e }}</td><td>{{ desc|e }}</td></tr>
+{% endif %}
+{% endfor %}
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% endif %}
+</section>
+{% endfor %}
+<script>
+{{ conformance_js|safe }}
+</script>
+</body>
+</html>

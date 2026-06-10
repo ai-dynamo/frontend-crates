@@ -1,26 +1,26 @@
 family: phi4
 mode: batch-on-stream
 captured_with:
-  vllm: 0.22.0
-  sglang: 0.5.12.post1
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
 cases:
   TOOLCALLING.batch.8.a:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'phi4'.
   TOOLCALLING.batch.8.b:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'phi4'.
   TOOLCALLING.batch.8.c:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'phi4'.
   TOOLCALLING.batch.8.d:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'phi4'.

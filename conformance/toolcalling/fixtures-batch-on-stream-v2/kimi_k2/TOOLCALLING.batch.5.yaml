@@ -1,38 +1,51 @@
 family: kimi_k2
 mode: batch-on-stream
 captured_with:
-  vllm: 0.22.0
-  sglang: 0.5.12.post1
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.batch.5.a:
-    vllm:
+    vllm_python:
       calls:
       - name: get_weather
         arguments:
           location: NYC
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments: {}
+    vllm_rust:
+      calls:
+      - arguments:
+          location: NYC
+        name: get_weather
+      normal_text: ''
   TOOLCALLING.batch.5.b:
-    vllm:
+    vllm_python:
       calls: []
       normal_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments: {}
+    vllm_rust:
+      calls: []
+      normal_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
   TOOLCALLING.batch.5.c:
-    vllm:
+    vllm_python:
       calls:
       - name: get_weather
         arguments: '{"loc'
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments: {}
+    vllm_rust:
+      unavailable: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
+        Kimi K2 tool call'
   TOOLCALLING.batch.5.d:
-    vllm:
+    vllm_python:
       calls:
       - name: get_weather
         arguments:
@@ -42,12 +55,15 @@ cases:
           location: New York
       normal_text: I'll start by fetching the weather for both Boston and New York
         at the same time!
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments: {}
+    vllm_rust:
+      unavailable: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
+        Kimi K2 tool call'
   TOOLCALLING.batch.5.e:
-    vllm:
+    vllm_python:
       calls:
       - name: get_weather
         arguments:
@@ -56,26 +72,38 @@ cases:
         arguments: '{"location":"New York'
       normal_text: I'll start by fetching the weather for both Boston and New York
         at the same time!
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments: {}
+    vllm_rust:
+      unavailable: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
+        Kimi K2 tool call'
   TOOLCALLING.batch.5.f:
-    vllm:
+    vllm_python:
       calls:
       - name: get_weather
         arguments:
           location: Boston
       normal_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments: {}
+    vllm_rust:
+      calls:
+      - arguments:
+          location: Boston
+        name: get_weather
+      normal_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
   TOOLCALLING.batch.5.g:
-    vllm:
+    vllm_python:
       calls: []
       normal_text: I will check that. <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments: {}
+    vllm_rust:
+      calls: []
+      normal_text: I will check that. <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>

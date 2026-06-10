@@ -1,22 +1,15 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-
-# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
-# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
-# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
-# here). Assembled result is derived by concatenating per index. A delta:
-# {index, id?, name?, arguments?}; id:true = an id was emitted.
-
 family: qwen3_coder
-model_label: 'Qwen 3 Coder'
+model_label: Qwen 3 Coder
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
-  sglang: '0.5.12.post1'
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.streamv2.50:
-    description: 'Complete single tool call with a grammar token split across chunk boundaries'
-    ref: 'derived from TOOLCALLING.batch.1'
+    description: Complete single tool call with a grammar token split across chunk
+      boundaries
+    ref: derived from TOOLCALLING.batch.1
     tools:
     - name: get_weather
       parameters:
@@ -25,110 +18,121 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
     chunks:
-    - delta_text: '<t'
+    - delta_text: <t
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '<t'
-    - delta_text: 'ool'
+        vllm_python: <t
+    - delta_text: ool
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'ool'
-    - delta_text: '_call'
+        vllm_python: ool
+    - delta_text: _call
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '_call'
-    - delta_text: '>
-<function'
+        vllm_python: _call
+    - delta_text: '> <function'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '>
-<function'
-    - delta_text: '=get_weather>
-<para'
+        vllm_python: '> <function'
+    - delta_text: =get_weather> <para
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, name: 'get_weather'}
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          name: get_weather
+        vllm_rust: []
       normal_text:
-        vllm: '=get_weather>
-<para'
-    - delta_text: 'me'
+        vllm_python: =get_weather> <para
+    - delta_text: me
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'me'
-    - delta_text: 'ter'
+        vllm_python: me
+    - delta_text: ter
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'ter'
-    - delta_text: '=loca'
+        vllm_python: ter
+    - delta_text: =loca
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '=loca'
-    - delta_text: 'tion>
-NYC
-<'
+        vllm_python: =loca
+    - delta_text: tion> NYC <
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'tion>
-NYC
-<'
-    - delta_text: '/parameter>
-</funct'
+        vllm_python: tion> NYC <
+    - delta_text: /parameter> </funct
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, arguments: '{'}
-        - {index: 0, arguments: '"location": "NYC"'}
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          arguments: '{'
+        - index: 0
+          arguments: '"location": "NYC"'
+        vllm_rust: []
       normal_text:
-        vllm: '/parameter>
-</funct'
-    - delta_text: 'io'
+        vllm_python: /parameter> </funct
+    - delta_text: io
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'io'
-    - delta_text: 'n>
-'
+        vllm_python: io
+    - delta_text: 'n> '
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, arguments: '}'}
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          arguments: '}'
+        vllm_rust: []
       normal_text:
-        vllm: 'n>
-'
-    - delta_text: '</too'
+        vllm_python: 'n> '
+    - delta_text: </too
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '</too'
-    - delta_text: 'l_call>'
+        vllm_python: </too
+    - delta_text: l_call>
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust:
+        - arguments: '{"location":" NYC "}'
+          index: 0
+          name: get_weather
       normal_text:
-        vllm: 'l_call>'
+        vllm_python: l_call>
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []

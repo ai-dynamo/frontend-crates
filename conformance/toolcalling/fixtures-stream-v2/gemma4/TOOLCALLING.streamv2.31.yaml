@@ -1,22 +1,15 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-
-# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
-# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
-# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
-# here). Assembled result is derived by concatenating per index. A delta:
-# {index, id?, name?, arguments?}; id:true = an id was emitted.
-
 family: gemma4
-model_label: 'Gemma 4'
+model_label: Gemma 4
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
-  sglang: '0.5.12.post1'
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.streamv2.31.a:
-    description: 'Multi-call response with Gemma delimiters `,`, `:`, and `{}` inside the first argument string'
-    ref: 'derived from TOOLCALLING.batch.31.a'
+    description: Multi-call response with Gemma delimiters `,`, `:`, and `{}` inside
+      the first argument string
+    ref: derived from TOOLCALLING.batch.31.a
     tools:
     - name: run_query
       parameters:
@@ -31,44 +24,70 @@ cases:
           timezone:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
     chunks:
-    - delta_text: '<|tool_call>call:run_query{sql:<|"|>'
+    - delta_text: <|tool_call>call:run_query{sql:<|"|>
       expected:
-        vllm:
-        - {index: 0, id: true, name: 'run_query', arguments: ''}
-        sglang:
-        - {index: 0, name: 'run_query'}
-    - delta_text: 'SELECT'
+        vllm_python:
+        - index: 0
+          id: true
+          name: run_query
+          arguments: ''
+        sglang_python:
+        - index: 0
+          name: run_query
+        vllm_rust: []
+    - delta_text: SELECT
       expected:
-        vllm:
-        - {index: 0, arguments: '{"sql": "SELECT'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: '{"sql": "SELECT'
+        sglang_python: []
+        vllm_rust: []
     - delta_text: ' a,b:and{brace}<|"|>}<tool_call|><|tool_call>'
       expected:
-        vllm: []
-        sglang:
-        - {index: 0, arguments: '{"sql": "SELECT a,b:and{brace}"}'}
-    - delta_text: 'call:get_time{timezone:<|"|>EST<|"|>'
+        vllm_python: []
+        sglang_python:
+        - index: 0
+          arguments: '{"sql": "SELECT a,b:and{brace}"}'
+        vllm_rust:
+        - arguments: '{"sql":"SELECT a,b:and{brace}"}'
+          index: 0
+          name: run_query
+    - delta_text: call:get_time{timezone:<|"|>EST<|"|>
       expected:
-        vllm:
-        - {index: 1, id: true, name: 'get_time', arguments: ''}
-        sglang:
-        - {index: 1, name: 'get_time'}
+        vllm_python:
+        - index: 1
+          id: true
+          name: get_time
+          arguments: ''
+        sglang_python:
+        - index: 1
+          name: get_time
+        vllm_rust: []
     - delta_text: '}<tool_call|>'
       expected:
-        vllm:
-        - {index: 1, arguments: '{"timezone": "EST"}'}
-        sglang:
-        - {index: 1, arguments: '{"timezone": "EST"}'}
+        vllm_python:
+        - index: 1
+          arguments: '{"timezone": "EST"}'
+        sglang_python:
+        - index: 1
+          arguments: '{"timezone": "EST"}'
+        vllm_rust:
+        - arguments: '{"timezone":"EST"}'
+          index: 1
+          name: get_time
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
   TOOLCALLING.streamv2.31.b:
-    description: 'Multi-call response with structural delimiters inside one argument string value'
-    ref: 'derived from TOOLCALLING.batch.31.b'
+    description: Multi-call response with structural delimiters inside one argument
+      string value
+    ref: derived from TOOLCALLING.batch.31.b
     tools:
     - name: run_query
       parameters:
@@ -83,63 +102,98 @@ cases:
           timezone:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
     chunks:
-    - delta_text: '<|tool_call>call:run_query{sql:<|"|>'
+    - delta_text: <|tool_call>call:run_query{sql:<|"|>
       expected:
-        vllm:
-        - {index: 0, id: true, name: 'run_query', arguments: ''}
-        sglang:
-        - {index: 0, name: 'run_query'}
-    - delta_text: 'SELECT'
+        vllm_python:
+        - index: 0
+          id: true
+          name: run_query
+          arguments: ''
+        sglang_python:
+        - index: 0
+          name: run_query
+        vllm_rust: []
+    - delta_text: SELECT
       expected:
-        vllm:
-        - {index: 0, arguments: '{"sql": "SELECT'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: '{"sql": "SELECT'
+        sglang_python: []
+        vllm_rust: []
     - delta_text: ' value WHERE note'
       expected:
-        vllm:
-        - {index: 0, arguments: ' value WHERE note'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: ' value WHERE note'
+        sglang_python: []
+        vllm_rust: []
     - delta_text: ' has brace'
       expected:
-        vllm:
-        - {index: 0, arguments: ' has brace'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: ' has brace'
+        sglang_python: []
+        vllm_rust: []
     - delta_text: ' }'
       expected:
-        vllm:
-        - {index: 0, arguments: ' '}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: ' '
+        sglang_python: []
+        vllm_rust: []
     - delta_text: ' and bracket'
       expected:
-        vllm:
-        - {index: 0, arguments: '} and bracket'}
-        sglang: []
+        vllm_python:
+        - index: 0
+          arguments: '} and bracket'
+        sglang_python: []
+        vllm_rust: []
     - delta_text: ' ]<|"|>}<tool_call|>'
       expected:
-        vllm:
-        - {index: 0, arguments: ' ]"}'}
-        sglang:
-        - {index: 0, arguments: '{"sql": "SELECT value WHERE note has brace } and bracket ]"}'}
-    - delta_text: '<|tool_call>'
+        vllm_python:
+        - index: 0
+          arguments: ' ]"}'
+        sglang_python:
+        - index: 0
+          arguments: '{"sql": "SELECT value WHERE note has brace } and bracket ]"}'
+        vllm_rust:
+        - arguments: '{"sql":"SELECT value WHERE note has brace } and bracket ]"}'
+          index: 0
+          name: run_query
+    - delta_text: <|tool_call>
       expected:
-        vllm: []
-        sglang: []
-    - delta_text: 'call:get_time{timezone:<|"|>EST<|"|>'
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
+    - delta_text: call:get_time{timezone:<|"|>EST<|"|>
       expected:
-        vllm:
-        - {index: 1, id: true, name: 'get_time', arguments: ''}
-        sglang:
-        - {index: 1, name: 'get_time'}
+        vllm_python:
+        - index: 1
+          id: true
+          name: get_time
+          arguments: ''
+        sglang_python:
+        - index: 1
+          name: get_time
+        vllm_rust: []
     - delta_text: '}<tool_call|>'
       expected:
-        vllm:
-        - {index: 1, arguments: '{"timezone": "EST"}'}
-        sglang:
-        - {index: 1, arguments: '{"timezone": "EST"}'}
+        vllm_python:
+        - index: 1
+          arguments: '{"timezone": "EST"}'
+        sglang_python:
+        - index: 1
+          arguments: '{"timezone": "EST"}'
+        vllm_rust:
+        - arguments: '{"timezone":"EST"}'
+          index: 1
+          name: get_time
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []

@@ -1,13 +1,14 @@
 family: qwen3_coder
 mode: batch-on-stream
 captured_with:
-  vllm: 0.22.0
-  sglang: 0.5.12.post1
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.batch.2.a:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
@@ -18,11 +19,22 @@ cases:
       normal_text: '
 
         '
+    vllm_rust:
+      calls:
+      - arguments:
+          location: NYC
+        name: get_weather
+      - arguments:
+          timezone: EST
+        name: get_time
+      normal_text: '
+
+        '
   TOOLCALLING.batch.2.c:
-    vllm:
+    vllm_python:
       calls: []
       normal_text: 'Both queries: '
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
@@ -31,10 +43,19 @@ cases:
         arguments:
           timezone: EST
       normal_text: "Both queries: \n Results above."
+    vllm_rust:
+      calls:
+      - arguments:
+          location: NYC
+        name: get_weather
+      - arguments:
+          timezone: EST
+        name: get_time
+      normal_text: "Both queries: \n Results above."
   TOOLCALLING.batch.2.d:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
@@ -45,8 +66,21 @@ cases:
       normal_text: '
 
         '
+    vllm_rust:
+      calls:
+      - arguments:
+          location: NYC
+        name: get_weather
+      - arguments:
+          location: LA
+        name: get_weather
+      normal_text: '
+
+        '
   TOOLCALLING.batch.2.b:
-    vllm:
+    vllm_python:
       unavailable: No batch model_text for this case.
-    sglang:
+    sglang_python:
+      unavailable: No batch model_text for this case.
+    vllm_rust:
       unavailable: No batch model_text for this case.

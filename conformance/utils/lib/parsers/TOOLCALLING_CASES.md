@@ -6,13 +6,11 @@ Reference taxonomy for unit testing **tool-call** parsers under
 - **Reasoning parsers** (`src/reasoning/`): see `REASONING_CASES.md`.
 - **Frontend gating** (request-time `tool_choice`, etc.): see
   `components/src/dynamo/frontend/tests/FRONTEND_CASES.md`.
-- **Pipeline boundary** (`finish_reason` independence, etc.): see
-  `PIPELINE_CASES.md`.
+- **Pipeline boundary** (`finish_reason` independence, etc.): tracked in the conformance fixtures and HTML matrix, not a separate local Markdown file.
 
 The taxonomy splits on three orthogonal axes:
 
-1. **Stage** — which module is under test (`TOOLCALLING.*` here, `REASONING.*`,
-   `FRONTEND.*`, `PIPELINE.*` in their own files).
+1. **Stage** — which module is under test (`TOOLCALLING.*` here, `REASONING.*`, `FRONTEND.*`, or pipeline-boundary fixture rows).
 2. **Mode** — invocation surface: `batch` (entire model output as one
    string) or `stream` (incremental `delta_text` + `delta_token_ids`).
    Each mode has its own contiguous case numbers; a "single tool call"

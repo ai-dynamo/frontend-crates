@@ -11,8 +11,9 @@ family: harmony
 model_label: 'gpt-oss (harmony, token-id)'
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
-  sglang: '0.5.12.post1'
+  vllm_python: '0.22.0'
+  sglang_python: '0.5.12.post1'
+  dynamo_rust: 'Dynamo parser v2'
 cases:
   TOOLCALLING.streamv2.2.a:
     description: 'Two back-to-back commentary envelopes'
@@ -34,164 +35,155 @@ cases:
     - delta_text: '<|start|>assistant'
       delta_token_ids: [200006, 173781]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '<|channel|>comment'
       delta_token_ids: [200005, 12606]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'ary to'
       delta_token_ids: [815, 316]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '=functions'
       delta_token_ids: [28, 44580]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '.get_weather'
       delta_token_ids: [775, 170154]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ' <|constrain|>'
       delta_token_ids: [220, 200003]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'json<|message|>'
       delta_token_ids: [4108, 200008]
       expected:
-        dynamo:
-        - {index: 0, id: true, name: 'get_weather'}
-        vllm:
+        dynamo_rust: []
+        vllm_python:
         - {index: 0, id: true, name: 'get_weather', arguments: ''}
-        sglang: []
+        sglang_python: []
     - delta_text: '{"location'
       delta_token_ids: [10848, 7693]
       expected:
-        dynamo:
+        dynamo_rust: []
+        vllm_python:
         - {index: 0, arguments: '{"'}
         - {index: 0, arguments: 'location'}
-        vllm:
-        - {index: 0, arguments: '{"'}
-        - {index: 0, arguments: 'location'}
-        sglang: []
+        sglang_python: []
     - delta_text: '":"NY'
       delta_token_ids: [7534, 24202]
       expected:
-        dynamo:
+        dynamo_rust: []
+        vllm_python:
         - {index: 0, arguments: '":"'}
         - {index: 0, arguments: 'NY'}
-        vllm:
-        - {index: 0, arguments: '":"'}
-        - {index: 0, arguments: 'NY'}
-        sglang: []
+        sglang_python: []
     - delta_text: 'C"}'
       delta_token_ids: [34, 18583]
       expected:
-        dynamo:
+        dynamo_rust: []
+        vllm_python:
         - {index: 0, arguments: 'C'}
         - {index: 0, arguments: '"}'}
-        vllm:
-        - {index: 0, arguments: 'C'}
-        - {index: 0, arguments: '"}'}
-        sglang: []
+        sglang_python: []
     - delta_text: '<|call|><|start|>'
       delta_token_ids: [200012, 200006]
       expected:
-        dynamo: []
-        vllm: []
-        sglang:
+        dynamo_rust:
+        - {index: 0, id: true, name: 'get_weather'}
+        - {index: 0, arguments: '{"location":"NYC"}'}
+        vllm_python: []
+        sglang_python:
         - {index: 0, name: 'get_weather', arguments: '{"location": "NYC"}'}
     - delta_text: 'assistant<|channel|>'
       delta_token_ids: [173781, 200005]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'commentary'
       delta_token_ids: [12606, 815]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ' to='
       delta_token_ids: [316, 28]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'functions.get'
       delta_token_ids: [44580, 775]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '_time '
       delta_token_ids: [6425, 220]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '<|constrain|>json'
       delta_token_ids: [200003, 4108]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '<|message|>{"'
       delta_token_ids: [200008, 10848]
       expected:
-        dynamo:
-        - {index: 1, id: true, name: 'get_time'}
-        - {index: 1, arguments: '{"'}
-        vllm:
+        dynamo_rust: []
+        vllm_python:
         - {index: 1, id: true, name: 'get_time', arguments: ''}
         - {index: 1, arguments: '{"'}
-        sglang: []
+        sglang_python: []
     - delta_text: 'timezone":"'
       delta_token_ids: [106775, 7534]
       expected:
-        dynamo:
+        dynamo_rust: []
+        vllm_python:
         - {index: 1, arguments: 'timezone'}
         - {index: 1, arguments: '":"'}
-        vllm:
-        - {index: 1, arguments: 'timezone'}
-        - {index: 1, arguments: '":"'}
-        sglang: []
+        sglang_python: []
     - delta_text: 'EST"}'
       delta_token_ids: [8292, 18583]
       expected:
-        dynamo:
+        dynamo_rust: []
+        vllm_python:
         - {index: 1, arguments: 'EST'}
         - {index: 1, arguments: '"}'}
-        vllm:
-        - {index: 1, arguments: 'EST'}
-        - {index: 1, arguments: '"}'}
-        sglang: []
+        sglang_python: []
     - delta_text: '<|call|>'
       delta_token_ids: [200012]
       expected:
-        dynamo: []
-        vllm: []
-        sglang:
+        dynamo_rust:
+        - {index: 1, id: true, name: 'get_time'}
+        - {index: 1, arguments: '{"timezone":"EST"}'}
+        vllm_python: []
+        sglang_python:
         - {index: 1, name: 'get_time', arguments: '{"timezone": "EST"}'}
     - delta_text: ''
       delta_token_ids: []
       finish_reason: tool_calls
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
   TOOLCALLING.streamv2.2.c:
     description: 'With surrounding narration'
     ref: 'derived from TOOLCALLING.batch.2.c'
@@ -212,170 +204,170 @@ cases:
     - delta_text: 'I need'
       delta_token_ids: [40, 1309]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
       normal_text:
-        sglang: 'I need'
+        sglang_python: 'I need'
     - delta_text: ' both.'
       delta_token_ids: [2973, 13]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
       normal_text:
-        sglang: ' both.'
+        sglang_python: ' both.'
     - delta_text: ' <|start|>'
       delta_token_ids: [220, 200006]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
       normal_text:
-        sglang: 'I need both. '
+        sglang_python: 'I need both. '
     - delta_text: 'assistant<|channel|>'
       delta_token_ids: [173781, 200005]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'commentary'
       delta_token_ids: [12606, 815]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ' to='
       delta_token_ids: [316, 28]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'functions.get'
       delta_token_ids: [44580, 775]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '_weather '
       delta_token_ids: [170154, 220]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '<|constrain|>json'
       delta_token_ids: [200003, 4108]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '<|message|>{"'
       delta_token_ids: [200008, 10848]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'location":"'
       delta_token_ids: [7693, 7534]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'NYC'
       delta_token_ids: [24202, 34]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '"}<|call|>'
       delta_token_ids: [18583, 200012]
       expected:
-        dynamo: []
-        vllm: []
-        sglang:
+        dynamo_rust:
+        - {index: 0, id: true, name: 'get_weather'}
+        - {index: 0, arguments: '{"location":"NYC"}'}
+        vllm_python: []
+        sglang_python:
         - {index: 0, name: 'get_weather', arguments: '{"location": "NYC"}'}
     - delta_text: '<|start|>assistant'
       delta_token_ids: [200006, 173781]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '<|channel|>comment'
       delta_token_ids: [200005, 12606]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'ary to'
       delta_token_ids: [815, 316]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '=functions'
       delta_token_ids: [28, 44580]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '.get_time'
       delta_token_ids: [775, 6425]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ' <|constrain|>'
       delta_token_ids: [220, 200003]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'json<|message|>'
       delta_token_ids: [4108, 200008]
       expected:
-        dynamo:
-        - {index: 0, id: true, name: 'get_time'}
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '{"timezone'
       delta_token_ids: [10848, 106775]
       expected:
-        dynamo:
-        - {index: 0, arguments: '{"'}
-        - {index: 0, arguments: 'timezone'}
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '":"EST'
       delta_token_ids: [7534, 8292]
       expected:
-        dynamo:
-        - {index: 0, arguments: '":"'}
-        - {index: 0, arguments: 'EST'}
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '"}<|call|>'
       delta_token_ids: [18583, 200012]
       expected:
-        dynamo:
-        - {index: 0, arguments: '"}'}
-        vllm: []
-        sglang:
+        dynamo_rust:
+        - {index: 1, id: true, name: 'get_time'}
+        - {index: 1, arguments: '{"timezone":"EST"}'}
+        vllm_python: []
+        sglang_python:
         - {index: 1, name: 'get_time', arguments: '{"timezone": "EST"}'}
     - delta_text: ' Done.'
       delta_token_ids: [46776, 13]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
       normal_text:
-        sglang: ' Done.'
+        sglang_python: ' Done.'
     - delta_text: ''
       delta_token_ids: []
       finish_reason: tool_calls
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
+      normal_text:
+        dynamo_rust: 'I need both.  Done.'
   TOOLCALLING.streamv2.2.d:
     description: 'Same-name twice'
     ref: 'derived from TOOLCALLING.batch.2.d'
@@ -396,161 +388,152 @@ cases:
     - delta_text: '<|start|>assistant'
       delta_token_ids: [200006, 173781]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '<|channel|>comment'
       delta_token_ids: [200005, 12606]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'ary to'
       delta_token_ids: [815, 316]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '=functions'
       delta_token_ids: [28, 44580]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '.get_weather'
       delta_token_ids: [775, 170154]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ' <|constrain|>'
       delta_token_ids: [220, 200003]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'json<|message|>'
       delta_token_ids: [4108, 200008]
       expected:
-        dynamo:
-        - {index: 0, id: true, name: 'get_weather'}
-        vllm:
+        dynamo_rust: []
+        vllm_python:
         - {index: 0, id: true, name: 'get_weather', arguments: ''}
-        sglang: []
+        sglang_python: []
     - delta_text: '{"location'
       delta_token_ids: [10848, 7693]
       expected:
-        dynamo:
+        dynamo_rust: []
+        vllm_python:
         - {index: 0, arguments: '{"'}
         - {index: 0, arguments: 'location'}
-        vllm:
-        - {index: 0, arguments: '{"'}
-        - {index: 0, arguments: 'location'}
-        sglang: []
+        sglang_python: []
     - delta_text: '":"NY'
       delta_token_ids: [7534, 24202]
       expected:
-        dynamo:
+        dynamo_rust: []
+        vllm_python:
         - {index: 0, arguments: '":"'}
         - {index: 0, arguments: 'NY'}
-        vllm:
-        - {index: 0, arguments: '":"'}
-        - {index: 0, arguments: 'NY'}
-        sglang: []
+        sglang_python: []
     - delta_text: 'C"}'
       delta_token_ids: [34, 18583]
       expected:
-        dynamo:
+        dynamo_rust: []
+        vllm_python:
         - {index: 0, arguments: 'C'}
         - {index: 0, arguments: '"}'}
-        vllm:
-        - {index: 0, arguments: 'C'}
-        - {index: 0, arguments: '"}'}
-        sglang: []
+        sglang_python: []
     - delta_text: '<|call|><|start|>'
       delta_token_ids: [200012, 200006]
       expected:
-        dynamo: []
-        vllm: []
-        sglang:
+        dynamo_rust:
+        - {index: 0, id: true, name: 'get_weather'}
+        - {index: 0, arguments: '{"location":"NYC"}'}
+        vllm_python: []
+        sglang_python:
         - {index: 0, name: 'get_weather', arguments: '{"location": "NYC"}'}
     - delta_text: 'assistant<|channel|>'
       delta_token_ids: [173781, 200005]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'commentary'
       delta_token_ids: [12606, 815]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ' to='
       delta_token_ids: [316, 28]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'functions.get'
       delta_token_ids: [44580, 775]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '_weather '
       delta_token_ids: [170154, 220]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '<|constrain|>json'
       delta_token_ids: [200003, 4108]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '<|message|>{"'
       delta_token_ids: [200008, 10848]
       expected:
-        dynamo:
-        - {index: 1, id: true, name: 'get_weather'}
-        - {index: 1, arguments: '{"'}
-        vllm:
+        dynamo_rust: []
+        vllm_python:
         - {index: 1, id: true, name: 'get_weather', arguments: ''}
         - {index: 1, arguments: '{"'}
-        sglang: []
+        sglang_python: []
     - delta_text: 'location":"'
       delta_token_ids: [7693, 7534]
       expected:
-        dynamo:
+        dynamo_rust: []
+        vllm_python:
         - {index: 1, arguments: 'location'}
         - {index: 1, arguments: '":"'}
-        vllm:
-        - {index: 1, arguments: 'location'}
-        - {index: 1, arguments: '":"'}
-        sglang: []
+        sglang_python: []
     - delta_text: 'LA"}'
       delta_token_ids: [11991, 18583]
       expected:
-        dynamo:
+        dynamo_rust: []
+        vllm_python:
         - {index: 1, arguments: 'LA'}
         - {index: 1, arguments: '"}'}
-        vllm:
-        - {index: 1, arguments: 'LA'}
-        - {index: 1, arguments: '"}'}
-        sglang: []
+        sglang_python: []
     - delta_text: '<|call|>'
       delta_token_ids: [200012]
       expected:
-        dynamo: []
-        vllm: []
-        sglang:
+        dynamo_rust:
+        - {index: 1, id: true, name: 'get_weather'}
+        - {index: 1, arguments: '{"location":"LA"}'}
+        vllm_python: []
+        sglang_python:
         - {index: 1, name: 'get_weather', arguments: '{"location": "LA"}'}
     - delta_text: ''
       delta_token_ids: []
       finish_reason: tool_calls
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []

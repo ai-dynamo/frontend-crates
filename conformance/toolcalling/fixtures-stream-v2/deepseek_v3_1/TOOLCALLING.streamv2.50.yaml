@@ -1,22 +1,15 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-
-# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
-# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
-# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
-# here). Assembled result is derived by concatenating per index. A delta:
-# {index, id?, name?, arguments?}; id:true = an id was emitted.
-
 family: deepseek_v3_1
-model_label: 'DeepSeek V3.1'
+model_label: DeepSeek V3.1
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
-  sglang: '0.5.12.post1'
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.streamv2.50:
-    description: 'Complete single tool call with a grammar token split across chunk boundaries'
-    ref: 'derived from TOOLCALLING.batch.1'
+    description: Complete single tool call with a grammar token split across chunk
+      boundaries
+    ref: derived from TOOLCALLING.batch.1
     tools:
     - name: get_weather
       parameters:
@@ -25,115 +18,136 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
+        per-chunk output is the target to match.
     chunks:
-    - delta_text: '<｜'
+    - delta_text: <｜
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '<｜'
-        sglang: '<｜'
-    - delta_text: 'too'
+        vllm_python: <｜
+        sglang_python: <｜
+    - delta_text: too
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'too'
-        sglang: 'too'
-    - delta_text: 'l▁cal'
+        vllm_python: too
+        sglang_python: too
+    - delta_text: l▁cal
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'l▁cal'
-        sglang: 'l▁cal'
-    - delta_text: 'ls▁begin｜><'
+        vllm_python: l▁cal
+        sglang_python: l▁cal
+    - delta_text: ls▁begin｜><
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'ls▁begin｜><'
-        sglang: 'ls▁begin｜><'
-    - delta_text: '｜tool▁call▁begin｜>g'
+        vllm_python: ls▁begin｜><
+        sglang_python: ls▁begin｜><
+    - delta_text: ｜tool▁call▁begin｜>g
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '｜tool▁call▁begin｜>g'
-        sglang: '｜tool▁call▁begin｜>g'
-    - delta_text: 'et'
+        vllm_python: ｜tool▁call▁begin｜>g
+        sglang_python: ｜tool▁call▁begin｜>g
+    - delta_text: et
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'et'
-        sglang: 'et'
-    - delta_text: '_we'
+        vllm_python: et
+        sglang_python: et
+    - delta_text: _we
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '_we'
-        sglang: '_we'
-    - delta_text: 'ather'
+        vllm_python: _we
+        sglang_python: _we
+    - delta_text: ather
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'ather'
-        sglang: 'ather'
-    - delta_text: '<｜tool▁sep｜'
+        vllm_python: ather
+        sglang_python: ather
+    - delta_text: <｜tool▁sep｜
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '<｜tool▁sep｜'
-        sglang: '<｜tool▁sep｜'
+        vllm_python: <｜tool▁sep｜
+        sglang_python: <｜tool▁sep｜
     - delta_text: '>{"location":"NYC"}'
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust:
+        - index: 0
+          name: get_weather
+        - arguments: '{"location":"NYC"}'
+          index: 0
       normal_text:
-        vllm: '>{"location":"NYC"}'
-        sglang: '>{"location":"NYC"}'
-    - delta_text: '<｜'
+        vllm_python: '>{"location":"NYC"}'
+        sglang_python: '>{"location":"NYC"}'
+    - delta_text: <｜
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: '<｜'
-        sglang: '<｜'
-    - delta_text: 'too'
+        vllm_python: <｜
+        sglang_python: <｜
+    - delta_text: too
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'too'
-        sglang: 'too'
-    - delta_text: 'l▁cal'
+        vllm_python: too
+        sglang_python: too
+    - delta_text: l▁cal
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'l▁cal'
-        sglang: 'l▁cal'
-    - delta_text: 'l▁end｜><｜to'
+        vllm_python: l▁cal
+        sglang_python: l▁cal
+    - delta_text: l▁end｜><｜to
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'l▁end｜><｜to'
-        sglang: 'l▁end｜><｜to'
-    - delta_text: 'ol▁calls▁end｜>'
+        vllm_python: l▁end｜><｜to
+        sglang_python: l▁end｜><｜to
+    - delta_text: ol▁calls▁end｜>
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []
       normal_text:
-        vllm: 'ol▁calls▁end｜>'
-        sglang: 'ol▁calls▁end｜>'
+        vllm_python: ol▁calls▁end｜>
+        sglang_python: ol▁calls▁end｜>
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
-        sglang: []
+        vllm_python: []
+        sglang_python: []
+        vllm_rust: []

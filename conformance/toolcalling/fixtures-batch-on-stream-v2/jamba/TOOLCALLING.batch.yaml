@@ -1,68 +1,68 @@
 family: jamba
 mode: batch-on-stream
 captured_with:
-  vllm: 0.22.0
-  sglang: 0.5.12.post1
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
 cases:
   TOOLCALLING.batch.1:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'jamba'.
   TOOLCALLING.batch.3:
-    vllm:
+    vllm_python:
       calls: []
       normal_text: Hello, how can I help you today?
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'jamba'.
   TOOLCALLING.batch.9.a:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'jamba'.
   TOOLCALLING.batch.9.b:
-    vllm:
+    vllm_python:
       calls: []
       normal_text: '   '
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'jamba'.
   TOOLCALLING.batch.10:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'jamba'.
   TOOLCALLING.batch.30.a:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'jamba'.
   TOOLCALLING.batch.30.b:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'jamba'.
   TOOLCALLING.batch.30.c:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'jamba'.
   TOOLCALLING.batch.31.a:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'jamba'.
   TOOLCALLING.batch.31.b:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'jamba'.
   TOOLCALLING.batch.13.a:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'jamba'.
   TOOLCALLING.batch.13.c:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'jamba'.

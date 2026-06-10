@@ -1,29 +1,36 @@
 family: minimax_m2
 mode: batch-on-stream
 captured_with:
-  vllm: 0.22.0
-  sglang: 0.5.12.post1
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.batch.6.a:
-    vllm:
+    vllm_python:
       calls:
       - name: get_time
         arguments: {}
-    sglang:
+    sglang_python:
       calls:
       - name: get_time
         arguments: {}
+    vllm_rust:
+      unavailable: 'vLLM Rust parser not captured: tool parser parsing failed: '
   TOOLCALLING.batch.6.b:
-    vllm:
+    vllm_python:
       calls:
       - name: get_time
         arguments: {}
-    sglang:
+    sglang_python:
       calls:
       - name: get_time
         arguments: {}
+    vllm_rust:
+      unavailable: 'vLLM Rust parser not captured: tool parser parsing failed: '
   TOOLCALLING.batch.6.c:
-    vllm:
+    vllm_python:
       unavailable: No batch model_text for this case.
-    sglang:
+    sglang_python:
+      unavailable: No batch model_text for this case.
+    vllm_rust:
       unavailable: No batch model_text for this case.

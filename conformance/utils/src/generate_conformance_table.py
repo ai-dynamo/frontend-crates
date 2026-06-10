@@ -11,24 +11,30 @@ EXAMPLE OUTPUT (truncated; illustrative, NOT a snapshot of current fixtures
     | model          | parser     | 1 | 2.a | 2.b | 2.c | ... | 9 | 10 |
     |---|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
     | **Top-N models** |   |   |   |   |   |   |   |   |
-    | Kimi K2.6      | kimi_k2    | = | =   | =   | VS  | ... | = | =  |
-    | gpt-oss        | harmony †  | S | S   | n/a | S?  | ... | = | S  |
+    | Kimi K2.6      | kimi_k2    | = | =   | =   | V_pbS_rb | ... | = | =  |
+    | gpt-oss        | harmony †  | S_rb | S_rb | n/a | S_rb? | ... | = | S_rb |
     | **Others** |   |   |   |   |   |   |   |   |
-    | Mistral series | mistral    | S | S   | n/a | VS  | ... | = | S  |
+    | Mistral series | mistral    | S_rb | S_rb | n/a | V_pbS_rb | ... | = | S_rb |
 
 ================================================================================
 
 Reads every `tests/parity/toolcalling/fixtures/<family>/TOOLCALLING.batch*.yaml` and emits
 the conformance table.
 
-Cell markers (per peer, vllm + sglang):
-  =     peer block matches the Dynamo block (`expected.dynamo`)
-  V/S   peer is a concrete inline block AND has `reason:` (intentional)
-  V?/S? peer is a concrete inline block AND has no `reason:` yet
+Cell markers (Dynamo Rust + vLLM Rust + vLLM Python + SGLang):
+  =     peer block matches the Dynamo Rust block (`expected.dynamo_rust`)
+  D_rb      Dynamo Rust batch parser output diverges from the selected parser
+  D_rs      Dynamo Rust stream parser output diverges from the selected parser
+  V_pb      vLLM Python batch parser output diverges from the selected parser
+  V_ps      vLLM Python stream parser output diverges from the selected parser
+  V_rs      vLLM Rust stream parser output diverges from the selected parser; no V_rb exists
+  S_rb      SGLang batch parser output diverges from the selected parser
+  S_rs      SGLang stream parser output diverges from the selected parser
+  ?         suffix means the divergent block has no `reason:` yet
         (research-needed; we observed it but haven't classified it)
-  V!/S! peer has `error: <substring>` (expected to crash)
-  VS, V?S, VS!, etc. — combinations
-  ·     Dynamo-only fixture; both peer blocks are `unavailable`
+  !         suffix means the parser has `error: <substring>` (expected to crash)
+  Combined markers, for example V_pbS_rb, mean multiple implementations diverge
+  ·     Dynamo Rust-only fixture; peer blocks are unavailable or not captured
   n/a   family/case doesn't apply
   —     no fixture entry exists for this family/case yet
 
@@ -37,18 +43,18 @@ from `expected.<impl>.unavailable` across each family's cases.
 
 Run:
     # Markdown table to stdout
-    python3 tests/parity/generate_conformance_table_v2.py toolcalling \
+    python3 tests/parity/generate_conformance_table.py toolcalling \
         > tests/parity/toolcalling/CONFORMANCE.md
-    python3 tests/parity/generate_conformance_table_v2.py toolcalling --mode stream \
+    python3 tests/parity/generate_conformance_table.py toolcalling --mode stream \
         > tests/parity/toolcalling/CONFORMANCE.stream.md
 
     # HTML table with tabs, clickable YAML links, and hover tooltips. Prefer
     # conformance/utils/render_table_v2.sh so links are computed for the output
     # location.
-    python3 tests/parity/generate_conformance_table_v2.py toolcalling --html \
-        > tests/parity/toolcalling/CONFORMANCE_v2.html
+    python3 tests/parity/generate_conformance_table.py toolcalling --html \
+        > tests/parity/toolcalling/CONFORMANCE.html
 
-CONFORMANCE_v2.html is for local viewing only; don't check it in.
+CONFORMANCE.html is for local viewing only; don't check it in.
 """
 
 from __future__ import annotations
@@ -91,8 +97,100 @@ TEMPLATE_DIR = REPO_ROOT / "tests/parity"
 
 RUST_TOOL_CALLING_DIR = REPO_ROOT / "lib/parsers/src/tool_calling"
 
+# Implementation identity (keys, aliases, display, markers) lives in impls.py — the
+# single source of truth (audit B1). build_stage_conformance stages impls.py next to
+# this file so the import works from the staged tests/parity layout too.
+from impls import (  # noqa: E402
+    BASELINE_IMPL,
+    BATCH_IMPL_KEYS,
+    ENGINE_LETTER,
+    IMPL_DISPLAY,
+    IMPL_KEYS,
+    IMPL_LANG_MARKER,
+    LEGACY_IMPL_ALIASES,
+    PARSER_NOT_CAPTURED,
+    PEER_IMPL_KEYS,
+    STREAM_IMPL_KEYS,
+)
+
+# Comparison + marker semantics live in markers.py (audit B5); re-exported here so the
+# rendering code below and the test suite keep referring to them as module attributes.
+from markers import (  # noqa: E402,F401
+    VLLM_RUST_UNAVAILABLE,
+    _BATCH_MODE_MARKER,
+    _PARSER_ERROR_RE,
+    _STREAM_MODE_MARKER,
+    _TOOL_CALL_MARKUP_RE,
+    _block_tool_call_leaks,
+    _canonical_impl_key,
+    _canonical_tool_output,
+    _dynamo_tool_call_leak,
+    _expected,
+    _impl_get,
+    _impl_keys_for_output_kind,
+    _impl_mode_label_html,
+    _impl_mode_letter,
+    _impl_mode_marker_html,
+    _impl_mode_suffix,
+    _is_parser_error_unavailable,
+    _is_todo_unavailable,
+    _legacy_impl_keys,
+    _marker_html,
+    _marker_span_html,
+    _norm_calls,
+    _normalize_impl_mapping,
+    _overview_status,
+    _overview_status_attrs,
+    _parity_marker,
+    _parser_marker,
+    _parser_marker_attrs,
+    _parser_marker_spans,
+    _selected_parity_marker,
+    _selected_parity_suffix,
+    _sob_calls_consistent,
+    _sob_cell_text,
+    _sob_marker_attrs,
+    _sob_marker_spans,
+    _sob_status,
+    _sob_status_attrs,
+    _stream_cross_suffix,
+    _stream_parity_explainer_html,
+    _stream_xeng_marker,
+    peer_status,
+)
+
+# Fixture loading + sub-case taxonomy live in fixtures.py (audit B5); re-exported here
+# so the rendering code and tests keep referring to them as module attributes. The
+# captured-with map is a shared mutable dict (load_all_cases mutates it in place).
+from fixtures import (  # noqa: E402,F401
+    BATCH_SUB_CASE_GROUPS,
+    SPLIT_PARENT_SUBCASES,
+    STREAM_SUB_CASE_GROUPS,
+    SUB_CASE_GROUPS_BY_MODE,
+    _CAPTURED_WITH_BY_MODE,
+    _SUB_CASE_GROUP_KEY_BY_LABEL_BY_MODE,
+    _SUB_CASE_GROUP_KEY_BY_SUB_BY_MODE,
+    _attach_streamv2_batch_expected,
+    _build_family_inheritance,
+    _build_family_to_rust_ref,
+    _derive_no_peer_sets,
+    _derive_stream_expected,
+    _discover_sub_cases,
+    _display_order,
+    _group_by_sub,
+    _group_index_by_sub,
+    _natural_sub_sort_key,
+    _normalize_split_parent_cases,
+    _sub_sort_key,
+    _subcase_band_class,
+    _subcase_group_key,
+    family_suffix,
+    load_all_cases,
+)
+
+
 # Row-label / visibility overrides keyed by tool calling family; ‡ is explained
-# by the legend note in conformance_table_v2.html.j2.
+# by the legend note in conformance_table.html.j2.
 _TOOL_CALLING_LABEL_OVERRIDES = {
     "qwen3_coder": "Qwen 3 Coder / Nemotron V3‡",
 }
@@ -120,6 +218,89 @@ def _make_jinja_env() -> Environment:
     )
 
 
+def _read_asset(name: str) -> str:
+    """Inline a static CSS/JS asset (audit B7) into the rendered page.
+
+    The page is a single self-contained HTML file (no external requests), so the
+    CSS/JS live in `tests/parity/assets/` as editable files and get inlined at
+    render time rather than hard-coded in the Jinja template.
+    """
+    return (TEMPLATE_DIR / "assets" / name).read_text(encoding="utf-8")
+
+
+def _impl_status_css() -> str:
+    """Generate the per-implementation status/marker CSS (audit B6) from the one
+    impl identity table (IMPL_KEYS + the legacy reasoning aliases) instead of
+    hand-maintaining one rule per implementation. The v2 keys use `.marker-<impl>`
+    show rules; the legacy reasoning keys use `content: attr(data-marker-<legacy>)`
+    with a `:not([data-marker-<canonical>])` guard. Colors are unchanged; only the
+    source is de-duplicated, so adding an impl is one `ImplSpec` row."""
+    lines: list[str] = []
+
+    def group(selectors: list[str], body: str) -> None:
+        lines.append(",\n".join(selectors) + f" {{ {body} }}")
+
+    # ----- v2 implementations: status background by selected parser -----
+    overview_bg = {"ok": "#76b884", "problem": "#db7777"}
+    for status, color in overview_bg.items():
+        group([f'.view-overview.parser-{k} td.cell[data-status-{k}="{status}"]' for k in IMPL_KEYS],
+              f"background: {color}; color: {color};")
+    group([f'.view-overview.parser-{k} td.cell[data-status-{k}="{s}"]'
+           for k in IMPL_KEYS for s in ("na", "todo")],
+          "background: #d3d8de; color: #d3d8de;")
+    details_bg = {"ok": "#bfe3c6", "problem": "#efb3b3"}
+    for status, color in details_bg.items():
+        group([f'.view-details.parser-{k} td.cell[data-status-{k}="{status}"]' for k in IMPL_KEYS],
+              f"background: {color};")
+    group([f'.view-details.parser-{k} td.cell[data-status-{k}="{s}"]'
+           for k in IMPL_KEYS for s in ("na", "todo")],
+          "background: #e4e8ec;")
+    for status, color in (("na", "#aeb6bf"), ("todo", "#6b7280")):
+        group([f'.view-details.parser-{k} td.cell[data-status-{k}="{status}"]::before' for k in IMPL_KEYS],
+              f"color: {color};")
+        group([f'.view-details.parser-{k} td.cell[data-status-{k}="{status}"] .cell-marker' for k in IMPL_KEYS],
+              f"color: {color};")
+    for k in IMPL_KEYS:
+        lines.append(f".view-details.parser-{k} td.cell .marker-{k} {{ display: flex; }}")
+    # Hide the per-engine status markers in Conformance mode. This MUST stay right
+    # after the status-marker show rules above (equal specificity, so source order
+    # decides) and before the parity-marker show rules below, or both the status and
+    # parity markers render in the same cell and visibly overlap (audit B7 regression:
+    # this rule used to live in the template and was wrongly moved into the static
+    # asset, which inlines *before* this generated block and lost the tie).
+    lines.append(".view-details.parity-mode td.cell .cell-marker { display: none; }")
+    for k in IMPL_KEYS:
+        lines.append(f".view-details.parity-mode.parser-{k} td.cell .marker-parity-{k} {{ display: flex; }}")
+
+    # ----- legacy reasoning implementations (dynamo/vllm/sglang) -----
+    legacy = list(LEGACY_IMPL_ALIASES.items())  # (legacy, canonical)
+    legacy_keys = [lg for lg, _ in legacy]
+    for status, color in overview_bg.items():
+        group([f'.view-overview.parser-{lg} td.cell[data-status-{lg}="{status}"]' for lg in legacy_keys],
+              f"background: {color}; color: {color};")
+    group([f'.view-overview.parser-{lg} td.cell[data-status-{lg}="{s}"]'
+           for lg in legacy_keys for s in ("na", "todo")],
+          "background: #d3d8de; color: #d3d8de;")
+    for status, color in details_bg.items():
+        group([f'.view-details.parser-{lg} td.cell[data-status-{lg}="{status}"]' for lg in legacy_keys],
+              f"background: {color};")
+    group([f'.view-details.parser-{lg} td.cell[data-status-{lg}="{s}"]'
+           for lg in legacy_keys for s in ("na", "todo")],
+          "background: #e4e8ec;")
+    for status, color in (("na", "#aeb6bf"), ("todo", "#6b7280")):
+        group([f'.view-details.parser-{lg} td.cell[data-status-{lg}="{status}"]::before' for lg in legacy_keys],
+              f"color: {color};")
+    for lg, canon in legacy:
+        lines.append(
+            f'.view-details.parser-{lg} td.cell:not([data-marker-{canon}])::before '
+            f"{{ content: attr(data-marker-{lg}); }}")
+    for lg, canon in legacy:
+        lines.append(
+            f'.view-details.parity-mode.parser-{lg} td.cell:not([data-marker-parity-{canon}])::before '
+            f"{{ content: attr(data-marker-parity-{lg}); }}")
+    return "\n".join(lines)
+
+
 def _ref_text(value: Any) -> str:
     if isinstance(value, list):
         return "\n".join(str(item) for item in value)
@@ -136,6 +317,7 @@ def _build_conformance_tooltip_html(
     input_html: str | None = None,
     output_sections: list[tuple[str, str]] | None = None,
     divergent_reasons: str | None = None,
+    divergent_reasons_html: str | None = None,
     leak_label: str | None = None,
     leak_text: str | None = None,
     extra_sections: list[tuple[str, str]] | None = None,
@@ -150,7 +332,7 @@ def _build_conformance_tooltip_html(
         parts.append(f'<pre class="ttip-pre">{html_lib.escape(description)}</pre>')
 
     def add_section(label: str, body_html: str) -> None:
-        # `html_section_labels` callers pass safe HTML (e.g. `D<sub>s</sub>`); all
+        # `html_section_labels` callers pass safe HTML (e.g. `D<sub>RS</sub>`); all
         # such labels are generator-controlled, never user input.
         shown = label if html_section_labels else html_lib.escape(label)
         parts.append(f'<div class="ttip-section">{shown}:</div>')
@@ -162,7 +344,9 @@ def _build_conformance_tooltip_html(
     for label, body_html in output_sections or []:
         add_section(label, body_html)
 
-    if divergent_reasons:
+    if divergent_reasons_html:
+        add_section("Divergent reasons", divergent_reasons_html)
+    elif divergent_reasons:
         add_section("Divergent reasons", linkify_text_html(divergent_reasons))
 
     if leak_label and leak_text:
@@ -320,7 +504,7 @@ def _commit_sha() -> str | None:
 
 
 def _peer_versions() -> dict[str, str]:
-    """Extract pinned vllm / sglang versions from pyproject.toml.
+    """Extract pinned vLLM Python / SGLang versions from pyproject.toml.
 
     Matches a line like `"vllm[flashinfer,runai,otel]==X.Y.Z",` (TOML is
     not parsed — the regex is sufficient and avoids a tomllib import on
@@ -332,527 +516,8 @@ def _peer_versions() -> dict[str, str]:
     for name in ("vllm", "sglang"):
         m = re.search(rf'"{name}(?:\[[^\]]*\])?==([0-9][^"]*)"', text)
         if m:
-            out[name] = m.group(1)
+            out[_canonical_impl_key(name)] = m.group(1)
     return out
-
-
-def _build_family_inheritance(
-    refs: dict[str, tuple[str, int]],
-) -> dict[str, dict]:
-    """Derive each family's parser-inheritance map from config.rs + parsers.rs.
-
-    Detects:
-      • `ParserConfig::<Variant>(...)` — top-level backend variant
-      • `JsonParserType::<Sub>`         — Json sub-dispatch (Basic / DeepseekV3 / DeepseekV31)
-      • `Self::<factory>(...)`          — private factories (e.g. `deepseek_dsml`)
-      • `map.insert("alias", ToolCallConfig::<family>())` — aliases (parsers.rs)
-
-    Backend file is derived from the resolved (variant, sub_variant) tuple.
-    Returns `{family: {variant, sub_variant, factory, backend_file,
-    base_label, shared_with, aliases, filed_under_xml_misleading}}`.
-    """
-    cfg = (RUST_TOOL_CALLING_DIR / "config.rs").read_text()
-    pars_path = RUST_TOOL_CALLING_DIR / "parsers.rs"
-    pars = pars_path.read_text() if pars_path.exists() else ""
-
-    # Extract all ctor bodies (pub fn + fn) — captures private factories too.
-    ctor_pat = re.compile(
-        r"^\s*(?:pub )?fn (\w+)\([^)]*\)\s*->\s*Self\s*\{", re.MULTILINE
-    )
-    bodies: dict[str, str] = {}
-    for m in ctor_pat.finditer(cfg):
-        start = m.end()
-        depth, i = 1, start
-        while i < len(cfg) and depth > 0:
-            c = cfg[i]
-            if c == "{":
-                depth += 1
-            elif c == "}":
-                depth -= 1
-            i += 1
-        bodies[m.group(1)] = cfg[start : i - 1]
-
-    def _classify(body: str) -> tuple[str | None, str | None, str | None]:
-        vm = re.search(r"ParserConfig::(\w+)\b", body)
-        variant = vm.group(1) if vm else None
-        sub = None
-        if variant == "Json":
-            sm = re.search(r"JsonParserType::(\w+)\b", body)
-            sub = sm.group(1) if sm else "Basic"
-        fm = re.search(r"Self::(\w+)\(([^)]*)\)", body)
-        factory = f"{fm.group(1)}({fm.group(2).strip()})" if fm else None
-        return variant, sub, factory
-
-    backend_file = {
-        ("Json", "Basic"): "json/base_json_parser.rs",
-        ("Json", "DeepseekV3"): "json/deepseek_v3_parser.rs",
-        ("Json", "DeepseekV31"): "json/deepseek_v3_1_parser.rs",
-        ("Xml", None): "xml/parser.rs",
-        ("Pythonic", None): "pythonic/pythonic_parser.rs",
-        ("Harmony", None): "harmony/harmony_parser.rs",
-        ("Dsml", None): "dsml/parser.rs",
-        ("Glm47", None): "xml/glm47_parser.rs",
-        ("KimiK2", None): "xml/kimi_k2_parser.rs",
-        ("Gemma4", None): "gemma4/parser.rs",
-    }
-    base_label = {
-        ("Json", "Basic"): "base_json_parser (JsonParserType::Basic)",
-        ("Json", "DeepseekV3"): "deepseek_v3_parser (JsonParserType::DeepseekV3)",
-        ("Json", "DeepseekV31"): "deepseek_v3_1_parser (JsonParserType::DeepseekV31)",
-        ("Xml", None): "xml::parser (shared XML base)",
-        ("Pythonic", None): "pythonic::parser (standalone)",
-        (
-            "Harmony",
-            None,
-        ): "harmony::parser (standalone; partial reuse of base_json's try_repair_truncated_json)",
-        ("Dsml", None): "dsml::parser (shared via deepseek_dsml() factory)",
-        ("Glm47", None): "glm47_parser (standalone; filed under xml/)",
-        ("KimiK2", None): "kimi_k2_parser (standalone; filed under xml/)",
-        ("Gemma4", None): "gemma4::parser (standalone)",
-    }
-
-    out: dict[str, dict] = {}
-    for family in refs:
-        body = bodies.get(family)
-        if body is None:
-            continue
-        variant, sub, factory = _classify(body)
-        if variant is None and factory:
-            # Resolve through factory (e.g. deepseek_dsml)
-            fbody = bodies.get(factory.split("(")[0])
-            if fbody:
-                variant, sub, _ = _classify(fbody)
-        key = (variant, sub) if variant == "Json" else (variant, None)
-        out[family] = {
-            "variant": variant,
-            "sub_variant": sub,
-            "factory": factory,
-            "backend_file": backend_file.get(key, "unknown"),
-            "base_label": base_label.get(key, f"{variant}"),
-            "key": key,
-            "aliases": [],
-            "shared_with": [],
-            "filed_under_xml_misleading": False,
-        }
-
-    # Aliases from parsers.rs (only ones where alias name != family name).
-    alias_pat = re.compile(r'map\.insert\("([^"]+)",\s*ToolCallConfig::(\w+)\(\)\)')
-    alias_to_target: dict[str, str] = {}
-    for m in alias_pat.finditer(pars):
-        alias, fam = m.group(1), m.group(2)
-        if alias != fam and fam in out:
-            out[fam]["aliases"].append(alias)
-            alias_to_target[alias] = fam
-
-    # shared_with — other families with the same (variant, sub_variant).
-    by_key: dict[tuple, list[str]] = {}
-    for fam, info in out.items():
-        by_key.setdefault(info["key"], []).append(fam)
-    for fam, info in out.items():
-        info["shared_with"] = [s for s in by_key[info["key"]] if s != fam]
-        info["filed_under_xml_misleading"] = (
-            info["backend_file"].startswith("xml/") and info["variant"] != "Xml"
-        )
-
-    # Synthesize entries for alias-only families (e.g. nemotron_nano, qwen25).
-    # These are in `refs` (registered in parsers.rs) but have no ctor of their
-    # own — the alias `map.insert("nemotron_nano", ToolCallConfig::qwen3_coder())`
-    # routes to the target's config. The alias gets the target's full
-    # inheritance tree, plus `alias_of` so the tooltip can mark itself as a
-    # leaf under the target rather than as the target itself.
-    for alias, target in alias_to_target.items():
-        if alias in out or target not in out:
-            continue
-        tgt = out[target]
-        out[alias] = {
-            **tgt,
-            "alias_of": target,
-        }
-
-    return out
-
-
-def _build_family_to_rust_ref() -> dict[str, tuple[str, int]]:
-    """Scan the Rust source for each family's anchor point.
-
-    Two patterns:
-      `config.rs` :  `pub fn <family>() -> Self`               (parser config ctor)
-      `parsers.rs`:  `map.insert("<family>", ToolCallConfig::...);`  (aliases)
-
-    Config-ctor wins when the same family appears in both (the ctor is
-    the canonical definition; the registration is just plumbing). Aliases
-    (e.g. `nemotron_nano`, `qwen25`) only appear in `parsers.rs`.
-    Returns `{family: (filename, line)}`; line is 1-indexed.
-    """
-    out: dict[str, tuple[str, int]] = {}
-
-    config_rs = RUST_TOOL_CALLING_DIR / "config.rs"
-    if config_rs.exists():
-        pat = re.compile(r"^\s*pub fn (\w+)\(\)\s*->\s*Self\b")
-        for lineno, line in enumerate(config_rs.read_text().splitlines(), 1):
-            m = pat.match(line)
-            if m:
-                out[m.group(1)] = ("config.rs", lineno)
-
-    parsers_rs = RUST_TOOL_CALLING_DIR / "parsers.rs"
-    if parsers_rs.exists():
-        pat = re.compile(r'^\s*map\.insert\("([^"]+)",\s*ToolCallConfig::')
-        for lineno, line in enumerate(parsers_rs.read_text().splitlines(), 1):
-            m = pat.match(line)
-            if m and m.group(1) not in out:
-                out[m.group(1)] = ("parsers.rs", lineno)
-
-    return out
-
-
-BATCH_SUB_CASE_GROUPS = [
-    ("Single-call", ("1.a", "1.b", "1.c", "1.d")),
-    ("Core", ("1", "3", "9", "9.a", "9.b")),
-    ("Multi-call", ("2.a", "2.b", "2.c", "2.d", "2.e", "10")),
-    (
-        "Malformed / recovery",
-        (
-            "4.a",
-            "4.b",
-            "4.c",
-            "4.d",
-            "4.e",
-            "4.f",
-            "5.a",
-            "5.b",
-            "5.c",
-            "5.d",
-            "5.e",
-            "5.f",
-            "5.g",
-        ),
-    ),
-    (
-        "Args",
-        (
-            "6.a",
-            "6.b",
-            "6.c",
-            "7.a",
-            "7.b",
-            "7.c",
-            "7.d",
-            "7.e",
-            "7.f",
-        ),
-    ),
-    ("Text interleaving", ("8.a", "8.b", "8.c", "8.d")),
-    ("Unknown tools", ("13", "13.a", "13.c")),
-    (
-        "String contents",
-        ("30", "30.a", "30.b", "30.c", "31", "31.a", "31.b"),
-    ),
-]
-
-SPLIT_PARENT_SUBCASES = {
-    # Once a taxonomy bucket has leaf cases, the matrix should render only the
-    # leaves. Existing parent fixtures still carry useful expectations/reasons
-    # for parser families that have not been rewritten to leaf IDs yet.
-    "1": ("1.a",),
-    "9": ("9.a",),
-    "30": ("30.a", "30.b", "30.c"),
-    "31": ("31.a", "31.b"),
-    "13": ("13.a",),
-}
-
-# Streaming taxonomy: TOOLCALLING.streamv2.<batch#> mirrors the batch taxonomy
-# 1:1 (streamv2.1 == batch.1, etc.), so the columns group exactly like the batch
-# tab. Only sub-cases that actually exist in fixtures become columns; the rest
-# fill in over time. Streaming-only cases with no batch analog use the >=50 band.
-STREAM_SUB_CASE_GROUPS = BATCH_SUB_CASE_GROUPS + [
-    ("Partial-token", ("50",)),
-]
-
-SUB_CASE_GROUPS_BY_MODE = {
-    "batch": BATCH_SUB_CASE_GROUPS,
-    "streamv2": STREAM_SUB_CASE_GROUPS,
-}
-
-_SUB_CASE_GROUP_KEY_BY_LABEL_BY_MODE = {
-    mode: {
-        label: re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_")
-        for label, _subs in groups
-    }
-    for mode, groups in SUB_CASE_GROUPS_BY_MODE.items()
-}
-
-_SUB_CASE_GROUP_KEY_BY_SUB_BY_MODE = {
-    mode: {
-        sub: _SUB_CASE_GROUP_KEY_BY_LABEL_BY_MODE[mode][label]
-        for label, subs in groups
-        for sub in subs
-    }
-    for mode, groups in SUB_CASE_GROUPS_BY_MODE.items()
-}
-
-
-def _display_order(mode: str) -> dict[str, tuple[int, int]]:
-    return {
-        sub: (group_idx, sub_idx)
-        for group_idx, (_label, subs) in enumerate(SUB_CASE_GROUPS_BY_MODE[mode])
-        for sub_idx, sub in enumerate(subs)
-    }
-
-
-def _group_index_by_sub(mode: str) -> dict[str, int]:
-    return {
-        sub: group_idx
-        for group_idx, (_label, subs) in enumerate(SUB_CASE_GROUPS_BY_MODE[mode])
-        for sub in subs
-    }
-
-
-def _group_by_sub(mode: str) -> dict[str, str]:
-    return {sub: label for label, subs in SUB_CASE_GROUPS_BY_MODE[mode] for sub in subs}
-
-
-def _natural_sub_sort_key(sub: str) -> tuple[int, str]:
-    """`8.a` → (8, 'a'); `9` → (9, '')."""
-    parts = sub.split(".")
-    return (int(parts[0]), parts[1] if len(parts) > 1 else "")
-
-
-def _sub_sort_key(mode: str, sub: str) -> tuple[int, int, int, str]:
-    """Sort known cases by semantic display group, future cases naturally last."""
-    display_order = _display_order(mode).get(sub)
-    if display_order is not None:
-        group_idx, sub_idx = display_order
-        return (0, group_idx, sub_idx, "")
-    num, suffix = _natural_sub_sort_key(sub)
-    return (1, num, 0, suffix)
-
-
-def _subcase_band_class(mode: str, sub: str) -> str:
-    group_idx = _group_index_by_sub(mode).get(sub, len(SUB_CASE_GROUPS_BY_MODE[mode]))
-    return f"case-band-{group_idx % 2}"
-
-
-def _subcase_group_key(mode: str, sub: str) -> str:
-    return _SUB_CASE_GROUP_KEY_BY_SUB_BY_MODE[mode].get(sub, "other")
-
-
-def _discover_sub_cases(mode: str, cases: dict) -> list[str]:
-    """Union of sub-case IDs across all loaded fixtures, in stable order."""
-    return sorted(
-        {sub for _fam, sub in cases.keys()}, key=lambda s: _sub_sort_key(mode, s)
-    )
-
-
-def _normalize_split_parent_cases(cases: dict) -> dict:
-    """Render split taxonomy buckets as leaf cases only.
-
-    Some older fixture files still define parent buckets such as
-    `TOOLCALLING.batch.30`, while newer files define leaf buckets such as
-    `TOOLCALLING.batch.30.a`. For display, parent+leaf duplication is confusing:
-    once any leaf exists for a parent bucket, the table should show only the
-    leaf columns. Parent entries are copied into missing leaf cells so their
-    existing expectations or n/a reasons remain visible until the YAML itself
-    is migrated.
-    """
-    all_subs = {sub for _fam, sub in cases.keys()}
-    active_split_parents = {
-        parent
-        for parent, children in SPLIT_PARENT_SUBCASES.items()
-        if any(child in all_subs for child in children)
-    }
-    if not active_split_parents:
-        return cases
-
-    normalized = dict(cases)
-    families = {fam for fam, _sub in cases.keys()}
-    for family in families:
-        for parent in active_split_parents:
-            parent_key = (family, parent)
-            parent_case = normalized.get(parent_key)
-            if parent_case is None:
-                continue
-            for child in SPLIT_PARENT_SUBCASES[parent]:
-                child_key = (family, child)
-                if child_key in normalized:
-                    continue
-                child_case = copy.deepcopy(parent_case)
-                child_case["__case_id"] = f"TOOLCALLING.batch.{child}"
-                child_case["__synthetic_from_case_id"] = parent_case.get("__case_id")
-                normalized[child_key] = child_case
-            del normalized[parent_key]
-    return normalized
-
-
-def _derive_no_peer_sets(cases: dict) -> tuple[set[str], set[str]]:
-    """Families where every case marks the engine `unavailable`.
-
-    Used to render the † (no vLLM peer) and § (no SGLang peer) footnote
-    markers next to a family's name. A family qualifies when every case
-    in every fixture file under that family has
-    `expected.<impl>.unavailable: <reason>` recorded — i.e. the wrapper
-    rejected the family for that parser in `capture_toolcalling_outputs.py`.
-    """
-    by_family: dict[str, list[dict]] = {}
-    for (fam, _sub), case in cases.items():
-        by_family.setdefault(fam, []).append(case)
-
-    def all_unavail(fam_cases: list[dict], impl: str) -> bool:
-        expected_cases = [c for c in fam_cases if isinstance(c.get("expected"), dict)]
-        if not expected_cases:
-            return False
-        for c in expected_cases:
-            block = c.get("expected", {}).get(impl)
-            if not isinstance(block, dict) or "unavailable" not in block:
-                return False
-        return True
-
-    no_vllm = {fam for fam, cs in by_family.items() if all_unavail(cs, "vllm")}
-    no_sglang = {fam for fam, cs in by_family.items() if all_unavail(cs, "sglang")}
-    return no_vllm, no_sglang
-
-
-def family_suffix(fam: str, no_vllm: set[str], no_sglang: set[str]) -> str:
-    suff = ""
-    if fam in no_vllm:
-        suff += "†"
-    if fam in no_sglang:
-        suff += "§"
-    return suff
-
-
-# Engine versions the per-chunk stream data was captured against, keyed by mode.
-# Populated by load_all_cases; read when rendering the panel footer.
-_CAPTURED_WITH_BY_MODE: dict[str, dict[str, str]] = {}
-
-
-def load_all_cases(mode: str) -> tuple[dict[tuple[str, str], dict], dict[str, str]]:
-    """Load every fixture YAML for one parser mode.
-
-    Returns `(cases, labels)`:
-      cases  — `{(family, sub_case_id): case_data}`; each case dict gets
-               `__fixture_path` (relative to this script) and `__case_id`
-               annotations for the HTML renderer.
-      labels — `{family: model_label}` collected from the fixtures' doc-level
-               `model_label:` field. Falls back to the family ID if a fixture
-               doesn't declare one.
-    """
-    cases: dict[tuple[str, str], dict] = {}
-    labels: dict[str, str] = {}
-    captured_with: dict[str, str] = {}
-    script_dir = Path(__file__).resolve().parent
-    for fp in sorted(FIXTURES.glob(f"*/TOOLCALLING.{mode}*.yaml")):
-        doc = yaml.safe_load(fp.read_text())
-        if doc.get("mode") != mode:
-            continue
-        family = doc["family"]
-        rel = str(fp.relative_to(script_dir))
-        if "model_label" in doc:
-            labels.setdefault(family, doc["model_label"])
-        for impl, ver in (doc.get("captured_with") or {}).items():
-            captured_with.setdefault(impl, str(ver))
-        for cid, case in doc["cases"].items():
-            case["__family"] = family
-            sub = cid.replace(f"TOOLCALLING.{mode}.", "")
-            case["__fixture_path"] = rel
-            case["__case_id"] = cid
-            # Stream fixtures use the per-chunk format: each chunk carries
-            # `expected.<impl>` deltas, plus a case-level `unavailable` block.
-            # Derive a case-level `expected` (assembled calls + normal_text per
-            # impl, or {unavailable}) so the rest of the generator — which expects
-            # the batch-style {calls, normal_text} shape — works unchanged.
-            if mode == "streamv2":
-                case["expected"] = _derive_stream_expected(case)
-            cases[(family, sub)] = case
-    _CAPTURED_WITH_BY_MODE[mode] = captured_with
-    if mode == "streamv2":
-        _attach_streamv2_batch_expected(cases)
-    return _normalize_split_parent_cases(cases), labels
-
-
-def _attach_streamv2_batch_expected(cases: dict) -> None:
-    """For each streamv2 case, attach `batch_expected[impl]` from the matching batch
-    case (same family + sub), so the stream tab can color each engine's stream
-    against its own batch (streamv2.<sub> mirrors batch.<sub>)."""
-    batch_exp: dict[tuple[str, str], dict] = {}
-    for fp in sorted(FIXTURES.glob("*/TOOLCALLING.batch*.yaml")):
-        doc = yaml.safe_load(fp.read_text()) or {}
-        if doc.get("mode") != "batch":
-            continue
-        family = doc["family"]
-        for cid, c in (doc.get("cases") or {}).items():
-            sub = cid.replace("TOOLCALLING.batch.", "")
-            exp = c.get("expected")
-            if isinstance(exp, dict):
-                batch_exp[(family, sub)] = exp
-    for (family, sub), case in cases.items():
-        if isinstance(case, dict):
-            case["batch_expected"] = batch_exp.get((family, sub), {})
-
-
-def _is_per_chunk_stream(case: dict) -> bool:
-    """True if the case uses the per-chunk streaming format (chunks with an
-    `expected` mapping), as opposed to the legacy case-level `expected`."""
-    return any(
-        isinstance(chunk, dict) and "expected" in chunk
-        for chunk in case.get("chunks", []) or []
-    )
-
-
-def _derive_stream_expected(case: dict) -> dict:
-    """Assemble case-level {impl: {calls, normal_text}} (or {unavailable}) from
-    the per-chunk `expected.<impl>` deltas and `normal_text.<impl>` fragments.
-
-    Tool calls are reconstructed per index: the first delta carrying a `name`
-    sets the call name; `arguments` fragments are concatenated and parsed as JSON
-    (kept as a raw string if not valid JSON — e.g. a truncated body)."""
-    unavailable = case.get("unavailable", {}) or {}
-    chunks = case.get("chunks", []) or []
-    derived: dict = {}
-    for impl in ("dynamo", "vllm", "sglang"):
-        if impl in unavailable:
-            derived[impl] = {"unavailable": unavailable[impl]}
-            continue
-        # impl is not in `unavailable` → it was run for this case. Always emit a
-        # {calls, normal_text} block, even if empty (emitting zero calls is a real
-        # result that may diverge from another impl, not a "not applicable").
-        names: dict[int, str] = {}
-        args: dict[int, str] = {}
-        order: list[int] = []
-        normal = ""
-        for chunk in chunks:
-            for d in (chunk.get("expected", {}) or {}).get(impl, []) or []:
-                idx = d["index"]
-                if idx not in order:
-                    order.append(idx)
-                if d.get("name") is not None:
-                    names[idx] = names.get(idx, "") + d["name"]
-                if d.get("arguments") is not None:
-                    args[idx] = args.get(idx, "") + d["arguments"]
-            nt = (chunk.get("normal_text", {}) or {}).get(impl)
-            if nt:
-                normal += nt
-        calls = []
-        for idx in order:
-            raw = args.get(idx, "")
-            try:
-                parsed = json.loads(raw) if raw else {}
-            except json.JSONDecodeError:
-                parsed = raw
-            calls.append({"name": names.get(idx, ""), "arguments": parsed})
-        block = {"calls": calls, "normal_text": normal}
-        # Peer (vllm/sglang) divergence from Dynamo parser v2 streaming is captured
-        # ground truth, not an un-triaged gap — text vs token streaming differ by
-        # design. Tag peer blocks with a reason so the cell shows `S`/`V` (known
-        # divergence), never `S?`/`V?` (research-needed). The per-chunk `expected`
-        # in the fixture is the detailed evidence.
-        if impl in ("vllm", "sglang"):
-            block["reason"] = (
-                f"Captured from the {impl} streaming parser. Streaming output differs "
-                "from Dynamo parser v2 token-incremental behavior by design (text vs token "
-                "streaming); see per-chunk `expected` in the fixture."
-            )
-        derived[impl] = block
-    return derived
 
 
 def _build_display_groups(
@@ -882,189 +547,15 @@ def _build_display_groups(
     return top_n, others
 
 
-def peer_status(case: dict, dyn: dict, impl: str) -> tuple[str, bool]:
-    """Returns (kind, is_unknown).
-
-    kind:
-      'na'      — peer key missing from `expected:` (block not recorded)
-      'match'   — peer is anchor ref to dynamo, or value-equal to dynamo
-      'unavail' — peer block is `{unavailable: <msg>}`
-      'err'     — peer block is `{error: <substring>}`
-      'div'     — peer block is a concrete divergent {calls, normal_text}
-    is_unknown is True iff kind == 'div' AND block has no `reason:`.
-    """
-    block = case.get("expected", {}).get(impl)
-    if block is None:
-        return ("na", False)
-    if block is dyn:
-        return ("match", False)
-    if not isinstance(block, dict):
-        return ("na", False)
-    if "unavailable" in block:
-        return ("unavail", False)
-    if "error" in block:
-        return ("err", False)
-    if "calls" in block or "normal_text" in block:
-        # Value-equal to dynamo (non-anchor)? Treat as match.
-        n_block = {
-            "calls": block.get("calls") or [],
-            "normal_text": block.get("normal_text") or "",
-        }
-        n_dyn = {
-            "calls": dyn.get("calls") or [],
-            "normal_text": dyn.get("normal_text") or "",
-        }
-        if n_block == n_dyn:
-            return ("match", False)
-        return ("div", "reason" not in block)
-    return ("na", False)
-
-
-_TOOL_CALL_MARKUP_RE = re.compile(
-    r"</?tool_call|</?tool_calls|<\|tool_call|<\|tool_calls|"
-    r"<\|(?:channel|message|call|python_tag)\|>|"
-    r"</?TOOLCALL|TOOL_CALLS|<｜(?:DSML｜)?(?:tool|tool▁call|tool▁calls)|"
-    r"<｜DSML｜|</?minimax:tool_call|</?invoke|</?arg_key|</?arg_value"
-)
-
-
-def _dynamo_tool_call_leak(dyn: dict) -> str | None:
-    normal_text = dyn.get("normal_text")
-    if not dyn.get("reason") or not isinstance(normal_text, str):
-        return None
-    if not _TOOL_CALL_MARKUP_RE.search(normal_text):
-        return None
-    return str(dyn["reason"])
-
-
-def _block_tool_call_leaks(block: dict) -> bool:
-    normal_text = block.get("normal_text")
-    return isinstance(normal_text, str) and bool(
-        _TOOL_CALL_MARKUP_RE.search(normal_text)
-    )
-
-
-def _overview_status(case: dict | None, impl: str) -> str:
-    if case is None or "expected" not in case:
-        return "na"
-    block = case.get("expected", {}).get(impl)
-    if not isinstance(block, dict) or "unavailable" in block:
-        if impl == "dynamo" and _is_todo_unavailable(block):
-            return "todo"
-        return "na"
-    if "error" in block or _block_tool_call_leaks(block):
-        return "problem"
-    return "ok"
-
-
-def _overview_status_attrs(case: dict | None) -> str:
-    return " ".join(
-        f'data-status-{impl}="{_overview_status(case, impl)}"'
-        for impl in ("dynamo", "vllm", "sglang")
-    )
-
-
-def _canonical_tool_output(block: object) -> dict | None:
-    if not isinstance(block, dict) or "unavailable" in block or "error" in block:
-        return None
-    if "calls" not in block and "normal_text" not in block:
-        return None
-    return {
-        "calls": block.get("calls") or [],
-        "normal_text": block.get("normal_text") or "",
-    }
-
-
-def _selected_parity_marker(case: dict | None, impl: str) -> str | None:
-    """Cross-engine conformance marker (batch / stream tabs): the letters of the
-    other engines whose canonical output differs from the selected one (`=` when
-    all three agree). Returns None — the caller falls back to the per-engine status
-    marker — when any engine lacks output. (The stream tabs do NOT use this; their
-    color carries stream-vs-own-batch (`_sob_status`) and their marker carries
-    cross-engine STREAM agreement (`_stream_xeng_marker`).)
-    """
-    if case is None or "expected" not in case:
-        return None
-    expected = case.get("expected", {})
-    outputs = {
-        eng: _canonical_tool_output(expected.get(eng))
-        for eng in ("dynamo", "vllm", "sglang")
-    }
-    if any(value is None for value in outputs.values()):
-        return None
-    if outputs["dynamo"] == outputs["vllm"] == outputs["sglang"]:
-        return "="
-    selected = outputs[impl]
-    peers = (("dynamo", "D"), ("vllm", "V"), ("sglang", "S"))
-    marker = "".join(
-        letter for peer, letter in peers if peer != impl and outputs[peer] != selected
-    )
-    return marker or "="
-
-
-def _selected_parity_suffix(case: dict | None, impl: str) -> str:
-    if case is None or "expected" not in case:
-        return ""
-    block = case.get("expected", {}).get(impl)
-    if isinstance(block, dict) and _block_tool_call_leaks(block):
-        return "↯"
-    return ""
-
-
-def _parity_marker(case: dict | None, impl: str) -> str:
-    marker = _selected_parity_marker(case, impl)
-    if marker is None:
-        return _parser_marker(case, impl)
-    return _selected_parity_suffix(case, impl) + marker
-
-
-def _is_todo_unavailable(block: object) -> bool:
-    """True when a dynamo unavailable block is a not-yet-implemented TODO
-    (v2 streaming work), not a structural n/a."""
-    if not isinstance(block, dict):
-        return False
-    msg = block.get("unavailable", "")
-    return isinstance(msg, str) and "not yet implemented" in msg
-
-
-def _parser_marker(case: dict | None, impl: str) -> str:
+def cell_for(
+    case: dict | None,
+    impl_keys: tuple[str, ...] = BATCH_IMPL_KEYS,
+    marker_mode: str | None = _BATCH_MODE_MARKER,
+) -> str:
     if case is None:
         return "—"
-    if "expected" not in case:
-        return "n/a"
-    expected = case.get("expected", {})
-    block = expected.get(impl)
-    if not isinstance(block, dict) or "unavailable" in block:
-        if impl == "dynamo" and _is_todo_unavailable(block):
-            return "…"
-        return "n/a"
-    if "error" in block:
-        return "!"
-    if _block_tool_call_leaks(block):
-        return "↯"
-    if impl == "dynamo":
-        peers = (expected.get("vllm"), expected.get("sglang"))
-        if all(isinstance(peer, dict) and "unavailable" in peer for peer in peers):
-            return "·"
-    return ""
-
-
-def _parser_marker_attrs(case: dict | None) -> str:
-    attrs = [
-        f'data-marker-{impl}="{html_lib.escape(_parser_marker(case, impl))}"'
-        for impl in ("dynamo", "vllm", "sglang")
-    ]
-    attrs.extend(
-        f'data-marker-parity-{impl}="{html_lib.escape(_parity_marker(case, impl))}"'
-        for impl in ("dynamo", "vllm", "sglang")
-    )
-    return " ".join(attrs)
-
-
-def cell_for(case: dict | None) -> str:
-    if case is None:
-        return "—"
-    dyn = case.get("expected", {}).get("dynamo")
+    expected = _expected(case)
+    dyn = _impl_get(expected, BASELINE_IMPL)
     if not isinstance(dyn, dict):
         return "n/a"
     # Dynamo parser v2 unavailable for this case: distinguish "not yet implemented"
@@ -1072,25 +563,27 @@ def cell_for(case: dict | None) -> str:
     # consume a character-split fixture per-chunk).
     if "unavailable" in dyn:
         return "…" if _is_todo_unavailable(dyn) else "n/a"
-    v_kind, v_unknown = peer_status(case, dyn, "vllm")
-    s_kind, s_unknown = peer_status(case, dyn, "sglang")
-
     parts: list[str] = []
-    if v_kind == "div":
-        parts.append("V?" if v_unknown else "V")
-    elif v_kind == "err":
-        parts.append("V!")
-    if s_kind == "div":
-        parts.append("S?" if s_unknown else "S")
-    elif s_kind == "err":
-        parts.append("S!")
+    peer_kinds: dict[str, str] = {}
+    for impl in (peer for peer in impl_keys if peer != BASELINE_IMPL):
+        kind, unknown = peer_status(case, dyn, impl)
+        peer_kinds[impl] = kind
+        letter = (
+            _impl_mode_letter(impl) + _impl_mode_suffix(impl, marker_mode)
+            if marker_mode is not None
+            else ENGINE_LETTER[impl]
+        )
+        if kind == "div":
+            parts.append(f"{letter}?" if unknown else letter)
+        elif kind == "err":
+            parts.append(f"{letter}!")
 
-    # `reason:` on the `expected.dynamo` block flags Dynamo parser v2 output as
+    # `reason:` on the `expected.dynamo_rust` block flags Dynamo parser v2 output as
     # leaking tool call markup only when it also leaves residual
     # `normal_text`. The Dynamo parser v2 can have non-leak reasons for dropped malformed
     # markup, so don't mark those as `↯`.
     if isinstance(dyn, dict) and _dynamo_tool_call_leak(dyn):
-        if v_kind == "unavail" and s_kind == "unavail":
+        if all(kind in {"unavail", "na"} for kind in peer_kinds.values()):
             return "↯·"
         if parts:
             return "↯" + "".join(parts)
@@ -1098,7 +591,7 @@ def cell_for(case: dict | None) -> str:
 
     if parts:
         return "".join(parts)
-    if v_kind == "unavail" and s_kind == "unavail":
+    if all(kind in {"unavail", "na"} for kind in peer_kinds.values()):
         return "·"
     return "="
 
@@ -1119,23 +612,76 @@ def render_row(
 
 _LEGEND_MD = (
     "**Legend:** "
-    "`=` all captured peers match Dynamo (`expected.dynamo`) · "
-    "`·` Dynamo-only fixture (both peers unavailable) · "
-    "`V`/`S` divergence (V = vLLM, S = SGLang; intentional, has `reason:`) · "
-    "`?` research-needed suffix (e.g. V?, S? — diverges with no `reason:` yet) · "
+    "`=` all captured peers match Dynamo Rust (`expected.dynamo_rust`) · "
+    "`·` Dynamo Rust-only fixture (peers unavailable or not captured) · "
+    "`D_rb` (Dynamo Rust batch parser) · "
+    "`D_rs` (Dynamo Rust stream parser) · "
+    "`V_pb` (vLLM Python batch parser) · "
+    "`V_ps` (vLLM Python stream parser) · "
+    "`V_rs` (vLLM Rust stream parser; no `V_rb` exists) · "
+    "`S_rb` (SGLang batch parser) · "
+    "`S_rs` (SGLang stream parser) · "
+    "a marker means that implementation diverges from the selected parser output; intentional divergences have `reason:` · "
+    "`?` research-needed suffix (e.g. V_pb?, S_rs? — diverges with no `reason:` yet) · "
     "`↯` selected parser leaks tool call markup into `normal_text` "
     "(captured peer output can legitimately show imperfect engine behavior) · "
-    "`!` expected-error suffix (e.g. V!, S! — engine crashes by design) · "
+    "`!` expected-error suffix (e.g. V_pb!, S_rs! — engine crashes by design) · "
+    "`✗` engine parser ran but failed to parse this input (recorded as `unavailable: … parser not captured: …`); distinct from `n/a` (not run) · "
     "`…` Dynamo parser v2 not yet implemented for this row (TODO) · "
     "`n/a` not applicable · "
     "`—` missing fixture coverage · "
-    "`†` (tool calling parser column) = no vLLM peer parser for this family · "
+    "`†` (tool calling parser column) = no vLLM Python peer parser for this family · "
     "`§` (tool calling parser column) = no SGLang peer parser for this family."
     "\n\n"
     "`‡` Nemotron V3 (Ultra) reuses the qwen3_coder tool calling parser; "
     "Nemotron V1 / V2 (DeciLM) is removed from the chart for being an older "
     "generation, but the nemotron_deci parser is still supported."
 )
+
+
+def _common_legend_html(
+    peer_versions: list[tuple[str, str]] | None = None,
+    peer_versions_href: str = "../../../pyproject.toml",
+) -> str:
+    versions_html = ""
+    if peer_versions:
+        versions = " · ".join(
+            f"{html_lib.escape(name)} <code>{html_lib.escape(version)}</code>"
+            for name, version in peer_versions
+        )
+        versions_html = (
+            "<p>"
+            "<strong>Peer parser versions</strong> pinned in "
+            f'<a href="{html_lib.escape(peer_versions_href, quote=True)}">pyproject.toml</a>: '
+            f"{versions}."
+            "</p>"
+        )
+    return (
+        "<p><strong>Legend:</strong></p>"
+        '<ul class="marker-defs">'
+        '<li><strong>v1</strong> means the parser code in the Dynamo repo (<code>parsers/src/...</code>); <strong>v2</strong> means the new frontend crate parser path (<code>parsers_v2/src/...</code>).</li>'
+        '<li><span style="color:#0a7d2c">=</span> all captured peers match Dynamo Rust.</li>'
+        '<li><span style="color:#8b949e">·</span> Dynamo Rust-only fixture (peers unavailable or not captured).</li>'
+        f'<li><span style="color:#555">{_marker_html("D_rb")}</span> Dynamo Rust batch parser.</li>'
+        f'<li><span style="color:#555">{_marker_html("D_rs")}</span> Dynamo Rust stream parser.</li>'
+        f'<li><span style="color:#555">{_marker_html("V_pb")}</span> vLLM Python batch parser.</li>'
+        f'<li><span style="color:#555">{_marker_html("V_ps")}</span> vLLM Python stream parser.</li>'
+        f'<li><span style="color:#555">{_marker_html("V_rs")}</span> vLLM Rust stream parser; no <code>V_rb</code> exists.</li>'
+        f'<li><span style="color:#555">{_marker_html("S_rb")}</span> SGLang batch parser.</li>'
+        f'<li><span style="color:#555">{_marker_html("S_rs")}</span> SGLang stream parser.</li>'
+        '<li>A marker means that implementation diverges from the selected parser output; intentional divergences have <code>reason:</code>.</li>'
+        f'<li><span style="color:#b00">?</span> more research needed, for example {_marker_html("V_pb")}? or {_marker_html("S_rs")}? diverges with no <code>reason:</code> yet.</li>'
+        '<li><span style="color:#b00">↯</span> selected parser leaks tool call markup into <code>normal_text</code>; captured peer output can legitimately show imperfect engine behavior.</li>'
+        f'<li><span style="color:#b00">!</span> expected-error suffix, for example {_marker_html("V_pb")}! or {_marker_html("S_rs")}! means the engine crashes by design.</li>'
+        '<li><span style="color:#b00">✗</span> the engine parser ran but <strong>failed to parse</strong> this input (recorded as <code>unavailable: … parser not captured: …</code>); distinct from <span style="color:#aaa">n/a</span> (not run).</li>'
+        '<li><span style="color:#aaa">n/a</span> not applicable.</li>'
+        '<li><span style="color:#8a6d3b">—</span> missing fixture coverage.</li>'
+        '<li><span class="parser-suffix">†</span> no vLLM Python peer parser for this family.</li>'
+        '<li><span class="parser-suffix">§</span> no SGLang peer parser for this family.</li>'
+        '<li><span class="parser-suffix">‡</span> Nemotron V3 (Ultra) reuses the qwen3_coder tool calling parser; Nemotron V1 / V2 (DeciLM) is removed from the chart for being an older generation, but the nemotron_deci parser is still supported.</li>'
+        "</ul>"
+        f"{versions_html}"
+    )
 
 
 def render_markdown(
@@ -1165,11 +711,7 @@ def render_markdown(
     return "\n".join(lines)
 
 
-_IMPL_DISPLAY = {
-    "dynamo": "Dynamo",
-    "vllm": "vLLM",
-    "sglang": "SGLang",
-}
+_IMPL_DISPLAY = IMPL_DISPLAY
 
 
 def _format_output_block_html(block, family: str | None = None) -> str:
@@ -1241,7 +783,8 @@ def _build_tooltip_html(case: dict, dyn, output_kind: str = "batch") -> str:
         input_label = "Input chunks"
         input_html = "\n".join(chunk_lines)
 
-    expected = case.get("expected") or {}
+    expected = _expected(case)
+    impl_keys = _impl_keys_for_output_kind(output_kind)
 
     def _norm(b):
         return {
@@ -1251,24 +794,24 @@ def _build_tooltip_html(case: dict, dyn, output_kind: str = "batch") -> str:
 
     n_dyn = _norm(dyn) if isinstance(dyn, dict) else None
     all_engines_parity = isinstance(dyn, dict) and all(
-        isinstance(expected.get(i), dict)
-        and not expected[i].get("unavailable")
-        and "error" not in expected[i]
-        and _norm(expected[i]) == n_dyn
-        for i in ("dynamo", "vllm", "sglang")
+        isinstance(_impl_get(expected, i), dict)
+        and not _impl_get(expected, i).get("unavailable")
+        and "error" not in _impl_get(expected, i)
+        and _norm(_impl_get(expected, i)) == n_dyn
+        for i in impl_keys
     )
 
     output_sections: list[tuple[str, str]] = []
     if all_engines_parity:
         output_sections.append(
             (
-                f"All engines match ({output_kind})",
+                f"All available engines match ({output_kind})",
                 _format_output_block_html(dyn, family),
             )
         )
     else:
-        for impl in ("dynamo", "vllm", "sglang"):
-            block = expected.get(impl)
+        for impl in impl_keys:
+            block = _impl_get(expected, impl)
             output_sections.append(
                 (
                     f"{_IMPL_DISPLAY[impl]} {output_kind}",
@@ -1276,7 +819,7 @@ def _build_tooltip_html(case: dict, dyn, output_kind: str = "batch") -> str:
                 )
             )
 
-    reasons = _tooltip_for(case, dyn) if isinstance(dyn, dict) else ""
+    reasons = _tooltip_for(case, dyn, impl_keys) if isinstance(dyn, dict) else ""
 
     chart = _per_chunk_chart_html(case, output_kind)
 
@@ -1331,7 +874,8 @@ def _render_chunk_deltas(deltas: list, normal_text: str) -> str:
 
 def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str, str] | None:
     """Per-chunk breakdown as a compact table: one row per chunk, first column the
-    input delta_text, then one column per available impl (Dynamo, vLLM, SGLang)
+    input delta_text, then one column per available impl (Dynamo Rust, vLLM Rust,
+    vLLM Python, SGLang)
     showing what it emitted at that chunk. Returns (label, table_html), or None for
     non per-chunk stream cases. No inter-tag whitespace (keeps the markup tight)."""
     chunks = case.get("chunks")
@@ -1341,15 +885,19 @@ def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str,
         return None
 
     family = case.get("__family")
-    unavailable = case.get("unavailable", {}) or {}
-    impls = [i for i in ("dynamo", "vllm", "sglang") if i not in unavailable]
+    unavailable = _normalize_impl_mapping(case.get("unavailable") or {})
+    for impl in IMPL_KEYS:
+        block = _impl_get(case.get("expected") or {}, impl)
+        if isinstance(block, dict) and "unavailable" in block:
+            unavailable.setdefault(impl, block["unavailable"])
+    impls = [i for i in IMPL_KEYS if i not in unavailable]
 
     chunk_html = colorize_stream_deltas(chunks, family)
     # Baseline column: the Dynamo BATCH result (no chunks — just the result),
     # placed immediately left of the stream columns as a fixed reference. The
     # streaming parser's job is to reconstruct this batch parse, so it sits beside
     # the per-chunk emit for a direct side-by-side. One cell spans every row.
-    dyn_batch = (case.get("batch_expected") or {}).get("dynamo")
+    dyn_batch = _impl_get(case.get("batch_expected") or {}, BASELINE_IMPL)
     show_baseline = isinstance(dyn_batch, dict) and (
         "calls" in dyn_batch or "normal_text" in dyn_batch
     )
@@ -1357,15 +905,16 @@ def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str,
     baseline_td = ""
     base_header = ""
     if show_baseline:
-        base_header = '<th class="cbase-h">baseline<br>D<sub>b</sub> Dynamo batch</th>'
+        base_header = f'<th class="cbase-h">baseline<br>{_impl_mode_label_html(BASELINE_IMPL, _BATCH_MODE_MARKER)}</th>'
         baseline_body = _format_output_block_html(dyn_batch, family).replace(
             chr(10), "<br>"
         )
         baseline_td = (
             f'<td class="cbase" rowspan="{n_body_rows}">{baseline_body}</td>'
         )
+    mode_marker = _STREAM_MODE_MARKER if output_kind == "stream" else _BATCH_MODE_MARKER
     header = base_header + "".join(
-        f"<th>{_IMPL_DISPLAY[i]} {output_kind}</th>" for i in impls
+        f"<th>{_impl_mode_label_html(i, mode_marker)}</th>" for i in impls
     )
     rows = []
     for i, chunk in enumerate(chunks):
@@ -1384,10 +933,10 @@ def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str,
                 + html_lib.escape(str(chunk["finish_reason"]))
                 + "</span>"
             )
-        exp = chunk.get("expected", {}) or {}
-        nt = chunk.get("normal_text", {}) or {}
+        exp = _normalize_impl_mapping(chunk.get("expected") or {})
+        nt = _normalize_impl_mapping(chunk.get("normal_text") or {})
         cells = "".join(
-            f"<td>{_render_chunk_deltas(exp.get(i2) or [], nt.get(i2) or '')}</td>"
+            f"<td>{_render_chunk_deltas(_impl_get(exp, i2, []) or [], _impl_get(nt, i2, '') or '')}</td>"
             for i2 in impls
         )
         # The baseline cell (rowspan) is emitted once, on the first body row.
@@ -1396,9 +945,9 @@ def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str,
     # Final row: each impl's assembled result (calls + normal_text), derived by
     # concatenating its per-chunk deltas. Compare each column here against the
     # baseline column on the left (assembled X_s vs Dynamo batch).
-    derived = case.get("expected", {}) or {}
+    derived = _expected(case)
     final_cells = "".join(
-        f"<td>{_format_output_block_html(derived.get(i2), family).replace(chr(10), '<br>')}</td>"
+        f"<td>{_format_output_block_html(_impl_get(derived, i2), family).replace(chr(10), '<br>')}</td>"
         for i2 in impls
     )
     rows.append(
@@ -1414,28 +963,29 @@ def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str,
     if unavailable:
         note = "; ".join(
             f"{_IMPL_DISPLAY[i]}: {unavailable[i]}"
-            for i in ("dynamo", "vllm", "sglang")
+            for i in IMPL_KEYS
             if i in unavailable
         )
         table += f'<div class="ttip-unavail">{html_lib.escape(note)}</div>'
     return ("Per-chunk emit (recorded from parser = expected)", table)
 
 
-def _tooltip_for(case: dict, dyn: dict) -> str:
+def _tooltip_for(case: dict, dyn: dict, impl_keys: tuple[str, ...] = IMPL_KEYS) -> str:
     """Build the hover-tooltip text for a divergent cell.
 
     Each non-matching, non-unavailable peer contributes one line:
-      vllm: <reason>                        # `reason:` field present
-      vllm: UNKNOWN — divergent ...         # divergent, no reason
-      vllm: expected error matching '...'   # `error:` field present
+      vllm_python: <reason>                        # `reason:` field present
+      vllm_python: UNKNOWN — divergent ...         # divergent, no reason
+      vllm_python: expected error matching '...'   # `error:` field present
     """
     parts: list[str] = []
     n_dyn = {
         "calls": dyn.get("calls") or [],
         "normal_text": dyn.get("normal_text") or "",
     }
-    for impl in ("vllm", "sglang"):
-        block = case.get("expected", {}).get(impl)
+    expected = _expected(case)
+    for impl in (peer for peer in impl_keys if peer != BASELINE_IMPL):
+        block = _impl_get(expected, impl)
         if not isinstance(block, dict) or block is dyn:
             continue
         if "unavailable" in block:
@@ -1504,24 +1054,30 @@ def render_cell_html(
     sub: str,
     output_kind: str = "batch",
     comparison: str = "cross_engine",
+    marker_context: str | None = None,
 ) -> str:
     # `comparison` selects how the cell's status/markers are derived — the HTML
     # shape, CSS, and tooltip assembler are shared either way:
     #   "cross_engine"    (batch / stream tabs): per-engine leak status + cross-
-    #                     engine conformance (`=`/D/V/S vs the other engines).
+    #                     engine conformance (`=`/D_rb/V_pb/S_rb vs the other engines).
     #   "stream_vs_batch" (batch-on-stream tab): each engine's stream parse vs its
     #                     OWN batch parse; diverge -> problem (red) + engine letter.
     sob = comparison == "stream_vs_batch"
     band_cls = _subcase_band_class(mode, sub)
     col_group = html_lib.escape(_subcase_group_key(mode, sub))
     if sob:
-        text = _sob_cell_text(case)
+        text = _sob_cell_text(case, marker_context)
         status_attrs = _sob_status_attrs(case)
-        marker_attrs = _sob_marker_attrs(case)
+        marker_attrs = _sob_marker_attrs(case, marker_context)
+        marker_spans = _sob_marker_spans(case, marker_context)
     else:
-        text = cell_for(case)
-        status_attrs = _overview_status_attrs(case)
-        marker_attrs = _parser_marker_attrs(case)
+        impl_keys = _impl_keys_for_output_kind(output_kind)
+        marker_mode = _STREAM_MODE_MARKER if output_kind == "stream" else _BATCH_MODE_MARKER
+        text = cell_for(case, impl_keys, marker_mode)
+        status_attrs = _overview_status_attrs(case, impl_keys)
+        marker_attrs = _parser_marker_attrs(case, impl_keys, marker_mode)
+        marker_spans = _parser_marker_spans(case, impl_keys, marker_mode)
+    display_text = _marker_html(text)
     cls = parity_cell_class(text)
     td_open = (
         f'<td class="cell {cls} {band_cls}" data-col-hide-group="{col_group}" '
@@ -1529,26 +1085,26 @@ def render_cell_html(
     )
     if case is None:
         ttip = _build_missing_tooltip_html(mode, family, sub)
-        return f"{td_open}{text}{ttip}</td>"
+        return f"{td_open}{marker_spans}{display_text}{ttip}</td>"
 
-    dyn = case.get("expected", {}).get("dynamo")
+    dyn = _impl_get(case.get("expected") or {}, BASELINE_IMPL)
     if not isinstance(dyn, dict):
         # n/a stub: case has only `reason:` (no `expected:` block).
         fp = case.get("__fixture_path", "")
         ttip = _build_na_tooltip_html(case)
         if not fp:
-            return f"{td_open}{text}{ttip}</td>"
+            return f"{td_open}{marker_spans}{display_text}{ttip}</td>"
         href = html_lib.escape(fp)
-        return f'{td_open}<a href="{href}">{text}</a>{ttip}</td>'
+        return f'{td_open}{marker_spans}<a href="{href}">{display_text}</a>{ttip}</td>'
 
     fp = case.get("__fixture_path", "")
     # Case id + description live in the rich CSS tooltip head — don't also
     # set `title=` on the link, or browsers stack a native tooltip on top.
-    ttip = _build_sob_tooltip(case) if sob else _build_tooltip_html(case, dyn, output_kind)
+    ttip = _build_sob_tooltip(case, marker_context) if sob else _build_tooltip_html(case, dyn, output_kind)
     if not fp:
-        return f"{td_open}{text}{ttip}</td>"
+        return f"{td_open}{marker_spans}{display_text}{ttip}</td>"
     href = html_lib.escape(fp)
-    return f'{td_open}<a href="{href}">{text}</a>{ttip}</td>'
+    return f'{td_open}{marker_spans}<a href="{href}">{display_text}</a>{ttip}</td>'
 
 
 def _parser_inheritance_tooltip_html(
@@ -1607,7 +1163,7 @@ def _parser_inheritance_tooltip_html(
 
     peer_notes: list[str] = []
     if no_vllm and family in no_vllm:
-        peer_notes.append("no vLLM peer parser")
+        peer_notes.append("no vLLM Python peer parser")
     if no_sglang and family in no_sglang:
         peer_notes.append("no SGLang peer parser")
     if peer_notes:
@@ -1710,35 +1266,54 @@ def _parser_cell_html(
     if suff:
         row_label += f'<span class="parser-suffix">{html_lib.escape(suff)}</span>'
     if family == "harmony" and stream_context == "streamv2":
-        return _v2_harmony_parser_cell_html(
+        return _v2_parser_cell_html(
             row_label,
             family,
             "HarmonyToolStreamParser token-id path",
+            "harmony.rs",
             "parse_tool_call_streaming_incremental",
             "v2 stream fixtures",
             "TC stream token-id row. It consumes `delta_token_ids` from v2 stream fixtures directly.",
         )
     if family == "harmony" and stream_context == "batch_on_stream":
-        return _v2_harmony_parser_cell_html(
+        return _v2_parser_cell_html(
             row_label,
             family,
             "HarmonyToolStreamParser text path",
+            "harmony.rs",
             "parse_tool_call_streaming_text",
             "v1 batch fixtures",
             "TC batch-on-stream row. It feeds each v1 batch fixture's full text through the v2 streaming parser.",
         )
     if family == "harmony_text":
-        return _v2_harmony_parser_cell_html(
+        return _v2_parser_cell_html(
             row_label,
             family,
             "HarmonyToolStreamParser text path",
+            "harmony.rs",
             "parse_tool_call_streaming_text",
             "v2 stream fixtures",
             "Synthetic v2 row for gpt-oss text streaming. The text path re-tokenizes a held suffix, then feeds the same token-incremental Harmony stream parser used by the token-id row.",
         )
+    if family == "deepseek_v4" and stream_context in ("streamv2", "batch_on_stream"):
+        fixtures = "v2 stream fixtures" if stream_context == "streamv2" else "v1 batch fixtures"
+        note = (
+            "TC stream row. It consumes DSML text chunks and emits compact complete-invoke deltas."
+            if stream_context == "streamv2"
+            else "TC batch-on-stream row. It feeds each v1 batch fixture's full text through the v2 DSML streaming parser."
+        )
+        return _v2_parser_cell_html(
+            row_label,
+            family,
+            "DeepSeekV4ToolStreamParser text path",
+            "dsml.rs",
+            "push",
+            fixtures,
+            note,
+        )
     if stream_context in ("streamv2", "batch_on_stream"):
-        # No Dynamo parser v2 stream parser for this family yet (only harmony,
-        # handled above). Inventory-only row; don't link the v1 batch parser.
+        # No Dynamo parser v2 stream parser for this family yet. Inventory-only
+        # row; don't link the v1 batch parser.
         return _v2_missing_stream_parser_cell_html(family)
     ref = refs.get(family)
     info = inheritance.get(family)
@@ -1779,10 +1354,11 @@ def _parser_cell_html(
     )
 
 
-def _v2_harmony_parser_cell_html(
+def _v2_parser_cell_html(
     row_label: str,
     family: str,
     backend: str,
+    source_file: str,
     entrypoint: str,
     fixtures: str,
     note: str,
@@ -1794,14 +1370,14 @@ def _v2_harmony_parser_cell_html(
         f"Fixtures: {html_lib.escape(fixtures)}.\n"
         f"Tool calling parser row: {html_lib.escape(family)}\n"
         f"Effective parser/backend: {html_lib.escape(backend)}\n"
-        'Dynamo parser v2 implementation: parsers_v2/src/tool_calling/harmony.rs -> '
-        f'<a href="../../../parsers_v2/src/tool_calling/harmony.rs">{html_lib.escape(entrypoint)}</a>\n'
+        f"Dynamo parser v2 implementation: parsers_v2/src/tool_calling/{html_lib.escape(source_file)} -> "
+        f'<a href="../../../parsers_v2/src/tool_calling/{html_lib.escape(source_file)}">{html_lib.escape(entrypoint)}</a>\n'
         f"Note: {html_lib.escape(note)}"
         "</pre></div>"
     )
     return (
         f'<td class="parser" data-col-hide-group="parser">'
-        f'<a href="../../../parsers_v2/src/tool_calling/harmony.rs">{row_label}</a>{tooltip}</td>'
+        f'<a href="../../../parsers_v2/src/tool_calling/{html_lib.escape(source_file)}">{row_label}</a>{tooltip}</td>'
     )
 
 
@@ -1841,7 +1417,11 @@ def render_row_html(
     # tab and the batch-on-stream tab carry STREAMING parser output; only the plain
     # batch tab carries batch output.
     output_kind = "batch" if parser_stream_context == "batch" else "stream"
-    cell_text = _sob_cell_text if comparison == "stream_vs_batch" else cell_for
+    cell_text = (
+        (lambda case: _sob_cell_text(case, parser_stream_context))
+        if comparison == "stream_vs_batch"
+        else cell_for
+    )
     cells = [
         f'<tr><td class="model" data-col-hide-group="model">{_model_label_html(model)}</td>',
         _column_placeholder_html("model"),
@@ -1856,7 +1436,7 @@ def render_row_html(
         _column_placeholder_html("parser"),
     ]
     # A family with no parser implemented and no captured peer output renders as
-    # an inventory-only row. If vLLM/SGLang data exists, still render cells so the
+    # an inventory-only row. If peer parser data exists, still render cells so the
     # peer Parser-radio views show the captured stream behavior while the local
     # Dynamo parser v2 remains TODO.
     all_todo = sub_cases and all(
@@ -1871,7 +1451,13 @@ def render_row_html(
         else:
             cells.extend(
                 render_cell_html(
-                    cases.get((family, sub)), mode, family, sub, output_kind, comparison
+                    cases.get((family, sub)),
+                    mode,
+                    family,
+                    sub,
+                    output_kind,
+                    comparison,
+                    parser_stream_context,
                 )
                 for sub in run
             )
@@ -1883,9 +1469,9 @@ def render_row_html(
 def _has_peer_output(case: dict | None) -> bool:
     if not case:
         return False
-    expected = case.get("expected", {})
-    for impl in ("vllm", "sglang"):
-        block = expected.get(impl)
+    expected = _expected(case)
+    for impl in PEER_IMPL_KEYS:
+        block = _impl_get(expected, impl)
         if isinstance(block, dict) and "unavailable" not in block:
             return True
     return False
@@ -2075,7 +1661,12 @@ def _glossary_groups(
 
 
 def _peer_version_items(versions: dict[str, str]) -> list[tuple[str, str]]:
-    return [(name, versions[name]) for name in ("vllm", "sglang") if name in versions]
+    normalized = _normalize_impl_mapping(versions)
+    return [
+        (_IMPL_DISPLAY[name], normalized[name])
+        for name in ("vllm_rust", "vllm_python", "sglang_python")
+        if name in normalized
+    ]
 
 
 def _compute_stats(
@@ -2114,7 +1705,7 @@ def _compute_stats(
             s["real"] += 1
             if text == "=":
                 s["parity"] += 1
-            elif text in {"D", "·"}:
+            elif text == "·" or text in {"D", "D_rb", "D_rs"}:
                 s["dynamo_only"] += 1
             elif "!" in text:
                 s["errors"] += 1
@@ -2165,7 +1756,11 @@ def render_html_panel(
     taxonomy_mode = taxonomy_mode or mode
     if parser_stream_context is None:
         parser_stream_context = mode
-    cell_text = _sob_cell_text if comparison == "stream_vs_batch" else cell_for
+    cell_text = (
+        (lambda case: _sob_cell_text(case, parser_stream_context))
+        if comparison == "stream_vs_batch"
+        else cell_for
+    )
     descriptions = _parse_subcase_descriptions(taxonomy_mode)
     refs = _build_family_to_rust_ref()
     inheritance = _build_family_inheritance(refs)
@@ -2243,156 +1838,17 @@ def render_html_panel(
         "stats": stats,
         "glossary_groups": _glossary_groups(taxonomy_mode, descriptions, sub_cases),
         "captured_note": captured_note,
+        "parser_options": _impl_keys_for_output_kind(
+            "batch" if parser_stream_context == "batch" else "stream"
+        ),
     }
     if comparison == "stream_vs_batch":
-        # The stream tabs encode two dimensions per cell, so the cross-engine
-        # explainer for the batch tab does not describe them. Override it.
-        panel["parity_explainer_html"] = _STREAM_PARITY_EXPLAINER_HTML
+        panel["details_note_html"] = f"<p>{_stream_parity_explainer_html(parser_stream_context)}</p>"
+        panel["parity_explainer_html"] = ""
     return panel
 
 
-_ENGINE_LETTER = {"dynamo": "D", "vllm": "V", "sglang": "S"}
-
-
-def _norm_calls(calls: list) -> list[tuple]:
-    """Normalize a calls list to [(name, canonical-json-args)] for equality."""
-    out = []
-    for c in calls or []:
-        out.append(
-            (c.get("name", ""), json.dumps(c.get("arguments", {}), sort_keys=True, ensure_ascii=False))
-        )
-    return out
-
-
-# --- Stream-tab comparison (TC stream v2 + batch-on-stream), two dimensions per cell:
-#   COLOR (data-status): each engine's STREAM parse vs its OWN BATCH parse — green if
-#     the stream reconstructs the batch result, red if it diverges (mirrors the
-#     `parity_toolcalling_batch_via_stream` Rust test).
-#   MARKER (Conformance toggle): each engine's stream vs the OTHER engines' streams —
-#     `=` when the available streams agree, else the differing engines' letters with a
-#     subscript-s (Vₛ/Sₛ). The default marker (toggle off) stays leak-only.
-_SUB_S = "ₛ"  # ₛ subscript small s, for the stream cross-engine marker
-# Unicode has no Latin subscript "b"; ᵦ (U+1D66, subscript beta) is the closest
-# glyph and renders inside the CSS `content: attr(...)` cell marker, where real
-# <sub> can't. Used for the own-batch divergence token (Dᵦ) in the grid.
-_SUB_B = "ᵦ"
-
-# The stream tabs (batch-on-stream + TC stream v2) pack two comparisons into one
-# cell, so they replace the batch tab's cross-engine explainer with this.
-_STREAM_PARITY_EXPLAINER_HTML = (
-    "<strong>Conformance (stream):</strong> two comparisons per cell. "
-    '<strong>Color</strong> = each engine\'s <em>stream</em> parse vs its own '
-    '<em>batch</em> parse — <span style="color:#0a7d2c">green</span> when the '
-    "stream reconstructs the batch result, "
-    '<span style="color:#b00">red</span> when it diverges from its own batch '
-    "(X<sub>s</sub> vs X<sub>b</sub>; see the tooltip for both sides). "
-    "<strong>Marker</strong> (Conformance on): "
-    '<span style="color:#0a7d2c">=</span> stream matches its own batch and all '
-    "available streams agree · "
-    '<span style="color:#b00">X<sub>b</sub></span> '
-    "(e.g. <span style=\"color:#b00\">D<sub>b</sub></span>) the selected engine's "
-    "own batch differs from its stream (subscript b = batch; the same divergence "
-    "that reddens the cell) · "
-    '<span style="color:#555">Y<sub>s</sub></span> '
-    "(<span style=\"color:#555\">D<sub>s</sub></span>/V<sub>s</sub>/S<sub>s</sub>) "
-    "another engine's <em>stream</em> differs from the selected engine's stream "
-    "(subscript s = stream) · "
-    '<span style="color:#b00">↯</span> the selected stream leaks markup.'
-)
-
-
-def _sob_calls_consistent(case: dict, impl: str) -> bool | None:
-    """True/False if the engine's stream calls match its batch calls; None when
-    there's nothing to compare (no stream output or no batch reference)."""
-    stream = case.get("expected", {}).get(impl)
-    batch = (case.get("batch_expected") or {}).get(impl)
-    if not isinstance(stream, dict) or not isinstance(batch, dict):
-        return None
-    if "calls" not in batch and "normal_text" not in batch:
-        return None
-    return _norm_calls(stream.get("calls")) == _norm_calls(batch.get("calls"))
-
-
-def _sob_status(case: dict | None, impl: str) -> str:
-    if case is None:
-        return "na"
-    stream = case.get("expected", {}).get(impl)
-    if not isinstance(stream, dict) or "unavailable" in stream:
-        return "todo" if (impl == "dynamo" and _is_todo_unavailable(stream)) else "na"
-    if "error" in stream or _block_tool_call_leaks(stream):
-        return "problem"
-    consistent = _sob_calls_consistent(case, impl)
-    if consistent is None:
-        return "ok"
-    return "ok" if consistent else "problem"
-
-
-def _sob_status_attrs(case: dict | None) -> str:
-    return " ".join(
-        f'data-status-{impl}="{_sob_status(case, impl)}"'
-        for impl in ("dynamo", "vllm", "sglang")
-    )
-
-
-def _stream_xeng_marker(case: dict | None, impl: str) -> str:
-    """Conformance marker for the stream tabs, two parts concatenated:
-      - own-batch: `Xᵦ` when this engine's stream diverges from its OWN batch parse
-        (the same condition that reddens the cell — e.g. `Dᵦ` for Dynamo).
-      - cross-engine: the OTHER engines' letters with a subscript-s (`Vₛ`, `Sₛ`)
-        for engines whose stream differs from this one (needs >=2 streams).
-    Returns the `↯` leak prefix + own-batch token + cross-engine tokens, `=` when
-    none, or the per-engine status marker (`…`/`n/a`) when this engine has no
-    stream output."""
-    if case is None:
-        return "—"
-    expected = case.get("expected", {})
-    sel_block = expected.get(impl)
-    if not isinstance(sel_block, dict) or "unavailable" in sel_block:
-        return _parser_marker(case, impl)
-    leak = "↯" if _block_tool_call_leaks(sel_block) else ""
-    # own-batch divergence (Xᵦ): this engine's stream != its own batch parse.
-    own = (
-        _ENGINE_LETTER[impl] + _SUB_B
-        if _sob_calls_consistent(case, impl) is False
-        else ""
-    )
-    # cross-engine (Yₛ): other engines whose stream differs from this one.
-    outputs = {
-        e: _canonical_tool_output(expected.get(e)) for e in ("dynamo", "vllm", "sglang")
-    }
-    available = {e: o for e, o in outputs.items() if o is not None}
-    selected = available.get(impl)
-    cross = ""
-    if selected is not None and len(available) >= 2:
-        cross = "".join(
-            _ENGINE_LETTER[e] + _SUB_S
-            for e in ("dynamo", "vllm", "sglang")
-            if e in available and e != impl and available[e] != selected
-        )
-    return leak + (own + cross or "=")
-
-
-def _sob_marker_attrs(case: dict | None) -> str:
-    # Default marker (Conformance OFF) = leak-only, same as every tab. Conformance
-    # marker (Conformance ON) = cross-engine stream agreement (Vₛ/Sₛ); the color
-    # (data-status) carries the stream-vs-batch result.
-    attrs = [
-        f'data-marker-{impl}="{html_lib.escape(_parser_marker(case, impl))}"'
-        for impl in ("dynamo", "vllm", "sglang")
-    ]
-    attrs.extend(
-        f'data-marker-parity-{impl}="{html_lib.escape(_stream_xeng_marker(case, impl))}"'
-        for impl in ("dynamo", "vllm", "sglang")
-    )
-    return " ".join(attrs)
-
-
-def _sob_cell_text(case: dict | None) -> str:
-    """Static/overview cell text: the Dynamo cross-engine stream marker (=, Vₛ, …)."""
-    return _stream_xeng_marker(case, "dynamo")
-
-
-def _build_sob_tooltip(case: dict) -> str:
+def _build_sob_tooltip(case: dict, marker_context: str | None = None) -> str:
     """Tooltip for a stream-tab cell (TC stream v2 + batch-on-stream).
 
     Two comparisons, both shown:
@@ -2412,8 +1868,8 @@ def _build_sob_tooltip(case: dict) -> str:
         if isinstance(model_text, str) and model_text
         else None
     )
-    expected = case.get("expected") or {}
-    batch = case.get("batch_expected") or {}
+    expected = _expected(case)
+    batch = _normalize_impl_mapping(case.get("batch_expected") or {})
     # The per-chunk chart (chunk-by-chunk emit + an assembled X_s row + a batch X_b
     # row) is the heart of the streaming tab; only TC stream v2 cases carry
     # `chunks:`. When it's present it already shows both X_s and X_b, so the
@@ -2421,18 +1877,18 @@ def _build_sob_tooltip(case: dict) -> str:
     chart = _per_chunk_chart_html(case, "stream")
     sections: list[tuple[str, str]] = []
     if not chart:
-        for impl in ("dynamo", "vllm", "sglang"):
-            L = _ENGINE_LETTER[impl]
+        for impl in IMPL_KEYS:
             sections.append(
-                (f"{L}<sub>s</sub> {_IMPL_DISPLAY[impl]} stream", _format_output_block_html(expected.get(impl), family))
+                (_impl_mode_label_html(impl, _STREAM_MODE_MARKER), _format_output_block_html(_impl_get(expected, impl), family))
             )
-            sections.append(
-                (f"{L}<sub>b</sub> {_IMPL_DISPLAY[impl]} batch", _format_output_block_html(batch.get(impl), family))
-            )
-    # Color reasons: stream diverged from its own batch (X_s != X_b -> red cell).
+            if impl != "vllm_rust":
+                sections.append(
+                    (_impl_mode_label_html(impl, _BATCH_MODE_MARKER), _format_output_block_html(_impl_get(batch, impl), family))
+                )
+    # Color reasons: stream diverged from its own batch (X_rs/X_ps != X_rb/X_pb -> red cell).
     reason_parts = [
-        f"{_ENGINE_LETTER[impl]}{_SUB_S} stream diverges from its own batch parse (cell is red)"
-        for impl in ("dynamo", "vllm", "sglang")
+        f"{_impl_mode_marker_html(impl, _STREAM_MODE_MARKER)} output diverges from {_impl_mode_marker_html(impl, _BATCH_MODE_MARKER)} (cell is red)"
+        for impl in IMPL_KEYS
         if _sob_calls_consistent(case, impl) is False
     ]
     return _build_conformance_tooltip_html(
@@ -2441,37 +1897,40 @@ def _build_sob_tooltip(case: dict) -> str:
         input_label="Input" if input_html else None,
         input_html=input_html,
         output_sections=sections,
-        divergent_reasons="\n".join(reason_parts) or None,
+        divergent_reasons_html="<br>".join(reason_parts) if reason_parts else None,
         chart=chart,
         refs=[("Ref", case.get("ref"))],
         html_section_labels=True,
     )
 
 
-def _stream_on_batch_expected(overlay_case: dict) -> dict:
+def _stream_on_batch_expected(overlay_case: dict, has_batch_text: bool = True) -> dict:
     """Build a standard `expected` block — `{impl: {calls, normal_text}}` (or
     `{unavailable}`) — from one batch-on-stream overlay case.
 
-    The overlay records each engine's STREAMING parse of the v1 batch text. Only
-    harmony has a Dynamo parser v2 stream parser today, so most overlays carry no
-    `dynamo` block; render those as a not-yet-implemented TODO so the Dynamo column
-    shows `…`. Peer (vLLM/SGLang) outputs are tagged with a `reason` so the
-    conformance marker reads as an intentional divergence (`V`/`S`), not
-    research-needed (`V?`/`S?`) — text-vs-token streaming differs by design.
+    The overlay records each engine's STREAMING parse of the v1 batch text. Some
+    overlay rows are taxonomy placeholders with no batch `model_text`; render
+    those as structural unavailability instead of claiming the parser is missing.
+    Peer outputs are tagged with a `reason` so the
+    conformance marker reads as an intentional divergence (`V_ps`/`S_rs`), not
+    research-needed (`V_ps?`/`S_rs?`) — text-vs-token streaming differs by design.
     """
     expected: dict = {}
-    dynamo = overlay_case.get("dynamo")
+    overlay_case = _normalize_impl_mapping(overlay_case)
+    dynamo = _impl_get(overlay_case, BASELINE_IMPL)
     if isinstance(dynamo, dict) and ("calls" in dynamo or "normal_text" in dynamo):
-        expected["dynamo"] = {
+        expected[BASELINE_IMPL] = {
             "calls": dynamo.get("calls") or [],
             "normal_text": dynamo.get("normal_text") or "",
         }
+    elif not has_batch_text:
+        expected[BASELINE_IMPL] = {"unavailable": "No batch model_text for this case."}
     else:
-        expected["dynamo"] = {
+        expected[BASELINE_IMPL] = {
             "unavailable": "Dynamo parser v2 stream parser not yet implemented for this family"
         }
-    for impl in ("vllm", "sglang"):
-        block = overlay_case.get(impl)
+    for impl in PEER_IMPL_KEYS:
+        block = _impl_get(overlay_case, impl)
         if not isinstance(block, dict):
             expected[impl] = {
                 "unavailable": "No batch-on-stream capture for this engine."
@@ -2483,7 +1942,7 @@ def _stream_on_batch_expected(overlay_case: dict) -> dict:
                 "calls": block.get("calls") or [],
                 "normal_text": block.get("normal_text") or "",
                 "reason": (
-                    f"Captured from the {impl} streaming parser on the batch text. "
+                    f"Captured from the {IMPL_DISPLAY[impl]} streaming parser on the batch text. "
                     "Streaming output differs from Dynamo parser v2 token-incremental "
                     "behavior by design (text vs token streaming)."
                 ),
@@ -2530,10 +1989,24 @@ def _build_stream_on_batch_cases(batch_cases: dict) -> dict:
             "description": bcase.get("description"),
             "model_text": bcase.get("model_text"),
             "ref": bcase.get("ref"),
-            "expected": _stream_on_batch_expected(overlay_case),
-            "batch_expected": bcase.get("expected") or {},
+            "expected": _stream_on_batch_expected(
+                overlay_case, has_batch_text="model_text" in bcase
+            ),
+            "batch_expected": _normalize_impl_mapping(bcase.get("expected") or {}),
         }
     return cases
+
+
+def _relabel_harmony_text_path(
+    groups: list[tuple[str, str]],
+) -> list[tuple[str, str]]:
+    """Display the batch-on-stream Harmony row as the text path (it runs
+    `parse_tool_call_streaming_text` only). Leaves every other row's label
+    untouched."""
+    return [
+        ("gpt-oss (harmony, text)" if fam == "harmony" else label, fam)
+        for label, fam in groups
+    ]
 
 
 def build_stream_on_batch_panel(active: bool = False) -> dict[str, object]:
@@ -2545,14 +2018,21 @@ def build_stream_on_batch_panel(active: bool = False) -> dict[str, object]:
     panel pipeline. Its markers use the `stream_vs_batch` comparison (two
     dimensions per cell): default mode shows only the leak marker; the cell COLOR
     is each engine's stream parse vs its own batch parse (green consistent, red
-    divergent), and the Conformance toggle shows cross-engine stream agreement
-    (`=`, or `Dₛ`/`Vₛ`/`Sₛ` for the streams that differ).
+    divergent), and the Conformance toggle shows cross-engine output agreement
+    (`=`, or `D_rs`/`V_ps`/`V_rs`/`S_rs` for stream parser outputs).
     """
     batch_cases, labels = load_all_cases("batch")
     cases = _build_stream_on_batch_cases(batch_cases)
     sub_cases = _discover_sub_cases("batch", batch_cases)
     no_vllm, no_sglang = _derive_no_peer_sets(batch_cases)
     top_n, others = _build_display_groups(batch_cases, labels)
+    # Batch-on-stream feeds each batch fixture's full text through the v2 stream
+    # parser. For Harmony that is the TEXT path only (parse_tool_call_streaming_text):
+    # batch fixtures carry no token IDs, so there is no token-id path on this tab.
+    # Relabel the row to say so — matching the TC stream tab's "gpt-oss (harmony,
+    # text)" — without touching the shared v1 batch label `gpt-oss`, which the plain
+    # batch tab (the batch parser, not the stream parser) still shows.
+    top_n, others = _relabel_harmony_text_path(top_n), _relabel_harmony_text_path(others)
     return render_html_panel(
         "stream_on_batch",
         cases,
@@ -2593,7 +2073,7 @@ def _load_html_panel(
     no_vllm, no_sglang = _derive_no_peer_sets(cases)
     top_n, others = _build_display_groups(cases, labels)
     # The streamv2 tab uses the stream comparison: color = stream-vs-own-batch,
-    # conformance marker = cross-engine stream agreement.
+    # conformance marker = cross-engine stream agreement (`Y_s`).
     comparison = "stream_vs_batch" if mode == "streamv2" else "cross_engine"
     return (
         mode,
@@ -2620,19 +2100,22 @@ def render_html(modes: list[str], family_filter: str | None = None) -> str:
         if family_filter
         else "Dynamo Tool Calling Parser v2 Conformance Table"
     )
-    command = "python3 tests/parity/generate_conformance_table_v2.py toolcalling --html"
-    output = "tests/parity/toolcalling/CONFORMANCE_v2.html"
+    command = "python3 tests/parity/generate_conformance_table.py toolcalling --html"
+    output = "tests/parity/toolcalling/CONFORMANCE.html"
     if family_filter:
         command += f" --family {family_filter}"
-        output = f"tests/parity/toolcalling/CONFORMANCE_v2.{family_filter}.html"
+        output = f"tests/parity/toolcalling/CONFORMANCE.{family_filter}.html"
 
     sha = _commit_sha()
+    legend_html = _common_legend_html(_peer_version_items(_peer_versions()))
+    for _mode, panel, _has_cases in panels:
+        panel["legend_html"] = legend_html
 
     if len(modes) == 1:
         command += f" --mode {modes[0]}"
-        output = f"tests/parity/toolcalling/CONFORMANCE_v2.{modes[0]}.html"
+        output = f"tests/parity/toolcalling/CONFORMANCE.{modes[0]}.html"
         if family_filter:
-            output = f"tests/parity/toolcalling/CONFORMANCE_v2.{family_filter}.{modes[0]}.html"
+            output = f"tests/parity/toolcalling/CONFORMANCE.{family_filter}.{modes[0]}.html"
 
     tabs = []
     for i, (mode, _panel, _has_cases) in enumerate(panels):
@@ -2647,7 +2130,7 @@ def render_html(modes: list[str], family_filter: str | None = None) -> str:
 
     html = (
         _make_jinja_env()
-        .get_template("conformance_table_v2.html.j2")
+        .get_template("conformance_table.html.j2")
         .render(
             title=title,
             title_html=title.replace(
@@ -2655,21 +2138,21 @@ def render_html(modes: list[str], family_filter: str | None = None) -> str:
                 '<span class="title-code">frontend-crate</span>',
             ),
             stamp=stamp,
+            conformance_css=_read_asset("conformance.css"),
+            conformance_js=_read_asset("conformance.js"),
+            impl_status_css=_impl_status_css(),
             sha=sha,
             short_sha=sha[:12] if sha else "",
             command=command,
             output=output,
             tabs=tabs,
             panels=[panel for _mode, panel, _has_cases in panels],
-            peer_versions=_peer_version_items(_peer_versions()),
         )
     )
     return _scrub_visible_conformance_text(html)
 
 
-
-
-# ===== merged combined-renderer orchestrator (was generate_conformance_table_v2.py) =====
+# ===== merged combined-renderer orchestrator (was generate_conformance_table.py) =====
 
 def _rewrite_panel_paths(
     panel: dict[str, Any],
@@ -2733,14 +2216,14 @@ def _rewrite_panel_paths(
 def _tab_label(
     prefix: str, data: str, parser: str | None, v2: bool, data_word: bool = True
 ) -> tuple[str, str]:
-    """Build a tab label as `<prefix> (<data> data on <parser>-parser)[ (v2)]`.
+    """Build a tab label as `<prefix> vN (<data> data on <parser>-parser)`.
     Returns (plain, html); the html form wraps the parenthetical in a smaller-font
     span (`tab-sub`) and color-codes the words "batch"/"stream" (`w-batch`/`w-stream`)
     so the two axes are distinguishable. `data` is "batch" or "stream". `parser` is
     "batch"/"stream", or None for a bare "parser" (reasoning has a single parser, not
     a batch/stream split). `data_word=False` drops the literal " data" word, e.g.
     reasoning renders `(batch on parser)`."""
-    suffix = " (v2)" if v2 else ""
+    version = "v2" if v2 else "v1"
     dword = " data" if data_word else ""
 
     def _w(word: str) -> str:
@@ -2748,9 +2231,9 @@ def _tab_label(
 
     parser_plain = f"{parser}-parser" if parser else "parser"
     parser_html = f"{_w(parser)}-parser" if parser else "parser"
-    plain = f"{prefix} ({data}{dword} on {parser_plain}){suffix}"
-    sub_html = f"({_w(data)}{dword} on {parser_html}){suffix}"
-    return plain, f'{prefix} <span class="tab-sub">{sub_html}</span>'
+    plain = f"{prefix} {version} ({data}{dword} on {parser_plain})"
+    sub_html = f"({_w(data)}{dword} on {parser_html})"
+    return plain, f'{prefix} {version} <span class="tab-sub">{sub_html}</span>'
 
 
 def _tab_button(panel: dict[str, Any]) -> str:
@@ -2765,19 +2248,23 @@ def _tab_button(panel: dict[str, Any]) -> str:
         else html_lib.escape(str(panel["label"]))
     )
     title = html_lib.escape(str(panel.get("tab_title", panel["label"])))
-    # toolbar_desc is HTML (link + emphasis), rendered via innerHTML on tab switch.
-    # Escape only the attribute-breaking chars so the inner tags survive.
-    desc = (
-        str(panel.get("toolbar_desc") or "")
-        .replace("&", "&amp;")
-        .replace('"', "&quot;")
-    )
+    # The per-panel provenance banner (toolbar_desc) renders inside each panel
+    # after the matrix table; the tab button no longer carries it.
     return (
         f'<button class="tab-button{active}" id="{panel_id}-button" '
         f'type="button" role="tab" aria-selected="{selected}" '
-        f'aria-label="{title}" title="{title}" data-desc="{desc}" '
+        f'aria-label="{title}" title="{title}" '
         f'data-tab-target="{panel_id}">{label}</button>'
     )
+
+
+def _apply_common_legend(panels: list[dict[str, Any]], hrefs: dict[str, str]) -> None:
+    legend_html = _common_legend_html(
+        _peer_version_items(_peer_versions()),
+        hrefs["pyproject_stub"],
+    )
+    for panel in panels:
+        panel["legend_html"] = legend_html
 
 
 def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
@@ -2788,16 +2275,16 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
     }
     _toolbar_desc = {
         "batch": (
-            f'Tool Calling parser version: <strong>v1</strong> Dynamo-synced batch parser '
-            f'(<a href="{hrefs["toolcalling_src"]}">parsers/src/tool_calling/</a>)<br>'
-            f'Tool Calling fixture version: <strong>v1</strong> batch fixtures '
-            f'(<a href="{hrefs["toolcalling_fixtures"]}">conformance/toolcalling/fixtures/</a>)'
+            f'Parser: <strong>v1</strong> Dynamo-synced batch parser '
+            f'(<a href="{hrefs["toolcalling_src"]}">parsers/src/tool_calling/</a>) · '
+            f'Input: <strong>v1</strong> batch fixtures '
+            f'(<a href="{hrefs["toolcalling_fixtures"]}">conformance/toolcalling/fixtures/</a>).'
         ),
         "streamv2": (
-            f'Tool Calling parser version: <strong>v2</strong> Dynamo parser v2 token-incremental streaming '
-            f'(<a href="{hrefs["streaming_src"]}">parsers_v2/src/tool_calling/*</a>)<br>'
-            f'Tool Calling fixture version: <strong>v2</strong> stream fixtures '
-            f'(<a href="{hrefs["toolcalling_stream_fixtures"]}">conformance/toolcalling/fixtures-stream-v2/</a>)'
+            f'Parser: <strong>v2</strong> Dynamo parser v2 token-incremental streaming '
+            f'(<a href="{hrefs["streaming_src"]}">parsers_v2/src/tool_calling/*</a>) · '
+            f'Input: <strong>v2</strong> stream fixtures '
+            f'(<a href="{hrefs["toolcalling_stream_fixtures"]}">conformance/toolcalling/fixtures-stream-v2/</a>).'
         ),
     }
     for mode in ("batch", "streamv2"):
@@ -2832,6 +2319,7 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
                 ),
                 "case_prefix": f"TOOLCALLING.{mode}.",
                 "case_section_id": f"toolcalling-{mode}",
+                "parser_options": STREAM_IMPL_KEYS if mode == "streamv2" else BATCH_IMPL_KEYS,
             }
         )
         panel["toolbar_desc"] = _toolbar_desc[mode]
@@ -2854,11 +2342,6 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
                     "label_html": _sob_label_html,
                     "tab_title": "Batch-on-stream: Dynamo parser v2 on v1 batch fixtures",
                     "toolbar_desc": (
-                        "This runs the batch examples through each engine's "
-                        "<strong>streaming</strong> parser, then compares that engine's "
-                        "streaming output against its own batch parser's output. If they "
-                        "differ, the cell turns red and Conformance view shows the engine's "
-                        "letter (D = Dynamo, V = vLLM, S = SGLang); matching cells show =.<br>"
                         f'Parser: <strong>v2</strong> Dynamo parser v2 '
                         f'(<a href="{hrefs["streaming_src"]}">parsers_v2/src/tool_calling/*</a>) · '
                         f'Input: <strong>v1</strong> batch fixtures '
@@ -2868,22 +2351,9 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
                     "case_docs_label": "lib/parsers/TOOLCALLING_CASES.md",
                     "case_prefix": "TOOLCALLING.batch.",
                     "case_section_id": "toolcalling-stream-on-batch",
-                    "captured_note": (
-                        "Batch-on-stream feeds each v1 batch fixture's full text to that "
-                        "engine's STREAMING parser (Dynamo parser v2's Harmony stream parser "
-                        "lives in parsers_v2/src/tool_calling/harmony.rs) and compares the "
-                        "assembled stream result to that engine's own BATCH parser. It answers: "
-                        "does streaming a complete output reconstruct what batch parsing gives? "
-                        "Default markers show only leaked tool-call markup; the Conformance "
-                        "toggle shows each engine's stream-vs-batch result for the selected "
-                        "parser (= consistent; D/V/S + red = that engine's stream diverges from "
-                        "its batch — e.g. truncation/EOF cases where the batch parser recovers a "
-                        "call but the token-incremental stream does not). The Dynamo column "
-                        "mirrors the parity_toolcalling_batch_via_stream test. Only Harmony has "
-                        "a Dynamo parser v2 stream parser today; other rows show vLLM/SGLang "
-                        "stream-on-batch evidence only. Harmony captured against vLLM 0.22.0 / "
-                        "SGLang 0.5.12.post1."
-                    ),
+                    "parser_options": STREAM_IMPL_KEYS,
+                    "details_note_html": f"<p>{_stream_parity_explainer_html('batch_on_stream')}</p>",
+                    "parity_explainer_html": "",
                 }
             )
             stream_on_batch = _rewrite_panel_paths(
@@ -2893,6 +2363,7 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
                 hrefs=hrefs,
             )
             panels.append(stream_on_batch)
+    _apply_common_legend(panels, hrefs)
     return panels
 
 
@@ -2920,6 +2391,7 @@ def _combined_reasoning_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
         # Reasoning has a single parser (not a batch/stream split), so the parser
         # axis renders as a bare "parser"; only the data axis varies.
         _r_label, _r_label_html = _tab_label("Reasoning", mode, None, False, data_word=False)
+        mode_word = "stream" if mode == "stream" else "batch"
         panel.update(
             {
                 "id": f"tab-reasoning-{mode}",
@@ -2927,20 +2399,30 @@ def _combined_reasoning_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
                 "label_html": _r_label_html,
                 "tab_title": f"Reasoning {mode}: v1 code on v1 fixtures",
                 "toolbar_desc": (
-                    f'Reasoning parser version: <strong>v1</strong> Dynamo-synced parser '
-                    f'(<a href="{hrefs["reasoning_src"]}">parsers/src/reasoning/</a>)<br>'
-                    f'Reasoning fixture version: <strong>v1</strong> reasoning fixtures '
-                    f'(<a href="{hrefs["reasoning_fixtures"]}">conformance/reasoning/fixtures/</a>)'
+                    f'Parser: <strong>v1</strong> Dynamo-synced reasoning parser '
+                    f'(<a href="{hrefs["reasoning_src"]}">parsers/src/reasoning/</a>) · '
+                    f'Input: <strong>v1</strong> reasoning fixtures '
+                    f'(<a href="{hrefs["reasoning_fixtures"]}">conformance/reasoning/fixtures/</a>).'
                 ),
                 "active": False,
                 "case_docs_href": hrefs["reasoning_cases"],
                 "case_docs_label": "lib/parsers/REASONING_CASES.md",
                 "case_prefix": "REASONING.",
                 "case_section_id": f"reasoning-{mode}",
-                "legend_html": reasoning_table._legend_html(rows, mode_columns),
+                "parity_explainer_html": (
+                    "<strong>Conformance:</strong> "
+                    '<span style="color:#0a7d2c">=</span> all available reasoning outputs match · '
+                    f'<span style="color:#555">D</span> (Dynamo Rust {mode_word} parser) / '
+                    f'<span style="color:#555">V</span> (vLLM Python {mode_word} parser) / '
+                    f'<span style="color:#555">S</span> (SGLang {mode_word} parser) names output '
+                    "that differs from the selected parser · multiple markers mean multiple peer "
+                    "outputs differ from the selected parser."
+                ),
+                "parser_options": ("dynamo_rust", "vllm_python", "sglang_python"),
             }
         )
         panels.append(panel)
+    _apply_common_legend(panels, hrefs)
     return panels
 
 
@@ -2952,7 +2434,7 @@ def render_combined_html(
     resolved_output_path = _resolve_output_path(
         output_path,
         artifact_root,
-        "tests/parity/CONFORMANCE_v2.html",
+        "tests/parity/CONFORMANCE.html",
     )
     hrefs = _hrefs_for_output(resolved_output_path, artifact_root)
     panels = [
@@ -2967,21 +2449,20 @@ def render_combined_html(
 
     html = (
         _make_jinja_env()
-        .get_template("conformance_table_v2.html.j2")
+        .get_template("conformance_table.html.j2")
         .render(
             title="Dynamo Parser v2 Conformance Table",
             title_html="Dynamo Parser v2 Conformance Table",
             stamp=stamp,
+            conformance_css=_read_asset("conformance.css"),
+            conformance_js=_read_asset("conformance.js"),
+            impl_status_css=_impl_status_css(),
             sha=sha,
             short_sha=sha[:12] if sha else "",
             command="conformance/utils/render_table_v2.sh",
             output=_display_path(resolved_output_path, artifact_root),
             tabs=[_tab_button(panel) for panel in panels],
             panels=panels,
-            peer_versions=_peer_version_items(
-                _peer_versions()
-            ),
-            peer_versions_href=hrefs["pyproject_stub"],
         )
     )
     return _scrub_visible_conformance_text(html)

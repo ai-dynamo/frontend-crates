@@ -1,20 +1,18 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Token-incremental Harmony (gpt-oss) tool-call streaming parser.
+//! Harmony (gpt-oss) tool-call streaming parser.
 //!
-//! This is the *token path*. It consumes `delta_token_ids` — not text — and wraps
-//! `openai-harmony`'s `StreamableParser`, emitting per-chunk `ToolCallResponseChunk`
-//! deltas (id + name first, then `arguments` fragments) off the
-//! `commentary to=functions.NAME` channel. That's the vLLM wire shape, produced
-//! incrementally as tokens arrive, with no jail and no buffer-then-release.
+//! This parser accepts either decoded text or Harmony token IDs and emits
+//! `ToolCallResponseChunk` deltas (id + name first, then `arguments`) from the
+//! `commentary to=functions.NAME` channel. It reparses the accumulated Harmony
+//! text after each chunk and emits only newly completed calls, so incomplete
+//! trailing envelopes are suppressed until EOF. At EOF, a directed function call
+//! with complete JSON arguments can recover even if only `<|call|>` is missing.
 //!
-//! Why harmony first: it's the one family where tokens genuinely drive
-//! the parse (channel/recipient/content come straight out of the token stream),
-//! and `StreamableParser` is a real incremental token parser — so this proves the
-//! crate streams on tokens the way vLLM's parsers do. The reasoning gpt_oss
-//! parser already wraps the same `StreamableParser` for the `analysis`/`final`
-//! channels; this is the tool-call half over the `commentary` channel.
+//! Why harmony first: it's the one family where token IDs matter for correctness.
+//! The reasoning gpt_oss parser handles the `analysis`/`final` channels; this is
+//! the tool-call half over the `commentary` channel.
 //!
 //! Scope: tool calls only. Reasoning/normal text over the same stream stays with
 //! the reasoning parser. Assembly into the OpenAI wire response (finish_reason,
@@ -23,14 +21,16 @@
 use std::sync::OnceLock;
 
 use dynamo_parsers::tool_calling::{CalledFunctionStream, ToolCallResponseChunk, ToolCallType};
-use openai_harmony::{
-    HarmonyEncoding, HarmonyEncodingName, StreamableParser, load_harmony_encoding,
+
+use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
+use openai_harmony::{HarmonyEncoding, HarmonyEncodingName, load_harmony_encoding};
+
+use super::harmony_grammar::{HarmonySnapshot, extract_calls_via_regex};
+use super::harmony_recovery::{
+    normal_text_after_parse_failure, strip_harmony_protocol_from_normal_text,
 };
 
 static GLOBAL_HARMONY_ENCODING: OnceLock<Result<HarmonyEncoding, anyhow::Error>> = OnceLock::new();
-// Longer than Harmony formatting markers, so text chunks split through
-// `<|channel|>` / `<|message|>` settle before token commit.
-const TEXT_STREAM_HOLDBACK_BYTES: usize = 16;
 
 /// Load (once) the gpt-oss harmony encoding.
 ///
@@ -69,68 +69,37 @@ fn decode_harmony_strict(token_ids: &[u32]) -> anyhow::Result<String> {
         .map_err(|e| anyhow::anyhow!("harmony decode failed: {e}"))
 }
 
-/// Per-chunk streaming result: the append-only tool-call deltas produced from the
-/// tokens in this chunk (mirrors vLLM's `DeltaMessage.tool_calls`).
+/// Per-chunk streaming result: the append-only deltas produced from this chunk.
+///
+/// `normal_text` carries non-tool-call output interleaved with calls. Harmony
+/// emits it only at stream finish after protocol cleanup, so split markers do
+/// not leak into user-visible content.
 #[derive(Default, Debug)]
 pub struct ToolStreamResult {
+    pub normal_text: String,
     pub tool_call_chunks: Vec<ToolCallResponseChunk>,
 }
 
-/// Token-incremental Harmony tool-call streaming parser.
+/// Harmony tool-call streaming parser.
 pub struct HarmonyToolStreamParser {
-    parser: StreamableParser,
-    /// The <|start|> token id — used to detect whether a chunk already carries
-    /// the full Harmony preamble (<|start|>assistant...) or starts directly with
-    /// <|channel|>. Cached at construction time so we don't re-encode each call.
-    start_token: u32,
-    /// Preamble tokens (<|start|>assistant) to prepend when the input starts at
-    /// <|channel|> without the role announcement.
-    preamble_tokens: Vec<u32>,
-    /// True when the inner parser is in ExpectStart state (between messages),
-    /// i.e. we should prepend the preamble if the next chunk doesn't start with
-    /// <|start|>. Starts true; set to false once the first token is processed;
-    /// reset to true when a message terminates (<|call|> stop token).
-    at_turn_start: bool,
-    /// Index of the tool call currently being emitted.
-    current_index: u32,
-    /// Whether we're inside a `commentary to=functions.*` message right now.
-    in_tool_call: bool,
-    /// Whether id+name for `current_index` has already been emitted.
-    header_emitted: bool,
+    scan_buffer: String,
+    pending_token_ids: Vec<u32>,
+    emitted_calls: usize,
+    normal_text_emitted: bool,
     next_id: u64,
-    /// Uncommitted text-path suffix. Text-only streams are re-tokenized with a
-    /// small holdback so token boundaries can settle before they are fed to the
-    /// inner Harmony token parser.
-    text_buffer: String,
 }
 
 impl HarmonyToolStreamParser {
     pub fn new() -> anyhow::Result<Self> {
-        let enc = get_harmony_encoding()
+        get_harmony_encoding()
             .as_ref()
             .map_err(|e| anyhow::anyhow!("harmony encoding unavailable: {e}"))?;
-        // Use None (ExpectStart state) so the parser accepts both:
-        //   (a) full preamble:    <|start|>assistant<|channel|>...
-        //   (b) channel-first:   <|channel|>...  (we prepend the preamble ourselves)
-        let parser = StreamableParser::new(enc.clone(), None)
-            .map_err(|e| anyhow::anyhow!("StreamableParser init failed: {e}"))?;
-        let start_token = encode_harmony("<|start|>")
-            .map_err(|e| anyhow::anyhow!("encode <|start|>: {e}"))?
-            .into_iter()
-            .next()
-            .ok_or_else(|| anyhow::anyhow!("<|start|> encoded to zero tokens"))?;
-        let preamble_tokens = encode_harmony("<|start|>assistant")
-            .map_err(|e| anyhow::anyhow!("encode preamble: {e}"))?;
         Ok(Self {
-            parser,
-            start_token,
-            preamble_tokens,
-            at_turn_start: true,
-            current_index: 0,
-            in_tool_call: false,
-            header_emitted: false,
+            scan_buffer: String::new(),
+            pending_token_ids: Vec::new(),
+            emitted_calls: 0,
+            normal_text_emitted: false,
             next_id: 0,
-            text_buffer: String::new(),
         })
     }
 
@@ -140,201 +109,185 @@ impl HarmonyToolStreamParser {
         id
     }
 
-    /// Feed one chunk of text. Tolerates text split at arbitrary boundaries —
-    /// including mid-token (`<|chan` + `nel|>`) — by re-tokenizing the pending
-    /// suffix and committing only token prefixes that leave a small text holdback.
-    /// That holdback lets BPE and Harmony formatting-token boundaries settle
-    /// before the token parser sees them, while still emitting before stream end
-    /// for normal text chunks.
+    /// Feed one chunk of text.
     pub fn parse_tool_call_streaming_text(&mut self, delta_text: &str) -> ToolStreamResult {
-        self.text_buffer.push_str(delta_text);
-        self.flush_text_buffer(false)
+        self.scan_buffer.push_str(delta_text);
+        self.emit_snapshot_delta(false)
     }
 
-    fn flush_text_buffer(&mut self, flush_all: bool) -> ToolStreamResult {
-        if self.text_buffer.is_empty() {
-            return ToolStreamResult::default();
-        }
-
-        let (tokens, committed_bytes) = if flush_all {
-            match encode_harmony(&self.text_buffer) {
-                Ok(tokens) => (tokens, self.text_buffer.len()),
-                Err(e) => {
-                    tracing::warn!("harmony encode failed while flushing text stream: {e}");
-                    return ToolStreamResult::default();
-                }
-            }
-        } else {
-            match committable_text_tokens(&self.text_buffer) {
-                Ok(commit) => commit,
-                Err(e) => {
-                    tracing::warn!("harmony encode failed while streaming text: {e}");
-                    return ToolStreamResult::default();
-                }
-            }
-        };
-
-        if tokens.is_empty() {
-            return ToolStreamResult::default();
-        }
-
-        if committed_bytes == self.text_buffer.len() {
-            self.text_buffer.clear();
-        } else {
-            self.text_buffer = self.text_buffer[committed_bytes..].to_string();
-        }
-        self.parse_tool_call_streaming_incremental(&tokens)
-    }
-
-    /// Feed one chunk of token ids; emit any new tool-call deltas.
-    ///
-    /// Accepts both formats:
-    /// - Full preamble:   `<|start|>assistant<|channel|>commentary to=functions.NAME ...`
-    /// - Channel-first:  `<|channel|>commentary to=functions.NAME ...`
-    ///
-    /// Channel-first inputs (e.g. from the vLLM wire shape, which strips the role
-    /// announcement) are automatically prefixed with `<|start|>assistant` so the
-    /// inner `StreamableParser` (in ExpectStart mode) can process them correctly.
+    /// Feed one chunk of token ids.
     pub fn parse_tool_call_streaming_incremental(
         &mut self,
         delta_token_ids: &[u32],
     ) -> ToolStreamResult {
-        let mut chunks = Vec::new();
-        for token in delta_token_ids {
-            if self.at_turn_start && *token != self.start_token {
-                let preamble_tokens = self.preamble_tokens.clone();
-                for preamble_token in preamble_tokens {
-                    if !self.process_tool_call_token(preamble_token, &mut chunks) {
-                        return ToolStreamResult {
-                            tool_call_chunks: chunks,
-                        };
-                    }
-                }
+        self.pending_token_ids.extend_from_slice(delta_token_ids);
+        match decode_harmony_strict(&self.pending_token_ids) {
+            Ok(text) => {
+                self.pending_token_ids.clear();
+                self.parse_tool_call_streaming_text(&text)
             }
-
-            if !self.process_tool_call_token(*token, &mut chunks) {
-                break;
+            Err(e) => {
+                tracing::warn!("harmony decode pending token stream failed: {e}");
+                ToolStreamResult::default()
             }
-        }
-        ToolStreamResult {
-            tool_call_chunks: chunks,
         }
     }
 
-    fn process_tool_call_token(
-        &mut self,
-        token: u32,
-        chunks: &mut Vec<ToolCallResponseChunk>,
-    ) -> bool {
-        let prev = current_function_recipient(&self.parser);
-        if let Err(e) = self.parser.process(token) {
-            tracing::warn!("harmony parse error for token {token}: {e}");
-            return false;
-        }
-        if token == self.start_token {
-            self.at_turn_start = false;
-        }
-        let recipient = current_function_recipient(&self.parser);
+    fn emit_snapshot_delta(&mut self, include_normal_text: bool) -> ToolStreamResult {
+        let snapshot = parse_harmony_snapshot(&self.scan_buffer, false);
+        self.emit_snapshot_delta_from_snapshot(snapshot, include_normal_text)
+    }
 
-        match (&prev, &recipient) {
-            // entered a new commentary->functions message
-            (None, Some(_)) => {
-                self.in_tool_call = true;
-                self.header_emitted = false;
-            }
-            // left the tool-call message: advance index for the next call.
-            // The stop token (<|call|>) also returns the inner parser to
-            // ExpectStart, so the next message needs the preamble again.
-            (Some(_), None) => {
-                if self.in_tool_call {
-                    self.current_index += 1;
+    /// Stream EOF. Flushes pending token text, emits newly completed calls, and
+    /// emits cleaned normal text once.
+    pub fn finish_tool_call_stream(&mut self) -> ToolStreamResult {
+        if !self.pending_token_ids.is_empty() {
+            match decode_harmony_strict(&self.pending_token_ids) {
+                Ok(text) => {
+                    self.scan_buffer.push_str(&text);
+                    self.pending_token_ids.clear();
                 }
-                self.in_tool_call = false;
-                self.at_turn_start = true;
-            }
-            _ => {}
-        }
-
-        if let Some(name) = recipient {
-            if !self.header_emitted {
-                let id = self.gen_id();
-                chunks.push(ToolCallResponseChunk {
-                    index: self.current_index,
-                    id: Some(id),
-                    tp: Some(ToolCallType::Function),
-                    function: Some(CalledFunctionStream {
-                        name: Some(name),
-                        arguments: None,
-                    }),
-                });
-                self.header_emitted = true;
-            }
-            // The header (channel/recipient/constrain) is metadata, not content,
-            // so `last_content_delta` only starts returning fragments once the
-            // `<|message|>` body begins - i.e. the JSON arguments.
-            if let Some(delta) = self.parser.last_content_delta().unwrap_or_default()
-                && !delta.is_empty()
-            {
-                chunks.push(ToolCallResponseChunk {
-                    index: self.current_index,
-                    id: None,
-                    tp: None,
-                    function: Some(CalledFunctionStream {
-                        name: None,
-                        arguments: Some(delta),
-                    }),
-                });
+                Err(e) => {
+                    tracing::warn!("harmony decode failed while finishing token stream: {e}");
+                    self.pending_token_ids.clear();
+                }
             }
         }
+        let snapshot = parse_harmony_snapshot(&self.scan_buffer, true);
+        self.emit_snapshot_delta_from_snapshot(snapshot, true)
+    }
 
+    fn emit_snapshot_delta_from_snapshot(
+        &mut self,
+        snapshot: HarmonySnapshot,
+        include_normal_text: bool,
+    ) -> ToolStreamResult {
+        let mut chunks = Vec::new();
+
+        for (index, call) in snapshot.calls.iter().enumerate().skip(self.emitted_calls) {
+            let id = self.gen_id();
+            chunks.push(ToolCallResponseChunk {
+                index: index as u32,
+                id: Some(id),
+                tp: Some(ToolCallType::Function),
+                function: Some(CalledFunctionStream {
+                    name: Some(call.name.clone()),
+                    arguments: None,
+                }),
+            });
+            chunks.push(ToolCallResponseChunk {
+                index: index as u32,
+                id: None,
+                tp: None,
+                function: Some(CalledFunctionStream {
+                    name: None,
+                    arguments: Some(call.arguments.clone()),
+                }),
+            });
+        }
+        self.emitted_calls = snapshot.calls.len();
+
+        let normal_text = if include_normal_text && !self.normal_text_emitted {
+            self.normal_text_emitted = true;
+            snapshot.normal_text
+        } else {
+            String::new()
+        };
+
+        ToolStreamResult {
+            normal_text,
+            tool_call_chunks: chunks,
+        }
+    }
+}
+
+fn parse_harmony_snapshot(text: &str, allow_eof_recovery: bool) -> HarmonySnapshot {
+    let (calls, residual) = extract_calls_via_regex(text, allow_eof_recovery);
+    let normal_text = if calls.is_empty() {
+        normal_text_after_parse_failure(text, "parse_failed_no_recovered_calls")
+    } else {
+        strip_harmony_protocol_from_normal_text(&residual, "regex_recovery_residual")
+    };
+    HarmonySnapshot { calls, normal_text }
+}
+
+/// Convert a `ToolStreamResult` to the trait's `ToolParseResult`.
+///
+/// Maps `ToolCallResponseChunk` → `ToolCallDelta`:
+/// - drops parser-minted `id` (vLLM serving layer mints its own)
+/// - coerces `arguments: None → ""` (vLLM Rust contract: always-present string)
+/// - `normal_text` passes through after Harmony protocol cleanup
+fn stream_result_to_parser_output(r: ToolStreamResult) -> ToolParseResult {
+    ToolParseResult {
+        normal_text: r.normal_text,
+        calls: r
+            .tool_call_chunks
+            .into_iter()
+            .map(|c| ToolCallDelta {
+                tool_index: c.index as usize,
+                name: c.function.as_ref().and_then(|f| f.name.clone()),
+                arguments: c
+                    .function
+                    .as_ref()
+                    .and_then(|f| f.arguments.clone())
+                    .unwrap_or_default(),
+            })
+            .collect(),
+    }
+}
+
+impl HarmonyToolStreamParser {
+    /// Clear parser state and return currently uncommitted buffered text.
+    pub fn reset(&mut self) -> String {
+        let buffered = std::mem::take(&mut self.scan_buffer);
+        if let Ok(reset) = Self::new() {
+            *self = reset;
+        } else {
+            self.pending_token_ids.clear();
+            self.emitted_calls = 0;
+            self.normal_text_emitted = false;
+            self.next_id = 0;
+        }
+        buffered
+    }
+}
+
+/// `ToolParser` implementation for `HarmonyToolStreamParser`.
+///
+/// Bridges Dynamo's streaming parser to the vLLM-shaped Rust trait contract:
+/// - `push(&str)` → text path
+/// - `push_tokens(&[u32])` → token-native path (higher fidelity for Harmony)
+/// - `finish()` → EOS flush
+/// - `preserve_special_tokens` → `false` (Harmony uses formatting tokens, not Unicode specials)
+impl ToolParser for HarmonyToolStreamParser {
+    fn create(_tools: &[Tool]) -> anyhow::Result<Box<dyn ToolParser>>
+    where
+        Self: Sized + 'static,
+    {
+        Ok(Box::new(Self::new()?))
+    }
+
+    fn prefers_tokens(&self) -> bool {
         true
     }
 
-    /// Stream EOF. For the text path, flush the held-back suffix (no more text is
-    /// coming, so the final re-tokenization is authoritative), emitting its
-    /// deltas. Then drive the parser to its terminal state. For the token path
-    /// there's no text buffer, so this is just the terminal step.
-    pub fn finish_tool_call_stream(&mut self) -> ToolStreamResult {
-        let mut chunks = Vec::new();
-        if !self.text_buffer.is_empty() {
-            chunks.extend(self.flush_text_buffer(true).tool_call_chunks);
-        }
-        let _ = self.parser.process_eos();
-        ToolStreamResult {
-            tool_call_chunks: chunks,
-        }
-    }
-}
-
-/// `Some(name)` when the parser is currently inside a `commentary to=functions.NAME`
-/// message, else `None`. (Analysis-directed calls are reasoning, not tool calls —
-/// matching the batch harmony parser, which only extracts the commentary channel.)
-fn current_function_recipient(parser: &StreamableParser) -> Option<String> {
-    if parser.current_channel().as_deref() != Some("commentary") {
-        return None;
-    }
-    parser
-        .current_recipient()
-        .and_then(|r| r.strip_prefix("functions.").map(|n| n.to_string()))
-}
-
-fn committable_text_tokens(text: &str) -> anyhow::Result<(Vec<u32>, usize)> {
-    if text.len() <= TEXT_STREAM_HOLDBACK_BYTES {
-        return Ok((Vec::new(), 0));
+    fn push(&mut self, chunk: &str) -> anyhow::Result<ToolParseResult> {
+        Ok(stream_result_to_parser_output(
+            self.parse_tool_call_streaming_text(chunk),
+        ))
     }
 
-    let max_commit_bytes = text.len() - TEXT_STREAM_HOLDBACK_BYTES;
-    let tokens = encode_harmony(text)?;
-    for token_count in (1..=tokens.len()).rev() {
-        let token_prefix = &tokens[..token_count];
-        let Ok(decoded_prefix) = decode_harmony_strict(token_prefix) else {
-            continue;
-        };
-        if decoded_prefix.len() <= max_commit_bytes && text.starts_with(&decoded_prefix) {
-            return Ok((token_prefix.to_vec(), decoded_prefix.len()));
-        }
+    fn push_tokens(&mut self, ids: &[u32]) -> anyhow::Result<ToolParseResult> {
+        Ok(stream_result_to_parser_output(
+            self.parse_tool_call_streaming_incremental(ids),
+        ))
     }
-    Ok((Vec::new(), 0))
+
+    fn finish(&mut self) -> anyhow::Result<ToolParseResult> {
+        Ok(stream_result_to_parser_output(
+            self.finish_tool_call_stream(),
+        ))
+    }
 }
 
 /// Assemble streamed deltas back into `(name, arguments-json-string)` per index —
@@ -363,9 +316,14 @@ pub fn assemble_tool_calls(chunks: &[ToolCallResponseChunk]) -> Vec<(String, Str
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::tool_calling::traits::{ToolParseResult, ToolParserInput};
 
     // Canonical single tool call (TOOLCALLING.batch.1, harmony family).
     const CANON: &str = "<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{\"location\":\"NYC\"}<|call|>";
+
+    fn parse_complete_for_test(parser: &mut impl ToolParser, text: &str) -> ToolParseResult {
+        parser.parse_complete(text).expect("parse_complete")
+    }
 
     #[test]
     fn single_tool_call_from_tokens() {
@@ -489,5 +447,268 @@ mod tests {
         assert_eq!(calls[0].0, "get_weather");
         let args: serde_json::Value = serde_json::from_str(&calls[0].1).expect("args json");
         assert_eq!(args, serde_json::json!({"location": "NYC"}));
+    }
+
+    // ── ToolParser trait tests ────────────────────────────────────────────────
+
+    #[test]
+    fn trait_parse_tokens_matches_incremental() {
+        let tokens = encode_harmony(CANON).expect("encode");
+        let mut parser = HarmonyToolStreamParser::new().expect("new");
+
+        let mut output = ToolParseResult::default();
+        for chunk in tokens.chunks(3) {
+            output.append(parser.push_tokens(chunk).expect("push_tokens"));
+        }
+        let r = parser.finish().expect("finish");
+        output.append(r);
+        let all = output.calls;
+
+        // First delta: name present, arguments == "" (vLLM always-present contract).
+        let name_delta = &all[0];
+        assert_eq!(name_delta.name.as_deref(), Some("get_weather"));
+        assert_eq!(name_delta.arguments, "");
+        // All subsequent deltas: name absent, arguments non-empty fragments.
+        for delta in &all[1..] {
+            assert!(delta.name.is_none());
+        }
+        // Concatenating all arguments gives the full JSON.
+        let full_args_str: String = all.iter().map(|d| d.arguments.as_str()).collect();
+        let full_args: serde_json::Value =
+            serde_json::from_str(&full_args_str).expect("concatenated args json");
+        assert_eq!(full_args, serde_json::json!({"location": "NYC"}));
+    }
+
+    #[test]
+    fn trait_parse_complete_helper_equals_push_plus_finish() {
+        // vLLM keeps parse_complete as a test helper over push + finish + coalesce.
+        // Verify it produces one coalesced call matching the streaming path.
+        let mut parser = HarmonyToolStreamParser::new().expect("new");
+        let result = parse_complete_for_test(&mut parser, CANON);
+
+        assert_eq!(result.normal_text, ""); // Harmony never produces normal_text
+        assert_eq!(result.calls.len(), 1, "coalesce should merge to 1 call");
+        assert_eq!(result.calls[0].name.as_deref(), Some("get_weather"));
+        let args: serde_json::Value =
+            serde_json::from_str(&result.calls[0].arguments).expect("args json");
+        assert_eq!(args, serde_json::json!({"location": "NYC"}));
+    }
+
+    #[test]
+    fn trait_arguments_always_string_never_none() {
+        // vLLM Rust contract: arguments is always "" on name delta, never absent.
+        let tokens = encode_harmony(CANON).expect("encode");
+        let mut parser = HarmonyToolStreamParser::new().expect("new");
+
+        let mut output = ToolParseResult::default();
+        for chunk in tokens.chunks(1) {
+            output.append(parser.push_tokens(chunk).expect("push_tokens"));
+        }
+        output.append(parser.finish().expect("finish"));
+        let all = output.calls;
+
+        // Every delta must have arguments as a String (never panic on empty check).
+        for delta in &all {
+            // This is the contract: arguments is always a String, even if "".
+            let _ = delta.arguments.is_empty(); // would panic if Option
+        }
+        // The name-only first delta must have arguments == "".
+        let name_delta = all.iter().find(|d| d.name.is_some()).expect("name delta");
+        assert_eq!(name_delta.arguments, "");
+    }
+
+    #[test]
+    fn trait_preserve_special_tokens_false() {
+        let parser = HarmonyToolStreamParser::new().expect("new");
+        assert!(!parser.preserve_special_tokens());
+    }
+
+    #[test]
+    fn trait_normal_text_empty_for_tool_only_harmony() {
+        let mut parser = HarmonyToolStreamParser::new().expect("new");
+        let r = parse_complete_for_test(&mut parser, CANON);
+        assert_eq!(r.normal_text, "");
+    }
+
+    #[test]
+    fn surrounding_narration_matches_batch_case_2_c() {
+        let text = concat!(
+            "I need both. ",
+            "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{\"location\":\"NYC\"}<|call|>",
+            "<|start|>assistant<|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{\"timezone\":\"EST\"}<|call|>",
+            " Done."
+        );
+        let mut parser = HarmonyToolStreamParser::new().expect("new");
+        let result = parse_complete_for_test(&mut parser, text);
+
+        assert_eq!(result.normal_text, "I need both.  Done.");
+        assert_eq!(result.calls.len(), 2);
+        assert_eq!(result.calls[0].name.as_deref(), Some("get_weather"));
+        assert_eq!(result.calls[1].name.as_deref(), Some("get_time"));
+        let first: serde_json::Value =
+            serde_json::from_str(&result.calls[0].arguments).expect("first args");
+        let second: serde_json::Value =
+            serde_json::from_str(&result.calls[1].arguments).expect("second args");
+        assert_eq!(first, serde_json::json!({"location": "NYC"}));
+        assert_eq!(second, serde_json::json!({"timezone": "EST"}));
+    }
+
+    #[test]
+    fn missing_call_marker_with_complete_json_recovers_batch_case_5_a() {
+        let text = "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{\"location\":\"NYC\"}";
+        let mut parser = HarmonyToolStreamParser::new().expect("new");
+        let result = parse_complete_for_test(&mut parser, text);
+        assert_eq!(result.normal_text, "");
+        assert_eq!(result.calls.len(), 1);
+        assert_eq!(result.calls[0].name.as_deref(), Some("get_weather"));
+        let args: serde_json::Value =
+            serde_json::from_str(&result.calls[0].arguments).expect("args");
+        assert_eq!(args, serde_json::json!({"location": "NYC"}));
+    }
+
+    #[test]
+    fn truncated_single_envelope_drops_batch_case_5_c() {
+        let text = "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{\"loc";
+        let mut parser = HarmonyToolStreamParser::new().expect("new");
+        let result = parse_complete_for_test(&mut parser, text);
+        assert_eq!(result.normal_text, "");
+        assert!(
+            result.calls.is_empty(),
+            "truncated envelope must not synthesize a call: {result:?}"
+        );
+    }
+
+    #[test]
+    fn complete_trailing_call_recovers_batch_case_5_d() {
+        let text = concat!(
+            "I'll start by fetching the weather for both Boston and New York at the same time!",
+            "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{\"location\":\"Boston\"}<|call|>",
+            "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{\"location\":\"New York\"}"
+        );
+        let mut parser = HarmonyToolStreamParser::new().expect("new");
+        let result = parse_complete_for_test(&mut parser, text);
+        assert_eq!(
+            result.normal_text,
+            "I'll start by fetching the weather for both Boston and New York at the same time!"
+        );
+        assert_eq!(result.calls.len(), 2);
+        assert_eq!(result.calls[0].name.as_deref(), Some("get_weather"));
+        assert_eq!(result.calls[1].name.as_deref(), Some("get_weather"));
+        let first: serde_json::Value =
+            serde_json::from_str(&result.calls[0].arguments).expect("first args");
+        let second: serde_json::Value =
+            serde_json::from_str(&result.calls[1].arguments).expect("second args");
+        assert_eq!(first, serde_json::json!({"location": "Boston"}));
+        assert_eq!(second, serde_json::json!({"location": "New York"}));
+    }
+
+    #[test]
+    fn truncated_trailing_call_drops_batch_case_5_e() {
+        let text = concat!(
+            "I'll start by fetching the weather for both Boston and New York at the same time!",
+            "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{\"location\":\"Boston\"}<|call|>",
+            "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{\"location\":\"New York"
+        );
+        let mut parser = HarmonyToolStreamParser::new().expect("new");
+        let result = parse_complete_for_test(&mut parser, text);
+        assert_eq!(
+            result.normal_text,
+            "I'll start by fetching the weather for both Boston and New York at the same time!"
+        );
+        assert_eq!(result.calls.len(), 1);
+        assert_eq!(result.calls[0].name.as_deref(), Some("get_weather"));
+        let args: serde_json::Value =
+            serde_json::from_str(&result.calls[0].arguments).expect("args");
+        assert_eq!(args, serde_json::json!({"location": "Boston"}));
+    }
+
+    #[test]
+    fn narration_between_multiple_calls_matches_batch_case_8_d() {
+        let text = concat!(
+            "I will check the weather. ",
+            "<|channel|>analysis<|message|>Need to use function get_weather.<|end|>",
+            "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{\"location\":\"NYC\"}<|call|>",
+            " Then check LA weather. ",
+            "<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{\"location\":\"LA\"}<|call|>"
+        );
+        let mut parser = HarmonyToolStreamParser::new().expect("new");
+        let result = parse_complete_for_test(&mut parser, text);
+
+        assert_eq!(
+            result.normal_text,
+            "I will check the weather.  Then check LA weather."
+        );
+        assert_eq!(result.calls.len(), 2);
+        let first: serde_json::Value =
+            serde_json::from_str(&result.calls[0].arguments).expect("first args");
+        let second: serde_json::Value =
+            serde_json::from_str(&result.calls[1].arguments).expect("second args");
+        assert_eq!(first, serde_json::json!({"location": "NYC"}));
+        assert_eq!(second, serde_json::json!({"location": "LA"}));
+    }
+
+    #[test]
+    fn trait_parse_input_accepts_text_or_tokens() {
+        let tokens = encode_harmony(CANON).expect("encode");
+
+        let mut text_parser = HarmonyToolStreamParser::new().expect("new");
+        let mut text_output = ToolParseResult::default();
+        text_output.append(
+            text_parser
+                .push_input(ToolParserInput::Text(CANON))
+                .expect("text input"),
+        );
+        text_output.append(text_parser.finish().expect("finish"));
+        let text_output = text_output.coalesce_calls();
+
+        let mut token_parser = HarmonyToolStreamParser::new().expect("new");
+        let mut token_output = ToolParseResult::default();
+        for chunk in tokens.chunks(4) {
+            token_output.append(
+                token_parser
+                    .push_input(ToolParserInput::Tokens(chunk))
+                    .expect("token input"),
+            );
+        }
+        token_output.append(token_parser.finish().expect("finish"));
+        let token_output = token_output.coalesce_calls();
+
+        assert_eq!(text_output, token_output);
+        assert_eq!(token_output.calls.len(), 1);
+        assert_eq!(token_output.calls[0].name.as_deref(), Some("get_weather"));
+    }
+
+    #[test]
+    fn trait_create_ignores_tools_for_harmony() {
+        let tools = [Tool {
+            name: "get_weather".to_string(),
+            description: Some("weather lookup".to_string()),
+            parameters: serde_json::json!({"type": "object"}),
+            strict: None,
+        }];
+        let mut parser = HarmonyToolStreamParser::create(&tools).expect("create");
+        let mut output = ToolParseResult::default();
+        output.append(parser.push(CANON).expect("push"));
+        output.append(parser.finish().expect("finish"));
+        let output = output.coalesce_calls();
+        assert_eq!(output.calls.len(), 1);
+        assert_eq!(output.calls[0].name.as_deref(), Some("get_weather"));
+    }
+
+    #[test]
+    fn trait_reset_returns_uncommitted_text_buffer() {
+        let mut parser = HarmonyToolStreamParser::new().expect("new");
+        let mut output = ToolParseResult::default();
+        output.append(parser.push("<|chan").expect("push"));
+        assert!(output.calls.is_empty());
+
+        let recovered = parser.reset();
+        assert_eq!(recovered, "<|chan");
+
+        output.append(parser.push(CANON).expect("push"));
+        output.append(parser.finish().expect("finish"));
+        let output = output.coalesce_calls();
+        assert_eq!(output.calls.len(), 1);
+        assert_eq!(output.calls[0].name.as_deref(), Some("get_weather"));
     }
 }

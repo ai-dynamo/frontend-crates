@@ -1,41 +1,41 @@
 family: pythonic
 mode: batch-on-stream
 captured_with:
-  vllm: 0.22.0
-  sglang: 0.5.12.post1
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
 cases:
   TOOLCALLING.batch.1:
-    vllm:
+    vllm_python:
       calls:
       - name: get_weather
         arguments:
           location: NYC
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
           location: NYC
   TOOLCALLING.batch.3:
-    vllm:
+    vllm_python:
       calls: []
       normal_text: Hello, how can I help you today?
-    sglang:
+    sglang_python:
       calls: []
       normal_text: Hello, how can I help you today?
   TOOLCALLING.batch.9.a:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       calls: []
   TOOLCALLING.batch.9.b:
-    vllm:
+    vllm_python:
       calls: []
       normal_text: '   '
-    sglang:
+    sglang_python:
       calls: []
       normal_text: '   '
   TOOLCALLING.batch.10:
-    vllm:
+    vllm_python:
       calls:
       - name: get_weather
         arguments:
@@ -43,7 +43,7 @@ cases:
       - name: get_weather
         arguments:
           location: LA
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
@@ -52,36 +52,36 @@ cases:
         arguments:
           location: LA
   TOOLCALLING.batch.30.a:
-    vllm:
+    vllm_python:
       calls:
       - name: run_query
         arguments:
           sql: SELECT a, SELECT b
-    sglang:
+    sglang_python:
       calls:
       - name: run_query
         arguments:
           sql: SELECT a, SELECT b
   TOOLCALLING.batch.30.b:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       calls: []
       normal_text: '[run_query(sql="SELECT value WHERE note has brace } and bracket
         ]'
   TOOLCALLING.batch.30.c:
-    vllm:
+    vllm_python:
       calls:
       - name: run_query
         arguments:
           sql: literal [get_time marker] stays text
-    sglang:
+    sglang_python:
       calls:
       - name: run_query
         arguments:
           sql: literal [get_time marker] stays text
   TOOLCALLING.batch.31.a:
-    vllm:
+    vllm_python:
       calls:
       - name: run_query
         arguments:
@@ -89,7 +89,7 @@ cases:
       - name: get_time
         arguments:
           timezone: EST
-    sglang:
+    sglang_python:
       calls:
       - name: run_query
         arguments:
@@ -98,22 +98,22 @@ cases:
         arguments:
           timezone: EST
   TOOLCALLING.batch.31.b:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       calls: []
       normal_text: '[run_query(sql="SELECT value WHERE note has brace } and bracket
         ]'
   TOOLCALLING.batch.13.a:
-    vllm:
+    vllm_python:
       calls:
       - name: unknown_tool
         arguments:
           location: NYC
-    sglang:
+    sglang_python:
       calls: []
   TOOLCALLING.batch.13.c:
-    vllm:
+    vllm_python:
       calls:
       - name: get_weather
         arguments:
@@ -121,7 +121,7 @@ cases:
       - name: unknown_tool
         arguments:
           location: LA
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:

@@ -1,59 +1,66 @@
 family: harmony
 mode: batch-on-stream
 captured_with:
-  vllm: 0.22.0
-  sglang: 0.5.12.post1
-  dynamo: Dynamo parser v2
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
+  dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.batch.5.a:
-    dynamo:
+    dynamo_rust:
       calls:
       - name: get_weather
         arguments:
           location: NYC
-    vllm:
+      normal_text: ''
+    vllm_python:
       calls:
       - name: get_weather
         arguments:
           location: NYC
-    sglang:
+    sglang_python:
       calls: []
       normal_text: ''
   TOOLCALLING.batch.5.b:
-    dynamo:
+    dynamo_rust:
       calls:
       - name: get_weather
         arguments:
           location: NYC
-    vllm:
+    vllm_python:
       calls:
       - name: get_weather
         arguments:
           location: NYC
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
           location: NYC
       normal_text: ''
   TOOLCALLING.batch.5.c:
-    dynamo:
+    dynamo_rust:
+      calls: []
+    vllm_python:
       calls:
       - name: get_weather
         arguments: '{"loc'
-    vllm:
-      calls:
-      - name: get_weather
-        arguments: '{"loc'
-    sglang:
+    sglang_python:
       calls: []
       normal_text: ''
   TOOLCALLING.batch.5.d:
-    dynamo:
+    dynamo_rust:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      - name: get_weather
+        arguments:
+          location: New York
+      normal_text: I'll start by fetching the weather for both Boston and New York
+        at the same time!
+    vllm_python:
       calls: []
-    vllm:
-      calls: []
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:
@@ -61,11 +68,16 @@ cases:
       normal_text: I'll start by fetching the weather for both Boston and New York
         at the same time!
   TOOLCALLING.batch.5.e:
-    dynamo:
+    dynamo_rust:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      normal_text: I'll start by fetching the weather for both Boston and New York
+        at the same time!
+    vllm_python:
       calls: []
-    vllm:
-      calls: []
-    sglang:
+    sglang_python:
       calls:
       - name: get_weather
         arguments:

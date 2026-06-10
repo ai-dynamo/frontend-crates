@@ -11,7 +11,7 @@ family: phi4
 model_label: 'Phi-4'
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
+  vllm_python: '0.22.0'
 cases:
   TOOLCALLING.streamv2.8.a:
     description: 'Narration before tool call only'
@@ -24,31 +24,31 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''phi4''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''phi4''.'
     chunks:
     - delta_text: 'I will'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' check'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' the weather. functools[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "get_weather", "arguments":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' {"location":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "NYC"}}]'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
+        vllm_python: []
   TOOLCALLING.streamv2.8.b:
     description: 'Narration after tool call only'
     ref: 'derived from TOOLCALLING.batch.8.b'
@@ -60,34 +60,34 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''phi4''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''phi4''.'
     chunks:
     - delta_text: 'functools[{"name": "get_weather",'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "arguments":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' {"location": "NYC"}}] Let'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' me know'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' if'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' you need'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' more.'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
+        vllm_python: []
   TOOLCALLING.streamv2.8.c:
     description: 'Narration both before and after (sandwich)'
     ref: 'derived from TOOLCALLING.batch.8.c'
@@ -99,40 +99,40 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''phi4''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''phi4''.'
     chunks:
     - delta_text: 'I will'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' check'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' the weather. functools[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "get_weather", "arguments":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' {"location":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "NYC"}}] Let'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' me know if'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' you'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' need more.'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
+        vllm_python: []
   TOOLCALLING.streamv2.8.d:
     description: 'Narration between multiple tool calls'
     ref: 'derived from TOOLCALLING.batch.8.d'
@@ -144,43 +144,43 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang: 'No SGLang parser for family ''phi4''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang parser for family ''phi4''.'
     chunks:
     - delta_text: 'I will'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' check'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' the weather. functools[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "get_weather", "arguments":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' {"location":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "NYC"}}] Then'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' check LA weather.'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' functools[{"name":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "get_weather", "arguments":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' {"location":'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ' "LA"}}]'
       expected:
-        vllm: []
+        vllm_python: []
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm: []
+        vllm_python: []

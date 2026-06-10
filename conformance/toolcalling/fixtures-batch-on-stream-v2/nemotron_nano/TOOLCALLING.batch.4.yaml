@@ -1,36 +1,51 @@
 family: nemotron_nano
 mode: batch-on-stream
 captured_with:
-  vllm: 0.22.0
-  sglang: 0.5.12.post1
+  vllm_python: 0.22.0
+  sglang_python: 0.5.12.post1
+  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
 cases:
   TOOLCALLING.batch.4.a:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'nemotron_nano'.
+    vllm_rust:
+      unavailable: 'vLLM Rust parser not captured: tool parser parsing failed: invalid
+        Hermes'
   TOOLCALLING.batch.4.d:
-    vllm:
+    vllm_python:
       calls: []
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'nemotron_nano'.
+    vllm_rust:
+      unavailable: 'vLLM Rust parser not captured: tool parser parsing failed: invalid
+        Hermes'
   TOOLCALLING.batch.4.b:
-    vllm:
+    vllm_python:
       unavailable: No batch model_text for this case.
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'nemotron_nano'.
+    vllm_rust:
+      unavailable: No batch model_text for this case.
   TOOLCALLING.batch.4.c:
-    vllm:
+    vllm_python:
       unavailable: No batch model_text for this case.
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'nemotron_nano'.
+    vllm_rust:
+      unavailable: No batch model_text for this case.
   TOOLCALLING.batch.4.e:
-    vllm:
+    vllm_python:
       unavailable: No batch model_text for this case.
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'nemotron_nano'.
+    vllm_rust:
+      unavailable: No batch model_text for this case.
   TOOLCALLING.batch.4.f:
-    vllm:
+    vllm_python:
       unavailable: No batch model_text for this case.
-    sglang:
+    sglang_python:
       unavailable: No SGLang parser for family 'nemotron_nano'.
+    vllm_rust:
+      unavailable: No batch model_text for this case.

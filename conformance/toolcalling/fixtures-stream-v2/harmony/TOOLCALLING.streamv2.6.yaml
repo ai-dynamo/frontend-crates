@@ -11,8 +11,9 @@ family: harmony
 model_label: 'gpt-oss (harmony, token-id)'
 mode: streamv2
 captured_with:
-  vllm: '0.22.0'
-  sglang: '0.5.12.post1'
+  vllm_python: '0.22.0'
+  sglang_python: '0.5.12.post1'
+  dynamo_rust: 'Dynamo parser v2'
 cases:
   TOOLCALLING.streamv2.6.a:
     description: 'Canonical empty {} message body'
@@ -26,57 +27,57 @@ cases:
     - delta_text: '<|channel|>comment'
       delta_token_ids: [200005, 12606]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'ary to'
       delta_token_ids: [815, 316]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '=functions'
       delta_token_ids: [28, 44580]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '.get_time'
       delta_token_ids: [775, 6425]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ' <|constrain|>'
       delta_token_ids: [220, 200003]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'json<|message|>'
       delta_token_ids: [4108, 200008]
       expected:
-        dynamo:
-        - {index: 0, id: true, name: 'get_time'}
-        vllm:
+        dynamo_rust: []
+        vllm_python:
         - {index: 0, id: true, name: 'get_time', arguments: ''}
-        sglang: []
+        sglang_python: []
     - delta_text: '{}<|call|>'
       delta_token_ids: [12083, 200012]
       expected:
-        dynamo:
+        dynamo_rust:
+        - {index: 0, id: true, name: 'get_time'}
         - {index: 0, arguments: '{}'}
-        vllm:
+        vllm_python:
         - {index: 0, arguments: '{}'}
-        sglang:
+        sglang_python:
         - {index: 0, name: 'get_time', arguments: '{}'}
     - delta_text: ''
       delta_token_ids: []
       finish_reason: tool_calls
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
   TOOLCALLING.streamv2.6.b:
     description: 'Whitespace inside empty {}'
     ref: 'derived from TOOLCALLING.batch.6.b'
@@ -89,65 +90,64 @@ cases:
     - delta_text: '<|channel|>comment'
       delta_token_ids: [200005, 12606]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'ary to'
       delta_token_ids: [815, 316]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '=functions'
       delta_token_ids: [28, 44580]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '.get_time'
       delta_token_ids: [775, 6425]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ' <|constrain|>'
       delta_token_ids: [220, 200003]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'json<|message|>'
       delta_token_ids: [4108, 200008]
       expected:
-        dynamo:
-        - {index: 0, id: true, name: 'get_time'}
-        vllm:
+        dynamo_rust: []
+        vllm_python:
         - {index: 0, id: true, name: 'get_time', arguments: ''}
-        sglang: []
+        sglang_python: []
     - delta_text: '{ }'
       delta_token_ids: [90, 388]
       expected:
-        dynamo:
+        dynamo_rust: []
+        vllm_python:
         - {index: 0, arguments: '{'}
         - {index: 0, arguments: ' }'}
-        vllm:
-        - {index: 0, arguments: '{'}
-        - {index: 0, arguments: ' }'}
-        sglang: []
+        sglang_python: []
     - delta_text: '<|call|>'
       delta_token_ids: [200012]
       expected:
-        dynamo: []
-        vllm: []
-        sglang:
+        dynamo_rust:
+        - {index: 0, id: true, name: 'get_time'}
+        - {index: 0, arguments: '{}'}
+        vllm_python: []
+        sglang_python:
         - {index: 0, name: 'get_time', arguments: '{}'}
     - delta_text: ''
       delta_token_ids: []
       finish_reason: tool_calls
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
   TOOLCALLING.streamv2.6.c:
     description: 'No <|message|> body'
     ref: 'derived from TOOLCALLING.batch.6.c'
@@ -160,43 +160,43 @@ cases:
     - delta_text: '<|channel|>comment'
       delta_token_ids: [200005, 12606]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'ary to'
       delta_token_ids: [815, 316]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '=functions'
       delta_token_ids: [28, 44580]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: '.get_time'
       delta_token_ids: [775, 6425]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ' <|constrain|>'
       delta_token_ids: [220, 200003]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: 'json'
       delta_token_ids: [4108]
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
     - delta_text: ''
       delta_token_ids: []
       finish_reason: stop
       expected:
-        dynamo: []
-        vllm: []
-        sglang: []
+        dynamo_rust: []
+        vllm_python: []
+        sglang_python: []
