@@ -133,11 +133,6 @@ for fam in toolcalling reasoning; do
   [ -d "$pfx_src" ] || continue
   echo "--- parity fixtures ($fam) ---"
   fixture_excludes=()
-  if [ "$fam" = "toolcalling" ]; then
-    # frontend-crates carries Harmony EOF recovery for batch case 5 ahead of
-    # the Dynamo mirror. Remove this once Dynamo's fixture has the same output.
-    fixture_excludes+=(--exclude "harmony/TOOLCALLING.batch.5.yaml")
-  fi
   if [ "$APPLY" = "1" ]; then
     mkdir -p "$pfx_dst"
     rsync -a --delete --checksum "${fixture_excludes[@]}" "$pfx_src/" "$pfx_dst/"

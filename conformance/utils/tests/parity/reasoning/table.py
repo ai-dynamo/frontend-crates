@@ -517,11 +517,7 @@ def _overview_status(case: dict[str, Any] | None, family: str | None, impl: str)
     if case is None:
         return "na"
     if "expected" not in case:
-        return (
-            "problem"
-            if impl in _python_exception_impls(case, family)
-            else "na"
-        )
+        return "problem" if impl in _python_exception_impls(case, family) else "na"
     block = case.get("expected", {}).get(impl)
     if not isinstance(block, dict) or "unavailable" in block:
         return "na"
@@ -797,6 +793,12 @@ def _python_exception_impls(
     case: dict[str, Any] | None,
     family: str | None,
 ) -> tuple[str, ...]:
+    """Impls whose Python parser would raise on this input-less n/a stub.
+
+    A no-`expected` n/a stub carries no `model_text`/`chunks`, so feeding it to
+    the vLLM/SGLang Python parser raises ``KeyError: 'model_text'``. Surface that
+    as a parser exception for any family that has a Python peer parser.
+    """
     if not case or "expected" in case or not _is_na_stub(case):
         return ()
     if _case_has_parser_input(case):
@@ -811,7 +813,9 @@ def _python_exception_marker(
     family: str | None,
 ) -> str:
     letters = {"vllm": "V", "sglang": "S"}
-    return "".join(f"{letters[impl]}✗" for impl in _python_exception_impls(case, family))
+    return "".join(
+        f"{letters[impl]}✗" for impl in _python_exception_impls(case, family)
+    )
 
 
 def _python_exception_tooltip_lines(
@@ -2181,8 +2185,8 @@ def _legend_html(rows: dict[str, dict[str, Any]], columns: list[str]) -> str:
         "(e.g. V?, S? — diverges with no <code>reason:</code> yet) · "
         '<span style="color:#b00">↯</span> Dynamo leaks reasoning markup '
         "or final-answer text · "
-        '<span style="color:#b00">✗</span> Python parser exception '
-        "(e.g. V✗, S✗ — parser raised while running this fixture) · "
+        '<span style="color:#b00">✗</span> parser exception '
+        "(e.g. V✗, S✗ — Python parser raised) · "
         '<span style="color:#aaa">n/a</span> not applicable'
         f"{missing_text}."
         "<br>"
