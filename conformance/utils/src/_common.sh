@@ -19,7 +19,9 @@ export FRONTEND_CRATES_ROOT="$ROOT"
 # tests/ and lib/ stay at conformance/utils/ (Dynamo-sync targets); the rest is in src/.
 UTILS="$ROOT/conformance/utils"
 TOOLS="$ROOT/conformance/utils/src"
-STAGE="${STAGE:-$TOOLS/.stage}"
+# Ephemeral build tree stays at conformance/utils/.stage (UTILS), not inside src/,
+# so CI and .gitignore find it where they always have.
+STAGE="${STAGE:-$UTILS/.stage}"
 # Override when the default cargo can't build the workspace (edition 2024 /
 # resolver "3" needs >= 1.85): CARGO='cargo +1.93.1' conformance/utils/check.sh ...
 CARGO="${CARGO:-cargo}"

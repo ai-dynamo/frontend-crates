@@ -11,7 +11,7 @@ while [ $# -gt 0 ]; do case "$1" in --dry-run|--dryrun) DRY=1; shift;; *) args+=
 set -- ${args+"${args[@]}"}
 source "$(dirname "$0")/src/_common.sh"
 
-STAGE="$TOOLS/.stage"
+STAGE="$UTILS/.stage"
 OUT="$STAGE/tests/parity/PARITY_v1.html"
 if [ "$DRY" = 1 ]; then
   echo "[dry-run] build v1 .stage, then render the old Dynamo parity table > $OUT"
