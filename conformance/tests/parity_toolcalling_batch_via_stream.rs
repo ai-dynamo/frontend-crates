@@ -66,14 +66,8 @@ fn toolcalling_batch_via_stream_parity() {
     // Batch samples where the streaming parser deliberately differs from the
     // strict batch parser. Removing an entry asserts that stream and batch now
     // agree on that sample.
-    let known_divergences: std::collections::BTreeSet<&str> = [
-        "deepseek_v4:TOOLCALLING.batch.5.a",
-        "deepseek_v4:TOOLCALLING.batch.5.d",
-        "deepseek_v4:TOOLCALLING.batch.5.e",
-        "deepseek_v4:TOOLCALLING.batch.5.g",
-    ]
-    .into_iter()
-    .collect();
+    let known_divergences: std::collections::BTreeSet<&str> =
+        ["deepseek_v4:TOOLCALLING.batch.5.g"].into_iter().collect();
 
     let mut total = 0usize;
     let mut consistent = 0usize;

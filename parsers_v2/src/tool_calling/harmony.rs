@@ -153,7 +153,12 @@ impl HarmonyToolStreamParser {
                 }
             }
         }
-        let snapshot = parse_harmony_snapshot(&self.scan_buffer, true);
+        // Match the v1 batch parser: do NOT recover commentary calls missing the
+        // closing <|call|> token at EOF. dynamo #10366 moved analysis-channel
+        // tool-call recovery to the reasoning parser, so the batch tool-call
+        // parser drops these — the stream parser stays consistent with it
+        // (batch.5.a -> no call, batch.5.d -> only the fenced call).
+        let snapshot = parse_harmony_snapshot(&self.scan_buffer, false);
         self.emit_snapshot_delta_from_snapshot(snapshot, true)
     }
 
@@ -554,16 +559,18 @@ mod tests {
     }
 
     #[test]
-    fn missing_call_marker_with_complete_json_recovers_batch_case_5_a() {
+    fn missing_call_marker_drops_batch_case_5_a() {
+        // A complete commentary call missing the closing <|call|> at EOF is NOT
+        // recovered — stream matches the v1 batch parser (analysis-channel
+        // recovery lives in the reasoning parser now; see dynamo #10366).
         let text = "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{\"location\":\"NYC\"}";
         let mut parser = HarmonyToolStreamParser::new().expect("new");
         let result = parse_complete_for_test(&mut parser, text);
         assert_eq!(result.normal_text, "");
-        assert_eq!(result.calls.len(), 1);
-        assert_eq!(result.calls[0].name.as_deref(), Some("get_weather"));
-        let args: serde_json::Value =
-            serde_json::from_str(&result.calls[0].arguments).expect("args");
-        assert_eq!(args, serde_json::json!({"location": "NYC"}));
+        assert!(
+            result.calls.is_empty(),
+            "missing <|call|> must not be recovered (batch parity): {result:?}"
+        );
     }
 
     #[test]
@@ -579,7 +586,9 @@ mod tests {
     }
 
     #[test]
-    fn complete_trailing_call_recovers_batch_case_5_d() {
+    fn unfenced_trailing_call_drops_batch_case_5_d() {
+        // The trailing call is missing its <|call|>; only the fenced Boston call
+        // is recovered — stream matches the v1 batch parser.
         let text = concat!(
             "I'll start by fetching the weather for both Boston and New York at the same time!",
             "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{\"location\":\"Boston\"}<|call|>",
@@ -591,15 +600,11 @@ mod tests {
             result.normal_text,
             "I'll start by fetching the weather for both Boston and New York at the same time!"
         );
-        assert_eq!(result.calls.len(), 2);
+        assert_eq!(result.calls.len(), 1);
         assert_eq!(result.calls[0].name.as_deref(), Some("get_weather"));
-        assert_eq!(result.calls[1].name.as_deref(), Some("get_weather"));
-        let first: serde_json::Value =
-            serde_json::from_str(&result.calls[0].arguments).expect("first args");
-        let second: serde_json::Value =
-            serde_json::from_str(&result.calls[1].arguments).expect("second args");
-        assert_eq!(first, serde_json::json!({"location": "Boston"}));
-        assert_eq!(second, serde_json::json!({"location": "New York"}));
+        let args: serde_json::Value =
+            serde_json::from_str(&result.calls[0].arguments).expect("args");
+        assert_eq!(args, serde_json::json!({"location": "Boston"}));
     }
 
     #[test]

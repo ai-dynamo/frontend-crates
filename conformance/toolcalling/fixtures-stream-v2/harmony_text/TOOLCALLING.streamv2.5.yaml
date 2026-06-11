@@ -21,6 +21,7 @@ captured_with:
 cases:
   TOOLCALLING.streamv2.5.a:
     description: 'Missing <|call|> end marker (bare envelope)'
+    dynamo_note: 'No recovery by design (dynamo #10366: https://github.com/ai-dynamo/dynamo/pull/10366): a Harmony commentary/analysis tool call must carry the <|call|> terminator to be recovered. <|call|> is also the gpt-oss EOS/commit token, so a call missing it was cut off before the model committed; the incomplete envelope is dropped, not recovered or leaked into content.'
     ref: 'derived from TOOLCALLING.batch.5.a'
     tools:
     - name: get_weather
@@ -101,9 +102,7 @@ cases:
       delta_token_ids: []
       finish_reason: stop
       expected:
-        dynamo_rust:
-        - {index: 0, id: true, name: 'get_weather'}
-        - {index: 0, arguments: '{"location":"NYC"}'}
+        dynamo_rust: []
         vllm_python: []
         sglang_python: []
   TOOLCALLING.streamv2.5.b:
@@ -265,6 +264,7 @@ cases:
         sglang_python: []
   TOOLCALLING.streamv2.5.d:
     description: 'Multi-call, last call missing only end marker (body complete)'
+    dynamo_note: 'Trailing call dropped by design (dynamo #10366: https://github.com/ai-dynamo/dynamo/pull/10366): only the commentary call carrying <|call|> (Boston) is recovered; the unterminated trailing call (New York) is dropped, since <|call|> is also the gpt-oss EOS/commit token and its absence means the model was cut off before committing that call.'
     ref: 'derived from TOOLCALLING.batch.5.d'
     tools:
     - name: get_weather
@@ -473,9 +473,7 @@ cases:
       delta_token_ids: []
       finish_reason: tool_calls
       expected:
-        dynamo_rust:
-        - {index: 1, id: true, name: 'get_weather'}
-        - {index: 1, arguments: '{"location":"New York"}'}
+        dynamo_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:

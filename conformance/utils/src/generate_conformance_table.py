@@ -738,6 +738,19 @@ def _format_output_block_html(block, family: str | None = None) -> str:
     return f"{nt_line}\n{calls_line}"
 
 
+def _dynamo_note_sections(case: dict) -> list[tuple[str, str]]:
+    """A baseline-side rationale for the Dynamo Rust output, rendered as its own
+    tooltip section. `_tooltip_for` only explains PEER divergences (it skips the
+    baseline), so a deliberate Dynamo behavior — e.g. dropping an unterminated
+    Harmony tool call per dynamo #10366 — has no other surface. Sourced from a
+    case-level `dynamo_note:` in the fc-local v2 fixtures; include a full URL so
+    `linkify_text_html` makes the PR reference clickable."""
+    note = case.get("dynamo_note")
+    if not note:
+        return []
+    return [("Dynamo recovery contract", linkify_text_html(str(note)))]
+
+
 def _build_tooltip_html(case: dict, dyn, output_kind: str = "batch") -> str:
     """Rich HTML hover tooltip: head, input (colorized), per-engine output,
     divergence reasons. Returns the full `<div class="ttip">...</div>`.
@@ -835,6 +848,7 @@ def _build_tooltip_html(case: dict, dyn, output_kind: str = "batch") -> str:
         divergent_reasons=reasons or None,
         leak_label="↯ Dynamo tool call leaks",
         leak_text=str(dyn_leak) if dyn_leak else None,
+        extra_sections=_dynamo_note_sections(case),
         chart=chart,
         refs=[("Ref", case.get("ref")), ("Spec ref", case.get("spec_ref"))],
     )
@@ -1898,6 +1912,7 @@ def _build_sob_tooltip(case: dict, marker_context: str | None = None) -> str:
         input_html=input_html,
         output_sections=sections,
         divergent_reasons_html="<br>".join(reason_parts) if reason_parts else None,
+        extra_sections=_dynamo_note_sections(case),
         chart=chart,
         refs=[("Ref", case.get("ref"))],
         html_section_labels=True,
@@ -1989,6 +2004,9 @@ def _build_stream_on_batch_cases(batch_cases: dict) -> dict:
             "description": bcase.get("description"),
             "model_text": bcase.get("model_text"),
             "ref": bcase.get("ref"),
+            # Baseline rationale lives in the fc-local overlay (sync-safe); fall
+            # back to the synced v1 batch fixture if it ever carries one upstream.
+            "dynamo_note": overlay_case.get("dynamo_note") or bcase.get("dynamo_note"),
             "expected": _stream_on_batch_expected(
                 overlay_case, has_batch_text="model_text" in bcase
             ),
