@@ -29,11 +29,20 @@ jobs:
     # workflow_dispatch bypasses the guard so a partial publish can be re-run.
     if: "${{ github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'chore: release') }}"
     steps:
+      - name: Generate release app token
+        id: release-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0
-          token: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          token: ${{ steps.release-token.outputs.token }}
 
       - name: Configure git identity
         run: |
@@ -91,7 +100,7 @@ jobs:
         if: steps.bump.outputs.bumped == 'true' || github.event_name == 'workflow_dispatch'
         run: release-plz release
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.release-token.outputs.token }}
           # No CARGO_REGISTRY_TOKEN — trusted publishing via OIDC is used
           # instead. release-plz exchanges the GitHub OIDC token for a
           # short-lived crates.io token automatically.

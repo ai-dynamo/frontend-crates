@@ -82,9 +82,9 @@ These admin actions must be done before the workflow can run end-to-end.
    - **Required reviewers:** leave empty. (Adding reviewers would force a
      manual click on every release, defeating the direct-release flow.)
    - **Wait timer:** leave at 0.
-   - **Environment secrets:** the `RELEASE_PLZ_TOKEN` provisioned in step
-     3 below should live here, not in repo-level secrets, so other
-     workflows can't read it.
+   - **Environment variables/secrets:** the app client ID and private key
+     provisioned in step 3 below should live here, not at repo level, so
+     other workflows can't read them.
 
 2. **Configure trusted publishing on crates.io.** For each published crate
    (`dynamo-protocols`, `dynamo-parsers`, `dynamo-tokenizers`,
@@ -96,22 +96,23 @@ These admin actions must be done before the workflow can run end-to-end.
    - **Environment: `automated-release`** — binds the OIDC claim to this
      environment so requests from anywhere else are rejected.
 
-3. **Provision a `RELEASE_PLZ_TOKEN` secret (in the `automated-release`
-   environment).** The default `GITHUB_TOKEN`
-   cannot push to a protected branch nor trigger downstream workflows
-   (CI on the release commit). Two options:
-   - **GitHub App (preferred for a public repo):** create a small app with
-     `Contents: write` + `Pull requests: write` permissions, install it on
-     this repo, and use `actions/create-github-app-token` at the top of the
-     workflow to mint a short-lived token. Replace `secrets.RELEASE_PLZ_TOKEN`
-     references with the app-token output.
-   - **Classic PAT:** scope `repo` + `workflow`, owned by a service
-     account, stored as `RELEASE_PLZ_TOKEN`. Rotate periodically.
+3. **Provision release GitHub App credentials (in the `automated-release`
+   environment).** The default `GITHUB_TOKEN` cannot push to a protected
+   branch nor trigger downstream workflows (CI on the release commit).
+   Create a small GitHub App with `Contents: write` + `Pull requests: write`
+   permissions and install it on only this repo. Then add:
+   - **Environment variable:** `RELEASE_APP_CLIENT_ID` with the app's
+     Client ID.
+   - **Environment secret:** `RELEASE_APP_PRIVATE_KEY` with the full private
+     key file contents, including the begin/end lines.
+   The workflow uses `actions/create-github-app-token` to mint a short-lived
+   installation token for checkout, pushing release commits, and release-plz
+   GitHub API calls.
 
 4. **Branch protection on `main`:** require CI status checks, require
-   linear history, require DCO. Add the bot identity to the bypass list so
-   it can push the `chore: release` commit directly. Human commits still
-   go through PRs.
+   linear history, require DCO. Add the release GitHub App to the ruleset
+   bypass list with "Always allow" so it can push the `chore: release`
+   commit directly. Human commits still go through PRs.
 
 5. **Tag protection:** add a tag protection rule matching `*-v*` to
    prevent updates and deletes.
