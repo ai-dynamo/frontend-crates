@@ -18,9 +18,9 @@ recover when it goes wrong.
    whose **packaged contents** changed. Packaged contents are spelled out
    via `include = [...]` in each crate's `Cargo.toml`: `src/**/*`,
    `Cargo.toml`, and `README.md`. Anything outside that list — `tests/`,
-   root `README.md`, `.github/`, `scripts/`, `deny.toml`, the
-   `examples/dynamo-demo-server/` crate (`publish = false`), and contributor
-   docs outside the packaged crate include list — does not trigger a
+   root `README.md`, `.github/`, `scripts/`, `deny.toml`, non-published
+   workspace crates (`conformance/` and `examples/dynamo-demo-server/`), and
+   contributor docs outside the packaged crate include list — does not trigger a
    release. A second filter, `release_commits` in `release-plz.toml`, only
    considers commits whose messages start with `feat:`, `fix:`, `perf:`,
    `refactor:`, or `sync:`. That filter keeps `chore:` / `ci:` / `build:` /
@@ -82,9 +82,9 @@ These admin actions must be done before the workflow can run end-to-end.
    - **Required reviewers:** leave empty. (Adding reviewers would force a
      manual click on every release, defeating the direct-release flow.)
    - **Wait timer:** leave at 0.
-   - **Environment variables/secrets:** the app client ID and private key
-     provisioned in step 3 below should live here, not at repo level, so
-     other workflows can't read them.
+   - **Environment secrets:** the app ID and private key provisioned in step
+     3 below should live here, not at repo level, so other workflows can't
+     read them.
 
 2. **Configure trusted publishing on crates.io.** For each published crate
    (`dynamo-protocols`, `dynamo-parsers`, `dynamo-tokenizers`,
@@ -99,10 +99,9 @@ These admin actions must be done before the workflow can run end-to-end.
 3. **Provision release GitHub App credentials (in the `automated-release`
    environment).** The default `GITHUB_TOKEN` cannot push to a protected
    branch nor trigger downstream workflows (CI on the release commit).
-   Create a small GitHub App with `Contents: write` + `Pull requests: write`
-   permissions and install it on only this repo. Then add:
-   - **Environment variable:** `RELEASE_APP_CLIENT_ID` with the app's
-     Client ID.
+   Create a small GitHub App with `Contents: write` permissions and install
+   it on only this repo. Then add:
+   - **Environment secret:** `RELEASE_APP_ID` with the app's Client ID.
    - **Environment secret:** `RELEASE_APP_PRIVATE_KEY` with the full private
      key file contents, including the begin/end lines.
    The workflow uses `actions/create-github-app-token` to mint a short-lived

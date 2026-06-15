@@ -23,10 +23,16 @@ git_release_enable = false
 # changelog_update = true
 # publish = true
 
-# `dynamo-demo-server` is `publish = false` in its Cargo.toml, but spell out
-# the release skip here too for legibility.
+# Non-published workspace crates must opt out of release-plz publishing too;
+# release-plz validates this against each crate's Cargo.toml.
+[[package]]
+name = "dynamo-conformance-fixtures-v2"
+publish = false
+release = false
+
 [[package]]
 name = "dynamo-demo-server"
+publish = false
 release = false
 
 [changelog]
