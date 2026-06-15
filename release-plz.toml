@@ -7,10 +7,14 @@
 semver_check = true
 
 # Only commits matching this regex count toward "is there anything to release".
-# Excludes chore:/ci:/build:/test:/docs: from triggering bumps. (Excluded
-# commits still appear in the changelog if their parser group is configured
-# below — they just don't drive a release on their own.)
-release_commits = "^(feat|fix|perf|refactor|sync)(\\(.+\\))?!?:"
+# TEMPORARY (transition only): `chore` is included so `chore: trivial parser
+# sync from dynamo` commits — how parser updates land during the
+# dynamo -> frontend-crates migration — actually trigger a version bump and
+# publish. Without it those syncs propose no bump, so the workflow's publish
+# step (gated on `bumped == 'true'`) is skipped and the synced fixes never
+# reach crates.io. REMOVE `chore` after the transition completes; it also lets
+# unrelated chore: commits (incl. dependabot `chore(deps):`) drive releases.
+release_commits = "^(feat|fix|perf|refactor|sync|chore)(\\(.+\\))?!?:"
 
 # Default tag format: per-crate, e.g. dynamo-protocols-v0.1.1
 git_tag_enable = true
