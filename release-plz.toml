@@ -30,6 +30,11 @@ name = "dynamo-conformance-fixtures-v2"
 publish = false
 release = false
 
+# `dynamo-demo-server` is `publish = false` in its Cargo.toml; mirror BOTH
+# `publish = false` and `release = false` here. release-plz fails the whole
+# `release` run if its config's publish flag (default true) disagrees with the
+# package's `publish = false` in Cargo.toml, so `release = false` alone is not
+# enough — the publish flag must match too.
 [[package]]
 name = "dynamo-demo-server"
 publish = false
