@@ -78,7 +78,12 @@ commit_parsers = [
     { message = "^refactor", group = "Refactoring" },
     { message = "^doc", group = "Documentation" },
     { message = "^sync", group = "Upstream sync" },
-    { message = "^chore", skip = true },
+    # TEMPORARY (transition): render `chore` in the changelog instead of
+    # skipping it, since `chore` now triggers releases (see `release_commits`
+    # above) — a chore-driven release would otherwise have an empty changelog.
+    # Remove together with the `release_commits` chore entry after the
+    # dynamo -> frontend-crates transition.
+    { message = "^chore", group = "Miscellaneous" },
     { message = "^ci", skip = true },
     { message = "^build", skip = true },
     { message = "^test", skip = true },
