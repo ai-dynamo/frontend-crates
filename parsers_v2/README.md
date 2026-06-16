@@ -102,7 +102,7 @@ For a new streaming parser family, add or update these files:
 - `conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md` when adding a new stream-only case or changing stream case descriptions.
 - `conformance/toolcalling/fixtures-stream-v2/README.md` only if the fixture schema or capture convention changes.
 
-Do not hand-edit legacy v1 parser code in `parsers/src/` for v2 behavior. During the bridge, `parsers/src/` and `conformance/toolcalling/fixtures/` remain legacy v1 inputs, while `parsers_v2/`, `fixtures-stream-v2/`, and `fixtures-batch-on-stream-v2/` are frontend-crate-owned v2 work.
+Fix legacy v1 parser bugs in `parsers/src/` and the matching v1 fixtures in `conformance/toolcalling/fixtures/`. During the bridge, keep v2-only parser behavior in `parsers_v2/`, `fixtures-stream-v2/`, and `fixtures-batch-on-stream-v2/` until the v1/v2 merge lands.
 
 ## Fixture Format
 
