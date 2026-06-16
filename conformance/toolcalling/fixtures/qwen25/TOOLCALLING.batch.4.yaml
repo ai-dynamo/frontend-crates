@@ -17,12 +17,18 @@ cases:
           location:
             type: string
     expected:
-      dynamo: &id001
+      dynamo:
         calls: []
-        normal_text: <tool_call>not even json</tool_call>
+        normal_text: ''
       vllm:
         unavailable: vLLM has no parser for family='qwen25'
-      sglang: *id001
+      sglang:
+        reason: 'Malformed body in a complete <tool_call> wrapper: Dynamo discards
+          the unparseable jail region (no leak); SGLang''s Qwen25Detector keys on a
+          "<tool_call>\n" prefix, so on this compact wrapper it detects nothing and
+          returns the raw text. Non-parity by design.'
+        calls: []
+        normal_text: <tool_call>not even json</tool_call>
   TOOLCALLING.batch.4.b:
     description: Missing close brace in JSON body
     ref: dynamo
@@ -32,10 +38,16 @@ cases:
     expected:
       vllm:
         unavailable: vLLM has no parser for family='qwen25'
-      dynamo: &id003
+      dynamo:
+        calls: []
+        normal_text: ''
+      sglang:
+        reason: 'Malformed JSON in a complete <tool_call> wrapper: Dynamo discards the
+          unparseable jail region (no leak); SGLang''s Qwen25Detector keys on a
+          "<tool_call>\n" prefix, so on this compact wrapper it detects nothing and
+          returns the raw text. Non-parity by design.'
         calls: []
         normal_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"</tool_call>'
-      sglang: *id003
   TOOLCALLING.batch.4.c:
     description: Missing name key
     ref: dynamo
@@ -43,12 +55,18 @@ cases:
     tools:
     - *id002
     expected:
-      dynamo: &id004
+      dynamo:
         calls: []
-        normal_text: '<tool_call>{"arguments": {"location": "NYC"}}</tool_call>'
+        normal_text: ''
       vllm:
         unavailable: vLLM has no parser for family='qwen25'
-      sglang: *id004
+      sglang:
+        reason: 'Missing name key in a complete <tool_call> wrapper: Dynamo discards the
+          unparseable jail region (no leak); SGLang''s Qwen25Detector keys on a
+          "<tool_call>\n" prefix, so on this compact wrapper it detects nothing and
+          returns the raw text. Non-parity by design.'
+        calls: []
+        normal_text: '<tool_call>{"arguments": {"location": "NYC"}}</tool_call>'
   TOOLCALLING.batch.4.d:
     description: Missing </tool_call> close
     ref: dynamo

@@ -72,12 +72,9 @@ cases:
           location:
             type: string
     expected:
-      dynamo:
-        calls: []
-        normal_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call></tool_call></tool_call>'
-      vllm:
-        unavailable: vLLM has no parser for family='qwen25'
-      sglang:
-        reason: 'Orphan </tool_call> markers with no opener: SGLang strips them, Dynamo keeps them (impl-defined recovery).'
+      dynamo: &d_stream_4_c
         calls: []
         normal_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}'
+      vllm:
+        unavailable: vLLM has no parser for family='qwen25'
+      sglang: *d_stream_4_c
