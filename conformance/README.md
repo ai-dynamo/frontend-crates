@@ -16,7 +16,7 @@ Parser v1/v2 terminology, migration steps, fixture ownership, and temporary sync
 ```
 conformance/
 ├── toolcalling/fixtures/<family>/*.yaml          # legacy v1 tool-calling batch cases
-├── reasoning/fixtures/<family>/*.yaml             # legacy reasoning v1 cases
+├── reasoning/fixtures/<family>/*.yaml             # legacy v1 reasoning cases
 ├── toolcalling/fixtures-stream-v2/<family>/*.yaml # frontend-crate-owned v2 stream cases
 ├── toolcalling/fixtures-batch-on-stream-v2/<family>/*.yaml # frontend-crate-owned complete-text-through-stream cases
 ├── tests/*.rs                                     # Rust fixture tests
