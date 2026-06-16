@@ -15,8 +15,8 @@ Parser v1/v2 terminology, migration steps, fixture ownership, and temporary sync
 
 ```
 conformance/
-├── toolcalling/fixtures/<family>/*.yaml          # Dynamo-synced v1 tool-calling batch cases
-├── reasoning/fixtures/<family>/*.yaml             # Dynamo-synced reasoning v1 cases
+├── toolcalling/fixtures/<family>/*.yaml          # legacy v1 tool-calling batch cases
+├── reasoning/fixtures/<family>/*.yaml             # legacy v1 reasoning cases
 ├── toolcalling/fixtures-stream-v2/<family>/*.yaml # frontend-crate-owned v2 stream cases
 ├── toolcalling/fixtures-batch-on-stream-v2/<family>/*.yaml # frontend-crate-owned complete-text-through-stream cases
 ├── tests/*.rs                                     # Rust fixture tests
@@ -55,11 +55,11 @@ The test package is named `dynamo-conformance-fixtures-v2` for historical compat
 
 The fixture `family` field is the parser name, the same value Dynamo's `parse_tool_calls_batch` binding takes for v1. Legacy v1 fixtures use `expected.dynamo`, `expected.vllm`, and `expected.sglang`; v2 fixtures should use explicit implementation keys such as `expected.dynamo_rust`, `expected.vllm_rust`, `expected.vllm_python`, and `expected.sglang_python`.
 
-Reasoning fixtures are Dynamo-synced and rendered in the v2 HTML table; a Rust fixture harness for reasoning is still a follow-up.
+Reasoning fixtures are rendered in the v2 HTML table; a Rust fixture harness for reasoning is still a follow-up.
 
-## Refreshing Dynamo-Synced Fixtures (v1)
+## Refreshing Legacy Fixtures (v1)
 
-Use the sync commands in [`../PARSERS-V2-MIGRATION-PLAN.md`](../PARSERS-V2-MIGRATION-PLAN.md#temporary-sync-commands). The v1 fixture refresh does not update frontend-crate-owned v2 stream fixtures.
+Parser fixture sync from Dynamo is retired. Update v1 fixtures through normal frontend-crates PRs and verify the renderers listed in [`../PARSERS-V2-MIGRATION-PLAN.md`](../PARSERS-V2-MIGRATION-PLAN.md#temporary-sync-commands).
 
 ## Adding Streaming Parser V2 Fixtures
 

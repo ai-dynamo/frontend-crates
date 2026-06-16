@@ -7,10 +7,9 @@
 # Sources:  $DYNAMO_SRC/lib/{protocols,tokenizers,renderer}/
 # Targets:  ./{protocols,tokenizers,renderer}/
 #
-# NOTE: parsers/ and conformance/utils/ are NOT synced by this script.
-# Parser v1 mirror updates are temporary/manual while the frontend-crates parser
-# crate is being prepared for release. See PARSERS-V2-MIGRATION-PLAN.md for the
-# mapping and post-release migration plan.
+# NOTE: parsers/, parser fixtures, and conformance/utils/ are NOT synced by
+# this script. Parser code and parser conformance data are owned in
+# frontend-crates after the parser crate migration.
 #
 # Usage:
 #   scripts/sync-from-dynamo.sh                 # check, against $DYNAMO_SRC (default /ephemeral/dynamo)
@@ -121,31 +120,6 @@ if [ -d "$fsrc" ]; then
     fi
   fi
 fi
-
-# Parser fixture corpus. Lives at the Dynamo repo root (tests/parity/), NOT under
-# lib/, so the per-crate sync above misses it. Mirror the fixtures/ subdir only.
-# The Python harness, template, bytecode, and rendered HTML all sit at the parent
-# level and must stay out of this repo. The fixtures/ dirs are pure YAML, so no
-# excludes are needed.
-for fam in toolcalling reasoning; do
-  pfx_src="$DYNAMO_SRC/tests/parity/$fam/fixtures"
-  pfx_dst="$HERE/conformance/$fam/fixtures"
-  [ -d "$pfx_src" ] || continue
-  echo "--- parity fixtures ($fam) ---"
-  fixture_excludes=()
-  if [ "$APPLY" = "1" ]; then
-    mkdir -p "$pfx_dst"
-    rsync -a --delete --checksum "${fixture_excludes[@]}" "$pfx_src/" "$pfx_dst/"
-  else
-    out=$(rsync -a --delete --checksum --dry-run --itemize-changes "${fixture_excludes[@]}" "$pfx_src/" "$pfx_dst/" | grep -E '^[<>c*]' || true)
-    if [ -n "$out" ]; then
-      echo "  $fam/fixtures would change:"
-      echo "$out" | sed 's/^/    /'
-      CODE_CHANGED=1
-    fi
-  fi
-done
-
 
 if [ "$APPLY" = "1" ]; then
   echo
