@@ -102,7 +102,7 @@ For a new streaming parser family, add or update these files:
 - `conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md` when adding a new stream-only case or changing stream case descriptions.
 - `conformance/toolcalling/fixtures-stream-v2/README.md` only if the fixture schema or capture convention changes.
 
-Do not hand-edit synced v1 parser code in `parsers/src/` for v2 behavior. During the bridge, `parsers/src/` and `conformance/toolcalling/fixtures/` remain Dynamo-synced v1 inputs, while `parsers_v2/`, `fixtures-stream-v2/`, and `fixtures-batch-on-stream-v2/` are frontend-crate-owned v2 work.
+Do not hand-edit legacy v1 parser code in `parsers/src/` for v2 behavior. During the bridge, `parsers/src/` and `conformance/toolcalling/fixtures/` remain legacy v1 inputs, while `parsers_v2/`, `fixtures-stream-v2/`, and `fixtures-batch-on-stream-v2/` are frontend-crate-owned v2 work.
 
 ## Fixture Format
 
@@ -157,7 +157,7 @@ Harmony is only the first example; DS4 and the other streaming families follow t
 
 ## Which Fixture Do I Edit?
 
-- `conformance/toolcalling/fixtures/<family>/TOOLCALLING.batch*.yaml` — Dynamo-synced v1 batch input and the current batch baseline. Do not hand-edit for v2 work (it syncs from upstream Dynamo); it is also the seed for stream capture.
+- `conformance/toolcalling/fixtures/<family>/TOOLCALLING.batch*.yaml` — legacy v1 batch input and the current batch baseline. Do not hand-edit for v2 work; it is also the seed for stream capture.
 - `conformance/toolcalling/fixtures-stream-v2/<family>/TOOLCALLING.streamv2.*.yaml` — per-chunk streaming behavior (the TC stream tab). Edit/capture here for streaming parser work.
 - `conformance/toolcalling/fixtures-batch-on-stream-v2/<family>/TOOLCALLING.batch*.yaml` — each batch sample's full text run through the stream parser (the batch-on-stream tab).
 

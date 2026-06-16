@@ -21,8 +21,7 @@ frontend-crates/
 ├── renderer/               # dynamo-renderer (deps protocols, tokenizers)
 ├── examples/
 │   └── dynamo-demo-server/ # axum server wiring them together
-└── scripts/
-    └── sync-from-dynamo.sh # check / pull changes from ai-dynamo/dynamo
+└── conformance/            # parser conformance fixtures, checks, and renderers
 ```
 
 ## Building
@@ -56,8 +55,6 @@ cargo machete
 cargo deny --all-features check bans licenses
 ```
 
-## Where the code lives
+## Source of Truth
 
-These crates currently mirror `lib/{protocols,tokenizers,parsers,renderer}/` from [ai-dynamo/dynamo](https://github.com/ai-dynamo/dynamo). The sync is **one-way (dynamo → frontend-crates) and manual** for now — see [`scripts/sync-from-dynamo.sh`](./scripts/sync-from-dynamo.sh) to check for upstream changes.
-
-> **Heads up:** this mirroring is temporary. Over the next few weeks we plan to **remove the sync entirely and make this repository the source of truth** for these crates — dynamo will then depend on the published crates rather than the other way around. Until that cutover lands, treat dynamo as upstream and land crate changes there first.
+This repository is the source of truth for these crates. Dynamo consumes the published crates instead of feeding a reverse sync back into this repository.

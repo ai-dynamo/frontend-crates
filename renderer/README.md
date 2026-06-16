@@ -38,7 +38,4 @@ let prompt: String = formatter.render(&request)?;
 
 ## Provenance
 
-This crate is a one-way mirror of `lib/renderer` from
-[ai-dynamo/dynamo](https://github.com/ai-dynamo/dynamo). `src/` is synced
-verbatim; `Cargo.toml` and this README are inlined for standalone publishing.
-See the repo root `scripts/sync-from-dynamo.sh`.
+This crate is owned in `ai-dynamo/frontend-crates` and published for Dynamo and other OpenAI-compatible frontends to consume.

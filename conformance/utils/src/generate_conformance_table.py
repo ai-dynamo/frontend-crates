@@ -476,7 +476,7 @@ _VISIBLE_CONFORMANCE_REPLACEMENTS = (
     ("Dynamo Tool Calling Parser - Parity Table", "Dynamo Tool Calling Parser v2 Conformance Table"),
     ("Parity Table", "Conformance Table"),
     ("parity table", "conformance table"),
-    ("tests/parity/README.md", "Dynamo-synced parser fixture README"),
+    ("tests/parity/README.md", "legacy parser fixture README"),
 )
 
 
@@ -2293,7 +2293,7 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
     }
     _toolbar_desc = {
         "batch": (
-            f'Parser: <strong>v1</strong> Dynamo-synced batch parser '
+            f'Parser: <strong>v1</strong> legacy batch parser '
             f'(<a href="{hrefs["toolcalling_src"]}">parsers/src/tool_calling/</a>) · '
             f'Input: <strong>v1</strong> batch fixtures '
             f'(<a href="{hrefs["toolcalling_fixtures"]}">conformance/toolcalling/fixtures/</a>).'
@@ -2417,7 +2417,7 @@ def _combined_reasoning_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
                 "label_html": _r_label_html,
                 "tab_title": f"Reasoning {mode}: v1 code on v1 fixtures",
                 "toolbar_desc": (
-                    f'Parser: <strong>v1</strong> Dynamo-synced reasoning parser '
+                    f'Parser: <strong>v1</strong> legacy reasoning parser '
                     f'(<a href="{hrefs["reasoning_src"]}">parsers/src/reasoning/</a>) · '
                     f'Input: <strong>v1</strong> reasoning fixtures '
                     f'(<a href="{hrefs["reasoning_fixtures"]}">conformance/reasoning/fixtures/</a>).'

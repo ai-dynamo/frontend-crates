@@ -153,14 +153,6 @@ If `main` has unreleased changes you don't want to ship yet, that's a
 sign the normal flow is broken — investigate before reaching for branch
 gymnastics.
 
-## Upstream sync commits
+## Crate source commits
 
-`sync(<crate>):` commits modify packaged source under `<crate>/src/`, so
-they trigger releases. By default this maps to a patch bump. If an upstream
-sync introduces a breaking API change, the human running `sync-from-dynamo.sh`
-must amend the commit message to `sync!(<crate>):` or add a
-`BREAKING CHANGE:` trailer so the right bump is chosen. If
-`cargo-semver-checks` catches a structural break that wasn't labeled
-correctly, the publish will fail and you'll need to follow up with a
-correctly-labeled commit (see "What `cargo-semver-checks` validates"
-above).
+Crate source changes under `<crate>/src/` should use a release-driving Conventional Commit type such as `fix:`, `feat:`, `perf:`, or `refactor:`. If a change removes or renames public API, use a breaking marker such as `feat!:` or add a `BREAKING CHANGE:` trailer so the right bump is chosen. If `cargo-semver-checks` catches a structural break that wasn't labeled correctly, the publish will fail and you'll need to follow up with a correctly-labeled commit (see "What `cargo-semver-checks` validates" above).
