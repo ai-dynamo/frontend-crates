@@ -3,7 +3,7 @@
 
 [package]
 name = "dynamo-parsers-v2-py"
-version = "0.1.0"
+version = "0.1.1"
 edition.workspace = true
 license = "Apache-2.0"
 description = "Python bindings for dynamo-parsers-v2 (PyO3 / maturin)"
@@ -18,6 +18,6 @@ name = "dynamo_parsers_v2"
 crate-type = ["cdylib"]
 
 [dependencies]
-dynamo-parsers-v2 = { path = "../parsers_v2", version = "0.1.0" }
+dynamo-parsers-v2 = { path = "../parsers_v2", version = "0.1.1" }
 dynamo-parsers = { workspace = true }
 pyo3 = { workspace = true }
