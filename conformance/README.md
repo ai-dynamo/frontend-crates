@@ -9,7 +9,7 @@ Parser conformance fixtures, fixture-based Rust tests, and HTML renderers for fr
 
 ## Ownership
 
-Parser v1/v2 terminology, migration steps, and fixture ownership are documented in [`../PARSERS-V2-MIGRATION-PLAN.md`](../PARSERS-V2-MIGRATION-PLAN.md). New streaming parser authors should also read [`../parsers_v2/README.md`](../parsers_v2/README.md); it explains the vLLM-shaped Rust parser contract, the v2 fixture schema, and the exact `conformance/toolcalling/*` files to add. This README covers conformance layout, render outputs, and test commands.
+Parser v1/v2 terminology, migration steps, fixture ownership, and temporary sync rules are documented in [`../PARSERS-V2-MIGRATION-PLAN.md`](../PARSERS-V2-MIGRATION-PLAN.md). New streaming parser authors should also read [`../parsers_v2/README.md`](../parsers_v2/README.md); it explains the vLLM-shaped Rust parser contract, the v2 fixture schema, and the exact `conformance/toolcalling/*` files to add. This README covers conformance layout, render outputs, and test commands.
 
 ## Layout
 
@@ -27,8 +27,8 @@ conformance/
 
 | Output | Command | Parser version | Fixture version |
 |---|---|---|---|
-| v1 parity HTML | `conformance/utils/render_table_v1.sh` | legacy v1 parser code through old `generate_parity_table.py` | legacy v1 tool-calling and reasoning fixtures; output stays under `conformance/utils/.stage/tests/parity/PARITY_v1.html` so old relative links resolve. |
-| v2 conformance HTML | `conformance/utils/render_table_v2.sh` | Mixed bridge table: `TC batch (v1)` and reasoning tabs use legacy v1 parser code; `TC batch-on-stream (v2)` and `TC stream (v2)` use Dynamo parser v2 code. | `TC batch (v1)` uses v1 batch fixtures; `TC batch-on-stream (v2)` uses v1 batch fixtures plus v2 batch-on-stream overlays; `TC stream (v2)` uses v2 stream fixtures; reasoning tabs use v1 reasoning fixtures. The default example output is `conformance/CONFORMANCE.html`, and the render script also accepts a custom output path. |
+| v1 parity HTML | `conformance/utils/render_table_v1.sh` | v1 Dynamo-synced parser code through old Dynamo `generate_parity_table.py` | v1 Dynamo-synced tool-calling and reasoning fixtures; output stays under `conformance/utils/.stage/tests/parity/PARITY_v1.html` so old relative links resolve. |
+| v2 conformance HTML | `conformance/utils/render_table_v2.sh` | Mixed bridge table: `TC batch (v1)` and reasoning tabs use v1 Dynamo-synced parser code; `TC batch-on-stream (v2)` and `TC stream (v2)` use Dynamo parser v2 code. | `TC batch (v1)` uses v1 batch fixtures; `TC batch-on-stream (v2)` uses v1 batch fixtures plus v2 batch-on-stream overlays; `TC stream (v2)` uses v2 stream fixtures; reasoning tabs use v1 reasoning fixtures. The default example output is `conformance/CONFORMANCE.html`, and the render script also accepts a custom output path. |
 
 ## Running the tests
 
@@ -49,13 +49,17 @@ The test package is named `dynamo-conformance-fixtures-v2` for historical compat
 
 | Test | Code under test | Fixtures | Notes |
 |---|---|---|---|
-| `parity_toolcalling` | legacy v1 batch parser in `parsers/src/tool_calling/` | v1 batch fixtures in `conformance/toolcalling/fixtures/` | Each `batch` case's `model_text` is fed through `detect_and_parse_tool_call_with_recovery(text, Some(family), tools)` and compared to `expected.dynamo`. |
+| `parity_toolcalling` | v1 Dynamo-synced batch parser in `parsers/src/tool_calling/` | v1 batch fixtures in `conformance/toolcalling/fixtures/` | Each `batch` case's `model_text` is fed through `detect_and_parse_tool_call_with_recovery(text, Some(family), tools)` and compared to `expected.dynamo`. |
 | `parity_toolcalling_batch_via_stream` | Dynamo parser v2 in `parsers_v2/src/tool_calling/*` | v1 batch fixtures in `conformance/toolcalling/fixtures/` plus v2 overlays in `conformance/toolcalling/fixtures-batch-on-stream-v2/` | Feeds complete batch text into the v2 stream parser and compares assembled calls to the committed batch-on-stream expectations. |
 | `parity_toolcalling_stream` | Dynamo parser v2 in `parsers_v2/src/tool_calling/*` | v2 stream fixtures in `conformance/toolcalling/fixtures-stream-v2/` | Checks token-id or text streaming paths per chunk, then checks assembled calls. |
 
 The fixture `family` field is the parser name, the same value Dynamo's `parse_tool_calls_batch` binding takes for v1. Legacy v1 fixtures use `expected.dynamo`, `expected.vllm`, and `expected.sglang`; v2 fixtures should use explicit implementation keys such as `expected.dynamo_rust`, `expected.vllm_rust`, `expected.vllm_python`, and `expected.sglang_python`.
 
 Reasoning fixtures are rendered in the v2 HTML table; a Rust fixture harness for reasoning is still a follow-up.
+
+## Refreshing Legacy Fixtures (v1)
+
+Parser fixture sync from Dynamo is retired. Update v1 fixtures through normal frontend-crates PRs and verify the renderers listed in [`../PARSERS-V2-MIGRATION-PLAN.md`](../PARSERS-V2-MIGRATION-PLAN.md#temporary-sync-commands).
 
 ## Adding Streaming Parser V2 Fixtures
 

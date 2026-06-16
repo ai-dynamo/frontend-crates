@@ -817,7 +817,7 @@ def test_structured_error_block_marks_x_string_error_marks_bang() -> None:
 def test_v2_overlays_are_canonical_only() -> None:
     """D3: the v2 overlays carry no legacy impl keys and stamp captured_with — locks
     the canonical-key migration (the renderer's legacy aliases exist only for the
-    legacy v1 corpus, so legacy keys here are silent drift)."""
+    Dynamo-synced v1 corpus, so legacy keys here are silent drift)."""
     assert vf.validate_overlays() == []
 
 

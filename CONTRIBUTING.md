@@ -9,16 +9,16 @@ Thank you for your interest in contributing to `frontend-crates`!
 
 This repository contains three independently published Rust crates — `dynamo-protocols`, `dynamo-tokenizers`, and `dynamo-parsers` — that can be adopted on their own to build OpenAI/Anthropic-compatible inference servers, plus a demo server wiring them together.
 
-## Source of Truth
+## Source of Truth and Sync Direction
 
-The code under `protocols/`, `tokenizers/`, `parsers/`, and `renderer/` is owned in this repository. Dynamo consumes the published crates, so changes to crate source should land here first instead of being synced back from Dynamo.
+The code under `protocols/`, `tokenizers/`, and `parsers/` currently mirrors `lib/{protocols,tokenizers,parsers}/` from [ai-dynamo/dynamo](https://github.com/ai-dynamo/dynamo). The canonical sync direction is **dynamo → frontend-crates**, one-way and manual, driven by [`scripts/sync-from-dynamo.sh`](scripts/sync-from-dynamo.sh).
 
 What this means for contributors:
 
-- **Changes to crate source code (`protocols/src/**`, `tokenizers/src/**`, `parsers/src/**`, `renderer/src/**`)** should be opened as PRs against this repository.
-- **Changes to repository scaffolding** — crate `Cargo.toml` metadata, `examples/dynamo-demo-server/`, `.github/`, docs, release config, and conformance tooling — should also be opened as PRs here.
+- **Changes to crate source code (`protocols/src/**`, `tokenizers/src/**`, `parsers/src/**`)** should be opened as PRs against [ai-dynamo/dynamo](https://github.com/ai-dynamo/dynamo) in the corresponding `lib/` directory. Once merged upstream, the sync script pulls them into this repository for the next published release.
+- **Changes to repository scaffolding** — crate `Cargo.toml` metadata, `examples/dynamo-demo-server/`, `scripts/`, `.github/`, docs in this repo, the sync tooling itself — should be opened as PRs here.
 
-If you're not sure where a change belongs, open the PR here and we'll route it.
+If you're not sure where a change belongs, open the PR in either place and we'll route it.
 
 ## How to Contribute
 

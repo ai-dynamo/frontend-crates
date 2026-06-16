@@ -1,31 +1,31 @@
-# Parser Migration Notes
+# Parsers V2 Migration Plan
 
-This records the parser v1/v2 bridge and the remaining migration out of `parsers_v2*`. Dynamo sync scripts are retired; do not refresh parser source, parser fixtures, or conformance utilities from Dynamo.
+This is the single source of truth for the parser v1/v2 bridge, the temporary Dynamo sync boundary, and the final migration out of `parsers_v2*`.
 
 ## Terminology
 
-`v1` means the legacy batch parser API, fixtures, and old parity renderer behavior retained for compatibility. During the bridge period, v1 lives in `parsers/src/`, `conformance/toolcalling/fixtures/`, `conformance/reasoning/fixtures/`, `conformance/utils/tests/parity/`, and `conformance/utils/lib/parsers/*_CASES.md`.
+`v1` means Dynamo-synced parser code, fixtures, and old parity renderer behavior. During the bridge period, v1 lives in `parsers/src/`, `conformance/toolcalling/fixtures/`, `conformance/reasoning/fixtures/`, `conformance/utils/tests/parity/`, and `conformance/utils/lib/parsers/*_CASES.md`.
 
 `v2` means frontend-crate-owned parser code, Python binding code, stream fixtures, batch-on-stream fixtures, and conformance renderer behavior. During the bridge period, v2 lives in `parsers_v2/`, `parsers_v2-py/`, `conformance/toolcalling/fixtures-stream-v2/`, `conformance/toolcalling/fixtures-batch-on-stream-v2/`, `conformance/utils/src/generate_conformance_table.py`, and `conformance/utils/src/conformance_table.html.j2`.
 
 Use `Dynamo parser v2` as the parser label. The fixture key `expected.dynamo` and helper subcommand `check.sh dynamo` are compatibility labels for local parser output; ownership during the bridge is still described separately as frontend-crates-owned.
 
-## Why The Bridge Remains
+## Why The Bridge Exists
 
-The current split exists because frontend-crates still needs to show and validate the old batch parser view while building the streaming parser path. v1 stays available so `PARITY_v1.html` can show legacy output. v2 stays separate until the parser crate layout, Python binding package, fixtures, and renderer are merged.
+The current split exists because frontend-crates still needs to show and validate the old Dynamo view while building Dynamo parser v2. v1 stays resettable to Dynamo so `PARITY_v1.html` can show what old Dynamo would have generated. v2 stays outside the sync target so new streaming parser work cannot be clobbered by a Dynamo rsync.
 
-Do not reintroduce parser-source rsync from Dynamo. That would make frontend-crates depend on a repo that now consumes frontend-crates.
+Do not move v2 parser code into `parsers/src/` until Dynamo consumes the released frontend-crates parser crate directly and parser-source rsync stops. Until then, `parsers/src/` is a v1 mirror.
 
 ## Current Bridge Layout
 
 | Area | Owner during bridge | Rule |
 |---|---|---|
-| `parsers/src/` | frontend-crates legacy v1 | Keep the batch API working until the v2 merge is complete. |
-| `parsers/tests/` | frontend-crates legacy v1 | Update through normal frontend-crates PRs. |
-| `conformance/toolcalling/fixtures/` | frontend-crates legacy v1 | Batch tool-calling fixtures used by v1 and batch-on-stream comparisons. |
+| `parsers/src/` | v1 Dynamo-synced | Resettable to Dynamo. Do not put v2 work here yet. |
+| `parsers/tests/` | v1 Dynamo-synced when present upstream | Resettable to Dynamo. |
+| `conformance/toolcalling/fixtures/` | frontend-crates legacy v1 | Batch tool-calling fixtures retained for v1 behavior. Do not hand-edit for v2 behavior. |
 | `conformance/reasoning/fixtures/` | frontend-crates legacy v1 | Reasoning fixtures rendered in the conformance table. |
-| `conformance/utils/tests/parity/` | frontend-crates legacy v1 | Old parity generator package kept so `PARITY_v1.html` stays old-output compatible. |
-| `conformance/utils/lib/parsers/TOOLCALLING_CASES.md` and `REASONING_CASES.md` | frontend-crates legacy v1 | Case docs used by the old v1 renderer. |
+| `conformance/utils/tests/parity/` | v1 Dynamo-synced | Old Dynamo parity generator package. Keep it close to Dynamo so `PARITY_v1.html` stays old-output compatible. |
+| `conformance/utils/lib/parsers/TOOLCALLING_CASES.md` and `REASONING_CASES.md` | v1 Dynamo-synced | Case docs used by the old v1 renderer. |
 | `parsers_v2/src/tool_calling/*` | v2 frontend-crate-owned | Temporary Rust home for new streaming tool-calling parsers. Current Harmony implementation is `parsers_v2/src/tool_calling/harmony.rs`. |
 | `parsers_v2-py/` | v2 frontend-crate-owned | Temporary PyO3 package exposing the v2 parser to Python as `dynamo_parsers_v2`. |
 | `conformance/toolcalling/fixtures-stream-v2/` | v2 frontend-crate-owned | Stream fixtures for v2 parser behavior. |
@@ -36,12 +36,12 @@ Do not reintroduce parser-source rsync from Dynamo. That would make frontend-cra
 
 1. Keep the bridge split in this PR: the v1 mirror stays under the v1 paths above; v2 parser, binding, stream fixture, and renderer work stays under the v2 paths above.
 2. Release the frontend-crates parser crate. The release must include the v1 parser API Dynamo already uses plus the v2 streaming parser API needed for this conformance work.
-3. Dynamo consumes the released crate directly instead of carrying synced parser source.
-4. Remove Dynamo-to-frontend-crates sync entry points. Do not keep fixture sync as a back door; fixtures are frontend-crates-owned after the cutover.
+3. Update Dynamo so it consumes that released crate directly instead of carrying synced parser source. After that Dynamo PR lands, stop syncing parser source and parser fixtures from Dynamo into frontend-crates.
+4. Remove parser sync runbooks. Keep the general `protocols` / `tokenizers` / `renderer` sync only while those crates still mirror Dynamo.
 5. Merge v1 and v2 inside frontend-crates: move frontend-crate-owned parser code from `parsers_v2/src/tool_calling/*` into the normal parser crate layout under `parsers/src/tool_calling/*`; move the Python binding surface from `parsers_v2-py` into the final parser Python binding package; remove the temporary `parsers_v2*` crate/package boundary; merge the old parity renderer and v2 conformance renderer into one owned renderer; retire temporary `_v2` names once the merged table is the only table.
-6. Delete bridge-only artifacts after the merge.
+6. Delete bridge-only artifacts after the merge, including the v1 sync whitelist entries that only existed to preserve old Dynamo output.
 
-Do not do step 5 until the Dynamo crate-consumption PR has landed.
+Do not do step 5 before step 3 lands in Dynamo. Until Dynamo consumes the released crate directly, the v1 mirror is useful because it shows exactly what old Dynamo would have generated.
 
 ## Final Target Shape
 
@@ -61,9 +61,16 @@ parsers_v2-py / dynamo_parsers_v2  ->  final parser Python binding package
 
 The final package name should not carry `v2`. Use the parser crate's release packaging decision for the exact module name.
 
-## Retired Dynamo Sync
+## Temporary Sync Commands
 
-The old `scripts/sync-from-dynamo.sh`, `scripts/manual-sync-parsers.sh`, and hourly sync-check workflow were removed when Dynamo started consuming these crates. Verify local changes with the renderers instead of syncing from Dynamo:
+Use the general sync script for the ordinary non-parser Dynamo mirrors:
+
+```bash
+scripts/sync-from-dynamo.sh /path/to/dynamo          # dry-run
+scripts/sync-from-dynamo.sh --apply /path/to/dynamo  # apply
+```
+
+Parser source, parser fixtures, and conformance utilities are frontend-crates-owned after the parser crate migration; do not sync them from Dynamo. After changing parser fixtures or conformance code, verify both renderers:
 
 ```bash
 conformance/utils/render_table_v1.sh
@@ -72,7 +79,7 @@ conformance/utils/render_table_v2.sh
 
 ## Manual Version Pins
 
-With sync removed, dependency pins are maintained directly in frontend-crates. The table below is historical bridge context and a checklist for migration follow-up, not a per-sync runbook.
+`sync-from-dynamo.sh` syncs non-parser `src/`, `tests/`, and tokenizer fixtures but never dependency versions. It lists `Cargo.toml` as manual-review and never auto-applies it. Check this table on every sync. `last-synced` is the value verified against Dynamo `main` on 2026-06-04; re-verify against current `main`, not a stale local checkout.
 
 | Pin | frontend-crates file | Dynamo file | last-synced value | Notes |
 |---|---|---|---|---|
