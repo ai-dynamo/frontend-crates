@@ -7,10 +7,14 @@
 semver_check = true
 
 # Only commits matching this regex count toward "is there anything to release".
-# Excludes chore:/ci:/build:/test:/docs: from triggering bumps. (Excluded
-# commits still appear in the changelog if their parser group is configured
-# below — they just don't drive a release on their own.)
-release_commits = "^(feat|fix|perf|refactor|sync)(\\(.+\\))?!?:"
+# TEMPORARY (transition only): `chore` is included so `chore: trivial parser
+# sync from dynamo` commits — how parser updates land during the
+# dynamo -> frontend-crates migration — actually trigger a version bump and
+# publish. Without it those syncs propose no bump, so the workflow's publish
+# step (gated on `bumped == 'true'`) is skipped and the synced fixes never
+# reach crates.io. REMOVE `chore` after the transition completes; it also lets
+# unrelated chore: commits (incl. dependabot `chore(deps):`) drive releases.
+release_commits = "^(feat|fix|perf|refactor|sync|chore)(\\(.+\\))?!?:"
 
 # Default tag format: per-crate, e.g. dynamo-protocols-v0.1.1
 git_tag_enable = true
@@ -30,6 +34,11 @@ name = "dynamo-conformance-fixtures-v2"
 publish = false
 release = false
 
+# `dynamo-demo-server` is `publish = false` in its Cargo.toml; mirror BOTH
+# `publish = false` and `release = false` here. release-plz fails the whole
+# `release` run if its config's publish flag (default true) disagrees with the
+# package's `publish = false` in Cargo.toml, so `release = false` alone is not
+# enough — the publish flag must match too.
 [[package]]
 name = "dynamo-demo-server"
 publish = false
@@ -69,7 +78,12 @@ commit_parsers = [
     { message = "^refactor", group = "Refactoring" },
     { message = "^doc", group = "Documentation" },
     { message = "^sync", group = "Upstream sync" },
-    { message = "^chore", skip = true },
+    # TEMPORARY (transition): render `chore` in the changelog instead of
+    # skipping it, since `chore` now triggers releases (see `release_commits`
+    # above) — a chore-driven release would otherwise have an empty changelog.
+    # Remove together with the `release_commits` chore entry after the
+    # dynamo -> frontend-crates transition.
+    { message = "^chore", group = "Miscellaneous" },
     { message = "^ci", skip = true },
     { message = "^build", skip = true },
     { message = "^test", skip = true },
