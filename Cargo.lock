@@ -890,7 +890,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers"
-version = "1.4.1"
+version = "1.4.2"
 dependencies = [
  "anyhow",
  "num-traits",
@@ -907,7 +907,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "dynamo-parsers",
@@ -921,7 +921,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2-py"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "dynamo-parsers",
  "dynamo-parsers-v2",
