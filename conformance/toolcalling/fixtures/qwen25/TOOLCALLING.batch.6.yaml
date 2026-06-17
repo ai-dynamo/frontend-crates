@@ -18,14 +18,18 @@ cases:
         type: object
         properties: {}
     expected:
-      dynamo: &id001
+      dynamo:
         calls:
         - name: get_time
           arguments: {}
         normal_text: ''
       vllm:
         unavailable: vLLM has no parser for family='qwen25'
-      sglang: *id001
+      sglang:
+        calls:
+        - name: get_time
+          arguments: {}
+        normal_text: ''
   TOOLCALLING.batch.6.b:
     description: Whitespace inside arguments {}
     ref: dynamo
@@ -36,14 +40,18 @@ cases:
     tools:
     - *id002
     expected:
-      dynamo: &id003
+      dynamo:
         calls:
         - name: get_time
           arguments: {}
         normal_text: ''
       vllm:
         unavailable: vLLM has no parser for family='qwen25'
-      sglang: *id003
+      sglang:
+        calls:
+        - name: get_time
+          arguments: {}
+        normal_text: ''
   TOOLCALLING.batch.6.c:
     description: No arguments key
     ref: dynamo
@@ -51,9 +59,17 @@ cases:
     tools:
     - *id002
     expected:
-      dynamo: &id004
-        calls: []
-        normal_text: '<tool_call>{"name": "get_time"}</tool_call>'
+      dynamo:
+        calls:
+        - name: get_time
+          arguments: {}
+        normal_text: ''
       vllm:
         unavailable: vLLM has no parser for family='qwen25'
-      sglang: *id004
+      sglang:
+        reason: 'Name-only call (no arguments key): Dynamo recovers it as get_time({})
+          (matching vLLM/SGLang Hermes detectors); SGLang''s Qwen25Detector keys on a
+          "<tool_call>\n" prefix, so on this compact wrapper it detects nothing and
+          returns the raw text. Non-parity by design.'
+        calls: []
+        normal_text: '<tool_call>{"name": "get_time"}</tool_call>'
