@@ -17,11 +17,15 @@ cases:
           location:
             type: string
     expected:
-      dynamo: &id001
-        reason: "Dynamo's hermes parser leaves <tool_call> tag in normal_text on malformed input (impl-defined recovery)"
+      dynamo:
+        calls: []
+        normal_text: ''
+      vllm: &id001
+        reason: 'vLLM and SGLang leave the raw <tool_call> wrapper in normal_text on
+          non-JSON garbage; Dynamo discards the unparseable wrapper (no leak). Non-parity
+          by design.'
         calls: []
         normal_text: <tool_call>not even json</tool_call>
-      vllm: *id001
       sglang: *id001
   TOOLCALLING.batch.4.b:
     description: Missing close brace in JSON body
@@ -36,12 +40,13 @@ cases:
           arguments:
             location: NYC
         normal_text: ''
-      vllm:
+      vllm: &id006
+        reason: 'vLLM and SGLang drop the call and leak the raw wrapper when the JSON
+          body is missing its closing brace; Dynamo''s JSON-repair recovers the call.
+          Non-parity by design.'
         calls: []
         normal_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"</tool_call>'
-      sglang:
-        calls: []
-        normal_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"</tool_call>'
+      sglang: *id006
   TOOLCALLING.batch.4.c:
     description: Missing name key
     ref: dynamo
@@ -50,13 +55,14 @@ cases:
     - *id002
     expected:
       dynamo: &id003
-        reason: "Dynamo's hermes parser leaves <tool_call> tag in normal_text on malformed input (impl-defined recovery)"
-        calls: []
-        normal_text: '<tool_call>{"arguments": {"location": "NYC"}}</tool_call>'
-      vllm: *id003
-      sglang:
         calls: []
         normal_text: ''
+      sglang: *id003
+      vllm:
+        reason: 'vLLM leaks the raw wrapper when the name key is missing; Dynamo and
+          SGLang discard the unparseable wrapper (no leak). Non-parity by design.'
+        calls: []
+        normal_text: '<tool_call>{"arguments": {"location": "NYC"}}</tool_call>'
   TOOLCALLING.batch.4.d:
     description: Missing </tool_call> close
     ref: dynamo
