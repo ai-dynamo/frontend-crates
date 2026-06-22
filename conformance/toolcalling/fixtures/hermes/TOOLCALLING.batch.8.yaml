@@ -24,6 +24,8 @@ cases:
             location: NYC
         normal_text: I will check the weather.
       vllm:
+        reason: 'vLLM preserves the trailing space before <tool_call> in normal_text;
+          Dynamo and SGLang trim it. Cosmetic whitespace, non-parity by design.'
         calls:
         - name: get_weather
           arguments:
@@ -61,6 +63,8 @@ cases:
             location: NYC
         normal_text: I will check the weather.
       vllm:
+        reason: 'vLLM preserves the trailing space before <tool_call> in normal_text;
+          Dynamo and SGLang trim it. Cosmetic whitespace, non-parity by design.'
         calls:
         - name: get_weather
           arguments:
@@ -85,6 +89,8 @@ cases:
             location: LA
         normal_text: I will check the weather.
       vllm:
+        reason: 'vLLM preserves the trailing space before <tool_call> in normal_text;
+          Dynamo and SGLang trim it. Cosmetic whitespace, non-parity by design.'
         calls:
         - name: get_weather
           arguments:

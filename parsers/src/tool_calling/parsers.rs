@@ -175,16 +175,20 @@ pub async fn detect_and_parse_tool_call_with_recovery(
     };
     let (calls, normal_text) = try_tool_call_parse(message, &cfg, tools).await?;
 
-    // An unterminated qwen25 call (open <tool_call>, no close, nothing parsed)
-    // drops its partial markup instead of leaking it. Deliberate non-parity
-    // with SGLang, which surfaces the raw text.
-    if parser_key == "qwen25"
+    // An unterminated qwen25/hermes call (open <tool_call>, no close, nothing
+    // parsed) drops its partial markup instead of leaking it. Deliberate
+    // non-parity with vLLM/SGLang, which surface the raw text. Hermes keeps
+    // `allow_eof_recovery` on (so a complete-but-unclosed body still recovers),
+    // so this only fires on a genuinely truncated body that salvaged nothing.
+    // Keep any prose that preceded the wrapper (trailing whitespace trimmed, to
+    // match the wrapped-call extraction) rather than wiping the whole message.
+    if matches!(parser_key, "qwen25" | "hermes")
         && calls.is_empty()
         && let Some(text) = normal_text.as_deref()
-        && text.contains("<tool_call>")
+        && let Some(idx) = text.find("<tool_call>")
         && !text.contains("</tool_call>")
     {
-        return Ok((calls, Some(String::new())));
+        return Ok((calls, Some(text[..idx].trim_end().to_string())));
     }
 
     Ok((calls, normal_text))
@@ -2007,6 +2011,30 @@ Remember, San Francisco weather can be quite unpredictable, particularly with it
         let args: serde_json::Value =
             serde_json::from_str(&tool_calls[0].function.arguments).unwrap();
         assert_eq!(args["timezone"], "Asia/Shanghai");
+    }
+
+    /// An unterminated hermes/qwen25 call (open `<tool_call>`, no close, nothing
+    /// salvaged) drops the partial markup without leaking it, but keeps the prose
+    /// that preceded the wrapper instead of wiping the whole message. Trailing
+    /// whitespace before the wrapper is trimmed, matching the wrapped-call path.
+    /// Not a TOOLCALLING.* fixture — the conformance cases for this shape have no
+    /// prefix prose, so this guards the prefix-preservation branch directly.
+    #[tokio::test]
+    async fn test_unterminated_call_preserves_prefix_prose() {
+        let input =
+            "I'll check the weather. <tool_call>{\"name\": \"get_weather\", \"arguments\": {\"loc";
+        for parser_name in ["hermes", "qwen25"] {
+            let (tool_calls, normal_text) =
+                detect_and_parse_tool_call_with_recovery(input, Some(parser_name), None)
+                    .await
+                    .expect("Failed to parse");
+            assert!(tool_calls.is_empty(), "{parser_name}: expected no calls");
+            assert_eq!(
+                normal_text,
+                Some("I'll check the weather.".to_string()),
+                "{parser_name}: prefix prose should be preserved (trailing space trimmed)"
+            );
+        }
     }
 
     /// Alias registration: verifies `deepseek-v4` and `deepseekv4` route to the same parser as `deepseek_v4`. Not a TOOLCALLING.*; covers registry plumbing.

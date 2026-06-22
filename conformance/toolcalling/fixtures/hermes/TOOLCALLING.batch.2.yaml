@@ -55,6 +55,9 @@ cases:
             timezone: EST
         normal_text: 'Both:'
       vllm:
+        reason: 'vLLM preserves the trailing space before the first <tool_call> in
+          normal_text; Dynamo and SGLang trim it. Cosmetic whitespace, non-parity by
+          design.'
         calls:
         - name: get_weather
           arguments:
