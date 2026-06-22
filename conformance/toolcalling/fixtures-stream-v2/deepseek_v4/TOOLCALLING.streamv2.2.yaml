@@ -37,7 +37,10 @@ cases:
         - index: 0
           name: get_weather
         vllm_rust: []
-        dynamo_rust: []
+        dynamo_rust:
+        - index: 0
+          name: get_weather
+          arguments: ''
     - delta_text: ' <｜DSML｜parameter name="location" string="true">'
       expected:
         vllm_python: []
@@ -60,7 +63,6 @@ cases:
           name: get_weather
         dynamo_rust:
         - index: 0
-          name: get_weather
           arguments: '{"location":"NYC"}'
     - delta_text: ' <｜DSML｜invoke'
       expected:
@@ -75,7 +77,10 @@ cases:
         - index: 1
           name: get_time
         vllm_rust: []
-        dynamo_rust: []
+        dynamo_rust:
+        - index: 1
+          name: get_time
+          arguments: ''
     - delta_text: ' name="timezone" string="true">EST</｜DSML｜parameter>'
       expected:
         vllm_python: []
@@ -100,7 +105,6 @@ cases:
           name: get_time
         dynamo_rust:
         - index: 1
-          name: get_time
           arguments: '{"timezone":"EST"}'
     - delta_text: ' </｜DSML｜tool_calls>'
       expected:
@@ -145,7 +149,10 @@ cases:
         - index: 0
           name: get_weather
         vllm_rust: []
-        dynamo_rust: []
+        dynamo_rust:
+        - index: 0
+          name: get_weather
+          arguments: ''
     - delta_text: ' <｜DSML｜parameter name="location" string="true">'
       expected:
         vllm_python: []
@@ -168,7 +175,6 @@ cases:
           name: get_weather
         dynamo_rust:
         - index: 0
-          name: get_weather
           arguments: '{"location":"NYC"}'
     - delta_text: ' </｜DSML｜tool_calls>'
       expected:
@@ -189,7 +195,10 @@ cases:
         - index: 1
           name: get_time
         vllm_rust: []
-        dynamo_rust: []
+        dynamo_rust:
+        - index: 1
+          name: get_time
+          arguments: ''
     - delta_text: ' string="true">'
       expected:
         vllm_python: []
@@ -209,7 +218,6 @@ cases:
         vllm_rust: []
         dynamo_rust:
         - index: 1
-          name: get_time
           arguments: '{"timezone":"EST"}'
     - delta_text: ' </｜DSML｜tool_calls>'
       expected:
@@ -264,7 +272,10 @@ cases:
         - index: 0
           name: get_weather
         vllm_rust: []
-        dynamo_rust: []
+        dynamo_rust:
+        - index: 0
+          name: get_weather
+          arguments: ''
     - delta_text: ' string="true">NYC</｜DSML｜parameter>'
       expected:
         vllm_python: []
@@ -289,7 +300,6 @@ cases:
           name: get_weather
         dynamo_rust:
         - index: 0
-          name: get_weather
           arguments: '{"location":"NYC"}'
     - delta_text: ' <｜DSML｜invoke name="get_time">'
       expected:
@@ -298,7 +308,10 @@ cases:
         - index: 1
           name: get_time
         vllm_rust: []
-        dynamo_rust: []
+        dynamo_rust:
+        - index: 1
+          name: get_time
+          arguments: ''
     - delta_text: ' <｜DSML｜parameter name="timezone" string="true">'
       expected:
         vllm_python: []
@@ -329,7 +342,6 @@ cases:
           name: get_time
         dynamo_rust:
         - index: 1
-          name: get_time
           arguments: '{"timezone":"EST"}'
     - delta_text: ' Done.'
       expected:
@@ -370,7 +382,10 @@ cases:
         - index: 0
           name: get_weather
         vllm_rust: []
-        dynamo_rust: []
+        dynamo_rust:
+        - index: 0
+          name: get_weather
+          arguments: ''
     - delta_text: ' <｜DSML｜parameter name="location" string="true">'
       expected:
         vllm_python: []
@@ -393,7 +408,6 @@ cases:
           name: get_weather
         dynamo_rust:
         - index: 0
-          name: get_weather
           arguments: '{"location":"NYC"}'
     - delta_text: ' <｜DSML｜invoke'
       expected:
@@ -408,7 +422,10 @@ cases:
         - index: 1
           name: get_weather
         vllm_rust: []
-        dynamo_rust: []
+        dynamo_rust:
+        - index: 1
+          name: get_weather
+          arguments: ''
     - delta_text: ' name="location" string="true">LA</｜DSML｜parameter>'
       expected:
         vllm_python: []
@@ -433,7 +450,6 @@ cases:
           name: get_weather
         dynamo_rust:
         - index: 1
-          name: get_weather
           arguments: '{"location":"LA"}'
     - delta_text: ' </｜DSML｜tool_calls>'
       expected:
