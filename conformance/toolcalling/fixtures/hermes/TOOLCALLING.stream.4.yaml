@@ -46,20 +46,19 @@ cases:
     expected:
       dynamo:
         calls: []
-        normal_text: '<tool_call>{"name": "get_weather", "arguments": {"loc'
+        normal_text: ''
       sglang:
         reason: 'On a stream truncated mid-body, SGLang''s finalizer recovers a no-arg
-          get_weather({}); Dynamo''s streaming jail surfaces the partial <tool_call>
-          body as text. Streaming-finalize recovery is tracked separately from the
-          batch path (the batch case 5.c suppresses to empty). Non-parity by design.'
+          get_weather({}); Dynamo suppresses the unterminated call (open <tool_call>,
+          no close, nothing salvaged) so no markup leaks. Non-parity by design.'
         calls:
         - name: get_weather
           arguments: {}
         normal_text: ''
       vllm:
         reason: 'On a stream truncated mid-body, vLLM''s finalizer emits get_weather
-          with the partial ''{"loc'' argument fragment; Dynamo''s streaming jail surfaces
-          the partial <tool_call> body as text. Non-parity by design.'
+          with the partial ''{"loc'' argument fragment; Dynamo suppresses the
+          unterminated call so no markup leaks. Non-parity by design.'
         calls:
         - name: get_weather
           arguments: '{"loc'
@@ -82,11 +81,11 @@ cases:
     expected:
       dynamo: &id002
         calls: []
-        normal_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call></tool_call></tool_call>'
-      vllm: *id002
-      sglang:
-        reason: 'SGLang strips the orphan </tool_call> run and keeps the inner JSON
-          body as text; Dynamo''s streaming jail leaves the trailing close-marker run
-          in normal_text. Non-parity by design.'
-        calls: []
         normal_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}'
+      sglang: *id002
+      vllm:
+        reason: 'vLLM leaves the orphan </tool_call> run in normal_text; Dynamo and
+          SGLang strip the stray end markers and keep the inner JSON body as text.
+          Non-parity by design.'
+        calls: []
+        normal_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call></tool_call></tool_call>'
