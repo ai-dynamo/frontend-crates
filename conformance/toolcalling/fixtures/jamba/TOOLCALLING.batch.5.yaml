@@ -24,6 +24,7 @@ cases:
             location: NYC
         normal_text: ''
       vllm:
+        reason: "vLLM's jamba detector requires the closing </tool_calls> marker and leaves the unterminated wrapper in normal_text. Dynamo recovers the complete call body (strip_markup_on_recovery) and emits no markup."
         calls: []
         normal_text: '<tool_calls>[{"name": "get_weather", "arguments": {"location": "NYC"}}]'
       sglang:
@@ -35,11 +36,16 @@ cases:
     tools:
     - *id001
     expected:
-      dynamo: &id002
-        reason: "Dynamo's jamba parser leaves closing </tool_calls> envelope plus the JSON array in normal_text when opening <tool_calls> marker is missing (impl-defined recovery)"
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+      vllm:
+        reason: "vLLM's jamba detector leaves the orphan closing </tool_calls> plus the JSON array in normal_text when the opening marker is missing. Dynamo strips the orphan close tag and recovers the call body (discard_unparseable_wrapper) so no tool-call markup reaches the user."
         calls: []
         normal_text: '[{"name": "get_weather", "arguments": {"location": "NYC"}}]</tool_calls>'
-      vllm: *id002
       sglang:
         unavailable: SGLang has no detector for family='jamba'
   TOOLCALLING.batch.5.c:
@@ -49,11 +55,13 @@ cases:
     tools:
     - *id001
     expected:
-      dynamo: &id003
-        reason: "Dynamo's jamba parser leaves closing </tool_calls> envelope plus the JSON array in normal_text when opening <tool_calls> marker is missing (impl-defined recovery)"
+      dynamo:
+        calls: []
+        normal_text: ''
+      vllm:
+        reason: "vLLM's jamba detector leaves the truncated <tool_calls> wrapper in normal_text. Dynamo strips the markup on recovery and drops the incomplete body so no tool-call markup reaches the user."
         calls: []
         normal_text: '<tool_calls>[{"name": "get_weather", "arguments": {"loc'
-      vllm: *id003
       sglang:
         unavailable: SGLang has no detector for family='jamba'
   TOOLCALLING.batch.5.d:
@@ -74,6 +82,7 @@ cases:
             location: New York
         normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
       vllm:
+        reason: "vLLM's jamba detector requires the closing </tool_calls> marker and leaves the unterminated wrapper in normal_text. Dynamo recovers the complete multi-call body and emits no markup."
         calls: []
         normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<tool_calls>[{"name":
           "get_weather", "arguments": {"location": "Boston"}}, {"name": "get_weather", "arguments": {"location": "New York"}}]'
@@ -97,6 +106,7 @@ cases:
             location: New York
         normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
       vllm:
+        reason: "vLLM's jamba detector leaves the truncated multi-call wrapper in normal_text. Dynamo recovers the two complete call bodies and drops the truncated tail, emitting no markup."
         calls: []
         normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<tool_calls>[{"name":
           "get_weather", "arguments": {"location": "Boston"}}, {"name": "get_weather", "arguments": {"location": "New York'

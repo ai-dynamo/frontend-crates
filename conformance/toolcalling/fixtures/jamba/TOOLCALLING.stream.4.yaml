@@ -29,6 +29,7 @@ cases:
       sglang:
         unavailable: SGLang has no detector for family='jamba'
       vllm:
+        reason: "vLLM's streaming jamba detector drops the arguments to an empty object on a truncated (finish_reason=stop) stream. Dynamo's streaming jail recovers the complete in-flight call body with full arguments."
         calls:
         - name: get_weather
           arguments: {}
@@ -55,6 +56,7 @@ cases:
       sglang:
         unavailable: SGLang has no detector for family='jamba'
       vllm:
+        reason: "Streaming-jail case, not covered by the batch parser fix: vLLM emits the call with empty arguments on mid-body truncation, while Dynamo's streaming jail currently leaves the truncated <tool_calls> wrapper in normal_text. Aligning the jail to discard the partial wrapper (matching the batch parser's strip_markup_on_recovery) is tracked as a follow-up dynamo jail PR."
         calls:
         - name: get_weather
           arguments: {}

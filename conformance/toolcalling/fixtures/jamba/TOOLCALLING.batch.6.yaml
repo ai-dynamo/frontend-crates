@@ -49,6 +49,7 @@ cases:
         calls: []
         normal_text: ''
       vllm:
+        reason: "vLLM's jamba detector leaves the raw <tool_calls> envelope in normal_text when a call object has no arguments key. Dynamo discards it so no tool-call markup reaches the user."
         calls: []
         normal_text: '<tool_calls>[{"name": "get_time"}]</tool_calls>'
       sglang:

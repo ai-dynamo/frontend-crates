@@ -24,6 +24,7 @@ cases:
             location: NYC
         normal_text: I will check the weather.
       vllm:
+        reason: "Cosmetic whitespace only: Dynamo trims the trailing space between the narration and the <tool_calls> fence; vLLM preserves it. Calls are identical."
         calls:
         - name: get_weather
           arguments:
@@ -63,6 +64,7 @@ cases:
             location: NYC
         normal_text: I will check the weather.
       vllm:
+        reason: "Cosmetic whitespace only: Dynamo trims the trailing space between the narration and the <tool_calls> fence; vLLM preserves it. Calls are identical."
         calls:
         - name: get_weather
           arguments:
@@ -82,6 +84,7 @@ cases:
         calls: []
         normal_text: I will check the weather.
       vllm:
+        reason: "Known Dynamo limitation: the jamba framed parser spans from the first <tool_calls> opener to the last </tool_calls> closer, so narration between two separate fences lands inside the captured region and breaks the JSON parse, dropping both calls and keeping only the leading narration. vLLM extracts the first call. Multiple-disjoint-fence support is a base JSON-parser change tracked as a follow-up, out of scope for the never-leak fix."
         calls:
         - name: get_weather
           arguments:

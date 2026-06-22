@@ -56,6 +56,7 @@ cases:
             timezone: EST
         normal_text: 'Both:'
       vllm:
+        reason: "Cosmetic whitespace only: Dynamo trims the single space between the leading narration and the <tool_calls> fence; vLLM preserves it. Calls are identical."
         calls:
         - name: get_weather
           arguments:
