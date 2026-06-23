@@ -670,6 +670,25 @@ mod tests {
         );
     }
 
+    #[test] // REASONING.batch.4 — dangling-end recovery is delimiter-agnostic, not ASCII-only.
+    fn test_dangling_end_recovery_is_family_agnostic() {
+        // Scope lock for the `!think_end_token.is_empty()` guard: recovery must
+        // fire for ANY configured delimiter pair, not just `<think>`/`</think>`
+        // or Kimi's unicode tags. A future narrowing of the guard back to a
+        // specific family would re-leak the closer for everyone else and fail
+        // here. Uses an arbitrary custom pair to prove the contract is generic.
+        let mut parser =
+            BasicReasoningParser::new("<R>".to_string(), "</R>".to_string(), false, true);
+        let result = parser.detect_and_parse_reasoning("prefix</R>tail", &[]);
+        assert_eq!(result.reasoning_text, "prefix");
+        assert_eq!(result.normal_text, "tail");
+        assert!(
+            !result.normal_text.contains("</R>"),
+            "custom closer must be stripped, not leaked; got normal={:?}",
+            result.normal_text
+        );
+    }
+
     #[test] // REASONING.batch.4
     fn test_malformed_multiple_opening_tags() {
         let mut parser =
