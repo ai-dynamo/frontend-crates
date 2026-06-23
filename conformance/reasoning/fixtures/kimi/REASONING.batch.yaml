@@ -51,16 +51,22 @@ cases:
       sglang: *d_3
   REASONING.batch.4:
     description: Dangling end marker without an opening think tag
-    dynamo_leak: true
     ref: dynamo
+    spec_ref: tests/parity/README.md
     model_text: normal◁/think▷answer
     expected:
-      dynamo: &d_4
-        reasoning_text: ''
-        normal_text: normal◁/think▷answer
+      dynamo:
+        reasoning_text: normal
+        normal_text: answer
+        reason: 'Lossless split: a dangling close marker with no opener triggers
+          recovery. The prefix becomes implicit reasoning and the parser-owned
+          marker is stripped, matching the ASCII REASONING.batch.4 behavior. The
+          unicode marker must never leak into normal_text.'
       vllm:
         unavailable: vLLM has no Kimi reasoning parser for this delimiter family.
-      sglang: *d_4
+      sglang:
+        reasoning_text: ''
+        normal_text: normal◁/think▷answer
   REASONING.batch.5:
     description: Missing end marker keeps the remaining text as reasoning
     ref: dynamo
