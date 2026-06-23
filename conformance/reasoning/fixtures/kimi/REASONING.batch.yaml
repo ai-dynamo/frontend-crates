@@ -51,13 +51,15 @@ cases:
       sglang: *d_3
   REASONING.batch.4:
     description: Dangling end marker without an opening think tag
-    dynamo_leak: true
+    reason: Dangling-end recovery treats the prefix as implicit reasoning and
+      strips the closer, matching the ASCII REASONING.batch.4 behavior. The
+      unicode marker must never leak into normal_text (lossless-split contract).
     ref: dynamo
     model_text: normal◁/think▷answer
     expected:
       dynamo: &d_4
-        reasoning_text: ''
-        normal_text: normal◁/think▷answer
+        reasoning_text: normal
+        normal_text: answer
       vllm:
         unavailable: vLLM has no Kimi reasoning parser for this delimiter family.
       sglang: *d_4

@@ -108,13 +108,16 @@ impl ReasoningParser for BasicReasoningParser {
         // REASONING.batch.4: dangling end marker without an opener. Treat the
         // prefix as reasoning.
         // Models in this family normally emit `<think>...</think>final_answer`;
-        // when the opener is absent but a `</think>` is present, the natural
+        // when the opener is absent but the end marker is present, the natural
         // reading is that the opener was implicit (chat template or tokenizer
-        // consumed it). Without this, the `</think>` markup leaks into
-        // normal_text. Matches vLLM's `partition()`-based behavior for the
-        // same input.
-        let supports_dangling_end_recovery =
-            self.think_start_token == "<think>" && self.think_end_token == "</think>";
+        // consumed it). Without this, the end marker leaks into normal_text.
+        // Matches vLLM's `partition()`-based behavior for the same input.
+        //
+        // This applies to any configured delimiter pair, not just the ASCII
+        // `<think>`/`</think>` tags: the lossless-split contract (parser-owned
+        // markup must never reach normal_text) is family-agnostic, so Kimi's
+        // unicode `◁think▷`/`◁/think▷` delimiters get the same recovery.
+        let supports_dangling_end_recovery = !self.think_end_token.is_empty();
         let has_dangling_end = supports_dangling_end_recovery
             && !has_think_tag
             && text.contains(&self.think_end_token);
@@ -647,13 +650,24 @@ mod tests {
         assert_eq!(result.reasoning_text, "normal text");
     }
 
-    #[test] // REASONING.batch.4 — Kimi Unicode delimiters keep stray closer as normal text.
-    fn test_kimi_unicode_stray_closing_tag_passes_through() {
+    #[test] // REASONING.batch.4 — Kimi unicode dangling closer recovers, no markup leak.
+    fn test_kimi_unicode_dangling_close_marker_recovers() {
+        // A stray `◁/think▷` with no opener must trigger dangling-end recovery
+        // the same way ASCII `</think>` does (test_malformed_stray_closing_tag):
+        // prefix becomes reasoning, the marker is stripped, the rest is normal.
+        // Previously the recovery was gated to ASCII tags and the unicode marker
+        // leaked verbatim into normal_text.
         let mut parser =
             BasicReasoningParser::new("◁think▷".to_string(), "◁/think▷".to_string(), false, true);
         let result = parser.detect_and_parse_reasoning("normal◁/think▷answer", &[]);
-        assert_eq!(result.normal_text, "normal◁/think▷answer");
-        assert_eq!(result.reasoning_text, "");
+        assert_eq!(result.reasoning_text, "normal");
+        assert_eq!(result.normal_text, "answer");
+        assert!(
+            !result.normal_text.contains('◁') && !result.reasoning_text.contains('◁'),
+            "unicode marker must be stripped, not leaked; got normal={:?} reasoning={:?}",
+            result.normal_text,
+            result.reasoning_text
+        );
     }
 
     #[test] // REASONING.batch.4
