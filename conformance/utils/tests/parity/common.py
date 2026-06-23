@@ -11,9 +11,75 @@ from __future__ import annotations
 
 import html as html_lib
 import json
+import os
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
+
+
+# ---------------------------------------------------------------------------
+# Destination-aware link resolution, shared by the v1 PARITY and v2 CONFORMANCE
+# generators. Each generator calls set_links() with its own output path before
+# building, so the table builders emit hrefs that resolve from where the page is
+# actually published -- no post-render path rewriting.
+# ---------------------------------------------------------------------------
+
+
+def _href_from_output(output_path: Path, artifact_root: Path, repo_relative: str) -> str:
+    trailing_slash = repo_relative.endswith("/")
+    target = artifact_root / repo_relative.rstrip("/")
+    href = Path(os.path.relpath(target, output_path.parent)).as_posix()
+    return f"{href}/" if trailing_slash else href
+
+
+def _hrefs_for_output(output_path: Path, artifact_root: Path) -> dict[str, str]:
+    def h(rel: str) -> str:
+        return _href_from_output(output_path, artifact_root, rel)
+
+    return {
+        "toolcalling_fixtures": h("conformance/toolcalling/fixtures/"),
+        "toolcalling_stream_fixtures": h("conformance/toolcalling/fixtures-stream-v2/"),
+        "toolcalling_batch_on_stream_fixtures": h(
+            "conformance/toolcalling/fixtures-batch-on-stream-v2/"
+        ),
+        "reasoning_fixtures": h("conformance/reasoning/fixtures/"),
+        "toolcalling_cases": h("conformance/utils/lib/parsers/TOOLCALLING_CASES.md"),
+        "toolcalling_streaming_cases": h(
+            "conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"
+        ),
+        "reasoning_cases": h("conformance/utils/lib/parsers/REASONING_CASES.md"),
+        "toolcalling_src": h("parsers/src/tool_calling/"),
+        "reasoning_src": h("parsers/src/reasoning/"),
+        "streaming_src": h("parsers_v2/src/tool_calling/"),
+        "streaming_harmony_src": h("parsers_v2/src/tool_calling/harmony.rs"),
+        "pyproject_stub": h("conformance/utils/src/pyproject.stub.toml"),
+    }
+
+
+# Render-context: the active generator sets this for its destination before the
+# builders run; the builders read LINKS[...] at emit time.
+LINKS: dict[str, str] = {}
+
+
+def set_links(output_path: Path, artifact_root: Path) -> dict[str, str]:
+    """Resolve all link bases for `output_path`, install them as the active
+    render context, and return them for callers that also want the dict."""
+    global LINKS
+    LINKS = _hrefs_for_output(output_path, artifact_root)
+    return LINKS
+
+
+# Best-effort default so code that emits links before a generator has called
+# set_links() (e.g. unit tests that invoke a builder helper directly) still
+# resolves to the published-page layout. The active generator overrides this for
+# its real destination on every render.
+try:
+    _DEFAULT_ROOT = Path(__file__).resolve().parents[4]
+    if (_DEFAULT_ROOT / "parsers_v2").is_dir():
+        set_links(_DEFAULT_ROOT / "conformance" / "PARITY.html", _DEFAULT_ROOT)
+except (IndexError, OSError):
+    pass
 
 URL_RE = re.compile(r"https?://[^\s<>'\"]+")
 TRAILING_URL_PUNCTUATION = ".,;:)"

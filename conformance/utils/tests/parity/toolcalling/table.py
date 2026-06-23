@@ -37,15 +37,15 @@ from `expected.<impl>.unavailable` across each family's cases.
 
 Run:
     # Markdown table to stdout
-    python3 tests/parity/generate_parity_table.py toolcalling \
+    python3 tests/parity/generate_parity_table_v1.py toolcalling \
         > tests/parity/toolcalling/PARITY.md
-    python3 tests/parity/generate_parity_table.py toolcalling --mode stream \
+    python3 tests/parity/generate_parity_table_v1.py toolcalling --mode stream \
         > tests/parity/toolcalling/PARITY.stream.md
 
     # HTML table with tabs, clickable YAML links, and hover tooltips. Write next
     # to this script so `<a href="fixtures/<family>/TOOLCALLING.batch.N.yaml">`
     # resolves when opened in a browser.
-    python3 tests/parity/generate_parity_table.py toolcalling --html \
+    python3 tests/parity/generate_parity_table_v1.py toolcalling --html \
         > tests/parity/toolcalling/PARITY.html
 
 PARITY.{md,html} are for local viewing only; don't check them in.
@@ -66,6 +66,7 @@ from pathlib import Path
 import yaml
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
+from tests.parity import common
 from tests.parity.common import TOP_N_TOOL_CALLING_FAMILIES as TOP_N_FAMILIES
 from tests.parity.common import (
     build_parity_tooltip_html,
@@ -83,7 +84,7 @@ TEMPLATE_DIR = REPO_ROOT / "tests/parity"
 RUST_TOOL_CALLING_DIR = REPO_ROOT / "lib/parsers/src/tool_calling"
 
 # Row-label / visibility overrides keyed by tool calling family; ‡ is explained
-# by the legend note in parity_table.html.j2.
+# by the legend note in parity_table_v1.html.j2.
 _TOOL_CALLING_LABEL_OVERRIDES = {
     "qwen3_coder": "Qwen 3 Coder / Nemotron V3‡",
 }
@@ -541,7 +542,7 @@ def load_all_cases(mode: str) -> tuple[dict[tuple[str, str], dict], dict[str, st
         if doc.get("mode") != mode:
             continue
         family = doc["family"]
-        rel = str(fp.relative_to(script_dir))
+        rel = common.LINKS["toolcalling_fixtures"] + str(fp.relative_to(FIXTURES))
         if "model_label" in doc:
             labels.setdefault(family, doc["model_label"])
         for cid, case in doc["cases"].items():
@@ -1079,7 +1080,7 @@ def _parser_inheritance_tooltip_html(
     head_parts = [f"ParserConfig::{variant}"]
     if sub_variant:
         head_parts[-1] = f"ParserConfig::{variant}::{sub_variant}"
-    bf_href = html_lib.escape(f"../../../lib/parsers/src/tool_calling/{backend_file}")
+    bf_href = html_lib.escape(f"{common.LINKS['toolcalling_src']}{backend_file}")
     bf_link = f'<a href="{bf_href}">{html_lib.escape(backend_file)}</a>'
 
     anchor = alias_of or family
@@ -1236,9 +1237,9 @@ def _parser_cell_html(
     # useful (factory calls). For families with no inheritance info, fall back
     # to the refs entry (config.rs or parsers.rs).
     if info and info["backend_file"] != "unknown":
-        href = f"../../../lib/parsers/src/tool_calling/{info['backend_file']}"
+        href = f"{common.LINKS['toolcalling_src']}{info['backend_file']}"
     elif ref is not None:
-        href = f"../../../lib/parsers/src/tool_calling/{ref[0]}"
+        href = f"{common.LINKS['toolcalling_src']}{ref[0]}"
     else:
         return (
             f'<td class="parser" data-col-hide-group="parser">'
@@ -1321,7 +1322,7 @@ def _parse_subcase_descriptions(mode: str) -> dict[str, str]:
 
 def _subcase_header_html(mode: str, sub: str, descriptions: dict[str, str]) -> str:
     desc = descriptions.get(sub) or descriptions.get(sub.split(".")[0]) or ""
-    href = "../../../lib/parsers/TOOLCALLING_CASES.md"
+    href = common.LINKS["toolcalling_cases"]
     title = html_lib.escape(desc) if desc else ""
     band_cls = _subcase_band_class(mode, sub)
     col_group = html_lib.escape(_subcase_group_key(mode, sub))
@@ -1623,7 +1624,7 @@ def render_html(modes: list[str], family_filter: str | None = None) -> str:
         if family_filter
         else "Dynamo Tool Calling Parser - Parity Table"
     )
-    command = "python3 tests/parity/generate_parity_table.py toolcalling --html"
+    command = "python3 tests/parity/generate_parity_table_v1.py toolcalling --html"
     output = "tests/parity/toolcalling/PARITY.html"
     if family_filter:
         command += f" --family {family_filter}"
@@ -1650,7 +1651,7 @@ def render_html(modes: list[str], family_filter: str | None = None) -> str:
 
     return (
         _make_jinja_env()
-        .get_template("parity_table.html.j2")
+        .get_template("parity_table_v1.html.j2")
         .render(
             title=title,
             stamp=stamp,

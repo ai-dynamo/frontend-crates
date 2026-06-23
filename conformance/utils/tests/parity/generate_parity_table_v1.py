@@ -24,25 +24,13 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
+from tests.parity import common  # noqa: E402
 from tests.parity.reasoning import table as reasoning_table  # noqa: E402
 from tests.parity.toolcalling import table as toolcalling_table  # noqa: E402
 
-
-def _rewrite_panel_paths(panel: dict[str, Any], stage_dir: str) -> dict[str, Any]:
-    """Adjust links from stage-local PARITY.html paths to tests/parity/PARITY.html."""
-    rewritten = dict(panel)
-
-    def rewrite(text: str) -> str:
-        return (
-            text.replace('href="fixtures/', f'href="{stage_dir}/fixtures/')
-            .replace('href="../../../lib/', 'href="../../lib/')
-            .replace('href="../../../pyproject.toml"', 'href="../../pyproject.toml"')
-        )
-
-    rewritten["group_headers"] = rewrite(str(rewritten["group_headers"]))
-    rewritten["sub_headers"] = rewrite(str(rewritten["sub_headers"]))
-    rewritten["body_rows"] = [rewrite(str(row)) for row in rewritten["body_rows"]]
-    return rewritten
+# Published location of the v1 PARITY page (rendered into .stage/, then copied to
+# conformance/PARITY.html). Links resolve relative to this destination.
+_PUBLISHED_OUTPUT = REPO_ROOT / "conformance" / "PARITY.html"
 
 
 def _tab_button(panel: dict[str, Any]) -> str:
@@ -63,14 +51,13 @@ def _combined_toolcalling_panels() -> list[dict[str, Any]]:
     panels = []
     for mode in ("batch", "stream"):
         _mode, panel, _has_cases = toolcalling_table._load_html_panel(mode)
-        panel = _rewrite_panel_paths(panel, "toolcalling")
         panel.update(
             {
                 "id": f"tab-toolcalling-{mode}",
                 "label": f"TC {mode}",
                 "tab_title": f"Tool Calling {mode}",
                 "active": False,
-                "case_docs_href": "../../lib/parsers/TOOLCALLING_CASES.md",
+                "case_docs_href": common.LINKS["toolcalling_cases"],
                 "case_docs_label": "lib/parsers/TOOLCALLING_CASES.md",
                 "case_prefix": f"TOOLCALLING.{mode}.",
                 "case_section_id": f"toolcalling-{mode}",
@@ -95,13 +82,12 @@ def _combined_reasoning_panels() -> list[dict[str, Any]]:
             mode=mode,
             active=False,
         )
-        panel = _rewrite_panel_paths(panel, "reasoning")
         panel.update(
             {
                 "id": f"tab-reasoning-{mode}",
                 "label": f"Reasoning {mode}",
                 "active": False,
-                "case_docs_href": "../../lib/parsers/REASONING_CASES.md",
+                "case_docs_href": common.LINKS["reasoning_cases"],
                 "case_docs_label": "lib/parsers/REASONING_CASES.md",
                 "case_prefix": "REASONING.",
                 "case_section_id": f"reasoning-{mode}",
@@ -113,6 +99,7 @@ def _combined_reasoning_panels() -> list[dict[str, Any]]:
 
 
 def render_combined_html() -> str:
+    common.set_links(_PUBLISHED_OUTPUT, REPO_ROOT)
     panels = [*_combined_toolcalling_panels(), *_combined_reasoning_panels()]
     panels[0]["active"] = True
 
@@ -122,7 +109,7 @@ def render_combined_html() -> str:
 
     return (
         toolcalling_table._make_jinja_env()
-        .get_template("parity_table.html.j2")
+        .get_template("parity_table_v1.html.j2")
         .render(
             title="Dynamo Parser Parity Table",
             stamp=stamp,
@@ -135,7 +122,7 @@ def render_combined_html() -> str:
             peer_versions=toolcalling_table._peer_version_items(
                 toolcalling_table._peer_versions()
             ),
-            peer_versions_href="../../pyproject.toml",
+            peer_versions_href=common.LINKS["pyproject_stub"],
         )
     )
 

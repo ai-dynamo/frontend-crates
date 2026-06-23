@@ -74,6 +74,7 @@ from typing import Any
 import yaml
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
+from tests.parity import common
 from tests.parity.common import TOP_N_TOOL_CALLING_FAMILIES as TOP_N_FAMILIES
 from tests.parity.common import (
     linkify_text_html,
@@ -388,80 +389,8 @@ def _display_path(path: Path, artifact_root: Path) -> str:
         return path.as_posix()
 
 
-def _href_from_output(
-    output_path: Path,
-    artifact_root: Path,
-    repo_relative: str,
-) -> str:
-    trailing_slash = repo_relative.endswith("/")
-    target = artifact_root / repo_relative.rstrip("/")
-    href = Path(os.path.relpath(target, output_path.parent)).as_posix()
-    return f"{href}/" if trailing_slash else href
-
-
-def _hrefs_for_output(output_path: Path, artifact_root: Path) -> dict[str, str]:
-    return {
-        "toolcalling_fixtures": _href_from_output(
-            output_path,
-            artifact_root,
-            "conformance/toolcalling/fixtures/",
-        ),
-        "toolcalling_stream_fixtures": _href_from_output(
-            output_path,
-            artifact_root,
-            "conformance/toolcalling/fixtures-stream-v2/",
-        ),
-        "toolcalling_batch_on_stream_fixtures": _href_from_output(
-            output_path,
-            artifact_root,
-            "conformance/toolcalling/fixtures-batch-on-stream-v2/",
-        ),
-        "reasoning_fixtures": _href_from_output(
-            output_path,
-            artifact_root,
-            "conformance/reasoning/fixtures/",
-        ),
-        "toolcalling_cases": _href_from_output(
-            output_path,
-            artifact_root,
-            "conformance/utils/lib/parsers/TOOLCALLING_CASES.md",
-        ),
-        "toolcalling_streaming_cases": _href_from_output(
-            output_path,
-            artifact_root,
-            "conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md",
-        ),
-        "reasoning_cases": _href_from_output(
-            output_path,
-            artifact_root,
-            "conformance/utils/lib/parsers/REASONING_CASES.md",
-        ),
-        "toolcalling_src": _href_from_output(
-            output_path,
-            artifact_root,
-            "parsers/src/tool_calling/",
-        ),
-        "reasoning_src": _href_from_output(
-            output_path,
-            artifact_root,
-            "parsers/src/reasoning/",
-        ),
-        "streaming_src": _href_from_output(
-            output_path,
-            artifact_root,
-            "parsers_v2/src/tool_calling/",
-        ),
-        "streaming_harmony_src": _href_from_output(
-            output_path,
-            artifact_root,
-            "parsers_v2/src/tool_calling/harmony.rs",
-        ),
-        "pyproject_stub": _href_from_output(
-            output_path,
-            artifact_root,
-            "conformance/utils/pyproject.stub.toml",
-        ),
-    }
+# Destination-aware link resolution lives in tests.parity.common
+# (`set_links` / `LINKS`), shared by the v1 PARITY and v2 CONFORMANCE generators.
 
 
 _VISIBLE_CONFORMANCE_REPLACEMENTS = (
@@ -641,7 +570,7 @@ _LEGEND_MD = (
 
 def _common_legend_html(
     peer_versions: list[tuple[str, str]] | None = None,
-    peer_versions_href: str = "../../../pyproject.toml",
+    peer_versions_href: str | None = None,
 ) -> str:
     versions_html = ""
     if peer_versions:
@@ -652,7 +581,7 @@ def _common_legend_html(
         versions_html = (
             "<p>"
             "<strong>Peer parser versions</strong> pinned in "
-            f'<a href="{html_lib.escape(peer_versions_href, quote=True)}">pyproject.toml</a>: '
+            f'<a href="{html_lib.escape(peer_versions_href or common.LINKS["pyproject_stub"], quote=True)}">pyproject.toml</a>: '
             f"{versions}."
             "</p>"
         )
@@ -1146,7 +1075,7 @@ def _parser_inheritance_tooltip_html(
     head_parts = [f"ParserConfig::{variant}"]
     if sub_variant:
         head_parts[-1] = f"ParserConfig::{variant}::{sub_variant}"
-    bf_href = html_lib.escape(f"../../../lib/parsers/src/tool_calling/{backend_file}")
+    bf_href = html_lib.escape(f"{common.LINKS['toolcalling_src']}{backend_file}")
     bf_link = f'<a href="{bf_href}">{html_lib.escape(backend_file)}</a>'
 
     anchor = alias_of or family
@@ -1354,9 +1283,9 @@ def _parser_cell_html(
     # useful (factory calls). For families with no inheritance info, fall back
     # to the refs entry (config.rs or parsers.rs).
     if info and info["backend_file"] != "unknown":
-        href = f"../../../lib/parsers/src/tool_calling/{info['backend_file']}"
+        href = f"{common.LINKS['toolcalling_src']}{info['backend_file']}"
     elif ref is not None:
-        href = f"../../../lib/parsers/src/tool_calling/{ref[0]}"
+        href = f"{common.LINKS['toolcalling_src']}{ref[0]}"
     else:
         return (
             f'<td class="parser" data-col-hide-group="parser">'
@@ -1385,13 +1314,13 @@ def _v2_parser_cell_html(
         f"Tool calling parser row: {html_lib.escape(family)}\n"
         f"Effective parser/backend: {html_lib.escape(backend)}\n"
         f"Dynamo parser v2 implementation: parsers_v2/src/tool_calling/{html_lib.escape(source_file)} -> "
-        f'<a href="../../../parsers_v2/src/tool_calling/{html_lib.escape(source_file)}">{html_lib.escape(entrypoint)}</a>\n'
+        f'<a href="{common.LINKS["streaming_src"]}{html_lib.escape(source_file)}">{html_lib.escape(entrypoint)}</a>\n'
         f"Note: {html_lib.escape(note)}"
         "</pre></div>"
     )
     return (
         f'<td class="parser" data-col-hide-group="parser">'
-        f'<a href="../../../parsers_v2/src/tool_calling/{html_lib.escape(source_file)}">{row_label}</a>{tooltip}</td>'
+        f'<a href="{common.LINKS["streaming_src"]}{html_lib.escape(source_file)}">{row_label}</a>{tooltip}</td>'
     )
 
 
@@ -1548,9 +1477,9 @@ def _parse_subcase_descriptions(mode: str) -> dict[str, str]:
 def _subcase_header_html(mode: str, sub: str, descriptions: dict[str, str]) -> str:
     desc = descriptions.get(sub) or descriptions.get(sub.split(".")[0]) or ""
     href = (
-        "../../../lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"
+        common.LINKS["toolcalling_streaming_cases"]
         if mode == "streamv2"
-        else "../../../lib/parsers/TOOLCALLING_CASES.md"
+        else common.LINKS["toolcalling_cases"]
     )
     title = html_lib.escape(desc) if desc else ""
     band_cls = _subcase_band_class(mode, sub)
@@ -2176,54 +2105,25 @@ def _rewrite_panel_paths(
     panel: dict[str, Any],
     stage_dir: str,
     fixture_href_root: str,
-    hrefs: dict[str, str],
 ) -> dict[str, Any]:
-    """Adjust links from stage-local fixture paths to the generated output HTML.
+    """Rebase a panel's fixture cell links onto that panel's real fixtures root.
 
-    Panels emit fixture links in two shapes (`fixtures/...` and
-    `{stage_dir}/fixtures/...`) depending on whether the underlying renderer was
-    copied or imported. Rewrite both against the requested output path.
+    This per-panel transform is irreducible: the same loaded case is rendered into
+    multiple panels with different fixture roots (e.g. a batch case appears in both
+    the `batch` and `batch-on-stream` panels), so the root can't be baked into the
+    case at load time. Every other link (case docs, parser source, pyproject) is
+    emitted destination-aware via `common.LINKS` and needs no rewrite.
     """
     rewritten = dict(panel)
 
     def rewrite(text: str) -> str:
-        # Panels emit two fixture-href shapes: the toolcalling builder (merged into
-        # this file, one dir up) emits `{stage_dir}/fixtures/...`; the reasoning
-        # builder (still its own module) emits bare `fixtures/...`. Remap both to
-        # the real source root. Order matters: the stage_dir form is rewritten
-        # first so the bare-`fixtures/` pass can't re-match its `../<dir>/fixtures/` output.
-        return (
-            text.replace(f'href="{stage_dir}/fixtures/', f'href="{fixture_href_root}')
-            .replace('href="fixtures/', f'href="{fixture_href_root}')
-            .replace(
-                'href="../../../lib/parsers/src/tool_calling/',
-                f'href="{hrefs["toolcalling_src"]}',
-            )
-            .replace(
-                'href="../../../parsers_v2/src/tool_calling/harmony.rs"',
-                f'href="{hrefs["streaming_harmony_src"]}"',
-            )
-            .replace(
-                'href="../../../parsers_v2/src/tool_calling/"',
-                f'href="{hrefs["streaming_src"]}"',
-            )
-            .replace(
-                'href="../../../lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"',
-                f'href="{hrefs["toolcalling_streaming_cases"]}"',
-            )
-            .replace(
-                'href="../../../lib/parsers/TOOLCALLING_CASES.md"',
-                f'href="{hrefs["toolcalling_cases"]}"',
-            )
-            .replace(
-                'href="../../../lib/parsers/REASONING_CASES.md"',
-                f'href="{hrefs["reasoning_cases"]}"',
-            )
-            .replace(
-                'href="../../../pyproject.toml"',
-                f'href="{hrefs["pyproject_stub"]}"',
-            )
-        )
+        # Fixture cell links are emitted as `{stage_dir}/fixtures/...` (toolcalling
+        # builder, merged into this file) or bare `fixtures/...` (reasoning builder).
+        # Order matters: the stage_dir form is rewritten first so the bare-`fixtures/`
+        # pass can't re-match its `../<dir>/fixtures/` output.
+        return text.replace(
+            f'href="{stage_dir}/fixtures/', f'href="{fixture_href_root}'
+        ).replace('href="fixtures/', f'href="{fixture_href_root}')
 
     rewritten["group_headers"] = rewrite(str(rewritten["group_headers"]))
     rewritten["sub_headers"] = rewrite(str(rewritten["sub_headers"]))
@@ -2310,7 +2210,6 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
         panel = _rewrite_panel_paths(
             panel, "toolcalling",
             fixture_href_root=_fixture_href_roots[mode],
-            hrefs=hrefs,
         )
         _tc_kind = "stream" if mode == "streamv2" else "batch"
         _tc_label, _tc_label_html = _tab_label("TC", _tc_kind, _tc_kind, mode == "streamv2")
@@ -2378,7 +2277,6 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
                 stream_on_batch,
                 "toolcalling",
                 fixture_href_root=hrefs["toolcalling_batch_on_stream_fixtures"],
-                hrefs=hrefs,
             )
             panels.append(stream_on_batch)
     _apply_common_legend(panels, hrefs)
@@ -2404,7 +2302,6 @@ def _combined_reasoning_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
             panel,
             "reasoning",
             fixture_href_root=hrefs["reasoning_fixtures"],
-            hrefs=hrefs,
         )
         # Reasoning has a single parser (not a batch/stream split), so the parser
         # axis renders as a bare "parser"; only the data axis varies.
@@ -2454,7 +2351,7 @@ def render_combined_html(
         artifact_root,
         "tests/parity/CONFORMANCE.html",
     )
-    hrefs = _hrefs_for_output(resolved_output_path, artifact_root)
+    hrefs = common.set_links(resolved_output_path, artifact_root)
     panels = [
         *_combined_toolcalling_panels(hrefs),
         *_combined_reasoning_panels(hrefs),
