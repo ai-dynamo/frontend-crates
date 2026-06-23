@@ -24,8 +24,13 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
+from tests.parity import common  # noqa: E402
 from tests.parity.reasoning import table as reasoning_table  # noqa: E402
 from tests.parity.toolcalling import table as toolcalling_table  # noqa: E402
+
+# Published location of the v1 PARITY page (rendered into .stage/, then copied to
+# conformance/PARITY.html). Links resolve relative to this destination.
+_PUBLISHED_OUTPUT = REPO_ROOT / "conformance" / "PARITY.html"
 
 
 def _rewrite_panel_paths(panel: dict[str, Any], stage_dir: str) -> dict[str, Any]:
@@ -33,33 +38,11 @@ def _rewrite_panel_paths(panel: dict[str, Any], stage_dir: str) -> dict[str, Any
     rewritten = dict(panel)
 
     def rewrite(text: str) -> str:
-        return (
-            text.replace('href="fixtures/', f'href="{stage_dir}/fixtures/')
-            # Case-doc markdown lives at conformance/utils/lib/parsers/ and the
-            # published PARITY.html sits at conformance/, so link it the way the
-            # v2 conformance page does (utils/lib/parsers/...). Must run before the
-            # general ../../../lib/ rewrite below so these specific links win.
-            .replace(
-                'href="../../../lib/parsers/TOOLCALLING_CASES.md"',
-                'href="utils/lib/parsers/TOOLCALLING_CASES.md"',
-            )
-            .replace(
-                'href="../../../lib/parsers/REASONING_CASES.md"',
-                'href="utils/lib/parsers/REASONING_CASES.md"',
-            )
-            # Parser source lives at parsers/src/tool_calling/ (no lib/ prefix
-            # after the cutover); published from conformance/ that is ../parsers/...
-            .replace(
-                'href="../../../lib/parsers/src/tool_calling/',
-                'href="../parsers/src/tool_calling/',
-            )
-            .replace('href="../../../lib/', 'href="../../lib/')
-            # Peer-version doc is the stub under conformance/utils/src/.
-            .replace(
-                'href="../../../pyproject.toml"',
-                'href="utils/src/pyproject.stub.toml"',
-            )
-        )
+        # Fixture cell links are emitted as `fixtures/<family>/<file>` by the
+        # builders and rebased onto this panel's staged fixtures dir. All other
+        # links (case docs, parser source, pyproject) are emitted
+        # destination-aware via common.LINKS, so they need no rewrite.
+        return text.replace('href="fixtures/', f'href="{stage_dir}/fixtures/')
 
     rewritten["group_headers"] = rewrite(str(rewritten["group_headers"]))
     rewritten["sub_headers"] = rewrite(str(rewritten["sub_headers"]))
@@ -135,6 +118,7 @@ def _combined_reasoning_panels() -> list[dict[str, Any]]:
 
 
 def render_combined_html() -> str:
+    common.set_links(_PUBLISHED_OUTPUT, REPO_ROOT)
     panels = [*_combined_toolcalling_panels(), *_combined_reasoning_panels()]
     panels[0]["active"] = True
 
@@ -157,7 +141,7 @@ def render_combined_html() -> str:
             peer_versions=toolcalling_table._peer_version_items(
                 toolcalling_table._peer_versions()
             ),
-            peer_versions_href="utils/src/pyproject.stub.toml",
+            peer_versions_href=common.LINKS["pyproject_stub"],
         )
     )
 

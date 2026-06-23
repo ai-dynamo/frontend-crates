@@ -19,6 +19,7 @@ from typing import Any
 import yaml
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
+from tests.parity import common
 from tests.parity.common import _FAMILY_TO_SGLANG_REASONING, _FAMILY_TO_VLLM_REASONING
 from tests.parity.common import TOP_N_TOOL_CALLING_FAMILIES as TOP_N_FAMILIES
 from tests.parity.common import (
@@ -1065,7 +1066,7 @@ def _parse_case_descriptions() -> dict[str, str]:
 def _case_header_html(case_id: str, descriptions: dict[str, str]) -> str:
     display = _display_case_id(case_id)
     desc = descriptions.get(_case_doc_id(case_id)) or ""
-    href = "../../../lib/parsers/REASONING_CASES.md"
+    href = common.LINKS["reasoning_cases"]
     return (
         f'<th class="case-sub {_case_band_class(case_id)}" '
         f'data-col-hide-group="{html_lib.escape(_case_group_key(case_id))}">'
@@ -2320,7 +2321,7 @@ def _html(
             peer_versions=[],
             intro_html="",
             legend_html=_legend_html(rows, columns),
-            case_docs_href="../../../lib/parsers/REASONING_CASES.md",
+            case_docs_href=common.LINKS["reasoning_cases"],
             case_docs_label="lib/parsers/REASONING_CASES.md",
             case_prefix="REASONING.",
         )

@@ -74,6 +74,7 @@ from typing import Any
 import yaml
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
+from tests.parity import common
 from tests.parity.common import TOP_N_TOOL_CALLING_FAMILIES as TOP_N_FAMILIES
 from tests.parity.common import (
     linkify_text_html,
@@ -388,80 +389,8 @@ def _display_path(path: Path, artifact_root: Path) -> str:
         return path.as_posix()
 
 
-def _href_from_output(
-    output_path: Path,
-    artifact_root: Path,
-    repo_relative: str,
-) -> str:
-    trailing_slash = repo_relative.endswith("/")
-    target = artifact_root / repo_relative.rstrip("/")
-    href = Path(os.path.relpath(target, output_path.parent)).as_posix()
-    return f"{href}/" if trailing_slash else href
-
-
-def _hrefs_for_output(output_path: Path, artifact_root: Path) -> dict[str, str]:
-    return {
-        "toolcalling_fixtures": _href_from_output(
-            output_path,
-            artifact_root,
-            "conformance/toolcalling/fixtures/",
-        ),
-        "toolcalling_stream_fixtures": _href_from_output(
-            output_path,
-            artifact_root,
-            "conformance/toolcalling/fixtures-stream-v2/",
-        ),
-        "toolcalling_batch_on_stream_fixtures": _href_from_output(
-            output_path,
-            artifact_root,
-            "conformance/toolcalling/fixtures-batch-on-stream-v2/",
-        ),
-        "reasoning_fixtures": _href_from_output(
-            output_path,
-            artifact_root,
-            "conformance/reasoning/fixtures/",
-        ),
-        "toolcalling_cases": _href_from_output(
-            output_path,
-            artifact_root,
-            "conformance/utils/lib/parsers/TOOLCALLING_CASES.md",
-        ),
-        "toolcalling_streaming_cases": _href_from_output(
-            output_path,
-            artifact_root,
-            "conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md",
-        ),
-        "reasoning_cases": _href_from_output(
-            output_path,
-            artifact_root,
-            "conformance/utils/lib/parsers/REASONING_CASES.md",
-        ),
-        "toolcalling_src": _href_from_output(
-            output_path,
-            artifact_root,
-            "parsers/src/tool_calling/",
-        ),
-        "reasoning_src": _href_from_output(
-            output_path,
-            artifact_root,
-            "parsers/src/reasoning/",
-        ),
-        "streaming_src": _href_from_output(
-            output_path,
-            artifact_root,
-            "parsers_v2/src/tool_calling/",
-        ),
-        "streaming_harmony_src": _href_from_output(
-            output_path,
-            artifact_root,
-            "parsers_v2/src/tool_calling/harmony.rs",
-        ),
-        "pyproject_stub": _href_from_output(
-            output_path,
-            artifact_root,
-            "conformance/utils/src/pyproject.stub.toml",
-        ),
-    }
+# Destination-aware link resolution lives in tests.parity.common
+# (`set_links` / `LINKS`), shared by the v1 PARITY and v2 CONFORMANCE generators.
 
 
 _VISIBLE_CONFORMANCE_REPLACEMENTS = (
@@ -2452,7 +2381,7 @@ def render_combined_html(
         artifact_root,
         "tests/parity/CONFORMANCE.html",
     )
-    hrefs = _hrefs_for_output(resolved_output_path, artifact_root)
+    hrefs = common.set_links(resolved_output_path, artifact_root)
     panels = [
         *_combined_toolcalling_panels(hrefs),
         *_combined_reasoning_panels(hrefs),

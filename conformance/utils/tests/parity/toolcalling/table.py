@@ -66,6 +66,7 @@ from pathlib import Path
 import yaml
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
+from tests.parity import common
 from tests.parity.common import TOP_N_TOOL_CALLING_FAMILIES as TOP_N_FAMILIES
 from tests.parity.common import (
     build_parity_tooltip_html,
@@ -1079,7 +1080,7 @@ def _parser_inheritance_tooltip_html(
     head_parts = [f"ParserConfig::{variant}"]
     if sub_variant:
         head_parts[-1] = f"ParserConfig::{variant}::{sub_variant}"
-    bf_href = html_lib.escape(f"../../../lib/parsers/src/tool_calling/{backend_file}")
+    bf_href = html_lib.escape(f"{common.LINKS['toolcalling_src']}{backend_file}")
     bf_link = f'<a href="{bf_href}">{html_lib.escape(backend_file)}</a>'
 
     anchor = alias_of or family
@@ -1236,9 +1237,9 @@ def _parser_cell_html(
     # useful (factory calls). For families with no inheritance info, fall back
     # to the refs entry (config.rs or parsers.rs).
     if info and info["backend_file"] != "unknown":
-        href = f"../../../lib/parsers/src/tool_calling/{info['backend_file']}"
+        href = f"{common.LINKS['toolcalling_src']}{info['backend_file']}"
     elif ref is not None:
-        href = f"../../../lib/parsers/src/tool_calling/{ref[0]}"
+        href = f"{common.LINKS['toolcalling_src']}{ref[0]}"
     else:
         return (
             f'<td class="parser" data-col-hide-group="parser">'
@@ -1321,7 +1322,7 @@ def _parse_subcase_descriptions(mode: str) -> dict[str, str]:
 
 def _subcase_header_html(mode: str, sub: str, descriptions: dict[str, str]) -> str:
     desc = descriptions.get(sub) or descriptions.get(sub.split(".")[0]) or ""
-    href = "../../../lib/parsers/TOOLCALLING_CASES.md"
+    href = common.LINKS["toolcalling_cases"]
     title = html_lib.escape(desc) if desc else ""
     band_cls = _subcase_band_class(mode, sub)
     col_group = html_lib.escape(_subcase_group_key(mode, sub))
