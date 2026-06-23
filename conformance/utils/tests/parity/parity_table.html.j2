@@ -189,7 +189,7 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 <body class="view-overview parser-dynamo">
 <h1>{{ title|e }}</h1>
 <p class="generated">
-  Auto-generated on {{ stamp|e }}{% if sha %} on commit <a href="https://github.com/ai-dynamo/dynamo/commit/{{ sha|e }}"><code>{{ short_sha|e }}</code></a>{% endif %}:
+  Auto-generated on {{ stamp|e }}{% if sha %} on commit <a href="https://github.com/ai-dynamo/frontend-crates/commit/{{ sha|e }}"><code>{{ short_sha|e }}</code></a>{% endif %}:
   <code>{{ command|e }} &gt; {{ output|e }}</code>
 </p>
 {% if intro_html is defined and intro_html %}
