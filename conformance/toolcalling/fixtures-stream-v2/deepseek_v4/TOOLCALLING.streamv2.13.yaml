@@ -11,6 +11,7 @@ family: deepseek_v4
 model_label: 'DeepSeek V4'
 mode: streamv2
 captured_with:
+  dynamo_rust: 'Dynamo parser v2'
   vllm_rust: 'v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75'
   vllm_python: '0.23.0'
   sglang_python: '0.5.12.post1'
@@ -25,47 +26,49 @@ cases:
         properties:
           location:
             type: string
-    unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
-    - delta_text: '<｜DSML｜tool_calls>
-<｜DSML｜invoke'
+    - delta_text: '<｜DSML｜tool_calls> <｜DSML｜invoke'
       expected:
+        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python: []
     - delta_text: ' name="unknown_tool">'
       expected:
+        dynamo_rust:
+        - {index: 0, name: 'unknown_tool', arguments: ''}
         vllm_rust: []
         vllm_python:
         - {index: 0, id: true, name: 'unknown_tool', arguments: ''}
         sglang_python:
         - {index: 0, name: 'unknown_tool'}
-    - delta_text: '
-<｜DSML｜parameter name="location" string="true">'
+    - delta_text: ' <｜DSML｜parameter name="location" string="true">'
       expected:
+        dynamo_rust: []
         vllm_rust: []
         vllm_python:
         - {index: 0, arguments: '{"location":"'}
         sglang_python: []
-    - delta_text: 'NYC</｜DSML｜parameter>
-</｜DSML｜invoke>'
+    - delta_text: 'NYC</｜DSML｜parameter> </｜DSML｜invoke>'
       expected:
+        dynamo_rust:
+        - {index: 0, arguments: '{"location":"NYC"}'}
         vllm_rust:
         - {index: 0, name: 'unknown_tool', arguments: '{"location":"NYC"}'}
         vllm_python:
         - {index: 0, arguments: 'NYC"}'}
         sglang_python:
         - {index: 0, arguments: '{"location": "NYC"}'}
-    - delta_text: '
-</｜DSML｜tool_calls>'
+    - delta_text: ' </｜DSML｜tool_calls>'
       expected:
+        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python: []
     - delta_text: ''
       finish_reason: stop
       expected:
+        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python: []

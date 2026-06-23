@@ -11,6 +11,7 @@ family: qwen3_coder
 model_label: 'Qwen 3 Coder'
 mode: streamv2
 captured_with:
+  dynamo_rust: 'Dynamo parser v2'
   vllm_rust: 'v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75'
   vllm_python: '0.23.0'
   sglang_python: '0.5.12.post1'
@@ -25,27 +26,25 @@ cases:
         properties:
           location:
             type: string
-    unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
-    - delta_text: '<tool_call>
-<function=unknown_tool>'
+    - delta_text: '<tool_call> <function=unknown_tool>'
       expected:
+        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python:
         - {index: 0, name: 'unknown_tool'}
-    - delta_text: '
-<parameter=location>'
+    - delta_text: ' <parameter=location>'
       expected:
+        dynamo_rust: []
         vllm_rust: []
         vllm_python:
         - {index: 0, id: true, name: 'unknown_tool', arguments: ''}
         sglang_python: []
-    - delta_text: 'NYC</parameter>
-</function>
-</tool_call>'
+    - delta_text: 'NYC</parameter> </function> </tool_call>'
       expected:
+        dynamo_rust:
+        - {index: 0, name: 'unknown_tool', arguments: '{"location":"NYC"}'}
         vllm_rust:
         - {index: 0, name: 'unknown_tool', arguments: '{"location":"NYC"}'}
         vllm_python:
@@ -57,6 +56,7 @@ cases:
     - delta_text: ''
       finish_reason: tool_calls
       expected:
+        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python: []

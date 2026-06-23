@@ -11,6 +11,7 @@ family: deepseek_v4
 model_label: 'DeepSeek V4'
 mode: streamv2
 captured_with:
+  dynamo_rust: 'Dynamo parser v2'
   vllm_rust: 'v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75'
   vllm_python: '0.23.0'
   sglang_python: '0.5.12.post1'
@@ -25,48 +26,55 @@ cases:
         properties:
           location:
             type: string
-    unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: 'Hello, how'
       expected:
+        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
+        dynamo_rust: 'Hello, how'
         vllm_rust: 'Hello, how'
         vllm_python: 'Hello, how'
         sglang_python: 'Hello, how'
     - delta_text: ' can'
       expected:
+        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
+        dynamo_rust: ' can'
         vllm_rust: ' can'
         vllm_python: ' can'
         sglang_python: ' can'
     - delta_text: ' I help you'
       expected:
+        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
+        dynamo_rust: ' I help you'
         vllm_rust: ' I help you'
         vllm_python: ' I help you'
         sglang_python: ' I help you'
     - delta_text: ' today?'
       expected:
+        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
+        dynamo_rust: ' today?'
         vllm_rust: ' today?'
         vllm_python: ' today?'
         sglang_python: ' today?'
     - delta_text: ''
       finish_reason: stop
       expected:
+        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python: []
