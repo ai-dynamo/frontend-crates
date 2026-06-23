@@ -44,11 +44,12 @@ cases:
     - 'Here is my thought process: second Here is my response: done'
     expected:
       dynamo:
-        reasoning_text: ' first '
-        normal_text: ' middle Here is my thought process: second Here is my response: done'
+        reasoning_text: ' first  second '
+        normal_text: ' middle  done'
       vllm:
         reasoning_text: ''
         normal_text: ' middle Here is my thought process: second Here is my response: done'
+        reason: vLLM stops after the first span and leaves the second span's markers in content; Dynamo re-enters reasoning on the later thought-process marker so none leak.
       sglang:
         unavailable: SGLang has no reasoning parser for family='granite'
   REASONING.stream.3.a:
@@ -69,18 +70,18 @@ cases:
         unavailable: SGLang has no reasoning parser for family='granite'
   REASONING.stream.3.b:
     description: End marker split across chunks
-    dynamo_leak: true
     ref: *upstream_ref
     chunks:
     - 'Here is my thought process: thinking Here is my res'
     - 'ponse: answer'
     expected:
       dynamo:
-        reasoning_text: ' thinking Here is my response: answer'
-        normal_text: ''
+        reasoning_text: ' thinking '
+        normal_text: ' answer'
       vllm:
         reasoning_text: 'Here is my thought process: thinking '
         normal_text: ' answer'
+        reason: vLLM retains the start marker in reasoning_text; Dynamo buffers the split response marker until complete so neither marker leaks.
       sglang:
         unavailable: SGLang has no reasoning parser for family='granite'
   REASONING.stream.3.c:

@@ -53,10 +53,13 @@ cases:
     ref: *upstream_ref
     model_text: 'normal Here is my response: answer'
     expected:
-      dynamo: &d_4
+      dynamo:
+        reasoning_text: ''
+        normal_text: 'normal answer'
+      vllm:
         reasoning_text: ''
         normal_text: 'normal Here is my response: answer'
-      vllm: *d_4
+        reason: vLLM leaves a dangling response marker (no preceding thought-process marker) in content; Dynamo consumes the marker so no markup leaks into normal_text.
       sglang:
         unavailable: SGLang has no reasoning parser for family='granite'
   REASONING.batch.5:
@@ -113,16 +116,17 @@ cases:
       sglang:
         unavailable: SGLang has no reasoning parser for family='granite'
   REASONING.batch.6.a:
-    description: Granite batch parser stops after the first thought-process span
+    description: Granite reasoning with multiple thought-process / response spans
     ref: *upstream_ref
     model_text: 'Here is my thought process: first Here is my response: middle Here is my thought process: second Here is my response: done'
     expected:
       dynamo:
-        reasoning_text: 'first '
-        normal_text: 'middle Here is my thought process: second Here is my response: done'
+        reasoning_text: 'first second'
+        normal_text: 'middle done'
       vllm:
         reasoning_text: ' first '
         normal_text: ' middle Here is my thought process: second Here is my response: done'
+        reason: vLLM stops after the first span and leaves the second span's markers in content; Dynamo consumes every thought-process / response marker so none leak.
       sglang:
         unavailable: SGLang has no reasoning parser for family='granite'
   REASONING.batch.2.d:
