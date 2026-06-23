@@ -36,8 +36,7 @@ cases:
         sglang_python: []
     - delta_text: ' name="get_weather">'
       expected:
-        dynamo_rust:
-        - {index: 0, name: 'get_weather', arguments: ''}
+        dynamo_rust: []
         vllm_python:
         - {index: 0, id: true, name: 'get_weather', arguments: ''}
         sglang_python:
@@ -51,6 +50,7 @@ cases:
     - delta_text: 'NYC</｜DSML｜parameter> </｜DSML｜invoke>'
       expected:
         dynamo_rust:
+        - {index: 0, name: 'get_weather', arguments: ''}
         - {index: 0, arguments: '{"location":"NYC"}'}
         vllm_python:
         - {index: 0, arguments: 'NYC"}'}
@@ -75,8 +75,7 @@ cases:
     chunks:
     - delta_text: '<｜DSML｜invoke name="get_weather">'
       expected:
-        dynamo_rust:
-        - {index: 0, name: 'get_weather', arguments: ''}
+        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python:
@@ -106,6 +105,7 @@ cases:
     - delta_text: ' </｜DSML｜invoke> </｜DSML｜tool_calls>'
       expected:
         dynamo_rust:
+        - {index: 0, name: 'get_weather', arguments: ''}
         - {index: 0, arguments: '{"location":"NYC"}'}
         vllm_rust: []
         vllm_python: []
@@ -141,8 +141,7 @@ cases:
         sglang_python: []
     - delta_text: ' name="get_weather">'
       expected:
-        dynamo_rust:
-        - {index: 0, name: 'get_weather', arguments: ''}
+        dynamo_rust: []
         vllm_python:
         - {index: 0, id: true, name: 'get_weather', arguments: ''}
         sglang_python:
@@ -266,8 +265,7 @@ cases:
         sglang_python: []
     - delta_text: ' name="get_weather"> <｜DSML｜parameter'
       expected:
-        dynamo_rust:
-        - {index: 0, name: 'get_weather', arguments: ''}
+        dynamo_rust: []
         vllm_python:
         - {index: 0, id: true, name: 'get_weather', arguments: ''}
         sglang_python:
@@ -280,6 +278,7 @@ cases:
     - delta_text: ' string="true">Boston</｜DSML｜parameter> </｜DSML｜invoke>'
       expected:
         dynamo_rust:
+        - {index: 0, name: 'get_weather', arguments: ''}
         - {index: 0, arguments: '{"location":"Boston"}'}
         vllm_python:
         - {index: 0, arguments: '{"location":"Boston"}'}
@@ -287,8 +286,7 @@ cases:
         - {index: 0, arguments: '{"location": "Boston"}'}
     - delta_text: ' <｜DSML｜invoke name="get_weather">'
       expected:
-        dynamo_rust:
-        - {index: 1, name: 'get_weather', arguments: ''}
+        dynamo_rust: []
         vllm_python:
         - {index: 1, id: true, name: 'get_weather', arguments: ''}
         sglang_python:
@@ -307,6 +305,7 @@ cases:
     - delta_text: 'New York</｜DSML｜parameter> </｜DSML｜invoke>'
       expected:
         dynamo_rust:
+        - {index: 1, name: 'get_weather', arguments: ''}
         - {index: 1, arguments: '{"location":"New York"}'}
         vllm_python:
         - {index: 1, arguments: 'New York"}'}
@@ -418,8 +417,7 @@ cases:
         sglang_python: []
     - delta_text: ' name="get_weather"> <｜DSML｜parameter'
       expected:
-        dynamo_rust:
-        - {index: 0, name: 'get_weather', arguments: ''}
+        dynamo_rust: []
         vllm_python:
         - {index: 0, id: true, name: 'get_weather', arguments: ''}
         sglang_python:
@@ -432,6 +430,7 @@ cases:
     - delta_text: ' string="true">Boston</｜DSML｜parameter> </｜DSML｜invoke>'
       expected:
         dynamo_rust:
+        - {index: 0, name: 'get_weather', arguments: ''}
         - {index: 0, arguments: '{"location":"Boston"}'}
         vllm_python:
         - {index: 0, arguments: '{"location":"Boston"}'}
@@ -439,8 +438,7 @@ cases:
         - {index: 0, arguments: '{"location": "Boston"}'}
     - delta_text: ' <｜DSML｜invoke name="get_weather">'
       expected:
-        dynamo_rust:
-        - {index: 1, name: 'get_weather', arguments: ''}
+        dynamo_rust: []
         vllm_python:
         - {index: 1, id: true, name: 'get_weather', arguments: ''}
         sglang_python:
@@ -482,8 +480,7 @@ cases:
     chunks:
     - delta_text: '<｜DSML｜invoke name="get_weather">'
       expected:
-        dynamo_rust:
-        - {index: 0, name: 'get_weather', arguments: ''}
+        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python:
@@ -513,6 +510,7 @@ cases:
     - delta_text: ' </｜DSML｜invoke> </｜DSML｜tool_calls>'
       expected:
         dynamo_rust:
+        - {index: 0, name: 'get_weather', arguments: ''}
         - {index: 0, arguments: '{"location":"NYC"}'}
         vllm_rust: []
         vllm_python: []
@@ -532,8 +530,7 @@ cases:
         vllm_python: ' '
     - delta_text: ' <｜DSML｜invoke name="get_weather">'
       expected:
-        dynamo_rust:
-        - {index: 1, name: 'get_weather', arguments: ''}
+        dynamo_rust: []
         vllm_rust: []
         vllm_python:
         - {index: 0, id: true, name: 'get_weather', arguments: ''}
@@ -557,6 +554,7 @@ cases:
     - delta_text: ' </｜DSML｜invoke> </｜DSML｜tool_calls>'
       expected:
         dynamo_rust:
+        - {index: 1, name: 'get_weather', arguments: ''}
         - {index: 1, arguments: '{"location":"Boston"}'}
         vllm_rust:
         - {index: 0, name: 'get_weather', arguments: '{"location":"Boston"}'}
@@ -606,8 +604,7 @@ cases:
         sglang_python: ' check'
     - delta_text: ' that. <｜DSML｜invoke name="get_weather">'
       expected:
-        dynamo_rust:
-        - {index: 0, name: 'get_weather', arguments: ''}
+        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python:
@@ -637,6 +634,7 @@ cases:
     - delta_text: 'NYC</｜DSML｜parameter> </｜DSML｜invoke>'
       expected:
         dynamo_rust:
+        - {index: 0, name: 'get_weather', arguments: ''}
         - {index: 0, arguments: '{"location":"NYC"}'}
         vllm_rust: []
         vllm_python: []

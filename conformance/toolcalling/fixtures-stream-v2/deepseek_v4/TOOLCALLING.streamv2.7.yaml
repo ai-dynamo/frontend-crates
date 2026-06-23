@@ -39,8 +39,7 @@ cases:
         sglang_python: []
     - delta_text: ' name="book_flight">'
       expected:
-        dynamo_rust:
-        - {index: 0, name: 'book_flight', arguments: ''}
+        dynamo_rust: []
         vllm_rust: []
         vllm_python:
         - {index: 0, id: true, name: 'book_flight', arguments: ''}
@@ -92,6 +91,7 @@ cases:
     - delta_text: ' </｜DSML｜invoke> </｜DSML｜tool_calls>'
       expected:
         dynamo_rust:
+        - {index: 0, name: 'book_flight', arguments: ''}
         - {index: 0, arguments: '{"destination":"Paris","passengers":2,"first_class":true}'}
         vllm_rust:
         - {index: 0, name: 'book_flight', arguments: '{"destination":"Paris","passengers":2,"first_class":true}'}
@@ -125,8 +125,7 @@ cases:
         sglang_python: []
     - delta_text: ' name="get_weather">'
       expected:
-        dynamo_rust:
-        - {index: 0, name: 'get_weather', arguments: ''}
+        dynamo_rust: []
         vllm_rust: []
         vllm_python:
         - {index: 0, id: true, name: 'get_weather', arguments: ''}
@@ -150,6 +149,7 @@ cases:
     - delta_text: ' </｜DSML｜invoke>'
       expected:
         dynamo_rust:
+        - {index: 0, name: 'get_weather', arguments: ''}
         - {index: 0, arguments: '{"location":"Tōkyō central"}'}
         vllm_rust:
         - {index: 0, name: 'get_weather', arguments: '{"location":"Tōkyō central"}'}
@@ -189,8 +189,7 @@ cases:
         sglang_python: []
     - delta_text: ' name="set_limit">'
       expected:
-        dynamo_rust:
-        - {index: 0, name: 'set_limit', arguments: ''}
+        dynamo_rust: []
         vllm_rust: []
         vllm_python:
         - {index: 0, id: true, name: 'set_limit', arguments: ''}
@@ -205,6 +204,7 @@ cases:
     - delta_text: '9007199254740993</｜DSML｜parameter> </｜DSML｜invoke>'
       expected:
         dynamo_rust:
+        - {index: 0, name: 'set_limit', arguments: ''}
         - {index: 0, arguments: '{"count":9007199254740993}'}
         vllm_rust:
         - {index: 0, name: 'set_limit', arguments: '{"count":9007199254740993}'}
