@@ -595,6 +595,13 @@ impl ToolCallConfig {
             parser_config: ParserConfig::Json(JsonParserConfig {
                 tool_call_start_tokens: vec!["<tool_calls>".to_string()],
                 tool_call_end_tokens: vec!["</tool_calls>".to_string()],
+                // Jamba never surfaces tool-call markup to the user: discard an
+                // unparseable wrapper / strip an orphan close tag rather than
+                // leaking the raw `<tool_calls>` envelope into normal_text, and
+                // strip the markers on truncation-recovery instead of leaving the
+                // partial fence. Same intent as hermes/qwen25 and nemotron_deci.
+                strip_markup_on_recovery: true,
+                discard_unparseable_wrapper: true,
                 ..Default::default()
             }),
             structural_tag_builder: None,

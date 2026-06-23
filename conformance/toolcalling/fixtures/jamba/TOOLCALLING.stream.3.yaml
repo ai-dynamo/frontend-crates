@@ -40,6 +40,7 @@ cases:
       sglang:
         unavailable: SGLang has no detector for family='jamba'
       vllm:
+        reason: "vLLM's streaming jamba detector leaks the partial opening wrapper (<tool_call) into normal_text and drops the arguments to an empty object when the grammar token is split across chunks. Dynamo's streaming jail buffers the split token and emits the complete call with no leaked markup."
         calls:
         - name: get_weather
           arguments: {}

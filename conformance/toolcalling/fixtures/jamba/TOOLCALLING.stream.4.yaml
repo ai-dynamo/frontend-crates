@@ -29,6 +29,7 @@ cases:
       sglang:
         unavailable: SGLang has no detector for family='jamba'
       vllm:
+        reason: "vLLM's streaming jamba detector drops the arguments to an empty object on a truncated (finish_reason=stop) stream. Dynamo's streaming jail recovers the complete in-flight call body with full arguments."
         calls:
         - name: get_weather
           arguments: {}
@@ -51,10 +52,11 @@ cases:
     expected:
       dynamo:
         calls: []
-        normal_text: '<tool_calls>[{"name": "get_weather", "arguments": {"loc'
+        normal_text: ''
       sglang:
         unavailable: SGLang has no detector for family='jamba'
       vllm:
+        reason: "vLLM emits the call with empty arguments on mid-body truncation; Dynamo's streaming jail suppresses the truncated <tool_calls> wrapper, emitting no call and no markup (aligned by ai-dynamo/dynamo#10847)."
         calls:
         - name: get_weather
           arguments: {}
@@ -75,9 +77,12 @@ cases:
           location:
             type: string
     expected:
-      dynamo: &id001
+      dynamo:
+        calls: []
+        normal_text: '[{"name": "get_weather", "arguments": {"location": "NYC"}}]'
+      vllm:
+        reason: "vLLM's streaming jamba detector leaves the orphan </tool_calls> close markers in normal_text. Dynamo's streaming jail strips every </tool_calls> occurrence and keeps the inner JSON body (aligned by ai-dynamo/dynamo#10847)."
         calls: []
         normal_text: '[{"name": "get_weather", "arguments": {"location": "NYC"}}]</tool_calls></tool_calls></tool_calls>'
-      vllm: *id001
       sglang:
         unavailable: SGLang has no detector for family='jamba'

@@ -29,6 +29,7 @@ cases:
       sglang:
         unavailable: SGLang has no detector for family='jamba'
       vllm:
+        reason: "vLLM's streaming jamba detector emits the call name but drops the arguments to an empty object. Dynamo's streaming jail surfaces the full arguments."
         calls:
         - name: get_weather
           arguments: {}
@@ -54,6 +55,7 @@ cases:
       sglang:
         unavailable: SGLang has no detector for family='jamba'
       vllm:
+        reason: "vLLM's streaming jamba detector emits the call name but drops the arguments to an empty object. Dynamo's streaming jail surfaces the full arguments."
         calls:
         - name: get_weather
           arguments: {}
