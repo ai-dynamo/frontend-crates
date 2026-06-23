@@ -376,14 +376,14 @@ fn parse_tool_call_block(
         let function_terminated = func_cap
             .get(0)
             .is_some_and(|m| m.as_str().contains(config.function_end_token.as_str()));
-        if !function_terminated {
-            if let Some(open_idx) = function_body.rfind(config.parameter_start_token.as_str()) {
-                let after_value = &function_body[open_idx..];
-                let value_bounded = after_value.contains(config.parameter_end_token.as_str())
-                    || after_value.contains(config.tool_call_end_token.as_str());
-                if !value_bounded {
-                    continue;
-                }
+        if !function_terminated
+            && let Some(open_idx) = function_body.rfind(config.parameter_start_token.as_str())
+        {
+            let after_value = &function_body[open_idx..];
+            let value_bounded = after_value.contains(config.parameter_end_token.as_str())
+                || after_value.contains(config.tool_call_end_token.as_str());
+            if !value_bounded {
+                continue;
             }
         }
 
