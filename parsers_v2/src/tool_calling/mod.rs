@@ -5,12 +5,14 @@ pub mod dsml;
 pub mod harmony;
 mod harmony_grammar;
 mod harmony_recovery;
+pub mod qwen3_coder;
 pub mod traits;
 
 use traits::{Tool, ToolParser};
 
 use self::dsml::DeepSeekV4ToolStreamParser;
 use self::harmony::HarmonyToolStreamParser;
+use self::qwen3_coder::Qwen3CoderToolStreamParser;
 
 /// Create the Dynamo v2 tool parser for a conformance family.
 pub fn create_tool_parser_for_family(
@@ -20,6 +22,7 @@ pub fn create_tool_parser_for_family(
     match family {
         "harmony" | "harmony_text" => HarmonyToolStreamParser::create(tools),
         "deepseek_v4" => DeepSeekV4ToolStreamParser::create(tools),
+        "qwen3_coder" => Qwen3CoderToolStreamParser::create(tools),
         other => anyhow::bail!("no Dynamo parser v2 for family '{other}'"),
     }
 }

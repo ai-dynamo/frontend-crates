@@ -1,14 +1,24 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
 family: qwen3_coder
-model_label: Qwen 3 Coder
+model_label: 'Qwen 3 Coder'
 mode: streamv2
 captured_with:
-  vllm_python: 0.22.0
-  sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  dynamo_rust: 'Dynamo parser v2'
+  vllm_rust: 'v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af'
+  vllm_python: '0.22.0'
+  sglang_python: '0.5.12.post1'
 cases:
   TOOLCALLING.streamv2.10:
-    description: Duplicate calls (same name twice)
-    ref: derived from TOOLCALLING.batch.10
+    description: 'Duplicate calls (same name twice)'
+    ref: 'derived from TOOLCALLING.batch.10'
     tools:
     - name: get_weather
       parameters:
@@ -16,87 +26,73 @@ cases:
         properties:
           location:
             type: string
-    unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
     chunks:
-    - delta_text: <tool_call> <function=get_weather>
+    - delta_text: '<tool_call> <function=get_weather>'
       expected:
+        dynamo_rust: []
+        vllm_rust: []
         vllm_python: []
         sglang_python:
-        - index: 0
-          name: get_weather
-        vllm_rust: []
+        - {index: 0, name: 'get_weather'}
     - delta_text: ' <parameter=location>'
       expected:
-        vllm_python:
-        - index: 0
-          id: true
-          name: get_weather
-          arguments: ''
-        sglang_python: []
+        dynamo_rust: []
         vllm_rust: []
+        vllm_python:
+        - {index: 0, id: true, name: 'get_weather', arguments: ''}
+        sglang_python: []
     - delta_text: ' NYC </parameter> </function>'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: '{'
-        sglang_python:
-        - index: 0
-          arguments: '{'
-        - index: 0
-          arguments: '"location": "NYC"'
-        - index: 0
-          arguments: '}'
+        dynamo_rust:
+        - {index: 0, name: 'get_weather', arguments: '{"location":"NYC"}'}
         vllm_rust: []
+        vllm_python:
+        - {index: 0, arguments: '{'}
+        sglang_python:
+        - {index: 0, arguments: '{'}
+        - {index: 0, arguments: '"location": "NYC"'}
+        - {index: 0, arguments: '}'}
     - delta_text: ' </tool_call> <tool_call>'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: '"location": "NYC"'
-        sglang_python: []
+        dynamo_rust: []
         vllm_rust:
-        - arguments: '{"location":" NYC "}'
-          index: 0
-          name: get_weather
+        - {index: 0, name: 'get_weather', arguments: '{"location":" NYC "}'}
+        vllm_python:
+        - {index: 0, arguments: '"location": "NYC"'}
+        sglang_python: []
       normal_text:
-        sglang_python: ' '
         vllm_rust: ' '
+        sglang_python: ' '
     - delta_text: ' <function=get_weather>'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: '}'
-        sglang_python:
-        - index: 1
-          name: get_weather
+        dynamo_rust: []
         vllm_rust: []
+        vllm_python:
+        - {index: 0, arguments: '}'}
+        sglang_python:
+        - {index: 1, name: 'get_weather'}
     - delta_text: ' <parameter=location> LA'
       expected:
+        dynamo_rust: []
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
     - delta_text: ' </parameter> </function> </tool_call>'
       expected:
-        vllm_python:
-        - index: 1
-          id: true
-          name: get_weather
-          arguments: ''
-        sglang_python:
-        - index: 1
-          arguments: '{'
-        - index: 1
-          arguments: '"location": "LA"'
-        - index: 1
-          arguments: '}'
+        dynamo_rust:
+        - {index: 1, name: 'get_weather', arguments: '{"location":"LA"}'}
         vllm_rust:
-        - arguments: '{"location":" LA "}'
-          index: 1
-          name: get_weather
+        - {index: 1, name: 'get_weather', arguments: '{"location":" LA "}'}
+        vllm_python:
+        - {index: 1, id: true, name: 'get_weather', arguments: ''}
+        sglang_python:
+        - {index: 1, arguments: '{'}
+        - {index: 1, arguments: '"location": "LA"'}
+        - {index: 1, arguments: '}'}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
+        dynamo_rust: []
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
