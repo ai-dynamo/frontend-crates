@@ -1,10 +1,14 @@
 family: pythonic
 mode: batch-on-stream
 captured_with:
-  vllm_python: 0.22.0
+  vllm_python: 0.23.0
   sglang_python: 0.5.12.post1
+  vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+  dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.batch.1:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
     vllm_python:
       calls:
       - name: get_weather
@@ -16,6 +20,8 @@ cases:
         arguments:
           location: NYC
   TOOLCALLING.batch.3:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
     vllm_python:
       calls: []
       normal_text: Hello, how can I help you today?
@@ -23,11 +29,15 @@ cases:
       calls: []
       normal_text: Hello, how can I help you today?
   TOOLCALLING.batch.9.a:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
     vllm_python:
       calls: []
     sglang_python:
       calls: []
   TOOLCALLING.batch.9.b:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
     vllm_python:
       calls: []
       normal_text: '   '
@@ -35,6 +45,8 @@ cases:
       calls: []
       normal_text: '   '
   TOOLCALLING.batch.10:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
     vllm_python:
       calls:
       - name: get_weather
@@ -52,6 +64,8 @@ cases:
         arguments:
           location: LA
   TOOLCALLING.batch.30.a:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
     vllm_python:
       calls:
       - name: run_query
@@ -63,6 +77,8 @@ cases:
         arguments:
           sql: SELECT a, SELECT b
   TOOLCALLING.batch.30.b:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
     vllm_python:
       calls: []
     sglang_python:
@@ -70,6 +86,8 @@ cases:
       normal_text: '[run_query(sql="SELECT value WHERE note has brace } and bracket
         ]'
   TOOLCALLING.batch.30.c:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
     vllm_python:
       calls:
       - name: run_query
@@ -81,6 +99,8 @@ cases:
         arguments:
           sql: literal [get_time marker] stays text
   TOOLCALLING.batch.31.a:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
     vllm_python:
       calls:
       - name: run_query
@@ -98,6 +118,8 @@ cases:
         arguments:
           timezone: EST
   TOOLCALLING.batch.31.b:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
     vllm_python:
       calls: []
     sglang_python:
@@ -105,6 +127,8 @@ cases:
       normal_text: '[run_query(sql="SELECT value WHERE note has brace } and bracket
         ]'
   TOOLCALLING.batch.13.a:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
     vllm_python:
       calls:
       - name: unknown_tool
@@ -113,6 +137,8 @@ cases:
     sglang_python:
       calls: []
   TOOLCALLING.batch.13.c:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
     vllm_python:
       calls:
       - name: get_weather

@@ -420,7 +420,7 @@ def _stream_parity_explainer_html(marker_context: str | None) -> str:
     return (
         "Red means that engine's stream parser diverges from its batch parser. "
         "There is no <code>V_rb</code>; vLLM Rust has stream parser capture only. "
-        "Harmony captured against vLLM 0.22.0 / SGLang 0.5.12.post1."
+        "Harmony captured against vLLM 0.23.0 / SGLang 0.5.12.post1."
     )
 
 

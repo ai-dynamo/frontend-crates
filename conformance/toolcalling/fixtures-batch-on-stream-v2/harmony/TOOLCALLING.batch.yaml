@@ -1,8 +1,9 @@
 family: harmony
 mode: batch-on-stream
 captured_with:
-  vllm_python: 0.22.0
+  vllm_python: 0.23.0
   sglang_python: 0.5.12.post1
+  vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
   dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.batch.1:
@@ -11,6 +12,9 @@ cases:
       - name: get_weather
         arguments:
           location: NYC
+      normal_text: ''
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls:
       - name: get_weather
@@ -25,6 +29,9 @@ cases:
   TOOLCALLING.batch.3:
     dynamo_rust:
       calls: []
+      normal_text: ''
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls: []
     sglang_python:
@@ -33,6 +40,9 @@ cases:
   TOOLCALLING.batch.9.a:
     dynamo_rust:
       calls: []
+      normal_text: ''
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls: []
     sglang_python:
@@ -41,6 +51,9 @@ cases:
   TOOLCALLING.batch.9.b:
     dynamo_rust:
       calls: []
+      normal_text: ''
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls: []
     sglang_python:
@@ -55,6 +68,9 @@ cases:
       - name: get_weather
         arguments:
           location: LA
+      normal_text: ''
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls:
       - name: get_weather
@@ -73,11 +89,15 @@ cases:
           location: LA
       normal_text: ''
   TOOLCALLING.batch.30:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       unavailable: No batch model_text for this case.
     sglang_python:
       unavailable: No batch model_text for this case.
   TOOLCALLING.batch.31:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       unavailable: No batch model_text for this case.
     sglang_python:
@@ -88,6 +108,9 @@ cases:
       - name: unknown_tool
         arguments:
           location: NYC
+      normal_text: ''
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls:
       - name: unknown_tool
@@ -97,6 +120,8 @@ cases:
       calls: []
       normal_text: ''
   TOOLCALLING.batch.13.c:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       unavailable: No batch model_text for this case.
     sglang_python:

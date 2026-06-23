@@ -11,7 +11,7 @@ family: pythonic
 model_label: 'Llama 4 (pythonic fmt)'
 mode: streamv2
 captured_with:
-  vllm_python: '0.22.0'
+  vllm_python: '0.23.0'
   sglang_python: '0.5.12.post1'
 cases:
   TOOLCALLING.streamv2.7.a:
@@ -29,7 +29,8 @@ cases:
           first_class:
             type: boolean
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''pythonic''.'
     chunks:
     - delta_text: '[book_flight(destination="Paris", passengers=2,'
       expected:
@@ -57,7 +58,8 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''pythonic''.'
     chunks:
     - delta_text: '[get_weather(location="Tōkyō \"central\"")]'
       expected:
@@ -81,7 +83,8 @@ cases:
           celsius:
             type: integer
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''pythonic''.'
     chunks:
     - delta_text: '[set_temperature(celsius="20")]'
       expected:
@@ -107,7 +110,8 @@ cases:
           config:
             type: object
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''pythonic''.'
     chunks:
     - delta_text: '[process_data(items=[1, 2,'
       expected:
@@ -139,7 +143,8 @@ cases:
           payload:
             type: object
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''pythonic''.'
     chunks:
     - delta_text: '[process_data(payload={"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]'
       expected:

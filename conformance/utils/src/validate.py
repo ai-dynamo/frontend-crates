@@ -42,7 +42,7 @@ import yaml
 from tests.parity.common import ParseResult, canonical
 
 PH = Path(__file__).resolve().parent
-PKG = PH / "tests" / "parity"
+PKG = PH.parent / "tests" / "parity"
 STUB = PH / "pyproject.stub.toml"
 from impls import FIXTURE_IMPL_ALIASES  # noqa: E402  (identity table; see impls.py)
 
@@ -144,7 +144,7 @@ def run_container(impl: str, container: str, cases: list[dict]) -> dict[str, dic
     """Ship the adapter + a worker into ``container`` and run all cases there."""
     dest = "/tmp/parity_validate"
     bundle = {
-        "tests/__init__.py": PH / "tests" / "__init__.py",
+        "tests/__init__.py": PKG.parent / "__init__.py",
         "tests/parity/__init__.py": PKG / "__init__.py",
         "tests/parity/common.py": PKG / "common.py",
         "tests/parity/toolcalling/__init__.py": PKG / "toolcalling" / "__init__.py",

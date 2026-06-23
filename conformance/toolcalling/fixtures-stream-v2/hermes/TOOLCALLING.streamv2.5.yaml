@@ -1,14 +1,23 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
 family: hermes
-model_label: Hermes-3 / Llama variants
+model_label: 'Hermes-3 / Llama variants'
 mode: streamv2
 captured_with:
-  vllm_python: 0.22.0
-  sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: 'v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75'
+  vllm_python: '0.23.0'
+  sglang_python: '0.5.12.post1'
 cases:
   TOOLCALLING.streamv2.5.a:
-    description: Missing </tool_call> end marker
-    ref: derived from TOOLCALLING.batch.5.a
+    description: 'Missing </tool_call> end marker'
+    ref: 'derived from TOOLCALLING.batch.5.a'
     tools:
     - name: get_weather
       parameters:
@@ -17,10 +26,8 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
-        Hermes tool call'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: incomplete Hermes tool call'
     chunks:
     - delta_text: '<tool_call>{"name":'
       expected:
@@ -29,28 +36,23 @@ cases:
     - delta_text: ' "get_weather",'
       expected:
         vllm_python:
-        - index: 0
-          id: true
-          name: get_weather
+        - {index: 0, id: true, name: 'get_weather'}
         sglang_python:
-        - index: 0
-          name: get_weather
+        - {index: 0, name: 'get_weather'}
     - delta_text: ' "arguments": {"location": "NYC"}}'
       expected:
         vllm_python:
-        - index: 0
-          arguments: '{"location": "NYC"}'
+        - {index: 0, arguments: '{"location": "NYC"}'}
         sglang_python:
-        - index: 0
-          arguments: '{"location": "NYC"}'
+        - {index: 0, arguments: '{"location": "NYC"}'}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
         vllm_python: []
         sglang_python: []
   TOOLCALLING.streamv2.5.b:
-    description: Closing </tool_call> without matching <tool_call> open
-    ref: derived from TOOLCALLING.batch.5.b
+    description: 'Closing </tool_call> without matching <tool_call> open'
+    ref: 'derived from TOOLCALLING.batch.5.b'
     tools:
     - name: get_weather
       parameters:
@@ -59,45 +61,44 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '{"name": "get_weather",'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
+        vllm_rust: '{"name": "get_weather",'
         vllm_python: '{"name": "get_weather",'
         sglang_python: '{"name": "get_weather",'
-        vllm_rust: '{"name": "get_weather",'
     - delta_text: ' "arguments":'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
+        vllm_rust: ' "arguments":'
         vllm_python: ' "arguments":'
         sglang_python: ' "arguments":'
-        vllm_rust: ' "arguments":'
     - delta_text: ' {"location": "NYC"}}</tool_call>'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
+        vllm_rust: ' {"location": "NYC"}}</tool_call>'
         vllm_python: ' {"location": "NYC"}}</tool_call>'
         sglang_python: ' {"location": "NYC"}}'
-        vllm_rust: ' {"location": "NYC"}}</tool_call>'
     - delta_text: ''
       finish_reason: stop
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
   TOOLCALLING.streamv2.5.c:
-    description: Truncation mid-arguments JSON
-    ref: derived from TOOLCALLING.batch.5.c
+    description: 'Truncation mid-arguments JSON'
+    ref: 'derived from TOOLCALLING.batch.5.c'
     tools:
     - name: get_weather
       parameters:
@@ -106,10 +107,8 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
-        Hermes tool call'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: incomplete Hermes tool call'
     chunks:
     - delta_text: '<tool_call>{"name":'
       expected:
@@ -118,17 +117,13 @@ cases:
     - delta_text: ' "get_weather",'
       expected:
         vllm_python:
-        - index: 0
-          id: true
-          name: get_weather
+        - {index: 0, id: true, name: 'get_weather'}
         sglang_python:
-        - index: 0
-          name: get_weather
+        - {index: 0, name: 'get_weather'}
     - delta_text: ' "arguments": {"loc'
       expected:
         vllm_python:
-        - index: 0
-          arguments: '{"loc'
+        - {index: 0, arguments: '{"loc'}
         sglang_python: []
     - delta_text: ''
       finish_reason: stop
@@ -136,8 +131,8 @@ cases:
         vllm_python: []
         sglang_python: []
   TOOLCALLING.streamv2.5.d:
-    description: Multi-call, last call missing only end marker (body complete)
-    ref: derived from TOOLCALLING.batch.5.d
+    description: 'Multi-call, last call missing only end marker (body complete)'
+    ref: 'derived from TOOLCALLING.batch.5.d'
     tools:
     - name: get_weather
       parameters:
@@ -146,18 +141,16 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
-        Hermes tool call'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: incomplete Hermes tool call'
     chunks:
-    - delta_text: I'll start
+    - delta_text: 'I''ll start'
       expected:
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: I'll start
-        sglang_python: I'll start
+        vllm_python: 'I''ll start'
+        sglang_python: 'I''ll start'
     - delta_text: ' by'
       expected:
         vllm_python: []
@@ -217,65 +210,52 @@ cases:
     - delta_text: ' "get_weather",'
       expected:
         vllm_python:
-        - index: 0
-          id: true
-          name: get_weather
+        - {index: 0, id: true, name: 'get_weather'}
         sglang_python:
-        - index: 0
-          name: get_weather
+        - {index: 0, name: 'get_weather'}
     - delta_text: ' "arguments": {"location":'
       expected:
         vllm_python:
-        - index: 0
-          arguments: '{"location":'
+        - {index: 0, arguments: '{"location":'}
         sglang_python: []
     - delta_text: ' "Boston"}}</tool_call>'
       expected:
         vllm_python:
-        - index: 0
-          arguments: ' "Boston"}'
+        - {index: 0, arguments: ' "Boston"}'}
         sglang_python:
-        - index: 0
-          arguments: '{"location": "Boston"}'
+        - {index: 0, arguments: '{"location": "Boston"}'}
     - delta_text: '<tool_call>{"name": "get_weather",'
       expected:
         vllm_python:
-        - index: 1
-          id: true
-          name: get_weather
+        - {index: 1, id: true, name: 'get_weather'}
         sglang_python: []
       normal_text:
-        sglang_python: </tool_call>
+        sglang_python: '</tool_call>'
     - delta_text: ' "arguments": {"location":'
       expected:
         vllm_python:
-        - index: 1
-          arguments: '{"location":'
+        - {index: 1, arguments: '{"location":'}
         sglang_python:
-        - index: 1
-          name: get_weather
+        - {index: 1, name: 'get_weather'}
     - delta_text: ' "New'
       expected:
         vllm_python:
-        - index: 1
-          arguments: ' "New'
+        - {index: 1, arguments: ' "New'}
         sglang_python: []
     - delta_text: ' York"}}'
       expected:
         vllm_python:
-        - index: 1
-          arguments: ' York"}'
+        - {index: 1, arguments: ' York"}'}
         sglang_python:
-        - index: 1
-          arguments: '{"location": "New York"}'
+        - {index: 1, arguments: '{"location": "New York"}'}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
         vllm_python: []
         sglang_python: []
   TOOLCALLING.streamv2.5.e:
-    description: Multi-call, last call truncated mid-arg-value
-    ref: derived from TOOLCALLING.batch.5.e
+    description: 'Multi-call, last call truncated mid-arg-value'
+    ref: 'derived from TOOLCALLING.batch.5.e'
     tools:
     - name: get_weather
       parameters:
@@ -284,18 +264,16 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
-        Hermes tool call'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: incomplete Hermes tool call'
     chunks:
-    - delta_text: I'll start
+    - delta_text: 'I''ll start'
       expected:
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: I'll start
-        sglang_python: I'll start
+        vllm_python: 'I''ll start'
+        sglang_python: 'I''ll start'
     - delta_text: ' by'
       expected:
         vllm_python: []
@@ -355,59 +333,46 @@ cases:
     - delta_text: ' "get_weather",'
       expected:
         vllm_python:
-        - index: 0
-          id: true
-          name: get_weather
+        - {index: 0, id: true, name: 'get_weather'}
         sglang_python:
-        - index: 0
-          name: get_weather
+        - {index: 0, name: 'get_weather'}
     - delta_text: ' "arguments": {"location":'
       expected:
         vllm_python:
-        - index: 0
-          arguments: '{"location":'
+        - {index: 0, arguments: '{"location":'}
         sglang_python: []
     - delta_text: ' "Boston"}}</tool_call>'
       expected:
         vllm_python:
-        - index: 0
-          arguments: ' "Boston"}'
+        - {index: 0, arguments: ' "Boston"}'}
         sglang_python:
-        - index: 0
-          arguments: '{"location": "Boston"}'
+        - {index: 0, arguments: '{"location": "Boston"}'}
     - delta_text: '<tool_call>{"name": "get_weather",'
       expected:
         vllm_python:
-        - index: 1
-          id: true
-          name: get_weather
+        - {index: 1, id: true, name: 'get_weather'}
         sglang_python: []
       normal_text:
-        sglang_python: </tool_call>
+        sglang_python: '</tool_call>'
     - delta_text: ' "arguments": {"location":'
       expected:
         vllm_python:
-        - index: 1
-          arguments: '{"location":'
+        - {index: 1, arguments: '{"location":'}
         sglang_python:
-        - index: 1
-          name: get_weather
+        - {index: 1, name: 'get_weather'}
     - delta_text: ' "New'
       expected:
         vllm_python:
-        - index: 1
-          arguments: ' "New'
+        - {index: 1, arguments: ' "New'}
         sglang_python: []
     - delta_text: ' York'
       expected:
         vllm_python:
-        - index: 1
-          arguments: ' York'
+        - {index: 1, arguments: ' York'}
         sglang_python:
-        - index: 1
-          arguments: '{"location": "New'
+        - {index: 1, arguments: '{"location": "New'}
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
         vllm_python: []
         sglang_python: []

@@ -1,14 +1,23 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
 family: llama3_json
-model_label: Llama 3 (JSON fmt)
+model_label: 'Llama 3 (JSON fmt)'
 mode: streamv2
 captured_with:
-  vllm_python: 0.22.0
-  sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: 'v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75'
+  vllm_python: '0.23.0'
+  sglang_python: '0.5.12.post1'
 cases:
   TOOLCALLING.streamv2.30.a:
-    description: Llama JSON call separator `;` inside one argument string value
-    ref: derived from TOOLCALLING.batch.30.a
+    description: 'Llama JSON call separator `;` inside one argument string value'
+    ref: 'derived from TOOLCALLING.batch.30.a'
     tools:
     - name: run_query
       parameters:
@@ -17,69 +26,59 @@ cases:
           sql:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '<|python_tag|>{"name":'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
         vllm_rust: '<|python_tag|>{"name":'
     - delta_text: ' "run_query",'
       expected:
-        vllm_python:
-        - index: 0
-          id: true
-          name: run_query
-        sglang_python:
-        - index: 0
-          name: run_query
         vllm_rust: []
+        vllm_python:
+        - {index: 0, id: true, name: 'run_query'}
+        sglang_python:
+        - {index: 0, name: 'run_query'}
       normal_text:
         vllm_rust: ' "run_query",'
     - delta_text: ' "arguments": {"sql": "SELECT'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
         vllm_rust: ' "arguments": {"sql": "SELECT'
     - delta_text: ' a; SELECT'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: '{"sql": "SELECT'
-        sglang_python:
-        - index: 0
-          arguments: '{"sql": "SELECT'
         vllm_rust: []
+        vllm_python:
+        - {index: 0, arguments: '{"sql": "SELECT'}
+        sglang_python:
+        - {index: 0, arguments: '{"sql": "SELECT'}
       normal_text:
         vllm_rust: ' a; SELECT'
     - delta_text: ' b"}}'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' a; SELECT b"}'
-        sglang_python:
-        - index: 0
-          arguments: ' a; SELECT b"}'
         vllm_rust: []
+        vllm_python:
+        - {index: 0, arguments: ' a; SELECT b"}'}
+        sglang_python:
+        - {index: 0, arguments: ' a; SELECT b"}'}
       normal_text:
         vllm_rust: ' b"}}'
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ''
-        sglang_python: []
         vllm_rust: []
+        vllm_python:
+        - {index: 0, arguments: ''}
+        sglang_python: []
   TOOLCALLING.streamv2.30.b:
-    description: JSON structural delimiters `}` and `]` inside one argument string
-      value
-    ref: derived from TOOLCALLING.batch.30.b
+    description: 'JSON structural delimiters `}` and `]` inside one argument string value'
+    ref: 'derived from TOOLCALLING.batch.30.b'
     tools:
     - name: run_query
       parameters:
@@ -88,112 +87,95 @@ cases:
           sql:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '<|python_tag|>{"name":'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
         vllm_rust: '<|python_tag|>{"name":'
     - delta_text: ' "run_query",'
       expected:
-        vllm_python:
-        - index: 0
-          id: true
-          name: run_query
-        sglang_python:
-        - index: 0
-          name: run_query
         vllm_rust: []
+        vllm_python:
+        - {index: 0, id: true, name: 'run_query'}
+        sglang_python:
+        - {index: 0, name: 'run_query'}
       normal_text:
         vllm_rust: ' "run_query",'
     - delta_text: ' "arguments": {"sql": "SELECT'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
         vllm_rust: ' "arguments": {"sql": "SELECT'
     - delta_text: ' value WHERE'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: '{"sql": "SELECT'
-        sglang_python:
-        - index: 0
-          arguments: '{"sql": "SELECT'
         vllm_rust: []
+        vllm_python:
+        - {index: 0, arguments: '{"sql": "SELECT'}
+        sglang_python:
+        - {index: 0, arguments: '{"sql": "SELECT'}
       normal_text:
         vllm_rust: ' value WHERE'
     - delta_text: ' note'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' value WHERE'
-        sglang_python:
-        - index: 0
-          arguments: ' value WHERE'
         vllm_rust: []
+        vllm_python:
+        - {index: 0, arguments: ' value WHERE'}
+        sglang_python:
+        - {index: 0, arguments: ' value WHERE'}
       normal_text:
         vllm_rust: ' note'
     - delta_text: ' has brace'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' note'
-        sglang_python:
-        - index: 0
-          arguments: ' note'
         vllm_rust: []
+        vllm_python:
+        - {index: 0, arguments: ' note'}
+        sglang_python:
+        - {index: 0, arguments: ' note'}
       normal_text:
         vllm_rust: ' has brace'
     - delta_text: ' } and bracket'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' has brace'
-        sglang_python:
-        - index: 0
-          arguments: ' has brace'
         vllm_rust: []
+        vllm_python:
+        - {index: 0, arguments: ' has brace'}
+        sglang_python:
+        - {index: 0, arguments: ' has brace'}
       normal_text:
         vllm_rust: ' } and bracket'
     - delta_text: ' ]'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' } and bracket'
-        sglang_python:
-        - index: 0
-          arguments: ' } and bracket'
         vllm_rust: []
+        vllm_python:
+        - {index: 0, arguments: ' } and bracket'}
+        sglang_python:
+        - {index: 0, arguments: ' } and bracket'}
       normal_text:
         vllm_rust: ' ]'
     - delta_text: '"}}'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' ]"}'
-        sglang_python:
-        - index: 0
-          arguments: ' ]"}'
         vllm_rust: []
+        vllm_python:
+        - {index: 0, arguments: ' ]"}'}
+        sglang_python:
+        - {index: 0, arguments: ' ]"}'}
       normal_text:
         vllm_rust: '"}}'
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ''
-        sglang_python: []
         vllm_rust: []
+        vllm_python:
+        - {index: 0, arguments: ''}
+        sglang_python: []
   TOOLCALLING.streamv2.30.c:
-    description: Start marker `<|python_tag|>` text inside one argument string value
-    ref: derived from TOOLCALLING.batch.30.c
+    description: 'Start marker `<|python_tag|>` text inside one argument string value'
+    ref: 'derived from TOOLCALLING.batch.30.c'
     tools:
     - name: run_query
       parameters:
@@ -202,73 +184,62 @@ cases:
           sql:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '<|python_tag|>{"name":'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
         vllm_rust: '<|python_tag|>{"name":'
     - delta_text: ' "run_query",'
       expected:
-        vllm_python:
-        - index: 0
-          id: true
-          name: run_query
-        sglang_python:
-        - index: 0
-          name: run_query
         vllm_rust: []
+        vllm_python:
+        - {index: 0, id: true, name: 'run_query'}
+        sglang_python:
+        - {index: 0, name: 'run_query'}
       normal_text:
         vllm_rust: ' "run_query",'
     - delta_text: ' "arguments": {"sql": "literal'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
         vllm_rust: ' "arguments": {"sql": "literal'
     - delta_text: ' <|python_tag marker|>'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: '{"sql": "literal'
-        sglang_python:
-        - index: 0
-          arguments: '{"sql": "literal'
         vllm_rust: []
+        vllm_python:
+        - {index: 0, arguments: '{"sql": "literal'}
+        sglang_python:
+        - {index: 0, arguments: '{"sql": "literal'}
       normal_text:
         vllm_rust: ' <|python_tag marker|>'
     - delta_text: '{name:x}'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' <|python_tag marker|>'
-        sglang_python:
-        - index: 0
-          arguments: ' <|python_tag marker|>'
         vllm_rust: []
+        vllm_python:
+        - {index: 0, arguments: ' <|python_tag marker|>'}
+        sglang_python:
+        - {index: 0, arguments: ' <|python_tag marker|>'}
       normal_text:
         vllm_rust: '{name:x}'
     - delta_text: ' stays text"}}'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: '{name:x} stays text"}'
-        sglang_python:
-        - index: 0
-          arguments: '{name:x} stays text"}'
         vllm_rust: []
+        vllm_python:
+        - {index: 0, arguments: '{name:x} stays text"}'}
+        sglang_python:
+        - {index: 0, arguments: '{name:x} stays text"}'}
       normal_text:
         vllm_rust: ' stays text"}}'
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ''
-        sglang_python: []
         vllm_rust: []
+        vllm_python:
+        - {index: 0, arguments: ''}
+        sglang_python: []

@@ -1,15 +1,23 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
 family: kimi_k2
-model_label: Kimi K2.6
+model_label: 'Kimi K2.6'
 mode: streamv2
 captured_with:
-  vllm_python: 0.22.0
-  sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: 'v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75'
+  vllm_python: '0.23.0'
+  sglang_python: '0.5.12.post1'
 cases:
   TOOLCALLING.streamv2.50:
-    description: Complete single tool call with a grammar token split across chunk
-      boundaries
-    ref: derived from TOOLCALLING.batch.1
+    description: 'Complete single tool call with a grammar token split across chunk boundaries'
+    ref: 'derived from TOOLCALLING.batch.1'
     tools:
     - name: get_weather
       parameters:
@@ -18,165 +26,157 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
-    - delta_text: <|
+    - delta_text: '<|'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
-        sglang_python: <|
-    - delta_text: too
+        sglang_python: '<|'
+    - delta_text: 'too'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
-        sglang_python: too
-    - delta_text: l_cal
+        sglang_python: 'too'
+    - delta_text: 'l_cal'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
-        sglang_python: l_cal
-    - delta_text: ls_section_
+        sglang_python: 'l_cal'
+    - delta_text: 'ls_section_'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
-        sglang_python: ls_section_
-    - delta_text: begin|><|tool_call_
+        sglang_python: 'ls_section_'
+    - delta_text: 'begin|><|tool_call_'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
-        sglang_python: begin|><|tool_call_
-    - delta_text: be
+        sglang_python: 'begin|><|tool_call_'
+    - delta_text: 'be'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
-        sglang_python: be
-    - delta_text: gin
+        sglang_python: 'be'
+    - delta_text: 'gin'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
-        sglang_python: gin
+        sglang_python: 'gin'
     - delta_text: '|>fun'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
         sglang_python: '|>fun'
-    - delta_text: ctions.get_
+    - delta_text: 'ctions.get_'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
-        sglang_python: ctions.get_
-    - delta_text: weather:0<|tool_cal
+        sglang_python: 'ctions.get_'
+    - delta_text: 'weather:0<|tool_cal'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
-        sglang_python: weather:0<|tool_cal
-    - delta_text: l_
+        sglang_python: 'weather:0<|tool_cal'
+    - delta_text: 'l_'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
-        sglang_python: l_
-    - delta_text: arg
+        sglang_python: 'l_'
+    - delta_text: 'arg'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
-        sglang_python: arg
-    - delta_text: ument
+        sglang_python: 'arg'
+    - delta_text: 'ument'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
-        sglang_python: ument
-    - delta_text: _begin|>{"l
+        sglang_python: 'ument'
+    - delta_text: '_begin|>{"l'
       expected:
-        vllm_python:
-        - index: 0
-          id: true
-          name: get_weather
-        - index: 0
-          arguments: '{"l'
-        sglang_python: []
         vllm_rust:
-        - index: 0
-          name: get_weather
-        - arguments: '{"l'
-          index: 0
-      normal_text:
-        sglang_python: _begin|>{"l
-    - delta_text: ocation":"NYC"}<|to
-      expected:
+        - {index: 0, name: 'get_weather'}
+        - {index: 0, arguments: '{"l'}
         vllm_python:
-        - index: 0
-          arguments: ocation":"NYC"}
+        - {index: 0, id: true, name: 'get_weather'}
+        - {index: 0, arguments: '{"l'}
         sglang_python: []
+      normal_text:
+        sglang_python: '_begin|>{"l'
+    - delta_text: 'ocation":"NYC"}<|to'
+      expected:
         vllm_rust:
-        - arguments: ocation":"NYC"}
-          index: 0
+        - {index: 0, arguments: 'ocation":"NYC"}'}
+        vllm_python:
+        - {index: 0, arguments: 'ocation":"NYC"}'}
+        sglang_python: []
       normal_text:
-        sglang_python: ocation":"NYC"}<|to
-    - delta_text: ol
+        sglang_python: 'ocation":"NYC"}<|to'
+    - delta_text: 'ol'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
-        sglang_python: ol
-    - delta_text: _ca
+        sglang_python: 'ol'
+    - delta_text: '_ca'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
-        sglang_python: _ca
-    - delta_text: ll_en
+        sglang_python: '_ca'
+    - delta_text: 'll_en'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
-        sglang_python: ll_en
-    - delta_text: d|><|tool_c
+        sglang_python: 'll_en'
+    - delta_text: 'd|><|tool_c'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
-        sglang_python: d|><|tool_c
-    - delta_text: alls_section_end|>
+        sglang_python: 'd|><|tool_c'
+    - delta_text: 'alls_section_end|>'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
-        sglang_python: alls_section_end|>
+        sglang_python: 'alls_section_end|>'
     - delta_text: ''
       finish_reason: tool_calls
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []

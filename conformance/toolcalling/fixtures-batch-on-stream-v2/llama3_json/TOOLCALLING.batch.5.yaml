@@ -1,32 +1,38 @@
 family: llama3_json
 mode: batch-on-stream
 captured_with:
-  vllm_python: 0.22.0
+  vllm_python: 0.23.0
   sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+  dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.batch.5.a:
-    vllm_python:
-      calls: []
-    sglang_python:
-      calls:
-      - name: get_weather
-        arguments: {}
     vllm_rust:
       calls: []
       normal_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location":
         "NYC"}'
-  TOOLCALLING.batch.5.c:
     vllm_python:
       calls: []
     sglang_python:
       calls:
       - name: get_weather
         arguments: {}
+  TOOLCALLING.batch.5.c:
     vllm_rust:
       calls: []
       normal_text: '<|python_tag|>{"name": "get_weather", "arguments": {"loc'
+    vllm_python:
+      calls: []
+    sglang_python:
+      calls:
+      - name: get_weather
+        arguments: {}
   TOOLCALLING.batch.5.d:
+    vllm_rust:
+      calls: []
+      normal_text: 'I''ll start by fetching the weather for both Boston and New York
+        at the same time!<|python_tag|>{"name": "get_weather", "arguments": {"location":
+        "Boston"}};{"name": "get_weather", "arguments": {"location": "New York"}'
     vllm_python:
       calls: []
       normal_text: 'I''ll start by fetching the weather for both Boston and New York
@@ -36,12 +42,12 @@ cases:
       calls:
       - name: get_weather
         arguments: {}
-    vllm_rust:
-      calls: []
-      normal_text: 'I''ll start by fetching the weather for both Boston and New York
-        at the same time!<|python_tag|>{"name": "get_weather", "arguments": {"location":
-        "Boston"}};{"name": "get_weather", "arguments": {"location": "New York"}'
   TOOLCALLING.batch.5.e:
+    vllm_rust:
+      calls: []
+      normal_text: 'I''ll start by fetching the weather for both Boston and New York
+        at the same time!<|python_tag|>{"name": "get_weather", "arguments": {"location":
+        "Boston"}};{"name": "get_weather", "arguments": {"location": "New York'
     vllm_python:
       calls: []
       normal_text: 'I''ll start by fetching the weather for both Boston and New York
@@ -51,15 +57,10 @@ cases:
       calls:
       - name: get_weather
         arguments: {}
-    vllm_rust:
-      calls: []
-      normal_text: 'I''ll start by fetching the weather for both Boston and New York
-        at the same time!<|python_tag|>{"name": "get_weather", "arguments": {"location":
-        "Boston"}};{"name": "get_weather", "arguments": {"location": "New York'
   TOOLCALLING.batch.5.b:
+    vllm_rust:
+      unavailable: No batch model_text for this case.
     vllm_python:
       unavailable: No batch model_text for this case.
     sglang_python:
-      unavailable: No batch model_text for this case.
-    vllm_rust:
       unavailable: No batch model_text for this case.

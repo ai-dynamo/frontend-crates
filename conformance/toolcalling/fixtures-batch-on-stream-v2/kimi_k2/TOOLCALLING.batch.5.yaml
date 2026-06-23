@@ -1,11 +1,18 @@
 family: kimi_k2
 mode: batch-on-stream
 captured_with:
-  vllm_python: 0.22.0
+  vllm_python: 0.23.0
   sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+  dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.batch.5.a:
+    vllm_rust:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
     vllm_python:
       calls:
       - name: get_weather
@@ -15,13 +22,10 @@ cases:
       calls:
       - name: get_weather
         arguments: {}
-    vllm_rust:
-      calls:
-      - arguments:
-          location: NYC
-        name: get_weather
-      normal_text: ''
   TOOLCALLING.batch.5.b:
+    vllm_rust:
+      calls: []
+      normal_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
     vllm_python:
       calls: []
       normal_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
@@ -29,10 +33,9 @@ cases:
       calls:
       - name: get_weather
         arguments: {}
-    vllm_rust:
-      calls: []
-      normal_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
   TOOLCALLING.batch.5.c:
+    vllm_rust:
+      error: 'tool parser parsing failed: incomplete Kimi K2 tool call'
     vllm_python:
       calls:
       - name: get_weather
@@ -41,10 +44,9 @@ cases:
       calls:
       - name: get_weather
         arguments: {}
-    vllm_rust:
-      unavailable: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
-        Kimi K2 tool call'
   TOOLCALLING.batch.5.d:
+    vllm_rust:
+      error: 'tool parser parsing failed: incomplete Kimi K2 tool call'
     vllm_python:
       calls:
       - name: get_weather
@@ -59,10 +61,9 @@ cases:
       calls:
       - name: get_weather
         arguments: {}
-    vllm_rust:
-      unavailable: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
-        Kimi K2 tool call'
   TOOLCALLING.batch.5.e:
+    vllm_rust:
+      error: 'tool parser parsing failed: incomplete Kimi K2 tool call'
     vllm_python:
       calls:
       - name: get_weather
@@ -76,10 +77,13 @@ cases:
       calls:
       - name: get_weather
         arguments: {}
-    vllm_rust:
-      unavailable: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
-        Kimi K2 tool call'
   TOOLCALLING.batch.5.f:
+    vllm_rust:
+      calls:
+      - name: get_weather
+        arguments:
+          location: Boston
+      normal_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
     vllm_python:
       calls:
       - name: get_weather
@@ -90,13 +94,10 @@ cases:
       calls:
       - name: get_weather
         arguments: {}
-    vllm_rust:
-      calls:
-      - arguments:
-          location: Boston
-        name: get_weather
-      normal_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
   TOOLCALLING.batch.5.g:
+    vllm_rust:
+      calls: []
+      normal_text: I will check that. <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
     vllm_python:
       calls: []
       normal_text: I will check that. <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
@@ -104,6 +105,3 @@ cases:
       calls:
       - name: get_weather
         arguments: {}
-    vllm_rust:
-      calls: []
-      normal_text: I will check that. <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>

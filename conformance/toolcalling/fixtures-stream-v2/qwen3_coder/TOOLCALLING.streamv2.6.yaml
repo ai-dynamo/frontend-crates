@@ -12,8 +12,8 @@ model_label: 'Qwen 3 Coder'
 mode: streamv2
 captured_with:
   dynamo_rust: 'Dynamo parser v2'
-  vllm_rust: 'v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af'
-  vllm_python: '0.22.0'
+  vllm_rust: 'v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75'
+  vllm_python: '0.23.0'
   sglang_python: '0.5.12.post1'
 cases:
   TOOLCALLING.streamv2.6.a:

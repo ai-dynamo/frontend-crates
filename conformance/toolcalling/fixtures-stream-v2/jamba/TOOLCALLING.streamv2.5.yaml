@@ -11,7 +11,7 @@ family: jamba
 model_label: 'AI21 Jamba'
 mode: streamv2
 captured_with:
-  vllm_python: '0.22.0'
+  vllm_python: '0.23.0'
 cases:
   TOOLCALLING.streamv2.5.a:
     description: 'Missing </tool_calls> end marker'
@@ -24,8 +24,9 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang_python: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''jamba''.'
+      sglang_python: 'No SGLang Python parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
@@ -38,7 +39,7 @@ cases:
         vllm_python:
         - {index: 0, id: true, name: 'get_weather'}
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
         vllm_python:
         - {index: 0, arguments: ''}
@@ -53,8 +54,9 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang_python: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''jamba''.'
+      sglang_python: 'No SGLang Python parser for family ''jamba''.'
     chunks:
     - delta_text: '[{"name": "get_weather",'
       expected:
@@ -86,8 +88,9 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang_python: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''jamba''.'
+      sglang_python: 'No SGLang Python parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
@@ -114,8 +117,9 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang_python: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''jamba''.'
+      sglang_python: 'No SGLang Python parser for family ''jamba''.'
     chunks:
     - delta_text: 'I''ll start'
       expected:
@@ -182,7 +186,7 @@ cases:
       expected:
         vllm_python: []
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
         vllm_python:
         - {index: 1, arguments: ''}
@@ -197,8 +201,9 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang_python: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''jamba''.'
+      sglang_python: 'No SGLang Python parser for family ''jamba''.'
     chunks:
     - delta_text: 'I''ll start'
       expected:
@@ -266,7 +271,7 @@ cases:
         vllm_python:
         - {index: 1, arguments: '{"location": "New York'}
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
         vllm_python:
         - {index: 1, arguments: ''}

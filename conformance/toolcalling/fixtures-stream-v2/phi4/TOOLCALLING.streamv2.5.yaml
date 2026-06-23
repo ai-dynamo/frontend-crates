@@ -11,7 +11,7 @@ family: phi4
 model_label: 'Phi-4'
 mode: streamv2
 captured_with:
-  vllm_python: '0.22.0'
+  vllm_python: '0.23.0'
 cases:
   TOOLCALLING.streamv2.5.a:
     description: 'No explicit end (truncation)'
@@ -24,8 +24,9 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang_python: 'No SGLang parser for family ''phi4''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''phi4''.'
+      sglang_python: 'No SGLang Python parser for family ''phi4''.'
     chunks:
     - delta_text: 'functools[{"name": "get_weather",'
       expected:
@@ -51,8 +52,9 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang_python: 'No SGLang parser for family ''phi4''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''phi4''.'
+      sglang_python: 'No SGLang Python parser for family ''phi4''.'
     chunks:
     - delta_text: 'functools{"name": "get_weather",'
       expected:
@@ -64,7 +66,7 @@ cases:
       expected:
         vllm_python: []
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
         vllm_python: []
   TOOLCALLING.streamv2.5.c:
@@ -78,8 +80,9 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang_python: 'No SGLang parser for family ''phi4''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''phi4''.'
+      sglang_python: 'No SGLang Python parser for family ''phi4''.'
     chunks:
     - delta_text: 'functools[{"name": "get_weather",'
       expected:
@@ -105,8 +108,9 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang_python: 'No SGLang parser for family ''phi4''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''phi4''.'
+      sglang_python: 'No SGLang Python parser for family ''phi4''.'
     chunks:
     - delta_text: 'I''ll start'
       expected:
@@ -165,8 +169,9 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang_python: 'No SGLang parser for family ''phi4''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''phi4''.'
+      sglang_python: 'No SGLang Python parser for family ''phi4''.'
     chunks:
     - delta_text: 'I''ll start'
       expected:

@@ -1,43 +1,44 @@
 family: mistral
 mode: batch-on-stream
 captured_with:
-  vllm_python: 0.22.0
+  vllm_python: 0.23.0
   sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+  dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.batch.2.a:
-    vllm_python:
-      calls: []
-    sglang_python:
-      calls: []
     vllm_rust:
       calls: []
       normal_text: '[TOOL_CALLS][{"name": "get_weather", "arguments": {"location":
         "NYC"}}, {"name": "get_time", "arguments": {"timezone": "EST"}}][/TOOL_CALLS]'
-  TOOLCALLING.batch.2.c:
     vllm_python:
       calls: []
     sglang_python:
       calls: []
-      normal_text: 'Both: '
+  TOOLCALLING.batch.2.c:
     vllm_rust:
       calls: []
       normal_text: 'Both: [TOOL_CALLS][{"name": "get_weather", "arguments": {"location":
         "NYC"}}, {"name": "get_time", "arguments": {"timezone": "EST"}}][/TOOL_CALLS]
         Done.'
-  TOOLCALLING.batch.2.d:
     vllm_python:
       calls: []
     sglang_python:
       calls: []
+      normal_text: 'Both: '
+  TOOLCALLING.batch.2.d:
     vllm_rust:
       calls: []
       normal_text: '[TOOL_CALLS][{"name": "get_weather", "arguments": {"location":
         "NYC"}}, {"name": "get_weather", "arguments": {"location": "LA"}}][/TOOL_CALLS]'
+    vllm_python:
+      calls: []
+    sglang_python:
+      calls: []
   TOOLCALLING.batch.2.b:
+    vllm_rust:
+      unavailable: No batch model_text for this case.
     vllm_python:
       unavailable: No batch model_text for this case.
     sglang_python:
-      unavailable: No batch model_text for this case.
-    vllm_rust:
       unavailable: No batch model_text for this case.

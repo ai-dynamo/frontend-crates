@@ -1,8 +1,9 @@
 family: harmony
 mode: batch-on-stream
 captured_with:
-  vllm_python: 0.22.0
+  vllm_python: 0.23.0
   sglang_python: 0.5.12.post1
+  vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
   dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.batch.7.a:
@@ -13,6 +14,9 @@ cases:
           destination: Paris
           passengers: 2
           first_class: true
+      normal_text: ''
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls:
       - name: book_flight
@@ -34,6 +38,9 @@ cases:
       - name: get_weather
         arguments:
           location: Tōkyō "central"
+      normal_text: ''
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls:
       - name: get_weather
@@ -51,6 +58,9 @@ cases:
       - name: set_temperature
         arguments:
           celsius: '20'
+      normal_text: ''
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls:
       - name: set_temperature
@@ -73,6 +83,9 @@ cases:
           - 3
           config:
             nested: true
+      normal_text: ''
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls:
       - name: process_data
@@ -115,6 +128,9 @@ cases:
               enabled: true
               retry: null
             empty: {}
+      normal_text: ''
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls:
       - name: process_data
@@ -162,6 +178,9 @@ cases:
       - name: set_limit
         arguments:
           count: 9007199254740993
+      normal_text: ''
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls:
       - name: set_limit

@@ -103,13 +103,13 @@ conformance/utils/capture.sh dynamo-stream \
 conformance/utils/capture.sh stream \
   --vllm-container vllm-localdev \
   --sglang-container sglang-localdev \
-  --vllm-rust-source ~/dynamo/vllm-0.22.0
+  --vllm-rust-source ~/dynamo/vllm-0.23.0
 
 # Example: capture all Dynamo v2 Rust, vLLM Python, vLLM Rust, and SGLang Python batch-on-stream behavior, then refresh `fixtures-batch-on-stream-v2/`.
 conformance/utils/capture.sh batch-on-stream \
   --vllm-container vllm-localdev \
   --sglang-container sglang-localdev \
-  --vllm-rust-source ~/dynamo/vllm-0.22.0 \
+  --vllm-rust-source ~/dynamo/vllm-0.23.0 \
   --capture-dynamo-rust-json /tmp/dynamo_batch_on_stream.json
 
 # Example: capture one Dynamo v2 Rust batch-on-stream JSON file without refreshing fixture YAML.
@@ -128,16 +128,16 @@ Use this before capture commands that refresh `expected.vllm_rust`.
 
 ```bash
 # Downloads the vLLM source tree used for current Rust captures.
-git clone https://github.com/vllm-project/vllm.git ~/dynamo/vllm-0.22.0
+git clone https://github.com/vllm-project/vllm.git ~/dynamo/vllm-0.23.0
 
 # Checks out the pinned vLLM version.
-git -C ~/dynamo/vllm-0.22.0 checkout v0.22.0
+git -C ~/dynamo/vllm-0.23.0 checkout v0.23.0
 
 # Confirms the Rust tool-parser crate exists.
-test -f ~/dynamo/vllm-0.22.0/rust/src/tool-parser/Cargo.toml
+test -f ~/dynamo/vllm-0.23.0/rust/src/tool-parser/Cargo.toml
 
 # Makes capture scripts pick up this checkout.
-export VLLM_RUST_SOURCE=~/dynamo/vllm-0.22.0
+export VLLM_RUST_SOURCE=~/dynamo/vllm-0.23.0
 
 # Shows the source version that will be stamped into YAML.
 git -C "$VLLM_RUST_SOURCE" describe --tags --exact-match
@@ -172,7 +172,7 @@ The matrix has four parser identities:
 | Selector | Marker form |
 |---|---|
 | Dynamo Rust | `D_rs` (Dynamo Rust stream parser), `D_rb` (Dynamo Rust batch parser). |
-| vLLM Rust | `V_rs` (vLLM Rust stream parser). There is no `V_rb`; vLLM Rust batch-style complete parsing delegates through streaming `push(full_output)` and `finish()` in vLLM Rust 0.22.0. |
+| vLLM Rust | `V_rs` (vLLM Rust stream parser). There is no `V_rb`; vLLM Rust batch-style complete parsing delegates through streaming `parse_into(full_output, ...)` and `finish()` in vLLM Rust 0.23.0. |
 | vLLM Python | `V_ps` (vLLM Python stream parser), `V_pb` (vLLM Python batch parser). |
 | SGLang | `S_rs` (SGLang stream parser), `S_rb` (SGLang batch parser). |
 
@@ -202,6 +202,6 @@ The implementation lives under `src/` — don't run these directly unless you're
 
 ## Notes
 
-Peer parser versions for vLLM Python and SGLang are pinned in `src/pyproject.stub.toml`; the table currently reports vLLM Python `0.22.0` and SGLang `0.5.12.post1`. vLLM Rust is captured from a local source checkout and recorded in YAML under `captured_with.vllm_rust`.
+Peer parser versions for vLLM Python and SGLang are pinned in `src/pyproject.stub.toml` — currently vLLM Python `0.23.0` and SGLang `0.5.12.post1`. This stub is the single source of truth for both the v2 `captured_with` stamps and the v1 batch fixtures (`expected.vllm` / `expected.sglang`), which carry no per-file version stamp; `check.sh vllm|sglang --container` validates the live engine against the committed v1 fixtures and reports it as `pinned (fixtures captured against)`. As of the 0.23.0 bump the live vLLM `0.23.0` and SGLang `0.5.12.post1` batch parsers match all committed v1 cases (519 vLLM, 448 SGLang). vLLM Rust is captured from a local source checkout and recorded in YAML under `captured_with.vllm_rust`.
 
 The scripts build an ephemeral `.stage/` tree because the vendored Dynamo Python table code assumes Dynamo's repo layout. `.stage*/` is gitignored.

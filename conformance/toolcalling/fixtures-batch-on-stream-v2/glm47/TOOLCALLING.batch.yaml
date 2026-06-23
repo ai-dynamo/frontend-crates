@@ -1,100 +1,107 @@
 family: glm47
 mode: batch-on-stream
 captured_with:
-  vllm_python: 0.22.0
+  vllm_python: 0.23.0
   sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+  dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.batch.1:
-    vllm_python:
-      calls:
-      - name: get_weather
-        arguments:
-          location: NYC
-    sglang_python:
-      calls:
-      - name: get_weather
-        arguments:
-          location: NYC
     vllm_rust:
       calls:
-      - arguments:
+      - name: get_weather
+        arguments:
           location: NYC
-        name: get_weather
       normal_text: ''
+    vllm_python:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+    sglang_python:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
   TOOLCALLING.batch.3:
+    vllm_rust:
+      calls: []
+      normal_text: Hello, how can I help you today?
     vllm_python:
       calls: []
       normal_text: Hello, how can I help you today?
     sglang_python:
-      calls: []
-      normal_text: Hello, how can I help you today?
-    vllm_rust:
       calls: []
       normal_text: Hello, how can I help you today?
   TOOLCALLING.batch.9.a:
-    vllm_python:
-      calls: []
-    sglang_python:
-      calls: []
     vllm_rust:
       calls: []
       normal_text: ''
+    vllm_python:
+      calls: []
+    sglang_python:
+      calls: []
   TOOLCALLING.batch.13.c:
+    vllm_rust:
+      unavailable: No batch model_text for this case.
     vllm_python:
       unavailable: No batch model_text for this case.
     sglang_python:
-      unavailable: No batch model_text for this case.
-    vllm_rust:
       unavailable: No batch model_text for this case.
   TOOLCALLING.batch.9.b:
+    vllm_rust:
+      calls: []
+      normal_text: '   '
     vllm_python:
       calls: []
       normal_text: '   '
     sglang_python:
-      calls: []
-      normal_text: '   '
-    vllm_rust:
       calls: []
       normal_text: '   '
   TOOLCALLING.batch.10:
-    vllm_python:
-      calls:
-      - name: get_weather
-        arguments:
-          location: NYC
-      - name: get_weather
-        arguments:
-          location: LA
-    sglang_python:
-      calls:
-      - name: get_weather
-        arguments:
-          location: NYC
     vllm_rust:
       calls:
-      - arguments:
+      - name: get_weather
+        arguments:
           location: NYC
-        name: get_weather
-      - arguments:
+      - name: get_weather
+        arguments:
           location: LA
-        name: get_weather
       normal_text: ''
+    vllm_python:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+    sglang_python:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
   TOOLCALLING.batch.30:
+    vllm_rust:
+      unavailable: No batch model_text for this case.
     vllm_python:
       unavailable: No batch model_text for this case.
     sglang_python:
-      unavailable: No batch model_text for this case.
-    vllm_rust:
       unavailable: No batch model_text for this case.
   TOOLCALLING.batch.31:
+    vllm_rust:
+      unavailable: No batch model_text for this case.
     vllm_python:
       unavailable: No batch model_text for this case.
     sglang_python:
-      unavailable: No batch model_text for this case.
-    vllm_rust:
       unavailable: No batch model_text for this case.
   TOOLCALLING.batch.13:
+    vllm_rust:
+      calls:
+      - name: unknown_tool
+        arguments:
+          location: NYC
+      normal_text: ''
     vllm_python:
       calls:
       - name: unknown_tool
@@ -105,9 +112,3 @@ cases:
       - name: unknown_tool
         arguments:
           location: NYC
-    vllm_rust:
-      calls:
-      - arguments:
-          location: NYC
-        name: unknown_tool
-      normal_text: ''

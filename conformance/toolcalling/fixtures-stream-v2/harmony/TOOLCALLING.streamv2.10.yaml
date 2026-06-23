@@ -11,7 +11,7 @@ family: harmony
 model_label: 'gpt-oss (harmony, token-id)'
 mode: streamv2
 captured_with:
-  vllm_python: '0.22.0'
+  vllm_python: '0.23.0'
   sglang_python: '0.5.12.post1'
   dynamo_rust: 'Dynamo parser v2'
 cases:

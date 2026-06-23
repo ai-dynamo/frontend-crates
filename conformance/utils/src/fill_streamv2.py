@@ -189,7 +189,7 @@ def main():
                 cmd += ["--unavailable", f"vllm_rust={cd._vllm_rust_unavailable(vllm_rust_source_version)}"]
             cmd += cd._impl_args("vllm_python", family, cd.VLLM.get(family),
                                  vllm_caps.get(fp, {}), vllm_ver, work, f"{family}_{num}", fp)
-            cmd += cd._impl_args("sglang", family, cd.SGLANG.get(family),
+            cmd += cd._impl_args("sglang_python", family, cd.SGLANG.get(family),
                                  sglang_caps.get(fp, {}), sglang_ver, work, f"{family}_{num}", fp)
             subprocess.run(cmd, check=True)
             # build_stream_fixtures.py hardcodes `mode: stream`; this is the v2 tab.

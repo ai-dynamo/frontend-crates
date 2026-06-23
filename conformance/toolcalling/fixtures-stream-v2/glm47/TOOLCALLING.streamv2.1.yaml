@@ -1,14 +1,23 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
 family: glm47
-model_label: GLM 5.1
+model_label: 'GLM 5.1'
 mode: streamv2
 captured_with:
-  vllm_python: 0.22.0
-  sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: 'v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75'
+  vllm_python: '0.23.0'
+  sglang_python: '0.5.12.post1'
 cases:
   TOOLCALLING.streamv2.1:
-    description: Single tool call (happy path)
-    ref: derived from TOOLCALLING.batch.1
+    description: 'Single tool call (happy path)'
+    ref: 'derived from TOOLCALLING.batch.1'
     tools:
     - name: get_weather
       parameters:
@@ -17,46 +26,34 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
-    - delta_text: <tool_call>get_weather<arg_key>
+    - delta_text: '<tool_call>get_weather<arg_key>'
       expected:
-        vllm_python:
-        - index: 0
-          id: true
-          name: get_weather
-          arguments: ''
-        sglang_python:
-        - index: 0
-          name: get_weather
-        - index: 0
-          arguments: '{'
         vllm_rust: []
-    - delta_text: location</arg_key>
+        vllm_python:
+        - {index: 0, id: true, name: 'get_weather', arguments: ''}
+        sglang_python:
+        - {index: 0, name: 'get_weather'}
+        - {index: 0, arguments: '{'}
+    - delta_text: 'location</arg_key>'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python:
-        - index: 0
-          arguments: '"location": '
-        vllm_rust: []
-    - delta_text: <arg_value>NYC</arg_value></tool_call>
+        - {index: 0, arguments: '"location": '}
+    - delta_text: '<arg_value>NYC</arg_value></tool_call>'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: '{"location": "NYC"}'
-        sglang_python:
-        - index: 0
-          arguments: '"NYC"'
-        - index: 0
-          arguments: '}'
         vllm_rust:
-        - arguments: '{"location":"NYC"}'
-          index: 0
-          name: get_weather
+        - {index: 0, name: 'get_weather', arguments: '{"location":"NYC"}'}
+        vllm_python:
+        - {index: 0, arguments: '{"location": "NYC"}'}
+        sglang_python:
+        - {index: 0, arguments: '"NYC"'}
+        - {index: 0, arguments: '}'}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []

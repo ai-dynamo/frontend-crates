@@ -12,8 +12,8 @@ model_label: 'Qwen 3 Coder'
 mode: streamv2
 captured_with:
   dynamo_rust: 'Dynamo parser v2'
-  vllm_rust: 'v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af'
-  vllm_python: '0.22.0'
+  vllm_rust: 'v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75'
+  vllm_python: '0.23.0'
   sglang_python: '0.5.12.post1'
 cases:
   TOOLCALLING.streamv2.5.a:
@@ -27,7 +27,7 @@ cases:
           location:
             type: string
     unavailable:
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete Qwen Coder tool call'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: incomplete Qwen Coder tool call'
     chunks:
     - delta_text: '<tool_call> <function=get_weather>'
       expected:
@@ -49,7 +49,7 @@ cases:
         - {index: 0, arguments: '{'}
         sglang_python:
         - {index: 0, arguments: '{'}
-        - {index: 0, arguments: '"location": "NYC"'}
+        - {index: 0, arguments: '"location": " NYC "'}
         - {index: 0, arguments: '}'}
     - delta_text: ''
       finish_reason: tool_calls
@@ -96,14 +96,14 @@ cases:
         vllm_python: []
         sglang_python:
         - {index: 0, arguments: '{'}
-        - {index: 0, arguments: '"location": "NYC"'}
+        - {index: 0, arguments: '"location": " NYC "'}
         - {index: 0, arguments: '}'}
       normal_text:
         vllm_rust: ' </parameter> </function> </tool_call>'
         vllm_python: ' </parameter> </function> </tool_call>'
-        sglang_python: "\n"
+        sglang_python: '  '
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
         dynamo_rust: []
         vllm_rust: []
@@ -120,7 +120,7 @@ cases:
           location:
             type: string
     unavailable:
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete Qwen Coder tool call'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: incomplete Qwen Coder tool call'
     chunks:
     - delta_text: '<tool_call> <function=get_weather>'
       expected:
@@ -157,7 +157,7 @@ cases:
           location:
             type: string
     unavailable:
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete Qwen Coder tool call'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: incomplete Qwen Coder tool call'
     chunks:
     - delta_text: 'I''ll start'
       expected:
@@ -257,10 +257,10 @@ cases:
       expected:
         dynamo_rust: []
         vllm_python:
-        - {index: 0, arguments: '"location": "Boston"'}
+        - {index: 0, arguments: '"location": " Boston "'}
         sglang_python:
         - {index: 0, arguments: '{'}
-        - {index: 0, arguments: '"location": "Boston"'}
+        - {index: 0, arguments: '"location": " Boston "'}
     - delta_text: ' </function> </tool_call> <tool_call>'
       expected:
         dynamo_rust:
@@ -290,13 +290,13 @@ cases:
         - {index: 1, arguments: '{'}
         sglang_python:
         - {index: 1, arguments: '{'}
-        - {index: 1, arguments: '"location": "New York"'}
+        - {index: 1, arguments: '"location": " New York "'}
     - delta_text: ' </function>'
       expected:
         dynamo_rust:
         - {index: 1, name: 'get_weather', arguments: '{"location":"New York"}'}
         vllm_python:
-        - {index: 1, arguments: '"location": "New York"'}
+        - {index: 1, arguments: '"location": " New York "'}
         sglang_python:
         - {index: 1, arguments: '}'}
     - delta_text: ''
@@ -316,7 +316,7 @@ cases:
           location:
             type: string
     unavailable:
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete Qwen Coder tool call'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: incomplete Qwen Coder tool call'
     chunks:
     - delta_text: 'I''ll start'
       expected:
@@ -416,10 +416,10 @@ cases:
       expected:
         dynamo_rust: []
         vllm_python:
-        - {index: 0, arguments: '"location": "Boston"'}
+        - {index: 0, arguments: '"location": " Boston "'}
         sglang_python:
         - {index: 0, arguments: '{'}
-        - {index: 0, arguments: '"location": "Boston"'}
+        - {index: 0, arguments: '"location": " Boston "'}
     - delta_text: ' </function> </tool_call> <tool_call>'
       expected:
         dynamo_rust:
@@ -493,12 +493,12 @@ cases:
         vllm_python: []
         sglang_python:
         - {index: 0, arguments: '{'}
-        - {index: 0, arguments: '"location": "NYC"'}
+        - {index: 0, arguments: '"location": " NYC "'}
         - {index: 0, arguments: '}'}
       normal_text:
         vllm_rust: ' </parameter> </function> </tool_call>'
         vllm_python: ' </parameter> </function> </tool_call>'
-        sglang_python: "\n"
+        sglang_python: '  '
     - delta_text: ' <tool_call> <function=get_weather>'
       expected:
         dynamo_rust: []
@@ -525,7 +525,7 @@ cases:
         - {index: 0, arguments: '{'}
         sglang_python:
         - {index: 1, arguments: '{'}
-        - {index: 1, arguments: '"location": "Boston"'}
+        - {index: 1, arguments: '"location": " Boston "'}
     - delta_text: ' </function> </tool_call>'
       expected:
         dynamo_rust:
@@ -533,7 +533,7 @@ cases:
         vllm_rust:
         - {index: 0, name: 'get_weather', arguments: '{"location":" Boston "}'}
         vllm_python:
-        - {index: 0, arguments: '"location": "Boston"'}
+        - {index: 0, arguments: '"location": " Boston "'}
         sglang_python:
         - {index: 1, arguments: '}'}
     - delta_text: ''
@@ -587,7 +587,7 @@ cases:
         dynamo_rust: ' that. '
         vllm_rust: ' that. <function=get_weather> <parameter=location>'
         vllm_python: ' that. <function=get_weather> <parameter=location>'
-        sglang_python: ' that. '
+        sglang_python: ' that.  '
     - delta_text: ' NYC </parameter>'
       expected:
         dynamo_rust: []
@@ -595,7 +595,7 @@ cases:
         vllm_python: []
         sglang_python:
         - {index: 0, arguments: '{'}
-        - {index: 0, arguments: '"location": "NYC"'}
+        - {index: 0, arguments: '"location": " NYC "'}
       normal_text:
         vllm_rust: ' NYC </parameter>'
         vllm_python: ' NYC </parameter>'
@@ -622,7 +622,7 @@ cases:
         vllm_python: ' </tool_call>'
         sglang_python: ' '
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
         dynamo_rust: []
         vllm_rust: []

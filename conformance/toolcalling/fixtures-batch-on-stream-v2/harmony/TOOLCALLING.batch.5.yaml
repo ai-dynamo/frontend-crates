@@ -1,15 +1,17 @@
 family: harmony
 mode: batch-on-stream
 captured_with:
-  vllm_python: 0.22.0
+  vllm_python: 0.23.0
   sglang_python: 0.5.12.post1
+  vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
   dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.batch.5.a:
-    dynamo_note: 'No recovery by design (dynamo #10366: https://github.com/ai-dynamo/dynamo/pull/10366): a Harmony commentary/analysis tool call must carry the <|call|> terminator to be recovered. <|call|> is also the gpt-oss EOS/commit token, so a call missing it was cut off before the model committed; the incomplete envelope is dropped, not recovered or leaked into content.'
     dynamo_rust:
       calls: []
       normal_text: ''
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls:
       - name: get_weather
@@ -24,6 +26,9 @@ cases:
       - name: get_weather
         arguments:
           location: NYC
+      normal_text: ''
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls:
       - name: get_weather
@@ -38,6 +43,9 @@ cases:
   TOOLCALLING.batch.5.c:
     dynamo_rust:
       calls: []
+      normal_text: ''
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls:
       - name: get_weather
@@ -46,7 +54,6 @@ cases:
       calls: []
       normal_text: ''
   TOOLCALLING.batch.5.d:
-    dynamo_note: 'Trailing call dropped by design (dynamo #10366: https://github.com/ai-dynamo/dynamo/pull/10366): only the commentary call carrying <|call|> (Boston) is recovered; the unterminated trailing call (New York) is dropped, since <|call|> is also the gpt-oss EOS/commit token and its absence means the model was cut off before committing that call.'
     dynamo_rust:
       calls:
       - name: get_weather
@@ -54,6 +61,8 @@ cases:
           location: Boston
       normal_text: I'll start by fetching the weather for both Boston and New York
         at the same time!
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls: []
     sglang_python:
@@ -71,6 +80,8 @@ cases:
           location: Boston
       normal_text: I'll start by fetching the weather for both Boston and New York
         at the same time!
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls: []
     sglang_python:

@@ -1,10 +1,14 @@
 family: pythonic
 mode: batch-on-stream
 captured_with:
-  vllm_python: 0.22.0
+  vllm_python: 0.23.0
   sglang_python: 0.5.12.post1
+  vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+  dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.batch.5.a:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
     vllm_python:
       calls:
       - name: get_weather
@@ -13,6 +17,8 @@ cases:
     sglang_python:
       calls: []
   TOOLCALLING.batch.5.b:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
     vllm_python:
       calls: []
       normal_text: get_weather(location="NYC")]
@@ -20,6 +26,8 @@ cases:
       calls: []
       normal_text: get_weather(location="NYC")]
   TOOLCALLING.batch.5.c:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
     vllm_python:
       calls:
       - name: get_weather
@@ -27,6 +35,8 @@ cases:
     sglang_python:
       calls: []
   TOOLCALLING.batch.5.d:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
     vllm_python:
       calls: []
       normal_text: I'll start by fetching the weather for both Boston and New York
@@ -37,6 +47,8 @@ cases:
       normal_text: I'll start by fetching the weather for both Boston and New York
         at the same time!
   TOOLCALLING.batch.5.e:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'pythonic'.
     vllm_python:
       calls: []
       normal_text: I'll start by fetching the weather for both Boston and New York

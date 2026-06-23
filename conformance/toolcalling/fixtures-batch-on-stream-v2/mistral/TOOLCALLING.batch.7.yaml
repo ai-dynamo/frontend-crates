@@ -1,61 +1,62 @@
 family: mistral
 mode: batch-on-stream
 captured_with:
-  vllm_python: 0.22.0
+  vllm_python: 0.23.0
   sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+  dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.batch.7.a:
-    vllm_python:
-      calls: []
-    sglang_python:
-      calls: []
     vllm_rust:
       calls: []
       normal_text: '[TOOL_CALLS][{"name": "book_flight", "arguments": {"destination":
         "Paris", "passengers": 2, "first_class": true}}][/TOOL_CALLS]'
-  TOOLCALLING.batch.7.b:
     vllm_python:
       calls: []
     sglang_python:
       calls: []
+  TOOLCALLING.batch.7.b:
     vllm_rust:
       calls: []
       normal_text: '[TOOL_CALLS][{"name": "get_weather", "arguments": {"location":
         "Tōkyō \"central\""}}][/TOOL_CALLS]'
-  TOOLCALLING.batch.7.c:
     vllm_python:
       calls: []
     sglang_python:
       calls: []
+  TOOLCALLING.batch.7.c:
     vllm_rust:
       calls: []
       normal_text: '[TOOL_CALLS][{"name": "set_temperature", "arguments": {"celsius":
         "20"}}][/TOOL_CALLS]'
-  TOOLCALLING.batch.7.d:
     vllm_python:
       calls: []
     sglang_python:
       calls: []
+  TOOLCALLING.batch.7.d:
     vllm_rust:
       calls: []
       normal_text: '[TOOL_CALLS][{"name": "process_data", "arguments": {"items": [1,2,3],
         "config": {"nested": true}}}][/TOOL_CALLS]'
-  TOOLCALLING.batch.7.e:
     vllm_python:
       calls: []
     sglang_python:
       calls: []
+  TOOLCALLING.batch.7.e:
     vllm_rust:
       calls: []
       normal_text: '[TOOL_CALLS][{"name": "process_data", "arguments": {"payload":
         {"regions": [{"name": "west", "scores": [1, 2, 3]}, {"name": "east", "scores":
         [4, 5, 6]}], "flags": {"enabled": true, "retry": null}, "empty": {}}}}][/TOOL_CALLS]'
-  TOOLCALLING.batch.7.f:
     vllm_python:
       calls: []
     sglang_python:
       calls: []
+  TOOLCALLING.batch.7.f:
     vllm_rust:
       calls: []
       normal_text: '[TOOL_CALLS][{"name": "set_limit", "arguments": {"count": 9007199254740993}}][/TOOL_CALLS]'
+    vllm_python:
+      calls: []
+    sglang_python:
+      calls: []
