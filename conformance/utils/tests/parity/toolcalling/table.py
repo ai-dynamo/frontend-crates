@@ -542,7 +542,7 @@ def load_all_cases(mode: str) -> tuple[dict[tuple[str, str], dict], dict[str, st
         if doc.get("mode") != mode:
             continue
         family = doc["family"]
-        rel = str(fp.relative_to(script_dir))
+        rel = common.LINKS["toolcalling_fixtures"] + str(fp.relative_to(FIXTURES))
         if "model_label" in doc:
             labels.setdefault(family, doc["model_label"])
         for cid, case in doc["cases"].items():

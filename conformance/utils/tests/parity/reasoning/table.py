@@ -10,6 +10,7 @@ import argparse
 import datetime
 import html as html_lib
 import json
+import os
 import re
 import subprocess
 import zoneinfo
@@ -1779,7 +1780,9 @@ def _render_cell_html(
         )
     else:
         marker, _ = _cell(case, family)
-        href = str(refs[(family, case_id)].relative_to(SCRIPT_DIR))
+        href = common.LINKS["reasoning_fixtures"] + Path(
+            os.path.relpath(refs[(family, case_id)], FIXTURES)
+        ).as_posix()
         tooltip = _tooltip_html(
             case_id,
             family,

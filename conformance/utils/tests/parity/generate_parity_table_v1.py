@@ -33,23 +33,6 @@ from tests.parity.toolcalling import table as toolcalling_table  # noqa: E402
 _PUBLISHED_OUTPUT = REPO_ROOT / "conformance" / "PARITY.html"
 
 
-def _rewrite_panel_paths(panel: dict[str, Any], stage_dir: str) -> dict[str, Any]:
-    """Adjust links from stage-local PARITY.html paths to tests/parity/PARITY.html."""
-    rewritten = dict(panel)
-
-    def rewrite(text: str) -> str:
-        # Fixture cell links are emitted as `fixtures/<family>/<file>` by the
-        # builders and rebased onto this panel's staged fixtures dir. All other
-        # links (case docs, parser source, pyproject) are emitted
-        # destination-aware via common.LINKS, so they need no rewrite.
-        return text.replace('href="fixtures/', f'href="{stage_dir}/fixtures/')
-
-    rewritten["group_headers"] = rewrite(str(rewritten["group_headers"]))
-    rewritten["sub_headers"] = rewrite(str(rewritten["sub_headers"]))
-    rewritten["body_rows"] = [rewrite(str(row)) for row in rewritten["body_rows"]]
-    return rewritten
-
-
 def _tab_button(panel: dict[str, Any]) -> str:
     active = " active" if panel["active"] else ""
     selected = "true" if panel["active"] else "false"
@@ -68,14 +51,13 @@ def _combined_toolcalling_panels() -> list[dict[str, Any]]:
     panels = []
     for mode in ("batch", "stream"):
         _mode, panel, _has_cases = toolcalling_table._load_html_panel(mode)
-        panel = _rewrite_panel_paths(panel, "toolcalling")
         panel.update(
             {
                 "id": f"tab-toolcalling-{mode}",
                 "label": f"TC {mode}",
                 "tab_title": f"Tool Calling {mode}",
                 "active": False,
-                "case_docs_href": "utils/lib/parsers/TOOLCALLING_CASES.md",
+                "case_docs_href": common.LINKS["toolcalling_cases"],
                 "case_docs_label": "lib/parsers/TOOLCALLING_CASES.md",
                 "case_prefix": f"TOOLCALLING.{mode}.",
                 "case_section_id": f"toolcalling-{mode}",
@@ -100,13 +82,12 @@ def _combined_reasoning_panels() -> list[dict[str, Any]]:
             mode=mode,
             active=False,
         )
-        panel = _rewrite_panel_paths(panel, "reasoning")
         panel.update(
             {
                 "id": f"tab-reasoning-{mode}",
                 "label": f"Reasoning {mode}",
                 "active": False,
-                "case_docs_href": "utils/lib/parsers/REASONING_CASES.md",
+                "case_docs_href": common.LINKS["reasoning_cases"],
                 "case_docs_label": "lib/parsers/REASONING_CASES.md",
                 "case_prefix": "REASONING.",
                 "case_section_id": f"reasoning-{mode}",
