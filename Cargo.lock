@@ -907,7 +907,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "anyhow",
  "dynamo-parsers",
@@ -921,7 +921,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2-py"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "dynamo-parsers",
  "dynamo-parsers-v2",
