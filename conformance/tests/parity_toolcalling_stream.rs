@@ -282,7 +282,10 @@ fn toolcalling_stream_parity() {
                 continue;
             }
         };
-        if !(fx.family == "harmony" || fx.family == "harmony_text" || fx.family == "deepseek_v4")
+        if !(fx.family == "harmony"
+            || fx.family == "harmony_text"
+            || fx.family == "deepseek_v4"
+            || fx.family == "qwen3_coder")
             || !matches!(fx.mode.as_deref(), Some("stream" | "streamv2"))
         {
             continue;

@@ -1,14 +1,24 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
 family: qwen3_coder
-model_label: Qwen 3 Coder
+model_label: 'Qwen 3 Coder'
 mode: streamv2
 captured_with:
-  vllm_python: 0.22.0
-  sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  dynamo_rust: 'Dynamo parser v2'
+  vllm_rust: 'v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af'
+  vllm_python: '0.22.0'
+  sglang_python: '0.5.12.post1'
 cases:
   TOOLCALLING.streamv2.9.a:
-    description: Empty model text
-    ref: derived from TOOLCALLING.batch.9.a
+    description: 'Empty model text'
+    ref: 'derived from TOOLCALLING.batch.9.a'
     tools:
     - name: get_weather
       parameters:
@@ -16,24 +26,23 @@ cases:
         properties:
           location:
             type: string
-    unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
     chunks:
     - delta_text: ''
       expected:
+        dynamo_rust: []
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
     - delta_text: ''
       finish_reason: stop
       expected:
+        dynamo_rust: []
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
   TOOLCALLING.streamv2.9.b:
-    description: Blank / whitespace-only model text
-    ref: derived from TOOLCALLING.batch.9.b
+    description: 'Blank / whitespace-only model text'
+    ref: 'derived from TOOLCALLING.batch.9.b'
     tools:
     - name: get_weather
       parameters:
@@ -41,22 +50,22 @@ cases:
         properties:
           location:
             type: string
-    unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
     chunks:
     - delta_text: '   '
       expected:
+        dynamo_rust: []
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
+        dynamo_rust: '   '
+        vllm_rust: '   '
         vllm_python: '   '
         sglang_python: '   '
-        vllm_rust: '   '
     - delta_text: ''
       finish_reason: stop
       expected:
+        dynamo_rust: []
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []

@@ -31,7 +31,7 @@ families:
   phi4:           {vllm_python: phi4_mini_json, vllm_rust: null,         sglang_python: null,        dynamo_v2: null,        preferred_input: text}
   pythonic:       {vllm_python: pythonic,       vllm_rust: null,         sglang_python: pythonic,    dynamo_v2: null,        preferred_input: text}
   qwen25:         {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: qwen25,      dynamo_v2: null,        preferred_input: text}
-  qwen3_coder:    {vllm_python: qwen3_coder,    vllm_rust: qwen3_coder,  sglang_python: qwen3_coder, dynamo_v2: null,        preferred_input: text}
+  qwen3_coder:    {vllm_python: qwen3_coder,    vllm_rust: qwen3_coder,  sglang_python: qwen3_coder, dynamo_v2: qwen3_coder, preferred_input: text}
   # Harmony (gpt-oss) is driven by the Dynamo token path and captured via the
   # harmony-specific flow, not the peer maps above; listed for registry coverage.
   harmony:        {vllm_python: null,           vllm_rust: null,         sglang_python: null,        dynamo_v2: harmony,      preferred_input: tokens}
