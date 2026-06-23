@@ -29,7 +29,10 @@ cases:
         - index: 0
           name: get_time
         vllm_rust: []
-        dynamo_rust: []
+        dynamo_rust:
+        - index: 0
+          name: get_time
+          arguments: ''
     - delta_text: ' </｜DSML｜invoke> </｜DSML｜tool_calls>'
       expected:
         vllm_python:
@@ -46,7 +49,6 @@ cases:
           name: get_time
         dynamo_rust:
         - index: 0
-          name: get_time
           arguments: '{}'
     - delta_text: ''
       finish_reason: tool_calls
@@ -77,7 +79,10 @@ cases:
         - index: 0
           name: get_time
         vllm_rust: []
-        dynamo_rust: []
+        dynamo_rust:
+        - index: 0
+          name: get_time
+          arguments: ''
     - delta_text: '
 
         </｜DSML｜invoke> </｜DSML｜tool_calls>'
@@ -96,7 +101,6 @@ cases:
           name: get_time
         dynamo_rust:
         - index: 0
-          name: get_time
           arguments: '{}'
     - delta_text: ''
       finish_reason: tool_calls

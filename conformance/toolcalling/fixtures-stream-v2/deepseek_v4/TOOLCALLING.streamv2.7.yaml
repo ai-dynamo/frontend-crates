@@ -35,7 +35,10 @@ cases:
         - index: 0
           name: book_flight
         vllm_rust: []
-        dynamo_rust: []
+        dynamo_rust:
+        - index: 0
+          name: book_flight
+          arguments: ''
     - delta_text: ' <｜DSML｜parameter name="destination" string="true">'
       expected:
         vllm_python: []
@@ -94,7 +97,6 @@ cases:
           name: book_flight
         dynamo_rust:
         - index: 0
-          name: book_flight
           arguments: '{"destination":"Paris","passengers":2,"first_class":true}'
     - delta_text: ''
       finish_reason: tool_calls
@@ -127,7 +129,10 @@ cases:
         - index: 0
           name: get_weather
         vllm_rust: []
-        dynamo_rust: []
+        dynamo_rust:
+        - index: 0
+          name: get_weather
+          arguments: ''
     - delta_text: ' <｜DSML｜parameter name="location" string="true">'
       expected:
         vllm_python: []
@@ -158,7 +163,6 @@ cases:
           name: get_weather
         dynamo_rust:
         - index: 0
-          name: get_weather
           arguments: '{"location":"Tōkyō central"}'
     - delta_text: ' </｜DSML｜tool_calls>'
       expected:
@@ -197,7 +201,10 @@ cases:
         - index: 0
           name: set_limit
         vllm_rust: []
-        dynamo_rust: []
+        dynamo_rust:
+        - index: 0
+          name: set_limit
+          arguments: ''
     - delta_text: ' <｜DSML｜parameter name="count" string="false">'
       expected:
         vllm_python: []
@@ -220,7 +227,6 @@ cases:
           name: set_limit
         dynamo_rust:
         - index: 0
-          name: set_limit
           arguments: '{"count":9007199254740993}'
     - delta_text: ' </｜DSML｜tool_calls>'
       expected:
