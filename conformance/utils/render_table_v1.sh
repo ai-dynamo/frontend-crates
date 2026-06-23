@@ -18,5 +18,5 @@ if [ "$DRY" = 1 ]; then
   exit 0
 fi
 build_stage_v1
-( cd "$STAGE" && PYTHONPATH="$STAGE" python3 tests/parity/generate_parity_table.py all --html > tests/parity/PARITY_v1.html )
+( cd "$STAGE" && PYTHONPATH="$STAGE" python3 tests/parity/generate_parity_table_v1.py all --html > tests/parity/PARITY_v1.html )
 echo "wrote $OUT"

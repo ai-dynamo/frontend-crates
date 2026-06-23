@@ -2288,7 +2288,7 @@ def _html(
         )
         for i, mode in enumerate(modes)
     ]
-    command = "python3 tests/parity/generate_parity_table.py reasoning --html"
+    command = "python3 tests/parity/generate_parity_table_v1.py reasoning --html"
     output = "tests/parity/reasoning/PARITY.html"
     if len(modes) == 1:
         command += f" --mode {modes[0]}"
@@ -2307,7 +2307,7 @@ def _html(
 
     return (
         _make_jinja_env()
-        .get_template("parity_table.html.j2")
+        .get_template("parity_table_v1.html.j2")
         .render(
             title="Dynamo Reasoning Parser - Parity Table",
             stamp=generated,

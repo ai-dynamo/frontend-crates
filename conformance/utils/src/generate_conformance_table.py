@@ -459,7 +459,7 @@ def _hrefs_for_output(output_path: Path, artifact_root: Path) -> dict[str, str]:
         "pyproject_stub": _href_from_output(
             output_path,
             artifact_root,
-            "conformance/utils/pyproject.stub.toml",
+            "conformance/utils/src/pyproject.stub.toml",
         ),
     }
 
@@ -2199,13 +2199,11 @@ def _rewrite_panel_paths(
                 'href="../../../lib/parsers/src/tool_calling/',
                 f'href="{hrefs["toolcalling_src"]}',
             )
+            # Prefix-rewrite every parsers_v2 source link (harmony.rs, dsml.rs, the
+            # bare dir, ...) so no specific file is missed. streaming_src ends in '/'.
             .replace(
-                'href="../../../parsers_v2/src/tool_calling/harmony.rs"',
-                f'href="{hrefs["streaming_harmony_src"]}"',
-            )
-            .replace(
-                'href="../../../parsers_v2/src/tool_calling/"',
-                f'href="{hrefs["streaming_src"]}"',
+                'href="../../../parsers_v2/src/tool_calling/',
+                f'href="{hrefs["streaming_src"]}',
             )
             .replace(
                 'href="../../../lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"',

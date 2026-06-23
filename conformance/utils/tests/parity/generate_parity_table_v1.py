@@ -47,8 +47,18 @@ def _rewrite_panel_paths(panel: dict[str, Any], stage_dir: str) -> dict[str, Any
                 'href="../../../lib/parsers/REASONING_CASES.md"',
                 'href="utils/lib/parsers/REASONING_CASES.md"',
             )
+            # Parser source lives at parsers/src/tool_calling/ (no lib/ prefix
+            # after the cutover); published from conformance/ that is ../parsers/...
+            .replace(
+                'href="../../../lib/parsers/src/tool_calling/',
+                'href="../parsers/src/tool_calling/',
+            )
             .replace('href="../../../lib/', 'href="../../lib/')
-            .replace('href="../../../pyproject.toml"', 'href="../../pyproject.toml"')
+            # Peer-version doc is the stub under conformance/utils/src/.
+            .replace(
+                'href="../../../pyproject.toml"',
+                'href="utils/src/pyproject.stub.toml"',
+            )
         )
 
     rewritten["group_headers"] = rewrite(str(rewritten["group_headers"]))
@@ -134,7 +144,7 @@ def render_combined_html() -> str:
 
     return (
         toolcalling_table._make_jinja_env()
-        .get_template("parity_table.html.j2")
+        .get_template("parity_table_v1.html.j2")
         .render(
             title="Dynamo Parser Parity Table",
             stamp=stamp,
@@ -147,7 +157,7 @@ def render_combined_html() -> str:
             peer_versions=toolcalling_table._peer_version_items(
                 toolcalling_table._peer_versions()
             ),
-            peer_versions_href="../../pyproject.toml",
+            peer_versions_href="utils/src/pyproject.stub.toml",
         )
     )
 

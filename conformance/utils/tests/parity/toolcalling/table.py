@@ -37,15 +37,15 @@ from `expected.<impl>.unavailable` across each family's cases.
 
 Run:
     # Markdown table to stdout
-    python3 tests/parity/generate_parity_table.py toolcalling \
+    python3 tests/parity/generate_parity_table_v1.py toolcalling \
         > tests/parity/toolcalling/PARITY.md
-    python3 tests/parity/generate_parity_table.py toolcalling --mode stream \
+    python3 tests/parity/generate_parity_table_v1.py toolcalling --mode stream \
         > tests/parity/toolcalling/PARITY.stream.md
 
     # HTML table with tabs, clickable YAML links, and hover tooltips. Write next
     # to this script so `<a href="fixtures/<family>/TOOLCALLING.batch.N.yaml">`
     # resolves when opened in a browser.
-    python3 tests/parity/generate_parity_table.py toolcalling --html \
+    python3 tests/parity/generate_parity_table_v1.py toolcalling --html \
         > tests/parity/toolcalling/PARITY.html
 
 PARITY.{md,html} are for local viewing only; don't check them in.
@@ -83,7 +83,7 @@ TEMPLATE_DIR = REPO_ROOT / "tests/parity"
 RUST_TOOL_CALLING_DIR = REPO_ROOT / "lib/parsers/src/tool_calling"
 
 # Row-label / visibility overrides keyed by tool calling family; ‡ is explained
-# by the legend note in parity_table.html.j2.
+# by the legend note in parity_table_v1.html.j2.
 _TOOL_CALLING_LABEL_OVERRIDES = {
     "qwen3_coder": "Qwen 3 Coder / Nemotron V3‡",
 }
@@ -1623,7 +1623,7 @@ def render_html(modes: list[str], family_filter: str | None = None) -> str:
         if family_filter
         else "Dynamo Tool Calling Parser - Parity Table"
     )
-    command = "python3 tests/parity/generate_parity_table.py toolcalling --html"
+    command = "python3 tests/parity/generate_parity_table_v1.py toolcalling --html"
     output = "tests/parity/toolcalling/PARITY.html"
     if family_filter:
         command += f" --family {family_filter}"
@@ -1650,7 +1650,7 @@ def render_html(modes: list[str], family_filter: str | None = None) -> str:
 
     return (
         _make_jinja_env()
-        .get_template("parity_table.html.j2")
+        .get_template("parity_table_v1.html.j2")
         .render(
             title=title,
             stamp=stamp,
