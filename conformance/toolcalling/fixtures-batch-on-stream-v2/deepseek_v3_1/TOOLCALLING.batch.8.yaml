@@ -1,50 +1,57 @@
 family: deepseek_v3_1
 mode: batch-on-stream
 captured_with:
-  vllm_python: 0.22.0
+  vllm_python: 0.23.0
   sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+  dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.batch.8.a:
+    vllm_rust:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
     vllm_python:
       calls: []
     sglang_python:
       calls:
       - name: get_weather
         arguments: {}
-    vllm_rust:
-      calls:
-      - arguments:
-          location: NYC
-        name: get_weather
-      normal_text: 'I will check the weather. '
   TOOLCALLING.batch.8.b:
-    vllm_python:
-      calls: []
-    sglang_python:
-      calls:
-      - name: get_weather
-        arguments: {}
     vllm_rust:
       calls:
-      - arguments:
+      - name: get_weather
+        arguments:
           location: NYC
-        name: get_weather
       normal_text: ''
-  TOOLCALLING.batch.8.c:
     vllm_python:
       calls: []
     sglang_python:
       calls:
       - name: get_weather
         arguments: {}
+  TOOLCALLING.batch.8.c:
     vllm_rust:
       calls:
-      - arguments:
+      - name: get_weather
+        arguments:
           location: NYC
-        name: get_weather
       normal_text: 'I will check the weather. '
+    vllm_python:
+      calls: []
+    sglang_python:
+      calls:
+      - name: get_weather
+        arguments: {}
   TOOLCALLING.batch.8.d:
+    vllm_rust:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather. '
     vllm_python:
       calls: []
     sglang_python:
@@ -52,9 +59,3 @@ cases:
       - name: get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
           Then check LA weather. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather
         arguments: {}
-    vllm_rust:
-      calls:
-      - arguments:
-          location: NYC
-        name: get_weather
-      normal_text: 'I will check the weather. '

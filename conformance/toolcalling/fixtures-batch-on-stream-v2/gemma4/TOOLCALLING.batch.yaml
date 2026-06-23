@@ -1,11 +1,18 @@
 family: gemma4
 mode: batch-on-stream
 captured_with:
-  vllm_python: 0.22.0
+  vllm_python: 0.23.0
   sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+  dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.batch.1:
+    vllm_rust:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
     vllm_python:
       calls: []
     sglang_python:
@@ -13,57 +20,57 @@ cases:
       - name: get_weather
         arguments:
           location: NYC
-    vllm_rust:
-      calls:
-      - arguments:
-          location: NYC
-        name: get_weather
-      normal_text: ''
   TOOLCALLING.batch.3:
+    vllm_rust:
+      calls: []
+      normal_text: Hello, how can I help you today?
     vllm_python:
       calls: []
       normal_text: Hello, how can I help you today?
     sglang_python:
-      calls: []
-      normal_text: Hello, how can I help you today?
-    vllm_rust:
       calls: []
       normal_text: Hello, how can I help you today?
   TOOLCALLING.batch.9.a:
-    vllm_python:
-      calls: []
-    sglang_python:
-      calls: []
     vllm_rust:
       calls: []
       normal_text: ''
+    vllm_python:
+      calls: []
+    sglang_python:
+      calls: []
   TOOLCALLING.batch.9.b:
+    vllm_rust:
+      calls: []
+      normal_text: '   '
     vllm_python:
       calls: []
       normal_text: '   '
     sglang_python:
       calls: []
       normal_text: '   '
-    vllm_rust:
-      calls: []
-      normal_text: '   '
   TOOLCALLING.batch.10:
+    vllm_rust:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: ''
     vllm_python:
       calls: []
     sglang_python:
       calls:
       - name: get_weatherget_weather
         arguments: '{"location": "NYC"}{"location": "LA"}'
-    vllm_rust:
-      calls:
-      - arguments:
-          location: NYC
-        name: get_weather
-      - arguments:
-          location: LA
-        name: get_weather
-      normal_text: ''
   TOOLCALLING.batch.30.a:
+    vllm_rust:
+      calls:
+      - name: run_query
+        arguments:
+          sql: SELECT a,b:and{brace}
+      normal_text: ''
     vllm_python:
       calls: []
     sglang_python:
@@ -71,13 +78,13 @@ cases:
       - name: run_query
         arguments:
           sql: SELECT a,b:and{brace}
-    vllm_rust:
-      calls:
-      - arguments:
-          sql: SELECT a,b:and{brace}
-        name: run_query
-      normal_text: ''
   TOOLCALLING.batch.30.b:
+    vllm_rust:
+      calls:
+      - name: run_query
+        arguments:
+          sql: SELECT value WHERE note has brace } and bracket ]
+      normal_text: ''
     vllm_python:
       calls: []
     sglang_python:
@@ -85,13 +92,13 @@ cases:
       - name: run_query
         arguments:
           sql: SELECT value WHERE note has brace } and bracket ]
-    vllm_rust:
-      calls:
-      - arguments:
-          sql: SELECT value WHERE note has brace } and bracket ]
-        name: run_query
-      normal_text: ''
   TOOLCALLING.batch.30.c:
+    vllm_rust:
+      calls:
+      - name: run_query
+        arguments:
+          sql: literal <|tool_call marker> call:get_time{} stays text
+      normal_text: ''
     vllm_python:
       calls: []
     sglang_python:
@@ -99,13 +106,16 @@ cases:
       - name: run_query
         arguments:
           sql: literal <|tool_call marker> call:get_time{} stays text
-    vllm_rust:
-      calls:
-      - arguments:
-          sql: literal <|tool_call marker> call:get_time{} stays text
-        name: run_query
-      normal_text: ''
   TOOLCALLING.batch.31.a:
+    vllm_rust:
+      calls:
+      - name: run_query
+        arguments:
+          sql: SELECT a,b:and{brace}
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: ''
     vllm_python:
       calls: []
     sglang_python:
@@ -116,16 +126,16 @@ cases:
       - name: get_time
         arguments:
           timezone: EST
-    vllm_rust:
-      calls:
-      - arguments:
-          sql: SELECT a,b:and{brace}
-        name: run_query
-      - arguments:
-          timezone: EST
-        name: get_time
-      normal_text: ''
   TOOLCALLING.batch.31.b:
+    vllm_rust:
+      calls:
+      - name: run_query
+        arguments:
+          sql: SELECT value WHERE note has brace } and bracket ]
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: ''
     vllm_python:
       calls: []
     sglang_python:
@@ -136,16 +146,13 @@ cases:
       - name: get_time
         arguments:
           timezone: EST
+  TOOLCALLING.batch.13.a:
     vllm_rust:
       calls:
-      - arguments:
-          sql: SELECT value WHERE note has brace } and bracket ]
-        name: run_query
-      - arguments:
-          timezone: EST
-        name: get_time
+      - name: unknown_tool
+        arguments:
+          location: NYC
       normal_text: ''
-  TOOLCALLING.batch.13.a:
     vllm_python:
       calls: []
     sglang_python:
@@ -153,13 +160,16 @@ cases:
       - name: unknown_tool
         arguments:
           location: NYC
+  TOOLCALLING.batch.13.c:
     vllm_rust:
       calls:
-      - arguments:
+      - name: get_weather
+        arguments:
           location: NYC
-        name: unknown_tool
+      - name: unknown_tool
+        arguments:
+          location: LA
       normal_text: ''
-  TOOLCALLING.batch.13.c:
     vllm_python:
       calls: []
     sglang_python:
@@ -170,12 +180,3 @@ cases:
       - name: unknown_tool
         arguments:
           location: LA
-    vllm_rust:
-      calls:
-      - arguments:
-          location: NYC
-        name: get_weather
-      - arguments:
-          location: LA
-        name: unknown_tool
-      normal_text: ''

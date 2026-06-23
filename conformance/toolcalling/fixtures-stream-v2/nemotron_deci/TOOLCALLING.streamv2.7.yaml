@@ -1,13 +1,22 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
 family: nemotron_deci
-model_label: Nemotron (DeciLM) v1/v2
+model_label: 'Nemotron (DeciLM) v1/v2'
 mode: streamv2
 captured_with:
-  vllm_python: 0.22.0
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: 'v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75'
+  vllm_python: '0.23.0'
 cases:
   TOOLCALLING.streamv2.7.a:
-    description: Standard scalar types
-    ref: derived from TOOLCALLING.batch.7.a
+    description: 'Standard scalar types'
+    ref: 'derived from TOOLCALLING.batch.7.a'
     tools:
     - name: book_flight
       parameters:
@@ -20,60 +29,59 @@ cases:
           first_class:
             type: boolean
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      sglang_python: No SGLang parser for family 'nemotron_deci'.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang Python parser for family ''nemotron_deci''.'
     chunks:
     - delta_text: '<TOOLCALL>[{"name":'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: '<TOOLCALL>[{"name":'
         vllm_rust: '<TOOLCALL>[{"name":'
+        vllm_python: '<TOOLCALL>[{"name":'
     - delta_text: ' "book_flight",'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' "book_flight",'
         vllm_rust: ' "book_flight",'
+        vllm_python: ' "book_flight",'
     - delta_text: ' "arguments": {"destination": "Paris",'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' "arguments": {"destination": "Paris",'
         vllm_rust: ' "arguments": {"destination": "Paris",'
+        vllm_python: ' "arguments": {"destination": "Paris",'
     - delta_text: ' "passengers": 2,'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' "passengers": 2,'
         vllm_rust: ' "passengers": 2,'
+        vllm_python: ' "passengers": 2,'
     - delta_text: ' "first_class":'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' "first_class":'
         vllm_rust: ' "first_class":'
+        vllm_python: ' "first_class":'
     - delta_text: ' true}}]</TOOLCALL>'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' true}}]</TOOLCALL>'
         vllm_rust: ' true}}]</TOOLCALL>'
+        vllm_python: ' true}}]</TOOLCALL>'
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
   TOOLCALLING.streamv2.7.b:
-    description: Unicode + escaped chars
-    ref: derived from TOOLCALLING.batch.7.b
+    description: 'Unicode + escaped chars'
+    ref: 'derived from TOOLCALLING.batch.7.b'
     tools:
     - name: get_weather
       parameters:
@@ -82,46 +90,45 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      sglang_python: No SGLang parser for family 'nemotron_deci'.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang Python parser for family ''nemotron_deci''.'
     chunks:
     - delta_text: '<TOOLCALL>[{"name":'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: '<TOOLCALL>[{"name":'
         vllm_rust: '<TOOLCALL>[{"name":'
+        vllm_python: '<TOOLCALL>[{"name":'
     - delta_text: ' "get_weather",'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' "get_weather",'
         vllm_rust: ' "get_weather",'
+        vllm_python: ' "get_weather",'
     - delta_text: ' "arguments": {"location": "Tōkyō'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' "arguments": {"location": "Tōkyō'
         vllm_rust: ' "arguments": {"location": "Tōkyō'
+        vllm_python: ' "arguments": {"location": "Tōkyō'
     - delta_text: ' \"central\""}}]</TOOLCALL>'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' \"central\""}}]</TOOLCALL>'
         vllm_rust: ' \"central\""}}]</TOOLCALL>'
+        vllm_python: ' \"central\""}}]</TOOLCALL>'
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
   TOOLCALLING.streamv2.7.c:
-    description: Schema mismatch — string value where schema declares integer
-    ref: derived from TOOLCALLING.batch.7.c
+    description: 'Schema mismatch — string value where schema declares integer'
+    ref: 'derived from TOOLCALLING.batch.7.c'
     tools:
     - name: set_temperature
       parameters:
@@ -130,46 +137,45 @@ cases:
           celsius:
             type: integer
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      sglang_python: No SGLang parser for family 'nemotron_deci'.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang Python parser for family ''nemotron_deci''.'
     chunks:
     - delta_text: '<TOOLCALL>[{"name":'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: '<TOOLCALL>[{"name":'
         vllm_rust: '<TOOLCALL>[{"name":'
+        vllm_python: '<TOOLCALL>[{"name":'
     - delta_text: ' "set_temperature",'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' "set_temperature",'
         vllm_rust: ' "set_temperature",'
+        vllm_python: ' "set_temperature",'
     - delta_text: ' "arguments": {"celsius": "20"}}]'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' "arguments": {"celsius": "20"}}]'
         vllm_rust: ' "arguments": {"celsius": "20"}}]'
-    - delta_text: </TOOLCALL>
+        vllm_python: ' "arguments": {"celsius": "20"}}]'
+    - delta_text: '</TOOLCALL>'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: </TOOLCALL>
-        vllm_rust: </TOOLCALL>
+        vllm_rust: '</TOOLCALL>'
+        vllm_python: '</TOOLCALL>'
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
   TOOLCALLING.streamv2.7.d:
-    description: Nested object + array (existing)
-    ref: derived from TOOLCALLING.batch.7.d
+    description: 'Nested object + array (existing)'
+    ref: 'derived from TOOLCALLING.batch.7.d'
     tools:
     - name: process_data
       parameters:
@@ -180,60 +186,59 @@ cases:
           config:
             type: object
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      sglang_python: No SGLang parser for family 'nemotron_deci'.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang Python parser for family ''nemotron_deci''.'
     chunks:
     - delta_text: '<TOOLCALL>[{"name":'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: '<TOOLCALL>[{"name":'
         vllm_rust: '<TOOLCALL>[{"name":'
+        vllm_python: '<TOOLCALL>[{"name":'
     - delta_text: ' "process_data",'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' "process_data",'
         vllm_rust: ' "process_data",'
+        vllm_python: ' "process_data",'
     - delta_text: ' "arguments": {"items": [1,2,3]'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' "arguments": {"items": [1,2,3]'
         vllm_rust: ' "arguments": {"items": [1,2,3]'
+        vllm_python: ' "arguments": {"items": [1,2,3]'
     - delta_text: ', "config":'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ', "config":'
         vllm_rust: ', "config":'
+        vllm_python: ', "config":'
     - delta_text: ' {"nested":'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' {"nested":'
         vllm_rust: ' {"nested":'
+        vllm_python: ' {"nested":'
     - delta_text: ' true}}}]</TOOLCALL>'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' true}}}]</TOOLCALL>'
         vllm_rust: ' true}}}]</TOOLCALL>'
+        vllm_python: ' true}}}]</TOOLCALL>'
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
   TOOLCALLING.streamv2.7.e:
-    description: Large / deep JSON-edge argument payload
-    ref: derived from TOOLCALLING.batch.7.e
+    description: 'Large / deep JSON-edge argument payload'
+    ref: 'derived from TOOLCALLING.batch.7.e'
     tools:
     - name: process_data
       parameters:
@@ -242,124 +247,123 @@ cases:
           payload:
             type: object
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      sglang_python: No SGLang parser for family 'nemotron_deci'.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang Python parser for family ''nemotron_deci''.'
     chunks:
     - delta_text: '<TOOLCALL>[{"name":'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: '<TOOLCALL>[{"name":'
         vllm_rust: '<TOOLCALL>[{"name":'
+        vllm_python: '<TOOLCALL>[{"name":'
     - delta_text: ' "process_data",'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' "process_data",'
         vllm_rust: ' "process_data",'
+        vllm_python: ' "process_data",'
     - delta_text: ' "arguments": {"payload": {"regions":'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' "arguments": {"payload": {"regions":'
         vllm_rust: ' "arguments": {"payload": {"regions":'
+        vllm_python: ' "arguments": {"payload": {"regions":'
     - delta_text: ' [{"name": "west",'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' [{"name": "west",'
         vllm_rust: ' [{"name": "west",'
+        vllm_python: ' [{"name": "west",'
     - delta_text: ' "scores":'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' "scores":'
         vllm_rust: ' "scores":'
+        vllm_python: ' "scores":'
     - delta_text: ' [1, 2,'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' [1, 2,'
         vllm_rust: ' [1, 2,'
+        vllm_python: ' [1, 2,'
     - delta_text: ' 3]}, {"name":'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' 3]}, {"name":'
         vllm_rust: ' 3]}, {"name":'
+        vllm_python: ' 3]}, {"name":'
     - delta_text: ' "east",'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' "east",'
         vllm_rust: ' "east",'
+        vllm_python: ' "east",'
     - delta_text: ' "scores": [4,'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' "scores": [4,'
         vllm_rust: ' "scores": [4,'
+        vllm_python: ' "scores": [4,'
     - delta_text: ' 5,'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' 5,'
         vllm_rust: ' 5,'
+        vllm_python: ' 5,'
     - delta_text: ' 6]}]'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' 6]}]'
         vllm_rust: ' 6]}]'
+        vllm_python: ' 6]}]'
     - delta_text: ','
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ','
         vllm_rust: ','
+        vllm_python: ','
     - delta_text: ' "flags": {"enabled": true,'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' "flags": {"enabled": true,'
         vllm_rust: ' "flags": {"enabled": true,'
+        vllm_python: ' "flags": {"enabled": true,'
     - delta_text: ' "retry": null},'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' "retry": null},'
         vllm_rust: ' "retry": null},'
+        vllm_python: ' "retry": null},'
     - delta_text: ' "empty":'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' "empty":'
         vllm_rust: ' "empty":'
+        vllm_python: ' "empty":'
     - delta_text: ' {}}}}]</TOOLCALL>'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' {}}}}]</TOOLCALL>'
         vllm_rust: ' {}}}}]</TOOLCALL>'
+        vllm_python: ' {}}}}]</TOOLCALL>'
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []

@@ -1,14 +1,23 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
 family: deepseek_v3_1
-model_label: DeepSeek V3.1
+model_label: 'DeepSeek V3.1'
 mode: streamv2
 captured_with:
-  vllm_python: 0.22.0
-  sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: 'v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75'
+  vllm_python: '0.23.0'
+  sglang_python: '0.5.12.post1'
 cases:
   TOOLCALLING.streamv2.3:
-    description: No tool call (plain text)
-    ref: derived from TOOLCALLING.batch.3
+    description: 'No tool call (plain text)'
+    ref: 'derived from TOOLCALLING.batch.3'
     tools:
     - name: get_weather
       parameters:
@@ -17,48 +26,47 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
-    - delta_text: Hello, how
+    - delta_text: 'Hello, how'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
-        vllm_python: Hello, how
-        sglang_python: Hello, how
-        vllm_rust: Hello, how
+        vllm_rust: 'Hello, how'
+        vllm_python: 'Hello, how'
+        sglang_python: 'Hello, how'
     - delta_text: ' can'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
+        vllm_rust: ' can'
         vllm_python: ' can'
         sglang_python: ' can'
-        vllm_rust: ' can'
     - delta_text: ' I help you'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
+        vllm_rust: ' I help you'
         vllm_python: ' I help you'
         sglang_python: ' I help you'
-        vllm_rust: ' I help you'
     - delta_text: ' today?'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
+        vllm_rust: ' today?'
         vllm_python: ' today?'
         sglang_python: ' today?'
-        vllm_rust: ' today?'
     - delta_text: ''
       finish_reason: stop
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []

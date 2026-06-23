@@ -38,7 +38,7 @@ use vllm_tool_parser::{
     DeepSeekV31ToolParser, DeepSeekV32ToolParser, DeepSeekV3ToolParser, DeepSeekV4ToolParser,
     Gemma4ToolParser, Glm47MoeToolParser, HermesToolParser, KimiK2ToolParser,
     Llama3JsonToolParser, MinimaxM2ToolParser, MistralToolParser, Qwen3CoderToolParser,
-    Qwen3XmlToolParser, Tool, ToolCallDelta, ToolParseResult, ToolParser,
+    Qwen3XmlToolParser, Tool, ToolCallDelta, ToolParser, ToolParserOutput,
 };
 
 #[derive(Debug, Deserialize)]
@@ -135,19 +135,19 @@ fn output_delta(delta: ToolCallDelta) -> OutputDelta {
     }
 }
 
-fn output_chunk(result: ToolParseResult) -> OutputChunk {
+fn output_chunk(result: ToolParserOutput) -> OutputChunk {
     OutputChunk {
         deltas: result.calls.into_iter().map(output_delta).collect(),
         normal_text: result.normal_text,
     }
 }
 
-fn append_result(out: &mut ToolParseResult, mut next: ToolParseResult) {
+fn append_result(out: &mut ToolParserOutput, mut next: ToolParserOutput) {
     out.normal_text.push_str(&next.normal_text);
     out.calls.append(&mut next.calls);
 }
 
-fn assembled_call_map(result: ToolParseResult) -> Vec<Value> {
+fn assembled_call_map(result: ToolParserOutput) -> Vec<Value> {
     let mut order = Vec::<usize>::new();
     let mut names = BTreeMap::<usize, String>::new();
     let mut args = BTreeMap::<usize, String>::new();
@@ -185,7 +185,8 @@ fn run_stream(input: Input) -> anyhow::Result<Value> {
             let mut parser = create_parser(&input.parser, &tools)?;
             let mut chunks = Vec::new();
             for chunk in case.chunks {
-                let mut result = parser.push(&chunk.delta_text)?;
+                let mut result = ToolParserOutput::default();
+                parser.parse_into(&chunk.delta_text, &mut result)?;
                 if chunk.finish_reason.is_some() {
                     append_result(&mut result, parser.finish()?);
                 }
@@ -211,9 +212,9 @@ fn run_batch_on_stream(input: Input) -> anyhow::Result<Value> {
         let result = (|| -> anyhow::Result<Option<Value>> {
             let tools = make_tools(case.tools);
             let mut parser = create_parser(&input.parser, &tools)?;
-            let mut result = ToolParseResult::default();
+            let mut result = ToolParserOutput::default();
             if let Some(model_text) = case.model_text {
-                append_result(&mut result, parser.push(&model_text)?);
+                parser.parse_into(&model_text, &mut result)?;
                 append_result(&mut result, parser.finish()?);
                 let normal_text = std::mem::take(&mut result.normal_text);
                 let calls = assembled_call_map(result);

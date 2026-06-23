@@ -1,12 +1,30 @@
 family: deepseek_v4
 mode: batch-on-stream
 captured_with:
-  vllm_python: 0.22.0
+  vllm_python: 0.23.0
   sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
   dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.batch.2.a:
+    dynamo_rust:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: ''
+    vllm_rust:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: ''
     vllm_python:
       calls:
       - name: get_weather
@@ -16,23 +34,6 @@ cases:
         arguments:
           timezone: EST
     sglang_python:
-      calls:
-      - name: get_weather
-        arguments:
-          location: NYC
-      - name: get_time
-        arguments:
-          timezone: EST
-    vllm_rust:
-      calls:
-      - arguments:
-          location: NYC
-        name: get_weather
-      - arguments:
-          timezone: EST
-        name: get_time
-      normal_text: ''
-    dynamo_rust:
       calls:
       - name: get_weather
         arguments:
@@ -41,6 +42,21 @@ cases:
         arguments:
           timezone: EST
   TOOLCALLING.batch.2.b:
+    dynamo_rust:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: ''
+    vllm_rust:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
     vllm_python:
       calls:
       - name: get_weather
@@ -49,21 +65,10 @@ cases:
       - name: get_time
         arguments:
           timezone: EST
+      normal_text: '
+
+        '
     sglang_python:
-      calls:
-      - name: get_weather
-        arguments:
-          location: NYC
-      - name: get_time
-        arguments:
-          timezone: EST
-    vllm_rust:
-      calls:
-      - arguments:
-          location: NYC
-        name: get_weather
-      normal_text: ''
-    dynamo_rust:
       calls:
       - name: get_weather
         arguments:
@@ -72,6 +77,24 @@ cases:
         arguments:
           timezone: EST
   TOOLCALLING.batch.2.c:
+    dynamo_rust:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: 'Both: '
+    vllm_rust:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_time
+        arguments:
+          timezone: EST
+      normal_text: 'Both: '
     vllm_python:
       calls:
       - name: get_weather
@@ -80,25 +103,8 @@ cases:
       - name: get_time
         arguments:
           timezone: EST
-      normal_text: 'Both: '
+      normal_text: 'Both:  Done.'
     sglang_python:
-      calls:
-      - name: get_weather
-        arguments:
-          location: NYC
-      - name: get_time
-        arguments:
-          timezone: EST
-    vllm_rust:
-      calls:
-      - arguments:
-          location: NYC
-        name: get_weather
-      - arguments:
-          timezone: EST
-        name: get_time
-      normal_text: 'Both: '
-    dynamo_rust:
       calls:
       - name: get_weather
         arguments:
@@ -107,6 +113,24 @@ cases:
         arguments:
           timezone: EST
   TOOLCALLING.batch.2.d:
+    dynamo_rust:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: ''
+    vllm_rust:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      - name: get_weather
+        arguments:
+          location: LA
+      normal_text: ''
     vllm_python:
       calls:
       - name: get_weather
@@ -116,23 +140,6 @@ cases:
         arguments:
           location: LA
     sglang_python:
-      calls:
-      - name: get_weather
-        arguments:
-          location: NYC
-      - name: get_weather
-        arguments:
-          location: LA
-    vllm_rust:
-      calls:
-      - arguments:
-          location: NYC
-        name: get_weather
-      - arguments:
-          location: LA
-        name: get_weather
-      normal_text: ''
-    dynamo_rust:
       calls:
       - name: get_weather
         arguments:

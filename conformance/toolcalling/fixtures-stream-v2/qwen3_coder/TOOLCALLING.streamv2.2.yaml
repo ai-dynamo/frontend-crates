@@ -11,9 +11,8 @@ family: qwen3_coder
 model_label: 'Qwen 3 Coder'
 mode: streamv2
 captured_with:
-  dynamo_rust: 'Dynamo parser v2'
-  vllm_rust: 'v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af'
-  vllm_python: '0.22.0'
+  vllm_rust: 'v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75'
+  vllm_python: '0.23.0'
   sglang_python: '0.5.12.post1'
 cases:
   TOOLCALLING.streamv2.2.a:
@@ -32,25 +31,28 @@ cases:
         properties:
           timezone:
             type: string
+    unavailable:
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
-    - delta_text: '<tool_call> <function=get_weather>'
+    - delta_text: '<tool_call>
+<function=get_weather>'
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python:
         - {index: 0, name: 'get_weather'}
-    - delta_text: ' <parameter=location>'
+    - delta_text: '
+<parameter=location>'
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python:
         - {index: 0, id: true, name: 'get_weather', arguments: ''}
         sglang_python: []
-    - delta_text: ' NYC </parameter> </function>'
+    - delta_text: '
+NYC
+</parameter>
+</function>'
       expected:
-        dynamo_rust:
-        - {index: 0, name: 'get_weather', arguments: '{"location":"NYC"}'}
         vllm_rust: []
         vllm_python:
         - {index: 0, arguments: '{'}
@@ -58,37 +60,42 @@ cases:
         - {index: 0, arguments: '{'}
         - {index: 0, arguments: '"location": "NYC"'}
         - {index: 0, arguments: '}'}
-    - delta_text: ' </tool_call> <tool_call>'
+    - delta_text: '
+</tool_call>
+<tool_call>'
       expected:
-        dynamo_rust: []
         vllm_rust:
-        - {index: 0, name: 'get_weather', arguments: '{"location":" NYC "}'}
+        - {index: 0, name: 'get_weather', arguments: '{"location":"NYC"}'}
         vllm_python:
         - {index: 0, arguments: '"location": "NYC"'}
         sglang_python: []
       normal_text:
-        vllm_rust: ' '
-        sglang_python: ' '
-    - delta_text: ' <function=get_time>'
+        vllm_rust: '
+'
+        sglang_python: '
+'
+    - delta_text: '
+<function=get_time>'
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python:
         - {index: 0, arguments: '}'}
         sglang_python:
         - {index: 1, name: 'get_time'}
-    - delta_text: ' <parameter=timezone> EST'
+    - delta_text: '
+<parameter=timezone>
+EST'
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python: []
-    - delta_text: ' </parameter> </function> </tool_call>'
+    - delta_text: '
+</parameter>
+</function>
+</tool_call>'
       expected:
-        dynamo_rust:
-        - {index: 1, name: 'get_time', arguments: '{"timezone":"EST"}'}
         vllm_rust:
-        - {index: 1, name: 'get_time', arguments: '{"timezone":" EST "}'}
+        - {index: 1, name: 'get_time', arguments: '{"timezone":"EST"}'}
         vllm_python:
         - {index: 1, id: true, name: 'get_time', arguments: ''}
         sglang_python:
@@ -98,7 +105,6 @@ cases:
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python: []
@@ -118,41 +124,41 @@ cases:
         properties:
           timezone:
             type: string
+    unavailable:
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: 'Both queries:'
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
-        dynamo_rust: 'Both queries:'
         vllm_rust: 'Both queries:'
         vllm_python: 'Both queries:'
         sglang_python: 'Both queries:'
     - delta_text: ' <tool_call>'
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
-        dynamo_rust: ' '
         vllm_rust: ' '
         vllm_python: ' '
         sglang_python: ' '
-    - delta_text: ' <function=get_weather> <parameter=location> NYC'
+    - delta_text: '
+<function=get_weather>
+<parameter=location>
+NYC'
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python:
         - {index: 0, id: true, name: 'get_weather', arguments: ''}
         sglang_python:
         - {index: 0, name: 'get_weather'}
-    - delta_text: ' </parameter> </function>'
+    - delta_text: '
+</parameter>
+</function>'
       expected:
-        dynamo_rust:
-        - {index: 0, name: 'get_weather', arguments: '{"location":"NYC"}'}
         vllm_rust: []
         vllm_python:
         - {index: 0, arguments: '{'}
@@ -160,47 +166,51 @@ cases:
         - {index: 0, arguments: '{'}
         - {index: 0, arguments: '"location": "NYC"'}
         - {index: 0, arguments: '}'}
-    - delta_text: ' </tool_call>'
+    - delta_text: '
+</tool_call>'
       expected:
-        dynamo_rust: []
         vllm_rust:
-        - {index: 0, name: 'get_weather', arguments: '{"location":" NYC "}'}
+        - {index: 0, name: 'get_weather', arguments: '{"location":"NYC"}'}
         vllm_python:
         - {index: 0, arguments: '"location": "NYC"'}
         sglang_python: []
-    - delta_text: ' <tool_call> <function=get_time>'
+    - delta_text: '
+<tool_call>
+<function=get_time>'
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python:
         - {index: 0, arguments: '}'}
         sglang_python:
         - {index: 1, name: 'get_time'}
       normal_text:
-        vllm_rust: ' '
-        sglang_python: ' '
-    - delta_text: ' <parameter=timezone> EST </parameter>'
+        vllm_rust: '
+'
+        sglang_python: '
+'
+    - delta_text: '
+<parameter=timezone>
+EST
+</parameter>'
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python:
         - {index: 1, arguments: '{'}
         - {index: 1, arguments: '"timezone": "EST"'}
-    - delta_text: ' </function>'
+    - delta_text: '
+</function>'
       expected:
-        dynamo_rust:
-        - {index: 1, name: 'get_time', arguments: '{"timezone":"EST"}'}
         vllm_rust: []
         vllm_python:
         - {index: 1, id: true, name: 'get_time', arguments: ''}
         sglang_python:
         - {index: 1, arguments: '}'}
-    - delta_text: ' </tool_call> Results'
+    - delta_text: '
+</tool_call> Results'
       expected:
-        dynamo_rust: []
         vllm_rust:
-        - {index: 1, name: 'get_time', arguments: '{"timezone":" EST "}'}
+        - {index: 1, name: 'get_time', arguments: '{"timezone":"EST"}'}
         vllm_python:
         - {index: 1, arguments: '{'}
         sglang_python: []
@@ -209,7 +219,6 @@ cases:
         sglang_python: ' Results'
     - delta_text: ' above.'
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python:
         - {index: 1, arguments: '"timezone": "EST"'}
@@ -220,7 +229,6 @@ cases:
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python: []
@@ -236,25 +244,28 @@ cases:
           location:
             type: string
     - *id001
+    unavailable:
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
-    - delta_text: '<tool_call> <function=get_weather>'
+    - delta_text: '<tool_call>
+<function=get_weather>'
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python:
         - {index: 0, name: 'get_weather'}
-    - delta_text: ' <parameter=location>'
+    - delta_text: '
+<parameter=location>'
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python:
         - {index: 0, id: true, name: 'get_weather', arguments: ''}
         sglang_python: []
-    - delta_text: ' NYC </parameter> </function>'
+    - delta_text: '
+NYC
+</parameter>
+</function>'
       expected:
-        dynamo_rust:
-        - {index: 0, name: 'get_weather', arguments: '{"location":"NYC"}'}
         vllm_rust: []
         vllm_python:
         - {index: 0, arguments: '{'}
@@ -262,37 +273,42 @@ cases:
         - {index: 0, arguments: '{'}
         - {index: 0, arguments: '"location": "NYC"'}
         - {index: 0, arguments: '}'}
-    - delta_text: ' </tool_call> <tool_call>'
+    - delta_text: '
+</tool_call>
+<tool_call>'
       expected:
-        dynamo_rust: []
         vllm_rust:
-        - {index: 0, name: 'get_weather', arguments: '{"location":" NYC "}'}
+        - {index: 0, name: 'get_weather', arguments: '{"location":"NYC"}'}
         vllm_python:
         - {index: 0, arguments: '"location": "NYC"'}
         sglang_python: []
       normal_text:
-        vllm_rust: ' '
-        sglang_python: ' '
-    - delta_text: ' <function=get_weather>'
+        vllm_rust: '
+'
+        sglang_python: '
+'
+    - delta_text: '
+<function=get_weather>'
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python:
         - {index: 0, arguments: '}'}
         sglang_python:
         - {index: 1, name: 'get_weather'}
-    - delta_text: ' <parameter=location> LA'
+    - delta_text: '
+<parameter=location>
+LA'
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python: []
-    - delta_text: ' </parameter> </function> </tool_call>'
+    - delta_text: '
+</parameter>
+</function>
+</tool_call>'
       expected:
-        dynamo_rust:
-        - {index: 1, name: 'get_weather', arguments: '{"location":"LA"}'}
         vllm_rust:
-        - {index: 1, name: 'get_weather', arguments: '{"location":" LA "}'}
+        - {index: 1, name: 'get_weather', arguments: '{"location":"LA"}'}
         vllm_python:
         - {index: 1, id: true, name: 'get_weather', arguments: ''}
         sglang_python:
@@ -302,7 +318,6 @@ cases:
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python: []

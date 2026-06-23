@@ -1,14 +1,23 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
 family: deepseek_v3_1
-model_label: DeepSeek V3.1
+model_label: 'DeepSeek V3.1'
 mode: streamv2
 captured_with:
-  vllm_python: 0.22.0
-  sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: 'v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75'
+  vllm_python: '0.23.0'
+  sglang_python: '0.5.12.post1'
 cases:
   TOOLCALLING.streamv2.4.a:
-    description: Garbage between calls fences (no tool_sep / args)
-    ref: derived from TOOLCALLING.batch.4.a
+    description: 'Garbage between calls fences (no tool_sep / args)'
+    ref: 'derived from TOOLCALLING.batch.4.a'
     tools:
     - name: get_weather
       parameters:
@@ -17,24 +26,23 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: '
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: '
     chunks:
-    - delta_text: <｜tool▁calls▁begin｜>nonsense<｜tool▁calls▁end｜>
+    - delta_text: '<｜tool▁calls▁begin｜>nonsense<｜tool▁calls▁end｜>'
       expected:
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: nonsense
+        vllm_python: 'nonsense'
     - delta_text: ''
       finish_reason: stop
       expected:
         vllm_python: []
         sglang_python: []
   TOOLCALLING.streamv2.4.b:
-    description: Unterminated JSON string in args
-    ref: derived from TOOLCALLING.batch.4.b
+    description: 'Unterminated JSON string in args'
+    ref: 'derived from TOOLCALLING.batch.4.b'
     tools:
     - name: get_weather
       parameters:
@@ -43,38 +51,32 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
-        DeepSeek V3.1 tool call'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: incomplete DeepSeek V3.1 tool call'
     chunks:
-    - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+    - delta_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>'
       expected:
         vllm_python: []
         sglang_python: []
-    - delta_text: get_weather<｜tool▁sep｜>
+    - delta_text: 'get_weather<｜tool▁sep｜>'
       expected:
         vllm_python:
-        - index: 0
-          id: true
-          name: get_weather
+        - {index: 0, id: true, name: 'get_weather'}
         sglang_python:
-        - index: 0
-          name: get_weather
+        - {index: 0, name: 'get_weather'}
     - delta_text: '{"location":"NYC<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
       expected:
         vllm_python: []
         sglang_python:
-        - index: 0
-          arguments: '{"location":"NYC'
+        - {index: 0, arguments: '{"location":"NYC'}
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
         vllm_python: []
         sglang_python: []
   TOOLCALLING.streamv2.4.c:
-    description: Missing function name (no token before tool_sep)
-    ref: derived from TOOLCALLING.batch.4.c
+    description: 'Missing function name (no token before tool_sep)'
+    ref: 'derived from TOOLCALLING.batch.4.c'
     tools:
     - name: get_weather
       parameters:
@@ -83,33 +85,31 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: '
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: '
     chunks:
-    - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+    - delta_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>'
       expected:
         vllm_python: []
         sglang_python: []
-    - delta_text: <｜tool▁sep｜>
+    - delta_text: '<｜tool▁sep｜>'
       expected:
         vllm_python: []
         sglang_python:
-        - index: 0
+        - {index: 0}
     - delta_text: '{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
       expected:
         vllm_python: []
         sglang_python:
-        - index: 0
-          arguments: '{"location":"NYC"}'
+        - {index: 0, arguments: '{"location":"NYC"}'}
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
         vllm_python: []
         sglang_python: []
   TOOLCALLING.streamv2.4.d:
-    description: Mismatched fences (calls_end without call_end)
-    ref: derived from TOOLCALLING.batch.4.d
+    description: 'Mismatched fences (calls_end without call_end)'
+    ref: 'derived from TOOLCALLING.batch.4.d'
     tools:
     - name: get_weather
       parameters:
@@ -118,31 +118,25 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: '
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: '
     chunks:
-    - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+    - delta_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>'
       expected:
         vllm_python: []
         sglang_python: []
-    - delta_text: get_weather<｜tool▁sep｜>
+    - delta_text: 'get_weather<｜tool▁sep｜>'
       expected:
         vllm_python:
-        - index: 0
-          id: true
-          name: get_weather
+        - {index: 0, id: true, name: 'get_weather'}
         sglang_python:
-        - index: 0
-          name: get_weather
+        - {index: 0, name: 'get_weather'}
     - delta_text: '{"location":"NYC"}<｜tool▁calls▁end｜>'
       expected:
         vllm_python:
-        - index: 0
-          arguments: '{"location":"NYC"}<｜tool▁calls▁end｜>'
+        - {index: 0, arguments: '{"location":"NYC"}<｜tool▁calls▁end｜>'}
         sglang_python:
-        - index: 0
-          arguments: '{"location":"NYC"}<｜tool▁calls▁end｜>'
+        - {index: 0, arguments: '{"location":"NYC"}<｜tool▁calls▁end｜>'}
     - delta_text: ''
       finish_reason: stop
       expected:

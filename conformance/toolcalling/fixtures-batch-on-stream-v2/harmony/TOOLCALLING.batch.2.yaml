@@ -1,8 +1,9 @@
 family: harmony
 mode: batch-on-stream
 captured_with:
-  vllm_python: 0.22.0
+  vllm_python: 0.23.0
   sglang_python: 0.5.12.post1
+  vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
   dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.batch.2.a:
@@ -14,6 +15,9 @@ cases:
       - name: get_time
         arguments:
           timezone: EST
+      normal_text: ''
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls:
       - name: get_weather
@@ -41,6 +45,8 @@ cases:
         arguments:
           timezone: EST
       normal_text: I need both.  Done.
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls: []
     sglang_python:
@@ -61,6 +67,9 @@ cases:
       - name: get_weather
         arguments:
           location: LA
+      normal_text: ''
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       calls:
       - name: get_weather
@@ -79,6 +88,8 @@ cases:
           location: LA
       normal_text: ''
   TOOLCALLING.batch.2.b:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'harmony'.
     vllm_python:
       unavailable: No batch model_text for this case.
     sglang_python:

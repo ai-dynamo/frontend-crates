@@ -1,15 +1,23 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
 family: minimax_m2
-model_label: MiniMax 2.7
+model_label: 'MiniMax 2.7'
 mode: streamv2
 captured_with:
-  vllm_python: 0.22.0
-  sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: 'v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75'
+  vllm_python: '0.23.0'
+  sglang_python: '0.5.12.post1'
 cases:
   TOOLCALLING.streamv2.50:
-    description: Complete single tool call with a grammar token split across chunk
-      boundaries
-    ref: derived from TOOLCALLING.batch.1
+    description: 'Complete single tool call with a grammar token split across chunk boundaries'
+    ref: 'derived from TOOLCALLING.batch.1'
     tools:
     - name: get_weather
       parameters:
@@ -18,117 +26,132 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: '
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
-    - delta_text: <m
+    - delta_text: '<m'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: <m
-        sglang_python: <m
-    - delta_text: ini
+        vllm_python: '<m'
+        sglang_python: '<m'
+    - delta_text: 'ini'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: ini
-        sglang_python: ini
-    - delta_text: max:t
+        vllm_python: 'ini'
+        sglang_python: 'ini'
+    - delta_text: 'max:t'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: max:t
-        sglang_python: max:t
-    - delta_text: ool_call> <
+        vllm_python: 'max:t'
+        sglang_python: 'max:t'
+    - delta_text: 'ool_call> <'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: ool_call> <
-        sglang_python: ool_call> <
-    - delta_text: invoke name="get_we
+        vllm_python: 'ool_call> <'
+        sglang_python: 'ool_call> <'
+    - delta_text: 'invoke name="get_we'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: invoke name="get_we
-        sglang_python: invoke name="get_we
-    - delta_text: at
+        vllm_python: 'invoke name="get_we'
+        sglang_python: 'invoke name="get_we'
+    - delta_text: 'at'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: at
-        sglang_python: at
-    - delta_text: her
+        vllm_python: 'at'
+        sglang_python: 'at'
+    - delta_text: 'her'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: her
-        sglang_python: her
+        vllm_python: 'her'
+        sglang_python: 'her'
     - delta_text: '"> <p'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
         vllm_python: '"> <p'
         sglang_python: '"> <p'
-    - delta_text: arameter na
+    - delta_text: 'arameter na'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: arameter na
-        sglang_python: arameter na
-    - delta_text: me="location">NYC</
+        vllm_python: 'arameter na'
+        sglang_python: 'arameter na'
+    - delta_text: 'me="location">NYC</'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: me="location">NYC</
-        sglang_python: me="location">NYC</
-    - delta_text: pa
+        vllm_python: 'me="location">NYC</'
+        sglang_python: 'me="location">NYC</'
+    - delta_text: 'pa'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: pa
-        sglang_python: pa
-    - delta_text: ram
+        vllm_python: 'pa'
+        sglang_python: 'pa'
+    - delta_text: 'ram'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: ram
-        sglang_python: ram
-    - delta_text: eter>
+        vllm_python: 'ram'
+        sglang_python: 'ram'
+    - delta_text: 'eter>'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: eter>
-        sglang_python: eter>
+        vllm_python: 'eter>'
+        sglang_python: 'eter>'
     - delta_text: ' </invoke> '
       expected:
+        vllm_rust:
+        - {index: 0, name: 'get_weather', arguments: '{"location":"NYC"}'}
         vllm_python: []
         sglang_python: []
       normal_text:
         vllm_python: ' </invoke> '
         sglang_python: ' </invoke> '
-    - delta_text: </minimax:tool_call
+    - delta_text: '</minimax:tool_call'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: </minimax:tool_call
-        sglang_python: </minimax:tool_call
+        vllm_python: '</minimax:tool_call'
+        sglang_python: '</minimax:tool_call'
     - delta_text: '>'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
       normal_text:
@@ -137,5 +160,6 @@ cases:
     - delta_text: ''
       finish_reason: tool_calls
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []

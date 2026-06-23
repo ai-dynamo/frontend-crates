@@ -11,7 +11,7 @@ family: jamba
 model_label: 'AI21 Jamba'
 mode: streamv2
 captured_with:
-  vllm_python: '0.22.0'
+  vllm_python: '0.23.0'
 cases:
   TOOLCALLING.streamv2.7.a:
     description: 'Standard scalar types'
@@ -28,8 +28,9 @@ cases:
           first_class:
             type: boolean
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang_python: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''jamba''.'
+      sglang_python: 'No SGLang Python parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
@@ -54,7 +55,7 @@ cases:
         vllm_python:
         - {index: 0, arguments: ', "first_class": true'}
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
         vllm_python:
         - {index: 0, arguments: ''}
@@ -69,8 +70,9 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang_python: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''jamba''.'
+      sglang_python: 'No SGLang Python parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
@@ -86,7 +88,7 @@ cases:
       expected:
         vllm_python: []
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
         vllm_python:
         - {index: 0, arguments: ''}
@@ -101,8 +103,9 @@ cases:
           celsius:
             type: integer
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang_python: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''jamba''.'
+      sglang_python: 'No SGLang Python parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
@@ -119,7 +122,7 @@ cases:
         vllm_python:
         - {index: 0, arguments: ''}
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
         vllm_python:
         - {index: 0, arguments: ''}
@@ -136,8 +139,9 @@ cases:
           config:
             type: object
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang_python: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''jamba''.'
+      sglang_python: 'No SGLang Python parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
@@ -162,7 +166,7 @@ cases:
         vllm_python:
         - {index: 0, arguments: '"nested": true'}
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
         vllm_python:
         - {index: 0, arguments: ''}
@@ -177,8 +181,9 @@ cases:
           payload:
             type: object
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang_python: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''jamba''.'
+      sglang_python: 'No SGLang Python parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
@@ -243,7 +248,7 @@ cases:
         vllm_python:
         - {index: 0, arguments: '}, "empty": {'}
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
         vllm_python:
         - {index: 0, arguments: ''}
@@ -258,8 +263,9 @@ cases:
           count:
             type: number
     unavailable:
-      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang per-chunk output is the target to match.'
-      sglang_python: 'No SGLang parser for family ''jamba''.'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'No vLLM Rust parser for family ''jamba''.'
+      sglang_python: 'No SGLang Python parser for family ''jamba''.'
     chunks:
     - delta_text: '<tool_calls>[{"name":'
       expected:
@@ -276,7 +282,7 @@ cases:
         vllm_python:
         - {index: 0, arguments: ''}
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
         vllm_python:
         - {index: 0, arguments: ''}

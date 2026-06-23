@@ -192,6 +192,16 @@ def main():
                                             allow_unicode=True, sort_keys=False).rstrip(), 4))
         # unavailable block
         case_unavail = dict(unavail)
+        # Per-case capture errors: the probe emits {"error": ...} for a case the
+        # parser rejected (e.g. garbage/incomplete tool call). That's expected
+        # behavior for some edge cases, not a chunk list — record it as a
+        # case-level unavailable so the per-chunk loop below skips the impl.
+        for impl in IMPL_KEYS:
+            if impl in case_unavail or impl in na_impls:
+                continue
+            cap = caps.get(impl, {}).get(cid)
+            if isinstance(cap, dict):
+                case_unavail[impl] = f"{impl} parser not captured: {cap.get('error', 'capture failed')}"
         if case_unavail:
             L.append("    unavailable:")
             for impl, reason in case_unavail.items():

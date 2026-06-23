@@ -1,20 +1,28 @@
 family: jamba
 mode: batch-on-stream
 captured_with:
-  vllm_python: 0.22.0
+  vllm_python: 0.23.0
   sglang_python: 0.5.12.post1
+  vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+  dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.batch.6.a:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'jamba'.
     vllm_python:
       calls: []
     sglang_python:
       unavailable: No SGLang parser for family 'jamba'.
   TOOLCALLING.batch.6.b:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'jamba'.
     vllm_python:
       calls: []
     sglang_python:
       unavailable: No SGLang parser for family 'jamba'.
   TOOLCALLING.batch.6.c:
+    vllm_rust:
+      unavailable: No vLLM Rust parser for family 'jamba'.
     vllm_python:
       calls: []
     sglang_python:

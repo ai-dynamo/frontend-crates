@@ -1,55 +1,58 @@
 family: llama3_json
 mode: batch-on-stream
 captured_with:
-  vllm_python: 0.22.0
+  vllm_python: 0.23.0
   sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+  dynamo_rust: Dynamo parser v2
 cases:
   TOOLCALLING.batch.4.a:
+    vllm_rust:
+      calls: []
+      normal_text: <|python_tag|>not even json
     vllm_python:
       calls: []
     sglang_python:
       calls: []
+  TOOLCALLING.batch.4.b:
     vllm_rust:
       calls: []
-      normal_text: <|python_tag|>not even json
-  TOOLCALLING.batch.4.b:
+      normal_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location":
+        "NYC"'
     vllm_python:
       calls: []
     sglang_python:
       calls:
       - name: get_weather
         arguments: {}
-    vllm_rust:
-      calls: []
-      normal_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location":
-        "NYC"'
   TOOLCALLING.batch.4.c:
-    vllm_python:
-      calls: []
-    sglang_python:
-      calls: []
     vllm_rust:
       calls: []
       normal_text: '<|python_tag|>{"arguments": {"location": "NYC"}}'
+    vllm_python:
+      calls: []
+    sglang_python:
+      calls: []
   TOOLCALLING.batch.4.e:
+    vllm_rust:
+      error: 'tool parser parsing failed: invalid Llama JSON
+
+        expected `parameters`'
     vllm_python:
       calls: []
     sglang_python:
       calls: []
-    vllm_rust:
-      unavailable: 'vLLM Rust parser not captured: expected `parameters`'
   TOOLCALLING.batch.4.d:
+    vllm_rust:
+      unavailable: No batch model_text for this case.
     vllm_python:
       unavailable: No batch model_text for this case.
     sglang_python:
-      unavailable: No batch model_text for this case.
-    vllm_rust:
       unavailable: No batch model_text for this case.
   TOOLCALLING.batch.4.f:
+    vllm_rust:
+      unavailable: No batch model_text for this case.
     vllm_python:
       unavailable: No batch model_text for this case.
     sglang_python:
-      unavailable: No batch model_text for this case.
-    vllm_rust:
       unavailable: No batch model_text for this case.

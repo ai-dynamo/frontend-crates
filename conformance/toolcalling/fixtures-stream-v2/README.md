@@ -15,8 +15,8 @@ Each stream fixture records chunks under `cases.<case>.chunks`. Each chunk has i
 ```yaml
 captured_with:
   dynamo_rust: Dynamo parser v2
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
-  vllm_python: 0.22.0
+  vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+  vllm_python: 0.23.0
   sglang_python: 0.5.12.post1
 cases:
   TOOLCALLING.streamv2.1.a:
@@ -76,7 +76,7 @@ conformance/utils/capture.sh dynamo-stream \
 conformance/utils/capture.sh stream \
   --vllm-container vllm-localdev \
   --sglang-container sglang-localdev \
-  --vllm-rust-source ~/dynamo/vllm-0.22.0
+  --vllm-rust-source ~/dynamo/vllm-0.23.0
 ```
 
 Use `capture.sh stream` for all-family captures; do not add a second wrapper for the same workflow.

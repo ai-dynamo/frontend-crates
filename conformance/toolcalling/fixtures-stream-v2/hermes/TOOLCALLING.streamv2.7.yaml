@@ -1,14 +1,23 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
 family: hermes
-model_label: Hermes-3 / Llama variants
+model_label: 'Hermes-3 / Llama variants'
 mode: streamv2
 captured_with:
-  vllm_python: 0.22.0
-  sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: 'v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75'
+  vllm_python: '0.23.0'
+  sglang_python: '0.5.12.post1'
 cases:
   TOOLCALLING.streamv2.7.a:
-    description: Standard scalar types
-    ref: derived from TOOLCALLING.batch.7.a
+    description: 'Standard scalar types'
+    ref: 'derived from TOOLCALLING.batch.7.a'
     tools:
     - name: book_flight
       parameters:
@@ -21,75 +30,60 @@ cases:
           first_class:
             type: boolean
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '<tool_call>{"name":'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
     - delta_text: ' "book_flight",'
       expected:
-        vllm_python:
-        - index: 0
-          id: true
-          name: book_flight
-        sglang_python:
-        - index: 0
-          name: book_flight
         vllm_rust: []
+        vllm_python:
+        - {index: 0, id: true, name: 'book_flight'}
+        sglang_python:
+        - {index: 0, name: 'book_flight'}
     - delta_text: ' "arguments": {"destination": "Paris",'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: '{"destination": "Paris",'
-        sglang_python: []
         vllm_rust:
-        - index: 0
-          name: book_flight
-        - arguments: '{"destination": "Paris",'
-          index: 0
+        - {index: 0, name: 'book_flight'}
+        - {index: 0, arguments: '{"destination": "Paris",'}
+        vllm_python:
+        - {index: 0, arguments: '{"destination": "Paris",'}
+        sglang_python: []
     - delta_text: ' "passengers": 2,'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' "passengers": 2,'
-        sglang_python:
-        - index: 0
-          arguments: '{"destination": "Paris"'
         vllm_rust:
-        - arguments: ' "passengers": 2,'
-          index: 0
+        - {index: 0, arguments: ' "passengers": 2,'}
+        vllm_python:
+        - {index: 0, arguments: ' "passengers": 2,'}
+        sglang_python:
+        - {index: 0, arguments: '{"destination": "Paris"'}
     - delta_text: ' "first_class":'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' "first_class":'
-        sglang_python: []
         vllm_rust:
-        - arguments: ' "first_class":'
-          index: 0
+        - {index: 0, arguments: ' "first_class":'}
+        vllm_python:
+        - {index: 0, arguments: ' "first_class":'}
+        sglang_python: []
     - delta_text: ' true}}</tool_call>'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' true}'
-        sglang_python:
-        - index: 0
-          arguments: ', "passengers": 2, "first_class": true}'
         vllm_rust:
-        - arguments: ' true}'
-          index: 0
+        - {index: 0, arguments: ' true}'}
+        vllm_python:
+        - {index: 0, arguments: ' true}'}
+        sglang_python:
+        - {index: 0, arguments: ', "passengers": 2, "first_class": true}'}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
   TOOLCALLING.streamv2.7.b:
-    description: Unicode + escaped chars
-    ref: derived from TOOLCALLING.batch.7.b
+    description: 'Unicode + escaped chars'
+    ref: 'derived from TOOLCALLING.batch.7.b'
     tools:
     - name: get_weather
       parameters:
@@ -98,55 +92,45 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '<tool_call>{"name":'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
     - delta_text: ' "get_weather",'
       expected:
-        vllm_python:
-        - index: 0
-          id: true
-          name: get_weather
-        sglang_python:
-        - index: 0
-          name: get_weather
         vllm_rust: []
+        vllm_python:
+        - {index: 0, id: true, name: 'get_weather'}
+        sglang_python:
+        - {index: 0, name: 'get_weather'}
     - delta_text: ' "arguments": {"location": "Tōkyō'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: '{"location": "Tōkyō'
-        sglang_python: []
         vllm_rust:
-        - index: 0
-          name: get_weather
-        - arguments: '{"location": "Tōkyō'
-          index: 0
+        - {index: 0, name: 'get_weather'}
+        - {index: 0, arguments: '{"location": "Tōkyō'}
+        vllm_python:
+        - {index: 0, arguments: '{"location": "Tōkyō'}
+        sglang_python: []
     - delta_text: ' \"central\""}}</tool_call>'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' \"central\""}'
-        sglang_python:
-        - index: 0
-          arguments: '{"location": "Tōkyō \"central\""}'
         vllm_rust:
-        - arguments: ' \"central\""}'
-          index: 0
+        - {index: 0, arguments: ' \"central\""}'}
+        vllm_python:
+        - {index: 0, arguments: ' \"central\""}'}
+        sglang_python:
+        - {index: 0, arguments: '{"location": "Tōkyō \"central\""}'}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
   TOOLCALLING.streamv2.7.c:
-    description: Schema mismatch — string value where schema declares integer
-    ref: derived from TOOLCALLING.batch.7.c
+    description: 'Schema mismatch — string value where schema declares integer'
+    ref: 'derived from TOOLCALLING.batch.7.c'
     tools:
     - name: set_temperature
       parameters:
@@ -155,46 +139,38 @@ cases:
           celsius:
             type: integer
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '<tool_call>{"name":'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
     - delta_text: ' "set_temperature",'
       expected:
-        vllm_python:
-        - index: 0
-          id: true
-          name: set_temperature
-        sglang_python:
-        - index: 0
-          name: set_temperature
         vllm_rust: []
+        vllm_python:
+        - {index: 0, id: true, name: 'set_temperature'}
+        sglang_python:
+        - {index: 0, name: 'set_temperature'}
     - delta_text: ' "arguments": {"celsius": "20"}}</tool_call>'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: '{"celsius": "20"}'
-        sglang_python:
-        - index: 0
-          arguments: '{"celsius": "20"}'
         vllm_rust:
-        - index: 0
-          name: set_temperature
-        - arguments: '{"celsius": "20"}'
-          index: 0
+        - {index: 0, name: 'set_temperature'}
+        - {index: 0, arguments: '{"celsius": "20"}'}
+        vllm_python:
+        - {index: 0, arguments: '{"celsius": "20"}'}
+        sglang_python:
+        - {index: 0, arguments: '{"celsius": "20"}'}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
   TOOLCALLING.streamv2.7.d:
-    description: Nested object + array
-    ref: derived from TOOLCALLING.batch.7.d
+    description: 'Nested object + array'
+    ref: 'derived from TOOLCALLING.batch.7.d'
     tools:
     - name: process_data
       parameters:
@@ -205,75 +181,60 @@ cases:
           config:
             type: object
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '<tool_call>{"name":'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
     - delta_text: ' "process_data",'
       expected:
-        vllm_python:
-        - index: 0
-          id: true
-          name: process_data
-        sglang_python:
-        - index: 0
-          name: process_data
         vllm_rust: []
+        vllm_python:
+        - {index: 0, id: true, name: 'process_data'}
+        sglang_python:
+        - {index: 0, name: 'process_data'}
     - delta_text: ' "arguments": {"items": [1,2,3]'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: '{"items": [1,2,3]'
-        sglang_python: []
         vllm_rust:
-        - index: 0
-          name: process_data
-        - arguments: '{"items": [1,2,3]'
-          index: 0
+        - {index: 0, name: 'process_data'}
+        - {index: 0, arguments: '{"items": [1,2,3]'}
+        vllm_python:
+        - {index: 0, arguments: '{"items": [1,2,3]'}
+        sglang_python: []
     - delta_text: ', "config":'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ', "config":'
-        sglang_python: []
         vllm_rust:
-        - arguments: ', "config":'
-          index: 0
+        - {index: 0, arguments: ', "config":'}
+        vllm_python:
+        - {index: 0, arguments: ', "config":'}
+        sglang_python: []
     - delta_text: ' {"nested":'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' {"nested":'
-        sglang_python:
-        - index: 0
-          arguments: '{"items": [1, 2, 3]'
         vllm_rust:
-        - arguments: ' {"nested":'
-          index: 0
+        - {index: 0, arguments: ' {"nested":'}
+        vllm_python:
+        - {index: 0, arguments: ' {"nested":'}
+        sglang_python:
+        - {index: 0, arguments: '{"items": [1, 2, 3]'}
     - delta_text: ' true}}}</tool_call>'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' true}}'
-        sglang_python:
-        - index: 0
-          arguments: ', "config": {"nested": true}}'
         vllm_rust:
-        - arguments: ' true}}'
-          index: 0
+        - {index: 0, arguments: ' true}}'}
+        vllm_python:
+        - {index: 0, arguments: ' true}}'}
+        sglang_python:
+        - {index: 0, arguments: ', "config": {"nested": true}}'}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
   TOOLCALLING.streamv2.7.e:
-    description: Large / deep JSON-edge argument payload
-    ref: derived from TOOLCALLING.batch.7.e
+    description: 'Large / deep JSON-edge argument payload'
+    ref: 'derived from TOOLCALLING.batch.7.e'
     tools:
     - name: process_data
       parameters:
@@ -282,181 +243,138 @@ cases:
           payload:
             type: object
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '<tool_call>{"name":'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
     - delta_text: ' "process_data",'
       expected:
-        vllm_python:
-        - index: 0
-          id: true
-          name: process_data
-        sglang_python:
-        - index: 0
-          name: process_data
         vllm_rust: []
+        vllm_python:
+        - {index: 0, id: true, name: 'process_data'}
+        sglang_python:
+        - {index: 0, name: 'process_data'}
     - delta_text: ' "arguments": {"payload": {"regions":'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: '{"payload": {"regions":'
-        sglang_python: []
         vllm_rust:
-        - index: 0
-          name: process_data
-        - arguments: '{"payload": {"regions":'
-          index: 0
+        - {index: 0, name: 'process_data'}
+        - {index: 0, arguments: '{"payload": {"regions":'}
+        vllm_python:
+        - {index: 0, arguments: '{"payload": {"regions":'}
+        sglang_python: []
     - delta_text: ' [{"name": "west",'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' [{"name": "west",'
-        sglang_python:
-        - index: 0
-          arguments: '{"payload": {'
         vllm_rust:
-        - arguments: ' [{"name": "west",'
-          index: 0
+        - {index: 0, arguments: ' [{"name": "west",'}
+        vllm_python:
+        - {index: 0, arguments: ' [{"name": "west",'}
+        sglang_python:
+        - {index: 0, arguments: '{"payload": {'}
     - delta_text: ' "scores":'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' "scores":'
-        sglang_python: []
         vllm_rust:
-        - arguments: ' "scores":'
-          index: 0
+        - {index: 0, arguments: ' "scores":'}
+        vllm_python:
+        - {index: 0, arguments: ' "scores":'}
+        sglang_python: []
     - delta_text: ' [1, 2,'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' [1, 2,'
-        sglang_python:
-        - index: 0
-          arguments: '"regions": [{"name": "west"'
         vllm_rust:
-        - arguments: ' [1, 2,'
-          index: 0
+        - {index: 0, arguments: ' [1, 2,'}
+        vllm_python:
+        - {index: 0, arguments: ' [1, 2,'}
+        sglang_python:
+        - {index: 0, arguments: '"regions": [{"name": "west"'}
     - delta_text: ' 3]}, {"name":'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' 3]}, {"name":'
-        sglang_python:
-        - index: 0
-          arguments: ', "scores": [1, 2'
         vllm_rust:
-        - arguments: ' 3]}, {"name":'
-          index: 0
+        - {index: 0, arguments: ' 3]}, {"name":'}
+        vllm_python:
+        - {index: 0, arguments: ' 3]}, {"name":'}
+        sglang_python:
+        - {index: 0, arguments: ', "scores": [1, 2'}
     - delta_text: ' "east",'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' "east",'
-        sglang_python:
-        - index: 0
-          arguments: ', 3]}, {'
         vllm_rust:
-        - arguments: ' "east",'
-          index: 0
+        - {index: 0, arguments: ' "east",'}
+        vllm_python:
+        - {index: 0, arguments: ' "east",'}
+        sglang_python:
+        - {index: 0, arguments: ', 3]}, {'}
     - delta_text: ' "scores": [4,'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' "scores": [4,'
-        sglang_python:
-        - index: 0
-          arguments: '"name": "east"'
         vllm_rust:
-        - arguments: ' "scores": [4,'
-          index: 0
+        - {index: 0, arguments: ' "scores": [4,'}
+        vllm_python:
+        - {index: 0, arguments: ' "scores": [4,'}
+        sglang_python:
+        - {index: 0, arguments: '"name": "east"'}
     - delta_text: ' 5,'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' 5,'
-        sglang_python:
-        - index: 0
-          arguments: ', "scores": [4'
         vllm_rust:
-        - arguments: ' 5,'
-          index: 0
+        - {index: 0, arguments: ' 5,'}
+        vllm_python:
+        - {index: 0, arguments: ' 5,'}
+        sglang_python:
+        - {index: 0, arguments: ', "scores": [4'}
     - delta_text: ' 6]}]'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' 6]}]'
-        sglang_python:
-        - index: 0
-          arguments: ', 5'
         vllm_rust:
-        - arguments: ' 6]}]'
-          index: 0
+        - {index: 0, arguments: ' 6]}]'}
+        vllm_python:
+        - {index: 0, arguments: ' 6]}]'}
+        sglang_python:
+        - {index: 0, arguments: ', 5'}
     - delta_text: ','
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ','
-        sglang_python: []
         vllm_rust:
-        - arguments: ','
-          index: 0
+        - {index: 0, arguments: ','}
+        vllm_python:
+        - {index: 0, arguments: ','}
+        sglang_python: []
     - delta_text: ' "flags": {"enabled": true,'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' "flags": {"enabled": true,'
-        sglang_python:
-        - index: 0
-          arguments: ', 6]}]'
         vllm_rust:
-        - arguments: ' "flags": {"enabled": true,'
-          index: 0
+        - {index: 0, arguments: ' "flags": {"enabled": true,'}
+        vllm_python:
+        - {index: 0, arguments: ' "flags": {"enabled": true,'}
+        sglang_python:
+        - {index: 0, arguments: ', 6]}]'}
     - delta_text: ' "retry": null},'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' "retry": null},'
-        sglang_python:
-        - index: 0
-          arguments: ', "flags": {"enabled": true'
         vllm_rust:
-        - arguments: ' "retry": null},'
-          index: 0
+        - {index: 0, arguments: ' "retry": null},'}
+        vllm_python:
+        - {index: 0, arguments: ' "retry": null},'}
+        sglang_python:
+        - {index: 0, arguments: ', "flags": {"enabled": true'}
     - delta_text: ' "empty":'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' "empty":'
-        sglang_python: []
         vllm_rust:
-        - arguments: ' "empty":'
-          index: 0
+        - {index: 0, arguments: ' "empty":'}
+        vllm_python:
+        - {index: 0, arguments: ' "empty":'}
+        sglang_python: []
     - delta_text: ' {}}}}</tool_call>'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: ' {}}}'
-        sglang_python:
-        - index: 0
-          arguments: ', "retry": null}, "empty": {}}}'
         vllm_rust:
-        - arguments: ' {}}}'
-          index: 0
+        - {index: 0, arguments: ' {}}}'}
+        vllm_python:
+        - {index: 0, arguments: ' {}}}'}
+        sglang_python:
+        - {index: 0, arguments: ', "retry": null}, "empty": {}}}'}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
   TOOLCALLING.streamv2.7.f:
-    description: Numeric precision edge preserves integer-like number literal
-    ref: derived from TOOLCALLING.batch.7.f
+    description: 'Numeric precision edge preserves integer-like number literal'
+    ref: 'derived from TOOLCALLING.batch.7.f'
     tools:
     - name: set_limit
       parameters:
@@ -465,40 +383,32 @@ cases:
           count:
             type: number
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
     - delta_text: '<tool_call>{"name":'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
     - delta_text: ' "set_limit",'
       expected:
-        vllm_python:
-        - index: 0
-          id: true
-          name: set_limit
-        sglang_python:
-        - index: 0
-          name: set_limit
         vllm_rust: []
+        vllm_python:
+        - {index: 0, id: true, name: 'set_limit'}
+        sglang_python:
+        - {index: 0, name: 'set_limit'}
     - delta_text: ' "arguments": {"count": 9007199254740993}}</tool_call>'
       expected:
-        vllm_python:
-        - index: 0
-          arguments: '{"count": 9007199254740993}'
-        sglang_python:
-        - index: 0
-          arguments: '{"count": 9007199254740993}'
         vllm_rust:
-        - index: 0
-          name: set_limit
-        - arguments: '{"count": 9007199254740993}'
-          index: 0
+        - {index: 0, name: 'set_limit'}
+        - {index: 0, arguments: '{"count": 9007199254740993}'}
+        vllm_python:
+        - {index: 0, arguments: '{"count": 9007199254740993}'}
+        sglang_python:
+        - {index: 0, arguments: '{"count": 9007199254740993}'}
     - delta_text: ''
       finish_reason: tool_calls
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []

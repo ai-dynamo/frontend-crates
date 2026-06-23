@@ -11,9 +11,8 @@ family: qwen3_coder
 model_label: 'Qwen 3 Coder'
 mode: streamv2
 captured_with:
-  dynamo_rust: 'Dynamo parser v2'
-  vllm_rust: 'v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af'
-  vllm_python: '0.22.0'
+  vllm_rust: 'v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75'
+  vllm_python: '0.23.0'
   sglang_python: '0.5.12.post1'
 cases:
   TOOLCALLING.streamv2.1:
@@ -26,25 +25,28 @@ cases:
         properties:
           location:
             type: string
+    unavailable:
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
-    - delta_text: '<tool_call> <function=get_weather>'
+    - delta_text: '<tool_call>
+<function=get_weather>'
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python:
         - {index: 0, name: 'get_weather'}
-    - delta_text: ' <parameter=location>'
+    - delta_text: '
+<parameter=location>'
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python:
         - {index: 0, id: true, name: 'get_weather', arguments: ''}
         sglang_python: []
-    - delta_text: ' NYC </parameter> </function>'
+    - delta_text: '
+NYC
+</parameter>
+</function>'
       expected:
-        dynamo_rust:
-        - {index: 0, name: 'get_weather', arguments: '{"location":"NYC"}'}
         vllm_rust: []
         vllm_python:
         - {index: 0, arguments: '{'}
@@ -52,18 +54,17 @@ cases:
         - {index: 0, arguments: '{'}
         - {index: 0, arguments: '"location": "NYC"'}
         - {index: 0, arguments: '}'}
-    - delta_text: ' </tool_call>'
+    - delta_text: '
+</tool_call>'
       expected:
-        dynamo_rust: []
         vllm_rust:
-        - {index: 0, name: 'get_weather', arguments: '{"location":" NYC "}'}
+        - {index: 0, name: 'get_weather', arguments: '{"location":"NYC"}'}
         vllm_python:
         - {index: 0, arguments: '"location": "NYC"'}
         sglang_python: []
     - delta_text: ''
       finish_reason: tool_calls
       expected:
-        dynamo_rust: []
         vllm_rust: []
         vllm_python: []
         sglang_python: []

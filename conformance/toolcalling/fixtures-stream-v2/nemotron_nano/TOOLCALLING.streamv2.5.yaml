@@ -1,13 +1,22 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
 family: nemotron_nano
-model_label: Nemotron Nano v3
+model_label: 'Nemotron Nano v3'
 mode: streamv2
 captured_with:
-  vllm_python: 0.22.0
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: 'v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75'
+  vllm_python: '0.23.0'
 cases:
   TOOLCALLING.streamv2.5.a:
-    description: Missing </tool_call> end marker
-    ref: derived from TOOLCALLING.batch.5.a
+    description: 'Missing </tool_call> end marker'
+    ref: 'derived from TOOLCALLING.batch.5.a'
     tools:
     - name: get_weather
       parameters:
@@ -16,28 +25,31 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      sglang_python: No SGLang parser for family 'nemotron_nano'.
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: invalid
-        Hermes'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang Python parser for family ''nemotron_nano''.'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: invalid Hermes'
     chunks:
-    - delta_text: <tool_call> <function=get_weather>
+    - delta_text: '<tool_call>
+<function=get_weather>'
       expected:
         vllm_python: []
-    - delta_text: ' <parameter=location>'
+    - delta_text: '
+<parameter=location>'
       expected:
         vllm_python: []
-    - delta_text: ' NYC </parameter> </function>'
+    - delta_text: '
+NYC
+</parameter>
+</function>'
       expected:
         vllm_python: []
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
         vllm_python: []
   TOOLCALLING.streamv2.5.b:
-    description: Closing </tool_call> without matching <tool_call> open
-    ref: derived from TOOLCALLING.batch.5.b
+    description: 'Closing </tool_call> without matching <tool_call> open'
+    ref: 'derived from TOOLCALLING.batch.5.b'
     tools:
     - name: get_weather
       parameters:
@@ -46,39 +58,53 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      sglang_python: No SGLang parser for family 'nemotron_nano'.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang Python parser for family ''nemotron_nano''.'
     chunks:
-    - delta_text: <function=get_weather> <parameter=location>
+    - delta_text: '<function=get_weather>
+<parameter=location>'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: <function=get_weather> <parameter=location>
-        vllm_rust: <function=get_weather> <parameter=location>
-    - delta_text: ' NYC'
+        vllm_rust: '<function=get_weather>
+<parameter=location>'
+        vllm_python: '<function=get_weather>
+<parameter=location>'
+    - delta_text: '
+NYC'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' NYC'
-        vllm_rust: ' NYC'
-    - delta_text: ' </parameter> </function> </tool_call>'
+        vllm_rust: '
+NYC'
+        vllm_python: '
+NYC'
+    - delta_text: '
+</parameter>
+</function>
+</tool_call>'
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
       normal_text:
-        vllm_python: ' </parameter> </function> </tool_call>'
-        vllm_rust: ' </parameter> </function> </tool_call>'
+        vllm_rust: '
+</parameter>
+</function>
+</tool_call>'
+        vllm_python: '
+</parameter>
+</function>
+</tool_call>'
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
-        vllm_python: []
         vllm_rust: []
+        vllm_python: []
   TOOLCALLING.streamv2.5.c:
-    description: Truncation mid-parameter value
-    ref: derived from TOOLCALLING.batch.5.c
+    description: 'Truncation mid-parameter value'
+    ref: 'derived from TOOLCALLING.batch.5.c'
     tools:
     - name: get_weather
       parameters:
@@ -87,28 +113,29 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      sglang_python: No SGLang parser for family 'nemotron_nano'.
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: invalid
-        Hermes'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang Python parser for family ''nemotron_nano''.'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: invalid Hermes'
     chunks:
-    - delta_text: <tool_call> <function=get_weather>
+    - delta_text: '<tool_call>
+<function=get_weather>'
       expected:
         vllm_python: []
-    - delta_text: ' <parameter=location>'
+    - delta_text: '
+<parameter=location>'
       expected:
         vllm_python: []
-    - delta_text: ' NY'
+    - delta_text: '
+NY'
       expected:
         vllm_python: []
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
         vllm_python: []
   TOOLCALLING.streamv2.5.d:
-    description: Multi-call, last call missing only end marker (body complete)
-    ref: derived from TOOLCALLING.batch.5.d
+    description: 'Multi-call, last call missing only end marker (body complete)'
+    ref: 'derived from TOOLCALLING.batch.5.d'
     tools:
     - name: get_weather
       parameters:
@@ -117,17 +144,15 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      sglang_python: No SGLang parser for family 'nemotron_nano'.
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: invalid
-        Hermes'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang Python parser for family ''nemotron_nano''.'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: invalid Hermes'
     chunks:
-    - delta_text: I'll start
+    - delta_text: 'I''ll start'
       expected:
         vllm_python: []
       normal_text:
-        vllm_python: I'll start
+        vllm_python: 'I''ll start'
     - delta_text: ' by'
       expected:
         vllm_python: []
@@ -163,42 +188,56 @@ cases:
         vllm_python: []
       normal_text:
         vllm_python: ' same'
-    - delta_text: ' time! <tool_call>'
+    - delta_text: ' time!
+<tool_call>'
       expected:
         vllm_python: []
       normal_text:
-        vllm_python: ' time! '
-    - delta_text: ' <function=get_weather>'
+        vllm_python: ' time!
+'
+    - delta_text: '
+<function=get_weather>'
       expected:
         vllm_python: []
-    - delta_text: ' <parameter=location> Boston'
+    - delta_text: '
+<parameter=location>
+Boston'
       expected:
         vllm_python: []
-    - delta_text: ' </parameter>'
+    - delta_text: '
+</parameter>'
       expected:
         vllm_python: []
-    - delta_text: ' </function> </tool_call> <tool_call>'
+    - delta_text: '
+</function>
+</tool_call>
+<tool_call>'
       expected:
         vllm_python: []
-    - delta_text: ' <function=get_weather> <parameter=location>'
+    - delta_text: '
+<function=get_weather>
+<parameter=location>'
       expected:
         vllm_python: []
-    - delta_text: ' New'
+    - delta_text: '
+New'
       expected:
         vllm_python: []
-    - delta_text: ' York </parameter>'
+    - delta_text: ' York
+</parameter>'
       expected:
         vllm_python: []
-    - delta_text: ' </function>'
+    - delta_text: '
+</function>'
       expected:
         vllm_python: []
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
         vllm_python: []
   TOOLCALLING.streamv2.5.e:
-    description: Multi-call, last call truncated mid-arg-value
-    ref: derived from TOOLCALLING.batch.5.e
+    description: 'Multi-call, last call truncated mid-arg-value'
+    ref: 'derived from TOOLCALLING.batch.5.e'
     tools:
     - name: get_weather
       parameters:
@@ -207,17 +246,15 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      sglang_python: No SGLang parser for family 'nemotron_nano'.
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: invalid
-        Hermes'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      sglang_python: 'No SGLang Python parser for family ''nemotron_nano''.'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: invalid Hermes'
     chunks:
-    - delta_text: I'll start
+    - delta_text: 'I''ll start'
       expected:
         vllm_python: []
       normal_text:
-        vllm_python: I'll start
+        vllm_python: 'I''ll start'
     - delta_text: ' by'
       expected:
         vllm_python: []
@@ -253,33 +290,45 @@ cases:
         vllm_python: []
       normal_text:
         vllm_python: ' same'
-    - delta_text: ' time! <tool_call>'
+    - delta_text: ' time!
+<tool_call>'
       expected:
         vllm_python: []
       normal_text:
-        vllm_python: ' time! '
-    - delta_text: ' <function=get_weather>'
+        vllm_python: ' time!
+'
+    - delta_text: '
+<function=get_weather>'
       expected:
         vllm_python: []
-    - delta_text: ' <parameter=location> Boston'
+    - delta_text: '
+<parameter=location>
+Boston'
       expected:
         vllm_python: []
-    - delta_text: ' </parameter>'
+    - delta_text: '
+</parameter>'
       expected:
         vllm_python: []
-    - delta_text: ' </function> </tool_call> <tool_call>'
+    - delta_text: '
+</function>
+</tool_call>
+<tool_call>'
       expected:
         vllm_python: []
-    - delta_text: ' <function=get_weather> <parameter=location>'
+    - delta_text: '
+<function=get_weather>
+<parameter=location>'
       expected:
         vllm_python: []
-    - delta_text: ' New'
+    - delta_text: '
+New'
       expected:
         vllm_python: []
     - delta_text: ' York'
       expected:
         vllm_python: []
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
         vllm_python: []

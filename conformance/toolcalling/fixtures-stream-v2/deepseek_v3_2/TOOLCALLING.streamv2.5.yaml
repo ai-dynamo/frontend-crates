@@ -1,14 +1,23 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Streaming fixture (per-chunk, per-impl). Each chunk: input (delta_text +
+# optional delta_token_ids) and `expected.<impl>` = tool-call deltas emitted at
+# that chunk. `normal_text.<impl>` (when non-empty) = non-tool text (leaks show
+# here). Assembled result is derived by concatenating per index. A delta:
+# {index, id?, name?, arguments?}; id:true = an id was emitted.
+
 family: deepseek_v3_2
-model_label: DeepSeek V3.2
+model_label: 'DeepSeek V3.2'
 mode: streamv2
 captured_with:
-  vllm_python: 0.22.0
-  sglang_python: 0.5.12.post1
-  vllm_rust: v0.22.0 0b3ba88f165976e77ca5e6a7a3f5bba4562b80af
+  vllm_rust: 'v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75'
+  vllm_python: '0.23.0'
+  sglang_python: '0.5.12.post1'
 cases:
   TOOLCALLING.streamv2.5.a:
-    description: Missing </｜DSML｜function_calls> end marker
-    ref: derived from TOOLCALLING.batch.5.a
+    description: 'Missing </｜DSML｜function_calls> end marker'
+    ref: 'derived from TOOLCALLING.batch.5.a'
     tools:
     - name: get_weather
       parameters:
@@ -17,43 +26,41 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
-        DeepSeek DSML tool call'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: incomplete DeepSeek DSML tool call'
     chunks:
-    - delta_text: <｜DSML｜function_calls> <｜DSML｜invoke
+    - delta_text: '<｜DSML｜function_calls>
+<｜DSML｜invoke'
       expected:
         vllm_python: []
         sglang_python: []
     - delta_text: ' name="get_weather">'
       expected:
-        vllm_python: []
+        vllm_python:
+        - {index: 0, id: true, name: 'get_weather', arguments: ''}
         sglang_python:
-        - index: 0
-          name: get_weather
-    - delta_text: ' <｜DSML｜parameter name="location" string="true">'
-      expected:
-        vllm_python: []
-        sglang_python: []
-    - delta_text: NYC</｜DSML｜parameter> </｜DSML｜invoke>
+        - {index: 0, name: 'get_weather'}
+    - delta_text: '
+<｜DSML｜parameter name="location" string="true">'
       expected:
         vllm_python:
-        - index: 0
-          id: true
-          name: get_weather
-          arguments: '{"location": "NYC"}'
+        - {index: 0, arguments: '{"location":"'}
+        sglang_python: []
+    - delta_text: 'NYC</｜DSML｜parameter>
+</｜DSML｜invoke>'
+      expected:
+        vllm_python:
+        - {index: 0, arguments: 'NYC"}'}
         sglang_python:
-        - index: 0
-          arguments: '{"location": "NYC"}'
+        - {index: 0, arguments: '{"location": "NYC"}'}
     - delta_text: ''
       finish_reason: stop
       expected:
         vllm_python: []
         sglang_python: []
   TOOLCALLING.streamv2.5.b:
-    description: Closing </｜DSML｜function_calls> without matching open
-    ref: derived from TOOLCALLING.batch.5.b
+    description: 'Closing </｜DSML｜function_calls> without matching open'
+    ref: 'derived from TOOLCALLING.batch.5.b'
     tools:
     - name: get_weather
       parameters:
@@ -62,60 +69,61 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
     chunks:
-    - delta_text: <｜DSML｜invoke name="get_weather">
+    - delta_text: '<｜DSML｜invoke name="get_weather">'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python:
-        - index: 0
-          name: get_weather
-        vllm_rust: []
+        - {index: 0, name: 'get_weather'}
       normal_text:
-        vllm_python: <｜DSML｜invoke name="get_weather">
-        vllm_rust: <｜DSML｜invoke name="get_weather">
-    - delta_text: ' <｜DSML｜parameter'
+        vllm_rust: '<｜DSML｜invoke name="get_weather">'
+        vllm_python: '<｜DSML｜invoke name="get_weather">'
+    - delta_text: '
+<｜DSML｜parameter'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
       normal_text:
-        vllm_python: ' <｜DSML｜parameter'
-        vllm_rust: ' <｜DSML｜parameter'
+        vllm_rust: '
+<｜DSML｜parameter'
+        vllm_python: '
+<｜DSML｜parameter'
     - delta_text: ' name="location" string="true">NYC</｜DSML｜parameter>'
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python:
-        - index: 0
-          arguments: '{'
-        vllm_rust: []
+        - {index: 0, arguments: '{'}
       normal_text:
-        vllm_python: ' name="location" string="true">NYC</｜DSML｜parameter>'
         vllm_rust: ' name="location" string="true">NYC</｜DSML｜parameter>'
-    - delta_text: ' </｜DSML｜invoke> </｜DSML｜function_calls>'
+        vllm_python: ' name="location" string="true">NYC</｜DSML｜parameter>'
+    - delta_text: '
+</｜DSML｜invoke>
+</｜DSML｜function_calls>'
       expected:
-        vllm_python:
-        - index: 0
-          id: true
-          name: get_weather
-          arguments: '{"location": "NYC"}'
-        sglang_python:
-        - index: 0
-          arguments: '"location": "NYC"}'
         vllm_rust: []
+        vllm_python: []
+        sglang_python:
+        - {index: 0, arguments: '"location": "NYC"}'}
       normal_text:
-        vllm_python: ' </｜DSML｜invoke> </｜DSML｜function_calls>'
-        vllm_rust: ' </｜DSML｜invoke> </｜DSML｜function_calls>'
+        vllm_rust: '
+</｜DSML｜invoke>
+</｜DSML｜function_calls>'
+        vllm_python: '
+</｜DSML｜invoke>
+</｜DSML｜function_calls>'
     - delta_text: ''
-      finish_reason: tool_calls
+      finish_reason: stop
       expected:
+        vllm_rust: []
         vllm_python: []
         sglang_python: []
-        vllm_rust: []
   TOOLCALLING.streamv2.5.c:
-    description: Truncation mid-parameter value
-    ref: derived from TOOLCALLING.batch.5.c
+    description: 'Truncation mid-parameter value'
+    ref: 'derived from TOOLCALLING.batch.5.c'
     tools:
     - name: get_weather
       parameters:
@@ -124,39 +132,40 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
-        DeepSeek DSML tool call'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: incomplete DeepSeek DSML tool call'
     chunks:
-    - delta_text: <｜DSML｜function_calls> <｜DSML｜invoke
+    - delta_text: '<｜DSML｜function_calls>
+<｜DSML｜invoke'
       expected:
         vllm_python: []
         sglang_python: []
     - delta_text: ' name="get_weather">'
       expected:
-        vllm_python: []
+        vllm_python:
+        - {index: 0, id: true, name: 'get_weather', arguments: ''}
         sglang_python:
-        - index: 0
-          name: get_weather
-    - delta_text: ' <｜DSML｜parameter name="location" string="true">'
+        - {index: 0, name: 'get_weather'}
+    - delta_text: '
+<｜DSML｜parameter name="location" string="true">'
       expected:
-        vllm_python: []
+        vllm_python:
+        - {index: 0, arguments: '{"location":"'}
         sglang_python: []
-    - delta_text: NY
+    - delta_text: 'NY'
       expected:
-        vllm_python: []
+        vllm_python:
+        - {index: 0, arguments: 'NY'}
         sglang_python:
-        - index: 0
-          arguments: '{'
+        - {index: 0, arguments: '{'}
     - delta_text: ''
       finish_reason: stop
       expected:
         vllm_python: []
         sglang_python: []
   TOOLCALLING.streamv2.5.d:
-    description: Multi-call, last call missing only end marker (body complete)
-    ref: derived from TOOLCALLING.batch.5.d
+    description: 'Multi-call, last call missing only end marker (body complete)'
+    ref: 'derived from TOOLCALLING.batch.5.d'
     tools:
     - name: get_weather
       parameters:
@@ -165,18 +174,16 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
-        DeepSeek DSML tool call'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: incomplete DeepSeek DSML tool call'
     chunks:
-    - delta_text: I'll start
+    - delta_text: 'I''ll start'
       expected:
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: I'll start
-        sglang_python: I'll start
+        vllm_python: 'I''ll start'
+        sglang_python: 'I''ll start'
     - delta_text: ' by'
       expected:
         vllm_python: []
@@ -226,68 +233,69 @@ cases:
       normal_text:
         vllm_python: ' same'
         sglang_python: ' same'
-    - delta_text: ' time! <｜DSML｜function_calls>'
+    - delta_text: ' time!
+<｜DSML｜function_calls>'
       expected:
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: ' time! '
-    - delta_text: ' <｜DSML｜invoke'
+        vllm_python: ' time!
+'
+    - delta_text: '
+<｜DSML｜invoke'
       expected:
         vllm_python: []
         sglang_python: []
-    - delta_text: ' name="get_weather"> <｜DSML｜parameter'
+    - delta_text: ' name="get_weather">
+<｜DSML｜parameter'
       expected:
-        vllm_python: []
+        vllm_python:
+        - {index: 0, id: true, name: 'get_weather', arguments: ''}
         sglang_python:
-        - index: 0
-          name: get_weather
+        - {index: 0, name: 'get_weather'}
     - delta_text: ' name="location"'
       expected:
         vllm_python: []
         sglang_python: []
-    - delta_text: ' string="true">Boston</｜DSML｜parameter> </｜DSML｜invoke>'
+    - delta_text: ' string="true">Boston</｜DSML｜parameter>
+</｜DSML｜invoke>'
       expected:
         vllm_python:
-        - index: 0
-          id: true
-          name: get_weather
-          arguments: '{"location": "Boston"}'
+        - {index: 0, arguments: '{"location":"Boston"}'}
         sglang_python:
-        - index: 0
-          arguments: '{"location": "Boston"}'
-    - delta_text: ' <｜DSML｜invoke name="get_weather">'
+        - {index: 0, arguments: '{"location": "Boston"}'}
+    - delta_text: '
+<｜DSML｜invoke name="get_weather">'
       expected:
-        vllm_python: []
+        vllm_python:
+        - {index: 1, id: true, name: 'get_weather', arguments: ''}
         sglang_python:
-        - index: 1
-          name: get_weather
-    - delta_text: ' <｜DSML｜parameter'
+        - {index: 1, name: 'get_weather'}
+    - delta_text: '
+<｜DSML｜parameter'
       expected:
         vllm_python: []
         sglang_python: []
     - delta_text: ' name="location" string="true">'
       expected:
-        vllm_python: []
+        vllm_python:
+        - {index: 1, arguments: '{"location":"'}
         sglang_python: []
-    - delta_text: New York</｜DSML｜parameter> </｜DSML｜invoke>
+    - delta_text: 'New York</｜DSML｜parameter>
+</｜DSML｜invoke>'
       expected:
         vllm_python:
-        - index: 1
-          id: true
-          name: get_weather
-          arguments: '{"location": "New York"}'
+        - {index: 1, arguments: 'New York"}'}
         sglang_python:
-        - index: 1
-          arguments: '{"location": "New York"}'
+        - {index: 1, arguments: '{"location": "New York"}'}
     - delta_text: ''
       finish_reason: stop
       expected:
         vllm_python: []
         sglang_python: []
   TOOLCALLING.streamv2.5.e:
-    description: Multi-call, last call truncated mid-arg-value
-    ref: derived from TOOLCALLING.batch.5.e
+    description: 'Multi-call, last call truncated mid-arg-value'
+    ref: 'derived from TOOLCALLING.batch.5.e'
     tools:
     - name: get_weather
       parameters:
@@ -296,18 +304,16 @@ cases:
           location:
             type: string
     unavailable:
-      dynamo_rust: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM/SGLang
-        per-chunk output is the target to match.
-      vllm_rust: 'vLLM Rust parser not captured: tool parser parsing failed: incomplete
-        DeepSeek DSML tool call'
+      dynamo_rust: 'Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.'
+      vllm_rust: 'vllm_rust parser not captured: tool parser parsing failed: incomplete DeepSeek DSML tool call'
     chunks:
-    - delta_text: I'll start
+    - delta_text: 'I''ll start'
       expected:
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: I'll start
-        sglang_python: I'll start
+        vllm_python: 'I''ll start'
+        sglang_python: 'I''ll start'
     - delta_text: ' by'
       expected:
         vllm_python: []
@@ -357,56 +363,60 @@ cases:
       normal_text:
         vllm_python: ' same'
         sglang_python: ' same'
-    - delta_text: ' time! <｜DSML｜function_calls>'
+    - delta_text: ' time!
+<｜DSML｜function_calls>'
       expected:
         vllm_python: []
         sglang_python: []
       normal_text:
-        vllm_python: ' time! '
-    - delta_text: ' <｜DSML｜invoke'
+        vllm_python: ' time!
+'
+    - delta_text: '
+<｜DSML｜invoke'
       expected:
         vllm_python: []
         sglang_python: []
-    - delta_text: ' name="get_weather"> <｜DSML｜parameter'
+    - delta_text: ' name="get_weather">
+<｜DSML｜parameter'
       expected:
-        vllm_python: []
+        vllm_python:
+        - {index: 0, id: true, name: 'get_weather', arguments: ''}
         sglang_python:
-        - index: 0
-          name: get_weather
+        - {index: 0, name: 'get_weather'}
     - delta_text: ' name="location"'
       expected:
         vllm_python: []
         sglang_python: []
-    - delta_text: ' string="true">Boston</｜DSML｜parameter> </｜DSML｜invoke>'
+    - delta_text: ' string="true">Boston</｜DSML｜parameter>
+</｜DSML｜invoke>'
       expected:
         vllm_python:
-        - index: 0
-          id: true
-          name: get_weather
-          arguments: '{"location": "Boston"}'
+        - {index: 0, arguments: '{"location":"Boston"}'}
         sglang_python:
-        - index: 0
-          arguments: '{"location": "Boston"}'
-    - delta_text: ' <｜DSML｜invoke name="get_weather">'
+        - {index: 0, arguments: '{"location": "Boston"}'}
+    - delta_text: '
+<｜DSML｜invoke name="get_weather">'
       expected:
-        vllm_python: []
+        vllm_python:
+        - {index: 1, id: true, name: 'get_weather', arguments: ''}
         sglang_python:
-        - index: 1
-          name: get_weather
-    - delta_text: ' <｜DSML｜parameter'
+        - {index: 1, name: 'get_weather'}
+    - delta_text: '
+<｜DSML｜parameter'
       expected:
         vllm_python: []
         sglang_python: []
     - delta_text: ' name="location" string="true">'
       expected:
-        vllm_python: []
+        vllm_python:
+        - {index: 1, arguments: '{"location":"'}
         sglang_python: []
-    - delta_text: New York
+    - delta_text: 'New York'
       expected:
-        vllm_python: []
+        vllm_python:
+        - {index: 1, arguments: 'New York'}
         sglang_python:
-        - index: 1
-          arguments: '{'
+        - {index: 1, arguments: '{'}
     - delta_text: ''
       finish_reason: stop
       expected:
