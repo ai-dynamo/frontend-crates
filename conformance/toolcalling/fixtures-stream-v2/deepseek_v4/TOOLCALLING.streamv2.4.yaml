@@ -104,7 +104,10 @@ cases:
         sglang_python:
         - index: 0
           name: get_weather
-        dynamo_rust: []
+        dynamo_rust:
+        - index: 0
+          name: get_weather
+          arguments: ''
     - delta_text: ' <｜DSML｜parameter name="location" string="true">'
       expected:
         vllm_python: []
@@ -122,7 +125,6 @@ cases:
           arguments: '{}'
         dynamo_rust:
         - index: 0
-          name: get_weather
           arguments: '{}'
     - delta_text: ' </｜DSML｜tool_calls>'
       expected:

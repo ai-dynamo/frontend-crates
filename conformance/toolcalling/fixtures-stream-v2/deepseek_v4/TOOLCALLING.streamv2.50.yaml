@@ -74,7 +74,10 @@ cases:
         - index: 0
           name: get_weather
         vllm_rust: []
-        dynamo_rust: []
+        dynamo_rust:
+        - index: 0
+          name: get_weather
+          arguments: ''
     - delta_text: arameter name="loca
       expected:
         vllm_python: []
@@ -149,7 +152,6 @@ cases:
           name: get_weather
         dynamo_rust:
         - index: 0
-          name: get_weather
           arguments: '{"location":"NYC"}'
     - delta_text: DSML｜tool_calls>
       expected:

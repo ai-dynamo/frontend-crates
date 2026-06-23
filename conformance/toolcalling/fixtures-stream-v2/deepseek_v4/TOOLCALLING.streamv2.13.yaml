@@ -31,7 +31,10 @@ cases:
         - index: 0
           name: unknown_tool
         vllm_rust: []
-        dynamo_rust: []
+        dynamo_rust:
+        - index: 0
+          name: unknown_tool
+          arguments: ''
     - delta_text: ' <｜DSML｜parameter name="location" string="true">'
       expected:
         vllm_python: []
@@ -54,7 +57,6 @@ cases:
           name: unknown_tool
         dynamo_rust:
         - index: 0
-          name: unknown_tool
           arguments: '{"location":"NYC"}'
     - delta_text: ' </｜DSML｜tool_calls>'
       expected:
