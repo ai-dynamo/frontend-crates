@@ -12,7 +12,7 @@ cases:
   REASONING.batch.1.b:
     description: Plain text stays in force-reasoning mode
     ref: *upstream_ref
-    spec_ref: lib/parsers/REASONING_CASES.md; https://api-docs.deepseek.com/guides/thinking_mode; https://docs.nvidia.com/dynamo/dev/user-guides/reasoning/reasoning-parsing-dynamo
+    spec_ref: lib/parsers/REASONING_CASES.md; https://api-docs.deepseek.com/guides/thinking_mode; https://docs.nvidia.com/dynamo/latest/user-guides/parsing/reasoning-parsing-dynamo
     model_text: plain answer
     expected:
       dynamo: &d_0
@@ -71,7 +71,7 @@ cases:
   REASONING.batch.4:
     description: Thinking-mode completion exits on a dangling end marker
     ref: *upstream_ref
-    spec_ref: lib/parsers/REASONING_CASES.md; https://api-docs.deepseek.com/guides/thinking_mode; https://docs.nvidia.com/dynamo/dev/user-guides/reasoning/reasoning-parsing-dynamo
+    spec_ref: lib/parsers/REASONING_CASES.md; https://api-docs.deepseek.com/guides/thinking_mode; https://docs.nvidia.com/dynamo/latest/user-guides/parsing/reasoning-parsing-dynamo
     model_text: normal</think>answer
     expected:
       dynamo: &d_4
@@ -133,7 +133,7 @@ cases:
   REASONING.batch.6.a:
     description: Multiple reasoning spans are concatenated by Dynamo
     ref: *upstream_ref
-    spec_ref: lib/parsers/REASONING_CASES.md; https://api-docs.deepseek.com/guides/thinking_mode; https://docs.nvidia.com/dynamo/dev/user-guides/reasoning/reasoning-parsing-dynamo
+    spec_ref: lib/parsers/REASONING_CASES.md; https://api-docs.deepseek.com/guides/thinking_mode; https://docs.nvidia.com/dynamo/latest/user-guides/parsing/reasoning-parsing-dynamo
     model_text: <think>first</think> middle <think>second</think> done
     expected:
       dynamo:
