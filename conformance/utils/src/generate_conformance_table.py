@@ -570,7 +570,7 @@ _LEGEND_MD = (
 
 def _common_legend_html(
     peer_versions: list[tuple[str, str]] | None = None,
-    peer_versions_href: str = "../../../pyproject.toml",
+    peer_versions_href: str | None = None,
 ) -> str:
     versions_html = ""
     if peer_versions:
@@ -581,7 +581,7 @@ def _common_legend_html(
         versions_html = (
             "<p>"
             "<strong>Peer parser versions</strong> pinned in "
-            f'<a href="{html_lib.escape(peer_versions_href, quote=True)}">pyproject.toml</a>: '
+            f'<a href="{html_lib.escape(peer_versions_href or common.LINKS["pyproject_stub"], quote=True)}">pyproject.toml</a>: '
             f"{versions}."
             "</p>"
         )
@@ -1075,7 +1075,7 @@ def _parser_inheritance_tooltip_html(
     head_parts = [f"ParserConfig::{variant}"]
     if sub_variant:
         head_parts[-1] = f"ParserConfig::{variant}::{sub_variant}"
-    bf_href = html_lib.escape(f"../../../lib/parsers/src/tool_calling/{backend_file}")
+    bf_href = html_lib.escape(f"{common.LINKS['toolcalling_src']}{backend_file}")
     bf_link = f'<a href="{bf_href}">{html_lib.escape(backend_file)}</a>'
 
     anchor = alias_of or family
@@ -1283,9 +1283,9 @@ def _parser_cell_html(
     # useful (factory calls). For families with no inheritance info, fall back
     # to the refs entry (config.rs or parsers.rs).
     if info and info["backend_file"] != "unknown":
-        href = f"../../../lib/parsers/src/tool_calling/{info['backend_file']}"
+        href = f"{common.LINKS['toolcalling_src']}{info['backend_file']}"
     elif ref is not None:
-        href = f"../../../lib/parsers/src/tool_calling/{ref[0]}"
+        href = f"{common.LINKS['toolcalling_src']}{ref[0]}"
     else:
         return (
             f'<td class="parser" data-col-hide-group="parser">'
@@ -1314,13 +1314,13 @@ def _v2_parser_cell_html(
         f"Tool calling parser row: {html_lib.escape(family)}\n"
         f"Effective parser/backend: {html_lib.escape(backend)}\n"
         f"Dynamo parser v2 implementation: parsers_v2/src/tool_calling/{html_lib.escape(source_file)} -> "
-        f'<a href="../../../parsers_v2/src/tool_calling/{html_lib.escape(source_file)}">{html_lib.escape(entrypoint)}</a>\n'
+        f'<a href="{common.LINKS["streaming_src"]}{html_lib.escape(source_file)}">{html_lib.escape(entrypoint)}</a>\n'
         f"Note: {html_lib.escape(note)}"
         "</pre></div>"
     )
     return (
         f'<td class="parser" data-col-hide-group="parser">'
-        f'<a href="../../../parsers_v2/src/tool_calling/{html_lib.escape(source_file)}">{row_label}</a>{tooltip}</td>'
+        f'<a href="{common.LINKS["streaming_src"]}{html_lib.escape(source_file)}">{row_label}</a>{tooltip}</td>'
     )
 
 
@@ -1477,9 +1477,9 @@ def _parse_subcase_descriptions(mode: str) -> dict[str, str]:
 def _subcase_header_html(mode: str, sub: str, descriptions: dict[str, str]) -> str:
     desc = descriptions.get(sub) or descriptions.get(sub.split(".")[0]) or ""
     href = (
-        "../../../lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"
+        common.LINKS["toolcalling_streaming_cases"]
         if mode == "streamv2"
-        else "../../../lib/parsers/TOOLCALLING_CASES.md"
+        else common.LINKS["toolcalling_cases"]
     )
     title = html_lib.escape(desc) if desc else ""
     band_cls = _subcase_band_class(mode, sub)
@@ -2116,41 +2116,16 @@ def _rewrite_panel_paths(
     rewritten = dict(panel)
 
     def rewrite(text: str) -> str:
-        # Panels emit two fixture-href shapes: the toolcalling builder (merged into
-        # this file, one dir up) emits `{stage_dir}/fixtures/...`; the reasoning
-        # builder (still its own module) emits bare `fixtures/...`. Remap both to
-        # the real source root. Order matters: the stage_dir form is rewritten
-        # first so the bare-`fixtures/` pass can't re-match its `../<dir>/fixtures/` output.
-        return (
-            text.replace(f'href="{stage_dir}/fixtures/', f'href="{fixture_href_root}')
-            .replace('href="fixtures/', f'href="{fixture_href_root}')
-            .replace(
-                'href="../../../lib/parsers/src/tool_calling/',
-                f'href="{hrefs["toolcalling_src"]}',
-            )
-            # Prefix-rewrite every parsers_v2 source link (harmony.rs, dsml.rs, the
-            # bare dir, ...) so no specific file is missed. streaming_src ends in '/'.
-            .replace(
-                'href="../../../parsers_v2/src/tool_calling/',
-                f'href="{hrefs["streaming_src"]}',
-            )
-            .replace(
-                'href="../../../lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"',
-                f'href="{hrefs["toolcalling_streaming_cases"]}"',
-            )
-            .replace(
-                'href="../../../lib/parsers/TOOLCALLING_CASES.md"',
-                f'href="{hrefs["toolcalling_cases"]}"',
-            )
-            .replace(
-                'href="../../../lib/parsers/REASONING_CASES.md"',
-                f'href="{hrefs["reasoning_cases"]}"',
-            )
-            .replace(
-                'href="../../../pyproject.toml"',
-                f'href="{hrefs["pyproject_stub"]}"',
-            )
-        )
+        # Fixture cell links are emitted as `{stage_dir}/fixtures/...` (toolcalling
+        # builder, merged into this file) or bare `fixtures/...` (reasoning builder)
+        # and rebased onto the panel's real fixtures root. Order matters: the
+        # stage_dir form is rewritten first so the bare-`fixtures/` pass can't
+        # re-match its `../<dir>/fixtures/` output. All other links (case docs,
+        # parser source, pyproject) are emitted destination-aware via common.LINKS,
+        # so they need no rewrite.
+        return text.replace(
+            f'href="{stage_dir}/fixtures/', f'href="{fixture_href_root}'
+        ).replace('href="fixtures/', f'href="{fixture_href_root}')
 
     rewritten["group_headers"] = rewrite(str(rewritten["group_headers"]))
     rewritten["sub_headers"] = rewrite(str(rewritten["sub_headers"]))

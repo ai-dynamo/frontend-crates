@@ -69,6 +69,18 @@ def set_links(output_path: Path, artifact_root: Path) -> dict[str, str]:
     LINKS = _hrefs_for_output(output_path, artifact_root)
     return LINKS
 
+
+# Best-effort default so code that emits links before a generator has called
+# set_links() (e.g. unit tests that invoke a builder helper directly) still
+# resolves to the published-page layout. The active generator overrides this for
+# its real destination on every render.
+try:
+    _DEFAULT_ROOT = Path(__file__).resolve().parents[4]
+    if (_DEFAULT_ROOT / "parsers_v2").is_dir():
+        set_links(_DEFAULT_ROOT / "conformance" / "PARITY.html", _DEFAULT_ROOT)
+except (IndexError, OSError):
+    pass
+
 URL_RE = re.compile(r"https?://[^\s<>'\"]+")
 TRAILING_URL_PUNCTUATION = ".,;:)"
 
