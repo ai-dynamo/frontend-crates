@@ -35,6 +35,18 @@ def _rewrite_panel_paths(panel: dict[str, Any], stage_dir: str) -> dict[str, Any
     def rewrite(text: str) -> str:
         return (
             text.replace('href="fixtures/', f'href="{stage_dir}/fixtures/')
+            # Case-doc markdown lives at conformance/utils/lib/parsers/ and the
+            # published PARITY.html sits at conformance/, so link it the way the
+            # v2 conformance page does (utils/lib/parsers/...). Must run before the
+            # general ../../../lib/ rewrite below so these specific links win.
+            .replace(
+                'href="../../../lib/parsers/TOOLCALLING_CASES.md"',
+                'href="utils/lib/parsers/TOOLCALLING_CASES.md"',
+            )
+            .replace(
+                'href="../../../lib/parsers/REASONING_CASES.md"',
+                'href="utils/lib/parsers/REASONING_CASES.md"',
+            )
             .replace('href="../../../lib/', 'href="../../lib/')
             .replace('href="../../../pyproject.toml"', 'href="../../pyproject.toml"')
         )
@@ -70,7 +82,7 @@ def _combined_toolcalling_panels() -> list[dict[str, Any]]:
                 "label": f"TC {mode}",
                 "tab_title": f"Tool Calling {mode}",
                 "active": False,
-                "case_docs_href": "../../lib/parsers/TOOLCALLING_CASES.md",
+                "case_docs_href": "utils/lib/parsers/TOOLCALLING_CASES.md",
                 "case_docs_label": "lib/parsers/TOOLCALLING_CASES.md",
                 "case_prefix": f"TOOLCALLING.{mode}.",
                 "case_section_id": f"toolcalling-{mode}",
@@ -101,7 +113,7 @@ def _combined_reasoning_panels() -> list[dict[str, Any]]:
                 "id": f"tab-reasoning-{mode}",
                 "label": f"Reasoning {mode}",
                 "active": False,
-                "case_docs_href": "../../lib/parsers/REASONING_CASES.md",
+                "case_docs_href": "utils/lib/parsers/REASONING_CASES.md",
                 "case_docs_label": "lib/parsers/REASONING_CASES.md",
                 "case_prefix": "REASONING.",
                 "case_section_id": f"reasoning-{mode}",
