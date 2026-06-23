@@ -2105,24 +2105,22 @@ def _rewrite_panel_paths(
     panel: dict[str, Any],
     stage_dir: str,
     fixture_href_root: str,
-    hrefs: dict[str, str],
 ) -> dict[str, Any]:
-    """Adjust links from stage-local fixture paths to the generated output HTML.
+    """Rebase a panel's fixture cell links onto that panel's real fixtures root.
 
-    Panels emit fixture links in two shapes (`fixtures/...` and
-    `{stage_dir}/fixtures/...`) depending on whether the underlying renderer was
-    copied or imported. Rewrite both against the requested output path.
+    This per-panel transform is irreducible: the same loaded case is rendered into
+    multiple panels with different fixture roots (e.g. a batch case appears in both
+    the `batch` and `batch-on-stream` panels), so the root can't be baked into the
+    case at load time. Every other link (case docs, parser source, pyproject) is
+    emitted destination-aware via `common.LINKS` and needs no rewrite.
     """
     rewritten = dict(panel)
 
     def rewrite(text: str) -> str:
         # Fixture cell links are emitted as `{stage_dir}/fixtures/...` (toolcalling
-        # builder, merged into this file) or bare `fixtures/...` (reasoning builder)
-        # and rebased onto the panel's real fixtures root. Order matters: the
-        # stage_dir form is rewritten first so the bare-`fixtures/` pass can't
-        # re-match its `../<dir>/fixtures/` output. All other links (case docs,
-        # parser source, pyproject) are emitted destination-aware via common.LINKS,
-        # so they need no rewrite.
+        # builder, merged into this file) or bare `fixtures/...` (reasoning builder).
+        # Order matters: the stage_dir form is rewritten first so the bare-`fixtures/`
+        # pass can't re-match its `../<dir>/fixtures/` output.
         return text.replace(
             f'href="{stage_dir}/fixtures/', f'href="{fixture_href_root}'
         ).replace('href="fixtures/', f'href="{fixture_href_root}')
@@ -2212,7 +2210,6 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
         panel = _rewrite_panel_paths(
             panel, "toolcalling",
             fixture_href_root=_fixture_href_roots[mode],
-            hrefs=hrefs,
         )
         _tc_kind = "stream" if mode == "streamv2" else "batch"
         _tc_label, _tc_label_html = _tab_label("TC", _tc_kind, _tc_kind, mode == "streamv2")
@@ -2280,7 +2277,6 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
                 stream_on_batch,
                 "toolcalling",
                 fixture_href_root=hrefs["toolcalling_batch_on_stream_fixtures"],
-                hrefs=hrefs,
             )
             panels.append(stream_on_batch)
     _apply_common_legend(panels, hrefs)
@@ -2306,7 +2302,6 @@ def _combined_reasoning_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
             panel,
             "reasoning",
             fixture_href_root=hrefs["reasoning_fixtures"],
-            hrefs=hrefs,
         )
         # Reasoning has a single parser (not a batch/stream split), so the parser
         # axis renders as a bare "parser"; only the data axis varies.
