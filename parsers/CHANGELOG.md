@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.1.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2.1.1...dynamo-parsers-v2.1.2) - 2026-06-23
+
+### Bug fixes
+
+- Stop granite reasoning parser leaking markers across spans and split chunks ([#75](https://github.com/ai-dynamo/frontend-crates/pull/75))
+- Strip dangling reasoning end marker for non-ASCII delimiter families (Kimi unicode) ([#74](https://github.com/ai-dynamo/frontend-crates/pull/74))
+
 ## [2.1.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2.1.0...dynamo-parsers-v2.1.1) - 2026-06-23
 
 ### Bug fixes
