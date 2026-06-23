@@ -46,13 +46,11 @@ impl GraniteReasoningParser {
             .min_by_key(|&(i, _)| i)
     }
 
-    /// Length of the longest suffix of `text` that is a *proper* prefix of an
-    /// end marker. Used in streaming to hold a partial `Here is my response:`
-    /// split across chunks, so it is matched once complete instead of leaking
-    /// into `reasoning_text`.
-    fn partial_end_suffix_len(&self, text: &str) -> usize {
-        let max = self
-            .think_end_tokens
+    /// Length of the longest suffix of `text` that is a *proper* prefix of one
+    /// of `tokens`. Used in streaming to hold a marker split across chunks so it
+    /// is matched once complete instead of leaking into the output.
+    fn partial_suffix_len(text: &str, tokens: &[String]) -> usize {
+        let max = tokens
             .iter()
             .map(|t| t.len())
             .max()
@@ -64,8 +62,7 @@ impl GraniteReasoningParser {
                 continue;
             }
             let suffix = &text[idx..];
-            if self
-                .think_end_tokens
+            if tokens
                 .iter()
                 .any(|t| t.len() > suffix.len() && t.starts_with(suffix))
             {
@@ -73,6 +70,35 @@ impl GraniteReasoningParser {
             }
         }
         0
+    }
+
+    /// Longest trailing partial *end* marker (split `Here is my response:`).
+    fn partial_end_suffix_len(&self, text: &str) -> usize {
+        Self::partial_suffix_len(text, &self.think_end_tokens)
+    }
+
+    /// Emit text that is currently outside a reasoning span. A complete marker
+    /// is consumed via `parse_all_spans` (a dangling response marker, or a
+    /// further span packed into the same chunk); otherwise a trailing partial
+    /// start/end marker is held in the buffer so a marker split across chunks
+    /// is not leaked as normal text. Updates streaming state accordingly.
+    fn emit_normal(&mut self, text: &str) -> ParserResult {
+        if Self::find_first(text, &self.think_start_tokens).is_some()
+            || Self::find_first(text, &self.think_end_tokens).is_some()
+        {
+            self.buffer.clear();
+            self.in_reasoning = false;
+            self.stripped_think_start = false;
+            return self.parse_all_spans(text);
+        }
+        let hold = Self::partial_suffix_len(text, &self.think_start_tokens)
+            .max(Self::partial_suffix_len(text, &self.think_end_tokens));
+        let split = text.len() - hold;
+        self.buffer = text[split..].to_string();
+        ParserResult {
+            normal_text: text[..split].to_string(),
+            reasoning_text: String::new(),
+        }
     }
 
     /// Re-parse text that still carries reasoning markers after a single-span
@@ -253,22 +279,21 @@ impl ReasoningParser for GraniteReasoningParser {
                 .unwrap_or(current_text.len());
         }
         if self.in_reasoning && think_end_idx < current_text.len() {
-            let reasoning_text = &current_text[..think_end_idx];
-            self.buffer.clear();
+            let reasoning_text = current_text[..think_end_idx].to_string();
             self.in_reasoning = false;
             // Allow a later thought-process marker to open a fresh span, so a
             // multi-span stream is parsed in full instead of leaking the
             // second span's markers into normal_text.
             self.stripped_think_start = false;
             let start_idx = think_end_idx + think_end_token.len();
-            let normal_text = if start_idx < current_text.len() {
-                &current_text[start_idx..]
-            } else {
-                ""
-            };
+            let remainder = current_text[start_idx..].to_string();
+            // The post-response remainder may carry further markers (another
+            // span, or a dangling marker) or a partial marker split into the
+            // next chunk; route it so none leaks.
+            let tail = self.emit_normal(&remainder);
             return ParserResult {
-                normal_text: normal_text.to_string(),
-                reasoning_text: reasoning_text.to_string(),
+                normal_text: tail.normal_text,
+                reasoning_text: reasoning_text + &tail.reasoning_text,
             };
         }
         // Continue with reasoning content
@@ -284,13 +309,9 @@ impl ReasoningParser for GraniteReasoningParser {
                 reasoning_text,
             }
         } else {
-            // If we're not in a reasoning block return as normal text
-            let normal_text = current_text;
-            self.buffer.clear();
-            ParserResult {
-                normal_text,
-                reasoning_text: String::new(),
-            }
+            // Outside a reasoning span: consume any dangling / packed markers
+            // and hold a trailing partial marker rather than leaking it.
+            self.emit_normal(&current_text)
         }
     }
 
@@ -577,6 +598,52 @@ mod tests {
         // never leaks into reasoning_text.
         assert_eq!(reasoning, " thinking ");
         assert_eq!(normal, " answer");
+    }
+
+    // Assert no Granite marker phrase survives in either output.
+    fn assert_no_marker_leak(reasoning: &str, normal: &str) {
+        for marker in [
+            "Here's my thought process:",
+            "Here is my thought process:",
+            "Here's my response:",
+            "Here is my response:",
+        ] {
+            assert!(!reasoning.contains(marker), "marker leaked into reasoning");
+            assert!(!normal.contains(marker), "marker leaked into normal");
+        }
+    }
+
+    #[test] // streaming: multiple spans packed into a single chunk
+    fn test_streaming_multiple_spans_single_chunk() {
+        let (reasoning, normal) = run_stream(&[
+            "Here is my thought process: first Here is my response: middle Here is my thought process: second Here is my response: done",
+        ]);
+
+        assert_no_marker_leak(&reasoning, &normal);
+        assert_eq!(reasoning, " first second");
+        assert_eq!(normal, "middle done");
+    }
+
+    #[test] // streaming: dangling response marker with no thought marker
+    fn test_streaming_dangling_response_marker() {
+        let (reasoning, normal) = run_stream(&["normal Here's my response: answer here"]);
+
+        assert_no_marker_leak(&reasoning, &normal);
+        assert_eq!(reasoning, "");
+        assert_eq!(normal, "normal answer here");
+    }
+
+    #[test] // streaming: second span's start marker split across chunks
+    fn test_streaming_split_second_start_marker() {
+        let (reasoning, normal) = run_stream(&[
+            "Here's my thought process: one Here's my response: mid Here's my thou",
+            "ght process: two Here's my response: end",
+        ]);
+
+        // Neither the split second start marker nor the response markers leak.
+        assert_no_marker_leak(&reasoning, &normal);
+        assert_eq!(reasoning, " one  two ");
+        assert_eq!(normal, " mid  end");
     }
 
     #[test] // TOOLCALLING.fmt.1
