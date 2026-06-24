@@ -119,15 +119,19 @@ cases:
             type: string
     expected:
       dynamo:
-        calls: []
+        calls:
+        - name: unknown_tool
+          arguments:
+            location: NYC
         normal_text: ''
+        reason: Dynamo forwards a tool call whose name is not in the request's tools list rather than dropping it; parsing is separate from validation (the serving layer rejects unknown tools), and the model may reference a tool the caller adds later or one baked into its chat template. Matches vLLM.
       vllm:
         calls:
         - name: unknown_tool
           arguments:
             location: NYC
         normal_text: ''
-        reason: vLLM forwards the unknown GLM tool name, while Dynamo validates against the supplied tools and drops the unparseable block.
       sglang:
         calls: []
         normal_text: ''
+        reason: SGLang drops a tool call whose name is not in the supplied tools list; Dynamo and vLLM forward it (validation is the serving layer's job, not the parser's).
