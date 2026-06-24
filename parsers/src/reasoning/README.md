@@ -16,7 +16,7 @@ Reasoning parsers share the same goals as the tool-call parsers — the full lis
 - **Never leak tool-call markup either** — when a model interleaves reasoning and tool calls, each parser strips only its own markup and leaves the rest intact for the next stage.
 - **Make a reasonable, bounded attempt to recover from imperfect / truncated output.** Generation may start already inside a reasoning span (force-reasoning families), or a stream may be cut before the closing delimiter. Recover the span where the grammar allows (e.g. treat marker-free leading text as reasoning for force-reasoning families, or close an open span at end-of-stream) without inventing content, and `tracing::warn!` with a stable `why=` on recovery.
 - **Preserve as much of the original output as possible** — only the recognized reasoning markup spans are removed from `content`; surrounding text is kept verbatim.
-- **A streaming parse must reconstruct the batch parse**, and divergence from vLLM/SGLang on under-specified recovery is expected and documented with a `reason:`, not "fixed" by matching a peer.
+- **A batch (v1) and a streaming (v2) parse of the same output must always agree** — once a v2 reasoning path exists it differs from v1 only in efficiency (v1 jails/buffers the whole output, v2 is token-incremental), never in result. Divergence from vLLM/SGLang on under-specified recovery, by contrast, is expected and documented with a `reason:`, not "fixed" by matching a peer.
 
 ## Case taxonomy
 

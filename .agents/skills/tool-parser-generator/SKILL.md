@@ -18,7 +18,7 @@ These bind every parser you add here and are the tie-breakers when vLLM, SGLang,
 - **Make a reasonable, bounded attempt to recover** an incomplete or stream-truncated call/reasoning span (e.g. close the JSON when only the end marker is missing) — never invent content the model didn't emit, and `tracing::warn!` with a stable `why=`.
 - **Preserve as much of the original output as possible**: `normal_text` is the model output minus only the recognized markup spans (prefix, inter-call, and trailing text kept verbatim).
 - **Parsing is separate from validation** — emit a call even for a tool not in the request's list; the serving layer validates.
-- **A streaming parse must reconstruct the batch parse**; intentional stream-vs-batch differences go in the `known_divergences` allowlist.
+- **v1 (batch) and v2 (streaming) must always agree** — same calls, same `normal_text`. v1 is the simple, inefficient reference (it jails/buffers the whole output, then parses); v2 parses token-incrementally (jailing only the ambiguous suffix) for lower latency. Intentional stream-vs-batch differences go in the `known_divergences` allowlist.
 
 ## When to Use This Skill
 
