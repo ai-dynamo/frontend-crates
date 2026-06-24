@@ -14,6 +14,11 @@ use uuid::Uuid;
 use super::super::config::DsmlParserConfig;
 use super::super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 
+/// Byte spans of the source text occupied by tool-call MARKUP. The caller
+/// subtracts these from the text to assemble `normal_text` while keeping every
+/// other byte verbatim. Ascending, non-overlapping.
+type MarkupSpans = Vec<(usize, usize)>;
+
 /// DeepSeek V3.2 / V4 use DSML (DeepSeek Markup Language) format for tool calls.
 /// V3.2 wraps calls in `<｜DSML｜function_calls>`; V4 wraps them in
 /// `<｜DSML｜tool_calls>`. The inner invoke / parameter grammar is identical:
@@ -62,16 +67,17 @@ pub fn find_tool_call_end_position_dsml(chunk: &str, config: &DsmlParserConfig) 
 /// Parse DSML formatted tool calls from a message.
 ///
 /// Returns `(parsed_tool_calls, normal_text_content)`. `normal_text` is the
-/// text BEFORE the first `<｜DSML｜tool_calls>` / `<｜DSML｜function_calls>`
-/// start marker. Text between blocks, after the last block, and any
-/// back-to-back-block content are all dropped — matching upstream vLLM
-/// (`vllm/tool_parsers/deepseek_v4_tool_parser.py` and the V3.2 sibling),
-/// which compute `content = model_output[:content_end]` where
-/// `content_end = model_output.find(self.tool_call_start_token)`.
+/// model text with each complete tool-call block removed (start marker through
+/// end marker), keeping ALL other text verbatim: the prefix before the first
+/// block, any text BETWEEN blocks, and any text AFTER the last block.
+/// Whitespace is preserved as-is. Only tool-call MARKUP is stripped — natural
+/// language is never dropped and markup never leaks. Cases:
+/// TOOLCALLING.batch.{8.b, 8.c, 8.d} carry inter-call / trailing narration.
 ///
-/// Per `tests/parity/README.md`: vLLM and SGLang both drop trailing text
-/// after the wrapper across XML-style families; this aligns Dynamo to that
-/// behavior. Cases: TOOLCALLING.batch.{2.b, 2.c, 8.b, 8.c, 8.d}.
+/// Malformed or unrecoverable blocks keep the conservative drop-without-leak
+/// behavior: when a block-start is detected but no valid invokes parse, every
+/// byte from that block-start onward is suppressed so wire tags do not bleed
+/// into `normal_text`.
 pub fn try_tool_call_parse_dsml(
     message: &str,
     config: &DsmlParserConfig,
@@ -117,25 +123,25 @@ pub fn try_tool_call_parse_dsml(
 
     // Extract tool calls blocks. Finalize paths can opt into EOF recovery so
     // a missing outer block end still yields any complete inner invokes.
-    let tool_calls = extract_tool_calls(trimmed, config)?;
-
-    // Whether or not invokes parsed, normal_text is the prefix before the
-    // first block_start — mirrors vLLM's success path. On no-invokes the
-    // markup-leak warning still fires for the diagnostic trail.
-    let pre_block_span = &trimmed[..start_idx];
-    let pre_block_text = first_orphan_dsml_marker_index(pre_block_span, config)
-        .filter(|idx| pre_block_span[*idx..].starts_with(config.invoke_start_prefix.as_str()))
-        .map(|idx| pre_block_span[..idx].trim_end().to_string())
-        .unwrap_or_else(|| pre_block_span.to_string());
+    // `markup_spans` are the byte ranges holding tool-call markup; everything
+    // else in `trimmed` is natural text to preserve.
+    let (tool_calls, markup_spans) = extract_tool_calls(trimmed, config)?;
 
     if tool_calls.is_empty() {
         // A block-start was detected but no valid invokes parsed. Do NOT leak
-        // the DSML markup back to the client; emit a diagnostic with a prefix
-        // of the failed block.
+        // the DSML markup back to the client; suppress every byte from the
+        // first block_start onward and keep only the natural-text prefix.
+        // (Malformed/unrecoverable blocks keep this drop-without-leak contract.)
         //
         // Note: an unterminated block-start here means `block_regex` finds no
         // match at all, so any valid block *after* the unterminated one is
         // lost. This matches the pre-existing conservative P1-3 contract.
+        let pre_block_span = &trimmed[..start_idx];
+        let pre_block_text = first_orphan_dsml_marker_index(pre_block_span, config)
+            .filter(|idx| pre_block_span[*idx..].starts_with(config.invoke_start_prefix.as_str()))
+            .map(|idx| pre_block_span[..idx].trim_end().to_string())
+            .unwrap_or_else(|| pre_block_span.to_string());
+
         let failed = &trimmed[start_idx..];
         let prefix: String = failed.chars().take(120).collect();
         tracing::warn!(
@@ -147,24 +153,22 @@ pub fn try_tool_call_parse_dsml(
         return Ok((vec![], Some(pre_block_text)));
     }
 
-    // Success path: prefix-only contract — everything from the first block_start
-    // onward (the block(s) themselves plus any inter-block / trailing narration)
-    // is stripped from normal_text. Mirrors vLLM's
-    // `content = model_output[:content_end]`.
-    let stripped = &trimmed[start_idx..];
-    if !stripped.is_empty() {
-        let preview: String = stripped.chars().take(120).collect();
+    // Success path: strip ONLY the tool-call markup spans; keep all other text
+    // verbatim — prefix, inter-block narration, and trailing narration.
+    let normal_text = normal_text_minus_spans(trimmed, &markup_spans);
+    let stripped_bytes: usize = markup_spans.iter().map(|(s, e)| e - s).sum();
+    if stripped_bytes > 0 {
         tracing::debug!(
-            why = "prefix_only_contract",
+            why = "strip_markup_keep_text",
             n_calls = tool_calls.len(),
-            kept_prefix_bytes = pre_block_text.len(),
-            stripped_bytes = stripped.len(),
-            "DSML strip (success): kept prefix before first block_start; dropped parsed-block(s) + any inter-block / trailing narration. preview={:?}",
-            preview
+            n_markup_spans = markup_spans.len(),
+            kept_bytes = normal_text.len(),
+            stripped_bytes,
+            "DSML strip (success): removed tool-call markup spans; kept all surrounding natural text (prefix + inter-block + trailing)."
         );
     }
 
-    Ok((tool_calls, Some(pre_block_text)))
+    Ok((tool_calls, Some(normal_text)))
 }
 
 fn first_orphan_dsml_marker_index(text: &str, config: &DsmlParserConfig) -> Option<usize> {
@@ -181,26 +185,38 @@ fn first_orphan_dsml_marker_index(text: &str, config: &DsmlParserConfig) -> Opti
 }
 
 /// Extract all tool calls from DSML formatted text.
+///
+/// Returns the parsed calls plus the byte spans of `text` that hold tool-call
+/// MARKUP (start marker through end marker, and any orphan-recovered invoke
+/// tails). The caller subtracts these spans from `text` to assemble
+/// `normal_text` while keeping every other byte verbatim. Spans are produced in
+/// ascending, non-overlapping order because the cursor only moves forward.
 fn extract_tool_calls(
     text: &str,
     config: &DsmlParserConfig,
-) -> anyhow::Result<Vec<ToolCallResponse>> {
+) -> anyhow::Result<(Vec<ToolCallResponse>, MarkupSpans)> {
     let mut tool_calls = Vec::new();
+    let mut markup_spans: MarkupSpans = Vec::new();
     let mut cursor = 0;
 
     while cursor < text.len() {
         let Some(rel_start) = text[cursor..].find(config.block_start.as_str()) else {
-            if let Some((_, mut recovered)) =
+            if let Some((marker_idx, mut recovered)) =
                 recover_orphan_invokes_in_span(&text[cursor..], config)?
             {
+                // Orphan invoke(s) with no outer block: the recovered markup
+                // runs from the first inner marker to the end of the span.
+                markup_spans.push((cursor + marker_idx, text.len()));
                 tool_calls.append(&mut recovered);
             }
             break;
         };
         let abs_start = cursor + rel_start;
-        if let Some((_, mut recovered)) =
+        if let Some((marker_idx, mut recovered)) =
             recover_orphan_invokes_in_span(&text[cursor..abs_start], config)?
         {
+            // Orphan invoke(s) in the gap before the next outer block_start.
+            markup_spans.push((cursor + marker_idx, abs_start));
             tool_calls.append(&mut recovered);
         }
 
@@ -221,17 +237,42 @@ fn extract_tool_calls(
 
         let invokes = extract_invokes(block, config)?;
         tool_calls.extend(invokes);
+        // The whole outer block — start marker through end marker — is markup.
+        markup_spans.push((abs_start, next_cursor));
 
         cursor = next_cursor;
     }
 
-    Ok(tool_calls)
+    Ok((tool_calls, markup_spans))
 }
 
+/// Assemble `normal_text` by removing the markup `spans` from `text`, keeping
+/// every other byte verbatim. `spans` must be ascending and non-overlapping.
+fn normal_text_minus_spans(text: &str, spans: &[(usize, usize)]) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut pos = 0;
+    for &(start, end) in spans {
+        if start > pos {
+            out.push_str(&text[pos..start]);
+        }
+        pos = end.max(pos);
+    }
+    if pos < text.len() {
+        out.push_str(&text[pos..]);
+    }
+    out
+}
+
+/// Recover complete bare invoke(s) inside `span` (no outer block wrapper).
+///
+/// On success returns `(marker_idx, calls)` where `marker_idx` is the byte
+/// offset within `span` of the first inner DSML marker — i.e. the start of the
+/// markup that the caller strips from `normal_text`. Everything in `span`
+/// before `marker_idx` is natural text and is preserved by the caller.
 fn recover_orphan_invokes_in_span(
     span: &str,
     config: &DsmlParserConfig,
-) -> anyhow::Result<Option<(String, Vec<ToolCallResponse>)>> {
+) -> anyhow::Result<Option<(usize, Vec<ToolCallResponse>)>> {
     let Some(marker_idx) = first_orphan_dsml_marker_index(span, config) else {
         return Ok(None);
     };
@@ -255,10 +296,7 @@ fn recover_orphan_invokes_in_span(
         kept_prefix_bytes = marker_idx,
         "DSML recovery: recovered complete bare invoke(s) before a later outer block"
     );
-    Ok(Some((
-        span[..marker_idx].trim_end().to_string(),
-        tool_calls,
-    )))
+    Ok(Some((marker_idx, tool_calls)))
 }
 
 /// Extract individual invoke blocks from function_calls content
@@ -922,10 +960,10 @@ mod tests {
     }
 
     #[test]
-    fn test_multi_block_drops_inter_and_trailing_text() {
+    fn test_multi_block_preserves_inter_and_trailing_text() {
         // Two complete DSML blocks with text before, between, and after.
-        // Both blocks must be parsed; only the pre-block prefix survives in
-        // normal_content — matches vLLM (drops inter / trailing).
+        // Both blocks must be parsed; ALL surrounding natural text survives in
+        // normal_text — only the tool-call markup spans are removed.
         let input = "pre <｜DSML｜tool_calls>\n<｜DSML｜invoke name=\"a\">\n</｜DSML｜invoke>\n</｜DSML｜tool_calls> middle <｜DSML｜tool_calls>\n<｜DSML｜invoke name=\"b\">\n</｜DSML｜invoke>\n</｜DSML｜tool_calls> tail";
 
         let config = get_v4_test_config();
@@ -935,7 +973,11 @@ mod tests {
         assert_eq!(calls[1].function.name, "b");
 
         let normal = normal.unwrap();
-        assert_eq!(normal, "pre ", "only pre-block text survives: {:?}", normal);
+        assert_eq!(
+            normal, "pre  middle  tail",
+            "prefix + inter-block + trailing text all survive: {:?}",
+            normal
+        );
         assert!(
             !normal.contains("<｜DSML｜"),
             "normal_content leaked DSML markup: {:?}",
@@ -966,10 +1008,14 @@ mod tests {
             "outer invoke name is matched first (non-greedy)"
         );
 
-        // After alignment to vLLM, normal_text is the prefix BEFORE the first
-        // block_start only — trailing text after the block is dropped.
+        // normal_text keeps the prefix before the block plus the trailing text
+        // after the block_end; only the matched markup span is removed.
         let normal = normal.unwrap();
-        assert_eq!(normal, "pre ", "only pre-block text survives: {:?}", normal);
+        assert_eq!(
+            normal, "pre  tail",
+            "prefix + trailing text survive; only the block markup is removed: {:?}",
+            normal
+        );
         assert!(
             !normal.contains("<｜DSML｜tool_calls>"),
             "normal_content leaked block_start: {:?}",

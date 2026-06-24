@@ -44,7 +44,7 @@ cases:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: ''
+        normal_text: Let me know if you need more.
       vllm:
         calls: []
         normal_text: '[get_weather(location="NYC")] Let me know if you need more.'
@@ -66,7 +66,7 @@ cases:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: I will check the weather.
+        normal_text: I will check the weather.  Let me know if you need more.
       vllm:
         calls: []
         normal_text: I will check the weather. [get_weather(location="NYC")] Let me know if you need more.
@@ -88,10 +88,14 @@ cases:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: I will check the weather.
+        - name: get_weather
+          arguments:
+            location: LA
+        normal_text: I will check the weather.  Then check LA weather.
       vllm:
         calls: []
         normal_text: I will check the weather. [get_weather(location="NYC")] Then check LA weather. [get_weather(location="LA")]
       sglang:
+        reason: SGLang's PythonicDetector only parses a single leading bracket group, so two separate bracket groups make it bail with no calls and keep just the prefix; Dynamo parses each complete bracket group and preserves the inter-call narration as normal_text.
         calls: []
         normal_text: 'I will check the weather. '

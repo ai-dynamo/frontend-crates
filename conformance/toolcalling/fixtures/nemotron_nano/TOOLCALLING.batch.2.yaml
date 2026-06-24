@@ -81,7 +81,7 @@ cases:
         - name: get_time
           arguments:
             timezone: EST
-        normal_text: 'Both: '
+        normal_text: "Both: \n Done."
       vllm:
         unavailable: vLLM has no parser for family='nemotron_nano'
       sglang:

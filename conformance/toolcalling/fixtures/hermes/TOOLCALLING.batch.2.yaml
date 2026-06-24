@@ -45,7 +45,7 @@ cases:
     - *id002
     - *id003
     expected:
-      dynamo: &id004
+      dynamo:
         calls:
         - name: get_weather
           arguments:
@@ -53,11 +53,12 @@ cases:
         - name: get_time
           arguments:
             timezone: EST
-        normal_text: 'Both:'
+        normal_text: 'Both:  Done.'
       vllm:
-        reason: 'vLLM preserves the trailing space before the first <tool_call> in
-          normal_text; Dynamo and SGLang trim it. Cosmetic whitespace, non-parity by
-          design.'
+        reason: 'Dynamo preserves both the leading prefix and the trailing text
+          ("Done.") around the parallel calls; only the two <tool_call> blocks are
+          stripped. vLLM keeps the prefix (with its trailing space) and drops the
+          text after the calls. Non-parity by design.'
         calls:
         - name: get_weather
           arguments:
@@ -66,7 +67,19 @@ cases:
           arguments:
             timezone: EST
         normal_text: 'Both: '
-      sglang: *id004
+      sglang:
+        reason: 'Dynamo preserves both the leading prefix and the trailing text
+          ("Done.") around the parallel calls; only the two <tool_call> blocks are
+          stripped. SGLang trims the boundary whitespace and drops the trailing text.
+          Non-parity by design.'
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: 'Both:'
   TOOLCALLING.batch.2.d:
     description: Same-name twice
     ref: dynamo

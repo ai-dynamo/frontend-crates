@@ -31,13 +31,27 @@ fn strip_text(message: &str) -> String {
         .replace("<|python_end|>", "")
 }
 
-fn get_regex_matches(message: &str) -> Vec<String> {
+/// Byte ranges of every tool-call block the regex matches, in order. This is the
+/// single source of truth for "where the tool-call markup is": call parsing maps
+/// each range to its parsed calls, and `normal_text` is built by removing these
+/// ranges (keeping prefix, inter-call, and trailing text exactly as written).
+fn get_regex_match_ranges(message: &str) -> Vec<std::ops::Range<usize>> {
     let re = get_pythonic_regex();
-    let mut matches = Vec::new();
-    for cap in re.find_iter(message) {
-        matches.push(cap.as_str().to_string());
+    re.find_iter(message).map(|m| m.range()).collect()
+}
+
+/// Remove the given (already sorted, non-overlapping) byte ranges from `message`,
+/// keeping every other byte verbatim. This is how we build `normal_text`: the
+/// model text minus each complete tool-call block, whitespace preserved as-is.
+fn strip_ranges(message: &str, ranges: &[std::ops::Range<usize>]) -> String {
+    let mut out = String::with_capacity(message.len());
+    let mut cursor = 0;
+    for r in ranges {
+        out.push_str(&message[cursor..r.start]);
+        cursor = r.end;
     }
-    matches
+    out.push_str(&message[cursor..]);
+    out
 }
 
 pub fn parse_tool_calls(src: &str) -> anyhow::Result<Vec<ToolCallResponse>> {
@@ -171,22 +185,34 @@ pub fn try_tool_call_parse_pythonic(
         return Ok((vec![], Some(String::new())));
     }
 
-    let matches = get_regex_matches(&stripped);
-    if matches.is_empty() {
+    let ranges = get_regex_match_ranges(&stripped);
+    if ranges.is_empty() {
         return Ok((vec![], Some(stripped)));
     }
 
-    let tool_response = parse_tool_calls(&matches[0]);
+    // Parse every complete tool-call block, not just the first, so multiple
+    // back-to-back bracket groups are all surfaced as calls. IDs are reassigned
+    // sequentially because `parse_tool_calls` numbers per block (call-1, ...).
+    let mut tool_calls = Vec::new();
+    for r in &ranges {
+        let block = &stripped[r.clone()];
+        // A malformed/unparseable block keeps the current drop-without-leak
+        // behavior: its markup is stripped from `normal_text` (below) and no
+        // call is emitted. Only propagate hard errors that aren't recoverable.
+        let calls = parse_tool_calls(block)?;
+        tool_calls.extend(calls);
+    }
+    for (idx, call) in tool_calls.iter_mut().enumerate() {
+        call.id = format!("call-{}", idx + 1);
+    }
 
-    // normal text is everything before the first match
-    let normal_text = stripped
-        .split(&matches[0])
-        .next()
-        .unwrap() // Safety: `split()` always returns at least one element (the string before the first delimiter, or the entire string if delimiter not found)
-        .trim()
-        .to_string();
+    // `normal_text` is the model text with each complete tool-call block removed,
+    // keeping ALL other text verbatim: prefix, text between calls, and trailing
+    // text. Whitespace is preserved as-is (only the outer trim, matching the
+    // pre-existing contract, is applied).
+    let normal_text = strip_ranges(&stripped, &ranges).trim().to_string();
 
-    Ok((tool_response?, Some(normal_text)))
+    Ok((tool_calls, Some(normal_text)))
 }
 
 pub fn detect_tool_call_start_pythonic(chunk: &str) -> bool {
@@ -227,11 +253,20 @@ mod tests {
         assert_eq!(stripped, "foo(a=1, b=2)");
     }
 
+    /// Extract the matched tool-call substrings via the byte ranges, mirroring
+    /// how the parser locates each block.
+    fn matched_blocks(message: &str) -> Vec<String> {
+        get_regex_match_ranges(message)
+            .into_iter()
+            .map(|r| message[r].to_string())
+            .collect()
+    }
+
     #[test] // helper
     fn test_get_regex_matches_simple_case() {
         // Simple Case
         let message = "[foo(a=1, b=2), bar(x=3)]";
-        let matches = get_regex_matches(message);
+        let matches = matched_blocks(message);
         assert_eq!(matches.len(), 1);
         assert_eq!(matches[0], "[foo(a=1, b=2), bar(x=3)]");
     }
@@ -240,7 +275,7 @@ mod tests {
     fn test_get_regex_matches_text_before_and_after() {
         // Spacing in arg and value and text before and after
         let message = "Hey yo ! [foo(a=1, b=2), bar(x= 3)] Hey yo";
-        let matches = get_regex_matches(message);
+        let matches = matched_blocks(message);
         assert_eq!(matches.len(), 1);
         assert_eq!(matches[0], "[foo(a=1, b=2), bar(x= 3)]");
     }
@@ -249,7 +284,7 @@ mod tests {
     fn test_get_regex_matches_new_line_in_arg_and_value() {
         // New Line in Arg and value
         let message = "Hey \n yo ! [foo(a=1,b=2), \n bar(x=3)] Hey yo";
-        let matches = get_regex_matches(message);
+        let matches = matched_blocks(message);
         assert_eq!(matches.len(), 1);
         assert_eq!(matches[0], "[foo(a=1,b=2), \n bar(x=3)]");
     }
@@ -258,7 +293,7 @@ mod tests {
     fn test_get_regex_matches_no_call() {
         // No Call
         let message = "Hey yo !";
-        let matches = get_regex_matches(message);
+        let matches = matched_blocks(message);
         assert_eq!(matches.len(), 0);
     }
 
@@ -284,7 +319,9 @@ mod tests {
     fn test_parse_tool_call_parse_pythonic_with_text() {
         let message = "Hey yo ! [foo(a=1, b=2), bar(x=3)] Hey yo";
         let (result, content) = try_tool_call_parse_pythonic(message, None).unwrap();
-        assert_eq!(content, Some("Hey yo !".to_string()));
+        // Trailing text after the call is preserved verbatim (only the call
+        // markup is stripped); inner whitespace is kept as-is.
+        assert_eq!(content, Some("Hey yo !  Hey yo".to_string()));
         assert!(!result.is_empty());
         assert_eq!(result.len(), 2);
         let (name, args) = extract_name_and_args(result[0].clone());
@@ -301,7 +338,8 @@ mod tests {
     fn test_parse_tool_call_parse_pythonic_with_text_and_new_line() {
         let message = "Hey \n yo ! [foo(a=1, b=2), bar(x=3)] Hey yo";
         let (result, content) = try_tool_call_parse_pythonic(message, None).unwrap();
-        assert_eq!(content, Some("Hey \n yo !".to_string()));
+        // Trailing text after the call is preserved verbatim.
+        assert_eq!(content, Some("Hey \n yo !  Hey yo".to_string()));
         assert!(!result.is_empty());
         assert_eq!(result.len(), 2);
         let (name, args) = extract_name_and_args(result[0].clone());
@@ -311,6 +349,53 @@ mod tests {
         let (name, args) = extract_name_and_args(result[1].clone());
         assert_eq!(name, "bar");
         assert_eq!(args["x"], 3);
+    }
+
+    #[test] // TOOLCALLING.batch.8.b
+    fn test_parse_tool_call_parse_pythonic_trailing_text_only() {
+        // Narration AFTER the only tool call must be preserved as normal_text.
+        let message = r#"[get_weather(location="NYC")] Let me know if you need more."#;
+        let (result, content) = try_tool_call_parse_pythonic(message, None).unwrap();
+        assert_eq!(content, Some("Let me know if you need more.".to_string()));
+        assert_eq!(result.len(), 1);
+        let (name, args) = extract_name_and_args(result[0].clone());
+        assert_eq!(name, "get_weather");
+        assert_eq!(args["location"], "NYC");
+    }
+
+    #[test] // TOOLCALLING.batch.8.c
+    fn test_parse_tool_call_parse_pythonic_sandwich_text() {
+        // Narration both before and after the call: both halves are preserved,
+        // the call markup is removed, and the internal whitespace stays as-is.
+        let message = r#"I will check the weather. [get_weather(location="NYC")] Let me know if you need more."#;
+        let (result, content) = try_tool_call_parse_pythonic(message, None).unwrap();
+        assert_eq!(
+            content,
+            Some("I will check the weather.  Let me know if you need more.".to_string())
+        );
+        assert_eq!(result.len(), 1);
+        let (name, args) = extract_name_and_args(result[0].clone());
+        assert_eq!(name, "get_weather");
+        assert_eq!(args["location"], "NYC");
+    }
+
+    #[test] // TOOLCALLING.batch.8.d
+    fn test_parse_tool_call_parse_pythonic_inter_call_text() {
+        // Narration BETWEEN two tool-call blocks: both blocks are parsed and the
+        // inter-call prose is preserved verbatim as normal_text.
+        let message = r#"I will check the weather. [get_weather(location="NYC")] Then check LA weather. [get_weather(location="LA")]"#;
+        let (result, content) = try_tool_call_parse_pythonic(message, None).unwrap();
+        assert_eq!(
+            content,
+            Some("I will check the weather.  Then check LA weather.".to_string())
+        );
+        assert_eq!(result.len(), 2);
+        let (name, args) = extract_name_and_args(result[0].clone());
+        assert_eq!(name, "get_weather");
+        assert_eq!(args["location"], "NYC");
+        let (name, args) = extract_name_and_args(result[1].clone());
+        assert_eq!(name, "get_weather");
+        assert_eq!(args["location"], "LA");
     }
 
     #[test] // TOOLCALLING.batch.3

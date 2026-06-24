@@ -41,17 +41,28 @@ cases:
     tools:
     - *id001
     expected:
-      dynamo: &id002
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: Let me know if you need more.
+      vllm:
+        reason: 'Dynamo now preserves the natural-language text that follows the tool
+          call in normal_text; vLLM drops everything after the parsed [TOOL_CALLS]
+          envelope. Non-parity by design.'
         calls:
         - name: get_weather
           arguments:
             location: NYC
         normal_text: ''
-      vllm: *id002
       sglang:
         calls: []
         normal_text: ''
-        reason: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+        reason: 'Two divergences. (1) Calls: SGLang MistralDetector returns calls=[]
+          on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits. (2) normal_text:
+          Dynamo now preserves the trailing text after the envelope; SGLang drops it.
+          Non-parity by design.'
   TOOLCALLING.batch.8.c:
     description: Narration both before and after (sandwich)
     ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_mistral_tool_parser.py#L1858
@@ -65,8 +76,12 @@ cases:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: 'I will check the weather. '
+        normal_text: 'I will check the weather.  Let me know if you need more.'
       vllm:
+        reason: 'Dynamo preserves both the leading narration and the trailing text
+          around the tool call (only the [TOOL_CALLS] envelope is stripped); vLLM
+          keeps the prefix (with its trailing space) and drops the trailing text.
+          Non-parity by design.'
         calls:
         - name: get_weather
           arguments:
@@ -75,7 +90,10 @@ cases:
       sglang:
         calls: []
         normal_text: I will check the weather.
-        reason: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
+        reason: 'Two divergences. (1) Calls: SGLang MistralDetector returns calls=[]
+          on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits. (2) normal_text:
+          Dynamo preserves both the leading narration and the trailing text around
+          the envelope; SGLang keeps only the prefix. Non-parity by design.'
   TOOLCALLING.batch.8.d:
     description: Narration between multiple tool calls
     ref: dynamo
@@ -86,11 +104,15 @@ cases:
     expected:
       dynamo:
         calls: []
-        normal_text: 'I will check the weather. '
+        normal_text: 'I will check the weather.  Then check LA weather.'
       vllm:
         error: 'ValueError: Only one BOT token should have been outputted'
         reason: vLLM mistral_tool_parser raises ValueError on two consecutive [TOOL_CALLS] envelopes
       sglang:
         calls: []
         normal_text: I will check the weather.
-        reason: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits; it also trims the boundary whitespace Dynamo now preserves.
+        reason: 'Two divergences. (1) Calls: SGLang MistralDetector returns calls=[]
+          on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits. (2) normal_text:
+          Dynamo now preserves the inter-call narration ("Then check LA weather.") by
+          stripping only the [TOOL_CALLS] envelopes; SGLang keeps only the leading
+          prefix. Non-parity by design.'

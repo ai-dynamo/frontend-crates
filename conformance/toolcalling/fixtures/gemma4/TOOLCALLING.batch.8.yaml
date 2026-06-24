@@ -38,14 +38,26 @@ cases:
     tools:
     - *id002
     expected:
-      dynamo: &id003
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: Let me know if you need more.
+      vllm:
         calls:
         - name: get_weather
           arguments:
             location: NYC
         normal_text: ''
-      vllm: *id003
-      sglang: *id003
+        reason: drops trailing normal_text after tool-call wrapper end; Dynamo preserves it
+      sglang:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+        reason: drops trailing normal_text after tool-call wrapper end; Dynamo preserves it
   TOOLCALLING.batch.8.c:
     description: Narration both before and after (sandwich)
     ref: dynamo
@@ -54,20 +66,26 @@ cases:
     tools:
     - *id002
     expected:
-      dynamo: &id004
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: I will check the weather.  Let me know if you need more.
+      vllm:
         calls:
         - name: get_weather
           arguments:
             location: NYC
         normal_text: I will check the weather.
-      vllm: *id004
+        reason: keeps only the prefix before the tool-call wrapper start and drops trailing normal_text; Dynamo preserves both
       sglang:
         calls:
         - name: get_weather
           arguments:
             location: NYC
         normal_text: 'I will check the weather. '
-        reason: preserves pre-tool-call whitespace and drops trailing normal_text after tool-call wrapper end
+        reason: preserves pre-tool-call whitespace and drops trailing normal_text after tool-call wrapper end; Dynamo preserves both
   TOOLCALLING.batch.8.d:
     description: Narration between multiple tool calls
     ref: dynamo
@@ -76,7 +94,16 @@ cases:
     tools:
     - *id002
     expected:
-      dynamo: &id005
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: LA
+        normal_text: I will check the weather.  Then check LA weather.
+      vllm:
         calls:
         - name: get_weather
           arguments:
@@ -85,7 +112,7 @@ cases:
           arguments:
             location: LA
         normal_text: I will check the weather.
-      vllm: *id005
+        reason: keeps only the prefix before the first tool-call wrapper start and drops inter-call normal_text; Dynamo preserves the text between calls
       sglang:
         calls:
         - name: get_weather
@@ -95,4 +122,4 @@ cases:
           arguments:
             location: LA
         normal_text: 'I will check the weather. '
-        reason: preserves pre-tool-call whitespace and drops trailing normal_text after tool-call wrapper end
+        reason: preserves pre-tool-call whitespace and drops inter-call normal_text after the first tool-call wrapper end; Dynamo preserves the text between calls

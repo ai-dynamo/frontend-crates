@@ -108,9 +108,9 @@ cases:
         - name: get_time
           arguments:
             timezone: EST
-        normal_text: 'Both: '
-      vllm: *id005
-      sglang:
+        normal_text: 'Both:  Done.'
+      sglang: *id005
+      vllm:
         calls:
         - name: get_weather
           arguments:
@@ -118,8 +118,8 @@ cases:
         - name: get_time
           arguments:
             timezone: EST
-        normal_text: 'Both:  Done.'
-        reason: "SGLang preserves normal text after parsed MiniMax tool-call wrappers; Dynamo aligns with vLLM by keeping only text before the first parsed tool call."
+        normal_text: 'Both: '
+        reason: "vLLM keeps only text before the first parsed MiniMax tool-call wrapper and drops the trailing narration; Dynamo (like SGLang) strips only the tool-call markup and preserves the surrounding natural-language text verbatim."
   TOOLCALLING.batch.2.d:
     description: Same-name twice
     ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_minimax_m2_tool_parser.py#L331

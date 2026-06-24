@@ -134,6 +134,73 @@ fn normal_text_before_wrapper_start(message: &str, config: &JsonParserConfig) ->
         .unwrap_or_default()
 }
 
+/// DeepSeek control tokens that must never leak into `normal_text`: the four
+/// tool-call markers plus the `<｜end▁of▁sentence｜>` EOS sentinel. A marker still
+/// present in the assembled `normal_text` (after complete spans are removed) is
+/// malformed framing — an unterminated wrapper, an orphan close, a stray
+/// inner/outer marker, or the trailing EOS token — and is dropped so protocol
+/// tokens never reach user-visible content.
+const DEEPSEEK_MARKERS: [&str; 5] = [
+    "<｜tool▁calls▁begin｜>",
+    "<｜tool▁calls▁end｜>",
+    "<｜tool▁call▁begin｜>",
+    "<｜tool▁call▁end｜>",
+    "<｜end▁of▁sentence｜>",
+];
+
+/// Build `normal_text` by removing every complete tool-call block — the
+/// `start_token` through `end_token` span — and keeping ALL surrounding natural
+/// text verbatim: the prefix before the first call, text BETWEEN consecutive
+/// wrappers, and text AFTER the last call. Only complete `start(.*?)end` spans
+/// are removed (lazy, multi-line), so a truncated wrapper with no matching close
+/// is left for the prefix-only fallback. Any DeepSeek marker still present after
+/// span removal is malformed framing and is dropped from its first occurrence
+/// onward (drop-without-leak). Returns `None` when no complete span is present
+/// (caller falls back to `normal_text_before_wrapper_start`).
+fn normal_text_outside_spans(message: &str, start_token: &str, end_token: &str) -> Option<String> {
+    if start_token.is_empty() || end_token.is_empty() {
+        return None;
+    }
+    let escaped_start = regex::escape(start_token);
+    let escaped_end = regex::escape(end_token);
+    let pattern = format!(r"{}(?s:.*?){}", escaped_start, escaped_end);
+    let regex = RegexBuilder::new(&pattern).build().ok()?;
+
+    let mut out = String::new();
+    let mut last_end = 0usize;
+    let mut matched = false;
+    for m in regex.find_iter(message) {
+        matched = true;
+        out.push_str(&message[last_end..m.start()]);
+        last_end = m.end();
+    }
+    if !matched {
+        return None;
+    }
+    out.push_str(&message[last_end..]);
+
+    // Drop any residual marker (malformed framing) so markup never leaks; the
+    // surrounding natural-language whitespace is preserved verbatim.
+    let cut = DEEPSEEK_MARKERS.iter().filter_map(|m| out.find(m)).min();
+    if let Some(idx) = cut {
+        out.truncate(idx);
+    }
+    Some(out)
+}
+
+/// `normal_text` for the success path: strip the complete outer
+/// `<｜tool▁calls▁begin｜>...<｜tool▁calls▁end｜>` wrapper spans (preserving text
+/// between and after them), falling back to the prefix-only text when no
+/// complete wrapper close is present (truncated / EOF-recovery framing).
+fn normal_text_outside_wrapper(message: &str, config: &JsonParserConfig) -> String {
+    config
+        .tool_call_start_tokens
+        .iter()
+        .zip(config.tool_call_end_tokens.iter())
+        .find_map(|(start, end)| normal_text_outside_spans(message, start, end))
+        .unwrap_or_else(|| normal_text_before_wrapper_start(message, config))
+}
+
 fn wrapper_start_index(message: &str, config: &JsonParserConfig) -> Option<usize> {
     config
         .tool_call_start_tokens
@@ -210,7 +277,17 @@ pub fn parse_tool_calls_deepseek_v3(
                     stripped_bytes = trimmed.len(),
                     "DeepSeek V3 parser recovered bare inner tool-call block and suppressed parser markup from normal_text"
                 );
-                return Ok((tool_calls, Some(normal_text)));
+                // Preserve prefix + between-call + trailing natural text by
+                // removing only the complete inner `<｜tool▁call▁begin｜>...
+                // <｜tool▁call▁end｜>` spans, falling back to the prefix-only text
+                // when no complete inner span is present.
+                let bare_normal_text = normal_text_outside_spans(
+                    trimmed,
+                    "<｜tool▁call▁begin｜>",
+                    "<｜tool▁call▁end｜>",
+                )
+                .unwrap_or(normal_text);
+                return Ok((tool_calls, Some(bare_normal_text)));
             }
             tracing::warn!(
                 why = "bare_deepseek_v3_call_without_outer_wrapper",
@@ -265,7 +342,13 @@ pub fn parse_tool_calls_deepseek_v3(
         return Ok((vec![], Some(normal_text)));
     }
 
-    Ok((tool_calls, Some(normal_text)))
+    // Success: at least one complete wrapper parsed. Preserve prefix +
+    // between-wrapper + trailing natural text by removing only the complete
+    // outer wrapper spans.
+    Ok((
+        tool_calls,
+        Some(normal_text_outside_wrapper(trimmed, config)),
+    ))
 }
 
 pub fn detect_tool_call_start_deepseek_v3(chunk: &str, config: &JsonParserConfig) -> bool {
@@ -589,7 +672,11 @@ mod tests {
             _ => panic!("Expected JSON parser config"),
         };
         let (result, content) = parse_tool_calls_deepseek_v3(text, &config, None).unwrap();
-        assert_eq!(content, Some("Before ".to_string()));
+        // The recovered call's inner span is stripped and the trailing orphan
+        // <｜tool▁call▁end｜> markers are dropped from their first occurrence
+        // without leaking; the natural-text whitespace between the call and the
+        // orphans is preserved verbatim ("Before " + the inter-token newline).
+        assert_eq!(content, Some("Before \n".to_string()));
         assert_eq!(result.len(), 1);
         let (name, args) = extract_name_and_args(result[0].clone());
         assert_eq!(name, "get_weather");

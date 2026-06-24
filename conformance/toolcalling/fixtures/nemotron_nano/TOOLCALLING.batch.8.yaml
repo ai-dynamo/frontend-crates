@@ -53,7 +53,7 @@ cases:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: ''
+        normal_text: ' Let me know if you need more.'
       vllm:
         unavailable: vLLM has no parser for family='nemotron_nano'
       sglang:
@@ -77,7 +77,7 @@ cases:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: 'I will check the weather. '
+        normal_text: 'I will check the weather.  Let me know if you need more.'
       vllm:
         unavailable: vLLM has no parser for family='nemotron_nano'
       sglang:
@@ -110,7 +110,7 @@ cases:
         - name: get_weather
           arguments:
             location: LA
-        normal_text: 'I will check the weather. '
+        normal_text: 'I will check the weather.  Then check LA weather. '
       vllm:
         unavailable: vLLM has no parser for family='nemotron_nano'
       sglang:

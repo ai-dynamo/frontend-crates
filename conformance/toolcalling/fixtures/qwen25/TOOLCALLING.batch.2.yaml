@@ -57,7 +57,22 @@ cases:
     - *id002
     - *id003
     expected:
-      dynamo: &id004
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: 'Both:  Done.'
+      vllm:
+        unavailable: vLLM has no parser for family='qwen25'
+      sglang:
+        reason: 'Dynamo preserves both the leading prefix and the trailing text
+          ("Done.") around the parallel calls; only the two <tool_call> blocks are
+          stripped. SGLang keeps only the prefix and drops the trailing text.
+          Non-parity by design.'
         calls:
         - name: get_weather
           arguments:
@@ -66,9 +81,6 @@ cases:
           arguments:
             timezone: EST
         normal_text: 'Both:'
-      vllm:
-        unavailable: vLLM has no parser for family='qwen25'
-      sglang: *id004
   TOOLCALLING.batch.2.d:
     description: Same-name twice
     ref: dynamo

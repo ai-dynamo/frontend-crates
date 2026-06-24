@@ -2071,7 +2071,10 @@ Remember, San Francisco weather can be quite unpredictable, particularly with it
         let (result, content) = detect_and_parse_tool_call(input, Some("hermes"), None)
             .await
             .unwrap();
-        assert_eq!(content, Some("".to_string()));
+        // Only the <tool_call>...</tool_call> span is stripped; the stray trailing
+        // text after the closing marker is preserved verbatim (trimmed at the
+        // boundary), so the lone `"` here survives as normal_text.
+        assert_eq!(content, Some("\"".to_string()));
         assert_eq!(result.len(), 1);
         let (name, args) = extract_name_and_args(result[0].clone());
         assert_eq!(name, "get_weather");
@@ -2299,7 +2302,8 @@ fahrenheit
             .await
             .unwrap();
 
-        assert_eq!(content, Some("".to_string()));
+        // The `\n` between the two tool-call blocks is preserved as normal_text.
+        assert_eq!(content, Some("\n".to_string()));
         validate_weather_tool_calls(&result, &[("Dallas", "TX"), ("Orlando", "FL")]);
     }
 
@@ -3143,9 +3147,14 @@ fahrenheit
         let (result, content) = detect_and_parse_tool_call(input, Some("qwen3_coder"), None)
             .await
             .unwrap();
+        // normal_text preserves both the prefix and the text after the call;
+        // only the `<tool_call>…</tool_call>` markup is stripped.
         assert_eq!(
             content,
-            Some("I'll help you check the weather. ".to_string())
+            Some(
+                "I'll help you check the weather.  Let me get that information for you."
+                    .to_string()
+            )
         );
         assert_eq!(result.len(), 1);
         let (name, args) = extract_name_and_args(result[0].clone());
@@ -3185,7 +3194,9 @@ fahrenheit
         let (result, content) = detect_and_parse_tool_call(input, Some("qwen3_coder"), None)
             .await
             .unwrap();
-        assert_eq!(content, Some("".to_string()));
+        // The `\n` between the two `</tool_call>`/`<tool_call>` blocks is
+        // natural text and is preserved; only the markup is stripped.
+        assert_eq!(content, Some("\n".to_string()));
         assert_eq!(result.len(), 2);
 
         let (name1, args1) = extract_name_and_args(result[0].clone());
@@ -3339,7 +3350,8 @@ Seattle
         let (result, content) = detect_and_parse_tool_call(input, Some("qwen3_coder"), None)
             .await
             .unwrap();
-        assert_eq!(content, Some("".to_string()));
+        // Two `\n` inter-call separators are preserved; only markup is stripped.
+        assert_eq!(content, Some("\n\n".to_string()));
         assert_eq!(result.len(), 3);
 
         let cities = ["Dallas", "Orlando", "Seattle"];
@@ -3387,7 +3399,8 @@ weather forecasting
             detect_and_parse_tool_call(input, Some("qwen3_coder"), Some(&tools))
                 .await
                 .unwrap();
-        assert_eq!(content, Some("".to_string()));
+        // The `\n` between the two tool-call blocks is preserved.
+        assert_eq!(content, Some("\n".to_string()));
         assert_eq!(result.len(), 2);
 
         let (name1, args1) = extract_name_and_args(result[0].clone());

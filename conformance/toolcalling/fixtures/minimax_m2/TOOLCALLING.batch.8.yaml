@@ -47,15 +47,15 @@ cases:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: ''
-      vllm: *id003
-      sglang:
+        normal_text: ' Let me know if you need more.'
+      sglang: *id003
+      vllm:
         calls:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: ' Let me know if you need more.'
-        reason: "SGLang preserves normal text after parsed MiniMax tool-call wrappers; Dynamo aligns with vLLM by keeping only text before the first parsed tool call."
+        normal_text: ''
+        reason: "vLLM keeps only text before the first parsed MiniMax tool-call wrapper and drops the trailing narration; Dynamo (like SGLang) strips only the tool-call markup and preserves the surrounding natural-language text verbatim."
   TOOLCALLING.batch.8.c:
     description: Narration both before and after (sandwich)
     ref: dynamo
@@ -73,15 +73,15 @@ cases:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: 'I will check the weather. '
-      vllm: *id004
-      sglang:
+        normal_text: 'I will check the weather.  Let me know if you need more.'
+      sglang: *id004
+      vllm:
         calls:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: I will check the weather.  Let me know if you need more.
-        reason: "SGLang preserves normal text after parsed MiniMax tool-call wrappers; Dynamo aligns with vLLM by keeping only text before the first parsed tool call."
+        normal_text: 'I will check the weather. '
+        reason: "vLLM keeps only text before the first parsed MiniMax tool-call wrapper and drops the trailing narration; Dynamo (like SGLang) strips only the tool-call markup and preserves the surrounding natural-language text verbatim."
   TOOLCALLING.batch.8.d:
     description: Narration between multiple tool calls
     ref: dynamo
@@ -106,9 +106,9 @@ cases:
         - name: get_weather
           arguments:
             location: LA
-        normal_text: 'I will check the weather. '
-      vllm: *id005
-      sglang:
+        normal_text: 'I will check the weather.  Then check LA weather. '
+      sglang: *id005
+      vllm:
         calls:
         - name: get_weather
           arguments:
@@ -116,5 +116,5 @@ cases:
         - name: get_weather
           arguments:
             location: LA
-        normal_text: 'I will check the weather.  Then check LA weather. '
-        reason: "SGLang preserves normal text after parsed MiniMax tool-call wrappers; Dynamo aligns with vLLM by keeping only text before the first parsed tool call."
+        normal_text: 'I will check the weather. '
+        reason: "vLLM keeps only text before the first parsed MiniMax tool-call wrapper and drops the inter-call and trailing narration; Dynamo (like SGLang) strips only the tool-call markup and preserves the surrounding natural-language text verbatim."

@@ -175,6 +175,131 @@ fn handle_single_token_tool_calls(input: &str, start_token: &str) -> Option<Stri
     Some(format!("[{}]", items.join(",")))
 }
 
+/// Build `normal_text` for the single-token families (`<|python_tag|>`, `functools`)
+/// by removing each tool-call block — the `start_token` plus the JSON value(s)
+/// that follow it — and keeping ALL surrounding natural text verbatim: the
+/// prefix before the first marker, text BETWEEN a JSON body and the next marker,
+/// and text AFTER the last call.
+///
+/// These families have no end token, so a "complete block" ends at the close of
+/// the JSON the block carries. This walks the same byte spans
+/// `handle_single_token_tool_calls` consumes (StreamDeserializer for `{...}`
+/// runs, `rfind(']')` for `[...]` arrays), so the markup it strips and the calls
+/// the parser emits agree. Returns `None` when the start token is absent (caller
+/// falls back), and only segments that yielded at least one parsed JSON value
+/// contribute their trailing remainder — a stray start token with no valid JSON
+/// keeps the current drop-without-leak behavior.
+fn normal_text_single_token(input: &str, start_token: &str) -> Option<String> {
+    if start_token.is_empty() || !input.contains(start_token) {
+        return None;
+    }
+
+    let mut out = String::new();
+    let mut first = true;
+    for seg in input.split(start_token) {
+        if first {
+            // Text before the first start token is the prefix — keep verbatim.
+            out.push_str(seg);
+            first = false;
+            continue;
+        }
+        // `seg` is the text after a start token. Find where the JSON value(s)
+        // the block carries end; everything past that is natural text.
+        let trimmed_start = seg.trim_start();
+        let leading_ws = &seg[..seg.len() - trimmed_start.len()];
+        if trimmed_start.starts_with('{') {
+            let mut remaining = trimmed_start;
+            let mut consumed_any = false;
+            loop {
+                let mut stream =
+                    serde_json::Deserializer::from_str(remaining).into_iter::<Box<RawValue>>();
+                match stream.next() {
+                    Some(Ok(rv)) => {
+                        let raw = rv.get();
+                        if raw.is_empty() {
+                            break;
+                        }
+                        consumed_any = true;
+                        let after = remaining[raw.len()..].trim_start();
+                        if let Some(rest) = after.strip_prefix(';') {
+                            remaining = rest.trim_start();
+                        } else {
+                            remaining = after;
+                            break;
+                        }
+                    }
+                    _ => break,
+                }
+            }
+            if consumed_any {
+                // `remaining` is the trailing text after the JSON run. Keep it
+                // only when it is natural language. A leftover that begins (after
+                // trimming) with a JSON delimiter is NOT natural text:
+                //   • `{` / `[` — another tool-call object/array the model began
+                //     but left malformed/truncated (e.g. `{a};{b,truncated`), so
+                //     the parser recovered only the complete leading call(s);
+                //   • `]` / `}` / `,` / `;` — stray JSON-close / separator residue
+                //     from a malformed block (e.g. a bare `{...}]`).
+                // Either way it is markup-shape residue, not prose, and must not
+                // leak; drop it (drop-without-leak), matching the parser's call
+                // recovery for the same input.
+                let lead = remaining.trim_start();
+                if !lead.starts_with(['{', '[', ']', '}', ',', ';']) {
+                    out.push_str(remaining);
+                }
+            } else {
+                // No JSON parsed from this segment — preserve the leading
+                // whitespace + segment as natural text (the start token was
+                // present but carried no call).
+                out.push_str(leading_ws);
+                out.push_str(trimmed_start);
+            }
+        } else if trimmed_start.starts_with('[') {
+            if let Some(pos) = trimmed_start.rfind(']') {
+                let candidate = trimmed_start[..=pos].trim();
+                if serde_json::from_str::<Vec<Box<RawValue>>>(candidate).is_ok() {
+                    // Keep everything after the closing ']' as natural text.
+                    out.push_str(&trimmed_start[pos + 1..]);
+                } else {
+                    out.push_str(leading_ws);
+                    out.push_str(trimmed_start);
+                }
+            } else {
+                out.push_str(leading_ws);
+                out.push_str(trimmed_start);
+            }
+        } else {
+            // Segment carried no JSON object/array. The current parser drops it
+            // (no call recovered); keep that drop-without-leak behavior here too
+            // rather than re-surfacing a stray start token's tail.
+        }
+    }
+    Some(out)
+}
+
+/// After complete tool-call spans are removed, any tool-call MARKER still
+/// present in the assembled `normal_text` is malformed framing — an
+/// unterminated opener whose end marker never arrived, or an orphan close with
+/// no opener. The model's natural text never contains these markers, and a
+/// complete span between two markers was already removed, so a residual marker
+/// can only be malformed markup. Drop everything from the first residual marker
+/// onward so the markup never leaks (drop-without-leak), keeping the clean
+/// natural text before it.
+fn drop_residual_markup<'a, I>(text: &str, markers: I) -> String
+where
+    I: IntoIterator<Item = &'a str>,
+{
+    let cut = markers
+        .into_iter()
+        .filter(|m| !m.is_empty())
+        .filter_map(|m| text.find(m))
+        .min();
+    match cut {
+        Some(idx) => text[..idx].to_string(),
+        None => text.to_string(),
+    }
+}
+
 /// Attempt to repair JSON truncated by max_tokens / EOS. Walks the input
 /// tracking string state and brace/bracket nesting; on EOF closes any
 /// open string and pops outstanding closers. Returns `Some(repaired)` only
@@ -257,6 +382,60 @@ fn recover_leading_complete_objects(json: &str) -> Vec<String> {
         }
     }
     out
+}
+
+/// Build `normal_text` for the two-token (`<start>...<end>`) families by
+/// removing every complete tool-call span — start marker through end marker —
+/// and keeping ALL surrounding natural text verbatim: the prefix before the
+/// first call, text BETWEEN consecutive calls, and text AFTER the last call.
+///
+/// Only complete `start_token(.*?)end_token` spans are removed (lazy match,
+/// `dot_matches_new_line` so multi-line JSON bodies are spanned), mirroring how
+/// `extract_tool_call_content` locates the calls it parses. Markup is therefore
+/// the only thing stripped — natural language is never dropped, and a markup
+/// marker never leaks. A trailing unterminated `<start>` with no matching
+/// `<end>` is malformed framing handled by the recovery paths, not here, so it
+/// is left for the prefix-only fallback.
+///
+/// Returns `None` when no complete span is present (the caller falls back to the
+/// prefix-only behavior used for malformed / unrecoverable framing).
+fn normal_text_outside_spans(input: &str, start_token: &str, end_token: &str) -> Option<String> {
+    if start_token.is_empty() || end_token.is_empty() {
+        return None;
+    }
+    let escaped_start = regex::escape(start_token);
+    let escaped_end = regex::escape(end_token);
+    let pattern = format!(r"{}(?s:.*?){}", escaped_start, escaped_end);
+    let regex = RegexBuilder::new(&pattern).build().ok()?;
+
+    let mut out = String::new();
+    let mut last_end = 0usize;
+    let mut matched = false;
+    for m in regex.find_iter(input) {
+        matched = true;
+        out.push_str(&input[last_end..m.start()]);
+        last_end = m.end();
+    }
+    if !matched {
+        return None;
+    }
+    out.push_str(&input[last_end..]);
+    Some(out)
+}
+
+/// Apply the family's boundary-whitespace rule to the assembled `normal_text`.
+/// The mistral family (`[TOOL_CALLS]`) preserves the boundary space to match
+/// vLLM; every other JSON family trims the outer whitespace — the same split
+/// `try_parse_normal_text` applies to the prefix, kept here so the span-removed
+/// result keeps each family's long-standing boundary contract while the new
+/// inter-call / trailing text it now preserves is left untouched (only outer
+/// whitespace is affected; internal spacing is verbatim).
+fn apply_boundary_trim(text: String, start_token: &str) -> String {
+    if start_token == "[TOOL_CALLS]" {
+        text
+    } else {
+        text.trim().to_string()
+    }
 }
 
 fn try_parse_normal_text(input: &str, start_token: &str) -> String {
@@ -437,7 +616,9 @@ pub fn try_tool_call_parse_basic_json(
         // Try all combinations of start and end tokens
         'outer: for start_token in tool_call_start_tokens.iter() {
             for end_token in tool_call_end_tokens.iter() {
-                let new_normal_text = try_parse_normal_text(&normal_text, start_token);
+                // Prefix before the first marker — the malformed-framing fallback
+                // when no complete tool-call span is found below.
+                let prefix_normal_text = try_parse_normal_text(&normal_text, start_token);
 
                 // Process based on token types
                 match (start_token.is_empty(), end_token.is_empty()) {
@@ -456,9 +637,25 @@ pub fn try_tool_call_parse_basic_json(
                                 found_start_token_with_no_valid_json = true;
                             }
 
+                            // Preserve prefix + between-call + trailing natural
+                            // text by removing only the start-token + JSON-value
+                            // blocks; fall back to prefix-only if the span walk
+                            // finds no marker (shouldn't happen here — the start
+                            // token is present — but keeps the type total). Drop
+                            // any residual start marker so malformed markup never
+                            // leaks (single-token families have no end token).
+                            normal_text = match normal_text_single_token(&normal_text, start_token)
+                            {
+                                Some(stripped) => {
+                                    let dropped = drop_residual_markup(
+                                        &stripped,
+                                        tool_call_start_tokens.iter().map(String::as_str),
+                                    );
+                                    apply_boundary_trim(dropped, start_token)
+                                }
+                                None => prefix_normal_text,
+                            };
                             json = content;
-                            // For single token case, use the normal text we extracted earlier
-                            normal_text = new_normal_text;
 
                             break 'outer; // Found content, exit early
                         }
@@ -483,8 +680,32 @@ pub fn try_tool_call_parse_basic_json(
                                 found_start_token_with_no_valid_json = true;
                             }
 
+                            // Preserve prefix + between-call + trailing natural
+                            // text by removing only the complete `<start>...<end>`
+                            // spans. When no complete span is present (e.g. an
+                            // unterminated opener recovered via EOF), fall back to
+                            // the prefix-only text — the malformed-framing path.
+                            // Then drop any residual marker (a dangling unterminated
+                            // opener or orphan close) so malformed markup never
+                            // leaks into normal_text.
+                            normal_text = match normal_text_outside_spans(
+                                &normal_text,
+                                start_token,
+                                end_token,
+                            ) {
+                                Some(stripped) => {
+                                    let dropped = drop_residual_markup(
+                                        &stripped,
+                                        tool_call_start_tokens
+                                            .iter()
+                                            .chain(tool_call_end_tokens.iter())
+                                            .map(String::as_str),
+                                    );
+                                    apply_boundary_trim(dropped, start_token)
+                                }
+                                None => prefix_normal_text,
+                            };
                             json = content;
-                            normal_text = new_normal_text;
 
                             break 'outer; // Found content, exit early
                         }

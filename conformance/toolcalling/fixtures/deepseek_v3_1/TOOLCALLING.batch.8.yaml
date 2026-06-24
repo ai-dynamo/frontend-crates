@@ -39,13 +39,21 @@ cases:
     tools:
     - *id002
     expected:
-      dynamo: &id003
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: Let me know if you need more.
+      vllm: &id003
+        reason: 'Dynamo now preserves the natural-language text that follows the tool
+          call in normal_text; vLLM and SGLang drop everything after the parsed
+          DeepSeek V3.1 wrapper. Non-parity by design.'
         calls:
         - name: get_weather
           arguments:
             location: NYC
         normal_text: ''
-      vllm: *id003
       sglang: *id003
   TOOLCALLING.batch.8.c:
     description: Narration both before and after (sandwich)
@@ -55,15 +63,27 @@ cases:
     tools:
     - *id002
     expected:
-      dynamo: &id004
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: 'I will check the weather.  Let me know if you need more.'
+      vllm:
+        reason: 'Dynamo preserves both the leading narration and the trailing text
+          around the tool call (only the DeepSeek V3.1 wrapper is stripped); vLLM
+          keeps the prefix (with its trailing space) and drops the trailing text.
+          Non-parity by design.'
         calls:
         - name: get_weather
           arguments:
             location: NYC
         normal_text: 'I will check the weather. '
-      vllm: *id004
       sglang:
-        reason: SGLang trims trailing whitespace from normal_text that precedes DeepSeek V3.1 tool-call blocks.
+        reason: 'Dynamo preserves both the leading narration and the trailing text
+          around the tool call (only the DeepSeek V3.1 wrapper is stripped); SGLang
+          trims the boundary whitespace and drops the trailing text. Non-parity by
+          design.'
         calls:
         - name: get_weather
           arguments:
@@ -77,7 +97,20 @@ cases:
     tools:
     - *id002
     expected:
-      dynamo: &id005
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: LA
+        normal_text: 'I will check the weather.  Then check LA weather.'
+      vllm:
+        reason: 'Dynamo preserves the inter-call narration ("Then check LA weather.")
+          in normal_text by stripping only the two DeepSeek V3.1 wrappers; vLLM keeps
+          the leading prefix (with its trailing space) and drops the inter-call text.
+          Non-parity by design.'
         calls:
         - name: get_weather
           arguments:
@@ -86,9 +119,11 @@ cases:
           arguments:
             location: LA
         normal_text: 'I will check the weather. '
-      vllm: *id005
       sglang:
-        reason: SGLang trims trailing whitespace from normal_text that precedes DeepSeek V3.1 tool-call blocks.
+        reason: 'Dynamo preserves the inter-call narration ("Then check LA weather.")
+          in normal_text by stripping only the two DeepSeek V3.1 wrappers; SGLang
+          trims the boundary whitespace and drops the inter-call text. Non-parity by
+          design.'
         calls:
         - name: get_weather
           arguments:

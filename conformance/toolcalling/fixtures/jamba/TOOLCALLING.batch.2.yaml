@@ -54,9 +54,12 @@ cases:
         - name: get_time
           arguments:
             timezone: EST
-        normal_text: 'Both:'
+        normal_text: 'Both:  Done.'
       vllm:
-        reason: "Cosmetic whitespace only: Dynamo trims the single space between the leading narration and the <tool_calls> fence; vLLM preserves it. Calls are identical."
+        reason: 'Dynamo preserves both the leading prefix and the trailing text
+          ("Done.") around the parallel calls; only the <tool_calls> block is
+          stripped. vLLM keeps the prefix (with its trailing space) and drops the
+          text after the calls. Non-parity by design.'
         calls:
         - name: get_weather
           arguments:

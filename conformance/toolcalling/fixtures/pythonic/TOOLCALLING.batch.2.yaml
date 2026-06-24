@@ -51,7 +51,7 @@ cases:
         - name: get_time
           arguments:
             timezone: EST
-        normal_text: 'Both:'
+        normal_text: 'Both:  Done.'
       vllm:
         calls: []
         normal_text: 'Both: [get_weather(location="NYC"), get_time(timezone="EST")] Done.'

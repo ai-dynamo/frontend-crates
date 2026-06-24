@@ -53,7 +53,7 @@ cases:
         - name: get_time
           arguments:
             timezone: EST
-        normal_text: 'Both:'
+        normal_text: 'Both: Done.'
       vllm:
         calls:
         - name: get_weather
@@ -63,7 +63,9 @@ cases:
           arguments:
             timezone: EST
         normal_text: ''
-        reason: vLLM llama3_json drops leading normal_text before the python_tag token
+        reason: 'Dynamo preserves both the leading prefix and the trailing text
+          ("Done.") around the parallel calls (matching SGLang); vLLM drops all
+          normal_text. Non-parity by design.'
       sglang:
         calls:
         - name: get_weather
@@ -73,7 +75,6 @@ cases:
           arguments:
             timezone: EST
         normal_text: 'Both: Done.'
-        reason: preserves trailing text after final parsed JSON object
   TOOLCALLING.batch.2.d:
     description: Same-name twice (semicolon-separated)
     ref: dynamo

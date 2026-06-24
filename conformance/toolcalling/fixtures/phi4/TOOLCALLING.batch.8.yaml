@@ -38,13 +38,21 @@ cases:
     tools:
     - *id001
     expected:
-      dynamo: &id002
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: Let me know if you need more.
+      vllm:
+        reason: 'Dynamo now preserves the natural-language text that follows the tool
+          call in normal_text; vLLM drops everything after the parsed functools array.
+          Non-parity by design.'
         calls:
         - name: get_weather
           arguments:
             location: NYC
         normal_text: ''
-      vllm: *id002
       sglang:
         unavailable: SGLang has no detector for family='phi4'
   TOOLCALLING.batch.8.c:
@@ -60,8 +68,11 @@ cases:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: I will check the weather.
+        normal_text: 'I will check the weather.  Let me know if you need more.'
       vllm:
+        reason: 'Dynamo preserves both the leading narration and the trailing text
+          around the tool call (only the functools array is stripped); vLLM keeps
+          only the prefix and drops the trailing text. Non-parity by design.'
         calls:
         - name: get_weather
           arguments:
@@ -85,8 +96,12 @@ cases:
         - name: get_weather
           arguments:
             location: LA
-        normal_text: I will check the weather.
+        normal_text: 'I will check the weather.  Then check LA weather.'
       vllm:
+        reason: 'Two divergences. (1) Calls: Dynamo recovers both functools arrays;
+          vLLM parses only the first. (2) normal_text: Dynamo preserves the inter-call
+          narration ("Then check LA weather.") by stripping only the functools-array
+          blocks, while vLLM keeps only the leading prefix. Non-parity by design.'
         calls:
         - name: get_weather
           arguments:

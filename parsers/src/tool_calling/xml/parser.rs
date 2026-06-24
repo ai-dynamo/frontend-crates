@@ -207,18 +207,17 @@ fn extract_tool_calls(
             if let Some((prefix, mut recovered_calls)) =
                 recover_bare_xml_calls_in_span(gap, config, tools)?
             {
-                if calls.is_empty() {
-                    normal_text.push_str(&prefix);
-                }
+                normal_text.push_str(&prefix);
                 calls.append(&mut recovered_calls);
-            } else if calls.is_empty() {
+            } else {
                 normal_text.push_str(gap);
             }
 
-            // Qwen3-Coder-style templates allow natural language before the
-            // tool call, but text after the tool-call block is not response
-            // content. Keep scanning for additional calls, but only surface
-            // normal text that precedes the first parsed call.
+            // Preserve ALL natural-language text — prefix, text between calls,
+            // and text after the last call — and strip only the tool-call
+            // markup (start marker through end marker). The gap before this
+            // start token is appended above unconditionally; the block markup
+            // itself is skipped when the cursor advances past `abs_end`.
 
             // Find the corresponding end token.
             if let Some(end_pos) = text[abs_start..].find(end_token.as_str()) {
@@ -252,22 +251,26 @@ fn extract_tool_calls(
                     calls.append(&mut parsed_calls);
                     break;
                 }
-                if calls.is_empty() && !looks_like_tool_call {
+                // No end marker and either no tool-call structure or
+                // unrecoverable: a `<start_token>` with no closing markup is
+                // natural text, not strippable markup, so preserve it verbatim.
+                // Malformed/unrecoverable tool-call blocks keep the
+                // drop-without-leak behavior (nothing appended).
+                if !looks_like_tool_call {
                     normal_text.push_str(&text[abs_start..]);
                 }
                 break;
             }
         } else {
-            // No more tool calls.
+            // No more tool calls — preserve the trailing text after the last
+            // parsed call verbatim (RULE: only tool-call markup is stripped).
             let gap = &text[cursor..];
             if let Some((prefix, mut recovered_calls)) =
                 recover_bare_xml_calls_in_span(gap, config, tools)?
             {
-                if calls.is_empty() {
-                    normal_text.push_str(&prefix);
-                }
+                normal_text.push_str(&prefix);
                 calls.append(&mut recovered_calls);
-            } else if calls.is_empty() {
+            } else {
                 normal_text.push_str(gap);
             }
             break;
@@ -998,7 +1001,12 @@ Dallas
             try_tool_call_parse_xml(input, &XmlParserConfig::default(), None).unwrap();
         assert_eq!(calls.len(), 1);
         assert_eq!(calls[0].function.name, "get_weather");
-        assert_eq!(normal, Some("I'll help you with that. ".to_string()));
+        // normal_text keeps both the prefix and the text after the block;
+        // only the `<tool_call>…</tool_call>` markup is removed.
+        assert_eq!(
+            normal,
+            Some("I'll help you with that.  Let me check that for you.".to_string())
+        );
     }
 
     // DEPRECATED(parser-fixture-duplicate): Duplicate of YAML fixture coverage: TOOLCALLING.batch.2.b in tests/parity/toolcalling/fixtures/qwen3_coder/TOOLCALLING.batch.2.yaml.

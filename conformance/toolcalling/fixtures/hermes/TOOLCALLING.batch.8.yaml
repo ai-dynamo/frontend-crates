@@ -40,37 +40,54 @@ cases:
     tools:
     - *id002
     expected:
-      dynamo: &id003
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: Let me know if you need more.
+      vllm: &id003
+        reason: 'Dynamo now preserves the natural-language text that follows the tool
+          call in normal_text; vLLM and SGLang drop everything after the parsed
+          <tool_call> block. Non-parity by design.'
         calls:
         - name: get_weather
           arguments:
             location: NYC
         normal_text: ''
-      vllm: *id003
       sglang: *id003
   TOOLCALLING.batch.8.c:
     description: Narration both before and after (sandwich)
-    ref: dynamo
+    ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_hermes_tool_parser.py#L128
     model_text: 'I will check the weather. <tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call>
       Let me know if you need more.'
     tools:
     - *id002
     expected:
-      dynamo: &id004
+      dynamo:
         calls:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: I will check the weather.
+        normal_text: 'I will check the weather.  Let me know if you need more.'
       vllm:
-        reason: 'vLLM preserves the trailing space before <tool_call> in normal_text;
-          Dynamo and SGLang trim it. Cosmetic whitespace, non-parity by design.'
+        reason: 'Dynamo preserves both the leading narration and the trailing text
+          around the tool call (only the <tool_call> block is stripped); vLLM and
+          SGLang keep only the prefix and drop the trailing text. Non-parity by design.'
         calls:
         - name: get_weather
           arguments:
             location: NYC
         normal_text: 'I will check the weather. '
-      sglang: *id004
+      sglang:
+        reason: 'Dynamo preserves both the leading narration and the trailing text
+          around the tool call (only the <tool_call> block is stripped); SGLang trims
+          the boundary whitespace and drops the trailing text. Non-parity by design.'
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: I will check the weather.
   TOOLCALLING.batch.8.d:
     description: Narration between multiple tool calls
     ref: dynamo
@@ -79,7 +96,7 @@ cases:
     tools:
     - *id002
     expected:
-      dynamo: &id005
+      dynamo:
         calls:
         - name: get_weather
           arguments:
@@ -87,10 +104,11 @@ cases:
         - name: get_weather
           arguments:
             location: LA
-        normal_text: I will check the weather.
+        normal_text: 'I will check the weather.  Then check LA weather.'
       vllm:
-        reason: 'vLLM preserves the trailing space before <tool_call> in normal_text;
-          Dynamo and SGLang trim it. Cosmetic whitespace, non-parity by design.'
+        reason: 'Dynamo preserves the inter-call narration ("Then check LA weather.")
+          in normal_text; only the two <tool_call> blocks are stripped. vLLM keeps
+          only the leading prefix and drops the inter-call text. Non-parity by design.'
         calls:
         - name: get_weather
           arguments:
@@ -99,4 +117,15 @@ cases:
           arguments:
             location: LA
         normal_text: 'I will check the weather. '
-      sglang: *id005
+      sglang:
+        reason: 'Dynamo preserves the inter-call narration ("Then check LA weather.")
+          in normal_text; only the two <tool_call> blocks are stripped. SGLang trims
+          the boundary whitespace and drops the inter-call text. Non-parity by design.'
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: LA
+        normal_text: I will check the weather.

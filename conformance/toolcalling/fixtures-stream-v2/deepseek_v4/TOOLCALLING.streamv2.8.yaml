@@ -154,6 +154,7 @@ cases:
         vllm_python: []
         sglang_python: []
       normal_text:
+        dynamo_rust: ' Let me'
         vllm_python: ' Let me'
     - delta_text: ' know if you'
       expected:
@@ -162,6 +163,7 @@ cases:
         vllm_python: []
         sglang_python: []
       normal_text:
+        dynamo_rust: ' know if you'
         vllm_python: ' know if you'
     - delta_text: ' need'
       expected:
@@ -170,6 +172,7 @@ cases:
         vllm_python: []
         sglang_python: []
       normal_text:
+        dynamo_rust: ' need'
         vllm_python: ' need'
     - delta_text: ' more.'
       expected:
@@ -178,6 +181,7 @@ cases:
         vllm_python: []
         sglang_python: []
       normal_text:
+        dynamo_rust: ' more.'
         vllm_python: ' more.'
     - delta_text: ''
       finish_reason: stop
@@ -268,6 +272,7 @@ cases:
         vllm_python: []
         sglang_python: []
       normal_text:
+        dynamo_rust: ' Let'
         vllm_python: ' Let'
     - delta_text: ' me know'
       expected:
@@ -276,6 +281,7 @@ cases:
         vllm_python: []
         sglang_python: []
       normal_text:
+        dynamo_rust: ' me know'
         vllm_python: ' me know'
     - delta_text: ' if'
       expected:
@@ -284,6 +290,7 @@ cases:
         vllm_python: []
         sglang_python: []
       normal_text:
+        dynamo_rust: ' if'
         vllm_python: ' if'
     - delta_text: ' you need'
       expected:
@@ -292,6 +299,7 @@ cases:
         vllm_python: []
         sglang_python: []
       normal_text:
+        dynamo_rust: ' you need'
         vllm_python: ' you need'
     - delta_text: ' more.'
       expected:
@@ -300,6 +308,7 @@ cases:
         vllm_python: []
         sglang_python: []
       normal_text:
+        dynamo_rust: ' more.'
         vllm_python: ' more.'
     - delta_text: ''
       finish_reason: stop
@@ -390,6 +399,7 @@ cases:
         vllm_python: []
         sglang_python: []
       normal_text:
+        dynamo_rust: ' Then'
         vllm_python: ' Then'
     - delta_text: ' check LA'
       expected:
@@ -398,6 +408,7 @@ cases:
         vllm_python: []
         sglang_python: []
       normal_text:
+        dynamo_rust: ' check LA'
         vllm_python: ' check LA'
     - delta_text: ' weather.'
       expected:
@@ -406,6 +417,7 @@ cases:
         vllm_python: []
         sglang_python: []
       normal_text:
+        dynamo_rust: ' weather.'
         vllm_python: ' weather.'
     - delta_text: ' <｜DSML｜tool_calls> <｜DSML｜invoke'
       expected:
@@ -414,6 +426,7 @@ cases:
         vllm_python: []
         sglang_python: []
       normal_text:
+        dynamo_rust: ' '
         vllm_python: ' '
     - delta_text: ' name="get_weather">'
       expected:

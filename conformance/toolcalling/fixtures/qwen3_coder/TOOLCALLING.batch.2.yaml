@@ -71,7 +71,16 @@ cases:
     - *id002
     - *id003
     expected:
-      dynamo: &id004
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: "Both queries: \n Results above."
+      vllm: &id004
         calls:
         - name: get_weather
           arguments:
@@ -80,7 +89,7 @@ cases:
           arguments:
             timezone: EST
         normal_text: 'Both queries: '
-      vllm: *id004
+        reason: "vLLM and SGLang keep only text before the first parsed tool call and drop the inter-call and trailing narration; Dynamo strips only the tool-call markup and preserves the surrounding natural-language text verbatim."
       sglang: *id004
   TOOLCALLING.batch.2.d:
     description: Same-name twice (id distinctness)

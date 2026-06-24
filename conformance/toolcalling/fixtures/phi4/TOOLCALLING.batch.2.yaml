@@ -54,8 +54,11 @@ cases:
         - name: get_time
           arguments:
             timezone: EST
-        normal_text: 'Both:'
+        normal_text: 'Both:  Done.'
       vllm:
+        reason: 'Dynamo preserves both the leading prefix and the trailing text
+          ("Done.") around the parallel calls (only the functools array is stripped);
+          vLLM drops all normal_text. Non-parity by design.'
         calls:
         - name: get_weather
           arguments:

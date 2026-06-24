@@ -35,7 +35,7 @@ cases:
             location: NYC
           name: get_weather
         normal_text: I will check the weather.
-        reason: drops trailing normal_text after tool-call wrapper end
+        reason: trims the trailing space from the prefix normal_text (no text after the wrapper here)
   TOOLCALLING.batch.8.b:
     description: Narration after tool call only
     ref: dynamo
@@ -53,13 +53,14 @@ cases:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: ''
+        normal_text: ' Let me know if you need more.'
       vllm:
         calls:
         - arguments:
             location: NYC
           name: get_weather
         normal_text: ''
+        reason: drops trailing normal_text after tool-call wrapper end
       sglang:
         calls:
         - arguments:
@@ -84,20 +85,21 @@ cases:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: 'I will check the weather. '
+        normal_text: 'I will check the weather.  Let me know if you need more.'
       vllm:
         calls:
         - arguments:
             location: NYC
           name: get_weather
         normal_text: 'I will check the weather. '
+        reason: drops trailing normal_text after tool-call wrapper end (keeps prefix)
       sglang:
         calls:
         - arguments:
             location: NYC
           name: get_weather
         normal_text: I will check the weather.
-        reason: drops trailing normal_text after tool-call wrapper end
+        reason: drops trailing normal_text after tool-call wrapper end (keeps prefix, trimmed)
   TOOLCALLING.batch.8.d:
     description: Narration between multiple tool calls
     ref: dynamo
@@ -122,7 +124,7 @@ cases:
         - name: get_weather
           arguments:
             location: LA
-        normal_text: 'I will check the weather. '
+        normal_text: 'I will check the weather.  Then check LA weather. '
       vllm:
         calls:
         - arguments:
@@ -132,10 +134,11 @@ cases:
             location: LA
           name: get_weather
         normal_text: 'I will check the weather. '
+        reason: keeps only the prefix and drops the inter-call narration between the two wrappers
       sglang:
         calls:
         - arguments:
             location: NYC
           name: get_weather
         normal_text: I will check the weather.
-        reason: drops trailing normal_text after tool-call wrapper end
+        reason: parses only the first wrapper (drops the second call) and keeps only the trimmed prefix as normal_text

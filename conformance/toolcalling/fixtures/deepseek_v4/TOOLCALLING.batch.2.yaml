@@ -72,7 +72,7 @@ cases:
         - name: get_time
           arguments:
             timezone: EST
-        normal_text: ''
+        normal_text: "\n"
       vllm:
         calls:
         - name: get_weather
@@ -109,7 +109,7 @@ cases:
         - name: get_time
           arguments:
             timezone: EST
-        normal_text: 'Both: '
+        normal_text: 'Both:  Done.'
       vllm:
         calls:
         - name: get_weather
@@ -119,6 +119,7 @@ cases:
           arguments:
             timezone: EST
         normal_text: 'Both: '
+        reason: vLLM drops trailing normal_text after the tool-call wrapper end
       sglang:
         unavailable: SGLang has no detector for family='deepseek_v4'
   TOOLCALLING.batch.2.d:

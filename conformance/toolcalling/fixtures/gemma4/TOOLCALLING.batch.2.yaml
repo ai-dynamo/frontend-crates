@@ -44,7 +44,16 @@ cases:
     - *id002
     - *id003
     expected:
-      dynamo: &id004
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: 'Both:  Done.'
+      vllm:
         calls:
         - name: get_weather
           arguments:
@@ -53,7 +62,7 @@ cases:
           arguments:
             timezone: EST
         normal_text: 'Both:'
-      vllm: *id004
+        reason: keeps only the prefix before the first tool-call wrapper start and drops trailing normal_text; Dynamo preserves both
       sglang:
         calls:
         - name: get_weather
@@ -63,7 +72,7 @@ cases:
           arguments:
             timezone: EST
         normal_text: 'Both: '
-        reason: preserves pre-tool-call whitespace and drops trailing normal_text after tool-call wrapper end
+        reason: preserves pre-tool-call whitespace and drops trailing normal_text after tool-call wrapper end; Dynamo preserves both
   TOOLCALLING.batch.2.d:
     description: Same-name twice
     ref: dynamo

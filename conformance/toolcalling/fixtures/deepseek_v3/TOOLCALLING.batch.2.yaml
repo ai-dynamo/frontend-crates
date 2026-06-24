@@ -83,7 +83,20 @@ cases:
     - *id002
     - *id003
     expected:
-      dynamo: &id005
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: 'Both:  Done.'
+      vllm:
+        reason: 'Dynamo preserves both the leading prefix and the trailing text
+          ("Done.") around the parallel calls (only the DeepSeek V3 wrapper is
+          stripped); vLLM keeps the prefix (with its trailing space) and drops the
+          trailing text. Non-parity by design.'
         calls:
         - name: get_weather
           arguments:
@@ -92,9 +105,11 @@ cases:
           arguments:
             timezone: EST
         normal_text: 'Both: '
-      vllm: *id005
       sglang:
-        reason: SGLang trims trailing whitespace from normal_text that precedes DeepSeek V3 tool-call blocks.
+        reason: 'Dynamo preserves both the leading prefix and the trailing text
+          ("Done.") around the parallel calls (only the DeepSeek V3 wrapper is
+          stripped); SGLang trims the boundary whitespace and drops the trailing
+          text. Non-parity by design.'
         calls:
         - name: get_weather
           arguments:

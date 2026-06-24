@@ -40,13 +40,21 @@ cases:
     tools:
     - *id001
     expected:
-      dynamo: &id002
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: Let me know if you need more.
+      vllm:
+        reason: 'Dynamo now preserves the natural-language text that follows the tool
+          call in normal_text; vLLM drops everything after the parsed <tool_calls>
+          block. Non-parity by design.'
         calls:
         - name: get_weather
           arguments:
             location: NYC
         normal_text: ''
-      vllm: *id002
       sglang:
         unavailable: SGLang has no detector for family='jamba'
   TOOLCALLING.batch.8.c:
@@ -62,9 +70,12 @@ cases:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: I will check the weather.
+        normal_text: 'I will check the weather.  Let me know if you need more.'
       vllm:
-        reason: "Cosmetic whitespace only: Dynamo trims the trailing space between the narration and the <tool_calls> fence; vLLM preserves it. Calls are identical."
+        reason: 'Dynamo preserves both the leading narration and the trailing text
+          around the tool call (only the <tool_calls> block is stripped); vLLM keeps
+          the prefix (with its trailing space) and drops the trailing text. Non-parity
+          by design.'
         calls:
         - name: get_weather
           arguments:
@@ -82,9 +93,9 @@ cases:
     expected:
       dynamo:
         calls: []
-        normal_text: I will check the weather.
+        normal_text: 'I will check the weather.  Then check LA weather.'
       vllm:
-        reason: "Known Dynamo limitation: the jamba framed parser spans from the first <tool_calls> opener to the last </tool_calls> closer, so narration between two separate fences lands inside the captured region and breaks the JSON parse, dropping both calls and keeping only the leading narration. vLLM extracts the first call. Multiple-disjoint-fence support is a base JSON-parser change tracked as a follow-up, out of scope for the never-leak fix."
+        reason: "Two divergences. (1) Calls: the jamba framed parser spans from the first <tool_calls> opener to the last </tool_calls> closer, so two disjoint fences are captured as one region whose joined body is not valid JSON; both calls drop. vLLM extracts the first call. Multiple-disjoint-fence support is a base JSON-parser change tracked as a follow-up. (2) normal_text: Dynamo now preserves the inter-call narration (\"Then check LA weather.\") by stripping only the <tool_calls> spans; vLLM keeps just the leading prefix. Non-parity by design."
         calls:
         - name: get_weather
           arguments:

@@ -44,7 +44,16 @@ cases:
     - *id002
     - *id003
     expected:
-      dynamo: &id004
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: 'Checking:  Done.'
+      vllm:
         calls:
         - name: get_weather
           arguments:
@@ -53,7 +62,7 @@ cases:
           arguments:
             timezone: EST
         normal_text: 'Checking: '
-      vllm: *id004
+        reason: vLLM drops the trailing prose after the last </tool_call>; Dynamo and SGLang preserve it
       sglang:
         calls:
         - name: get_weather
@@ -63,7 +72,6 @@ cases:
           arguments:
             timezone: EST
         normal_text: 'Checking:  Done.'
-        reason: SGLang glm47 preserves trailing prose after the last </tool_call>; Dynamo and vLLM drop it
   TOOLCALLING.batch.2.d:
     description: Same-name twice (id distinctness)
     ref: dynamo

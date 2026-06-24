@@ -114,7 +114,7 @@ cases:
         - name: get_time
           arguments:
             timezone: EST
-        normal_text: 'Both: '
+        normal_text: 'Both:  Done.'
       vllm:
         calls:
         - arguments:
@@ -134,7 +134,7 @@ cases:
             timezone: EST
           name: get_time
         normal_text: 'Both:'
-        reason: trims trailing space from preceding normal_text
+        reason: drops trailing normal_text after tool-call wrapper end (keeps prefix, trimmed)
   TOOLCALLING.batch.2.d:
     description: Same-name twice
     ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_deepseekv32_tool_parser.py#L370

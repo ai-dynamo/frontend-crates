@@ -270,6 +270,7 @@ pub fn find_tool_call_end_position_gemma4(chunk: &str) -> Option<usize> {
 fn push_recovered_call(
     calls: &mut Vec<ToolCallResponse>,
     first_tool_start: &mut Option<usize>,
+    removed_spans: &mut Vec<(usize, usize)>,
     absolute_start: usize,
     recovered: (&str, &str, usize),
     tools: Option<&[ToolDefinition]>,
@@ -278,6 +279,9 @@ fn push_recovered_call(
     if first_tool_start.is_none_or(|idx| absolute_start < idx) {
         *first_tool_start = Some(absolute_start);
     }
+    // Record the byte span of the recovered call so the normal_text assembler
+    // can strip exactly this markup and keep the surrounding natural text.
+    removed_spans.push((absolute_start, absolute_start + recovered.2));
     tracing::warn!(
         why = reason,
         recovered_calls = 1,
@@ -295,6 +299,7 @@ fn recover_calls_in_span(
     tools: Option<&[ToolDefinition]>,
     calls: &mut Vec<ToolCallResponse>,
     first_tool_start: &mut Option<usize>,
+    removed_spans: &mut Vec<(usize, usize)>,
 ) -> anyhow::Result<()> {
     let mut cursor = 0usize;
 
@@ -327,6 +332,7 @@ fn recover_calls_in_span(
             push_recovered_call(
                 calls,
                 first_tool_start,
+                removed_spans,
                 span_offset + rel_start,
                 recovered,
                 tools,
@@ -344,16 +350,25 @@ fn recover_calls_in_span(
 /// Parse a Gemma 4 model response into structured tool calls + leftover text.
 ///
 /// Returns `(parsed_tool_calls, normal_text_content)`. `normal_text` is the
-/// text BEFORE the first `<|tool_call>` start marker, trimmed of whitespace.
-/// Text between calls, after the last call, and truncated-incomplete-call
-/// tails are all dropped — matching upstream vLLM
-/// (`vllm/tool_parsers/gemma4_tool_parser.py::extract_tool_calls`) which
-/// computes `content = model_output[:content_end].strip()` where
-/// `content_end = model_output.find(self.tool_call_start_token)`.
+/// model text with each complete tool-call block (start marker `<|tool_call>`
+/// through end marker `<tool_call|>`) removed, keeping ALL other text:
+/// the prefix before the first call, the text BETWEEN calls, and the text
+/// AFTER the last call. Interior whitespace is preserved as-is (only the
+/// outermost ends are trimmed, matching the rest of the parser family); only
+/// tool-call markup is stripped, natural text is never dropped, and markup
+/// never leaks.
 ///
-/// Per `tests/parity/README.md`: vLLM and SGLang both drop trailing text
-/// after the wrapper across XML-style families; this aligns Dynamo to that
-/// behavior. Cases: TOOLCALLING.batch.{2.c, 8.b, 8.c, 8.d}.
+/// This is a deliberate divergence from upstream vLLM
+/// (`vllm/tool_parsers/gemma4_tool_parser.py::extract_tool_calls`, which keeps
+/// only `model_output[:content_end].strip()`, i.e. the prefix before the first
+/// marker) and from SGLang (which also drops trailing narration). Dynamo
+/// preserves the surrounding narration so a model that sandwiches a tool call
+/// between sentences doesn't silently lose the user-visible text. Cases:
+/// TOOLCALLING.batch.{2.c, 8.b, 8.c, 8.d}.
+///
+/// Malformed / unrecoverable / truncated tool-call markup keeps its no-leak
+/// drop behavior: a gap that still contains gemma4 markup tokens after the
+/// complete calls are removed is suppressed rather than echoed verbatim.
 ///
 /// The `}<tool_call|>` adjacency requirement in the regex means embedded
 /// `<tool_call|>` literals inside string-typed args (e.g. a `description`
@@ -366,6 +381,9 @@ pub fn try_tool_call_parse_gemma4(
     let regex = tool_call_regex();
     let mut calls = Vec::new();
     let mut first_tool_start = None;
+    // Byte spans of every complete (parsed or recovered) tool-call block, used
+    // to subtract markup from the assembled normal_text below.
+    let mut removed_spans: Vec<(usize, usize)> = Vec::new();
     let mut cursor = 0usize;
 
     for caps in regex.captures_iter(message) {
@@ -377,8 +395,10 @@ pub fn try_tool_call_parse_gemma4(
                 tools,
                 &mut calls,
                 &mut first_tool_start,
+                &mut removed_spans,
             )?;
             first_tool_start.get_or_insert(m.start());
+            removed_spans.push((m.start(), m.end()));
             cursor = m.end();
         }
         let name = caps.name("name").map(|m| m.as_str()).unwrap_or_default();
@@ -397,22 +417,23 @@ pub fn try_tool_call_parse_gemma4(
         tools,
         &mut calls,
         &mut first_tool_start,
+        &mut removed_spans,
     )?;
 
-    // No-leak contract for `normal_text`:
-    //   - Success path (≥1 call extracted): prefix BEFORE the first
-    //     `<|tool_call>` start marker — mirrors vLLM's
-    //     `content = model_output[:content_end].strip()`. Inter-call,
-    //     trailing, and truncation tails after a successful call are dropped.
+    // `normal_text` assembly:
+    //   - Success path (≥1 call extracted): concatenate the text outside every
+    //     complete tool-call block — prefix, inter-call narration, and trailing
+    //     narration — preserving whitespace verbatim. A gap that still contains
+    //     gemma4 markup tokens (`<|tool_call>`, `<tool_call|>`, `<|"|>`) is a
+    //     malformed / truncated / unrecoverable remnant; it is dropped so
+    //     tool-call markup never leaks into normal_text.
     //   - Recovery path (zero calls extracted): if the message contains ANY
-    //     gemma4 markup token (`<|tool_call>`, `<tool_call|>`, `<|"|>`),
-    //     return empty — Dynamo intentionally diverges from vLLM's
-    //     exception-fallback (which echoes raw bytes) so tool-call markup
-    //     never leaks into normal_text on malformed / truncated / orphan-
-    //     close / no-body inputs. Cases flagged by the parity table's `↯`:
+    //     gemma4 markup token, return empty — Dynamo intentionally diverges
+    //     from vLLM's exception-fallback (which echoes raw bytes) so tool-call
+    //     markup never leaks on malformed / truncated / orphan-close / no-body
+    //     inputs. Cases flagged by the parity table's `↯`:
     //     TOOLCALLING.batch.{4.a, 4.b, 4.c, 4.d, 5.a, 5.b, 5.c, 6.c}.
-    //   - Plain-text path (zero calls AND no markup): return the message
-    //     as-is.
+    //   - Plain-text path (zero calls AND no markup): return the message as-is.
     let has_markup = message.contains(TOOL_CALL_START)
         || message.contains(TOOL_CALL_END)
         || message.contains(STRING_DELIM);
@@ -436,29 +457,46 @@ pub fn try_tool_call_parse_gemma4(
             message.trim().to_string()
         }
     } else {
-        // Success: prefix-only contract — drop everything from the first
-        // `<|tool_call>` onward (inter-call text, trailing narration,
-        // truncation tails). Mirrors vLLM's
-        // `content = model_output[:content_end].strip()`.
-        match first_tool_start {
-            Some(idx) => {
-                let stripped = &message[idx..];
-                let preview: String = stripped.chars().take(120).collect();
-                tracing::debug!(
-                    why = "prefix_only_contract",
-                    n_calls = calls.len(),
-                    kept_prefix_bytes = idx,
-                    stripped_bytes = stripped.len(),
-                    "gemma4 strip (success): kept prefix before first <|tool_call>; dropped parsed-call(s) + any inter-call / trailing narration. preview={:?}",
-                    preview
-                );
-                message[..idx].trim().to_string()
+        // Success: keep every gap between/around the complete tool-call blocks.
+        removed_spans.sort_unstable();
+        let mut kept = String::new();
+        let mut prev_end = 0usize;
+        for &(start, end) in &removed_spans {
+            // Spans are non-overlapping and sorted; guard against any pathological
+            // overlap so we never slice on a stale offset.
+            if start >= prev_end {
+                push_natural_text_gap(&mut kept, &message[prev_end..start]);
             }
-            None => String::new(),
+            prev_end = prev_end.max(end);
         }
+        push_natural_text_gap(&mut kept, &message[prev_end..]);
+        // Trim only the outermost ends (interior whitespace stays verbatim) to
+        // match the dynamo normal_text convention used across this family.
+        kept.trim().to_string()
     };
 
     Ok((calls, Some(normal_text)))
+}
+
+/// Append a single inter-call / surrounding gap to the accumulated normal_text.
+/// A gap that still contains gemma4 tool-call markup is a malformed / truncated
+/// remnant (e.g. an incomplete trailing call that never closed) — drop it so
+/// markup never leaks. Natural text is appended verbatim, whitespace included.
+fn push_natural_text_gap(kept: &mut String, gap: &str) {
+    if gap.is_empty() {
+        return;
+    }
+    if gap.contains(TOOL_CALL_START) || gap.contains(TOOL_CALL_END) || gap.contains(STRING_DELIM) {
+        let preview: String = gap.chars().take(120).collect();
+        tracing::warn!(
+            why = "dropped_markup_gap",
+            stripped_bytes = gap.len(),
+            "gemma4 strip (success): dropped a gap that still contained gemma4 markup (malformed/truncated remnant) to prevent leak into normal_text. preview={:?}",
+            preview
+        );
+        return;
+    }
+    kept.push_str(gap);
 }
 
 // ---------------------------------------------------------------------------
@@ -826,12 +864,42 @@ mod tests {
         assert_eq!(normal, Some(String::new()));
     }
 
-    #[test] // TOOLCALLING.batch.8.c — prefix narration preserved, trailing dropped (matches vLLM)
+    #[test] // TOOLCALLING.batch.8.c — prefix AND trailing narration both preserved;
+    // only the tool-call block is stripped. Interior whitespace (the double
+    // space left where the block was removed) is kept verbatim; outer ends are
+    // trimmed. Dynamo intentionally diverges from vLLM/SGLang, which drop the
+    // trailing narration.
     fn parse_with_surrounding_text() {
         let input = r#"Sure thing. <|tool_call>call:f{x:1}<tool_call|> All set."#;
         let (calls, normal) = try_tool_call_parse_gemma4(input, None).unwrap();
         assert_eq!(calls.len(), 1);
-        assert_eq!(normal, Some("Sure thing.".to_string()));
+        assert_eq!(normal, Some("Sure thing.  All set.".to_string()));
+    }
+
+    #[test] // TOOLCALLING.batch.8.b — narration only AFTER the call is preserved
+    // (vLLM/SGLang drop it; Dynamo keeps it).
+    fn parse_trailing_text_only_preserved() {
+        let input = r#"<|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Let me know if you need more."#;
+        let (calls, normal) = try_tool_call_parse_gemma4(input, None).unwrap();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(normal, Some("Let me know if you need more.".to_string()));
+    }
+
+    #[test] // TOOLCALLING.batch.8.d — narration BETWEEN two calls is preserved;
+    // both calls extracted, inter-call text kept verbatim, outer ends trimmed.
+    fn parse_inter_call_text_preserved() {
+        let input = concat!(
+            "I will check the weather. ",
+            "<|tool_call>call:get_weather{location:<|\"|>NYC<|\"|>}<tool_call|>",
+            " Then check LA weather. ",
+            "<|tool_call>call:get_weather{location:<|\"|>LA<|\"|>}<tool_call|>",
+        );
+        let (calls, normal) = try_tool_call_parse_gemma4(input, None).unwrap();
+        assert_eq!(calls.len(), 2);
+        assert_eq!(
+            normal,
+            Some("I will check the weather.  Then check LA weather.".to_string())
+        );
     }
 
     #[test] // TOOLCALLING.batch.3 — no tool calls at all
