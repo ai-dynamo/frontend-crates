@@ -596,11 +596,20 @@ fn parse_tool_call_block(
     let arg_value_start_escaped = regex::escape(&config.arg_value_start);
     let arg_value_end_escaped = regex::escape(&config.arg_value_end);
 
-    // Pattern to match: <arg_key>key</arg_key><arg_value>value</arg_value>
+    // Pattern: <arg_key>key</arg_key><arg_value>value(</arg_value> | end-of-block)
+    // The `</arg_value>` close is treated as OPTIONAL. A final value whose close
+    // tag was dropped (mismatched/missing fences — batch case 4.d
+    // `<arg_value>NYC</tool_call>`, whose trailing `</tool_call>` is stripped
+    // before this regex, leaving the value at end-of-block) is recovered by
+    // terminating at `\z` instead of being dropped to empty args. `</arg_value>`
+    // is listed first so a well-formed value (including a multi-line one) still
+    // terminates exactly there; `\z` only applies when the close tag is absent.
+    // (The `regex` crate has no lookahead, so the terminator is a plain
+    // alternation of the close tag and the end-of-text anchor.)
     // (?s) enables dotall mode so (.*?) matches across newlines — required
     // because models often emit multi-line content in arg values.
     let pattern = format!(
-        r"(?s){}([^<]+){}{}(.*?){}",
+        r"(?s){}([^<]+){}{}(.*?)(?:{}|\z)",
         arg_key_start_escaped, arg_key_end_escaped, arg_value_start_escaped, arg_value_end_escaped
     );
 
@@ -900,6 +909,23 @@ mod tests {
 
         let (calls, _) = result.unwrap();
         assert_eq!(calls.len(), 0);
+    }
+
+    // TOOLCALLING.batch.4.d — missing `</arg_value>` close tag: the value runs
+    // straight into the outer `</tool_call>`. The arg-value close is optional, so
+    // the value is recovered (terminated by the outer close / end-of-block)
+    // instead of being dropped to empty args.
+    #[test] // TOOLCALLING.batch.4
+    fn test_recover_arg_value_missing_close_tag() {
+        let config = get_test_config();
+        let message = "<tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</tool_call>";
+
+        let (calls, _) = try_tool_call_parse_glm47(message, &config, None).unwrap();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].function.name, "get_weather");
+        let args: HashMap<String, Value> =
+            serde_json::from_str(&calls[0].function.arguments).unwrap();
+        assert_eq!(args.get("location").unwrap().as_str().unwrap(), "NYC");
     }
 
     // Recovery for missing outer </tool_call> (max_tokens / EOS truncation):
