@@ -67,23 +67,14 @@ fn toolcalling_batch_via_stream_parity() {
     // strict batch parser. Removing an entry asserts that stream and batch now
     // agree on that sample.
     //
-    // The DSv4 stream parser emits the function `name` eagerly the moment the
-    // `<｜DSML｜invoke name="...">` header closes (SGLang-style streaming latency).
-    // When the invoke then truncates before `</｜DSML｜invoke>`, that name has
-    // already escaped with empty arguments, while the strict batch parser drops
-    // the incomplete call entirely — so stream and batch diverge by design:
-    //   5.c: invoke header closed, truncated mid-parameter -> stream emits
-    //        ("get_weather", "") ; batch emits nothing.
-    //   5.e: first call complete, second call's header closed then truncated
-    //        mid-arg -> stream emits the extra ("get_weather", "") ; batch drops it.
-    //   5.g: bare invoke after prose, recovered eagerly (pre-existing).
-    let known_divergences: std::collections::BTreeSet<&str> = [
-        "deepseek_v4:TOOLCALLING.batch.5.c",
-        "deepseek_v4:TOOLCALLING.batch.5.e",
-        "deepseek_v4:TOOLCALLING.batch.5.g",
-    ]
-    .into_iter()
-    .collect();
+    // The DSv4 stream parser now buffers each invoke until `</｜DSML｜invoke>` and
+    // drops a call truncated before its close (v1 parity), so the former 5.c /
+    // 5.e truncation divergences are gone. The remaining entry:
+    //   5.g: bare invoke after prose — the stream parser recovers it while the
+    //        strict batch parser drops it (pre-existing recovery divergence,
+    //        unrelated to truncation).
+    let known_divergences: std::collections::BTreeSet<&str> =
+        ["deepseek_v4:TOOLCALLING.batch.5.g"].into_iter().collect();
 
     let mut total = 0usize;
     let mut consistent = 0usize;

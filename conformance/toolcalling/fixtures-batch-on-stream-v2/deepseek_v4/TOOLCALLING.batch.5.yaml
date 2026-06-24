@@ -57,9 +57,7 @@ cases:
           location: NYC
   TOOLCALLING.batch.5.c:
     dynamo_rust:
-      calls:
-      - name: get_weather
-        arguments: ''
+      calls: []
       normal_text: ''
     vllm_rust:
       error: 'tool parser parsing failed: incomplete DeepSeek DSML tool call'
@@ -112,8 +110,6 @@ cases:
       - name: get_weather
         arguments:
           location: Boston
-      - name: get_weather
-        arguments: ''
       normal_text: 'I''ll start by fetching the weather for both Boston and New York
         at the same time!
 

@@ -77,8 +77,7 @@ cases:
         sglang_python: []
     - delta_text: '"> <｜DSML｜p'
       expected:
-        dynamo_rust:
-        - {index: 0, name: 'get_weather', arguments: ''}
+        dynamo_rust: []
         vllm_rust: []
         vllm_python:
         - {index: 0, id: true, name: 'get_weather', arguments: ''}
@@ -146,6 +145,7 @@ cases:
     - delta_text: 'invoke> </｜'
       expected:
         dynamo_rust:
+        - {index: 0, name: 'get_weather', arguments: ''}
         - {index: 0, arguments: '{"location":"NYC"}'}
         vllm_rust:
         - {index: 0, name: 'get_weather', arguments: '{"location":"NYC"}'}

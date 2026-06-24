@@ -16,20 +16,22 @@ const PARAMETER_END: &str = "</｜DSML｜parameter>";
 
 /// Stream parser for DeepSeek V4 DSML tool calls.
 ///
-/// Emits eagerly to match SGLang's streaming latency: the function `name` is
-/// emitted as a delta the moment the `<｜DSML｜invoke name="...">` header closes,
-/// before any parameter body has streamed. The complete JSON `arguments` are
-/// emitted in a second delta once `</｜DSML｜invoke>` arrives. Consumers coalesce
-/// the two deltas by `tool_index` (name on the first, args on the second). This
-/// is the same wire shape Harmony uses (`name`-first, then arguments fragment).
+/// Conforms to the v1 batch baseline: a tool call is emitted only once its
+/// `</｜DSML｜invoke>` has streamed. A call truncated mid-call (header seen but no
+/// closing marker by end of stream) is DROPPED rather than emitted with empty
+/// arguments, matching the v1 DSML parser's "drop truncated-mid-value" rule. The
+/// `name` delta is emitted immediately before the `arguments` delta (both once
+/// the call closes), so consumers still coalesce the two by `tool_index` — the
+/// same wire shape Harmony uses (`name`-first, then arguments fragment).
 pub struct DeepSeekV4ToolStreamParser {
     buffer: String,
     in_block: bool,
     suppress_normal_text: bool,
     next_index: usize,
-    /// Set to `Some(tool_index)` after the invoke header (and its `name`) has
-    /// been emitted, while we wait for `</｜DSML｜invoke>` to emit the arguments.
-    open_invoke: Option<usize>,
+    /// Set to `Some((tool_index, name))` after the invoke header has streamed,
+    /// while we buffer the body and wait for `</｜DSML｜invoke>`. Nothing is
+    /// emitted until the close arrives; if it never does, the call is dropped.
+    open_invoke: Option<(usize, String)>,
 }
 
 impl DeepSeekV4ToolStreamParser {
@@ -47,17 +49,17 @@ impl DeepSeekV4ToolStreamParser {
         let mut out = ToolParseResult::default();
 
         loop {
-            // An invoke header (with its name) has already been emitted; we are
-            // now waiting for the closing marker to emit the complete arguments.
-            if let Some(tool_index) = self.open_invoke {
+            // The invoke header has streamed; buffer the body until the closing
+            // marker arrives, then emit `name` + `arguments` together. If the
+            // close never arrives (truncated mid-call), drop the call to match
+            // the v1 batch parser instead of emitting empty arguments.
+            if let Some((tool_index, name)) = self.open_invoke.clone() {
                 let Some(end) = self.buffer.find(INVOKE_END) else {
                     if flush {
-                        // Eager name already escaped; the truncated body cannot
-                        // produce arguments, so the call lands with empty args.
                         tracing::warn!(
                             why = "dsv4_incomplete_invoke",
                             tool_index,
-                            "DSML stream truncated after eager name emit; arguments dropped"
+                            "DSML stream truncated before </invoke>; dropping the call (v1 parity)"
                         );
                         self.buffer.clear();
                         self.in_block = false;
@@ -68,6 +70,14 @@ impl DeepSeekV4ToolStreamParser {
                 let body = self.buffer[..end].to_string();
                 self.buffer.drain(..end + INVOKE_END.len());
                 let arguments = serde_json::to_string(&parse_parameters(&body)?)?;
+                // Complete call: emit the name delta, then the arguments delta
+                // (coalesced by tool_index) — the call only appears once known
+                // complete.
+                out.calls.push(ToolCallDelta {
+                    tool_index,
+                    name: Some(name),
+                    arguments: String::new(),
+                });
                 out.calls.push(ToolCallDelta {
                     tool_index,
                     name: None,
@@ -107,7 +117,7 @@ impl DeepSeekV4ToolStreamParser {
                 if start > 0 {
                     self.buffer.drain(..start);
                 }
-                if self.open_invoke_header(&mut out)?.is_none() {
+                if self.open_invoke_header()?.is_none() {
                     // Header not fully streamed yet; wait for more input.
                     if flush {
                         tracing::warn!(
@@ -161,12 +171,12 @@ impl DeepSeekV4ToolStreamParser {
                     self.in_block = true;
                     self.suppress_normal_text = true;
                 }
-                Marker::BareInvoke => match self.open_invoke_header(&mut out)? {
+                Marker::BareInvoke => match self.open_invoke_header()? {
                     Some(tool_index) => {
                         tracing::warn!(
                             why = "dsv4_bare_invoke_recovery",
                             tool_index,
-                            "DSML stream recovering a bare invoke (eager name emit)"
+                            "DSML stream recovering a bare invoke (buffered until close)"
                         );
                     }
                     None => {
@@ -188,21 +198,18 @@ impl DeepSeekV4ToolStreamParser {
 
     /// Given `self.buffer` positioned at an `INVOKE_START_PREFIX`, parse the
     /// invoke header. If the header is complete (its closing `>` has streamed),
-    /// emit a name-only delta, consume the header bytes, mark `open_invoke`, and
-    /// return `Some(tool_index)`. If the header is still partial, leave the
+    /// consume the header bytes, buffer the `(tool_index, name)` in `open_invoke`
+    /// WITHOUT emitting yet, and return `Some(tool_index)`. The name + arguments
+    /// are emitted together once `</｜DSML｜invoke>` arrives, so a call that never
+    /// closes is dropped (v1 parity). If the header is still partial, leave the
     /// buffer intact and return `None` so the caller can wait for more input.
-    fn open_invoke_header(&mut self, out: &mut ToolParseResult) -> anyhow::Result<Option<usize>> {
+    fn open_invoke_header(&mut self) -> anyhow::Result<Option<usize>> {
         let Some((name, header_len)) = parse_invoke_header(&self.buffer) else {
             return Ok(None);
         };
         self.buffer.drain(..header_len);
         let tool_index = self.next_index;
-        out.calls.push(ToolCallDelta {
-            tool_index,
-            name: Some(name),
-            arguments: String::new(),
-        });
-        self.open_invoke = Some(tool_index);
+        self.open_invoke = Some((tool_index, name));
         self.suppress_normal_text = true;
         Ok(Some(tool_index))
     }
@@ -321,7 +328,9 @@ mod tests {
     }
 
     #[test]
-    fn emits_name_eagerly_then_args_on_close() {
+    fn emits_name_then_args_on_close() {
+        // Name and arguments are both emitted once `</invoke>` arrives, as two
+        // deltas (name-only, then arguments-only) coalesced by tool_index.
         let out = parse_chunks(&[
             "<｜DSML｜tool_calls> <｜DSML｜invoke",
             " name=\"get_weather\">",
@@ -386,17 +395,34 @@ mod tests {
     }
 
     #[test]
-    fn eager_name_escapes_when_invoke_truncates_at_eof() {
-        // The header closed, so the name was already emitted eagerly. The
-        // truncated parameter body never closes, so arguments stay empty.
+    fn drops_invoke_truncated_after_header() {
+        // The header closed (name seen) but the parameter body never closes
+        // before EOF. v1 parity: drop the call entirely rather than emit it
+        // with empty arguments.
         let out = parse_chunks(&[
             "<｜DSML｜tool_calls> <｜DSML｜invoke name=\"get_weather\">",
             " <｜DSML｜parameter name=\"location\" string=\"true\">NY",
         ]);
         assert_eq!(out.normal_text, "");
-        assert_eq!(out.calls.len(), 1);
-        assert_eq!(out.calls[0].name.as_deref(), Some("get_weather"));
-        assert_eq!(out.calls[0].arguments, "");
+        assert!(
+            out.calls.is_empty(),
+            "truncated-mid-value call must be dropped"
+        );
+    }
+
+    #[test]
+    fn drops_last_call_when_truncated_keeps_earlier_complete_call() {
+        // Multi-call, last call truncated mid-arg-value (conformance 5.e): the
+        // first complete call survives, the truncated second is dropped.
+        let out = parse_chunks(&[
+            "I'll check both. <｜DSML｜tool_calls>",
+            " <｜DSML｜invoke name=\"get_weather\"> <｜DSML｜parameter name=\"location\" string=\"true\">Boston</｜DSML｜parameter> </｜DSML｜invoke>",
+            " <｜DSML｜invoke name=\"get_weather\"> <｜DSML｜parameter name=\"location\" string=\"true\">New York",
+        ]);
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 1, "truncated 2nd call dropped");
+        assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
+        assert_eq!(merged.calls[0].arguments, r#"{"location":"Boston"}"#);
     }
 
     #[test]
