@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.1.10](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.1.9...dynamo-parsers-v2-v0.1.10) - 2026-06-24
+
+### Bug fixes
+
+- *(parsers-v2)* Drop DSv4 tool calls truncated mid-call to match v1 batch ([#79](https://github.com/ai-dynamo/frontend-crates/pull/79))
+
 ## [0.1.9](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.1.8...dynamo-parsers-v2-v0.1.9) - 2026-06-23
 
 ### Miscellaneous
