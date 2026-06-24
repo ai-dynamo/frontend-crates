@@ -8,6 +8,18 @@ license: "Apache-2.0"
 
 Add support for new models' tool calling formats by analyzing their chat templates and generating appropriate parser implementations for the `dynamo-parsers` crate (`parsers/`).
 
+## Parser goals (read first)
+
+These bind every parser you add here and are the tie-breakers when vLLM, SGLang, and Dynamo disagree. The canonical list is in [`../../../parsers_v2/README.md`](../../../parsers_v2/README.md) ("Parser goals"); in brief:
+
+- **Follow the model's own spec** (its chat template / tool-calling guide defines the grammar), and **record the spec source in the fixture YAML** (a `spec:` URL), not just in code comments.
+- **Error recovery is under-specified**, so a divergence from vLLM/SGLang on a recovery / edge case is **expected** — document it with a `reason:`; do not "fix" it by matching a peer.
+- **Never leak tool-call or reasoning markup into user-visible `content`/`normal_text`** (the `↯` marker catches tool leaks).
+- **Make a reasonable, bounded attempt to recover** an incomplete or stream-truncated call/reasoning span (e.g. close the JSON when only the end marker is missing) — never invent content the model didn't emit, and `tracing::warn!` with a stable `why=`.
+- **Preserve as much of the original output as possible**: `normal_text` is the model output minus only the recognized markup spans (prefix, inter-call, and trailing text kept verbatim).
+- **Parsing is separate from validation** — emit a call even for a tool not in the request's list; the serving layer validates.
+- **A streaming parse must reconstruct the batch parse**; intentional stream-vs-batch differences go in the `known_divergences` allowlist.
+
 ## When to Use This Skill
 
 - User asks to add tool calling support for a specific HuggingFace model
