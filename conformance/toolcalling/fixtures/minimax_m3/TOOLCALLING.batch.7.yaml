@@ -1,0 +1,221 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+family: minimax_m3
+mode: batch
+cases:
+  TOOLCALLING.batch.7.a:
+    description: Standard scalar types (string + int + bool)
+    model_text: |-
+      ]<]minimax[>[<tool_call>
+      ]<]minimax[>[<invoke name="book_flight">
+      ]<]minimax[>[<destination>Paris]<]minimax[>[</destination>
+      ]<]minimax[>[<passengers>2]<]minimax[>[</passengers>
+      ]<]minimax[>[<first_class>true]<]minimax[>[</first_class>
+      ]<]minimax[>[</invoke>
+      ]<]minimax[>[</tool_call>
+    tools:
+    - name: book_flight
+      parameters:
+        type: object
+        properties:
+          destination:
+            type: string
+          passengers:
+            type: integer
+          first_class:
+            type: boolean
+    expected:
+      dynamo:
+        calls:
+        - name: book_flight
+          arguments:
+            destination: Paris
+            passengers: 2
+            first_class: true
+        normal_text: ''
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      sglang:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.batch.7.b:
+    description: Unicode + XML entity unescape in string value
+    model_text: |-
+      ]<]minimax[>[<tool_call>
+      ]<]minimax[>[<invoke name="get_weather">
+      ]<]minimax[>[<location>Tōkyō &quot;central&quot; &amp; west]<]minimax[>[</location>
+      ]<]minimax[>[</invoke>
+      ]<]minimax[>[</tool_call>
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    expected:
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Tōkyō "central" & west
+        normal_text: ''
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      sglang:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.batch.7.c:
+    description: Schema mismatch — string value where schema declares integer
+    model_text: |-
+      ]<]minimax[>[<tool_call>
+      ]<]minimax[>[<invoke name="set_temperature">
+      ]<]minimax[>[<celsius>twenty]<]minimax[>[</celsius>
+      ]<]minimax[>[</invoke>
+      ]<]minimax[>[</tool_call>
+    tools:
+    - name: set_temperature
+      parameters:
+        type: object
+        properties:
+          celsius:
+            type: integer
+    expected:
+      dynamo:
+        calls:
+        - name: set_temperature
+          arguments:
+            celsius: twenty
+        normal_text: ''
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      sglang:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.batch.7.d:
+    description: Nested object + array represented as nested MiniMax XML tags
+    model_text: |-
+      ]<]minimax[>[<tool_call>
+      ]<]minimax[>[<invoke name="process_data">
+      ]<]minimax[>[<items>]<]minimax[>[<item>1]<]minimax[>[</item>]<]minimax[>[<item>2]<]minimax[>[</item>]<]minimax[>[<item>3]<]minimax[>[</item>]<]minimax[>[</items>
+      ]<]minimax[>[<config>]<]minimax[>[<nested>true]<]minimax[>[</nested>]<]minimax[>[</config>
+      ]<]minimax[>[</invoke>
+      ]<]minimax[>[</tool_call>
+    tools:
+    - name: process_data
+      parameters:
+        type: object
+        properties:
+          items:
+            type: array
+            items:
+              type: integer
+          config:
+            type: object
+            properties:
+              nested:
+                type: boolean
+    expected:
+      dynamo:
+        calls:
+        - name: process_data
+          arguments:
+            items:
+            - 1
+            - 2
+            - 3
+            config:
+              nested: true
+        normal_text: ''
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      sglang:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.batch.7.e:
+    description: Large / deep nested MiniMax XML argument payload
+    model_text: |-
+      ]<]minimax[>[<tool_call>
+      ]<]minimax[>[<invoke name="process_data">
+      ]<]minimax[>[<payload>]<]minimax[>[<regions>]<]minimax[>[<item>]<]minimax[>[<name>west]<]minimax[>[</name>]<]minimax[>[<scores>]<]minimax[>[<item>1]<]minimax[>[</item>]<]minimax[>[<item>2]<]minimax[>[</item>]<]minimax[>[<item>3]<]minimax[>[</item>]<]minimax[>[</scores>]<]minimax[>[</item>]<]minimax[>[<item>]<]minimax[>[<name>east]<]minimax[>[</name>]<]minimax[>[<scores>]<]minimax[>[<item>4]<]minimax[>[</item>]<]minimax[>[<item>5]<]minimax[>[</item>]<]minimax[>[<item>6]<]minimax[>[</item>]<]minimax[>[</scores>]<]minimax[>[</item>]<]minimax[>[</regions>]<]minimax[>[<flags>]<]minimax[>[<enabled>true]<]minimax[>[</enabled>]<]minimax[>[<retry>null]<]minimax[>[</retry>]<]minimax[>[</flags>]<]minimax[>[<empty>]<]minimax[>[</empty>]<]minimax[>[</payload>
+      ]<]minimax[>[</invoke>
+      ]<]minimax[>[</tool_call>
+    tools:
+    - name: process_data
+      parameters:
+        type: object
+        properties:
+          payload:
+            type: object
+            properties:
+              regions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    scores:
+                      type: array
+                      items:
+                        type: integer
+              flags:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                  retry:
+                    type:
+                    - 'null'
+                    - string
+              empty:
+                type: object
+    expected:
+      dynamo:
+        calls:
+        - name: process_data
+          arguments:
+            payload:
+              regions:
+              - name: west
+                scores:
+                - 1
+                - 2
+                - 3
+              - name: east
+                scores:
+                - 4
+                - 5
+                - 6
+              flags:
+                enabled: true
+                retry: null
+              empty: {}
+        normal_text: ''
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      sglang:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.batch.7.f:
+    description: Numeric precision edge preserves integer-like number literal
+    model_text: |-
+      ]<]minimax[>[<tool_call>
+      ]<]minimax[>[<invoke name="set_limit">
+      ]<]minimax[>[<count>9007199254740993]<]minimax[>[</count>
+      ]<]minimax[>[</invoke>
+      ]<]minimax[>[</tool_call>
+    tools:
+    - name: set_limit
+      parameters:
+        type: object
+        properties:
+          count:
+            type: number
+    expected:
+      dynamo:
+        calls:
+        - name: set_limit
+          arguments:
+            count: 9007199254740993
+        normal_text: ''
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      sglang:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.

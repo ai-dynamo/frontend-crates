@@ -1,0 +1,58 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+family: minimax_m3
+model_label: MiniMax M3
+mode: stream
+cases:
+  REASONING.stream.1.b:
+    description: Plain text without reasoning markers
+    chunks:
+    - plain
+    - ' answer'
+    expected:
+      dynamo:
+        reasoning_text: ''
+        normal_text: plain answer
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+      sglang:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+  REASONING.stream.2.a:
+    description: MiniMax M3 reasoning split across chunks
+    chunks:
+    - <mm:think>rea
+    - son</mm:think>answer
+    expected:
+      dynamo:
+        reasoning_text: reason
+        normal_text: answer
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+      sglang:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+  REASONING.stream.4:
+    description: Dangling MiniMax M3 end marker split across chunks
+    chunks:
+    - reason</mm:
+    - think>answer
+    expected:
+      dynamo:
+        reasoning_text: reason
+        normal_text: answer
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+      sglang:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+  REASONING.stream.4.a:
+    description: Close marker only is stripped as prompt-prefilled reasoning close
+    chunks:
+    - </mm:think>I'll check the content of both files.
+    expected:
+      dynamo:
+        reasoning_text: ''
+        normal_text: I'll check the content of both files.
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 reasoning parser yet.
+      sglang:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 reasoning parser yet.

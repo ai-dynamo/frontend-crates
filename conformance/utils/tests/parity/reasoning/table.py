@@ -106,6 +106,7 @@ PARSER_TO_REASONING_FAMILY = {
     "harmony": "gpt_oss",
     "kimi_k2": "kimi_k25",
     "minimax_m2": "minimax_append_think",
+    "minimax_m3": "minimax_m3",
     "mistral": "mistral",
     "nemotron_deci": "nemotron_deci",
     "nemotron_nano": "deepseek_r1",
