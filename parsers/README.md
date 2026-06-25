@@ -2,7 +2,7 @@
 
 Rust crate for parsing **tool calls** and **reasoning content** out of raw LLM output. This is the v1 **batch** path: it jails (buffers) the whole model output, then parses.
 
-> **Deprecated — being merged into v2.** The canonical parser documentation now lives in [`../parsers_v2/README.md`](../parsers_v2/README.md): parser goals, the family taxonomy cheat-sheet, how to add a parser, fixtures, and conformance all live there and cover both paths. **The end state is v2-only — this entire crate and its docs are slated for removal once v2 reaches parity.** Do new parser work in v2; only touch v1 to fix a batch bug that v2's `batch_via_stream` parity depends on.
+> **Still in use — to be removed once v2 is done.** This v1 crate is the jail-and-buffer (batch) parser. The pure-streaming v2 path under `../parsers_v2/` is under development and will fully replace it; v1 is not being merged into v2 — when v2 is done this entire crate and its docs will be removed outright. The canonical parser documentation now lives in [`../parsers_v2/README.md`](../parsers_v2/README.md): parser goals, the family cheat-sheet, how to add a parser, fixtures, and conformance all live there. Do new parser work in v2; only touch v1 to fix a batch bug that v2's `batch_via_stream` parity depends on.
 
 ## v1-specific API
 

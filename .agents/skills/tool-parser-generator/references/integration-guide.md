@@ -2,7 +2,7 @@
 
 Step-by-step guide for wiring a parser into the v1 batch crate (`parsers/`): the `ToolCallConfig` preset + `get_tool_parser_map()` registry mechanics.
 
-> This is the **v1 (batch)** integration mechanism. v1 is being merged into v2 and will be removed once v2 reaches parity, so new parser work targets v2 — follow "Adding A Day-0 Tool-Calling Parser" in [`../../../../parsers_v2/README.md`](../../../../parsers_v2/README.md), and pick the family from its "Parser families" cheat-sheet. The steps below still apply when a new model reuses an existing v1 family via config.
+> This is the **v1 (batch / jail-and-buffer)** integration mechanism. v1 is still in use, but the pure-streaming v2 path will fully replace it — v1 is not being merged in, it will be removed once v2 is done — so new parser work targets v2: follow "Adding A Day-0 Tool-Calling Parser" in [`../../../../parsers_v2/README.md`](../../../../parsers_v2/README.md), and pick the family from its "Parser families" cheat-sheet. The steps below still apply when a new model reuses an existing v1 family via config.
 
 ## Option 1: Add Configuration Preset (Most Common)
 

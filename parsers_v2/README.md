@@ -2,9 +2,9 @@
 
 Rust crate for Dynamo-owned token-incremental tool-call parsers. This is the v2 path for streaming parser behavior, and its public Rust contract intentionally mimics vLLM Rust's parser contract so vLLM can move toward using the frontend-crate parser instead of carrying a separate Rust parser surface.
 
-This README is the canonical parser documentation for the workspace. The goals, family taxonomy, and how-to-add-a-parser guidance below cover both the legacy v1 batch crate (`../parsers/`) and this v2 streaming crate — v1 is the inefficient batch path being merged into v2, and `../parsers/README.md` now defers here.
+This README is the canonical parser documentation for the workspace. The goals, family taxonomy, and how-to-add-a-parser guidance below cover both the v1 batch crate (`../parsers/`) and this v2 streaming crate, and `../parsers/README.md` defers here.
 
-**Migration direction: the end state is v2-only.** All v1 code and docs (the entire `../parsers/` crate and its README) are slated for removal once v2 reaches parity. Put new parser work and documentation here, not in v1.
+**Two parser paths exist today.** v1 (`../parsers/`) is the **jail-and-buffer** path still in use: it buffers the entire model output, then parses it. v2 (this crate) is the **pure-streaming** path — token-incremental, and still under development. The two are kept in agreement (goal 8 below). v1 is not being merged into v2; when v2 is done it will fully replace v1, and all v1 code and docs will be removed outright. Put new parser work and documentation here, not in v1.
 
 ## Parser goals (read first)
 
@@ -151,7 +151,7 @@ For a new streaming parser family, add or update these files:
 - `conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md` when adding a new stream-only case or changing stream case descriptions.
 - `conformance/toolcalling/fixtures-stream-v2/README.md` only if the fixture schema or capture convention changes.
 
-Fix legacy v1 parser bugs in `parsers/src/` and the matching v1 fixtures in `conformance/toolcalling/fixtures/`. During the bridge, keep v2-only parser behavior in `parsers_v2/`, `fixtures-stream-v2/`, and `fixtures-batch-on-stream-v2/` until the v1/v2 merge lands.
+Fix legacy v1 parser bugs in `parsers/src/` and the matching v1 fixtures in `conformance/toolcalling/fixtures/`. While both paths coexist, keep v2-only parser behavior in `parsers_v2/`, `fixtures-stream-v2/`, and `fixtures-batch-on-stream-v2/` until v2 replaces v1.
 
 ## Fixture Format
 

@@ -84,7 +84,7 @@ The chat template is a Jinja template. Analyze it to identify tool call patterns
 
 1. **Read that family's parser module** under `parsers/src/tool_calling/<family>/` (the batch impl that owns the grammar) to confirm the markers and structure match the model you analyzed.
 2. **Review its config preset** in `tool_calling/config.rs` (`ToolCallConfig::<family>()` — start/end tokens, key names, parser type) and its registry entry in `tool_calling/parsers.rs` (`get_tool_parser_map()` → `ParserType`).
-3. **Check whether a streaming (v2) parser already exists** under `parsers_v2/src/tool_calling/<family>.rs`. New work targets v2; v1 is being removed once v2 reaches parity.
+3. **Check whether a streaming (v2) parser already exists** under `parsers_v2/src/tool_calling/<family>.rs`. New work targets v2 (pure streaming); v1 (jail-and-buffer batch) is still in use but will be removed once v2 is done.
 
 **Match the analyzed format**:
 - If start/end tokens and format match existing parser → Use existing parser with config
