@@ -264,7 +264,19 @@ fn extract_tool_calls(
                 // signal that a real tool call was emitted.
                 let block = &text[abs_start..];
                 let arg_key_start = &config.arg_key_start;
-                if config.allow_eof_recovery && block.contains(arg_key_start.as_str()) {
+                // Recover only if the trailing <arg_value> is delimiter-
+                // terminated: a value followed by a marker (`<`) is complete,
+                // but one that runs to end-of-stream may be truncated mid-token
+                // (recover/drop rule, parsers_v2/README.md goal 5) — e.g.
+                // `<arg_value>N` could be a cut-off `NYC`, so drop it.
+                let value_terminated = match block.rfind(config.arg_value_start.as_str()) {
+                    Some(p) => block[p + config.arg_value_start.len()..].contains('<'),
+                    None => true,
+                };
+                if config.allow_eof_recovery
+                    && block.contains(arg_key_start.as_str())
+                    && value_terminated
+                {
                     match parse_tool_call_block(block, config, tools) {
                         Ok(parsed_call) => {
                             calls.push(parsed_call);
@@ -284,15 +296,18 @@ fn extract_tool_calls(
                         }
                     }
                 } else {
-                    // Either recovery disabled (production default for GLM-4.7)
-                    // or no <arg_key> in the tail (so this is plausibly not a
-                    // real tool call at all, just a stray <tool_call> token).
+                    // Recovery disabled (streaming jail), or no <arg_key> in the
+                    // tail (not a real tool call), or the trailing value runs to
+                    // end-of-stream with no terminating marker (truncated
+                    // mid-token).
                     let reason = if !config.allow_eof_recovery {
-                        "allow_eof_recovery=false (production default for GLM-4.7 to match \
-                         vLLM/SGLang on truncated tool calls)"
-                    } else {
+                        "allow_eof_recovery=false (streaming jail path; finalize recovers)"
+                    } else if !block.contains(arg_key_start.as_str()) {
                         "no <arg_key> in the tail after the <tool_call> start fence, so the \
                          block does not look like a structurally-real GLM-4.7 tool call"
+                    } else {
+                        "trailing <arg_value> runs to end-of-stream with no terminating marker, \
+                         so the value may be truncated mid-token; dropped per the recover/drop rule"
                     };
                     warn!(
                         why = %reason,

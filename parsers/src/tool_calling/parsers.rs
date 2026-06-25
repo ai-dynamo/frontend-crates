@@ -148,10 +148,13 @@ pub async fn detect_and_parse_tool_call_with_recovery(
     let recovery_config = match &base.parser_config {
         ParserConfig::Json(c) => {
             let mut c = c.clone();
-            // qwen25 opts out of EOF recovery so unterminated calls are dropped,
-            // not salvaged. Keyed by name (not a config field) to keep the
-            // exported JsonParserConfig stable for downstream callers.
-            c.allow_eof_recovery = parser_key != "qwen25";
+            // Recover a complete-but-unterminated call when the outer end token
+            // never arrived (recover/drop rule, parsers_v2/README.md goal 5):
+            // a delimiter-terminated JSON body recovers; a body truncated
+            // mid-value fails to parse and still drops. qwen25 used to opt out
+            // to match vLLM, but vLLM is a peer, not a published spec, so it
+            // now recovers like hermes.
+            c.allow_eof_recovery = true;
             ParserConfig::Json(c)
         }
         ParserConfig::Xml(c) => {
@@ -164,8 +167,15 @@ pub async fn detect_and_parse_tool_call_with_recovery(
             c.allow_eof_recovery = true;
             ParserConfig::Dsml(c)
         }
-        // GLM-4.7 intentionally omitted: match upstream vLLM/SGLang behavior
-        // (drop the call when </tool_call> is missing).
+        ParserConfig::Glm47(c) => {
+            let mut c = c.clone();
+            // Recover a complete-but-unterminated GLM call when </tool_call>
+            // never arrived (recover/drop rule, parsers_v2/README.md goal 5).
+            // Previously omitted to match vLLM/SGLang, but that is a peer, not
+            // a published spec, so GLM now recovers like the other families.
+            c.allow_eof_recovery = true;
+            ParserConfig::Glm47(c)
+        }
         // Other parsers don't have an EOF-recovery flag — pass through.
         other => other.clone(),
     };

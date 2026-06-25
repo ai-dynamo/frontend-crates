@@ -20,11 +20,15 @@ cases:
       vllm:
         unavailable: vLLM has no parser for family='qwen25'
       dynamo:
-        calls: []
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
         normal_text: ''
       sglang:
-        reason: 'Incomplete call (open <tool_call>, no close): Dynamo suppresses to empty, SGLang keeps raw. Non-parity by
-          design.'
+        reason: 'allow_eof_recovery=true: the JSON body is complete and only </tool_call> is
+          missing, so Dynamo recovers the call (matching hermes; recover/drop rule). SGLang
+          keeps raw. Non-parity by design.'
         calls: []
         normal_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}'
   TOOLCALLING.batch.5.b:

@@ -320,8 +320,20 @@ fn parse_parameters(body: &str) -> anyhow::Result<Map<String, Value>> {
         };
         let attrs = &body[attrs_start..attrs_start + header_end_rel];
         let value_start = attrs_start + header_end_rel + 1;
-        let Some(value_end_rel) = body[value_start..].find(PARAMETER_END) else {
-            break;
+        // Value ends at its own close tag if present, otherwise at the next
+        // parameter or the end of the invoke body. drain() only calls this once
+        // </｜DSML｜invoke> has streamed (a call truncated before its close is
+        // dropped upstream), so the body is delimiter-terminated and a value
+        // with no </｜DSML｜parameter> close is still recoverable (recover/drop
+        // rule, matches v1's parse_parameters and keeps v1/v2 in agreement).
+        let rest = &body[value_start..];
+        let end_close = rest.find(PARAMETER_END);
+        let end_next = rest.find(PARAMETER_PREFIX);
+        let value_end_rel = match (end_close, end_next) {
+            (Some(c), Some(n)) => c.min(n),
+            (Some(c), None) => c,
+            (None, Some(n)) => n,
+            (None, None) => rest.len(),
         };
         let raw_value = body[value_start..value_start + value_end_rel].trim();
         let value = if attrs.contains(r#"string="true""#) {
@@ -330,7 +342,11 @@ fn parse_parameters(body: &str) -> anyhow::Result<Map<String, Value>> {
             serde_json::from_str(raw_value).unwrap_or_else(|_| Value::String(raw_value.to_string()))
         };
         params.insert(name.to_string(), value);
-        cursor = value_start + value_end_rel + PARAMETER_END.len();
+        cursor = if end_close == Some(value_end_rel) {
+            value_start + value_end_rel + PARAMETER_END.len()
+        } else {
+            value_start + value_end_rel
+        };
     }
     Ok(params)
 }

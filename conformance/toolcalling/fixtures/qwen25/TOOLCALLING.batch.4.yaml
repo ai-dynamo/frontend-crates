@@ -39,12 +39,15 @@ cases:
       vllm:
         unavailable: vLLM has no parser for family='qwen25'
       dynamo:
-        calls: []
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
         normal_text: ''
       sglang:
-        reason: 'Malformed JSON in a complete <tool_call> wrapper: Dynamo discards the
-          unparseable jail region (no leak); SGLang''s Qwen25Detector keys on a
-          "<tool_call>\n" prefix, so on this compact wrapper it detects nothing and
+        reason: 'allow_eof_recovery=true: Dynamo closes the unterminated JSON and recovers
+          the call (matching hermes; recover/drop rule). SGLang''s Qwen25Detector keys on
+          a "<tool_call>\n" prefix, so on this compact wrapper it detects nothing and
           returns the raw text. Non-parity by design.'
         calls: []
         normal_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"</tool_call>'
@@ -77,11 +80,15 @@ cases:
       vllm:
         unavailable: vLLM has no parser for family='qwen25'
       dynamo:
-        calls: []
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
         normal_text: ''
       sglang:
-        reason: 'Incomplete call (open <tool_call>, no close): Dynamo suppresses to empty, SGLang keeps raw. Non-parity by
-          design.'
+        reason: 'allow_eof_recovery=true: the JSON body is complete and only </tool_call> is
+          missing, so Dynamo recovers the call (matching hermes; recover/drop rule). SGLang
+          keeps raw. Non-parity by design.'
         calls: []
         normal_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}'
   TOOLCALLING.batch.4.e:

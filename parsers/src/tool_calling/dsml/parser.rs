@@ -346,47 +346,64 @@ fn extract_invokes(
     Ok(invokes)
 }
 
-/// Parse parameters from invoke content
+/// Parse parameters from invoke content.
+///
+/// Each parameter region begins at `parameter_prefix` and ends at the next
+/// prefix, or at the end of the invoke body. The value runs from after the
+/// header `>` to its own `parameter_end` close tag if present, otherwise to
+/// the end of the region.
+///
+/// Recovering a value that has no `</｜DSML｜parameter>` close follows the
+/// recover/drop rule (see parsers_v2/README.md goal 5): the value is still
+/// terminated by the next marker — the next parameter, or `</｜DSML｜invoke>`,
+/// which bounds this content — so it is provably complete and we recover it
+/// (this is what fixes case 4.d). A value that ran to genuine end-of-stream
+/// has no terminating `</｜DSML｜invoke>`, so `extract_invokes` never matches
+/// the invoke and it never reaches this function — i.e. mid-value truncation
+/// (case 5.c) still drops, never guessed.
 fn parse_parameters(
     content: &str,
     config: &DsmlParserConfig,
 ) -> anyhow::Result<serde_json::Map<String, serde_json::Value>> {
     let mut parameters = serde_json::Map::new();
 
-    // Build pattern with proper escaping
-    // Match: <｜DSML｜parameter name="param_name" string="true|false">value</｜DSML｜parameter>
-    // Note: parameter_prefix is "<｜DSML｜parameter name=" (no quotes, we add them in pattern)
-    let prefix_escaped = regex::escape(&config.parameter_prefix);
-    let end_escaped = regex::escape(&config.parameter_end);
+    let prefix = config.parameter_prefix.as_str();
+    let end = config.parameter_end.as_str();
 
-    // The `string="true|false"` attribute is optional: some model outputs omit it.
-    // When absent we best-effort parse the value (JSON → String fallback).
-    let param_pattern = format!(
-        r#"(?s){}\"([^"]+)\"(?:\s+string=\"(true|false)\")?\s*>(.*?){}"#,
-        prefix_escaped, end_escaped
-    );
+    // After the prefix (`<｜DSML｜parameter name=`): name="..." with an optional
+    // `string="true|false"` attribute, then `>`. We add the quotes here.
+    let header_regex = Regex::new(r#"^"([^"]+)"(?:\s+string="(true|false)")?\s*>"#)?;
 
-    let param_regex = Regex::new(&param_pattern)?;
+    let starts: Vec<usize> = content.match_indices(prefix).map(|(i, _)| i).collect();
+    for (i, &start) in starts.iter().enumerate() {
+        let region_end = starts.get(i + 1).copied().unwrap_or(content.len());
+        let after_prefix = &content[start + prefix.len()..region_end];
+        let Some(header) = header_regex.captures(after_prefix) else {
+            continue;
+        };
+        let param_name = header.get(1).unwrap().as_str().trim();
+        let string_attr = header.get(2).map(|m| m.as_str());
 
-    for param_match in param_regex.captures_iter(content) {
-        if let (Some(name_match), Some(value_match)) = (param_match.get(1), param_match.get(3)) {
-            let param_name = name_match.as_str().trim();
-            let param_value = value_match.as_str().trim();
+        // Value: from after the header `>` to its own close tag if present,
+        // else to the region boundary (the next marker that bounds it).
+        let value_region = &after_prefix[header.get(0).unwrap().end()..];
+        let raw_value = match value_region.find(end) {
+            Some(p) => &value_region[..p],
+            None => value_region,
+        };
+        let param_value = raw_value.trim();
 
-            // Parse value based on string attribute (if present).
-            // `string="true"` forces the String branch; every other case
-            // (`string="false"` or attribute omitted) tries JSON first and
-            // falls back to String.
-            let string_attr = param_match.get(2).map(|m| m.as_str());
-            let value = if string_attr == Some("true") {
-                serde_json::Value::String(param_value.to_string())
-            } else {
-                serde_json::from_str(param_value)
-                    .unwrap_or_else(|_| serde_json::Value::String(param_value.to_string()))
-            };
+        // `string="true"` forces the String branch; every other case
+        // (`string="false"` or attribute omitted) tries JSON first and falls
+        // back to String.
+        let value = if string_attr == Some("true") {
+            serde_json::Value::String(param_value.to_string())
+        } else {
+            serde_json::from_str(param_value)
+                .unwrap_or_else(|_| serde_json::Value::String(param_value.to_string()))
+        };
 
-            parameters.insert(param_name.to_string(), value);
-        }
+        parameters.insert(param_name.to_string(), value);
     }
 
     Ok(parameters)
@@ -500,9 +517,10 @@ mod tests {
     //   - (TOOLCALLING.batch.5  FIXED: batch/non-streaming finalize now recovers
     //     complete invokes when </｜DSML｜tool_calls> is absent, matching the
     //     stream-finalize path. Same class as Kimi K2 pre-PR #8208.)
-    //   - (TOOLCALLING.batch.4 missing-parameter-close & middle-invoke-truncation now
-    //     pinned: see test_parse_deepseek_v4_missing_parameter_close_loses_param,
-    //     test_parse_deepseek_v4_middle_invoke_truncation_corrupts_next.)
+    //   - (TOOLCALLING.batch.4 missing-parameter-close FIXED: a value with no
+    //     </｜DSML｜parameter> close is recovered when it is delimiter-terminated by
+    //     </｜DSML｜invoke> — see test_parse_deepseek_v4_missing_parameter_close_recovers_param.
+    //     Middle-invoke-truncation still pinned: test_parse_deepseek_v4_middle_invoke_truncation_corrupts_next.)
     // No customer-incident regression tests yet — V4 is hours old
     // (2026-04-24) and no bugs have been filed against it.
     // -------------------------------------------------------------------
@@ -1203,7 +1221,7 @@ mod tests {
     /// the raw value up to `</｜DSML｜invoke>`. Flip this test once fixed.
     // DEPRECATED(parser-fixture-duplicate): Duplicate of YAML fixture coverage: TOOLCALLING.batch.4.d in tests/parity/toolcalling/fixtures/deepseek_v4/TOOLCALLING.batch.4.yaml.
     #[test] // TOOLCALLING.batch.4, TOOLCALLING.fmt.3
-    fn test_parse_deepseek_v4_missing_parameter_close_loses_param() {
+    fn test_parse_deepseek_v4_missing_parameter_close_recovers_param() {
         let input = "<｜DSML｜tool_calls>\n\
 <｜DSML｜invoke name=\"test\">\n\
 <｜DSML｜parameter name=\"x\" string=\"true\">value\n\
@@ -1212,14 +1230,18 @@ mod tests {
 
         let config = get_v4_test_config();
         let (calls, _) = try_tool_call_parse_dsml(input, &config).unwrap();
-        // PIN_ME: replace with observed behavior after first run.
         assert_eq!(calls.len(), 1);
         let (name, args) = extract_name_and_args(calls[0].clone());
         assert_eq!(name, "test");
-        assert!(
-            args.get("x").is_none(),
-            "Expected 'x' to be dropped because </｜DSML｜parameter> is missing; \
-             got args={args}"
+        // The value "value" has no </｜DSML｜parameter> close, but it is
+        // delimiter-terminated by </｜DSML｜invoke>, so the recover/drop rule
+        // recovers it (see parsers_v2/README.md goal 5). A value that ran to
+        // genuine EOF would leave the invoke unterminated, fail extract_invokes,
+        // and drop (see test_parse_deepseek_v4_missing_end_token_without_recovery
+        // and TOOLCALLING.batch.5.c).
+        assert_eq!(
+            args["x"], "value",
+            "Expected 'x' recovered (value terminated by </｜DSML｜invoke>); got args={args}"
         );
     }
 

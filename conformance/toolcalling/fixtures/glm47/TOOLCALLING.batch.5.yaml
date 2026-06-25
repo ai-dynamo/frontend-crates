@@ -18,12 +18,19 @@ cases:
             type: string
     expected:
       dynamo:
-        calls: []
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
         normal_text: ''
       vllm: &id001
         calls: []
         normal_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
-        reason: vLLM and SGLang preserve the truncated <tool_call>... markup as content on missing-end-token recovery; Dynamo drops to keep wire tags out of message.content
+        reason: |-
+          allow_eof_recovery=true, so Dynamo recovers the call: NYC is
+          delimiter-terminated by </arg_value> and only the outer </tool_call> is
+          missing (recover/drop rule, parsers_v2/README.md goal 5). vLLM and
+          SGLang instead leak the truncated <tool_call>... markup as content.
       sglang: *id001
   TOOLCALLING.batch.5.b:
     description: Closing </tool_call> without matching <tool_call> open
@@ -71,6 +78,9 @@ cases:
         - name: get_weather
           arguments:
             location: Boston
+        - name: get_weather
+          arguments:
+            location: New York
         normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
       vllm:
         calls:
@@ -78,6 +88,10 @@ cases:
           arguments:
             location: Boston
         normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+        reason: |-
+          allow_eof_recovery=true, so Dynamo also recovers the last call: "New York" is
+          delimiter-terminated by </arg_value> and only its </tool_call> is missing
+          (recover/drop rule). vLLM drops the trailing truncated call.
       sglang:
         calls:
         - name: get_weather
@@ -85,7 +99,7 @@ cases:
             location: Boston
         normal_text: I'll start by fetching the weather for both Boston and New York at the same time!<tool_call>get_weather<arg_key>location</arg_key><arg_value>New
           York</arg_value>
-        reason: SGLang preserves the trailing truncated <tool_call>... block as content; Dynamo and vLLM both drop it
+        reason: SGLang preserves the trailing truncated <tool_call>... block as content; Dynamo recovers it as a call (allow_eof_recovery=true) and vLLM drops it.
   TOOLCALLING.batch.5.e:
     description: Multi-call, last call truncated mid-arg-value
     ref: dynamo

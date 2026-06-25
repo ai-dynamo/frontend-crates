@@ -124,7 +124,7 @@ cases:
       expected:
         dynamo_rust:
         - {index: 0, name: 'get_weather', arguments: ''}
-        - {index: 0, arguments: '{}'}
+        - {index: 0, arguments: '{"location":"NYC"}'}
         vllm_python:
         - {index: 0, arguments: 'NYC </｜DSML｜invoke>'}
         sglang_python:
