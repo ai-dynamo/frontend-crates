@@ -1,6 +1,8 @@
 # Parser Integration Guide
 
-Step-by-step guide for integrating new parsers or configurations into dynamo.
+Step-by-step guide for wiring a parser into the v1 batch crate (`parsers/`): the `ToolCallConfig` preset + `get_tool_parser_map()` registry mechanics.
+
+> This is the **v1 (batch)** integration mechanism. v1 is being merged into v2 and will be removed once v2 reaches parity, so new parser work targets v2 — follow "Adding A Day-0 Tool-Calling Parser" in [`../../../../parsers_v2/README.md`](../../../../parsers_v2/README.md), and pick the family from its "Parser families" cheat-sheet. The steps below still apply when a new model reuses an existing v1 family via config.
 
 ## Option 1: Add Configuration Preset (Most Common)
 
@@ -173,30 +175,14 @@ cargo fmt
 
 ## File Structure
 
-```
-parsers/src/tool_calling/
-├── mod.rs                   # Main module exports
-├── config.rs                # Configurations and presets
-├── parsers.rs               # Parser routing and registry
-├── response.rs              # Response types
-├── tools.rs                 # High-level APIs
-├── tests.rs                 # Integration tests
-│
-├── json/                    # JSON parsers
-│   ├── mod.rs
-│   ├── base_json_parser.rs
-│   ├── deepseek_v3_parser.rs
-│   ├── deepseek_v3_1_parser.rs
-│   └── model_name_parser.rs  # Your new parser
-│
-├── xml/                     # XML parsers
-│   ├── mod.rs
-│   └── parser.rs
-│
-├── pythonic/                # Pythonic parsers
-├── harmony/                 # Harmony parsers
-└── dsml/                    # DSML parsers
-```
+The v1 tool-call crate root is `parsers/src/tool_calling/`:
+
+- `config.rs` — `ToolCallConfig` presets and the `ParserConfig` enum
+- `parsers.rs` — `get_tool_parser_map()` registry and dispatch
+- `response.rs` — `ToolCallResponse` types; `tools.rs` — high-level APIs; `tests.rs` — integration tests
+- per-family grammar modules in subdirectories: `json/`, `xml/`, `dsml/`, `gemma4/`, `harmony/`, `pythonic/`
+
+For which family owns which model and the exact module per family, use the "Parser families" cheat-sheet in [`../../../../parsers_v2/README.md`](../../../../parsers_v2/README.md) rather than a tree here (a tree drifts as families are added). Reasoning parsers live in `parsers/src/reasoning/` (see its README).
 
 ## Testing Strategy
 

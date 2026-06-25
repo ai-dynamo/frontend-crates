@@ -63,7 +63,8 @@ tool-parser-generator/
 
 ## References
 
-- **Dynamo Parsers**: `parsers/src/tool_calling/`
+- **Canonical parser docs** (goals, family cheat-sheet, how-to-add): [`../../../parsers_v2/README.md`](../../../parsers_v2/README.md). v2 is the path forward; v1 (`parsers/`) is being removed once v2 reaches parity.
+- **Dynamo Parsers (v1 batch crate)**: `parsers/src/tool_calling/` and `parsers/src/reasoning/`
 - **sglang**: https://github.com/sgl-project/sglang/tree/main/python/sglang/srt/function_call
 - **vLLM**: https://github.com/vllm-project/vllm/tree/main/vllm/tool_parsers
 - **HuggingFace**: https://huggingface.co/docs/transformers/chat_templating

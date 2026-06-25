@@ -1,104 +1,18 @@
-# dynamo-parsers
+# dynamo-parsers (v1, legacy)
 
-Rust crate for parsing **tool calls** and **reasoning content** out of raw LLM output. Wire-format-aware, streaming-first, model-family-aware.
+Rust crate for parsing **tool calls** and **reasoning content** out of raw LLM output. This is the v1 **batch** path: it jails (buffers) the whole model output, then parses.
 
-Given a token stream from any inference engine (vLLM, SGLang, etc.), extract structured `Vec<ToolCallResponse>` + `reasoning_content` ready to be returned to the client. Prompt formatting (the pre-model side) is out of scope.
+> **Deprecated — being merged into v2.** The canonical parser documentation now lives in [`../parsers_v2/README.md`](../parsers_v2/README.md): parser goals, the family taxonomy cheat-sheet, how to add a parser, fixtures, and conformance all live there and cover both paths. **The end state is v2-only — this entire crate and its docs are slated for removal once v2 reaches parity.** Do new parser work in v2; only touch v1 to fix a batch bug that v2's `batch_via_stream` parity depends on.
 
-## What's in the crate
+## v1-specific API
 
-Two top-level modules, each with its own parser registry:
+The v1 batch entry points (in `src/tool_calling/parsers.rs`) that v2 does not mirror:
 
-```text
-src/
-├── tool_calling/        ← tool-call extraction (18 registered parsers)
-│   ├── parsers.rs         — registry + dispatch (detect_and_parse_tool_call)
-│   ├── config.rs          — per-parser ToolCallConfig
-│   ├── response.rs        — ToolCallResponse shape (wire type)
-│   ├── dsml/              — DeepSeek V3.2 / V4 DSML grammar
-│   ├── gemma4/            — Google Gemma 4 custom non-JSON grammar (`<|"|>`-delimited strings)
-│   ├── xml/               — hermes, glm47, kimi_k2, minimax_m2, qwen3_coder
-│   ├── json/              — deepseek_v3, deepseek_v3_1, nemotron_deci/nano, jamba, mistral, phi4, llama3_json
-│   ├── harmony/           — OpenAI gpt-oss (Harmony token stream, uses openai_harmony crate)
-│   └── pythonic/          — Python function-call syntax (some Llama variants)
-└── reasoning/           ← reasoning-content extraction (15 registered parsers)
-    ├── mod.rs             — registry + dispatch
-    ├── base_parser.rs     — BasicReasoningParser (<think> ... </think>)
-    ├── gemma4_parser.rs   — Gemma 4 (`<|channel>thought\n...<channel|>`)
-    ├── gpt_oss_parser.rs  — Harmony channel parsing
-    ├── granite_parser.rs  — Granite-style
-    └── minimax_append_think_parser.rs  — MiniMax inline-reasoning
-```
-
-## How a request flows through the crate
-
-```text
-  token stream from engine
-            │
-            ▼
-  ┌─────────────────────────────────┐
-  │ reasoning parser                │  — registered by name via
-  │   (basic / gpt_oss / ...)       │    reasoning::mod.rs get_reasoning_parser_map()
-  │                                 │    returns: (reasoning_content, non_reasoning_tail)
-  └─────────────────────────────────┘
-            │
-            ▼ (non-reasoning tail)
-  ┌─────────────────────────────────┐
-  │ tool-call parser                │  — registered by name via
-  │   dispatched on parser name     │    tool_calling::parsers::get_tool_parser_map()
-  │   which picks a ParserConfig:   │
-  │     - Dsml(DsmlParserConfig)    │  → try_tool_call_parse_dsml
-  │     - Json(JsonParserConfig)    │  → try_tool_call_parse_json
-  │     - Xml(XmlParserConfig)      │  → try_tool_call_parse_xml
-  │     - KimiK2(KimiK2ParserConfig)│  → try_tool_call_parse_kimi_k2
-  │     - Pythonic / Harmony        │
-  └─────────────────────────────────┘
-            │
-            ▼
-  Vec<ToolCallResponse> + normal_text
-```
-
-Main public entry points in `tool_calling/parsers.rs`:
-
-- `detect_and_parse_tool_call(input, parser_name, schema) -> (calls, normal_text)`
-- `try_tool_call_parse(input, config) -> (calls, normal_text)` (lower-level, bypasses the registry)
+- `detect_and_parse_tool_call(input, parser_name, schema) -> (calls, normal_text)` — registry dispatch.
+- `try_tool_call_parse(input, config) -> (calls, normal_text)` — lower-level, bypasses the registry.
 - `detect_tool_call_start(chunk, parser_name)` — streaming: "is this chunk starting a tool-call block?"
 - `find_tool_call_end_position(chunk, parser_name)` — streaming: "where does the block end in this chunk?"
 
-## Parser-family cheat sheet
+The registry (`tool_calling/parsers.rs`) maps a parser name to a `ParserConfig` variant (`Dsml` / `Json` / `Xml` / `KimiK2` / `Pythonic` / `Harmony`); per-parser presets are in `tool_calling/config.rs`. Reasoning parsers register by name in `reasoning/mod.rs`; see [`src/reasoning/README.md`](src/reasoning/README.md).
 
-When adding a new model, the right parser family is usually one of:
-
-| Family | Grammar | Shared engine | Examples |
-| -- | -- | -- | -- |
-| **DSML** | `<｜DSML｜tool_calls>...` with typed `string="true|false"` parameters | `dsml/parser.rs` | DeepSeek V3.2, V4 |
-| **XML** | `<tool_call>...</tool_call>` with nested `<parameter>` or `<function>` | `xml/parser.rs` (generic) or own file for variants | hermes, qwen3_coder, minimax_m2, glm47 (own), kimi_k2 (own, special-token XML) |
-| **JSON** | Start sentinel + bare JSON array of `{name, arguments}` | `json/base_json_parser.rs` | deepseek_v3, deepseek_v3_1, nemotron_deci/nano |
-| **Harmony** | OpenAI Harmony token stream with `<\|channel\|>`, `<\|message\|>`, `<\|call\|>` | `harmony/harmony_parser.rs` (wraps external `openai_harmony` crate) | gpt-oss-20B / 120B |
-| **Pythonic** | `[func_name(arg=value, ...)]` Python function-call syntax | `pythonic/pythonic_parser.rs` | some Llama variants |
-| **Gemma 4** | Custom: `<\|tool_call>call:name{key:<\|"\|>val<\|"\|>}<tool_call\|>`, bare keys, custom string delimiter | `gemma4/parser.rs` (recursive-descent into `serde_json::Value`) | Google Gemma 4 thinking models |
-
-Reasoning parsers:
-
-| Family | Grammar | Shared engine | Examples |
-| -- | -- | -- | -- |
-| **Basic (think-tag)** | `<think>...</think>` | `reasoning/base_parser.rs` (BasicReasoningParser) | Qwen3, Nemotron, Kimi K2.5, DeepSeek R1 / V4, GLM-4.5+ |
-| **Append-think** | `<think>...</think>` left inline as text, with `<think>` prefix on first chunk | `reasoning/minimax_append_think_parser.rs` | MiniMax M2 |
-| **Harmony channel** | Hidden `analysis` channel | `reasoning/gpt_oss_parser.rs` (wraps external `openai_harmony`) | gpt-oss-20B / 120B |
-| **Granite** | Custom start/end tokens | `reasoning/granite_parser.rs` | IBM Granite |
-| **Gemma 4 channel** | `<\|channel>thought\n...<channel\|>` with role-label prefix stripped | `reasoning/gemma4_parser.rs` | Google Gemma 4 thinking models |
-
-## Adding a new parser
-
-1. **Pick the family** from the cheat sheet above. If an existing config-driven family fits, add a `ToolCallConfig::<your_model>()` constructor in `tool_calling/config.rs`, register it in `tool_calling/parsers.rs`. Done — you inherit all the shared parser and tests.
-
-2. **If the grammar is genuinely new**, add a module under `tool_calling/` and add a `ParserConfig` variant in `config.rs`. Follow the existing parser modules for layout.
-
-3. **For reasoning**, prefer aliasing to `BasicReasoningParser` unless the grammar truly diverges (append-think, Harmony channels). Most new models use plain `<think>...</think>` and can share.
-
-4. **Write tests.** Use the conformance case docs as the source of truth: [`TOOLCALLING_CASES.md`](../conformance/utils/lib/parsers/TOOLCALLING_CASES.md) for tool-call parser cases and [`REASONING_CASES.md`](../conformance/utils/lib/parsers/REASONING_CASES.md) for reasoning parser cases. At minimum, cover `TOOLCALLING.batch.1`/`.2`/`.3` for correctness, `TOOLCALLING.batch.5` for truncation behavior, and the relevant reasoning cases when reasoning parsing is involved. `N/A` categories should be explicitly called out in a comment rather than silently skipped.
-
-## Related docs
-
-- [`../conformance/utils/lib/parsers/TOOLCALLING_CASES.md`](../conformance/utils/lib/parsers/TOOLCALLING_CASES.md) — tool-call parser case taxonomy used by conformance fixtures and HTML generation.
-- [`../conformance/utils/lib/parsers/REASONING_CASES.md`](../conformance/utils/lib/parsers/REASONING_CASES.md) — reasoning parser case taxonomy used by conformance fixtures and HTML generation.
-- [`../parsers_v2/README.md`](../parsers_v2/README.md) — streaming parser v2 contract, fixture files, and capture workflow.
+For the family-to-grammar-to-file mapping (the cheat-sheet), the parser goals, and the step-by-step add flow, see [`../parsers_v2/README.md`](../parsers_v2/README.md).

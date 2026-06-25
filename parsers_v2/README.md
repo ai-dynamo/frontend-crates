@@ -2,6 +2,10 @@
 
 Rust crate for Dynamo-owned token-incremental tool-call parsers. This is the v2 path for streaming parser behavior, and its public Rust contract intentionally mimics vLLM Rust's parser contract so vLLM can move toward using the frontend-crate parser instead of carrying a separate Rust parser surface.
 
+This README is the canonical parser documentation for the workspace. The goals, family taxonomy, and how-to-add-a-parser guidance below cover both the legacy v1 batch crate (`../parsers/`) and this v2 streaming crate — v1 is the inefficient batch path being merged into v2, and `../parsers/README.md` now defers here.
+
+**Migration direction: the end state is v2-only.** All v1 code and docs (the entire `../parsers/` crate and its README) are slated for removal once v2 reaches parity. Put new parser work and documentation here, not in v1.
+
 ## Parser goals (read first)
 
 These goals govern every tool-calling and reasoning parser, v1 and v2, and are the tie-breakers when the engines (vLLM, SGLang, Dynamo) disagree.
@@ -17,6 +21,35 @@ These goals govern every tool-calling and reasoning parser, v1 and v2, and are t
 9. **Mirror vLLM Rust's contract shape, not necessarily its output.** The types and method names mirror vLLM Rust so vLLM can adopt this crate, but Dynamo may intentionally diverge on output content (e.g. preserve surrounding text where vLLM drops it) — every such divergence carries a `reason:`.
 
 The end-to-end workflow for adding a parser — fetch the chat template, identify the format, prefer an existing parser + config over new code, register, test, render — lives in the `tool-parser-generator` skill under `.agents/skills/tool-parser-generator/`. Reasoning parsers follow the same goals; see [`../parsers/src/reasoning/README.md`](../parsers/src/reasoning/README.md).
+
+## Parser families
+
+This is the single source of truth for the parser-family taxonomy — which grammar family a model belongs to and where the grammar is implemented. Families are shared across both paths: the **batch (v1)** implementation under `parsers/src/tool_calling/` owns the grammar and value-typing, and the **streaming (v2)** implementation under `parsers_v2/src/tool_calling/` reuses it. Pick the family first when adding a model; only write a new module when the grammar is genuinely new.
+
+A request flows reasoning-parser first (`<think>` stripping), then the tool-call parser on the non-reasoning tail, producing `Vec<ToolCallResponse>` + `normal_text` (v1) or a stream of `ToolParseResult` deltas (v2).
+
+Tool-call families:
+
+| Family | Grammar | Batch impl (`parsers/src/tool_calling/`) | Examples |
+| -- | -- | -- | -- |
+| **DSML** | `<｜DSML｜tool_calls>...` with typed `string="true\|false"` parameters | `dsml/parser.rs` | DeepSeek V3.2, V4 |
+| **XML** | `<tool_call>...</tool_call>` with nested `<parameter>` / `<function>` (or special-token variants) | `xml/parser.rs` (generic) or own file per variant | hermes, qwen3_coder, minimax_m2, glm47 (own file), kimi_k2 (own file, special-token XML) |
+| **JSON** | Start sentinel + JSON `{name, arguments}` (single object or array) | `json/base_json_parser.rs` (+ variant files) | deepseek_v3, deepseek_v3_1, nemotron_deci, nemotron_nano, jamba, mistral, phi4, llama3_json, qwen25 |
+| **Harmony** | OpenAI Harmony token stream with `<\|channel\|>`, `<\|message\|>`, `<\|call\|>` | `harmony/harmony_parser.rs` (wraps external `openai_harmony` crate) | gpt-oss-20B / 120B |
+| **Pythonic** | `[func_name(arg=value, ...)]` Python function-call syntax | `pythonic/pythonic_parser.rs` | some Llama variants |
+| **Gemma 4** | Custom: `<\|tool_call>call:name{key:<\|"\|>val<\|"\|>}<tool_call\|>`, bare keys, custom string delimiter | `gemma4/parser.rs` (recursive-descent into `serde_json::Value`) | Google Gemma 4 thinking models |
+
+Reasoning families:
+
+| Family | Grammar | Batch impl (`parsers/src/reasoning/`) | Examples |
+| -- | -- | -- | -- |
+| **Basic (think-tag)** | `<think>...</think>` | `base_parser.rs` (`BasicReasoningParser`) | Qwen3, Nemotron, Kimi K2.5, DeepSeek R1 / V4, GLM-4.5+ |
+| **Append-think** | `<think>...</think>` left inline as text, with `<think>` prefix on first chunk | `minimax_append_think_parser.rs` | MiniMax M2 |
+| **Harmony channel** | Hidden `analysis` channel | `gpt_oss_parser.rs` (wraps external `openai_harmony`) | gpt-oss-20B / 120B |
+| **Granite** | Custom start/end tokens | `granite_parser.rs` | IBM Granite |
+| **Gemma 4 channel** | `<\|channel>thought\n...<channel\|>` with role-label prefix stripped | `gemma4_parser.rs` | Google Gemma 4 thinking models |
+
+Streaming (v2) implementations exist today for `harmony`, `deepseek_v4` (DSML), and `qwen3_coder`; the remaining families run on the v1 batch parser until their streaming port lands.
 
 ## Why It Mimics vLLM Rust
 

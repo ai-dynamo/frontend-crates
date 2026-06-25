@@ -80,28 +80,11 @@ The chat template is a Jinja template. Analyze it to identify tool call patterns
 
 ### Phase 3: Compare with Existing Parsers
 
-**Read existing parser implementations** in `parsers/src/tool_calling/`:
+**Identify the family from the authoritative cheat-sheet.** The full, current family-to-grammar-to-file mapping (every tool-call and reasoning family) is the "Parser families" section of [`../../../parsers_v2/README.md`](../../../parsers_v2/README.md) — do not maintain a model list here, it drifts. Use it to pick the closest family, then:
 
-1. **Check JSON parsers** (`json/` directory):
-   - `base_json_parser.rs` - Generic JSON with markers
-   - `deepseek_v3_parser.rs` - DeepSeek V3 format
-   - `deepseek_v3_1_parser.rs` - DeepSeek V3.1 format
-
-2. **Check XML parsers** (`xml/` directory):
-   - `parser.rs` - Qwen3 Coder XML format
-
-3. **Check other formats**:
-   - `pythonic/pythonic_parser.rs` - Python syntax
-   - `harmony/harmony_parser.rs` - Harmony protocol
-   - `dsml/parser.rs` - DeepSeek V3.2 DSML
-
-4. **Review config presets** in `config.rs`:
-   - Look at `ToolCallConfig::hermes()`, `mistral()`, `llama3_json()`, etc.
-   - Each preset defines start/end tokens, key names, parser type
-
-5. **Check parser registry** in `parsers.rs`:
-   - See how parsers are registered in `get_tool_parser_map()`
-   - Understand the `ParserType` enum and routing logic
+1. **Read that family's parser module** under `parsers/src/tool_calling/<family>/` (the batch impl that owns the grammar) to confirm the markers and structure match the model you analyzed.
+2. **Review its config preset** in `tool_calling/config.rs` (`ToolCallConfig::<family>()` — start/end tokens, key names, parser type) and its registry entry in `tool_calling/parsers.rs` (`get_tool_parser_map()` → `ParserType`).
+3. **Check whether a streaming (v2) parser already exists** under `parsers_v2/src/tool_calling/<family>.rs`. New work targets v2; v1 is being removed once v2 reaches parity.
 
 **Match the analyzed format**:
 - If start/end tokens and format match existing parser → Use existing parser with config
@@ -292,35 +275,7 @@ User: "Add tool calling support for Qwen/Qwen2.5-72B-Instruct"
 
 ## Common Patterns
 
-### JSON with Brackets
-```
-[TOOL_CALLS] [{"name": "func", "arguments": {}}]
-```
-→ Use `base_json_parser` with bracket markers
-
-### JSON with XML Tags
-```xml
-<tool_call>
-{"name": "func", "arguments": {}}
-</tool_call>
-```
-→ Use `base_json_parser` with XML-style markers
-
-### XML Structure
-```xml
-<tool_call>
-<function=name>
-<parameter=key>value</parameter>
-</function>
-</tool_call>
-```
-→ Use `xml/parser.rs` or create variant
-
-### Nested Tokens
-```
-<｜tool▁call▁begin｜>name<｜tool▁sep｜>args<｜tool▁call▁end｜>
-```
-→ Create specialized parser (see DeepSeek parsers)
+The grammar-recognition guide — how to spot each pattern in a chat template — is in [`references/parser-patterns.md`](references/parser-patterns.md). The authoritative family-to-grammar-to-file mapping is the "Parser families" cheat-sheet in [`../../../parsers_v2/README.md`](../../../parsers_v2/README.md). Use those instead of re-listing patterns here.
 
 ## Minimal Changes Philosophy
 
