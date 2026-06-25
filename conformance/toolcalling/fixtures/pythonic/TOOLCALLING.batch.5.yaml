@@ -17,10 +17,16 @@ cases:
           location:
             type: string
     expected:
-      dynamo: &id001
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+      vllm: &id001
         calls: []
         normal_text: '[get_weather(location="NYC")'
-      vllm: *id001
+        reason: 'Dynamo recovers: the call get_weather(location="NYC") is complete (closing ")") and only the outer "]" was truncated, so Dynamo closes the list and emits the call (recover/drop rule, parsers_v2/README.md goal 5). vLLM and SGLang leak the raw text instead.'
       sglang: *id001
   TOOLCALLING.batch.5.b:
     description: Closing `]` without matching `[` open
@@ -54,11 +60,20 @@ cases:
     tools:
     - *id002
     expected:
-      dynamo: &id005
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Boston
+        - name: get_weather
+          arguments:
+            location: New York
+        normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+      vllm: &id005
         calls: []
         normal_text: I'll start by fetching the weather for both Boston and New York at the same time![get_weather(location="Boston"),
           get_weather(location="New York")
-      vllm: *id005
+        reason: 'Dynamo recovers both calls: each is complete (closing ")") and only the outer "]" was truncated, so Dynamo closes the list and emits them (recover/drop rule, parsers_v2/README.md goal 5); vLLM and SGLang leak the raw text instead.'
       sglang: *id005
   TOOLCALLING.batch.5.e:
     description: Multi-call, last call truncated mid-arg-value

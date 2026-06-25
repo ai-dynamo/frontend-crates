@@ -19,7 +19,12 @@ static PYTHONIC_REGEX: OnceLock<Regex> = OnceLock::new();
 fn get_pythonic_regex() -> &'static Regex {
     PYTHONIC_REGEX.get_or_init(|| {
         // Format Structure: [tool1(arg1=val1, arg2=val2), tool2(arg1=val3)]
-        let pattern = r"\[([a-zA-Z]+\w*\(([a-zA-Z]+\w*=.*?,\s*)*([a-zA-Z]+\w*=.*?\s?)?\),\s*)*([a-zA-Z]+\w*\(([a-zA-Z]+\w*=.*?,\s*)*([a-zA-Z]+\w*=.*?\s*)?\)\s*)+\]";
+        // The trailing `]` is optional at end-of-text so a complete call list
+        // whose closing `]` was truncated still recovers (recover/drop rule,
+        // parsers_v2/README.md goal 5). A call missing its own `)` is still
+        // dropped, since each call requires `\)` — so mid-value truncation
+        // (no closing paren) never recovers.
+        let pattern = r"\[([a-zA-Z]+\w*\(([a-zA-Z]+\w*=.*?,\s*)*([a-zA-Z]+\w*=.*?\s?)?\),\s*)*([a-zA-Z]+\w*\(([a-zA-Z]+\w*=.*?,\s*)*([a-zA-Z]+\w*=.*?\s*)?\)\s*)+(?:\]|\z)";
         Regex::new(pattern).expect("Failed to compile pythonic regex pattern")
     })
 }
@@ -195,11 +200,21 @@ pub fn try_tool_call_parse_pythonic(
     // sequentially because `parse_tool_calls` numbers per block (call-1, ...).
     let mut tool_calls = Vec::new();
     for r in &ranges {
-        let block = &stripped[r.clone()];
+        let raw = &stripped[r.clone()];
+        // The regex allows a complete call list whose trailing `]` was truncated
+        // (recover/drop rule); the Python AST parser needs balanced brackets, so
+        // close it before parsing. A call missing its own `)` never matched the
+        // regex, so this only completes the outer list, never a partial call.
+        let trimmed = raw.trim_end();
+        let block = if trimmed.ends_with(']') {
+            trimmed.to_string()
+        } else {
+            format!("{trimmed}]")
+        };
         // A malformed/unparseable block keeps the current drop-without-leak
         // behavior: its markup is stripped from `normal_text` (below) and no
         // call is emitted. Only propagate hard errors that aren't recoverable.
-        let calls = parse_tool_calls(block)?;
+        let calls = parse_tool_calls(&block)?;
         tool_calls.extend(calls);
     }
     for (idx, call) in tool_calls.iter_mut().enumerate() {
