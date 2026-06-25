@@ -2,6 +2,55 @@
 
 Rust crate for Dynamo-owned token-incremental tool-call parsers. This is the v2 path for streaming parser behavior, and its public Rust contract intentionally mimics vLLM Rust's parser contract so vLLM can move toward using the frontend-crate parser instead of carrying a separate Rust parser surface.
 
+This README is the canonical parser documentation for the workspace. The goals, family taxonomy, and how-to-add-a-parser guidance below cover both the v1 batch crate (`../parsers/`) and this v2 streaming crate, and `../parsers/README.md` defers here.
+
+**Two parser paths exist today.** v1 (`../parsers/`) is the **jail-and-buffer** path still in use: it buffers the entire model output, then parses it. v2 (this crate) is the **pure-streaming** path — token-incremental, and still under development. The two are kept in agreement (goal 8 below). v1 is not being merged into v2; when v2 is done it will fully replace v1, and all v1 code and docs will be removed outright. Put new parser work and documentation here, not in v1.
+
+## Parser goals (read first)
+
+These goals govern every tool-calling and reasoning parser, v1 and v2, and are the tie-breakers when the engines (vLLM, SGLang, Dynamo) disagree.
+
+1. **Follow the model's own spec.** The model's chat template / tool-calling guide defines the emission grammar — parse to that, not to another engine's parser. Record the spec source in the fixture YAML so a reviewer can check the grammar against ground truth: add a `spec:` key (the HuggingFace chat-template or tool-calling-guide URL) on the family/fixture alongside the existing `captured_with:` engine versions. Spec URLs that currently live only in `parsers/src/tool_calling/config.rs` comments should migrate into the fixtures over time.
+2. **Error recovery is under-specified, so engine divergence is expected.** A spec says how a model EMITS a well-formed call; it rarely says what to do with malformed, truncated, or surrounding output. vLLM, SGLang, and Dynamo each interpret recovery differently, so a divergence on a recovery / edge case is normal and is documented with a `reason:` — it is not a bug to "fix" by matching a peer.
+3. **Never leak tool-call markup into user-visible `normal_text`.** The `↯` conformance marker exists to catch this; a parser must strip recognized markup, never surface it as content.
+4. **Never leak reasoning markup into user-visible content.** The reasoning parser moves `<think>...</think>` (and equivalents) into the reasoning channel; neither the reasoning nor the tool parser may leave its markup in `content`.
+5. **Make a reasonable, bounded attempt to recover — recover only what is provably complete.** A captured value is complete when a delimiter follows it (the next marker such as `<`, or a closing `"` / `}` / `]` / `)`); recover that value — and the call — even when an outer end or wrapper marker is missing. A value that runs straight into end-of-stream with nothing after it is ambiguous: it may be truncated mid-token (is `NY` the whole value, or a cut-off `NYC`?), so drop it — never guess. Keying recovery on this single delimiter-terminated test is what keeps the decision consistent across families: same input shape, same drop/recover outcome. Recovery never invents content the model did not emit, never leaks markup, and `tracing::warn!`s with a stable `why=` field plus small byte counts (never raw model text or arguments). **A published spec overrides this rule (see goal 1):** if the model publishes a parser/regex that requires a fence, honor it — drop when that fence is missing, even though the value is delimiter-terminated — and document the divergence with the spec URL and a verbatim quote (e.g. MiniMax-M2.1 publishes `invoke_regex = re.compile(r"<invoke name=(.*?)</invoke>", re.DOTALL)`, which requires `</invoke>`, so a missing `</invoke>` yields no call). In the v1 batch parsers this rule is carried by the `allow_eof_recovery` flag (finalize / non-streaming only — streaming jails keep it `false`): `true` recovers a call whose outer end/wrapper marker is missing as long as the body still parses (and still drops a body truncated mid-value), `false` drops it. State the consequence in the fixture `reason:` — e.g. `allow_eof_recovery=true, so the complete-but-unterminated call is recovered` or `allow_eof_recovery=false (spec requires the fence), so the call is dropped`. Recovering an inner value whose own close tag is missing — the value is terminated by the next marker — is a separate value-capture concern, not this flag.
+6. **Preserve as much of the original output as possible.** When the spec is silent, `normal_text` is the model output with only the recognized tool-call / reasoning markup spans removed — text before, between, and after calls is kept verbatim. Do not drop surrounding narration.
+7. **Parsing is separate from validation.** Emit a tool call even when its function name is not in the request's tools list; the serving layer validates and rejects unknown tools. This matches vLLM.
+8. **v1 (batch) and v2 (streaming) must always agree.** Fed the same complete output, both paths produce identical results — same calls, same `normal_text`. The only intended difference is mechanism, not output: v1 is the simple, inefficient reference that jails (buffers) the entire response before parsing, while v2 parses token-incrementally and jails only the minimal ambiguous suffix, so it can emit unambiguous text and calls as soon as they arrive (lower latency). v2 also delegates value-typing to the v1 batch parser, so the two stay in agreement by construction. This equivalence is v2's correctness contract, enforced by the `batch_via_stream` conformance test (`conformance/tests/parity_toolcalling_batch_via_stream.rs`); any intentional stream-vs-batch difference is recorded in its `known_divergences` allowlist.
+9. **Mirror vLLM Rust's contract shape, not necessarily its output.** The types and method names mirror vLLM Rust so vLLM can adopt this crate, but Dynamo may intentionally diverge on output content (e.g. preserve surrounding text where vLLM drops it) — every such divergence carries a `reason:`.
+
+The end-to-end workflow for adding a parser — fetch the chat template, identify the format, prefer an existing parser + config over new code, register, test, render — lives in the `tool-parser-generator` skill under `.agents/skills/tool-parser-generator/`. Reasoning parsers follow the same goals; see [`../parsers/src/reasoning/README.md`](../parsers/src/reasoning/README.md).
+
+## Parser families
+
+This is the single source of truth for the parser-family taxonomy — which grammar family a model belongs to and where the grammar is implemented. Families are shared across both paths: the **batch (v1)** implementation under `parsers/src/tool_calling/` owns the grammar and value-typing, and the **streaming (v2)** implementation under `parsers_v2/src/tool_calling/` reuses it. Pick the family first when adding a model; only write a new module when the grammar is genuinely new.
+
+A request flows reasoning-parser first (`<think>` stripping), then the tool-call parser on the non-reasoning tail, producing `Vec<ToolCallResponse>` + `normal_text` (v1) or a stream of `ToolParseResult` deltas (v2).
+
+Tool-call families:
+
+| Family | Grammar | Batch impl (`parsers/src/tool_calling/`) | Examples |
+| -- | -- | -- | -- |
+| **DSML** | `<｜DSML｜tool_calls>...` with typed `string="true\|false"` parameters | `dsml/parser.rs` | DeepSeek V3.2, V4 |
+| **XML** | `<tool_call>...</tool_call>` with nested `<parameter>` / `<function>` (or special-token variants) | `xml/parser.rs` (generic) or own file per variant | hermes, qwen3_coder, minimax_m2, glm47 (own file), kimi_k2 (own file, special-token XML) |
+| **JSON** | Start sentinel + JSON `{name, arguments}` (single object or array) | `json/base_json_parser.rs` (+ variant files) | deepseek_v3, deepseek_v3_1, nemotron_deci, nemotron_nano, jamba, mistral, phi4, llama3_json, qwen25 |
+| **Harmony** | OpenAI Harmony token stream with `<\|channel\|>`, `<\|message\|>`, `<\|call\|>` | `harmony/harmony_parser.rs` (wraps external `openai_harmony` crate) | gpt-oss-20B / 120B |
+| **Pythonic** | `[func_name(arg=value, ...)]` Python function-call syntax | `pythonic/pythonic_parser.rs` | some Llama variants |
+| **Gemma 4** | Custom: `<\|tool_call>call:name{key:<\|"\|>val<\|"\|>}<tool_call\|>`, bare keys, custom string delimiter | `gemma4/parser.rs` (recursive-descent into `serde_json::Value`) | Google Gemma 4 thinking models |
+
+Reasoning families:
+
+| Family | Grammar | Batch impl (`parsers/src/reasoning/`) | Examples |
+| -- | -- | -- | -- |
+| **Basic (think-tag)** | `<think>...</think>` | `base_parser.rs` (`BasicReasoningParser`) | Qwen3, Nemotron, Kimi K2.5, DeepSeek R1 / V4, GLM-4.5+ |
+| **Append-think** | `<think>...</think>` left inline as text, with `<think>` prefix on first chunk | `minimax_append_think_parser.rs` | MiniMax M2 |
+| **Harmony channel** | Hidden `analysis` channel | `gpt_oss_parser.rs` (wraps external `openai_harmony`) | gpt-oss-20B / 120B |
+| **Granite** | Custom start/end tokens | `granite_parser.rs` | IBM Granite |
+| **Gemma 4 channel** | `<\|channel>thought\n...<channel\|>` with role-label prefix stripped | `gemma4_parser.rs` | Google Gemma 4 thinking models |
+
+Streaming (v2) implementations exist today for `harmony`, `deepseek_v4` (DSML), and `qwen3_coder`; the remaining families run on the v1 batch parser until their streaming port lands.
+
 ## Why It Mimics vLLM Rust
 
 The important DIS-2218 comparison is vLLM Rust vs Dynamo Rust. vLLM Python is still useful coverage and behavioral evidence, but it is not the API target.
@@ -102,7 +151,7 @@ For a new streaming parser family, add or update these files:
 - `conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md` when adding a new stream-only case or changing stream case descriptions.
 - `conformance/toolcalling/fixtures-stream-v2/README.md` only if the fixture schema or capture convention changes.
 
-Fix legacy v1 parser bugs in `parsers/src/` and the matching v1 fixtures in `conformance/toolcalling/fixtures/`. During the bridge, keep v2-only parser behavior in `parsers_v2/`, `fixtures-stream-v2/`, and `fixtures-batch-on-stream-v2/` until the v1/v2 merge lands.
+Fix legacy v1 parser bugs in `parsers/src/` and the matching v1 fixtures in `conformance/toolcalling/fixtures/`. While both paths coexist, keep v2-only parser behavior in `parsers_v2/`, `fixtures-stream-v2/`, and `fixtures-batch-on-stream-v2/` until v2 replaces v1.
 
 ## Fixture Format
 

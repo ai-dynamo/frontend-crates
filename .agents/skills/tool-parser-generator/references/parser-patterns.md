@@ -1,6 +1,6 @@
 # Tool Call Parser Patterns Reference
 
-Quick reference for common tool call patterns found in LLM chat templates.
+A recognition guide: how to spot each tool-call grammar in an LLM chat template. The authoritative, current family-to-grammar-to-file mapping (which family owns each model and where the parser lives) is the "Parser families" cheat-sheet in [`../../../../parsers_v2/README.md`](../../../../parsers_v2/README.md) — this doc only helps you recognize the shape; it does not track the model list.
 
 ## Pattern Categories
 
@@ -68,7 +68,7 @@ Quick reference for common tool call patterns found in LLM chat templates.
 - Parser: `deepseek_v3_1_parser.rs`
 - Inline JSON
 
-### 4. DSML (DeepSeek V3.2)
+### 4. DSML (DeepSeek V3.2 / V4)
 ```xml
 <｜DSML｜function_calls>
 <｜DSML｜invoke name="get_weather">
@@ -76,15 +76,15 @@ Quick reference for common tool call patterns found in LLM chat templates.
 </｜DSML｜invoke>
 </｜DSML｜function_calls>
 ```
-- Models: DeepSeek-V3.2
+- Models: DeepSeek-V3.2, DeepSeek-V4
 - Parser: `dsml/parser.rs`
-- Explicit parameter types
+- Explicit parameter types (`string="true|false"`)
 
 ### 5. Pythonic
 ```python
 [get_weather(location="NYC"), get_time(timezone="EST")]
 ```
-- Models: Custom/Experimental
+- Models: some Llama variants
 - Parser: `pythonic/pythonic_parser.rs`
 - Python function call syntax
 
@@ -98,6 +98,30 @@ Quick reference for common tool call patterns found in LLM chat templates.
 - Parser: `harmony/harmony_parser.rs`
 - OpenAI Harmony protocol
 
+### 7. GLM (arg_key / arg_value tags)
+```xml
+<tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+```
+- Models: GLM-4.x, GLM 5.1
+- Parser: `xml/glm47_parser.rs`
+- Function name is bare text right after `<tool_call>`; each argument is an `<arg_key>`/`<arg_value>` pair (not nested JSON)
+
+### 8. Kimi K2 (special-token sections)
+```
+<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location": "NYC"}<|tool_call_end|><|tool_calls_section_end|>
+```
+- Models: Kimi K2
+- Parser: `xml/kimi_k2_parser.rs`
+- Calls wrapped in `<|tool_calls_section_begin|>`...`<|tool_calls_section_end|>`; each call is `functions.{name}:{index}` then JSON args after `<|tool_call_argument_begin|>`
+
+### 9. Gemma 4 (custom delimited)
+```
+<|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+```
+- Models: Google Gemma 4 thinking models
+- Parser: `gemma4/parser.rs`
+- `<|tool_call>`...`<tool_call|>` wrapper, `call:name`, bare keys, and a custom `<|"|>` string delimiter instead of normal JSON quoting
+
 ## Quick Identification Guide
 
 1. **Look for `tojson` filter** → JSON format
@@ -105,7 +129,10 @@ Quick reference for common tool call patterns found in LLM chat templates.
 3. **Look for `<｜DSML｜`** → DSML format
 4. **Look for `function(arg=val)`** → Pythonic format
 5. **Look for `<|channel|>commentary`** → Harmony format
-6. **Check start/end markers** → Match to config preset
+6. **Look for `<arg_key>` / `<arg_value>`** → GLM format
+7. **Look for `<|tool_calls_section_begin|>` / `<|tool_call_begin|>`** → Kimi K2 format
+8. **Look for `<|tool_call>call:` with `<|"|>` string delimiters** → Gemma 4 format
+9. **Check start/end markers** → Match to config preset
 
 ## Configuration Keys
 
