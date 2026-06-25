@@ -666,11 +666,19 @@ impl ToolCallConfig {
         // <parameter name="param_name">value</parameter>
         // </invoke>
         // </minimax:tool_call>
-        // Reference: https://huggingface.co/MiniMaxAI/MiniMax-M2.1/blob/main/docs/tool_calling_guide.md
         //
-        // MiniMax uses strict inner invoke/parameter fences. Dynamo still
-        // recovers complete inner invokes when only the outer wrapper is
-        // missing or truncated so valid tool calls do not disappear.
+        // SPEC WINS over Dynamo's generic recovery rule. The MiniMax-M2.1
+        // tool-calling guide publishes the parser regexes (section "Manually
+        // Parsing Tool Call Results"):
+        //   https://huggingface.co/MiniMaxAI/MiniMax-M2.1/blob/main/docs/tool_calling_guide.md
+        //   invoke_regex = re.compile(r"<invoke name=(.*?)</invoke>", re.DOTALL)
+        // That regex REQUIRES the closing </invoke> fence, so a missing
+        // </invoke> matches nothing -> no call, even though the value is
+        // delimiter-terminated and the generic rule would otherwise recover it
+        // (strict_match + allow_eof_recovery=false below). The spec is silent
+        // on the OUTER wrapper, so Dynamo DOES still recover a complete inner
+        // invoke when only <minimax:tool_call> is missing -- valid tool calls
+        // do not disappear.
         Self {
             parser_config: ParserConfig::Xml(XmlParserConfig {
                 tool_call_start_token: "<minimax:tool_call>".to_string(),

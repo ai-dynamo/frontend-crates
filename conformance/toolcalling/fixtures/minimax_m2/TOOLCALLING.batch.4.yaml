@@ -71,13 +71,18 @@ cases:
         calls: []
         normal_text: ''
         reason: |-
-          Strict per MiniMax-M2 reference parser
-          (https://huggingface.co/MiniMaxAI/MiniMax-M2/blob/main/docs/tool_calling_guide.md):
-          the published `<invoke name=(.*?)</invoke>` regex requires both
-          fences, so missing `</invoke>` yields no match and no recovered
-          call. Wrapper markup is intentionally dropped (not echoed to
-          normal_text) so tool-call protocol markers don't leak to
-          user-facing content.
+          SPEC WINS over Dynamo's generic recovery rule. The MiniMax-M2.1
+          tool-calling guide publishes the parser regexes (section "Manually
+          Parsing Tool Call Results"):
+          https://huggingface.co/MiniMaxAI/MiniMax-M2.1/blob/main/docs/tool_calling_guide.md
+          The published invoke regex requires BOTH fences:
+            invoke_regex = re.compile(r"<invoke name=(.*?)</invoke>", re.DOTALL)
+          The value "NYC" here is delimiter-terminated, so the generic rule
+          (recover a value that is followed by a delimiter) would recover it --
+          but a PUBLISHED SPEC OVERRIDES the generic rule: with </invoke>
+          missing the published regex matches nothing, so Dynamo emits no call.
+          Wrapper markup is dropped, never echoed to normal_text, so tool-call
+          markers don't leak to user content.
       vllm:
         calls: []
         normal_text: |-
