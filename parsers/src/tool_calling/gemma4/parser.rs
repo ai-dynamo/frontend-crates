@@ -22,6 +22,9 @@ use super::super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 
 pub(crate) const TOOL_CALL_START: &str = "<|tool_call>";
 pub(crate) const TOOL_CALL_END: &str = "<tool_call|>";
+/// Mismatched close sentinel Gemma 4 sometimes emits instead of `<tool_call|>`.
+/// Accepted as an alternative end so a complete call body recovers either way.
+pub(crate) const MISMATCHED_TOOL_CALL_END: &str = "</tool_call>";
 pub(crate) const STRING_DELIM: &str = "<|\"|>";
 pub(crate) const CALL_PREFIX: &str = "call:";
 
@@ -141,6 +144,19 @@ fn parse_recoverable_call_at(
 
     if after_args.starts_with(TOOL_CALL_END) {
         return Some((name, args_raw, close_brace + 1 + TOOL_CALL_END.len()));
+    }
+
+    // Support either close sentinel: Gemma 4 sometimes emits the mismatched
+    // </tool_call> instead of the canonical <tool_call|>. The call body is
+    // already complete here (balanced args brace, string values delimited by
+    // <|"|>), so recover it either way and consume the stray close marker so it
+    // never leaks into normal_text (recover/drop rule, parsers_v2/README.md goal 5).
+    if after_args.starts_with(MISMATCHED_TOOL_CALL_END) {
+        return Some((
+            name,
+            args_raw,
+            close_brace + 1 + MISMATCHED_TOOL_CALL_END.len(),
+        ));
     }
 
     if allow_missing_end && after_args.trim().is_empty() {

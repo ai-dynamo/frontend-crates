@@ -82,13 +82,7 @@ cases:
         - name: get_weather
           arguments: {}
         normal_text: ''
-        reason: |-
-          Dynamo recovers "NYC" per the recover/drop rule (parsers_v2/README.md
-          goal 5): the value is delimiter-terminated by </｜DSML｜invoke> even
-          though its own </｜DSML｜parameter> close is missing. This is the
-          value-capture path, not allow_eof_recovery (the invoke is already
-          closed). vLLM's DSML parser requires </｜DSML｜parameter>, so it emits
-          empty args.
+        reason: 'Dynamo recovers "NYC" per the recover/drop rule (parsers_v2/README.md goal 5): the value is delimiter-terminated by </｜DSML｜invoke> even though its own </｜DSML｜parameter> close is missing. This is the value-capture path, not allow_eof_recovery (the invoke is already closed). vLLM''s DSML parser requires </｜DSML｜parameter>, so it emits empty args.'
       sglang:
         unavailable: SGLang has no detector for family='deepseek_v4'
   TOOLCALLING.batch.4.b:

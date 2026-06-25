@@ -75,16 +75,19 @@ cases:
     - *id001
     expected:
       dynamo:
-        calls: []
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
         normal_text: ''
       vllm:
         calls: []
         normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}</tool_call>
-        reason: vLLM leaks the tool call tag into normal_text on the recovery path
+        reason: Dynamo accepts either close sentinel -- the canonical <tool_call|> or the mismatched </tool_call> -- and recovers the complete call body, stripping the stray close (recover/drop rule, parsers_v2/README.md goal 5); vLLM leaks the tool-call markup into normal_text instead.
       sglang:
         calls: []
         normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}</tool_call>
-        reason: SGLang leaks the tool call tag into normal_text on the recovery path
+        reason: Dynamo accepts either close sentinel -- the canonical <tool_call|> or the mismatched </tool_call> -- and recovers the complete call body; SGLang leaks the tool-call markup into normal_text instead.
   TOOLCALLING.batch.4.e:
     description: Malformed-prefix recovery — n/a for this family's syntax
     reason: |-
