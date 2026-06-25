@@ -181,7 +181,7 @@ fn parse_recoverable_call_at(
     let (sent_rel, sent_len) = close_sentinel(rest)?;
     let sentinel_pos = open_brace + sent_rel;
     let args_raw = &input[open_brace + 1..sentinel_pos];
-    if args_raw.matches(STRING_DELIM).count() % 2 != 0 {
+    if !args_raw.matches(STRING_DELIM).count().is_multiple_of(2) {
         return None;
     }
     Some((name, args_raw, sentinel_pos + sent_len))
