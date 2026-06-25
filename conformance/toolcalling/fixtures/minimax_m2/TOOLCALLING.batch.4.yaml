@@ -58,6 +58,7 @@ cases:
       sglang: *id003
   TOOLCALLING.batch.4.d:
     description: Missing closing </invoke>
+    dynamo_note: 'Intentional exception to the recover/drop rule. The value "NYC" is delimiter-terminated so the rule would normally recover it, but the MiniMax-M2.1 spec publishes the parser regex invoke_regex = re.compile(r"<invoke name=(.*?)</invoke>", re.DOTALL) (https://huggingface.co/MiniMaxAI/MiniMax-M2.1/blob/main/docs/tool_calling_guide.md) which requires </invoke>; a published spec wins over the generic rule (goal 1 over goal 5), so a missing </invoke> matches nothing and Dynamo emits no call. Wrapper markup is dropped, never leaked to normal_text.'
     ref: dynamo
     model_text: |-
       <minimax:tool_call>
@@ -70,7 +71,6 @@ cases:
       dynamo:
         calls: []
         normal_text: ''
-        reason: 'SPEC WINS over Dynamo''s generic recovery rule. The MiniMax-M2.1 tool-calling guide publishes the parser regexes (section "Manually Parsing Tool Call Results") at https://huggingface.co/MiniMaxAI/MiniMax-M2.1/blob/main/docs/tool_calling_guide.md and the published invoke regex requires BOTH fences -- invoke_regex = re.compile(r"<invoke name=(.*?)</invoke>", re.DOTALL). The value "NYC" here is delimiter-terminated, so the generic rule would recover it, but a PUBLISHED SPEC OVERRIDES it: with </invoke> missing the published regex matches nothing, so Dynamo emits no call. Wrapper markup is dropped, never echoed to normal_text, so tool-call markers don''t leak to user content.'
       vllm:
         calls: []
         normal_text: |-
