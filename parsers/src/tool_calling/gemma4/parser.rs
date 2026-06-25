@@ -137,33 +137,54 @@ fn parse_recoverable_call_at(
     }
 
     let open_brace = after_start_offset + CALL_PREFIX.len() + name_len;
-    let close_brace = find_balanced_args_end(input, open_brace)?;
-    let args_start = open_brace + 1;
-    let args_raw = &input[args_start..close_brace];
-    let after_args = &input[close_brace + 1..];
 
-    if after_args.starts_with(TOOL_CALL_END) {
-        return Some((name, args_raw, close_brace + 1 + TOOL_CALL_END.len()));
+    // Locate the close sentinel (canonical <tool_call|> or the mismatched
+    // </tool_call>) in a slice -> (relative offset, sentinel length).
+    let close_sentinel = |s: &str| -> Option<(usize, usize)> {
+        s.find(TOOL_CALL_END)
+            .map(|p| (p, TOOL_CALL_END.len()))
+            .or_else(|| {
+                s.find(MISMATCHED_TOOL_CALL_END)
+                    .map(|p| (p, MISMATCHED_TOOL_CALL_END.len()))
+            })
+    };
+
+    // Normal path: a balanced `}` ends the args object.
+    if let Some(close_brace) = find_balanced_args_end(input, open_brace) {
+        let args_raw = &input[open_brace + 1..close_brace];
+        let after_args = &input[close_brace + 1..];
+        if after_args.starts_with(TOOL_CALL_END) {
+            return Some((name, args_raw, close_brace + 1 + TOOL_CALL_END.len()));
+        }
+        // Support either close sentinel: Gemma 4 sometimes emits the mismatched
+        // </tool_call> instead of <tool_call|>; the call body is complete, so
+        // recover either way and consume the stray close (recover/drop rule,
+        // parsers_v2/README.md goal 5).
+        if after_args.starts_with(MISMATCHED_TOOL_CALL_END) {
+            return Some((
+                name,
+                args_raw,
+                close_brace + 1 + MISMATCHED_TOOL_CALL_END.len(),
+            ));
+        }
+        if allow_missing_end && after_args.trim().is_empty() {
+            return Some((name, args_raw, close_brace + 1));
+        }
+        return None;
     }
 
-    // Support either close sentinel: Gemma 4 sometimes emits the mismatched
-    // </tool_call> instead of the canonical <tool_call|>. The call body is
-    // already complete here (balanced args brace, string values delimited by
-    // <|"|>), so recover it either way and consume the stray close marker so it
-    // never leaks into normal_text (recover/drop rule, parsers_v2/README.md goal 5).
-    if after_args.starts_with(MISMATCHED_TOOL_CALL_END) {
-        return Some((
-            name,
-            args_raw,
-            close_brace + 1 + MISMATCHED_TOOL_CALL_END.len(),
-        ));
+    // Recovery path: the closing `}` was truncated (e.g. 4.b). Recover only if a
+    // close sentinel follows the open brace AND every <|"|> string in the body is
+    // closed (balanced delimiters). An odd count means the last value was
+    // truncated mid-string, which must drop (recover/drop rule).
+    let rest = &input[open_brace..];
+    let (sent_rel, sent_len) = close_sentinel(rest)?;
+    let sentinel_pos = open_brace + sent_rel;
+    let args_raw = &input[open_brace + 1..sentinel_pos];
+    if args_raw.matches(STRING_DELIM).count() % 2 != 0 {
+        return None;
     }
-
-    if allow_missing_end && after_args.trim().is_empty() {
-        return Some((name, args_raw, close_brace + 1));
-    }
-
-    None
+    Some((name, args_raw, sentinel_pos + sent_len))
 }
 
 fn is_call_prefix_boundary(input: &str, idx: usize) -> bool {

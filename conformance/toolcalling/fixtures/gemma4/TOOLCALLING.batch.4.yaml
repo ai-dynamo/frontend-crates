@@ -36,12 +36,15 @@ cases:
     - *id001
     expected:
       dynamo:
-        calls: []
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
         normal_text: ''
       vllm:
         calls: []
         normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|><tool_call|>
-        reason: vLLM leaks the tool call tag into normal_text on the recovery path
+        reason: Dynamo recovers the call -- the value NYC is <|"|>-delimited (complete) and the close sentinel follows, so Dynamo completes the truncated args object and emits the call (recover/drop rule, parsers_v2/README.md goal 5), matching SGLang; vLLM leaks the markup into normal_text instead.
       sglang:
         calls:
         - name: get_weather
