@@ -464,6 +464,32 @@ mod tests {
     }
 
     #[test]
+    fn recovers_value_when_parameter_close_missing() {
+        // Conformance 4.d: </｜DSML｜parameter> missing but </｜DSML｜invoke>
+        // present (invoke-terminated). Must recover the value, not emit {}.
+        let input = "<｜DSML｜tool_calls>\n<｜DSML｜invoke name=\"get_weather\">\n<｜DSML｜parameter name=\"location\" string=\"true\">NYC\n</｜DSML｜invoke>\n</｜DSML｜tool_calls>";
+        let out = parse_chunks(&[input]);
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 1, "one push: {:?}", merged.calls);
+        assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
+        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
+    }
+
+    #[test]
+    fn recovers_value_when_parameter_close_missing_char_by_char() {
+        // Same 4.d input fed one Unicode scalar at a time — the harshest
+        // streaming split. The call must still recover NYC, not {}.
+        let input = "<｜DSML｜tool_calls>\n<｜DSML｜invoke name=\"get_weather\">\n<｜DSML｜parameter name=\"location\" string=\"true\">NYC\n</｜DSML｜invoke>\n</｜DSML｜tool_calls>";
+        let chunks: Vec<String> = input.chars().map(|c| c.to_string()).collect();
+        let refs: Vec<&str> = chunks.iter().map(|s| s.as_str()).collect();
+        let out = parse_chunks(&refs);
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 1, "char-by-char: {:?}", merged.calls);
+        assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
+        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
+    }
+
+    #[test]
     fn suppresses_invoke_header_truncated_mid_header() {
         // The header itself never closes, so nothing is emitted at all.
         let out = parse_chunks(&["<｜DSML｜tool_calls> <｜DSML｜invoke name=\"get_weat"]);

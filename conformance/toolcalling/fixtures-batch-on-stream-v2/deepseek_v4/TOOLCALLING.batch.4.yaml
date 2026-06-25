@@ -30,7 +30,8 @@ cases:
     dynamo_rust:
       calls:
       - name: get_weather
-        arguments: {}
+        arguments:
+          location: NYC
       normal_text: ''
     vllm_rust:
       error: 'tool parser parsing failed: '
