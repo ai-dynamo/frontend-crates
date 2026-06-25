@@ -225,6 +225,15 @@ _FAMILY_METADATA = {
         "rust_enum": "ReasoningParserType::MiniMaxAppendThink",
         "implementation": "MiniMaxAppendThinkParser",
     },
+    "minimax_m3": {
+        "models": ["MiniMax M3"],
+        "rust_enum": "ReasoningParserType::MiniMaxM3",
+        "implementation": (
+            "BasicReasoningParser `<mm:think>` / `</mm:think>`, "
+            "dangling-end recovery"
+        ),
+        "aliases": ["minimax-m3"],
+    },
     "gemma4": {
         "models": ["Google Gemma 4 thinking models"],
         "rust_enum": "ReasoningParserType::Gemma4",
@@ -375,6 +384,20 @@ _REASONING_MODE_METADATA = {
         "static": [
             "MiniMaxAppendThinkParser",
             "parser-specific content wrapper behavior",
+        ],
+    },
+    "minimax_m3": {
+        "label": "explicit M3 markers",
+        "control": "frontend-tunable",
+        "summary": (
+            "MiniMax M3 reasoning uses explicit `<mm:think>` markers, with "
+            "dangling-end recovery for prompt-prefilled reasoning starts."
+        ),
+        "static": [
+            "BasicReasoningParser `<mm:think>` / `</mm:think>`",
+            "force_reasoning=false",
+            "stream_reasoning=true",
+            "recover_dangling_end=true",
         ],
     },
     "gemma4": {

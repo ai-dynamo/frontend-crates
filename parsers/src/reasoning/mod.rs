@@ -431,6 +431,53 @@ mod tests {
         assert_eq!(result.normal_text, "I'll check the content of both files.");
     }
 
+    #[test] // MiniMax M3
+    fn test_minimax_m3_detect_and_parse_multiple_spans() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m3");
+        let result = parser.detect_and_parse_reasoning(
+            "<mm:think>first</mm:think> middle <mm:think>second</mm:think> done",
+            &[],
+        );
+
+        assert_eq!(result.reasoning_text, "firstsecond");
+        assert_eq!(result.normal_text, "middle  done");
+    }
+
+    #[test] // MiniMax M3
+    fn test_minimax_m3_streaming_prompt_prefilled_close_after_complete_span() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m3");
+
+        let r1 = parser.parse_reasoning_streaming_incremental("<mm:think>preamble</mm:think>", &[]);
+        let r2 = parser.parse_reasoning_streaming_incremental("body</mm:think>", &[]);
+        let r3 = parser.parse_reasoning_streaming_incremental("answer", &[]);
+
+        assert_eq!(
+            format!(
+                "{}{}{}",
+                r1.reasoning_text, r2.reasoning_text, r3.reasoning_text
+            ),
+            "preamblebody"
+        );
+        assert_eq!(
+            format!("{}{}{}", r1.normal_text, r2.normal_text, r3.normal_text),
+            "answer"
+        );
+    }
+
+    #[test] // MiniMax M3
+    fn test_minimax_m3_streaming_partial_start_prefix_becomes_normal_text() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m3");
+
+        let r1 = parser.parse_reasoning_streaming_incremental("plain <mm:th", &[]);
+        let r2 = parser.parse_reasoning_streaming_incremental("esis answer", &[]);
+
+        assert_eq!(format!("{}{}", r1.reasoning_text, r2.reasoning_text), "");
+        assert_eq!(
+            format!("{}{}", r1.normal_text, r2.normal_text),
+            "plain <mm:thesis answer"
+        );
+    }
+
     #[test] // REASONING.batch.2.c
     fn test_deepseek_v4_detect_and_parse() {
         for parser_name in ["deepseek_v4", "deepseek-v4", "deepseekv4"] {

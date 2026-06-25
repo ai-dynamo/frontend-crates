@@ -137,14 +137,86 @@ cases:
       sglang:
         unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
   TOOLCALLING.batch.13.c:
-    description: Mixed known and unknown calls not applicable
+    description: Mixed known and unknown calls
+    model_text: |-
+      ]<]minimax[>[<tool_call>
+      ]<]minimax[>[<invoke name="get_weather">
+      ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+      ]<]minimax[>[</invoke>
+      ]<]minimax[>[<invoke name="unknown_tool">
+      ]<]minimax[>[<location>LA]<]minimax[>[</location>
+      ]<]minimax[>[</invoke>
+      ]<]minimax[>[</tool_call>
+    tools:
+    - *weather_tool
+    expected:
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: unknown_tool
+          arguments:
+            location: LA
+        normal_text: ''
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      sglang:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.batch.13.a:
+    description: Unknown-only call under default parser behavior
+    model_text: |-
+      ]<]minimax[>[<tool_call>
+      ]<]minimax[>[<invoke name="unknown_tool">
+      ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+      ]<]minimax[>[</invoke>
+      ]<]minimax[>[</tool_call>
+    tools:
+    - *weather_tool
+    expected:
+      dynamo:
+        calls:
+        - name: unknown_tool
+          arguments:
+            location: NYC
+        normal_text: ''
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      sglang:
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.batch.13.b:
+    description: Explicit forward-unknown-tools mode is not applicable
     reason: |-
-      This case is not applicable to minimax_m3 until peer MiniMax M3 mixed known/unknown behavior is captured in the pinned conformance engines.
+      MiniMax M3's Dynamo parser does not have a separate forward-unknown-tools mode; default behavior already forwards syntactically valid calls by name.
+  TOOLCALLING.batch.13.d:
+    description: Unknown native index is not applicable
+    reason: |-
+      MiniMax M3 tool calls identify functions by the <invoke name="..."> attribute, not by ordinal or registry index.
   TOOLCALLING.batch.30:
     description: Separator-character case not applicable
     reason: |-
       This case is not applicable to minimax_m3 because it uses namespace-prefixed XML tags, not delimiter-separated call bodies.
+  TOOLCALLING.batch.30.a:
+    description: Call separator inside argument string is not applicable
+    reason: |-
+      MiniMax M3 does not use delimiter-separated call bodies; argument values are bounded by namespace-prefixed XML tags.
+  TOOLCALLING.batch.30.b:
+    description: Structural delimiter inside argument string is not applicable
+    reason: |-
+      MiniMax M3 does not use delimiter depth tracking over delimiter-separated JSON call bodies; nested values are represented as nested namespace-prefixed XML tags.
+  TOOLCALLING.batch.30.c:
+    description: Tool-call marker text inside argument string is not applicable
+    reason: |-
+      MiniMax M3 argument boundaries are explicit namespace-prefixed XML tags. Literal marker-like text must be escaped by the model/template rather than parsed as a delimiter-separated string hazard.
   TOOLCALLING.batch.31:
     description: Multi-call separator-character case not applicable
     reason: |-
       This case is not applicable to minimax_m3 because it uses namespace-prefixed XML tags, not delimiter-separated call bodies.
+  TOOLCALLING.batch.31.a:
+    description: Separator character before real inter-call separator is not applicable
+    reason: |-
+      MiniMax M3 represents multiple calls as multiple <invoke name="..."> blocks inside one outer tool_call wrapper, not with separator characters between calls.
+  TOOLCALLING.batch.31.b:
+    description: Nested delimiter before later calls is not applicable
+    reason: |-
+      MiniMax M3 nested structures are encoded as nested namespace-prefixed XML tags, so delimiter-state regressions for JSON/string separators do not apply.
