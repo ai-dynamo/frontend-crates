@@ -860,6 +860,7 @@ version = "0.1.0"
 dependencies = [
  "dynamo-parsers",
  "dynamo-parsers-v2",
+ "dynamo-protocols",
  "serde",
  "serde_json",
  "serde_yaml",
