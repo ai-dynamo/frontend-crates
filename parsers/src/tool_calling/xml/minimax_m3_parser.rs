@@ -199,7 +199,7 @@ fn parse_parameters(
         let value_end = value_start + value_end_rel;
         let raw_value = &body[value_start..value_end];
         let schema = param_config.get(parameter_name);
-        let value = parse_parameter_value(raw_value, schema);
+        let value = parse_parameter_value(raw_value, schema, config);
         insert_parameter(&mut parameters, parameter_name.to_string(), value);
 
         cursor = value_end + parameter_end.len();
@@ -225,17 +225,25 @@ fn insert_parameter(parameters: &mut Map<String, Value>, key: String, value: Val
 }
 
 // Chooses scalar conversion or nested XML parsing based on whether the value contains M3 tags.
-fn parse_parameter_value(raw: &str, schema: Option<&Value>) -> Value {
-    if raw.contains("]<]minimax[>[<") {
-        parse_nested_minimax_xml(raw, schema.cloned())
+fn parse_parameter_value(
+    raw: &str,
+    schema: Option<&Value>,
+    config: &MiniMaxM3ParserConfig,
+) -> Value {
+    if raw.contains(parameter_start(config).as_str()) {
+        parse_nested_minimax_xml(raw, schema.cloned(), config)
     } else {
         convert_scalar_value(raw, schema)
     }
 }
 
 // Parses nested parameter bodies such as arrays of `<item>` objects into JSON values.
-fn parse_nested_minimax_xml(raw: &str, schema: Option<Value>) -> Value {
-    let chunks: Vec<&str> = raw.split("]<]minimax[>[").collect();
+fn parse_nested_minimax_xml(
+    raw: &str,
+    schema: Option<Value>,
+    config: &MiniMaxM3ParserConfig,
+) -> Value {
+    let chunks: Vec<&str> = raw.split(config.namespace_token.as_str()).collect();
     let leading_text = chunks.first().copied().unwrap_or_default();
     let root_value = if schema_has_type(schema.as_ref(), "array")
         && chunks
