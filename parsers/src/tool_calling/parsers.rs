@@ -56,6 +56,9 @@ pub fn get_tool_parser_map() -> &'static HashMap<&'static str, ToolCallConfig> {
         map.insert("minimax_m2", ToolCallConfig::minimax_m2());
         map.insert("minimax_m3", ToolCallConfig::minimax_m3());
         map.insert("minimax-m3", ToolCallConfig::minimax_m3());
+        // `_nom` is a legacy Day-0 deployment parser-name alias used by
+        // earlier MiniMax M3 Dynamo manifests; public MiniMax M3 artifacts
+        // define one tool-call grammar, so behavior is intentionally identical.
         map.insert("minimax_m3_nom", ToolCallConfig::minimax_m3());
         map.insert("minimax-m3-nom", ToolCallConfig::minimax_m3());
         map.insert("glm47", ToolCallConfig::glm47());
@@ -3679,5 +3682,24 @@ weather forecasting
         let (name, args) = extract_name_and_args(result[0].clone());
         assert_eq!(name, "get_weather");
         assert_eq!(args["city"], "Seattle");
+    }
+
+    #[tokio::test]
+    async fn test_minimax_m3_recovers_bare_invoke_without_outer_tool_call() {
+        let input = r#"prefix ]<]minimax[>[<invoke name="get_weather">
+]<]minimax[>[<location>NYC]<]minimax[>[</location>
+]<]minimax[>[</invoke>
+]<]minimax[>[</invoke>"#;
+
+        let (result, content) =
+            detect_and_parse_tool_call_with_recovery(input, Some("minimax-m3"), None)
+                .await
+                .unwrap();
+
+        assert_eq!(content, Some("prefix".to_string()));
+        assert_eq!(result.len(), 1);
+        let (name, args) = extract_name_and_args(result[0].clone());
+        assert_eq!(name, "get_weather");
+        assert_eq!(args["location"], "NYC");
     }
 }

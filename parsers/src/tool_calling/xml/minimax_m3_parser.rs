@@ -14,16 +14,23 @@ const MIN_PARTIAL_TOOL_CALL_START_LEN: usize = 3;
 // Used by the streaming jail to detect a complete or split MiniMax M3 tool-call opener.
 pub fn detect_tool_call_start_minimax_m3(chunk: &str, config: &MiniMaxM3ParserConfig) -> bool {
     let tool_call_start = tool_call_start(config);
+    let invoke_start = invoke_start(config);
 
-    if chunk.contains(tool_call_start.as_str()) {
-        return true;
+    for token in [tool_call_start.as_str(), invoke_start.as_str()] {
+        if chunk.contains(token) || chunk_ends_with_partial_m3_marker(chunk, token) {
+            return true;
+        }
     }
 
-    for (i, _) in tool_call_start.char_indices().skip(1) {
+    false
+}
+
+fn chunk_ends_with_partial_m3_marker(chunk: &str, marker: &str) -> bool {
+    for (i, _) in marker.char_indices().skip(1) {
         if i < MIN_PARTIAL_TOOL_CALL_START_LEN {
             continue;
         }
-        if chunk.ends_with(&tool_call_start[..i]) {
+        if chunk.ends_with(&marker[..i]) {
             return true;
         }
     }
@@ -50,10 +57,29 @@ pub fn try_tool_call_parse_minimax_m3(
     tools: Option<&[ToolDefinition]>,
 ) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
     let Some(start_pos) = message.find(tool_call_start(config).as_str()) else {
+        if let Some(marker_idx) = first_orphan_minimax_m3_marker_index(message, config) {
+            if let Some((prefix, calls)) = recover_orphan_invokes_in_span(message, config, tools)? {
+                return Ok((calls, Some(prefix)));
+            }
+            return Ok((vec![], Some(message[..marker_idx].trim_end().to_string())));
+        }
         return Ok((vec![], Some(message.to_string())));
     };
 
-    let prefix = message[..start_pos].to_string();
+    let pre_block_span = &message[..start_pos];
+    let (prefix, mut calls) = if let Some((prefix, recovered)) =
+        recover_orphan_invokes_in_span(pre_block_span, config, tools)?
+    {
+        (prefix, recovered)
+    } else if let Some(marker_idx) = first_orphan_minimax_m3_marker_index(pre_block_span, config) {
+        (
+            pre_block_span[..marker_idx].trim_end().to_string(),
+            Vec::new(),
+        )
+    } else {
+        (pre_block_span.to_string(), Vec::new())
+    };
+
     let block_start = start_pos + tool_call_start(config).len();
     let tool_call_end = tool_call_end(config);
     let (block, complete) =
@@ -68,7 +94,7 @@ pub fn try_tool_call_parse_minimax_m3(
         return Ok((vec![], Some(prefix)));
     }
 
-    let calls = parse_invokes(block, config, tools)?;
+    calls.extend(parse_invokes(block, config, tools)?);
     Ok((calls, Some(prefix)))
 }
 
@@ -95,6 +121,46 @@ fn invoke_end(config: &MiniMaxM3ParserConfig) -> String {
 // Builds the shared namespace prefix that starts any M3 XML-ish tag.
 fn parameter_start(config: &MiniMaxM3ParserConfig) -> String {
     format!("{}<", config.namespace_token)
+}
+
+fn first_orphan_minimax_m3_marker_index(
+    text: &str,
+    config: &MiniMaxM3ParserConfig,
+) -> Option<usize> {
+    [
+        tool_call_end(config),
+        invoke_start(config),
+        invoke_end(config),
+        parameter_start(config),
+    ]
+    .iter()
+    .filter_map(|marker| text.find(marker.as_str()))
+    .min()
+}
+
+fn recover_orphan_invokes_in_span(
+    span: &str,
+    config: &MiniMaxM3ParserConfig,
+    tools: Option<&[ToolDefinition]>,
+) -> anyhow::Result<Option<(String, Vec<ToolCallResponse>)>> {
+    let Some(marker_idx) = first_orphan_minimax_m3_marker_index(span, config) else {
+        return Ok(None);
+    };
+
+    let marker_tail = &span[marker_idx..];
+    if !marker_tail.starts_with(invoke_start(config).as_str()) {
+        return Ok(None);
+    }
+    if !marker_tail.contains(tool_call_end(config).as_str()) && !config.allow_eof_recovery {
+        return Ok(None);
+    }
+
+    let calls = parse_invokes(marker_tail, config, tools)?;
+    if calls.is_empty() {
+        return Ok(None);
+    }
+
+    Ok(Some((span[..marker_idx].trim_end().to_string(), calls)))
 }
 
 // Extracts one or more `<invoke name="...">` blocks from the outer tool-call block.
@@ -585,6 +651,20 @@ fn html_unescape(s: &str) -> String {
 mod tests {
     use super::*;
 
+    fn recovery_config() -> MiniMaxM3ParserConfig {
+        MiniMaxM3ParserConfig {
+            allow_eof_recovery: true,
+            ..Default::default()
+        }
+    }
+
+    fn call_name_and_args(call: &ToolCallResponse) -> (String, Value) {
+        (
+            call.function.name.clone(),
+            serde_json::from_str(&call.function.arguments).expect("valid JSON arguments"),
+        )
+    }
+
     #[test]
     fn detect_tool_call_start_minimax_m3_rejects_short_suffix_false_positives() {
         let config = MiniMaxM3ParserConfig::default();
@@ -609,5 +689,94 @@ mod tests {
             "full opener ]<]minimax[>[<tool_call>",
             &config
         ));
+        assert!(detect_tool_call_start_minimax_m3(
+            "bare invoke ]<]minimax[>[<invoke",
+            &config
+        ));
+        assert!(detect_tool_call_start_minimax_m3(
+            "split bare invoke ]<]minimax[>[<inv",
+            &config
+        ));
+    }
+
+    #[test]
+    fn recovers_complete_bare_invoke_without_outer_tool_call() {
+        let config = recovery_config();
+        let input = r#"prefix ]<]minimax[>[<invoke name="get_weather">
+]<]minimax[>[<location>NYC]<]minimax[>[</location>
+]<]minimax[>[</invoke>
+]<]minimax[>[</invoke>"#;
+
+        let (calls, normal_text) = try_tool_call_parse_minimax_m3(input, &config, None).unwrap();
+
+        assert_eq!(normal_text.as_deref(), Some("prefix"));
+        assert_eq!(calls.len(), 1);
+        let (name, args) = call_name_and_args(&calls[0]);
+        assert_eq!(name, "get_weather");
+        assert_eq!(args["location"], "NYC");
+    }
+
+    #[test]
+    fn non_recovery_path_strips_bare_invoke_without_claiming_call() {
+        let config = MiniMaxM3ParserConfig::default();
+        let input = r#"prefix ]<]minimax[>[<invoke name="get_weather">
+]<]minimax[>[<location>NYC]<]minimax[>[</location>
+]<]minimax[>[</invoke>"#;
+
+        let (calls, normal_text) = try_tool_call_parse_minimax_m3(input, &config, None).unwrap();
+
+        assert!(calls.is_empty());
+        assert_eq!(normal_text.as_deref(), Some("prefix"));
+    }
+
+    #[test]
+    fn strips_incomplete_bare_invoke_marker_tail() {
+        let config = recovery_config();
+        let input = r#"prefix ]<]minimax[>[<invoke name="get_weather">
+]<]minimax[>[<location>NY"#;
+
+        let (calls, normal_text) = try_tool_call_parse_minimax_m3(input, &config, None).unwrap();
+
+        assert!(calls.is_empty());
+        assert_eq!(normal_text.as_deref(), Some("prefix"));
+    }
+
+    #[test]
+    fn parses_nested_arguments_with_custom_namespace_token() {
+        let config = MiniMaxM3ParserConfig {
+            namespace_token: "NS|".to_string(),
+            ..recovery_config()
+        };
+        let input = r#"NS|<tool_call>
+NS|<invoke name="create_order">
+NS|<shipping>NS|<city>SingaporeNS|</city>NS|<zip>18956NS|</zip>NS|</shipping>
+NS|</invoke>
+NS|</tool_call>"#;
+        let tools = vec![ToolDefinition {
+            name: "create_order".to_string(),
+            parameters: Some(serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "shipping": {
+                        "type": "object",
+                        "properties": {
+                            "city": { "type": "string" },
+                            "zip": { "type": "integer" }
+                        }
+                    }
+                }
+            })),
+            strict: None,
+        }];
+
+        let (calls, normal_text) =
+            try_tool_call_parse_minimax_m3(input, &config, Some(&tools)).unwrap();
+
+        assert_eq!(normal_text.as_deref(), Some(""));
+        assert_eq!(calls.len(), 1);
+        let (name, args) = call_name_and_args(&calls[0]);
+        assert_eq!(name, "create_order");
+        assert_eq!(args["shipping"]["city"], "Singapore");
+        assert_eq!(args["shipping"]["zip"], 18956);
     }
 }

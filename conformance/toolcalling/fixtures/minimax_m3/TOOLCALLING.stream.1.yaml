@@ -1,0 +1,58 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+family: minimax_m3
+model_label: MiniMax M3
+mode: stream
+cases:
+  TOOLCALLING.stream.1.a:
+    description: Complete tool-call payload delivered in one content chunk
+    ref: derived from TOOLCALLING.batch.1
+    chunks:
+    - delta_text: |-
+        ]<]minimax[>[<tool_call>
+        ]<]minimax[>[<invoke name="get_weather">
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+        ]<]minimax[>[</invoke>
+        ]<]minimax[>[</tool_call>
+    - delta_text: ''
+      finish_reason: tool_calls
+    tools: &weather_tools
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    expected:
+      dynamo: &weather_call
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+      vllm: &vllm_unavailable
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      sglang: &sglang_unavailable
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.stream.1.b:
+    description: Complete tool call split across parser-significant boundaries
+    ref: derived from TOOLCALLING.batch.1
+    chunks:
+    - delta_text: |
+        ]<]minimax[>[<tool_call>
+    - delta_text: |
+        ]<]minimax[>[<invoke name="get_weather">
+    - delta_text: ']<]minimax[>[<location>'
+    - delta_text: NYC
+    - delta_text: ']<]minimax[>[</location>'
+    - delta_text: |
+        ]<]minimax[>[</invoke>
+    - delta_text: ']<]minimax[>[</tool_call>'
+    - delta_text: ''
+      finish_reason: tool_calls
+    tools: *weather_tools
+    expected:
+      dynamo: *weather_call
+      vllm: *vllm_unavailable
+      sglang: *sglang_unavailable
