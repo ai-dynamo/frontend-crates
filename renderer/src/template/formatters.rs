@@ -278,10 +278,6 @@ fn is_gemma4_reasoning_field_template_source(source: &str) -> bool {
 /// segment i is emitted immediately before tool_call i, and the optional
 /// trailing segment is emitted after the final tool call.
 fn adapt_gemma4_reasoning_template_source(source: &str) -> String {
-    if !is_gemma4_reasoning_field_template_source(source) {
-        return source.to_string();
-    }
-
     const OLD_REASONING_BLOCK: &str = "{%- if message.get('reasoning') and loop.index0 > ns_turn.last_user_idx and message.get('tool_calls') -%}
         {{- '<|channel>thought\\n' + message['reasoning'] + '\\n<channel|>'}}
     {%- endif -%}";
@@ -330,9 +326,13 @@ fn adapt_gemma4_reasoning_template_source(source: &str) -> String {
 }
 
 fn normalize_chat_template_source(source: &str) -> String {
-    adapt_gemma4_reasoning_template_source(&normalize_dict_method_calls(
-        &remove_known_non_jinja2_tags(source),
-    ))
+    let source = normalize_dict_method_calls(&remove_known_non_jinja2_tags(source));
+
+    if is_gemma4_reasoning_field_template_source(&source) {
+        adapt_gemma4_reasoning_template_source(&source)
+    } else {
+        source
+    }
 }
 
 impl JinjaEnvironment {
