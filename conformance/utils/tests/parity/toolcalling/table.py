@@ -197,6 +197,7 @@ def _build_family_inheritance(
         ("Dsml", None): "dsml/parser.rs",
         ("Glm47", None): "xml/glm47_parser.rs",
         ("KimiK2", None): "xml/kimi_k2_parser.rs",
+        ("MiniMaxM3", None): "xml/minimax_m3_parser.rs",
         ("Gemma4", None): "gemma4/parser.rs",
     }
     base_label = {
@@ -212,6 +213,7 @@ def _build_family_inheritance(
         ("Dsml", None): "dsml::parser (shared via deepseek_dsml() factory)",
         ("Glm47", None): "glm47_parser (standalone; filed under xml/)",
         ("KimiK2", None): "kimi_k2_parser (standalone; filed under xml/)",
+        ("MiniMaxM3", None): "minimax_m3_parser (standalone; filed under xml/)",
         ("Gemma4", None): "gemma4::parser (standalone)",
     }
 

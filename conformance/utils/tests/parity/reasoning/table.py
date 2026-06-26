@@ -106,6 +106,7 @@ PARSER_TO_REASONING_FAMILY = {
     "harmony": "gpt_oss",
     "kimi_k2": "kimi_k25",
     "minimax_m2": "minimax_append_think",
+    "minimax_m3": "minimax_m3",
     "mistral": "mistral",
     "nemotron_deci": "nemotron_deci",
     "nemotron_nano": "deepseek_r1",
@@ -223,6 +224,15 @@ _FAMILY_METADATA = {
         "models": ["MiniMax M2", "MiniMax M2.1"],
         "rust_enum": "ReasoningParserType::MiniMaxAppendThink",
         "implementation": "MiniMaxAppendThinkParser",
+    },
+    "minimax_m3": {
+        "models": ["MiniMax M3"],
+        "rust_enum": "ReasoningParserType::MiniMaxM3",
+        "implementation": (
+            "BasicReasoningParser `<mm:think>` / `</mm:think>`, "
+            "dangling-end recovery"
+        ),
+        "aliases": ["minimax-m3"],
     },
     "gemma4": {
         "models": ["Google Gemma 4 thinking models"],
@@ -374,6 +384,20 @@ _REASONING_MODE_METADATA = {
         "static": [
             "MiniMaxAppendThinkParser",
             "parser-specific content wrapper behavior",
+        ],
+    },
+    "minimax_m3": {
+        "label": "explicit M3 markers",
+        "control": "frontend-tunable",
+        "summary": (
+            "MiniMax M3 reasoning uses explicit `<mm:think>` markers, with "
+            "dangling-end recovery for prompt-prefilled reasoning starts."
+        ),
+        "static": [
+            "BasicReasoningParser `<mm:think>` / `</mm:think>`",
+            "force_reasoning=false",
+            "stream_reasoning=true",
+            "recover_dangling_end=true",
         ],
     },
     "gemma4": {

@@ -39,6 +39,12 @@ from sglang.srt.function_call.llama32_detector import (
 from sglang.srt.function_call.minimax_m2 import (
     MinimaxM2Detector,  # type: ignore[import-untyped]
 )
+try:
+    from sglang.srt.function_call.minimax_m3 import (
+        MinimaxM3Detector,  # type: ignore[import-untyped]
+    )
+except ImportError:  # SGLang 0.5.12.post1 lacks this detector.
+    MinimaxM3Detector = None  # type: ignore[assignment]
 from sglang.srt.function_call.mistral_detector import (
     MistralDetector,  # type: ignore[import-untyped]
 )
@@ -68,6 +74,7 @@ _FAMILY_TO_SGLANG_DETECTOR = {
     "harmony": GptOssDetector,
     "llama3_json": Llama32Detector,
     "minimax_m2": MinimaxM2Detector,
+    "minimax_m3": MinimaxM3Detector,
     "pythonic": PythonicDetector,
     "hermes": HermesDetector,
     "mistral": MistralDetector,
