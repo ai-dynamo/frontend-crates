@@ -172,6 +172,7 @@ cases:
         dynamo_rust: 'I will check the weather.'
   TOOLCALLING.streamv2.8.b:
     description: 'Narration after tool call only'
+    dynamo_note: 'harmony_text is the Dynamo-internal text variant of the OpenAI Harmony format. Harmony terminates a commentary-channel tool call with the <|call|> stop token, so trailing narration cannot occur in a well-formed turn (this case is synthetic); text is routed by channel, not position, so Dynamo preserves any surrounding text it sees rather than dropping it. Source: https://developers.openai.com/cookbook/articles/openai-harmony'
     ref: 'derived from TOOLCALLING.batch.8.b'
     tools:
     - name: get_weather
@@ -330,6 +331,7 @@ cases:
         dynamo_rust: 'Let me know if you need more.'
   TOOLCALLING.streamv2.8.c:
     description: 'Narration both before and after (sandwich)'
+    dynamo_note: 'harmony_text is the Dynamo-internal text variant of the OpenAI Harmony format. Harmony terminates a commentary-channel tool call with the <|call|> stop token, so trailing narration cannot occur in a well-formed turn (this case is synthetic); text is routed by channel, not position, so Dynamo preserves any surrounding text it sees rather than dropping it. Source: https://developers.openai.com/cookbook/articles/openai-harmony'
     ref: 'derived from TOOLCALLING.batch.8.c'
     tools:
     - name: get_weather
@@ -515,6 +517,7 @@ cases:
         dynamo_rust: 'I will check the weather.  Let me know if you need more.'
   TOOLCALLING.streamv2.8.d:
     description: 'Narration between multiple tool calls'
+    dynamo_note: 'harmony_text is the Dynamo-internal text variant of the OpenAI Harmony format. Harmony terminates a commentary-channel tool call with the <|call|> stop token, so trailing narration cannot occur in a well-formed turn (this case is synthetic); text is routed by channel, not position, so Dynamo preserves any surrounding text it sees rather than dropping it. Source: https://developers.openai.com/cookbook/articles/openai-harmony'
     ref: 'derived from TOOLCALLING.batch.8.d'
     tools:
     - name: get_weather

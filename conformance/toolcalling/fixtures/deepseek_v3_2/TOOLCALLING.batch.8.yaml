@@ -38,6 +38,7 @@ cases:
         reason: trims the trailing space from the prefix normal_text (no text after the wrapper here)
   TOOLCALLING.batch.8.b:
     description: Narration after tool call only
+    dynamo_note: 'DeepSeek-V3/V3.1/V3.2 publishes only the tool-call encoding grammar (a chat-template renderer, not a decoder) but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/deepseek-ai/DeepSeek-V3.1/blob/main/README.md'
     ref: dynamo
     model_text: |-
       <｜DSML｜function_calls>
@@ -70,6 +71,7 @@ cases:
         reason: drops trailing normal_text after tool-call wrapper end
   TOOLCALLING.batch.8.c:
     description: Narration both before and after (sandwich)
+    dynamo_note: 'DeepSeek-V3/V3.1/V3.2 publishes only the tool-call encoding grammar (a chat-template renderer, not a decoder) but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/deepseek-ai/DeepSeek-V3.1/blob/main/README.md'
     ref: dynamo
     model_text: |-
       I will check the weather. <｜DSML｜function_calls>
@@ -102,6 +104,7 @@ cases:
         reason: drops trailing normal_text after tool-call wrapper end (keeps prefix, trimmed)
   TOOLCALLING.batch.8.d:
     description: Narration between multiple tool calls
+    dynamo_note: 'DeepSeek-V3/V3.1/V3.2 publishes only the tool-call encoding grammar (a chat-template renderer, not a decoder) but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/deepseek-ai/DeepSeek-V3.1/blob/main/README.md'
     ref: dynamo
     model_text: |-
       I will check the weather. <｜DSML｜function_calls>

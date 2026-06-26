@@ -37,6 +37,7 @@ cases:
       sglang: *id001
   TOOLCALLING.batch.2.c:
     description: With surrounding narration
+    dynamo_note: 'Pythonic tool calls are terminal only by a prompt-side instruction — Meta''s Llama-4 prompt format tells the model it "SHOULD NOT include any other text in the response" — but there is no published parser rule that forbids or drops trailing text. That instruction constrains the model''s generation, not a decoder, and the model can still emit trailing prose; Dynamo preserves it rather than discard real user-facing content. Source: https://github.com/meta-llama/llama-models/blob/main/models/llama4/prompt_format.md'
     ref: dynamo
     model_text: 'Both: [get_weather(location="NYC"), get_time(timezone="EST")] Done.'
     tools:

@@ -41,6 +41,7 @@ cases:
         reason: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
   TOOLCALLING.batch.2.c:
     description: With surrounding narration
+    dynamo_note: 'Mistral ships a reference decoder in mistral-common: content is only the tokens before the [TOOL_CALLS] control token and the remainder is parsed as the tool-call JSON array, so trailing prose is unrepresentable. Dynamo follows that decoder: text from [TOOL_CALLS] onward is dropped. Source: https://github.com/mistralai/mistral-common/blob/main/src/mistral_common/experimental/tools.py'
     ref: dynamo
     model_text: 'Both: [TOOL_CALLS][{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "get_time", "arguments":
       {"timezone": "EST"}}][/TOOL_CALLS] Done.'
@@ -56,7 +57,7 @@ cases:
         - name: get_time
           arguments:
             timezone: EST
-        normal_text: 'Both:  Done.'
+        normal_text: 'Both:'
       vllm:
         reason: 'Dynamo preserves both the leading prefix and the trailing text
           ("Done.") around the parallel calls (only the [TOOL_CALLS] envelope is

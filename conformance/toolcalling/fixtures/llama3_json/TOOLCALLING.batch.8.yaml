@@ -39,6 +39,7 @@ cases:
         reason: preserves whitespace before python_tag in normal_text
   TOOLCALLING.batch.8.b:
     description: Narration after tool call only
+    dynamo_note: 'Llama 3.x publishes only a prompt-format/chat-template spec (an encoder); its ''no prefix or suffix'' line instructs the model, not a parser but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://raw.githubusercontent.com/meta-llama/llama-models/main/models/llama3_1/prompt_format.md'
     ref: dynamo
     model_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}} Let me know if you need more.'
     tools:
@@ -67,6 +68,7 @@ cases:
         normal_text: Let me know if you need more.
   TOOLCALLING.batch.8.c:
     description: Narration both before and after (sandwich)
+    dynamo_note: 'Llama 3.x publishes only a prompt-format/chat-template spec (an encoder); its ''no prefix or suffix'' line instructs the model, not a parser but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://raw.githubusercontent.com/meta-llama/llama-models/main/models/llama3_1/prompt_format.md'
     ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_llama3_json_tool_parser.py#L128
     model_text: 'I will check the weather. <|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}} Let me
       know if you need more.'
@@ -96,6 +98,7 @@ cases:
         normal_text: I will check the weather. Let me know if you need more.
   TOOLCALLING.batch.8.d:
     description: Narration between multiple tool calls
+    dynamo_note: 'Llama 3.x publishes only a prompt-format/chat-template spec (an encoder); its ''no prefix or suffix'' line instructs the model, not a parser but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://raw.githubusercontent.com/meta-llama/llama-models/main/models/llama3_1/prompt_format.md'
     ref: dynamo
     model_text: 'I will check the weather. <|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}} Then check
       LA weather. <|python_tag|>{"name": "get_weather", "arguments": {"location": "LA"}}'

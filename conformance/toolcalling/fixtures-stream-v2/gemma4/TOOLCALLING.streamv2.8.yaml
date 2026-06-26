@@ -77,6 +77,7 @@ cases:
         sglang_python: []
   TOOLCALLING.streamv2.8.b:
     description: 'Narration after tool call only'
+    dynamo_note: 'Gemma publishes only a chat-template plus a non-normative regex recipe; two reference decoders (vLLM, SGLang) even disagree on trailing text but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4'
     ref: 'derived from TOOLCALLING.batch.8.b'
     tools:
     - name: get_weather
@@ -147,6 +148,7 @@ cases:
         sglang_python: []
   TOOLCALLING.streamv2.8.c:
     description: 'Narration both before and after (sandwich)'
+    dynamo_note: 'Gemma publishes only a chat-template plus a non-normative regex recipe; two reference decoders (vLLM, SGLang) even disagree on trailing text but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4'
     ref: 'derived from TOOLCALLING.batch.8.c'
     tools:
     - name: get_weather
@@ -243,6 +245,7 @@ cases:
         sglang_python: []
   TOOLCALLING.streamv2.8.d:
     description: 'Narration between multiple tool calls'
+    dynamo_note: 'Gemma publishes only a chat-template plus a non-normative regex recipe; two reference decoders (vLLM, SGLang) even disagree on trailing text but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4'
     ref: 'derived from TOOLCALLING.batch.8.d'
     tools:
     - name: get_weather

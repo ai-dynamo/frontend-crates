@@ -65,6 +65,7 @@ cases:
         - {index: 1, arguments: ''}
   TOOLCALLING.streamv2.2.c:
     description: 'With surrounding narration'
+    dynamo_note: 'AI21 Jamba publishes only an encoder chat_template; the card describes encoding with no decode or ordering rule but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/ai21labs/AI21-Jamba-1.5-Mini'
     ref: 'derived from TOOLCALLING.batch.2.c'
     tools:
     - name: get_weather

@@ -186,6 +186,7 @@ cases:
         sglang_python: []
   TOOLCALLING.streamv2.2.c:
     description: 'With surrounding narration'
+    dynamo_note: 'The OpenAI Harmony spec terminates a commentary-channel tool call with the <|call|> stop token, so in a well-formed turn no natural-language text follows the call within the same message — this trailing-narration case is synthetic. Harmony routes text by channel rather than by position, so when surrounding text does appear Dynamo preserves it as channel content rather than dropping it. Source: https://developers.openai.com/cookbook/articles/openai-harmony'
     ref: 'derived from TOOLCALLING.batch.2.c'
     tools:
     - name: get_weather

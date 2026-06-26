@@ -199,6 +199,14 @@ fn extract_tool_calls(
     let start_token = &config.tool_call_start_token;
     let end_token = &config.tool_call_end_token;
 
+    // When the family's reference decoder makes the tool-call block terminal,
+    // normal_text is ONLY the text before the FIRST start marker; inter-call
+    // gaps and trailing text are dropped (markup never leaks). We track the
+    // marker offset and truncate at the end, but only when a call is actually
+    // parsed (plain text with no calls is preserved).
+    let prefix_only = config.content_is_prefix_only;
+    let mut first_marker_idx: Option<usize> = None;
+
     while cursor < text.len() {
         // Find next tool call start.
         if let Some(start_pos) = text[cursor..].find(start_token.as_str()) {
@@ -207,10 +215,17 @@ fn extract_tool_calls(
             if let Some((prefix, mut recovered_calls)) =
                 recover_bare_xml_calls_in_span(gap, config, tools)?
             {
+                if first_marker_idx.is_none() {
+                    first_marker_idx =
+                        prefix_before_orphan_xml_marker_index(gap, config).map(|i| cursor + i);
+                }
                 normal_text.push_str(&prefix);
                 calls.append(&mut recovered_calls);
             } else {
                 normal_text.push_str(gap);
+            }
+            if first_marker_idx.is_none() {
+                first_marker_idx = Some(abs_start);
             }
 
             // Preserve ALL natural-language text — prefix, text between calls,
@@ -268,6 +283,10 @@ fn extract_tool_calls(
             if let Some((prefix, mut recovered_calls)) =
                 recover_bare_xml_calls_in_span(gap, config, tools)?
             {
+                if first_marker_idx.is_none() {
+                    first_marker_idx =
+                        prefix_before_orphan_xml_marker_index(gap, config).map(|i| cursor + i);
+                }
                 normal_text.push_str(&prefix);
                 calls.append(&mut recovered_calls);
             } else {
@@ -275,6 +294,15 @@ fn extract_tool_calls(
             }
             break;
         }
+    }
+
+    // Terminal-block families: once a tool call exists, normal_text collapses to
+    // the text before the FIRST marker. Plain text (no calls) is untouched.
+    if prefix_only
+        && !calls.is_empty()
+        && let Some(idx) = first_marker_idx
+    {
+        return Ok((text[..idx].trim().to_string(), calls));
     }
 
     let normal_text = if calls.is_empty() {
@@ -285,7 +313,10 @@ fn extract_tool_calls(
     Ok((normal_text, calls))
 }
 
-fn prefix_before_orphan_xml_marker(text: &str, config: &XmlParserConfig) -> Option<String> {
+/// Byte offset of the first XML tool-call marker in `text`, or `None` if none
+/// is present. Shared by `prefix_before_orphan_xml_marker` and the
+/// prefix-only (terminal-block) truncation in `extract_tool_calls`.
+fn prefix_before_orphan_xml_marker_index(text: &str, config: &XmlParserConfig) -> Option<usize> {
     [
         config.tool_call_end_token.as_str(),
         config.function_start_token.as_str(),
@@ -296,7 +327,10 @@ fn prefix_before_orphan_xml_marker(text: &str, config: &XmlParserConfig) -> Opti
     .into_iter()
     .filter_map(|marker| text.find(marker))
     .min()
-    .map(|idx| text[..idx].trim().to_string())
+}
+
+fn prefix_before_orphan_xml_marker(text: &str, config: &XmlParserConfig) -> Option<String> {
+    prefix_before_orphan_xml_marker_index(text, config).map(|idx| text[..idx].trim().to_string())
 }
 
 fn recover_bare_xml_calls_in_span(
@@ -1306,6 +1340,7 @@ NYC
             strict_match: true,
             passthrough_when_no_function: false,
             backoff_when_no_wrapper: true,
+            content_is_prefix_only: false,
         };
         let input = r#"<minimax:tool_call><invoke name="get_weather"><parameter name="city">NYC</parameter></invoke>"#;
 
@@ -1516,6 +1551,7 @@ NYC
             strict_match: true,
             passthrough_when_no_function: false,
             backoff_when_no_wrapper: true,
+            content_is_prefix_only: false,
         }
     }
 

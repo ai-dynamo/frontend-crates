@@ -33,6 +33,7 @@ cases:
         unavailable: SGLang has no detector for family='phi4'
   TOOLCALLING.batch.8.b:
     description: Narration after tool call only
+    dynamo_note: 'Phi-4 publishes only the input/tool-definition format in the system prompt; no output decoder but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/microsoft/Phi-4-mini-instruct'
     ref: dynamo
     model_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}] Let me know if you need more.'
     tools:
@@ -57,6 +58,7 @@ cases:
         unavailable: SGLang has no detector for family='phi4'
   TOOLCALLING.batch.8.c:
     description: Narration both before and after (sandwich)
+    dynamo_note: 'Phi-4 publishes only the input/tool-definition format in the system prompt; no output decoder but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/microsoft/Phi-4-mini-instruct'
     ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/common_tests.py#L282
     model_text: 'I will check the weather. functools[{"name": "get_weather", "arguments": {"location": "NYC"}}] Let me know
       if you need more.'
@@ -82,6 +84,7 @@ cases:
         unavailable: SGLang has no detector for family='phi4'
   TOOLCALLING.batch.8.d:
     description: Narration between multiple tool calls
+    dynamo_note: 'Phi-4 publishes only the input/tool-definition format in the system prompt; no output decoder but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/microsoft/Phi-4-mini-instruct'
     ref: dynamo
     model_text: 'I will check the weather. functools[{"name": "get_weather", "arguments": {"location": "NYC"}}] Then check
       LA weather. functools[{"name": "get_weather", "arguments": {"location": "LA"}}]'

@@ -56,6 +56,7 @@ cases:
       sglang: *id004
   TOOLCALLING.batch.2.c:
     description: Parallel calls with surrounding narration
+    dynamo_note: 'Moonshot publishes a reference decoder (docs/tool_call_guidance.md, extract_tool_call_info) that slices out the <|tool_calls_section_begin|>…<|tool_calls_section_end|> section and defines content as the text before it, never collecting text after. Dynamo follows that decoder: text from the tool-call section onward is dropped. Source: https://huggingface.co/moonshotai/Kimi-K2-Instruct/blob/main/docs/tool_call_guidance.md'
     ref: dynamo
     model_text: I will check both. <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_call_begin|>functions.get_time:1<|tool_call_argument_begin|>{"timezone":"EST"}<|tool_call_end|><|tool_calls_section_end|>
       Done.
@@ -73,7 +74,7 @@ cases:
         - name: get_time
           arguments:
             timezone: EST
-        normal_text: 'I will check both.  Done.'
+        normal_text: 'I will check both.'
       vllm: &v_2_c
         # vLLM/SGLang keep the prefix but drop the post-wrapper narration;
         # Dynamo preserves all surrounding natural text.

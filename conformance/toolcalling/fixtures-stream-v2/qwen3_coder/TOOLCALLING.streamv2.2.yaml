@@ -104,6 +104,7 @@ cases:
         sglang_python: []
   TOOLCALLING.streamv2.2.c:
     description: 'Parallel calls with surrounding narration'
+    dynamo_note: 'Qwen3-Coder publishes a reference parser and chat_template, but the parser does not assert the block is terminal and Qwen''s docs decline a formal parse spec but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/Qwen/Qwen3-Coder-480B-A35B-Instruct/blob/main/qwen3coder_tool_parser.py'
     ref: 'derived from TOOLCALLING.batch.2.c'
     tools:
     - name: get_weather

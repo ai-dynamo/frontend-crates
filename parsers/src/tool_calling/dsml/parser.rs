@@ -155,7 +155,23 @@ pub fn try_tool_call_parse_dsml(
 
     // Success path: strip ONLY the tool-call markup spans; keep all other text
     // verbatim — prefix, inter-block narration, and trailing narration.
-    let normal_text = normal_text_minus_spans(trimmed, &markup_spans);
+    //
+    // When `content_is_prefix_only` is set (e.g. DeepSeek-V4, whose reference
+    // decoder makes the block terminal), normal_text is ONLY the natural text
+    // before the FIRST tool-call markup span; inter-block and trailing text are
+    // dropped. The earliest markup-span start is the first marker (which may be
+    // a bare invoke that precedes the wrapped block_start, so we cannot just use
+    // `start_idx`).
+    let normal_text = if config.content_is_prefix_only {
+        let first_marker = markup_spans
+            .iter()
+            .map(|(s, _)| *s)
+            .min()
+            .unwrap_or(start_idx);
+        trimmed[..first_marker].to_string()
+    } else {
+        normal_text_minus_spans(trimmed, &markup_spans)
+    };
     let stripped_bytes: usize = markup_spans.iter().map(|(s, e)| e - s).sum();
     if stripped_bytes > 0 {
         tracing::debug!(

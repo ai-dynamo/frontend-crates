@@ -83,6 +83,14 @@ pub struct JsonParserConfig {
     /// tool-call markup to the user.
     #[serde(default)]
     pub discard_unparseable_wrapper: bool,
+
+    /// When true, the tool-call block is terminal per the model's published
+    /// reference decoder: normal_text is only the natural-language text before
+    /// the FIRST tool-call start marker; inter-call and trailing text are
+    /// dropped (markup never leaks). Default false preserves all surrounding
+    /// text.
+    #[serde(default)]
+    pub content_is_prefix_only: bool,
 }
 
 impl Default for JsonParserConfig {
@@ -99,6 +107,7 @@ impl Default for JsonParserConfig {
             strip_markup_on_recovery: false,
             allow_name_only_call: false,
             discard_unparseable_wrapper: false,
+            content_is_prefix_only: false,
         }
     }
 }
@@ -149,6 +158,14 @@ pub struct XmlParserConfig {
     /// one fires when function tags exist but the outer wrapper does not).
     #[serde(default)]
     pub backoff_when_no_wrapper: bool,
+
+    /// When true, the tool-call block is terminal per the model's published
+    /// reference decoder: normal_text is only the natural-language text before
+    /// the FIRST tool-call start marker; inter-call and trailing text are
+    /// dropped (markup never leaks). Default false preserves all surrounding
+    /// text.
+    #[serde(default)]
+    pub content_is_prefix_only: bool,
 }
 
 impl Default for XmlParserConfig {
@@ -164,6 +181,7 @@ impl Default for XmlParserConfig {
             strict_match: false,
             passthrough_when_no_function: false,
             backoff_when_no_wrapper: false,
+            content_is_prefix_only: false,
         }
     }
 }
@@ -204,6 +222,14 @@ pub struct DsmlParserConfig {
     /// leave this `false`.
     #[serde(default)]
     pub allow_eof_recovery: bool,
+
+    /// When true, the tool-call block is terminal per the model's published
+    /// reference decoder: normal_text is only the natural-language text before
+    /// the FIRST tool-call start marker; inter-call and trailing text are
+    /// dropped (markup never leaks). Default false preserves all surrounding
+    /// text.
+    #[serde(default)]
+    pub content_is_prefix_only: bool,
 }
 
 impl Default for DsmlParserConfig {
@@ -216,6 +242,7 @@ impl Default for DsmlParserConfig {
             parameter_prefix: "<｜DSML｜parameter name=".to_string(),
             parameter_end: "</｜DSML｜parameter>".to_string(),
             allow_eof_recovery: false,
+            content_is_prefix_only: false,
         }
     }
 }
@@ -286,6 +313,14 @@ pub struct KimiK2ParserConfig {
     pub call_end: String,
     /// Token separating function ID from JSON arguments (e.g., "<|tool_call_argument_begin|>")
     pub argument_begin: String,
+
+    /// When true, the tool-call block is terminal per the model's published
+    /// reference decoder: normal_text is only the natural-language text before
+    /// the FIRST tool-call start marker; inter-call and trailing text are
+    /// dropped (markup never leaks). Default false preserves all surrounding
+    /// text.
+    #[serde(default)]
+    pub content_is_prefix_only: bool,
 }
 
 impl Default for KimiK2ParserConfig {
@@ -304,6 +339,7 @@ impl Default for KimiK2ParserConfig {
             call_start: "<|tool_call_begin|>".to_string(),
             call_end: "<|tool_call_end|>".to_string(),
             argument_begin: "<|tool_call_argument_begin|>".to_string(),
+            content_is_prefix_only: false,
         }
     }
 }
@@ -485,6 +521,10 @@ impl ToolCallConfig {
                 // opener). Same flag nemotron_deci uses; base_json_parser.rs has
                 // the streaming-path detail.
                 strip_markup_on_recovery: true,
+                // mistral-common's reference decoder takes content as only the
+                // tokens before the [TOOL_CALLS] control token; trailing prose
+                // is unrepresentable, so the tool-call block is terminal.
+                content_is_prefix_only: true,
                 ..Default::default()
             }),
             structural_tag_builder: None,
@@ -590,6 +630,20 @@ impl ToolCallConfig {
         }
     }
 
+    /// Nemotron Nano shares Qwen3-Coder's `<tool_call><function=...>` XML wire
+    /// format, but NVIDIA's reference decoder
+    /// (nemotron_toolcall_parser_no_streaming.py) defines content as
+    /// `model_output[:rfind("<TOOLCALL>")]` — only the text before the tool-call
+    /// block — making the block terminal. So this config is identical to
+    /// `qwen3_coder()` except `content_is_prefix_only` is true.
+    pub fn nemotron_nano() -> Self {
+        let mut cfg = Self::qwen3_coder();
+        if let ParserConfig::Xml(xml) = &mut cfg.parser_config {
+            xml.content_is_prefix_only = true;
+        }
+        cfg
+    }
+
     pub fn jamba() -> Self {
         Self {
             parser_config: ParserConfig::Json(JsonParserConfig {
@@ -608,10 +662,11 @@ impl ToolCallConfig {
         }
     }
 
-    fn deepseek_dsml(block_name: &str) -> Self {
+    fn deepseek_dsml(block_name: &str, content_is_prefix_only: bool) -> Self {
         let dsml_config = DsmlParserConfig {
             block_start: format!("<｜DSML｜{}>", block_name),
             block_end: format!("</｜DSML｜{}>", block_name),
+            content_is_prefix_only,
             ..Default::default()
         };
         let structural_tag = StructuralTagBuilder::DsmlToolCalls(DsmlToolCallsConfig {
@@ -646,7 +701,9 @@ impl ToolCallConfig {
         // <｜DSML｜parameter name="param_name" string="true|false">value</｜DSML｜parameter>
         // </｜DSML｜invoke>
         // </｜DSML｜function_calls>
-        Self::deepseek_dsml("function_calls")
+        // V3.2's spec is silent on trailing text, so Dynamo preserves it
+        // (content_is_prefix_only = false).
+        Self::deepseek_dsml("function_calls", false)
     }
 
     pub fn deepseek_v4() -> Self {
@@ -656,7 +713,10 @@ impl ToolCallConfig {
         // <｜DSML｜parameter name="param_name" string="true|false">value</｜DSML｜parameter>
         // </｜DSML｜invoke>
         // </｜DSML｜tool_calls>
-        Self::deepseek_dsml("tool_calls")
+        // V4's reference decoder (encoding_dsv4.py::parse_message_from_completion_text)
+        // asserts no content after tool calls, making the tool-call block
+        // terminal: content is only the text before the block.
+        Self::deepseek_dsml("tool_calls", true)
     }
 
     pub fn minimax_m2() -> Self {
@@ -691,6 +751,7 @@ impl ToolCallConfig {
                 strict_match: true,
                 passthrough_when_no_function: false,
                 backoff_when_no_wrapper: true,
+                content_is_prefix_only: false,
             }),
             structural_tag_builder: None,
         }
@@ -713,7 +774,13 @@ impl ToolCallConfig {
         // <|tool_calls_section_end|>
         // Reference: https://huggingface.co/moonshotai/Kimi-K2-Instruct/blob/main/docs/tool_call_guidance.md
         Self {
-            parser_config: ParserConfig::KimiK2(KimiK2ParserConfig::default()),
+            parser_config: ParserConfig::KimiK2(KimiK2ParserConfig {
+                // Moonshot's reference decoder (extract_tool_call_info) defines
+                // content as the text before the tool-call section and never
+                // collects text after it, so the block is terminal.
+                content_is_prefix_only: true,
+                ..Default::default()
+            }),
             structural_tag_builder: None,
         }
     }

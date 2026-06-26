@@ -173,7 +173,7 @@ cases:
         vllm_python: []
         sglang_python: []
       normal_text:
-        dynamo_rust: ' '
+        dynamo_rust: ''
         vllm_python: ' '
     - delta_text: ' name="get_time"> <｜DSML｜parameter name="timezone"'
       expected:
@@ -314,7 +314,7 @@ cases:
         vllm_python: []
         sglang_python: []
       normal_text:
-        dynamo_rust: ' Done.'
+        dynamo_rust: ''
         vllm_python: ' Done.'
     - delta_text: ''
       finish_reason: stop

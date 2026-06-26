@@ -36,6 +36,7 @@ cases:
         unavailable: SGLang has no detector for family='nemotron_nano'
   TOOLCALLING.batch.8.b:
     description: Narration after tool call only
+    dynamo_note: 'NVIDIA publishes a reference decoder (nemotron_toolcall_parser_no_streaming.py) that defines content as model_output[:rfind("<TOOLCALL>")] — only text before the tool-call block — so text after the block is dropped. Dynamo follows that decoder. Source: https://huggingface.co/nvidia/NVIDIA-Nemotron-Nano-9B-v2/blob/main/nemotron_toolcall_parser_no_streaming.py'
     ref: dynamo
     model_text: |-
       <tool_call>
@@ -53,13 +54,14 @@ cases:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: ' Let me know if you need more.'
+        normal_text: ''
       vllm:
         unavailable: vLLM has no parser for family='nemotron_nano'
       sglang:
         unavailable: SGLang has no detector for family='nemotron_nano'
   TOOLCALLING.batch.8.c:
     description: Narration both before and after (sandwich)
+    dynamo_note: 'NVIDIA publishes a reference decoder (nemotron_toolcall_parser_no_streaming.py) that defines content as model_output[:rfind("<TOOLCALL>")] — only text before the tool-call block — so text after the block is dropped. Dynamo follows that decoder. Source: https://huggingface.co/nvidia/NVIDIA-Nemotron-Nano-9B-v2/blob/main/nemotron_toolcall_parser_no_streaming.py'
     ref: dynamo
     model_text: |-
       I will check the weather. <tool_call>
@@ -77,13 +79,14 @@ cases:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: 'I will check the weather.  Let me know if you need more.'
+        normal_text: 'I will check the weather.'
       vllm:
         unavailable: vLLM has no parser for family='nemotron_nano'
       sglang:
         unavailable: SGLang has no detector for family='nemotron_nano'
   TOOLCALLING.batch.8.d:
     description: Narration between multiple tool calls
+    dynamo_note: 'NVIDIA publishes a reference decoder (nemotron_toolcall_parser_no_streaming.py) that defines content as model_output[:rfind("<TOOLCALL>")] — only text before the tool-call block — so text after the block is dropped. Dynamo follows that decoder. Source: https://huggingface.co/nvidia/NVIDIA-Nemotron-Nano-9B-v2/blob/main/nemotron_toolcall_parser_no_streaming.py'
     ref: dynamo
     model_text: |-
       I will check the weather. <tool_call>
@@ -110,7 +113,7 @@ cases:
         - name: get_weather
           arguments:
             location: LA
-        normal_text: 'I will check the weather.  Then check LA weather. '
+        normal_text: 'I will check the weather.'
       vllm:
         unavailable: vLLM has no parser for family='nemotron_nano'
       sglang:

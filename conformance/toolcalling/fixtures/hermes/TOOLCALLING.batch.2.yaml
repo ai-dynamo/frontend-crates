@@ -38,6 +38,7 @@ cases:
       sglang: *id001
   TOOLCALLING.batch.2.c:
     description: With surrounding narration
+    dynamo_note: 'Hermes publishes only a chat_template; the model card delegates parsing to an external repo but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/NousResearch/Hermes-2-Pro-Llama-3-8B'
     ref: dynamo
     model_text: 'Both: <tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call><tool_call>{"name":
       "get_time", "arguments": {"timezone": "EST"}}</tool_call> Done.'

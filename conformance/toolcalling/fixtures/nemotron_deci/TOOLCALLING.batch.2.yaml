@@ -56,6 +56,7 @@ cases:
         unavailable: SGLang has no detector for family='nemotron_deci'
   TOOLCALLING.batch.2.c:
     description: With surrounding narration
+    dynamo_note: 'Nemotron (Deci) publishes a system-prompt instruction telling the model not to add other text (encoder-side), but no published decoder rule for a parser but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/nvidia/Llama-3_1-Nemotron-Ultra-253B-v1'
     ref: dynamo
     model_text: 'Both: <TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "get_time", "arguments":
       {"timezone": "EST"}}]</TOOLCALL> Done.'

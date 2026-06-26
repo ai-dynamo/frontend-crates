@@ -34,6 +34,7 @@ cases:
       sglang: *id001
   TOOLCALLING.batch.8.b:
     description: Narration after tool call only
+    dynamo_note: 'Qwen3-Coder publishes a reference parser and chat_template, but the parser does not assert the block is terminal and Qwen''s docs decline a formal parse spec but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/Qwen/Qwen3-Coder-480B-A35B-Instruct/blob/main/qwen3coder_tool_parser.py'
     ref: dynamo
     model_text: |-
       <tool_call>
@@ -62,6 +63,7 @@ cases:
       sglang: *id003
   TOOLCALLING.batch.8.c:
     description: Narration both before and after (sandwich)
+    dynamo_note: 'Qwen3-Coder publishes a reference parser and chat_template, but the parser does not assert the block is terminal and Qwen''s docs decline a formal parse spec but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/Qwen/Qwen3-Coder-480B-A35B-Instruct/blob/main/qwen3coder_tool_parser.py'
     ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/common_tests.py#L282
     model_text: |-
       I will check the weather. <tool_call>
@@ -90,6 +92,7 @@ cases:
       sglang: *id004
   TOOLCALLING.batch.8.d:
     description: Narration between multiple tool calls
+    dynamo_note: 'Qwen3-Coder publishes a reference parser and chat_template, but the parser does not assert the block is terminal and Qwen''s docs decline a formal parse spec but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/Qwen/Qwen3-Coder-480B-A35B-Instruct/blob/main/qwen3coder_tool_parser.py'
     ref: dynamo
     model_text: |-
       I will check the weather. <tool_call>

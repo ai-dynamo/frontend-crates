@@ -54,6 +54,7 @@ cases:
         normal_text: ''
   TOOLCALLING.batch.2.c:
     description: With surrounding narration
+    dynamo_note: 'The OpenAI Harmony spec terminates a commentary-channel tool call with the <|call|> stop token, so in a well-formed turn no natural-language text follows the call within the same message — this trailing-narration case is synthetic. Harmony routes text by channel rather than by position, so when surrounding text does appear Dynamo preserves it as channel content rather than dropping it. Source: https://developers.openai.com/cookbook/articles/openai-harmony'
     ref: "OpenAI Harmony preambles should be commentary messages: https://developers.openai.com/cookbook/articles/openai-harmony#preambles"
     model_text: I need both. <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary
       to=functions.get_time <|constrain|>json<|message|>{"timezone":"EST"}<|call|> Done.

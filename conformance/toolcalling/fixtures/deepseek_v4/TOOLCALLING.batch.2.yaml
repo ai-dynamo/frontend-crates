@@ -48,6 +48,7 @@ cases:
         unavailable: SGLang has no detector for family='deepseek_v4'
   TOOLCALLING.batch.2.b:
     description: Two back-to-back tool_calls wrappers
+    dynamo_note: 'DeepSeek-V4 publishes a reference decoder (encoding/encoding_dsv4.py::parse_message_from_completion_text) that establishes the tool-call block is terminal: content is only the text before the block, and it executes `assert not tool_ends_text, "Unexpected content after tool calls"`. Dynamo takes that normative "should not" at face value and drops text from the first tool-call marker onward. (Contrast V3/V3.1/V3.2, whose specs are silent and where Dynamo preserves trailing text.) Source: https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/raw/main/encoding/encoding_dsv4.py'
     ref: dynamo
     model_text: |-
       <｜DSML｜tool_calls>
@@ -72,7 +73,7 @@ cases:
         - name: get_time
           arguments:
             timezone: EST
-        normal_text: "\n"
+        normal_text: ''
       vllm:
         calls:
         - name: get_weather
@@ -87,6 +88,7 @@ cases:
         unavailable: SGLang has no detector for family='deepseek_v4'
   TOOLCALLING.batch.2.c:
     description: Parallel with surrounding narration
+    dynamo_note: 'DeepSeek-V4 publishes a reference decoder (encoding/encoding_dsv4.py::parse_message_from_completion_text) that establishes the tool-call block is terminal: content is only the text before the block, and it executes `assert not tool_ends_text, "Unexpected content after tool calls"`. Dynamo takes that normative "should not" at face value and drops text from the first tool-call marker onward. (Contrast V3/V3.1/V3.2, whose specs are silent and where Dynamo preserves trailing text.) Source: https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/raw/main/encoding/encoding_dsv4.py'
     ref: dynamo
     model_text: |-
       Both: <｜DSML｜tool_calls>
@@ -109,7 +111,7 @@ cases:
         - name: get_time
           arguments:
             timezone: EST
-        normal_text: 'Both:  Done.'
+        normal_text: 'Both: '
       vllm:
         calls:
         - name: get_weather

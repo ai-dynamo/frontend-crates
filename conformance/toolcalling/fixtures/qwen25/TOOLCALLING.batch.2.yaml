@@ -46,6 +46,7 @@ cases:
     reason: Multi-call is covered by 2.a/2.c/2.d; no back-to-back fence pattern for this family.
   TOOLCALLING.batch.2.c:
     description: With surrounding narration
+    dynamo_note: 'Qwen2.5 publishes only a Hermes-style chat_template (an encoder; Qwen''s docs defer decoding to frameworks) but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/raw/main/tokenizer_config.json'
     ref: dynamo
     model_text: |-
       Both: <tool_call>

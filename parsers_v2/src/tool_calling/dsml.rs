@@ -107,12 +107,16 @@ impl DeepSeekV4ToolStreamParser {
                         .find(INVOKE_START_PREFIX)
                         .is_some_and(|start| start < end);
                     if !invoke_before_end {
-                        // Complete block fully closed: drop its markup and resume
-                        // keeping natural text (inter-block / trailing). Any later
-                        // block re-enters `in_block` and re-suppresses its markup.
+                        // Complete block fully closed: drop its markup. DeepSeek-V4's
+                        // reference decoder (encoding_dsv4.py) makes the tool-call
+                        // block TERMINAL — content is only the text before the first
+                        // block, and it asserts no text follows the calls. So once a
+                        // block has been entered, suppression stays LATCHED: all
+                        // inter-block and trailing natural text is dropped (markup
+                        // never leaks). This matches the v1 batch parser's
+                        // `content_is_prefix_only` contract for deepseek_v4.
                         self.buffer.drain(..end + BLOCK_END.len());
                         self.in_block = false;
-                        self.suppress_normal_text = false;
                         continue;
                     }
                 }

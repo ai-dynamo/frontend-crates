@@ -33,6 +33,7 @@ cases:
         reason: preserves whitespace before tool-call wrapper start
   TOOLCALLING.batch.8.b:
     description: Narration after tool call only
+    dynamo_note: 'Gemma publishes only a chat-template plus a non-normative regex recipe; two reference decoders (vLLM, SGLang) even disagree on trailing text but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4'
     ref: dynamo
     model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Let me know if you need more.
     tools:
@@ -60,6 +61,7 @@ cases:
         reason: drops trailing normal_text after tool-call wrapper end; Dynamo preserves it
   TOOLCALLING.batch.8.c:
     description: Narration both before and after (sandwich)
+    dynamo_note: 'Gemma publishes only a chat-template plus a non-normative regex recipe; two reference decoders (vLLM, SGLang) even disagree on trailing text but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4'
     ref: dynamo
     model_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Let me know if
       you need more.
@@ -88,6 +90,7 @@ cases:
         reason: preserves pre-tool-call whitespace and drops trailing normal_text after tool-call wrapper end; Dynamo preserves both
   TOOLCALLING.batch.8.d:
     description: Narration between multiple tool calls
+    dynamo_note: 'Gemma publishes only a chat-template plus a non-normative regex recipe; two reference decoders (vLLM, SGLang) even disagree on trailing text but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4'
     ref: dynamo
     model_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Then check LA weather.
       <|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>

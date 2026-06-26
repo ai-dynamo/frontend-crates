@@ -37,6 +37,7 @@ cases:
       sglang: *id001
   TOOLCALLING.batch.2.c:
     description: Parallel calls with surrounding narration
+    dynamo_note: 'GLM-4.x publishes only a chat_template/tokenizer_config registering the <tool_call>/<arg_key>/<arg_value> tokens (an encoder, not a decoder) but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/zai-org/GLM-4.5/raw/main/chat_template.jinja'
     ref: dynamo
     model_text: 'Checking: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call>
       Done.'

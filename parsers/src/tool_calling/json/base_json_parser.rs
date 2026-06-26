@@ -644,16 +644,22 @@ pub fn try_tool_call_parse_basic_json(
                             // token is present — but keeps the type total). Drop
                             // any residual start marker so malformed markup never
                             // leaks (single-token families have no end token).
-                            normal_text = match normal_text_single_token(&normal_text, start_token)
-                            {
-                                Some(stripped) => {
-                                    let dropped = drop_residual_markup(
-                                        &stripped,
-                                        tool_call_start_tokens.iter().map(String::as_str),
-                                    );
-                                    apply_boundary_trim(dropped, start_token)
+                            normal_text = if config.content_is_prefix_only {
+                                // Terminal-block families (reference decoder):
+                                // content is only the text before the FIRST
+                                // start marker; inter-call/trailing dropped.
+                                prefix_normal_text
+                            } else {
+                                match normal_text_single_token(&normal_text, start_token) {
+                                    Some(stripped) => {
+                                        let dropped = drop_residual_markup(
+                                            &stripped,
+                                            tool_call_start_tokens.iter().map(String::as_str),
+                                        );
+                                        apply_boundary_trim(dropped, start_token)
+                                    }
+                                    None => prefix_normal_text,
                                 }
-                                None => prefix_normal_text,
                             };
                             json = content;
 
@@ -688,22 +694,29 @@ pub fn try_tool_call_parse_basic_json(
                             // Then drop any residual marker (a dangling unterminated
                             // opener or orphan close) so malformed markup never
                             // leaks into normal_text.
-                            normal_text = match normal_text_outside_spans(
-                                &normal_text,
-                                start_token,
-                                end_token,
-                            ) {
-                                Some(stripped) => {
-                                    let dropped = drop_residual_markup(
-                                        &stripped,
-                                        tool_call_start_tokens
-                                            .iter()
-                                            .chain(tool_call_end_tokens.iter())
-                                            .map(String::as_str),
-                                    );
-                                    apply_boundary_trim(dropped, start_token)
+                            normal_text = if config.content_is_prefix_only {
+                                // Terminal-block families (reference decoder):
+                                // content is only the text before the FIRST
+                                // start marker; inter-call/trailing dropped.
+                                prefix_normal_text
+                            } else {
+                                match normal_text_outside_spans(
+                                    &normal_text,
+                                    start_token,
+                                    end_token,
+                                ) {
+                                    Some(stripped) => {
+                                        let dropped = drop_residual_markup(
+                                            &stripped,
+                                            tool_call_start_tokens
+                                                .iter()
+                                                .chain(tool_call_end_tokens.iter())
+                                                .map(String::as_str),
+                                        );
+                                        apply_boundary_trim(dropped, start_token)
+                                    }
+                                    None => prefix_normal_text,
                                 }
-                                None => prefix_normal_text,
                             };
                             json = content;
 

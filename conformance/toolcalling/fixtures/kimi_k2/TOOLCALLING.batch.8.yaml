@@ -27,6 +27,7 @@ cases:
       sglang: *d_8_a
   TOOLCALLING.batch.8.b:
     description: Narration after tool call only
+    dynamo_note: 'Moonshot publishes a reference decoder (docs/tool_call_guidance.md, extract_tool_call_info) that slices out the <|tool_calls_section_begin|>…<|tool_calls_section_end|> section and defines content as the text before it, never collecting text after. Dynamo follows that decoder: text from the tool-call section onward is dropped. Source: https://huggingface.co/moonshotai/Kimi-K2-Instruct/blob/main/docs/tool_call_guidance.md'
     ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_kimi_k2_tool_parser.py#L435
     model_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"Dallas"}<|tool_call_end|><|tool_calls_section_end|>
       Let me know if you need more.
@@ -40,7 +41,7 @@ cases:
         - name: get_weather
           arguments:
             location: Dallas
-        normal_text: ' Let me know if you need more.'
+        normal_text: ''
       vllm: &v_8_b
         # vLLM/SGLang drop post-wrapper narration on a Kimi tool-call turn;
         # Dynamo preserves it as normal_text.
@@ -53,6 +54,7 @@ cases:
       sglang: *v_8_b
   TOOLCALLING.batch.8.c:
     description: Narration both before and after (sandwich)
+    dynamo_note: 'Moonshot publishes a reference decoder (docs/tool_call_guidance.md, extract_tool_call_info) that slices out the <|tool_calls_section_begin|>…<|tool_calls_section_end|> section and defines content as the text before it, never collecting text after. Dynamo follows that decoder: text from the tool-call section onward is dropped. Source: https://huggingface.co/moonshotai/Kimi-K2-Instruct/blob/main/docs/tool_call_guidance.md'
     ref: dynamo
     model_text: I'll check the weather. <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"Dallas"}<|tool_call_end|><|tool_calls_section_end|>
       Let me know if you need more.
@@ -66,7 +68,7 @@ cases:
         - name: get_weather
           arguments:
             location: Dallas
-        normal_text: 'I''ll check the weather.  Let me know if you need more.'
+        normal_text: 'I''ll check the weather.'
       vllm: &v_8_c
         # vLLM/SGLang keep the prefix but drop the post-wrapper narration;
         # Dynamo preserves all surrounding natural text.
@@ -79,6 +81,7 @@ cases:
       sglang: *v_8_c
   TOOLCALLING.batch.8.d:
     description: Narration between multiple tool calls
+    dynamo_note: 'Moonshot publishes a reference decoder (docs/tool_call_guidance.md, extract_tool_call_info) that slices out the <|tool_calls_section_begin|>…<|tool_calls_section_end|> section and defines content as the text before it, never collecting text after. Dynamo follows that decoder: text from the tool-call section onward is dropped. Source: https://huggingface.co/moonshotai/Kimi-K2-Instruct/blob/main/docs/tool_call_guidance.md'
     ref: dynamo
     model_text: First check Dallas. <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"Dallas"}<|tool_call_end|><|tool_calls_section_end|>
       Then check NYC. <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
@@ -96,7 +99,7 @@ cases:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: 'First check Dallas.  Then check NYC. '
+        normal_text: 'First check Dallas.'
       vllm:
         # vLLM keeps the prefix but drops the inter-section narration and parses
         # only the first section; Dynamo preserves all surrounding natural text

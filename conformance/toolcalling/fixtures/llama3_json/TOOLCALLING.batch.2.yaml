@@ -38,6 +38,7 @@ cases:
       sglang: *id001
   TOOLCALLING.batch.2.c:
     description: With surrounding narration
+    dynamo_note: 'Llama 3.x publishes only a prompt-format/chat-template spec (an encoder); its ''no prefix or suffix'' line instructs the model, not a parser but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://raw.githubusercontent.com/meta-llama/llama-models/main/models/llama3_1/prompt_format.md'
     ref: dynamo
     model_text: 'Both: <|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}};{"name": "get_time", "arguments":
       {"timezone": "EST"}} Done.'

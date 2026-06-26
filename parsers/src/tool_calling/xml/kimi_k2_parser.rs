@@ -215,6 +215,14 @@ fn extract_tool_calls(
         return Ok((text[..marker_idx].trim().to_string(), calls));
     }
 
+    // When the family's reference decoder makes the tool-call section terminal
+    // (Moonshot's extract_tool_call_info), normal_text is ONLY the text before
+    // the FIRST tool-call marker; inter-section and trailing text are dropped.
+    // We track that marker offset and apply the truncation at the end, but only
+    // when a tool call was actually parsed (plain text with no calls is kept).
+    let prefix_only = config.content_is_prefix_only;
+    let mut first_marker_idx: Option<usize> = None;
+
     while cursor < text.len() {
         if let Some((start_pos, _start_len)) = find_section_start(text, cursor, config) {
             let abs_start = cursor + start_pos;
@@ -222,10 +230,20 @@ fn extract_tool_calls(
             if let Some((prefix, mut recovered)) =
                 recover_bare_kimi_calls_in_span(gap, config, tools)?
             {
+                // A bare call inside the gap — the first tool-call marker is
+                // inside this gap, before `prefix`'s trailing markup. Track its
+                // offset as cursor + (gap length consumed before the marker).
+                if first_marker_idx.is_none() {
+                    first_marker_idx =
+                        first_orphan_kimi_marker_index(gap, config).map(|i| cursor + i);
+                }
                 normal_parts.push(prefix);
                 calls.append(&mut recovered);
             } else {
                 normal_parts.push(gap.to_string());
+            }
+            if first_marker_idx.is_none() {
+                first_marker_idx = Some(abs_start);
             }
 
             // Add text before tool call section to normal parts.
@@ -253,6 +271,10 @@ fn extract_tool_calls(
             if let Some((prefix, mut recovered)) =
                 recover_bare_kimi_calls_in_span(gap, config, tools)?
             {
+                if first_marker_idx.is_none() {
+                    first_marker_idx =
+                        first_orphan_kimi_marker_index(gap, config).map(|i| cursor + i);
+                }
                 normal_parts.push(prefix);
                 calls.append(&mut recovered);
             } else {
@@ -260,6 +282,15 @@ fn extract_tool_calls(
             }
             break;
         }
+    }
+
+    // Terminal-block families: once a tool call exists, normal_text collapses to
+    // the text before the FIRST marker. Plain text (no calls) is untouched.
+    if prefix_only
+        && !calls.is_empty()
+        && let Some(idx) = first_marker_idx
+    {
+        return Ok((text[..idx].to_string(), calls));
     }
 
     let joined_normal_text = normal_parts.join("");

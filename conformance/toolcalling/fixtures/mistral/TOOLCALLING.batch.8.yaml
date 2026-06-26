@@ -35,6 +35,7 @@ cases:
         reason: SGLang MistralDetector returns calls=[] on the bare [TOOL_CALLS]...[/TOOL_CALLS] format Dynamo emits
   TOOLCALLING.batch.8.b:
     description: Narration after tool call only
+    dynamo_note: 'Mistral ships a reference decoder in mistral-common: content is only the tokens before the [TOOL_CALLS] control token and the remainder is parsed as the tool-call JSON array, so trailing prose is unrepresentable. Dynamo follows that decoder: text from [TOOL_CALLS] onward is dropped. Source: https://github.com/mistralai/mistral-common/blob/main/src/mistral_common/experimental/tools.py'
     ref: dynamo
     model_text: '[TOOL_CALLS][{"name": "get_weather", "arguments": {"location": "NYC"}}][/TOOL_CALLS] Let me know if you need
       more.'
@@ -46,7 +47,7 @@ cases:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: Let me know if you need more.
+        normal_text: ''
       vllm:
         reason: 'Dynamo now preserves the natural-language text that follows the tool
           call in normal_text; vLLM drops everything after the parsed [TOOL_CALLS]
@@ -65,6 +66,7 @@ cases:
           Non-parity by design.'
   TOOLCALLING.batch.8.c:
     description: Narration both before and after (sandwich)
+    dynamo_note: 'Mistral ships a reference decoder in mistral-common: content is only the tokens before the [TOOL_CALLS] control token and the remainder is parsed as the tool-call JSON array, so trailing prose is unrepresentable. Dynamo follows that decoder: text from [TOOL_CALLS] onward is dropped. Source: https://github.com/mistralai/mistral-common/blob/main/src/mistral_common/experimental/tools.py'
     ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_mistral_tool_parser.py#L1858
     model_text: 'I will check the weather. [TOOL_CALLS][{"name": "get_weather", "arguments": {"location": "NYC"}}][/TOOL_CALLS]
       Let me know if you need more.'
@@ -76,7 +78,7 @@ cases:
         - name: get_weather
           arguments:
             location: NYC
-        normal_text: 'I will check the weather.  Let me know if you need more.'
+        normal_text: 'I will check the weather.'
       vllm:
         reason: 'Dynamo preserves both the leading narration and the trailing text
           around the tool call (only the [TOOL_CALLS] envelope is stripped); vLLM
@@ -96,6 +98,7 @@ cases:
           the envelope; SGLang keeps only the prefix. Non-parity by design.'
   TOOLCALLING.batch.8.d:
     description: Narration between multiple tool calls
+    dynamo_note: 'Mistral ships a reference decoder in mistral-common: content is only the tokens before the [TOOL_CALLS] control token and the remainder is parsed as the tool-call JSON array, so trailing prose is unrepresentable. Dynamo follows that decoder: text from [TOOL_CALLS] onward is dropped. Source: https://github.com/mistralai/mistral-common/blob/main/src/mistral_common/experimental/tools.py'
     ref: dynamo
     model_text: 'I will check the weather. [TOOL_CALLS][{"name": "get_weather", "arguments": {"location": "NYC"}}][/TOOL_CALLS]
       Then check LA weather. [TOOL_CALLS][{"name": "get_weather", "arguments": {"location": "LA"}}][/TOOL_CALLS]'
@@ -104,7 +107,7 @@ cases:
     expected:
       dynamo:
         calls: []
-        normal_text: 'I will check the weather.  Then check LA weather.'
+        normal_text: 'I will check the weather.'
       vllm:
         error: 'ValueError: Only one BOT token should have been outputted'
         reason: vLLM mistral_tool_parser raises ValueError on two consecutive [TOOL_CALLS] envelopes

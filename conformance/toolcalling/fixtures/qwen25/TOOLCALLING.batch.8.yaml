@@ -31,6 +31,7 @@ cases:
       sglang: *id001
   TOOLCALLING.batch.8.b:
     description: Narration after tool call only
+    dynamo_note: 'Qwen2.5 publishes only a Hermes-style chat_template (an encoder; Qwen''s docs defer decoding to frameworks) but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/raw/main/tokenizer_config.json'
     ref: dynamo
     model_text: |-
       <tool_call>
@@ -58,6 +59,7 @@ cases:
         normal_text: ''
   TOOLCALLING.batch.8.c:
     description: Narration both before and after (sandwich)
+    dynamo_note: 'Qwen2.5 publishes only a Hermes-style chat_template (an encoder; Qwen''s docs defer decoding to frameworks) but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/raw/main/tokenizer_config.json'
     ref: dynamo
     model_text: |-
       I will check the weather. <tool_call>
@@ -85,6 +87,7 @@ cases:
         normal_text: I will check the weather.
   TOOLCALLING.batch.8.d:
     description: Narration between multiple tool calls
+    dynamo_note: 'Qwen2.5 publishes only a Hermes-style chat_template (an encoder; Qwen''s docs defer decoding to frameworks) but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/raw/main/tokenizer_config.json'
     ref: dynamo
     model_text: |-
       I will check the weather. <tool_call>

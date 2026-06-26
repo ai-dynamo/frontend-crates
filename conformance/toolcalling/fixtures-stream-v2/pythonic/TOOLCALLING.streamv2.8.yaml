@@ -57,6 +57,7 @@ cases:
         sglang_python: []
   TOOLCALLING.streamv2.8.b:
     description: 'Narration after tool call only'
+    dynamo_note: 'Pythonic tool calls are terminal only by a prompt-side instruction — Meta''s Llama-4 prompt format tells the model it "SHOULD NOT include any other text in the response" — but there is no published parser rule that forbids or drops trailing text. That instruction constrains the model''s generation, not a decoder, and the model can still emit trailing prose; Dynamo preserves it rather than discard real user-facing content. Source: https://github.com/meta-llama/llama-models/blob/main/models/llama4/prompt_format.md'
     ref: 'derived from TOOLCALLING.batch.8.b'
     tools:
     - name: get_weather
@@ -99,6 +100,7 @@ cases:
         sglang_python: []
   TOOLCALLING.streamv2.8.c:
     description: 'Narration both before and after (sandwich)'
+    dynamo_note: 'Pythonic tool calls are terminal only by a prompt-side instruction — Meta''s Llama-4 prompt format tells the model it "SHOULD NOT include any other text in the response" — but there is no published parser rule that forbids or drops trailing text. That instruction constrains the model''s generation, not a decoder, and the model can still emit trailing prose; Dynamo preserves it rather than discard real user-facing content. Source: https://github.com/meta-llama/llama-models/blob/main/models/llama4/prompt_format.md'
     ref: 'derived from TOOLCALLING.batch.8.c'
     tools:
     - name: get_weather
@@ -168,6 +170,7 @@ cases:
         sglang_python: []
   TOOLCALLING.streamv2.8.d:
     description: 'Narration between multiple tool calls'
+    dynamo_note: 'Pythonic tool calls are terminal only by a prompt-side instruction — Meta''s Llama-4 prompt format tells the model it "SHOULD NOT include any other text in the response" — but there is no published parser rule that forbids or drops trailing text. That instruction constrains the model''s generation, not a decoder, and the model can still emit trailing prose; Dynamo preserves it rather than discard real user-facing content. Source: https://github.com/meta-llama/llama-models/blob/main/models/llama4/prompt_format.md'
     ref: 'derived from TOOLCALLING.batch.8.d'
     tools:
     - name: get_weather

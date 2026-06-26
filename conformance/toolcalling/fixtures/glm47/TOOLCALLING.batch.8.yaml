@@ -33,6 +33,7 @@ cases:
         reason: SGLang glm47 trims trailing whitespace before the first <tool_call>; Dynamo and vLLM keep it verbatim
   TOOLCALLING.batch.8.b:
     description: Narration after tool call only
+    dynamo_note: 'GLM-4.x publishes only a chat_template/tokenizer_config registering the <tool_call>/<arg_key>/<arg_value> tokens (an encoder, not a decoder) but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/zai-org/GLM-4.5/raw/main/chat_template.jinja'
     ref: dynamo
     model_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call> Let me know if you
       need more.
@@ -60,6 +61,7 @@ cases:
         normal_text: Let me know if you need more.
   TOOLCALLING.batch.8.c:
     description: Narration both before and after (sandwich)
+    dynamo_note: 'GLM-4.x publishes only a chat_template/tokenizer_config registering the <tool_call>/<arg_key>/<arg_value> tokens (an encoder, not a decoder) but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/zai-org/GLM-4.5/raw/main/chat_template.jinja'
     ref: dynamo
     model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
       Let me know if you need more.
@@ -87,6 +89,7 @@ cases:
         normal_text: 'I will check the weather.  Let me know if you need more.'
   TOOLCALLING.batch.8.d:
     description: Narration between multiple tool calls
+    dynamo_note: 'GLM-4.x publishes only a chat_template/tokenizer_config registering the <tool_call>/<arg_key>/<arg_value> tokens (an encoder, not a decoder) but is silent on natural-language text that follows the tool-call block. The model can emit trailing or inter-call prose, and nothing in the spec dictates whether a parser keeps or drops it; both readings are defensible. Because dropping silently discards genuine user-facing assistant text, Dynamo keeps it — it strips only the tool-call markup and preserves the surrounding narration verbatim. No published rule is violated, because the spec does not address this case. Source: https://huggingface.co/zai-org/GLM-4.5/raw/main/chat_template.jinja'
     ref: dynamo
     model_text: I will check the weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
       Then check LA weather. <tool_call>get_weather<arg_key>location</arg_key><arg_value>LA</arg_value></tool_call>
