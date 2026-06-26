@@ -205,6 +205,7 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 .tt-c6 { color: #22d3ee; }
 .tt-c7 { color: #f87171; }
 .tt-orphan { background: #7f1d1d; color: #fecaca; padding: 0 2px; border-radius: 2px; }
+.tt-ns { color: #6b7280; }  /* MiniMax `]<]minimax[>[` namespace token: muted decoration */
 .tt-h { padding: 0 1px; border-radius: 2px; }
 .tt-h-token { font-weight: 700; }
 .tt-h-start { color: #fbbf24; }
