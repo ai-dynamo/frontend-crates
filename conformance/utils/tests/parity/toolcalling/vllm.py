@@ -224,6 +224,7 @@ _FAMILY_TO_VLLM_KEY = {
     "kimi_k2": "kimi_k2",
     "qwen3_coder": "qwen3_coder",
     "minimax_m2": "minimax_m2",
+    "minimax_m3": "minimax_m3",
     "glm47": "glm47",
     "deepseek_v3_1": "deepseek_v31",
     "deepseek_v3": "deepseek_v3",

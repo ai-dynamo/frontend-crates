@@ -1,0 +1,115 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+family: minimax_m3
+model_label: MiniMax M3
+mode: batch
+cases:
+  TOOLCALLING.batch.2.a:
+    description: Two invokes inside one tool_call wrapper
+    ref: MiniMax M3 namespace-token XML tool-call grammar
+    model_text: |-
+      ]<]minimax[>[<tool_call>
+      ]<]minimax[>[<invoke name="get_weather">
+      ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+      ]<]minimax[>[</invoke>
+      ]<]minimax[>[<invoke name="get_time">
+      ]<]minimax[>[<timezone>EST]<]minimax[>[</timezone>
+      ]<]minimax[>[</invoke>
+      ]<]minimax[>[</tool_call>
+    tools:
+    - &weather_tool
+      name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - &time_tool
+      name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    expected:
+      dynamo: &weather_time_calls
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: ''
+      vllm: &m3_vllm_unavailable
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      sglang: &m3_sglang_unavailable
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.batch.2.b:
+    description: Two invokes adjacent inside one tool_call wrapper
+    ref: MiniMax M3 namespace-token XML tool-call grammar
+    model_text: |-
+      ]<]minimax[>[<tool_call>
+      ]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>NYC]<]minimax[>[</location>]<]minimax[>[</invoke>]<]minimax[>[<invoke name="get_time">]<]minimax[>[<timezone>EST]<]minimax[>[</timezone>]<]minimax[>[</invoke>
+      ]<]minimax[>[</tool_call>
+    tools:
+    - *weather_tool
+    - *time_tool
+    expected:
+      dynamo: *weather_time_calls
+      vllm: *m3_vllm_unavailable
+      sglang: *m3_sglang_unavailable
+  TOOLCALLING.batch.2.c:
+    description: Parallel invokes with surrounding narration
+    ref: MiniMax M3 namespace-token XML tool-call grammar
+    model_text: |-
+      Both: ]<]minimax[>[<tool_call>
+      ]<]minimax[>[<invoke name="get_weather">
+      ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+      ]<]minimax[>[</invoke>
+      ]<]minimax[>[<invoke name="get_time">
+      ]<]minimax[>[<timezone>EST]<]minimax[>[</timezone>
+      ]<]minimax[>[</invoke>
+      ]<]minimax[>[</tool_call> Done.
+    tools:
+    - *weather_tool
+    - *time_tool
+    expected:
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: 'Both: '
+      vllm: *m3_vllm_unavailable
+      sglang: *m3_sglang_unavailable
+  TOOLCALLING.batch.2.d:
+    description: Same function name twice inside one tool_call wrapper
+    ref: MiniMax M3 namespace-token XML tool-call grammar
+    model_text: |-
+      ]<]minimax[>[<tool_call>
+      ]<]minimax[>[<invoke name="get_weather">
+      ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+      ]<]minimax[>[</invoke>
+      ]<]minimax[>[<invoke name="get_weather">
+      ]<]minimax[>[<location>LA]<]minimax[>[</location>
+      ]<]minimax[>[</invoke>
+      ]<]minimax[>[</tool_call>
+    tools:
+    - *weather_tool
+    expected:
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: LA
+        normal_text: ''
+      vllm: *m3_vllm_unavailable
+      sglang: *m3_sglang_unavailable

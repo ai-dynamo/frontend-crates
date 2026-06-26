@@ -94,6 +94,7 @@ TOP_N_TOOL_CALLING_FAMILIES = [
     "harmony",
     "kimi_k2",
     "minimax_m2",
+    "minimax_m3",
     "qwen3_coder",
 ]
 
@@ -124,6 +125,7 @@ _FAMILY_TO_VLLM_REASONING = {
     "kimi_k25": "kimi_k2",
     "mistral": "mistral",
     "minimax_append_think": "minimax_m2_append_think",
+    "minimax_m3": "minimax_m3",
     "nemotron_deci": "glm45",
     "qwen3": "qwen3",
 }

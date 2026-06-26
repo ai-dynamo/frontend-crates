@@ -25,6 +25,7 @@ families:
   kimi_k2:        {vllm_python: kimi_k2,        vllm_rust: kimi_k2,      sglang_python: kimi_k2,     dynamo_v2: null,        preferred_input: text}
   llama3_json:    {vllm_python: llama3_json,    vllm_rust: llama3_json,  sglang_python: llama3,      dynamo_v2: null,        preferred_input: text}
   minimax_m2:     {vllm_python: minimax_m2,     vllm_rust: minimax_m2,   sglang_python: minimax-m2,  dynamo_v2: null,        preferred_input: text}
+  minimax_m3:     {vllm_python: minimax_m3,     vllm_rust: null,         sglang_python: minimax-m3,  dynamo_v2: null,        preferred_input: text}
   mistral:        {vllm_python: mistral,        vllm_rust: mistral,      sglang_python: mistral,     dynamo_v2: null,        preferred_input: text}
   nemotron_deci:  {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: null,        dynamo_v2: null,        preferred_input: text}
   nemotron_nano:  {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: null,        dynamo_v2: null,        preferred_input: text}

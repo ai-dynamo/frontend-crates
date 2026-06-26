@@ -1,0 +1,59 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+family: minimax_m3
+model_label: MiniMax M3
+mode: batch
+cases:
+  TOOLCALLING.batch.6.a:
+    description: Invoke with no parameter tags
+    ref: MiniMax M3 namespace-token XML tool-call grammar
+    model_text: |-
+      ]<]minimax[>[<tool_call>
+      ]<]minimax[>[<invoke name="get_time">
+      ]<]minimax[>[</invoke>
+      ]<]minimax[>[</tool_call>
+    tools:
+    - &time_tool
+      name: get_time
+      parameters:
+        type: object
+        properties: {}
+    expected:
+      dynamo: &empty_args_call
+        calls:
+        - name: get_time
+          arguments: {}
+        normal_text: ''
+      vllm: &m3_vllm_unavailable
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+      sglang: &m3_sglang_unavailable
+        unavailable: SGLang 0.5.12.post1 in this conformance harness does not include the MiniMax M3 detector yet.
+  TOOLCALLING.batch.6.b:
+    description: Invoke with whitespace-only body
+    ref: MiniMax M3 namespace-token XML tool-call grammar
+    model_text: |-
+      ]<]minimax[>[<tool_call>
+      ]<]minimax[>[<invoke name="get_time">
+
+      ]<]minimax[>[</invoke>
+      ]<]minimax[>[</tool_call>
+    tools:
+    - *time_tool
+    expected:
+      dynamo: *empty_args_call
+      vllm: *m3_vllm_unavailable
+      sglang: *m3_sglang_unavailable
+  TOOLCALLING.batch.6.c:
+    description: Invoke with empty body on one line
+    ref: MiniMax M3 namespace-token XML tool-call grammar
+    model_text: |-
+      ]<]minimax[>[<tool_call>
+      ]<]minimax[>[<invoke name="get_time">]<]minimax[>[</invoke>
+      ]<]minimax[>[</tool_call>
+    tools:
+    - *time_tool
+    expected:
+      dynamo: *empty_args_call
+      vllm: *m3_vllm_unavailable
+      sglang: *m3_sglang_unavailable

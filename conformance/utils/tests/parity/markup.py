@@ -9,10 +9,20 @@ import html as html_lib
 import re
 from typing import Any
 
-# Matches both `<...>` and the Mistral-style `[NAME]`/`[/NAME]` form.
+# MiniMax M3 prefixes every structural tag with the `]<]minimax[>[` namespace
+# special token (tokenizer id 200058), e.g. `]<]minimax[>[<tool_call>`. It must
+# be matched as one whole token *before* the generic `<...>` rule, otherwise the
+# inner `<]minimax[>` is mis-split into a red orphan tag with stray `]`/`[`
+# around it. The token carries no open/close semantics, so it is colored as
+# muted namespace decoration (`tt-ns`) rather than a paired or orphan tag.
+_MINIMAX_NS_TOKEN = "]<]minimax[>["
+_NS_CLASS = "tt-ns"
+
+# Matches the MiniMax namespace token (first, so it wins over `<...>`), then
+# `<...>`, then the Mistral-style `[NAME]`/`[/NAME]` form.
 # Brackets only match ALL-CAPS-underscore names so JSON arrays
 # (e.g. `[{...}]`, `[1, 2]`) don't get false-matched as tags.
-_TAG_RE = re.compile(r"<[^<>]+>|\[/?[A-Z][A-Z0-9_]*\]")
+_TAG_RE = re.compile(r"\]<\]minimax\[>\[|<[^<>]+>|\[/?[A-Z][A-Z0-9_]*\]")
 
 # Two coloring schemes share one cycling palette:
 #   * Paired open/close: every matched pair gets a *fresh* palette index, so
@@ -185,6 +195,10 @@ def _colorize_xml(text: str) -> str:
         if m.start() > last:
             pieces.append(html_lib.escape(text[last : m.start()]))
         tok = m.group(0)
+        if tok == _MINIMAX_NS_TOKEN:
+            pieces.append(f'<span class="{_NS_CLASS}">{html_lib.escape(tok)}</span>')
+            last = m.end()
+            continue
         kind, pair_id, color_override = _tag_kind_and_name(tok[1:-1])
         esc = html_lib.escape(tok)
         if kind is None:
@@ -253,8 +267,13 @@ def _xml_token_intervals(text: str) -> list[dict[str, Any]]:
     intervals: list[dict[str, Any]] = []
     stack: list[tuple[str, int]] = []
     for match in _TAG_RE.finditer(text):
-        idx = len(intervals)
         tok = match.group(0)
+        if tok == _MINIMAX_NS_TOKEN:
+            intervals.append(
+                {"start": match.start(), "end": match.end(), "class": _NS_CLASS}
+            )
+            continue
+        idx = len(intervals)
         kind, pair_id, _color_override = _tag_kind_and_name(tok[1:-1])
         intervals.append({"start": match.start(), "end": match.end(), "class": None})
         if kind is None:
