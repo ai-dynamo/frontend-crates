@@ -1818,6 +1818,58 @@ NORMAL_MODE
         .unwrap()
     }
 
+    fn gemma4_tool_template_for_tests() -> &'static str {
+        r#"
+{{ bos_token }}
+{%- set loop_messages = messages -%}
+{%- set ns_turn = namespace(last_user_idx=-1) -%}
+{%- for i in range(loop_messages | length) -%}
+    {%- if loop_messages[i]['role'] == 'user' -%}
+        {%- set ns_turn.last_user_idx = i -%}
+    {%- endif -%}
+{%- endfor -%}
+{%- for message in loop_messages -%}
+    {%- set role = 'model' if message['role'] == 'assistant' else message['role'] -%}
+    {{- '<|turn>' + role + '\n' }}
+
+    {%- if message.get('reasoning') and loop.index0 > ns_turn.last_user_idx and message.get('tool_calls') -%}
+        {{- '<|channel>thought\n' + message['reasoning'] + '\n<channel|>'}}
+    {%- endif -%}
+
+            {%- if message['tool_calls'] -%}
+                {%- for tool_call in message['tool_calls'] -%}
+                    {%- set function = tool_call['function'] -%}
+                    {{- '<|tool_call>call:' + function['name'] + '{' -}}
+                    {%- if function['arguments'] is mapping -%}
+                        {%- set ns_args = namespace(found_first=false) -%}
+                        {%- for key, value in function['arguments'] | dictsort -%}
+                            {%- if ns_args.found_first %},{% endif -%}
+                            {%- set ns_args.found_first = true -%}
+                            {{- key -}}:{{- value -}}
+                        {%- endfor -%}
+                    {%- elif function['arguments'] is string -%}
+                        {{- function['arguments'] -}}
+                    {%- endif -%}
+                    {{- '}<tool_call|>' -}}
+                {%- endfor -%}
+            {%- endif -%}
+
+            {%- if message['content'] is string -%}
+                {{- message['content'] -}}
+            {%- endif -%}
+    {{- '<turn|>\n' -}}
+{%- endfor -%}
+"#
+    }
+
+    fn make_gemma4_tool_formatter_for_tests() -> HfTokenizerConfigJsonFormatter {
+        let chat_template: ChatTemplate = serde_json::from_value(serde_json::json!({
+            "chat_template": gemma4_tool_template_for_tests()
+        }))
+        .unwrap();
+        HfTokenizerConfigJsonFormatter::new(chat_template, ContextMixins::new(&[])).unwrap()
+    }
+
     /// Helper to build a request with tools and optional tool_choice.
     fn request_with_tool_choice(tool_choice: &str) -> NvCreateChatCompletionRequest {
         serde_json::from_value(serde_json::json!({
@@ -1941,6 +1993,92 @@ NORMAL_MODE
         // tool_calls should be untouched
         assert!(assistant.get("tool_calls").is_some());
         assert_eq!(assistant["tool_calls"].as_array().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn test_gemma4_template_renders_reasoning_content_segments_around_tool_calls() {
+        let formatter = make_gemma4_tool_formatter_for_tests();
+        assert!(
+            formatter.template_handles_reasoning,
+            "Gemma4 template adaptation should make reasoning_content native"
+        );
+
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(serde_json::json!({
+            "model": "gemma4-test",
+            "messages": [
+                {"role": "user", "content": "inspect two things"},
+                {
+                    "role": "assistant",
+                    "content": null,
+                    "reasoning_content": [
+                        "Think before the first call.",
+                        "Think before the second call.",
+                        "Think after both calls."
+                    ],
+                    "tool_calls": [
+                        {
+                            "id": "call_0",
+                            "type": "function",
+                            "function": {
+                                "name": "first_tool",
+                                "arguments": "{\"path\":\".\"}"
+                            }
+                        },
+                        {
+                            "id": "call_1",
+                            "type": "function",
+                            "function": {
+                                "name": "second_tool",
+                                "arguments": "{\"path\":\"/tmp\"}"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }))
+        .unwrap();
+
+        let rendered = formatter.render(&request).unwrap();
+
+        let expected = concat!(
+            "<|channel>thought\nThink before the first call.\n<channel|>",
+            "<|tool_call>call:first_tool{path:.}<tool_call|>",
+            "<|channel>thought\nThink before the second call.\n<channel|>",
+            "<|tool_call>call:second_tool{path:/tmp}<tool_call|>",
+            "<|channel>thought\nThink after both calls.\n<channel|>"
+        );
+        assert!(
+            rendered.contains(expected),
+            "Gemma4 reasoning segments should stay adjacent to their tool calls, got: {rendered}"
+        );
+        assert!(!rendered.contains("<think>"));
+        assert!(!rendered.contains("reasoning_content"));
+    }
+
+    #[test]
+    fn test_gemma4_template_renders_reasoning_content_without_tool_calls() {
+        let formatter = make_gemma4_tool_formatter_for_tests();
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(serde_json::json!({
+            "model": "gemma4-test",
+            "messages": [
+                {"role": "user", "content": "answer directly"},
+                {
+                    "role": "assistant",
+                    "content": "Direct answer.",
+                    "reasoning_content": "Private thought."
+                }
+            ]
+        }))
+        .unwrap();
+
+        let rendered = formatter.render(&request).unwrap();
+
+        assert!(
+            rendered.contains("<|channel>thought\nPrivate thought.\n<channel|>Direct answer."),
+            "Gemma4 reasoning_content should render in the thought channel, got: {rendered}"
+        );
+        assert!(!rendered.contains("<think>"));
+        assert!(!rendered.contains("reasoning_content"));
     }
 
     #[test]

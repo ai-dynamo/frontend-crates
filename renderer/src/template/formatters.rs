@@ -262,6 +262,79 @@ fn normalize_jinja_code_segment(segment: &str) -> String {
     out
 }
 
+/// Detects the Gemma4 tool template shape that replays assistant thinking from
+/// the upstream/vLLM-style `message.reasoning` field.
+fn is_gemma4_reasoning_field_template_source(source: &str) -> bool {
+    source.contains("<|channel>thought")
+        && source.contains("<|tool_call>call:")
+        && (source.contains("message.get('reasoning')")
+            || source.contains("message.get(\"reasoning\")"))
+        && !source.contains("reasoning_content")
+}
+
+/// The stock template has a single `message.reasoning` block before the
+/// tool-call loop. Dynamo can carry reasoning as N+1 segments around N tool
+/// calls, so the renderer patches that known template shape at load time:
+/// segment i is emitted immediately before tool_call i, and the optional
+/// trailing segment is emitted after the final tool call.
+fn adapt_gemma4_reasoning_template_source(source: &str) -> String {
+    if !is_gemma4_reasoning_field_template_source(source) {
+        return source.to_string();
+    }
+
+    const OLD_REASONING_BLOCK: &str = "{%- if message.get('reasoning') and loop.index0 > ns_turn.last_user_idx and message.get('tool_calls') -%}
+        {{- '<|channel>thought\\n' + message['reasoning'] + '\\n<channel|>'}}
+    {%- endif -%}";
+    const NEW_REASONING_BLOCK: &str = "{%- set dyn_gemma4_reasoning_value = message.get('reasoning') or message.get('reasoning_content') -%}
+    {%- set dyn_gemma4_reasoning_segments = [] -%}
+    {%- if dyn_gemma4_reasoning_value is string -%}
+        {%- set dyn_gemma4_reasoning_segments = [dyn_gemma4_reasoning_value] -%}
+    {%- elif dyn_gemma4_reasoning_value is sequence -%}
+        {%- set dyn_gemma4_reasoning_segments = dyn_gemma4_reasoning_value -%}
+    {%- endif -%}
+    {%- if dyn_gemma4_reasoning_value and not message.get('tool_calls') -%}
+        {%- for dyn_gemma4_reasoning_segment in dyn_gemma4_reasoning_segments -%}
+            {%- if dyn_gemma4_reasoning_segment -%}
+                {{- '<|channel>thought\\n' + dyn_gemma4_reasoning_segment + '\\n<channel|>'}}
+            {%- endif -%}
+        {%- endfor -%}
+    {%- endif -%}";
+    const OLD_TOOL_LOOP_START: &str = "{%- for tool_call in message['tool_calls'] -%}
+                    {%- set function = tool_call['function'] -%}";
+    const NEW_TOOL_LOOP_START: &str = "{%- for tool_call in message['tool_calls'] -%}
+                    {%- set dyn_gemma4_reasoning_segment = dyn_gemma4_reasoning_segments[loop.index0] | default('') -%}
+                    {%- if dyn_gemma4_reasoning_segment -%}
+                        {{- '<|channel>thought\\n' + dyn_gemma4_reasoning_segment + '\\n<channel|>'}}
+                    {%- endif -%}
+                    {%- set function = tool_call['function'] -%}";
+    const OLD_TOOL_LOOP_END: &str = "{{- '}<tool_call|>' -}}
+                {%- endfor -%}";
+    const NEW_TOOL_LOOP_END: &str = "{{- '}<tool_call|>' -}}
+                {%- endfor -%}
+                {%- set dyn_gemma4_trailing_reasoning = dyn_gemma4_reasoning_segments[message['tool_calls'] | length] | default('') -%}
+                {%- if dyn_gemma4_trailing_reasoning -%}
+                    {{- '<|channel>thought\\n' + dyn_gemma4_trailing_reasoning + '\\n<channel|>'}}
+                {%- endif -%}";
+
+    if !source.contains(OLD_REASONING_BLOCK)
+        || !source.contains(OLD_TOOL_LOOP_START)
+        || !source.contains(OLD_TOOL_LOOP_END)
+    {
+        return source.to_string();
+    }
+
+    source
+        .replace(OLD_REASONING_BLOCK, NEW_REASONING_BLOCK)
+        .replace(OLD_TOOL_LOOP_START, NEW_TOOL_LOOP_START)
+        .replace(OLD_TOOL_LOOP_END, NEW_TOOL_LOOP_END)
+}
+
+fn normalize_chat_template_source(source: &str) -> String {
+    adapt_gemma4_reasoning_template_source(&normalize_dict_method_calls(
+        &remove_known_non_jinja2_tags(source),
+    ))
+}
+
 impl JinjaEnvironment {
     fn env(self) -> Environment<'static> {
         self.env
@@ -327,8 +400,7 @@ impl HfTokenizerConfigJsonFormatter {
                     supports_add_generation_prompt = Some(true);
                 }
                 // Remove known non-standard tags before validation (they don't affect output)
-                let template_cleaned =
-                    normalize_dict_method_calls(&remove_known_non_jinja2_tags(x));
+                let template_cleaned = normalize_chat_template_source(x);
                 env.add_template_owned("default", template_cleaned.clone())?;
                 env.add_template_owned("tool_use", template_cleaned)?;
             }
@@ -353,8 +425,7 @@ impl HfTokenizerConfigJsonFormatter {
                             supports_add_generation_prompt = Some(false);
                         }
                         // Remove known non-standard tags before validation (they don't affect output)
-                        let template_cleaned =
-                            normalize_dict_method_calls(&remove_known_non_jinja2_tags(v));
+                        let template_cleaned = normalize_chat_template_source(v);
                         env.add_template_owned(k.to_string(), template_cleaned)?;
                     }
                 }
