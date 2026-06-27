@@ -367,7 +367,18 @@ impl DecodeStream {
 
         let new_text = new_result.as_str();
         if new_text.len() > prefix_text.len() && !new_result.is_partial() {
-            let emitted = new_text[prefix_text.len()..].to_string();
+            // If the decode window starts on an incomplete multi-byte sequence,
+            // `prefix_text` contains a U+FFFD replacement char and
+            // `prefix_text.len()` may not be a char boundary in `new_text`;
+            // slicing there panics. Roll back to the nearest char boundary, then
+            // strip the replacement char. Mirrors `Sequence::append_token_id`.
+            let mut prefix_text_len = prefix_text.len();
+            while !new_text.is_char_boundary(prefix_text_len) && prefix_text_len > 0 {
+                prefix_text_len -= 1;
+            }
+            let emitted = new_text[prefix_text_len..]
+                .to_string()
+                .replace('\u{FFFD}', "");
 
             self.prefix_offset = self.read_offset;
             self.read_offset = self.all_token_ids.len();
