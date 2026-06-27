@@ -96,9 +96,18 @@ struct HfTokenizerConfigJsonFormatter {
     /// When true, strip tool definitions from the chat template when tool_choice is "none".
     /// This prevents models from generating raw XML tool calls in the content field.
     exclude_tools_when_tool_choice_none: bool,
-    /// True if the chat template natively references `reasoning_content`.
-    /// When true, skip injection — the template handles it.
-    template_handles_reasoning: bool,
+    /// True if the `default` template natively references `reasoning_content`.
+    /// When true and rendering through `default`, skip injection — the template
+    /// handles it. Tracked separately for `default` and `tool_use` because HF
+    /// configs may register different sources for each: Gemma4's `tool_use`
+    /// template is adapted by `normalize_chat_template_source` to read
+    /// `reasoning_content`, while its `default` template is not. A single global
+    /// flag would wrongly suppress injection on the untouched `default` path and
+    /// silently drop prior assistant reasoning on no-tool renders.
+    default_template_handles_reasoning: bool,
+    /// True if the `tool_use` template natively references `reasoning_content`.
+    /// See `default_template_handles_reasoning` for rationale.
+    tool_use_template_handles_reasoning: bool,
     /// Per-family placeholder template for image content parts when flattening
     /// mixed text+image content arrays into a single string (`preserve_arrays`
     /// = false path). `{n}` in the template is substituted with the 1-based

@@ -478,17 +478,20 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
         // and only for the `tool_calls[].function.arguments` field. Legacy
         // `function_call.arguments` lives outside that branch and is always
         // normalized.
-        let (template_name, template_handles_tool_calls_args_string) = if has_tools {
-            (
-                "tool_use",
-                self.tool_use_template_handles_tool_calls_arguments_string,
-            )
-        } else {
-            (
-                "default",
-                self.default_template_handles_tool_calls_arguments_string,
-            )
-        };
+        let (template_name, template_handles_tool_calls_args_string, template_handles_reasoning) =
+            if has_tools {
+                (
+                    "tool_use",
+                    self.tool_use_template_handles_tool_calls_arguments_string,
+                    self.tool_use_template_handles_reasoning,
+                )
+            } else {
+                (
+                    "default",
+                    self.default_template_handles_tool_calls_arguments_string,
+                    self.default_template_handles_reasoning,
+                )
+            };
 
         // Pre-parse JSON-string `arguments` into objects — but only for templates
         // that unconditionally `| tojson` them. Templates that branch on
@@ -508,7 +511,7 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
         // the template doesn't handle it natively. Templates like Nemotron and
         // Qwen3 reference reasoning_content directly in their Jinja logic; injecting
         // would produce duplicate <think> blocks.
-        if !self.template_handles_reasoning {
+        if !template_handles_reasoning {
             inject_reasoning_content_into_messages(&mut messages_for_template);
         }
 
@@ -1818,6 +1821,58 @@ NORMAL_MODE
         .unwrap()
     }
 
+    fn gemma4_tool_template_for_tests() -> &'static str {
+        r#"
+{{ bos_token }}
+{%- set loop_messages = messages -%}
+{%- set ns_turn = namespace(last_user_idx=-1) -%}
+{%- for i in range(loop_messages | length) -%}
+    {%- if loop_messages[i]['role'] == 'user' -%}
+        {%- set ns_turn.last_user_idx = i -%}
+    {%- endif -%}
+{%- endfor -%}
+{%- for message in loop_messages -%}
+    {%- set role = 'model' if message['role'] == 'assistant' else message['role'] -%}
+    {{- '<|turn>' + role + '\n' }}
+
+    {%- if message.get('reasoning') and loop.index0 > ns_turn.last_user_idx and message.get('tool_calls') -%}
+        {{- '<|channel>thought\n' + message['reasoning'] + '\n<channel|>'}}
+    {%- endif -%}
+
+            {%- if message['tool_calls'] -%}
+                {%- for tool_call in message['tool_calls'] -%}
+                    {%- set function = tool_call['function'] -%}
+                    {{- '<|tool_call>call:' + function['name'] + '{' -}}
+                    {%- if function['arguments'] is mapping -%}
+                        {%- set ns_args = namespace(found_first=false) -%}
+                        {%- for key, value in function['arguments'] | dictsort -%}
+                            {%- if ns_args.found_first %},{% endif -%}
+                            {%- set ns_args.found_first = true -%}
+                            {{- key -}}:{{- value -}}
+                        {%- endfor -%}
+                    {%- elif function['arguments'] is string -%}
+                        {{- function['arguments'] -}}
+                    {%- endif -%}
+                    {{- '}<tool_call|>' -}}
+                {%- endfor -%}
+            {%- endif -%}
+
+            {%- if message['content'] is string -%}
+                {{- message['content'] -}}
+            {%- endif -%}
+    {{- '<turn|>\n' -}}
+{%- endfor -%}
+"#
+    }
+
+    fn make_gemma4_tool_formatter_for_tests() -> HfTokenizerConfigJsonFormatter {
+        let chat_template: ChatTemplate = serde_json::from_value(serde_json::json!({
+            "chat_template": gemma4_tool_template_for_tests()
+        }))
+        .unwrap();
+        HfTokenizerConfigJsonFormatter::new(chat_template, ContextMixins::new(&[])).unwrap()
+    }
+
     /// Helper to build a request with tools and optional tool_choice.
     fn request_with_tool_choice(tool_choice: &str) -> NvCreateChatCompletionRequest {
         serde_json::from_value(serde_json::json!({
@@ -1941,6 +1996,148 @@ NORMAL_MODE
         // tool_calls should be untouched
         assert!(assistant.get("tool_calls").is_some());
         assert_eq!(assistant["tool_calls"].as_array().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn test_gemma4_template_renders_reasoning_content_segments_around_tool_calls() {
+        let formatter = make_gemma4_tool_formatter_for_tests();
+        assert!(
+            formatter.tool_use_template_handles_reasoning,
+            "Gemma4 template adaptation should make reasoning_content native"
+        );
+
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(serde_json::json!({
+            "model": "gemma4-test",
+            "messages": [
+                {"role": "user", "content": "inspect two things"},
+                {
+                    "role": "assistant",
+                    "content": null,
+                    "reasoning_content": [
+                        "Think before the first call.",
+                        "Think before the second call.",
+                        "Think after both calls."
+                    ],
+                    "tool_calls": [
+                        {
+                            "id": "call_0",
+                            "type": "function",
+                            "function": {
+                                "name": "first_tool",
+                                "arguments": "{\"path\":\".\"}"
+                            }
+                        },
+                        {
+                            "id": "call_1",
+                            "type": "function",
+                            "function": {
+                                "name": "second_tool",
+                                "arguments": "{\"path\":\"/tmp\"}"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }))
+        .unwrap();
+
+        let rendered = formatter.render(&request).unwrap();
+
+        let expected = concat!(
+            "<|channel>thought\nThink before the first call.\n<channel|>",
+            "<|tool_call>call:first_tool{path:.}<tool_call|>",
+            "<|channel>thought\nThink before the second call.\n<channel|>",
+            "<|tool_call>call:second_tool{path:/tmp}<tool_call|>",
+            "<|channel>thought\nThink after both calls.\n<channel|>"
+        );
+        assert!(
+            rendered.contains(expected),
+            "Gemma4 reasoning segments should stay adjacent to their tool calls, got: {rendered}"
+        );
+        assert!(!rendered.contains("<think>"));
+        assert!(!rendered.contains("reasoning_content"));
+    }
+
+    #[test]
+    fn test_gemma4_template_renders_reasoning_content_without_tool_calls() {
+        let formatter = make_gemma4_tool_formatter_for_tests();
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(serde_json::json!({
+            "model": "gemma4-test",
+            "messages": [
+                {"role": "user", "content": "answer directly"},
+                {
+                    "role": "assistant",
+                    "content": "Direct answer.",
+                    "reasoning_content": "Private thought."
+                }
+            ]
+        }))
+        .unwrap();
+
+        let rendered = formatter.render(&request).unwrap();
+
+        assert!(
+            rendered.contains("<|channel>thought\nPrivate thought.\n<channel|>Direct answer."),
+            "Gemma4 reasoning_content should render in the thought channel, got: {rendered}"
+        );
+        assert!(!rendered.contains("<think>"));
+        assert!(!rendered.contains("reasoning_content"));
+    }
+
+    /// Regression: when a config ships a separate non-tool `default` template
+    /// (dict form), adapting only the `tool_use` template to read
+    /// `reasoning_content` must NOT suppress `<think>` injection on the
+    /// `default` path. A global `any()` flag would flip true off the adapted
+    /// `tool_use` template and silently drop reasoning on no-tool renders.
+    #[test]
+    fn test_reasoning_flag_is_per_template_not_global() {
+        // Plain default template: renders content, never mentions reasoning_content
+        // and lacks the Gemma4 fingerprint, so it is left untouched.
+        const PLAIN_DEFAULT: &str = "{{ bos_token }}{%- for message in messages -%}\
+            {{ message['role'] }}: {{ message['content'] }}\n{%- endfor -%}";
+
+        let chat_template: ChatTemplate = serde_json::from_value(serde_json::json!({
+            "chat_template": [
+                {"default": PLAIN_DEFAULT},
+                {"tool_use": gemma4_tool_template_for_tests()},
+            ]
+        }))
+        .unwrap();
+        let formatter =
+            HfTokenizerConfigJsonFormatter::new(chat_template, ContextMixins::new(&[])).unwrap();
+
+        // The adapted Gemma4 tool_use template handles reasoning natively; the
+        // untouched plain default template does not. The flag must reflect that
+        // per-template split, not a global OR across both.
+        assert!(
+            formatter.tool_use_template_handles_reasoning,
+            "adapted gemma4 tool_use template should handle reasoning natively"
+        );
+        assert!(
+            !formatter.default_template_handles_reasoning,
+            "plain default template does not reference reasoning_content"
+        );
+
+        // A no-tools request routes to `default`. Reasoning must still be injected
+        // as a <think> block — not silently dropped by the tool_use template's flag.
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(serde_json::json!({
+            "model": "gemma4-test",
+            "messages": [
+                {"role": "user", "content": "answer directly"},
+                {
+                    "role": "assistant",
+                    "content": "Direct answer.",
+                    "reasoning_content": "Private thought."
+                }
+            ]
+        }))
+        .unwrap();
+
+        let rendered = formatter.render(&request).unwrap();
+        assert!(
+            rendered.contains("<think>Private thought.</think>Direct answer."),
+            "reasoning must be injected on the no-tool default path, got: {rendered}"
+        );
     }
 
     #[test]
@@ -2127,7 +2324,8 @@ NORMAL_MODE
         let formatter = make_test_formatter();
 
         // Formatter uses a simple template that doesn't reference reasoning_content
-        assert!(!formatter.template_handles_reasoning);
+        assert!(!formatter.default_template_handles_reasoning);
+        assert!(!formatter.tool_use_template_handles_reasoning);
 
         let request: NvCreateChatCompletionRequest = serde_json::from_value(serde_json::json!({
             "model": "test-model",
@@ -2172,7 +2370,8 @@ NORMAL_MODE
             HfTokenizerConfigJsonFormatter::new(chat_template, ContextMixins::new(&[])).unwrap();
 
         // Verify detection worked
-        assert!(formatter.template_handles_reasoning);
+        assert!(formatter.default_template_handles_reasoning);
+        assert!(formatter.tool_use_template_handles_reasoning);
 
         let request: NvCreateChatCompletionRequest = serde_json::from_value(serde_json::json!({
             "model": "test-model",
@@ -2307,7 +2506,7 @@ NORMAL_MODE
     fn test_qwen3_thinking_template_flags_detected() {
         let formatter = qwen3_thinking_formatter();
         assert!(
-            formatter.template_handles_reasoning,
+            formatter.tool_use_template_handles_reasoning,
             "template references reasoning_content directly"
         );
         // The Qwen3-Thinking template is registered as both `default` and
