@@ -449,11 +449,22 @@ impl HfTokenizerConfigJsonFormatter {
             detect_image_placeholder_template(&env)
         };
 
-        // Detect if the template natively handles reasoning_content (e.g. Nemotron, Qwen3).
-        // If so, we must NOT inject <think> blocks — the template does it itself.
-        let template_handles_reasoning = env
-            .templates()
-            .any(|(_, tmpl)| tmpl.source().contains("reasoning_content"));
+        // Detect if a given template natively handles reasoning_content (e.g.
+        // Nemotron, Qwen3, or a Gemma4 tool template adapted by
+        // `normalize_chat_template_source`). If so, we must NOT inject <think>
+        // blocks for that template — it renders reasoning itself. Per-template
+        // (default vs tool_use) because HF configs can register different sources
+        // for each: Gemma4 adapts only its `tool_use` template to read
+        // `reasoning_content`, so a global `any()` flag would wrongly suppress
+        // injection on the untouched `default` path and silently drop reasoning.
+        let template_handles_reasoning = |name: &str| -> bool {
+            env.templates()
+                .find(|(n, _)| *n == name)
+                .map(|(_, tmpl)| tmpl.source().contains("reasoning_content"))
+                .unwrap_or(false)
+        };
+        let default_template_handles_reasoning = template_handles_reasoning("default");
+        let tool_use_template_handles_reasoning = template_handles_reasoning("tool_use");
 
         // Detect if a given template branches on `tool_call.arguments is string` (Qwen3, Hermes).
         // Such templates render a JSON-string `arguments` field verbatim; if we pre-parse
@@ -482,7 +493,8 @@ impl HfTokenizerConfigJsonFormatter {
             supports_add_generation_prompt: supports_add_generation_prompt.unwrap_or(false),
             requires_content_arrays,
             exclude_tools_when_tool_choice_none,
-            template_handles_reasoning,
+            default_template_handles_reasoning,
+            tool_use_template_handles_reasoning,
             image_placeholder_template,
             default_template_handles_tool_calls_arguments_string,
             tool_use_template_handles_tool_calls_arguments_string,

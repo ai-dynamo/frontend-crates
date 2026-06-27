@@ -478,17 +478,20 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
         // and only for the `tool_calls[].function.arguments` field. Legacy
         // `function_call.arguments` lives outside that branch and is always
         // normalized.
-        let (template_name, template_handles_tool_calls_args_string) = if has_tools {
-            (
-                "tool_use",
-                self.tool_use_template_handles_tool_calls_arguments_string,
-            )
-        } else {
-            (
-                "default",
-                self.default_template_handles_tool_calls_arguments_string,
-            )
-        };
+        let (template_name, template_handles_tool_calls_args_string, template_handles_reasoning) =
+            if has_tools {
+                (
+                    "tool_use",
+                    self.tool_use_template_handles_tool_calls_arguments_string,
+                    self.tool_use_template_handles_reasoning,
+                )
+            } else {
+                (
+                    "default",
+                    self.default_template_handles_tool_calls_arguments_string,
+                    self.default_template_handles_reasoning,
+                )
+            };
 
         // Pre-parse JSON-string `arguments` into objects — but only for templates
         // that unconditionally `| tojson` them. Templates that branch on
@@ -508,7 +511,7 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
         // the template doesn't handle it natively. Templates like Nemotron and
         // Qwen3 reference reasoning_content directly in their Jinja logic; injecting
         // would produce duplicate <think> blocks.
-        if !self.template_handles_reasoning {
+        if !template_handles_reasoning {
             inject_reasoning_content_into_messages(&mut messages_for_template);
         }
 
@@ -1999,7 +2002,7 @@ NORMAL_MODE
     fn test_gemma4_template_renders_reasoning_content_segments_around_tool_calls() {
         let formatter = make_gemma4_tool_formatter_for_tests();
         assert!(
-            formatter.template_handles_reasoning,
+            formatter.tool_use_template_handles_reasoning,
             "Gemma4 template adaptation should make reasoning_content native"
         );
 
@@ -2079,6 +2082,62 @@ NORMAL_MODE
         );
         assert!(!rendered.contains("<think>"));
         assert!(!rendered.contains("reasoning_content"));
+    }
+
+    /// Regression: when a config ships a separate non-tool `default` template
+    /// (dict form), adapting only the `tool_use` template to read
+    /// `reasoning_content` must NOT suppress `<think>` injection on the
+    /// `default` path. A global `any()` flag would flip true off the adapted
+    /// `tool_use` template and silently drop reasoning on no-tool renders.
+    #[test]
+    fn test_reasoning_flag_is_per_template_not_global() {
+        // Plain default template: renders content, never mentions reasoning_content
+        // and lacks the Gemma4 fingerprint, so it is left untouched.
+        const PLAIN_DEFAULT: &str = "{{ bos_token }}{%- for message in messages -%}\
+            {{ message['role'] }}: {{ message['content'] }}\n{%- endfor -%}";
+
+        let chat_template: ChatTemplate = serde_json::from_value(serde_json::json!({
+            "chat_template": [
+                {"default": PLAIN_DEFAULT},
+                {"tool_use": gemma4_tool_template_for_tests()},
+            ]
+        }))
+        .unwrap();
+        let formatter =
+            HfTokenizerConfigJsonFormatter::new(chat_template, ContextMixins::new(&[])).unwrap();
+
+        // The adapted Gemma4 tool_use template handles reasoning natively; the
+        // untouched plain default template does not. The flag must reflect that
+        // per-template split, not a global OR across both.
+        assert!(
+            formatter.tool_use_template_handles_reasoning,
+            "adapted gemma4 tool_use template should handle reasoning natively"
+        );
+        assert!(
+            !formatter.default_template_handles_reasoning,
+            "plain default template does not reference reasoning_content"
+        );
+
+        // A no-tools request routes to `default`. Reasoning must still be injected
+        // as a <think> block — not silently dropped by the tool_use template's flag.
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(serde_json::json!({
+            "model": "gemma4-test",
+            "messages": [
+                {"role": "user", "content": "answer directly"},
+                {
+                    "role": "assistant",
+                    "content": "Direct answer.",
+                    "reasoning_content": "Private thought."
+                }
+            ]
+        }))
+        .unwrap();
+
+        let rendered = formatter.render(&request).unwrap();
+        assert!(
+            rendered.contains("<think>Private thought.</think>Direct answer."),
+            "reasoning must be injected on the no-tool default path, got: {rendered}"
+        );
     }
 
     #[test]
@@ -2265,7 +2324,8 @@ NORMAL_MODE
         let formatter = make_test_formatter();
 
         // Formatter uses a simple template that doesn't reference reasoning_content
-        assert!(!formatter.template_handles_reasoning);
+        assert!(!formatter.default_template_handles_reasoning);
+        assert!(!formatter.tool_use_template_handles_reasoning);
 
         let request: NvCreateChatCompletionRequest = serde_json::from_value(serde_json::json!({
             "model": "test-model",
@@ -2310,7 +2370,8 @@ NORMAL_MODE
             HfTokenizerConfigJsonFormatter::new(chat_template, ContextMixins::new(&[])).unwrap();
 
         // Verify detection worked
-        assert!(formatter.template_handles_reasoning);
+        assert!(formatter.default_template_handles_reasoning);
+        assert!(formatter.tool_use_template_handles_reasoning);
 
         let request: NvCreateChatCompletionRequest = serde_json::from_value(serde_json::json!({
             "model": "test-model",
@@ -2445,7 +2506,7 @@ NORMAL_MODE
     fn test_qwen3_thinking_template_flags_detected() {
         let formatter = qwen3_thinking_formatter();
         assert!(
-            formatter.template_handles_reasoning,
+            formatter.tool_use_template_handles_reasoning,
             "template references reasoning_content directly"
         );
         // The Qwen3-Thinking template is registered as both `default` and
