@@ -61,6 +61,21 @@ use crate::{
     traits::{DecodeResult, Decoder, Encoder, Tokenizer},
 };
 
+/// Token-level cache usage for one successful encode.
+///
+/// A partial cache hit reports both cached prefix tokens and uncached suffix tokens.
+/// Their sum always equals the number of tokens returned by the encode operation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CacheTokenUsage {
+    /// Tokens returned from the cached prefix.
+    pub cached_tokens: usize,
+    /// Tokens freshly encoded from the uncached suffix.
+    pub uncached_tokens: usize,
+}
+
+/// Optional observer for token-level cache usage.
+pub type CacheTokenUsageFn = Arc<dyn Fn(CacheTokenUsage) + Send + Sync>;
+
 /// Caching wrapper around an inner tokenizer.
 ///
 /// Implements [`Encoder`], [`Decoder`], and [`Tokenizer`]; decode calls pass
@@ -75,6 +90,8 @@ pub struct CachedTokenizer {
     /// When true, cache the newly-tokenized suffix on a partial hit so the next turn
     /// of a growing conversation hits deeper (see [`L1Cache::extend_after_match`]).
     extend_on_hit: bool,
+    /// Called once after every successful encode while L1 is active.
+    token_observer: Option<CacheTokenUsageFn>,
 }
 
 impl CachedTokenizer {
@@ -98,6 +115,7 @@ impl CachedTokenizer {
             l1: L1Cache::new(max_memory_bytes, special_tokens),
             l1_enabled,
             extend_on_hit: false,
+            token_observer: None,
         }
     }
 
@@ -116,6 +134,30 @@ impl CachedTokenizer {
     pub fn with_observer(mut self, on_hit: CacheEventFn, on_miss: CacheEventFn) -> Self {
         self.l1.set_observer(on_hit, on_miss);
         self
+    }
+
+    /// Install a callback that receives exact cached and uncached token counts after each
+    /// successful encode while L1 is active. A partial hit reports both categories, which
+    /// lets consumers maintain token-level cache totals and derive a reuse ratio. Replaces
+    /// any previously-set token observer.
+    ///
+    /// This observer is not called when the special-token set is empty (and L1 is therefore
+    /// disabled) or when encoding returns an error.
+    pub fn with_token_observer(mut self, observer: CacheTokenUsageFn) -> Self {
+        self.token_observer = Some(observer);
+        self
+    }
+
+    fn observe_token_usage(&self, cached_tokens: usize, total_tokens: usize) {
+        if let Some(observer) = &self.token_observer {
+            let uncached_tokens = total_tokens
+                .checked_sub(cached_tokens)
+                .expect("cached token count cannot exceed total token count");
+            observer(CacheTokenUsage {
+                cached_tokens,
+                uncached_tokens,
+            });
+        }
     }
 
     /// Snapshot of L1 cache statistics (cumulative hits/misses/entries/memory).
@@ -147,30 +189,33 @@ impl Encoder for CachedTokenizer {
         if let Some((prefix_tokens, prefix_len, deepest_boundary)) =
             self.l1.longest_prefix_match(input)
         {
+            let cached_tokens = prefix_tokens.len();
             let suffix = &input[prefix_len..];
-            if suffix.is_empty() {
-                return Ok(Encoding::Sp(prefix_tokens.to_vec()));
-            }
-            if self.extend_on_hit {
+            let encoding = if suffix.is_empty() {
+                Encoding::Sp(prefix_tokens.to_vec())
+            } else if self.extend_on_hit {
                 // Cache the new suffix at its deepest boundary so the next turn hits
                 // deeper, then return the full merged tokens. The deepest boundary was
                 // already found by `longest_prefix_match`, so no rescan is needed here.
-                return Ok(Encoding::Sp(self.l1.extend_after_match(
+                Encoding::Sp(self.l1.extend_after_match(
                     input,
                     prefix_tokens,
                     prefix_len,
                     deepest_boundary,
                     self.inner.as_ref(),
-                )?));
-            }
-            let suffix_enc = self.inner.encode(suffix)?;
-            // Reserve exact capacity so appending the suffix doesn't grow-realloc and
-            // re-copy the (large) cached prefix.
-            let mut merged: Vec<TokenIdType> =
-                Vec::with_capacity(prefix_tokens.len() + suffix_enc.token_ids().len());
-            merged.extend_from_slice(&prefix_tokens);
-            merged.extend_from_slice(suffix_enc.token_ids());
-            return Ok(Encoding::Sp(merged));
+                )?)
+            } else {
+                let suffix_enc = self.inner.encode(suffix)?;
+                // Reserve exact capacity so appending the suffix doesn't grow-realloc and
+                // re-copy the (large) cached prefix.
+                let mut merged: Vec<TokenIdType> =
+                    Vec::with_capacity(prefix_tokens.len() + suffix_enc.token_ids().len());
+                merged.extend_from_slice(&prefix_tokens);
+                merged.extend_from_slice(suffix_enc.token_ids());
+                Encoding::Sp(merged)
+            };
+            self.observe_token_usage(cached_tokens, encoding.token_ids().len());
+            return Ok(encoding);
         }
 
         // Miss path: tokenize once, caching the cumulative prefix at every boundary as we
@@ -178,9 +223,9 @@ impl Encoder for CachedTokenizer {
         // avoid the redundant second tokenization a separate full-encode + insert would
         // cost. Returns Encoding::Sp — consistent with the hit path (see the storage-
         // normalization note in the module docs).
-        Ok(Encoding::Sp(
-            self.l1.populate_and_encode(input, self.inner.as_ref())?,
-        ))
+        let encoding = Encoding::Sp(self.l1.populate_and_encode(input, self.inner.as_ref())?);
+        self.observe_token_usage(0, encoding.token_ids().len());
+        Ok(encoding)
     }
 
     fn encode_batch(&self, inputs: &[&str]) -> Result<Vec<Encoding>> {
@@ -211,6 +256,31 @@ impl Tokenizer for CachedTokenizer {}
 mod tests {
     use super::*;
     use crate::HuggingFaceTokenizer;
+    use std::sync::{Mutex, atomic::AtomicU64, atomic::Ordering};
+
+    struct FailingTokenizer;
+
+    impl Encoder for FailingTokenizer {
+        fn encode(&self, _input: &str) -> Result<Encoding> {
+            Err(anyhow::anyhow!("intentional encode failure"))
+        }
+
+        fn encode_batch(&self, _inputs: &[&str]) -> Result<Vec<Encoding>> {
+            Err(anyhow::anyhow!("intentional encode failure"))
+        }
+    }
+
+    impl Decoder for FailingTokenizer {
+        fn decode(
+            &self,
+            _token_ids: &[TokenIdType],
+            _skip_special_tokens: bool,
+        ) -> Result<DecodeResult> {
+            Err(anyhow::anyhow!("intentional decode failure"))
+        }
+    }
+
+    impl Tokenizer for FailingTokenizer {}
 
     const TINYLLAMA_PATH: &str = concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -225,6 +295,17 @@ mod tests {
         vec!["<s>".into(), "</s>".into()]
     }
 
+    fn collect_token_usage(
+        tokenizer: CachedTokenizer,
+    ) -> (CachedTokenizer, Arc<Mutex<Vec<CacheTokenUsage>>>) {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let observed = events.clone();
+        let tokenizer = tokenizer.with_token_observer(Arc::new(move |usage| {
+            observed.lock().unwrap().push(usage);
+        }));
+        (tokenizer, events)
+    }
+
     #[test]
     fn empty_specials_passes_through_correctly() {
         // L1 disabled by empty specials list — encode must produce correct ids
@@ -232,7 +313,8 @@ mod tests {
         // insert attempt). Otherwise the tiktoken integration would log a
         // miss per request with zero hits forever.
         let tok = inner();
-        let cached = CachedTokenizer::new(tok.clone(), Vec::new(), 4096);
+        let (cached, events) =
+            collect_token_usage(CachedTokenizer::new(tok.clone(), Vec::new(), 4096));
         let s = "<s>hello world</s>";
         let a = cached.encode(s).unwrap();
         let b = tok.encode(s).unwrap();
@@ -241,6 +323,67 @@ mod tests {
         assert_eq!(stats.entries, 0);
         assert_eq!(stats.misses, 0, "empty specials must not increment misses");
         assert_eq!(stats.hits, 0);
+        assert!(
+            events.lock().unwrap().is_empty(),
+            "empty specials must not emit token usage"
+        );
+    }
+
+    #[test]
+    fn token_observer_reports_full_miss_and_partial_hit_with_and_without_extension() {
+        for extend_on_hit in [false, true] {
+            let tok = inner();
+            let hits = Arc::new(AtomicU64::new(0));
+            let misses = Arc::new(AtomicU64::new(0));
+            let hit_counter = hits.clone();
+            let miss_counter = misses.clone();
+            let cached = CachedTokenizer::new(tok, specials(), 64 * 1024)
+                .with_extend(extend_on_hit)
+                .with_observer(
+                    Arc::new(move || {
+                        hit_counter.fetch_add(1, Ordering::Relaxed);
+                    }),
+                    Arc::new(move || {
+                        miss_counter.fetch_add(1, Ordering::Relaxed);
+                    }),
+                );
+            let (cached, events) = collect_token_usage(cached);
+
+            let shared = "<s>system\nYou are helpful.</s><s>user\n";
+            let first = format!("{shared}First question?</s>");
+            let second = format!("{shared}Second different prompt entirely.</s>");
+
+            let first_encoding = cached.encode(&first).unwrap();
+            let second_encoding = cached.encode(&second).unwrap();
+
+            let events = events.lock().unwrap();
+            assert_eq!(events.len(), 2);
+            assert_eq!(
+                events[0],
+                CacheTokenUsage {
+                    cached_tokens: 0,
+                    uncached_tokens: first_encoding.token_ids().len(),
+                }
+            );
+            assert!(events[1].cached_tokens > 0);
+            assert!(events[1].uncached_tokens > 0);
+            assert_eq!(
+                events[1].cached_tokens + events[1].uncached_tokens,
+                second_encoding.token_ids().len()
+            );
+            assert_eq!(hits.load(Ordering::Relaxed), 1);
+            assert_eq!(misses.load(Ordering::Relaxed), 1);
+        }
+    }
+
+    #[test]
+    fn token_observer_does_not_report_failed_encodes() {
+        let tokenizer: Arc<dyn Tokenizer> = Arc::new(FailingTokenizer);
+        let (cached, events) =
+            collect_token_usage(CachedTokenizer::new(tokenizer, specials(), 4096));
+
+        assert!(cached.encode("<s>this fails</s>").is_err());
+        assert!(events.lock().unwrap().is_empty());
     }
 
     #[test]
@@ -281,7 +424,8 @@ mod tests {
     #[test]
     fn encode_batch_uses_cache() {
         let tok = inner();
-        let cached = CachedTokenizer::new(tok.clone(), specials(), 64 * 1024);
+        let (cached, events) =
+            collect_token_usage(CachedTokenizer::new(tok.clone(), specials(), 64 * 1024));
         let shared = "<s>system\nShared persona.</s><s>user\n";
         let inputs = [
             format!("{shared}q1</s>"),
@@ -291,6 +435,16 @@ mod tests {
         let refs: Vec<&str> = inputs.iter().map(String::as_str).collect();
         let outs = cached.encode_batch(&refs).unwrap();
         assert_eq!(outs.len(), 3);
+        let events = events.lock().unwrap();
+        assert_eq!(events.len(), outs.len());
+        for (event, output) in events.iter().zip(&outs) {
+            assert_eq!(
+                event.cached_tokens + event.uncached_tokens,
+                output.token_ids().len()
+            );
+        }
+        assert_eq!(events[0].cached_tokens, 0);
+        assert!(events[1..].iter().all(|event| event.cached_tokens > 0));
         // First call populates, second/third hit.
         assert!(cached.cache_stats().hits >= 2, "expected hits on q2 and q3");
     }

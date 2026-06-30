@@ -17,7 +17,7 @@ use std::{fs::File, io::BufReader, ops::Deref, path::Path};
 use anyhow::Context as _;
 pub use anyhow::{Error, Result};
 
-pub use cache::{CachedTokenizer, L1CacheStats};
+pub use cache::{CacheTokenUsage, CacheTokenUsageFn, CachedTokenizer, L1CacheStats};
 pub use fastokens::FastTokenizer;
 pub use hf::HuggingFaceTokenizer;
 pub use tiktoken::TikTokenTokenizer;
