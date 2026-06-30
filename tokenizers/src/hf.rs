@@ -169,7 +169,11 @@ impl Decoder for HuggingFaceTokenizer {
     }
 }
 
-impl Tokenizer for HuggingFaceTokenizer {}
+impl Tokenizer for HuggingFaceTokenizer {
+    fn token_to_id(&self, token: &str) -> Option<TokenIdType> {
+        self.tokenizer.token_to_id(token)
+    }
+}
 
 impl From<HfTokenizer> for HuggingFaceTokenizer {
     fn from(tokenizer: HfTokenizer) -> Self {
@@ -227,7 +231,8 @@ mod tests {
         const TOKENIZER_CONFIG_JSON: &str = r#"{
             "added_tokens_decoder": {
                 "3": {"content": "<|special_kept|>",    "special": true,  "single_word": false, "lstrip": false, "rstrip": false, "normalized": false},
-                "4": {"content": "<|special_dropped|>", "special": false, "single_word": false, "lstrip": false, "rstrip": false, "normalized": false}
+                "4": {"content": "<|special_dropped|>", "special": false, "single_word": false, "lstrip": false, "rstrip": false, "normalized": false},
+                "42": {"content": "<|config_only|>",   "special": true,  "single_word": false, "lstrip": false, "rstrip": false, "normalized": false}
             }
         }"#;
 
@@ -239,8 +244,11 @@ mod tests {
         )
         .unwrap();
 
-        let mut tokenizer = HfTokenizer::from_file(dir.path().join("tokenizer.json")).unwrap();
+        let tokenizer_path = dir.path().join("tokenizer.json");
+        let mut tokenizer = HfTokenizer::from_file(&tokenizer_path).unwrap();
+        assert_eq!(tokenizer.token_to_id("<|config_only|>"), None);
         merge_special_tokens_from_config(&mut tokenizer, dir.path());
+        assert_eq!(tokenizer.token_to_id("<|config_only|>"), Some(5));
 
         // Registry assertion: only the special:true entry was promoted.
         let specials: Vec<String> = {
@@ -255,8 +263,12 @@ mod tests {
         };
         assert_eq!(
             specials,
-            vec!["<unk>".to_string(), "<|special_kept|>".to_string()],
-            "<|special_kept|> promoted; <|special_dropped|> stayed non-special"
+            vec![
+                "<unk>".to_string(),
+                "<|config_only|>".to_string(),
+                "<|special_kept|>".to_string()
+            ],
+            "special:true entries promoted; <|special_dropped|> stayed non-special"
         );
 
         // Decode round-trip assertion (the layer parser tests cannot
@@ -275,5 +287,10 @@ mod tests {
             decoded_keep.contains("<|special_dropped|>"),
             "non-promoted special:false token must survive skip_special_tokens=true; got {decoded_keep:?}"
         );
+
+        let wrapped = HuggingFaceTokenizer::from_file(tokenizer_path.to_str().unwrap()).unwrap();
+        assert_eq!(wrapped.token_to_id("hello"), Some(1));
+        assert_eq!(wrapped.token_to_id("<|config_only|>"), Some(5));
+        assert_eq!(wrapped.token_to_id("not-in-vocabulary"), None);
     }
 }

@@ -363,6 +363,9 @@ mod tests {
         // Test decode roundtrip
         let decoded: String = tokenizer.decode(ids, false).unwrap().into();
         assert_eq!(decoded, "hello world");
+
+        assert_eq!(tokenizer.token_to_id("hello"), None);
+        assert_eq!(tokenizer.token_to_id("[BOS]"), None);
     }
 
     #[test]

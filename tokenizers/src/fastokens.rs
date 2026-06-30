@@ -57,7 +57,11 @@ impl Decoder for FastTokenizer {
     }
 }
 
-impl Tokenizer for FastTokenizer {}
+impl Tokenizer for FastTokenizer {
+    fn token_to_id(&self, token: &str) -> Option<TokenIdType> {
+        self.hf_decoder.token_to_id(token)
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -106,6 +110,14 @@ mod tests {
                 "fastokens and HuggingFace must produce identical token IDs for '{text}'"
             );
         }
+    }
+
+    #[test]
+    fn test_fast_token_to_id_delegates_to_hf() {
+        let fast = FastTokenizer::from_file(TOKENIZER_PATH).unwrap();
+
+        assert_eq!(fast.token_to_id("He"), Some(18));
+        assert_eq!(fast.token_to_id("not-in-vocabulary"), None);
     }
 
     #[test]

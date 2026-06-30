@@ -130,6 +130,13 @@ pub mod traits {
     }
 
     pub trait Tokenizer: Encoder + Decoder {
+        /// Return the exact vocabulary ID for `token` without normalizing or
+        /// encoding it. Tokenizers that do not expose vocabulary lookup return
+        /// `None`.
+        fn token_to_id(&self, _token: &str) -> Option<TokenIdType> {
+            None
+        }
+
         // fn get_vocab_size(&self) -> usize;
         // fn make_unique_clone(&self) -> Box<dyn Tokenizer>;
     }

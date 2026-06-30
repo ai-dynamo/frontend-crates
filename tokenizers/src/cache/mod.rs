@@ -250,7 +250,11 @@ impl Decoder for CachedTokenizer {
     }
 }
 
-impl Tokenizer for CachedTokenizer {}
+impl Tokenizer for CachedTokenizer {
+    fn token_to_id(&self, token: &str) -> Option<TokenIdType> {
+        self.inner.token_to_id(token)
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -419,6 +423,16 @@ mod tests {
         let direct = tok.decode(enc.token_ids(), false).unwrap();
         let through = cached.decode(enc.token_ids(), false).unwrap();
         assert_eq!(direct, through);
+    }
+
+    #[test]
+    fn token_to_id_passes_through() {
+        let tok = inner();
+        let cached = CachedTokenizer::new(tok.clone(), specials(), 4096);
+
+        assert_eq!(tok.token_to_id("<s>"), Some(1));
+        assert_eq!(cached.token_to_id("<s>"), Some(1));
+        assert_eq!(cached.token_to_id("not-in-vocabulary"), None);
     }
 
     #[test]

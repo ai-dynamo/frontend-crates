@@ -5,6 +5,7 @@ Efficient, versatile tokenization for LLM inference. Wraps HuggingFace and TikTo
 ## Features
 
 - **Multiple backends.** HuggingFace `tokenizers`, OpenAI `tiktoken`, and a FastTokenizer hybrid behind one trait.
+- **Exact vocabulary lookup.** HuggingFace-backed tokenizers resolve registered token strings to IDs without normalization or encoding; unsupported backends return `None`.
 - **Streaming-friendly.** `Sequence` tracks incremental token-id appends and emits text deltas without re-decoding the full prefix.
 - **Prefix caching.** `CachedTokenizer` records prefix tokenizations at special-token boundaries; repeated prompts that share a system prefix re-encode only the trailing suffix, turning O(N) work into O(suffix_len).
 - **Hash verification.** Detect tokenizer drift across model versions.
