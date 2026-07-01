@@ -27,5 +27,14 @@ openai-harmony.workspace = true
 rustpython-parser.workspace = true
 num-traits.workspace = true
 
+# Streaming tool-call jail (ported from dynamo lib/llm). The jail wraps the
+# streaming parsers, so it needs the OpenAI chat stream protocol types plus the
+# async-stream/futures combinators. dynamo-protocols has no dependencies, so
+# dynamo-parsers -> dynamo-protocols stays acyclic.
+dynamo-protocols = { workspace = true }
+async-stream.workspace = true
+futures.workspace = true
+aho-corasick.workspace = true
+
 [dev-dependencies]
 rstest.workspace = true

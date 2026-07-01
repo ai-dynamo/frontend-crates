@@ -7,6 +7,7 @@ pub mod config;
 pub mod dsml;
 pub mod gemma4;
 pub mod harmony;
+pub mod jail;
 pub mod json;
 pub mod parsers;
 pub mod pythonic;
