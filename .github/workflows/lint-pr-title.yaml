@@ -21,3 +21,23 @@ jobs:
         with:
           task_types: '["feat", "fix", "docs", "test", "ci", "refactor", "perf", "chore", "revert", "style", "build"]'
           add_label: 'true'
+
+  external-contribution:
+    name: Label external contributions
+    # Fork PRs only, on open.
+    if: ${{ github.event.action == 'opened' && github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name }}
+    permissions:
+      issues: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add external-contribution label
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ["external-contribution"]
+            });
