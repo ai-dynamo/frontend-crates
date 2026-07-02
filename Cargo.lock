@@ -892,7 +892,11 @@ dependencies = [
 name = "dynamo-parsers"
 version = "3.0.0"
 dependencies = [
+ "aho-corasick",
  "anyhow",
+ "async-stream",
+ "dynamo-protocols",
+ "futures",
  "num-traits",
  "openai-harmony",
  "regex",
