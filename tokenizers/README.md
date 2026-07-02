@@ -83,4 +83,8 @@ println!("hits={} misses={} hit_rate={:.2}", stats.hits, stats.misses, stats.hit
 
 Entries are evicted by approximate LRU once `max_memory_bytes` is exceeded. The
 cache lives as long as the `CachedTokenizer` instance. Use `.with_observer(...)`
-to push hit/miss events into your metrics (e.g. Prometheus counters).
+to push request-level hit/miss events into your metrics. Use
+`.with_token_observer(...)` to receive exact cached and uncached token counts
+after each successful encode while L1 is active. Partial hits report both
+categories, so consumers can increment `cached_tokens_total` and
+`uncached_tokens_total` counters and derive a token-level reuse ratio.
