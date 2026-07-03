@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+use std::borrow::Cow;
+
 use serde_json::value::RawValue;
 use uuid::Uuid;
 
@@ -8,7 +10,9 @@ use super::super::ToolDefinition;
 use super::config::JsonParserConfig;
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 
-// Same as CalledFunction with named parameters.
+/// Public compatibility shape for callers that deserialize a tool call using
+/// the legacy `parameters` key. The parser itself uses an internal union so it
+/// can accept both argument-key variants in a single pass.
 //
 // `parameters` / `arguments` are deserialized as `Box<RawValue>` so the
 // original byte span — including key order, whitespace, and number
@@ -24,35 +28,20 @@ pub struct CalledFunctionParameters {
     pub parameters: Box<RawValue>,
 }
 
+/// Public compatibility shape for callers that deserialize a tool call using
+/// the `arguments` key. The parser itself uses an internal union.
 #[derive(Debug, serde::Deserialize)]
 pub struct CalledFunctionArguments {
     pub name: String,
     pub arguments: Box<RawValue>,
 }
 
-// A tool call may omit both `arguments` and `parameters` when the function
-// takes no inputs (e.g. `{"name": "get_time"}`). vLLM's and SGLang's Hermes
-// detectors treat that as an empty-argument call; this name-only shape is
-// tried as a last resort (after the `parameters` / `arguments` shapes) so the
-// call is recovered with `{}` args rather than dropped and its wrapper leaked.
+/// Public compatibility shape for a call containing only a function name.
+/// Parsers whose configuration permits name-only calls convert it to `{}`
+/// arguments through the internal union representation.
 #[derive(Debug, serde::Deserialize)]
 pub struct CalledFunctionNameOnly {
     pub name: String,
-}
-
-#[derive(Debug)]
-enum JsonPayload<'a> {
-    Borrowed(&'a str),
-    Owned(String),
-}
-
-impl JsonPayload<'_> {
-    fn as_str(&self) -> &str {
-        match self {
-            Self::Borrowed(value) => value,
-            Self::Owned(value) => value,
-        }
-    }
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -77,7 +66,7 @@ fn extract_tool_call_content<'a>(
     input: &'a str,
     start_token: &str,
     end_token: &str,
-) -> Option<JsonPayload<'a>> {
+) -> Option<Cow<'a, str>> {
     if start_token.is_empty() || end_token.is_empty() {
         return None;
     }
@@ -100,8 +89,8 @@ fn extract_tool_call_content<'a>(
 
     match matches.len() {
         0 => None,
-        1 => Some(JsonPayload::Borrowed(matches[0])),
-        _ => Some(JsonPayload::Owned(format!("[{}]", matches.join(",")))),
+        1 => Some(Cow::Borrowed(matches[0])),
+        _ => Some(Cow::Owned(format!("[{}]", matches.join(",")))),
     }
 }
 
@@ -112,11 +101,11 @@ fn extract_tool_call_content<'a>(
 fn extract_tool_call_content_eof_recovery<'a>(
     input: &'a str,
     start_token: &str,
-) -> Option<JsonPayload<'a>> {
+) -> Option<Cow<'a, str>> {
     let start_pos = input.find(start_token)?;
     let tail = input[start_pos + start_token.len()..].trim();
     if tail.starts_with('{') || tail.starts_with('[') {
-        Some(JsonPayload::Borrowed(tail))
+        Some(Cow::Borrowed(tail))
     } else {
         None
     }
@@ -353,10 +342,9 @@ fn try_parse_normal_text(input: &str, start_token: &str) -> String {
 /// let result = try_tool_call_parse_json(input)?;
 /// assert!(result.is_some());
 /// ```
-/// Parse `payload` into tool calls, trying the three canonical JSON shapes in
-/// order: an array of calls, a single `{name, arguments}`, then a single
-/// `{name, parameters}`. Within an array, each element is tried as
-/// `arguments` then `parameters`.
+/// Parse `payload` into tool calls through one internal representation that
+/// accepts both `arguments` and `parameters`. Arrays retain arguments-first
+/// precedence; single calls retain parameters-first precedence.
 ///
 /// Returns:
 /// - `Ok(Some(calls))` when `payload` matched one of the shapes. The vec may be
@@ -455,7 +443,7 @@ pub fn try_tool_call_parse_basic_json(
 
     // Iterate over all start and end tokens and try to extract the content between them
     // Assumption : One message will not contain different tags for tool calls. Iteration over tags is to support different tags by default for multiple models
-    let mut json = JsonPayload::Borrowed(trimmed);
+    let mut json = Cow::Borrowed(trimmed);
     let mut normal_text = trimmed.to_string();
     let mut found_start_token_with_no_valid_json = false;
 
@@ -473,7 +461,7 @@ pub fn try_tool_call_parse_basic_json(
             let extracted_json = trimmed[idx..].trim();
             if !extracted_json.is_empty() {
                 normal_text = extracted_normal;
-                json = JsonPayload::Borrowed(extracted_json);
+                json = Cow::Borrowed(extracted_json);
             }
         }
     } else {
@@ -487,7 +475,7 @@ pub fn try_tool_call_parse_basic_json(
                 match (start_token.is_empty(), end_token.is_empty()) {
                     (false, true) => {
                         // Single token case
-                        let result = handle_single_token_tool_calls(json.as_str(), start_token);
+                        let result = handle_single_token_tool_calls(json.as_ref(), start_token);
                         if let Some(content) = result {
                             // handle_single_token_tool_calls returns either:
                             //   Some("[{...}, ...]") — one or more extracted calls
@@ -500,7 +488,7 @@ pub fn try_tool_call_parse_basic_json(
                                 found_start_token_with_no_valid_json = true;
                             }
 
-                            json = JsonPayload::Owned(content);
+                            json = Cow::Owned(content);
                             // For single token case, use the normal text we extracted earlier
                             normal_text = new_normal_text;
 
@@ -523,7 +511,7 @@ pub fn try_tool_call_parse_basic_json(
                         if let Some(content) = result {
                             // Check if we found a start token but got empty JSON back
                             // This indicates the token was found but no valid JSON followed
-                            if content.as_str().is_empty() {
+                            if content.as_ref().is_empty() {
                                 found_start_token_with_no_valid_json = true;
                             }
 
@@ -540,7 +528,7 @@ pub fn try_tool_call_parse_basic_json(
             }
         }
     }
-    let json = json.as_str();
+    let json = json.as_ref();
     // Anonymous function to attempt deserialization into a known representation.
     //
     // Try the three canonical JSON shapes (single object with `parameters` or

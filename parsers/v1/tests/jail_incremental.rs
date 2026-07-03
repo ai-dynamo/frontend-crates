@@ -87,6 +87,37 @@ fn content(responses: &[Annotated<CreateChatCompletionStreamResponse>]) -> Strin
         .collect()
 }
 
+fn content_chunks(responses: &[Annotated<CreateChatCompletionStreamResponse>]) -> Vec<String> {
+    responses
+        .iter()
+        .filter_map(|response| response.data.as_ref())
+        .flat_map(|response| response.choices.iter())
+        .filter_map(|choice| choice.delta.content.as_ref())
+        .filter_map(|content| match content {
+            ChatCompletionMessageContent::Text(text) => Some(text.clone()),
+            ChatCompletionMessageContent::Parts(_) => None,
+        })
+        .filter(|text| !text.is_empty())
+        .collect()
+}
+
+#[tokio::test]
+async fn marker_only_jail_completes_even_when_default_parser_accepts_body() {
+    let responses: Vec<_> = JailedStream::builder()
+        .jail_start_sequence("<jail>")
+        .jail_end_sequence("</jail>")
+        .build()
+        .apply_with_finish_reason(stream::iter([
+            chunk(r#"<jail><TOOLCALL>[{"name":"get_time","arguments":{}}]</TOOLCALL></jail>"#),
+            chunk(" trailing prose"),
+        ]))
+        .collect()
+        .await;
+
+    assert_eq!(tool_calls(&responses).len(), 1);
+    assert!(content(&responses).ends_with(" trailing prose"));
+}
+
 #[tokio::test]
 async fn invalid_balanced_candidate_does_not_pin_later_valid_call() {
     let responses = run(
@@ -101,6 +132,55 @@ async fn invalid_balanced_candidate_does_not_pin_later_valid_call() {
     let calls = tool_calls(&responses);
     assert_eq!(calls.len(), 1, "later valid JSON must trigger revalidation");
     assert_eq!(calls[0].0, "get_time");
+}
+
+#[tokio::test]
+async fn unbalanced_candidate_resynchronizes_at_later_start_marker() {
+    for poisoned in [r#"<|python_tag|>{""#, r#"<|python_tag|>{{{"#] {
+        let responses = run(
+            "llama3_json",
+            [
+                poisoned,
+                r#"<|python_tag|>{"name":"get_time","arguments":{}}"#,
+                " all done!",
+            ],
+        )
+        .await;
+
+        let calls = tool_calls(&responses);
+        assert_eq!(calls.len(), 1, "poisoned prefix: {poisoned:?}");
+        assert_eq!(calls[0].0, "get_time");
+        assert_eq!(content(&responses), " all done!");
+    }
+}
+
+#[tokio::test]
+async fn deepseek_bare_calls_complete_before_trailing_prose() {
+    let cases = [
+        (
+            "deepseek_v3",
+            concat!(
+                "<｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather\n",
+                "```json\n{\"location\":\"Paris\"}\n```\n",
+                "<｜tool▁call▁end｜>"
+            ),
+        ),
+        (
+            "deepseek_v3_1",
+            concat!(
+                "<｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>",
+                "{\"location\":\"Paris\"}<｜tool▁call▁end｜>"
+            ),
+        ),
+    ];
+
+    for (parser, call) in cases {
+        let responses = run(parser, [call, " And here is some trailing prose."]).await;
+        let calls = tool_calls(&responses);
+        assert_eq!(calls.len(), 1, "bare call was dropped for {parser}");
+        assert_eq!(calls[0].0, "get_weather");
+        assert_eq!(content(&responses), " And here is some trailing prose.");
+    }
 }
 
 #[tokio::test]
@@ -137,10 +217,25 @@ async fn split_mistral_close_marker_never_leaks() {
 }
 
 #[tokio::test]
+async fn validated_mistral_candidate_retries_authoritative_boundary() {
+    let responses = run(
+        "mistral",
+        [
+            r#"[TOOL_CALLS][{"name":"get_time","arguments":{}}]"#,
+            " trailing prose",
+        ],
+    )
+    .await;
+
+    assert_eq!(tool_calls(&responses).len(), 1);
+    assert_eq!(content(&responses), " trailing prose");
+}
+
+#[tokio::test]
 async fn overlapping_end_markers_choose_longest_boundary() {
     let responses: Vec<_> = JailedStream::builder()
         .tool_call_parser("hermes")
-        .jail_end_sequences(["</tool", "</tool_call>"])
+        .jail_end_sequences(["</tool_call>", "</tool"])
         .build()
         .apply_with_finish_reason(stream::iter([chunk(
             "<tool_call>not-json</tool_call>visible",
@@ -149,6 +244,42 @@ async fn overlapping_end_markers_choose_longest_boundary() {
         .await;
 
     assert_eq!(content(&responses), "visible");
+}
+
+#[tokio::test]
+async fn configured_end_marker_order_has_priority_over_text_position() {
+    let responses: Vec<_> = JailedStream::builder()
+        .jail_start_sequence("<jail>")
+        .jail_end_sequences(["<late>", "</jail>"])
+        .build()
+        .apply_with_finish_reason(stream::iter([chunk(
+            "<jail>inside</jail>outside<late>tail",
+        )]))
+        .collect()
+        .await;
+
+    let chunks = content_chunks(&responses);
+    assert_eq!(chunks.len(), 2);
+    assert_eq!(chunks[0], "<jail>inside</jail>outside<late>");
+    assert_eq!(chunks[1], "tail");
+}
+
+#[tokio::test]
+async fn manual_end_marker_override_disables_json_boundary_exit() {
+    let responses: Vec<_> = JailedStream::builder()
+        .tool_call_parser("llama3_json")
+        .jail_end_sequence("[[END]]")
+        .build()
+        .apply_with_finish_reason(stream::iter([
+            chunk(r#"<|python_tag|>{"name":"get_time","arguments":{}}"#),
+            chunk("[[END]]"),
+            chunk(" after"),
+        ]))
+        .collect()
+        .await;
+
+    assert_eq!(tool_calls(&responses).len(), 1);
+    assert_eq!(content(&responses), " after");
 }
 
 #[tokio::test]

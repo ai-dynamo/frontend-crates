@@ -40,7 +40,7 @@ use uuid::Uuid;
 
 use crate::tool_calling::config::{JsonParserConfig, ParserConfig};
 use crate::tool_calling::gemma4::split_partial_call_prefix_gemma4;
-use crate::tool_calling::json::try_tool_call_parse_basic_json;
+use crate::tool_calling::json::{JsonParserType, try_tool_call_parse_basic_json};
 use crate::tool_calling::parsers::get_tool_parser_map;
 use crate::tool_calling::{
     ToolCallResponse, detect_tool_call_start, find_tool_call_end_position,
@@ -158,26 +158,31 @@ struct ChoiceJailState {
 #[derive(Debug, Clone, Default)]
 struct JailCompletionProgress {
     next_end_search_start: usize,
+    pending_end_marker: Option<usize>,
+    pending_parse: Option<ParsedToolCalls>,
     json: JsonCompletionProgress,
 }
 
 impl JailCompletionProgress {
     fn reset(&mut self) {
         self.next_end_search_start = 0;
+        self.pending_end_marker = None;
+        self.pending_parse = None;
         self.json.reset();
     }
 }
 
 #[derive(Debug, Clone, Default)]
 struct JsonCompletionProgress {
-    base_offset: usize,
     scanned_len: usize,
+    next_start_search_start: usize,
+    last_start_end: Option<usize>,
     started: bool,
     depth: usize,
     in_string: bool,
     escape: bool,
     last_complete_end: Option<usize>,
-    last_validation_len: usize,
+    last_reported_end: Option<usize>,
 }
 
 impl JsonCompletionProgress {
@@ -185,18 +190,59 @@ impl JsonCompletionProgress {
         *self = Self::default();
     }
 
-    /// Scan only newly appended bytes and return the last completed top-level
-    /// JSON boundary when new input makes validation useful. The boundary is
-    /// lexical state, not parser acceptance: every appended suffix can trigger
-    /// fresh validation, so a malformed first candidate never pins the jail.
-    fn new_complete_end_from(&mut self, content: &str, base_offset: usize) -> Option<usize> {
-        if self.base_offset != base_offset
-            || self.scanned_len > content.len()
-            || self.scanned_len < base_offset
-        {
+    fn reset_lexer_at(&mut self, offset: usize) {
+        self.scanned_len = offset;
+        self.started = false;
+        self.depth = 0;
+        self.in_string = false;
+        self.escape = false;
+        self.last_complete_end = None;
+        self.last_reported_end = None;
+    }
+
+    fn find_new_start(&mut self, content: &str, start_tokens: &[String]) -> Option<usize> {
+        let max_token_len = start_tokens
+            .iter()
+            .filter(|token| !token.is_empty())
+            .map(String::len)
+            .max()?;
+        let mut search_start = self
+            .next_start_search_start
+            .min(content.len())
+            .saturating_sub(max_token_len.saturating_sub(1));
+        while search_start > 0 && !content.is_char_boundary(search_start) {
+            search_start -= 1;
+        }
+
+        let newest = start_tokens
+            .iter()
+            .filter(|token| !token.is_empty())
+            .filter_map(|token| {
+                content[search_start..]
+                    .match_indices(token)
+                    .map(|(offset, _)| search_start + offset + token.len())
+                    .filter(|end| self.last_start_end.is_none_or(|previous| *end > previous))
+                    .last()
+            })
+            .max();
+
+        self.next_start_search_start = content.len();
+        if let Some(end) = newest {
+            self.last_start_end = Some(end);
+        }
+        newest
+    }
+
+    /// Scan only newly appended bytes and report each completed top-level JSON
+    /// boundary once. A new configured start marker resets lexical state to
+    /// mirror parsers that resynchronize with `split(start_token)`.
+    fn new_complete_end(&mut self, content: &str, start_tokens: &[String]) -> Option<usize> {
+        if self.scanned_len > content.len() || self.next_start_search_start > content.len() {
             self.reset();
-            self.base_offset = base_offset;
-            self.scanned_len = base_offset;
+        }
+
+        if let Some(start_end) = self.find_new_start(content, start_tokens) {
+            self.reset_lexer_at(start_end);
         }
 
         for (offset, ch) in content[self.scanned_len..].char_indices() {
@@ -239,16 +285,29 @@ impl JsonCompletionProgress {
         }
 
         self.scanned_len = content.len();
-        if self.last_complete_end.is_some() && self.last_validation_len < content.len() {
-            self.last_validation_len = content.len();
-            self.last_complete_end
-        } else {
-            None
+        if self.last_complete_end != self.last_reported_end {
+            self.last_reported_end = self.last_complete_end;
+            return self.last_complete_end;
         }
+        None
     }
 }
 
-type MarkerParseResult = anyhow::Result<(Vec<ToolCallResponse>, Option<String>)>;
+type ParsedToolCalls = (Vec<ToolCallResponse>, Option<String>);
+type MarkerParseResult = anyhow::Result<ParsedToolCalls>;
+
+#[derive(Debug, Clone)]
+enum CompletionStrategy {
+    EndMarker,
+    JsonBoundary { start_tokens: Vec<String> },
+    ParserDriven,
+}
+
+enum ParsedCompletion {
+    Complete(CompletedJail),
+    Pending(ParsedToolCalls),
+    Invalid,
+}
 
 struct CompletedJail {
     split_pos: usize,
@@ -751,6 +810,7 @@ pub enum EmissionMode {
 pub struct JailedStream {
     jail_start_sequences: Vec<String>,
     jail_end_sequences: Vec<String>,
+    completion_strategy: CompletionStrategy,
     tool_call_parser: Option<String>,
     /// When set, only tool calls with this name are emitted (enforces tool_choice=named
     /// when a tool_call_parser is active and the parser-aware MarkerBased path is used).
@@ -1116,6 +1176,10 @@ impl JailedStream {
         accumulated_content: &str,
         progress: &mut JailCompletionProgress,
     ) -> Option<usize> {
+        if let Some(end_pos) = progress.pending_end_marker {
+            return Some(end_pos);
+        }
+
         let max_marker_len = self
             .jail_end_sequences
             .iter()
@@ -1132,53 +1196,23 @@ impl JailedStream {
             search_start -= 1;
         }
 
+        // Preserve the pre-incremental contract: configured sequence order has
+        // priority over text position when more than one marker is present.
         let found = self
             .jail_end_sequences
             .iter()
             .filter(|seq| !seq.is_empty())
-            .filter_map(|seq| {
-                accumulated_content[search_start..].find(seq).map(|pos| {
-                    let start = search_start + pos;
-                    (start, start + seq.len())
-                })
+            .find_map(|seq| {
+                accumulated_content[search_start..]
+                    .find(seq)
+                    .map(|pos| search_start + pos + seq.len())
             })
-            .min_by(|(start_a, end_a), (start_b, end_b)| {
-                start_a.cmp(start_b).then(end_b.cmp(end_a))
-            })
-            .map(|(_, end)| end);
+            .inspect(|end_pos| progress.pending_end_marker = Some(*end_pos));
 
-        progress.next_end_search_start = accumulated_content.len();
-        found
-    }
-
-    /// Return the JSON payload start for parser configurations whose empty end
-    /// token makes a structurally complete JSON value a valid completion
-    /// candidate. This is capability-based and contains no parser-name policy.
-    fn json_completion_base(&self, accumulated_content: &str) -> Option<usize> {
-        let parser_name = self.tool_call_parser.as_deref()?;
-        let parser_map = get_tool_parser_map();
-        let Some(ParserConfig::Json(config)) = parser_map
-            .get(parser_name)
-            .map(|config| &config.parser_config)
-        else {
-            return None;
-        };
-
-        if !config.tool_call_end_tokens.iter().any(String::is_empty) {
-            return None;
+        if found.is_none() {
+            progress.next_end_search_start = accumulated_content.len();
         }
-
-        config
-            .tool_call_start_tokens
-            .iter()
-            .filter(|token| !token.is_empty())
-            .filter_map(|token| {
-                accumulated_content
-                    .find(token.as_str())
-                    .map(|pos| pos + token.len())
-            })
-            .min()
-            .or_else(|| accumulated_content.find(['{', '[']))
+        found
     }
 
     async fn parse_marker_tool_calls(&self, accumulated_content: &str) -> MarkerParseResult {
@@ -1190,32 +1224,29 @@ impl JailedStream {
         .await
     }
 
-    fn marker_parse_has_tool_calls(parse_result: &MarkerParseResult) -> bool {
-        matches!(parse_result, Ok((tool_calls, _)) if !tool_calls.is_empty())
-    }
-
-    async fn completed_from_valid_marker_parse(
+    async fn completion_from_parsed_tool_calls(
         &self,
         accumulated_content: &str,
-        parse_result: MarkerParseResult,
-    ) -> Option<CompletedJail> {
-        if !Self::marker_parse_has_tool_calls(&parse_result) {
-            return None;
-        }
-        let parser = self.tool_call_parser.as_deref()?;
-        let split_pos = find_tool_call_end_position(accumulated_content, Some(parser))?;
-        let marker_parse_result = if split_pos < accumulated_content.len() {
-            let reparsed = self
-                .parse_marker_tool_calls(&accumulated_content[..split_pos])
-                .await;
-            if !Self::marker_parse_has_tool_calls(&reparsed) {
-                return None;
-            }
-            Some(reparsed)
-        } else {
-            Some(parse_result)
+        parsed: ParsedToolCalls,
+    ) -> ParsedCompletion {
+        let Some(parser) = self.tool_call_parser.as_deref() else {
+            return ParsedCompletion::Invalid;
         };
-        Some(CompletedJail {
+        let Some(split_pos) = find_tool_call_end_position(accumulated_content, Some(parser)) else {
+            return ParsedCompletion::Pending(parsed);
+        };
+        let marker_parse_result = if split_pos < accumulated_content.len() {
+            match self
+                .parse_marker_tool_calls(&accumulated_content[..split_pos])
+                .await
+            {
+                Ok(reparsed) if !reparsed.0.is_empty() => Some(Ok(reparsed)),
+                _ => return ParsedCompletion::Invalid,
+            }
+        } else {
+            Some(Ok(parsed))
+        };
+        ParsedCompletion::Complete(CompletedJail {
             split_pos,
             marker_parse_result,
         })
@@ -1231,60 +1262,89 @@ impl JailedStream {
     ) -> JailCompletion {
         match &self.jail_mode {
             JailMode::MarkerBased => {
+                if let Some(parsed) = progress.pending_parse.take() {
+                    match self
+                        .completion_from_parsed_tool_calls(accumulated_content, parsed)
+                        .await
+                    {
+                        ParsedCompletion::Complete(completed) => {
+                            return JailCompletion::Complete(completed);
+                        }
+                        ParsedCompletion::Pending(parsed) => {
+                            progress.pending_parse = Some(parsed);
+                        }
+                        ParsedCompletion::Invalid => {}
+                    }
+                }
+
                 if let Some(end_pos) =
                     self.find_incremental_end_marker(accumulated_content, progress)
                 {
-                    let parse_result = self.parse_marker_tool_calls(accumulated_content).await;
-                    if Self::marker_parse_has_tool_calls(&parse_result) {
-                        if let Some(completed) = self
-                            .completed_from_valid_marker_parse(accumulated_content, parse_result)
-                            .await
-                        {
+                    if self.tool_call_parser.is_none() {
+                        return JailCompletion::Complete(CompletedJail {
+                            split_pos: end_pos,
+                            marker_parse_result: None,
+                        });
+                    }
+
+                    match self.parse_marker_tool_calls(accumulated_content).await {
+                        Ok(parsed) if !parsed.0.is_empty() => {
+                            match self
+                                .completion_from_parsed_tool_calls(accumulated_content, parsed)
+                                .await
+                            {
+                                ParsedCompletion::Complete(completed) => {
+                                    return JailCompletion::Complete(completed);
+                                }
+                                ParsedCompletion::Pending(parsed) => {
+                                    progress.pending_parse = Some(parsed);
+                                    progress.pending_end_marker = None;
+                                    progress.next_end_search_start = accumulated_content.len();
+                                }
+                                ParsedCompletion::Invalid => {}
+                            }
+                            return JailCompletion::Incomplete;
+                        }
+                        _ => {
+                            return JailCompletion::Complete(CompletedJail {
+                                split_pos: end_pos,
+                                marker_parse_result: None,
+                            });
+                        }
+                    }
+                }
+
+                let should_parse = match &self.completion_strategy {
+                    CompletionStrategy::EndMarker => false,
+                    CompletionStrategy::JsonBoundary { start_tokens } => progress
+                        .json
+                        .new_complete_end(accumulated_content, start_tokens)
+                        .is_some(),
+                    CompletionStrategy::ParserDriven => progress.pending_parse.is_none(),
+                };
+
+                if should_parse
+                    && let Ok(parsed) = self.parse_marker_tool_calls(accumulated_content).await
+                    && !parsed.0.is_empty()
+                {
+                    match self
+                        .completion_from_parsed_tool_calls(accumulated_content, parsed)
+                        .await
+                    {
+                        ParsedCompletion::Complete(completed) => {
                             return JailCompletion::Complete(completed);
                         }
-                        return JailCompletion::Incomplete;
-                    }
-
-                    return JailCompletion::Complete(CompletedJail {
-                        split_pos: end_pos,
-                        marker_parse_result: None,
-                    });
-                }
-
-                if let Some(json_base) = self.json_completion_base(accumulated_content)
-                    && progress
-                        .json
-                        .new_complete_end_from(accumulated_content, json_base)
-                        .is_some()
-                {
-                    let parse_result = self.parse_marker_tool_calls(accumulated_content).await;
-                    if let Some(completed) = self
-                        .completed_from_valid_marker_parse(accumulated_content, parse_result)
-                        .await
-                    {
-                        return JailCompletion::Complete(completed);
-                    }
-                }
-
-                // Parsers without markers or JSON framing have no generic
-                // lexical completion signal. Preserve their existing streaming
-                // behavior by validating appended input as before.
-                if self.jail_end_sequences.is_empty()
-                    && self.json_completion_base(accumulated_content).is_none()
-                {
-                    let parse_result = self.parse_marker_tool_calls(accumulated_content).await;
-                    if let Some(completed) = self
-                        .completed_from_valid_marker_parse(accumulated_content, parse_result)
-                        .await
-                    {
-                        return JailCompletion::Complete(completed);
+                        ParsedCompletion::Pending(parsed) => {
+                            progress.pending_parse = Some(parsed);
+                        }
+                        ParsedCompletion::Invalid => {}
                     }
                 }
 
                 JailCompletion::Incomplete
             }
             JailMode::Immediate { format } => {
-                let Some(split_pos) = progress.json.new_complete_end_from(accumulated_content, 0)
+                let Some(split_pos) = progress.json.new_complete_end(accumulated_content, &[])
                 else {
                     return JailCompletion::Incomplete;
                 };
@@ -1835,6 +1895,7 @@ impl JailedStream {
 pub struct JailedStreamBuilder {
     jail_start_sequences: Vec<String>,
     jail_end_sequences: Vec<String>,
+    has_custom_end_sequences: bool,
     tool_call_parser: Option<String>,
     /// When set, only tool calls with this name are emitted (enforces tool_choice=named
     /// when a tool_call_parser is active and the parser-aware MarkerBased path is used).
@@ -1850,6 +1911,7 @@ impl JailedStreamBuilder {
         Self {
             jail_start_sequences: Vec::new(),
             jail_end_sequences: Vec::new(),
+            has_custom_end_sequences: false,
             tool_call_parser: None,
             named_tool_name: None,
             tool_definitions: None,
@@ -1876,6 +1938,7 @@ impl JailedStreamBuilder {
 
     /// Add a sequence that ends jailing when detected
     pub fn jail_end_sequence(mut self, sequence: impl Into<String>) -> Self {
+        self.has_custom_end_sequences = true;
         self.jail_end_sequences.push(sequence.into());
         self
     }
@@ -1885,6 +1948,7 @@ impl JailedStreamBuilder {
         mut self,
         sequences: impl IntoIterator<Item = impl Into<String>>,
     ) -> Self {
+        self.has_custom_end_sequences = true;
         self.jail_end_sequences
             .extend(sequences.into_iter().map(Into::into));
         self
@@ -1946,10 +2010,13 @@ impl JailedStreamBuilder {
 
     /// Build the configured JailedStream
     pub fn build(mut self) -> JailedStream {
+        let mut parser_config = None;
+
         // Auto-populate jail sequences from parser config if not manually configured
         if let Some(ref parser_name) = self.tool_call_parser {
             let parser_map = get_tool_parser_map();
             if let Some(config) = parser_map.get(parser_name.as_str()) {
+                parser_config = Some(&config.parser_config);
                 // Auto-populate start sequences if none configured
                 if self.jail_start_sequences.is_empty() {
                     self.jail_start_sequences = config.parser_config.tool_call_start_tokens();
@@ -1967,6 +2034,28 @@ impl JailedStreamBuilder {
                 }
             }
         }
+
+        let completion_strategy = if self.has_custom_end_sequences {
+            CompletionStrategy::EndMarker
+        } else {
+            match parser_config {
+                Some(ParserConfig::Json(config)) => match &config.parser_type {
+                    JsonParserType::Basic => CompletionStrategy::JsonBoundary {
+                        start_tokens: config.tool_call_start_tokens.clone(),
+                    },
+                    JsonParserType::DeepseekV3 | JsonParserType::DeepseekV31 => {
+                        CompletionStrategy::ParserDriven
+                    }
+                },
+                Some(ParserConfig::Pythonic | ParserConfig::Typescript) => {
+                    CompletionStrategy::ParserDriven
+                }
+                Some(ParserConfig::Xml(config)) if config.backoff_when_no_wrapper => {
+                    CompletionStrategy::ParserDriven
+                }
+                _ => CompletionStrategy::EndMarker,
+            }
+        };
 
         // Collect all possible marker patterns for the MarkerMatcher
         let mut all_patterns = Vec::new();
@@ -2028,6 +2117,7 @@ impl JailedStreamBuilder {
         JailedStream {
             jail_start_sequences: self.jail_start_sequences,
             jail_end_sequences: self.jail_end_sequences,
+            completion_strategy,
             tool_call_parser: self.tool_call_parser,
             named_tool_name: self.named_tool_name,
             tool_definitions: self.tool_definitions,
