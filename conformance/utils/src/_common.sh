@@ -50,13 +50,13 @@ _build_stage_base() {
 
 _copy_toolcalling_v1_fixtures() {
   mkdir -p "$STAGE/tests/parity/toolcalling/fixtures"
-  \cp -Rf "$ROOT/conformance/toolcalling/fixtures/." "$STAGE/tests/parity/toolcalling/fixtures/"
+  \cp -Rf "$ROOT/conformance/toolcalling/fixtures-v1/." "$STAGE/tests/parity/toolcalling/fixtures/"
 }
 
 _copy_toolcalling_v2_fixtures() {
   # v2 reads v1 batch fixtures, then replaces TC stream with v2 per-chunk fixtures.
   mkdir -p "$STAGE/tests/parity/toolcalling/fixtures"
-  for family_dir in "$ROOT/conformance/toolcalling/fixtures"/*/; do
+  for family_dir in "$ROOT/conformance/toolcalling/fixtures-v1"/*/; do
     family="$(basename "$family_dir")"
     mkdir -p "$STAGE/tests/parity/toolcalling/fixtures/$family"
     for f in "$family_dir"TOOLCALLING.batch*.yaml; do

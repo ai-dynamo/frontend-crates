@@ -38,7 +38,7 @@ def _hrefs_for_output(output_path: Path, artifact_root: Path) -> dict[str, str]:
         return _href_from_output(output_path, artifact_root, rel)
 
     return {
-        "toolcalling_fixtures": h("conformance/toolcalling/fixtures/"),
+        "toolcalling_fixtures": h("conformance/toolcalling/fixtures-v1/"),
         "toolcalling_stream_fixtures": h("conformance/toolcalling/fixtures-stream-v2/"),
         "toolcalling_batch_on_stream_fixtures": h(
             "conformance/toolcalling/fixtures-batch-on-stream-v2/"

@@ -147,11 +147,11 @@ For a new streaming parser family, add or update these files:
 - `parsers/v2/src/tool_calling/mod.rs` for the family registry entry.
 - `conformance/toolcalling/fixtures-stream-v2/<family>/TOOLCALLING.streamv2.*.yaml` for per-chunk stream captures.
 - `conformance/toolcalling/fixtures-batch-on-stream-v2/<family>/TOOLCALLING.batch*.yaml` for complete batch text fed through streaming parsers.
-- `conformance/toolcalling/fixtures/<family>/TOOLCALLING.batch*.yaml` only when the family or taxonomy cases do not already exist in the v1 batch corpus.
+- `conformance/toolcalling/fixtures-v1/<family>/TOOLCALLING.batch*.yaml` only when the family or taxonomy cases do not already exist in the v1 batch corpus.
 - `conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md` when adding a new stream-only case or changing stream case descriptions.
 - `conformance/toolcalling/fixtures-stream-v2/README.md` only if the fixture schema or capture convention changes.
 
-Fix legacy v1 parser bugs in `parsers/v1/src/` and the matching v1 fixtures in `conformance/toolcalling/fixtures/`. While both paths coexist, keep v2-only parser behavior in `parsers/v2/`, `fixtures-stream-v2/`, and `fixtures-batch-on-stream-v2/` until v2 replaces v1.
+Fix legacy v1 parser bugs in `parsers/v1/src/` and the matching v1 fixtures in `conformance/toolcalling/fixtures-v1/`. While both paths coexist, keep v2-only parser behavior in `parsers/v2/`, `fixtures-stream-v2/`, and `fixtures-batch-on-stream-v2/` until v2 replaces v1.
 
 ## Fixture Format
 
@@ -206,7 +206,7 @@ Harmony is only the first example; DS4 and the other streaming families follow t
 
 ## Which Fixture Do I Edit?
 
-- `conformance/toolcalling/fixtures/<family>/TOOLCALLING.batch*.yaml` — legacy v1 batch input and the current batch baseline. Do not hand-edit for v2 work; it is also the seed for stream capture.
+- `conformance/toolcalling/fixtures-v1/<family>/TOOLCALLING.batch*.yaml` — legacy v1 batch input and the current batch baseline. Do not hand-edit for v2 work; it is also the seed for stream capture.
 - `conformance/toolcalling/fixtures-stream-v2/<family>/TOOLCALLING.streamv2.*.yaml` — per-chunk streaming behavior (the TC stream tab). Edit/capture here for streaming parser work.
 - `conformance/toolcalling/fixtures-batch-on-stream-v2/<family>/TOOLCALLING.batch*.yaml` — each batch sample's full text run through the stream parser (the batch-on-stream tab).
 

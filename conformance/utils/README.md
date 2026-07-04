@@ -29,7 +29,7 @@ Fixture locations:
 
 | Path | Used By |
 |---|---|
-| `conformance/toolcalling/fixtures/` | `TC batch (v1)` tab. Complete model output through batch parsers. |
+| `conformance/toolcalling/fixtures-v1/` | `TC batch (v1)` tab. Complete model output through batch parsers. |
 | `conformance/toolcalling/fixtures-batch-on-stream-v2/` | `TC batch-on-stream (v2)` tab. Complete batch text through streaming parsers. |
 | `conformance/toolcalling/fixtures-stream-v2/` | `TC stream (v2)` tab. Incremental chunks through streaming parsers. |
 | `conformance/reasoning/fixtures/` | Reasoning parser tabs. |
@@ -38,7 +38,7 @@ Fixture locations:
 
 Keep the implementation and mode separate when reading or updating fixtures.
 
-- Dynamo v1 is batch only. It writes `expected.dynamo` in `conformance/toolcalling/fixtures/`. This is the current batch baseline, not the upcoming v2 stream parser.
+- Dynamo v1 is batch only. It writes `expected.dynamo` in `conformance/toolcalling/fixtures-v1/`. This is the current batch baseline, not the upcoming v2 stream parser.
 - Dynamo v2 Rust is stream and batch-on-stream. It writes `expected.dynamo_rust` in new v2 fixture shapes, though some older example fixtures still use `expected.dynamo`. This is the upcoming Dynamo-owned Rust stream parser. Harmony is only the example wired today; DS4 and the other v2 stream parsers should use the same flow as they land.
 - vLLM Python is batch and stream. Legacy batch fixtures use `expected.vllm`; v2 fixtures use `expected.vllm_python`. Batch output is vLLM's complete-text parser. Stream output is vLLM's streaming parser.
 - vLLM Rust is stream only. It writes `expected.vllm_rust`. vLLM Rust does not expose a separate batch parser here. Complete text is tested by feeding the full text through the Rust streaming parser.
@@ -60,7 +60,7 @@ cargo test --locked -p dynamo-parsers-v2 -- --nocapture
 # Runs fixture-based tests against committed YAML fixtures for Dynamo Rust parser behavior.
 cargo test --locked -p dynamo-conformance-fixtures-v2 -- --nocapture
 
-# Example: check Dynamo v1 batch behavior against committed `expected.dynamo` blocks in `conformance/toolcalling/fixtures/`.
+# Example: check Dynamo v1 batch behavior against committed `expected.dynamo` blocks in `conformance/toolcalling/fixtures-v1/`.
 conformance/utils/check.sh dynamo batch
 
 # Example: check Dynamo v2 stream fixtures and Dynamo v2 batch-on-stream behavior.

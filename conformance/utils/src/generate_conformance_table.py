@@ -2196,7 +2196,7 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
             f'Parser: <strong>v1</strong> Dynamo-synced batch parser '
             f'(<a href="{hrefs["toolcalling_src"]}">parsers/v1/src/tool_calling/</a>) · '
             f'Input: <strong>v1</strong> batch fixtures '
-            f'(<a href="{hrefs["toolcalling_fixtures"]}">conformance/toolcalling/fixtures/</a>).'
+            f'(<a href="{hrefs["toolcalling_fixtures"]}">conformance/toolcalling/fixtures-v1/</a>).'
         ),
         "streamv2": (
             f'Parser: <strong>v2</strong> Dynamo parser v2 token-incremental streaming '
@@ -2262,7 +2262,7 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
                         f'Parser: <strong>v2</strong> Dynamo parser v2 '
                         f'(<a href="{hrefs["streaming_src"]}">parsers/v2/src/tool_calling/*</a>) · '
                         f'Input: <strong>v1</strong> batch fixtures '
-                        f'(<a href="{hrefs["toolcalling_fixtures"]}">conformance/toolcalling/fixtures/</a>).'
+                        f'(<a href="{hrefs["toolcalling_fixtures"]}">conformance/toolcalling/fixtures-v1/</a>).'
                     ),
                     "case_docs_href": hrefs["toolcalling_cases"],
                     "case_docs_label": "lib/parsers/TOOLCALLING_CASES.md",

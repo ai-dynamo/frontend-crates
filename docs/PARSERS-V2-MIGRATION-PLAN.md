@@ -16,7 +16,7 @@ All three parser crates live under `parsers/`, grouped but still separately pack
 
 ## Terminology
 
-`v1` means the stable batch parser crate (`dynamo-parsers`, under `parsers/v1/`), its legacy fixtures (`conformance/toolcalling/fixtures/`, `conformance/reasoning/fixtures/`), the old parity renderer (`conformance/utils/tests/parity/`), and `conformance/utils/lib/parsers/*_CASES.md`.
+`v1` means the stable batch parser crate (`dynamo-parsers`, under `parsers/v1/`), its legacy fixtures (`conformance/toolcalling/fixtures-v1/`, `conformance/reasoning/fixtures/`), the old parity renderer (`conformance/utils/tests/parity/`), and `conformance/utils/lib/parsers/*_CASES.md`.
 
 `v2` means the WIP streaming parser crate (`dynamo-parsers-v2`, under `parsers/v2/`), its Python binding (`parsers/v2-py/`), stream fixtures, batch-on-stream fixtures, and the conformance renderer (`conformance/utils/src/generate_conformance_table.py`, `conformance/utils/src/conformance_table.html.j2`).
 
@@ -34,7 +34,7 @@ The v1/v2 split is kept because **v2 is still under active development**: it liv
 |---|---|---|
 | `parsers/v1/src/` | v1 frontend-crates-owned | Stable batch parser (`dynamo-parsers`). Bug-fix only; do not put v2 streaming work here. |
 | `parsers/v1/tests/` | v1 frontend-crates-owned | v1 crate tests. |
-| `conformance/toolcalling/fixtures/` | frontend-crates legacy v1 | Batch tool-calling fixtures retained for v1 behavior. Do not hand-edit for v2 behavior. |
+| `conformance/toolcalling/fixtures-v1/` | frontend-crates legacy v1 | Batch tool-calling fixtures retained for v1 behavior. Do not hand-edit for v2 behavior. |
 | `conformance/reasoning/fixtures/` | frontend-crates legacy v1 | Reasoning fixtures rendered in the conformance table. |
 | `conformance/utils/tests/parity/` | frontend-crates-owned | Parity generator package for `PARITY_v1.html`. |
 | `conformance/utils/lib/parsers/TOOLCALLING_CASES.md` and `REASONING_CASES.md` | frontend-crates-owned | Case docs used by the v1 renderer. |

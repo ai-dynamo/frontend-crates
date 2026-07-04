@@ -49,8 +49,8 @@ The test package is named `dynamo-conformance-fixtures-v2` for historical compat
 
 | Test | Code under test | Fixtures | Notes |
 |---|---|---|---|
-| `parity_toolcalling` | v1 Dynamo-synced batch parser in `parsers/src/tool_calling/` | v1 batch fixtures in `conformance/toolcalling/fixtures/` | Each `batch` case's `model_text` is fed through `detect_and_parse_tool_call_with_recovery(text, Some(family), tools)` and compared to `expected.dynamo`. |
-| `parity_toolcalling_batch_via_stream` | Dynamo parser v2 in `parsers/v2/src/tool_calling/*` | v1 batch fixtures in `conformance/toolcalling/fixtures/` plus v2 overlays in `conformance/toolcalling/fixtures-batch-on-stream-v2/` | Feeds complete batch text into the v2 stream parser and compares assembled calls to the committed batch-on-stream expectations. |
+| `parity_toolcalling` | v1 Dynamo-synced batch parser in `parsers/src/tool_calling/` | v1 batch fixtures in `conformance/toolcalling/fixtures-v1/` | Each `batch` case's `model_text` is fed through `detect_and_parse_tool_call_with_recovery(text, Some(family), tools)` and compared to `expected.dynamo`. |
+| `parity_toolcalling_batch_via_stream` | Dynamo parser v2 in `parsers/v2/src/tool_calling/*` | v1 batch fixtures in `conformance/toolcalling/fixtures-v1/` plus v2 overlays in `conformance/toolcalling/fixtures-batch-on-stream-v2/` | Feeds complete batch text into the v2 stream parser and compares assembled calls to the committed batch-on-stream expectations. |
 | `parity_toolcalling_stream` | Dynamo parser v2 in `parsers/v2/src/tool_calling/*` | v2 stream fixtures in `conformance/toolcalling/fixtures-stream-v2/` | Checks token-id or text streaming paths per chunk, then checks assembled calls. |
 
 The fixture `family` field is the parser name, the same value Dynamo's `parse_tool_calls_batch` binding takes for v1. Legacy v1 fixtures use `expected.dynamo`, `expected.vllm`, and `expected.sglang`; v2 fixtures should use explicit implementation keys such as `expected.dynamo_rust`, `expected.vllm_rust`, `expected.vllm_python`, and `expected.sglang_python`.
@@ -63,6 +63,6 @@ Parser fixture sync from Dynamo is retired. Update v1 fixtures through normal fr
 
 ## Adding Streaming Parser V2 Fixtures
 
-Use [`../parsers/v2/README.md`](../parsers/v2/README.md#fixture-files-to-add) for the parser-side checklist. In conformance, a new streaming family normally needs `conformance/toolcalling/fixtures-stream-v2/<family>/TOOLCALLING.streamv2.*.yaml` and `conformance/toolcalling/fixtures-batch-on-stream-v2/<family>/TOOLCALLING.batch*.yaml`; add `conformance/toolcalling/fixtures/<family>/TOOLCALLING.batch*.yaml` only when the v1 batch corpus does not already contain that family or taxonomy case.
+Use [`../parsers/v2/README.md`](../parsers/v2/README.md#fixture-files-to-add) for the parser-side checklist. In conformance, a new streaming family normally needs `conformance/toolcalling/fixtures-stream-v2/<family>/TOOLCALLING.streamv2.*.yaml` and `conformance/toolcalling/fixtures-batch-on-stream-v2/<family>/TOOLCALLING.batch*.yaml`; add `conformance/toolcalling/fixtures-v1/<family>/TOOLCALLING.batch*.yaml` only when the v1 batch corpus does not already contain that family or taxonomy case.
 
 The v2 stream fixture schema is documented in [`toolcalling/fixtures-stream-v2/README.md`](toolcalling/fixtures-stream-v2/README.md). Capture and render commands are documented in [`utils/README.md`](utils/README.md).

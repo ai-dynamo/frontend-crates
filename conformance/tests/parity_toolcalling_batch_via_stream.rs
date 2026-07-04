@@ -58,7 +58,7 @@ struct ExpCall {
 
 #[test]
 fn toolcalling_batch_via_stream_parity() {
-    let root = concat!(env!("CARGO_MANIFEST_DIR"), "/toolcalling/fixtures");
+    let root = concat!(env!("CARGO_MANIFEST_DIR"), "/toolcalling/fixtures-v1");
     let mut files = Vec::new();
     collect_yaml(Path::new(root), &mut files);
     files.sort();

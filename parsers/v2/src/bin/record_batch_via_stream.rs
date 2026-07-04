@@ -52,7 +52,7 @@ fn main() -> anyhow::Result<()> {
     let fixture_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .unwrap()
-        .join("conformance/toolcalling/fixtures");
+        .join("conformance/toolcalling/fixtures-v1");
 
     let mut nested = BTreeMap::new();
     for family in families {
