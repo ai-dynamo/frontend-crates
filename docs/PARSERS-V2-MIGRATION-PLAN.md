@@ -52,6 +52,7 @@ Already done:
 - `dynamo-parsers` (v1) is published to crates.io and consumed by Dynamo from there.
 - All three parser crates are grouped under `parsers/{v1,v2,v2-py}` (packaging-neutral; names unchanged).
 - `dynamo-parsers-v2-py` is marked `publish = false` (test-only).
+- The tokenizer test fixtures moved out of the top-level `llm/tests/data` into `tokenizers/tests/data` (removing the lone root `llm/` dir), and the `tokenizers/` crate was **detached from the Dynamo sync** as a result. The synced tokenizer tests hard-coded `../llm/tests/data`, so the fixtures could not move without either detaching or fragile post-sync path patching; `tokenizers/` is now frontend-crates-owned like `parsers/`. Trade-off: `tokenizers/src` no longer receives Dynamo updates automatically — port upstream tokenizer changes by hand. Only `protocols/` and `renderer/` are still Dynamo-synced.
 
 Remaining, gated on **v2's streaming API stabilizing** (do not start while v2 is still churning on `0.x`):
 

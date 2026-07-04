@@ -284,7 +284,7 @@ mod tests {
 
     const TINYLLAMA_PATH: &str = concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../llm/tests/data/sample-models/TinyLlama_v1.1/tokenizer.json"
+        "/tests/data/sample-models/TinyLlama_v1.1/tokenizer.json"
     );
 
     fn inner() -> Arc<dyn Tokenizer> {
