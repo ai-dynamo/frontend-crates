@@ -83,7 +83,7 @@ If you only changed docs or the HTML generator, the Python regression test and `
 
 ## 2. Update Code Or Fixtures
 
-Change parser code under `parsers_v2/` when Dynamo behavior is wrong. Change fixture YAML when expected output changed, new peer output was captured, or a new case was added.
+Change parser code under `parsers/v2/` when Dynamo behavior is wrong. Change fixture YAML when expected output changed, new peer output was captured, or a new case was added.
 
 ### Capture Parser Behavior Into Fixtures
 

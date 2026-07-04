@@ -371,7 +371,7 @@ def test_dsv4_v2_parser_cell_links_dsml_parser() -> None:
         stream_context="streamv2",
     )
     assert "DeepSeekV4ToolStreamParser text path" in html
-    assert "parsers_v2/src/tool_calling/dsml.rs" in html
+    assert "parsers/v2/src/tool_calling/dsml.rs" in html
     assert "not implemented" not in html
 
 
@@ -723,10 +723,10 @@ def test_tab_labels_put_version_after_family() -> None:
 
 def test_common_legend_defines_v1_v2() -> None:
     legend = g._common_legend_html()
-    assert "<strong>v1</strong> means the parser code in the Dynamo repo" in legend
-    assert "<strong>v2</strong> means the new frontend crate parser path" in legend
-    assert "<code>parsers/src/...</code>" in legend
-    assert "<code>parsers_v2/src/...</code>" in legend
+    assert "<strong>v1</strong> means the stable batch parser crate" in legend
+    assert "<strong>v2</strong> means the WIP streaming parser crate" in legend
+    assert "<code>parsers/v1/src/...</code>" in legend
+    assert "<code>parsers/v2/src/...</code>" in legend
 
 
 def test_template_cells_do_not_clip_hover_tooltips() -> None:
@@ -747,7 +747,7 @@ def test_toolcalling_parser_options_are_mode_specific() -> None:
 
 _DOC_FILES = (
     UTILS / "README.md",
-    REPO / "parsers_v2" / "README.md",
+    REPO / "parsers" / "v2" / "README.md",
     REPO / "conformance" / "README.md",
     REPO / "conformance" / "toolcalling" / "fixtures-stream-v2" / "README.md",
 )

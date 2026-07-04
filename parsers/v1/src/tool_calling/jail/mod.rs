@@ -7,14 +7,14 @@
 //! whether a span is a tool call, then **batch-parses** the accumulated text
 //! and emits the result — it accumulates, then parses, rather than parsing
 //! token-by-token. This is the v1 path and is **being deprecated**: the
-//! pure-streaming v2 parser under `../parsers_v2/` is under development and will
+//! pure-streaming v2 parser under `parsers/v2/` is under development and will
 //! fully replace it, at which point this v1 crate is removed outright.
 //!
 //! This module is a relocation, not a rewrite: it was moved from dynamo
 //! `lib/llm/src/protocols/openai/chat_completions/jail.rs` so all of v1 lives
 //! in one repo during the transition. v1 behavior is unchanged.
 
-// TODO: Deprecate this when v2 streaming (../parsers_v2/) fully replaces v1 —
+// TODO: Deprecate this when v2 streaming (parsers/v2/) fully replaces v1 —
 // at that point the jail-and-batch mechanism and this whole v1 crate are removed.
 
 pub mod annotated;

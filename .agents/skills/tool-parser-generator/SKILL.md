@@ -1,6 +1,6 @@
 ---
 name: tool-parser-generator
-description: Generate optimized tool call parsers for the dynamo-parsers crate from HuggingFace model chat templates. Use this when you need to add support for a new model's tool calling format. Takes a HuggingFace model name, analyzes its chat template, compares with existing parsers, and either maps to an existing parser or generates new Rust code with tests for the tool_calling library. The same workflow applies to reasoning parsers in parsers/src/reasoning/.
+description: Generate optimized tool call parsers for the dynamo-parsers crate from HuggingFace model chat templates. Use this when you need to add support for a new model's tool calling format. Takes a HuggingFace model name, analyzes its chat template, compares with existing parsers, and either maps to an existing parser or generates new Rust code with tests for the tool_calling library. The same workflow applies to reasoning parsers in parsers/v1/src/reasoning/.
 license: "Apache-2.0"
 ---
 
@@ -10,7 +10,7 @@ Add support for new models' tool calling formats by analyzing their chat templat
 
 ## Parser goals (read first)
 
-These bind every parser you add here and are the tie-breakers when vLLM, SGLang, and Dynamo disagree. The canonical list is in [`../../../parsers_v2/README.md`](../../../parsers_v2/README.md) ("Parser goals"); in brief:
+These bind every parser you add here and are the tie-breakers when vLLM, SGLang, and Dynamo disagree. The canonical list is in [`../../../parsers/v2/README.md`](../../../parsers/v2/README.md) ("Parser goals"); in brief:
 
 - **Follow the model's own spec** (its chat template / tool-calling guide defines the grammar), and **record the spec source in the fixture YAML** (a `spec:` URL), not just in code comments.
 - **Error recovery is under-specified**, so a divergence from vLLM/SGLang on a recovery / edge case is **expected** — document it with a `reason:`; do not "fix" it by matching a peer.
@@ -80,11 +80,11 @@ The chat template is a Jinja template. Analyze it to identify tool call patterns
 
 ### Phase 3: Compare with Existing Parsers
 
-**Identify the family from the authoritative cheat-sheet.** The full, current family-to-grammar-to-file mapping (every tool-call and reasoning family) is the "Parser families" section of [`../../../parsers_v2/README.md`](../../../parsers_v2/README.md) — do not maintain a model list here, it drifts. Use it to pick the closest family, then:
+**Identify the family from the authoritative cheat-sheet.** The full, current family-to-grammar-to-file mapping (every tool-call and reasoning family) is the "Parser families" section of [`../../../parsers/v2/README.md`](../../../parsers/v2/README.md) — do not maintain a model list here, it drifts. Use it to pick the closest family, then:
 
-1. **Read that family's parser module** under `parsers/src/tool_calling/<family>/` (the batch impl that owns the grammar) to confirm the markers and structure match the model you analyzed.
+1. **Read that family's parser module** under `parsers/v1/src/tool_calling/<family>/` (the batch impl that owns the grammar) to confirm the markers and structure match the model you analyzed.
 2. **Review its config preset** in `tool_calling/config.rs` (`ToolCallConfig::<family>()` — start/end tokens, key names, parser type) and its registry entry in `tool_calling/parsers.rs` (`get_tool_parser_map()` → `ParserType`).
-3. **Check whether a streaming (v2) parser already exists** under `parsers_v2/src/tool_calling/<family>.rs`. New work targets v2 (pure streaming); v1 (jail-and-buffer batch) is still in use but will be removed once v2 is done.
+3. **Check whether a streaming (v2) parser already exists** under `parsers/v2/src/tool_calling/<family>.rs`. New work targets v2 (pure streaming); v1 (jail-and-buffer batch) is still in use but will be removed once v2 is done.
 
 **Match the analyzed format**:
 - If start/end tokens and format match existing parser → Use existing parser with config
@@ -97,7 +97,7 @@ The chat template is a Jinja template. Analyze it to identify tool call patterns
 
 If a match is found, create a configuration preset:
 
-1. Add a new preset function to `parsers/src/tool_calling/config.rs`:
+1. Add a new preset function to `parsers/v1/src/tool_calling/config.rs`:
    ```rust
    impl ToolCallConfig {
        pub fn new_model_name() -> Self {
@@ -114,7 +114,7 @@ If a match is found, create a configuration preset:
    }
    ```
 
-2. Register in parser map in `parsers/src/tool_calling/parsers.rs`
+2. Register in parser map in `parsers/v1/src/tool_calling/parsers.rs`
 
 3. **Create tests** to verify the configuration works
 
@@ -180,7 +180,7 @@ For any new parser or configuration, generate comprehensive tests:
 
 4. **Add tests** to appropriate location:
    - Inline in parser file (in `#[cfg(test)]` module)
-   - Or in `parsers/src/tool_calling/tests.rs`
+   - Or in `parsers/v1/src/tool_calling/tests.rs`
 
 ### Phase 6: Integration
 
@@ -211,10 +211,10 @@ For any new parser or configuration, generate comprehensive tests:
 ## Key Reference Files
 
 **This repo (`dynamo-parsers`)**:
-- `parsers/src/tool_calling/` - All tool call parsers
-- `parsers/src/tool_calling/config.rs` - Configuration presets
-- `parsers/src/tool_calling/parsers.rs` - Parser registry
-- `parsers/src/reasoning/` - Reasoning parsers (same workflow if you're adding
+- `parsers/v1/src/tool_calling/` - All tool call parsers
+- `parsers/v1/src/tool_calling/config.rs` - Configuration presets
+- `parsers/v1/src/tool_calling/parsers.rs` - Parser registry
+- `parsers/v1/src/reasoning/` - Reasoning parsers (same workflow if you're adding
   a `<think>`-style reasoning parser instead of a tool parser)
 
 Note: chat-template loading/structures (`tokcfg.rs`, `template.rs`) live
@@ -245,7 +245,7 @@ User: "Add tool calling support for Qwen/Qwen2.5-72B-Instruct"
 - Identify format: Check for JSON with `tojson` filter
 
 **Step 3**: Compare with existing parsers
-- Read `parsers/src/tool_calling/config.rs`
+- Read `parsers/v1/src/tool_calling/config.rs`
 - Check `ToolCallConfig::hermes()` - uses `<tool_call>` markers
 - Check if Qwen format matches hermes format
 
@@ -275,7 +275,7 @@ User: "Add tool calling support for Qwen/Qwen2.5-72B-Instruct"
 
 ## Common Patterns
 
-The grammar-recognition guide — how to spot each pattern in a chat template — is in [`references/parser-patterns.md`](references/parser-patterns.md). The authoritative family-to-grammar-to-file mapping is the "Parser families" cheat-sheet in [`../../../parsers_v2/README.md`](../../../parsers_v2/README.md). Use those instead of re-listing patterns here.
+The grammar-recognition guide — how to spot each pattern in a chat template — is in [`references/parser-patterns.md`](references/parser-patterns.md). The authoritative family-to-grammar-to-file mapping is the "Parser families" cheat-sheet in [`../../../parsers/v2/README.md`](../../../parsers/v2/README.md). Use those instead of re-listing patterns here.
 
 ## Minimal Changes Philosophy
 

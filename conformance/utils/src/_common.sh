@@ -40,7 +40,7 @@ _build_stage_base() {
     \cp -Rf "$ROOT/conformance/toolcalling/fixtures-batch-on-stream-v2" \
       "$STAGE/tests/parity/toolcalling/fixtures-batch-on-stream-v2"
   fi
-  ln -s "$ROOT/parsers/src/tool_calling"         "$STAGE/lib/parsers/src/tool_calling"
+  ln -s "$ROOT/parsers/v1/src/tool_calling"      "$STAGE/lib/parsers/src/tool_calling"
   ln -s "$UTILS/lib/parsers/TOOLCALLING_CASES.md"   "$STAGE/lib/parsers/TOOLCALLING_CASES.md"
   ln -s "$UTILS/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md" "$STAGE/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"
   ln -s "$UTILS/lib/parsers/REASONING_CASES.md"     "$STAGE/lib/parsers/REASONING_CASES.md"

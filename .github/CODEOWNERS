@@ -12,7 +12,7 @@ RELEASING.md     @ai-dynamo/devops
 SECURITY.md      @ai-dynamo/devops
 
 # Tool-calling / reasoning parser crates and their conformance tests.
+# parsers/ holds all three crates: v1 (dynamo-parsers), v2 (dynamo-parsers-v2),
+# and v2-py (dynamo-parsers-v2-py, test-only PyO3 binding).
 /parsers/       @ai-dynamo/contributors-frontend-crates
-/parsers_v2/    @ai-dynamo/contributors-frontend-crates
-/parsers_v2-py/ @ai-dynamo/contributors-frontend-crates
 /conformance/   @ai-dynamo/contributors-frontend-crates
