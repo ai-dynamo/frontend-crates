@@ -2,12 +2,12 @@
 resolver = "3"
 members = [
     "protocols",
-    "parsers",
+    "parsers/v1",
     "renderer",
     "tokenizers",
     "conformance",
-    "parsers_v2",
-    "parsers_v2-py",
+    "parsers/v2",
+    "parsers/v2-py",
     "examples/dynamo-demo-server",
 ]
 
@@ -34,7 +34,7 @@ chrono = { version = "0.4", default-features = false, features = [
 ] }
 clap = "4"
 derive_builder = "0.20"
-dynamo-parsers = { path = "parsers", version = "3.1.0" }
+dynamo-parsers = { path = "parsers/v1", version = "3.1.0" }
 dynamo-protocols = { path = "protocols", version = "2.0.1" }
 dynamo-renderer = { path = "renderer", version = "1.3.7" }
 dynamo-tokenizers = { path = "tokenizers", version = "1.4.0" }

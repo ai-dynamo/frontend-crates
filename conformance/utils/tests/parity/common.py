@@ -38,7 +38,7 @@ def _hrefs_for_output(output_path: Path, artifact_root: Path) -> dict[str, str]:
         return _href_from_output(output_path, artifact_root, rel)
 
     return {
-        "toolcalling_fixtures": h("conformance/toolcalling/fixtures/"),
+        "toolcalling_fixtures": h("conformance/toolcalling/fixtures-v1/"),
         "toolcalling_stream_fixtures": h("conformance/toolcalling/fixtures-stream-v2/"),
         "toolcalling_batch_on_stream_fixtures": h(
             "conformance/toolcalling/fixtures-batch-on-stream-v2/"
@@ -49,10 +49,10 @@ def _hrefs_for_output(output_path: Path, artifact_root: Path) -> dict[str, str]:
             "conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"
         ),
         "reasoning_cases": h("conformance/utils/lib/parsers/REASONING_CASES.md"),
-        "toolcalling_src": h("parsers/src/tool_calling/"),
-        "reasoning_src": h("parsers/src/reasoning/"),
-        "streaming_src": h("parsers_v2/src/tool_calling/"),
-        "streaming_harmony_src": h("parsers_v2/src/tool_calling/harmony.rs"),
+        "toolcalling_src": h("parsers/v1/src/tool_calling/"),
+        "reasoning_src": h("parsers/v1/src/reasoning/"),
+        "streaming_src": h("parsers/v2/src/tool_calling/"),
+        "streaming_harmony_src": h("parsers/v2/src/tool_calling/harmony.rs"),
         "pyproject_stub": h("conformance/utils/src/pyproject.stub.toml"),
     }
 
@@ -76,7 +76,7 @@ def set_links(output_path: Path, artifact_root: Path) -> dict[str, str]:
 # its real destination on every render.
 try:
     _DEFAULT_ROOT = Path(__file__).resolve().parents[4]
-    if (_DEFAULT_ROOT / "parsers_v2").is_dir():
+    if (_DEFAULT_ROOT / "parsers" / "v2").is_dir():
         set_links(_DEFAULT_ROOT / "conformance" / "PARITY.html", _DEFAULT_ROOT)
 except (IndexError, OSError):
     pass

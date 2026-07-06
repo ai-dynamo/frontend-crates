@@ -1,6 +1,6 @@
 # Tool Call Parser Patterns Reference
 
-A recognition guide: how to spot each tool-call grammar in an LLM chat template. The authoritative, current family-to-grammar-to-file mapping (which family owns each model and where the parser lives) is the "Parser families" cheat-sheet in [`../../../../parsers_v2/README.md`](../../../../parsers_v2/README.md) — this doc only helps you recognize the shape; it does not track the model list.
+A recognition guide: how to spot each tool-call grammar in an LLM chat template. The authoritative, current family-to-grammar-to-file mapping (which family owns each model and where the parser lives) is the "Parser families" cheat-sheet in [`../../../../parsers/v2/README.md`](../../../../parsers/v2/README.md) — this doc only helps you recognize the shape; it does not track the model list.
 
 ## Pattern Categories
 

@@ -41,8 +41,10 @@ struct Chunk {
 
 fn main() -> anyhow::Result<()> {
     let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        // this crate lives at parsers/v2, so the repo root is two levels up
         .parent()
-        .unwrap()
+        .and_then(|p| p.parent())
+        .expect("parsers/v2 is two levels below the repo root")
         .to_path_buf();
 
     // Stamp the v2 stream overlay only. The v1 conformance corpus stays pristine

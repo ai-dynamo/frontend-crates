@@ -44,6 +44,16 @@ name = "dynamo-demo-server"
 publish = false
 release = false
 
+# `dynamo-parsers-v2-py` is the PyO3/maturin binding used only by the conformance
+# harness. It is a cdylib (a Python extension module, useless as a crates.io
+# dependency) with no consumer outside this repo, and no PyPI publish job exists.
+# It was being published to crates.io only because it lacked an opt-out. Mirror
+# BOTH flags to match its Cargo.toml `publish = false` (see the demo-server note).
+[[package]]
+name = "dynamo-parsers-v2-py"
+publish = false
+release = false
+
 [changelog]
 header = """# Changelog
 

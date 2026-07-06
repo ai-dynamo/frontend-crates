@@ -588,7 +588,7 @@ def _common_legend_html(
     return (
         "<p><strong>Legend:</strong></p>"
         '<ul class="marker-defs">'
-        '<li><strong>v1</strong> means the parser code in the Dynamo repo (<code>parsers/src/...</code>); <strong>v2</strong> means the new frontend crate parser path (<code>parsers_v2/src/...</code>).</li>'
+        '<li><strong>v1</strong> means the stable batch parser crate (<code>parsers/v1/src/...</code>, published as <code>dynamo-parsers</code>); <strong>v2</strong> means the WIP streaming parser crate (<code>parsers/v2/src/...</code>, <code>dynamo-parsers-v2</code>).</li>'
         '<li><span style="color:#0a7d2c">=</span> all captured peers match Dynamo Rust.</li>'
         '<li><span style="color:#8b949e">·</span> Dynamo Rust-only fixture (peers unavailable or not captured).</li>'
         f'<li><span style="color:#555">{_marker_html("D_rb")}</span> Dynamo Rust batch parser.</li>'
@@ -1313,7 +1313,7 @@ def _v2_parser_cell_html(
         f"Fixtures: {html_lib.escape(fixtures)}.\n"
         f"Tool calling parser row: {html_lib.escape(family)}\n"
         f"Effective parser/backend: {html_lib.escape(backend)}\n"
-        f"Dynamo parser v2 implementation: parsers_v2/src/tool_calling/{html_lib.escape(source_file)} -> "
+        f"Dynamo parser v2 implementation: parsers/v2/src/tool_calling/{html_lib.escape(source_file)} -> "
         f'<a href="{common.LINKS["streaming_src"]}{html_lib.escape(source_file)}">{html_lib.escape(entrypoint)}</a>\n'
         f"Note: {html_lib.escape(note)}"
         "</pre></div>"
@@ -2194,13 +2194,13 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
     _toolbar_desc = {
         "batch": (
             f'Parser: <strong>v1</strong> Dynamo-synced batch parser '
-            f'(<a href="{hrefs["toolcalling_src"]}">parsers/src/tool_calling/</a>) · '
+            f'(<a href="{hrefs["toolcalling_src"]}">parsers/v1/src/tool_calling/</a>) · '
             f'Input: <strong>v1</strong> batch fixtures '
-            f'(<a href="{hrefs["toolcalling_fixtures"]}">conformance/toolcalling/fixtures/</a>).'
+            f'(<a href="{hrefs["toolcalling_fixtures"]}">conformance/toolcalling/fixtures-v1/</a>).'
         ),
         "streamv2": (
             f'Parser: <strong>v2</strong> Dynamo parser v2 token-incremental streaming '
-            f'(<a href="{hrefs["streaming_src"]}">parsers_v2/src/tool_calling/*</a>) · '
+            f'(<a href="{hrefs["streaming_src"]}">parsers/v2/src/tool_calling/*</a>) · '
             f'Input: <strong>v2</strong> stream fixtures '
             f'(<a href="{hrefs["toolcalling_stream_fixtures"]}">conformance/toolcalling/fixtures-stream-v2/</a>).'
         ),
@@ -2260,9 +2260,9 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
                     "tab_title": "Batch-on-stream: Dynamo parser v2 on v1 batch fixtures",
                     "toolbar_desc": (
                         f'Parser: <strong>v2</strong> Dynamo parser v2 '
-                        f'(<a href="{hrefs["streaming_src"]}">parsers_v2/src/tool_calling/*</a>) · '
+                        f'(<a href="{hrefs["streaming_src"]}">parsers/v2/src/tool_calling/*</a>) · '
                         f'Input: <strong>v1</strong> batch fixtures '
-                        f'(<a href="{hrefs["toolcalling_fixtures"]}">conformance/toolcalling/fixtures/</a>).'
+                        f'(<a href="{hrefs["toolcalling_fixtures"]}">conformance/toolcalling/fixtures-v1/</a>).'
                     ),
                     "case_docs_href": hrefs["toolcalling_cases"],
                     "case_docs_label": "lib/parsers/TOOLCALLING_CASES.md",
@@ -2315,7 +2315,7 @@ def _combined_reasoning_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
                 "tab_title": f"Reasoning {mode}: v1 code on v1 fixtures",
                 "toolbar_desc": (
                     f'Parser: <strong>v1</strong> Dynamo-synced reasoning parser '
-                    f'(<a href="{hrefs["reasoning_src"]}">parsers/src/reasoning/</a>) · '
+                    f'(<a href="{hrefs["reasoning_src"]}">parsers/v1/src/reasoning/</a>) · '
                     f'Input: <strong>v1</strong> reasoning fixtures '
                     f'(<a href="{hrefs["reasoning_fixtures"]}">conformance/reasoning/fixtures/</a>).'
                 ),

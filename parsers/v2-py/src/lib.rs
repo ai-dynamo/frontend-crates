@@ -7,7 +7,7 @@
 //! PyO3 Python bindings for `dynamo-parsers-v2`.
 //!
 //! Build with maturin:
-//!   cd parsers_v2-py
+//!   cd parsers/v2-py
 //!   maturin develop          # installs into the active venv
 //!   maturin build --release  # produces a wheel
 //!

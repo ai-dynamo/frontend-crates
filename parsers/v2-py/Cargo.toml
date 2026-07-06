@@ -7,6 +7,10 @@ version = "0.1.12"
 edition.workspace = true
 license = "Apache-2.0"
 description = "Python bindings for dynamo-parsers-v2 (PyO3 / maturin)"
+# Test-only PyO3 binding for the conformance harness — never published. It is a
+# cdylib (a Python extension module, not a linkable Rust dependency) and has no
+# consumer outside this repo. release-plz also opts it out (release = false).
+publish = false
 
 # cdylib only — this crate exists solely to produce the Python extension module.
 # The pure-Rust API lives in dynamo-parsers-v2 (rlib).
@@ -18,6 +22,6 @@ name = "dynamo_parsers_v2"
 crate-type = ["cdylib"]
 
 [dependencies]
-dynamo-parsers-v2 = { path = "../parsers_v2", version = "0.1.12" }
+dynamo-parsers-v2 = { path = "../v2", version = "0.1.12" }
 dynamo-parsers = { workspace = true }
 pyo3 = { workspace = true }

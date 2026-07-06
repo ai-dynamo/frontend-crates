@@ -2,7 +2,7 @@
 
 Step-by-step guide for wiring a parser into the v1 batch crate (`parsers/`): the `ToolCallConfig` preset + `get_tool_parser_map()` registry mechanics.
 
-> This is the **v1 (batch / jail-and-buffer)** integration mechanism. v1 is still in use, but the pure-streaming v2 path will fully replace it — v1 is not being merged in, it will be removed once v2 is done — so new parser work targets v2: follow "Adding A Day-0 Tool-Calling Parser" in [`../../../../parsers_v2/README.md`](../../../../parsers_v2/README.md), and pick the family from its "Parser families" cheat-sheet. The steps below still apply when a new model reuses an existing v1 family via config.
+> This is the **v1 (batch / jail-and-buffer)** integration mechanism. v1 is still in use, but the pure-streaming v2 path will fully replace it — v1 is not being merged in, it will be removed once v2 is done — so new parser work targets v2: follow "Adding A Day-0 Tool-Calling Parser" in [`../../../../parsers/v2/README.md`](../../../../parsers/v2/README.md), and pick the family from its "Parser families" cheat-sheet. The steps below still apply when a new model reuses an existing v1 family via config.
 
 ## Option 1: Add Configuration Preset (Most Common)
 
@@ -10,7 +10,7 @@ When an existing parser can handle the new model with different configuration.
 
 ### Step 1: Add Config Preset
 
-Edit `parsers/src/tool_calling/config.rs`:
+Edit `parsers/v1/src/tool_calling/config.rs`:
 
 ```rust
 impl ToolCallConfig {
@@ -31,7 +31,7 @@ impl ToolCallConfig {
 
 ### Step 2: Register in Parser Map
 
-Edit `parsers/src/tool_calling/parsers.rs`:
+Edit `parsers/v1/src/tool_calling/parsers.rs`:
 
 In the `get_tool_parser_map()` function:
 
@@ -175,14 +175,14 @@ cargo fmt
 
 ## File Structure
 
-The v1 tool-call crate root is `parsers/src/tool_calling/`:
+The v1 tool-call crate root is `parsers/v1/src/tool_calling/`:
 
 - `config.rs` — `ToolCallConfig` presets and the `ParserConfig` enum
 - `parsers.rs` — `get_tool_parser_map()` registry and dispatch
 - `response.rs` — `ToolCallResponse` types; `tools.rs` — high-level APIs; `tests.rs` — integration tests
 - per-family grammar modules in subdirectories: `json/`, `xml/`, `dsml/`, `gemma4/`, `harmony/`, `pythonic/`
 
-For which family owns which model and the exact module per family, use the "Parser families" cheat-sheet in [`../../../../parsers_v2/README.md`](../../../../parsers_v2/README.md) rather than a tree here (a tree drifts as families are added). Reasoning parsers live in `parsers/src/reasoning/` (see its README).
+For which family owns which model and the exact module per family, use the "Parser families" cheat-sheet in [`../../../../parsers/v2/README.md`](../../../../parsers/v2/README.md) rather than a tree here (a tree drifts as families are added). Reasoning parsers live in `parsers/v1/src/reasoning/` (see its README).
 
 ## Testing Strategy
 

@@ -1,12 +1,12 @@
 # PyO3 binding guide — `dynamo-parsers-v2`
 
-This document explains how to add a Python binding for a new parser family and make it compatible with vLLM's and SGLang's streaming interfaces. It uses the existing Harmony binding in `parsers_v2-py/src/lib.rs` as the reference implementation.
+This document explains how to add a Python binding for a new parser family and make it compatible with vLLM's and SGLang's streaming interfaces. It uses the existing Harmony binding in `parsers/v2-py/src/lib.rs` as the reference implementation.
 
 ---
 
 ## Why a separate crate
 
-The Rust parser (`parsers_v2`) is a pure `rlib` used by the conformance test suite and other Rust consumers. PyO3 requires a `cdylib` that links against the Python runtime — mixing `rlib` and `cdylib` in one crate causes symbol conflicts and breaks both. `parsers_v2-py` is the thin `cdylib` wrapper that only exists to produce the Python extension module.
+The Rust parser (`parsers/v2`) is a pure `rlib` used by the conformance test suite and other Rust consumers. PyO3 requires a `cdylib` that links against the Python runtime — mixing `rlib` and `cdylib` in one crate causes symbol conflicts and breaks both. `parsers/v2-py` is the thin `cdylib` wrapper that only exists to produce the Python extension module.
 
 ---
 
@@ -145,12 +145,12 @@ pub struct PyHarmonyToolStreamParser { inner: HarmonyToolStreamParser }
 
 ## Adding a new family
 
-1. **Implement the Rust streaming parser** in `parsers_v2/src/tool_calling/`:
+1. **Implement the Rust streaming parser** in `parsers/v2/src/tool_calling/`:
    - Add `parse_<family>_streaming_incremental(&mut self, delta_token_ids: &[u32]) -> ToolStreamResult`
    - Add `parse_<family>_streaming_text(&mut self, delta_text: &str) -> ToolStreamResult`
    - Add `finish_<family>_stream(&mut self) -> ToolStreamResult`
 
-2. **Add a Python class** in `parsers_v2-py/src/lib.rs`:
+2. **Add a Python class** in `parsers/v2-py/src/lib.rs`:
    ```rust
    #[pyclass(name = "FamilyToolStreamParser", unsendable)]
    pub struct PyFamilyParser { inner: FamilyToolStreamParser }
@@ -253,7 +253,7 @@ class DynamoHarmonyDetector(BaseFormatDetector):
 ## Build
 
 ```bash
-cd parsers_v2-py
+cd parsers/v2-py
 maturin develop          # install into active venv (dev build)
 maturin build --release  # produce a wheel for distribution
 
@@ -263,4 +263,4 @@ python3 -c "from dynamo_parsers_v2 import HarmonyToolStreamParser; p = HarmonyTo
 
 ## Migration note
 
-`parsers_v2-py` is temporary for the bridge period. It exists so Dynamo parser v2 can expose a Python module without mixing `rlib` and `cdylib` outputs in the same Rust crate. After Dynamo consumes the released frontend-crates parser crate directly and parser-source rsync stops, move this binding surface into the parser crate's normal Python binding package and remove the temporary `dynamo_parsers_v2` module/package name.
+`parsers/v2-py` is temporary for the bridge period. It exists so Dynamo parser v2 can expose a Python module without mixing `rlib` and `cdylib` outputs in the same Rust crate. After Dynamo consumes the released frontend-crates parser crate directly and parser-source rsync stops, move this binding surface into the parser crate's normal Python binding package and remove the temporary `dynamo_parsers_v2` module/package name.
