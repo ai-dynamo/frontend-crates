@@ -50,8 +50,10 @@ fn main() -> anyhow::Result<()> {
         .unwrap_or_else(|| vec!["harmony", "deepseek_v4"]);
 
     let fixture_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        // this crate lives at parsers/v2, so the repo root is two levels up
         .parent()
-        .unwrap()
+        .and_then(|p| p.parent())
+        .expect("parsers/v2 is two levels below the repo root")
         .join("conformance/toolcalling/fixtures-v1");
 
     let mut nested = BTreeMap::new();
