@@ -10,7 +10,7 @@ publish = false
 
 [dev-dependencies]
 dynamo-parsers = { workspace = true }
-dynamo-parsers-v2 = { path = "../parsers/v2", version = "0.1.12" }
+dynamo-parsers-v2 = { path = "../parsers/v2", version = "0.1.13" }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 serde_yaml = "0.9"
