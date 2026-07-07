@@ -551,29 +551,25 @@ impl ReasoningParser for GptOssReasoningParser {
                         normal_delta.push_str(&delta);
                         self.emitted_normal_text = true;
                     }
-                    "analysis" => {
-                        // Analysis WITHOUT a recipient is reasoning content.
-                        // Analysis WITH a functions recipient is a (malformed)
-                        // tool call — its payload is handed off via normal_delta
-                        // below; do not also surface it as reasoning_content.
-                        if current_recipient.is_none() {
-                            if self.insert_reasoning_separator {
-                                reasoning_delta.push('\n');
-                                self.insert_reasoning_separator = false;
-                            }
-                            reasoning_delta.push_str(&delta);
-                            self.emitted_reasoning_text = true;
+                    // Analysis WITHOUT a recipient is reasoning content.
+                    // Analysis WITH a functions recipient is a (malformed)
+                    // tool call — its payload is handed off via normal_delta
+                    // below; do not also surface it as reasoning_content.
+                    "analysis" if current_recipient.is_none() => {
+                        if self.insert_reasoning_separator {
+                            reasoning_delta.push('\n');
+                            self.insert_reasoning_separator = false;
                         }
+                        reasoning_delta.push_str(&delta);
+                        self.emitted_reasoning_text = true;
                     }
-                    "commentary" => {
-                        if current_recipient.is_none() {
-                            if self.insert_normal_separator {
-                                normal_delta.push('\n');
-                                self.insert_normal_separator = false;
-                            }
-                            normal_delta.push_str(&delta);
-                            self.emitted_normal_text = true;
+                    "commentary" if current_recipient.is_none() => {
+                        if self.insert_normal_separator {
+                            normal_delta.push('\n');
+                            self.insert_normal_separator = false;
                         }
+                        normal_delta.push_str(&delta);
+                        self.emitted_normal_text = true;
                     }
                     _ => {}
                 }

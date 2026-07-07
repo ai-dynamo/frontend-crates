@@ -529,10 +529,8 @@ fn coerce_value(raw: &str, schema_type: Option<&str>) -> ParsedValue {
                 .collect();
             return Value::Array(items).into();
         }
-        Some("null") => {
-            if trimmed == "null" || trimmed == "None" || trimmed.is_empty() {
-                return Value::Null.into();
-            }
+        Some("null") if trimmed == "null" || trimmed == "None" || trimmed.is_empty() => {
+            return Value::Null.into();
         }
         _ => {}
     }

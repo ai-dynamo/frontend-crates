@@ -32,7 +32,7 @@ conformance/
 
 ## Running the tests
 
-Use the repo's pinned toolchain (Rust 1.93.1 via rustup; a system `cargo` may be too old for the workspace):
+Use the repo's pinned toolchain (Rust 1.96.1 via rustup; a system `cargo` may be too old for the workspace):
 
 ```bash
 # tool-calling batch parity, all families:

@@ -23,7 +23,7 @@ TOOLS="$ROOT/conformance/utils/src"
 # so CI and .gitignore find it where they always have.
 STAGE="${STAGE:-$UTILS/.stage}"
 # Override when the default cargo can't build the workspace (edition 2024 /
-# resolver "3" needs >= 1.85): CARGO='cargo +1.93.1' conformance/utils/check.sh ...
+# resolver "3" needs >= 1.85): CARGO='cargo +1.96.1' conformance/utils/check.sh ...
 CARGO="${CARGO:-cargo}"
 : "${DRY:=0}"
 

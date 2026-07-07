@@ -12,7 +12,7 @@ Subcommands:
   token-ids              stamp token ids into stream fixtures (cargo bin)
 
 `--dry-run` prints the commands instead of running them. `CARGO` env overrides the
-cargo binary (e.g. `CARGO='cargo +1.93.1'`). `--family`/`--fixture` (B4) narrow the
+cargo binary (e.g. `CARGO='cargo +1.96.1'`). `--family`/`--fixture` (B4) narrow the
 peer captures to one family/fixture.
 """
 import argparse
