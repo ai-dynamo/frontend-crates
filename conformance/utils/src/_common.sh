@@ -57,7 +57,7 @@ _resolve_toolcalling_fixtures() {
   local vllm_v sglang_v dynamo_v
   vllm_v=$(grep -oE 'vllm\[[^]]*\]==[^"]+' "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//')
   sglang_v=$(grep -oE 'sglang\[[^]]*\]==[^"]+' "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//')
-  dynamo_v=$(grep -m1 -E '^version = ' "$ROOT/parsers/Cargo.toml" | sed -E 's/.*"([^"]+)".*/\1/')
+  dynamo_v=$(grep -m1 -E '^version = ' "$ROOT/parsers/v1/Cargo.toml" | sed -E 's/.*"([^"]+)".*/\1/')
   python3 "$TOOLS/resolve_fixtures.py" \
     --fixtures-root "$ROOT/conformance/toolcalling/fixtures-batch-v1" \
     --out "$out" --select "dynamo-${dynamo_v}" "vllm-${vllm_v}" "sglang-${sglang_v}"
