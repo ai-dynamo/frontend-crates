@@ -10,40 +10,6 @@ use super::super::ToolDefinition;
 use super::config::JsonParserConfig;
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 
-/// Public compatibility shape for callers that deserialize a tool call using
-/// the legacy `parameters` key. The parser itself uses an internal union so it
-/// can accept both argument-key variants in a single pass.
-//
-// `parameters` / `arguments` are deserialized as `Box<RawValue>` so the
-// original byte span — including key order, whitespace, and number
-// formatting — is preserved verbatim. Going through `HashMap<String, Value>`
-// here would normalize via `serde_json::to_string`, which strips spaces and
-// reorders keys based on HashMap iteration. That broke append-only KV-cache
-// prefix matching: when the model's emitted `arguments` were re-rendered
-// through this parser and round-tripped back into the next turn's prompt,
-// the bytes diverged from what the model originally emitted.
-#[derive(Debug, serde::Deserialize)]
-pub struct CalledFunctionParameters {
-    pub name: String,
-    pub parameters: Box<RawValue>,
-}
-
-/// Public compatibility shape for callers that deserialize a tool call using
-/// the `arguments` key. The parser itself uses an internal union.
-#[derive(Debug, serde::Deserialize)]
-pub struct CalledFunctionArguments {
-    pub name: String,
-    pub arguments: Box<RawValue>,
-}
-
-/// Public compatibility shape for a call containing only a function name.
-/// Parsers whose configuration permits name-only calls convert it to `{}`
-/// arguments through the internal union representation.
-#[derive(Debug, serde::Deserialize)]
-pub struct CalledFunctionNameOnly {
-    pub name: String,
-}
-
 #[derive(Debug, serde::Deserialize)]
 struct CalledFunctionRaw {
     name: String,
@@ -301,50 +267,13 @@ fn try_parse_normal_text(input: &str, start_token: &str) -> String {
     String::new()
 }
 
-/// Attempts to parse a tool call from a raw LLM message string into a unified [`ToolCallResponse`] format.
+/// Parse a JSON `payload` into tool calls through one internal representation.
 ///
-/// This is a flexible helper that handles a variety of potential formats emitted by LLMs for function/tool calls,
-/// including wrapped payloads (`<TOOLCALL>[...]</TOOLCALL>`, `<|python_tag|>...`) and JSON representations
-/// with either `parameters` or `arguments` fields.
-///
-/// # Supported Formats
-///
-/// The input `message` may be one of:
-///
-/// - `<TOOLCALL>[{ "name": ..., "parameters": { ... } }]</TOOLCALL>`
-/// - `<|python_tag|>{ "name": ..., "arguments": { ... } }`
-/// - Raw JSON of:
-///     - `CalledFunctionParameters`: `{ "name": ..., "parameters": { ... } }`
-///     - `CalledFunctionArguments`: `{ "name": ..., "arguments": { ... } }`
-///     - Or a list of either of those types: `[ { "name": ..., "arguments": { ... } }, ... ]`
-///
-/// # Return
-///
-/// - `Ok(Some(ToolCallResponse))` if parsing succeeds
-/// - `Ok(None)` if input format is unrecognized or invalid JSON
-/// - `Err(...)` if JSON is valid but deserialization or argument re-serialization fails
-///
-/// # Note on List Handling
-///
-/// When the input contains a list of tool calls (either with `parameters` or `arguments`),
-/// only the **last item** in the list is returned. This design choice assumes that the
-/// most recent tool call in a list is the one to execute.
-///
-/// # Errors
-///
-/// Returns a `Result::Err` only if an inner `serde_json::to_string(...)` fails
-/// (e.g., if the arguments are not serializable).
-///
-/// # Examples
-///
-/// ```ignore
-/// let input = r#"<TOOLCALL>[{ "name": "search", "parameters": { "query": "rust" } }]</TOOLCALL>"#;
-/// let result = try_tool_call_parse_json(input)?;
-/// assert!(result.is_some());
-/// ```
-/// Parse `payload` into tool calls through one internal representation that
-/// accepts both `arguments` and `parameters`. Arrays retain arguments-first
-/// precedence; single calls retain parameters-first precedence.
+/// Accepted payloads are a single object or an array of objects containing a
+/// `name` plus either `arguments` or `parameters`. When `allow_name_only` is
+/// enabled, an object containing only `name` is accepted with `{}` arguments.
+/// Array entries retain arguments-first precedence when both keys are present;
+/// single calls retain parameters-first precedence.
 ///
 /// Returns:
 /// - `Ok(Some(calls))` when `payload` matched one of the shapes. The vec may be
