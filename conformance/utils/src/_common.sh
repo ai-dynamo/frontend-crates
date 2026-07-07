@@ -46,7 +46,7 @@ _build_stage_base() {
   # COPY the vendored python package so resolved __file__ -> REPO_ROOT == $STAGE.
   \cp -Rf "$UTILS/tests/parity" "$STAGE/tests/parity"
   \cp -f "$UTILS/tests/__init__.py" "$STAGE/tests/__init__.py"
-  ln -s "$ROOT/conformance/reasoning/fixtures"   "$STAGE/tests/parity/reasoning/fixtures"
+  _resolve_reasoning_fixtures "$STAGE/tests/parity/reasoning/fixtures"
   # Recorded Dynamo parser v2 stream-on-batch fixture overlay.
   if [ -d "$FIXTURES_ROOT/toolcalling/fixtures-batch-on-stream-v2" ]; then
     mkdir -p "$STAGE/tests/parity/toolcalling"
@@ -74,6 +74,16 @@ _resolve_toolcalling_fixtures() {
   python3 "$TOOLS/resolve_fixtures.py" \
     --fixtures-root "$FIXTURES_ROOT/toolcalling/fixtures-batch-v1" \
     --out "$out" --select "dynamo-${dynamo_v}" "vllm-${vllm_v}" "sglang-${sglang_v}"
+}
+
+_resolve_reasoning_fixtures() {
+  local out="$1"; mkdir -p "$out"
+  local vllm_v sglang_v
+  vllm_v=$(grep -oE 'vllm\[[^]]*\]==[^"]+' "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//')
+  sglang_v=$(grep -oE 'sglang\[[^]]*\]==[^"]+' "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//')
+  python3 "$TOOLS/resolve_reasoning_fixtures.py" \
+    --fixtures-root "$ROOT/conformance/reasoning/fixtures-v1" \
+    --out "$out" --select "vllm-${vllm_v}" "sglang-${sglang_v}"
 }
 
 _copy_toolcalling_v1_fixtures() {
