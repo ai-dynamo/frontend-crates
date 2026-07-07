@@ -1,0 +1,35 @@
+family: harmony_text
+mode: streamv2
+model_label: gpt-oss (harmony, text)
+cases:
+  TOOLCALLING.streamv2.9.a:
+    description: Empty model text
+    ref: derived from TOOLCALLING.batch.9.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: stop
+  TOOLCALLING.streamv2.9.b:
+    description: Blank / whitespace-only model text
+    ref: derived from TOOLCALLING.batch.9.b
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '   '
+      delta_token_ids:
+      - 271
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: stop

@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for dynamo@3.0.0 (lowest version = baseline). expected.dynamo only.
+family: phi4
+mode: batch
+cases:
+  TOOLCALLING.batch.5.a:
+    expected:
+      dynamo:
+        calls: []
+        normal_text: ''
+  TOOLCALLING.batch.5.b:
+    expected:
+      dynamo:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+  TOOLCALLING.batch.5.c:
+    expected:
+      dynamo:
+        calls: []
+        normal_text: ''
+  TOOLCALLING.batch.5.d:
+    expected:
+      dynamo:
+        calls: []
+        normal_text: ''
+  TOOLCALLING.batch.5.e:
+    expected:
+      dynamo:
+        calls: []
+        normal_text: ''

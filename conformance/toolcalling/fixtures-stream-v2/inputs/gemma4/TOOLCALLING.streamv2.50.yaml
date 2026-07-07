@@ -1,0 +1,27 @@
+family: gemma4
+mode: streamv2
+model_label: Gemma 4
+cases:
+  TOOLCALLING.streamv2.50:
+    description: Complete single tool call with a grammar token split across chunk boundaries
+    ref: derived from TOOLCALLING.batch.1
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|
+    - delta_text: too
+    - delta_text: l_cal
+    - delta_text: l>call:get_
+    - delta_text: weather{location:<|
+    - delta_text: '"|'
+    - delta_text: '>NY'
+    - delta_text: C<|"|
+    - delta_text: '>}<tool_cal'
+    - delta_text: l|>
+    - delta_text: ''
+      finish_reason: tool_calls

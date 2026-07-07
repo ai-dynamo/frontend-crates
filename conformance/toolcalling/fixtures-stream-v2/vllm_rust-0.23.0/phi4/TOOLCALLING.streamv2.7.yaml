@@ -1,0 +1,15 @@
+family: phi4
+mode: streamv2
+captured_with:
+  vllm_rust: 0.23.0
+cases:
+  TOOLCALLING.streamv2.7.a:
+    unavailable: No vLLM Rust parser for family 'phi4'.
+  TOOLCALLING.streamv2.7.b:
+    unavailable: No vLLM Rust parser for family 'phi4'.
+  TOOLCALLING.streamv2.7.c:
+    unavailable: No vLLM Rust parser for family 'phi4'.
+  TOOLCALLING.streamv2.7.d:
+    unavailable: No vLLM Rust parser for family 'phi4'.
+  TOOLCALLING.streamv2.7.e:
+    unavailable: No vLLM Rust parser for family 'phi4'.

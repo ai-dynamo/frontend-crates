@@ -1,0 +1,11 @@
+family: nemotron_nano
+mode: streamv2
+captured_with:
+  vllm_rust: 0.23.0
+cases:
+  TOOLCALLING.streamv2.7.a:
+    unavailable: 'vllm_rust parser not captured: tool parser parsing failed: invalid Hermes'
+  TOOLCALLING.streamv2.7.b:
+    unavailable: 'vllm_rust parser not captured: tool parser parsing failed: invalid Hermes'
+  TOOLCALLING.streamv2.7.f:
+    unavailable: 'vllm_rust parser not captured: tool parser parsing failed: invalid Hermes'

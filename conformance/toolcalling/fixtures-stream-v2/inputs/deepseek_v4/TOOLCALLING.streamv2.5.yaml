@@ -1,0 +1,157 @@
+family: deepseek_v4
+mode: streamv2
+model_label: DeepSeek V4
+cases:
+  TOOLCALLING.streamv2.5.a:
+    description: Missing </｜DSML｜tool_calls> end marker
+    ref: derived from TOOLCALLING.batch.5.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <｜DSML｜tool_calls> <｜DSML｜invoke
+    - delta_text: ' name="get_weather">'
+    - delta_text: ' <｜DSML｜parameter name="location" string="true">'
+    - delta_text: NYC</｜DSML｜parameter> </｜DSML｜invoke>
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.5.b:
+    description: Closing </｜DSML｜tool_calls> without matching open
+    ref: derived from TOOLCALLING.batch.5.b
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <｜DSML｜invoke name="get_weather">
+    - delta_text: ' <｜DSML｜parameter'
+    - delta_text: ' name="location" string="true">NYC</｜DSML｜parameter>'
+    - delta_text: ' </｜DSML｜invoke> </｜DSML｜tool_calls>'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.5.c:
+    description: Truncation mid-parameter value
+    ref: derived from TOOLCALLING.batch.5.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <｜DSML｜tool_calls> <｜DSML｜invoke
+    - delta_text: ' name="get_weather">'
+    - delta_text: ' <｜DSML｜parameter name="location" string="true">'
+    - delta_text: NY
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.5.d:
+    description: Multi-call, last call missing only end marker (body complete)
+    ref: derived from TOOLCALLING.batch.5.d
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I'll start
+    - delta_text: ' by'
+    - delta_text: ' fetching the weather'
+    - delta_text: ' for both'
+    - delta_text: ' Boston'
+    - delta_text: ' and New'
+    - delta_text: ' York at the'
+    - delta_text: ' same'
+    - delta_text: ' time! <｜DSML｜tool_calls>'
+    - delta_text: ' <｜DSML｜invoke'
+    - delta_text: ' name="get_weather"> <｜DSML｜parameter'
+    - delta_text: ' name="location"'
+    - delta_text: ' string="true">Boston</｜DSML｜parameter> </｜DSML｜invoke>'
+    - delta_text: ' <｜DSML｜invoke name="get_weather">'
+    - delta_text: ' <｜DSML｜parameter'
+    - delta_text: ' name="location" string="true">'
+    - delta_text: New York</｜DSML｜parameter> </｜DSML｜invoke>
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.5.e:
+    description: Multi-call, last call truncated mid-arg-value
+    ref: derived from TOOLCALLING.batch.5.e
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I'll start
+    - delta_text: ' by'
+    - delta_text: ' fetching the weather'
+    - delta_text: ' for both'
+    - delta_text: ' Boston'
+    - delta_text: ' and New'
+    - delta_text: ' York at the'
+    - delta_text: ' same'
+    - delta_text: ' time! <｜DSML｜tool_calls>'
+    - delta_text: ' <｜DSML｜invoke'
+    - delta_text: ' name="get_weather"> <｜DSML｜parameter'
+    - delta_text: ' name="location"'
+    - delta_text: ' string="true">Boston</｜DSML｜parameter> </｜DSML｜invoke>'
+    - delta_text: ' <｜DSML｜invoke name="get_weather">'
+    - delta_text: ' <｜DSML｜parameter'
+    - delta_text: ' name="location" string="true">'
+    - delta_text: New York
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.5.f:
+    description: Bare valid invoke before a complete wrapped call
+    ref: derived from TOOLCALLING.batch.5.f
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <｜DSML｜invoke name="get_weather">
+    - delta_text: ' <｜DSML｜parameter'
+    - delta_text: ' name="location" string="true">NYC</｜DSML｜parameter>'
+    - delta_text: ' </｜DSML｜invoke> </｜DSML｜tool_calls>'
+    - delta_text: ' <｜DSML｜tool_calls>'
+    - delta_text: ' <｜DSML｜invoke name="get_weather">'
+    - delta_text: ' <｜DSML｜parameter name="location" string="true">'
+    - delta_text: Boston</｜DSML｜parameter>
+    - delta_text: ' </｜DSML｜invoke> </｜DSML｜tool_calls>'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.5.g:
+    description: Closing </｜DSML｜tool_calls> without matching open after prefix prose
+    ref: derived from TOOLCALLING.batch.5.g
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I will
+    - delta_text: ' check'
+    - delta_text: ' that. <｜DSML｜invoke name="get_weather">'
+    - delta_text: ' <｜DSML｜parameter name="location"'
+    - delta_text: ' string="true">'
+    - delta_text: NYC</｜DSML｜parameter> </｜DSML｜invoke>
+    - delta_text: ' </｜DSML｜tool_calls>'
+    - delta_text: ''
+      finish_reason: stop

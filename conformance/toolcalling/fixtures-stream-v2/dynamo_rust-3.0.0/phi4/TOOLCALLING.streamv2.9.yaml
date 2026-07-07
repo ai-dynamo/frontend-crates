@@ -1,0 +1,13 @@
+family: phi4
+mode: streamv2
+captured_with:
+  dynamo_rust: 3.0.0
+cases:
+  TOOLCALLING.streamv2.9.a:
+    chunks:
+    - expected: []
+  TOOLCALLING.streamv2.9.b:
+    chunks:
+    - expected: []
+      normal_text: '   '
+    - expected: []

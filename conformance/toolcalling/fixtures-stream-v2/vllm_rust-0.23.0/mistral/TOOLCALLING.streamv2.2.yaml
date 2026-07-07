@@ -1,0 +1,56 @@
+family: mistral
+mode: streamv2
+captured_with:
+  vllm_rust: 0.23.0
+cases:
+  TOOLCALLING.streamv2.2.a:
+    chunks:
+    - expected: []
+      normal_text: '[TOOL_CALLS][{"name":'
+    - expected: []
+      normal_text: ' "get_weather",'
+    - expected: []
+      normal_text: ' "arguments": {"location": "NYC"}},'
+    - expected: []
+      normal_text: ' {"name": "get_time",'
+    - expected: []
+      normal_text: ' "arguments":'
+    - expected: []
+      normal_text: ' {"timezone": "EST"}}]'
+    - expected: []
+      normal_text: '[/TOOL_CALLS]'
+    - expected: []
+  TOOLCALLING.streamv2.2.c:
+    chunks:
+    - expected: []
+      normal_text: 'Both: '
+    - expected: []
+      normal_text: '[TOOL_CALLS][{"name":'
+    - expected: []
+      normal_text: ' "get_weather", "arguments": {"location":'
+    - expected: []
+      normal_text: ' "NYC"}}, {"name":'
+    - expected: []
+      normal_text: ' "get_time",'
+    - expected: []
+      normal_text: ' "arguments": {"timezone":'
+    - expected: []
+      normal_text: ' "EST"}}][/TOOL_CALLS] Done.'
+    - expected: []
+  TOOLCALLING.streamv2.2.d:
+    chunks:
+    - expected: []
+      normal_text: '[TOOL_CALLS][{"name":'
+    - expected: []
+      normal_text: ' "get_weather",'
+    - expected: []
+      normal_text: ' "arguments": {"location": "NYC"}},'
+    - expected: []
+      normal_text: ' {"name": "get_weather",'
+    - expected: []
+      normal_text: ' "arguments":'
+    - expected: []
+      normal_text: ' {"location": "LA"}}]'
+    - expected: []
+      normal_text: '[/TOOL_CALLS]'
+    - expected: []

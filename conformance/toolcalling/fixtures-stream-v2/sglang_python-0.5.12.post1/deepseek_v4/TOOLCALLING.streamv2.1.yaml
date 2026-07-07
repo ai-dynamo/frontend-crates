@@ -1,0 +1,17 @@
+family: deepseek_v4
+mode: streamv2
+captured_with:
+  sglang_python: 0.5.12.post1
+cases:
+  TOOLCALLING.streamv2.1:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected: []
+    - expected:
+      - index: 0
+        arguments: '{"location": "NYC"}'
+    - expected: []
+    - expected: []

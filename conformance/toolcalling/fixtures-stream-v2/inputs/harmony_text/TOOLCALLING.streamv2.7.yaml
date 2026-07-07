@@ -1,0 +1,463 @@
+family: harmony_text
+mode: streamv2
+model_label: gpt-oss (harmony, text)
+cases:
+  TOOLCALLING.streamv2.7.a:
+    description: Standard scalar types
+    ref: derived from TOOLCALLING.batch.7.a
+    tools:
+    - name: book_flight
+      parameters:
+        type: object
+        properties:
+          destination:
+            type: string
+          passengers:
+            type: integer
+          first_class:
+            type: boolean
+    chunks:
+    - delta_text: <|channel|>comment
+      delta_token_ids:
+      - 200005
+      - 12606
+    - delta_text: ary to
+      delta_token_ids:
+      - 815
+      - 316
+    - delta_text: =functions
+      delta_token_ids:
+      - 28
+      - 44580
+    - delta_text: .book_f
+      delta_token_ids:
+      - 42850
+      - 1337
+    - delta_text: 'light '
+      delta_token_ids:
+      - 6038
+      - 220
+    - delta_text: <|constrain|>json
+      delta_token_ids:
+      - 200003
+      - 4108
+    - delta_text: <|message|>{"
+      delta_token_ids:
+      - 200008
+      - 10848
+    - delta_text: destination":"
+      delta_token_ids:
+      - 51810
+      - 7534
+    - delta_text: Paris","
+      delta_token_ids:
+      - 72782
+      - 4294
+    - delta_text: passengers
+      delta_token_ids:
+      - 9948
+      - 24764
+    - delta_text: '":2'
+      delta_token_ids:
+      - 1243
+      - 17
+    - delta_text: ',"first'
+      delta_token_ids:
+      - 3532
+      - 7743
+    - delta_text: '_class":'
+      delta_token_ids:
+      - 10602
+      - 1243
+    - delta_text: true}
+      delta_token_ids:
+      - 3309
+      - 92
+    - delta_text: <|call|>
+      delta_token_ids:
+      - 200012
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.7.b:
+    description: Unicode + escaped chars
+    ref: derived from TOOLCALLING.batch.7.b
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|channel|>comment
+      delta_token_ids:
+      - 200005
+      - 12606
+    - delta_text: ary to
+      delta_token_ids:
+      - 815
+      - 316
+    - delta_text: =functions
+      delta_token_ids:
+      - 28
+      - 44580
+    - delta_text: .get_weather
+      delta_token_ids:
+      - 775
+      - 170154
+    - delta_text: ' <|constrain|>'
+      delta_token_ids:
+      - 220
+      - 200003
+    - delta_text: json<|message|>
+      delta_token_ids:
+      - 4108
+      - 200008
+    - delta_text: '{"location'
+      delta_token_ids:
+      - 10848
+      - 7693
+    - delta_text: '":"T'
+      delta_token_ids:
+      - 7534
+      - 51
+    - delta_text: ōky
+      delta_token_ids:
+      - 16191
+      - 5781
+    - delta_text: ō \"
+      delta_token_ids:
+      - 16191
+      - 14927
+    - delta_text: central\"
+      delta_token_ids:
+      - 79937
+      - 4017
+    - delta_text: '"}<|call|>'
+      delta_token_ids:
+      - 18583
+      - 200012
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.7.c:
+    description: Schema mismatch — string value where schema declares integer
+    ref: derived from TOOLCALLING.batch.7.c
+    tools:
+    - name: set_temperature
+      parameters:
+        type: object
+        properties:
+          celsius:
+            type: integer
+    chunks:
+    - delta_text: <|channel|>comment
+      delta_token_ids:
+      - 200005
+      - 12606
+    - delta_text: ary to
+      delta_token_ids:
+      - 815
+      - 316
+    - delta_text: =functions
+      delta_token_ids:
+      - 28
+      - 44580
+    - delta_text: .set_temperature
+      delta_token_ids:
+      - 1230
+      - 133120
+    - delta_text: ' <|constrain|>'
+      delta_token_ids:
+      - 220
+      - 200003
+    - delta_text: json<|message|>
+      delta_token_ids:
+      - 4108
+      - 200008
+    - delta_text: '{"c'
+      delta_token_ids:
+      - 10848
+      - 66
+    - delta_text: elsius":"
+      delta_token_ids:
+      - 63110
+      - 7534
+    - delta_text: 20"}
+      delta_token_ids:
+      - 455
+      - 18583
+    - delta_text: <|call|>
+      delta_token_ids:
+      - 200012
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.7.d:
+    description: Nested object + array
+    ref: derived from TOOLCALLING.batch.7.d
+    tools:
+    - name: process_data
+      parameters:
+        type: object
+        properties:
+          items:
+            type: array
+          config:
+            type: object
+    chunks:
+    - delta_text: <|channel|>comment
+      delta_token_ids:
+      - 200005
+      - 12606
+    - delta_text: ary to
+      delta_token_ids:
+      - 815
+      - 316
+    - delta_text: =functions
+      delta_token_ids:
+      - 28
+      - 44580
+    - delta_text: .process_data
+      delta_token_ids:
+      - 28604
+      - 3537
+    - delta_text: ' <|constrain|>'
+      delta_token_ids:
+      - 220
+      - 200003
+    - delta_text: json<|message|>
+      delta_token_ids:
+      - 4108
+      - 200008
+    - delta_text: '{"items'
+      delta_token_ids:
+      - 10848
+      - 6918
+    - delta_text: '":[1'
+      delta_token_ids:
+      - 16853
+      - 16
+    - delta_text: ',2'
+      delta_token_ids:
+      - 11
+      - 17
+    - delta_text: ',3'
+      delta_token_ids:
+      - 11
+      - 18
+    - delta_text: '],"config'
+      delta_token_ids:
+      - 91001
+      - 3154
+    - delta_text: '":{"nested'
+      delta_token_ids:
+      - 70649
+      - 125059
+    - delta_text: '":true'
+      delta_token_ids:
+      - 1243
+      - 3309
+    - delta_text: '}}<|call|>'
+      delta_token_ids:
+      - 6478
+      - 200012
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.7.e:
+    description: Large / deep JSON-edge argument payload
+    ref: derived from TOOLCALLING.batch.7.e
+    tools:
+    - name: process_data
+      parameters:
+        type: object
+        properties:
+          payload:
+            type: object
+    chunks:
+    - delta_text: <|channel|>comment
+      delta_token_ids:
+      - 200005
+      - 12606
+    - delta_text: ary to
+      delta_token_ids:
+      - 815
+      - 316
+    - delta_text: =functions
+      delta_token_ids:
+      - 28
+      - 44580
+    - delta_text: .process_data
+      delta_token_ids:
+      - 28604
+      - 3537
+    - delta_text: ' <|constrain|>'
+      delta_token_ids:
+      - 220
+      - 200003
+    - delta_text: json<|message|>
+      delta_token_ids:
+      - 4108
+      - 200008
+    - delta_text: '{"payload'
+      delta_token_ids:
+      - 10848
+      - 39859
+    - delta_text: '":{"regions'
+      delta_token_ids:
+      - 70649
+      - 134292
+    - delta_text: '":[{"'
+      delta_token_ids:
+      - 16853
+      - 10848
+    - delta_text: name":"
+      delta_token_ids:
+      - 897
+      - 7534
+    - delta_text: west","
+      delta_token_ids:
+      - 14914
+      - 4294
+    - delta_text: scores":[
+      delta_token_ids:
+      - 109945
+      - 16853
+    - delta_text: 1,
+      delta_token_ids:
+      - 16
+      - 11
+    - delta_text: 2,
+      delta_token_ids:
+      - 17
+      - 11
+    - delta_text: 3]
+      delta_token_ids:
+      - 18
+      - 60
+    - delta_text: '},{"name'
+      delta_token_ids:
+      - 138064
+      - 897
+    - delta_text: '":"east'
+      delta_token_ids:
+      - 7534
+      - 157488
+    - delta_text: '","scores'
+      delta_token_ids:
+      - 4294
+      - 109945
+    - delta_text: '":[4'
+      delta_token_ids:
+      - 16853
+      - 19
+    - delta_text: ',5'
+      delta_token_ids:
+      - 11
+      - 20
+    - delta_text: ',6'
+      delta_token_ids:
+      - 11
+      - 21
+    - delta_text: ']}],"'
+      delta_token_ids:
+      - 28000
+      - 91001
+    - delta_text: flags":{"
+      delta_token_ids:
+      - 24254
+      - 70649
+    - delta_text: 'enabled":'
+      delta_token_ids:
+      - 42840
+      - 1243
+    - delta_text: true,"
+      delta_token_ids:
+      - 3309
+      - 3532
+    - delta_text: 'retry":'
+      delta_token_ids:
+      - 91799
+      - 1243
+    - delta_text: null},"
+      delta_token_ids:
+      - 5398
+      - 140781
+    - delta_text: 'empty":'
+      delta_token_ids:
+      - 6857
+      - 1243
+    - delta_text: '{}}'
+      delta_token_ids:
+      - 90
+      - 6478
+    - delta_text: '}<|call|>'
+      delta_token_ids:
+      - 92
+      - 200012
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.7.f:
+    description: Numeric precision edge preserves integer-like number literal
+    ref: derived from TOOLCALLING.batch.7.f
+    tools:
+    - name: set_limit
+      parameters:
+        type: object
+        properties:
+          count:
+            type: number
+    chunks:
+    - delta_text: <|channel|>comment
+      delta_token_ids:
+      - 200005
+      - 12606
+    - delta_text: ary to
+      delta_token_ids:
+      - 815
+      - 316
+    - delta_text: =functions
+      delta_token_ids:
+      - 28
+      - 44580
+    - delta_text: .set_limit
+      delta_token_ids:
+      - 1230
+      - 34361
+    - delta_text: ' <|constrain|>'
+      delta_token_ids:
+      - 220
+      - 200003
+    - delta_text: json<|message|>
+      delta_token_ids:
+      - 4108
+      - 200008
+    - delta_text: '{"count'
+      delta_token_ids:
+      - 10848
+      - 5420
+    - delta_text: '":900'
+      delta_token_ids:
+      - 1243
+      - 9752
+    - delta_text: '719925'
+      delta_token_ids:
+      - 47555
+      - 36831
+    - delta_text: '474099'
+      delta_token_ids:
+      - 39739
+      - 37986
+    - delta_text: 3}
+      delta_token_ids:
+      - 18
+      - 92
+    - delta_text: <|call|>
+      delta_token_ids:
+      - 200012
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: tool_calls

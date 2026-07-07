@@ -1,0 +1,150 @@
+family: qwen3_coder
+mode: streamv2
+model_label: Qwen 3 Coder
+cases:
+  TOOLCALLING.streamv2.5.a:
+    description: Missing </tool_call> end marker
+    ref: derived from TOOLCALLING.batch.5.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <tool_call> <function=get_weather>
+    - delta_text: ' <parameter=location>'
+    - delta_text: ' NYC </parameter> </function>'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.5.b:
+    description: Closing </tool_call> without matching <tool_call> open
+    ref: derived from TOOLCALLING.batch.5.b
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <function=get_weather> <parameter=location>
+    - delta_text: ' NYC'
+    - delta_text: ' </parameter> </function> </tool_call>'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.5.c:
+    description: Truncation mid-parameter value
+    ref: derived from TOOLCALLING.batch.5.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <tool_call> <function=get_weather>
+    - delta_text: ' <parameter=location>'
+    - delta_text: ' NY'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.5.d:
+    description: Multi-call, last call missing only end marker (body complete)
+    ref: derived from TOOLCALLING.batch.5.d
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I'll start
+    - delta_text: ' by'
+    - delta_text: ' fetching the weather'
+    - delta_text: ' for both'
+    - delta_text: ' Boston'
+    - delta_text: ' and New'
+    - delta_text: ' York at the'
+    - delta_text: ' same'
+    - delta_text: ' time! <tool_call>'
+    - delta_text: ' <function=get_weather>'
+    - delta_text: ' <parameter=location> Boston'
+    - delta_text: ' </parameter>'
+    - delta_text: ' </function> </tool_call> <tool_call>'
+    - delta_text: ' <function=get_weather> <parameter=location>'
+    - delta_text: ' New'
+    - delta_text: ' York </parameter>'
+    - delta_text: ' </function>'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.5.e:
+    description: Multi-call, last call truncated mid-arg-value
+    ref: derived from TOOLCALLING.batch.5.e
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I'll start
+    - delta_text: ' by'
+    - delta_text: ' fetching the weather'
+    - delta_text: ' for both'
+    - delta_text: ' Boston'
+    - delta_text: ' and New'
+    - delta_text: ' York at the'
+    - delta_text: ' same'
+    - delta_text: ' time! <tool_call>'
+    - delta_text: ' <function=get_weather>'
+    - delta_text: ' <parameter=location> Boston'
+    - delta_text: ' </parameter>'
+    - delta_text: ' </function> </tool_call> <tool_call>'
+    - delta_text: ' <function=get_weather> <parameter=location>'
+    - delta_text: ' New'
+    - delta_text: ' York'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.5.f:
+    description: Bare valid function before a complete wrapped call
+    ref: derived from TOOLCALLING.batch.5.f
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <function=get_weather> <parameter=location>
+    - delta_text: ' NYC'
+    - delta_text: ' </parameter> </function> </tool_call>'
+    - delta_text: ' <tool_call> <function=get_weather>'
+    - delta_text: ' <parameter=location>'
+    - delta_text: ' Boston </parameter>'
+    - delta_text: ' </function> </tool_call>'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.5.g:
+    description: Closing </tool_call> without matching <tool_call> open after prefix prose
+    ref: derived from TOOLCALLING.batch.5.g
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I will
+    - delta_text: ' check'
+    - delta_text: ' that. <function=get_weather> <parameter=location>'
+    - delta_text: ' NYC </parameter>'
+    - delta_text: ' </function>'
+    - delta_text: ' </tool_call>'
+    - delta_text: ''
+      finish_reason: stop

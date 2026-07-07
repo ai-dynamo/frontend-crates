@@ -1,0 +1,36 @@
+family: mistral
+mode: streamv2
+captured_with:
+  sglang_python: 0.5.12.post1
+cases:
+  TOOLCALLING.streamv2.2.a:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.2.c:
+    chunks:
+    - expected: []
+      normal_text: 'Both: '
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.2.d:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []

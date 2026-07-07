@@ -1,0 +1,31 @@
+family: harmony
+mode: streamv2
+captured_with:
+  sglang_python: 0.5.12.post1
+cases:
+  TOOLCALLING.streamv2.50:
+    chunks:
+    - expected: []
+      normal_text: <|
+    - expected: []
+      normal_text: cha
+    - expected: []
+      normal_text: nnel|
+    - expected: []
+      normal_text: '>commentary'
+    - expected: []
+      normal_text: ' to=functions.get_w'
+    - expected: []
+      normal_text: ea
+    - expected: []
+      normal_text: the
+    - expected: []
+      normal_text: r <|c
+    - expected: []
+      normal_text: onstrain|>j
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []

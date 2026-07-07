@@ -1,0 +1,142 @@
+family: harmony
+mode: streamv2
+captured_with:
+  dynamo_rust: 0.1.11
+cases:
+  TOOLCALLING.streamv2.8.a:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+      - index: 0
+        arguments: '{"location":"NYC"}'
+    - expected: []
+      normal_text: I will check the weather.
+  TOOLCALLING.streamv2.8.b:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+      - index: 0
+        arguments: '{"location":"NYC"}'
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+      normal_text: Let me know if you need more.
+  TOOLCALLING.streamv2.8.c:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+      - index: 0
+        arguments: '{"location":"NYC"}'
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+      normal_text: I will check the weather.  Let me know if you need more.
+  TOOLCALLING.streamv2.8.d:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+      - index: 0
+        arguments: '{"location":"NYC"}'
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 1
+        id: true
+        name: get_weather
+      - index: 1
+        arguments: '{"location":"LA"}'
+    - expected: []
+      normal_text: I will check the weather.  Then check LA weather.

@@ -1,0 +1,44 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: hermes
+mode: batch
+cases:
+  TOOLCALLING.batch.5.a:
+    expected:
+      vllm:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+  TOOLCALLING.batch.5.b:
+    expected:
+      vllm:
+        reason: vLLM and SGLang leave the orphan </tool_call> in normal_text when the opening <tool_call> marker is missing; Dynamo strips the stray end marker (no leak). Non-parity by design.
+        calls: []
+        normal_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call>'
+  TOOLCALLING.batch.5.c:
+    expected:
+      vllm:
+        reason: vLLM and SGLang surface the truncated <tool_call> body as raw text; Dynamo suppresses the unterminated call (open <tool_call>, no close, nothing salvaged) so no markup leaks. Non-parity by design.
+        calls: []
+        normal_text: '<tool_call>{"name": "get_weather", "arguments": {"loc'
+  TOOLCALLING.batch.5.d:
+    expected:
+      vllm:
+        reason: vLLM and SGLang recover the trailing call whose body is complete but end marker is missing; Dynamo drops the unterminated trailing call and keeps the first complete call. Non-parity by design.
+        calls:
+        - name: get_weather
+          arguments:
+            location: Boston
+        - name: get_weather
+          arguments:
+            location: New York
+        normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  TOOLCALLING.batch.5.e:
+    expected:
+      vllm:
+        reason: vLLM and SGLang leak the whole text when the trailing call is truncated mid-arg-value; Dynamo recovers the first complete call and drops the truncated trailer (no leak). Non-parity by design.
+        calls: []
+        normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<tool_call>{"name": "get_weather", "arguments": {"location": "Boston"}}</tool_call><tool_call>{"name": "get_weather", "arguments": {"location": "New York'

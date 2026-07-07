@@ -1,0 +1,29 @@
+family: llama3_json
+mode: streamv2
+captured_with:
+  dynamo_rust: 3.0.0
+cases:
+  TOOLCALLING.streamv2.31.a:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: run_query
+        arguments: '{"sql":"SELECT a; SELECT b"}'
+    - expected: []
+      normal_text: ' "get_time", "arguments":'
+    - expected: []
+    - expected: []
+      normal_text: ' {"timezone": "EST"}}'
+  TOOLCALLING.streamv2.31.b:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: run_query
+        arguments: '{"sql":"SELECT value WHERE note has brace } and bracket ]"}'
+    - expected: []
+      normal_text: ' "arguments":'
+    - expected: []
+    - expected: []
+      normal_text: ' {"timezone": "EST"}}'

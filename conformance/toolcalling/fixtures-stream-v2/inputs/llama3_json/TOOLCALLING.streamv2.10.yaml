@@ -1,0 +1,23 @@
+family: llama3_json
+mode: streamv2
+model_label: Llama 3 (JSON fmt)
+cases:
+  TOOLCALLING.streamv2.10:
+    description: Duplicate calls (same name twice, semicolon-separated)
+    ref: derived from TOOLCALLING.batch.10
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '<|python_tag|>{"name":'
+    - delta_text: ' "get_weather",'
+    - delta_text: ' "arguments": {"location": "NYC"}};{"name":'
+    - delta_text: ' "get_weather", "arguments":'
+    - delta_text: ' {"location":'
+    - delta_text: ' "LA"}}'
+    - delta_text: ''
+      finish_reason: tool_calls

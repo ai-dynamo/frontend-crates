@@ -1,0 +1,134 @@
+family: harmony
+mode: streamv2
+captured_with:
+  sglang_python: 0.5.12.post1
+cases:
+  TOOLCALLING.streamv2.7.a:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: book_flight
+        arguments: '{"destination": "Paris", "passengers": 2, "first_class": true}'
+    - expected: []
+  TOOLCALLING.streamv2.7.b:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+        arguments: '{"location": "Tōkyō \"central\""}'
+    - expected: []
+  TOOLCALLING.streamv2.7.c:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: set_temperature
+        arguments: '{"celsius": "20"}'
+    - expected: []
+  TOOLCALLING.streamv2.7.d:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: process_data
+        arguments: '{"items": [1, 2, 3], "config": {"nested": true}}'
+    - expected: []
+  TOOLCALLING.streamv2.7.e:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: process_data
+        arguments: '{"payload": {"regions": [{"name": "west", "scores": [1, 2, 3]}, {"name": "east", "scores": [4, 5, 6]}], "flags": {"enabled": true, "retry": null}, "empty": {}}}'
+    - expected: []
+  TOOLCALLING.streamv2.7.f:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: set_limit
+        arguments: '{"count": 9007199254740993}'
+    - expected: []

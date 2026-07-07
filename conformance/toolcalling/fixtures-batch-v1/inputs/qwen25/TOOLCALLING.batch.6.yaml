@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Shared inputs (version-independent): no expected blocks.
+family: qwen25
+mode: batch
+cases:
+  TOOLCALLING.batch.6.a:
+    description: 'Canonical "arguments": {}'
+    ref: dynamo
+    model_text: '<tool_call>
+
+      {"name": "get_time", "arguments": {}}
+
+      </tool_call>'
+    tools:
+    - &id001
+      name: get_time
+      parameters:
+        type: object
+        properties: {}
+  TOOLCALLING.batch.6.b:
+    description: Whitespace inside arguments {}
+    ref: dynamo
+    model_text: '<tool_call>
+
+      {"name": "get_time", "arguments": { }}
+
+      </tool_call>'
+    tools:
+    - *id001
+  TOOLCALLING.batch.6.c:
+    description: No arguments key
+    ref: dynamo
+    model_text: '<tool_call>{"name": "get_time"}</tool_call>'
+    tools:
+    - *id001

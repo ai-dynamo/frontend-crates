@@ -1,0 +1,78 @@
+family: mistral
+mode: streamv2
+model_label: Mistral series
+cases:
+  TOOLCALLING.streamv2.2.a:
+    description: Parallel calls in JSON array
+    ref: derived from TOOLCALLING.batch.2.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    chunks:
+    - delta_text: '[TOOL_CALLS][{"name":'
+    - delta_text: ' "get_weather",'
+    - delta_text: ' "arguments": {"location": "NYC"}},'
+    - delta_text: ' {"name": "get_time",'
+    - delta_text: ' "arguments":'
+    - delta_text: ' {"timezone": "EST"}}]'
+    - delta_text: '[/TOOL_CALLS]'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.2.c:
+    description: With surrounding narration
+    ref: derived from TOOLCALLING.batch.2.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    chunks:
+    - delta_text: 'Both: [TOOL_CALLS]'
+    - delta_text: '[{"name":'
+    - delta_text: ' "get_weather", "arguments": {"location":'
+    - delta_text: ' "NYC"}}, {"name":'
+    - delta_text: ' "get_time",'
+    - delta_text: ' "arguments": {"timezone":'
+    - delta_text: ' "EST"}}][/TOOL_CALLS] Done.'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.2.d:
+    description: Same-name twice
+    ref: derived from TOOLCALLING.batch.2.d
+    tools:
+    - &id001
+      name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - *id001
+    chunks:
+    - delta_text: '[TOOL_CALLS][{"name":'
+    - delta_text: ' "get_weather",'
+    - delta_text: ' "arguments": {"location": "NYC"}},'
+    - delta_text: ' {"name": "get_weather",'
+    - delta_text: ' "arguments":'
+    - delta_text: ' {"location": "LA"}}]'
+    - delta_text: '[/TOOL_CALLS]'
+    - delta_text: ''
+      finish_reason: stop

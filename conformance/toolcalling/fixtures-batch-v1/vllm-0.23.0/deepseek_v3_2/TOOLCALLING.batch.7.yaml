@@ -1,0 +1,33 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: deepseek_v3_2
+mode: batch
+cases:
+  TOOLCALLING.batch.7.a:
+    expected:
+      vllm:
+        calls:
+        - name: book_flight
+          arguments:
+            destination: Paris
+            passengers: 2
+            first_class: true
+        normal_text: ''
+  TOOLCALLING.batch.7.b:
+    expected:
+      vllm:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Tōkyō central
+        normal_text: ''
+  TOOLCALLING.batch.7.f:
+    expected:
+      vllm:
+        reason: Dynamo/SGLang preserve integer-like number literals; vLLM rounds this DSML number parameter through f64 and loses precision above 2^53.
+        calls:
+        - name: set_limit
+          arguments:
+            count: 9007199254740992
+        normal_text: ''

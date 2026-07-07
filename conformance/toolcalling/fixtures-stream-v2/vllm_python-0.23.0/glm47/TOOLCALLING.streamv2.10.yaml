@@ -1,0 +1,29 @@
+family: glm47
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.10:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected: []
+    - expected:
+      - index: 0
+        arguments: '{"location": "NYC"}'
+    - expected:
+      - index: 1
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected: []
+    - expected:
+      - index: 1
+        arguments: '{"location": "LA"'
+    - expected:
+      - index: 1
+        arguments: '}'
+    - expected: []

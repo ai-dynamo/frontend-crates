@@ -1,0 +1,44 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: deepseek_v3
+mode: stream
+cases:
+  TOOLCALLING.stream.4.a:
+    expected:
+      vllm:
+        calls: []
+        normal_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+          ```json
+
+          {"location": "NYC"}
+
+          ```'
+  TOOLCALLING.stream.4.b:
+    expected:
+      vllm:
+        calls: []
+        normal_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+          ```json
+
+          {"loc'
+  TOOLCALLING.stream.4.c:
+    expected:
+      vllm:
+        calls: []
+        normal_text: '<｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+          ```json
+
+          {"location": "NYC"}
+
+          ```
+
+          <｜tool▁call▁end｜>
+
+          <｜tool▁call▁end｜>
+
+          <｜tool▁call▁end｜>'
+        reason: vllm preserves malformed bare-wrapper parser syntax in normal_text for this recovery case; Dynamo recovers the call and suppresses parser-owned markers so they do not leak into message.content.

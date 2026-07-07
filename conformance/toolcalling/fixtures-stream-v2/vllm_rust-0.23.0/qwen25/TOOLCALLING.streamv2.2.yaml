@@ -1,0 +1,65 @@
+family: qwen25
+mode: streamv2
+captured_with:
+  vllm_rust: 0.23.0
+cases:
+  TOOLCALLING.streamv2.2.a:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+      - index: 0
+        arguments: '{"location": "NYC"}'
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 1
+        name: get_time
+      - index: 1
+        arguments: '{"timezone": "EST"}'
+    - expected: []
+  TOOLCALLING.streamv2.2.c:
+    chunks:
+    - expected: []
+      normal_text: 'Both: '
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+      - index: 0
+        arguments: '{"location":'
+    - expected:
+      - index: 0
+        arguments: ' "NYC"}'
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 1
+        name: get_time
+      - index: 1
+        arguments: '{"timezone": "EST"}'
+    - expected: []
+    - expected: []
+      normal_text: ' Done.'
+    - expected: []
+  TOOLCALLING.streamv2.2.d:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+      - index: 0
+        arguments: '{"location": "NYC"}'
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 1
+        name: get_weather
+      - index: 1
+        arguments: '{"location": "LA"}'
+    - expected: []

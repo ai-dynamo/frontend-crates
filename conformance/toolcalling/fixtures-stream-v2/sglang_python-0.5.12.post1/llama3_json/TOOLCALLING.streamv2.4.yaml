@@ -1,0 +1,34 @@
+family: llama3_json
+mode: streamv2
+captured_with:
+  sglang_python: 0.5.12.post1
+cases:
+  TOOLCALLING.streamv2.4.a:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.4.b:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.4.c:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.4.e:
+    chunks:
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []

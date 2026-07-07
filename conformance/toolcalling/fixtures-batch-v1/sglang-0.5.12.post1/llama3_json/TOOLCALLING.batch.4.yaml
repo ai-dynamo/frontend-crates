@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for sglang@0.5.12.post1 (lowest version = baseline). expected.sglang only.
+family: llama3_json
+mode: batch
+cases:
+  TOOLCALLING.batch.4.a:
+    expected:
+      sglang:
+        calls: []
+        normal_text: not even json
+        reason: impl-defined recovery contract; strips python_tag before returning malformed action text
+  TOOLCALLING.batch.4.b:
+    expected:
+      sglang:
+        calls: []
+        normal_text: '{"name": "get_weather", "arguments": {"location": "NYC"'
+        reason: impl-defined recovery contract; strips python_tag before returning malformed action text
+  TOOLCALLING.batch.4.c:
+    expected:
+      sglang:
+        calls: []
+        normal_text: ''
+  TOOLCALLING.batch.4.e:
+    expected:
+      sglang:
+        calls:
+        - name: get_weather
+          arguments: {}
+        normal_text: ''
+        reason: SGLang Llama32Detector scans past the malformed prefix and recovers the later valid JSON object.

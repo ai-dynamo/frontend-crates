@@ -1,0 +1,28 @@
+family: pythonic
+mode: streamv2
+model_label: Llama 4 (pythonic fmt)
+cases:
+  TOOLCALLING.streamv2.6.a:
+    description: Empty parens (no args)
+    ref: derived from TOOLCALLING.batch.6.a
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    chunks:
+    - delta_text: '[get_time()]'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.6.b:
+    description: Whitespace inside parens
+    ref: derived from TOOLCALLING.batch.6.b
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    chunks:
+    - delta_text: '[get_time( )]'
+    - delta_text: ''
+      finish_reason: stop

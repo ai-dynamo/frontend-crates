@@ -1,0 +1,135 @@
+family: deepseek_v3
+mode: streamv2
+model_label: DeepSeek V3
+cases:
+  TOOLCALLING.streamv2.7.a:
+    description: Standard scalar types
+    ref: derived from TOOLCALLING.batch.7.a
+    tools:
+    - name: book_flight
+      parameters:
+        type: object
+        properties:
+          destination:
+            type: string
+          passengers:
+            type: integer
+          first_class:
+            type: boolean
+    chunks:
+    - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+    - delta_text: function<｜tool▁sep｜>
+    - delta_text: 'book_flight ```json {"destination":'
+    - delta_text: ' "Paris", "passengers":'
+    - delta_text: ' 2,'
+    - delta_text: ' "first_class": true}'
+    - delta_text: ' ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.7.b:
+    description: Unicode + escaped chars
+    ref: derived from TOOLCALLING.batch.7.b
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+    - delta_text: function<｜tool▁sep｜>
+    - delta_text: 'get_weather ```json {"location":'
+    - delta_text: ' "Tōkyō \"central\""}'
+    - delta_text: ' ```<｜tool▁call▁end｜>'
+    - delta_text: <｜tool▁calls▁end｜>
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.7.c:
+    description: Schema mismatch — string value where schema declares integer
+    ref: derived from TOOLCALLING.batch.7.c
+    tools:
+    - name: set_temperature
+      parameters:
+        type: object
+        properties:
+          celsius:
+            type: integer
+    chunks:
+    - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+    - delta_text: function<｜tool▁sep｜>
+    - delta_text: 'set_temperature ```json {"celsius":'
+    - delta_text: ' "20"} ```<｜tool▁call▁end｜>'
+    - delta_text: <｜tool▁calls▁end｜>
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.7.d:
+    description: Nested object + array (existing)
+    ref: derived from TOOLCALLING.batch.7.d
+    tools:
+    - name: process_data
+      parameters:
+        type: object
+        properties:
+          items:
+            type: array
+          config:
+            type: object
+    chunks:
+    - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+    - delta_text: function<｜tool▁sep｜>
+    - delta_text: 'process_data ```json {"items":'
+    - delta_text: ' [1, 2,'
+    - delta_text: ' 3]'
+    - delta_text: ', "config":'
+    - delta_text: ' {"nested": true}} ```<｜tool▁call▁end｜>'
+    - delta_text: <｜tool▁calls▁end｜>
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.7.e:
+    description: Large / deep JSON-edge argument payload
+    ref: derived from TOOLCALLING.batch.7.e
+    tools:
+    - name: process_data
+      parameters:
+        type: object
+        properties:
+          payload:
+            type: object
+    chunks:
+    - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+    - delta_text: function<｜tool▁sep｜>
+    - delta_text: 'process_data ```json {"payload":'
+    - delta_text: ' {"regions": [{"name":'
+    - delta_text: ' "west",'
+    - delta_text: ' "scores": [1,'
+    - delta_text: ' 2, 3]},'
+    - delta_text: ' {"name":'
+    - delta_text: ' "east", "scores":'
+    - delta_text: ' [4,'
+    - delta_text: ' 5, 6]'
+    - delta_text: '}]'
+    - delta_text: ', "flags": {"enabled":'
+    - delta_text: ' true, "retry":'
+    - delta_text: ' null},'
+    - delta_text: ' "empty": {}}}'
+    - delta_text: ' ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.7.f:
+    description: Numeric precision edge preserves integer-like number literal
+    ref: derived from TOOLCALLING.batch.7.f
+    tools:
+    - name: set_limit
+      parameters:
+        type: object
+        properties:
+          count:
+            type: number
+    chunks:
+    - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+    - delta_text: function<｜tool▁sep｜>
+    - delta_text: set_limit ```json {"count":9007199254740993}
+    - delta_text: ' ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    - delta_text: ''
+      finish_reason: tool_calls

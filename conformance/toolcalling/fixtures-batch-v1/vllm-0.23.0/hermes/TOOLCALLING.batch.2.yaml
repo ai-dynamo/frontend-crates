@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: hermes
+mode: batch
+cases:
+  TOOLCALLING.batch.2.a:
+    expected:
+      vllm:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: ''
+  TOOLCALLING.batch.2.c:
+    expected:
+      vllm:
+        reason: vLLM preserves the trailing space before the first <tool_call> in normal_text; Dynamo and SGLang trim it. Cosmetic whitespace, non-parity by design.
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: 'Both: '
+  TOOLCALLING.batch.2.d:
+    expected:
+      vllm:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: LA
+        normal_text: ''

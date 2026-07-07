@@ -1,0 +1,15 @@
+family: nemotron_deci
+mode: streamv2
+captured_with:
+  dynamo_rust: 0.1.11
+cases:
+  TOOLCALLING.streamv2.7.a:
+    unavailable: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.
+  TOOLCALLING.streamv2.7.b:
+    unavailable: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.
+  TOOLCALLING.streamv2.7.c:
+    unavailable: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.
+  TOOLCALLING.streamv2.7.d:
+    unavailable: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.
+  TOOLCALLING.streamv2.7.e:
+    unavailable: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.

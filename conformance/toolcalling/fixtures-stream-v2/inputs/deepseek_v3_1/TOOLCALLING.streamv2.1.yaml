@@ -1,0 +1,20 @@
+family: deepseek_v3_1
+mode: streamv2
+model_label: DeepSeek V3.1
+cases:
+  TOOLCALLING.streamv2.1:
+    description: Single tool call (happy path)
+    ref: derived from TOOLCALLING.batch.1
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+    - delta_text: get_weather<｜tool▁sep｜>
+    - delta_text: '{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    - delta_text: ''
+      finish_reason: tool_calls

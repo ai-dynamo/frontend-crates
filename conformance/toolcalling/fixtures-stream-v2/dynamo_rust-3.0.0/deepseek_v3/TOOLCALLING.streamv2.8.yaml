@@ -1,0 +1,66 @@
+family: deepseek_v3
+mode: streamv2
+captured_with:
+  dynamo_rust: 3.0.0
+cases:
+  TOOLCALLING.streamv2.8.a:
+    chunks:
+    - expected: []
+      normal_text: I will
+    - expected: []
+      normal_text: ' check'
+    - expected: []
+      normal_text: ' the weather. '
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.8.b:
+    chunks:
+    - expected: []
+    - expected: []
+      normal_text: ' Let me'
+    - expected: []
+      normal_text: ' know if you'
+    - expected: []
+      normal_text: ' need'
+    - expected: []
+      normal_text: ' more.'
+    - expected: []
+  TOOLCALLING.streamv2.8.c:
+    chunks:
+    - expected: []
+      normal_text: I will
+    - expected: []
+      normal_text: ' check'
+    - expected: []
+      normal_text: ' the weather. '
+    - expected: []
+    - expected: []
+      normal_text: ' Let'
+    - expected: []
+      normal_text: ' me know'
+    - expected: []
+      normal_text: ' if'
+    - expected: []
+      normal_text: ' you need'
+    - expected: []
+      normal_text: ' more.'
+    - expected: []
+  TOOLCALLING.streamv2.8.d:
+    chunks:
+    - expected: []
+      normal_text: I will
+    - expected: []
+      normal_text: ' check'
+    - expected: []
+      normal_text: ' the weather. '
+    - expected: []
+    - expected: []
+      normal_text: ' Then'
+    - expected: []
+      normal_text: ' check LA'
+    - expected: []
+      normal_text: ' weather.'
+    - expected: []
+      normal_text: ' '
+    - expected: []
+    - expected: []

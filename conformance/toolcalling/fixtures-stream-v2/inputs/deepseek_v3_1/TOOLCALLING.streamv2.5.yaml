@@ -1,0 +1,104 @@
+family: deepseek_v3_1
+mode: streamv2
+model_label: DeepSeek V3.1
+cases:
+  TOOLCALLING.streamv2.5.a:
+    description: Missing tool_calls_end (truncation)
+    ref: derived from TOOLCALLING.batch.5.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+    - delta_text: get_weather<｜tool▁sep｜>
+    - delta_text: '{"location":"NYC"}<｜tool▁call▁end｜>'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.5.b:
+    description: Closing tool_calls_end without matching tool_calls_begin
+    ref: derived from TOOLCALLING.batch.5.b
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>
+    - delta_text: '{"location":"NYC"}<｜tool▁call▁end｜>'
+    - delta_text: <｜tool▁calls▁end｜>
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.5.c:
+    description: Truncation mid-arguments JSON
+    ref: derived from TOOLCALLING.batch.5.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+    - delta_text: get_weather<｜tool▁sep｜>
+    - delta_text: '{"loc'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.5.d:
+    description: Multi-call, last call missing only end marker (body complete)
+    ref: derived from TOOLCALLING.batch.5.d
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I'll start
+    - delta_text: ' by'
+    - delta_text: ' fetching the weather'
+    - delta_text: ' for both'
+    - delta_text: ' Boston'
+    - delta_text: ' and New'
+    - delta_text: ' York at the'
+    - delta_text: ' same'
+    - delta_text: ' time!<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>'
+    - delta_text: get_weather<｜tool▁sep｜>
+    - delta_text: '{"location":"Boston"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>'
+    - delta_text: get_weather<｜tool▁sep｜>
+    - delta_text: '{"location":"New York"}'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.5.e:
+    description: Multi-call, last call truncated mid-arg-value
+    ref: derived from TOOLCALLING.batch.5.e
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I'll start
+    - delta_text: ' by'
+    - delta_text: ' fetching the weather'
+    - delta_text: ' for both'
+    - delta_text: ' Boston'
+    - delta_text: ' and New'
+    - delta_text: ' York at the'
+    - delta_text: ' same'
+    - delta_text: ' time!<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>'
+    - delta_text: get_weather<｜tool▁sep｜>
+    - delta_text: '{"location":"Boston"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>'
+    - delta_text: get_weather<｜tool▁sep｜>
+    - delta_text: '{"location":"New York'
+    - delta_text: ''
+      finish_reason: tool_calls

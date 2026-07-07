@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: phi4
+mode: batch
+cases:
+  TOOLCALLING.batch.4.a:
+    expected:
+      vllm:
+        calls: []
+        normal_text: ''
+  TOOLCALLING.batch.4.b:
+    expected:
+      vllm:
+        calls: []
+        normal_text: ''
+  TOOLCALLING.batch.4.c:
+    expected:
+      vllm:
+        calls: []
+        normal_text: 'functools[{"arguments": {"location": "NYC"}}]'
+  TOOLCALLING.batch.4.d:
+    expected:
+      vllm:
+        calls: []
+        normal_text: 'functools[{"name": "get_weather", "arguments": {"location": "NYC"}}'

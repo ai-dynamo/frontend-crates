@@ -1,0 +1,32 @@
+family: deepseek_v4
+mode: streamv2
+model_label: DeepSeek V4
+cases:
+  TOOLCALLING.streamv2.6.a:
+    description: Invoke with no <parameter>
+    ref: derived from TOOLCALLING.batch.6.a
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    chunks:
+    - delta_text: <｜DSML｜tool_calls> <｜DSML｜invoke
+    - delta_text: ' name="get_time">'
+    - delta_text: ' </｜DSML｜invoke> </｜DSML｜tool_calls>'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.6.b:
+    description: Invoke with extra newline
+    ref: derived from TOOLCALLING.batch.6.b
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    chunks:
+    - delta_text: <｜DSML｜tool_calls> <｜DSML｜invoke
+    - delta_text: ' name="get_time">'
+    - delta_text: ' </｜DSML｜invoke> </｜DSML｜tool_calls>'
+    - delta_text: ''
+      finish_reason: stop

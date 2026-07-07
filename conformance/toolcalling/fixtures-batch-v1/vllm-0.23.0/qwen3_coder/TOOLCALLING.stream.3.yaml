@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: qwen3_coder
+mode: stream
+cases:
+  TOOLCALLING.stream.3:
+    expected:
+      vllm:
+        calls: []
+        normal_text: '<tool_call>
+
+          <function=get_weather>
+
+          <parameter=location>
+
+          NYC
+
+          </parameter>
+
+          </function>
+
+          </tool_call>'
+        reason: 'Same root cause as TOOLCALLING.stream.2: vLLM checks for `<tool_call>` in `delta_text` only (qwen3coder_tool_parser.py:402). With the start token split across chunks (`<t` + `ool` + `_call` + `>\n…`), the guard never matches and every chunk is emitted as plain content via qwen3coder_tool_parser.py:422, leaking the entire payload into `normal_text`.'

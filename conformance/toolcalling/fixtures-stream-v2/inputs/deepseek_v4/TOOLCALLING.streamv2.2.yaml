@@ -1,0 +1,114 @@
+family: deepseek_v4
+mode: streamv2
+model_label: DeepSeek V4
+cases:
+  TOOLCALLING.streamv2.2.a:
+    description: Two invokes inside one tool_calls wrapper
+    ref: derived from TOOLCALLING.batch.2.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    chunks:
+    - delta_text: <｜DSML｜tool_calls> <｜DSML｜invoke
+    - delta_text: ' name="get_weather">'
+    - delta_text: ' <｜DSML｜parameter name="location" string="true">'
+    - delta_text: NYC</｜DSML｜parameter> </｜DSML｜invoke>
+    - delta_text: ' <｜DSML｜invoke'
+    - delta_text: ' name="get_time"> <｜DSML｜parameter'
+    - delta_text: ' name="timezone" string="true">EST</｜DSML｜parameter>'
+    - delta_text: ' </｜DSML｜invoke>'
+    - delta_text: ' </｜DSML｜tool_calls>'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.2.b:
+    description: Two back-to-back tool_calls wrappers
+    ref: derived from TOOLCALLING.batch.2.b
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    chunks:
+    - delta_text: <｜DSML｜tool_calls> <｜DSML｜invoke
+    - delta_text: ' name="get_weather">'
+    - delta_text: ' <｜DSML｜parameter name="location" string="true">'
+    - delta_text: NYC</｜DSML｜parameter> </｜DSML｜invoke>
+    - delta_text: ' </｜DSML｜tool_calls>'
+    - delta_text: ' <｜DSML｜tool_calls> <｜DSML｜invoke'
+    - delta_text: ' name="get_time"> <｜DSML｜parameter name="timezone"'
+    - delta_text: ' string="true">'
+    - delta_text: EST</｜DSML｜parameter> </｜DSML｜invoke>
+    - delta_text: ' </｜DSML｜tool_calls>'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.2.c:
+    description: Parallel with surrounding narration
+    ref: derived from TOOLCALLING.batch.2.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    chunks:
+    - delta_text: 'Both: <｜DSML｜tool_calls>'
+    - delta_text: ' <｜DSML｜invoke'
+    - delta_text: ' name="get_weather"> <｜DSML｜parameter name="location"'
+    - delta_text: ' string="true">NYC</｜DSML｜parameter>'
+    - delta_text: ' </｜DSML｜invoke>'
+    - delta_text: ' <｜DSML｜invoke name="get_time">'
+    - delta_text: ' <｜DSML｜parameter name="timezone" string="true">'
+    - delta_text: EST</｜DSML｜parameter>
+    - delta_text: ' </｜DSML｜invoke> </｜DSML｜tool_calls>'
+    - delta_text: ' Done.'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.2.d:
+    description: Same-name twice
+    ref: derived from TOOLCALLING.batch.2.d
+    tools:
+    - &id001
+      name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - *id001
+    chunks:
+    - delta_text: <｜DSML｜tool_calls> <｜DSML｜invoke
+    - delta_text: ' name="get_weather">'
+    - delta_text: ' <｜DSML｜parameter name="location" string="true">'
+    - delta_text: NYC</｜DSML｜parameter> </｜DSML｜invoke>
+    - delta_text: ' <｜DSML｜invoke'
+    - delta_text: ' name="get_weather"> <｜DSML｜parameter'
+    - delta_text: ' name="location" string="true">LA</｜DSML｜parameter>'
+    - delta_text: ' </｜DSML｜invoke>'
+    - delta_text: ' </｜DSML｜tool_calls>'
+    - delta_text: ''
+      finish_reason: stop

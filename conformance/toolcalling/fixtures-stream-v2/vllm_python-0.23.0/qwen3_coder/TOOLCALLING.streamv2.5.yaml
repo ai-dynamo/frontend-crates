@@ -1,0 +1,166 @@
+family: qwen3_coder
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.5.a:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected:
+      - index: 0
+        arguments: '{'
+    - expected: []
+  TOOLCALLING.streamv2.5.b:
+    chunks:
+    - expected: []
+      normal_text: <function=get_weather> <parameter=location>
+    - expected: []
+      normal_text: ' NYC'
+    - expected: []
+      normal_text: ' </parameter> </function> </tool_call>'
+    - expected: []
+  TOOLCALLING.streamv2.5.c:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected:
+      - index: 0
+        arguments: '{'
+    - expected: []
+  TOOLCALLING.streamv2.5.d:
+    chunks:
+    - expected: []
+      normal_text: I'll start
+    - expected: []
+      normal_text: ' by'
+    - expected: []
+      normal_text: ' fetching the weather'
+    - expected: []
+      normal_text: ' for both'
+    - expected: []
+      normal_text: ' Boston'
+    - expected: []
+      normal_text: ' and New'
+    - expected: []
+      normal_text: ' York at the'
+    - expected: []
+      normal_text: ' same'
+    - expected: []
+      normal_text: ' time! '
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected:
+      - index: 0
+        arguments: '{'
+    - expected:
+      - index: 0
+        arguments: '"location": " Boston "'
+    - expected:
+      - index: 0
+        arguments: '}'
+    - expected: []
+    - expected:
+      - index: 1
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected:
+      - index: 1
+        arguments: '{'
+    - expected:
+      - index: 1
+        arguments: '"location": " New York "'
+    - expected: []
+  TOOLCALLING.streamv2.5.e:
+    chunks:
+    - expected: []
+      normal_text: I'll start
+    - expected: []
+      normal_text: ' by'
+    - expected: []
+      normal_text: ' fetching the weather'
+    - expected: []
+      normal_text: ' for both'
+    - expected: []
+      normal_text: ' Boston'
+    - expected: []
+      normal_text: ' and New'
+    - expected: []
+      normal_text: ' York at the'
+    - expected: []
+      normal_text: ' same'
+    - expected: []
+      normal_text: ' time! '
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected:
+      - index: 0
+        arguments: '{'
+    - expected:
+      - index: 0
+        arguments: '"location": " Boston "'
+    - expected:
+      - index: 0
+        arguments: '}'
+    - expected: []
+    - expected:
+      - index: 1
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected:
+      - index: 1
+        arguments: '{'
+    - expected: []
+  TOOLCALLING.streamv2.5.f:
+    chunks:
+    - expected: []
+      normal_text: <function=get_weather> <parameter=location>
+    - expected: []
+      normal_text: ' NYC'
+    - expected: []
+      normal_text: ' </parameter> </function> </tool_call>'
+    - expected: []
+      normal_text: ' '
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected:
+      - index: 0
+        arguments: '{'
+    - expected:
+      - index: 0
+        arguments: '"location": " Boston "'
+    - expected: []
+  TOOLCALLING.streamv2.5.g:
+    chunks:
+    - expected: []
+      normal_text: I will
+    - expected: []
+      normal_text: ' check'
+    - expected: []
+      normal_text: ' that. <function=get_weather> <parameter=location>'
+    - expected: []
+      normal_text: ' NYC </parameter>'
+    - expected: []
+      normal_text: ' </function>'
+    - expected: []
+      normal_text: ' </tool_call>'
+    - expected: []

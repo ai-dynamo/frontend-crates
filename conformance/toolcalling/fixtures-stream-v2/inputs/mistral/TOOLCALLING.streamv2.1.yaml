@@ -1,0 +1,21 @@
+family: mistral
+mode: streamv2
+model_label: Mistral series
+cases:
+  TOOLCALLING.streamv2.1:
+    description: Single tool call (happy path)
+    ref: derived from TOOLCALLING.batch.1
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '[TOOL_CALLS][{"name":'
+    - delta_text: ' "get_weather",'
+    - delta_text: ' "arguments": {"location": "NYC"}}]'
+    - delta_text: '[/TOOL_CALLS]'
+    - delta_text: ''
+      finish_reason: stop

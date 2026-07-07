@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for dynamo@3.0.0 (lowest version = baseline). expected.dynamo only.
+family: harmony
+mode: batch
+cases:
+  TOOLCALLING.batch.2.a:
+    expected:
+      dynamo:
+        calls:
+        - arguments:
+            location: NYC
+          name: get_weather
+        - arguments:
+            timezone: EST
+          name: get_time
+        normal_text: ''
+  TOOLCALLING.batch.2.c:
+    expected:
+      dynamo:
+        calls:
+        - arguments:
+            location: NYC
+          name: get_weather
+        - arguments:
+            timezone: EST
+          name: get_time
+        normal_text: I need both.  Done.
+  TOOLCALLING.batch.2.d:
+    expected:
+      dynamo:
+        calls:
+        - arguments:
+            location: NYC
+          name: get_weather
+        - arguments:
+            location: LA
+          name: get_weather
+        normal_text: ''

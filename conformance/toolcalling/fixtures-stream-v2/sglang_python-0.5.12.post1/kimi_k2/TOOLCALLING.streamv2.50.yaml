@@ -1,0 +1,48 @@
+family: kimi_k2
+mode: streamv2
+captured_with:
+  sglang_python: 0.5.12.post1
+cases:
+  TOOLCALLING.streamv2.50:
+    chunks:
+    - expected: []
+      normal_text: <|
+    - expected: []
+      normal_text: too
+    - expected: []
+      normal_text: l_cal
+    - expected: []
+      normal_text: ls_section_
+    - expected: []
+      normal_text: begin|><|tool_call_
+    - expected: []
+      normal_text: be
+    - expected: []
+      normal_text: gin
+    - expected: []
+      normal_text: '|>fun'
+    - expected: []
+      normal_text: ctions.get_
+    - expected: []
+      normal_text: weather:0<|tool_cal
+    - expected: []
+      normal_text: l_
+    - expected: []
+      normal_text: arg
+    - expected: []
+      normal_text: ument
+    - expected: []
+      normal_text: _begin|>{"l
+    - expected: []
+      normal_text: ocation":"NYC"}<|to
+    - expected: []
+      normal_text: ol
+    - expected: []
+      normal_text: _ca
+    - expected: []
+      normal_text: ll_en
+    - expected: []
+      normal_text: d|><|tool_c
+    - expected: []
+      normal_text: alls_section_end|>
+    - expected: []

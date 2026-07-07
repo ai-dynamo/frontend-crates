@@ -58,8 +58,11 @@ import copy
 import datetime
 import html as html_lib
 import json
+import os
 import re
 import subprocess
+import sys
+import tempfile
 import zoneinfo
 from pathlib import Path
 
@@ -80,6 +83,15 @@ FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures"
 TOOLCALLING_CASES_MD = REPO_ROOT / "lib/parsers/TOOLCALLING_CASES.md"
 PYPROJECT_TOML = REPO_ROOT / "pyproject.toml"
 TEMPLATE_DIR = REPO_ROOT / "tests/parity"
+
+# The versioned fixture source (inputs/ + per-impl <impl>-<version>/ dirs) lives in
+# the real repo, not the ephemeral stage. `_common.sh` exports FRONTEND_CRATES_ROOT;
+# fall back to REPO_ROOT for standalone runs. Used to power the per-impl version
+# radios: we resolve each version snapshot and re-run the load path so cell keys
+# align exactly with the rendered (pinned) table.
+_FRONTEND_CRATES_ROOT = Path(os.environ.get("FRONTEND_CRATES_ROOT", str(REPO_ROOT)))
+_SRC_FIXTURES = _FRONTEND_CRATES_ROOT / "conformance/toolcalling/fixtures-batch-v1"
+_RESOLVE_SRC_DIR = _FRONTEND_CRATES_ROOT / "conformance/utils/src"
 
 RUST_TOOL_CALLING_DIR = REPO_ROOT / "lib/parsers/src/tool_calling"
 
@@ -138,6 +150,104 @@ def _peer_versions() -> dict[str, str]:
         if m:
             out[name] = m.group(1)
     return out
+
+
+# --- per-impl version snapshots (version radios) --------------------------------
+# The impls the version radios cover, in display order.
+_VERSION_IMPLS = ("dynamo", "vllm", "sglang")
+
+
+def _version_slug(version: str) -> str:
+    """CSS/DOM-safe token for a version, e.g. 0.5.12.post1 -> 0-5-12-post1."""
+    return re.sub(r"[^0-9A-Za-z]+", "-", version).strip("-")
+
+
+def _version_sort_key(version: str) -> tuple:
+    """Order versions like 0.5.12.post1 < 0.5.14 < 0.24.0 < 3.0.0."""
+    m = re.match(r"(\d+(?:\.\d+)*)(?:[.-]?post(\d+))?", version)
+    release = tuple(int(x) for x in m.group(1).split(".")) if m else ()
+    post = int(m.group(2)) if m and m.group(2) else 0
+    return (release, post)
+
+
+def _impl_versions() -> dict[str, list[str]]:
+    """Discover the versions present per impl from the fixture source dirs,
+    ascending. E.g. {"dynamo": ["3.0.0"], "vllm": ["0.23.0", "0.24.0"], ...}."""
+    found: dict[str, list[str]] = {}
+    if not _SRC_FIXTURES.is_dir():
+        return found
+    for d in _SRC_FIXTURES.iterdir():
+        if not d.is_dir() or d.name == "inputs" or "-" not in d.name:
+            continue
+        impl, version = d.name.split("-", 1)
+        if impl in _VERSION_IMPLS:
+            found.setdefault(impl, []).append(version)
+    for impl in found:
+        found[impl] = sorted(set(found[impl]), key=_version_sort_key)
+    return {impl: found[impl] for impl in _VERSION_IMPLS if impl in found}
+
+
+def _pinned_versions(impl_versions: dict[str, list[str]]) -> dict[str, str]:
+    """Latest (pinned) version per impl = the default the radios select."""
+    return {impl: vers[-1] for impl, vers in impl_versions.items() if vers}
+
+
+def _latest_impl_versions() -> dict[str, list[str]]:
+    """PARITY_v1 pins each peer to its latest version only. The v1 parity page
+    compares the Dynamo v1 parser against the current peer engines, so older captured
+    versions are omitted here (the conformance page keeps them for version diffs)."""
+    return {impl: [vers[-1]] for impl, vers in _impl_versions().items() if vers}
+
+
+def _version_status_map(mode: str) -> dict[tuple[str, str], dict[str, dict[str, str]]]:
+    """{(family, sub): {impl: {version_slug: overview_status}}}.
+
+    For each impl/version we resolve that version (other impls pinned) into a temp
+    flat tree and run the same `load_all_cases` path, so keys match the rendered
+    table exactly (including split-parent normalization). Status uses the same
+    `_overview_status` classifier as the pinned cells."""
+    impl_versions = _latest_impl_versions()
+    if not impl_versions:
+        return {}
+    resolver = _RESOLVE_SRC_DIR / "resolve_fixtures.py"
+    if not resolver.exists():
+        return {}
+    pinned = _pinned_versions(impl_versions)
+
+    global FIXTURES
+    result: dict[tuple[str, str], dict[str, dict[str, str]]] = {}
+    for impl, versions in impl_versions.items():
+        for version in versions:
+            slug = _version_slug(version)
+            # Resolve this impl@version with every other impl pinned, so the cell's
+            # color reflects only this impl's version change.
+            select = [
+                f"{other}-{version if other == impl else pinned[other]}"
+                for other in impl_versions
+            ]
+            with tempfile.TemporaryDirectory() as tmp:
+                subprocess.run(
+                    [sys.executable, str(resolver),
+                     "--fixtures-root", str(_SRC_FIXTURES),
+                     "--out", tmp, "--select", *select],
+                    check=True, capture_output=True,
+                )
+                saved = FIXTURES
+                FIXTURES = Path(tmp)
+                try:
+                    cases, _labels = load_all_cases(mode)
+                finally:
+                    FIXTURES = saved
+            for key, case in cases.items():
+                block = (case.get("expected") or {}).get(impl)
+                result.setdefault(key, {}).setdefault(impl, {})[slug] = {
+                    "status": _overview_status(case, impl),
+                    "block": block,
+                    "version": version,
+                    "marker": _parser_marker(case, impl),
+                    "parity_marker": _parity_marker(case, impl),
+                }
+    return result
 
 
 def _build_family_inheritance(
@@ -654,10 +764,18 @@ def _overview_status(case: dict | None, impl: str) -> str:
 
 
 def _overview_status_attrs(case: dict | None) -> str:
-    return " ".join(
+    parts = [
         f'data-status-{impl}="{_overview_status(case, impl)}"'
         for impl in ("dynamo", "vllm", "sglang")
-    )
+    ]
+    # Per-version status (data-status-<impl>-<slug>) drives the version radios.
+    # Absent on missing/None cells — the CSS falls back to the pinned attr above.
+    ver_status = (case or {}).get("__ver_status") if isinstance(case, dict) else None
+    if ver_status:
+        for impl, by_slug in ver_status.items():
+            for slug, info in by_slug.items():
+                parts.append(f'data-status-{impl}-{slug}="{info["status"]}"')
+    return " ".join(parts)
 
 
 def _canonical_tool_output(block: object) -> dict | None:
@@ -740,6 +858,18 @@ def _parser_marker_attrs(case: dict | None) -> str:
         f'data-marker-parity-{impl}="{html_lib.escape(_parity_marker(case, impl))}"'
         for impl in ("dynamo", "vllm", "sglang")
     )
+    # Per-version details markers (↯/✗/=/V/S) so the details view tracks the
+    # selected version, not just the pinned one.
+    ver_status = (case or {}).get("__ver_status") if isinstance(case, dict) else None
+    if ver_status:
+        for impl, by_slug in ver_status.items():
+            for slug, info in by_slug.items():
+                attrs.append(
+                    f'data-marker-{impl}-{slug}="{html_lib.escape(info["marker"])}"'
+                )
+                attrs.append(
+                    f'data-marker-parity-{impl}-{slug}="{html_lib.escape(info["parity_marker"])}"'
+                )
     return " ".join(attrs)
 
 
@@ -868,6 +998,16 @@ def _format_output_block_html(block, family: str | None = None) -> str:
     return f"{nt_line}\n{calls_line}"
 
 
+def _cand_section_body(block, family: str | None = None) -> str:
+    """A compare candidate's tooltip section body: its output block plus its own
+    `reason:` (when present), so the reason shows only when that candidate is
+    selected instead of via a global cross-engine blob naming unselected engines."""
+    body = _format_output_block_html(block, family)
+    if isinstance(block, dict) and block.get("reason"):
+        body += "\nreason: " + html_lib.escape(str(block["reason"]))
+    return body
+
+
 def _build_tooltip_html(case: dict, dyn) -> str:
     """Rich HTML hover tooltip: head, input (colorized), per-engine output,
     divergence reasons. Returns the full `<div class="ttip">...</div>`."""
@@ -918,17 +1058,46 @@ def _build_tooltip_html(case: dict, dyn) -> str:
         for i in ("dynamo", "vllm", "sglang")
     )
 
-    output_sections: list[tuple[str, str]] = []
-    if all_engines_parity:
+    ver_status = case.get("__ver_status") or {}
+
+    output_sections: list[tuple] = []
+    if ver_status:
+        # Compare model: one section per candidate (impl+version), each wrapped in
+        # cand-<key> and toggled by the Base/Compare selection so the tooltip shows
+        # exactly the candidates being compared. Labels match the chips
+        # (e.g. "Dynamo Rust v1 3.0.0 (batch)").
+        _mode = "stream" if ".stream." in (case.get("__case_id") or "") else "batch"
+        for impl in ("dynamo", "vllm", "sglang"):
+            base = _PARITY_CAND_BASE.get(impl, _IMPL_DISPLAY[impl])
+            if impl == "dynamo":
+                eng, _, rt = base.partition(" ")  # -> "Dynamo v1 Rust"
+                base = f"{eng} v1 {rt}".strip()
+            for slug, info in (ver_status.get(impl) or {}).items():
+                key = f"{impl}-{slug}"
+                output_sections.append(
+                    (
+                        f'{base} {info["version"]} ({_mode})',
+                        _cand_section_body(info["block"], family),
+                        f"cand cand-{key}",
+                        isinstance(info["block"], dict) and _block_tool_call_leaks(info["block"]),
+                    )
+                )
+    elif all_engines_parity:
         output_sections.append(
             ("All engines parity", _format_output_block_html(dyn, family))
         )
     else:
         for impl in ("dynamo", "vllm", "sglang"):
-            block = expected.get(impl)
             output_sections.append(
-                (_IMPL_DISPLAY[impl], _format_output_block_html(block, family))
+                (
+                    _IMPL_DISPLAY[impl],
+                    _format_output_block_html(expected.get(impl), family),
+                )
             )
+
+    # Show the compare candidates in the same lexical order as the bucket chips.
+    if ver_status:
+        output_sections.sort(key=lambda s: s[0])
 
     reasons = _tooltip_for(case, dyn) if isinstance(dyn, dict) else ""
 
@@ -939,7 +1108,9 @@ def _build_tooltip_html(case: dict, dyn) -> str:
         input_label=input_label,
         input_html=input_html,
         output_sections=output_sections,
-        divergent_reasons=reasons or None,
+        # Compare model: each candidate's reason is in its own section, so suppress
+        # the global cross-engine blob that would name engines not in the selection.
+        divergent_reasons=None if ver_status else (reasons or None),
         leak_label="↯ Dynamo tool call leaks",
         leak_text=str(dyn_leak) if dyn_leak else None,
         refs=[("Ref", case.get("ref")), ("Spec ref", case.get("spec_ref"))],
@@ -1029,13 +1200,22 @@ def render_cell_html(case: dict | None, mode: str, family: str, sub: str) -> str
     col_group = html_lib.escape(_subcase_group_key(mode, sub))
     status_attrs = _overview_status_attrs(case)
     marker_attrs = _parser_marker_attrs(case)
+    # Compare model: embed the per-candidate signature payload + a JS-filled marker
+    # span. JS colors the cell and fills the count from the Base/Compare selection.
+    cmp_json = "" if case is None else _candidate_cmp_json(case)
+    cmp_attr = f' data-cmp="{cmp_json}"' if cmp_json else ""
+    cmp_span = (
+        '<span class="cmp-marker"><span class="marker-text"></span></span>'
+        if cmp_json
+        else ""
+    )
     td_open = (
-        f'<td class="cell {cls} {band_cls}" data-col-hide-group="{col_group}" '
+        f'<td class="cell {cls} {band_cls}" data-col-hide-group="{col_group}"{cmp_attr} '
         f"{status_attrs} {marker_attrs}>"
     )
     if case is None:
         ttip = _build_missing_tooltip_html(mode, family, sub)
-        return f"{td_open}{text}{ttip}</td>"
+        return f"{td_open}{cmp_span}{text}{ttip}</td>"
 
     dyn = case.get("expected", {}).get("dynamo")
     if not isinstance(dyn, dict):
@@ -1043,18 +1223,18 @@ def render_cell_html(case: dict | None, mode: str, family: str, sub: str) -> str
         fp = case.get("__fixture_path", "")
         ttip = _build_na_tooltip_html(case)
         if not fp:
-            return f"{td_open}{text}{ttip}</td>"
+            return f"{td_open}{cmp_span}{text}{ttip}</td>"
         href = html_lib.escape(fp)
-        return f'{td_open}<a href="{href}">{text}</a>{ttip}</td>'
+        return f'{td_open}{cmp_span}<a href="{href}">{text}</a>{ttip}</td>'
 
     fp = case.get("__fixture_path", "")
     # Case id + description live in the rich CSS tooltip head — don't also
     # set `title=` on the link, or browsers stack a native tooltip on top.
     ttip = _build_tooltip_html(case, dyn)
     if not fp:
-        return f"{td_open}{text}{ttip}</td>"
+        return f"{td_open}{cmp_span}{text}{ttip}</td>"
     href = html_lib.escape(fp)
-    return f'{td_open}<a href="{href}">{text}</a>{ttip}</td>'
+    return f'{td_open}{cmp_span}<a href="{href}">{text}</a>{ttip}</td>'
 
 
 def _parser_inheritance_tooltip_html(
@@ -1451,6 +1631,132 @@ def _peer_version_items(versions: dict[str, str]) -> list[tuple[str, str]]:
     return [(name, versions[name]) for name in ("vllm", "sglang") if name in versions]
 
 
+_IMPL_RADIO_LABEL = {"dynamo": "Dynamo", "vllm": "vLLM", "sglang": "SGLang"}
+
+
+def _impl_version_items() -> list[dict[str, object]]:
+    """Version-radio model for the template: one entry per impl, each with its
+    versions (ascending) and which slug is the default (pinned = latest)."""
+    impl_versions = _impl_versions()
+    pinned = _pinned_versions(impl_versions)
+    items: list[dict[str, object]] = []
+    for impl, versions in impl_versions.items():
+        default = pinned.get(impl)
+        items.append(
+            {
+                "impl": impl,
+                "label": _IMPL_RADIO_LABEL.get(impl, impl),
+                "default_slug": _version_slug(default) if default else "",
+                "versions": [
+                    {
+                        "version": v,
+                        "slug": _version_slug(v),
+                        "default": v == default,
+                    }
+                    for v in versions
+                ],
+            }
+        )
+    return items
+
+
+# Candidate label base per parity impl: "<Engine> <Runtime>". Parity runs the v1
+# parsers; the standardized label is "<base> <version> (<mode>)" (e.g.
+# "Dynamo Rust 3.0.0 (batch)"), matching the conformance page. Dynamo's parser is a
+# Rust crate (dynamo-parsers 3.0.0).
+_PARITY_CAND_BASE = {"dynamo": "Dynamo Rust", "vllm": "vLLM Python", "sglang": "SGLang Python"}
+
+
+def _candidate_items(mode: str = "batch") -> list[dict[str, str]]:
+    """Ordered comparison candidates for the compare model: Dynamo, then vLLM/SGLang
+    versions ascending. Each: {key, impl, version, slug, short, label, default_bucket}.
+    Labels are "<Engine> <Runtime> <version> (<mode>)", e.g. "Dynamo Rust 3.0.0
+    (batch)" / "vLLM Python 0.24.0 (stream)".
+
+    Default layout: A (reference) = Dynamo; B (compare with) = each peer impl. Only
+    the latest version of each peer is offered (the parity page pins to current
+    engines), so there is no C (others) bucket."""
+    impl_versions = _latest_impl_versions()
+    latest = {impl: (vers[-1] if vers else None) for impl, vers in impl_versions.items()}
+    out: list[dict[str, str]] = []
+    first = True
+    for impl in _VERSION_IMPLS:
+        base = _PARITY_CAND_BASE.get(impl, _IMPL_RADIO_LABEL.get(impl, impl))
+        # Parity runs the v1 Dynamo crate (dynamo-parsers 3.x), so Dynamo reads
+        # "Dynamo v1 Rust 3.0.0 (batch)" / "(stream)"; peers have no crate split.
+        if impl == "dynamo":
+            eng, _, rt = base.partition(" ")  # -> "Dynamo v1 Rust"
+            base = f"{eng} v1 {rt}".strip()
+        for v in impl_versions.get(impl, []):
+            slug = _version_slug(v)
+            if first:
+                bucket = "A"
+                first = False
+            elif v == latest.get(impl):
+                bucket = "B"
+            else:
+                bucket = "C"
+            out.append(
+                {
+                    "key": f"{impl}-{slug}",
+                    "impl": impl,
+                    "version": v,
+                    "slug": slug,
+                    "short": base,
+                    "label": f"{base} {v} ({mode})",
+                    "default_bucket": bucket,
+                }
+            )
+    return out
+
+
+def _candidate_sig(block) -> str:
+    """Canonical signature of a candidate's output; equal signatures = same output."""
+    if not isinstance(block, dict) or "unavailable" in block:
+        return "na"
+    if "error" in block:
+        return f"err:{block.get('error')}"
+    return json.dumps(
+        {
+            "calls": block.get("calls") or [],
+            "normal_text": block.get("normal_text") or "",
+        },
+        sort_keys=True,
+        ensure_ascii=False,
+    )
+
+
+def _cmp_json_from_blocks(blocks: dict) -> str:
+    """Per-cell `data-cmp` payload from {candidate_key: block}: {key: {sig, leak, na}}.
+    `sig` is a per-cell group id (candidates with identical output share an id);
+    `na` (unavailable) is excluded from the diff count but still shown in the tooltip."""
+    if not blocks:
+        return ""
+    ids: dict[str, int] = {}
+    out: dict[str, dict] = {}
+    for key, block in blocks.items():
+        sig = _candidate_sig(block)
+        out[key] = {
+            "sig": ids.setdefault(sig, len(ids)),
+            "leak": 1 if (isinstance(block, dict) and _block_tool_call_leaks(block)) else 0,
+            "na": 1 if sig == "na" else 0,
+        }
+    return html_lib.escape(json.dumps(out, separators=(",", ":")), quote=True)
+
+
+def _candidate_cmp_json(case: dict | None) -> str:
+    """Versioned per-cell payload: candidate key = `<impl>-<version_slug>`."""
+    ver = (case or {}).get("__ver_status") if isinstance(case, dict) else None
+    if not ver:
+        return ""
+    blocks = {
+        f"{impl}-{slug}": info.get("block")
+        for impl, by_slug in ver.items()
+        for slug, info in by_slug.items()
+    }
+    return _cmp_json_from_blocks(blocks)
+
+
 def _compute_stats(
     cases: dict, sub_cases: list[str], families: list[str]
 ) -> dict[str, int]:
@@ -1575,6 +1881,7 @@ def render_html_panel(
         "body_rows": body_rows,
         "stats": stats,
         "glossary_groups": _glossary_groups(mode, descriptions, sub_cases),
+        "candidates": _candidate_items(mode),
     }
 
 
@@ -1598,6 +1905,11 @@ def _load_html_panel(
 ) -> tuple[str, dict[str, object], bool]:
     cases, labels = load_all_cases(mode)
     cases, labels = _filter_family(cases, labels, family_filter)
+    # Attach per-impl per-version status so each cell can emit data-status-<impl>-<slug>.
+    ver_status = _version_status_map(mode)
+    for key, case in cases.items():
+        if isinstance(case, dict) and key in ver_status:
+            case["__ver_status"] = ver_status[key]
     has_cases = bool(cases)
     sub_cases = _discover_sub_cases(mode, cases)
     no_vllm, no_sglang = _derive_no_peer_sets(cases)

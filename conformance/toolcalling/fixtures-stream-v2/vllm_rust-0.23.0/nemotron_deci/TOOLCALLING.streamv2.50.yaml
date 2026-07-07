@@ -1,0 +1,28 @@
+family: nemotron_deci
+mode: streamv2
+captured_with:
+  vllm_rust: 0.23.0
+cases:
+  TOOLCALLING.streamv2.50:
+    chunks:
+    - expected: []
+      normal_text: <T
+    - expected: []
+      normal_text: OOL
+    - expected: []
+      normal_text: CALL>
+    - expected: []
+      normal_text: '[{"name": "'
+    - expected: []
+      normal_text: get_weather", "argu
+    - expected: []
+      normal_text: me
+    - expected: []
+      normal_text: nts
+    - expected: []
+      normal_text: '": {"'
+    - expected: []
+      normal_text: 'location": '
+    - expected: []
+      normal_text: '"NYC"}}]</TOOLCALL>'
+    - expected: []

@@ -1,0 +1,17 @@
+family: minimax_m2
+mode: streamv2
+captured_with:
+  dynamo_rust: 3.0.0
+cases:
+  TOOLCALLING.streamv2.10:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: '{"location":"NYC"}'
+      - index: 1
+        id: true
+        name: get_weather
+        arguments: '{"location":"LA"}'
+    - expected: []

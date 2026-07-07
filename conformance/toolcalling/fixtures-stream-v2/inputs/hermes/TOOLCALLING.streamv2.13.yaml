@@ -1,0 +1,40 @@
+family: hermes
+mode: streamv2
+model_label: Hermes-3 / Llama variants
+cases:
+  TOOLCALLING.streamv2.13.a:
+    description: Unknown-only call under default behavior
+    ref: derived from TOOLCALLING.batch.13.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '<tool_call>{"name":'
+    - delta_text: ' "unknown_tool",'
+    - delta_text: ' "arguments": {"location": "NYC"}}</tool_call>'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.13.c:
+    description: Mixed known and unknown calls in one response
+    ref: derived from TOOLCALLING.batch.13.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '<tool_call>{"name":'
+    - delta_text: ' "get_weather",'
+    - delta_text: ' "arguments": {"location": "NYC"}}</tool_call>'
+    - delta_text: '<tool_call>{"name":'
+    - delta_text: ' "unknown_tool",'
+    - delta_text: ' "arguments": {"location":'
+    - delta_text: ' "LA"}}</tool_call>'
+    - delta_text: ''
+      finish_reason: tool_calls

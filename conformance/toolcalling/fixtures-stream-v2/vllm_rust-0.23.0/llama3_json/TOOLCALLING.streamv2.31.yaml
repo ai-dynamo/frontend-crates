@@ -1,0 +1,47 @@
+family: llama3_json
+mode: streamv2
+captured_with:
+  vllm_rust: 0.23.0
+cases:
+  TOOLCALLING.streamv2.31.a:
+    chunks:
+    - expected: []
+      normal_text: '<|python_tag|>{"name":'
+    - expected: []
+      normal_text: ' "run_query",'
+    - expected: []
+      normal_text: ' "arguments": {"sql": "SELECT'
+    - expected: []
+      normal_text: ' a; SELECT'
+    - expected: []
+      normal_text: ' b"}};{"name":'
+    - expected: []
+      normal_text: ' "get_time", "arguments":'
+    - expected: []
+      normal_text: ' {"timezone": "EST"}}'
+    - expected: []
+  TOOLCALLING.streamv2.31.b:
+    chunks:
+    - expected: []
+      normal_text: '<|python_tag|>{"name":'
+    - expected: []
+      normal_text: ' "run_query",'
+    - expected: []
+      normal_text: ' "arguments": {"sql": "SELECT'
+    - expected: []
+      normal_text: ' value WHERE'
+    - expected: []
+      normal_text: ' note'
+    - expected: []
+      normal_text: ' has brace'
+    - expected: []
+      normal_text: ' } and bracket'
+    - expected: []
+      normal_text: ' ]'
+    - expected: []
+      normal_text: '"}};{"name": "get_time",'
+    - expected: []
+      normal_text: ' "arguments":'
+    - expected: []
+      normal_text: ' {"timezone": "EST"}}'
+    - expected: []

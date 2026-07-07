@@ -1,0 +1,93 @@
+family: nemotron_deci
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.8.a:
+    chunks:
+    - expected: []
+      normal_text: I will
+    - expected: []
+      normal_text: ' check'
+    - expected: []
+      normal_text: ' the weather. <TOOLCALL>'
+    - expected: []
+      normal_text: '[{"name": "get_weather",'
+    - expected: []
+      normal_text: ' "arguments":'
+    - expected: []
+      normal_text: ' {"location": "NYC"}}]'
+    - expected: []
+      normal_text: </TOOLCALL>
+    - expected: []
+  TOOLCALLING.streamv2.8.b:
+    chunks:
+    - expected: []
+      normal_text: '<TOOLCALL>[{"name":'
+    - expected: []
+      normal_text: ' "get_weather",'
+    - expected: []
+      normal_text: ' "arguments": {"location": "NYC"}}]'
+    - expected: []
+      normal_text: </TOOLCALL> Let
+    - expected: []
+      normal_text: ' me'
+    - expected: []
+      normal_text: ' know if'
+    - expected: []
+      normal_text: ' you need more.'
+    - expected: []
+  TOOLCALLING.streamv2.8.c:
+    chunks:
+    - expected: []
+      normal_text: I will
+    - expected: []
+      normal_text: ' check'
+    - expected: []
+      normal_text: ' the weather. <TOOLCALL>'
+    - expected: []
+      normal_text: '[{"name": "get_weather",'
+    - expected: []
+      normal_text: ' "arguments":'
+    - expected: []
+      normal_text: ' {"location": "NYC"}}]'
+    - expected: []
+      normal_text: </TOOLCALL> Let me
+    - expected: []
+      normal_text: ' know'
+    - expected: []
+      normal_text: ' if you'
+    - expected: []
+      normal_text: ' need'
+    - expected: []
+      normal_text: ' more.'
+    - expected: []
+  TOOLCALLING.streamv2.8.d:
+    chunks:
+    - expected: []
+      normal_text: I will
+    - expected: []
+      normal_text: ' check'
+    - expected: []
+      normal_text: ' the weather. <TOOLCALL>'
+    - expected: []
+      normal_text: '[{"name": "get_weather",'
+    - expected: []
+      normal_text: ' "arguments":'
+    - expected: []
+      normal_text: ' {"location": "NYC"}}]'
+    - expected: []
+      normal_text: </TOOLCALL> Then check
+    - expected: []
+      normal_text: ' LA'
+    - expected: []
+      normal_text: ' weather. <TOOLCALL>'
+    - expected: []
+      normal_text: '[{"name":'
+    - expected: []
+      normal_text: ' "get_weather", "arguments":'
+    - expected: []
+      normal_text: ' {"location":'
+    - expected: []
+      normal_text: ' "LA"}}]</TOOLCALL>'
+    - expected: []

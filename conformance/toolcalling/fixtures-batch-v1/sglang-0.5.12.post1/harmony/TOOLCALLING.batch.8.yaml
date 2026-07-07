@@ -1,0 +1,43 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for sglang@0.5.12.post1 (lowest version = baseline). expected.sglang only.
+family: harmony
+mode: batch
+cases:
+  TOOLCALLING.batch.8.a:
+    expected:
+      sglang:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: I will check the weather.
+  TOOLCALLING.batch.8.b:
+    expected:
+      sglang:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: Let me know if you need more.
+  TOOLCALLING.batch.8.c:
+    expected:
+      sglang:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: I will check the weather.   Let me know if you need more.
+        reason: 'No spec-correct winner on whitespace: analysis is correctly hidden and the same call is extracted; surrounding prose is outside Harmony messages, so whitespace is recovery-only'
+  TOOLCALLING.batch.8.d:
+    expected:
+      sglang:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: LA
+        normal_text: I will check the weather.   Then check LA weather.
+        reason: 'No spec-correct winner on whitespace: analysis is correctly hidden and the same calls are extracted; surrounding prose is outside Harmony messages, so whitespace is recovery-only'

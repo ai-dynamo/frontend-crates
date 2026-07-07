@@ -1,0 +1,66 @@
+family: kimi_k2
+mode: streamv2
+model_label: Kimi K2.6
+cases:
+  TOOLCALLING.streamv2.4.a:
+    description: Garbage between section fences (no call_begin)
+    ref: derived from TOOLCALLING.batch.4.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|tool_calls_section_begin|>nonsense<|tool_calls_section_end|>
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.4.b:
+    description: Invalid JSON args (missing close brace)
+    ref: derived from TOOLCALLING.batch.4.b
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+    - delta_text: functions.get_weather:0<|tool_call_argument_begin|>
+    - delta_text: '{"location":"NYC"<|tool_call_end|><|tool_calls_section_end|>'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.4.c:
+    description: Missing function name (call_begin without functions.X:N)
+    ref: derived from TOOLCALLING.batch.4.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+    - delta_text: <|tool_call_argument_begin|>
+    - delta_text: '{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.4.d:
+    description: Mismatched fences (call_end before call_begin closes)
+    ref: derived from TOOLCALLING.batch.4.d
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+    - delta_text: functions.get_weather:0<|tool_call_argument_begin|>
+    - delta_text: '{"location":"NYC"}<|tool_calls_section_end|>'
+    - delta_text: ''
+      finish_reason: stop

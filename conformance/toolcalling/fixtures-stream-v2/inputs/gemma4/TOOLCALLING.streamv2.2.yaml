@@ -1,0 +1,71 @@
+family: gemma4
+mode: streamv2
+model_label: Gemma 4
+cases:
+  TOOLCALLING.streamv2.2.a:
+    description: Parallel calls (back-to-back sentinels)
+    ref: derived from TOOLCALLING.batch.2.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    chunks:
+    - delta_text: <|tool_call>call:get_weather{location:<|"|>
+    - delta_text: NYC<|"|>
+    - delta_text: '}<tool_call|><|tool_call>call:get_time{timezone:<|"|>'
+    - delta_text: EST<|"|>}<tool_call|>
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.2.c:
+    description: With surrounding narration
+    ref: derived from TOOLCALLING.batch.2.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    chunks:
+    - delta_text: 'Both: <|tool_call>'
+    - delta_text: call:get_weather{location:<|"|>
+    - delta_text: NYC<|"|>}<tool_call|><|tool_call>
+    - delta_text: call:get_time{timezone:<|"|>EST<|"|>
+    - delta_text: '}<tool_call|>'
+    - delta_text: ' Done.'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.2.d:
+    description: Same-name twice
+    ref: derived from TOOLCALLING.batch.2.d
+    tools:
+    - &id001
+      name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - *id001
+    chunks:
+    - delta_text: <|tool_call>call:get_weather{location:<|"|>
+    - delta_text: NYC<|"|>
+    - delta_text: '}<tool_call|><|tool_call>call:get_weather{location:<|"|>'
+    - delta_text: LA<|"|>}<tool_call|>
+    - delta_text: ''
+      finish_reason: tool_calls

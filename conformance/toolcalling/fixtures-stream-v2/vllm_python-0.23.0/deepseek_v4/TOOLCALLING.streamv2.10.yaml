@@ -1,0 +1,33 @@
+family: deepseek_v4
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.10:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected:
+      - index: 0
+        arguments: '{"location":"'
+    - expected:
+      - index: 0
+        arguments: NYC"}
+    - expected: []
+    - expected:
+      - index: 1
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected:
+      - index: 1
+        arguments: '{"location":"LA"'
+    - expected:
+      - index: 1
+        arguments: '}'
+    - expected: []
+    - expected: []

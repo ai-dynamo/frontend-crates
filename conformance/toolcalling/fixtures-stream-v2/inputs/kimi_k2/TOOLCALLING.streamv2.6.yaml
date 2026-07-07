@@ -1,0 +1,46 @@
+family: kimi_k2
+mode: streamv2
+model_label: Kimi K2.6
+cases:
+  TOOLCALLING.streamv2.6.a:
+    description: Canonical empty {} arguments
+    ref: derived from TOOLCALLING.batch.6.a
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    chunks:
+    - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+    - delta_text: functions.get_time:0<|tool_call_argument_begin|>
+    - delta_text: '{}<|tool_call_end|><|tool_calls_section_end|>'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.6.b:
+    description: Whitespace inside empty {}
+    ref: derived from TOOLCALLING.batch.6.b
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    chunks:
+    - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+    - delta_text: functions.get_time:0<|tool_call_argument_begin|>
+    - delta_text: '{ }<|tool_call_end|><|tool_calls_section_end|>'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.6.c:
+    description: No argument body (skip argument_begin → end)
+    ref: derived from TOOLCALLING.batch.6.c
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    chunks:
+    - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+    - delta_text: functions.get_time:0<|tool_call_end|>
+    - delta_text: <|tool_calls_section_end|>
+    - delta_text: ''
+      finish_reason: stop

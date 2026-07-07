@@ -1,0 +1,36 @@
+family: qwen3_coder
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.50:
+    chunks:
+    - expected: []
+      normal_text: <t
+    - expected: []
+      normal_text: ool
+    - expected: []
+      normal_text: _call
+    - expected: []
+      normal_text: '> <function'
+    - expected: []
+      normal_text: =get_weather> <para
+    - expected: []
+      normal_text: me
+    - expected: []
+      normal_text: ter
+    - expected: []
+      normal_text: =loca
+    - expected: []
+      normal_text: tion> NYC <
+    - expected: []
+      normal_text: /parameter> </funct
+    - expected: []
+      normal_text: io
+    - expected: []
+      normal_text: 'n> '
+    - expected: []
+      normal_text: </too
+    - expected: []
+      normal_text: l_call>
+    - expected: []

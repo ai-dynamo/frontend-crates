@@ -1,0 +1,72 @@
+family: pythonic
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.5.a:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: '{"location": "NYC"}'
+    - expected: []
+  TOOLCALLING.streamv2.5.b:
+    chunks:
+    - expected: []
+      normal_text: get_weather(location="NYC")]
+    - expected: []
+  TOOLCALLING.streamv2.5.c:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: '{"location": "N'
+    - expected: []
+  TOOLCALLING.streamv2.5.d:
+    chunks:
+    - expected: []
+      normal_text: I'll start
+    - expected: []
+      normal_text: ' by'
+    - expected: []
+      normal_text: ' fetching the weather'
+    - expected: []
+      normal_text: ' for both'
+    - expected: []
+      normal_text: ' Boston'
+    - expected: []
+      normal_text: ' and New'
+    - expected: []
+      normal_text: ' York at the'
+    - expected: []
+      normal_text: ' same'
+    - expected: []
+      normal_text: ' time![get_weather(location="Boston"), get_weather(location="New'
+    - expected: []
+      normal_text: ' York")'
+    - expected: []
+  TOOLCALLING.streamv2.5.e:
+    chunks:
+    - expected: []
+      normal_text: I'll start
+    - expected: []
+      normal_text: ' by'
+    - expected: []
+      normal_text: ' fetching the weather'
+    - expected: []
+      normal_text: ' for both'
+    - expected: []
+      normal_text: ' Boston'
+    - expected: []
+      normal_text: ' and New'
+    - expected: []
+      normal_text: ' York at the'
+    - expected: []
+      normal_text: ' same'
+    - expected: []
+      normal_text: ' time![get_weather(location="Boston"), get_weather(location="New'
+    - expected: []
+      normal_text: ' York'
+    - expected: []

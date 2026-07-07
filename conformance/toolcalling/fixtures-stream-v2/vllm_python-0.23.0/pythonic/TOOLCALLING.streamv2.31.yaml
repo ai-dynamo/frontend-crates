@@ -1,0 +1,41 @@
+family: pythonic
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.31.a:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: run_query
+        arguments: '{"sql": "SELECT a'
+    - expected:
+      - index: 0
+        arguments: ', SELECT'
+    - expected:
+      - index: 0
+        arguments: ' b"}'
+      - index: 1
+        id: true
+        name: get_time
+        arguments: '{"timezone": "EST"}'
+    - expected: []
+  TOOLCALLING.streamv2.31.b:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: run_query
+        arguments: '{"sql": "SELECT value'
+    - expected:
+      - index: 0
+        arguments: ' WHERE'
+    - expected:
+      - index: 0
+        arguments: ' note has brace'
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []

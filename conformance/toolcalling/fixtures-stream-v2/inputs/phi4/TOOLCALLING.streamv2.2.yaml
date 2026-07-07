@@ -1,0 +1,76 @@
+family: phi4
+mode: streamv2
+model_label: Phi-4
+cases:
+  TOOLCALLING.streamv2.2.a:
+    description: Parallel calls in JSON array
+    ref: derived from TOOLCALLING.batch.2.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    chunks:
+    - delta_text: 'functools[{"name": "get_weather",'
+    - delta_text: ' "arguments":'
+    - delta_text: ' {"location": "NYC"}}, {"name":'
+    - delta_text: ' "get_time", "arguments":'
+    - delta_text: ' {"timezone":'
+    - delta_text: ' "EST"}}]'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.2.c:
+    description: With surrounding narration
+    ref: derived from TOOLCALLING.batch.2.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    chunks:
+    - delta_text: 'Both: functools[{"name":'
+    - delta_text: ' "get_weather",'
+    - delta_text: ' "arguments": {"location": "NYC"}},'
+    - delta_text: ' {"name": "get_time",'
+    - delta_text: ' "arguments":'
+    - delta_text: ' {"timezone": "EST"}}]'
+    - delta_text: ' Done.'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.2.d:
+    description: Same-name twice
+    ref: derived from TOOLCALLING.batch.2.d
+    tools:
+    - &id001
+      name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - *id001
+    chunks:
+    - delta_text: 'functools[{"name": "get_weather",'
+    - delta_text: ' "arguments":'
+    - delta_text: ' {"location": "NYC"}}, {"name":'
+    - delta_text: ' "get_weather", "arguments":'
+    - delta_text: ' {"location":'
+    - delta_text: ' "LA"}}]'
+    - delta_text: ''
+      finish_reason: stop

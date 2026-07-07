@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: minimax_m2
+mode: batch
+cases:
+  TOOLCALLING.batch.1:
+    expected:
+      vllm:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+  TOOLCALLING.batch.3:
+    expected:
+      vllm:
+        calls: []
+        normal_text: Hello, how can I help you today?
+  TOOLCALLING.batch.9.a:
+    expected:
+      vllm:
+        calls: []
+        normal_text: ''
+  TOOLCALLING.batch.9.b:
+    expected:
+      vllm:
+        calls: []
+        normal_text: '   '
+  TOOLCALLING.batch.10:
+    expected:
+      vllm:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: LA
+        normal_text: ''
+  TOOLCALLING.batch.13:
+    expected:
+      vllm:
+        calls: []
+        normal_text: '<minimax:tool_call>
+
+          <minimax:tool_name>unknown_tool</minimax:tool_name>
+
+          <minimax:tool_args>{"location":"NYC"}</minimax:tool_args>
+
+          </minimax:tool_call>'
+        reason: vLLM leaves the unknown MiniMax tool-call block in normal_text, while Dynamo drops it after tool-name validation.

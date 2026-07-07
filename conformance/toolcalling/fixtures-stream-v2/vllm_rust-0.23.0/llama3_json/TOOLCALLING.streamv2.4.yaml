@@ -1,0 +1,34 @@
+family: llama3_json
+mode: streamv2
+captured_with:
+  vllm_rust: 0.23.0
+cases:
+  TOOLCALLING.streamv2.4.a:
+    chunks:
+    - expected: []
+      normal_text: <|python_tag|>not
+    - expected: []
+      normal_text: ' even'
+    - expected: []
+      normal_text: ' json'
+    - expected: []
+  TOOLCALLING.streamv2.4.b:
+    chunks:
+    - expected: []
+      normal_text: '<|python_tag|>{"name":'
+    - expected: []
+      normal_text: ' "get_weather",'
+    - expected: []
+      normal_text: ' "arguments": {"location": "NYC"'
+    - expected: []
+  TOOLCALLING.streamv2.4.c:
+    chunks:
+    - expected: []
+      normal_text: '<|python_tag|>{"arguments":'
+    - expected: []
+      normal_text: ' {"location":'
+    - expected: []
+      normal_text: ' "NYC"}}'
+    - expected: []
+  TOOLCALLING.streamv2.4.e:
+    unavailable: 'vllm_rust parser not captured: tool parser parsing failed: invalid Llama JSON expected `parameters`'

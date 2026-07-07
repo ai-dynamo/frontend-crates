@@ -1,0 +1,9 @@
+family: jamba
+mode: streamv2
+captured_with:
+  sglang_python: 0.5.12.post1
+cases:
+  TOOLCALLING.streamv2.13.a:
+    unavailable: No SGLang Python parser for family 'jamba'.
+  TOOLCALLING.streamv2.13.c:
+    unavailable: No SGLang Python parser for family 'jamba'.

@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for sglang@0.5.12.post1 (lowest version = baseline). expected.sglang only.
+family: harmony
+mode: batch
+cases:
+  TOOLCALLING.batch.2.a:
+    expected:
+      sglang:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: ''
+  TOOLCALLING.batch.2.c:
+    expected:
+      sglang:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments:
+            timezone: EST
+        normal_text: I need both.   Done.
+        reason: 'No spec-correct winner on whitespace: surrounding prose is outside Harmony messages, so this is recovery-only; SGLang extracts the same calls but preserves one extra separator space'
+  TOOLCALLING.batch.2.d:
+    expected:
+      sglang:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_weather
+          arguments:
+            location: LA
+        normal_text: ''

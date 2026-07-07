@@ -1,0 +1,69 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Shared inputs (version-independent): no expected blocks.
+family: nemotron_deci
+model_label: Nemotron (DeciLM) v1/v2
+mode: batch
+cases:
+  TOOLCALLING.batch.1:
+    description: Single tool call (happy path)
+    model_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}]</TOOLCALL>'
+    tools:
+    - &id001
+      name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+  TOOLCALLING.batch.13.c:
+    description: Mixed known and unknown calls not applicable
+    reason: This case is not applicable to nemotron_deci because neither vLLM nor SGLang has a peer parser for this family.
+  TOOLCALLING.batch.3:
+    description: No tool call (plain text)
+    model_text: Hello, how can I help you today?
+    tools:
+    - *id001
+  TOOLCALLING.batch.9.a:
+    description: Empty model text
+    model_text: ''
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+  TOOLCALLING.batch.9.b:
+    description: Blank / whitespace-only model text
+    ref: dynamo
+    model_text: '   '
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+  TOOLCALLING.batch.10:
+    description: Duplicate calls (same name twice)
+    model_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}, {"name": "get_weather", "arguments": {"location": "LA"}}]</TOOLCALL>'
+    tools:
+    - *id001
+  TOOLCALLING.batch.30:
+    description: Separator-character case not applicable
+    reason: This case is not applicable to nemotron_deci because neither vLLM nor SGLang has a peer parser for this family.
+  TOOLCALLING.batch.31:
+    description: Multi-call separator-character case not applicable
+    reason: This case is not applicable to nemotron_deci because neither vLLM nor SGLang has a peer parser for this family.
+  TOOLCALLING.batch.13:
+    description: Unknown tool name absent from supplied tools
+    ref: dynamo
+    model_text: '<TOOLCALL>[{"name": "unknown_tool", "arguments": {"location": "NYC"}}]</TOOLCALL>'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string

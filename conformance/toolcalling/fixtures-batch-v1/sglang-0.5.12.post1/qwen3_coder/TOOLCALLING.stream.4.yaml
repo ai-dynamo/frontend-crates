@@ -1,0 +1,35 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for sglang@0.5.12.post1 (lowest version = baseline). expected.sglang only.
+family: qwen3_coder
+mode: stream
+cases:
+  TOOLCALLING.stream.4.a:
+    expected:
+      sglang:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+  TOOLCALLING.stream.4.b:
+    expected:
+      sglang:
+        calls:
+        - name: get_weather
+          arguments: {}
+        normal_text: ''
+        reason: 'Impl-defined recovery for TOOLCALLING.batch.5-class missing end-token (per `tests/parity/README.md` "permanent divergences"). The stream ends mid-argument with `NY` but no `</parameter>`; SGLang requires the parameter close-token before emitting the value, so it ships the header with empty `arguments` and drops the partial payload. Dynamo emits the partial value (`location: "NY"`).'
+  TOOLCALLING.stream.4.c:
+    expected:
+      sglang:
+        calls:
+        - arguments: '{"location": "NYC"}}}'
+          name: get_weather
+        reason: SGLang recovers the bare <function=...> body, but the repeated </function> close markers are folded into the emitted argument string as extra closing braces. Dynamo consumes the repeated close markers as parser syntax and emits arguments {"location":"NYC"} with empty normal_text.
+        normal_text: '
+
+
+
+
+          '

@@ -1,0 +1,98 @@
+family: nemotron_deci
+mode: streamv2
+captured_with:
+  vllm_rust: 0.23.0
+cases:
+  TOOLCALLING.streamv2.5.a:
+    chunks:
+    - expected: []
+      normal_text: '<TOOLCALL>[{"name":'
+    - expected: []
+      normal_text: ' "get_weather",'
+    - expected: []
+      normal_text: ' "arguments": {"location": "NYC"}}]'
+    - expected: []
+  TOOLCALLING.streamv2.5.b:
+    chunks:
+    - expected: []
+      normal_text: '[{"name": "get_weather",'
+    - expected: []
+      normal_text: ' "arguments":'
+    - expected: []
+      normal_text: ' {"location": "NYC"}}]</TOOLCALL>'
+    - expected: []
+  TOOLCALLING.streamv2.5.c:
+    chunks:
+    - expected: []
+      normal_text: '<TOOLCALL>[{"name":'
+    - expected: []
+      normal_text: ' "get_weather",'
+    - expected: []
+      normal_text: ' "arguments": {"loc'
+    - expected: []
+  TOOLCALLING.streamv2.5.d:
+    chunks:
+    - expected: []
+      normal_text: I'll start
+    - expected: []
+      normal_text: ' by'
+    - expected: []
+      normal_text: ' fetching the weather'
+    - expected: []
+      normal_text: ' for both'
+    - expected: []
+      normal_text: ' Boston'
+    - expected: []
+      normal_text: ' and New'
+    - expected: []
+      normal_text: ' York at the'
+    - expected: []
+      normal_text: ' same'
+    - expected: []
+      normal_text: ' time!<TOOLCALL>[{"name":'
+    - expected: []
+      normal_text: ' "get_weather",'
+    - expected: []
+      normal_text: ' "arguments": {"location":'
+    - expected: []
+      normal_text: ' "Boston"}},'
+    - expected: []
+      normal_text: ' {"name": "get_weather", "arguments":'
+    - expected: []
+      normal_text: ' {"location": "New'
+    - expected: []
+      normal_text: ' York"}}]'
+    - expected: []
+  TOOLCALLING.streamv2.5.e:
+    chunks:
+    - expected: []
+      normal_text: I'll start
+    - expected: []
+      normal_text: ' by'
+    - expected: []
+      normal_text: ' fetching the weather'
+    - expected: []
+      normal_text: ' for both'
+    - expected: []
+      normal_text: ' Boston'
+    - expected: []
+      normal_text: ' and New'
+    - expected: []
+      normal_text: ' York at the'
+    - expected: []
+      normal_text: ' same'
+    - expected: []
+      normal_text: ' time!<TOOLCALL>[{"name":'
+    - expected: []
+      normal_text: ' "get_weather",'
+    - expected: []
+      normal_text: ' "arguments": {"location":'
+    - expected: []
+      normal_text: ' "Boston"}},'
+    - expected: []
+      normal_text: ' {"name": "get_weather", "arguments":'
+    - expected: []
+      normal_text: ' {"location": "New'
+    - expected: []
+      normal_text: ' York'
+    - expected: []

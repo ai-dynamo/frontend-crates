@@ -1,0 +1,81 @@
+family: kimi_k2
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.2.a:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location":"NYC"}'
+      - index: 1
+        id: true
+        name: get_time
+    - expected:
+      - index: 1
+        arguments: '{"timezone":"EST"}'
+    - expected: []
+  TOOLCALLING.streamv2.2.b:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location":"NYC"}'
+    - expected:
+      - index: 1
+        id: true
+        name: get_time
+    - expected:
+      - index: 1
+        arguments: '{"timezone":"EST"}'
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.2.c:
+    chunks:
+    - expected: []
+      normal_text: I will
+    - expected: []
+      normal_text: ' check'
+    - expected: []
+      normal_text: ' both. '
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+      - index: 0
+        arguments: '{"location":"NYC"}'
+    - expected: []
+    - expected:
+      - index: 1
+        id: true
+        name: get_time
+      - index: 1
+        arguments: '{"timezone":"EST"}'
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.2.d:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location":"NYC"}'
+      - index: 1
+        id: true
+        name: get_weather
+    - expected:
+      - index: 1
+        arguments: '{"location":"LA"}'
+    - expected: []

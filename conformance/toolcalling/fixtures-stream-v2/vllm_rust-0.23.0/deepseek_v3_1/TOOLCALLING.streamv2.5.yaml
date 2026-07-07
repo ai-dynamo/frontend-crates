@@ -1,0 +1,30 @@
+family: deepseek_v3_1
+mode: streamv2
+captured_with:
+  vllm_rust: 0.23.0
+cases:
+  TOOLCALLING.streamv2.5.a:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location":"NYC"}'
+    - expected: []
+  TOOLCALLING.streamv2.5.b:
+    chunks:
+    - expected: []
+      normal_text: <｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>
+    - expected: []
+      normal_text: '{"location":"NYC"}<｜tool▁call▁end｜>'
+    - expected: []
+      normal_text: <｜tool▁calls▁end｜>
+    - expected: []
+  TOOLCALLING.streamv2.5.c:
+    unavailable: 'vllm_rust parser not captured: tool parser parsing failed: incomplete DeepSeek V3.1 tool call'
+  TOOLCALLING.streamv2.5.d:
+    unavailable: 'vllm_rust parser not captured: tool parser parsing failed: incomplete DeepSeek V3.1 tool call'
+  TOOLCALLING.streamv2.5.e:
+    unavailable: 'vllm_rust parser not captured: tool parser parsing failed: incomplete DeepSeek V3.1 tool call'

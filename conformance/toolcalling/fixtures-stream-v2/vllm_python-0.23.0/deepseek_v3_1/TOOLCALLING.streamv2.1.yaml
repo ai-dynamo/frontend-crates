@@ -1,0 +1,14 @@
+family: deepseek_v3_1
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.1:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+    - expected: []
+    - expected: []

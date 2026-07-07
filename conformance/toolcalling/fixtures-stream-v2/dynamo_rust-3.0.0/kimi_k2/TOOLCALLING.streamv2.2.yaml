@@ -1,0 +1,62 @@
+family: kimi_k2
+mode: streamv2
+captured_with:
+  dynamo_rust: 3.0.0
+cases:
+  TOOLCALLING.streamv2.2.a:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: '{"location":"NYC"}'
+      - index: 1
+        id: true
+        name: get_time
+        arguments: '{"timezone":"EST"}'
+    - expected: []
+  TOOLCALLING.streamv2.2.b:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: '{"location":"NYC"}'
+    - expected:
+      - index: 1
+        id: true
+        name: get_time
+        arguments: '{"timezone":"EST"}'
+    - expected: []
+  TOOLCALLING.streamv2.2.c:
+    chunks:
+    - expected: []
+      normal_text: I will
+    - expected: []
+      normal_text: ' check'
+    - expected: []
+      normal_text: ' both. '
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: '{"location":"NYC"}'
+      - index: 1
+        id: true
+        name: get_time
+        arguments: '{"timezone":"EST"}'
+    - expected: []
+      normal_text: ' Done.'
+    - expected: []
+  TOOLCALLING.streamv2.2.d:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: '{"location":"NYC"}'
+      - index: 1
+        id: true
+        name: get_weather
+        arguments: '{"location":"LA"}'
+    - expected: []

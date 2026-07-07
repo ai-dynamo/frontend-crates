@@ -1,0 +1,36 @@
+family: nemotron_nano
+mode: streamv2
+model_label: Nemotron Nano v3
+cases:
+  TOOLCALLING.streamv2.4.a:
+    description: Tool_call wrapper with no <function> body
+    ref: derived from TOOLCALLING.batch.4.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <tool_call> random
+    - delta_text: ' text'
+    - delta_text: ' </tool_call>'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.4.d:
+    description: Missing </parameter> closing tag
+    ref: derived from TOOLCALLING.batch.4.d
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <tool_call> <function=get_weather>
+    - delta_text: ' <parameter=location>'
+    - delta_text: ' NYC </function> </tool_call>'
+    - delta_text: ''
+      finish_reason: stop

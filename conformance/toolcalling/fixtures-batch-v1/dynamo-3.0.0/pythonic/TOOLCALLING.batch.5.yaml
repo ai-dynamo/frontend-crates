@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for dynamo@3.0.0 (lowest version = baseline). expected.dynamo only.
+family: pythonic
+mode: batch
+cases:
+  TOOLCALLING.batch.5.a:
+    expected:
+      dynamo:
+        calls: []
+        normal_text: '[get_weather(location="NYC")'
+  TOOLCALLING.batch.5.b:
+    expected:
+      dynamo:
+        calls: []
+        normal_text: get_weather(location="NYC")]
+  TOOLCALLING.batch.5.c:
+    expected:
+      dynamo:
+        calls: []
+        normal_text: '[get_weather(location="N'
+  TOOLCALLING.batch.5.d:
+    expected:
+      dynamo:
+        calls: []
+        normal_text: I'll start by fetching the weather for both Boston and New York at the same time![get_weather(location="Boston"), get_weather(location="New York")
+  TOOLCALLING.batch.5.e:
+    expected:
+      dynamo:
+        calls: []
+        normal_text: I'll start by fetching the weather for both Boston and New York at the same time![get_weather(location="Boston"), get_weather(location="New York

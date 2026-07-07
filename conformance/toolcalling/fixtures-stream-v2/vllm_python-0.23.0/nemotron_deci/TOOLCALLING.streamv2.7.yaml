@@ -1,0 +1,92 @@
+family: nemotron_deci
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.7.a:
+    chunks:
+    - expected: []
+      normal_text: '<TOOLCALL>[{"name":'
+    - expected: []
+      normal_text: ' "book_flight",'
+    - expected: []
+      normal_text: ' "arguments": {"destination": "Paris",'
+    - expected: []
+      normal_text: ' "passengers": 2,'
+    - expected: []
+      normal_text: ' "first_class":'
+    - expected: []
+      normal_text: ' true}}]</TOOLCALL>'
+    - expected: []
+  TOOLCALLING.streamv2.7.b:
+    chunks:
+    - expected: []
+      normal_text: '<TOOLCALL>[{"name":'
+    - expected: []
+      normal_text: ' "get_weather",'
+    - expected: []
+      normal_text: ' "arguments": {"location": "Tōkyō'
+    - expected: []
+      normal_text: ' \"central\""}}]</TOOLCALL>'
+    - expected: []
+  TOOLCALLING.streamv2.7.c:
+    chunks:
+    - expected: []
+      normal_text: '<TOOLCALL>[{"name":'
+    - expected: []
+      normal_text: ' "set_temperature",'
+    - expected: []
+      normal_text: ' "arguments": {"celsius": "20"}}]'
+    - expected: []
+      normal_text: </TOOLCALL>
+    - expected: []
+  TOOLCALLING.streamv2.7.d:
+    chunks:
+    - expected: []
+      normal_text: '<TOOLCALL>[{"name":'
+    - expected: []
+      normal_text: ' "process_data",'
+    - expected: []
+      normal_text: ' "arguments": {"items": [1,2,3]'
+    - expected: []
+      normal_text: ', "config":'
+    - expected: []
+      normal_text: ' {"nested":'
+    - expected: []
+      normal_text: ' true}}}]</TOOLCALL>'
+    - expected: []
+  TOOLCALLING.streamv2.7.e:
+    chunks:
+    - expected: []
+      normal_text: '<TOOLCALL>[{"name":'
+    - expected: []
+      normal_text: ' "process_data",'
+    - expected: []
+      normal_text: ' "arguments": {"payload": {"regions":'
+    - expected: []
+      normal_text: ' [{"name": "west",'
+    - expected: []
+      normal_text: ' "scores":'
+    - expected: []
+      normal_text: ' [1, 2,'
+    - expected: []
+      normal_text: ' 3]}, {"name":'
+    - expected: []
+      normal_text: ' "east",'
+    - expected: []
+      normal_text: ' "scores": [4,'
+    - expected: []
+      normal_text: ' 5,'
+    - expected: []
+      normal_text: ' 6]}]'
+    - expected: []
+      normal_text: ','
+    - expected: []
+      normal_text: ' "flags": {"enabled": true,'
+    - expected: []
+      normal_text: ' "retry": null},'
+    - expected: []
+      normal_text: ' "empty":'
+    - expected: []
+      normal_text: ' {}}}}]</TOOLCALL>'
+    - expected: []

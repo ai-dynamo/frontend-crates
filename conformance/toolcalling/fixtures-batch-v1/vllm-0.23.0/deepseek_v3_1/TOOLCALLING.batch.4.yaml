@@ -1,0 +1,33 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: deepseek_v3_1
+mode: batch
+cases:
+  TOOLCALLING.batch.4.a:
+    expected:
+      vllm:
+        calls: []
+        normal_text: ''
+  TOOLCALLING.batch.4.b:
+    expected:
+      vllm:
+        reason: vLLM surfaces malformed DeepSeek V3.1 JSON arguments as a raw string while Dynamo treats the whole wrapper as malformed.
+        calls:
+        - name: get_weather
+          arguments: '{"location":"NYC'
+        normal_text: ''
+  TOOLCALLING.batch.4.c:
+    expected:
+      vllm:
+        reason: vLLM recovers a call with an empty function name when the arguments are valid; Dynamo treats the missing name as malformed.
+        calls:
+        - name: ''
+          arguments:
+            location: NYC
+        normal_text: ''
+  TOOLCALLING.batch.4.d:
+    expected:
+      vllm:
+        calls: []
+        normal_text: ''

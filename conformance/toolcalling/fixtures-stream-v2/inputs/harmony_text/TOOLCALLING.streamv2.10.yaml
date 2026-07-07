@@ -1,0 +1,101 @@
+family: harmony_text
+mode: streamv2
+model_label: gpt-oss (harmony, text)
+cases:
+  TOOLCALLING.streamv2.10:
+    description: Duplicate calls (same name twice)
+    ref: derived from TOOLCALLING.batch.10
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|start|>assistant
+      delta_token_ids:
+      - 200006
+      - 173781
+    - delta_text: <|channel|>comment
+      delta_token_ids:
+      - 200005
+      - 12606
+    - delta_text: ary to
+      delta_token_ids:
+      - 815
+      - 316
+    - delta_text: =functions
+      delta_token_ids:
+      - 28
+      - 44580
+    - delta_text: .get_weather
+      delta_token_ids:
+      - 775
+      - 170154
+    - delta_text: ' <|constrain|>'
+      delta_token_ids:
+      - 220
+      - 200003
+    - delta_text: json<|message|>
+      delta_token_ids:
+      - 4108
+      - 200008
+    - delta_text: '{"location'
+      delta_token_ids:
+      - 10848
+      - 7693
+    - delta_text: '":"NY'
+      delta_token_ids:
+      - 7534
+      - 24202
+    - delta_text: C"}
+      delta_token_ids:
+      - 34
+      - 18583
+    - delta_text: <|call|><|start|>
+      delta_token_ids:
+      - 200012
+      - 200006
+    - delta_text: assistant<|channel|>
+      delta_token_ids:
+      - 173781
+      - 200005
+    - delta_text: commentary
+      delta_token_ids:
+      - 12606
+      - 815
+    - delta_text: ' to='
+      delta_token_ids:
+      - 316
+      - 28
+    - delta_text: functions.get
+      delta_token_ids:
+      - 44580
+      - 775
+    - delta_text: '_weather '
+      delta_token_ids:
+      - 170154
+      - 220
+    - delta_text: <|constrain|>json
+      delta_token_ids:
+      - 200003
+      - 4108
+    - delta_text: <|message|>{"
+      delta_token_ids:
+      - 200008
+      - 10848
+    - delta_text: location":"
+      delta_token_ids:
+      - 7693
+      - 7534
+    - delta_text: LA"}
+      delta_token_ids:
+      - 11991
+      - 18583
+    - delta_text: <|call|>
+      delta_token_ids:
+      - 200012
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: tool_calls

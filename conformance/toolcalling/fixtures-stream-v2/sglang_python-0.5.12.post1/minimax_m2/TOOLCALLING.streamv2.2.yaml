@@ -1,0 +1,98 @@
+family: minimax_m2
+mode: streamv2
+captured_with:
+  sglang_python: 0.5.12.post1
+cases:
+  TOOLCALLING.streamv2.2.a:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location": "NYC"'
+    - expected:
+      - index: 0
+        arguments: '}'
+    - expected:
+      - index: 1
+        name: get_time
+    - expected: []
+    - expected:
+      - index: 1
+        arguments: '{"timezone": "EST"'
+      - index: 1
+        arguments: '}'
+    - expected: []
+  TOOLCALLING.streamv2.2.b:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location": "NYC"'
+    - expected:
+      - index: 0
+        arguments: '}'
+    - expected: []
+    - expected:
+      - index: 1
+        name: get_time
+    - expected:
+      - index: 1
+        arguments: '{"timezone": "EST"'
+    - expected:
+      - index: 1
+        arguments: '}'
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.2.c:
+    chunks:
+    - expected: []
+      normal_text: 'Both: '
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location": "NYC"'
+      - index: 0
+        arguments: '}'
+    - expected: []
+    - expected:
+      - index: 1
+        name: get_time
+    - expected:
+      - index: 1
+        arguments: '{"timezone": "EST"'
+      - index: 1
+        arguments: '}'
+    - expected: []
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.2.d:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location": "NYC"'
+    - expected:
+      - index: 0
+        arguments: '}'
+    - expected:
+      - index: 1
+        name: get_weather
+    - expected: []
+    - expected:
+      - index: 1
+        arguments: '{"location": "LA"'
+      - index: 1
+        arguments: '}'
+    - expected: []

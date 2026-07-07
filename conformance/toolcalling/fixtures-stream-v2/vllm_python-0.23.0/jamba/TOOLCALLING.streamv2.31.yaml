@@ -1,0 +1,68 @@
+family: jamba
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.31.a:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: run_query
+    - expected:
+      - index: 0
+        arguments: '{"sql": "SELECT a, SELECT'
+    - expected:
+      - index: 0
+        arguments: ' b'
+    - expected:
+      - index: 0
+        arguments: '"}'
+    - expected:
+      - index: 1
+        id: true
+        name: get_time
+    - expected:
+      - index: 1
+        arguments: ''
+    - expected:
+      - index: 1
+        arguments: ''
+  TOOLCALLING.streamv2.31.b:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: run_query
+    - expected:
+      - index: 0
+        arguments: '{"sql": "SELECT value WHERE'
+    - expected:
+      - index: 0
+        arguments: ' note'
+    - expected:
+      - index: 0
+        arguments: ' has brace'
+    - expected:
+      - index: 0
+        arguments: ' } and bracket'
+    - expected:
+      - index: 0
+        arguments: ' ]'
+    - expected:
+      - index: 0
+        arguments: '"}'
+    - expected:
+      - index: 1
+        id: true
+        name: get_time
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 1
+        arguments: ''

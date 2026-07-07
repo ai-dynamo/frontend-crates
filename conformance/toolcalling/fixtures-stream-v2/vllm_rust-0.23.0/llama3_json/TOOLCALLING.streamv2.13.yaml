@@ -1,0 +1,29 @@
+family: llama3_json
+mode: streamv2
+captured_with:
+  vllm_rust: 0.23.0
+cases:
+  TOOLCALLING.streamv2.13.a:
+    chunks:
+    - expected: []
+      normal_text: '<|python_tag|>{"name":'
+    - expected: []
+      normal_text: ' "unknown_tool",'
+    - expected: []
+      normal_text: ' "arguments": {"location": "NYC"}}'
+    - expected: []
+  TOOLCALLING.streamv2.13.c:
+    chunks:
+    - expected: []
+      normal_text: '<|python_tag|>{"name":'
+    - expected: []
+      normal_text: ' "get_weather",'
+    - expected: []
+      normal_text: ' "arguments": {"location": "NYC"}};{"name":'
+    - expected: []
+      normal_text: ' "unknown_tool", "arguments":'
+    - expected: []
+      normal_text: ' {"location":'
+    - expected: []
+      normal_text: ' "LA"}}'
+    - expected: []

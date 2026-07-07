@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for sglang@0.5.12.post1 (lowest version = baseline). expected.sglang only.
+family: glm47
+mode: batch
+cases:
+  TOOLCALLING.batch.6.a:
+    expected:
+      sglang:
+        calls:
+        - name: get_time
+          arguments: {}
+        normal_text: ''
+  TOOLCALLING.batch.6.b:
+    expected:
+      sglang:
+        calls: []
+        normal_text: ''
+        reason: SGLang glm47 rejects whitespace between the function name and </tool_call> (`get_time `), emitting no calls; Dynamo and vLLM both tolerate it and extract the empty-args call

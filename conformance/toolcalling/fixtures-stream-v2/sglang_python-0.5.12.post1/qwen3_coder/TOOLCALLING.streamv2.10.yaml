@@ -1,0 +1,32 @@
+family: qwen3_coder
+mode: streamv2
+captured_with:
+  sglang_python: 0.5.12.post1
+cases:
+  TOOLCALLING.streamv2.10:
+    chunks:
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected: []
+    - expected:
+      - index: 0
+        arguments: '{'
+      - index: 0
+        arguments: '"location": " NYC "'
+      - index: 0
+        arguments: '}'
+    - expected: []
+      normal_text: ' '
+    - expected:
+      - index: 1
+        name: get_weather
+    - expected: []
+    - expected:
+      - index: 1
+        arguments: '{'
+      - index: 1
+        arguments: '"location": " LA "'
+      - index: 1
+        arguments: '}'
+    - expected: []

@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for sglang@0.5.12.post1 (lowest version = baseline). expected.sglang only.
+family: glm47
+mode: batch
+cases:
+  TOOLCALLING.batch.7.a:
+    expected:
+      sglang:
+        calls:
+        - name: book_flight
+          arguments:
+            first_class: true
+            passengers: 2
+            destination: Paris
+        normal_text: ''
+  TOOLCALLING.batch.7.b:
+    expected:
+      sglang:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Tōkyō central
+        normal_text: ''
+  TOOLCALLING.batch.7.f:
+    expected:
+      sglang:
+        calls:
+        - name: set_limit
+          arguments:
+            count: 9007199254740993
+        normal_text: ''

@@ -1,0 +1,66 @@
+family: gemma4
+mode: streamv2
+model_label: Gemma 4
+cases:
+  TOOLCALLING.streamv2.4.a:
+    description: Sentinel pair with garbage
+    ref: derived from TOOLCALLING.batch.4.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|tool_call>nonsense<tool_call|>
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.4.b:
+    description: Missing close brace in body
+    ref: derived from TOOLCALLING.batch.4.b
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|tool_call>call:get_weather{location:<|"|>
+    - delta_text: NYC<|"|>
+    - delta_text: <tool_call|>
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.4.c:
+    description: No call:name prefix
+    ref: derived from TOOLCALLING.batch.4.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|tool_call>{location:<|"|>
+    - delta_text: NYC<|"|>
+    - delta_text: '}<tool_call|>'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.4.d:
+    description: Mismatched sentinels
+    ref: derived from TOOLCALLING.batch.4.d
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|tool_call>call:get_weather{location:<|"|>
+    - delta_text: NYC<|"|>
+    - delta_text: '}</tool_call>'
+    - delta_text: ''
+      finish_reason: stop

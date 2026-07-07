@@ -1,0 +1,20 @@
+family: pythonic
+mode: streamv2
+captured_with:
+  dynamo_rust: 3.0.0
+cases:
+  TOOLCALLING.streamv2.4.a:
+    chunks:
+    - expected: []
+    - expected: []
+      normal_text: '[not a valid python call]'
+  TOOLCALLING.streamv2.4.b:
+    chunks:
+    - expected: []
+    - expected: []
+      normal_text: '[get_weather(location="NYC"'
+  TOOLCALLING.streamv2.4.d:
+    chunks:
+    - expected: []
+    - expected: []
+      normal_text: '[get_weather(location="NYC"]'

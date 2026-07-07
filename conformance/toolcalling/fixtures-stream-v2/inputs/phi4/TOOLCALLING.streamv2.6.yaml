@@ -1,0 +1,44 @@
+family: phi4
+mode: streamv2
+model_label: Phi-4
+cases:
+  TOOLCALLING.streamv2.6.a:
+    description: 'Canonical "arguments": {}'
+    ref: derived from TOOLCALLING.batch.6.a
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    chunks:
+    - delta_text: 'functools[{"name": "get_time",'
+    - delta_text: ' "arguments":'
+    - delta_text: ' {}}]'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.6.b:
+    description: Whitespace inside arguments {}
+    ref: derived from TOOLCALLING.batch.6.b
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    chunks:
+    - delta_text: 'functools[{"name": "get_time",'
+    - delta_text: ' "arguments":'
+    - delta_text: ' { }}]'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.6.c:
+    description: No arguments key
+    ref: derived from TOOLCALLING.batch.6.c
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    chunks:
+    - delta_text: 'functools[{"name": "get_time"}]'
+    - delta_text: ''
+      finish_reason: stop

@@ -1,0 +1,24 @@
+family: nemotron_deci
+mode: streamv2
+captured_with:
+  dynamo_rust: 3.0.0
+cases:
+  TOOLCALLING.streamv2.4.a:
+    chunks:
+    - expected: []
+      normal_text: <TOOLCALL>not a json array</TOOLCALL>
+    - expected: []
+  TOOLCALLING.streamv2.4.b:
+    chunks:
+    - expected: []
+      normal_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC</TOOLCALL>'
+    - expected: []
+  TOOLCALLING.streamv2.4.c:
+    chunks:
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.4.d:
+    chunks:
+    - expected: []
+      normal_text: '<TOOLCALL>[{"name": "get_weather", "arguments": {"location": "NYC"}}</TOOLCALL>'
+    - expected: []

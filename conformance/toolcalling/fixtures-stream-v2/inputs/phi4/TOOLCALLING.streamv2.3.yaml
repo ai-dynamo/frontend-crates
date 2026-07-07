@@ -1,0 +1,21 @@
+family: phi4
+mode: streamv2
+model_label: Phi-4
+cases:
+  TOOLCALLING.streamv2.3:
+    description: No tool call (plain text)
+    ref: derived from TOOLCALLING.batch.3
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: Hello, how
+    - delta_text: ' can'
+    - delta_text: ' I help you'
+    - delta_text: ' today?'
+    - delta_text: ''
+      finish_reason: stop

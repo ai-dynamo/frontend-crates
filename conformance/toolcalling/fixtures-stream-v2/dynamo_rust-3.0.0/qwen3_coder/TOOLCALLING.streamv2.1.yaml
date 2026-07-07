@@ -1,0 +1,13 @@
+family: qwen3_coder
+mode: streamv2
+captured_with:
+  dynamo_rust: 3.0.0
+cases:
+  TOOLCALLING.streamv2.1:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: '{"location":"NYC"}'
+    - expected: []

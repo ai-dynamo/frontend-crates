@@ -1,0 +1,18 @@
+family: pythonic
+mode: streamv2
+model_label: Llama 4 (pythonic fmt)
+cases:
+  TOOLCALLING.streamv2.1:
+    description: Single tool call (happy path)
+    ref: derived from TOOLCALLING.batch.1
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '[get_weather(location="NYC")]'
+    - delta_text: ''
+      finish_reason: tool_calls

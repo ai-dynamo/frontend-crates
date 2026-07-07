@@ -1,0 +1,22 @@
+family: llama3_json
+mode: streamv2
+captured_with:
+  dynamo_rust: 3.0.0
+cases:
+  TOOLCALLING.streamv2.4.a:
+    chunks:
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.4.b:
+    chunks:
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.4.c:
+    chunks:
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.4.e:
+    chunks:
+    - expected: []
+    - expected: []
+      normal_text: '{"name": "get_weather", "arguments": {{"name": "get_weather", "arguments": {}}'

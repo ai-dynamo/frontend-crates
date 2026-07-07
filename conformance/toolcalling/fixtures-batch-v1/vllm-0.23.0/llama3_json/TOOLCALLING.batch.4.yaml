@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: llama3_json
+mode: batch
+cases:
+  TOOLCALLING.batch.4.a:
+    expected:
+      vllm:
+        calls: []
+        normal_text: <|python_tag|>not even json
+        reason: impl-defined recovery contract (see TOOLCALLING_CASES.md)
+  TOOLCALLING.batch.4.b:
+    expected:
+      vllm:
+        calls: []
+        normal_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"'
+        reason: impl-defined recovery contract (see TOOLCALLING_CASES.md)
+  TOOLCALLING.batch.4.c:
+    expected:
+      vllm:
+        calls: []
+        normal_text: '<|python_tag|>{"arguments": {"location": "NYC"}}'
+        reason: impl-defined recovery contract (see TOOLCALLING_CASES.md)
+  TOOLCALLING.batch.4.e:
+    expected:
+      vllm:
+        calls: []
+        normal_text: '{"name": "get_weather", "arguments": {{"name": "get_weather", "arguments": {}}'

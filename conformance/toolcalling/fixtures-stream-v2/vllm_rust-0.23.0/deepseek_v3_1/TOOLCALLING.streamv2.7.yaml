@@ -1,0 +1,68 @@
+family: deepseek_v3_1
+mode: streamv2
+captured_with:
+  vllm_rust: 0.23.0
+cases:
+  TOOLCALLING.streamv2.7.a:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: book_flight
+    - expected:
+      - index: 0
+        arguments: '{"destination":"Paris","passengers":2,"first_class":true}'
+    - expected: []
+  TOOLCALLING.streamv2.7.b:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location":"Tōkyō \"central\""}'
+    - expected: []
+  TOOLCALLING.streamv2.7.c:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: set_temperature
+    - expected:
+      - index: 0
+        arguments: '{"celsius":"20"}'
+    - expected: []
+  TOOLCALLING.streamv2.7.d:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: process_data
+    - expected:
+      - index: 0
+        arguments: '{"items":[1,2,3],"config":{"nested":true}}'
+    - expected: []
+  TOOLCALLING.streamv2.7.e:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: process_data
+    - expected:
+      - index: 0
+        arguments: '{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}]'
+    - expected:
+      - index: 0
+        arguments: ',"flags":{"enabled":true,"retry":null},"empty":{}}}'
+    - expected: []
+  TOOLCALLING.streamv2.7.f:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: set_limit
+    - expected:
+      - index: 0
+        arguments: '{"count":9007199254740993}'
+    - expected: []

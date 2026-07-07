@@ -1,0 +1,91 @@
+family: glm47
+mode: streamv2
+model_label: GLM 5.1
+cases:
+  TOOLCALLING.streamv2.8.a:
+    description: Narration before tool call only
+    ref: derived from TOOLCALLING.batch.8.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I will
+    - delta_text: ' check'
+    - delta_text: ' the weather. <tool_call>'
+    - delta_text: get_weather<arg_key>location</arg_key>
+    - delta_text: <arg_value>
+    - delta_text: NYC</arg_value></tool_call>
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.8.b:
+    description: Narration after tool call only
+    ref: derived from TOOLCALLING.batch.8.b
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <tool_call>get_weather<arg_key>
+    - delta_text: location</arg_key>
+    - delta_text: <arg_value>NYC</arg_value></tool_call>
+    - delta_text: ' Let me'
+    - delta_text: ' know'
+    - delta_text: ' if you'
+    - delta_text: ' need more.'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.8.c:
+    description: Narration both before and after (sandwich)
+    ref: derived from TOOLCALLING.batch.8.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I will
+    - delta_text: ' check'
+    - delta_text: ' the weather. <tool_call>'
+    - delta_text: get_weather<arg_key>location</arg_key>
+    - delta_text: <arg_value>
+    - delta_text: NYC</arg_value></tool_call>
+    - delta_text: ' Let me know'
+    - delta_text: ' if'
+    - delta_text: ' you need'
+    - delta_text: ' more.'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.8.d:
+    description: Narration between multiple tool calls
+    ref: derived from TOOLCALLING.batch.8.d
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I will
+    - delta_text: ' check'
+    - delta_text: ' the weather. <tool_call>'
+    - delta_text: get_weather<arg_key>location</arg_key>
+    - delta_text: <arg_value>
+    - delta_text: NYC</arg_value></tool_call>
+    - delta_text: ' Then check LA'
+    - delta_text: ' weather.'
+    - delta_text: ' <tool_call>get_weather<arg_key>'
+    - delta_text: location</arg_key>
+    - delta_text: <arg_value>LA</arg_value>
+    - delta_text: </tool_call>
+    - delta_text: ''
+      finish_reason: tool_calls

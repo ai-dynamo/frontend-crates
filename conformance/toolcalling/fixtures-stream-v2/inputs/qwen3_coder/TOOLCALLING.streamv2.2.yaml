@@ -1,0 +1,81 @@
+family: qwen3_coder
+mode: streamv2
+model_label: Qwen 3 Coder
+cases:
+  TOOLCALLING.streamv2.2.a:
+    description: Parallel calls (different names)
+    ref: derived from TOOLCALLING.batch.2.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    chunks:
+    - delta_text: <tool_call> <function=get_weather>
+    - delta_text: ' <parameter=location>'
+    - delta_text: ' NYC </parameter> </function>'
+    - delta_text: ' </tool_call> <tool_call>'
+    - delta_text: ' <function=get_time>'
+    - delta_text: ' <parameter=timezone> EST'
+    - delta_text: ' </parameter> </function> </tool_call>'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.2.c:
+    description: Parallel calls with surrounding narration
+    ref: derived from TOOLCALLING.batch.2.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    chunks:
+    - delta_text: 'Both queries:'
+    - delta_text: ' <tool_call>'
+    - delta_text: ' <function=get_weather> <parameter=location> NYC'
+    - delta_text: ' </parameter> </function>'
+    - delta_text: ' </tool_call>'
+    - delta_text: ' <tool_call> <function=get_time>'
+    - delta_text: ' <parameter=timezone> EST </parameter>'
+    - delta_text: ' </function>'
+    - delta_text: ' </tool_call> Results'
+    - delta_text: ' above.'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.2.d:
+    description: Same-name twice (id distinctness)
+    ref: derived from TOOLCALLING.batch.2.d
+    tools:
+    - &id001
+      name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - *id001
+    chunks:
+    - delta_text: <tool_call> <function=get_weather>
+    - delta_text: ' <parameter=location>'
+    - delta_text: ' NYC </parameter> </function>'
+    - delta_text: ' </tool_call> <tool_call>'
+    - delta_text: ' <function=get_weather>'
+    - delta_text: ' <parameter=location> LA'
+    - delta_text: ' </parameter> </function> </tool_call>'
+    - delta_text: ''
+      finish_reason: tool_calls

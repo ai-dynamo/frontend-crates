@@ -1,0 +1,94 @@
+family: nemotron_deci
+mode: streamv2
+model_label: Nemotron (DeciLM) v1/v2
+cases:
+  TOOLCALLING.streamv2.8.a:
+    description: Narration before tool call only
+    ref: derived from TOOLCALLING.batch.8.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I will
+    - delta_text: ' check'
+    - delta_text: ' the weather. <TOOLCALL>'
+    - delta_text: '[{"name": "get_weather",'
+    - delta_text: ' "arguments":'
+    - delta_text: ' {"location": "NYC"}}]'
+    - delta_text: </TOOLCALL>
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.8.b:
+    description: Narration after tool call only
+    ref: derived from TOOLCALLING.batch.8.b
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '<TOOLCALL>[{"name":'
+    - delta_text: ' "get_weather",'
+    - delta_text: ' "arguments": {"location": "NYC"}}]'
+    - delta_text: </TOOLCALL> Let
+    - delta_text: ' me'
+    - delta_text: ' know if'
+    - delta_text: ' you need more.'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.8.c:
+    description: Narration both before and after (sandwich)
+    ref: derived from TOOLCALLING.batch.8.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I will
+    - delta_text: ' check'
+    - delta_text: ' the weather. <TOOLCALL>'
+    - delta_text: '[{"name": "get_weather",'
+    - delta_text: ' "arguments":'
+    - delta_text: ' {"location": "NYC"}}]'
+    - delta_text: </TOOLCALL> Let me
+    - delta_text: ' know'
+    - delta_text: ' if you'
+    - delta_text: ' need'
+    - delta_text: ' more.'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.8.d:
+    description: Narration between multiple tool calls
+    ref: derived from TOOLCALLING.batch.8.d
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I will
+    - delta_text: ' check'
+    - delta_text: ' the weather. <TOOLCALL>'
+    - delta_text: '[{"name": "get_weather",'
+    - delta_text: ' "arguments":'
+    - delta_text: ' {"location": "NYC"}}]'
+    - delta_text: </TOOLCALL> Then check
+    - delta_text: ' LA'
+    - delta_text: ' weather. <TOOLCALL>'
+    - delta_text: '[{"name":'
+    - delta_text: ' "get_weather", "arguments":'
+    - delta_text: ' {"location":'
+    - delta_text: ' "LA"}}]</TOOLCALL>'
+    - delta_text: ''
+      finish_reason: stop

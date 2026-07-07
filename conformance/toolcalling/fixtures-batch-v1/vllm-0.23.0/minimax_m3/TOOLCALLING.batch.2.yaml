@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: minimax_m3
+mode: batch
+cases:
+  TOOLCALLING.batch.2.a:
+    expected:
+      vllm: &id001
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+  TOOLCALLING.batch.2.b:
+    expected:
+      vllm: *id001
+  TOOLCALLING.batch.2.c:
+    expected:
+      vllm: *id001
+  TOOLCALLING.batch.2.d:
+    expected:
+      vllm: *id001

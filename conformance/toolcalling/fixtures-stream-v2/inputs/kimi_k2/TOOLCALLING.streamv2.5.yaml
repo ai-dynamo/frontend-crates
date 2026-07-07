@@ -1,0 +1,139 @@
+family: kimi_k2
+mode: streamv2
+model_label: Kimi K2.6
+cases:
+  TOOLCALLING.streamv2.5.a:
+    description: 'Missing section_end (max_tokens truncation, PR #8208)'
+    ref: derived from TOOLCALLING.batch.5.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+    - delta_text: functions.get_weather:0<|tool_call_argument_begin|>
+    - delta_text: '{"location":"NYC"}<|tool_call_end|>'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.5.b:
+    description: Closing section_end without matching section_begin
+    ref: derived from TOOLCALLING.batch.5.b
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>
+    - delta_text: '{"location":"NYC"}<|tool_call_end|>'
+    - delta_text: <|tool_calls_section_end|>
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.5.c:
+    description: Truncation mid-arguments (incomplete JSON body)
+    ref: derived from TOOLCALLING.batch.5.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|tool_calls_section_begin|><|tool_call_begin|>
+    - delta_text: functions.get_weather:0<|tool_call_argument_begin|>
+    - delta_text: '{"loc'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.5.d:
+    description: Multi-call, last call missing only end marker (body complete)
+    ref: derived from TOOLCALLING.batch.5.d
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I'll start
+    - delta_text: ' by'
+    - delta_text: ' fetching the weather'
+    - delta_text: ' for both'
+    - delta_text: ' Boston'
+    - delta_text: ' and New'
+    - delta_text: ' York at the'
+    - delta_text: ' same'
+    - delta_text: ' time!<|tool_calls_section_begin|><|tool_call_begin|>'
+    - delta_text: functions.get_weather:0<|tool_call_argument_begin|>
+    - delta_text: '{"location":"Boston"}<|tool_call_end|><|tool_call_begin|>'
+    - delta_text: functions.get_weather:1<|tool_call_argument_begin|>
+    - delta_text: '{"location":"New York"}'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.5.e:
+    description: Multi-call, last call truncated mid-arg-value
+    ref: derived from TOOLCALLING.batch.5.e
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I'll start
+    - delta_text: ' by'
+    - delta_text: ' fetching the weather'
+    - delta_text: ' for both'
+    - delta_text: ' Boston'
+    - delta_text: ' and New'
+    - delta_text: ' York at the'
+    - delta_text: ' same'
+    - delta_text: ' time!<|tool_calls_section_begin|><|tool_call_begin|>'
+    - delta_text: functions.get_weather:0<|tool_call_argument_begin|>
+    - delta_text: '{"location":"Boston"}<|tool_call_end|><|tool_call_begin|>'
+    - delta_text: functions.get_weather:1<|tool_call_argument_begin|>
+    - delta_text: '{"location":"New York'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.5.f:
+    description: Bare valid call before a complete wrapped section
+    ref: derived from TOOLCALLING.batch.5.f
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>
+    - delta_text: '{"location":"NYC"}<|tool_call_end|>'
+    - delta_text: <|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>
+    - delta_text: functions.get_weather:1<|tool_call_argument_begin|>{"location":"Boston"}<|tool_call_end|>
+    - delta_text: <|tool_calls_section_end|>
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.5.g:
+    description: Closing section_end without matching section_begin after prefix prose
+    ref: derived from TOOLCALLING.batch.5.g
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I will
+    - delta_text: ' check'
+    - delta_text: ' that. <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>'
+    - delta_text: '{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>'
+    - delta_text: ''
+      finish_reason: stop

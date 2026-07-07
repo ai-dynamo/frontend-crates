@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: jamba
+mode: batch
+cases:
+  TOOLCALLING.batch.6.a:
+    expected:
+      vllm:
+        calls:
+        - name: get_time
+          arguments: {}
+        normal_text: ''
+  TOOLCALLING.batch.6.b:
+    expected:
+      vllm:
+        calls:
+        - name: get_time
+          arguments: {}
+        normal_text: ''
+  TOOLCALLING.batch.6.c:
+    expected:
+      vllm:
+        reason: vLLM's jamba detector leaves the raw <tool_calls> envelope in normal_text when a call object has no arguments key. Dynamo discards it so no tool-call markup reaches the user.
+        calls: []
+        normal_text: '<tool_calls>[{"name": "get_time"}]</tool_calls>'

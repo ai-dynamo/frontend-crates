@@ -1,0 +1,21 @@
+family: qwen25
+mode: streamv2
+model_label: Qwen 2.5
+cases:
+  TOOLCALLING.streamv2.1:
+    description: Single tool call (happy path)
+    ref: derived from TOOLCALLING.batch.1
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '<tool_call> {"name":'
+    - delta_text: ' "get_weather",'
+    - delta_text: ' "arguments": {"location": "NYC"}}'
+    - delta_text: ' </tool_call>'
+    - delta_text: ''
+      finish_reason: tool_calls

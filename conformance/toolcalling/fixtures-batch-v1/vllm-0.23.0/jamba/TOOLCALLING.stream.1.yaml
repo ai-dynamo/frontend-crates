@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: jamba
+mode: stream
+cases:
+  TOOLCALLING.stream.1.a:
+    expected:
+      vllm:
+        reason: vLLM's streaming jamba detector emits the call name but drops the arguments to an empty object. Dynamo's streaming jail surfaces the full arguments.
+        calls:
+        - name: get_weather
+          arguments: {}
+        normal_text: ''
+  TOOLCALLING.stream.1.b:
+    expected:
+      vllm:
+        reason: vLLM's streaming jamba detector emits the call name but drops the arguments to an empty object. Dynamo's streaming jail surfaces the full arguments.
+        calls:
+        - name: get_weather
+          arguments: {}
+        normal_text: ''

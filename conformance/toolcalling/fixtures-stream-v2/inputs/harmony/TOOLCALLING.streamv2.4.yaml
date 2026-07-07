@@ -1,0 +1,157 @@
+family: harmony
+mode: streamv2
+model_label: gpt-oss (harmony, token-id)
+cases:
+  TOOLCALLING.streamv2.4.a:
+    description: Channel envelope with garbage body
+    ref: derived from TOOLCALLING.batch.4.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|start|>assistant
+      delta_token_ids:
+      - 200006
+      - 173781
+    - delta_text: <|channel|>comment
+      delta_token_ids:
+      - 200005
+      - 12606
+    - delta_text: ary to
+      delta_token_ids:
+      - 815
+      - 316
+    - delta_text: =functions
+      delta_token_ids:
+      - 28
+      - 44580
+    - delta_text: .get_weather
+      delta_token_ids:
+      - 775
+      - 170154
+    - delta_text: ' <|constrain|>'
+      delta_token_ids:
+      - 220
+      - 200003
+    - delta_text: json<|message|>
+      delta_token_ids:
+      - 4108
+      - 200008
+    - delta_text: not json
+      delta_token_ids:
+      - 2878
+      - 5701
+    - delta_text: ' at all'
+      delta_token_ids:
+      - 540
+      - 722
+    - delta_text: <|call|>
+      delta_token_ids:
+      - 200012
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.4.b:
+    description: Unterminated JSON in message body
+    ref: derived from TOOLCALLING.batch.4.b
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|start|>assistant
+      delta_token_ids:
+      - 200006
+      - 173781
+    - delta_text: <|channel|>comment
+      delta_token_ids:
+      - 200005
+      - 12606
+    - delta_text: ary to
+      delta_token_ids:
+      - 815
+      - 316
+    - delta_text: =functions
+      delta_token_ids:
+      - 28
+      - 44580
+    - delta_text: .get_weather
+      delta_token_ids:
+      - 775
+      - 170154
+    - delta_text: ' <|constrain|>'
+      delta_token_ids:
+      - 220
+      - 200003
+    - delta_text: json<|message|>
+      delta_token_ids:
+      - 4108
+      - 200008
+    - delta_text: '{"location'
+      delta_token_ids:
+      - 10848
+      - 7693
+    - delta_text: '":"NY'
+      delta_token_ids:
+      - 7534
+      - 24202
+    - delta_text: C<|call|>
+      delta_token_ids:
+      - 34
+      - 200012
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.4.c:
+    description: No to=functions.X recipient
+    ref: derived from TOOLCALLING.batch.4.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|start|>assistant
+      delta_token_ids:
+      - 200006
+      - 173781
+    - delta_text: <|channel|>comment
+      delta_token_ids:
+      - 200005
+      - 12606
+    - delta_text: 'ary '
+      delta_token_ids:
+      - 815
+      - 220
+    - delta_text: <|constrain|>json
+      delta_token_ids:
+      - 200003
+      - 4108
+    - delta_text: <|message|>{"
+      delta_token_ids:
+      - 200008
+      - 10848
+    - delta_text: location":"
+      delta_token_ids:
+      - 7693
+      - 7534
+    - delta_text: NYC
+      delta_token_ids:
+      - 24202
+      - 34
+    - delta_text: '"}<|call|>'
+      delta_token_ids:
+      - 18583
+      - 200012
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: stop

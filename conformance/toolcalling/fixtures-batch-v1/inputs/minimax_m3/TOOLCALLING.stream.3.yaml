@@ -1,0 +1,30 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Shared inputs (version-independent): no expected blocks.
+family: minimax_m3
+model_label: MiniMax M3
+mode: stream
+cases:
+  TOOLCALLING.stream.3:
+    description: Tool-call start marker split across chunk boundaries
+    ref: derived from TOOLCALLING.batch.1
+    chunks:
+    - delta_text: ']<]'
+    - delta_text: 'minimax[>[<tool_call>
+
+        ]<]minimax[>[<invoke name="get_weather">
+
+        ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+        ]<]minimax[>[</invoke>
+
+        ]<]minimax[>[</tool_call>'
+    - delta_text: ''
+      finish_reason: tool_calls
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string

@@ -1,0 +1,101 @@
+family: mistral
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.8.a:
+    chunks:
+    - expected: []
+      normal_text: I will
+    - expected: []
+      normal_text: ' check'
+    - expected: []
+      normal_text: ' the weather. '
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+    - expected: []
+    - expected:
+      - index: 0
+        arguments: '{"location": "NYC"}'
+    - expected: []
+      normal_text: '[/TOOL_CALLS]'
+    - expected: []
+  TOOLCALLING.streamv2.8.b:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location": "NYC"}'
+    - expected: []
+      normal_text: '[/TOOL_CALLS] Let'
+    - expected: []
+      normal_text: ' me'
+    - expected: []
+      normal_text: ' know if'
+    - expected: []
+      normal_text: ' you need more.'
+    - expected: []
+  TOOLCALLING.streamv2.8.c:
+    chunks:
+    - expected: []
+      normal_text: I will
+    - expected: []
+      normal_text: ' check'
+    - expected: []
+      normal_text: ' the weather. '
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+    - expected: []
+    - expected:
+      - index: 0
+        arguments: '{"location": "NYC"}'
+    - expected: []
+      normal_text: '[/TOOL_CALLS] Let me'
+    - expected: []
+      normal_text: ' know'
+    - expected: []
+      normal_text: ' if you'
+    - expected: []
+      normal_text: ' need'
+    - expected: []
+      normal_text: ' more.'
+    - expected: []
+  TOOLCALLING.streamv2.8.d:
+    chunks:
+    - expected: []
+      normal_text: I will
+    - expected: []
+      normal_text: ' check'
+    - expected: []
+      normal_text: ' the weather. '
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+    - expected: []
+    - expected:
+      - index: 0
+        arguments: '{"location": "NYC"}'
+    - expected: []
+      normal_text: '[/TOOL_CALLS] Then check'
+    - expected: []
+      normal_text: ' LA'
+    - expected: []
+      normal_text: ' weather. '
+    - expected: []
+      normal_text: '[{"name":'
+    - expected: []
+      normal_text: ' "get_weather", "arguments":'
+    - expected: []
+      normal_text: ' {"location":'
+    - expected: []
+      normal_text: ' "LA"}}][/TOOL_CALLS]'
+    - expected: []

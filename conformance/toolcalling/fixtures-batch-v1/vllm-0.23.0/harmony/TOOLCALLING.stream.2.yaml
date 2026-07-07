@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: harmony
+mode: stream
+cases:
+  TOOLCALLING.stream.2:
+    expected:
+      vllm:
+        unavailable: vLLM streaming parser for family='harmony' requires `delta_token_ids` in fixture chunks

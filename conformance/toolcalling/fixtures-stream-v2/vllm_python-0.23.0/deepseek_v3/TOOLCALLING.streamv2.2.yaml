@@ -1,0 +1,85 @@
+family: deepseek_v3
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.2.a:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 1
+        id: true
+        name: get_time
+    - expected: []
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.2.b:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 1
+        id: true
+        name: get_time
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.2.c:
+    chunks:
+    - expected: []
+      normal_text: 'Both: '
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location": "NYC"}'
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 1
+        id: true
+        name: get_time
+    - expected:
+      - index: 1
+        arguments: '{"timezone": "EST"}'
+    - expected: []
+    - expected: []
+      normal_text: ' Done.'
+    - expected: []
+  TOOLCALLING.streamv2.2.d:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 1
+        id: true
+        name: get_weather
+    - expected: []
+    - expected: []
+    - expected: []

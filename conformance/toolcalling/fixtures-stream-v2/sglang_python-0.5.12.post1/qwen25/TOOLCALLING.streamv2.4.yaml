@@ -1,0 +1,41 @@
+family: qwen25
+mode: streamv2
+captured_with:
+  sglang_python: 0.5.12.post1
+cases:
+  TOOLCALLING.streamv2.4.a:
+    chunks:
+    - expected: []
+      normal_text: <tool_call>not
+    - expected: []
+      normal_text: ' even'
+    - expected: []
+      normal_text: ' json'
+    - expected: []
+  TOOLCALLING.streamv2.4.b:
+    chunks:
+    - expected: []
+      normal_text: '<tool_call>{"name":'
+    - expected: []
+      normal_text: ' "get_weather",'
+    - expected: []
+      normal_text: ' "arguments": {"location": "NYC"'
+    - expected: []
+  TOOLCALLING.streamv2.4.c:
+    chunks:
+    - expected: []
+      normal_text: '<tool_call>{"arguments":'
+    - expected: []
+      normal_text: ' {"location":'
+    - expected: []
+      normal_text: ' "NYC"}}'
+    - expected: []
+  TOOLCALLING.streamv2.4.d:
+    chunks:
+    - expected: []
+      normal_text: '<tool_call>{"name":'
+    - expected: []
+      normal_text: ' "get_weather",'
+    - expected: []
+      normal_text: ' "arguments": {"location": "NYC"}}'
+    - expected: []

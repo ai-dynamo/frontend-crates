@@ -1,0 +1,22 @@
+family: qwen25
+mode: streamv2
+captured_with:
+  vllm_rust: 0.23.0
+cases:
+  TOOLCALLING.streamv2.5.a:
+    unavailable: 'vllm_rust parser not captured: tool parser parsing failed: incomplete Hermes tool call'
+  TOOLCALLING.streamv2.5.b:
+    chunks:
+    - expected: []
+      normal_text: '{"name": "get_weather",'
+    - expected: []
+      normal_text: ' "arguments":'
+    - expected: []
+      normal_text: ' {"location": "NYC"}}</tool_call>'
+    - expected: []
+  TOOLCALLING.streamv2.5.c:
+    unavailable: 'vllm_rust parser not captured: tool parser parsing failed: incomplete Hermes tool call'
+  TOOLCALLING.streamv2.5.d:
+    unavailable: 'vllm_rust parser not captured: tool parser parsing failed: incomplete Hermes tool call'
+  TOOLCALLING.streamv2.5.e:
+    unavailable: 'vllm_rust parser not captured: tool parser parsing failed: incomplete Hermes tool call'

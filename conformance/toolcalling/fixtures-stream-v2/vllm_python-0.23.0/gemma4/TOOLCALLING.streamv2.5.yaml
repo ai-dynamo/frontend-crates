@@ -1,0 +1,128 @@
+family: gemma4
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.5.a:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected:
+      - index: 0
+        arguments: '{"location": "NYC'
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.5.b:
+    chunks:
+    - expected: []
+      normal_text: call:get_weather{location:<|"|>NYC<|"|>
+    - expected: []
+      normal_text: '}<tool_call|>'
+    - expected: []
+  TOOLCALLING.streamv2.5.c:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected:
+      - index: 0
+        arguments: '{"location": "N'
+    - expected: []
+  TOOLCALLING.streamv2.5.d:
+    chunks:
+    - expected: []
+      normal_text: I'll start
+    - expected: []
+      normal_text: ' by'
+    - expected: []
+      normal_text: ' fetching the weather'
+    - expected: []
+      normal_text: ' for both'
+    - expected: []
+      normal_text: ' Boston'
+    - expected: []
+      normal_text: ' and New'
+    - expected: []
+      normal_text: ' York at the'
+    - expected: []
+      normal_text: ' same'
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected:
+      - index: 0
+        arguments: '{"location": "Boston'
+    - expected: []
+    - expected:
+      - index: 1
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected:
+      - index: 1
+        arguments: '{"location": "New York'
+    - expected: []
+  TOOLCALLING.streamv2.5.e:
+    chunks:
+    - expected: []
+      normal_text: I'll start
+    - expected: []
+      normal_text: ' by'
+    - expected: []
+      normal_text: ' fetching the weather'
+    - expected: []
+      normal_text: ' for both'
+    - expected: []
+      normal_text: ' Boston'
+    - expected: []
+      normal_text: ' and New'
+    - expected: []
+      normal_text: ' York at the'
+    - expected: []
+      normal_text: ' same'
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected:
+      - index: 0
+        arguments: '{"location": "Boston'
+    - expected: []
+    - expected:
+      - index: 1
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected:
+      - index: 1
+        arguments: '{"location": "New York'
+    - expected: []
+  TOOLCALLING.streamv2.5.f:
+    chunks:
+    - expected: []
+      normal_text: call:get_weather{location:<|"|>NYC<|"|>
+    - expected: []
+      normal_text: '}<tool_call|>'
+    - expected: []
+      normal_text: <|tool_call>call:get_weather{location:<|"|>Boston<|"|>
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.5.g:
+    chunks:
+    - expected: []
+      normal_text: I will
+    - expected: []
+      normal_text: ' check'
+    - expected: []
+      normal_text: ' that. call:get_weather{location:<|"|>NYC<|"|>'
+    - expected: []
+      normal_text: '}<tool_call|>'
+    - expected: []

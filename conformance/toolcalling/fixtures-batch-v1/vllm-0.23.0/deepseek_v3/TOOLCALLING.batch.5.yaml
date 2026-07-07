@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: deepseek_v3
+mode: batch
+cases:
+  TOOLCALLING.batch.5.a:
+    expected:
+      vllm:
+        calls: []
+        normal_text: ''
+  TOOLCALLING.batch.5.b:
+    expected:
+      vllm:
+        reason: vLLM/SGLang deepseek_v3 handling leaves the <｜tool▁call…｜> envelope and <｜tool▁sep｜> in normal_text on this orphan end-marker case.
+        calls: []
+        normal_text: '<｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+          ```json
+
+          {"location": "NYC"}
+
+          ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+  TOOLCALLING.batch.5.c:
+    expected:
+      vllm:
+        calls: []
+        normal_text: ''
+  TOOLCALLING.batch.5.d:
+    expected:
+      vllm:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Boston
+        normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+          '
+  TOOLCALLING.batch.5.e:
+    expected:
+      vllm:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Boston
+        normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+          '

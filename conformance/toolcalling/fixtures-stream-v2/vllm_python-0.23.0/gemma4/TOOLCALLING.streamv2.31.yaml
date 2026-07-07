@@ -1,0 +1,60 @@
+family: gemma4
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.31.a:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: run_query
+        arguments: ''
+    - expected:
+      - index: 0
+        arguments: '{"sql": "SELECT'
+    - expected: []
+    - expected:
+      - index: 1
+        id: true
+        name: get_time
+        arguments: ''
+    - expected:
+      - index: 1
+        arguments: '{"timezone": "EST"}'
+    - expected: []
+  TOOLCALLING.streamv2.31.b:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: run_query
+        arguments: ''
+    - expected:
+      - index: 0
+        arguments: '{"sql": "SELECT'
+    - expected:
+      - index: 0
+        arguments: ' value WHERE note'
+    - expected:
+      - index: 0
+        arguments: ' has brace'
+    - expected:
+      - index: 0
+        arguments: ' '
+    - expected:
+      - index: 0
+        arguments: '} and bracket'
+    - expected:
+      - index: 0
+        arguments: ' ]"}'
+    - expected: []
+    - expected:
+      - index: 1
+        id: true
+        name: get_time
+        arguments: ''
+    - expected:
+      - index: 1
+        arguments: '{"timezone": "EST"}'
+    - expected: []

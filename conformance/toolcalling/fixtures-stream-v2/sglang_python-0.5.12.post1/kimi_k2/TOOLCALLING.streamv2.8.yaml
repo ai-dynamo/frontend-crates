@@ -1,0 +1,81 @@
+family: kimi_k2
+mode: streamv2
+captured_with:
+  sglang_python: 0.5.12.post1
+cases:
+  TOOLCALLING.streamv2.8.a:
+    chunks:
+    - expected: []
+      normal_text: I'll check
+    - expected: []
+      normal_text: ' the'
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location":"Dallas"}'
+    - expected: []
+  TOOLCALLING.streamv2.8.b:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location":"Dallas"}'
+    - expected: []
+      normal_text: ' if'
+    - expected: []
+      normal_text: ' you need'
+    - expected: []
+      normal_text: ' more.'
+    - expected: []
+  TOOLCALLING.streamv2.8.c:
+    chunks:
+    - expected: []
+      normal_text: I'll check
+    - expected: []
+      normal_text: ' the'
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location":"Dallas"}'
+    - expected: []
+      normal_text: ' Let me'
+    - expected: []
+      normal_text: ' know if you'
+    - expected: []
+      normal_text: ' need'
+    - expected: []
+      normal_text: ' more.'
+    - expected: []
+  TOOLCALLING.streamv2.8.d:
+    chunks:
+    - expected: []
+      normal_text: First check
+    - expected: []
+      normal_text: ' Dallas.'
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location":"Dallas"}'
+    - expected: []
+      normal_text: ' check NYC.'
+    - expected: []
+    - expected:
+      - index: 1
+        name: get_weather
+    - expected:
+      - index: 1
+        arguments: '{"location":"NYC"}'
+    - expected: []

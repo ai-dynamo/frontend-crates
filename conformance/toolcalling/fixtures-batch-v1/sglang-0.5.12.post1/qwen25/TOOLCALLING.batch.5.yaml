@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for sglang@0.5.12.post1 (lowest version = baseline). expected.sglang only.
+family: qwen25
+mode: batch
+cases:
+  TOOLCALLING.batch.5.a:
+    expected:
+      sglang:
+        reason: 'Incomplete call (open <tool_call>, no close): Dynamo suppresses to empty, SGLang keeps raw. Non-parity by design.'
+        calls: []
+        normal_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}'
+  TOOLCALLING.batch.5.b:
+    expected:
+      sglang:
+        reason: 'Orphan </tool_call> with no opener: Dynamo strips the stray end marker from normal_text (no leak); SGLang''s Qwen25Detector leaves it in the raw text. Non-parity by design.'
+        calls: []
+        normal_text: '{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call>'
+  TOOLCALLING.batch.5.c:
+    expected:
+      sglang:
+        reason: 'Incomplete call (open <tool_call>, no close): Dynamo suppresses to empty, SGLang keeps raw. Non-parity by design.'
+        calls: []
+        normal_text: '<tool_call>{"name": "get_weather", "arguments": {"loc'
+  TOOLCALLING.batch.5.d:
+    expected:
+      sglang:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Boston
+        normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  TOOLCALLING.batch.5.e:
+    expected:
+      sglang:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Boston
+        normal_text: I'll start by fetching the weather for both Boston and New York at the same time!

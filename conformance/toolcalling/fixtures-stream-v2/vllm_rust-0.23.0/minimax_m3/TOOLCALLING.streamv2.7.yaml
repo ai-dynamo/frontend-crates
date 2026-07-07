@@ -1,0 +1,17 @@
+family: minimax_m3
+mode: streamv2
+captured_with:
+  vllm_rust: 0.23.0
+cases:
+  TOOLCALLING.streamv2.7.a:
+    unavailable: vLLM Rust v0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+  TOOLCALLING.streamv2.7.b:
+    unavailable: vLLM Rust v0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+  TOOLCALLING.streamv2.7.c:
+    unavailable: vLLM Rust v0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+  TOOLCALLING.streamv2.7.d:
+    unavailable: vLLM Rust v0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+  TOOLCALLING.streamv2.7.e:
+    unavailable: vLLM Rust v0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+  TOOLCALLING.streamv2.7.f:
+    unavailable: vLLM Rust v0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.

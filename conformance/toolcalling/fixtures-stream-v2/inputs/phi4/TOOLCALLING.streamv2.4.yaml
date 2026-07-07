@@ -1,0 +1,67 @@
+family: phi4
+mode: streamv2
+model_label: Phi-4
+cases:
+  TOOLCALLING.streamv2.4.a:
+    description: functools[ wrapper with garbage
+    ref: derived from TOOLCALLING.batch.4.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: functools[not a
+    - delta_text: ' json'
+    - delta_text: ' array]'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.4.b:
+    description: Missing close brace
+    ref: derived from TOOLCALLING.batch.4.b
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: 'functools[{"name": "get_weather",'
+    - delta_text: ' "arguments":'
+    - delta_text: ' {"location": "NYC"]'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.4.c:
+    description: Missing name key
+    ref: derived from TOOLCALLING.batch.4.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: 'functools[{"arguments": {"location":'
+    - delta_text: ' "NYC"}}]'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.4.d:
+    description: Missing closing ]
+    ref: derived from TOOLCALLING.batch.4.d
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: 'functools[{"name": "get_weather",'
+    - delta_text: ' "arguments":'
+    - delta_text: ' {"location": "NYC"}}'
+    - delta_text: ''
+      finish_reason: stop

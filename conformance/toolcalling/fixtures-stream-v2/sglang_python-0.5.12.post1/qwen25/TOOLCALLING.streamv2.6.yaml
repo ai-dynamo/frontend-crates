@@ -1,0 +1,33 @@
+family: qwen25
+mode: streamv2
+captured_with:
+  sglang_python: 0.5.12.post1
+cases:
+  TOOLCALLING.streamv2.6.a:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_time
+    - expected:
+      - index: 0
+        arguments: '{}'
+    - expected: []
+  TOOLCALLING.streamv2.6.b:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_time
+    - expected:
+      - index: 0
+        arguments: '{}'
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.6.c:
+    chunks:
+    - expected: []
+      normal_text: '<tool_call>{"name":'
+    - expected: []
+      normal_text: ' "get_time"}'
+    - expected: []

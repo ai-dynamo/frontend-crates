@@ -1,0 +1,24 @@
+family: glm47
+mode: streamv2
+captured_with:
+  vllm_rust: 0.23.0
+cases:
+  TOOLCALLING.streamv2.50:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+        arguments: '{"location":"NYC"}'
+    - expected: []

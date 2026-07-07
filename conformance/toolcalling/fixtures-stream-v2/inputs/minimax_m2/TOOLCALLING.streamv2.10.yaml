@@ -1,0 +1,24 @@
+family: minimax_m2
+mode: streamv2
+model_label: MiniMax 2.7
+cases:
+  TOOLCALLING.streamv2.10:
+    description: Duplicate calls (same name twice)
+    ref: derived from TOOLCALLING.batch.10
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <minimax:tool_call> <invoke
+    - delta_text: ' name="get_weather">'
+    - delta_text: ' <parameter name="location">NYC</parameter>'
+    - delta_text: ' </invoke> <invoke'
+    - delta_text: ' name="get_weather">'
+    - delta_text: ' <parameter name="location">'
+    - delta_text: LA</parameter> </invoke> </minimax:tool_call>
+    - delta_text: ''
+      finish_reason: tool_calls

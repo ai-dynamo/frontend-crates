@@ -1,0 +1,55 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: glm47
+mode: batch
+cases:
+  TOOLCALLING.batch.5.a:
+    expected:
+      vllm:
+        calls: []
+        normal_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>
+        reason: vLLM and SGLang preserve the truncated <tool_call>... markup as content on missing-end-token recovery; Dynamo drops to keep wire tags out of message.content
+  TOOLCALLING.batch.5.b:
+    expected:
+      vllm:
+        reason: vLLM and SGLang preserve orphan GLM <arg_key>/<arg_value>/</tool_call> markup as content when opening <tool_call> is missing; Dynamo recovers the complete bare call body and strips the orphan close marker.
+        calls: []
+        normal_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+  TOOLCALLING.batch.5.c:
+    expected:
+      vllm:
+        calls: []
+        normal_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>N
+        reason: vLLM and SGLang preserve the truncated <tool_call>... prefix as content on mid-arg-value truncation; Dynamo drops to keep wire tags out of message.content
+  TOOLCALLING.batch.5.d:
+    expected:
+      vllm:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Boston
+        normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  TOOLCALLING.batch.5.e:
+    expected:
+      vllm:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Boston
+        normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  TOOLCALLING.batch.5.f:
+    expected:
+      vllm:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Boston
+        normal_text: get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>
+        reason: vLLM and SGLang preserve the bare GLM call before the first <tool_call> as content; Dynamo recovers it as the first structured call before parsing the wrapped call.
+  TOOLCALLING.batch.5.g:
+    expected:
+      vllm:
+        reason: vLLM and SGLang preserve orphan GLM <arg_key>/<arg_value>/</tool_call> markup as content when opening <tool_call> is missing; Dynamo preserves the prefix prose, recovers the complete bare call body, and strips the orphan close marker.
+        calls: []
+        normal_text: I will check that. get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>

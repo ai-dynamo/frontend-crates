@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: jamba
+mode: batch
+cases:
+  TOOLCALLING.batch.8.a:
+    expected:
+      vllm:
+        reason: 'Cosmetic whitespace only: Dynamo trims the trailing space between the narration and the <tool_calls> fence; vLLM preserves it. Calls are identical.'
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: 'I will check the weather. '
+  TOOLCALLING.batch.8.b:
+    expected:
+      vllm:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+  TOOLCALLING.batch.8.c:
+    expected:
+      vllm:
+        reason: 'Cosmetic whitespace only: Dynamo trims the trailing space between the narration and the <tool_calls> fence; vLLM preserves it. Calls are identical.'
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: 'I will check the weather. '
+  TOOLCALLING.batch.8.d:
+    expected:
+      vllm:
+        reason: 'Known Dynamo limitation: the jamba framed parser spans from the first <tool_calls> opener to the last </tool_calls> closer, so narration between two separate fences lands inside the captured region and breaks the JSON parse, dropping both calls and keeping only the leading narration. vLLM extracts the first call. Multiple-disjoint-fence support is a base JSON-parser change tracked as a follow-up, out of scope for the never-leak fix.'
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: 'I will check the weather. '

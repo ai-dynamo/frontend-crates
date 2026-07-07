@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: qwen3_coder
+mode: batch
+cases:
+  TOOLCALLING.batch.6.a:
+    expected:
+      vllm:
+        calls:
+        - name: get_time
+          arguments: {}
+        normal_text: ''
+  TOOLCALLING.batch.6.b:
+    expected:
+      vllm:
+        calls:
+        - name: get_time
+          arguments: {}
+        normal_text: ''

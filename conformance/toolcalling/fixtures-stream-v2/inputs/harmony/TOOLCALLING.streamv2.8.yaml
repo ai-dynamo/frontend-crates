@@ -1,0 +1,441 @@
+family: harmony
+mode: streamv2
+model_label: gpt-oss (harmony, token-id)
+cases:
+  TOOLCALLING.streamv2.8.a:
+    description: Narration before tool call only
+    ref: derived from TOOLCALLING.batch.8.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I will
+      delta_token_ids:
+      - 40
+      - 738
+    - delta_text: ' check the'
+      delta_token_ids:
+      - 2371
+      - 290
+    - delta_text: ' weather.'
+      delta_token_ids:
+      - 11122
+      - 13
+    - delta_text: ' <|channel|>'
+      delta_token_ids:
+      - 220
+      - 200005
+    - delta_text: analysis<|message|>
+      delta_token_ids:
+      - 35644
+      - 200008
+    - delta_text: Need to
+      delta_token_ids:
+      - 23483
+      - 316
+    - delta_text: ' use function'
+      delta_token_ids:
+      - 1199
+      - 1114
+    - delta_text: ' get_weather'
+      delta_token_ids:
+      - 717
+      - 170154
+    - delta_text: .<|end|>
+      delta_token_ids:
+      - 13
+      - 200007
+    - delta_text: <|start|>assistant
+      delta_token_ids:
+      - 200006
+      - 173781
+    - delta_text: <|channel|>comment
+      delta_token_ids:
+      - 200005
+      - 12606
+    - delta_text: ary to
+      delta_token_ids:
+      - 815
+      - 316
+    - delta_text: =functions
+      delta_token_ids:
+      - 28
+      - 44580
+    - delta_text: .get_weather
+      delta_token_ids:
+      - 775
+      - 170154
+    - delta_text: ' <|constrain|>'
+      delta_token_ids:
+      - 220
+      - 200003
+    - delta_text: json<|message|>
+      delta_token_ids:
+      - 4108
+      - 200008
+    - delta_text: '{"location'
+      delta_token_ids:
+      - 10848
+      - 7693
+    - delta_text: '":"NY'
+      delta_token_ids:
+      - 7534
+      - 24202
+    - delta_text: C"}
+      delta_token_ids:
+      - 34
+      - 18583
+    - delta_text: <|call|>
+      delta_token_ids:
+      - 200012
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.8.b:
+    description: Narration after tool call only
+    ref: derived from TOOLCALLING.batch.8.b
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|channel|>analysis
+      delta_token_ids:
+      - 200005
+      - 35644
+    - delta_text: <|message|>Need
+      delta_token_ids:
+      - 200008
+      - 23483
+    - delta_text: ' to use'
+      delta_token_ids:
+      - 316
+      - 1199
+    - delta_text: ' function get'
+      delta_token_ids:
+      - 1114
+      - 717
+    - delta_text: _weather.
+      delta_token_ids:
+      - 170154
+      - 13
+    - delta_text: <|end|><|start|>
+      delta_token_ids:
+      - 200007
+      - 200006
+    - delta_text: assistant<|channel|>
+      delta_token_ids:
+      - 173781
+      - 200005
+    - delta_text: commentary
+      delta_token_ids:
+      - 12606
+      - 815
+    - delta_text: ' to='
+      delta_token_ids:
+      - 316
+      - 28
+    - delta_text: functions.get
+      delta_token_ids:
+      - 44580
+      - 775
+    - delta_text: '_weather '
+      delta_token_ids:
+      - 170154
+      - 220
+    - delta_text: <|constrain|>json
+      delta_token_ids:
+      - 200003
+      - 4108
+    - delta_text: <|message|>{"
+      delta_token_ids:
+      - 200008
+      - 10848
+    - delta_text: location":"
+      delta_token_ids:
+      - 7693
+      - 7534
+    - delta_text: NYC
+      delta_token_ids:
+      - 24202
+      - 34
+    - delta_text: '"}<|call|>'
+      delta_token_ids:
+      - 18583
+      - 200012
+    - delta_text: ' Let me'
+      delta_token_ids:
+      - 9024
+      - 668
+    - delta_text: ' know if'
+      delta_token_ids:
+      - 1761
+      - 538
+    - delta_text: ' you need'
+      delta_token_ids:
+      - 481
+      - 1309
+    - delta_text: ' more.'
+      delta_token_ids:
+      - 945
+      - 13
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.8.c:
+    description: Narration both before and after (sandwich)
+    ref: derived from TOOLCALLING.batch.8.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I will
+      delta_token_ids:
+      - 40
+      - 738
+    - delta_text: ' check the'
+      delta_token_ids:
+      - 2371
+      - 290
+    - delta_text: ' weather.'
+      delta_token_ids:
+      - 11122
+      - 13
+    - delta_text: ' <|channel|>'
+      delta_token_ids:
+      - 220
+      - 200005
+    - delta_text: analysis<|message|>
+      delta_token_ids:
+      - 35644
+      - 200008
+    - delta_text: Need to
+      delta_token_ids:
+      - 23483
+      - 316
+    - delta_text: ' use function'
+      delta_token_ids:
+      - 1199
+      - 1114
+    - delta_text: ' get_weather'
+      delta_token_ids:
+      - 717
+      - 170154
+    - delta_text: .<|end|>
+      delta_token_ids:
+      - 13
+      - 200007
+    - delta_text: <|start|>assistant
+      delta_token_ids:
+      - 200006
+      - 173781
+    - delta_text: <|channel|>comment
+      delta_token_ids:
+      - 200005
+      - 12606
+    - delta_text: ary to
+      delta_token_ids:
+      - 815
+      - 316
+    - delta_text: =functions
+      delta_token_ids:
+      - 28
+      - 44580
+    - delta_text: .get_weather
+      delta_token_ids:
+      - 775
+      - 170154
+    - delta_text: ' <|constrain|>'
+      delta_token_ids:
+      - 220
+      - 200003
+    - delta_text: json<|message|>
+      delta_token_ids:
+      - 4108
+      - 200008
+    - delta_text: '{"location'
+      delta_token_ids:
+      - 10848
+      - 7693
+    - delta_text: '":"NY'
+      delta_token_ids:
+      - 7534
+      - 24202
+    - delta_text: C"}
+      delta_token_ids:
+      - 34
+      - 18583
+    - delta_text: <|call|> Let
+      delta_token_ids:
+      - 200012
+      - 9024
+    - delta_text: ' me know'
+      delta_token_ids:
+      - 668
+      - 1761
+    - delta_text: ' if you'
+      delta_token_ids:
+      - 538
+      - 481
+    - delta_text: ' need more'
+      delta_token_ids:
+      - 1309
+      - 945
+    - delta_text: .
+      delta_token_ids:
+      - 13
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.8.d:
+    description: Narration between multiple tool calls
+    ref: derived from TOOLCALLING.batch.8.d
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I will
+      delta_token_ids:
+      - 40
+      - 738
+    - delta_text: ' check the'
+      delta_token_ids:
+      - 2371
+      - 290
+    - delta_text: ' weather.'
+      delta_token_ids:
+      - 11122
+      - 13
+    - delta_text: ' <|channel|>'
+      delta_token_ids:
+      - 220
+      - 200005
+    - delta_text: analysis<|message|>
+      delta_token_ids:
+      - 35644
+      - 200008
+    - delta_text: Need to
+      delta_token_ids:
+      - 23483
+      - 316
+    - delta_text: ' use function'
+      delta_token_ids:
+      - 1199
+      - 1114
+    - delta_text: ' get_weather'
+      delta_token_ids:
+      - 717
+      - 170154
+    - delta_text: .<|end|>
+      delta_token_ids:
+      - 13
+      - 200007
+    - delta_text: <|start|>assistant
+      delta_token_ids:
+      - 200006
+      - 173781
+    - delta_text: <|channel|>comment
+      delta_token_ids:
+      - 200005
+      - 12606
+    - delta_text: ary to
+      delta_token_ids:
+      - 815
+      - 316
+    - delta_text: =functions
+      delta_token_ids:
+      - 28
+      - 44580
+    - delta_text: .get_weather
+      delta_token_ids:
+      - 775
+      - 170154
+    - delta_text: ' <|constrain|>'
+      delta_token_ids:
+      - 220
+      - 200003
+    - delta_text: json<|message|>
+      delta_token_ids:
+      - 4108
+      - 200008
+    - delta_text: '{"location'
+      delta_token_ids:
+      - 10848
+      - 7693
+    - delta_text: '":"NY'
+      delta_token_ids:
+      - 7534
+      - 24202
+    - delta_text: C"}
+      delta_token_ids:
+      - 34
+      - 18583
+    - delta_text: <|call|> Then
+      delta_token_ids:
+      - 200012
+      - 7801
+    - delta_text: ' check LA'
+      delta_token_ids:
+      - 2371
+      - 13120
+    - delta_text: ' weather.'
+      delta_token_ids:
+      - 11122
+      - 13
+    - delta_text: ' <|channel|>'
+      delta_token_ids:
+      - 220
+      - 200005
+    - delta_text: commentary
+      delta_token_ids:
+      - 12606
+      - 815
+    - delta_text: ' to='
+      delta_token_ids:
+      - 316
+      - 28
+    - delta_text: functions.get
+      delta_token_ids:
+      - 44580
+      - 775
+    - delta_text: '_weather '
+      delta_token_ids:
+      - 170154
+      - 220
+    - delta_text: <|constrain|>json
+      delta_token_ids:
+      - 200003
+      - 4108
+    - delta_text: <|message|>{"
+      delta_token_ids:
+      - 200008
+      - 10848
+    - delta_text: location":"
+      delta_token_ids:
+      - 7693
+      - 7534
+    - delta_text: LA"}
+      delta_token_ids:
+      - 11991
+      - 18583
+    - delta_text: <|call|>
+      delta_token_ids:
+      - 200012
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: tool_calls

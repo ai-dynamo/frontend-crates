@@ -1,0 +1,32 @@
+family: deepseek_v3_2
+mode: streamv2
+model_label: DeepSeek V3.2
+cases:
+  TOOLCALLING.streamv2.9.a:
+    description: Empty model text
+    ref: derived from TOOLCALLING.batch.9.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: ''
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.9.b:
+    description: Blank / whitespace-only model text
+    ref: derived from TOOLCALLING.batch.9.b
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '   '
+    - delta_text: ''
+      finish_reason: stop

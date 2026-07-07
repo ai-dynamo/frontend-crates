@@ -1,0 +1,42 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for sglang@0.5.12.post1 (lowest version = baseline). expected.sglang only.
+family: harmony
+mode: batch
+cases:
+  TOOLCALLING.batch.7.a:
+    expected:
+      sglang:
+        calls: []
+        normal_text: <|channel|>commentary to=functions.book_flight <|constrain|>json<|message|>{"destination":"Paris","passengers":2,"first_class":true}<|call|>
+        reason: 'Dynamo/vLLM are more spec-correct for completion-body parsing: the first assistant message may start at ''<|channel|>''; SGLang requires a redundant ''<|start|>assistant'' prefix and leaks raw markup'
+  TOOLCALLING.batch.7.b:
+    expected:
+      sglang:
+        calls: []
+        normal_text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"Tōkyō \"central\""}<|call|>
+        reason: 'Dynamo/vLLM are more spec-correct for completion-body parsing: the first assistant message may start at ''<|channel|>''; SGLang requires a redundant ''<|start|>assistant'' prefix and leaks raw markup'
+  TOOLCALLING.batch.7.c:
+    expected:
+      sglang:
+        calls: []
+        normal_text: <|channel|>commentary to=functions.set_temperature <|constrain|>json<|message|>{"celsius":"20"}<|call|>
+        reason: 'Dynamo/vLLM are more spec-correct for completion-body parsing: the first assistant message may start at ''<|channel|>''; SGLang requires a redundant ''<|start|>assistant'' prefix and leaks raw markup'
+  TOOLCALLING.batch.7.d:
+    expected:
+      sglang:
+        calls: []
+        normal_text: <|channel|>commentary to=functions.process_data <|constrain|>json<|message|>{"items":[1,2,3],"config":{"nested":true}}<|call|>
+        reason: 'Dynamo/vLLM are more spec-correct for completion-body parsing: the first assistant message may start at ''<|channel|>''; SGLang requires a redundant ''<|start|>assistant'' prefix and leaks raw markup'
+  TOOLCALLING.batch.7.e:
+    expected:
+      sglang:
+        calls: []
+        normal_text: <|channel|>commentary to=functions.process_data <|constrain|>json<|message|>{"payload":{"regions":[{"name":"west","scores":[1,2,3]},{"name":"east","scores":[4,5,6]}],"flags":{"enabled":true,"retry":null},"empty":{}}}<|call|>
+        reason: 'Dynamo/vLLM are more spec-correct for completion-body parsing: the first assistant message may start at ''<|channel|>''; SGLang requires a redundant ''<|start|>assistant'' prefix and leaks raw markup'
+  TOOLCALLING.batch.7.f:
+    expected:
+      sglang:
+        calls: []
+        normal_text: <|channel|>commentary to=functions.set_limit <|constrain|>json<|message|>{"count":9007199254740993}<|call|>
+        reason: 'Dynamo/vLLM are more spec-correct for completion-body parsing: the first assistant message may start at ''<|channel|>''; SGLang requires a redundant ''<|start|>assistant'' prefix and leaks raw markup'

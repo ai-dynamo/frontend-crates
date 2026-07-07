@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for sglang@0.5.12.post1 (lowest version = baseline). expected.sglang only.
+family: minimax_m2
+mode: stream
+cases:
+  TOOLCALLING.stream.2:
+    expected:
+      sglang:
+        calls: []
+        normal_text: '<minimax:tool_call>
+
+          <invoke name="get_weather">
+
+          <parameter name="location">NYC</parameter>
+
+          </invoke>
+
+          <invoke name="get_time">
+
+          <parameter name="timezone">EST</parameter>
+
+          </invoke>
+
+          </minimax:tool_call>'
+        reason: 'SGLang leaks the complete MiniMax tool-call block into normal_text;
+
+          Dynamo parses it as structured tool output per the M2.7 spec.'

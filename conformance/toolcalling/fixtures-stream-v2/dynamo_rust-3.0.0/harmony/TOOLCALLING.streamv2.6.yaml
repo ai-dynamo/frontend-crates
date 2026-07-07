@@ -1,0 +1,11 @@
+family: harmony
+mode: streamv2
+captured_with:
+  dynamo_rust: 3.0.0
+cases:
+  TOOLCALLING.streamv2.6.a:
+    unavailable: Dynamo v1 has no token-id ingestion path — the harmony parser is text-only (re-tokenizes text via the harmony encoding). See the harmony_text (text) row.
+  TOOLCALLING.streamv2.6.b:
+    unavailable: Dynamo v1 has no token-id ingestion path — the harmony parser is text-only (re-tokenizes text via the harmony encoding). See the harmony_text (text) row.
+  TOOLCALLING.streamv2.6.c:
+    unavailable: Dynamo v1 has no token-id ingestion path — the harmony parser is text-only (re-tokenizes text via the harmony encoding). See the harmony_text (text) row.

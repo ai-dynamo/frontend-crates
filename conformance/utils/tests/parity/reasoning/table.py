@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import functools
 import html as html_lib
 import json
 import os
@@ -466,6 +467,50 @@ def _canonical(d: dict[str, Any]) -> str:
     return json.dumps(d, sort_keys=True, separators=(",", ":"))
 
 
+def _reasoning_cmp_sig(block: Any) -> str:
+    """Canonical signature of a reasoning candidate's output; equal signatures =
+    same output. Mirrors generate_conformance_table._candidate_sig but over the
+    reasoning {reasoning_text, normal_text} block shape."""
+    if block is None or (isinstance(block, dict) and "unavailable" in block):
+        return "na"
+    if isinstance(block, dict) and "error" in block:
+        return f"err:{block.get('error')}"
+    return _canonical(block)
+
+
+def _reasoning_cmp_json(case: dict[str, Any] | None, family: str | None) -> str:
+    """Per-cell `data-cmp` payload for the reasoning panels, mirroring
+    generate_conformance_table._candidate_cmp_json but keyed on the legacy
+    reasoning impl keys (dynamo/vllm/sglang): {impl: {"sig": int, "leak": 0|1,
+    "na": 0|1}}. `sig` is a per-cell group id (impls sharing an id have identical
+    output). Only impls that appear in this cell's `expected` are included."""
+    if not isinstance(case, dict) or "expected" not in case:
+        return ""
+    expected = case.get("expected", {})
+    if not isinstance(expected, dict):
+        return ""
+    raw: dict[str, dict[str, Any]] = {}
+    for impl in ("dynamo", "vllm", "sglang"):
+        if impl not in expected:
+            continue
+        block = expected.get(impl)
+        sig = _reasoning_cmp_sig(block)
+        raw[impl] = {
+            "s": sig,
+            "leak": 1 if (isinstance(block, dict) and _block_leak_reason(block, family)) else 0,
+            # na = None/unavailable; still shown, but excluded from the diff count.
+            "na": 1 if sig == "na" else 0,
+        }
+    if not raw:
+        return ""
+    ids: dict[str, int] = {}
+    out = {
+        impl: {"sig": ids.setdefault(e["s"], len(ids)), "leak": e["leak"], "na": e["na"]}
+        for impl, e in raw.items()
+    }
+    return html_lib.escape(json.dumps(out, separators=(",", ":")), quote=True)
+
+
 _DEFAULT_REASONING_MARKUP_RE = re.compile(r"</?think>")
 _NO_AUTO_REASONING_MARKUP_RE = re.compile(r"(?!)")
 _REASONING_MARKUP_BY_FAMILY: dict[str, re.Pattern[str]] = {
@@ -664,8 +709,16 @@ def _load() -> tuple[dict[str, dict[str, Any]], list[str], dict[tuple[str, str],
                 "family": family,
                 "model_label": doc.get("model_label", family),
                 "cases": {},
+                "captured_with": {},
             },
         )
+        # Merge the fixture's captured-peer versions into the family row. Only
+        # files whose peer output was reproduced by the container carry this
+        # block (stamped by src/capture_reasoning.py), so it is a real provenance
+        # claim -- the batch and stream files for one family may differ.
+        captured = doc.get("captured_with")
+        if isinstance(captured, dict):
+            row["captured_with"].update(captured)
         for case_id, case in doc["cases"].items():
             columns.add(case_id)
             row["cases"][case_id] = case
@@ -860,10 +913,13 @@ def _cell(case: dict[str, Any] | None, family: str | None = None) -> tuple[str, 
         return "—", "missing fixture coverage"
     if "expected" not in case:
         if _is_na_stub(case):
+            # No Dynamo `expected` block, so from the Dynamo-as-reference compare view
+            # this cell is simply n/a — don't surface peer parser exceptions (V✗/S✗)
+            # in the grid. The exception detail still shows in the tooltip.
             marker = _python_exception_marker(case, family)
             if marker:
                 parts = [case["reason"], *_python_exception_tooltip_lines(case, family)]
-                return marker, "\n".join(parts)
+                return "n/a", "\n".join(parts)
             return "n/a", case["reason"]
         return "?", "fixture has no expected block"
 
@@ -1689,9 +1745,9 @@ def _tooltip_html(
 
     expected = case["expected"]
     dyn = expected.get("dynamo")
-    explanations = _explanations_for(case, dyn, family) if isinstance(dyn, dict) else ""
-    if explanations:
-        extra_sections.append(("Explanations", linkify_text_html(explanations)))
+    # Per-candidate reasons live in each candidate's own toggleable section below (so
+    # they show only when that candidate is selected), not in a global cross-engine
+    # "Explanations" blob that would name engines outside the Base/Compare selection.
     extra_sections.append(
         (
             "Harness flags",
@@ -1703,38 +1759,27 @@ def _tooltip_html(
             ),
         )
     )
-    all_engines_parity = isinstance(dyn, dict) and all(
-        isinstance(expected.get(i), dict)
-        and not expected[i].get("unavailable")
-        and "error" not in expected[i]
-        and _canonical(expected[i]) == _canonical(dyn)
-        for i in ("dynamo", "vllm", "sglang")
-    )
-
-    output_sections: list[tuple[str, str]] = []
-    if all_engines_parity:
+    # Always emit one wrapped section per impl so the shared compare-candidates JS
+    # can toggle the per-impl output block (mirrors generate_conformance_table's
+    # per-candidate `cand cand-<key>` wrapping). The optional 3rd tuple element is
+    # the wrap class, consumed by common.build_parity_tooltip_html's add_section.
+    mode = "stream" if ".stream." in case_id else "batch"
+    output_sections: list[tuple] = []
+    for impl in ("dynamo", "vllm", "sglang"):
+        blk = expected.get(impl)
+        body = _format_output_block_html(blk, family, display_family=display_family)
+        if isinstance(blk, dict) and blk.get("reason"):
+            body += "\nreason: " + html_lib.escape(str(blk["reason"]))
         output_sections.append(
             (
-                "All engines parity",
-                _format_output_block_html(
-                    dyn,
-                    family,
-                    display_family=display_family,
-                ),
+                _reasoning_cand_label(impl, mode),
+                body,
+                f"cand cand-{impl}",
+                isinstance(blk, dict) and _block_leak_reason(blk, family) is not None,
             )
         )
-    else:
-        for impl in ("dynamo", "vllm", "sglang"):
-            output_sections.append(
-                (
-                    _IMPL_DISPLAY[impl],
-                    _format_output_block_html(
-                        expected.get(impl),
-                        family,
-                        display_family=display_family,
-                    ),
-                )
-            )
+    # Show the compare candidates in the same lexical order as the bucket chips.
+    output_sections.sort(key=lambda s: s[0])
 
     dynamo_leak = (
         _dynamo_leak_reason(expected, family)
@@ -1823,10 +1868,21 @@ def _render_cell_html(
         body = f'<a href="{html_lib.escape(href)}">{label}</a>'
     else:
         body = label
+    # Compare-candidates model (shared with the toolcalling batch tab): embed the
+    # per-impl signature payload + a JS-filled marker span. JS colors the cell and
+    # fills the count from the Base/Compare selection; inactive by default (falls
+    # back to the parser-radio view before JS runs).
+    cmp_json = _reasoning_cmp_json(case, family)
+    cmp_attr = f' data-cmp="{cmp_json}"' if cmp_json else ""
+    cmp_span = (
+        '<span class="cmp-marker"><span class="marker-text"></span></span>'
+        if cmp_json
+        else ""
+    )
     return (
-        f'<td class="{classes}" data-col-hide-group="{group_key}" '
+        f'<td class="{classes}" data-col-hide-group="{group_key}"{cmp_attr} '
         f"{status_attrs} {marker_attrs}>"
-        f"{body}{tooltip}</td>"
+        f"{cmp_span}{body}{tooltip}</td>"
     )
 
 
@@ -2249,6 +2305,113 @@ def _mode_label(mode: str) -> str:
     return mode
 
 
+# Standardized reasoning candidate label base: "<Engine> <Runtime>". Dynamo's
+# reasoning parser is a Rust crate (dynamo-parsers 3.0.0); vLLM/SGLang reasoning
+# parsers are Python. Full label: "<base> <version> (<mode>)".
+_REASONING_ENGINE_RUNTIME = {
+    "dynamo": "Dynamo Rust",
+    "vllm": "vLLM Python",
+    "sglang": "SGLang Python",
+}
+
+
+@functools.lru_cache(maxsize=1)
+def _reasoning_version_by_impl() -> dict[str, str | None]:
+    """{impl: display version} for reasoning candidates: Dynamo from the v1 crate
+    Cargo.toml, vLLM/SGLang from the fixtures' captured_with. Cached so the tooltip
+    section labels can carry the same version as the compare chips without reloading
+    fixtures per cell."""
+    rows, _, _ = _load()
+    return {"dynamo": _dynamo_v1_version(), **_peer_captured_versions(rows)}
+
+
+def _reasoning_cand_label(impl: str, mode: str) -> str:
+    """Full compare-candidate label "<Engine> <Runtime> <version> (<mode>)", shared
+    by the chips and the tooltip sections so the pop-up keys match the buckets.
+    Dynamo's reasoning parser is the v1 crate (dynamo-parsers 3.x), so it reads
+    "Dynamo Rust v1 3.0.0 (batch)" / "(stream)"; peers have no crate split."""
+    base = _REASONING_ENGINE_RUNTIME.get(impl, _IMPL_DISPLAY[impl])
+    if impl == "dynamo":
+        eng, _, rt = base.partition(" ")  # "Dynamo" / "Rust" -> "Dynamo v1 Rust"
+        base = f"{eng} v1 {rt}".strip()
+    ver = _reasoning_version_by_impl().get(impl)
+    return f"{base} {ver} ({mode})" if ver else f"{base} ({mode})"
+
+
+def _panel_candidates(
+    rows: dict[str, dict[str, Any]],
+    columns: list[str],
+    display_rows: list[DisplayRow],
+    mode: str,
+) -> list[dict[str, str]]:
+    """Ordered compare-candidates for this panel: Dynamo, vLLM, SGLang — but only
+    impls that appear in at least one displayed cell's `expected`. The first
+    included candidate is the reference bucket "A"; all others default to "B".
+    Labels are "<Engine> <Runtime> <version> (<mode>)" to match the other tabs.
+    Mirrors generate_conformance_table._candidate_items (default_bucket layout)."""
+    present: set[str] = set()
+    for row in display_rows:
+        reasoning_family = row["reasoning_family"]
+        if reasoning_family is None or reasoning_family not in rows:
+            continue
+        cases = rows[reasoning_family]["cases"]
+        for case_id in columns:
+            case = cases.get(case_id)
+            expected = case.get("expected") if isinstance(case, dict) else None
+            if not isinstance(expected, dict):
+                continue
+            for impl in ("dynamo", "vllm", "sglang"):
+                if impl in expected:
+                    present.add(impl)
+    # Version sourcing (Dynamo from the v1 crate Cargo.toml, peers from the fixtures'
+    # captured_with) and the full label are shared with the tooltip sections via
+    # _reasoning_cand_label so chips and pop-up keys read identically.
+    candidates: list[dict[str, str]] = []
+    for impl in ("dynamo", "vllm", "sglang"):
+        if impl not in present:
+            continue
+        candidates.append(
+            {
+                "key": impl,
+                "label": _reasoning_cand_label(impl, mode),
+                "default_bucket": "A" if not candidates else "B",
+            }
+        )
+    return candidates
+
+
+def _peer_captured_versions(rows: dict[str, dict[str, Any]]) -> dict[str, str]:
+    """Captured peer reasoning-parser versions, keyed by impl (vllm/sglang).
+
+    Reads the `captured_with` blocks merged onto the family rows in `_load`. Only
+    one version per engine is expected across the fixtures (all captured against
+    the same container: vLLM 0.24.0 / SGLang 0.5.14). A single container per
+    engine is available, so there is no older reasoning image to support a
+    two-version compare -- each candidate just carries its real captured version.
+    The last non-empty value wins if fixtures ever disagree."""
+    key_by_impl = {"vllm": "vllm_python", "sglang": "sglang_python"}
+    out: dict[str, str] = {}
+    for row in rows.values():
+        captured = row.get("captured_with") or {}
+        for impl, key in key_by_impl.items():
+            version = captured.get(key)
+            if version:
+                out[impl] = str(version)
+    return out
+
+
+def _dynamo_v1_version() -> str | None:
+    """Version of the v1 dynamo-parsers crate (which contains the reasoning parser)."""
+    root = os.environ.get("FRONTEND_CRATES_ROOT")
+    if not root:
+        return None
+    p = Path(root) / "parsers" / "Cargo.toml"
+    if not p.exists():
+        return None
+    m = re.search(r'^version\s*=\s*"([^"]+)"', p.read_text(), re.M)
+    return m.group(1) if m else None
+
+
 def _html_panel(
     rows: dict[str, dict[str, Any]],
     columns: list[str],
@@ -2290,6 +2453,7 @@ def _html_panel(
         "body_rows": body_rows,
         "stats": _compute_stats(rows, columns, display_rows),
         "glossary_groups": _glossary_groups(descriptions, columns),
+        "candidates": _panel_candidates(rows, columns, display_rows, mode),
     }
 
 

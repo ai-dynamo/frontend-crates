@@ -1,0 +1,39 @@
+family: gemma4
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.4.a:
+    chunks:
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.4.b:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected:
+      - index: 0
+        arguments: '{"location": "NYC'
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.4.c:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.4.d:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected:
+      - index: 0
+        arguments: '{"location": "NYC'
+    - expected: []
+    - expected: []

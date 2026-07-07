@@ -1,0 +1,14 @@
+family: qwen3_coder
+mode: streamv2
+captured_with:
+  vllm_rust: 0.23.0
+cases:
+  TOOLCALLING.streamv2.13:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: unknown_tool
+        arguments: '{"location":"NYC"}'
+    - expected: []

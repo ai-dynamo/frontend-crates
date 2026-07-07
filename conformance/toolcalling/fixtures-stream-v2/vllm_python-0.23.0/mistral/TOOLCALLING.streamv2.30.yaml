@@ -1,0 +1,72 @@
+family: mistral
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.30.a:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: run_query
+    - expected:
+      - index: 0
+        arguments: '{"sql": "SELECT'
+    - expected:
+      - index: 0
+        arguments: ' a, SELECT'
+    - expected:
+      - index: 0
+        arguments: ' b"}'
+    - expected: []
+      normal_text: '[/TOOL_CALLS]'
+    - expected: []
+  TOOLCALLING.streamv2.30.b:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: run_query
+    - expected:
+      - index: 0
+        arguments: '{"sql": "SELECT'
+    - expected:
+      - index: 0
+        arguments: ' value WHERE'
+    - expected:
+      - index: 0
+        arguments: ' note'
+    - expected:
+      - index: 0
+        arguments: ' has brace'
+    - expected:
+      - index: 0
+        arguments: ' } and bracket'
+    - expected:
+      - index: 0
+        arguments: ' ]'
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.30.c:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: run_query
+    - expected:
+      - index: 0
+        arguments: '{"sql": "literal'
+    - expected:
+      - index: 0
+        arguments: ' [TOOL_CALLS marker]'
+    - expected:
+      - index: 0
+        arguments: '[]'
+    - expected:
+      - index: 0
+        arguments: '[/TOOL_CALLS marker]'
+    - expected: []
+    - expected: []

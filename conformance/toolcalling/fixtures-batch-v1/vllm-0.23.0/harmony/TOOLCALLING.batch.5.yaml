@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: harmony
+mode: batch
+cases:
+  TOOLCALLING.batch.5.a:
+    expected:
+      vllm: &id001
+        calls: []
+        normal_text: ''
+  TOOLCALLING.batch.5.b:
+    expected:
+      vllm:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+  TOOLCALLING.batch.5.c:
+    expected:
+      vllm: *id001
+  TOOLCALLING.batch.5.d:
+    expected:
+      vllm:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Boston
+        normal_text: I'll start by fetching the weather for both Boston and New York at the same time!commentary to=functions.get_weather json{"location":"New York"}
+        reason: 'Dynamo/SGLang are more spec-correct: they strip the incomplete trailing commentary envelope after extracting the complete first call; vLLM preserves protocol-stripped residue from the incomplete second call'
+  TOOLCALLING.batch.5.e:
+    expected:
+      vllm:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Boston
+        normal_text: I'll start by fetching the weather for both Boston and New York at the same time!commentary to=functions.get_weather json{"location":"New York
+        reason: 'Dynamo/SGLang are more spec-correct: they strip the incomplete trailing commentary envelope after extracting the complete first call; vLLM preserves protocol-stripped residue from the incomplete second call'

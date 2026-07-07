@@ -1,0 +1,96 @@
+family: minimax_m2
+mode: streamv2
+model_label: MiniMax 2.7
+cases:
+  TOOLCALLING.streamv2.8.a:
+    description: Narration before tool call only
+    ref: derived from TOOLCALLING.batch.8.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I will
+    - delta_text: ' check'
+    - delta_text: ' the weather. <minimax:tool_call>'
+    - delta_text: ' <invoke name="get_weather">'
+    - delta_text: ' <parameter'
+    - delta_text: ' name="location">NYC</parameter>'
+    - delta_text: ' </invoke> </minimax:tool_call>'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.8.b:
+    description: Narration after tool call only
+    ref: derived from TOOLCALLING.batch.8.b
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <minimax:tool_call> <invoke
+    - delta_text: ' name="get_weather">'
+    - delta_text: ' <parameter name="location">NYC</parameter>'
+    - delta_text: ' </invoke> </minimax:tool_call>'
+    - delta_text: ' Let'
+    - delta_text: ' me know'
+    - delta_text: ' if you need'
+    - delta_text: ' more.'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.8.c:
+    description: Narration both before and after (sandwich)
+    ref: derived from TOOLCALLING.batch.8.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I will
+    - delta_text: ' check'
+    - delta_text: ' the weather. <minimax:tool_call>'
+    - delta_text: ' <invoke name="get_weather">'
+    - delta_text: ' <parameter'
+    - delta_text: ' name="location">NYC</parameter>'
+    - delta_text: ' </invoke> </minimax:tool_call> Let'
+    - delta_text: ' me'
+    - delta_text: ' know if'
+    - delta_text: ' you'
+    - delta_text: ' need more.'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.8.d:
+    description: Narration between multiple tool calls
+    ref: derived from TOOLCALLING.batch.8.d
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: I will
+    - delta_text: ' check'
+    - delta_text: ' the weather. <minimax:tool_call>'
+    - delta_text: ' <invoke name="get_weather">'
+    - delta_text: ' <parameter'
+    - delta_text: ' name="location">NYC</parameter>'
+    - delta_text: ' </invoke> </minimax:tool_call> Then'
+    - delta_text: ' check'
+    - delta_text: ' LA weather.'
+    - delta_text: ' <minimax:tool_call>'
+    - delta_text: ' <invoke name="get_weather">'
+    - delta_text: ' <parameter'
+    - delta_text: ' name="location">LA</parameter> </invoke>'
+    - delta_text: ' </minimax:tool_call>'
+    - delta_text: ''
+      finish_reason: tool_calls

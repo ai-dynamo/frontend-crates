@@ -1,0 +1,24 @@
+family: nemotron_deci
+mode: streamv2
+model_label: Nemotron (DeciLM) v1/v2
+cases:
+  TOOLCALLING.streamv2.10:
+    description: Duplicate calls (same name twice)
+    ref: derived from TOOLCALLING.batch.10
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '<TOOLCALL>[{"name":'
+    - delta_text: ' "get_weather",'
+    - delta_text: ' "arguments": {"location": "NYC"}},'
+    - delta_text: ' {"name": "get_weather",'
+    - delta_text: ' "arguments":'
+    - delta_text: ' {"location": "LA"}}]'
+    - delta_text: </TOOLCALL>
+    - delta_text: ''
+      finish_reason: stop

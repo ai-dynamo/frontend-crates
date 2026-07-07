@@ -1,0 +1,22 @@
+family: deepseek_v4
+mode: streamv2
+model_label: DeepSeek V4
+cases:
+  TOOLCALLING.streamv2.1:
+    description: Single tool call (happy path)
+    ref: derived from TOOLCALLING.batch.1
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <｜DSML｜tool_calls> <｜DSML｜invoke
+    - delta_text: ' name="get_weather">'
+    - delta_text: ' <｜DSML｜parameter name="location" string="true">'
+    - delta_text: NYC</｜DSML｜parameter> </｜DSML｜invoke>
+    - delta_text: ' </｜DSML｜tool_calls>'
+    - delta_text: ''
+      finish_reason: stop

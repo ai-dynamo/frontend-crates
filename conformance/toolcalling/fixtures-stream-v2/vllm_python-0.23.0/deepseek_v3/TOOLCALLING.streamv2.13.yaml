@@ -1,0 +1,16 @@
+family: deepseek_v3
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.13:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: unknown_tool
+    - expected: []
+    - expected: []
+    - expected: []

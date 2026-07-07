@@ -1,0 +1,9 @@
+family: minimax_m2
+mode: streamv2
+captured_with:
+  dynamo_rust: 3.0.0
+cases:
+  TOOLCALLING.streamv2.13:
+    chunks:
+    - expected: []
+    - expected: []

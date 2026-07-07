@@ -1,0 +1,32 @@
+family: qwen3_coder
+mode: streamv2
+model_label: Qwen 3 Coder
+cases:
+  TOOLCALLING.streamv2.6.a:
+    description: Function block with no <parameter>
+    ref: derived from TOOLCALLING.batch.6.a
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    chunks:
+    - delta_text: <tool_call> <function=get_time>
+    - delta_text: ' </function>'
+    - delta_text: ' </tool_call>'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.6.b:
+    description: Function block with extra whitespace inside
+    ref: derived from TOOLCALLING.batch.6.b
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    chunks:
+    - delta_text: <tool_call> <function=get_time>
+    - delta_text: ' </function>'
+    - delta_text: ' </tool_call>'
+    - delta_text: ''
+      finish_reason: tool_calls

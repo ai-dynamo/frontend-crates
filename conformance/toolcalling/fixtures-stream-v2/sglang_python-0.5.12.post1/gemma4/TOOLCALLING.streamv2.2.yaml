@@ -1,0 +1,54 @@
+family: gemma4
+mode: streamv2
+captured_with:
+  sglang_python: 0.5.12.post1
+cases:
+  TOOLCALLING.streamv2.2.a:
+    chunks:
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected: []
+    - expected:
+      - index: 0
+        arguments: '{"location": "NYC"}'
+      - index: 1
+        name: get_time
+    - expected:
+      - index: 1
+        arguments: '{"timezone": "EST"}'
+    - expected: []
+  TOOLCALLING.streamv2.2.c:
+    chunks:
+    - expected: []
+      normal_text: 'Both: '
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location": "NYC"}'
+    - expected:
+      - index: 1
+        name: get_time
+    - expected:
+      - index: 1
+        arguments: '{"timezone": "EST"}'
+    - expected: []
+      normal_text: ' Done.'
+    - expected: []
+  TOOLCALLING.streamv2.2.d:
+    chunks:
+    - expected:
+      - index: 1
+        name: get_weather
+    - expected: []
+    - expected:
+      - index: 1
+        arguments: '{"location": "NYC"}'
+      - index: 1
+        name: get_weather
+    - expected:
+      - index: 1
+        arguments: '{"location": "LA"}'
+    - expected: []

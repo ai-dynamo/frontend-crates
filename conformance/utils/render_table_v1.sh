@@ -12,11 +12,12 @@ set -- ${args+"${args[@]}"}
 source "$(dirname "$0")/src/_common.sh"
 
 STAGE="$UTILS/.stage"
-OUT="$STAGE/tests/parity/PARITY_v1.html"
+OUT="$ROOT/conformance/PARITY_v1.html"
 if [ "$DRY" = 1 ]; then
   echo "[dry-run] build v1 .stage, then render the old Dynamo parity table > $OUT"
   exit 0
 fi
 build_stage_v1
-( cd "$STAGE" && PYTHONPATH="$STAGE" python3 tests/parity/generate_parity_table_v1.py all --html > tests/parity/PARITY_v1.html )
+mkdir -p "$(dirname "$OUT")"
+( cd "$STAGE" && PYTHONPATH="$STAGE" python3 tests/parity/generate_parity_table_v1.py all --html > "$OUT" )
 echo "wrote $OUT"

@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: jamba
+mode: stream
+cases:
+  TOOLCALLING.stream.2:
+    expected:
+      vllm:
+        reason: vLLM's streaming jamba detector leaks the first partial wrapper chunk (<tool_cal) into normal_text and leaves the second call's arguments as an unterminated JSON fragment. Dynamo's streaming jail buffers across chunk boundaries and emits both complete calls with no leaked markup.
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        - name: get_time
+          arguments: '{"timezone": "EST"'
+        normal_text: <tool_cal

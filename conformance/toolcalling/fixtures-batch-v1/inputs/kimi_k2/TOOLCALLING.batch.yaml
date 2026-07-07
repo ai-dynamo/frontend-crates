@@ -1,0 +1,69 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Shared inputs (version-independent): no expected blocks.
+family: kimi_k2
+model_label: Kimi K2.6
+mode: batch
+cases:
+  TOOLCALLING.batch.1:
+    description: Single tool call (happy path)
+    model_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
+    tools:
+    - &id001
+      name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+  TOOLCALLING.batch.3:
+    description: No tool call (plain text)
+    model_text: Hello, how can I help you today?
+    tools:
+    - *id001
+  TOOLCALLING.batch.9.a:
+    description: Empty model text
+    model_text: ''
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+  TOOLCALLING.batch.9.b:
+    description: Blank / whitespace-only model text
+    ref: dynamo
+    model_text: '   '
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+  TOOLCALLING.batch.10:
+    description: Duplicate calls (same name twice)
+    model_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{"location":"LA"}<|tool_call_end|><|tool_calls_section_end|>
+    tools:
+    - *id001
+  TOOLCALLING.batch.30:
+    description: Separator-character case not applicable
+    reason: This case is not applicable to kimi_k2 because it uses section/call/argument sentinel tokens, not delimiter-separated call bodies.
+  TOOLCALLING.batch.31:
+    description: Multi-call separator-character case not applicable
+    reason: This case is not applicable to kimi_k2 because it uses section/call/argument sentinel tokens, not delimiter-separated call bodies.
+  TOOLCALLING.batch.13:
+    description: Unknown tool name absent from supplied tools
+    ref: dynamo
+    model_text: <|tool_calls_section_begin|><|tool_call_begin|>functions.unknown_tool:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+  TOOLCALLING.batch.13.c:
+    description: Mixed known and unknown calls not applicable
+    reason: This case is not applicable to kimi_k2 because there is no peer mixed known/unknown Kimi K2 parser case to align against.

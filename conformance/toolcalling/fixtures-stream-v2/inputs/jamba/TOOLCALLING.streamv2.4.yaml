@@ -1,0 +1,69 @@
+family: jamba
+mode: streamv2
+model_label: AI21 Jamba
+cases:
+  TOOLCALLING.streamv2.4.a:
+    description: Tool_calls wrapper with garbage
+    ref: derived from TOOLCALLING.batch.4.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <tool_calls>not
+    - delta_text: ' a'
+    - delta_text: ' json array</tool_calls>'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.4.b:
+    description: Missing close brace in JSON
+    ref: derived from TOOLCALLING.batch.4.b
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '<tool_calls>[{"name":'
+    - delta_text: ' "get_weather",'
+    - delta_text: ' "arguments": {"location": "NYC"]'
+    - delta_text: </tool_calls>
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.4.c:
+    description: Missing name key
+    ref: derived from TOOLCALLING.batch.4.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '<tool_calls>[{"arguments":'
+    - delta_text: ' {"location":'
+    - delta_text: ' "NYC"}}]</tool_calls>'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.4.d:
+    description: Missing </tool_calls> close
+    ref: derived from TOOLCALLING.batch.4.d
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '<tool_calls>[{"name":'
+    - delta_text: ' "get_weather",'
+    - delta_text: ' "arguments": {"location": "NYC"}}]'
+    - delta_text: ''
+      finish_reason: stop

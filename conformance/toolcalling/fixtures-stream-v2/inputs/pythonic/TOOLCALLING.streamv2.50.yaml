@@ -1,0 +1,22 @@
+family: pythonic
+mode: streamv2
+model_label: Llama 4 (pythonic fmt)
+cases:
+  TOOLCALLING.streamv2.50:
+    description: Complete single tool call with a grammar token split across chunk boundaries
+    ref: derived from TOOLCALLING.batch.1
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '[g'
+    - delta_text: et_
+    - delta_text: weath
+    - delta_text: er(location
+    - delta_text: ="NYC")]
+    - delta_text: ''
+      finish_reason: tool_calls

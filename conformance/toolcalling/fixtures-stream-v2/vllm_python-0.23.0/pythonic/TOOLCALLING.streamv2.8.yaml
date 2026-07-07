@@ -1,0 +1,53 @@
+family: pythonic
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.8.a:
+    chunks:
+    - expected: []
+      normal_text: I will
+    - expected: []
+      normal_text: ' check'
+    - expected: []
+      normal_text: ' the weather. [get_weather(location="NYC")]'
+    - expected: []
+  TOOLCALLING.streamv2.8.b:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.8.c:
+    chunks:
+    - expected: []
+      normal_text: I will
+    - expected: []
+      normal_text: ' check'
+    - expected: []
+      normal_text: ' the weather. [get_weather(location="NYC")]'
+    - expected: []
+      normal_text: ' Let me'
+    - expected: []
+      normal_text: ' know'
+    - expected: []
+      normal_text: ' if you'
+    - expected: []
+      normal_text: ' need more.'
+    - expected: []
+  TOOLCALLING.streamv2.8.d:
+    chunks:
+    - expected: []
+      normal_text: I will
+    - expected: []
+      normal_text: ' check'
+    - expected: []
+      normal_text: ' the weather. [get_weather(location="NYC")]'
+    - expected: []
+      normal_text: ' Then check'
+    - expected: []
+      normal_text: ' LA'
+    - expected: []
+      normal_text: ' weather. [get_weather(location="LA")]'
+    - expected: []

@@ -1,0 +1,58 @@
+family: deepseek_v3_1
+mode: streamv2
+captured_with:
+  sglang_python: 0.5.12.post1
+cases:
+  TOOLCALLING.streamv2.2.a:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected: []
+    - expected:
+      - index: 0
+        arguments: '{"timezone":"EST"}'
+    - expected: []
+  TOOLCALLING.streamv2.2.b:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location":"NYC"}'
+    - expected:
+      - index: 1
+        name: get_time
+    - expected:
+      - index: 1
+        arguments: '{"timezone":"EST"}'
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.2.c:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"timezone":"EST"}'
+    - expected: []
+    - expected: []
+      normal_text: ' Results.'
+    - expected: []
+  TOOLCALLING.streamv2.2.d:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+    - expected: []
+    - expected:
+      - index: 0
+        arguments: '{"location":"LA"}'
+    - expected: []

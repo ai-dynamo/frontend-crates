@@ -1,0 +1,17 @@
+family: deepseek_v3
+mode: streamv2
+captured_with:
+  dynamo_rust: 3.0.0
+cases:
+  TOOLCALLING.streamv2.6.a:
+    chunks:
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.6.b:
+    chunks:
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.6.c:
+    chunks:
+    - expected: []
+    - expected: []

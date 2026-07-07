@@ -2,6 +2,6 @@
 # Staged as pyproject.toml; the generator's _peer_versions() text-searches it.
 [tool.parity]
 peers = [
-  "sglang[diffusion]==0.5.12.post1",
-  "vllm[flashinfer,runai,otel]==0.23.0",
+  "sglang[diffusion]==0.5.14",
+  "vllm[flashinfer,runai,otel]==0.24.0",
 ]

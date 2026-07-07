@@ -1,0 +1,41 @@
+family: gemma4
+mode: streamv2
+model_label: Gemma 4
+cases:
+  TOOLCALLING.streamv2.6.a:
+    description: Canonical empty {} body
+    ref: derived from TOOLCALLING.batch.6.a
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    chunks:
+    - delta_text: <|tool_call>call:get_time{}<tool_call|>
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.6.b:
+    description: Whitespace inside empty {}
+    ref: derived from TOOLCALLING.batch.6.b
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    chunks:
+    - delta_text: <|tool_call>call:get_time{
+    - delta_text: ' }<tool_call|>'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.6.c:
+    description: No body (just call:name)
+    ref: derived from TOOLCALLING.batch.6.c
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    chunks:
+    - delta_text: <|tool_call>call:get_time<tool_call|>
+    - delta_text: ''
+      finish_reason: stop

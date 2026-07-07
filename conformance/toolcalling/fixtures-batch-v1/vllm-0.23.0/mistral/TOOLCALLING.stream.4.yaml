@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: mistral
+mode: stream
+cases:
+  TOOLCALLING.stream.4.a:
+    expected:
+      vllm:
+        calls:
+        - name: get_weather
+          arguments:
+            location: NYC
+        normal_text: ''
+  TOOLCALLING.stream.4.b:
+    expected:
+      vllm:
+        calls:
+        - name: get_weather
+          arguments: '{"loc'
+        normal_text: ''
+        reason: vLLM emits a malformed partial call with the incomplete argument fragment as arguments; Dynamo suppresses the unterminated call and emits empty content.
+  TOOLCALLING.stream.4.c:
+    expected:
+      vllm:
+        calls: []
+        normal_text: '[{"name": "get_weather", "arguments": {"location": "NYC"}}][/TOOL_CALLS][/TOOL_CALLS][/TOOL_CALLS]'
+        reason: vLLM streaming sees no [TOOL_CALLS] opener in the chunk, so it emits the whole string as content with no call, leaking the orphan [/TOOL_CALLS] markers verbatim. Dynamo strips the orphan close markers at the confirmed end token and recovers the complete call body without leaking markup.

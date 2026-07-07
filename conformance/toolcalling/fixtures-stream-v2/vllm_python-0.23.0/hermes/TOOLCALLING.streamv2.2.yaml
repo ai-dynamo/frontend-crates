@@ -1,0 +1,72 @@
+family: hermes
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.2.a:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location": "NYC"}'
+    - expected: []
+    - expected:
+      - index: 1
+        id: true
+        name: get_time
+    - expected:
+      - index: 1
+        arguments: '{"timezone":'
+    - expected:
+      - index: 1
+        arguments: ' "EST"}'
+    - expected: []
+  TOOLCALLING.streamv2.2.c:
+    chunks:
+    - expected: []
+      normal_text: 'Both: '
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+      - index: 0
+        arguments: '{"location":'
+    - expected:
+      - index: 0
+        arguments: ' "NYC"}'
+    - expected: []
+    - expected:
+      - index: 1
+        id: true
+        name: get_time
+    - expected:
+      - index: 1
+        arguments: '{"timezone": "EST"}'
+    - expected: []
+  TOOLCALLING.streamv2.2.d:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location": "NYC"}'
+    - expected: []
+    - expected:
+      - index: 1
+        id: true
+        name: get_weather
+    - expected:
+      - index: 1
+        arguments: '{"location":'
+    - expected:
+      - index: 1
+        arguments: ' "LA"}'
+    - expected: []

@@ -1,0 +1,27 @@
+family: llama3_json
+mode: streamv2
+model_label: Llama 3 (JSON fmt)
+cases:
+  TOOLCALLING.streamv2.50:
+    description: Complete single tool call with a grammar token split across chunk boundaries
+    ref: derived from TOOLCALLING.batch.1
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|
+    - delta_text: pyt
+    - delta_text: hon_t
+    - delta_text: ag|>{"name"
+    - delta_text: ': "get_weather", "a'
+    - delta_text: rg
+    - delta_text: ume
+    - delta_text: 'nts":'
+    - delta_text: ' {"location'
+    - delta_text: '": "NYC"}}'
+    - delta_text: ''
+      finish_reason: tool_calls

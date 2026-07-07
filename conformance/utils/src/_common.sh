@@ -48,30 +48,53 @@ _build_stage_base() {
   [ -e "$ROOT/.git" ] && ln -s "$ROOT/.git" "$STAGE/.git" || true
 }
 
+# Fixtures are versioned per impl: fixtures/inputs/ (shared inputs) + fixtures/<impl>-<version>/
+# (lowest version = full anchor, higher = changed-only overlays). Resolve the pinned
+# version of each impl into the flat tree the readers/renderers expect. Peer versions
+# come from pyproject.stub.toml; the Dynamo version from parsers/Cargo.toml.
+_resolve_toolcalling_fixtures() {
+  local out="$1"; mkdir -p "$out"
+  local vllm_v sglang_v dynamo_v
+  vllm_v=$(grep -oE 'vllm\[[^]]*\]==[^"]+' "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//')
+  sglang_v=$(grep -oE 'sglang\[[^]]*\]==[^"]+' "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//')
+  dynamo_v=$(grep -m1 -E '^version = ' "$ROOT/parsers/Cargo.toml" | sed -E 's/.*"([^"]+)".*/\1/')
+  python3 "$TOOLS/resolve_fixtures.py" \
+    --fixtures-root "$ROOT/conformance/toolcalling/fixtures-batch-v1" \
+    --out "$out" --select "dynamo-${dynamo_v}" "vllm-${vllm_v}" "sglang-${sglang_v}"
+}
+
 _copy_toolcalling_v1_fixtures() {
-  mkdir -p "$STAGE/tests/parity/toolcalling/fixtures"
-  \cp -Rf "$ROOT/conformance/toolcalling/fixtures-v1/." "$STAGE/tests/parity/toolcalling/fixtures/"
+  _resolve_toolcalling_fixtures "$STAGE/tests/parity/toolcalling/fixtures"
 }
 
 _copy_toolcalling_v2_fixtures() {
   # v2 reads v1 batch fixtures, then replaces TC stream with v2 per-chunk fixtures.
-  mkdir -p "$STAGE/tests/parity/toolcalling/fixtures"
-  for family_dir in "$ROOT/conformance/toolcalling/fixtures-v1"/*/; do
-    family="$(basename "$family_dir")"
-    mkdir -p "$STAGE/tests/parity/toolcalling/fixtures/$family"
-    for f in "$family_dir"TOOLCALLING.batch*.yaml; do
-      [ -f "$f" ] && \cp -f "$f" "$STAGE/tests/parity/toolcalling/fixtures/$family/"
+  # Resolve the versioned v1 corpus, then drop its stream fixtures so only batch remains.
+  local dst="$STAGE/tests/parity/toolcalling/fixtures"
+  _resolve_toolcalling_fixtures "$dst"
+  find "$dst" -name 'TOOLCALLING.stream*.yaml' -delete
+  # The stream-v2 corpus is versioned like the batch corpus (no unversioned anchor):
+  # inputs/ (shared per-chunk delta_text) + <impl>-<version>/ (per-impl expected;
+  # lowest version = full anchor, higher = changed-only). Resolve the PINNED (latest)
+  # peer versions into the flat tree the renderer expects; single-version impls
+  # (dynamo_rust, vllm_rust) default to their lowest. The generator re-resolves each
+  # version for the compare model.
+  local sv2="$ROOT/conformance/toolcalling/fixtures-stream-v2"
+  if [ -d "$sv2" ]; then
+    local vllm_v sglang_v tmp family f
+    vllm_v=$(grep -oE 'vllm\[[^]]*\]==[^"]+' "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//')
+    sglang_v=$(grep -oE 'sglang\[[^]]*\]==[^"]+' "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//')
+    tmp="$(mktemp -d)"
+    python3 "$TOOLS/resolve_stream_fixtures.py" \
+      --fixtures-root "$sv2" --out "$tmp" \
+      --select "vllm_python-${vllm_v}" "sglang_python-${sglang_v}"
+    for f in "$tmp"/*/TOOLCALLING.stream*.yaml; do
+      [ -f "$f" ] || continue
+      family="$(basename "$(dirname "$f")")"
+      mkdir -p "$dst/$family"
+      \cp -f "$f" "$dst/$family/"
     done
-  done
-  if [ -d "$ROOT/conformance/toolcalling/fixtures-stream-v2" ]; then
-    for family_dir in "$ROOT/conformance/toolcalling/fixtures-stream-v2"/*/; do
-      [ -d "$family_dir" ] || continue
-      family="$(basename "$family_dir")"
-      mkdir -p "$STAGE/tests/parity/toolcalling/fixtures/$family"
-      for f in "$family_dir"TOOLCALLING.stream*.yaml; do
-        [ -f "$f" ] && \cp -f "$f" "$STAGE/tests/parity/toolcalling/fixtures/$family/"
-      done
-    done
+    rm -rf "$tmp"
   fi
 }
 

@@ -1,0 +1,108 @@
+family: jamba
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.5.a:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: ''
+  TOOLCALLING.streamv2.5.b:
+    chunks:
+    - expected: []
+      normal_text: '[{"name": "get_weather",'
+    - expected: []
+      normal_text: ' "arguments":'
+    - expected: []
+      normal_text: ' {"location": "NYC"}}]</tool_calls>'
+    - expected: []
+  TOOLCALLING.streamv2.5.c:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+    - expected: []
+  TOOLCALLING.streamv2.5.d:
+    chunks:
+    - expected: []
+      normal_text: I'll start
+    - expected: []
+      normal_text: ' by'
+    - expected: []
+      normal_text: ' fetching the weather'
+    - expected: []
+      normal_text: ' for both'
+    - expected: []
+      normal_text: ' Boston'
+    - expected: []
+      normal_text: ' and New'
+    - expected: []
+      normal_text: ' York at the'
+    - expected: []
+      normal_text: ' same'
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+    - expected: []
+    - expected:
+      - index: 0
+        arguments: '{"location": "Boston"}'
+    - expected:
+      - index: 1
+        id: true
+        name: get_weather
+    - expected: []
+    - expected:
+      - index: 1
+        arguments: ''
+  TOOLCALLING.streamv2.5.e:
+    chunks:
+    - expected: []
+      normal_text: I'll start
+    - expected: []
+      normal_text: ' by'
+    - expected: []
+      normal_text: ' fetching the weather'
+    - expected: []
+      normal_text: ' for both'
+    - expected: []
+      normal_text: ' Boston'
+    - expected: []
+      normal_text: ' and New'
+    - expected: []
+      normal_text: ' York at the'
+    - expected: []
+      normal_text: ' same'
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+    - expected: []
+    - expected:
+      - index: 0
+        arguments: '{"location": "Boston"}'
+    - expected:
+      - index: 1
+        id: true
+        name: get_weather
+    - expected:
+      - index: 1
+        arguments: '{"location": "New York'
+    - expected:
+      - index: 1
+        arguments: ''

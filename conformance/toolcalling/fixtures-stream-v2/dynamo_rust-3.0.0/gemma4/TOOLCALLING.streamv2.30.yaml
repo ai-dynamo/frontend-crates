@@ -1,0 +1,29 @@
+family: gemma4
+mode: streamv2
+captured_with:
+  dynamo_rust: 3.0.0
+cases:
+  TOOLCALLING.streamv2.30.a:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: run_query
+        arguments: '{"sql":"SELECT a,b:and{brace}"}'
+    - expected: []
+  TOOLCALLING.streamv2.30.b:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: run_query
+        arguments: '{"sql":"SELECT value WHERE note has brace } and bracket ]"}'
+    - expected: []
+  TOOLCALLING.streamv2.30.c:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: run_query
+        arguments: '{"sql":"literal <|tool_call marker> call:get_time{} stays text"}'
+    - expected: []

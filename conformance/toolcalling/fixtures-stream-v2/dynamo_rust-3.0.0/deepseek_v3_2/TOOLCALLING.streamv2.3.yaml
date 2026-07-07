@@ -1,0 +1,16 @@
+family: deepseek_v3_2
+mode: streamv2
+captured_with:
+  dynamo_rust: 3.0.0
+cases:
+  TOOLCALLING.streamv2.3:
+    chunks:
+    - expected: []
+      normal_text: Hello, how
+    - expected: []
+      normal_text: ' can'
+    - expected: []
+      normal_text: ' I help you'
+    - expected: []
+      normal_text: ' today?'
+    - expected: []

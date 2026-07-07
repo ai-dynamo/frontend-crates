@@ -58,9 +58,25 @@ struct ExpCall {
 
 #[test]
 fn toolcalling_batch_via_stream_parity() {
-    let root = concat!(env!("CARGO_MANIFEST_DIR"), "/toolcalling/fixtures-v1");
+    // Versioned corpus (inputs/ + <impl>-<version>/): read the shared inputs and fold
+    // Dynamo v1's `expected.dynamo` from the (single) dynamo-<version>/ dir back in.
+    let batch_root = Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/toolcalling/fixtures-batch-v1"
+    ));
+    let inputs_root = batch_root.join("inputs");
+    let dyn_dir = std::fs::read_dir(batch_root)
+        .unwrap()
+        .filter_map(|e| e.ok().map(|e| e.path()))
+        .find(|p| {
+            p.is_dir()
+                && p.file_name()
+                    .and_then(|n| n.to_str())
+                    .is_some_and(|n| n.starts_with("dynamo-"))
+        })
+        .expect("no dynamo-<version> dir under fixtures-batch-v1");
     let mut files = Vec::new();
-    collect_yaml(Path::new(root), &mut files);
+    collect_yaml(&inputs_root, &mut files);
     files.sort();
 
     // Batch samples where the streaming parser deliberately differs from the
@@ -84,7 +100,7 @@ fn toolcalling_batch_via_stream_parity() {
 
     for path in &files {
         let yaml = std::fs::read_to_string(path).unwrap();
-        let fx: Fixture = match serde_yaml::from_str(&yaml) {
+        let mut fx: Fixture = match serde_yaml::from_str(&yaml) {
             Ok(f) => f,
             Err(e) => {
                 failures.push(format!("{}: YAML parse error: {e}", path.display()));
@@ -93,6 +109,17 @@ fn toolcalling_batch_via_stream_parity() {
         };
         if !(fx.family == "harmony" || fx.family == "deepseek_v4") || fx.mode != "batch" {
             continue;
+        }
+        let rel = path.strip_prefix(&inputs_root).unwrap();
+        let dyn_fx = std::fs::read_to_string(dyn_dir.join(rel))
+            .ok()
+            .and_then(|t| serde_yaml::from_str::<Fixture>(&t).ok());
+        if let Some(dfx) = dyn_fx {
+            for (cid, dcase) in dfx.cases {
+                if let (Some(c), Some(exp)) = (fx.cases.get_mut(&cid), dcase.expected) {
+                    c.expected = Some(exp);
+                }
+            }
         }
         eprintln!("fixture {}", fixture_name(path));
 

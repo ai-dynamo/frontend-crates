@@ -1,0 +1,41 @@
+family: gemma4
+mode: streamv2
+captured_with:
+  sglang_python: 0.5.12.post1
+cases:
+  TOOLCALLING.streamv2.30.a:
+    chunks:
+    - expected:
+      - index: 0
+        name: run_query
+    - expected: []
+    - expected:
+      - index: 0
+        arguments: '{"sql": "SELECT a,b:and{brace}"}'
+    - expected: []
+  TOOLCALLING.streamv2.30.b:
+    chunks:
+    - expected:
+      - index: 0
+        name: run_query
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        arguments: '{"sql": "SELECT value WHERE note has brace } and bracket ]"}'
+    - expected: []
+  TOOLCALLING.streamv2.30.c:
+    chunks:
+    - expected:
+      - index: 0
+        name: run_query
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        arguments: '{"sql": "literal <|tool_call marker> call:get_time{} stays text"}'
+    - expected: []

@@ -1,0 +1,33 @@
+family: glm47
+mode: streamv2
+captured_with:
+  sglang_python: 0.5.12.post1
+cases:
+  TOOLCALLING.streamv2.50:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+      - index: 0
+        arguments: '{'
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        arguments: '"location": '
+    - expected:
+      - index: 0
+        arguments: '"N'
+    - expected:
+      - index: 0
+        arguments: YC"
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        arguments: '}'
+    - expected: []

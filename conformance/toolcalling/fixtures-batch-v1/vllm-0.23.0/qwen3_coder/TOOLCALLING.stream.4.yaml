@@ -1,0 +1,38 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: qwen3_coder
+mode: stream
+cases:
+  TOOLCALLING.stream.4.a:
+    expected:
+      vllm:
+        calls: []
+        normal_text: ''
+        reason: 'Same root cause as TOOLCALLING.stream.1.a: the full body arrives in a single delta, vLLM detects `<tool_call>` and returns at qwen3coder_tool_parser.py:412 without reprocessing the rest of the chunk. The final `finish_reason=stop` chunk has no `delta_token_ids`, so the EOS-flush branch at qwen3coder_tool_parser.py:348-370 is skipped. No header or arguments are ever emitted.'
+  TOOLCALLING.stream.4.b:
+    expected:
+      vllm:
+        calls:
+        - name: get_weather
+          arguments: {}
+        normal_text: ''
+        reason: Impl-defined recovery for TOOLCALLING.batch.5-class missing end-token (per `tests/parity/README.md` "permanent divergences"). vLLM's per-parameter extraction loop (qwen3coder_tool_parser.py:540-579) requires either `</parameter>`, the next `<parameter=`, or `</function>` to delimit the value; when the stream ends mid-payload none of those are present, the loop breaks before emitting a json fragment, and the header ships with empty `arguments`. Matches SGLang.
+  TOOLCALLING.stream.4.c:
+    expected:
+      vllm:
+        calls: []
+        normal_text: '<function=get_weather>
+
+          <parameter=location>
+
+          NYC
+
+          </parameter>
+
+          </function>
+
+          </function>
+
+          </function>'
+        reason: vLLM's streaming qwen3_coder parser does not enter tool-call mode for this bare <function=...> body because the outer <tool_call> marker is missing, so it preserves the raw function markup in normal_text. Dynamo intentionally uses Qwen3-Coder's no-wrapper backoff and emits the structured call without leaking parser tags.

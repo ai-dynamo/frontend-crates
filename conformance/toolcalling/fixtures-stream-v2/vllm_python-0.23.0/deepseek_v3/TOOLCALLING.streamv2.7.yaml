@@ -1,0 +1,128 @@
+family: deepseek_v3
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.7.a:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: book_flight
+    - expected:
+      - index: 0
+        arguments: '{"destination": "Paris", "passengers":'
+    - expected:
+      - index: 0
+        arguments: ' 2,'
+    - expected:
+      - index: 0
+        arguments: ' "first_class": true}'
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.7.b:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+    - expected:
+      - index: 0
+        arguments: '{"location": "Tōkyō \"central\""}'
+    - expected: []
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.7.c:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: set_temperature
+    - expected: []
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.7.d:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: process_data
+    - expected:
+      - index: 0
+        arguments: '{"items": [1, 2,'
+    - expected:
+      - index: 0
+        arguments: ' 3]'
+    - expected:
+      - index: 0
+        arguments: ', "config":'
+    - expected: []
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.7.e:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: process_data
+    - expected:
+      - index: 0
+        arguments: '{"payload": {"regions": [{"name":'
+    - expected:
+      - index: 0
+        arguments: ' "west",'
+    - expected:
+      - index: 0
+        arguments: ' "scores": [1,'
+    - expected:
+      - index: 0
+        arguments: ' 2, 3]},'
+    - expected:
+      - index: 0
+        arguments: ' {"name":'
+    - expected:
+      - index: 0
+        arguments: ' "east", "scores":'
+    - expected:
+      - index: 0
+        arguments: ' [4,'
+    - expected:
+      - index: 0
+        arguments: ' 5, 6]'
+    - expected:
+      - index: 0
+        arguments: '}]'
+    - expected:
+      - index: 0
+        arguments: ', "flags": {"enabled":'
+    - expected:
+      - index: 0
+        arguments: ' true, "retry":'
+    - expected:
+      - index: 0
+        arguments: ' null},'
+    - expected:
+      - index: 0
+        arguments: ' "empty": {}}}'
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.7.f:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: set_limit
+    - expected: []
+    - expected: []

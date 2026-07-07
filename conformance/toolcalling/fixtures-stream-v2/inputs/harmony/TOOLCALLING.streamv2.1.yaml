@@ -1,0 +1,57 @@
+family: harmony
+mode: streamv2
+model_label: gpt-oss (harmony, token-id)
+cases:
+  TOOLCALLING.streamv2.1:
+    description: Single tool call (basic complete envelope)
+    ref: derived from TOOLCALLING.batch.1
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|channel|>comment
+      delta_token_ids:
+      - 200005
+      - 12606
+    - delta_text: ary to
+      delta_token_ids:
+      - 815
+      - 316
+    - delta_text: =functions
+      delta_token_ids:
+      - 28
+      - 44580
+    - delta_text: .get_weather
+      delta_token_ids:
+      - 775
+      - 170154
+    - delta_text: ' <|constrain|>'
+      delta_token_ids:
+      - 220
+      - 200003
+    - delta_text: json<|message|>
+      delta_token_ids:
+      - 4108
+      - 200008
+    - delta_text: '{"location'
+      delta_token_ids:
+      - 10848
+      - 7693
+    - delta_text: '":"NY'
+      delta_token_ids:
+      - 7534
+      - 24202
+    - delta_text: C"}
+      delta_token_ids:
+      - 34
+      - 18583
+    - delta_text: <|call|>
+      delta_token_ids:
+      - 200012
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: tool_calls

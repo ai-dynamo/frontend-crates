@@ -1,0 +1,7 @@
+family: nemotron_deci
+mode: streamv2
+captured_with:
+  sglang_python: 0.5.12.post1
+cases:
+  TOOLCALLING.streamv2.10:
+    unavailable: No SGLang Python parser for family 'nemotron_deci'.

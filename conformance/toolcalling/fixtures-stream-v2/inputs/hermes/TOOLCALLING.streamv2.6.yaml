@@ -1,0 +1,45 @@
+family: hermes
+mode: streamv2
+model_label: Hermes-3 / Llama variants
+cases:
+  TOOLCALLING.streamv2.6.a:
+    description: 'Canonical "arguments": {}'
+    ref: derived from TOOLCALLING.batch.6.a
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    chunks:
+    - delta_text: '<tool_call>{"name":'
+    - delta_text: ' "get_time",'
+    - delta_text: ' "arguments": {}}</tool_call>'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.6.b:
+    description: Whitespace inside arguments {}
+    ref: derived from TOOLCALLING.batch.6.b
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    chunks:
+    - delta_text: '<tool_call>{"name":'
+    - delta_text: ' "get_time",'
+    - delta_text: ' "arguments": { }}</tool_call>'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.6.c:
+    description: No arguments key
+    ref: derived from TOOLCALLING.batch.6.c
+    tools:
+    - name: get_time
+      parameters:
+        type: object
+        properties: {}
+    chunks:
+    - delta_text: '<tool_call>{"name":'
+    - delta_text: ' "get_time"}</tool_call>'
+    - delta_text: ''
+      finish_reason: tool_calls

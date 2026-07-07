@@ -1,0 +1,55 @@
+family: pythonic
+mode: streamv2
+model_label: Llama 4 (pythonic fmt)
+cases:
+  TOOLCALLING.streamv2.30.a:
+    description: Pythonic call separator `,` inside one argument string value
+    ref: derived from TOOLCALLING.batch.30.a
+    tools:
+    - name: run_query
+      parameters:
+        type: object
+        properties:
+          sql:
+            type: string
+    chunks:
+    - delta_text: '[run_query(sql="SELECT a,'
+    - delta_text: ' SELECT'
+    - delta_text: ' b")]'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.30.b:
+    description: Pythonic/list structural delimiters `}` and `]` inside one argument string value
+    ref: derived from TOOLCALLING.batch.30.b
+    tools:
+    - name: run_query
+      parameters:
+        type: object
+        properties:
+          sql:
+            type: string
+    chunks:
+    - delta_text: '[run_query(sql="SELECT value'
+    - delta_text: ' WHERE'
+    - delta_text: ' note has brace'
+    - delta_text: ' } and'
+    - delta_text: ' bracket'
+    - delta_text: ' ]")]'
+    - delta_text: ''
+      finish_reason: tool_calls
+  TOOLCALLING.streamv2.30.c:
+    description: Tool-call marker-looking `[get_time ...]` text inside one argument string value
+    ref: derived from TOOLCALLING.batch.30.c
+    tools:
+    - name: run_query
+      parameters:
+        type: object
+        properties:
+          sql:
+            type: string
+    chunks:
+    - delta_text: '[run_query(sql="literal [get_time'
+    - delta_text: ' marker]'
+    - delta_text: ' stays text")]'
+    - delta_text: ''
+      finish_reason: tool_calls

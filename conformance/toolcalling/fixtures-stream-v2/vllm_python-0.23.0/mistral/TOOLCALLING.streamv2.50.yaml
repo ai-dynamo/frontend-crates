@@ -1,0 +1,23 @@
+family: mistral
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.50:
+    chunks:
+    - expected: []
+      normal_text: '[T'
+    - expected: []
+      normal_text: OOL
+    - expected: []
+      normal_text: _CALL
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []

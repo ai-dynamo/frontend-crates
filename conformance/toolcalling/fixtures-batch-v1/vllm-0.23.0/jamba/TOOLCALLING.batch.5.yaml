@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: jamba
+mode: batch
+cases:
+  TOOLCALLING.batch.5.a:
+    expected:
+      vllm:
+        reason: vLLM's jamba detector requires the closing </tool_calls> marker and leaves the unterminated wrapper in normal_text. Dynamo recovers the complete call body (strip_markup_on_recovery) and emits no markup.
+        calls: []
+        normal_text: '<tool_calls>[{"name": "get_weather", "arguments": {"location": "NYC"}}]'
+  TOOLCALLING.batch.5.b:
+    expected:
+      vllm:
+        reason: vLLM's jamba detector leaves the orphan closing </tool_calls> plus the JSON array in normal_text when the opening marker is missing. Dynamo strips the orphan close tag and recovers the call body (discard_unparseable_wrapper) so no tool-call markup reaches the user.
+        calls: []
+        normal_text: '[{"name": "get_weather", "arguments": {"location": "NYC"}}]</tool_calls>'
+  TOOLCALLING.batch.5.c:
+    expected:
+      vllm:
+        reason: vLLM's jamba detector leaves the truncated <tool_calls> wrapper in normal_text. Dynamo strips the markup on recovery and drops the incomplete body so no tool-call markup reaches the user.
+        calls: []
+        normal_text: '<tool_calls>[{"name": "get_weather", "arguments": {"loc'
+  TOOLCALLING.batch.5.d:
+    expected:
+      vllm:
+        reason: vLLM's jamba detector requires the closing </tool_calls> marker and leaves the unterminated wrapper in normal_text. Dynamo recovers the complete multi-call body and emits no markup.
+        calls: []
+        normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<tool_calls>[{"name": "get_weather", "arguments": {"location": "Boston"}}, {"name": "get_weather", "arguments": {"location": "New York"}}]'
+  TOOLCALLING.batch.5.e:
+    expected:
+      vllm:
+        reason: vLLM's jamba detector leaves the truncated multi-call wrapper in normal_text. Dynamo recovers the two complete call bodies and drops the truncated tail, emitting no markup.
+        calls: []
+        normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<tool_calls>[{"name": "get_weather", "arguments": {"location": "Boston"}}, {"name": "get_weather", "arguments": {"location": "New York'

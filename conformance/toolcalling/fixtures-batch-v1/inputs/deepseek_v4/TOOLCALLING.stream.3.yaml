@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Shared inputs (version-independent): no expected blocks.
+family: deepseek_v4
+model_label: DeepSeek V4
+mode: stream
+cases:
+  TOOLCALLING.stream.3:
+    description: Complete single tool call with a grammar token split across chunk boundaries
+    ref: derived from TOOLCALLING.batch.1
+    chunks:
+    - delta_text: <｜
+    - delta_text: DSM
+    - delta_text: L｜too
+    - delta_text: 'l_calls>
+
+        <｜'
+    - delta_text: DSML｜invoke name="g
+    - delta_text: et
+    - delta_text: _we
+    - delta_text: ather
+    - delta_text: '">
+
+        <｜DSML｜p'
+    - delta_text: arameter name="loca
+    - delta_text: ti
+    - delta_text: on"
+    - delta_text: ' stri'
+    - delta_text: ng="true">N
+    - delta_text: YC</｜DSML｜parameter
+    - delta_text: '>
+
+        '
+    - delta_text: </｜
+    - delta_text: DSML｜
+    - delta_text: 'invoke>
+
+        </｜'
+    - delta_text: DSML｜tool_calls>
+    - delta_text: ''
+      finish_reason: tool_calls
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string

@@ -1,0 +1,138 @@
+family: deepseek_v3
+mode: streamv2
+captured_with:
+  vllm_rust: 0.23.0
+cases:
+  TOOLCALLING.streamv2.7.a:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: book_flight
+      - index: 0
+        arguments: '{"destination":'
+    - expected:
+      - index: 0
+        arguments: ' "Paris", "passengers":'
+    - expected:
+      - index: 0
+        arguments: ' 2,'
+    - expected:
+      - index: 0
+        arguments: ' "first_class": true}'
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.7.b:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_weather
+      - index: 0
+        arguments: '{"location":'
+    - expected:
+      - index: 0
+        arguments: ' "Tōkyō \"central\""}'
+    - expected: []
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.7.c:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: set_temperature
+      - index: 0
+        arguments: '{"celsius":'
+    - expected:
+      - index: 0
+        arguments: ' "20"}'
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.7.d:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: process_data
+      - index: 0
+        arguments: '{"items":'
+    - expected:
+      - index: 0
+        arguments: ' [1, 2,'
+    - expected:
+      - index: 0
+        arguments: ' 3]'
+    - expected:
+      - index: 0
+        arguments: ', "config":'
+    - expected:
+      - index: 0
+        arguments: ' {"nested": true}}'
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.7.e:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: process_data
+      - index: 0
+        arguments: '{"payload":'
+    - expected:
+      - index: 0
+        arguments: ' {"regions": [{"name":'
+    - expected:
+      - index: 0
+        arguments: ' "west",'
+    - expected:
+      - index: 0
+        arguments: ' "scores": [1,'
+    - expected:
+      - index: 0
+        arguments: ' 2, 3]},'
+    - expected:
+      - index: 0
+        arguments: ' {"name":'
+    - expected:
+      - index: 0
+        arguments: ' "east", "scores":'
+    - expected:
+      - index: 0
+        arguments: ' [4,'
+    - expected:
+      - index: 0
+        arguments: ' 5, 6]'
+    - expected:
+      - index: 0
+        arguments: '}]'
+    - expected:
+      - index: 0
+        arguments: ', "flags": {"enabled":'
+    - expected:
+      - index: 0
+        arguments: ' true, "retry":'
+    - expected:
+      - index: 0
+        arguments: ' null},'
+    - expected:
+      - index: 0
+        arguments: ' "empty": {}}}'
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.7.f:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: set_limit
+      - index: 0
+        arguments: '{"count":9007199254740993}'
+    - expected: []
+    - expected: []

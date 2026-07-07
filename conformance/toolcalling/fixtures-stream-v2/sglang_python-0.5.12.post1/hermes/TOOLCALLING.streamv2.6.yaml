@@ -1,0 +1,32 @@
+family: hermes
+mode: streamv2
+captured_with:
+  sglang_python: 0.5.12.post1
+cases:
+  TOOLCALLING.streamv2.6.a:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_time
+    - expected:
+      - index: 0
+        arguments: '{}'
+    - expected: []
+  TOOLCALLING.streamv2.6.b:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_time
+    - expected:
+      - index: 0
+        arguments: '{}'
+    - expected: []
+  TOOLCALLING.streamv2.6.c:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_time
+    - expected: []

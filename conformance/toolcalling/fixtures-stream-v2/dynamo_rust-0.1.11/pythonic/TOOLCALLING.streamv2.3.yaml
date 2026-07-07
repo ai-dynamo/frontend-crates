@@ -1,0 +1,7 @@
+family: pythonic
+mode: streamv2
+captured_with:
+  dynamo_rust: 0.1.11
+cases:
+  TOOLCALLING.streamv2.3:
+    unavailable: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.

@@ -26,7 +26,7 @@ th a:hover { background: #ffd; }
 td.model, td.parser { white-space: nowrap; }
 td.parser a { color: inherit; text-decoration: none; }
 td.parser a:hover { background: #ffd; }
-td.cell { text-align: center; width: 64px; min-width: 64px; max-width: 64px; font-weight: 400; }
+td.cell { text-align: center; width: 44px; min-width: 44px; max-width: 44px; font-weight: 400; }
 td.cell.ok         { color: #0a7d2c; }
 td.cell.donly      { color: #8b949e; }
 td.cell.documented { color: #555; }
@@ -57,6 +57,64 @@ tr.section td { background: #eef; font-weight: bold; text-align: left; }
 .toolbar-desc a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .radio-group { display: flex; align-items: center; gap: 8px; border: 1px solid #d0d7de; background: #f8fafc; border-radius: 6px; padding: 6px 8px; }
 .radio-group-label { font-size: 13px; font-weight: 600; }
+/* Compare model (all tabs): per-panel drag buckets — A=Base reference (0 or 1),
+ * B=Compare with, C=Others. Each cell shows how many selected candidates differ
+ * from Base ("=" if none); color encodes leak only (red) vs clean (green). */
+/* Detailed + Reset live at the right end of the tab row. */
+.tabs-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.cmp-reset { border: 1px solid #d0d7de; background: #fff; border-radius: 6px;
+  padding: 6px 10px; font-size: 13px; cursor: pointer; color: #333; }
+.cmp-reset:hover { background: #f1f3f5; }
+/* Base / Compare / Others are three columns that share the row width and resize. */
+.cmpctl { display: flex; gap: 10px; align-items: flex-start; margin: 16px 0 10px; }
+/* Three columns. Base holds exactly one chip, so it shrinks to that chip's width
+ * rather than claiming an even third. Compare and Others get a flex-grow set per
+ * bucket by JS (resizeBuckets) proportional to how many chips each holds, so the
+ * fuller bucket expands more; the values below are the pre-JS fallback. min-width
+ * keeps a near-empty bucket readable and droppable. */
+.cmpctl > .bucket-A { flex: 0 1 auto; min-width: min-content; }
+.cmpctl > .bucket-B { flex: 1 1 0; position: relative; min-width: min-content; }
+.cmpctl > .bucket-C { flex: 1 1 0; min-width: min-content; }
+.bucket { border: 1px solid #d0d7de; background: #f8fafc; border-radius: 6px;
+  padding: 4px 8px 6px; min-width: 0; }
+.bucket-A { border-color: #6b9bd6; background: #eef4fc; }
+.bucket-B { border-color: #7bb98a; background: #eef7f0; }
+.bucket-hd { font-size: 11px; font-weight: 700; color: #555; text-transform: uppercase;
+  letter-spacing: 0.03em; margin-bottom: 3px; }
+.bucket.drop-hover { outline: 2px dashed #2563eb; outline-offset: -2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; min-height: 24px; align-content: flex-start; }
+.chip { display: inline-flex; align-items: center; font-size: 12px; font-weight: 600;
+  background: #fff; border: 1px solid #b9c2cd; border-radius: 12px; padding: 2px 9px;
+  cursor: grab; user-select: none; white-space: nowrap; }
+.chip.dragging { opacity: 0.4; }
+.chip.chip-over { outline: 2px solid #2563eb; outline-offset: 1px; }
+/* Swap button floats on top of the Compare box at the Base/Compare seam (over the
+ * box, not occupying an in-between column). Anchored to bucket-B's left edge so it
+ * stays on the seam regardless of the narrow Base bucket's width. Hidden (out of
+ * flow) when not at a 1-vs-1 comparison, so the buckets never shift. */
+.cmp-swap { position: absolute; top: -12px; left: 0; transform: translateX(-50%); z-index: 3;
+  border: 1px solid #6b9bd6; background: #fff; border-radius: 12px; cursor: pointer;
+  font-size: 13px; line-height: 1; padding: 3px 9px; color: #174a86; box-shadow: 0 1px 2px rgba(0,0,0,0.12); }
+.cmp-swap[hidden] { display: none; }
+/* Cells: compare coloring wins over the dormant parser-status rules (!important).
+ * Numbers are not bold. */
+.cmp-marker { position: absolute; inset: 0; display: none; align-items: center;
+  justify-content: center; color: #111; pointer-events: none; font-weight: 400; }
+td.cell[data-cmp] .cell-marker { display: none !important; }
+body.view-details td.cell .cmp-marker { display: flex; }
+td.cell.cmp-eq { background: #76b884 !important; }
+body.view-overview td.cell.cmp-eq { color: #76b884; }
+td.cell.cmp-leak { background: #db7777 !important; }
+body.view-overview td.cell.cmp-leak { color: #db7777; }
+td.cell.cmp-na { background: #d3d8de !important; }
+body.view-overview td.cell.cmp-na { color: #d3d8de; }
+td.cell.cmp-nobase { background: #eceff2 !important; }
+body.view-overview td.cell.cmp-nobase { color: #eceff2; }
+/* Tooltip candidate sections: hidden until the selection shows them. */
+.ttip .cand { display: none; }
+.ttip .cand.cand-on { display: block; }
+/* Base reference's section is flagged with a marker (same color as the others). */
+.ttip .cand.cand-base .ttip-section::after { content: ' ← base reference'; font-weight: 700; }
 .radio-option { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; cursor: pointer; }
 /* The parser-radio JS hides options the active tab doesn't support via `hidden`;
    the explicit display above would otherwise override the default [hidden] rule
@@ -65,6 +123,9 @@ tr.section td { background: #eef; font-weight: bold; text-align: left; }
 .radio-option input { margin: 0; }
 .checkbox-option { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #d0d7de; background: #f8fafc; border-radius: 6px; padding: 6px 8px; font-size: 13px; cursor: pointer; }
 .checkbox-option input { margin: 0; }
+/* Detailed toggle is a subtle, boxless, grayed-out control (not a prominent button). */
+.checkbox-option.cmp-detailed { border: none; background: none; padding: 4px 2px; color: #8a8f98; }
+.checkbox-option.cmp-detailed input { accent-color: #8a8f98; }
 .view-overview .parity-option { display: none; }
 .view-overview .details-only { display: none; }
 .view-details .summary-only { display: none; }
@@ -102,7 +163,7 @@ tr.section td { background: #eef; font-weight: bold; text-align: left; }
 .view-details td.cell a { color: transparent; }
 .view-details td.cell a:hover { background: rgba(255,255,255,0.35); }
 .view-details td.cell .ttip { font-weight: 400; }
-.tabs { display: flex; gap: 4px; border-bottom: 1px solid #ccc; margin: 1em 0; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid #ccc; margin: 1em 0; align-items: center; flex-wrap: wrap; }
 .tab-button { appearance: none; border: 1px solid #ccc; border-bottom: 0; background: #f5f5f5; color: #222; padding: 6px 10px; font: inherit; cursor: pointer; border-radius: 4px 4px 0 0; }
 .tab-button.active { background: #fff; font-weight: 600; position: relative; top: 1px; }
 /* Smaller-font parenthetical in tab labels, with "batch"/"stream" color-coded so the
@@ -179,6 +240,7 @@ td.cell .ttip a, td.parser .ttip a { color: #bfdbfe; text-decoration: none; bord
 td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: transparent; }
 .ttip-head { font-weight: bold; margin-bottom: 4px; color: #fbbf24; }
 .ttip-section { font-weight: bold; margin-top: 6px; color: #93c5fd; }
+.ttip-leak { color: #ff6b6b; font-weight: 700; }
 .ttip-pre { margin: 2px 0 0 0; white-space: pre-wrap; word-break: break-word; font-family: inherit; color: #e5e7eb; }
 /* Per-chunk emit chart: input | Dynamo Rust | vLLM Rust | vLLM Python | SGLang, one row per chunk. */
 .ttip-chunks { border-collapse: collapse; margin: 3px 0 0 0; font-size: 11px; width: 100%; }

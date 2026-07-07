@@ -1,0 +1,27 @@
+family: hermes
+mode: streamv2
+captured_with:
+  vllm_rust: 0.23.0
+cases:
+  TOOLCALLING.streamv2.6.a:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_time
+      - index: 0
+        arguments: '{}'
+    - expected: []
+  TOOLCALLING.streamv2.6.b:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        name: get_time
+      - index: 0
+        arguments: '{ }'
+    - expected: []
+  TOOLCALLING.streamv2.6.c:
+    unavailable: 'vllm_rust parser not captured: tool parser parsing failed: invalid Hermes'

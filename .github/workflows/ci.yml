@@ -80,10 +80,12 @@ jobs:
           python3 -m venv /tmp/pvenv
           /tmp/pvenv/bin/pip install --quiet pyyaml jinja2
           PATH="/tmp/pvenv/bin:$PATH" conformance/utils/render_table_v1.sh
-          OUT=conformance/utils/.stage/tests/parity/PARITY_v1.html
+          PATH="/tmp/pvenv/bin:$PATH" conformance/utils/render_table_v2.sh
+          OUT=conformance/PARITY_v1.html
           test -s "$OUT"
           grep -q "TOOLCALLING.batch" "$OUT"
           grep -q "REASONING.batch" "$OUT"
+          test -s conformance/CONFORMANCE_v2.html
           echo "conformance matrix rendered: $(wc -c < "$OUT") bytes"
           cp "$OUT" conformance/utils/CONFORMITY.html
 

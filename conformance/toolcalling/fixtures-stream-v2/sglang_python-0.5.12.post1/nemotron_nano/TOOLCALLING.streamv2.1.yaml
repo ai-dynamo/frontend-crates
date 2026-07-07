@@ -1,0 +1,7 @@
+family: nemotron_nano
+mode: streamv2
+captured_with:
+  sglang_python: 0.5.12.post1
+cases:
+  TOOLCALLING.streamv2.1:
+    unavailable: No SGLang Python parser for family 'nemotron_nano'.

@@ -1,0 +1,34 @@
+family: harmony
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.1:
+    chunks:
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: get_weather
+        arguments: ''
+    - expected:
+      - index: 0
+        arguments: '{"'
+      - index: 0
+        arguments: location
+    - expected:
+      - index: 0
+        arguments: '":"'
+      - index: 0
+        arguments: NY
+    - expected:
+      - index: 0
+        arguments: C
+      - index: 0
+        arguments: '"}'
+    - expected: []
+    - expected: []

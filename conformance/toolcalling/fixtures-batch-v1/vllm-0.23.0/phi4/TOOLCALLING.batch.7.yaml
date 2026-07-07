@@ -1,0 +1,42 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: phi4
+mode: batch
+cases:
+  TOOLCALLING.batch.7.a:
+    expected:
+      vllm:
+        calls:
+        - name: book_flight
+          arguments:
+            destination: Paris
+            passengers: 2
+            first_class: true
+        normal_text: ''
+  TOOLCALLING.batch.7.b:
+    expected:
+      vllm:
+        calls:
+        - name: get_weather
+          arguments:
+            location: Tōkyō "central"
+        normal_text: ''
+  TOOLCALLING.batch.7.c:
+    expected:
+      vllm:
+        calls:
+        - name: set_temperature
+          arguments:
+            celsius: '20'
+        normal_text: ''
+  TOOLCALLING.batch.7.d:
+    expected:
+      vllm:
+        calls: []
+        normal_text: ''
+  TOOLCALLING.batch.7.e:
+    expected:
+      vllm:
+        calls: []
+        normal_text: ''

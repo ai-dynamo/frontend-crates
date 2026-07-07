@@ -67,6 +67,8 @@ import json
 import os
 import re
 import subprocess
+import sys
+import tempfile
 import zoneinfo
 from pathlib import Path
 from typing import Any
@@ -82,6 +84,7 @@ from tests.parity.common import (
 )
 from tests.parity.markup import colorize_markup, colorize_stream_deltas
 from tests.parity.reasoning import table as reasoning_table
+from tests.parity.toolcalling import table as toolcalling_table
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures"
@@ -163,6 +166,7 @@ from markers import (  # noqa: E402,F401
 # Fixture loading + sub-case taxonomy live in fixtures.py (audit B5); re-exported here
 # so the rendering code and tests keep referring to them as module attributes. The
 # captured-with map is a shared mutable dict (load_all_cases mutates it in place).
+import fixtures  # noqa: E402  (module handle: version radios repoint fixtures.FIXTURES)
 from fixtures import (  # noqa: E402,F401
     BATCH_SUB_CASE_GROUPS,
     SPLIT_PARENT_SUBCASES,
@@ -299,6 +303,29 @@ def _impl_status_css() -> str:
         lines.append(
             f'.view-details.parity-mode.parser-{lg} td.cell:not([data-marker-parity-{canon}])::before '
             f"{{ content: attr(data-marker-parity-{lg}); }}")
+
+    # ----- per-version coloring + tooltip for the TC v1 (batch) tab -----
+    # Keyed on parser-<impl> + verv-<impl>-<slug> + data-status-<impl>-<slug>, so
+    # these override the pinned rules above when a non-default version is active.
+    # Cells without a per-version attr fall back to the pinned data-status-<impl>.
+    lines.append(".ttip .verrow { display: none; }")
+    for legacy_impl, versions in _batch_impl_versions().items():
+        canon = _VERSION_LEGACY_TO_CANON[legacy_impl]
+        for version in versions:
+            slug = toolcalling_table._version_slug(version)
+            # Version-aware tooltip: show only the active version's output block.
+            lines.append(
+                f"body.verv-{canon}-{slug} .ttip .verrow-{canon}-{slug} "
+                "{ display: block; }")
+            base = f'.view-overview.parser-{canon}.verv-{canon}-{slug} td.cell[data-status-{canon}-{slug}='
+            for status, color in overview_bg.items():
+                group([f'{base}"{status}"]'], f"background: {color}; color: {color};")
+            group([f'{base}"{s}"]' for s in ("na", "todo")],
+                  "background: #d3d8de; color: #d3d8de;")
+            dbase = f'.view-details.parser-{canon}.verv-{canon}-{slug} td.cell[data-status-{canon}-{slug}='
+            for status, color in details_bg.items():
+                group([f'{dbase}"{status}"]'], f"background: {color};")
+            group([f'{dbase}"{s}"]' for s in ("na", "todo")], "background: #e4e8ec;")
     return "\n".join(lines)
 
 
@@ -332,18 +359,28 @@ def _build_conformance_tooltip_html(
     if description:
         parts.append(f'<pre class="ttip-pre">{html_lib.escape(description)}</pre>')
 
-    def add_section(label: str, body_html: str) -> None:
+    def add_section(
+        label: str, body_html: str, wrap_class: str | None = None, leak: bool = False
+    ) -> None:
         # `html_section_labels` callers pass safe HTML (e.g. `D<sub>RS</sub>`); all
         # such labels are generator-controlled, never user input.
         shown = label if html_section_labels else html_lib.escape(label)
-        parts.append(f'<div class="ttip-section">{shown}:</div>')
-        parts.append(f'<pre class="ttip-pre">{body_html}</pre>')
+        # A leaking candidate gets a red ↯ after the label, e.g. "… (stream): ↯".
+        marker = ' <span class="ttip-leak">↯</span>' if leak else ""
+        section = (
+            f'<div class="ttip-section">{shown}:{marker}</div>'
+            f'<pre class="ttip-pre">{body_html}</pre>'
+        )
+        # Optional wrapper lets a whole labeled section toggle (per-version blocks).
+        if wrap_class:
+            section = f'<span class="{wrap_class}">{section}</span>'
+        parts.append(section)
 
     if input_label and input_html is not None:
         add_section(input_label, input_html)
 
-    for label, body_html in output_sections or []:
-        add_section(label, body_html)
+    for section in output_sections or []:
+        add_section(*section)
 
     if divergent_reasons_html:
         add_section("Divergent reasons", divergent_reasons_html)
@@ -643,6 +680,14 @@ def render_markdown(
 _IMPL_DISPLAY = IMPL_DISPLAY
 
 
+def _short_unavailable(reason: object) -> str:
+    """Collapse the verbose "… not yet implemented for this family; …" reason to a
+    terse "not yet implemented"; keep other reasons (missing peer parser, capture
+    error) verbatim since they carry specifics."""
+    r = str(reason)
+    return "not yet implemented" if "not yet implemented" in r else r
+
+
 def _format_output_block_html(block, family: str | None = None) -> str:
     """HTML rendering of an `expected.<impl>` block for tooltips.
     Applies _colorize_xml to `normal_text` so raw model output the engine
@@ -650,7 +695,7 @@ def _format_output_block_html(block, family: str | None = None) -> str:
     if not isinstance(block, dict):
         return html_lib.escape("(no expectation)")
     if block.get("unavailable"):
-        return html_lib.escape(f"unavailable: {block['unavailable']}")
+        return html_lib.escape(f"unavailable: {_short_unavailable(block['unavailable'])}")
     if "error" in block:
         return html_lib.escape(f"error matching {block['error']!r}")
     nt = block.get("normal_text", "") or ""
@@ -665,6 +710,17 @@ def _format_output_block_html(block, family: str | None = None) -> str:
         calls_line = "calls=[]"
     nt_line = f"normal_text='{colorize_markup(nt, family)}'"
     return f"{nt_line}\n{calls_line}"
+
+
+def _cand_section_body(block, family: str | None = None) -> str:
+    """A compare candidate's tooltip section body: its output block plus its own
+    `reason:` (when present). The reason lives INSIDE the candidate's toggleable
+    section — so it shows only when that candidate is selected — instead of a global
+    cross-engine "Divergent reasons" blob that would name unselected engines."""
+    body = _format_output_block_html(block, family)
+    if isinstance(block, dict) and block.get("reason"):
+        body += "\nreason: " + html_lib.escape(str(block["reason"]))
+    return body
 
 
 def _dynamo_note_sections(case: dict) -> list[tuple[str, str]]:
@@ -743,8 +799,36 @@ def _build_tooltip_html(case: dict, dyn, output_kind: str = "batch") -> str:
         for i in impl_keys
     )
 
-    output_sections: list[tuple[str, str]] = []
-    if all_engines_parity:
+    ver_status = case.get("__ver_status") or {}
+    cmp_items = case.get("__cmp") or []
+
+    output_sections: list[tuple] = []
+    if cmp_items:
+        # Merged tab: one section per candidate (parser flavor + version), each
+        # wrapped in cand-<key> and toggled by the Base/Compare selection so the
+        # tooltip shows exactly the candidates being compared.
+        for item in cmp_items:
+            blk = item["block"]
+            output_sections.append((
+                item["label"],
+                _cand_section_body(blk, family),
+                f"cand cand-{item['key']}",
+                isinstance(blk, dict) and _block_tool_call_leaks(blk),
+            ))
+    elif ver_status:
+        # Compare model (batch tab): one section per candidate (parser+version),
+        # each wrapped in cand-<key> and toggled by the Base/Compare selection so
+        # the tooltip shows exactly the candidates being compared.
+        for impl in ("dynamo_rust", "vllm_rust", "vllm_python", "sglang_python"):
+            for slug, info in (ver_status.get(impl) or {}).items():
+                key = f"{impl}-{slug}"
+                output_sections.append((
+                    _full_label(impl, info["version"], "batch"),
+                    _cand_section_body(info["block"], family),
+                    f"cand cand-{key}",
+                    isinstance(info["block"], dict) and _block_tool_call_leaks(info["block"]),
+                ))
+    elif all_engines_parity:
         output_sections.append(
             (
                 f"All available engines match ({output_kind})",
@@ -753,13 +837,16 @@ def _build_tooltip_html(case: dict, dyn, output_kind: str = "batch") -> str:
         )
     else:
         for impl in impl_keys:
-            block = _impl_get(expected, impl)
             output_sections.append(
                 (
                     f"{_IMPL_DISPLAY[impl]} {output_kind}",
-                    _format_output_block_html(block, family),
+                    _format_output_block_html(_impl_get(expected, impl), family),
                 )
             )
+
+    # Show the compare candidates in the same lexical order as the bucket chips.
+    if cmp_items or ver_status:
+        output_sections.sort(key=lambda s: s[0])
 
     reasons = _tooltip_for(case, dyn, impl_keys) if isinstance(dyn, dict) else ""
 
@@ -773,8 +860,18 @@ def _build_tooltip_html(case: dict, dyn, output_kind: str = "batch") -> str:
         input_html=None if chart else input_html,
         # When the chart is shown it carries a final "assembled" row per impl, so
         # the separate per-engine output blocks would be redundant — drop them.
-        output_sections=None if chart else output_sections,
-        divergent_reasons=reasons or None,
+        # Exception: versioned candidates (__ver_status) keep their per-candidate
+        # `cand cand-<impl>-<slug>` sections so the compare selection can toggle each
+        # version's assembled output alongside the chart.
+        output_sections=(
+            output_sections
+            if (ver_status or cmp_items)
+            else (None if chart else output_sections)
+        ),
+        # In the compare model each candidate's reason lives in its own section
+        # (via _cand_section_body), so suppress the global cross-engine blob that
+        # would name engines not in the current Base/Compare selection.
+        divergent_reasons=None if (cmp_items or ver_status) else (reasons or None),
         leak_label="↯ Dynamo tool call leaks",
         leak_text=str(dyn_leak) if dyn_leak else None,
         extra_sections=_dynamo_note_sections(case),
@@ -905,7 +1002,7 @@ def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str,
     )
     if unavailable:
         note = "; ".join(
-            f"{_IMPL_DISPLAY[i]}: {unavailable[i]}"
+            f"{_IMPL_DISPLAY[i]}: {_short_unavailable(unavailable[i])}"
             for i in IMPL_KEYS
             if i in unavailable
         )
@@ -1022,8 +1119,31 @@ def render_cell_html(
         marker_spans = _parser_marker_spans(case, impl_keys, marker_mode)
     display_text = _marker_html(text)
     cls = parity_cell_class(text)
+    # Compare-any-combination model (batch/TC v1 tab): embed the per-candidate
+    # signature payload + a JS-filled marker span. JS colors the cell and fills the
+    # count from the Base/Compare selection; falls back to the parser-radio view when
+    # inactive (e.g. before JS runs, or on other tabs).
+    # Compare model on every toolcalling tab: versioned candidates on the batch (v1)
+    # tab; per-impl candidates on the stream / stream-on-batch tabs.
+    # Versioned candidates (impl×version) when the case carries a __ver_status map
+    # (batch tab, and the streamv2 tab once its per-version overlays are wired);
+    # otherwise one candidate per impl (stream-on-batch, or a missing map).
+    if case is None:
+        cmp_json = ""
+    elif isinstance(case, dict) and case.get("__cmp"):
+        # Merged tab: both parser flavors (batch + stream on batch) in one payload.
+        cmp_json = _cmp_json_from_blocks(
+            {item["key"]: item["block"] for item in case["__cmp"]}
+        )
+    elif isinstance(case, dict) and case.get("__ver_status"):
+        cmp_json = _candidate_cmp_json(case)
+    else:
+        cmp_json = _impl_cmp_json(case, STREAM_IMPL_KEYS)
+    cmp_attr = f' data-cmp="{cmp_json}"' if cmp_json else ""
+    cmp_span = '<span class="cmp-marker"><span class="marker-text"></span></span>' if cmp_json else ""
+    marker_spans = cmp_span + marker_spans
     td_open = (
-        f'<td class="cell {cls} {band_cls}" data-col-hide-group="{col_group}" '
+        f'<td class="cell {cls} {band_cls}" data-col-hide-group="{col_group}"{cmp_attr} '
         f"{status_attrs} {marker_attrs}>"
     )
     if case is None:
@@ -1612,6 +1732,521 @@ def _peer_version_items(versions: dict[str, str]) -> list[tuple[str, str]]:
     ]
 
 
+# --- per-impl version snapshots for the TC v1 (batch) tab -----------------------
+# Version dirs use legacy impl prefixes (dynamo/vllm/sglang); map to the canonical
+# batch impl keys the cells + radios use. Discovery/slug/sort helpers are shared
+# with the parity page via toolcalling_table.
+_VERSION_LEGACY_TO_CANON = {
+    "dynamo": "dynamo_rust",
+    "vllm": "vllm_python",
+    "sglang": "sglang_python",
+}
+_IMPL_VERSION_RADIO_LABEL = {
+    "dynamo_rust": "Dynamo Rust",
+    "vllm_python": "vLLM Python",
+    "sglang_python": "SGLang Python",
+}
+
+
+def _batch_impl_versions() -> dict[str, list[str]]:
+    """Legacy-impl -> versions (ascending) for impls present on the batch tab."""
+    discovered = toolcalling_table._impl_versions()
+    return {
+        legacy: vers
+        for legacy, vers in discovered.items()
+        if _VERSION_LEGACY_TO_CANON.get(legacy) in BATCH_IMPL_KEYS
+    }
+
+
+def _batch_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, str]]]:
+    """{(family, sub): {canonical_impl: {version_slug: overview_status}}} for batch.
+
+    Resolve each impl@version (others pinned) and re-run load_all_cases("batch") so
+    keys match the rendered table (same normalization); classify with the same
+    markers._overview_status used for the pinned cells."""
+    impl_versions = _batch_impl_versions()
+    if not impl_versions:
+        return {}
+    resolver = toolcalling_table._RESOLVE_SRC_DIR / "resolve_fixtures.py"
+    src = toolcalling_table._SRC_FIXTURES
+    if not resolver.exists() or not src.is_dir():
+        return {}
+    pinned = toolcalling_table._pinned_versions(impl_versions)
+    saved_fixtures = fixtures.FIXTURES
+    saved_captured = _CAPTURED_WITH_BY_MODE.get("batch")
+    result: dict[tuple[str, str], dict[str, dict[str, str]]] = {}
+    try:
+        for legacy, versions in impl_versions.items():
+            canon = _VERSION_LEGACY_TO_CANON[legacy]
+            for version in versions:
+                slug = toolcalling_table._version_slug(version)
+                select = [
+                    f"{other}-{version if other == legacy else pinned[other]}"
+                    for other in impl_versions
+                ]
+                # Resolve under the staged fixtures parent so load_all_cases's
+                # `fp.relative_to(script_dir)` stays valid (script_dir = the module
+                # dir, above the fixtures tree).
+                with tempfile.TemporaryDirectory(dir=str(saved_fixtures.parent)) as tmp:
+                    subprocess.run(
+                        [sys.executable, str(resolver),
+                         "--fixtures-root", str(src),
+                         "--out", tmp, "--select", *select],
+                        check=True, capture_output=True,
+                    )
+                    fixtures.FIXTURES = Path(tmp)
+                    cases, _labels = load_all_cases("batch")
+                for key, case in cases.items():
+                    block = _impl_get(case.get("expected") or {}, canon)
+                    result.setdefault(key, {}).setdefault(canon, {})[slug] = {
+                        "status": _overview_status(case, canon),
+                        "block": block,
+                        "version": version,
+                        "marker": _parser_marker(case, canon),
+                        "parity_marker": _parity_marker(
+                            case, canon, BATCH_IMPL_KEYS, _BATCH_MODE_MARKER
+                        ),
+                    }
+    finally:
+        fixtures.FIXTURES = saved_fixtures
+        if saved_captured is not None:
+            _CAPTURED_WITH_BY_MODE["batch"] = saved_captured
+    return result
+
+
+def _impl_version_items() -> list[dict[str, object]]:
+    """Version-radio model for the TC v1 tab template (canonical-keyed)."""
+    impl_versions = _batch_impl_versions()
+    pinned = toolcalling_table._pinned_versions(impl_versions)
+    items: list[dict[str, object]] = []
+    for legacy, versions in impl_versions.items():
+        canon = _VERSION_LEGACY_TO_CANON[legacy]
+        default = pinned.get(legacy)
+        items.append({
+            "impl": canon,
+            "label": _IMPL_VERSION_RADIO_LABEL.get(canon, canon),
+            "default_slug": toolcalling_table._version_slug(default) if default else "",
+            "versions": [
+                {
+                    "version": v,
+                    "slug": toolcalling_table._version_slug(v),
+                    "default": v == default,
+                }
+                for v in versions
+            ],
+        })
+    return items
+
+
+# --- compare-any-combination model (TC v1 tab) ---------------------------------
+# Every (parser, version) is a "candidate". A cell reports how many of the
+# user-selected candidates differ from the chosen Base; the tooltip shows Base +
+# each selected candidate's output. All of it is computed client-side from the
+# compact per-cell `data-cmp` payload below, so any base/compare combination works.
+_CANDIDATE_SHORT = {
+    "dynamo_rust": "Dynamo",
+    "vllm_rust": "vLLM Rust",
+    "vllm_python": "vLLM",
+    "sglang_python": "SGLang",
+}
+
+# Standardized candidate label: "<Engine> <Runtime> <version> (<mode>)", e.g.
+# "Dynamo Rust 3.0.0 (batch)", "vLLM Python 0.24.0 (stream)". The runtime is part of
+# the engine display so a chip and its tooltip section read identically, and one
+# merged-tab cell distinguishes a batch parser from a stream parser on the same text
+# purely by the trailing "(mode)". Dynamo's parsers are Rust crates (dynamo-parsers
+# v1 3.0.0, dynamo-parsers-v2 0.1.11); the version disambiguates v1 vs v2.
+_ENGINE_RUNTIME = {
+    "dynamo_rust": "Dynamo Rust",
+    "vllm_rust": "vLLM Rust",
+    "vllm_python": "vLLM Python",
+    "sglang_python": "SGLang Python",
+}
+
+
+def _dynamo_vtag(version: object) -> str | None:
+    """v1 vs v2 tag for a Dynamo parser version: the dynamo-parsers-v2 crate (0.x) = v2,
+    the dynamo-parsers crate (3.x) = v1. Returns None when the version is unknown so a
+    version-less synthetic case just reads '(mode)'.
+
+    Classify by major version rather than string-matching the live parsers_v2/Cargo.toml
+    version. The two crates occupy disjoint major ranges (0.x vs 3.x), and a captured
+    fixture dir (e.g. dynamo_rust-0.1.11) keeps its capture-time version even after the
+    crate is bumped — matching the current Cargo version would silently mis-tag a
+    not-yet-recaptured dir as v1 (and, worse, drop it into the v1 reference bucket)."""
+    if not version:
+        return None
+    try:
+        major = int(str(version).split(".")[0])
+    except ValueError:
+        return None
+    return "v2" if major == 0 else "v1"
+
+
+def _full_label(impl: str, version: object, mode: str) -> str:
+    base = _ENGINE_RUNTIME.get(impl, _CANDIDATE_SHORT.get(impl, impl))
+    # Dynamo carries a v1/v2 crate tag between the engine and runtime, e.g.
+    # "Dynamo v1 Rust 3.0.0 (batch)" vs "Dynamo v2 Rust 0.1.11 (stream)". The v1 parser
+    # run against stream data goes through the streaming jail (buffer then v1 batch
+    # parse), so on the stream tab it reads "(jail+batch)". Peers have no crate
+    # split and stay "<Engine> <Runtime> <version> (<mode>)".
+    if impl == BASELINE_IMPL:
+        vtag = _dynamo_vtag(version)
+        if vtag:
+            eng, _, rt = base.partition(" ")  # "Dynamo" / "Rust" -> "Dynamo <vtag> Rust"
+            base = f"{eng} {vtag} {rt}".strip()
+            if vtag == "v1" and mode == "stream":
+                mode = "jail+batch"
+    ver = f" {version}" if version else ""
+    return f"{base}{ver} ({mode})"
+
+
+def _dynamo_v2_version() -> str | None:
+    """Version of the v2 Dynamo parser crate (dynamo-parsers-v2); the stream/v2 tabs
+    run this, not the v1 dynamo-parsers crate. captured_with only records the label
+    'Dynamo parser v2', so read the real version from parsers_v2/Cargo.toml."""
+    p = toolcalling_table._FRONTEND_CRATES_ROOT / "parsers_v2" / "Cargo.toml"
+    if not p.exists():
+        return None
+    m = re.search(r'^version\s*=\s*"([^"]+)"', p.read_text(), re.M)
+    return m.group(1) if m else None
+
+
+def _v2_display_version(impl: str) -> str | None:
+    """Display version for a v2-tab candidate: Dynamo -> the v2 crate version;
+    peers -> the engine version they were captured against."""
+    if impl == BASELINE_IMPL:
+        return _dynamo_v2_version()
+    return _clean_version((_CAPTURED_WITH_BY_MODE.get("streamv2") or {}).get(impl))
+
+
+def _cand_label(impl: str, mode: str = "streamv2") -> str:
+    """Engine+runtime+version candidate label without the trailing "(mode)", e.g.
+    'vLLM Rust 0.23.0' / 'Dynamo Rust 0.1.11'. Callers append "(stream)"/"(batch)"."""
+    base = _ENGINE_RUNTIME.get(impl, _CANDIDATE_SHORT.get(impl, impl))
+    ver = _v2_display_version(impl)
+    return f"{base} {ver}" if ver else base
+
+
+def _clean_version(v: object) -> str | None:
+    """Pull a display version from a captured_with value: 'v0.23.0 <sha>' -> '0.23.0',
+    '0.5.12.post1' -> '0.5.12.post1', 'Dynamo parser v2' -> None (no numeric version)."""
+    if not v:
+        return None
+    token = str(v).split()[0].lstrip("v")
+    return token if re.match(r"\d", token) else None
+
+
+def _impl_candidate_items(
+    impl_keys: tuple[str, ...], versions: dict[str, str] | None = None
+) -> list[dict[str, str]]:
+    """Candidates for a non-versioned tab: one per impl key, labeled with the
+    captured version when available (e.g. 'vLLM Rust 0.23.0'). First = Base (A),
+    the rest default to Compare-with (B)."""
+    versions = versions or {}
+    out: list[dict[str, str]] = []
+    for i, impl in enumerate(impl_keys):
+        short = _CANDIDATE_SHORT.get(impl, impl)
+        ver = _clean_version(versions.get(impl))
+        out.append({
+            "key": impl,
+            "label": f"{short} {ver}" if ver else short,
+            "default_bucket": "A" if i == 0 else "B",
+        })
+    return out
+
+
+def _candidate_items() -> list[dict[str, str]]:
+    """Ordered comparison candidates for the batch tab: Dynamo, then vLLM/SGLang
+    versions ascending. Each: {key, impl, version, slug, label, short, default_bucket}.
+
+    Default layout: A (reference) = the first candidate (Dynamo); B (compare with) =
+    the latest version of each peer impl; C (others) = the remaining older versions."""
+    impl_versions = _batch_impl_versions()
+    latest = {lg: (vers[-1] if vers else None) for lg, vers in impl_versions.items()}
+    out: list[dict[str, str]] = []
+    first = True
+    for legacy in ("dynamo", "vllm", "sglang"):
+        canon = _VERSION_LEGACY_TO_CANON.get(legacy)
+        for v in impl_versions.get(legacy, []):
+            slug = toolcalling_table._version_slug(v)
+            if first:
+                bucket = "A"
+                first = False
+            elif v == latest.get(legacy):
+                bucket = "B"
+            else:
+                bucket = "C"
+            out.append({
+                "key": f"{canon}-{slug}",
+                "impl": canon,
+                "version": v,
+                "slug": slug,
+                "short": _ENGINE_RUNTIME.get(canon, canon),
+                "label": _full_label(canon, v, "batch"),
+                "default_bucket": bucket,
+            })
+    return out
+
+
+# --- per-impl version snapshots for the TC v2 (stream) tab ----------------------
+# The streamv2 corpus is versioned like batch, but with a different physical layout:
+# The stream-v2 corpus is versioned like the batch corpus (no unversioned anchor):
+# fixtures-stream-v2/inputs/ (shared per-chunk delta_text) + fixtures-stream-v2/
+# <impl>-<version>/ (per-impl expected; lowest version = full anchor, higher =
+# changed-only). resolve_stream_fixtures.py reconstructs a flat tree for any selected
+# version set — the stream analogue of resolve_fixtures.py + the batch __ver_status map.
+_STREAM_SRC = (
+    toolcalling_table._FRONTEND_CRATES_ROOT / "conformance/toolcalling/fixtures-stream-v2"
+)
+
+
+def _stream_impl_versions() -> dict[str, list[str]]:
+    """{stream_impl: versions ascending} discovered from the fixtures-stream-v2/
+    <impl>-<version>/ dirs (no hardcoded anchor — the baseline is whichever version is
+    lowest). Ordered dynamo_rust, vllm_rust, vllm_python, sglang_python (canonical
+    stream column order)."""
+    found: dict[str, list[str]] = {}
+    if _STREAM_SRC.is_dir():
+        for d in _STREAM_SRC.iterdir():
+            if not d.is_dir() or d.name == "inputs" or "-" not in d.name:
+                continue
+            impl, ver = d.name.split("-", 1)
+            found.setdefault(impl, []).append(ver)
+    for impl in list(found):
+        found[impl] = sorted(set(found[impl]), key=toolcalling_table._version_sort_key)
+    order = ("dynamo_rust", "vllm_rust", "vllm_python", "sglang_python")
+    return {i: found[i] for i in order if i in found}
+
+
+def _stream_candidate_items() -> list[dict[str, str]]:
+    """Versioned comparison candidates for the stream tab. Keyed <impl>-<slug> like
+    the batch tab. Default layout: A (reference) = Dynamo v1 (jail+batch, 3.0.0) — the
+    parser that has stream coverage on every family; B (compare) = Dynamo v2 + the
+    latest of each peer; C (others) = older peer versions."""
+    impl_versions = _stream_impl_versions()
+    latest = {i: (vs[-1] if vs else None) for i, vs in impl_versions.items()}
+    out: list[dict[str, str]] = []
+    for impl in ("dynamo_rust", "vllm_rust", "vllm_python", "sglang_python"):
+        for v in impl_versions.get(impl, []):
+            slug = toolcalling_table._version_slug(v)
+            if impl == BASELINE_IMPL:
+                # Dynamo v1 (jail+batch) is the default reference; v2 goes to compare.
+                bucket = "A" if _dynamo_vtag(v) == "v1" else "B"
+            elif v == latest.get(impl):
+                bucket = "B"
+            else:
+                bucket = "C"
+            out.append({
+                "key": f"{impl}-{slug}",
+                "label": _full_label(impl, v, "stream"),
+                "default_bucket": bucket,
+            })
+    return out
+
+
+def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, dict]]]:
+    """{(family, sub): {impl: {slug: {block, version, status}}}} for the stream tab.
+
+    Resolve each versioned peer @ each of its versions (others pinned) and re-run
+    load_all_cases("streamv2") so keys match the rendered table (same assembly +
+    split-parent normalization). Single-version impls (dynamo_rust, vllm_rust) are
+    recorded once from the pinned resolve. `block` is the assembled per-impl
+    {calls, normal_text} used for the per-cell `data-cmp` signature."""
+    impl_versions = _stream_impl_versions()
+    if not impl_versions:
+        return {}
+    resolver = toolcalling_table._RESOLVE_SRC_DIR / "resolve_stream_fixtures.py"
+    if not resolver.exists() or not _STREAM_SRC.is_dir():
+        return {}
+    overlaid = {i: vs for i, vs in impl_versions.items() if len(vs) > 1}
+    pinned = {i: vs[-1] for i, vs in impl_versions.items()}
+    saved_fixtures = fixtures.FIXTURES
+    saved_captured = _CAPTURED_WITH_BY_MODE.get("streamv2")
+    result: dict[tuple[str, str], dict[str, dict[str, dict]]] = {}
+
+    def _record(cases, impl, version):
+        slug = toolcalling_table._version_slug(version)
+        for key, case in cases.items():
+            block = _impl_get(case.get("expected") or {}, impl)
+            result.setdefault(key, {}).setdefault(impl, {})[slug] = {
+                "status": _overview_status(case, impl),
+                "block": block,
+                "version": version,
+            }
+
+    def _resolve_and_load(select):
+        # Resolve under the staged fixtures parent so load_all_cases's
+        # `fp.relative_to(script_dir)` stays valid (script_dir is above the tree).
+        with tempfile.TemporaryDirectory(dir=str(saved_fixtures.parent)) as tmp:
+            subprocess.run(
+                [sys.executable, str(resolver),
+                 "--fixtures-root", str(_STREAM_SRC),
+                 "--out", tmp, "--select", *select],
+                check=True, capture_output=True,
+            )
+            fixtures.FIXTURES = Path(tmp)
+            cases, _labels = load_all_cases("streamv2")
+        return cases
+
+    try:
+        pinned_select = [f"{i}-{pinned[i]}" for i in overlaid]
+        # Baseline pinned resolve: record the single-version impls once (their block
+        # is version-independent — no overlays exist for them).
+        cases = _resolve_and_load(pinned_select)
+        for impl, vs in impl_versions.items():
+            if impl not in overlaid:
+                _record(cases, impl, vs[0])
+        # Each versioned peer @ each of its versions, other overlaid peers pinned.
+        for impl, versions in overlaid.items():
+            for v in versions:
+                select = [f"{o}-{v if o == impl else pinned[o]}" for o in overlaid]
+                cases = _resolve_and_load(select)
+                _record(cases, impl, v)
+    finally:
+        fixtures.FIXTURES = saved_fixtures
+        if saved_captured is not None:
+            _CAPTURED_WITH_BY_MODE["streamv2"] = saved_captured
+    return result
+
+
+def _candidate_sig(block) -> str:
+    """Canonical signature of a candidate's output; equal signatures = same output."""
+    if not isinstance(block, dict) or "unavailable" in block:
+        return "na"
+    if "error" in block:
+        return f"err:{block.get('error')}"
+    return json.dumps(
+        {"calls": block.get("calls") or [], "normal_text": block.get("normal_text") or ""},
+        sort_keys=True, ensure_ascii=False,
+    )
+
+
+def _cmp_json_from_blocks(blocks: dict) -> str:
+    """Per-cell `data-cmp` payload from {candidate_key: block}: {key: {sig, leak, na}}.
+    `sig` is a per-cell group id (candidates with identical output share an id);
+    `na` (unavailable) is excluded from the diff count but still shown in the tooltip."""
+    if not blocks:
+        return ""
+    ids: dict[str, int] = {}
+    out: dict[str, dict] = {}
+    for key, block in blocks.items():
+        sig = _candidate_sig(block)
+        out[key] = {
+            "sig": ids.setdefault(sig, len(ids)),
+            "leak": 1 if (isinstance(block, dict) and _block_tool_call_leaks(block)) else 0,
+            "na": 1 if sig == "na" else 0,
+        }
+    return html_lib.escape(json.dumps(out, separators=(",", ":")), quote=True)
+
+
+def _candidate_cmp_json(case: dict | None) -> str:
+    """Versioned (batch tab) payload: candidate key = <impl>-<version_slug>."""
+    ver = (case or {}).get("__ver_status") if isinstance(case, dict) else None
+    if not ver:
+        return ""
+    blocks = {
+        f"{impl}-{slug}": info.get("block")
+        for impl, by_slug in ver.items()
+        for slug, info in by_slug.items()
+    }
+    return _cmp_json_from_blocks(blocks)
+
+
+def _impl_cmp_json(case: dict | None, impl_keys: tuple[str, ...]) -> str:
+    """Non-versioned tabs (streamv2 / stream-on-batch): candidate key = impl key.
+    One capture per impl; the block is the impl's expected output for this cell."""
+    if not isinstance(case, dict):
+        return ""
+    expected = _expected(case)
+    return _cmp_json_from_blocks({impl: _impl_get(expected, impl) for impl in impl_keys})
+
+
+# --- merged compare model ("Tool Calling (batch data)" tab) ---------------------
+# The merged tab renders the v1 batch grid, but each cell compares BOTH parser
+# flavors over the same batch text: the versioned batch parsers (key <impl>-b-<slug>)
+# and the stream parsers run on the batch text (key <impl>-s-<slug>). A cell's
+# `__cmp` (ordered [{key, label, block}]) drives its data-cmp payload + per-candidate
+# tooltip sections; `_merged_candidate_items()` supplies the matching chip list.
+def _stream_on_batch_versions() -> dict[str, str]:
+    """{impl: display version} for the merged tab's stream candidates. Dynamo -> the
+    v2 crate version; peers -> the engine version the batch-on-stream fixtures were
+    captured against (their `captured_with`), since those fixtures are the source of
+    the stream blocks shown here."""
+    out: dict[str, str] = {}
+    dynv = _dynamo_v2_version()
+    if dynv:
+        out[BASELINE_IMPL] = dynv
+    for fp in sorted(STREAM_ON_BATCH_FIXTURES.glob("*/TOOLCALLING.batch*.yaml")):
+        doc = yaml.safe_load(fp.read_text()) or {}
+        for impl, ver in (doc.get("captured_with") or {}).items():
+            if impl == BASELINE_IMPL or impl not in STREAM_IMPL_KEYS:
+                continue
+            cv = _clean_version(ver)
+            if cv:
+                out.setdefault(impl, cv)
+    return out
+
+
+def _merged_candidate_items() -> list[dict[str, str]]:
+    """Chip list for the merged tab: batch parsers (versioned, keyed <impl>-b-<slug>)
+    then the stream parsers on batch (keyed <impl>-s-<slug>). Default layout: A =
+    Dynamo v1 batch (from `_candidate_items()`); B = latest vLLM Python + SGLang
+    batch; C = everything else (older batch versions + all stream candidates)."""
+    out: list[dict[str, str]] = []
+    for c in _candidate_items():
+        impl = c["impl"]
+        out.append({
+            "key": f"{impl}-b-{c['slug']}",
+            "label": _full_label(impl, c['version'], "batch"),
+            "default_bucket": c["default_bucket"],
+        })
+    stream_versions = _stream_on_batch_versions()
+    for impl in STREAM_IMPL_KEYS:
+        ver = stream_versions.get(impl)
+        slug = toolcalling_table._version_slug(ver) if ver else ""
+        out.append({
+            "key": f"{impl}-s-{slug}" if slug else f"{impl}-s",
+            "label": _full_label(impl, ver, "stream"),
+            "default_bucket": "C",
+        })
+    return out
+
+
+def _attach_merged_cmp(cases: dict) -> None:
+    """Attach `case['__cmp']` to each merged-tab batch case: the batch parsers (from
+    `__ver_status`) plus the stream parsers run on the same batch text (from the
+    batch-on-stream overlay). Keys/labels mirror `_merged_candidate_items()` so the
+    compare chips, data-cmp payloads, and `cand-<key>` tooltip sections line up."""
+    sob_cases = _build_stream_on_batch_cases(cases)
+    stream_versions = _stream_on_batch_versions()
+    for key, case in cases.items():
+        if not isinstance(case, dict):
+            continue
+        items: list[dict] = []
+        ver_status = case.get("__ver_status") or {}
+        for impl in ("dynamo_rust", "vllm_python", "sglang_python"):
+            for slug, info in (ver_status.get(impl) or {}).items():
+                items.append({
+                    "key": f"{impl}-b-{slug}",
+                    "label": _full_label(impl, info['version'], "batch"),
+                    "block": info.get("block"),
+                })
+        sob = sob_cases.get(key)
+        if sob is not None:
+            expected = _expected(sob)
+            for impl in STREAM_IMPL_KEYS:
+                ver = stream_versions.get(impl)
+                slug = toolcalling_table._version_slug(ver) if ver else ""
+                items.append({
+                    "key": f"{impl}-s-{slug}" if slug else f"{impl}-s",
+                    "label": _full_label(impl, ver, "stream"),
+                    "block": _impl_get(expected, impl),
+                })
+        if items:
+            case["__cmp"] = items
+
+
 def _compute_stats(
     cases: dict, sub_cases: list[str], families: list[str], cell_text=cell_for
 ) -> dict[str, int]:
@@ -1818,29 +2453,48 @@ def _build_sob_tooltip(case: dict, marker_context: str | None = None) -> str:
     # `chunks:`. When it's present it already shows both X_s and X_b, so the
     # separate per-engine blocks below would be redundant — skip them.
     chart = _per_chunk_chart_html(case, "stream")
-    sections: list[tuple[str, str]] = []
-    if not chart:
+    sections: list[tuple] = []
+    ver_status = case.get("__ver_status") or {}
+    if ver_status:
+        # Versioned candidates (impl×engine-version, e.g. vLLM 0.23.0 vs 0.24.0):
+        # one toggleable section each showing that version's assembled stream output.
+        # Kept alongside the chart so the Base/Compare selection reveals each
+        # candidate — the stream analogue of the batch tab's per-version blocks.
+        for impl in ("dynamo_rust", "vllm_rust", "vllm_python", "sglang_python"):
+            for slug, info in (ver_status.get(impl) or {}).items():
+                blk = info["block"]
+                sections.append((
+                    _full_label(impl, info["version"], "stream"),
+                    _cand_section_body(blk, family),
+                    f"cand cand-{impl}-{slug}",
+                    isinstance(blk, dict) and _block_tool_call_leaks(blk),
+                ))
+    elif not chart:
         for impl in IMPL_KEYS:
+            lbl = _cand_label(impl)  # friendly candidate name, e.g. "vLLM Rust 0.23.0"
+            sblk = _impl_get(expected, impl)
             sections.append(
-                (_impl_mode_label_html(impl, _STREAM_MODE_MARKER), _format_output_block_html(_impl_get(expected, impl), family))
+                (f"{lbl} (stream)", _format_output_block_html(sblk, family), f"cand cand-{impl}",
+                 isinstance(sblk, dict) and _block_tool_call_leaks(sblk))
             )
             if impl != "vllm_rust":
+                bblk = _impl_get(batch, impl)
                 sections.append(
-                    (_impl_mode_label_html(impl, _BATCH_MODE_MARKER), _format_output_block_html(_impl_get(batch, impl), family))
+                    (f"{lbl} (batch)", _format_output_block_html(bblk, family), f"cand cand-{impl}",
+                     isinstance(bblk, dict) and _block_tool_call_leaks(bblk))
                 )
-    # Color reasons: stream diverged from its own batch (X_rs/X_ps != X_rb/X_pb -> red cell).
-    reason_parts = [
-        f"{_impl_mode_marker_html(impl, _STREAM_MODE_MARKER)} output diverges from {_impl_mode_marker_html(impl, _BATCH_MODE_MARKER)} (cell is red)"
-        for impl in IMPL_KEYS
-        if _sob_calls_consistent(case, impl) is False
-    ]
+    # Show the compare candidates in the same lexical order as the bucket chips.
+    sections.sort(key=lambda s: s[0])
     return _build_conformance_tooltip_html(
         head=head,
         description=desc,
         input_label="Input" if input_html else None,
         input_html=input_html,
         output_sections=sections,
-        divergent_reasons_html="<br>".join(reason_parts) if reason_parts else None,
+        # Coloring is leak-only in the compare model, so the old cross-impl
+        # "stream diverges from batch" blob is stale and would name engines not in
+        # the current selection; each candidate's own reason is in its section.
+        divergent_reasons_html=None,
         extra_sections=_dynamo_note_sections(case),
         chart=chart,
         refs=[("Ref", case.get("ref"))],
@@ -2015,6 +2669,25 @@ def _load_html_panel(
 ) -> tuple[str, dict[str, object], bool]:
     cases, labels = load_all_cases(mode)
     cases, labels = _filter_family(cases, labels, family_filter)
+    # TC v1 (batch) tab: attach per-impl per-version status so cells can emit
+    # data-status-<impl>-<slug> for the version radios. Other tabs aren't versioned.
+    if mode == "batch":
+        ver_status = _batch_version_status_map()
+        for key, case in cases.items():
+            if isinstance(case, dict) and key in ver_status:
+                case["__ver_status"] = ver_status[key]
+        # Merged "Tool Calling (batch data)" tab: augment each cell so the compare
+        # model spans both the batch parsers (from __ver_status) and the stream
+        # parsers run on the same batch text (batch-on-stream overlay).
+        _attach_merged_cmp(cases)
+    elif mode == "streamv2":
+        # Stream analogue of the batch version map: per-cell candidates are the
+        # peer engine versions (vLLM 0.23.0/0.24.0, SGLang 0.5.12.post1/0.5.14),
+        # plus single-version Dynamo v2 + vLLM Rust.
+        ver_status = _stream_version_status_map()
+        for key, case in cases.items():
+            if isinstance(case, dict) and key in ver_status:
+                case["__ver_status"] = ver_status[key]
     has_cases = bool(cases)
     sub_cases = _discover_sub_cases(mode, cases)
     no_vllm, no_sglang = _derive_no_peer_sets(cases)
@@ -2176,109 +2849,112 @@ def _tab_button(panel: dict[str, Any]) -> str:
     )
 
 
+def _compare_legend_html() -> str:
+    return (
+        "<p><strong>Legend — compare mode:</strong> pick one <strong>Base</strong> and any number of "
+        "<strong>Compare</strong> candidates (parser + version); each cell counts how many selected "
+        "candidates produce different output than Base.</p>"
+        '<ul class="marker-defs">'
+        '<li><span style="color:#0a7d2c">=</span> every selected candidate matches Base.</li>'
+        '<li><span style="color:#8a6d3b">N</span> N selected candidates differ from Base.</li>'
+        '<li><span style="color:#8b949e">·</span> nothing available to compare (Base-only / peers not captured).</li>'
+        '<li><span style="color:#b00">↯</span> Base leaks tool call markup into <code>normal_text</code>.</li>'
+        '<li><span style="color:#aaa">n/a</span> Base has no captured output for this case.</li>'
+        "<li>Unavailable candidates never count toward the number but still appear in the hover tooltip, "
+        "which shows Base plus each selected candidate's output.</li>"
+        "</ul>"
+    )
+
+
 def _apply_common_legend(panels: list[dict[str, Any]], hrefs: dict[str, str]) -> None:
     legend_html = _common_legend_html(
         _peer_version_items(_peer_versions()),
         hrefs["pyproject_stub"],
     )
+    compare_legend = _compare_legend_html()
     for panel in panels:
-        panel["legend_html"] = legend_html
+        panel["legend_html"] = (
+            compare_legend if panel.get("id") == "tab-toolcalling-batch" else legend_html
+        )
 
 
 def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
     panels = []
-    _fixture_href_roots = {
-        "batch": hrefs["toolcalling_fixtures"],
-        "streamv2": hrefs["toolcalling_stream_fixtures"],
-    }
-    _toolbar_desc = {
-        "batch": (
-            f'Parser: <strong>v1</strong> Dynamo-synced batch parser '
-            f'(<a href="{hrefs["toolcalling_src"]}">parsers/v1/src/tool_calling/</a>) · '
-            f'Input: <strong>v1</strong> batch fixtures '
-            f'(<a href="{hrefs["toolcalling_fixtures"]}">conformance/toolcalling/fixtures-v1/</a>).'
-        ),
-        "streamv2": (
-            f'Parser: <strong>v2</strong> Dynamo parser v2 token-incremental streaming '
-            f'(<a href="{hrefs["streaming_src"]}">parsers/v2/src/tool_calling/*</a>) · '
-            f'Input: <strong>v2</strong> stream fixtures '
-            f'(<a href="{hrefs["toolcalling_stream_fixtures"]}">conformance/toolcalling/fixtures-stream-v2/</a>).'
-        ),
-    }
-    for mode in ("batch", "streamv2"):
-        _mode, panel, _has_cases = _load_html_panel(mode)
-        panel = _rewrite_panel_paths(
-            panel, "toolcalling",
-            fixture_href_root=_fixture_href_roots[mode],
-        )
-        _tc_kind = "stream" if mode == "streamv2" else "batch"
-        _tc_label, _tc_label_html = _tab_label("TC", _tc_kind, _tc_kind, mode == "streamv2")
-        panel.update(
-            {
-                "id": f"tab-toolcalling-{mode}",
-                "label": _tc_label,
-                "label_html": _tc_label_html,
-                "tab_title": (
-                    "Tool Calling stream: Dynamo parser v2 on v2 stream fixtures"
-                    if mode == "streamv2"
-                    else "Tool Calling batch: v1 code on v1 batch fixtures"
-                ),
-                "active": False,
-                "case_docs_href": (
-                    hrefs["toolcalling_streaming_cases"]
-                    if mode == "streamv2"
-                    else hrefs["toolcalling_cases"]
-                ),
-                "case_docs_label": (
-                    "lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"
-                    if mode == "streamv2"
-                    else "lib/parsers/TOOLCALLING_CASES.md"
-                ),
-                "case_prefix": f"TOOLCALLING.{mode}.",
-                "case_section_id": f"toolcalling-{mode}",
-                "parser_options": STREAM_IMPL_KEYS if mode == "streamv2" else BATCH_IMPL_KEYS,
-            }
-        )
-        panel["toolbar_desc"] = _toolbar_desc[mode]
-        panels.append(panel)
-        # After the batch panel, insert "Stream parser on batch" — the streaming
-        # parser run over the batch samples, compared to the batch parser.
-        if mode == "batch":
-            # Batch-on-stream sits between batch and stream. It shares the batch
-            # panel's renderer (see build_stream_on_batch_panel); only its identity
-            # fields and the fixture root for cell links differ. The cells claim a
-            # `fixtures/<fam>/<file>` path (the batch file name, which the overlay
-            # mirrors), so rewriting against the batch-on-stream fixture root points
-            # each link at the overlay sample.
-            stream_on_batch = build_stream_on_batch_panel()
-            _sob_label, _sob_label_html = _tab_label("TC", "batch", "stream", True)
-            stream_on_batch.update(
-                {
-                    "id": "tab-toolcalling-stream-on-batch",
-                    "label": _sob_label,
-                    "label_html": _sob_label_html,
-                    "tab_title": "Batch-on-stream: Dynamo parser v2 on v1 batch fixtures",
-                    "toolbar_desc": (
-                        f'Parser: <strong>v2</strong> Dynamo parser v2 '
-                        f'(<a href="{hrefs["streaming_src"]}">parsers/v2/src/tool_calling/*</a>) · '
-                        f'Input: <strong>v1</strong> batch fixtures '
-                        f'(<a href="{hrefs["toolcalling_fixtures"]}">conformance/toolcalling/fixtures-v1/</a>).'
-                    ),
-                    "case_docs_href": hrefs["toolcalling_cases"],
-                    "case_docs_label": "lib/parsers/TOOLCALLING_CASES.md",
-                    "case_prefix": "TOOLCALLING.batch.",
-                    "case_section_id": "toolcalling-stream-on-batch",
-                    "parser_options": STREAM_IMPL_KEYS,
-                    "details_note_html": f"<p>{_stream_parity_explainer_html('batch_on_stream')}</p>",
-                    "parity_explainer_html": "",
-                }
-            )
-            stream_on_batch = _rewrite_panel_paths(
-                stream_on_batch,
-                "toolcalling",
-                fixture_href_root=hrefs["toolcalling_batch_on_stream_fixtures"],
-            )
-            panels.append(stream_on_batch)
+
+    # --- Merged "Tool Calling (batch data)" tab ---
+    # One tab over the v1 batch input. Each cell's compare model spans BOTH parser
+    # flavors on the same batch text: the versioned batch parsers (<impl>-b-<slug>)
+    # and the stream parsers run on the batch text (<impl>-s-<slug>). This replaces
+    # the two former tabs (batch + batch-on-stream), which shared the same input.
+    _mode, batch_panel, _has_cases = _load_html_panel("batch")
+    batch_panel = _rewrite_panel_paths(
+        batch_panel, "toolcalling",
+        fixture_href_root=hrefs["toolcalling_fixtures"],
+    )
+    batch_panel.update(
+        {
+            "id": "tab-toolcalling-batch",
+            "label": "Tool Calling (batch data)",
+            "label_html": (
+                'Tool Calling <span class="tab-sub">'
+                '(<span class="w-batch">batch</span> data)</span>'
+            ),
+            "tab_title": (
+                "Tool Calling (batch data): v1 batch parsers plus v2 stream parsers "
+                "on the same v1 batch fixtures"
+            ),
+            "active": False,
+            "case_docs_href": hrefs["toolcalling_cases"],
+            "case_docs_label": "lib/parsers/TOOLCALLING_CASES.md",
+            "case_prefix": "TOOLCALLING.batch.",
+            "case_section_id": "toolcalling-batch",
+            "parser_options": BATCH_IMPL_KEYS,
+            "candidates": _merged_candidate_items(),
+            "toolbar_desc": (
+                f'Parsers: <strong>v1</strong> Dynamo-synced batch '
+                f'(<a href="{hrefs["toolcalling_src"]}">parsers/src/tool_calling/</a>) '
+                f'plus <strong>v2</strong> streaming on the same batch text '
+                f'(<a href="{hrefs["streaming_src"]}">parsers_v2/src/tool_calling/*</a>) · '
+                f'Input: <strong>v1</strong> batch fixtures '
+                f'(<a href="{hrefs["toolcalling_fixtures"]}">conformance/toolcalling/fixtures-batch-v1/</a>).'
+            ),
+        }
+    )
+    panels.append(batch_panel)
+
+    # --- "Tool Calling (stream data)" tab (per-chunk streamv2; data unchanged) ---
+    _mode, stream_panel, _has_cases = _load_html_panel("streamv2")
+    stream_panel = _rewrite_panel_paths(
+        stream_panel, "toolcalling",
+        fixture_href_root=hrefs["toolcalling_stream_fixtures"],
+    )
+    stream_panel.update(
+        {
+            "id": "tab-toolcalling-streamv2",
+            "label": "Tool Calling (stream data)",
+            "label_html": (
+                'Tool Calling <span class="tab-sub">'
+                '(<span class="w-stream">stream</span> data)</span>'
+            ),
+            "tab_title": "Tool Calling (stream data): Dynamo parser v2 on v2 stream fixtures",
+            "active": False,
+            "case_docs_href": hrefs["toolcalling_streaming_cases"],
+            "case_docs_label": "lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md",
+            "case_prefix": "TOOLCALLING.streamv2.",
+            "case_section_id": "toolcalling-streamv2",
+            "parser_options": STREAM_IMPL_KEYS,
+            "candidates": _stream_candidate_items(),
+            "toolbar_desc": (
+                f'Parser: <strong>v2</strong> Dynamo parser v2 token-incremental streaming '
+                f'(<a href="{hrefs["streaming_src"]}">parsers_v2/src/tool_calling/*</a>) · '
+                f'Input: <strong>v2</strong> stream fixtures '
+                f'(<a href="{hrefs["toolcalling_stream_fixtures"]}">conformance/toolcalling/fixtures-stream-v2/</a>).'
+            ),
+        }
+    )
+    panels.append(stream_panel)
+
+
     _apply_common_legend(panels, hrefs)
     return panels
 
@@ -2378,6 +3054,8 @@ def render_combined_html(
             output=_display_path(resolved_output_path, artifact_root),
             tabs=[_tab_button(panel) for panel in panels],
             panels=panels,
+            impl_versions=_impl_version_items(),
+            candidate_items=_candidate_items(),
         )
     )
     return _scrub_visible_conformance_text(html)

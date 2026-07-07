@@ -1,0 +1,61 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: minimax_m3
+mode: batch
+cases:
+  TOOLCALLING.batch.1:
+    expected:
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+  TOOLCALLING.batch.3:
+    expected:
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+  TOOLCALLING.batch.5.a:
+    expected:
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+  TOOLCALLING.batch.5.b:
+    expected:
+      vllm: &id001
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+  TOOLCALLING.batch.5.c:
+    expected:
+      vllm: *id001
+  TOOLCALLING.batch.5.d:
+    expected:
+      vllm: *id001
+  TOOLCALLING.batch.5.e:
+    expected:
+      vllm: *id001
+  TOOLCALLING.batch.5.f:
+    expected:
+      vllm: *id001
+  TOOLCALLING.batch.5.g:
+    expected:
+      vllm: *id001
+  TOOLCALLING.batch.9.a:
+    expected:
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+  TOOLCALLING.batch.9.b:
+    expected:
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+  TOOLCALLING.batch.10:
+    expected:
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+  TOOLCALLING.batch.13:
+    expected:
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+  TOOLCALLING.batch.13.c:
+    expected:
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.
+  TOOLCALLING.batch.13.a:
+    expected:
+      vllm:
+        unavailable: vLLM Python 0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.

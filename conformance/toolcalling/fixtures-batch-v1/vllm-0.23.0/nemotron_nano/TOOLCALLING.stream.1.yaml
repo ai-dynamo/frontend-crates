@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for vllm@0.23.0 (lowest version = baseline). expected.vllm only.
+family: nemotron_nano
+mode: stream
+cases:
+  TOOLCALLING.stream.1.a:
+    expected:
+      vllm:
+        unavailable: vLLM has no parser for family='nemotron_nano'
+  TOOLCALLING.stream.1.b:
+    expected:
+      vllm:
+        unavailable: vLLM has no parser for family='nemotron_nano'

@@ -1,0 +1,48 @@
+family: pythonic
+mode: streamv2
+captured_with:
+  vllm_python: 0.23.0
+cases:
+  TOOLCALLING.streamv2.30.a:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: run_query
+        arguments: '{"sql": "SELECT a'
+    - expected:
+      - index: 0
+        arguments: ', SELECT'
+    - expected:
+      - index: 0
+        arguments: ' b"}'
+    - expected: []
+  TOOLCALLING.streamv2.30.b:
+    chunks:
+    - expected:
+      - index: 0
+        id: true
+        name: run_query
+        arguments: '{"sql": "SELECT value'
+    - expected:
+      - index: 0
+        arguments: ' WHERE'
+    - expected:
+      - index: 0
+        arguments: ' note has brace'
+    - expected: []
+    - expected: []
+    - expected: []
+    - expected: []
+  TOOLCALLING.streamv2.30.c:
+    chunks:
+    - expected: []
+    - expected:
+      - index: 0
+        id: true
+        name: run_query
+        arguments: '{"sql": "literal [get_time marker]'
+    - expected:
+      - index: 0
+        arguments: ' stays text"}'
+    - expected: []

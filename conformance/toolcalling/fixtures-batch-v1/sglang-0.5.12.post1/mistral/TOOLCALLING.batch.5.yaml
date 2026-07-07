@@ -1,0 +1,35 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Full anchor for sglang@0.5.12.post1 (lowest version = baseline). expected.sglang only.
+family: mistral
+mode: batch
+cases:
+  TOOLCALLING.batch.5.a:
+    expected:
+      sglang:
+        calls: []
+        normal_text: ''
+        reason: SGLang's MistralDetector requires '[TOOL_CALLS] [' with a space before the JSON array; the canonical mistral_common wire format emits '[TOOL_CALLS][' with no space, so it falls to its compact path, finds no [ARGS], and returns no call. Dynamo recovers the call via the empty end-token. Real SGLang divergence on the genuine Mistral format.
+  TOOLCALLING.batch.5.b:
+    expected:
+      sglang:
+        calls: []
+        normal_text: '[{"name": "get_weather", "arguments": {"location": "NYC"}}][/TOOL_CALLS]'
+        reason: SGLang's MistralDetector matches no [TOOL_CALLS opener (an orphan [/TOOL_CALLS] close does not match) and returns the text unchanged with no call. Dynamo strips the orphan close marker and recovers the complete call body without leaking markup (TOOLCALLING.batch.5 impl-defined recovery).
+  TOOLCALLING.batch.5.c:
+    expected:
+      sglang:
+        calls: []
+        normal_text: ''
+  TOOLCALLING.batch.5.d:
+    expected:
+      sglang:
+        calls: []
+        normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+        reason: SGLang's MistralDetector requires '[TOOL_CALLS] [' with a space before the JSON array; the canonical mistral_common format emits '[TOOL_CALLS][' with no space, so it returns no call and keeps the narration prefix. Dynamo recovers both complete calls. Real SGLang divergence on the genuine Mistral format.
+  TOOLCALLING.batch.5.e:
+    expected:
+      sglang:
+        calls: []
+        normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+        reason: SGLang emits no call and keeps the narration prefix; Dynamo recovers the complete leading call (Boston) and drops the truncated trailing call.

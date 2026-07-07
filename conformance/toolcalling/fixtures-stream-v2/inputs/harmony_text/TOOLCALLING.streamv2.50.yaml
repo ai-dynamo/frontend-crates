@@ -1,0 +1,65 @@
+family: harmony_text
+mode: streamv2
+model_label: gpt-oss (harmony, text)
+cases:
+  TOOLCALLING.streamv2.50:
+    description: Complete single tool call with a grammar token split across chunk boundaries
+    ref: derived from TOOLCALLING.batch.1
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <|
+      delta_token_ids: []
+    - delta_text: cha
+      delta_token_ids: []
+    - delta_text: nnel|
+      delta_token_ids: []
+    - delta_text: '>commentary'
+      delta_token_ids:
+      - 200005
+      - 12606
+      - 815
+    - delta_text: ' to=functions.get_w'
+      delta_token_ids:
+      - 316
+      - 28
+      - 44580
+      - 775
+    - delta_text: ea
+      delta_token_ids: []
+    - delta_text: the
+      delta_token_ids: []
+    - delta_text: r <|c
+      delta_token_ids:
+      - 170154
+      - 220
+    - delta_text: onstrain|>j
+      delta_token_ids:
+      - 200003
+    - delta_text: son<|message|>{"loc
+      delta_token_ids:
+      - 4108
+      - 200008
+      - 10848
+    - delta_text: at
+      delta_token_ids: []
+    - delta_text: ion
+      delta_token_ids:
+      - 7693
+    - delta_text: '":"NY'
+      delta_token_ids:
+      - 7534
+      - 24202
+    - delta_text: C"}<|call|>
+      delta_token_ids:
+      - 34
+      - 18583
+      - 200012
+    - delta_text: ''
+      delta_token_ids: []
+      finish_reason: tool_calls

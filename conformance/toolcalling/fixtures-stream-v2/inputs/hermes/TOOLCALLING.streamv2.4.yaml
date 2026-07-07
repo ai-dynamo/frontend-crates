@@ -1,0 +1,68 @@
+family: hermes
+mode: streamv2
+model_label: Hermes-3 / Llama variants
+cases:
+  TOOLCALLING.streamv2.4.a:
+    description: Tool_call wrapper with non-JSON garbage
+    ref: derived from TOOLCALLING.batch.4.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <tool_call>not
+    - delta_text: ' even'
+    - delta_text: ' json</tool_call>'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.4.b:
+    description: Missing close brace in JSON body
+    ref: derived from TOOLCALLING.batch.4.b
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '<tool_call>{"name":'
+    - delta_text: ' "get_weather",'
+    - delta_text: ' "arguments": {"location": "NYC"</tool_call>'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.4.c:
+    description: Missing name key
+    ref: derived from TOOLCALLING.batch.4.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '<tool_call>{"arguments":'
+    - delta_text: ' {"location":'
+    - delta_text: ' "NYC"}}</tool_call>'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv2.4.d:
+    description: Missing </tool_call> close
+    ref: derived from TOOLCALLING.batch.4.d
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: '<tool_call>{"name":'
+    - delta_text: ' "get_weather",'
+    - delta_text: ' "arguments": {"location": "NYC"}}'
+    - delta_text: ''
+      finish_reason: tool_calls
