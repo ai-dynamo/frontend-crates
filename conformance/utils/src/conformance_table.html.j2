@@ -61,8 +61,7 @@
 <p class="legend summary-only">
   <span class="summary-key ok" aria-hidden="true"></span>green(<span data-overview-count="ok">0</span>) = selected implementation output is clean ·
   <span class="summary-key problem" aria-hidden="true"></span>red(<span data-overview-count="problem">0</span>) = leaks parser markup, has an expected error, or the engine parser failed to parse (<span style="font-family:ui-monospace,monospace">✗</span>) ·
-  <span class="summary-key todo" aria-hidden="true"></span>gray(<span data-overview-count="todo">0</span>) = selected parser is not implemented yet ·
-  <span class="summary-key na" aria-hidden="true"></span>gray(<span data-overview-count="na">0</span>) = not applicable, unavailable, or missing fixture.
+  <span class="summary-key na" aria-hidden="true"></span>gray(<span data-overview-count="na">0</span>) = not applicable, unavailable, missing fixture, or a family the Dynamo v2 stream parser doesn't implement.
 </p>
 <div class="legend details-only">
 {% if panel.legend_html is defined and panel.legend_html %}
@@ -126,7 +125,7 @@
 </p>
 <p class="stats details-only">
   Stats: {{ panel.stats.families }} families × {{ panel.stats.sub_cases }} sub-cases
-  = {{ panel.stats.slots }} grid slots ({{ panel.stats.todo|default(0) }} TODO, {{ panel.stats.na }} n/a, {{ panel.stats.missing }} missing).
+  = {{ panel.stats.slots }} grid slots ({{ panel.stats.na }} n/a, {{ panel.stats.missing }} missing).
   <strong>{{ panel.stats.real }}</strong> real cases:
   <span style="color:#0a7d2c">{{ panel.stats.parity }} captured-peer conformance</span> ·
   <span style="color:#555">{{ panel.stats.dynamo_only }} Dynamo Rust-only</span> ·

@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import itertools
 import json
+import os
 import re
 import subprocess
 import sys
@@ -37,6 +38,27 @@ SRC = UTILS / "src"  # internal modules moved under conformance/utils/src/
 REPO = UTILS.parents[1]
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
+
+
+def _fixtures_cache_root() -> Path:
+    """HuggingFace fixture download cache root. Fixture YAMLs live on HF (not the
+    repo) since DIS-2310, so path-existence checks resolve against the cache.
+    `_common.sh` exports CONFORMANCE_FIXTURES_ROOT pointing here."""
+    env = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
+    if env:
+        return Path(env)
+    xdg = os.environ.get("XDG_CACHE_HOME")
+    base = Path(xdg) if xdg else Path.home() / ".cache"
+    return base / "dynamo/conformance-fixtures"
+
+
+def _resolve_conformance_ref(ref: str) -> Path:
+    """Map a `conformance/...` doc path to disk: fixture trees resolve against the HF
+    cache (they're not in the repo), everything else against the repo."""
+    rel = ref[len("conformance/"):]
+    if rel.startswith(("toolcalling/fixtures", "reasoning/fixtures")):
+        return _fixtures_cache_root() / rel
+    return REPO / ref
 
 import build_stream_fixtures as b  # noqa: E402
 import capture_vllm_rust as r  # noqa: E402
@@ -474,7 +496,9 @@ def test_sob_marker_all_consistent_is_equals_and_green() -> None:
         assert m[f"data-status-{impl}"] == "ok"  # green
 
 
-def test_sob_dynamo_todo_when_no_v2_parser() -> None:
+def test_sob_dynamo_na_when_no_v2_parser() -> None:
+    # A family the Dynamo v2 stream parser doesn't implement is a plain neutral n/a
+    # (the v1 table has no "TODO" concept), not a distinct orange "todo"/"…" state.
     case = _sobcase(
         stream={
             D: {"unavailable": _TODO_MSG},
@@ -483,9 +507,9 @@ def test_sob_dynamo_todo_when_no_v2_parser() -> None:
         },
         batch={i: _calls("f") for i in (D, V, S)},
     )
-    assert g._sob_status(case, D) == "todo"
-    # dynamo unavailable -> marker falls back to the per-engine status (…)
-    assert g._stream_xeng_marker(case, D, "batch_on_stream") == "…"
+    assert g._sob_status(case, D) == "na"
+    # dynamo unavailable -> marker is a clean n/a, no distinct "…" TODO marker
+    assert g._stream_xeng_marker(case, D, "batch_on_stream") == "n/a"
     # vllm/sglang streams both present and agree -> cross-engine '='
     assert g._stream_xeng_marker(case, V, "batch_on_stream") == "="
 
@@ -766,14 +790,23 @@ _STALE_COMMAND_NAMES = (
 
 
 def test_readme_fixture_paths_exist() -> None:
-    """D1: every concrete conformance/*.yaml path in the doc set resolves (A2 regression)."""
+    """D1: every concrete conformance/*.yaml path in the doc set resolves (A2 regression).
+
+    Fixture YAMLs live on HuggingFace (not the repo) since DIS-2310, so fixture paths
+    resolve against the download cache; skip if the cache isn't populated yet."""
+    if not (_fixtures_cache_root() / "toolcalling").is_dir():
+        import pytest
+
+        pytest.skip("fixtures not downloaded (run download_fixtures.py)")
     for doc in _DOC_FILES:
         if not doc.exists():
             continue
         for ref in re.findall(r"conformance/[\w./*<>-]+\.yaml", doc.read_text()):
             if "<" in ref or "*" in ref:  # placeholder/glob, not a concrete path
                 continue
-            assert (REPO / ref).exists(), f"{doc.name}: missing fixture path {ref}"
+            assert _resolve_conformance_ref(ref).exists(), (
+                f"{doc.name}: missing fixture path {ref}"
+            )
 
 
 def test_repo_docs_have_no_stale_command_names() -> None:
@@ -837,7 +870,12 @@ def test_every_stream_family_has_registry_row_and_fixtures() -> None:
     families live under `inputs/`; the sibling `<impl>-<version>/` dirs are per-impl
     expected, not families (resolve_stream_fixtures.py folds them into the inputs)."""
     registry = yaml.safe_load((SRC / "parser_families.yaml").read_text())["families"]
-    inputs_root = REPO / "conformance" / "toolcalling" / "fixtures-stream-v2" / "inputs"
+    # Fixtures live on HuggingFace since DIS-2310; resolve against the download cache.
+    inputs_root = _fixtures_cache_root() / "toolcalling" / "fixtures-stream-v2" / "inputs"
+    if not inputs_root.is_dir():
+        import pytest
+
+        pytest.skip("fixtures not downloaded (run download_fixtures.py)")
     for fam_dir in sorted(p for p in inputs_root.iterdir() if p.is_dir()):
         assert fam_dir.name in registry, f"family {fam_dir.name} has no parser_families.yaml row"
     for fam, spec in registry.items():

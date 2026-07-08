@@ -147,8 +147,9 @@ def _overview_status(case: dict | None, impl: str) -> str:
     if not isinstance(block, dict) or "unavailable" in block:
         if _is_parser_error_unavailable(block):
             return "problem"
-        if impl == BASELINE_IMPL and _is_todo_unavailable(block):
-            return "todo"
+        # A family the Dynamo v2 stream parser doesn't implement is a plain neutral
+        # n/a (like the v1 table, which has no "TODO" concept) — not a distinct
+        # orange "todo" state.
         return "na"
     if "error" in block or _block_tool_call_leaks(block):
         return "problem"
@@ -291,8 +292,8 @@ def _parser_marker(case: dict | None, impl: str) -> str:
     if not isinstance(block, dict) or "unavailable" in block:
         if _is_parser_error_unavailable(block):
             return "✗"
-        if impl == BASELINE_IMPL and _is_todo_unavailable(block):
-            return "…"
+        # Un-implemented Dynamo v2 family: plain neutral n/a, no distinct "…" TODO
+        # marker (matches the v1 table's clean look; see _overview_status).
         return "n/a"
     if "error" in block:
         # B11: a structured (dict) error = a peer parser ran and threw -> `✗`;
@@ -451,7 +452,7 @@ def _sob_status(case: dict | None, impl: str) -> str:
     if not isinstance(stream, dict) or "unavailable" in stream:
         if _is_parser_error_unavailable(stream):
             return "problem"
-        return "todo" if (impl == BASELINE_IMPL and _is_todo_unavailable(stream)) else "na"
+        return "na"
     if "error" in stream or _block_tool_call_leaks(stream):
         return "problem"
     consistent = _sob_calls_consistent(case, impl)
@@ -475,7 +476,7 @@ def _stream_xeng_marker(case: dict | None, impl: str, marker_context: str | None
         vLLM Python stream output, including batch-on-stream) for engines whose output differs
         from this one (needs >=2 available outputs).
     Returns the `↯` leak prefix + own-batch token + cross-engine tokens, `=` when
-    none, or the per-engine status marker (`…`/`n/a`) when this engine has no
+    none, or the per-engine status marker (`n/a`) when this engine has no
     stream output."""
     if case is None:
         return "—"

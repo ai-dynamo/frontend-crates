@@ -593,8 +593,7 @@ _LEGEND_MD = (
     "(captured peer output can legitimately show imperfect engine behavior) · "
     "`!` expected-error suffix (e.g. V_pb!, S_rs! — engine crashes by design) · "
     "`✗` engine parser ran but failed to parse this input (recorded as `unavailable: … parser not captured: …`); distinct from `n/a` (not run) · "
-    "`…` Dynamo parser v2 not yet implemented for this row (TODO) · "
-    "`n/a` not applicable · "
+    "`n/a` not applicable (includes families the Dynamo v2 stream parser doesn't implement) · "
     "`—` missing fixture coverage · "
     "`†` (tool calling parser column) = no vLLM Python peer parser for this family · "
     "`§` (tool calling parser column) = no SGLang peer parser for this family."
@@ -681,11 +680,12 @@ _IMPL_DISPLAY = IMPL_DISPLAY
 
 
 def _short_unavailable(reason: object) -> str:
-    """Collapse the verbose "… not yet implemented for this family; …" reason to a
-    terse "not yet implemented"; keep other reasons (missing peer parser, capture
-    error) verbatim since they carry specifics."""
+    """A family the Dynamo v2 stream parser doesn't implement is a plain neutral
+    `n/a` (matching the v1 table, which has no "TODO" concept) — collapse the verbose
+    "… not yet implemented for this family; …" reason to `n/a`. Other reasons (missing
+    peer parser, capture error) stay verbatim since they carry specifics."""
     r = str(reason)
-    return "not yet implemented" if "not yet implemented" in r else r
+    return "n/a" if "not yet implemented" in r else r
 
 
 def _format_output_block_html(block, family: str | None = None) -> str:
@@ -695,6 +695,10 @@ def _format_output_block_html(block, family: str | None = None) -> str:
     if not isinstance(block, dict):
         return html_lib.escape("(no expectation)")
     if block.get("unavailable"):
+        # Un-implemented Dynamo v2 family reads as a plain "n/a" (no "unavailable:"
+        # prefix, no "not yet implemented" prose) — same clean placeholder as the v1 table.
+        if _is_todo_unavailable(block):
+            return html_lib.escape("n/a")
         return html_lib.escape(f"unavailable: {_short_unavailable(block['unavailable'])}")
     if "error" in block:
         return html_lib.escape(f"error matching {block['error']!r}")
@@ -2278,7 +2282,10 @@ def _compute_stats(
                 s["na"] += 1
                 continue
             if text == "…":
-                s["todo"] += 1
+                # Un-implemented Dynamo v2 family: counted as plain n/a in the stats,
+                # like the v1 table (no distinct "TODO" bucket). The "…" sentinel is
+                # kept only to detect all-unimplemented inventory rows (see all_todo).
+                s["na"] += 1
                 continue
             s["real"] += 1
             if text == "=":
