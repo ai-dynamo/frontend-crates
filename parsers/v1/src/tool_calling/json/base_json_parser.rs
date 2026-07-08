@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use regex::RegexBuilder;
+use std::borrow::Cow;
+
 use serde_json::value::RawValue;
 use uuid::Uuid;
 
@@ -9,69 +10,53 @@ use super::super::ToolDefinition;
 use super::config::JsonParserConfig;
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 
-// Same as CalledFunction with named parameters.
-//
-// `parameters` / `arguments` are deserialized as `Box<RawValue>` so the
-// original byte span — including key order, whitespace, and number
-// formatting — is preserved verbatim. Going through `HashMap<String, Value>`
-// here would normalize via `serde_json::to_string`, which strips spaces and
-// reorders keys based on HashMap iteration. That broke append-only KV-cache
-// prefix matching: when the model's emitted `arguments` were re-rendered
-// through this parser and round-tripped back into the next turn's prompt,
-// the bytes diverged from what the model originally emitted.
 #[derive(Debug, serde::Deserialize)]
-pub struct CalledFunctionParameters {
-    pub name: String,
-    pub parameters: Box<RawValue>,
+struct CalledFunctionRaw {
+    name: String,
+    #[serde(default, deserialize_with = "deserialize_present_raw")]
+    parameters: Option<Box<RawValue>>,
+    #[serde(default, deserialize_with = "deserialize_present_raw")]
+    arguments: Option<Box<RawValue>>,
 }
 
-#[derive(Debug, serde::Deserialize)]
-pub struct CalledFunctionArguments {
-    pub name: String,
-    pub arguments: Box<RawValue>,
+fn deserialize_present_raw<'de, D>(deserializer: D) -> Result<Option<Box<RawValue>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    <Box<RawValue> as serde::Deserialize>::deserialize(deserializer).map(Some)
 }
 
-// A tool call may omit both `arguments` and `parameters` when the function
-// takes no inputs (e.g. `{"name": "get_time"}`). vLLM's and SGLang's Hermes
-// detectors treat that as an empty-argument call; this name-only shape is
-// tried as a last resort (after the `parameters` / `arguments` shapes) so the
-// call is recovered with `{}` args rather than dropped and its wrapper leaked.
-#[derive(Debug, serde::Deserialize)]
-pub struct CalledFunctionNameOnly {
-    pub name: String,
-}
-
-// Extract the contents between start and end tokens using regex parsing.
+// Extract the contents between start and end tokens using slice search.
 // Returns a JSON array string if there are multiple matches, otherwise returns the last match directly.
-fn extract_tool_call_content(input: &str, start_token: &str, end_token: &str) -> Option<String> {
-    let escaped_start = regex::escape(start_token);
-    let escaped_end = regex::escape(end_token);
-    let pattern = format!(r"{}(.*?){}", escaped_start, escaped_end);
+fn extract_tool_call_content<'a>(
+    input: &'a str,
+    start_token: &str,
+    end_token: &str,
+) -> Option<Cow<'a, str>> {
+    if start_token.is_empty() || end_token.is_empty() {
+        return None;
+    }
 
-    match RegexBuilder::new(&pattern)
-        .dot_matches_new_line(true)
-        .build()
-    {
-        Ok(regex) => {
-            // Get all matches and take the last one for now. TODO: Handle multiple tool calls
-            let matches: Vec<_> = regex
-                .captures_iter(input)
-                .filter_map(|captures| captures.get(1))
-                .map(|m| m.as_str().trim().to_string())
-                .collect();
-            if !matches.is_empty() {
-                // If only one match, return it directly, otherwise return as a JSON array string
-                if matches.len() == 1 {
-                    // Return the last match directly
-                    return Some(matches.last().unwrap().clone());
-                } else {
-                    // Join the matches into a JSON array string
-                    return Some(format!("[{}]", matches.join(",")));
-                }
-            }
-            None
-        }
-        Err(_) => None,
+    let mut search_from = 0;
+    let mut matches = Vec::new();
+    while search_from < input.len() {
+        let Some(start_rel) = input[search_from..].find(start_token) else {
+            break;
+        };
+        let start_pos = search_from + start_rel;
+        let content_start = start_pos + start_token.len();
+        let Some(end_rel) = input[content_start..].find(end_token) else {
+            break;
+        };
+        let content_end = content_start + end_rel;
+        matches.push(input[content_start..content_end].trim());
+        search_from = content_end + end_token.len();
+    }
+
+    match matches.len() {
+        0 => None,
+        1 => Some(Cow::Borrowed(matches[0])),
+        _ => Some(Cow::Owned(format!("[{}]", matches.join(",")))),
     }
 }
 
@@ -79,11 +64,14 @@ fn extract_tool_call_content(input: &str, start_token: &str, end_token: &str) ->
 /// tail after `start_token` when the outer end-token never arrived. Gated on
 /// `JsonParserConfig::allow_eof_recovery` so streaming early-exit doesn't
 /// fire mid-stream before the end-token has shown up.
-fn extract_tool_call_content_eof_recovery(input: &str, start_token: &str) -> Option<String> {
+fn extract_tool_call_content_eof_recovery<'a>(
+    input: &'a str,
+    start_token: &str,
+) -> Option<Cow<'a, str>> {
     let start_pos = input.find(start_token)?;
     let tail = input[start_pos + start_token.len()..].trim();
     if tail.starts_with('{') || tail.starts_with('[') {
-        Some(tail.to_string())
+        Some(Cow::Borrowed(tail))
     } else {
         None
     }
@@ -279,51 +267,13 @@ fn try_parse_normal_text(input: &str, start_token: &str) -> String {
     String::new()
 }
 
-/// Attempts to parse a tool call from a raw LLM message string into a unified [`ToolCallResponse`] format.
+/// Parse a JSON `payload` into tool calls through one internal representation.
 ///
-/// This is a flexible helper that handles a variety of potential formats emitted by LLMs for function/tool calls,
-/// including wrapped payloads (`<TOOLCALL>[...]</TOOLCALL>`, `<|python_tag|>...`) and JSON representations
-/// with either `parameters` or `arguments` fields.
-///
-/// # Supported Formats
-///
-/// The input `message` may be one of:
-///
-/// - `<TOOLCALL>[{ "name": ..., "parameters": { ... } }]</TOOLCALL>`
-/// - `<|python_tag|>{ "name": ..., "arguments": { ... } }`
-/// - Raw JSON of:
-///     - `CalledFunctionParameters`: `{ "name": ..., "parameters": { ... } }`
-///     - `CalledFunctionArguments`: `{ "name": ..., "arguments": { ... } }`
-///     - Or a list of either of those types: `[ { "name": ..., "arguments": { ... } }, ... ]`
-///
-/// # Return
-///
-/// - `Ok(Some(ToolCallResponse))` if parsing succeeds
-/// - `Ok(None)` if input format is unrecognized or invalid JSON
-/// - `Err(...)` if JSON is valid but deserialization or argument re-serialization fails
-///
-/// # Note on List Handling
-///
-/// When the input contains a list of tool calls (either with `parameters` or `arguments`),
-/// only the **last item** in the list is returned. This design choice assumes that the
-/// most recent tool call in a list is the one to execute.
-///
-/// # Errors
-///
-/// Returns a `Result::Err` only if an inner `serde_json::to_string(...)` fails
-/// (e.g., if the arguments are not serializable).
-///
-/// # Examples
-///
-/// ```ignore
-/// let input = r#"<TOOLCALL>[{ "name": "search", "parameters": { "query": "rust" } }]</TOOLCALL>"#;
-/// let result = try_tool_call_parse_json(input)?;
-/// assert!(result.is_some());
-/// ```
-/// Parse `payload` into tool calls, trying the three canonical JSON shapes in
-/// order: an array of calls, a single `{name, arguments}`, then a single
-/// `{name, parameters}`. Within an array, each element is tried as
-/// `arguments` then `parameters`.
+/// Accepted payloads are a single object or an array of objects containing a
+/// `name` plus either `arguments` or `parameters`. When `allow_name_only` is
+/// enabled, an object containing only `name` is accepted with `{}` arguments.
+/// Array entries retain arguments-first precedence when both keys are present;
+/// single calls retain parameters-first precedence.
 ///
 /// Returns:
 /// - `Ok(Some(calls))` when `payload` matched one of the shapes. The vec may be
@@ -340,48 +290,59 @@ fn parse_calls(
     payload: &str,
     allow_name_only: bool,
 ) -> anyhow::Result<Option<Vec<ToolCallResponse>>> {
-    let mk = |name: String, args: &RawValue| ToolCallResponse {
-        id: format!("call-{}", Uuid::new_v4()),
-        tp: ToolCallType::Function,
-        function: CalledFunction {
+    fn make_tool_call(name: String, args: &RawValue) -> ToolCallResponse {
+        ToolCallResponse {
+            id: format!("call-{}", Uuid::new_v4()),
+            tp: ToolCallType::Function,
+            function: CalledFunction {
+                name,
+                arguments: args.get().to_string(),
+            },
+        }
+    }
+
+    fn convert_raw(
+        raw: CalledFunctionRaw,
+        prefer_arguments: bool,
+        allow_name_only: bool,
+    ) -> anyhow::Result<Option<ToolCallResponse>> {
+        let CalledFunctionRaw {
             name,
-            arguments: args.get().to_string(),
-        },
-    };
+            parameters,
+            arguments,
+        } = raw;
+        let args = if prefer_arguments {
+            arguments.or(parameters)
+        } else {
+            parameters.or(arguments)
+        };
+
+        if let Some(args) = args {
+            return Ok(Some(make_tool_call(name, args.as_ref())));
+        }
+        if allow_name_only {
+            let empty = RawValue::from_string("{}".to_string())?;
+            return Ok(Some(make_tool_call(name, empty.as_ref())));
+        }
+        Ok(None)
+    }
 
     if let Ok(array) = serde_json::from_str::<Vec<Box<RawValue>>>(payload) {
         let mut calls = Vec::new();
         for item in array {
-            let item_str = item.get();
-            if let Ok(func_args) = serde_json::from_str::<CalledFunctionArguments>(item_str) {
-                calls.push(mk(func_args.name, &func_args.arguments));
-            } else if let Ok(func_params) =
-                serde_json::from_str::<CalledFunctionParameters>(item_str)
+            if let Ok(raw) = serde_json::from_str::<CalledFunctionRaw>(item.get())
+                && let Some(call) = convert_raw(raw, true, allow_name_only)?
             {
-                calls.push(mk(func_params.name, &func_params.parameters));
-            } else if allow_name_only
-                && let Ok(name_only) = serde_json::from_str::<CalledFunctionNameOnly>(item_str)
-            {
-                // No `arguments`/`parameters` key — treat as an empty-arg call.
-                let empty = RawValue::from_string("{}".to_string())?;
-                calls.push(mk(name_only.name, &empty));
+                calls.push(call);
             }
             // Skip malformed entries silently.
         }
         return Ok(Some(calls));
     }
-    if let Ok(single) = serde_json::from_str::<CalledFunctionParameters>(payload) {
-        return Ok(Some(vec![mk(single.name, &single.parameters)]));
-    }
-    if let Ok(single) = serde_json::from_str::<CalledFunctionArguments>(payload) {
-        return Ok(Some(vec![mk(single.name, &single.arguments)]));
-    }
-    if allow_name_only
-        && let Ok(name_only) = serde_json::from_str::<CalledFunctionNameOnly>(payload)
+    if let Ok(single) = serde_json::from_str::<CalledFunctionRaw>(payload)
+        && let Some(call) = convert_raw(single, false, allow_name_only)?
     {
-        // No `arguments`/`parameters` key — treat as an empty-arg call.
-        let empty = RawValue::from_string("{}".to_string())?;
-        return Ok(Some(vec![mk(name_only.name, &empty)]));
+        return Ok(Some(vec![call]));
     }
     Ok(None)
 }
@@ -411,7 +372,7 @@ pub fn try_tool_call_parse_basic_json(
 
     // Iterate over all start and end tokens and try to extract the content between them
     // Assumption : One message will not contain different tags for tool calls. Iteration over tags is to support different tags by default for multiple models
-    let mut json = trimmed.to_string();
+    let mut json = Cow::Borrowed(trimmed);
     let mut normal_text = trimmed.to_string();
     let mut found_start_token_with_no_valid_json = false;
 
@@ -426,14 +387,14 @@ pub fn try_tool_call_parse_basic_json(
         // No start tokens found, try to extract JSON directly. Everything that starts with { or [ is considered a potential JSON.
         if let Some(idx) = normal_text.find(['{', '[']) {
             let extracted_normal = normal_text[..idx].trim().to_string();
-            let extracted_json = normal_text[idx..].trim().to_string();
+            let extracted_json = trimmed[idx..].trim();
             if !extracted_json.is_empty() {
                 normal_text = extracted_normal;
-                json = extracted_json;
+                json = Cow::Borrowed(extracted_json);
             }
         }
     } else {
-        // Start tokens exist, use regex-based parsing
+        // Start tokens exist, extract payloads between or after the markers.
         // Try all combinations of start and end tokens
         'outer: for start_token in tool_call_start_tokens.iter() {
             for end_token in tool_call_end_tokens.iter() {
@@ -443,7 +404,7 @@ pub fn try_tool_call_parse_basic_json(
                 match (start_token.is_empty(), end_token.is_empty()) {
                     (false, true) => {
                         // Single token case
-                        let result = handle_single_token_tool_calls(&json, start_token);
+                        let result = handle_single_token_tool_calls(json.as_ref(), start_token);
                         if let Some(content) = result {
                             // handle_single_token_tool_calls returns either:
                             //   Some("[{...}, ...]") — one or more extracted calls
@@ -456,7 +417,7 @@ pub fn try_tool_call_parse_basic_json(
                                 found_start_token_with_no_valid_json = true;
                             }
 
-                            json = content;
+                            json = Cow::Owned(content);
                             // For single token case, use the normal text we extracted earlier
                             normal_text = new_normal_text;
 
@@ -465,21 +426,21 @@ pub fn try_tool_call_parse_basic_json(
                     }
                     (false, false) => {
                         // Start and end token case
-                        let mut result = extract_tool_call_content(&json, start_token, end_token);
+                        let mut result = extract_tool_call_content(trimmed, start_token, end_token);
                         // EOF recovery: only when explicitly opted in (finalize
                         // path). Streaming jails leave `allow_eof_recovery=false`
                         // so the parser doesn't claim a complete call before
                         // the end-token has actually arrived.
                         if result.is_none()
                             && config.allow_eof_recovery
-                            && json.contains(start_token.as_str())
+                            && trimmed.contains(start_token.as_str())
                         {
-                            result = extract_tool_call_content_eof_recovery(&json, start_token);
+                            result = extract_tool_call_content_eof_recovery(trimmed, start_token);
                         }
                         if let Some(content) = result {
                             // Check if we found a start token but got empty JSON back
                             // This indicates the token was found but no valid JSON followed
-                            if content.is_empty() {
+                            if content.as_ref().is_empty() {
                                 found_start_token_with_no_valid_json = true;
                             }
 
@@ -496,8 +457,7 @@ pub fn try_tool_call_parse_basic_json(
             }
         }
     }
-    // Convert json (String) to &str
-    let json = json.as_str();
+    let json = json.as_ref();
     // Anonymous function to attempt deserialization into a known representation.
     //
     // Try the three canonical JSON shapes (single object with `parameters` or

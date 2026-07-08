@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [4.0.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v4.0.0...dynamo-parsers-v4.0.1) - 2026-07-08
+
+### Miscellaneous
+
+- Upgrade Rust toolchain to 1.96.1 to match Dynamo ([#99](https://github.com/ai-dynamo/frontend-crates/pull/99))
+
+## [4.0.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v3.1.1...dynamo-parsers-v4.0.0) - 2026-07-07
+
+### Performance
+
+- Make tool-call jail completion incremental ([#94](https://github.com/ai-dynamo/frontend-crates/pull/94))
+
 ## [3.1.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v3.1.0...dynamo-parsers-v3.1.1) - 2026-07-06
 
 ### Refactoring
