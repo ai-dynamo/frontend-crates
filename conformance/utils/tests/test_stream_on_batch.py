@@ -364,8 +364,10 @@ def test_expected_dynamo_absent_renders_as_todo() -> None:
     exp = g._stream_on_batch_expected({"vllm": {"calls": []}, "sglang": {"calls": []}})
     assert g._is_todo_unavailable(exp[D])
     assert "unavailable" in exp[R]
-    assert "reason" in exp[V] and "reason" in exp[S]
-    assert "SGLang Python streaming parser" in exp[S]["reason"]
+    # New captures write the `explanation` key (not the legacy `reason`).
+    assert "explanation" in exp[V] and "explanation" in exp[S]
+    assert "reason" not in exp[V] and "reason" not in exp[S]
+    assert "SGLang Python streaming parser" in exp[S]["explanation"]
 
 
 def test_expected_dynamo_absent_without_batch_text_is_structural_na() -> None:
@@ -386,8 +388,24 @@ def test_expected_dynamo_present_and_peer_unavailable() -> None:
         }
     )
     assert exp[D]["calls"] == [{"name": "f", "arguments": {}}]
-    assert "reason" not in exp[D]
+    assert "explanation" not in exp[D] and "reason" not in exp[D]
     assert exp[S] == {"unavailable": "SGLang has no detector for family"}
+
+
+def test_explanation_and_legacy_reason_both_recognized() -> None:
+    # Backward-compat: the divergence note reads from `explanation` (current) or the
+    # legacy `reason` (older fixtures / Dynamo-synced code); explanation wins.
+    assert g._explanation({"explanation": "new"}) == "new"
+    assert g._explanation({"reason": "old"}) == "old"
+    assert g._explanation({"explanation": "new", "reason": "old"}) == "new"
+    assert g._explanation({}) is None
+    # A divergent peer carrying EITHER key is treated as intentional (marker without
+    # the research-needed `?`), not as an un-triaged gap.
+    dyn = {"calls": [{"name": "f", "arguments": {}}], "normal_text": ""}
+    for key in ("reason", "explanation"):
+        case = _xcase({D: dyn, V: {"calls": [], "normal_text": "", key: "intentional"}})
+        kind, unknown = g.peer_status(case, dyn, V)
+        assert kind == "div" and unknown is False, key
 
 
 def test_dsv4_v2_parser_cell_links_dsml_parser() -> None:

@@ -155,6 +155,16 @@ def test_v2_no_not_yet_implemented_text(charts):
     assert "not yet implemented" not in charts["v2"]
 
 
+def test_divergence_notes_use_explanation_label(charts):
+    # The divergence-note field renders under the "explanation:" label (renamed from
+    # the confusing "reason:", which collided with "reasoning"). Legacy fixtures with a
+    # `reason` key are still read, but the displayed label is always "explanation:".
+    for page in ("v1", "v2"):
+        assert "explanation:" in charts[page], f"{page}: no explanation: note label"
+        # No bare "reason: <Text>" divergence label should leak (finish_reason: is fine).
+        assert not re.search(r"[^_]reason: [A-Z]", charts[page]), f"{page}: stale reason: label"
+
+
 def test_v2_reasoning_candidates_are_versioned(charts):
     for tab in ("tab-reasoning-batch", "tab-reasoning-stream"):
         cands = _candidates(_panel(charts["v2"], tab, _V2_TABS))
