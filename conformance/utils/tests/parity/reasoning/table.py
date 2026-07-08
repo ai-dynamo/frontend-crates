@@ -2401,18 +2401,30 @@ def _peer_captured_versions(rows: dict[str, dict[str, Any]]) -> dict[str, str]:
 
 
 def _dynamo_v1_version() -> str | None:
-    """Version of the v1 dynamo-parsers crate (which contains the reasoning parser).
+    """Version label for the Dynamo v1 reasoning parser, taken from the PUBLISHED fixture
+    provenance — the `dynamo-<ver>` dir in the tool-calling batch corpus (the same v1
+    crate powers reasoning and tool-calling) — NOT the live `parsers/v1/Cargo.toml`.
 
-    The crate now lives at `parsers/v1/Cargo.toml` (the DIS-2310 reorg moved it out
-    of the flat `parsers/`); `_common.sh` reads the same path for its fixture select."""
-    root = os.environ.get("FRONTEND_CRATES_ROOT")
-    if not root:
+    Sourcing the label from the fixtures keeps it consistent with the tool-calling tabs
+    (both read "3.0.0") and, crucially, matching the version the data was actually
+    captured against. Reading the live Cargo.toml instead makes the label drift ahead of
+    the fixtures the moment the crate is bumped but before a re-capture/republish — the
+    label would claim 4.1.0 while every fixture still holds 3.0.0-era output."""
+    cache = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
+    if not cache:
         return None
-    p = Path(root) / "parsers" / "v1" / "Cargo.toml"
-    if not p.exists():
+    root = Path(cache) / "toolcalling" / "fixtures-batch-v1"
+    if not root.is_dir():
         return None
-    m = re.search(r'^version\s*=\s*"([^"]+)"', p.read_text(), re.M)
-    return m.group(1) if m else None
+    versions = [
+        d.name.split("-", 1)[1]
+        for d in root.iterdir()
+        if d.is_dir() and d.name.startswith("dynamo-")
+    ]
+    if not versions:
+        return None
+    # Highest recorded capture (normally exactly one v1 dynamo dir exists).
+    return max(versions, key=lambda v: tuple(int(x) for x in re.findall(r"\d+", v)))
 
 
 def _html_panel(

@@ -1906,15 +1906,19 @@ def _full_label(impl: str, version: object, mode: str) -> str:
 
 
 def _dynamo_v2_version() -> str | None:
-    """Version of the v2 Dynamo parser crate (dynamo-parsers-v2); the stream/v2 tabs
-    run this, not the v1 dynamo-parsers crate. captured_with only records the label
-    'Dynamo parser v2', so read the real version from parsers/v2/Cargo.toml (the
-    DIS-2310 reorg moved it out of the flat parsers_v2/ dir)."""
-    p = toolcalling_table._FRONTEND_CRATES_ROOT / "parsers" / "v2" / "Cargo.toml"
-    if not p.exists():
-        return None
-    m = re.search(r'^version\s*=\s*"([^"]+)"', p.read_text(), re.M)
-    return m.group(1) if m else None
+    """Version label for the Dynamo v2 stream parser, taken from the PUBLISHED fixture
+    provenance (the v2-major `dynamo_rust-<ver>` dir, e.g. 0.1.11), NOT the live
+    parsers/v2/Cargo.toml.
+
+    Sourcing from the fixtures keeps every "Dynamo v2 Rust … (stream)" label on the page
+    consistent (the stream-tab candidates already read the dir version) and matching the
+    captured data. Reading the live crate makes the label drift ahead — the page would
+    show 0.1.16 in one place and the real captured 0.1.11 in another the moment the crate
+    is bumped before a re-capture/republish."""
+    for v in _stream_impl_versions().get(BASELINE_IMPL, []):
+        if _dynamo_vtag(v) == "v2":
+            return v
+    return None
 
 
 def _v2_display_version(impl: str) -> str | None:
