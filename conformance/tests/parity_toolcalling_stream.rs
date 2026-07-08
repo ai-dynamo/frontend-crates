@@ -320,10 +320,7 @@ fn toolcalling_stream_parity() {
     // dynamo_rust-<version>/ dirs. This test drives the Dynamo parser *v2*, so fold in
     // the lowest dynamo_rust version (the v2 crate, 0.1.11) — the higher 3.0.0 dir is
     // the v1 jail candidate, tested elsewhere.
-    let sv2 = Path::new(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/toolcalling/fixtures-stream-v2"
-    ));
+    let sv2 = common::ensure_fixtures().join("toolcalling/fixtures-stream-v2");
     let inputs_root = sv2.join("inputs");
     let ver_key = |p: &Path| -> Vec<u64> {
         p.file_name()

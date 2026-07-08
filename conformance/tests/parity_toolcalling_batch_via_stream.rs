@@ -8,7 +8,6 @@
 //! the same calls as the batch parser.
 
 use std::collections::BTreeMap;
-use std::path::Path;
 
 mod common;
 use common::{collect_yaml, fixture_name};
@@ -60,10 +59,7 @@ struct ExpCall {
 fn toolcalling_batch_via_stream_parity() {
     // Versioned corpus (inputs/ + <impl>-<version>/): read the shared inputs and fold
     // Dynamo v1's `expected.dynamo` from the (single) dynamo-<version>/ dir back in.
-    let batch_root = Path::new(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/toolcalling/fixtures-batch-v1"
-    ));
+    let batch_root = common::ensure_fixtures().join("toolcalling/fixtures-batch-v1");
     let inputs_root = batch_root.join("inputs");
     let dyn_dir = std::fs::read_dir(batch_root)
         .unwrap()

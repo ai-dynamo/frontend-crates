@@ -20,14 +20,18 @@ export FRONTEND_CRATES_ROOT="$ROOT"
 UTILS="$ROOT/conformance/utils"
 TOOLS="$ROOT/conformance/utils/src"
 # Fixture trees are cached in ~/.cache/dynamo/conformance-fixtures/ (downloaded
-# from HuggingFace on first use). Run download_fixtures.py to populate.
+# from HuggingFace on first use via download_fixtures.py).
 FIXTURES_ROOT="${XDG_CACHE_HOME:-$HOME/.cache}/dynamo/conformance-fixtures"
 if [ ! -d "$FIXTURES_ROOT/toolcalling" ]; then
-  echo "error: fixtures not found at $FIXTURES_ROOT" >&2
-  echo "  Run: export HF_TOKEN=<read-token>" >&2
-  echo "       python3 $TOOLS/download_fixtures.py" >&2
-  exit 1
+  echo "[conformance] fixtures not cached — downloading from HuggingFace (first run only)..." >&2
+  python3 "$TOOLS/download_fixtures.py" || {
+    echo "[conformance] download failed. Set HF_TOKEN to a read token and retry:" >&2
+    echo "  export HF_TOKEN=<read-token>" >&2
+    exit 1
+  }
 fi
+# Export so cargo test subprocesses can find the cache without re-downloading.
+export CONFORMANCE_FIXTURES_ROOT="$FIXTURES_ROOT"
 # Ephemeral build tree stays at conformance/utils/.stage (UTILS), not inside src/,
 # so CI and .gitignore find it where they always have.
 STAGE="${STAGE:-$UTILS/.stage}"

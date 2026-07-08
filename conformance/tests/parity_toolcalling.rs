@@ -13,7 +13,6 @@
 //! cross-family placeholder cases (no model_text / no expected) are skipped.
 
 use std::collections::BTreeMap;
-use std::path::Path;
 
 mod common;
 use common::{collect_yaml, fixture_name};
@@ -85,10 +84,7 @@ async fn toolcalling_batch_parity() {
     // inputs/, Dynamo v1's expected in the (single) dynamo-<version>/ dir. Read inputs
     // and fold Dynamo's expected back in; the version dirs' peer-only files are not
     // top-level fixtures here.
-    let batch_root = Path::new(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/toolcalling/fixtures-batch-v1"
-    ));
+    let batch_root = common::ensure_fixtures().join("toolcalling/fixtures-batch-v1");
     let inputs_root = batch_root.join("inputs");
     let dyn_dir = std::fs::read_dir(batch_root)
         .unwrap()
