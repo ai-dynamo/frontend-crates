@@ -1,9 +1,9 @@
 {
-  "snapshot": "20260708_143706",
-  "created_pt": "2026-07-08 14:37:06 America/Los_Angeles",
+  "snapshot": "20260708_154355",
+  "created_pt": "2026-07-08 15:43:55 America/Los_Angeles",
   "hf_repo": "ai-dynamo/conformance-fixtures",
-  "all_tarball": "all-20260708_143706.tar.gz",
-  "all_sha256": "e2a38983586b4bc9d11933061c8fd6a3304c79110e31f89cdcf43ce67344e4be",
+  "all_tarball": "all-20260708_154355.tar.gz",
+  "all_sha256": "94ea947c00ac9a1d5705d132cbe17a7311718c7dfe2d557d8df26c513761d354",
   "crates": {
     "dynamo-parsers": "4.1.0",
     "dynamo-parsers-v2": "0.1.16"
@@ -15,18 +15,18 @@
   "shards": [
     {
       "path": "toolcalling/fixtures-batch-v1/dynamo-3.0.0.tar.gz",
-      "sha256": "0a74dcad6414393525c7fe55bb7b31ff9b7b908f877b4155c32d78acbc60859c",
-      "size": 10670
+      "sha256": "495945e2657feb6ef7bd3b5347250fa102baf9016830aae37c77b49c2dd3d1ff",
+      "size": 10678
     },
     {
       "path": "toolcalling/fixtures-batch-v1/inputs.tar.gz",
-      "sha256": "22d75b18b559e418aae40b526659a1c619f3860b427595d7bbc86b8c576cd568",
-      "size": 35517
+      "sha256": "36981402fceee626c65989a9047fd959e53c8ebe0725a14ebf3eef33033db14f",
+      "size": 35548
     },
     {
       "path": "toolcalling/fixtures-batch-v1/sglang-0.5.12.post1.tar.gz",
-      "sha256": "42c054750a72f96b70e2618e38e333122783191ae75423ca9f2022d53475d0b1",
-      "size": 19415
+      "sha256": "586e6054c0e7e79cfae56a2fdcfc68e2d160916cddc347b12384c1adaf86b0ce",
+      "size": 19461
     },
     {
       "path": "toolcalling/fixtures-batch-v1/sglang-0.5.14.tar.gz",
@@ -35,8 +35,8 @@
     },
     {
       "path": "toolcalling/fixtures-batch-v1/vllm-0.23.0.tar.gz",
-      "sha256": "a8ad4636349e76abd38708162fd12939b29a1e715d616173b35ca39b2958a3c1",
-      "size": 19897
+      "sha256": "f3bfb2b66affb5f0a13fe2ab14559431be4a0f7d699e536004004e6db93c58eb",
+      "size": 19888
     },
     {
       "path": "toolcalling/fixtures-batch-v1/vllm-0.24.0.tar.gz",
@@ -85,8 +85,8 @@
     },
     {
       "path": "reasoning/fixtures-v1/inputs.tar.gz",
-      "sha256": "4621a78b46eb632e776a0850f9f44f36417c6098c5fd45b1e77106c6f61800a2",
-      "size": 16307
+      "sha256": "a90404f7c825691fa375857d964deac915f8dc7755a3519f1045e296b352c4ce",
+      "size": 16325
     },
     {
       "path": "toolcalling/fixtures-batch-on-stream-v2.tar.gz",
