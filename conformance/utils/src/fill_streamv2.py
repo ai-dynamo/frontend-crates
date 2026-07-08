@@ -133,7 +133,7 @@ def main():
     ap.add_argument("--work", help="work dir (default: a fresh temp dir)")
     args = ap.parse_args()
 
-    fixtures_root = os.path.join(args.root, "conformance/toolcalling/fixtures-v1")
+    fixtures_root = os.path.join(args.root, "conformance/toolcalling/fixtures-batch-v1")
     out_root = os.path.join(args.root, "conformance/toolcalling/fixtures-stream-v2")
     work = args.work or tempfile.mkdtemp(prefix="streamv2_fill_")
     srcdir = os.path.join(work, "src")

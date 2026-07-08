@@ -1,44 +1,59 @@
 # conformance/toolcalling/fixtures-stream-v2
 
-Per-chunk streaming fixtures for the `TC stream (v2)` conformance tab. These are frontend-crate-owned v2 overlays; `render_table_v2.sh` stages them together with the Dynamo-synced `conformance/toolcalling/fixtures/` batch corpus when building the HTML matrix.
+Per-chunk streaming fixtures for the `TC stream (v2)` conformance tab. These are frontend-crate-owned v2 overlays; `render_table_v2.sh` stages them together with the Dynamo-synced `conformance/toolcalling/fixtures-batch-v1/` batch corpus when building the HTML matrix.
 
 ## Why A Separate Overlay Exists
 
-The Dynamo-synced `conformance/toolcalling/fixtures/` corpus is batch-first v1 data. Streaming is different: vLLM Python, vLLM Rust, SGLang Python, and Dynamo Rust stream parsers emit per-chunk deltas, and those deltas can differ even when the final assembled call is the same. Streaming evidence lives here, not in the synced v1 corpus.
+The Dynamo-synced `conformance/toolcalling/fixtures-batch-v1/` corpus is batch-first v1 data. Streaming is different: vLLM Python, vLLM Rust, SGLang Python, and Dynamo Rust stream parsers emit per-chunk deltas, and those deltas can differ even when the final assembled call is the same. Streaming evidence lives here, not in the synced v1 corpus.
 
 Complete batch text fed through streaming parsers lives in `conformance/toolcalling/fixtures-batch-on-stream-v2/`. Use both directories when adding a v2 streaming parser: stream fixtures check chunk behavior, and batch-on-stream fixtures check whether the streaming parser reconstructs the batch result.
 
-## Fixture Schema
+## Layout (versioned, no unversioned baseline)
 
-Each stream fixture records chunks under `cases.<case>.chunks`. Each chunk has input text and optional token IDs, then an `expected` block keyed by implementation:
+This corpus is versioned exactly like the batch corpus (`conformance/toolcalling/fixtures-batch-v1/`): there is **no** unversioned "baseline"/anchor dir. The baseline is whichever version is lowest, per impl, found dynamically at resolve time.
+
+```
+fixtures-stream-v2/
+  inputs/<family>/TOOLCALLING.streamv2.*.yaml        # shared per-chunk delta_text
+                                                     # (+ delta_token_ids/finish_reason,
+                                                     #  tools, description) — NO expected
+  <impl>-<version>/<family>/TOOLCALLING.streamv2.*.yaml
+                                                     # that impl's per-chunk expected
+                                                     # (+ normal_text); lowest version =
+                                                     # full anchor, higher = changed-only
+```
+
+Current version dirs: `dynamo_rust-0.1.11` (Dynamo v2 stream parser), `dynamo_rust-3.0.0` (Dynamo v1 batch parser run against stream data via the streaming jail — captured by `capture_dynamo_jail_stream.py` / the `record_dynamo_jail_stream` bin), `vllm_rust-0.23.0`, `vllm_python-0.23.0` + `vllm_python-0.24.0`, `sglang_python-0.5.12.post1` + `sglang_python-0.5.14`. So the stream tab compares the v1 batch parser (jailed), the v2 stream parser, and the peer stream parsers on the same chunk inputs.
+
+`resolve_stream_fixtures.py` copies `inputs/` and folds each impl's version dirs (ascending, up to the selected version) back into the shared chunks — the stream analogue of `resolve_fixtures.py`. Every impl is included at its lowest version by default; `--select <impl>-<version>` bumps a specific impl higher. Readers see the assembled flat tree.
+
+### Fixture Schema
+
+**Shared input** (`inputs/<family>/…`) — no expected, no captured_with:
 
 ```yaml
-captured_with:
-  dynamo_rust: Dynamo parser v2
-  vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
-  vllm_python: 0.23.0
-  sglang_python: 0.5.12.post1
+family: harmony
+mode: streamv2
 cases:
   TOOLCALLING.streamv2.1.a:
     tools: [...]
     chunks:
-    - delta_text: '<|message|>'
-      delta_token_ids: [200008]
-      expected:
-        dynamo_rust: []
-        vllm_rust: []
-        vllm_python: []
-        sglang_python: []
-    - delta_text: '{"location":"NYC"}<|call|>'
-      expected:
-        dynamo_rust:
-        - {index: 0, name: get_weather, arguments: '{"location":"NYC"}'}
-        vllm_rust:
-        - {index: 0, name: get_weather, arguments: '{"location":"NYC"}'}
-        vllm_python:
-        - {index: 0, name: get_weather, arguments: '{"location":"NYC"}'}
-        sglang_python:
-        - {index: 0, name: get_weather, arguments: '{"location":"NYC"}'}
+    - {delta_text: '<|message|>', delta_token_ids: [200008]}
+    - {delta_text: '{"location":"NYC"}<|call|>'}
+```
+
+**Per-impl expected** (`<impl>-<version>/<family>/…`) — one impl, chunk-aligned to the shared inputs, plus `captured_with`:
+
+```yaml
+family: harmony
+mode: streamv2
+captured_with: {vllm_python: '0.23.0'}
+cases:
+  TOOLCALLING.streamv2.1.a:
+    chunks:
+    - {expected: []}
+    - expected:
+      - {index: 0, name: get_weather, arguments: '{"location":"NYC"}'}
 ```
 
 A delta is `{index, name?, arguments?}`. The v2 Rust core delta does not include parser-minted IDs; serving adapters add IDs outside the parser. The assembled call is derived by concatenating each index's name and argument fragments. Cross-implementation comparison happens at the assembled level.
@@ -69,7 +84,7 @@ Use `conformance/utils/capture.sh` for new captures:
 ```bash
 # Example: capture one Dynamo v2 Rust stream fixture into JSON for inspection.
 conformance/utils/capture.sh dynamo-stream \
-  --fixture conformance/toolcalling/fixtures-stream-v2/harmony/TOOLCALLING.streamv2.1.yaml \
+  --fixture conformance/toolcalling/fixtures-stream-v2/inputs/harmony/TOOLCALLING.streamv2.1.yaml \
   --output /tmp/dynamo_stream.json
 
 # Example: capture all stream behavior and refresh `fixtures-stream-v2/`.

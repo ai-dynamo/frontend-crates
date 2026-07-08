@@ -208,12 +208,14 @@ def _select_fixtures(fixtures, args):
 
 def _run_stream(args):
     here = os.path.dirname(os.path.abspath(__file__))
-    # A3: stream-capture SEEDS are the v1 batch corpus's stream files
-    # (`conformance/toolcalling/fixtures-v1/<family>/TOOLCALLING.stream.*.yaml`) — the
-    # chunking derives from the same model_text. Captured per-chunk output is WRITTEN
-    # to the frontend-crate-owned `fixtures-stream-v2/<family>/`. To add a new family's
-    # stream case, add its `TOOLCALLING.stream.*.yaml` seed under `fixtures/` first.
-    conf = os.path.join(args.root, "conformance/toolcalling/fixtures-v1")
+    # A3: stream-capture SEEDS are the v1 corpus's shared stream inputs
+    # (`conformance/toolcalling/fixtures-batch-v1/inputs/<family>/TOOLCALLING.stream.*.yaml`) —
+    # the chunking derives from the same model_text. (The DIS-2310 versioning
+    # restructure moved these input-only files from the flat family dirs into
+    # `inputs/`.) Captured per-chunk output is WRITTEN to the frontend-crate-owned
+    # `fixtures-stream-v2/<family>/`. To add a new family's stream case, add its
+    # `TOOLCALLING.stream.*.yaml` seed under `fixtures/inputs/` first.
+    conf = os.path.join(args.root, "conformance/toolcalling/fixtures-batch-v1/inputs")
     _copy_worker((args.vllm_container, args.sglang_container))
     vllm_rust_source_version = _vllm_rust_source_version(_vllm_rust_source_arg(args))
     vllm_rust_source = _vllm_rust_source_arg(args)
@@ -376,7 +378,7 @@ def _run_batch_on_stream(args):
     _copy_worker((args.vllm_container, args.sglang_container))
     vllm_rust_source_version = _vllm_rust_source_version(_vllm_rust_source_arg(args))
     vllm_rust_source = _vllm_rust_source_arg(args)
-    fixture_root = os.path.join(args.root, "conformance/toolcalling/fixtures-v1")
+    fixture_root = os.path.join(args.root, "conformance/toolcalling/fixtures-batch-v1")
     sources = sorted(glob.glob(f"{fixture_root}/*/TOOLCALLING.batch*.yaml"))
     if getattr(args, "family", None):
         sources = [s for s in sources if os.path.basename(os.path.dirname(s)) == args.family]

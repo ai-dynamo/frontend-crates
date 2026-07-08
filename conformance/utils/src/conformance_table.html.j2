@@ -19,25 +19,31 @@
 {% for tab in tabs %}
 {{ tab|safe }}
 {% endfor %}
+<span class="tabs-right">
+  <label class="checkbox-option cmp-detailed"><input type="checkbox" data-view-detailed> Detailed</label>
+  <button type="button" class="cmp-reset" data-reset title="Clear all selections and reload defaults">Reset</button>
+</span>
 </div>
 {% endif %}
-<div class="table-toolbar">
-  <div class="radio-group" role="radiogroup" aria-label="Conformance table view">
-    <span class="radio-group-label">View:</span>
-    <label class="radio-option"><input type="radio" name="parity-view" value="overview" data-view-toggle checked> Overview</label>
-    <label class="radio-option"><input type="radio" name="parity-view" value="details" data-view-toggle> Details</label>
-  </div>
-  <div class="radio-group" role="radiogroup" aria-label="Parser implementation">
-    <span class="radio-group-label">Parser:</span>
-    <label class="radio-option" data-parser-option="dynamo_rust"><input type="radio" name="parity-parser" value="dynamo_rust" data-parser-toggle checked> Dynamo Rust</label>
-    <label class="radio-option" data-parser-option="vllm_rust"><input type="radio" name="parity-parser" value="vllm_rust" data-parser-toggle> vLLM Rust</label>
-    <label class="radio-option" data-parser-option="vllm_python"><input type="radio" name="parity-parser" value="vllm_python" data-parser-toggle> vLLM Python</label>
-    <label class="radio-option" data-parser-option="sglang_python"><input type="radio" name="parity-parser" value="sglang_python" data-parser-toggle> SGLang Python</label>
-  </div>
-  <label class="checkbox-option parity-option"><input type="checkbox" data-parity-toggle> Conformance</label>
-</div>
 {% for panel in panels %}
-<section id="{{ panel.id|e }}" class="tab-panel{% if panel.active %} active{% endif %}" role="tabpanel"{% if tabs|length > 1 %} aria-labelledby="{{ panel.id|e }}-button"{% endif %} data-parser-options="{{ panel.parser_options|default(['dynamo_rust', 'vllm_rust', 'vllm_python', 'sglang_python'])|join(',')|e }}">
+<section id="{{ panel.id|e }}" class="tab-panel{% if panel.active %} active{% endif %}" role="tabpanel"{% if tabs|length > 1 %} aria-labelledby="{{ panel.id|e }}-button"{% endif %}{% if panel.candidates %} data-cmp-panel="true"{% endif %}>
+{% if panel.candidates %}
+<div class="cmpctl" role="group" aria-label="Compare — drag chips between buckets">
+  <div class="bucket bucket-A" data-bucket="A" data-limit="1">
+    <div class="bucket-hd">Reference parser</div>
+    <div class="chips">{% for c in panel.candidates %}{% if c.default_bucket == 'A' %}<span class="chip" data-cand="{{ c.key }}" draggable="true">{{ c.label|e }}</span>{% endif %}{% endfor %}</div>
+  </div>
+  <div class="bucket bucket-B" data-bucket="B">
+    <button type="button" class="cmp-swap" data-cmp-swap title="Swap reference and compare-with parser" hidden>⇄</button>
+    <div class="bucket-hd">Compare-with parser(s)</div>
+    <div class="chips">{% for c in panel.candidates %}{% if c.default_bucket == 'B' %}<span class="chip" data-cand="{{ c.key }}" draggable="true">{{ c.label|e }}</span>{% endif %}{% endfor %}</div>
+  </div>
+  <div class="bucket bucket-C" data-bucket="C">
+    <div class="bucket-hd">Other parsers</div>
+    <div class="chips">{% for c in panel.candidates %}{% if c.default_bucket == 'C' %}<span class="chip" data-cand="{{ c.key }}" draggable="true">{{ c.label|e }}</span>{% endif %}{% endfor %}</div>
+  </div>
+</div>
+{% endif %}
 <table data-parity-table>
 <thead>
 <tr>{{ panel.group_headers|safe }}</tr>

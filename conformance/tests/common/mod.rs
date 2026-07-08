@@ -26,6 +26,62 @@ pub fn collect_yaml(dir: &Path, out: &mut Vec<PathBuf>) {
     }
 }
 
+/// Ensures fixture files are available and returns the fixtures root path.
+///
+/// Priority:
+/// 1. `CONFORMANCE_FIXTURES_ROOT` env var — set by `check.sh` after it has
+///    already downloaded and verified the cache.
+/// 2. HF cache at `~/.cache/dynamo/conformance-fixtures/` (or `$XDG_CACHE_HOME`).
+///    If the `toolcalling/` subdir is missing, runs `download_fixtures.py`
+///    automatically. A `flock` on `/tmp/dynamo-conformance-download.lock`
+///    serializes parallel test binaries so only one download runs at a time.
+///
+/// If the download fails (e.g. no HF credentials), the test panics with a
+/// message that includes the exact command to retry after setting `HF_TOKEN`.
+pub fn ensure_fixtures() -> PathBuf {
+    if let Ok(r) = std::env::var("CONFORMANCE_FIXTURES_ROOT") {
+        return PathBuf::from(r);
+    }
+
+    let cache_root = std::env::var("XDG_CACHE_HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| {
+            PathBuf::from(std::env::var("HOME").expect("HOME not set")).join(".cache")
+        })
+        .join("dynamo/conformance-fixtures");
+
+    if cache_root.join("toolcalling").is_dir() {
+        return cache_root;
+    }
+
+    let script = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("utils/src/download_fixtures.py");
+    eprintln!(
+        "[conformance] fixtures not cached — downloading (first run only): {}",
+        script.display()
+    );
+
+    // flock serializes parallel test binaries so only one download runs.
+    let status = std::process::Command::new("flock")
+        .args([
+            "/tmp/dynamo-conformance-download.lock",
+            "python3",
+            script.to_str().expect("non-UTF-8 script path"),
+        ])
+        .status()
+        .expect("flock/python3 not found — ensure python3 is in PATH");
+
+    if !status.success() {
+        panic!(
+            "fixture download failed (exit {}). Set HF_TOKEN and retry:\n  \
+             export HF_TOKEN=<read-token>\n  python3 {}",
+            status.code().unwrap_or(-1),
+            script.display()
+        );
+    }
+
+    cache_root
+}
+
 /// Crate-relative display path for a fixture (for failure messages).
 pub fn fixture_name(path: &Path) -> String {
     path.strip_prefix(env!("CARGO_MANIFEST_DIR"))

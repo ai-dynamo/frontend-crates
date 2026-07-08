@@ -160,10 +160,18 @@ def _impl_keys_for_output_kind(output_kind: str) -> tuple[str, ...]:
 
 
 def _overview_status_attrs(case: dict | None, impl_keys: tuple[str, ...] = BATCH_IMPL_KEYS) -> str:
-    return " ".join(
+    parts = [
         f'data-status-{impl}="{_overview_status(case, impl)}"'
         for impl in impl_keys
-    )
+    ]
+    # Per-version status (data-status-<impl>-<slug>) powers the TC v1 version radios.
+    # Only batch cases carry __ver_status; other cells fall back to the pinned attr.
+    ver_status = case.get("__ver_status") if isinstance(case, dict) else None
+    if ver_status:
+        for impl, by_slug in ver_status.items():
+            for slug, info in by_slug.items():
+                parts.append(f'data-status-{impl}-{slug}="{info["status"]}"')
+    return " ".join(parts)
 
 
 def _canonical_tool_output(block: object) -> dict | None:

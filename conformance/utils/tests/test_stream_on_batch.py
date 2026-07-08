@@ -51,14 +51,17 @@ D, R, V, S = g.IMPL_KEYS
 IMPLS = g.IMPL_KEYS
 
 
-def test_reasoning_python_exceptions_render_as_x() -> None:
+def test_reasoning_python_exceptions_render_as_na() -> None:
+    # Dynamo-as-reference: an na-stub (no Dynamo `expected`) shows n/a in the grid,
+    # never peer parser exception markers (V✗/S✗). The exceptions still surface in the
+    # tooltip. The dormant per-engine parser markers/status are unchanged.
     case = {
         "description": "No parser input",
         "reason": "not applicable",
     }
 
     marker, tooltip = reasoning_table._cell(case, "gpt_oss")
-    assert marker == "V✗S✗"
+    assert marker == "n/a"
     assert "vLLM Python: parser exception" in tooltip
     assert "SGLang Python: parser exception" in tooltip
 
@@ -75,12 +78,14 @@ def test_reasoning_python_exception_rendering_respects_missing_peer_parser() -> 
         "reason": "not applicable",
     }
 
-    assert reasoning_table._cell(case, "kimi")[0] == "S✗"
+    # Grid marker is n/a regardless of which peers raised; the exception detail is in
+    # the tooltip / dormant per-engine markers only.
+    assert reasoning_table._cell(case, "kimi")[0] == "n/a"
     assert reasoning_table._parser_marker(case, "kimi", "vllm") == "n/a"
     assert reasoning_table._parser_marker(case, "kimi", "sglang") == "✗"
 
 
-def test_reasoning_python_exception_cell_uses_error_class_and_tooltip() -> None:
+def test_reasoning_python_exception_cell_uses_na_class_and_tooltip() -> None:
     case = {
         "description": "No parser input",
         "reason": "not applicable",
@@ -94,8 +99,10 @@ def test_reasoning_python_exception_cell_uses_error_class_and_tooltip() -> None:
         refs,
     )
 
-    assert 'class="cell err ' in html
-    assert ">V✗S✗<" in html
+    assert 'class="cell na ' in html
+    assert ">n/a<" in html
+    assert ">V✗S✗<" not in html
+    # Dormant per-engine data attributes still record the peer exceptions.
     assert 'data-marker-vllm="✗"' in html
     assert 'data-status-vllm="problem"' in html
     assert "Python parser exceptions" in html
@@ -438,8 +445,10 @@ def test_sob_cell_two_dimensions_color_and_cross_engine_marker() -> None:
     assert "D<sub>RS</sub>V<sub>PS</sub>S<sub>RS</sub>" in html
     assert "V<sub>RB</sub>" not in html
     assert "\u1d66" not in html
-    assert "D<sub>RS</sub> output diverges from D<sub>RB</sub>" in html
-    assert "S<sub>RS</sub> output diverges from S<sub>RB</sub>" in html
+    # Compare model: coloring is leak-only, so the global cross-impl
+    # "X output diverges from X batch" blob is gone (it named engines regardless of
+    # the Base/Compare selection); per-candidate reasons live in their own sections.
+    assert "output diverges from" not in html
 
     stream_html = g.render_cell_html(
         case, "streamv2", "harmony", "5.d", "stream", "stream_vs_batch", "streamv2"
@@ -519,12 +528,16 @@ def test_sob_tooltip_labels_stream_and_batch() -> None:
         batch={i: _calls("f") for i in IMPLS},
     )
     ttip = g._build_sob_tooltip(case)
-    for impl in ("Dynamo Rust", "vLLM Rust", "vLLM Python", "SGLang Python"):
-        assert f"({impl} stream parser):" in ttip
-    for impl in ("Dynamo Rust", "vLLM Python", "SGLang Python"):
-        assert f"({impl} batch parser):" in ttip
-    assert "vLLM Rust batch:" not in ttip
+    # Sections now use the standardized "<Engine> <Runtime> (<mode>)" candidate label
+    # (same key as the Base/Compare buckets), wrapped as cand-<impl> so the selection
+    # can toggle them.
+    for lbl in ("Dynamo Rust", "vLLM Rust", "vLLM Python", "SGLang Python"):
+        assert f"{lbl} (stream):" in ttip
+    for lbl in ("Dynamo Rust", "vLLM Python", "SGLang Python"):
+        assert f"{lbl} (batch):" in ttip
+    assert "vLLM Rust (batch):" not in ttip
     assert "V<sub>RB</sub>" not in ttip
+    assert "cand cand-vllm_rust" in ttip
 
 
 def test_stream_v2_x_marker_shows_vllm_rust_error_message() -> None:
@@ -634,23 +647,18 @@ def test_build_cases_carries_stream_and_batch(monkeypatch) -> None:
     assert g._stream_xeng_marker(built, V, "batch_on_stream") == "V_ps"
 
 
-def test_template_legacy_alias_selectors_do_not_override_canonical_markers() -> None:
+def test_template_has_compare_buckets_and_reasoning_candidates() -> None:
+    # The single-parser radio was replaced by the per-panel compare buckets
+    # (A=Base reference, B=Compare with, C=Others).
     template = (SRC / "conformance_table.html.j2").read_text()
-    assert "value=\"dynamo_rust\"" in template
-    assert "value=\"vllm_python\"" in template
-    assert "value=\"vllm_rust\"" in template
-    assert "data-parser-options" in template
-    assert "data-parser-option=\"vllm_rust\"" in template
-    # The toolbar wiring is now in the static JS asset (audit B7).
+    assert 'data-bucket="A"' in template
+    assert 'data-bucket="B"' in template
+    assert 'data-bucket="C"' in template
+    assert "data-cmp-base" not in template  # old radio-based control is gone
+    # The compare JS drives cells from each cell's data-cmp payload.
     js = (SRC / "assets" / "conformance.js").read_text()
-    assert "radio.disabled = !isAllowed" in js
-    assert "label.hidden = !isAllowed" in js
-    # The per-impl status/marker rules are generated from the impl table (audit B6).
-    css = g._impl_status_css()
-    assert ".view-details.parity-mode.parser-dynamo td.cell:not([data-marker-parity-dynamo_rust])::before" in css
-    assert ".view-details.parity-mode.parser-vllm td.cell:not([data-marker-parity-vllm_python])::before" in css
-    assert ".view-details.parity-mode.parser-sglang td.cell:not([data-marker-parity-sglang_python])::before" in css
-    assert ".view-details.parity-mode.parser-dynamo_rust td.cell .marker-parity-dynamo_rust" in css
+    assert "function applyCtl" in js
+    assert "cmp-leak" in js and "cmp-eq" in js
     hrefs = {
         "reasoning_fixtures": "#",
         "reasoning_cases": "#",
@@ -671,7 +679,7 @@ def test_template_legacy_alias_selectors_do_not_override_canonical_markers() -> 
 def test_template_overview_cells_do_not_expand_from_hidden_marker_text() -> None:
     # Static styles now live in the CSS asset, inlined at render (audit B7).
     css = (SRC / "assets" / "conformance.css").read_text()
-    assert "td.cell { text-align: center; width: 64px; min-width: 64px; max-width: 64px;" in css
+    assert "td.cell { text-align: center; width: 44px; min-width: 44px; max-width: 44px;" in css
     assert ".view-overview td.cell { font-size: 0; line-height: 0; }" in css
     assert ".view-overview td.cell .cell-marker { display: none; }" in css
     assert ".view-overview td.cell .ttip { font-size: 12px; line-height: 1.4; }" in css
@@ -822,15 +830,19 @@ def test_v2_overlays_are_canonical_only() -> None:
 
 
 def test_every_stream_family_has_registry_row_and_fixtures() -> None:
-    """D6: each fixtures-stream-v2/<family> has a parser_families.yaml row, and each
-    Dynamo-v2 family in the registry has at least one stream fixture."""
+    """D6: each fixtures-stream-v2/inputs/<family> has a parser_families.yaml row, and
+    each Dynamo-v2 family in the registry has at least one stream input fixture.
+
+    The stream corpus is versioned like the batch corpus (no unversioned anchor):
+    families live under `inputs/`; the sibling `<impl>-<version>/` dirs are per-impl
+    expected, not families (resolve_stream_fixtures.py folds them into the inputs)."""
     registry = yaml.safe_load((SRC / "parser_families.yaml").read_text())["families"]
-    stream_root = REPO / "conformance" / "toolcalling" / "fixtures-stream-v2"
-    for fam_dir in sorted(p for p in stream_root.iterdir() if p.is_dir()):
+    inputs_root = REPO / "conformance" / "toolcalling" / "fixtures-stream-v2" / "inputs"
+    for fam_dir in sorted(p for p in inputs_root.iterdir() if p.is_dir()):
         assert fam_dir.name in registry, f"family {fam_dir.name} has no parser_families.yaml row"
     for fam, spec in registry.items():
         if spec.get("dynamo_v2"):
-            assert list((stream_root / fam).glob("*.yaml")), f"dynamo_v2 family {fam} has no stream fixtures"
+            assert list((inputs_root / fam).glob("*.yaml")), f"dynamo_v2 family {fam} has no stream fixtures"
 
 
 def test_impl_spec_is_single_identity_source() -> None:

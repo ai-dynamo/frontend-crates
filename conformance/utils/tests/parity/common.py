@@ -304,15 +304,26 @@ def build_parity_tooltip_html(
     if description:
         parts.append(f'<pre class="ttip-pre">{html_lib.escape(description)}</pre>')
 
-    def add_section(label: str, body_html: str) -> None:
-        parts.append(f'<div class="ttip-section">{html_lib.escape(label)}:</div>')
-        parts.append(f'<pre class="ttip-pre">{body_html}</pre>')
+    def add_section(
+        label: str, body_html: str, wrap_class: str | None = None, leak: bool = False
+    ) -> None:
+        # A leaking candidate gets a red ↯ after the label, e.g. "… (stream): ↯".
+        marker = ' <span class="ttip-leak">↯</span>' if leak else ""
+        section = (
+            f'<div class="ttip-section">{html_lib.escape(label)}:{marker}</div>'
+            f'<pre class="ttip-pre">{body_html}</pre>'
+        )
+        # Optional wrapper lets callers toggle a whole labeled section (e.g. the
+        # per-version output blocks swapped by the version radios).
+        if wrap_class:
+            section = f'<span class="{wrap_class}">{section}</span>'
+        parts.append(section)
 
     if input_label and input_html is not None:
         add_section(input_label, input_html)
 
-    for label, body_html in output_sections or []:
-        add_section(label, body_html)
+    for section in output_sections or []:
+        add_section(*section)
 
     if divergent_reasons:
         add_section("Divergent reasons", linkify_text_html(divergent_reasons))

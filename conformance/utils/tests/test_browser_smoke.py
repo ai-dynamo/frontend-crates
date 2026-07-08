@@ -59,7 +59,7 @@ def driver(rendered):
 def test_hover_shows_tooltip(driver):
     """Hovering a detail cell makes its `.ttip` visible (`.ttip-visible`)."""
     driver.execute_script(
-        "document.querySelector('input[name=\"parity-view\"][value=\"details\"]').click();"
+        "const v=document.querySelector('[data-view-detailed]'); if(v && !v.checked){v.checked=true; v.dispatchEvent(new Event('change'));}"
     )
     # Find a cell that actually has a tooltip, fire the hover event the page listens for.
     found = driver.execute_script(
@@ -87,14 +87,13 @@ def test_hover_shows_tooltip(driver):
     assert visible, "tooltip did not become visible on hover"
 
 
-def test_vllm_rust_option_hidden_on_reasoning(driver):
-    """The vLLM Rust parser radio shows on a tool-calling tab and hides on Reasoning."""
-    def vllm_rust_visible():
+def test_compare_candidates_are_per_tab(driver):
+    """Each tab's compare control carries its own candidate chips: the merged Tool
+    Calling (batch data) tab offers a vLLM Rust stream candidate; Reasoning does not."""
+    def cand_keys():
         return driver.execute_script(
-            """
-            const lbl = document.querySelector('label[data-parser-option="vllm_rust"]');
-            return !!(lbl && lbl.offsetParent !== null);
-            """
+            "const p=document.querySelector('.tab-panel.active .cmpctl');"
+            "return p?Array.from(p.querySelectorAll('.chip')).map(c=>c.dataset.cand):[];"
         )
 
     def click_tab(panel_id):
@@ -104,59 +103,40 @@ def test_vllm_rust_option_hidden_on_reasoning(driver):
         )
         time.sleep(0.2)
 
-    click_tab("tab-toolcalling-stream-on-batch")
-    assert vllm_rust_visible(), "vLLM Rust option should show on a tool-calling tab"
+    click_tab("tab-toolcalling-batch")
+    keys = cand_keys()
+    assert any("vllm_rust" in k for k in keys), "merged tab should offer a vLLM Rust candidate"
     click_tab("tab-reasoning-batch")
-    assert not vllm_rust_visible(), "vLLM Rust option should hide on Reasoning"
-    click_tab("tab-toolcalling-stream-on-batch")
-    assert vllm_rust_visible(), "vLLM Rust option should reappear on a tool-calling tab"
+    keys = cand_keys()
+    assert keys and not any("vllm_rust" in k for k in keys), (
+        "Reasoning should have candidates but no vLLM Rust"
+    )
 
 
-def test_conformance_mode_shows_one_marker_per_cell(driver):
-    """In Details + Conformance, a cell must not show BOTH the per-engine status
-    marker and the cross-engine parity marker — they're absolutely positioned in
-    the same box and visibly overlap if both display (the B7 CSS-order regression
-    that produced garbled markers like a struck-through `=`)."""
+def test_compare_shows_one_marker_per_cell(driver):
+    """In Details view a compare cell shows exactly one marker — the JS-filled
+    `.cmp-marker` — and the legacy per-engine `.cell-marker` spans stay hidden, so
+    nothing overlaps (the B7 CSS-order regression that garbled markers)."""
     driver.execute_script(
-        """
-        document.querySelector('input[name="parity-view"][value="details"]').click();
-        const par = document.querySelector('input[data-parity-toggle]');
-        if (par && !par.checked) par.click();
-        """
+        "const v=document.querySelector('[data-view-detailed]'); if(v && !v.checked){v.checked=true; v.dispatchEvent(new Event('change'));}"
     )
     time.sleep(0.2)
-    # For the selected parser, count cells where both its status marker and its
-    # parity marker are visibly rendered. Must be zero.
-    both_visible = driver.execute_script(
+    result = driver.execute_script(
         """
-        const sel = (document.body.className.match(/parser-(\\w+)/) || [])[1];
         const tab = document.querySelector('.tab-panel.active') || document;
         const vis = (el) => el && el.offsetParent !== null
             && getComputedStyle(el).display !== 'none';
-        let overlap = 0;
-        for (const cell of tab.querySelectorAll('td.cell')) {
-          const status = cell.querySelector('.marker-' + sel);
-          const parity = cell.querySelector('.marker-parity-' + sel);
-          if (vis(status) && vis(parity)) overlap++;
+        let overlap = 0, cmpShown = 0;
+        for (const cell of tab.querySelectorAll('td.cell[data-cmp]')) {
+          const legacy = Array.from(cell.querySelectorAll('.cell-marker')).some(vis);
+          const cmp = cell.querySelector('.cmp-marker');
+          if (legacy) overlap++;
+          if (vis(cmp) && cmp.textContent.trim()) cmpShown++;
         }
-        return overlap;
+        return {overlap, cmpShown};
         """
     )
-    assert both_visible == 0, (
-        f"{both_visible} cell(s) show both the status and parity marker overlapping"
+    assert result["overlap"] == 0, (
+        f"{result['overlap']} cell(s) still show a legacy marker alongside the compare marker"
     )
-    # And the parity marker IS the one shown for non-trivial cells.
-    parity_shown = driver.execute_script(
-        """
-        const sel = (document.body.className.match(/parser-(\\w+)/) || [])[1];
-        const tab = document.querySelector('.tab-panel.active') || document;
-        for (const cell of tab.querySelectorAll('td.cell')) {
-          const parity = cell.querySelector('.marker-parity-' + sel);
-          if (parity && parity.textContent.trim()
-              && parity.offsetParent !== null
-              && getComputedStyle(parity).display !== 'none') return true;
-        }
-        return false;
-        """
-    )
-    assert parity_shown, "no parity marker is visible in Conformance mode"
+    assert result["cmpShown"] > 0, "no compare marker is visible in Details view"

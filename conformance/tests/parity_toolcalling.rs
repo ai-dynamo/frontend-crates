@@ -13,7 +13,6 @@
 //! cross-family placeholder cases (no model_text / no expected) are skipped.
 
 use std::collections::BTreeMap;
-use std::path::Path;
 
 mod common;
 use common::{collect_yaml, fixture_name};
@@ -81,18 +80,37 @@ fn norm_text(s: Option<&str>) -> String {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn toolcalling_batch_parity() {
-    let root = concat!(env!("CARGO_MANIFEST_DIR"), "/toolcalling/fixtures-v1");
+    // Versioned corpus (inputs/ + <impl>-<version>/): shared model_text/tools live in
+    // inputs/, Dynamo v1's expected in the (single) dynamo-<version>/ dir. Read inputs
+    // and fold Dynamo's expected back in; the version dirs' peer-only files are not
+    // top-level fixtures here.
+    let batch_root = common::ensure_fixtures().join("toolcalling/fixtures-batch-v1");
+    let inputs_root = batch_root.join("inputs");
+    let dyn_dir = std::fs::read_dir(batch_root)
+        .unwrap()
+        .filter_map(|e| e.ok().map(|e| e.path()))
+        .find(|p| {
+            p.is_dir()
+                && p.file_name()
+                    .and_then(|n| n.to_str())
+                    .is_some_and(|n| n.starts_with("dynamo-"))
+        })
+        .expect("no dynamo-<version> dir under fixtures-batch-v1");
     let mut files = Vec::new();
-    collect_yaml(Path::new(root), &mut files);
+    collect_yaml(&inputs_root, &mut files);
     files.sort();
-    assert!(!files.is_empty(), "no fixtures found under {root}");
+    assert!(
+        !files.is_empty(),
+        "no fixtures found under {}",
+        inputs_root.display()
+    );
 
     let mut total = 0usize;
     let mut failures: Vec<String> = Vec::new();
 
     for path in &files {
         let yaml = std::fs::read_to_string(path).unwrap();
-        let fx: Fixture = match serde_yaml::from_str(&yaml) {
+        let mut fx: Fixture = match serde_yaml::from_str(&yaml) {
             Ok(f) => f,
             Err(e) => {
                 failures.push(format!("{}: YAML parse error: {e}", path.display()));
@@ -101,6 +119,19 @@ async fn toolcalling_batch_parity() {
         };
         if fx.mode != "batch" {
             continue;
+        }
+        // Fold Dynamo v1's `expected.dynamo` (from dynamo-<version>/<family>/<name>)
+        // into the shared inputs cases.
+        let rel = path.strip_prefix(&inputs_root).unwrap();
+        let dyn_fx = std::fs::read_to_string(dyn_dir.join(rel))
+            .ok()
+            .and_then(|t| serde_yaml::from_str::<Fixture>(&t).ok());
+        if let Some(dfx) = dyn_fx {
+            for (cid, dcase) in dfx.cases {
+                if let (Some(c), Some(exp)) = (fx.cases.get_mut(&cid), dcase.expected) {
+                    c.expected = Some(exp);
+                }
+            }
         }
         eprintln!("fixture {}", fixture_name(path));
         for (cid, case) in &fx.cases {

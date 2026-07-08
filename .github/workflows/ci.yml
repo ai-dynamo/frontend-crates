@@ -50,7 +50,12 @@ jobs:
       - name: Check workspace
         run: cargo check --workspace --all-targets --locked
 
+      - name: Install fixture download dependencies
+        run: pip install --quiet huggingface_hub
+
       - name: Run tests
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: cargo test --workspace --all-targets --locked
 
       - name: Run doctests
@@ -76,14 +81,18 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Render conformance matrix (no engines)
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           python3 -m venv /tmp/pvenv
-          /tmp/pvenv/bin/pip install --quiet pyyaml jinja2
+          /tmp/pvenv/bin/pip install --quiet pyyaml jinja2 huggingface_hub
           PATH="/tmp/pvenv/bin:$PATH" conformance/utils/render_table_v1.sh
-          OUT=conformance/utils/.stage/tests/parity/PARITY_v1.html
+          PATH="/tmp/pvenv/bin:$PATH" conformance/utils/render_table_v2.sh
+          OUT=conformance/PARITY_v1.html
           test -s "$OUT"
           grep -q "TOOLCALLING.batch" "$OUT"
           grep -q "REASONING.batch" "$OUT"
+          test -s conformance/CONFORMANCE_v2.html
           echo "conformance matrix rendered: $(wc -c < "$OUT") bytes"
           cp "$OUT" conformance/utils/CONFORMITY.html
 

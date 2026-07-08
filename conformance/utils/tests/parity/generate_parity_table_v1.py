@@ -61,6 +61,9 @@ def _combined_toolcalling_panels() -> list[dict[str, Any]]:
                 "case_docs_label": "lib/parsers/TOOLCALLING_CASES.md",
                 "case_prefix": f"TOOLCALLING.{mode}.",
                 "case_section_id": f"toolcalling-{mode}",
+                # Compare model: versioned candidates (impl+version) drive the
+                # per-panel Base/Compare buckets on both TC batch and TC stream.
+                "candidates": toolcalling_table._candidate_items(mode),
             }
         )
         panels.append(panel)

@@ -15,7 +15,7 @@ Render the v2 conformance matrix to an HTML file.
 
 Options:
   --output PATH   Write to PATH. Relative paths resolve from the repo root.
-                  Default: conformance/CONFORMANCE.html
+                  Default: conformance/CONFORMANCE_v2.html
   --dry-run       Print what would run.
   --help          Show this help.
 EOF
@@ -50,7 +50,7 @@ while [ $# -gt 0 ]; do
 done
 source "$(dirname "$0")/src/_common.sh"
 
-OUT="$ROOT/conformance/CONFORMANCE.html"
+OUT="$ROOT/conformance/CONFORMANCE_v2.html"
 if [ -n "$OUT_ARG" ]; then
   case "$OUT_ARG" in
     /*) OUT="$OUT_ARG" ;;

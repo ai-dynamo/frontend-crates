@@ -9,10 +9,7 @@
   const columnKeys = Array.from(new Set(columnButtons.map(function (button) {
     return button.dataset.colToggle;
   })));
-  const viewRadios = Array.from(document.querySelectorAll('[data-view-toggle]'));
-  const viewKeys = new Set(viewRadios.map(function (radio) {
-    return radio.value;
-  }));
+  const viewCheckboxes = Array.from(document.querySelectorAll('[data-view-detailed]'));
   const parserRadios = Array.from(document.querySelectorAll('[data-parser-toggle]'));
   const parserKeys = new Set(parserRadios.map(function (radio) {
     return radio.value;
@@ -24,9 +21,217 @@
   };
   const parityToggle = document.querySelector('[data-parity-toggle]');
 
-  function readActiveView() {
-    const requested = new URLSearchParams(window.location.search).get('view');
-    return viewKeys.has(requested) ? requested : 'overview';
+  // Per-impl version radios (TC v1 tab). impl -> { slugs: [...], default: slug }.
+  const versionRadios = Array.from(document.querySelectorAll('[data-version-toggle]'));
+  const versionImpls = {};
+  versionRadios.forEach(function (radio) {
+    const impl = radio.dataset.versionImpl;
+    if (!versionImpls[impl]) { versionImpls[impl] = { slugs: [], default: null }; }
+    versionImpls[impl].slugs.push(radio.value);
+    if (radio.checked) { versionImpls[impl].default = radio.value; }
+  });
+  const activeVersion = {};
+  Object.keys(versionImpls).forEach(function (impl) {
+    activeVersion[impl] = versionImpls[impl].default || versionImpls[impl].slugs[0];
+  });
+
+  // Compare-any-combination model (TC v1 batch tab): pick one Base and any number
+  // of Compare candidates; each cell shows how many selected candidates differ
+  // from Base ("=" if none), plus ↯ when Base leaks markup. Tooltip shows Base +
+  // each selected candidate. All client-side from each cell's data-cmp payload.
+  // Compare is per-panel: each tab's .cmpctl has its own candidate chips + buckets.
+  function activePanel() { return document.querySelector('.tab-panel.active'); }
+  function panelCtl(panel) { return panel ? panel.querySelector('.cmpctl') : null; }
+  function ctlBase(ctl) { const c = ctl && ctl.querySelector('.bucket-A .chip'); return c ? c.dataset.cand : null; }
+  function ctlShown(ctl) {
+    return ctl ? Array.from(ctl.querySelectorAll('.bucket-B .chip')).map(function (x) { return x.dataset.cand; }) : [];
+  }
+  function toggleCands(cell, active, base) {
+    cell.querySelectorAll('.ttip .cand').forEach(function (sec) {
+      const cls = Array.from(sec.classList).find(function (c) { return c.indexOf('cand-') === 0; });
+      const key = cls ? cls.slice(5) : null;
+      sec.classList.toggle('cand-on', key !== null && active.has(key));
+      // Mark the Base reference's section so the tooltip flags which output the
+      // others are being compared against.
+      sec.classList.toggle('cand-base', key !== null && key === base);
+    });
+  }
+  // Keep each bucket's chips in lexical order regardless of drag/restore order.
+  function sortChips(ctl) {
+    ctl.querySelectorAll('.chips').forEach(function (zone) {
+      Array.from(zone.querySelectorAll('.chip'))
+        .sort(function (a, b) { return a.textContent.trim().localeCompare(b.textContent.trim()); })
+        .forEach(function (chip) { zone.appendChild(chip); });
+    });
+  }
+  // Size Compare-with and Others proportionally to how many chips each holds, so the
+  // fuller bucket gets more width. Base holds one chip and stays content-sized. The
+  // grow factor is floored at 1 so an empty bucket keeps a usable, droppable width.
+  function resizeBuckets(ctl) {
+    const b = ctl.querySelector('.bucket-B');
+    const c = ctl.querySelector('.bucket-C');
+    const nB = ctl.querySelectorAll('.bucket-B .chip').length;
+    const nC = ctl.querySelectorAll('.bucket-C .chip').length;
+    if (b) { b.style.flexGrow = String(Math.max(1, nB)); }
+    if (c) { c.style.flexGrow = String(Math.max(1, nC)); }
+  }
+  const cmpDefaults = {};  // panel id -> {base, shown} captured before URL restore
+  function _sameLayout(pid, base, shown) {
+    const d = cmpDefaults[pid];
+    if (!d) { return false; }
+    if ((d.base || '') !== (base || '')) { return false; }
+    if (d.shown.length !== shown.length) { return false; }
+    const set = new Set(d.shown);
+    return shown.every(function (k) { return set.has(k); });
+  }
+  function updateCompareUrl(panel, ctl) {
+    const url = new URL(window.location.href);
+    const pid = panel.id;
+    const base = ctlBase(ctl), b = ctlShown(ctl);
+    url.searchParams.delete('base_' + pid); url.searchParams.delete('cmp_' + pid);
+    // Only record params when this panel differs from its default layout, so the
+    // default state keeps a clean URL (and Reset lands on an empty query).
+    if (!_sameLayout(pid, base, b)) {
+      if (base) { url.searchParams.set('base_' + pid, base); }
+      if (b.length) { url.searchParams.set('cmp_' + pid, b.join(',')); }
+    }
+    window.history.replaceState(null, '', url.toString());
+  }
+  function restoreCtlFromUrl(panel, ctl) {
+    const params = new URLSearchParams(window.location.search);
+    const pid = panel.id;
+    if (!params.has('base_' + pid) && !params.has('cmp_' + pid)) { return; }  // keep defaults
+    const base = params.get('base_' + pid);
+    const inB = new Set((params.get('cmp_' + pid) || '').split(',').filter(Boolean));
+    const A = ctl.querySelector('.bucket-A .chips');
+    const B = ctl.querySelector('.bucket-B .chips');
+    const C = ctl.querySelector('.bucket-C .chips');
+    ctl.querySelectorAll('.chip').forEach(function (chip) {
+      const k = chip.dataset.cand;
+      if (k === base) { A.appendChild(chip); }
+      else if (inB.has(k)) { B.appendChild(chip); }
+      else { C.appendChild(chip); }
+    });
+  }
+  function updateSwap(ctl) {
+    const btn = ctl.querySelector('.cmp-swap');
+    if (!btn) { return; }
+    btn.hidden = !(ctl.querySelectorAll('.bucket-A .chip').length === 1
+      && ctl.querySelectorAll('.bucket-B .chip').length === 1);
+  }
+  function applyCtl(panel) {
+    const ctl = panelCtl(panel);
+    if (!ctl) { return; }
+    sortChips(ctl);
+    resizeBuckets(ctl);
+    const base = ctlBase(ctl);
+    const shown = ctlShown(ctl).filter(function (k) { return k !== base; });
+    const active = new Set((base ? [base] : []).concat(shown));
+    const counts = { ok: 0, problem: 0, na: 0 };
+    panel.querySelectorAll('td.cell[data-cmp]').forEach(function (cell) {
+      let cmp;
+      try { cmp = JSON.parse(cell.getAttribute('data-cmp')); } catch (e) { return; }
+      cell.classList.remove('cmp-eq', 'cmp-leak', 'cmp-na', 'cmp-nobase');
+      const marker = cell.querySelector('.cmp-marker .marker-text');
+      const bd = base ? cmp[base] : null;
+      if (!base) {
+        cell.classList.add('cmp-nobase'); if (marker) { marker.textContent = ''; }
+        counts.na++; toggleCands(cell, active, base); return;
+      }
+      if (!bd || bd.na === 1) {
+        cell.classList.add('cmp-na'); if (marker) { marker.textContent = 'n/a'; }
+        counts.na++; toggleCands(cell, active, base); return;
+      }
+      // Unavailable candidates never count toward the diff; still shown in tooltip.
+      const avail = shown.map(function (k) { return cmp[k]; }).filter(function (o) { return o && o.na !== 1; });
+      const diffs = avail.filter(function (o) { return o.sig !== bd.sig; }).length;
+      const leak = bd.leak === 1;
+      const txt = avail.length === 0 ? '·' : (diffs === 0 ? '=' : String(diffs));
+      if (marker) { marker.textContent = (leak ? '↯' : '') + txt; }
+      // Color = leak only: red = Base leaks markup, green = clean. Count is the number.
+      cell.classList.add(leak ? 'cmp-leak' : 'cmp-eq');
+      if (leak) { counts.problem++; } else { counts.ok++; }
+      toggleCands(cell, active, base);
+    });
+    panel.querySelectorAll('[data-overview-count]').forEach(function (el) {
+      const k = el.dataset.overviewCount;
+      el.textContent = String(k === 'todo' ? 0 : (counts[k] || 0));
+    });
+    updateSwap(ctl);
+    updateCompareUrl(panel, ctl);
+  }
+  function applyCompare() { const p = activePanel(); if (p) { applyCtl(p); } }
+  function swapChips(x, y) {
+    const xp = x.parentNode, xn = x.nextSibling, yp = y.parentNode, yn = y.nextSibling;
+    yp.insertBefore(x, yn === x ? xn : yn);
+    xp.insertBefore(y, xn === y ? yn : xn);
+  }
+  function initCompareDnd() {
+    let dragged = null;
+    document.querySelectorAll('.cmpctl .chip').forEach(function (chip) {
+      chip.addEventListener('dragstart', function (e) {
+        dragged = chip; chip.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', chip.dataset.cand || '');
+      });
+      chip.addEventListener('dragend', function () {
+        chip.classList.remove('dragging'); dragged = null;
+        document.querySelectorAll('.chip-over').forEach(function (c) { c.classList.remove('chip-over'); });
+      });
+      // Drop a chip directly onto another chip in the same control = swap them —
+      // except in Others, which always just receives the chip (no swap).
+      const inOthers = function () { return chip.closest('.bucket').dataset.bucket === 'C'; };
+      chip.addEventListener('dragover', function (e) {
+        if (!inOthers() && dragged && dragged !== chip && chip.closest('.cmpctl') === dragged.closest('.cmpctl')) {
+          e.preventDefault(); e.stopPropagation(); chip.classList.add('chip-over');
+        }
+      });
+      chip.addEventListener('dragleave', function () { chip.classList.remove('chip-over'); });
+      chip.addEventListener('drop', function (e) {
+        if (inOthers() || !dragged || dragged === chip || chip.closest('.cmpctl') !== dragged.closest('.cmpctl')) { return; }
+        e.preventDefault(); e.stopPropagation(); chip.classList.remove('chip-over');
+        swapChips(dragged, chip); applyCompare();
+      });
+    });
+    document.querySelectorAll('.cmpctl .bucket').forEach(function (b) {
+      const zone = b.querySelector('.chips');
+      b.addEventListener('dragover', function (e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; b.classList.add('drop-hover'); });
+      b.addEventListener('dragleave', function () { b.classList.remove('drop-hover'); });
+      b.addEventListener('drop', function (e) {
+        e.preventDefault(); b.classList.remove('drop-hover');
+        if (!dragged || dragged.closest('.cmpctl') !== b.closest('.cmpctl')) { return; }
+        if (b.dataset.bucket === 'A') {
+          const cur = b.querySelector('.chip');
+          if (cur && cur !== dragged) { b.closest('.cmpctl').querySelector('.bucket-B .chips').appendChild(cur); }
+        }
+        zone.appendChild(dragged); applyCompare();
+      });
+    });
+    document.querySelectorAll('.cmpctl .cmp-swap').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const ctl = btn.closest('.cmpctl');
+        const a = ctl.querySelector('.bucket-A .chip'), bch = ctl.querySelector('.bucket-B .chip');
+        if (a && bch) { swapChips(a, bch); applyCompare(); }
+      });
+    });
+  }
+  function initCompare() {
+    document.querySelectorAll('.tab-panel').forEach(function (panel) {
+      const ctl = panelCtl(panel);
+      if (!ctl) { return; }
+      // Record the server-rendered default layout BEFORE applying any URL state,
+      // so updateCompareUrl can keep the URL clean while at defaults.
+      cmpDefaults[panel.id] = { base: ctlBase(ctl), shown: ctlShown(ctl).slice() };
+      restoreCtlFromUrl(panel, ctl);
+    });
+    initCompareDnd();
+    document.querySelectorAll('.tab-panel').forEach(function (panel) {
+      if (panelCtl(panel)) { applyCtl(panel); }
+    });
+  }
+
+  function readDetailed() {
+    // Overview (non-detailed) is the default; ?view=details turns it on.
+    return new URLSearchParams(window.location.search).get('view') === 'details';
   }
 
   function readActiveParser() {
@@ -40,11 +245,11 @@
     return requested === '1' || requested === 'true';
   }
 
-  function updateViewUrl(view) {
+  function updateViewUrl(detailed) {
     const url = new URL(window.location.href);
     url.searchParams.delete('view');
-    if (view !== 'overview') {
-      url.searchParams.set('view', view);
+    if (detailed) {
+      url.searchParams.set('view', 'details');
     }
     window.history.replaceState(null, '', url.toString());
   }
@@ -68,6 +273,24 @@
     window.history.replaceState(null, '', url.toString());
   }
 
+  function readActiveVersion(impl) {
+    const info = versionImpls[impl];
+    if (!info) { return null; }
+    const requested = new URLSearchParams(window.location.search).get('ver-' + impl);
+    if (requested && info.slugs.indexOf(requested) !== -1) { return requested; }
+    return info.default || info.slugs[0];
+  }
+
+  function updateVersionUrl(impl, slug) {
+    const info = versionImpls[impl];
+    const url = new URL(window.location.href);
+    url.searchParams.delete('ver-' + impl);
+    if (info && slug !== info.default) {
+      url.searchParams.set('ver-' + impl, slug);
+    }
+    window.history.replaceState(null, '', url.toString());
+  }
+
   function activeParser() {
     const checked = parserRadios.find(function (radio) {
       return radio.checked;
@@ -77,11 +300,17 @@
 
   function updateOverviewStats() {
     const parser = activeParser();
+    const slug = activeVersion[parser];
     document.querySelectorAll('.tab-panel').forEach(function (panel) {
+      const versioned = panel.dataset.hasVersions === 'true';
       const counts = {ok: 0, problem: 0, todo: 0, na: 0};
       panel.querySelectorAll('td.cell').forEach(function (cell) {
         const alias = legacyParserAliases[parser];
-        const status = cell.getAttribute('data-status-' + parser) || (alias ? cell.getAttribute('data-status-' + alias) : null) || 'na';
+        // On a versioned tab, prefer the active version's status; fall back to the
+        // pinned attr (and legacy alias) for cells without per-version data.
+        const status = (versioned && slug && cell.getAttribute('data-status-' + parser + '-' + slug))
+          || cell.getAttribute('data-status-' + parser)
+          || (alias ? cell.getAttribute('data-status-' + alias) : null) || 'na';
         counts[status] = (counts[status] || 0) + 1;
       });
       panel.querySelectorAll('[data-overview-count]').forEach(function (el) {
@@ -90,15 +319,31 @@
     });
   }
 
-  function applyView(view, shouldUpdateUrl) {
-    const activeView = viewKeys.has(view) ? view : 'overview';
-    document.body.classList.toggle('view-overview', activeView === 'overview');
-    document.body.classList.toggle('view-details', activeView === 'details');
-    viewRadios.forEach(function (radio) {
-      radio.checked = radio.value === activeView;
+  function applyVersion(impl, slug, shouldUpdateUrl) {
+    const info = versionImpls[impl];
+    if (!info) { return; }
+    const active = info.slugs.indexOf(slug) !== -1 ? slug : (info.default || info.slugs[0]);
+    activeVersion[impl] = active;
+    info.slugs.forEach(function (s) {
+      document.body.classList.toggle('verv-' + impl + '-' + s, s === active);
     });
+    versionRadios.forEach(function (radio) {
+      if (radio.dataset.versionImpl === impl) {
+        radio.checked = radio.value === active;
+      }
+    });
+    updateOverviewStats();
     if (shouldUpdateUrl) {
-      updateViewUrl(activeView);
+      updateVersionUrl(impl, active);
+    }
+  }
+
+  function applyView(detailed, shouldUpdateUrl) {
+    document.body.classList.toggle('view-overview', !detailed);
+    document.body.classList.toggle('view-details', detailed);
+    viewCheckboxes.forEach(function (cb) { cb.checked = detailed; });
+    if (shouldUpdateUrl) {
+      updateViewUrl(detailed);
     }
   }
 
@@ -129,14 +374,31 @@
     }
   }
 
-  applyView(readActiveView(), false);
+  applyView(readDetailed(), false);
   applyParser(readActiveParser(), false);
+  Object.keys(versionImpls).forEach(function (impl) {
+    applyVersion(impl, readActiveVersion(impl), false);
+  });
   applyParityMode(readParityMode(), false);
-  viewRadios.forEach(function (radio) {
+  versionRadios.forEach(function (radio) {
     radio.addEventListener('change', function () {
       if (radio.checked) {
-        applyView(radio.value, true);
+        applyVersion(radio.dataset.versionImpl, radio.value, true);
       }
+    });
+  });
+  initCompare();
+  viewCheckboxes.forEach(function (cb) {
+    cb.addEventListener('change', function () { applyView(cb.checked, true); });
+  });
+  // Reset: drop every URL param (compare/view state) and reload at defaults, but
+  // stay on the current tab.
+  document.querySelectorAll('[data-reset]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const tab = new URLSearchParams(window.location.search).get('tab');
+      const u = new URL(window.location.href); u.search = ''; u.hash = '';
+      if (tab) { u.searchParams.set('tab', tab); }
+      window.location.href = u.href;  // reload at defaults, same tab
     });
   });
   parserRadios.forEach(function (radio) {
@@ -334,7 +596,9 @@
     tabPanels.forEach(function (panel) {
       panel.classList.toggle('active', panel.id === id);
     });
-    syncParserOptions(shouldUpdateUrl);
+    // Each tab keeps its own Base/Compare/Others (its own URL state or default) —
+    // no carry-over from the previously-viewed tab.
+    applyCompare();
     if (shouldUpdateUrl) {
       updateTabUrl(id);
     }
@@ -356,7 +620,7 @@
     ttip.style.top = '100%';
     ttip.style.right = 'auto';
     ttip.style.bottom = 'auto';
-    ttip.style.maxWidth = (window.innerWidth - 2 * margin) + 'px';
+    ttip.style.maxWidth = Math.round(window.innerWidth * 0.9) + 'px';
     const cellRect = cell.getBoundingClientRect();
     const tipRect = ttip.getBoundingClientRect();
     const vw = window.innerWidth, vh = window.innerHeight;
