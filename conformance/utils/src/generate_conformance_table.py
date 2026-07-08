@@ -1908,8 +1908,9 @@ def _full_label(impl: str, version: object, mode: str) -> str:
 def _dynamo_v2_version() -> str | None:
     """Version of the v2 Dynamo parser crate (dynamo-parsers-v2); the stream/v2 tabs
     run this, not the v1 dynamo-parsers crate. captured_with only records the label
-    'Dynamo parser v2', so read the real version from parsers_v2/Cargo.toml."""
-    p = toolcalling_table._FRONTEND_CRATES_ROOT / "parsers_v2" / "Cargo.toml"
+    'Dynamo parser v2', so read the real version from parsers/v2/Cargo.toml (the
+    DIS-2310 reorg moved it out of the flat parsers_v2/ dir)."""
+    p = toolcalling_table._FRONTEND_CRATES_ROOT / "parsers" / "v2" / "Cargo.toml"
     if not p.exists():
         return None
     m = re.search(r'^version\s*=\s*"([^"]+)"', p.read_text(), re.M)
@@ -2000,8 +2001,11 @@ def _candidate_items() -> list[dict[str, str]]:
 # <impl>-<version>/ (per-impl expected; lowest version = full anchor, higher =
 # changed-only). resolve_stream_fixtures.py reconstructs a flat tree for any selected
 # version set — the stream analogue of resolve_fixtures.py + the batch __ver_status map.
+# Read from the HuggingFace download cache (fixtures aren't in the repo since DIS-2310);
+# _common.sh exports CONFORMANCE_FIXTURES_ROOT. Without this the stream tab's versioned
+# candidates come up empty and the Base/Compare parser selector doesn't render.
 _STREAM_SRC = (
-    toolcalling_table._FRONTEND_CRATES_ROOT / "conformance/toolcalling/fixtures-stream-v2"
+    toolcalling_table._fixtures_cache_root() / "toolcalling/fixtures-stream-v2"
 )
 
 

@@ -1,9 +1,9 @@
 {
-  "snapshot": "20260708_132514",
-  "created_pt": "2026-07-08 13:25:14 America/Los_Angeles",
+  "snapshot": "20260708_143706",
+  "created_pt": "2026-07-08 14:37:06 America/Los_Angeles",
   "hf_repo": "ai-dynamo/conformance-fixtures",
-  "all_tarball": "all-20260708_132514.tar.gz",
-  "all_sha256": "5f4cecd799b5e1486bd53e2154b291d4ca0b677335043a38ff9c4e07bc445096",
+  "all_tarball": "all-20260708_143706.tar.gz",
+  "all_sha256": "e2a38983586b4bc9d11933061c8fd6a3304c79110e31f89cdcf43ce67344e4be",
   "crates": {
     "dynamo-parsers": "4.1.0",
     "dynamo-parsers-v2": "0.1.16"
@@ -47,6 +47,11 @@
       "path": "toolcalling/fixtures-stream-v2/dynamo_rust-0.1.11.tar.gz",
       "sha256": "ab3d41e056b00b114874a63c1c9d88d073b818224df20b4bdf5ff23f84f76718",
       "size": 2834
+    },
+    {
+      "path": "toolcalling/fixtures-stream-v2/dynamo_rust-3.0.0.tar.gz",
+      "sha256": "3dc4878480d7512d8c574e5d22608c45657290427ef1a9cc1e199a5a006a8cae",
+      "size": 10812
     },
     {
       "path": "toolcalling/fixtures-stream-v2/inputs.tar.gz",
