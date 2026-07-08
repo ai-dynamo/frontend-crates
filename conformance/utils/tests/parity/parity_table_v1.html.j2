@@ -105,6 +105,14 @@ td.cell.cmp-na { background: #d3d8de !important; }
 body.view-overview td.cell.cmp-na { color: #d3d8de; }
 td.cell.cmp-nobase { background: #eceff2 !important; }
 body.view-overview td.cell.cmp-nobase { color: #eceff2; }
+/* Base-only "·" (no peer to compare): neutral gray, not green. */
+td.cell.cmp-donly { background: #edf0f2 !important; }
+body.view-overview td.cell.cmp-donly { color: #edf0f2; }
+/* No-comparison markers (n/a, —, ·) recede to a subtle gray in the detailed view so
+   the real data markers (=, divergence counts) stay high-contrast. */
+body.view-details td.cell.cmp-na .cmp-marker,
+body.view-details td.cell.cmp-nobase .cmp-marker,
+body.view-details td.cell.cmp-donly .cmp-marker { color: #9aa1a9; }
 /* Tooltip candidate sections: hidden until the selection shows them. */
 .ttip .cand { display: none; }
 .ttip .cand.cand-on { display: block; }
@@ -460,7 +468,7 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
     panel.querySelectorAll('td.cell[data-cmp]').forEach(function (cell) {
       let cmp;
       try { cmp = JSON.parse(cell.getAttribute('data-cmp')); } catch (e) { return; }
-      cell.classList.remove('cmp-eq', 'cmp-leak', 'cmp-na', 'cmp-nobase');
+      cell.classList.remove('cmp-eq', 'cmp-leak', 'cmp-na', 'cmp-nobase', 'cmp-donly');
       const marker = cell.querySelector('.cmp-marker .marker-text');
       const bd = base ? cmp[base] : null;
       if (!base) {
@@ -475,11 +483,14 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
       const avail = shown.map(function (k) { return cmp[k]; }).filter(function (o) { return o && o.na !== 1; });
       const diffs = avail.filter(function (o) { return o.sig !== bd.sig; }).length;
       const leak = bd.leak === 1;
-      const txt = avail.length === 0 ? '·' : (diffs === 0 ? '=' : String(diffs));
+      // No available peer to compare against = a subtle "·" (Base-only), rendered
+      // neutral gray (cmp-donly) rather than green — there is nothing to conform to.
+      const donly = avail.length === 0;
+      const txt = donly ? '·' : (diffs === 0 ? '=' : String(diffs));
       if (marker) { marker.textContent = (leak ? '↯' : '') + txt; }
       // Color = leak only: red = Base leaks markup, green = clean. Count is the number.
-      cell.classList.add(leak ? 'cmp-leak' : 'cmp-eq');
-      if (leak) { counts.problem++; } else { counts.ok++; }
+      cell.classList.add(leak ? 'cmp-leak' : (donly ? 'cmp-donly' : 'cmp-eq'));
+      if (leak) { counts.problem++; } else if (donly) { counts.na++; } else { counts.ok++; }
       toggleCands(cell, active, base);
     });
     panel.querySelectorAll('[data-overview-count]').forEach(function (el) {

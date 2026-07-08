@@ -131,7 +131,7 @@
     panel.querySelectorAll('td.cell[data-cmp]').forEach(function (cell) {
       let cmp;
       try { cmp = JSON.parse(cell.getAttribute('data-cmp')); } catch (e) { return; }
-      cell.classList.remove('cmp-eq', 'cmp-leak', 'cmp-na', 'cmp-nobase');
+      cell.classList.remove('cmp-eq', 'cmp-leak', 'cmp-na', 'cmp-nobase', 'cmp-donly');
       const marker = cell.querySelector('.cmp-marker .marker-text');
       const bd = base ? cmp[base] : null;
       if (!base) {
@@ -146,11 +146,14 @@
       const avail = shown.map(function (k) { return cmp[k]; }).filter(function (o) { return o && o.na !== 1; });
       const diffs = avail.filter(function (o) { return o.sig !== bd.sig; }).length;
       const leak = bd.leak === 1;
-      const txt = avail.length === 0 ? '·' : (diffs === 0 ? '=' : String(diffs));
+      // No available peer to compare against = a subtle "·" (Base-only), rendered
+      // neutral gray (cmp-donly) rather than green — there is nothing to conform to.
+      const donly = avail.length === 0;
+      const txt = donly ? '·' : (diffs === 0 ? '=' : String(diffs));
       if (marker) { marker.textContent = (leak ? '↯' : '') + txt; }
       // Color = leak only: red = Base leaks markup, green = clean. Count is the number.
-      cell.classList.add(leak ? 'cmp-leak' : 'cmp-eq');
-      if (leak) { counts.problem++; } else { counts.ok++; }
+      cell.classList.add(leak ? 'cmp-leak' : (donly ? 'cmp-donly' : 'cmp-eq'));
+      if (leak) { counts.problem++; } else if (donly) { counts.na++; } else { counts.ok++; }
       toggleCands(cell, active, base);
     });
     panel.querySelectorAll('[data-overview-count]').forEach(function (el) {

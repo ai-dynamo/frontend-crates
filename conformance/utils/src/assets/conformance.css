@@ -110,6 +110,14 @@ td.cell.cmp-na { background: #d3d8de !important; }
 body.view-overview td.cell.cmp-na { color: #d3d8de; }
 td.cell.cmp-nobase { background: #eceff2 !important; }
 body.view-overview td.cell.cmp-nobase { color: #eceff2; }
+/* Base-only "·" (no peer to compare): neutral gray, not green. */
+td.cell.cmp-donly { background: #edf0f2 !important; }
+body.view-overview td.cell.cmp-donly { color: #edf0f2; }
+/* No-comparison markers (n/a, —, ·) recede to a subtle gray in the detailed view so
+   the real data markers (=, divergence counts) stay high-contrast. */
+body.view-details td.cell.cmp-na .cmp-marker,
+body.view-details td.cell.cmp-nobase .cmp-marker,
+body.view-details td.cell.cmp-donly .cmp-marker { color: #9aa1a9; }
 /* Tooltip candidate sections: hidden until the selection shows them. */
 .ttip .cand { display: none; }
 .ttip .cand.cand-on { display: block; }
