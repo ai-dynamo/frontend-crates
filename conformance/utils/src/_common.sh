@@ -82,7 +82,7 @@ _resolve_reasoning_fixtures() {
   vllm_v=$(grep -oE 'vllm\[[^]]*\]==[^"]+' "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//')
   sglang_v=$(grep -oE 'sglang\[[^]]*\]==[^"]+' "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//')
   python3 "$TOOLS/resolve_reasoning_fixtures.py" \
-    --fixtures-root "$ROOT/conformance/reasoning/fixtures-v1" \
+    --fixtures-root "$FIXTURES_ROOT/reasoning/fixtures-v1" \
     --out "$out" --select "vllm-${vllm_v}" "sglang-${sglang_v}"
 }
 
