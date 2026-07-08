@@ -27,12 +27,14 @@ For tool-calling, the important fields are:
 
 Fixture locations:
 
-| Path | Used By |
+All fixture YAMLs live on HuggingFace (`ai-dynamo/conformance-fixtures`, public dataset) and are downloaded automatically on first use via `download_fixtures.py`. Do NOT commit fixture YAMLs to the repo — publish new or updated fixtures via `package_and_publish.py` instead (see "Fixture Hosting" below). `conformance/utils/src/parser_families.yaml` is a parser config file, not a fixture — it stays in the repo.
+
+| HuggingFace path (inside snapshot) | Used By |
 |---|---|
-| `conformance/toolcalling/fixtures-batch-v1/` | `TC batch (v1)` tab. Complete model output through batch parsers. |
-| `conformance/toolcalling/fixtures-batch-on-stream-v2/` | `TC batch-on-stream (v2)` tab. Complete batch text through streaming parsers. |
-| `conformance/toolcalling/fixtures-stream-v2/` | `TC stream (v2)` tab. Incremental chunks through streaming parsers. |
-| `conformance/reasoning/fixtures/` | Reasoning parser tabs. |
+| `toolcalling/fixtures-batch-v1/` | `TC batch (v1)` tab. Complete model output through batch parsers. |
+| `toolcalling/fixtures-batch-on-stream-v2/` | `TC batch-on-stream (v2)` tab. Complete batch text through streaming parsers. |
+| `toolcalling/fixtures-stream-v2/` | `TC stream (v2)` tab. Incremental chunks through streaming parsers. |
+| `reasoning/fixtures-v1/inputs/` | Reasoning parser tabs. |
 
 ## Parser Implementations
 
@@ -202,14 +204,13 @@ The implementation lives under `src/` — don't run these directly unless you're
 
 ## Fixture Hosting (HuggingFace)
 
-Fixtures are hosted on HuggingFace as a private dataset (`ai-dynamo/conformance-fixtures`). The in-repo manifest (`conformance/fixtures-manifest.json`) pins the current snapshot; no HF metadata calls are needed at download time.
+Fixtures are hosted on HuggingFace as a public dataset (`ai-dynamo/conformance-fixtures`). The in-repo manifest (`conformance/fixtures-manifest.json`) pins the current snapshot; no HF metadata calls are needed at download time.
 
 ### Run conformance tests (fixtures download transparently)
 
-Set a read-capable HF token before the first run. Downloads are cached locally; subsequent runs are instant.
+Downloads are cached locally; subsequent runs are instant. No token is required — the dataset is public.
 
 ```bash
-export HF_TOKEN=<your-read-token>
 python3 conformance/utils/src/download_fixtures.py
 conformance/utils/check.sh dynamo all        # batch + stream + batch-via-stream
 conformance/utils/check.sh vllm --container <name>
@@ -244,7 +245,7 @@ The publish script builds deterministic per-version shard tarballs plus a monoli
 
 ### Add new fixtures (new SGLang / vLLM / Dynamo family)
 
-Add YAML files locally under the appropriate fixture tree (see `conformance/README.md` → "Adding Streaming Parser V2 Fixtures"), then publish a new snapshot exactly as above. The new family appears as a new subdirectory in the tarball; warm-path downloads on other machines will fetch only the shard(s) that changed.
+Add YAML files locally under the appropriate fixture tree, then publish a new snapshot exactly as above. The new family appears as a new subdirectory in the tarball; warm-path downloads on other machines will fetch only the shard(s) that changed.
 
 ## Notes
 
