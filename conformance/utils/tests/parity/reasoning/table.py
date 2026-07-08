@@ -2401,11 +2401,14 @@ def _peer_captured_versions(rows: dict[str, dict[str, Any]]) -> dict[str, str]:
 
 
 def _dynamo_v1_version() -> str | None:
-    """Version of the v1 dynamo-parsers crate (which contains the reasoning parser)."""
+    """Version of the v1 dynamo-parsers crate (which contains the reasoning parser).
+
+    The crate now lives at `parsers/v1/Cargo.toml` (the DIS-2310 reorg moved it out
+    of the flat `parsers/`); `_common.sh` reads the same path for its fixture select."""
     root = os.environ.get("FRONTEND_CRATES_ROOT")
     if not root:
         return None
-    p = Path(root) / "parsers" / "Cargo.toml"
+    p = Path(root) / "parsers" / "v1" / "Cargo.toml"
     if not p.exists():
         return None
     m = re.search(r'^version\s*=\s*"([^"]+)"', p.read_text(), re.M)

@@ -84,13 +84,29 @@ TOOLCALLING_CASES_MD = REPO_ROOT / "lib/parsers/TOOLCALLING_CASES.md"
 PYPROJECT_TOML = REPO_ROOT / "pyproject.toml"
 TEMPLATE_DIR = REPO_ROOT / "tests/parity"
 
-# The versioned fixture source (inputs/ + per-impl <impl>-<version>/ dirs) lives in
-# the real repo, not the ephemeral stage. `_common.sh` exports FRONTEND_CRATES_ROOT;
-# fall back to REPO_ROOT for standalone runs. Used to power the per-impl version
-# radios: we resolve each version snapshot and re-run the load path so cell keys
-# align exactly with the rendered (pinned) table.
+# The versioned fixture source (inputs/ + per-impl <impl>-<version>/ dirs) now lives
+# in the HuggingFace download cache, not the repo. `_common.sh` exports
+# CONFORMANCE_FIXTURES_ROOT (the cache root); fall back to the standard cache path for
+# standalone runs. Used to power the per-impl version radios: we resolve each version
+# snapshot and re-run the load path so cell keys align exactly with the rendered
+# (pinned) table.
 _FRONTEND_CRATES_ROOT = Path(os.environ.get("FRONTEND_CRATES_ROOT", str(REPO_ROOT)))
-_SRC_FIXTURES = _FRONTEND_CRATES_ROOT / "conformance/toolcalling/fixtures-batch-v1"
+
+
+def _fixtures_cache_root() -> Path:
+    """HuggingFace fixture download cache root (`~/.cache/dynamo/conformance-fixtures`
+    or `$XDG_CACHE_HOME/...`). `_common.sh` exports CONFORMANCE_FIXTURES_ROOT pointing
+    here; honor it first so staged renders and standalone runs agree."""
+    env = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
+    if env:
+        return Path(env)
+    xdg = os.environ.get("XDG_CACHE_HOME")
+    base = Path(xdg) if xdg else Path.home() / ".cache"
+    return base / "dynamo/conformance-fixtures"
+
+
+_SRC_FIXTURES = _fixtures_cache_root() / "toolcalling/fixtures-batch-v1"
+# The resolver script stays in the repo (it's code, not a fixture).
 _RESOLVE_SRC_DIR = _FRONTEND_CRATES_ROOT / "conformance/utils/src"
 
 RUST_TOOL_CALLING_DIR = REPO_ROOT / "lib/parsers/src/tool_calling"
