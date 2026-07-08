@@ -209,11 +209,12 @@ def _pinned_versions(impl_versions: dict[str, list[str]]) -> dict[str, str]:
 
 
 def _v1_peer_versions() -> dict[str, list[str]]:
-    """PARITY_v1 pins each peer to its OLDEST captured version only. The v1 parity page
-    is the legacy baseline — the Dynamo v1 batch parser was captured against the older
-    peer engines (vLLM 0.23.0 / SGLang 0.5.12.post1), so the v1 page shows that data;
-    the newer engines and per-version diffs live on the v2 conformance page."""
-    return {impl: [vers[0]] for impl, vers in _impl_versions().items() if vers}
+    """PARITY_v1 shows ALL captured peer versions (ascending) so both the v1-era
+    engines (vLLM 0.23.0 / SGLang 0.5.12.post1) and the current ones (0.24.0 / 0.5.14)
+    are present and selectable in the compare bar. The oldest peer is the default
+    Compare candidate (this is the legacy baseline page) and newer ones default to the
+    Others bucket — see _candidate_items."""
+    return _impl_versions()
 
 
 def _version_status_map(mode: str) -> dict[tuple[str, str], dict[str, dict[str, str]]]:
@@ -1690,11 +1691,12 @@ def _candidate_items(mode: str = "batch") -> list[dict[str, str]]:
     Labels are "<Engine> <Runtime> <version> (<mode>)", e.g. "Dynamo Rust 3.0.0
     (batch)" / "vLLM Python 0.24.0 (stream)".
 
-    Default layout: A (reference) = Dynamo; B (compare with) = each peer impl. Only
-    the latest version of each peer is offered (the parity page pins to current
-    engines), so there is no C (others) bucket."""
+    Default layout: A (reference) = Dynamo; B (compare with) = each peer's OLDEST
+    (v1-era) version — this is the legacy page, so the older engines are the default
+    comparison; C (others) = each peer's newer versions, present but not shown until
+    dragged into Compare."""
     impl_versions = _v1_peer_versions()
-    latest = {impl: (vers[-1] if vers else None) for impl, vers in impl_versions.items()}
+    oldest = {impl: (vers[0] if vers else None) for impl, vers in impl_versions.items()}
     out: list[dict[str, str]] = []
     first = True
     for impl in _VERSION_IMPLS:
@@ -1709,7 +1711,7 @@ def _candidate_items(mode: str = "batch") -> list[dict[str, str]]:
             if first:
                 bucket = "A"
                 first = False
-            elif v == latest.get(impl):
+            elif v == oldest.get(impl):
                 bucket = "B"
             else:
                 bucket = "C"
