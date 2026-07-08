@@ -96,7 +96,7 @@ conformance/utils/render_table_v2.sh
 | `openai_harmony` (Python, in the engine containers) | recorded as `captured_with` in `conformance/toolcalling/fixtures-stream-v2/harmony*/` | n/a (engine container) | vLLM container `0.0.8`, SGLang container `0.0.4` | The gpt-oss/Harmony parser behavior is defined by the Harmony grammar; a Rust-`0.0.3`-vs-Python-`0.0.8` gap is the most likely source of a Harmony conformance mismatch. Re-check the in-container version after any vLLM/SGLang bump. Consider bumping the Rust crate to match. |
 | `fastokens` (Rust) | root `Cargo.toml` | root `Cargo.toml` | frontend-crates `0.1.0` vs Dynamo `0.2.0` (skew) | Tokenizer backend; low parser conformance impact but the one hard Rust skew. Bump to `0.2.0` to stay honest. |
 | `vllm` / `sglang` (Python engine pins) | `conformance/utils/src/pyproject.stub.toml` | `pyproject.toml` | `vllm==0.22.0`, `sglang==0.5.12.post1` | Matches current `main`. After bumping, re-capture peer streaming data and update `captured_with`. |
-| Shared crate versions + parser deps | `parsers/v1/`, `tokenizers/`, `protocols/`, `renderer/` `Cargo.toml` + root | `lib/*/Cargo.toml` + root | all `1.3.0`; async-openai `0.34`, tokenizers `0.21.4`, tiktoken-rs `0.9`, rustpython-parser `0.4.0`, minijinja `2.20.0`; Rust `1.93.1` | Should always match the Dynamo workspace; verify on sync. |
+| Shared crate versions + parser deps | `parsers/v1/`, `tokenizers/`, `protocols/`, `renderer/` `Cargo.toml` + root | `lib/*/Cargo.toml` + root | all `1.3.0`; async-openai `0.34`, tokenizers `0.21.4`, tiktoken-rs `0.9`, rustpython-parser `0.4.0`, minijinja `2.20.0`; Rust `1.96.1` | Should always match the Dynamo workspace; verify on sync. |
 
 ## Frontend-Crate-Only Files
 
