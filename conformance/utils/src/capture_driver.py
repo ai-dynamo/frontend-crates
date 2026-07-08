@@ -7,11 +7,11 @@ then assembles fixtures. Runs on the HOST (docker exec), not inside a container.
 
 Modes (`--mode`):
   stream           Per-chunk vLLM Python + vLLM Rust + SGLang Python streaming for configured families;
-                   builds conformance/toolcalling/fixtures-stream-v2/<family>/TOOLCALLING.stream.*.yaml
+                   captures into local fixture trees, then publish to HuggingFace via package_and_publish.py
                    (Dynamo parser v2 marked unavailable/TODO). Calls build_stream_fixtures.py.
   batch-on-stream  Each family's batch text through each engine's streaming parser;
-                   writes conformance/toolcalling/fixtures-batch-on-stream-v2/<family>/TOOLCALLING.batch*.yaml
-                   overlay (optionally with Dynamo Rust recorder JSON).
+                   captures into local fixture trees, then publish to HuggingFace via package_and_publish.py
+                   (optionally with Dynamo Rust recorder JSON).
   merge            Merge the three per-engine flat stream-on-batch captures
                    (--dynamo-rust/--vllm-python/--sglang JSON) into the nested
                    harmony_batch_stream.json the older flow consumes.
@@ -208,13 +208,12 @@ def _select_fixtures(fixtures, args):
 
 def _run_stream(args):
     here = os.path.dirname(os.path.abspath(__file__))
-    # A3: stream-capture SEEDS are the v1 corpus's shared stream inputs
-    # (`conformance/toolcalling/fixtures-batch-v1/inputs/<family>/TOOLCALLING.stream.*.yaml`) —
-    # the chunking derives from the same model_text. (The DIS-2310 versioning
-    # restructure moved these input-only files from the flat family dirs into
-    # `inputs/`.) Captured per-chunk output is WRITTEN to the frontend-crate-owned
-    # `fixtures-stream-v2/<family>/`. To add a new family's stream case, add its
-    # `TOOLCALLING.stream.*.yaml` seed under `fixtures/inputs/` first.
+    # A3: stream-capture SEEDS are the HF-downloaded v1 corpus's shared stream inputs
+    # (`fixtures-batch-v1/inputs/<family>/TOOLCALLING.stream.*.yaml`) —
+    # the chunking derives from the same model_text. Captured per-chunk output is
+    # written locally, then published to HuggingFace via package_and_publish.py.
+    # To add a new family's stream case, add its TOOLCALLING.stream.*.yaml seed
+    # under the HF fixtures-batch-v1/inputs/ tree and re-publish.
     conf = os.path.join(args.root, "conformance/toolcalling/fixtures-batch-v1/inputs")
     _copy_worker((args.vllm_container, args.sglang_container))
     vllm_rust_source_version = _vllm_rust_source_version(_vllm_rust_source_arg(args))
