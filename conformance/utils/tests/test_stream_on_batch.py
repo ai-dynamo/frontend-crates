@@ -552,14 +552,15 @@ def test_sob_tooltip_labels_stream_and_batch() -> None:
         batch={i: _calls("f") for i in IMPLS},
     )
     ttip = g._build_sob_tooltip(case)
-    # Sections now use the standardized "<Engine> <Runtime> (<mode>)" candidate label
-    # (same key as the Base/Compare buckets), wrapped as cand-<impl> so the selection
-    # can toggle them.
+    # Sections now use the standardized "<Engine> <Runtime> <version> (<mode>)" candidate
+    # label (same key as the Base/Compare buckets), wrapped as cand-<impl> so the
+    # selection can toggle them. The version comes from fixture provenance and may be
+    # absent for a synthetic case with no captured_with, so match it optionally.
     for lbl in ("Dynamo Rust", "vLLM Rust", "vLLM Python", "SGLang Python"):
-        assert f"{lbl} (stream):" in ttip
+        assert re.search(rf"{re.escape(lbl)}(?: \S+)? \(stream\):", ttip), f"missing {lbl} (stream)"
     for lbl in ("Dynamo Rust", "vLLM Python", "SGLang Python"):
-        assert f"{lbl} (batch):" in ttip
-    assert "vLLM Rust (batch):" not in ttip
+        assert re.search(rf"{re.escape(lbl)}(?: \S+)? \(batch\):", ttip), f"missing {lbl} (batch)"
+    assert not re.search(r"vLLM Rust(?: \S+)? \(batch\):", ttip)
     assert "V<sub>RB</sub>" not in ttip
     assert "cand cand-vllm_rust" in ttip
 
