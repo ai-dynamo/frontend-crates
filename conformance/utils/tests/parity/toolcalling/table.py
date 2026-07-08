@@ -23,8 +23,8 @@ the table referenced in `tests/parity/README.md`.
 
 Cell markers (per peer, vllm + sglang):
   =     peer block is `*d_<case>` anchor ref to dynamo (matches)
-  V/S   peer is a concrete inline block AND has `reason:` (intentional)
-  V?/S? peer is a concrete inline block AND has no `reason:` yet
+  V/S   peer is a concrete inline block AND has `explanation:` (intentional)
+  V?/S? peer is a concrete inline block AND has no `explanation:` yet
         (research-needed; we observed it but haven't classified it)
   V✗/S✗ peer has `error: <substring>` (Python parser raised)
   VS, V?S, VS✗, etc. — combinations
@@ -717,7 +717,7 @@ def peer_status(case: dict, dyn: dict, impl: str) -> tuple[str, bool]:
       'unavail' — peer block is `{unavailable: <msg>}`
       'err'     — peer block is `{error: <substring>}`
       'div'     — peer block is a concrete divergent {calls, normal_text}
-    is_unknown is True iff kind == 'div' AND block has no `reason:`.
+    is_unknown is True iff kind == 'div' AND block has no `explanation:`.
     """
     block = case.get("expected", {}).get(impl)
     if block is None:
@@ -742,7 +742,7 @@ def peer_status(case: dict, dyn: dict, impl: str) -> tuple[str, bool]:
         }
         if n_block == n_dyn:
             return ("match", False)
-        return ("div", "reason" not in block)
+        return ("div", _explanation(block) is None)
     return ("na", False)
 
 
@@ -754,13 +754,24 @@ _TOOL_CALL_MARKUP_RE = re.compile(
 )
 
 
+def _explanation(block: object) -> str | None:
+    """The intentional-divergence note on an expected block. `explanation` is the
+    current key; `reason` is the legacy spelling still present in older fixtures. Read
+    both (explanation wins); new fixtures/captures write `explanation`."""
+    if not isinstance(block, dict):
+        return None
+    v = block.get("explanation")
+    return v if v is not None else block.get("reason")
+
+
 def _dynamo_tool_call_leak(dyn: dict) -> str | None:
     normal_text = dyn.get("normal_text")
-    if not dyn.get("reason") or not isinstance(normal_text, str):
+    note = _explanation(dyn)
+    if not note or not isinstance(normal_text, str):
         return None
     if not _TOOL_CALL_MARKUP_RE.search(normal_text):
         return None
-    return str(dyn["reason"])
+    return str(note)
 
 
 def _block_tool_call_leaks(block: dict) -> bool:
@@ -910,7 +921,7 @@ def cell_for(case: dict | None) -> str:
     elif s_kind == "err":
         parts.append("S✗")
 
-    # `reason:` on the `expected.dynamo` block flags Dynamo's own output as
+    # `explanation:` on the `expected.dynamo` block flags Dynamo's own output as
     # leaking tool call markup only when Dynamo also leaves residual
     # `normal_text`. Dynamo can have non-leak reasons for dropped malformed
     # markup, so don't mark those as `↯`.
@@ -946,8 +957,8 @@ _LEGEND_MD = (
     "**Legend:** "
     "`=` all captured peers match Dynamo · "
     "`·` Dynamo-only fixture (both peers unavailable) · "
-    "`V`/`S` divergence (V = vLLM, S = SGLang; intentional, has `reason:`) · "
-    "`?` research-needed suffix (e.g. V?, S? — diverges with no `reason:` yet) · "
+    "`V`/`S` divergence (V = vLLM, S = SGLang; intentional, has `explanation:`) · "
+    "`?` research-needed suffix (e.g. V?, S? — diverges with no `explanation:` yet) · "
     "`↯` Dynamo leaks tool call markup into `normal_text` "
     "(`expected.dynamo.reason:` carries the explanation) · "
     "`✗` parser exception (e.g. V✗, S✗ — Python parser raised) · "
@@ -1018,11 +1029,12 @@ def _format_output_block_html(block, family: str | None = None) -> str:
 
 def _cand_section_body(block, family: str | None = None) -> str:
     """A compare candidate's tooltip section body: its output block plus its own
-    `reason:` (when present), so the reason shows only when that candidate is
+    `explanation:` (when present), so the note shows only when that candidate is
     selected instead of via a global cross-engine blob naming unselected engines."""
     body = _format_output_block_html(block, family)
-    if isinstance(block, dict) and block.get("reason"):
-        body += "\nreason: " + html_lib.escape(str(block["reason"]))
+    note = _explanation(block)
+    if note:
+        body += "\nexplanation: " + html_lib.escape(str(note))
     return body
 
 
@@ -1139,7 +1151,7 @@ def _tooltip_for(case: dict, dyn: dict) -> str:
     """Build the hover-tooltip text for a divergent cell.
 
     Each non-matching, non-unavailable peer contributes one line:
-      vllm: <reason>                        # `reason:` field present
+      vllm: <reason>                        # `explanation:` field present
       vllm: UNKNOWN — divergent ...         # divergent, no reason
       vllm: parser exception matching '...' # `error:` field present
     """
@@ -1166,21 +1178,22 @@ def _tooltip_for(case: dict, dyn: dict) -> str:
         }
         if n_block == n_dyn:
             continue
-        if "reason" in block:
-            parts.append(f"{name}: {block['reason']}")
+        note = _explanation(block)
+        if note:
+            parts.append(f"{name}: {note}")
         elif "calls" in block or "normal_text" in block:
-            parts.append(f"{name}: (research-needed — no `reason:` field yet)")
+            parts.append(f"{name}: (research-needed — no `explanation:` field yet)")
     return "\n".join(parts)
 
 
 def _build_na_tooltip_html(case: dict) -> str:
-    """Tooltip for an n/a stub case (only `reason:` in YAML, no `expected:`
-    block). Renders case id + description + the reason. Used when the cell
+    """Tooltip for an n/a stub case (only `explanation:` in YAML, no `expected:`
+    block). Renders case id + description + the note. Used when the cell
     is n/a because the scenario doesn't apply to the family's parser syntax."""
     case_id = case.get("__case_id", "")
     desc = case.get("description") or ""
     head = f"{case_id} — {desc}" if (case_id and desc) else (case_id or desc)
-    reason = case.get("reason") or "n/a (no reason given)"
+    reason = _explanation(case) or "n/a (no explanation given)"
     return build_parity_tooltip_html(
         head=head,
         extra_sections=[("Why not applicable", linkify_text_html(str(reason)))],
@@ -1204,7 +1217,7 @@ def _build_missing_tooltip_html(mode: str, family: str, sub: str) -> str:
                 html_lib.escape(
                     "No fixture entry exists for this family/case. If the case "
                     "is intentionally not applicable, add an explicit n/a stub "
-                    "with description: and reason: so the table can explain it."
+                    "with description: and explanation: so the table can explain it."
                 ),
             )
         ],
@@ -1237,7 +1250,7 @@ def render_cell_html(case: dict | None, mode: str, family: str, sub: str) -> str
 
     dyn = case.get("expected", {}).get("dynamo")
     if not isinstance(dyn, dict):
-        # n/a stub: case has only `reason:` (no `expected:` block).
+        # n/a stub: case has only `explanation:` (no `expected:` block).
         fp = case.get("__fixture_path", "")
         ttip = _build_na_tooltip_html(case)
         if not fp:

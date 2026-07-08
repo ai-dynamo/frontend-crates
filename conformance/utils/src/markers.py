@@ -87,7 +87,7 @@ def peer_status(case: dict, dyn: dict, impl: str) -> tuple[str, bool]:
       'unavail' — peer block is `{unavailable: <msg>}`
       'err'     — peer block is `{error: <substring>}`
       'div'     — peer block is a concrete divergent {calls, normal_text}
-    is_unknown is True iff kind == 'div' AND block has no `reason:`.
+    is_unknown is True iff kind == 'div' AND block has no `explanation:`.
     """
     block = _impl_get(case.get("expected") or {}, impl)
     if block is None:
@@ -112,7 +112,7 @@ def peer_status(case: dict, dyn: dict, impl: str) -> tuple[str, bool]:
         }
         if n_block == n_dyn:
             return ("match", False)
-        return ("div", "reason" not in block)
+        return ("div", _explanation(block) is None)
     return ("na", False)
 
 
@@ -124,13 +124,25 @@ _TOOL_CALL_MARKUP_RE = re.compile(
 )
 
 
+def _explanation(block: object) -> str | None:
+    """The intentional-divergence note on an expected block. `explanation` is the
+    current key; `reason` is the legacy spelling still present in older fixtures and
+    Dynamo-synced code. Read both (explanation wins); new fixtures/captures write
+    `explanation`."""
+    if not isinstance(block, dict):
+        return None
+    v = block.get("explanation")
+    return v if v is not None else block.get("reason")
+
+
 def _dynamo_tool_call_leak(dyn: dict) -> str | None:
     normal_text = dyn.get("normal_text")
-    if not dyn.get("reason") or not isinstance(normal_text, str):
+    note = _explanation(dyn)
+    if not note or not isinstance(normal_text, str):
         return None
     if not _TOOL_CALL_MARKUP_RE.search(normal_text):
         return None
-    return str(dyn["reason"])
+    return str(note)
 
 
 def _block_tool_call_leaks(block: dict) -> bool:

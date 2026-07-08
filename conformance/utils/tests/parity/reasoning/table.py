@@ -457,6 +457,16 @@ def _normalize_text(v: Any) -> Any:
     return v
 
 
+def _explanation(block: object) -> str | None:
+    """The intentional-divergence note on an expected block / case. `explanation` is the
+    current key; `reason` is the legacy spelling still present in older fixtures. Read
+    both (explanation wins); new fixtures/captures write `explanation`."""
+    if not isinstance(block, dict):
+        return None
+    v = block.get("explanation")
+    return v if v is not None else block.get("reason")
+
+
 def _canonical(d: dict[str, Any]) -> str:
     d = {
         **d,
@@ -464,6 +474,7 @@ def _canonical(d: dict[str, Any]) -> str:
         "reasoning_text": _normalize_text(d.get("reasoning_text")),
     }
     d.pop("reason", None)
+    d.pop("explanation", None)
     return json.dumps(d, sort_keys=True, separators=(",", ":"))
 
 
@@ -562,7 +573,7 @@ def _block_leak_reason(block: dict[str, Any], family: str | None) -> str | None:
             and not _is_gpt_oss_tool_handoff(family, field, value)
         ):
             return str(
-                block.get("reason")
+                _explanation(block)
                 or "Dynamo leaks reasoning markup or final-answer text."
             )
     return None
@@ -850,7 +861,8 @@ def _columns_for_mode(columns: list[str], mode: str) -> list[str]:
 
 def _is_na_stub(case: dict[str, Any]) -> bool:
     return (
-        set(case) <= {"description", "reason", "ref", "spec_ref"} and "reason" in case
+        set(case) <= {"description", "reason", "explanation", "ref", "spec_ref"}
+        and _explanation(case) is not None
     )
 
 
@@ -918,9 +930,9 @@ def _cell(case: dict[str, Any] | None, family: str | None = None) -> tuple[str, 
             # in the grid. The exception detail still shows in the tooltip.
             marker = _python_exception_marker(case, family)
             if marker:
-                parts = [case["reason"], *_python_exception_tooltip_lines(case, family)]
+                parts = [_explanation(case), *_python_exception_tooltip_lines(case, family)]
                 return "n/a", "\n".join(parts)
-            return "n/a", case["reason"]
+            return "n/a", _explanation(case)
         return "?", "fixture has no expected block"
 
     expected = case["expected"]
@@ -947,12 +959,12 @@ def _cell(case: dict[str, Any] | None, family: str | None = None) -> tuple[str, 
         suffix = (
             "?"
             if (dynamo_leak and not dynamo_leak_reason)
-            or (not dynamo_leak and not spec.get("reason"))
+            or (not dynamo_leak and not _explanation(spec))
             else ""
         )
         markers.append(f"{letter}{suffix}")
         reason = (
-            dynamo_leak_reason if dynamo_leak else spec.get("reason", "research-needed")
+            dynamo_leak_reason if dynamo_leak else (_explanation(spec) or "research-needed")
         )
         tooltip_parts.append(f"{impl}: diverges — {reason}")
 
@@ -1680,11 +1692,11 @@ def _tooltip_for(
         if dynamo_leak_reason:
             continue
         if dynamo_leak:
-            parts.append(f"{name}: (research-needed — no `reason:` field yet)")
-        elif "reason" in block and not dynamo_leak:
-            parts.append(f"{name}: {block['reason']}")
+            parts.append(f"{name}: (research-needed — no `explanation:` field yet)")
+        elif _explanation(block) and not dynamo_leak:
+            parts.append(f"{name}: {_explanation(block)}")
         elif "reasoning_text" in block or "normal_text" in block:
-            parts.append(f"{name}: (research-needed — no `reason:` field yet)")
+            parts.append(f"{name}: (research-needed — no `explanation:` field yet)")
     return "\n".join(parts)
 
 
@@ -1697,8 +1709,8 @@ def _explanations_for(
     peer_reasons = _tooltip_for(case, dyn, family)
     if peer_reasons:
         parts.append(peer_reasons)
-    if isinstance(dyn.get("reason"), str) and not _has_dynamo_leak(case, family):
-        parts.append(f"Dynamo: {dyn['reason']}")
+    if isinstance(_explanation(dyn), str) and not _has_dynamo_leak(case, family):
+        parts.append(f"Dynamo: {_explanation(dyn)}")
     return "\n".join(parts)
 
 
@@ -1726,7 +1738,7 @@ def _tooltip_html(
             )
         )
     if "expected" not in case:
-        reason = case.get("reason", "fixture has no expected block")
+        reason = _explanation(case) or "fixture has no expected block"
         extra_sections = [("Why not applicable", linkify_text_html(str(reason)))]
         parser_exceptions = _python_exception_tooltip_lines(case, family)
         if parser_exceptions:
@@ -1768,8 +1780,9 @@ def _tooltip_html(
     for impl in ("dynamo", "vllm", "sglang"):
         blk = expected.get(impl)
         body = _format_output_block_html(blk, family, display_family=display_family)
-        if isinstance(blk, dict) and blk.get("reason"):
-            body += "\nreason: " + html_lib.escape(str(blk["reason"]))
+        note = _explanation(blk)
+        if note:
+            body += "\nexplanation: " + html_lib.escape(str(note))
         output_sections.append(
             (
                 _reasoning_cand_label(impl, mode),
@@ -2264,9 +2277,9 @@ def _legend_html(rows: dict[str, dict[str, Any]], columns: list[str]) -> str:
         '<span style="color:#8b949e">·</span> Dynamo-only fixture '
         "(both peers unavailable) · "
         '<span style="color:#555">V/S</span> divergence '
-        "(V = vLLM, S = SGLang; intentional, has <code>reason:</code>) · "
+        "(V = vLLM, S = SGLang; intentional, has <code>explanation:</code>) · "
         '<span style="color:#b00">?</span> more research needed '
-        "(e.g. V?, S? — diverges with no <code>reason:</code> yet) · "
+        "(e.g. V?, S? — diverges with no <code>explanation:</code> yet) · "
         '<span style="color:#b00">↯</span> Dynamo leaks reasoning markup '
         "or final-answer text · "
         '<span style="color:#b00">✗</span> parser exception '

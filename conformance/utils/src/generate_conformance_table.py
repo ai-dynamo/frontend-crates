@@ -30,7 +30,7 @@ Cell markers (Dynamo Rust + vLLM Rust + vLLM Python + SGLang):
   V_rs      vLLM Rust stream parser output diverges from the selected parser; no V_rb exists
   S_rb      SGLang batch parser output diverges from the selected parser
   S_rs      SGLang stream parser output diverges from the selected parser
-  ?         suffix means the divergent block has no `reason:` yet
+  ?         suffix means the divergent block has no `explanation:` yet
         (research-needed; we observed it but haven't classified it)
   !         suffix means the parser has `error: <substring>` (expected to crash)
   Combined markers, for example V_pbS_rb, mean multiple implementations diverge
@@ -130,6 +130,7 @@ from markers import (  # noqa: E402,F401
     _canonical_tool_output,
     _dynamo_tool_call_leak,
     _expected,
+    _explanation,
     _impl_get,
     _impl_keys_for_output_kind,
     _impl_mode_label_html,
@@ -544,7 +545,7 @@ def cell_for(
         elif kind == "err":
             parts.append(f"{letter}!")
 
-    # `reason:` on the `expected.dynamo_rust` block flags Dynamo parser v2 output as
+    # `explanation:` on the `expected.dynamo_rust` block flags Dynamo parser v2 output as
     # leaking tool call markup only when it also leaves residual
     # `normal_text`. The Dynamo parser v2 can have non-leak reasons for dropped malformed
     # markup, so don't mark those as `↯`.
@@ -587,8 +588,8 @@ _LEGEND_MD = (
     "`V_rs` (vLLM Rust stream parser; no `V_rb` exists) · "
     "`S_rb` (SGLang batch parser) · "
     "`S_rs` (SGLang stream parser) · "
-    "a marker means that implementation diverges from the selected parser output; intentional divergences have `reason:` · "
-    "`?` research-needed suffix (e.g. V_pb?, S_rs? — diverges with no `reason:` yet) · "
+    "a marker means that implementation diverges from the selected parser output; intentional divergences have `explanation:` · "
+    "`?` research-needed suffix (e.g. V_pb?, S_rs? — diverges with no `explanation:` yet) · "
     "`↯` selected parser leaks tool call markup into `normal_text` "
     "(captured peer output can legitimately show imperfect engine behavior) · "
     "`!` expected-error suffix (e.g. V_pb!, S_rs! — engine crashes by design) · "
@@ -634,8 +635,8 @@ def _common_legend_html(
         f'<li><span style="color:#555">{_marker_html("V_rs")}</span> vLLM Rust stream parser; no <code>V_rb</code> exists.</li>'
         f'<li><span style="color:#555">{_marker_html("S_rb")}</span> SGLang batch parser.</li>'
         f'<li><span style="color:#555">{_marker_html("S_rs")}</span> SGLang stream parser.</li>'
-        '<li>A marker means that implementation diverges from the selected parser output; intentional divergences have <code>reason:</code>.</li>'
-        f'<li><span style="color:#b00">?</span> more research needed, for example {_marker_html("V_pb")}? or {_marker_html("S_rs")}? diverges with no <code>reason:</code> yet.</li>'
+        '<li>A marker means that implementation diverges from the selected parser output; intentional divergences have <code>explanation:</code>.</li>'
+        f'<li><span style="color:#b00">?</span> more research needed, for example {_marker_html("V_pb")}? or {_marker_html("S_rs")}? diverges with no <code>explanation:</code> yet.</li>'
         '<li><span style="color:#b00">↯</span> selected parser leaks tool call markup into <code>normal_text</code>; captured peer output can legitimately show imperfect engine behavior.</li>'
         f'<li><span style="color:#b00">!</span> expected-error suffix, for example {_marker_html("V_pb")}! or {_marker_html("S_rs")}! means the engine crashes by design.</li>'
         '<li><span style="color:#b00">✗</span> the engine parser ran but <strong>failed to parse</strong> this input (recorded as <code>unavailable: … parser not captured: …</code>); distinct from <span style="color:#aaa">n/a</span> (not run).</li>'
@@ -718,12 +719,13 @@ def _format_output_block_html(block, family: str | None = None) -> str:
 
 def _cand_section_body(block, family: str | None = None) -> str:
     """A compare candidate's tooltip section body: its output block plus its own
-    `reason:` (when present). The reason lives INSIDE the candidate's toggleable
+    `explanation:` (when present). The note lives INSIDE the candidate's toggleable
     section — so it shows only when that candidate is selected — instead of a global
     cross-engine "Divergent reasons" blob that would name unselected engines."""
     body = _format_output_block_html(block, family)
-    if isinstance(block, dict) and block.get("reason"):
-        body += "\nreason: " + html_lib.escape(str(block["reason"]))
+    note = _explanation(block)
+    if note:
+        body += "\nexplanation: " + html_lib.escape(str(note))
     return body
 
 
@@ -1018,7 +1020,7 @@ def _tooltip_for(case: dict, dyn: dict, impl_keys: tuple[str, ...] = IMPL_KEYS) 
     """Build the hover-tooltip text for a divergent cell.
 
     Each non-matching, non-unavailable peer contributes one line:
-      vllm_python: <reason>                        # `reason:` field present
+      vllm_python: <reason>                        # `explanation:` field present
       vllm_python: UNKNOWN — divergent ...         # divergent, no reason
       vllm_python: expected error matching '...'   # `error:` field present
     """
@@ -1046,21 +1048,22 @@ def _tooltip_for(case: dict, dyn: dict, impl_keys: tuple[str, ...] = IMPL_KEYS) 
         }
         if n_block == n_dyn:
             continue
-        if "reason" in block:
-            parts.append(f"{name}: {block['reason']}")
+        note = _explanation(block)
+        if note:
+            parts.append(f"{name}: {note}")
         elif "calls" in block or "normal_text" in block:
-            parts.append(f"{name}: (research-needed — no `reason:` field yet)")
+            parts.append(f"{name}: (research-needed — no `explanation:` field yet)")
     return "\n".join(parts)
 
 
 def _build_na_tooltip_html(case: dict) -> str:
-    """Tooltip for an n/a stub case (only `reason:` in YAML, no `expected:`
-    block). Renders case id + description + the reason. Used when the cell
+    """Tooltip for an n/a stub case (only `explanation:` in YAML, no `expected:`
+    block). Renders case id + description + the note. Used when the cell
     is n/a because the scenario doesn't apply to the family's parser syntax."""
     case_id = case.get("__case_id", "")
     desc = case.get("description") or ""
     head = f"{case_id} — {desc}" if (case_id and desc) else (case_id or desc)
-    reason = case.get("reason") or "n/a (no reason given)"
+    reason = _explanation(case) or "n/a (no explanation given)"
     return _build_conformance_tooltip_html(
         head=head,
         extra_sections=[("Why not applicable", linkify_text_html(str(reason)))],
@@ -1084,7 +1087,7 @@ def _build_missing_tooltip_html(mode: str, family: str, sub: str) -> str:
                 html_lib.escape(
                     "No fixture entry exists for this family/case. If the case "
                     "is intentionally not applicable, add an explicit n/a stub "
-                    "with description: and reason: so the table can explain it."
+                    "with description: and explanation: so the table can explain it."
                 ),
             )
         ],
@@ -1156,7 +1159,7 @@ def render_cell_html(
 
     dyn = _impl_get(case.get("expected") or {}, BASELINE_IMPL)
     if not isinstance(dyn, dict):
-        # n/a stub: case has only `reason:` (no `expected:` block).
+        # n/a stub: case has only `explanation:` (no `expected:` block).
         fp = case.get("__fixture_path", "")
         ttip = _build_na_tooltip_html(case)
         if not fp:
@@ -2554,7 +2557,7 @@ def _stream_on_batch_expected(overlay_case: dict, has_batch_text: bool = True) -
             expected[impl] = {
                 "calls": block.get("calls") or [],
                 "normal_text": block.get("normal_text") or "",
-                "reason": (
+                "explanation": (
                     f"Captured from the {IMPL_DISPLAY[impl]} streaming parser on the batch text. "
                     "Streaming output differs from Dynamo parser v2 token-incremental "
                     "behavior by design (text vs token streaming)."
