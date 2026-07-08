@@ -1,7 +1,0 @@
-family: pythonic
-mode: streamv2
-captured_with:
-  vllm_rust: 0.23.0
-cases:
-  TOOLCALLING.streamv2.10:
-    unavailable: No vLLM Rust parser for family 'pythonic'.

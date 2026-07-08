@@ -200,6 +200,52 @@ Run these from `conformance/utils/`:
 
 The implementation lives under `src/` — don't run these directly unless you're developing the harness: `_common.sh`, the renderer (`generate_conformance_table.py` + `impls.py` / `markers.py` / `fixtures.py`, `conformance_table.html.j2` + `assets/`), the capture chain (`capture_cli.py` / `capture_driver.py` / `capture.py` / `capture_vllm_rust.py`), the fixture builders (`build_stream_fixtures.py` / `fill_streamv2.py` / `gen_harmony_text_fixtures.py`), the validators (`validate.py` / `validate_fixtures.py`), and the data files (`parser_families.yaml`, `pyproject.stub.toml`). `tests/` and `lib/` stay at the top level because they are Dynamo-sync targets.
 
+## Fixture Hosting (HuggingFace)
+
+Fixtures are hosted on HuggingFace as a private dataset (`ai-dynamo/conformance-fixtures`). The in-repo manifest (`conformance/fixtures-manifest.json`) pins the current snapshot; no HF metadata calls are needed at download time.
+
+### Run conformance tests (fixtures download transparently)
+
+Set a read-capable HF token before the first run. Downloads are cached locally; subsequent runs are instant.
+
+```bash
+export HF_TOKEN=<your-read-token>
+python3 conformance/utils/src/download_fixtures.py
+conformance/utils/check.sh dynamo all        # batch + stream + batch-via-stream
+conformance/utils/check.sh vllm --container <name>
+conformance/utils/check.sh sglang --container <name>
+```
+
+Fixtures always download to `~/.cache/dynamo/conformance-fixtures/` (or `$XDG_CACHE_HOME/dynamo/conformance-fixtures/` if set). The HF blob cache (raw tarballs before extraction) goes to `~/.cache/huggingface/hub/datasets--ai-dynamo--conformance-fixtures/`. Stable symlinks `toolcalling/` and `reasoning/` point at the current snapshot subdir. Cold start = 1 resolver call (monolith tarball, ~210 KB). Cache hit = 0 calls — the script compares the manifest pin against the local state file and exits immediately if they match.
+
+To see what snapshot is pinned and whether it is already cached:
+
+```bash
+python3 conformance/utils/src/download_fixtures.py --info
+```
+
+### Update existing fixtures on HF (re-capture after a parser version bump)
+
+After re-capturing YAML locally with `capture.sh`, publish a new snapshot and commit the updated manifest:
+
+```bash
+# 1. Re-capture (see capture.sh commands above)
+
+# 2. Publish to HF — requires a write-capable token
+export HF_TOKEN=<your-write-token>
+python3 conformance/utils/src/package_and_publish.py
+
+# 3. Commit the manifest pin
+git add conformance/fixtures-manifest.json
+git commit -m "fixtures: snapshot <stamp printed by publish script>"
+```
+
+The publish script builds deterministic per-version shard tarballs plus a monolith `all-<stamp>.tar.gz`, uploads each blob individually (one commit per blob on HF), and writes the new manifest. Unchanged shards are LFS-deduped by HF and are not re-uploaded.
+
+### Add new fixtures (new SGLang / vLLM / Dynamo family)
+
+Add YAML files locally under the appropriate fixture tree (see `conformance/README.md` → "Adding Streaming Parser V2 Fixtures"), then publish a new snapshot exactly as above. The new family appears as a new subdirectory in the tarball; warm-path downloads on other machines will fetch only the shard(s) that changed.
+
 ## Notes
 
 Peer parser versions for vLLM Python and SGLang are pinned in `src/pyproject.stub.toml` — currently vLLM Python `0.23.0` and SGLang `0.5.12.post1`. This stub is the single source of truth for both the v2 `captured_with` stamps and the v1 batch fixtures (`expected.vllm` / `expected.sglang`), which carry no per-file version stamp; `check.sh vllm|sglang --container` validates the live engine against the committed v1 fixtures and reports it as `pinned (fixtures captured against)`. As of the 0.23.0 bump the live vLLM `0.23.0` and SGLang `0.5.12.post1` batch parsers match all committed v1 cases (519 vLLM, 448 SGLang). vLLM Rust is captured from a local source checkout and recorded in YAML under `captured_with.vllm_rust`.

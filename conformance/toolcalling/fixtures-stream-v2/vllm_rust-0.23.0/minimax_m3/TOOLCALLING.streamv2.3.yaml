@@ -1,7 +1,0 @@
-family: minimax_m3
-mode: streamv2
-captured_with:
-  vllm_rust: 0.23.0
-cases:
-  TOOLCALLING.streamv2.3:
-    unavailable: vLLM Rust v0.23.0 in this conformance harness does not include the MiniMax M3 tool parser yet.

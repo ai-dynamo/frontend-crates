@@ -1,9 +1,0 @@
-family: glm47
-mode: streamv2
-captured_with:
-  dynamo_rust: 0.1.11
-cases:
-  TOOLCALLING.streamv2.4.a:
-    unavailable: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.
-  TOOLCALLING.streamv2.4.d:
-    unavailable: Dynamo parser v2 TC streaming not yet implemented for this family; vLLM Python/SGLang per-chunk output is the target to match.

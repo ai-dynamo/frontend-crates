@@ -1,7 +1,0 @@
-family: phi4
-mode: streamv2
-captured_with:
-  sglang_python: 0.5.12.post1
-cases:
-  TOOLCALLING.streamv2.3:
-    unavailable: No SGLang Python parser for family 'phi4'.

@@ -19,6 +19,15 @@ export FRONTEND_CRATES_ROOT="$ROOT"
 # tests/ and lib/ stay at conformance/utils/ (Dynamo-sync targets); the rest is in src/.
 UTILS="$ROOT/conformance/utils"
 TOOLS="$ROOT/conformance/utils/src"
+# Fixture trees are cached in ~/.cache/dynamo/conformance-fixtures/ (downloaded
+# from HuggingFace on first use). Run download_fixtures.py to populate.
+FIXTURES_ROOT="${XDG_CACHE_HOME:-$HOME/.cache}/dynamo/conformance-fixtures"
+if [ ! -d "$FIXTURES_ROOT/toolcalling" ]; then
+  echo "error: fixtures not found at $FIXTURES_ROOT" >&2
+  echo "  Run: export HF_TOKEN=<read-token>" >&2
+  echo "       python3 $TOOLS/download_fixtures.py" >&2
+  exit 1
+fi
 # Ephemeral build tree stays at conformance/utils/.stage (UTILS), not inside src/,
 # so CI and .gitignore find it where they always have.
 STAGE="${STAGE:-$UTILS/.stage}"
@@ -35,9 +44,9 @@ _build_stage_base() {
   \cp -f "$UTILS/tests/__init__.py" "$STAGE/tests/__init__.py"
   ln -s "$ROOT/conformance/reasoning/fixtures"   "$STAGE/tests/parity/reasoning/fixtures"
   # Recorded Dynamo parser v2 stream-on-batch fixture overlay.
-  if [ -d "$ROOT/conformance/toolcalling/fixtures-batch-on-stream-v2" ]; then
+  if [ -d "$FIXTURES_ROOT/toolcalling/fixtures-batch-on-stream-v2" ]; then
     mkdir -p "$STAGE/tests/parity/toolcalling"
-    \cp -Rf "$ROOT/conformance/toolcalling/fixtures-batch-on-stream-v2" \
+    \cp -Rf "$FIXTURES_ROOT/toolcalling/fixtures-batch-on-stream-v2" \
       "$STAGE/tests/parity/toolcalling/fixtures-batch-on-stream-v2"
   fi
   ln -s "$ROOT/parsers/v1/src/tool_calling"      "$STAGE/lib/parsers/src/tool_calling"
@@ -59,7 +68,7 @@ _resolve_toolcalling_fixtures() {
   sglang_v=$(grep -oE 'sglang\[[^]]*\]==[^"]+' "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//')
   dynamo_v=$(grep -m1 -E '^version = ' "$ROOT/parsers/v1/Cargo.toml" | sed -E 's/.*"([^"]+)".*/\1/')
   python3 "$TOOLS/resolve_fixtures.py" \
-    --fixtures-root "$ROOT/conformance/toolcalling/fixtures-batch-v1" \
+    --fixtures-root "$FIXTURES_ROOT/toolcalling/fixtures-batch-v1" \
     --out "$out" --select "dynamo-${dynamo_v}" "vllm-${vllm_v}" "sglang-${sglang_v}"
 }
 
@@ -79,7 +88,7 @@ _copy_toolcalling_v2_fixtures() {
   # peer versions into the flat tree the renderer expects; single-version impls
   # (dynamo_rust, vllm_rust) default to their lowest. The generator re-resolves each
   # version for the compare model.
-  local sv2="$ROOT/conformance/toolcalling/fixtures-stream-v2"
+  local sv2="$FIXTURES_ROOT/toolcalling/fixtures-stream-v2"
   if [ -d "$sv2" ]; then
     local vllm_v sglang_v tmp family f
     vllm_v=$(grep -oE 'vllm\[[^]]*\]==[^"]+' "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//')

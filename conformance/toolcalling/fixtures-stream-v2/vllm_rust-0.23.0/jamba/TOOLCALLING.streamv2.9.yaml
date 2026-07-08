@@ -1,9 +1,0 @@
-family: jamba
-mode: streamv2
-captured_with:
-  vllm_rust: 0.23.0
-cases:
-  TOOLCALLING.streamv2.9.a:
-    unavailable: No vLLM Rust parser for family 'jamba'.
-  TOOLCALLING.streamv2.9.b:
-    unavailable: No vLLM Rust parser for family 'jamba'.
