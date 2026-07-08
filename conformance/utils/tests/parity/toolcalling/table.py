@@ -208,11 +208,12 @@ def _pinned_versions(impl_versions: dict[str, list[str]]) -> dict[str, str]:
     return {impl: vers[-1] for impl, vers in impl_versions.items() if vers}
 
 
-def _latest_impl_versions() -> dict[str, list[str]]:
-    """PARITY_v1 pins each peer to its latest version only. The v1 parity page
-    compares the Dynamo v1 parser against the current peer engines, so older captured
-    versions are omitted here (the conformance page keeps them for version diffs)."""
-    return {impl: [vers[-1]] for impl, vers in _impl_versions().items() if vers}
+def _v1_peer_versions() -> dict[str, list[str]]:
+    """PARITY_v1 pins each peer to its OLDEST captured version only. The v1 parity page
+    is the legacy baseline — the Dynamo v1 batch parser was captured against the older
+    peer engines (vLLM 0.23.0 / SGLang 0.5.12.post1), so the v1 page shows that data;
+    the newer engines and per-version diffs live on the v2 conformance page."""
+    return {impl: [vers[0]] for impl, vers in _impl_versions().items() if vers}
 
 
 def _version_status_map(mode: str) -> dict[tuple[str, str], dict[str, dict[str, str]]]:
@@ -222,7 +223,7 @@ def _version_status_map(mode: str) -> dict[tuple[str, str], dict[str, dict[str, 
     flat tree and run the same `load_all_cases` path, so keys match the rendered
     table exactly (including split-parent normalization). Status uses the same
     `_overview_status` classifier as the pinned cells."""
-    impl_versions = _latest_impl_versions()
+    impl_versions = _v1_peer_versions()
     if not impl_versions:
         return {}
     resolver = _RESOLVE_SRC_DIR / "resolve_fixtures.py"
@@ -1692,7 +1693,7 @@ def _candidate_items(mode: str = "batch") -> list[dict[str, str]]:
     Default layout: A (reference) = Dynamo; B (compare with) = each peer impl. Only
     the latest version of each peer is offered (the parity page pins to current
     engines), so there is no C (others) bucket."""
-    impl_versions = _latest_impl_versions()
+    impl_versions = _v1_peer_versions()
     latest = {impl: (vers[-1] if vers else None) for impl, vers in impl_versions.items()}
     out: list[dict[str, str]] = []
     first = True
