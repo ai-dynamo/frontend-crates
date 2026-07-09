@@ -180,6 +180,22 @@ def test_v2_cells_have_compare_data(charts):
     assert charts["v2"].count("data-cmp=") > 100
 
 
+def test_v2_reasoning_in_sync_with_toolcalling_peers(charts):
+    # CONFORMANCE_v2 is the "current" page: its reasoning tab must compare against the
+    # SAME current engine versions as its toolcalling tab. The bug was reasoning stuck
+    # on the old peers (0.23.0 / 0.5.12.post1) while toolcalling showed 0.24.0 / 0.5.14.
+    tc = _panel(charts["v2"], "tab-toolcalling-batch", _V2_TABS)
+    rz = _panel(charts["v2"], "tab-reasoning-batch", _V2_TABS)
+    for impl, vers in _peer_versions("toolcalling/fixtures-batch-v1").items():
+        if impl == "dynamo":
+            continue
+        newest = max(vers, key=lambda v: tuple(int(x) for x in re.findall(r"\d+", v)))
+        assert newest in tc, f"v2 toolcalling missing current {impl} {newest}"
+        assert newest in rz, (
+            f"v2 reasoning missing current {impl} {newest} — out of sync with toolcalling"
+        )
+
+
 def test_dynamo_version_labels_are_consistent_and_from_fixtures(charts):
     # The same Dynamo parser must show ONE version everywhere — a split (e.g. v1 3.0.0
     # in tool-calling but 4.1.0 in reasoning, or v2 0.1.11 vs 0.1.16) means a label is

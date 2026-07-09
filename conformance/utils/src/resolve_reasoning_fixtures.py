@@ -38,6 +38,33 @@ def split_impl_ver(dirname: str):
     return impl, ver
 
 
+# The captured_with key each impl records its engine version under.
+_CAPTURED_KEY = {"vllm": "vllm_python", "sglang": "sglang_python"}
+
+
+def _stamp_captured_with(out: Path, impl: str, version: str) -> None:
+    """Stamp captured_with.<impl>_python = version on every staged fixture that has a
+    real (non-unavailable) expected.<impl> block, so the reasoning tab labels the peer
+    candidate with the SELECTED version. Without this the anchor's captured_with stays
+    put and the label wouldn't move between the old (v1) and new (v2) selections."""
+    key = _CAPTURED_KEY.get(impl, f"{impl}_python")
+    for fp in out.glob("*/*.yaml"):
+        doc = load(fp)
+        cases = doc.get("cases") or {}
+        has = any(
+            isinstance(c, dict)
+            and isinstance((c.get("expected") or {}).get(impl), dict)
+            and "unavailable" not in (c["expected"][impl])
+            for c in cases.values()
+        )
+        if not has:
+            continue
+        doc.setdefault("captured_with", {})[key] = version
+        fp.write_text(
+            yaml.safe_dump(doc, sort_keys=False, allow_unicode=True, width=4096)
+        )
+
+
 def resolve(fixtures_root, out, select, verbose=False):
     """Stage inputs/ + selected peer-version overlays into a flat tree at `out`.
 
@@ -67,11 +94,12 @@ def resolve(fixtures_root, out, select, verbose=False):
             key=lambda t: t[0],
         )
         applied = [(k, d) for k, d in vdirs if k <= target_k]
+        # Stamp the SELECTED version onto every fixture with this impl's output, whether
+        # or not an overlay changed it (the selected engine is what this page renders).
+        _stamp_captured_with(out, impl, target)
         if not applied:
-            print(
-                f"resolve_reasoning_fixtures: no version dirs for {impl} <= {target}, skipping",
-                file=sys.stderr,
-            )
+            # No overlay for this version = the anchor already holds the selected
+            # engine's output (nothing changed at/below it); the stamp above is enough.
             continue
         for _, vdir in applied:
             for ofp in vdir.glob("*/*.yaml"):
