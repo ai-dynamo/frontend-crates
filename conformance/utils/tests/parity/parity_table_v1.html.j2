@@ -21,14 +21,17 @@ td.model, td.parser { white-space: nowrap; }
 td.parser a { color: inherit; text-decoration: none; }
 td.parser a:hover { background: #ffd; }
 td.cell { text-align: center; min-width: 24px; font-weight: 400; }
+/* One color = one meaning, whether or not the cell has compare data: the static status
+   classes carry the SAME backgrounds as the cmp-* classes (gray = n/a, light-gray =
+   Base-only, near-white = missing); cmp-* keeps !important so it wins for compare cells. */
 td.cell.ok         { color: #0a7d2c; }
-td.cell.donly      { color: #8b949e; }
+td.cell.donly      { color: #8b949e; background: #dfe3e7; }
 td.cell.documented { color: #555; }
 td.cell.research   { color: #b00; }
 td.cell.leak       { color: #b00; }
 td.cell.err        { color: #b00; }
-td.cell.na         { color: #aeb6bf; }
-td.cell.missing    { color: #8a6d3b; }
+td.cell.na         { color: #aeb6bf; background: #d3d8de; }
+td.cell.missing    { color: #8a6d3b; background: #eceff2; }
 td.cell a { color: inherit; text-decoration: none; display: block; }
 td.cell a:hover { background: #ffd; }
 tr.section td { background: #eef; font-weight: bold; text-align: left; }
@@ -56,6 +59,11 @@ tr.section td { background: #eef; font-weight: bold; text-align: left; }
 .view-details td.cell { color: transparent; }
 .view-details td.cell a { color: transparent; }
 .view-details td.cell a:hover { background: rgba(255,255,255,0.35); }
+/* Non-compare cells (n/a stubs, missing fixtures) show their marker in the same subtle
+   gray as the compare markers, so `n/a` / `—` read identically with or without compare
+   data. Scoped to :not([data-cmp]) so compare cells keep using .cmp-marker. */
+.view-details td.cell.na:not([data-cmp]) > a,
+.view-details td.cell.missing:not([data-cmp]) { color: #9aa1a9; }
 .view-details td.cell .ttip { font-weight: 400; }
 /* Compare model (all tabs): per-panel drag buckets — A=Base reference (0 or 1),
  * B=Compare with, C=Others. Each cell shows how many selected candidates differ
@@ -106,8 +114,8 @@ body.view-overview td.cell.cmp-na { color: #d3d8de; }
 td.cell.cmp-nobase { background: #eceff2 !important; }
 body.view-overview td.cell.cmp-nobase { color: #eceff2; }
 /* Base-only "·" (no peer to compare): neutral gray, not green. */
-td.cell.cmp-donly { background: #edf0f2 !important; }
-body.view-overview td.cell.cmp-donly { color: #edf0f2; }
+td.cell.cmp-donly { background: #dfe3e7 !important; }
+body.view-overview td.cell.cmp-donly { color: #dfe3e7; }
 /* No-comparison markers (n/a, —, ·) recede to a subtle gray in the detailed view so
    the real data markers (=, divergence counts) stay high-contrast. */
 body.view-details td.cell.cmp-na .cmp-marker,
