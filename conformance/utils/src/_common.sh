@@ -46,7 +46,14 @@ _build_stage_base() {
   # COPY the vendored python package so resolved __file__ -> REPO_ROOT == $STAGE.
   \cp -Rf "$UTILS/tests/parity" "$STAGE/tests/parity"
   \cp -f "$UTILS/tests/__init__.py" "$STAGE/tests/__init__.py"
-  ln -s "$ROOT/conformance/reasoning/fixtures"   "$STAGE/tests/parity/reasoning/fixtures"
+  # Shared static CSS/JS inlined into BOTH pages at render time (v1 parity + v2
+  # conformance both read tests/parity/assets/*). Staged here in the base so the v1
+  # render finds them too — the compare-bar/coloring logic lives in one place now.
+  mkdir -p "$STAGE/tests/parity/assets"
+  \cp -f "$TOOLS/assets/conformance.css" "$STAGE/tests/parity/assets/conformance.css"
+  \cp -f "$TOOLS/assets/conformance.js" "$STAGE/tests/parity/assets/conformance.js"
+  # Reasoning fixtures are resolved per page (v1 = old anchor peers, v2 = pinned new
+  # peers) by build_stage_v1 / build_stage_conformance — not here in the shared base.
   # Recorded Dynamo parser v2 stream-on-batch fixture overlay.
   if [ -d "$FIXTURES_ROOT/toolcalling/fixtures-batch-on-stream-v2" ]; then
     mkdir -p "$STAGE/tests/parity/toolcalling"
@@ -74,6 +81,28 @@ _resolve_toolcalling_fixtures() {
   python3 "$TOOLS/resolve_fixtures.py" \
     --fixtures-root "$FIXTURES_ROOT/toolcalling/fixtures-batch-v1" \
     --out "$out" --select "dynamo-${dynamo_v}" "vllm-${vllm_v}" "sglang-${sglang_v}"
+}
+
+# Reasoning fixtures are versioned like toolcalling: inputs/ = the OLD (v1-era) anchor,
+# <impl>-<version>/ = changed-only overlays for a newer engine. The page picks which
+# version to render, so this takes the versions as args ($2=vllm, $3=sglang).
+_resolve_reasoning_fixtures() {
+  local out="$1" vllm_v="$2" sglang_v="$3"; mkdir -p "$out"
+  python3 "$TOOLS/resolve_reasoning_fixtures.py" \
+    --fixtures-root "$FIXTURES_ROOT/reasoning/fixtures-v1" \
+    --out "$out" --select "vllm-${vllm_v}" "sglang-${sglang_v}"
+}
+
+# The OLD (v1-era) reasoning peer versions = the anchor's captured_with stamps in
+# inputs/ (e.g. vLLM 0.23.0 / SGLang 0.5.12.post1). Read them rather than hardcode.
+_reasoning_anchor_ver() {  # $1 = vllm_python | sglang_python
+  grep -rhoE "$1: '[^']+'" "$FIXTURES_ROOT/reasoning/fixtures-v1/inputs" 2>/dev/null \
+    | head -1 | sed -E "s/.*'([^']+)'.*/\1/"
+}
+
+# The NEW (pinned) reasoning peer versions = the engines pinned in pyproject.stub.toml.
+_reasoning_pinned_ver() {  # $1 = vllm | sglang
+  grep -oE "$1\[[^]]*\]==[^\"]+" "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//'
 }
 
 _copy_toolcalling_v1_fixtures() {
@@ -114,6 +143,9 @@ _copy_toolcalling_v2_fixtures() {
 build_stage_v1() {
   _build_stage_base
   _copy_toolcalling_v1_fixtures
+  # Legacy baseline page: reasoning shows the OLD (anchor) peer versions.
+  _resolve_reasoning_fixtures "$STAGE/tests/parity/reasoning/fixtures" \
+    "$(_reasoning_anchor_ver vllm_python)" "$(_reasoning_anchor_ver sglang_python)"
 }
 
 build_stage_conformance() {
@@ -125,11 +157,12 @@ build_stage_conformance() {
   \cp -f "$TOOLS/markers.py" "$STAGE/tests/parity/markers.py"
   \cp -f "$TOOLS/fixtures.py" "$STAGE/tests/parity/fixtures.py"
   \cp -f "$TOOLS/conformance_table.html.j2" "$STAGE/tests/parity/conformance_table.html.j2"
-  # Static CSS/JS (audit B7) inlined into the page at render time.
-  mkdir -p "$STAGE/tests/parity/assets"
-  \cp -f "$TOOLS/assets/conformance.css" "$STAGE/tests/parity/assets/conformance.css"
-  \cp -f "$TOOLS/assets/conformance.js" "$STAGE/tests/parity/assets/conformance.js"
+  # Shared CSS/JS assets are staged in _build_stage_base (used by both pages).
   _copy_toolcalling_v2_fixtures
+  # Current page: reasoning shows the pinned NEW peer versions, in sync with the v2
+  # toolcalling tab (both compare against the current engines).
+  _resolve_reasoning_fixtures "$STAGE/tests/parity/reasoning/fixtures" \
+    "$(_reasoning_pinned_ver vllm)" "$(_reasoning_pinned_ver sglang)"
 }
 
 build_stage() {

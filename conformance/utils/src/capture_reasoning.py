@@ -353,7 +353,7 @@ def _run_worker(args):
 _HERE = os.path.dirname(os.path.abspath(__file__))
 # capture_reasoning.py lives in conformance/utils/src/, so the repo root is 3 up.
 _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(_HERE)))
-_FIXTURES = os.path.join(_ROOT, "conformance", "reasoning", "fixtures")
+_FIXTURES = os.path.join(_ROOT, "conformance", "reasoning", "fixtures-v1", "inputs")
 _CAPTURED_KEY = {"vllm": "vllm_python", "sglang": "sglang_python"}
 
 

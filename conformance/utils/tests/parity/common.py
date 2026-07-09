@@ -57,6 +57,48 @@ def _hrefs_for_output(output_path: Path, artifact_root: Path) -> dict[str, str]:
     }
 
 
+# Fixtures aren't in the repo — they're published to HuggingFace as tarballs and
+# extracted into the local cache (~/.cache/dynamo/conformance-fixtures/, or
+# $CONFORMANCE_FIXTURES_ROOT). HF stores only the tarballs (no per-file blob URL), so a
+# per-cell YAML link points at the extracted file in that cache via file://. The
+# rendered `__fixture_path` is the flat resolved-tree path the readers use; remap it to
+# the versioned cache layout (the shared `inputs/` tree carries the model_text /
+# description a viewer wants to see).
+def _fixtures_cache_root() -> str:
+    env = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
+    if env:
+        return env.rstrip("/")
+    xdg = os.environ.get("XDG_CACHE_HOME")
+    base = Path(xdg) if xdg else Path.home() / ".cache"
+    return str(base / "dynamo/conformance-fixtures")
+
+
+def _fixture_cache_relpath(rel: str) -> str:
+    """Map a rendered `<family>/<FILE>` fixture path to its versioned cache location.
+    The renderers resolve batch + v1-stream into a single flat `fixtures/` dir, so the
+    corpus can't be told from the path prefix — route on the FILE name instead."""
+    parts = rel.lstrip("./").split("/")
+    fname = parts[-1]
+    family = parts[-2] if len(parts) >= 2 else ""
+    if fname.startswith("REASONING."):
+        corpus = "reasoning/fixtures-v1/inputs"
+    elif fname.startswith("TOOLCALLING.streamv2"):
+        corpus = "toolcalling/fixtures-stream-v2/inputs"
+    elif fname.startswith("TOOLCALLING."):  # batch + v1 stream both live in the v1 corpus
+        corpus = "toolcalling/fixtures-batch-v1/inputs"
+    else:
+        return rel.lstrip("./")
+    return f"{corpus}/{family}/{fname}"
+
+
+def fixture_href(rel: str) -> str:
+    """Map a rendered fixture path to a file:// link into the local fixture cache.
+    Leaves absolute URLs and empty strings untouched."""
+    if not rel or "://" in rel:
+        return rel
+    return "file://" + _fixtures_cache_root() + "/" + _fixture_cache_relpath(rel)
+
+
 # Render-context: the active generator sets this for its destination before the
 # builders run; the builders read LINKS[...] at emit time.
 LINKS: dict[str, str] = {}

@@ -28,21 +28,7 @@
 {% for panel in panels %}
 <section id="{{ panel.id|e }}" class="tab-panel{% if panel.active %} active{% endif %}" role="tabpanel"{% if tabs|length > 1 %} aria-labelledby="{{ panel.id|e }}-button"{% endif %}{% if panel.candidates %} data-cmp-panel="true"{% endif %}>
 {% if panel.candidates %}
-<div class="cmpctl" role="group" aria-label="Compare — drag chips between buckets">
-  <div class="bucket bucket-A" data-bucket="A" data-limit="1">
-    <div class="bucket-hd">Reference parser</div>
-    <div class="chips">{% for c in panel.candidates %}{% if c.default_bucket == 'A' %}<span class="chip" data-cand="{{ c.key }}" draggable="true">{{ c.label|e }}</span>{% endif %}{% endfor %}</div>
-  </div>
-  <div class="bucket bucket-B" data-bucket="B">
-    <button type="button" class="cmp-swap" data-cmp-swap title="Swap reference and compare-with parser" hidden>⇄</button>
-    <div class="bucket-hd">Compare-with parser(s)</div>
-    <div class="chips">{% for c in panel.candidates %}{% if c.default_bucket == 'B' %}<span class="chip" data-cand="{{ c.key }}" draggable="true">{{ c.label|e }}</span>{% endif %}{% endfor %}</div>
-  </div>
-  <div class="bucket bucket-C" data-bucket="C">
-    <div class="bucket-hd">Other parsers</div>
-    <div class="chips">{% for c in panel.candidates %}{% if c.default_bucket == 'C' %}<span class="chip" data-cand="{{ c.key }}" draggable="true">{{ c.label|e }}</span>{% endif %}{% endfor %}</div>
-  </div>
-</div>
+{% include "_compare_bar.html.j2" %}
 {% endif %}
 <table data-parity-table>
 <thead>
@@ -61,8 +47,7 @@
 <p class="legend summary-only">
   <span class="summary-key ok" aria-hidden="true"></span>green(<span data-overview-count="ok">0</span>) = selected implementation output is clean ·
   <span class="summary-key problem" aria-hidden="true"></span>red(<span data-overview-count="problem">0</span>) = leaks parser markup, has an expected error, or the engine parser failed to parse (<span style="font-family:ui-monospace,monospace">✗</span>) ·
-  <span class="summary-key todo" aria-hidden="true"></span>gray(<span data-overview-count="todo">0</span>) = selected parser is not implemented yet ·
-  <span class="summary-key na" aria-hidden="true"></span>gray(<span data-overview-count="na">0</span>) = not applicable, unavailable, or missing fixture.
+  <span class="summary-key na" aria-hidden="true"></span>gray(<span data-overview-count="na">0</span>) = not applicable, unavailable, missing fixture, or a family the Dynamo v2 stream parser doesn't implement.
 </p>
 <div class="legend details-only">
 {% if panel.legend_html is defined and panel.legend_html %}
@@ -126,7 +111,7 @@
 </p>
 <p class="stats details-only">
   Stats: {{ panel.stats.families }} families × {{ panel.stats.sub_cases }} sub-cases
-  = {{ panel.stats.slots }} grid slots ({{ panel.stats.todo|default(0) }} TODO, {{ panel.stats.na }} n/a, {{ panel.stats.missing }} missing).
+  = {{ panel.stats.slots }} grid slots ({{ panel.stats.na }} n/a, {{ panel.stats.missing }} missing).
   <strong>{{ panel.stats.real }}</strong> real cases:
   <span style="color:#0a7d2c">{{ panel.stats.parity }} captured-peer conformance</span> ·
   <span style="color:#555">{{ panel.stats.dynamo_only }} Dynamo Rust-only</span> ·
@@ -171,6 +156,7 @@
 {% endif %}
 </section>
 {% endfor %}
+<script>window.__PARSER_NI = {{ parser_ni_json|safe }};</script>
 <script>
 {{ conformance_js|safe }}
 </script>
