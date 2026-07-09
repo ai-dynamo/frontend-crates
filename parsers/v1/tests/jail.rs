@@ -65,6 +65,18 @@ mod tests {
             }
         }
 
+        pub fn with_finish_reason(
+            mut response: Annotated<CreateChatCompletionStreamResponse>,
+            finish_reason: FinishReason,
+        ) -> Annotated<CreateChatCompletionStreamResponse> {
+            if let Some(data) = response.data.as_mut() {
+                for choice in &mut data.choices {
+                    choice.finish_reason = Some(finish_reason);
+                }
+            }
+            response
+        }
+
         /// Helper function to create a final response chunk with finish reason
         pub fn create_final_response_chunk(
             index: u32,
@@ -2206,6 +2218,221 @@ mod tests {
         // Verify content reconstruction excludes tool calls.
         let reconstructed = test_utils::reconstruct_content(&results);
         assert_eq!(reconstructed, "I'll call a function.  Done.");
+    }
+
+    const QWEN3_CODER_SEARCH_CALL: &str =
+        "<tool_call><function=search><parameter=query>Rust</parameter></function></tool_call>";
+
+    #[tokio::test]
+    async fn test_terminal_tool_call_drops_trailing_newline_across_jail_modes() {
+        let cases = vec![
+            (
+                "qwen3_coder",
+                JailedStream::builder()
+                    .tool_call_parser("qwen3_coder")
+                    .build(),
+                format!("{QWEN3_CODER_SEARCH_CALL}\n"),
+                FinishReason::Stop,
+                FinishReason::ToolCalls,
+            ),
+            (
+                "qwen3_coder length",
+                JailedStream::builder()
+                    .tool_call_parser("qwen3_coder")
+                    .build(),
+                format!("{QWEN3_CODER_SEARCH_CALL}\n"),
+                FinishReason::Length,
+                FinishReason::Length,
+            ),
+            (
+                "hermes",
+                JailedStream::builder().tool_call_parser("hermes").build(),
+                "<tool_call>{\"name\":\"search\",\"arguments\":{\"query\":\"Rust\"}}</tool_call>\n"
+                    .to_string(),
+                FinishReason::Stop,
+                FinishReason::ToolCalls,
+            ),
+            (
+                "immediate",
+                JailedStream::builder().tool_choice_required().build(),
+                "[{\"name\":\"search\",\"parameters\":{\"query\":\"Rust\"}}]\n".to_string(),
+                FinishReason::Stop,
+                FinishReason::ToolCalls,
+            ),
+        ];
+
+        for (case, jail, content, upstream_finish, expected_finish) in cases {
+            let input = with_finish_reason(create_mock_response_chunk(content, 0), upstream_finish);
+            let results: Vec<_> = jail
+                .apply_with_finish_reason(stream::iter([input]))
+                .collect()
+                .await;
+
+            assert_eq!(results.len(), 1, "case: {case}");
+            assert_tool_call(&results[0], "search", json!({"query": "Rust"}));
+            assert_eq!(reconstruct_content(&results), "", "case: {case}");
+            let choice = results[0].data.as_ref().unwrap().choices.first().unwrap();
+            assert_eq!(choice.finish_reason, Some(expected_finish), "case: {case}");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_qwen3_coder_terminal_prefix_and_suffix_keep_stream_order() {
+        let input = with_finish_reason(
+            create_mock_response_chunk(
+                format!("Starting search. {QWEN3_CODER_SEARCH_CALL} Search started."),
+                0,
+            ),
+            FinishReason::Stop,
+        );
+        let jail = JailedStream::builder()
+            .tool_call_parser("qwen3_coder")
+            .build();
+
+        let results: Vec<_> = jail
+            .apply_with_finish_reason(stream::iter([input]))
+            .collect()
+            .await;
+
+        assert_eq!(results.len(), 3);
+        assert_content(&results[0], "Starting search. ");
+        assert_tool_call(&results[1], "search", json!({"query": "Rust"}));
+        assert_content(&results[2], " Search started.");
+        assert_eq!(
+            reconstruct_content(&results),
+            "Starting search.  Search started."
+        );
+
+        let finish_reasons: Vec<_> = results
+            .iter()
+            .flat_map(|result| result.data.as_ref().unwrap().choices.iter())
+            .filter_map(|choice| choice.finish_reason)
+            .collect();
+        assert_eq!(finish_reasons, [FinishReason::ToolCalls]);
+    }
+
+    #[tokio::test]
+    async fn test_qwen3_coder_separate_terminal_newline_is_suppressed() {
+        for (upstream_finish, expected_finish) in [
+            (FinishReason::Stop, FinishReason::ToolCalls),
+            (FinishReason::Length, FinishReason::Length),
+        ] {
+            let terminal_newline = with_finish_reason(
+                create_mock_response_chunk("\n".to_string(), 0),
+                upstream_finish,
+            );
+            let jail = JailedStream::builder()
+                .tool_call_parser("qwen3_coder")
+                .build();
+            let results: Vec<_> = jail
+                .apply_with_finish_reason(stream::iter([
+                    create_mock_response_chunk(QWEN3_CODER_SEARCH_CALL.to_string(), 0),
+                    terminal_newline,
+                ]))
+                .collect()
+                .await;
+
+            assert_eq!(results.len(), 2);
+            assert_tool_call(&results[0], "search", json!({"query": "Rust"}));
+            assert_eq!(reconstruct_content(&results), "");
+            let terminal = results[1].data.as_ref().unwrap().choices.first().unwrap();
+            assert_eq!(terminal.finish_reason, Some(expected_finish));
+            assert!(terminal.delta.content.is_none());
+            assert!(terminal.delta.tool_calls.is_none());
+        }
+    }
+
+    #[tokio::test]
+    async fn test_qwen3_coder_terminal_whitespace_is_choice_local() {
+        let input = with_finish_reason(
+            create_multi_choice_chunk(vec![
+                (format!("{QWEN3_CODER_SEARCH_CALL}\n"), 0),
+                ("plain response".to_string(), 1),
+            ]),
+            FinishReason::Stop,
+        );
+        let jail = JailedStream::builder()
+            .tool_call_parser("qwen3_coder")
+            .build();
+
+        let results: Vec<_> = jail
+            .apply_with_finish_reason(stream::iter([input]))
+            .collect()
+            .await;
+        let choices: Vec<_> = results
+            .iter()
+            .filter_map(|result| result.data.as_ref())
+            .flat_map(|data| data.choices.iter())
+            .collect();
+        assert_eq!(choices.len(), 2);
+        let choice_0 = choices.iter().find(|choice| choice.index == 0).unwrap();
+        let choice_1 = choices.iter().find(|choice| choice.index == 1).unwrap();
+
+        assert!(choice_0.delta.tool_calls.is_some());
+        assert_eq!(choice_0.finish_reason, Some(FinishReason::ToolCalls));
+        assert_eq!(
+            choice_0
+                .delta
+                .content
+                .as_ref()
+                .map(extract_text)
+                .unwrap_or_default(),
+            ""
+        );
+
+        assert_eq!(choice_1.finish_reason, Some(FinishReason::Stop));
+        assert!(choice_1.delta.tool_calls.is_none());
+        assert_eq!(
+            choice_1.delta.content.as_ref().map(extract_text),
+            Some("plain response")
+        );
+    }
+
+    #[tokio::test]
+    async fn test_terminal_newline_without_tool_call_is_preserved() {
+        let input = with_finish_reason(
+            create_mock_response_chunk("\n".to_string(), 0),
+            FinishReason::Stop,
+        );
+        let jail = JailedStream::builder()
+            .tool_call_parser("qwen3_coder")
+            .build();
+
+        let results: Vec<_> = jail
+            .apply_with_finish_reason(stream::iter([input]))
+            .collect()
+            .await;
+
+        assert_eq!(results.len(), 1);
+        assert_content(&results[0], "\n");
+        let choice = results[0].data.as_ref().unwrap().choices.first().unwrap();
+        assert_eq!(choice.finish_reason, Some(FinishReason::Stop));
+    }
+
+    #[tokio::test]
+    async fn test_qwen3_coder_nonterminal_whitespace_after_tool_call_is_preserved() {
+        let final_content = with_finish_reason(
+            create_mock_response_chunk("Search started.".to_string(), 0),
+            FinishReason::Stop,
+        );
+        let jail = JailedStream::builder()
+            .tool_call_parser("qwen3_coder")
+            .build();
+
+        let results: Vec<_> = jail
+            .apply_with_finish_reason(stream::iter([
+                create_mock_response_chunk(QWEN3_CODER_SEARCH_CALL.to_string(), 0),
+                create_mock_response_chunk("\n".to_string(), 0),
+                final_content,
+            ]))
+            .collect()
+            .await;
+
+        assert_eq!(results.len(), 3);
+        assert_tool_call(&results[0], "search", json!({"query": "Rust"}));
+        assert_eq!(reconstruct_content(&results), "\nSearch started.");
+        let final_choice = results[2].data.as_ref().unwrap().choices.first().unwrap();
+        assert_eq!(final_choice.finish_reason, Some(FinishReason::ToolCalls));
     }
 
     #[tokio::test]
