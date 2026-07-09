@@ -24,6 +24,14 @@ const KIMI_PATTERN: &str = r#"[\p{Han}]+|[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p
 pub struct TikTokenTokenizer {
     bpe: CoreBPE,
     special_token_ids: HashSet<u32>,
+    special_tokens: Vec<String>,
+}
+
+fn sorted_special_token_strings(special_tokens: &FxHashMap<String, u32>) -> Vec<String> {
+    let mut strings: Vec<String> = special_tokens.keys().cloned().collect();
+    strings.sort();
+    strings.dedup();
+    strings
 }
 
 impl TikTokenTokenizer {
@@ -40,6 +48,7 @@ impl TikTokenTokenizer {
     ) -> Result<Self> {
         let encoder = parse_tiktoken_file(path)?;
         let special_token_ids: HashSet<u32> = special_tokens.values().copied().collect();
+        let special_token_strings = sorted_special_token_strings(&special_tokens);
 
         let bpe = CoreBPE::new(encoder, special_tokens, pattern)
             .map_err(|err| Error::msg(format!("Error creating tiktoken BPE: {err}")))?;
@@ -47,6 +56,7 @@ impl TikTokenTokenizer {
         Ok(Self {
             bpe,
             special_token_ids,
+            special_tokens: special_token_strings,
         })
     }
 
@@ -66,6 +76,7 @@ impl TikTokenTokenizer {
         let num_base_tokens = encoder.values().max().map_or(0, |&m| m + 1) as usize;
         let special_tokens = load_special_tokens(directory, num_base_tokens)?;
         let special_token_ids: HashSet<u32> = special_tokens.values().copied().collect();
+        let special_token_strings = sorted_special_token_strings(&special_tokens);
 
         let bpe = CoreBPE::new(encoder, special_tokens, pattern)
             .map_err(|err| Error::msg(format!("Error creating tiktoken BPE: {err}")))?;
@@ -73,7 +84,17 @@ impl TikTokenTokenizer {
         Ok(Self {
             bpe,
             special_token_ids,
+            special_tokens: special_token_strings,
         })
+    }
+
+    /// Atomic special-token strings registered with the underlying TikToken BPE.
+    ///
+    /// [`CoreBPE::encode_with_special_tokens`] recognizes these strings outside ordinary
+    /// BPE. For non-overlapping token spellings, splitting immediately after a match
+    /// preserves tokenization.
+    pub fn special_tokens(&self) -> &[String] {
+        &self.special_tokens
     }
 }
 
@@ -355,6 +376,11 @@ mod tests {
 
         let tokenizer = TikTokenTokenizer::from_file(&file_path, pattern, special_tokens).unwrap();
 
+        assert_eq!(
+            tokenizer.special_tokens(),
+            &["[BOS]".to_string(), "[EOS]".to_string()]
+        );
+
         // Test encode
         let encoding = tokenizer.encode("hello world").unwrap();
         let ids = encoding.token_ids();
@@ -374,6 +400,7 @@ mod tests {
         let pattern = r"[\w]+|[^\w\s]+|\s+";
 
         let tokenizer = TikTokenTokenizer::from_file(&file_path, pattern, special_tokens).unwrap();
+        assert!(tokenizer.special_tokens().is_empty());
         let encoding = tokenizer.encode("hello").unwrap();
 
         // Verify it produces the Sp variant
@@ -419,7 +446,13 @@ mod tests {
         create_test_config(dir.path(), "kimi");
         create_test_tokenizer_config(dir.path(), 21);
 
+        let mut expected_specials: Vec<String> = load_special_tokens(dir.path(), 21)
+            .unwrap()
+            .into_keys()
+            .collect();
+        expected_specials.sort();
         let tokenizer = TikTokenTokenizer::from_file_auto(&file_path).unwrap();
+        assert_eq!(tokenizer.special_tokens(), expected_specials);
 
         // Basic encode/decode roundtrip
         let encoding = tokenizer.encode("hello world").unwrap();
@@ -716,6 +749,98 @@ mod tests {
         let file_path = dir.join("tiktoken.model");
         std::fs::write(&file_path, &content).unwrap();
         file_path.to_str().unwrap().to_string()
+    }
+
+    fn has_nontrivial_self_overlap(token: &str) -> bool {
+        let bytes = token.as_bytes();
+        (1..bytes.len()).any(|overlap| bytes[bytes.len() - overlap..] == bytes[..overlap])
+    }
+
+    fn have_ambiguous_overlap(a: &str, b: &str) -> bool {
+        let a = a.as_bytes();
+        let b = b.as_bytes();
+
+        if a.windows(b.len()).any(|window| window == b)
+            || b.windows(a.len()).any(|window| window == a)
+        {
+            return true;
+        }
+
+        let max_overlap = a.len().min(b.len());
+        (1..max_overlap).any(|overlap| {
+            a[a.len() - overlap..] == b[..overlap] || b[b.len() - overlap..] == a[..overlap]
+        })
+    }
+
+    fn assert_special_split_invariant(
+        tokenizer: &TikTokenTokenizer,
+        left: &str,
+        special: &str,
+        right: &str,
+    ) {
+        let whole = tokenizer
+            .encode(&format!("{left}{special}{right}"))
+            .unwrap()
+            .token_ids()
+            .to_vec();
+        let mut split = tokenizer
+            .encode(&format!("{left}{special}"))
+            .unwrap()
+            .token_ids()
+            .to_vec();
+        split.extend_from_slice(tokenizer.encode(right).unwrap().token_ids());
+        assert_eq!(
+            whole, split,
+            "splitting after registered special token {special:?} must preserve tokenization"
+        );
+    }
+
+    #[test]
+    fn test_registered_special_tokens_are_cache_safe_boundaries() {
+        let dir = tempfile::tempdir().unwrap();
+        let file_path = create_byte_level_tiktoken_file(dir.path());
+        create_test_config(dir.path(), "kimi");
+        create_test_tokenizer_config(dir.path(), 256);
+
+        let tokenizer = TikTokenTokenizer::from_file_auto(&file_path).unwrap();
+        let specials = tokenizer.special_tokens();
+        assert!(!specials.is_empty());
+
+        for (index, special) in specials.iter().enumerate() {
+            assert!(
+                !has_nontrivial_self_overlap(special),
+                "registered special token has an ambiguous self-overlap: {special:?}"
+            );
+            for other in &specials[index + 1..] {
+                assert!(
+                    !have_ambiguous_overlap(special, other),
+                    "registered special tokens overlap ambiguously: {special:?} and {other:?}"
+                );
+            }
+
+            for (left, right) in [
+                ("ordinary prefix ", " ordinary suffix"),
+                ("line before\n", "\tUnicode after: 北京 😀"),
+                ("", " trailing text"),
+            ] {
+                assert_special_split_invariant(&tokenizer, left, special, right);
+            }
+        }
+
+        let bos = specials
+            .iter()
+            .find(|token| token.as_str() == "[BOS]")
+            .unwrap();
+        let eos = specials
+            .iter()
+            .find(|token| token.as_str() == "[EOS]")
+            .unwrap();
+        assert_special_split_invariant(
+            &tokenizer,
+            "prefix ",
+            bos,
+            &format!("{eos}<|reserved_token_258|>Unicode 尾部"),
+        );
     }
 
     /// Regression test for Kimi K2.5 tokenizer inflation.
