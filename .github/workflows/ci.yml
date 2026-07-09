@@ -16,6 +16,9 @@ jobs:
     env:
       CARGO_DENY_VERSION: "0.19.4"
       CARGO_MACHETE_VERSION: "0.9.2"
+      # Fixtures live on a private HuggingFace dataset; every step that may download
+      # them (cargo check/test) needs the token. Job-level so all steps inherit it.
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -54,8 +57,6 @@ jobs:
         run: pip install --quiet huggingface_hub
 
       - name: Run tests
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: cargo test --workspace --all-targets --locked
 
       - name: Run doctests
@@ -76,16 +77,18 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+    env:
+      # Fixtures live on a private HuggingFace dataset; the render + guard steps
+      # download them, so the token is needed job-wide.
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Render conformance matrix (no engines)
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           python3 -m venv /tmp/pvenv
-          /tmp/pvenv/bin/pip install --quiet pyyaml jinja2 huggingface_hub
+          /tmp/pvenv/bin/pip install --quiet pyyaml jinja2 huggingface_hub pytest
           PATH="/tmp/pvenv/bin:$PATH" conformance/utils/render_table_v1.sh
           PATH="/tmp/pvenv/bin:$PATH" conformance/utils/render_table_v2.sh
           OUT=conformance/PARITY_v1.html
@@ -95,6 +98,16 @@ jobs:
           test -s conformance/CONFORMANCE_v2.html
           echo "conformance matrix rendered: $(wc -c < "$OUT") bytes"
           cp "$OUT" conformance/utils/CONFORMITY.html
+
+      # Structural regression guard on the rendered charts: parser selectors present,
+      # every candidate versioned from fixture provenance (not the live Cargo.toml),
+      # all peer versions present, no "not yet implemented", coloring intact. Reuses the
+      # HTML rendered above. See conformance/utils/tests/test_chart_invariants.py.
+      - name: Chart invariants
+        run: |
+          PATH="/tmp/pvenv/bin:$PATH" python3 -m pytest \
+            conformance/utils/tests/test_chart_invariants.py \
+            conformance/utils/tests/test_stream_on_batch.py -q
 
       - name: Upload conformance matrix
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
