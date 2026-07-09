@@ -23,8 +23,8 @@ the table referenced in `tests/parity/README.md`.
 
 Cell markers (per peer, vllm + sglang):
   =     peer block is `*d_<case>` anchor ref to dynamo (matches)
-  V/S   peer is a concrete inline block AND has `reason:` (intentional)
-  V?/S? peer is a concrete inline block AND has no `reason:` yet
+  V/S   peer is a concrete inline block AND has `explanation:` (intentional)
+  V?/S? peer is a concrete inline block AND has no `explanation:` yet
         (research-needed; we observed it but haven't classified it)
   V✗/S✗ peer has `error: <substring>` (Python parser raised)
   VS, V?S, VS✗, etc. — combinations
@@ -84,13 +84,29 @@ TOOLCALLING_CASES_MD = REPO_ROOT / "lib/parsers/TOOLCALLING_CASES.md"
 PYPROJECT_TOML = REPO_ROOT / "pyproject.toml"
 TEMPLATE_DIR = REPO_ROOT / "tests/parity"
 
-# The versioned fixture source (inputs/ + per-impl <impl>-<version>/ dirs) lives in
-# the real repo, not the ephemeral stage. `_common.sh` exports FRONTEND_CRATES_ROOT;
-# fall back to REPO_ROOT for standalone runs. Used to power the per-impl version
-# radios: we resolve each version snapshot and re-run the load path so cell keys
-# align exactly with the rendered (pinned) table.
+# The versioned fixture source (inputs/ + per-impl <impl>-<version>/ dirs) now lives
+# in the HuggingFace download cache, not the repo. `_common.sh` exports
+# CONFORMANCE_FIXTURES_ROOT (the cache root); fall back to the standard cache path for
+# standalone runs. Used to power the per-impl version radios: we resolve each version
+# snapshot and re-run the load path so cell keys align exactly with the rendered
+# (pinned) table.
 _FRONTEND_CRATES_ROOT = Path(os.environ.get("FRONTEND_CRATES_ROOT", str(REPO_ROOT)))
-_SRC_FIXTURES = _FRONTEND_CRATES_ROOT / "conformance/toolcalling/fixtures-batch-v1"
+
+
+def _fixtures_cache_root() -> Path:
+    """HuggingFace fixture download cache root (`~/.cache/dynamo/conformance-fixtures`
+    or `$XDG_CACHE_HOME/...`). `_common.sh` exports CONFORMANCE_FIXTURES_ROOT pointing
+    here; honor it first so staged renders and standalone runs agree."""
+    env = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
+    if env:
+        return Path(env)
+    xdg = os.environ.get("XDG_CACHE_HOME")
+    base = Path(xdg) if xdg else Path.home() / ".cache"
+    return base / "dynamo/conformance-fixtures"
+
+
+_SRC_FIXTURES = _fixtures_cache_root() / "toolcalling/fixtures-batch-v1"
+# The resolver script stays in the repo (it's code, not a fixture).
 _RESOLVE_SRC_DIR = _FRONTEND_CRATES_ROOT / "conformance/utils/src"
 
 RUST_TOOL_CALLING_DIR = REPO_ROOT / "lib/parsers/src/tool_calling"
@@ -111,12 +127,27 @@ def _model_label_html(model: str) -> str:
 
 
 def _make_jinja_env() -> Environment:
-    return Environment(
+    env = Environment(
         loader=FileSystemLoader(TEMPLATE_DIR),
         trim_blocks=False,
         lstrip_blocks=True,
         undefined=StrictUndefined,
     )
+    # Shared assets are template globals so every render site (parity table,
+    # reasoning parity, family-filtered) inlines them without repeating the kwargs.
+    env.globals["conformance_css"] = _read_asset("conformance.css")
+    env.globals["conformance_js"] = _read_asset("conformance.js")
+    return env
+
+
+def _read_asset(name: str) -> str:
+    """Inline a shared static asset (conformance.css / conformance.js) into the page.
+
+    Both the v1 parity page and the v2 conformance table render as single
+    self-contained HTML files that inline the SAME `tests/parity/assets/` CSS+JS —
+    no per-page copy. Keeping one source avoids the compare-bar/coloring logic
+    drifting between the two pages (it used to be duplicated inline in each)."""
+    return (TEMPLATE_DIR / "assets" / name).read_text(encoding="utf-8")
 
 
 def _commit_sha() -> str | None:
@@ -192,11 +223,13 @@ def _pinned_versions(impl_versions: dict[str, list[str]]) -> dict[str, str]:
     return {impl: vers[-1] for impl, vers in impl_versions.items() if vers}
 
 
-def _latest_impl_versions() -> dict[str, list[str]]:
-    """PARITY_v1 pins each peer to its latest version only. The v1 parity page
-    compares the Dynamo v1 parser against the current peer engines, so older captured
-    versions are omitted here (the conformance page keeps them for version diffs)."""
-    return {impl: [vers[-1]] for impl, vers in _impl_versions().items() if vers}
+def _v1_peer_versions() -> dict[str, list[str]]:
+    """PARITY_v1 shows ALL captured peer versions (ascending) so both the v1-era
+    engines (vLLM 0.23.0 / SGLang 0.5.12.post1) and the current ones (0.24.0 / 0.5.14)
+    are present and selectable in the compare bar. The oldest peer is the default
+    Compare candidate (this is the legacy baseline page) and newer ones default to the
+    Others bucket — see _candidate_items."""
+    return _impl_versions()
 
 
 def _version_status_map(mode: str) -> dict[tuple[str, str], dict[str, dict[str, str]]]:
@@ -206,7 +239,7 @@ def _version_status_map(mode: str) -> dict[tuple[str, str], dict[str, dict[str, 
     flat tree and run the same `load_all_cases` path, so keys match the rendered
     table exactly (including split-parent normalization). Status uses the same
     `_overview_status` classifier as the pinned cells."""
-    impl_versions = _latest_impl_versions()
+    impl_versions = _v1_peer_versions()
     if not impl_versions:
         return {}
     resolver = _RESOLVE_SRC_DIR / "resolve_fixtures.py"
@@ -699,7 +732,7 @@ def peer_status(case: dict, dyn: dict, impl: str) -> tuple[str, bool]:
       'unavail' — peer block is `{unavailable: <msg>}`
       'err'     — peer block is `{error: <substring>}`
       'div'     — peer block is a concrete divergent {calls, normal_text}
-    is_unknown is True iff kind == 'div' AND block has no `reason:`.
+    is_unknown is True iff kind == 'div' AND block has no `explanation:`.
     """
     block = case.get("expected", {}).get(impl)
     if block is None:
@@ -724,7 +757,7 @@ def peer_status(case: dict, dyn: dict, impl: str) -> tuple[str, bool]:
         }
         if n_block == n_dyn:
             return ("match", False)
-        return ("div", "reason" not in block)
+        return ("div", _explanation(block) is None)
     return ("na", False)
 
 
@@ -736,13 +769,24 @@ _TOOL_CALL_MARKUP_RE = re.compile(
 )
 
 
+def _explanation(block: object) -> str | None:
+    """The intentional-divergence note on an expected block. `explanation` is the
+    current key; `reason` is the legacy spelling still present in older fixtures. Read
+    both (explanation wins); new fixtures/captures write `explanation`."""
+    if not isinstance(block, dict):
+        return None
+    v = block.get("explanation")
+    return v if v is not None else block.get("reason")
+
+
 def _dynamo_tool_call_leak(dyn: dict) -> str | None:
     normal_text = dyn.get("normal_text")
-    if not dyn.get("reason") or not isinstance(normal_text, str):
+    note = _explanation(dyn)
+    if not note or not isinstance(normal_text, str):
         return None
     if not _TOOL_CALL_MARKUP_RE.search(normal_text):
         return None
-    return str(dyn["reason"])
+    return str(note)
 
 
 def _block_tool_call_leaks(block: dict) -> bool:
@@ -892,7 +936,7 @@ def cell_for(case: dict | None) -> str:
     elif s_kind == "err":
         parts.append("S✗")
 
-    # `reason:` on the `expected.dynamo` block flags Dynamo's own output as
+    # `explanation:` on the `expected.dynamo` block flags Dynamo's own output as
     # leaking tool call markup only when Dynamo also leaves residual
     # `normal_text`. Dynamo can have non-leak reasons for dropped malformed
     # markup, so don't mark those as `↯`.
@@ -928,8 +972,8 @@ _LEGEND_MD = (
     "**Legend:** "
     "`=` all captured peers match Dynamo · "
     "`·` Dynamo-only fixture (both peers unavailable) · "
-    "`V`/`S` divergence (V = vLLM, S = SGLang; intentional, has `reason:`) · "
-    "`?` research-needed suffix (e.g. V?, S? — diverges with no `reason:` yet) · "
+    "`V`/`S` divergence (V = vLLM, S = SGLang; intentional, has `explanation:`) · "
+    "`?` research-needed suffix (e.g. V?, S? — diverges with no `explanation:` yet) · "
     "`↯` Dynamo leaks tool call markup into `normal_text` "
     "(`expected.dynamo.reason:` carries the explanation) · "
     "`✗` parser exception (e.g. V✗, S✗ — Python parser raised) · "
@@ -1000,11 +1044,12 @@ def _format_output_block_html(block, family: str | None = None) -> str:
 
 def _cand_section_body(block, family: str | None = None) -> str:
     """A compare candidate's tooltip section body: its output block plus its own
-    `reason:` (when present), so the reason shows only when that candidate is
+    `explanation:` (when present), so the note shows only when that candidate is
     selected instead of via a global cross-engine blob naming unselected engines."""
     body = _format_output_block_html(block, family)
-    if isinstance(block, dict) and block.get("reason"):
-        body += "\nreason: " + html_lib.escape(str(block["reason"]))
+    note = _explanation(block)
+    if note:
+        body += "\nexplanation: " + html_lib.escape(str(note))
     return body
 
 
@@ -1121,7 +1166,7 @@ def _tooltip_for(case: dict, dyn: dict) -> str:
     """Build the hover-tooltip text for a divergent cell.
 
     Each non-matching, non-unavailable peer contributes one line:
-      vllm: <reason>                        # `reason:` field present
+      vllm: <reason>                        # `explanation:` field present
       vllm: UNKNOWN — divergent ...         # divergent, no reason
       vllm: parser exception matching '...' # `error:` field present
     """
@@ -1148,21 +1193,22 @@ def _tooltip_for(case: dict, dyn: dict) -> str:
         }
         if n_block == n_dyn:
             continue
-        if "reason" in block:
-            parts.append(f"{name}: {block['reason']}")
+        note = _explanation(block)
+        if note:
+            parts.append(f"{name}: {note}")
         elif "calls" in block or "normal_text" in block:
-            parts.append(f"{name}: (research-needed — no `reason:` field yet)")
+            parts.append(f"{name}: (research-needed — no `explanation:` field yet)")
     return "\n".join(parts)
 
 
 def _build_na_tooltip_html(case: dict) -> str:
-    """Tooltip for an n/a stub case (only `reason:` in YAML, no `expected:`
-    block). Renders case id + description + the reason. Used when the cell
+    """Tooltip for an n/a stub case (only `explanation:` in YAML, no `expected:`
+    block). Renders case id + description + the note. Used when the cell
     is n/a because the scenario doesn't apply to the family's parser syntax."""
     case_id = case.get("__case_id", "")
     desc = case.get("description") or ""
     head = f"{case_id} — {desc}" if (case_id and desc) else (case_id or desc)
-    reason = case.get("reason") or "n/a (no reason given)"
+    reason = _explanation(case) or "n/a (no explanation given)"
     return build_parity_tooltip_html(
         head=head,
         extra_sections=[("Why not applicable", linkify_text_html(str(reason)))],
@@ -1186,7 +1232,7 @@ def _build_missing_tooltip_html(mode: str, family: str, sub: str) -> str:
                 html_lib.escape(
                     "No fixture entry exists for this family/case. If the case "
                     "is intentionally not applicable, add an explicit n/a stub "
-                    "with description: and reason: so the table can explain it."
+                    "with description: and explanation: so the table can explain it."
                 ),
             )
         ],
@@ -1219,12 +1265,12 @@ def render_cell_html(case: dict | None, mode: str, family: str, sub: str) -> str
 
     dyn = case.get("expected", {}).get("dynamo")
     if not isinstance(dyn, dict):
-        # n/a stub: case has only `reason:` (no `expected:` block).
+        # n/a stub: case has only `explanation:` (no `expected:` block).
         fp = case.get("__fixture_path", "")
         ttip = _build_na_tooltip_html(case)
         if not fp:
             return f"{td_open}{cmp_span}{text}{ttip}</td>"
-        href = html_lib.escape(fp)
+        href = html_lib.escape(common.fixture_href(fp))
         return f'{td_open}{cmp_span}<a href="{href}">{text}</a>{ttip}</td>'
 
     fp = case.get("__fixture_path", "")
@@ -1233,7 +1279,7 @@ def render_cell_html(case: dict | None, mode: str, family: str, sub: str) -> str
     ttip = _build_tooltip_html(case, dyn)
     if not fp:
         return f"{td_open}{cmp_span}{text}{ttip}</td>"
-    href = html_lib.escape(fp)
+    href = html_lib.escape(common.fixture_href(fp))
     return f'{td_open}{cmp_span}<a href="{href}">{text}</a>{ttip}</td>'
 
 
@@ -1673,11 +1719,12 @@ def _candidate_items(mode: str = "batch") -> list[dict[str, str]]:
     Labels are "<Engine> <Runtime> <version> (<mode>)", e.g. "Dynamo Rust 3.0.0
     (batch)" / "vLLM Python 0.24.0 (stream)".
 
-    Default layout: A (reference) = Dynamo; B (compare with) = each peer impl. Only
-    the latest version of each peer is offered (the parity page pins to current
-    engines), so there is no C (others) bucket."""
-    impl_versions = _latest_impl_versions()
-    latest = {impl: (vers[-1] if vers else None) for impl, vers in impl_versions.items()}
+    Default layout: A (reference) = Dynamo; B (compare with) = each peer's OLDEST
+    (v1-era) version — this is the legacy page, so the older engines are the default
+    comparison; C (others) = each peer's newer versions, present but not shown until
+    dragged into Compare."""
+    impl_versions = _v1_peer_versions()
+    oldest = {impl: (vers[0] if vers else None) for impl, vers in impl_versions.items()}
     out: list[dict[str, str]] = []
     first = True
     for impl in _VERSION_IMPLS:
@@ -1692,7 +1739,7 @@ def _candidate_items(mode: str = "batch") -> list[dict[str, str]]:
             if first:
                 bucket = "A"
                 first = False
-            elif v == latest.get(impl):
+            elif v == oldest.get(impl):
                 bucket = "B"
             else:
                 bucket = "C"

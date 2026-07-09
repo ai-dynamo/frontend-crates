@@ -27,12 +27,14 @@ For tool-calling, the important fields are:
 
 Fixture locations:
 
-| Path | Used By |
+All fixture YAMLs live on HuggingFace (`ai-dynamo/conformance-fixtures`, public dataset) and are downloaded automatically on first use via `download_fixtures.py`. Do NOT commit fixture YAMLs to the repo — publish new or updated fixtures via `package_and_publish.py` instead (see "Fixture Hosting" below). `conformance/utils/src/parser_families.yaml` is a parser config file, not a fixture — it stays in the repo.
+
+| HuggingFace path (inside snapshot) | Used By |
 |---|---|
-| `conformance/toolcalling/fixtures-batch-v1/` | `TC batch (v1)` tab. Complete model output through batch parsers. |
-| `conformance/toolcalling/fixtures-batch-on-stream-v2/` | `TC batch-on-stream (v2)` tab. Complete batch text through streaming parsers. |
-| `conformance/toolcalling/fixtures-stream-v2/` | `TC stream (v2)` tab. Incremental chunks through streaming parsers. |
-| `conformance/reasoning/fixtures/` | Reasoning parser tabs. |
+| `toolcalling/fixtures-batch-v1/` | `TC batch (v1)` tab. Complete model output through batch parsers. |
+| `toolcalling/fixtures-batch-on-stream-v2/` | `TC batch-on-stream (v2)` tab. Complete batch text through streaming parsers. |
+| `toolcalling/fixtures-stream-v2/` | `TC stream (v2)` tab. Incremental chunks through streaming parsers. |
+| `reasoning/fixtures-v1/inputs/` | Reasoning parser tabs. |
 
 ## Parser Implementations
 
@@ -46,9 +48,9 @@ Keep the implementation and mode separate when reading or updating fixtures.
 
 ## 1. Verify
 
-Run this when you want to check the local Dynamo parser code, the conformance table generator (`conformance/utils/`), and the committed YAML fixtures.
+Run this when you want to check the local Dynamo parser code, the conformance table generator (`conformance/utils/`), and the HuggingFace-hosted fixture YAMLs.
 
-The verification-only path reads committed YAML and reports mismatches. It does not rewrite fixture YAML. The vLLM and SGLang verification commands run live peer parsers against committed expected output, but they do not recapture or update fixtures.
+The verification-only path reads HF-downloaded fixtures and reports mismatches. It does not rewrite fixture YAML. The vLLM and SGLang verification commands run live peer parsers against the HF-downloaded expected output, but they do not recapture or update fixtures.
 
 ```bash
 # Runs Python regression tests for table generation, marker semantics, vLLM Rust capture plumbing, and path scrubbing.
@@ -57,19 +59,19 @@ python3 -m pytest conformance/utils/tests/test_stream_on_batch.py
 # Runs Rust smoke tests (quick check) for the v2 parser implementation.
 cargo test --locked -p dynamo-parsers-v2 -- --nocapture
 
-# Runs fixture-based tests against committed YAML fixtures for Dynamo Rust parser behavior.
+# Runs fixture-based tests against HuggingFace-hosted YAML fixtures for Dynamo Rust parser behavior.
 cargo test --locked -p dynamo-conformance-fixtures-v2 -- --nocapture
 
-# Example: check Dynamo v1 batch behavior against committed `expected.dynamo` blocks in `conformance/toolcalling/fixtures-batch-v1/`.
+# Example: check Dynamo v1 batch behavior against HF-downloaded `expected.dynamo` blocks in `toolcalling/fixtures-batch-v1/`.
 conformance/utils/check.sh dynamo batch
 
 # Example: check Dynamo v2 stream fixtures and Dynamo v2 batch-on-stream behavior.
 conformance/utils/check.sh dynamo stream
 
-# Example: check vLLM Python batch and stream behavior against committed legacy `expected.vllm` and v2 `expected.vllm_python` blocks.
+# Example: check vLLM Python batch and stream behavior against HF-downloaded legacy `expected.vllm` and v2 `expected.vllm_python` blocks.
 conformance/utils/check.sh vllm --container vllm-localdev
 
-# Example: check SGLang Python batch and stream behavior against committed legacy `expected.sglang` and v2 `expected.sglang_python` blocks.
+# Example: check SGLang Python batch and stream behavior against HF-downloaded legacy `expected.sglang` and v2 `expected.sglang_python` blocks.
 conformance/utils/check.sh sglang --container sglang-localdev
 
 # Formats Rust changes.
@@ -83,13 +85,13 @@ If you only changed docs or the HTML generator, the Python regression test and `
 
 ## 2. Update Code Or Fixtures
 
-Change parser code under `parsers/v2/` when Dynamo behavior is wrong. Change fixture YAML when expected output changed, new peer output was captured, or a new case was added.
+Change parser code under `parsers/v2/` when Dynamo behavior is wrong. When fixture output changes or a new case is added, capture locally then publish a new HuggingFace snapshot via `package_and_publish.py`.
 
 ### Capture Parser Behavior Into Fixtures
 
-Use the same pattern for capture commands: `conformance/utils/capture.sh <target> ...`. The `stream` and `batch-on-stream` targets update v2 fixture YAML. The `dynamo-stream`, `dynamo-batch-on-stream`, and `token-ids` targets capture local Dynamo Rust behavior or token IDs used by fixture updates.
+Use the same pattern for capture commands: `conformance/utils/capture.sh <target> ...`. The `stream` and `batch-on-stream` targets capture v2 fixture YAMLs locally. The `dynamo-stream`, `dynamo-batch-on-stream`, and `token-ids` targets capture local Dynamo Rust behavior or token IDs. After capturing, publish to HuggingFace with `package_and_publish.py`.
 
-`capture.sh` is not the v1 batch rewrite tool. Dynamo v1 batch, vLLM Python batch, and SGLang Python batch are verified in Section 1 against committed fixtures. Change those YAML files directly when the committed batch expectation is wrong.
+`capture.sh` is not the v1 batch rewrite tool. Dynamo v1 batch, vLLM Python batch, and SGLang Python batch are verified in Section 1 against HF-downloaded fixtures. Update those YAMLs locally and re-publish when the expected batch output changes.
 
 Harmony fixture paths below are examples only. Harmony is not the intended scope limit. As DS4 and the other v2 stream parsers land, use the same commands with those fixture paths and families.
 
@@ -148,7 +150,7 @@ The local checkout path is not written to YAML or HTML. Fixtures record only the
 
 ## 3. Generate Matrix
 
-Run this after updating code or fixture YAML.
+Run this after updating code or publishing new fixtures to HuggingFace.
 
 ```bash
 # Generates an HTML matrix at the default example path: `conformance/CONFORMANCE_v2.html`.
@@ -161,9 +163,9 @@ conformance/utils/render_table_v2.sh --output index.html
 conformance/utils/render_table_v2.sh --dry-run
 ```
 
-Open the generated HTML file in a browser. The table is generated from the committed fixture directories plus the staged v2 fixture view built by `render_table_v2.sh`.
+Open the generated HTML file in a browser. The table is generated from HuggingFace-downloaded fixture directories staged by `render_table_v2.sh`.
 
-Use the generated matrix to inspect vLLM Python vs vLLM Rust behavior. `check.sh vllm` runs the live vLLM Python parser against committed YAML; it does not run vLLM Rust. vLLM Python vs Rust is a committed fixture comparison in the `TC stream (v2)` and `TC batch-on-stream (v2)` tabs.
+Use the generated matrix to inspect vLLM Python vs vLLM Rust behavior. `check.sh vllm` runs the live vLLM Python parser against HF-downloaded YAML; it does not run vLLM Rust. vLLM Python vs Rust is an HF fixture comparison in the `TC stream (v2)` and `TC batch-on-stream (v2)` tabs.
 
 ## Matrix Legend
 
@@ -202,14 +204,13 @@ The implementation lives under `src/` — don't run these directly unless you're
 
 ## Fixture Hosting (HuggingFace)
 
-Fixtures are hosted on HuggingFace as a private dataset (`ai-dynamo/conformance-fixtures`). The in-repo manifest (`conformance/fixtures-manifest.json`) pins the current snapshot; no HF metadata calls are needed at download time.
+Fixtures are hosted on HuggingFace as a public dataset (`ai-dynamo/conformance-fixtures`). The in-repo manifest (`conformance/fixtures-manifest.json`) pins the current snapshot; no HF metadata calls are needed at download time.
 
 ### Run conformance tests (fixtures download transparently)
 
-Set a read-capable HF token before the first run. Downloads are cached locally; subsequent runs are instant.
+Downloads are cached locally; subsequent runs are instant. No token is required — the dataset is public.
 
 ```bash
-export HF_TOKEN=<your-read-token>
 python3 conformance/utils/src/download_fixtures.py
 conformance/utils/check.sh dynamo all        # batch + stream + batch-via-stream
 conformance/utils/check.sh vllm --container <name>
@@ -244,7 +245,7 @@ The publish script builds deterministic per-version shard tarballs plus a monoli
 
 ### Add new fixtures (new SGLang / vLLM / Dynamo family)
 
-Add YAML files locally under the appropriate fixture tree (see `conformance/README.md` → "Adding Streaming Parser V2 Fixtures"), then publish a new snapshot exactly as above. The new family appears as a new subdirectory in the tarball; warm-path downloads on other machines will fetch only the shard(s) that changed.
+Add YAML files locally under the appropriate fixture tree, then publish a new snapshot exactly as above. The new family appears as a new subdirectory in the tarball; warm-path downloads on other machines will fetch only the shard(s) that changed.
 
 ## Notes
 

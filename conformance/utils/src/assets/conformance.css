@@ -27,15 +27,20 @@ td.model, td.parser { white-space: nowrap; }
 td.parser a { color: inherit; text-decoration: none; }
 td.parser a:hover { background: #ffd; }
 td.cell { text-align: center; width: 44px; min-width: 44px; max-width: 44px; font-weight: 400; }
+/* One color = one meaning, whether or not the cell has compare data. A cell without
+   `data-cmp` (an n/a stub or a missing fixture) must read exactly like a compare cell
+   of the same meaning: gray = n/a, light-gray = Base-only, near-white = missing. The
+   static status classes below carry the SAME backgrounds as the cmp-* classes; cmp-*
+   keeps `!important` so it still wins for cells that DO have a comparison. */
 td.cell.ok         { color: #0a7d2c; }
-td.cell.donly      { color: #8b949e; }
+td.cell.donly      { color: #8b949e; background: #dfe3e7; }
 td.cell.documented { color: #555; }
 td.cell.research   { color: #b00; }
 td.cell.leak       { color: #b00; }
 td.cell.err        { color: #b00; }
-td.cell.na         { color: #aeb6bf; }
+td.cell.na         { color: #aeb6bf; background: #d3d8de; }
 td.cell.todo       { color: #e07000; }
-td.cell.missing    { color: #8a6d3b; }
+td.cell.missing    { color: #8a6d3b; background: #eceff2; }
 td.cell a { color: inherit; text-decoration: none; display: block; }
 td.cell a:hover { background: #ffd; }
 tr.section td { background: #eef; font-weight: bold; text-align: left; }
@@ -65,37 +70,41 @@ tr.section td { background: #eef; font-weight: bold; text-align: left; }
 .cmp-reset { border: 1px solid #d0d7de; background: #fff; border-radius: 6px;
   padding: 6px 10px; font-size: 13px; cursor: pointer; color: #333; }
 .cmp-reset:hover { background: #f1f3f5; }
-/* Base / Compare / Others are three columns that share the row width and resize. */
-.cmpctl { display: flex; gap: 10px; align-items: flex-start; margin: 16px 0 10px; }
-/* Three columns. Base holds exactly one chip, so it shrinks to that chip's width
- * rather than claiming an even third. Compare and Others get a flex-grow set per
- * bucket by JS (resizeBuckets) proportional to how many chips each holds, so the
- * fuller bucket expands more; the values below are the pre-JS fallback. min-width
- * keeps a near-empty bucket readable and droppable. */
-.cmpctl > .bucket-A { flex: 0 1 auto; min-width: min-content; }
-.cmpctl > .bucket-B { flex: 1 1 0; position: relative; min-width: min-content; }
-.cmpctl > .bucket-C { flex: 1 1 0; min-width: min-content; }
-.bucket { border: 1px solid #d0d7de; background: #f8fafc; border-radius: 6px;
-  padding: 4px 8px 6px; min-width: 0; }
-.bucket-A { border-color: #6b9bd6; background: #eef4fc; }
-.bucket-B { border-color: #7bb98a; background: #eef7f0; }
-.bucket-hd { font-size: 11px; font-weight: 700; color: #555; text-transform: uppercase;
-  letter-spacing: 0.03em; margin-bottom: 3px; }
-.bucket.drop-hover { outline: 2px dashed #2563eb; outline-offset: -2px; }
-.chips { display: flex; flex-wrap: wrap; gap: 5px; min-height: 24px; align-content: flex-start; }
-.chip { display: inline-flex; align-items: center; font-size: 12px; font-weight: 600;
-  background: #fff; border: 1px solid #b9c2cd; border-radius: 12px; padding: 2px 9px;
-  cursor: grab; user-select: none; white-space: nowrap; }
-.chip.dragging { opacity: 0.4; }
-.chip.chip-over { outline: 2px solid #2563eb; outline-offset: 1px; }
-/* Swap button floats on top of the Compare box at the Base/Compare seam (over the
- * box, not occupying an in-between column). Anchored to bucket-B's left edge so it
- * stays on the seam regardless of the narrow Base bucket's width. Hidden (out of
- * flow) when not at a 1-vs-1 comparison, so the buckets never shift. */
-.cmp-swap { position: absolute; top: -12px; left: 0; transform: translateX(-50%); z-index: 3;
-  border: 1px solid #6b9bd6; background: #fff; border-radius: 12px; cursor: pointer;
-  font-size: 13px; line-height: 1; padding: 3px 9px; color: #174a86; box-shadow: 0 1px 2px rgba(0,0,0,0.12); }
-.cmp-swap[hidden] { display: none; }
+/* Parser picker: ONE visible box; inside, one invisible column per engine
+ * (Dynamo / vLLM / SGLang) of equal width, separated by a divider line. Engine
+ * names are omitted (the parser labels are self-explanatory). Each parser row is a
+ * Reference star (acts as a radio, one across all columns) + a Compare checkbox
+ * (any number) + the label; the ref/cmp header labels sit directly over the two
+ * control columns. */
+.cmpctl { display: flex; align-items: stretch; margin: 16px 0 10px;
+  border: 1px solid #d0d7de; background: #f8fafc; border-radius: 6px; padding: 5px 0; }
+.cmpcol { flex: 1 1 0; min-width: 0; padding: 0 12px; }
+.cmpcol + .cmpcol { border-left: 1px solid #dde3ea; }
+/* header + data rows share the same grid so ref/cmp headers align over the star
+ * and checkbox columns. */
+.cmprow { display: grid; grid-template-columns: 26px 26px 1fr; align-items: center;
+  padding: 1px 0; border-radius: 4px; }
+.cmprow.cmphd { padding-bottom: 3px; margin-bottom: 3px; border-bottom: 1px solid #e3e8ee; }
+.cmphd-ref, .cmphd-cmp { font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.03em; color: #8a95a3; text-align: center; }
+.cmprow-ref, .cmprow-cmp { position: relative; display: flex; justify-content: center;
+  align-items: center; margin: 0; cursor: pointer; }
+.cmprow input.cmp-on { margin: 0; cursor: pointer; }
+/* Reference control: a star that behaves as the radio. The native radio stays for
+ * semantics/a11y but is transparent and overlaid, so the label click toggles it;
+ * the star fills gold when its radio is checked. */
+.cmprow-ref input.cmp-ref { position: absolute; inset: 0; width: 100%; height: 100%;
+  margin: 0; opacity: 0; cursor: pointer; }
+.cmprow-ref .star { font-size: 15px; line-height: 1; color: #cbd2da; pointer-events: none; }
+.cmprow-ref input.cmp-ref:checked ~ .star { color: #f5a623; }
+.cmprow-ref input.cmp-ref:focus-visible ~ .star { outline: 2px solid #6b9bd6; outline-offset: 1px; border-radius: 2px; }
+.cmprow-label { font-size: 12px; color: #2d3440; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; padding-left: 4px; }
+.cmprow.is-ref { background: #eef4fc; }
+.cmprow.is-ref .cmprow-label { font-weight: 700; color: #174a86; }
+/* The Reference's Compare box is checked + locked (can't be unchecked) — keep it
+ * clearly visible (pressed), just slightly muted to read as locked. */
+.cmprow input.cmp-on:disabled { opacity: 0.55; }
 /* Cells: compare coloring wins over the dormant parser-status rules (!important).
  * Numbers are not bold. */
 .cmp-marker { position: absolute; inset: 0; display: none; align-items: center;
@@ -110,9 +119,22 @@ td.cell.cmp-na { background: #d3d8de !important; }
 body.view-overview td.cell.cmp-na { color: #d3d8de; }
 td.cell.cmp-nobase { background: #eceff2 !important; }
 body.view-overview td.cell.cmp-nobase { color: #eceff2; }
+/* Base-only "·" (no peer to compare): neutral gray, not green. */
+td.cell.cmp-donly { background: #dfe3e7 !important; }
+body.view-overview td.cell.cmp-donly { color: #dfe3e7; }
+/* No-comparison markers (n/a, —, ·) recede to a subtle gray in the detailed view so
+   the real data markers (=, divergence counts) stay high-contrast. */
+body.view-details td.cell.cmp-na .cmp-marker,
+body.view-details td.cell.cmp-nobase .cmp-marker,
+body.view-details td.cell.cmp-donly .cmp-marker { color: #9aa1a9; }
 /* Tooltip candidate sections: hidden until the selection shows them. */
 .ttip .cand { display: none; }
 .ttip .cand.cand-on { display: block; }
+/* JS-inserted reference-aware "not implemented" note (the selected Reference parser
+ * doesn't support this family) — distinct from a case-level "not applicable". */
+.cmp-why { font-weight: 600; color: #8a4b0b; background: #fdf2e2; border: 1px solid #f0d9b5;
+  border-radius: 4px; padding: 4px 6px; margin-bottom: 6px; font-size: 12px; line-height: 1.35;
+  white-space: normal; }
 /* Base reference's section is flagged with a marker (same color as the others). */
 .ttip .cand.cand-base .ttip-section::after { content: ' ← base reference'; font-weight: 700; }
 .radio-option { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; cursor: pointer; }
@@ -157,6 +179,12 @@ body.view-overview td.cell.cmp-nobase { color: #eceff2; }
 .view-details td.cell .cell-marker sub { font-size: 0.65em; line-height: 0; vertical-align: -0.35em; }
 .view-details td.cell.donly::before { color: #8b949e; }
 .view-details td.cell.donly .cell-marker { color: #8b949e; }
+/* Cells without a comparison (n/a stubs, missing fixtures) show their marker in the
+   same subtle gray as the compare markers (#9aa1a9), so `n/a` and `—` read identically
+   whether or not the cell carries compare data. Scoped to :not([data-cmp]) so compare
+   cells keep rendering their marker via .cmp-marker (no double text). */
+.view-details td.cell.na:not([data-cmp]) > a,
+.view-details td.cell.missing:not([data-cmp]) { color: #9aa1a9; }
 /* The .view-details.parity-mode hide-marker rule is emitted by _impl_status_css()
    (generate_conformance_table.py), not here: it must be ordered right after the
    per-engine status-marker show rules to win the specificity tie. See audit B7. */

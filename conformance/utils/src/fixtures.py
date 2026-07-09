@@ -544,7 +544,7 @@ def _derive_stream_expected(case: dict) -> dict:
         # divergence), never `S_rs?`/`V_ps?` (research-needed). The per-chunk `expected`
         # in the fixture is the detailed evidence.
         if impl in PEER_IMPL_KEYS:
-            block["reason"] = (
+            block["explanation"] = (
                 f"Captured from the {IMPL_DISPLAY[impl]} streaming parser. Streaming output differs "
                 "from Dynamo parser v2 token-incremental behavior by design (text vs token "
                 "streaming); see per-chunk `expected` in the fixture."

@@ -15,12 +15,18 @@ Parser v1/v2 terminology, migration steps, fixture ownership, and temporary sync
 
 ```
 conformance/
-├── toolcalling/fixtures-batch-v1/<family>/*.yaml          # legacy v1 tool-calling batch cases
-├── reasoning/fixtures/<family>/*.yaml             # legacy v1 reasoning cases
-├── toolcalling/fixtures-stream-v2/<family>/*.yaml # frontend-crate-owned v2 stream cases
-├── toolcalling/fixtures-batch-on-stream-v2/<family>/*.yaml # frontend-crate-owned complete-text-through-stream cases
-├── tests/*.rs                                     # Rust fixture tests
+├── fixtures-manifest.json                         # pins the active HuggingFace fixture snapshot
+├── tests/*.rs                                     # Rust fixture tests (fixtures downloaded from HF on first run)
 └── utils/                                         # render, check, and record helpers
+```
+
+Fixture YAMLs are NOT in the repo. They live on HuggingFace (`ai-dynamo/conformance-fixtures`, public) and are downloaded automatically on first use. HF snapshot layout:
+
+```
+toolcalling/fixtures-batch-v1/<family>/           # v1 tool-calling batch cases
+toolcalling/fixtures-stream-v2/<family>/          # v2 stream cases
+toolcalling/fixtures-batch-on-stream-v2/<family>/ # v2 complete-text-through-stream cases
+reasoning/fixtures-v1/inputs/<family>/            # v1 reasoning cases
 ```
 
 ## Render Outputs
@@ -49,9 +55,9 @@ The test package is named `dynamo-conformance-fixtures-v2` for historical compat
 
 | Test | Code under test | Fixtures | Notes |
 |---|---|---|---|
-| `parity_toolcalling` | v1 Dynamo-synced batch parser in `parsers/src/tool_calling/` | v1 batch fixtures in `conformance/toolcalling/fixtures-batch-v1/` | Each `batch` case's `model_text` is fed through `detect_and_parse_tool_call_with_recovery(text, Some(family), tools)` and compared to `expected.dynamo`. |
-| `parity_toolcalling_batch_via_stream` | Dynamo parser v2 in `parsers_v2/src/tool_calling/*` | v1 batch fixtures in `conformance/toolcalling/fixtures-batch-v1/` plus v2 overlays in `conformance/toolcalling/fixtures-batch-on-stream-v2/` | Feeds complete batch text into the v2 stream parser and compares assembled calls to the committed batch-on-stream expectations. |
-| `parity_toolcalling_stream` | Dynamo parser v2 in `parsers_v2/src/tool_calling/*` | v2 stream fixtures in `conformance/toolcalling/fixtures-stream-v2/` | Checks token-id or text streaming paths per chunk, then checks assembled calls. |
+| `parity_toolcalling` | v1 Dynamo-synced batch parser in `parsers/src/tool_calling/` | v1 batch fixtures from HF (`toolcalling/fixtures-batch-v1/`) | Each `batch` case's `model_text` is fed through `detect_and_parse_tool_call_with_recovery(text, Some(family), tools)` and compared to `expected.dynamo`. |
+| `parity_toolcalling_batch_via_stream` | Dynamo parser v2 in `parsers_v2/src/tool_calling/*` | v1 batch fixtures from HF (`toolcalling/fixtures-batch-v1/`) plus v2 overlays (`toolcalling/fixtures-batch-on-stream-v2/`) | Feeds complete batch text into the v2 stream parser and compares assembled calls to the HF-hosted batch-on-stream expectations. |
+| `parity_toolcalling_stream` | Dynamo parser v2 in `parsers_v2/src/tool_calling/*` | v2 stream fixtures from HF (`toolcalling/fixtures-stream-v2/`) | Checks token-id or text streaming paths per chunk, then checks assembled calls. |
 
 The fixture `family` field is the parser name, the same value Dynamo's `parse_tool_calls_batch` binding takes for v1. Legacy v1 fixtures use `expected.dynamo`, `expected.vllm`, and `expected.sglang`; v2 fixtures should use explicit implementation keys such as `expected.dynamo_rust`, `expected.vllm_rust`, `expected.vllm_python`, and `expected.sglang_python`.
 
@@ -63,6 +69,6 @@ Parser fixture sync from Dynamo is retired. Update v1 fixtures through normal fr
 
 ## Adding Streaming Parser V2 Fixtures
 
-Use [`../parsers_v2/README.md`](../parsers_v2/README.md#fixture-files-to-add) for the parser-side checklist. In conformance, a new streaming family normally needs `conformance/toolcalling/fixtures-stream-v2/<family>/TOOLCALLING.streamv2.*.yaml` and `conformance/toolcalling/fixtures-batch-on-stream-v2/<family>/TOOLCALLING.batch*.yaml`; add `conformance/toolcalling/fixtures-batch-v1/<family>/TOOLCALLING.batch*.yaml` only when the v1 batch corpus does not already contain that family or taxonomy case.
+Use [`../parsers_v2/README.md`](../parsers_v2/README.md#fixture-files-to-add) for the parser-side checklist. In conformance, a new streaming family normally needs YAML files under `toolcalling/fixtures-stream-v2/<family>/` and `toolcalling/fixtures-batch-on-stream-v2/<family>/`; add `toolcalling/fixtures-batch-v1/<family>/` entries only when the v1 batch corpus does not already contain that family or taxonomy case. Capture locally with `capture.sh`, then publish to HuggingFace with `package_and_publish.py` — do not commit fixture YAMLs to the repo.
 
 The v2 stream fixture schema is documented in [`toolcalling/fixtures-stream-v2/README.md`](toolcalling/fixtures-stream-v2/README.md). Capture and render commands are documented in [`utils/README.md`](utils/README.md).

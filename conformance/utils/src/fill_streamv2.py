@@ -5,8 +5,8 @@
 
 For each family + each batch case that has `model_text`, chunk the text into ~1-3
 "token" pieces, run the vLLM and SGLang streaming parsers over the chunks (inside
-the engine containers, one engine import each), and assemble the per-chunk fixture
-at conformance/toolcalling/fixtures-stream-v2/<family>/TOOLCALLING.streamv2.<N>.yaml.
+the engine containers, one engine import each), and assemble the per-chunk fixture locally, then publish to HuggingFace
+(`ai-dynamo/conformance-fixtures`) via `package_and_publish.py`.
 Dynamo is marked unavailable/TODO (no parser v2 stream parser for these families
 yet); the synthetic partial-token case `50` has no batch source and is left
 untouched.

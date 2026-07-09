@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import itertools
 import json
+import os
 import re
 import subprocess
 import sys
@@ -37,6 +38,27 @@ SRC = UTILS / "src"  # internal modules moved under conformance/utils/src/
 REPO = UTILS.parents[1]
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
+
+
+def _fixtures_cache_root() -> Path:
+    """HuggingFace fixture download cache root. Fixture YAMLs live on HF (not the
+    repo) since DIS-2310, so path-existence checks resolve against the cache.
+    `_common.sh` exports CONFORMANCE_FIXTURES_ROOT pointing here."""
+    env = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
+    if env:
+        return Path(env)
+    xdg = os.environ.get("XDG_CACHE_HOME")
+    base = Path(xdg) if xdg else Path.home() / ".cache"
+    return base / "dynamo/conformance-fixtures"
+
+
+def _resolve_conformance_ref(ref: str) -> Path:
+    """Map a `conformance/...` doc path to disk: fixture trees resolve against the HF
+    cache (they're not in the repo), everything else against the repo."""
+    rel = ref[len("conformance/"):]
+    if rel.startswith(("toolcalling/fixtures", "reasoning/fixtures")):
+        return _fixtures_cache_root() / rel
+    return REPO / ref
 
 import build_stream_fixtures as b  # noqa: E402
 import capture_vllm_rust as r  # noqa: E402
@@ -121,10 +143,10 @@ def test_readme_documents_vllm_rust_capture_flow() -> None:
         "captured_with.vllm_rust",
         "expected.vllm_rust",
         "conformance/utils/render_table_v2.sh",
-        "The verification-only path reads committed YAML and reports mismatches",
+        "The verification-only path reads HF-downloaded fixtures and reports mismatches",
         "it does not run vLLM Rust",
         "conformance/utils/check.sh dynamo stream",
-        "vLLM Python vs Rust is a committed fixture comparison",
+        "vLLM Python vs Rust is an HF fixture comparison",
         "capture.sh",
         "Parser Implementations",
         "Dynamo v1",
@@ -342,8 +364,10 @@ def test_expected_dynamo_absent_renders_as_todo() -> None:
     exp = g._stream_on_batch_expected({"vllm": {"calls": []}, "sglang": {"calls": []}})
     assert g._is_todo_unavailable(exp[D])
     assert "unavailable" in exp[R]
-    assert "reason" in exp[V] and "reason" in exp[S]
-    assert "SGLang Python streaming parser" in exp[S]["reason"]
+    # New captures write the `explanation` key (not the legacy `reason`).
+    assert "explanation" in exp[V] and "explanation" in exp[S]
+    assert "reason" not in exp[V] and "reason" not in exp[S]
+    assert "SGLang Python streaming parser" in exp[S]["explanation"]
 
 
 def test_expected_dynamo_absent_without_batch_text_is_structural_na() -> None:
@@ -364,8 +388,24 @@ def test_expected_dynamo_present_and_peer_unavailable() -> None:
         }
     )
     assert exp[D]["calls"] == [{"name": "f", "arguments": {}}]
-    assert "reason" not in exp[D]
+    assert "explanation" not in exp[D] and "reason" not in exp[D]
     assert exp[S] == {"unavailable": "SGLang has no detector for family"}
+
+
+def test_explanation_and_legacy_reason_both_recognized() -> None:
+    # Backward-compat: the divergence note reads from `explanation` (current) or the
+    # legacy `reason` (older fixtures / Dynamo-synced code); explanation wins.
+    assert g._explanation({"explanation": "new"}) == "new"
+    assert g._explanation({"reason": "old"}) == "old"
+    assert g._explanation({"explanation": "new", "reason": "old"}) == "new"
+    assert g._explanation({}) is None
+    # A divergent peer carrying EITHER key is treated as intentional (marker without
+    # the research-needed `?`), not as an un-triaged gap.
+    dyn = {"calls": [{"name": "f", "arguments": {}}], "normal_text": ""}
+    for key in ("reason", "explanation"):
+        case = _xcase({D: dyn, V: {"calls": [], "normal_text": "", key: "intentional"}})
+        kind, unknown = g.peer_status(case, dyn, V)
+        assert kind == "div" and unknown is False, key
 
 
 def test_dsv4_v2_parser_cell_links_dsml_parser() -> None:
@@ -474,7 +514,9 @@ def test_sob_marker_all_consistent_is_equals_and_green() -> None:
         assert m[f"data-status-{impl}"] == "ok"  # green
 
 
-def test_sob_dynamo_todo_when_no_v2_parser() -> None:
+def test_sob_dynamo_na_when_no_v2_parser() -> None:
+    # A family the Dynamo v2 stream parser doesn't implement is a plain neutral n/a
+    # (the v1 table has no "TODO" concept), not a distinct orange "todo"/"…" state.
     case = _sobcase(
         stream={
             D: {"unavailable": _TODO_MSG},
@@ -483,9 +525,9 @@ def test_sob_dynamo_todo_when_no_v2_parser() -> None:
         },
         batch={i: _calls("f") for i in (D, V, S)},
     )
-    assert g._sob_status(case, D) == "todo"
-    # dynamo unavailable -> marker falls back to the per-engine status (…)
-    assert g._stream_xeng_marker(case, D, "batch_on_stream") == "…"
+    assert g._sob_status(case, D) == "na"
+    # dynamo unavailable -> marker is a clean n/a, no distinct "…" TODO marker
+    assert g._stream_xeng_marker(case, D, "batch_on_stream") == "n/a"
     # vllm/sglang streams both present and agree -> cross-engine '='
     assert g._stream_xeng_marker(case, V, "batch_on_stream") == "="
 
@@ -528,14 +570,15 @@ def test_sob_tooltip_labels_stream_and_batch() -> None:
         batch={i: _calls("f") for i in IMPLS},
     )
     ttip = g._build_sob_tooltip(case)
-    # Sections now use the standardized "<Engine> <Runtime> (<mode>)" candidate label
-    # (same key as the Base/Compare buckets), wrapped as cand-<impl> so the selection
-    # can toggle them.
+    # Sections now use the standardized "<Engine> <Runtime> <version> (<mode>)" candidate
+    # label (same key as the Base/Compare buckets), wrapped as cand-<impl> so the
+    # selection can toggle them. The version comes from fixture provenance and may be
+    # absent for a synthetic case with no captured_with, so match it optionally.
     for lbl in ("Dynamo Rust", "vLLM Rust", "vLLM Python", "SGLang Python"):
-        assert f"{lbl} (stream):" in ttip
+        assert re.search(rf"{re.escape(lbl)}(?: \S+)? \(stream\):", ttip), f"missing {lbl} (stream)"
     for lbl in ("Dynamo Rust", "vLLM Python", "SGLang Python"):
-        assert f"{lbl} (batch):" in ttip
-    assert "vLLM Rust (batch):" not in ttip
+        assert re.search(rf"{re.escape(lbl)}(?: \S+)? \(batch\):", ttip), f"missing {lbl} (batch)"
+    assert not re.search(r"vLLM Rust(?: \S+)? \(batch\):", ttip)
     assert "V<sub>RB</sub>" not in ttip
     assert "cand cand-vllm_rust" in ttip
 
@@ -647,18 +690,23 @@ def test_build_cases_carries_stream_and_batch(monkeypatch) -> None:
     assert g._stream_xeng_marker(built, V, "batch_on_stream") == "V_ps"
 
 
-def test_template_has_compare_buckets_and_reasoning_candidates() -> None:
-    # The single-parser radio was replaced by the per-panel compare buckets
-    # (A=Base reference, B=Compare with, C=Others).
+def test_template_has_compare_picker_and_reasoning_candidates() -> None:
+    # The compare bar is a SHARED Jinja partial (used by both the v2 conformance
+    # table and the v1 parity page): one column per engine, each parser row a
+    # Reference radio + Compare-with checkbox. The drag/drop buckets are gone.
     template = (SRC / "conformance_table.html.j2").read_text()
-    assert 'data-bucket="A"' in template
-    assert 'data-bucket="B"' in template
-    assert 'data-bucket="C"' in template
-    assert "data-cmp-base" not in template  # old radio-based control is gone
+    assert '{% include "_compare_bar.html.j2" %}' in template
+    assert "data-bucket" not in template  # old drag/drop buckets are gone
+    partial = (UTILS / "tests" / "parity" / "_compare_bar.html.j2").read_text()
+    assert 'data-engine="Dynamo"' in partial or "'Dynamo'" in partial
+    assert 'class="cmp-ref"' in partial  # Reference radio
+    assert 'class="cmp-on"' in partial  # Compare-with checkbox
+    assert "data-cmp-base" not in partial  # old radio-based control is gone
     # The compare JS drives cells from each cell's data-cmp payload.
     js = (SRC / "assets" / "conformance.js").read_text()
     assert "function applyCtl" in js
     assert "cmp-leak" in js and "cmp-eq" in js
+    assert "function initCompareInputs" in js  # radio/checkbox wiring replaced DnD
     hrefs = {
         "reasoning_fixtures": "#",
         "reasoning_cases": "#",
@@ -731,10 +779,22 @@ def test_tab_labels_put_version_after_family() -> None:
 
 def test_common_legend_defines_v1_v2() -> None:
     legend = g._common_legend_html()
-    assert "<strong>v1</strong> means the stable batch parser crate" in legend
-    assert "<strong>v2</strong> means the WIP streaming parser crate" in legend
+    assert "<strong>v1</strong> = the stable batch parser crate" in legend
+    assert "<strong>v2</strong> = the WIP streaming parser crate" in legend
     assert "<code>parsers/v1/src/...</code>" in legend
     assert "<code>parsers/v2/src/...</code>" in legend
+
+
+def test_common_legend_defines_green_by_reference_cleanliness() -> None:
+    # Green is defined by the Reference parser being leak-free (compare-model), not by
+    # the old "all peers match Dynamo Rust". The stale per-impl marker keys (D_rb,
+    # V_ps, …) and the "match Dynamo Rust" / donly lines were removed.
+    legend = g._common_legend_html()
+    assert "Reference</strong> parser output is clean" in legend
+    assert "whether or not any Compare parser is selected" in legend
+    assert "all captured peers match Dynamo Rust" not in legend
+    assert "Dynamo Rust batch parser" not in legend
+    assert "Dynamo Rust-only fixture" not in legend
 
 
 def test_template_cells_do_not_clip_hover_tooltips() -> None:
@@ -766,14 +826,23 @@ _STALE_COMMAND_NAMES = (
 
 
 def test_readme_fixture_paths_exist() -> None:
-    """D1: every concrete conformance/*.yaml path in the doc set resolves (A2 regression)."""
+    """D1: every concrete conformance/*.yaml path in the doc set resolves (A2 regression).
+
+    Fixture YAMLs live on HuggingFace (not the repo) since DIS-2310, so fixture paths
+    resolve against the download cache; skip if the cache isn't populated yet."""
+    if not (_fixtures_cache_root() / "toolcalling").is_dir():
+        import pytest
+
+        pytest.skip("fixtures not downloaded (run download_fixtures.py)")
     for doc in _DOC_FILES:
         if not doc.exists():
             continue
         for ref in re.findall(r"conformance/[\w./*<>-]+\.yaml", doc.read_text()):
             if "<" in ref or "*" in ref:  # placeholder/glob, not a concrete path
                 continue
-            assert (REPO / ref).exists(), f"{doc.name}: missing fixture path {ref}"
+            assert _resolve_conformance_ref(ref).exists(), (
+                f"{doc.name}: missing fixture path {ref}"
+            )
 
 
 def test_repo_docs_have_no_stale_command_names() -> None:
@@ -837,7 +906,12 @@ def test_every_stream_family_has_registry_row_and_fixtures() -> None:
     families live under `inputs/`; the sibling `<impl>-<version>/` dirs are per-impl
     expected, not families (resolve_stream_fixtures.py folds them into the inputs)."""
     registry = yaml.safe_load((SRC / "parser_families.yaml").read_text())["families"]
-    inputs_root = REPO / "conformance" / "toolcalling" / "fixtures-stream-v2" / "inputs"
+    # Fixtures live on HuggingFace since DIS-2310; resolve against the download cache.
+    inputs_root = _fixtures_cache_root() / "toolcalling" / "fixtures-stream-v2" / "inputs"
+    if not inputs_root.is_dir():
+        import pytest
+
+        pytest.skip("fixtures not downloaded (run download_fixtures.py)")
     for fam_dir in sorted(p for p in inputs_root.iterdir() if p.is_dir()):
         assert fam_dir.name in registry, f"family {fam_dir.name} has no parser_families.yaml row"
     for fam, spec in registry.items():
