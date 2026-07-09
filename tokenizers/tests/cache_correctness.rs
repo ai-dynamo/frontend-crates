@@ -6,15 +6,12 @@
 // CHAT_TURNS corpus adapted from sgl-project/llm-tokenizer v1.3.2
 // (`tests/tokenizer_cache_correctness_test.rs`). The ChatML markers `<|im_start|>` /
 // `<|im_end|>` were rewritten to TinyLlama's `<s>` / `</s>` so the test runs offline
-// against in-tree tokenizer fixtures. The same corpus is also rendered into Llama-3.1
-// format and tested against the bundled mock-llama-3.1 fixture, exercising a second
-// special-token family with a different added-token layout (4 boundary tokens instead
-// of 2, distinct surface strings `<|begin_of_text|>` / `<|start_header_id|>` /
-// `<|end_header_id|>` / `<|eot_id|>`).
+// against in-tree tokenizer fixtures. The same corpus is also rendered into Llama-3.1,
+// DeepSeek, and Kimi ChatML formats. The fourth setup uses the bundled mock Kimi
+// TikToken fixture and obtains its boundary strings from `TikTokenTokenizer` itself.
 //
-// All boundary tokens used in both formats are atomic in their respective BPE
-// vocabularies (`special: true, normalized: false`), so the same L1 correctness
-// invariant is exercised for each:
+// All boundary tokens are atomic in their respective tokenizer's special-token set, so
+// the same L1 correctness invariant is exercised for each:
 //
 //   tokenize(prefix) + tokenize(suffix) == tokenize(prefix + suffix)
 
@@ -24,7 +21,7 @@
 use std::sync::Arc;
 
 use dynamo_tokenizers::{
-    CachedTokenizer, HuggingFaceTokenizer,
+    CachedTokenizer, HuggingFaceTokenizer, TikTokenTokenizer,
     traits::{Encoder, Tokenizer},
 };
 
@@ -57,16 +54,71 @@ const DEEPSEEK_PATH: &str = concat!(
     "/../llm/tests/data/sample-models/mock-deepseek-r1/tokenizer.json"
 );
 
+/// In-tree mock Kimi TikToken fixture. Its byte-pair ranks cover ordinary text and its
+/// tokenizer config registers Kimi's ChatML boundaries as CoreBPE special tokens.
+const TIKTOKEN_PATH: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../llm/tests/data/sample-models/mock-tiktoken/tiktoken.model"
+);
+
 /// A tokenizer fixture together with the formatter that re-keys the chat corpus into
-/// that family's native special-token markers, plus the list of those markers for the
-/// `CachedTokenizer` constructor.
+/// that family's native special-token markers.
 struct Setup {
     name: &'static str,
-    path: &'static str,
-    specials: &'static [&'static str],
+    build: fn() -> (Arc<dyn Tokenizer>, Vec<String>),
     /// Rewrite a corpus turn from the canonical TinyLlama-format CHAT_TURNS entry
     /// (with `<s>role\n...</s>` markers) into this family's native chat format.
     render: fn(tinyllama_format: &str) -> String,
+}
+
+fn build_hf_setup(
+    path: &'static str,
+    specials: &'static [&'static str],
+) -> (Arc<dyn Tokenizer>, Vec<String>) {
+    let tokenizer: Arc<dyn Tokenizer> = Arc::new(
+        HuggingFaceTokenizer::from_file(path)
+            .unwrap_or_else(|error| panic!("load tokenizer {path}: {error}")),
+    );
+    let specials = specials.iter().map(|token| (*token).to_string()).collect();
+    (tokenizer, specials)
+}
+
+fn build_tinyllama() -> (Arc<dyn Tokenizer>, Vec<String>) {
+    build_hf_setup(TINYLLAMA_PATH, &["<s>", "</s>"])
+}
+
+fn build_llama31() -> (Arc<dyn Tokenizer>, Vec<String>) {
+    build_hf_setup(
+        LLAMA31_PATH,
+        &[
+            "<|begin_of_text|>",
+            "<|start_header_id|>",
+            "<|end_header_id|>",
+            "<|eot_id|>",
+        ],
+    )
+}
+
+fn build_deepseek() -> (Arc<dyn Tokenizer>, Vec<String>) {
+    build_hf_setup(
+        DEEPSEEK_PATH,
+        &[
+            "<｜begin▁of▁sentence｜>",
+            "<｜User｜>",
+            "<｜Assistant｜>",
+            "<｜end▁of▁sentence｜>",
+        ],
+    )
+}
+
+fn build_kimi_tiktoken() -> (Arc<dyn Tokenizer>, Vec<String>) {
+    let tokenizer = Arc::new(
+        TikTokenTokenizer::from_file_auto(TIKTOKEN_PATH)
+            .expect("load in-tree mock Kimi TikToken tokenizer"),
+    );
+    let specials = tokenizer.special_tokens().to_vec();
+    let tokenizer: Arc<dyn Tokenizer> = tokenizer;
+    (tokenizer, specials)
 }
 
 /// Identity: CHAT_TURNS entries are already in TinyLlama format.
@@ -136,43 +188,51 @@ fn render_deepseek(s: &str) -> String {
     out
 }
 
+/// Convert the canonical corpus into a ChatML-style Kimi prompt.
+fn render_kimi(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() + 64);
+    let mut remaining = s;
+    while let Some(rest) = remaining.strip_prefix("<s>") {
+        let end = rest
+            .find("</s>")
+            .expect("CHAT_TURNS turn must end with </s>");
+        let turn = &rest[..end];
+        let (role, content) = turn.split_once('\n').unwrap_or((turn, ""));
+        out.push_str("<|im_start|>");
+        out.push_str(role);
+        out.push('\n');
+        out.push_str(content);
+        out.push_str("<|im_end|>");
+        remaining = &rest[end + "</s>".len()..];
+    }
+    out
+}
+
 const SETUPS: &[Setup] = &[
     Setup {
         name: "tinyllama (Llama-2 family, <s>/</s>)",
-        path: TINYLLAMA_PATH,
-        specials: &["<s>", "</s>"],
+        build: build_tinyllama,
         render: render_llama2,
     },
     Setup {
         name: "mock-llama-3.1 (Llama-3 family, <|begin_of_text|>/<|*_header_id|>/<|eot_id|>)",
-        path: LLAMA31_PATH,
-        specials: &[
-            "<|begin_of_text|>",
-            "<|start_header_id|>",
-            "<|end_header_id|>",
-            "<|eot_id|>",
-        ],
+        build: build_llama31,
         render: render_llama3,
     },
     Setup {
         name: "mock-deepseek-r1 (DeepSeek family, <｜begin▁of▁sentence｜>/<｜User｜>/<｜Assistant｜>/<｜end▁of▁sentence｜>)",
-        path: DEEPSEEK_PATH,
-        specials: &[
-            "<｜begin▁of▁sentence｜>",
-            "<｜User｜>",
-            "<｜Assistant｜>",
-            "<｜end▁of▁sentence｜>",
-        ],
+        build: build_deepseek,
         render: render_deepseek,
+    },
+    Setup {
+        name: "mock-kimi (TikToken, <|im_start|>/<|im_end|>)",
+        build: build_kimi_tiktoken,
+        render: render_kimi,
     },
 ];
 
 fn build_cached_setup(setup: &Setup) -> (Arc<dyn Tokenizer>, CachedTokenizer) {
-    let base = Arc::new(
-        HuggingFaceTokenizer::from_file(setup.path)
-            .unwrap_or_else(|e| panic!("load tokenizer {}: {e}", setup.path)),
-    );
-    let specials: Vec<String> = setup.specials.iter().map(|s| (*s).to_string()).collect();
+    let (base, specials) = (setup.build)();
     let cached = CachedTokenizer::new(base.clone(), specials, 50 * 1024 * 1024);
     (base, cached)
 }
@@ -317,10 +377,7 @@ fn cache_disabled_by_empty_specials_is_transparent() {
     // tokenizer. Output must still equal uncached encode. Tested per tokenizer family
     // because the relevant code path is the wrapper, not the tokenizer.
     for setup in SETUPS {
-        let base = Arc::new(
-            HuggingFaceTokenizer::from_file(setup.path)
-                .unwrap_or_else(|e| panic!("load tokenizer {}: {e}", setup.path)),
-        );
+        let (base, _specials) = (setup.build)();
         let cached = CachedTokenizer::new(base.clone(), Vec::new(), 4096);
         for (i, raw_turn) in CHAT_TURNS.iter().enumerate() {
             let turn = (setup.render)(raw_turn);
@@ -366,11 +423,7 @@ fn extend_on_hit_matches_uncached_across_growing_turns() {
     // (mock-llama-3.1's empty-BPE vocab surfaces any seg_a/seg_b split off-by-one).
     let turns = growing_chat_turns(12);
     for setup in SETUPS {
-        let base = Arc::new(
-            HuggingFaceTokenizer::from_file(setup.path)
-                .unwrap_or_else(|e| panic!("load tokenizer {}: {e}", setup.path)),
-        );
-        let specials: Vec<String> = setup.specials.iter().map(|s| (*s).to_string()).collect();
+        let (base, specials) = (setup.build)();
         let cached =
             CachedTokenizer::new(base.clone(), specials, 50 * 1024 * 1024).with_extend(true);
 
@@ -442,11 +495,7 @@ fn extend_on_partial_hit_adds_exactly_one_entry() {
     // the intermediate boundaries. Holds on every family.
     let turns = growing_chat_turns(6);
     for setup in SETUPS {
-        let base = Arc::new(
-            HuggingFaceTokenizer::from_file(setup.path)
-                .unwrap_or_else(|e| panic!("load tokenizer {}: {e}", setup.path)),
-        );
-        let specials: Vec<String> = setup.specials.iter().map(|s| (*s).to_string()).collect();
+        let (base, specials) = (setup.build)();
         let cached = CachedTokenizer::new(base, specials, 50 * 1024 * 1024).with_extend(true);
 
         // Turn 0: miss path populates the cache at every boundary.
@@ -589,11 +638,7 @@ fn extend_transparent_to_plaintext_tool_markup() {
         let bare = growing_tool_turns(8, false);
 
         let build = || {
-            let base = Arc::new(
-                HuggingFaceTokenizer::from_file(setup.path)
-                    .unwrap_or_else(|e| panic!("load tokenizer {}: {e}", setup.path)),
-            );
-            let specials: Vec<String> = setup.specials.iter().map(|s| (*s).to_string()).collect();
+            let (base, specials) = (setup.build)();
             let cached =
                 CachedTokenizer::new(base.clone(), specials, 50 * 1024 * 1024).with_extend(true);
             (base, cached)

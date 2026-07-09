@@ -81,6 +81,21 @@ let stats = cached.cache_stats();
 println!("hits={} misses={} hit_rate={:.2}", stats.hits, stats.misses, stats.hit_rate);
 ```
 
+TikToken models expose the exact special-token strings registered with their BPE, so
+the same cache can be constructed without duplicating model metadata:
+
+```rust
+use dynamo_tokenizers::{CachedTokenizer, TikTokenTokenizer};
+use dynamo_tokenizers::traits::Tokenizer;
+use std::sync::Arc;
+
+let tiktoken = TikTokenTokenizer::from_file_auto("/path/to/tiktoken.model")
+    .expect("load tokenizer");
+let specials = tiktoken.special_tokens().to_vec();
+let inner: Arc<dyn Tokenizer> = Arc::new(tiktoken);
+let cached = CachedTokenizer::new(inner, specials, 256 * 1024 * 1024);
+```
+
 Entries are evicted by approximate LRU once `max_memory_bytes` is exceeded. The
 cache lives as long as the `CachedTokenizer` instance. Use `.with_observer(...)`
 to push request-level hit/miss events into your metrics. Use
