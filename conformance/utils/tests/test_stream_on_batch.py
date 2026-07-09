@@ -690,18 +690,23 @@ def test_build_cases_carries_stream_and_batch(monkeypatch) -> None:
     assert g._stream_xeng_marker(built, V, "batch_on_stream") == "V_ps"
 
 
-def test_template_has_compare_buckets_and_reasoning_candidates() -> None:
-    # The single-parser radio was replaced by the per-panel compare buckets
-    # (A=Base reference, B=Compare with, C=Others).
+def test_template_has_compare_picker_and_reasoning_candidates() -> None:
+    # The compare bar is a SHARED Jinja partial (used by both the v2 conformance
+    # table and the v1 parity page): one column per engine, each parser row a
+    # Reference radio + Compare-with checkbox. The drag/drop buckets are gone.
     template = (SRC / "conformance_table.html.j2").read_text()
-    assert 'data-bucket="A"' in template
-    assert 'data-bucket="B"' in template
-    assert 'data-bucket="C"' in template
-    assert "data-cmp-base" not in template  # old radio-based control is gone
+    assert '{% include "_compare_bar.html.j2" %}' in template
+    assert "data-bucket" not in template  # old drag/drop buckets are gone
+    partial = (UTILS / "tests" / "parity" / "_compare_bar.html.j2").read_text()
+    assert 'data-engine="Dynamo"' in partial or "'Dynamo'" in partial
+    assert 'class="cmp-ref"' in partial  # Reference radio
+    assert 'class="cmp-on"' in partial  # Compare-with checkbox
+    assert "data-cmp-base" not in partial  # old radio-based control is gone
     # The compare JS drives cells from each cell's data-cmp payload.
     js = (SRC / "assets" / "conformance.js").read_text()
     assert "function applyCtl" in js
     assert "cmp-leak" in js and "cmp-eq" in js
+    assert "function initCompareInputs" in js  # radio/checkbox wiring replaced DnD
     hrefs = {
         "reasoning_fixtures": "#",
         "reasoning_cases": "#",
@@ -774,10 +779,22 @@ def test_tab_labels_put_version_after_family() -> None:
 
 def test_common_legend_defines_v1_v2() -> None:
     legend = g._common_legend_html()
-    assert "<strong>v1</strong> means the stable batch parser crate" in legend
-    assert "<strong>v2</strong> means the WIP streaming parser crate" in legend
+    assert "<strong>v1</strong> = the stable batch parser crate" in legend
+    assert "<strong>v2</strong> = the WIP streaming parser crate" in legend
     assert "<code>parsers/v1/src/...</code>" in legend
     assert "<code>parsers/v2/src/...</code>" in legend
+
+
+def test_common_legend_defines_green_by_reference_cleanliness() -> None:
+    # Green is defined by the Reference parser being leak-free (compare-model), not by
+    # the old "all peers match Dynamo Rust". The stale per-impl marker keys (D_rb,
+    # V_ps, …) and the "match Dynamo Rust" / donly lines were removed.
+    legend = g._common_legend_html()
+    assert "Reference</strong> parser output is clean" in legend
+    assert "whether or not any Compare parser is selected" in legend
+    assert "all captured peers match Dynamo Rust" not in legend
+    assert "Dynamo Rust batch parser" not in legend
+    assert "Dynamo Rust-only fixture" not in legend
 
 
 def test_template_cells_do_not_clip_hover_tooltips() -> None:

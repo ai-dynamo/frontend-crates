@@ -625,26 +625,13 @@ def _common_legend_html(
     return (
         "<p><strong>Legend:</strong></p>"
         '<ul class="marker-defs">'
-        '<li><strong>v1</strong> means the stable batch parser crate (<code>parsers/v1/src/...</code>, published as <code>dynamo-parsers</code>); <strong>v2</strong> means the WIP streaming parser crate (<code>parsers/v2/src/...</code>, <code>dynamo-parsers-v2</code>).</li>'
-        '<li><span style="color:#0a7d2c">=</span> all captured peers match Dynamo Rust.</li>'
-        '<li><span style="color:#8b949e">·</span> Dynamo Rust-only fixture (peers unavailable or not captured).</li>'
-        f'<li><span style="color:#555">{_marker_html("D_rb")}</span> Dynamo Rust batch parser.</li>'
-        f'<li><span style="color:#555">{_marker_html("D_rs")}</span> Dynamo Rust stream parser.</li>'
-        f'<li><span style="color:#555">{_marker_html("V_pb")}</span> vLLM Python batch parser.</li>'
-        f'<li><span style="color:#555">{_marker_html("V_ps")}</span> vLLM Python stream parser.</li>'
-        f'<li><span style="color:#555">{_marker_html("V_rs")}</span> vLLM Rust stream parser; no <code>V_rb</code> exists.</li>'
-        f'<li><span style="color:#555">{_marker_html("S_rb")}</span> SGLang batch parser.</li>'
-        f'<li><span style="color:#555">{_marker_html("S_rs")}</span> SGLang stream parser.</li>'
-        '<li>A marker means that implementation diverges from the selected parser output; intentional divergences have <code>explanation:</code>.</li>'
-        f'<li><span style="color:#b00">?</span> more research needed, for example {_marker_html("V_pb")}? or {_marker_html("S_rs")}? diverges with no <code>explanation:</code> yet.</li>'
-        '<li><span style="color:#b00">↯</span> selected parser leaks tool call markup into <code>normal_text</code>; captured peer output can legitimately show imperfect engine behavior.</li>'
-        f'<li><span style="color:#b00">!</span> expected-error suffix, for example {_marker_html("V_pb")}! or {_marker_html("S_rs")}! means the engine crashes by design.</li>'
-        '<li><span style="color:#b00">✗</span> the engine parser ran but <strong>failed to parse</strong> this input (recorded as <code>unavailable: … parser not captured: …</code>); distinct from <span style="color:#aaa">n/a</span> (not run).</li>'
-        '<li><span style="color:#aaa">n/a</span> not applicable.</li>'
+        '<li><span style="color:#0a7d2c"><strong>green</strong></span> = the selected <strong>Reference</strong> parser output is clean — no tool-call markup leaked into <code>normal_text</code>. A clean Reference is green whether or not any Compare parser is selected.</li>'
+        '<li><span style="color:#b00"><strong>red</strong> (↯)</span> = the Reference parser leaks tool-call markup into <code>normal_text</code>.</li>'
+        '<li><span style="color:#aaa"><strong>n/a</strong></span> = the selected Reference is not applicable for this case (for example the Dynamo v2 stream parser is not implemented for this family).</li>'
         '<li><span style="color:#8a6d3b">—</span> missing fixture coverage.</li>'
-        '<li><span class="parser-suffix">†</span> no vLLM Python peer parser for this family.</li>'
-        '<li><span class="parser-suffix">§</span> no SGLang peer parser for this family.</li>'
-        '<li><span class="parser-suffix">‡</span> Nemotron V3 (Ultra) reuses the qwen3_coder tool calling parser; Nemotron V1 / V2 (DeciLM) is removed from the chart for being an older generation, but the nemotron_deci parser is still supported.</li>'
+        '<li>In the <strong>Detailed</strong> view the number on a cell = how many selected <strong>Compare</strong> parsers diverge from the Reference (<span style="color:#0a7d2c">=</span> means every selected Compare matches). A divergence with no <code>explanation:</code> yet is flagged <span style="color:#b00">?</span> (research needed); <span style="color:#b00">!</span> marks an engine that errors by design; <span style="color:#b00">✗</span> means the parser ran but failed to parse.</li>'
+        '<li><strong>v1</strong> = the stable batch parser crate (<code>parsers/v1/src/...</code>, <code>dynamo-parsers</code>); <strong>v2</strong> = the WIP streaming parser crate (<code>parsers/v2/src/...</code>, <code>dynamo-parsers-v2</code>).</li>'
+        '<li><span class="parser-suffix">†</span> no vLLM Python peer parser for this family. &nbsp; <span class="parser-suffix">§</span> no SGLang peer parser for this family. &nbsp; <span class="parser-suffix">‡</span> Nemotron V3 (Ultra) reuses the qwen3_coder parser.</li>'
         "</ul>"
         f"{versions_html}"
     )
@@ -1149,8 +1136,11 @@ def render_cell_html(
     cmp_attr = f' data-cmp="{cmp_json}"' if cmp_json else ""
     cmp_span = '<span class="cmp-marker"><span class="marker-text"></span></span>' if cmp_json else ""
     marker_spans = cmp_span + marker_spans
+    # data-family lets the compare JS tell "not implemented" (the selected Reference
+    # parser doesn't support this family) apart from the case-level "not applicable".
+    fam_attr = f' data-family="{html_lib.escape(str(family or ""))}"'
     td_open = (
-        f'<td class="cell {cls} {band_cls}" data-col-hide-group="{col_group}"{cmp_attr} '
+        f'<td class="cell {cls} {band_cls}" data-col-hide-group="{col_group}"{cmp_attr}{fam_attr} '
         f"{status_attrs} {marker_attrs}>"
     )
     if case is None:
@@ -1164,7 +1154,7 @@ def render_cell_html(
         ttip = _build_na_tooltip_html(case)
         if not fp:
             return f"{td_open}{marker_spans}{display_text}{ttip}</td>"
-        href = html_lib.escape(fp)
+        href = html_lib.escape(common.fixture_href(fp))
         return f'{td_open}{marker_spans}<a href="{href}">{display_text}</a>{ttip}</td>'
 
     fp = case.get("__fixture_path", "")
@@ -1173,7 +1163,7 @@ def render_cell_html(
     ttip = _build_sob_tooltip(case, marker_context) if sob else _build_tooltip_html(case, dyn, output_kind)
     if not fp:
         return f"{td_open}{marker_spans}{display_text}{ttip}</td>"
-    href = html_lib.escape(fp)
+    href = html_lib.escape(common.fixture_href(fp))
     return f'{td_open}{marker_spans}<a href="{href}">{display_text}</a>{ttip}</td>'
 
 
@@ -2060,6 +2050,38 @@ def _stream_candidate_items() -> list[dict[str, str]]:
     return out
 
 
+def _stream_version_families(impl: str, version: str) -> set[str] | None:
+    """Families the `<impl>-<version>` stream fixture dir actually holds — the
+    authoritative coverage for that parser build. `None` if the dir is absent (don't
+    gate). Used to mark the Dynamo v2 stream candidate `na` on families its parser
+    doesn't implement, since the dir only contains the families it produced output
+    for (dynamo_rust-0.1.11 = the v2-supported handful; dynamo_rust-3.0.0 = all)."""
+    d = _STREAM_SRC / f"{impl}-{version}"
+    if not d.is_dir():
+        return None
+    return {p.name for p in d.iterdir() if p.is_dir()}
+
+
+def _parser_ni_map() -> dict:
+    """Map candidate key -> {label, families} for parsers with LIMITED family coverage
+    (only the Dynamo v2 parser today, which implements a handful of families). The
+    compare JS uses it to render a per-family "not implemented" reason when such a
+    parser is the selected Reference, instead of the case-level "not applicable"
+    (which is about whether the test case fits the family, not whether the parser
+    exists). Coverage is the authoritative `dynamo_rust-<v2>` fixture dir family list."""
+    v2ver = _dynamo_v2_version()
+    if not v2ver:
+        return {}
+    fams = sorted(_stream_version_families(BASELINE_IMPL, v2ver) or [])
+    if not fams:
+        return {}
+    slug = toolcalling_table._version_slug(v2ver)
+    entry = {"label": _full_label(BASELINE_IMPL, v2ver, "stream"), "families": fams}
+    # The v2 candidate key differs by tab: "<impl>-s-<slug>" on the batch
+    # (stream-on-batch) tab, bare "<impl>-<slug>" on the stream tab.
+    return {f"{BASELINE_IMPL}-s-{slug}": entry, f"{BASELINE_IMPL}-{slug}": entry}
+
+
 def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, dict]]]:
     """{(family, sub): {impl: {slug: {block, version, status}}}} for the stream tab.
 
@@ -2082,10 +2104,20 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
 
     def _record(cases, impl, version):
         slug = toolcalling_table._version_slug(version)
+        # The Dynamo parser is version-split into two DIFFERENT parsers: v2
+        # (dynamo_rust-0.1.11) implements only a handful of families, while the v1
+        # jail (dynamo_rust-3.0.0) covers all. The stream assembly defaults an absent
+        # impl to an empty-but-present block, which would paint the v2 parser green on
+        # families it doesn't implement. Gate on the version dir's actual family list
+        # so uncovered families read `na` (not implemented), not a clean empty output.
+        covered = _stream_version_families(impl, version) if impl == BASELINE_IMPL else None
         for key, case in cases.items():
             block = _impl_get(case.get("expected") or {}, impl)
+            status = _overview_status(case, impl)
+            if covered is not None and case.get("__family") not in covered:
+                block, status = None, "na"
             result.setdefault(key, {}).setdefault(impl, {})[slug] = {
-                "status": _overview_status(case, impl),
+                "status": status,
                 "block": block,
                 "version": version,
             }
@@ -2785,6 +2817,7 @@ def render_html(modes: list[str], family_filter: str | None = None) -> str:
             output=output,
             tabs=tabs,
             panels=[panel for _mode, panel, _has_cases in panels],
+            parser_ni_json=json.dumps(_parser_ni_map()),
         )
     )
     return _scrub_visible_conformance_text(html)
@@ -3074,6 +3107,7 @@ def render_combined_html(
             panels=panels,
             impl_versions=_impl_version_items(),
             candidate_items=_candidate_items(),
+            parser_ni_json=json.dumps(_parser_ni_map()),
         )
     )
     return _scrub_visible_conformance_text(html)

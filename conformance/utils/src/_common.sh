@@ -46,6 +46,12 @@ _build_stage_base() {
   # COPY the vendored python package so resolved __file__ -> REPO_ROOT == $STAGE.
   \cp -Rf "$UTILS/tests/parity" "$STAGE/tests/parity"
   \cp -f "$UTILS/tests/__init__.py" "$STAGE/tests/__init__.py"
+  # Shared static CSS/JS inlined into BOTH pages at render time (v1 parity + v2
+  # conformance both read tests/parity/assets/*). Staged here in the base so the v1
+  # render finds them too — the compare-bar/coloring logic lives in one place now.
+  mkdir -p "$STAGE/tests/parity/assets"
+  \cp -f "$TOOLS/assets/conformance.css" "$STAGE/tests/parity/assets/conformance.css"
+  \cp -f "$TOOLS/assets/conformance.js" "$STAGE/tests/parity/assets/conformance.js"
   # Reasoning fixtures are resolved per page (v1 = old anchor peers, v2 = pinned new
   # peers) by build_stage_v1 / build_stage_conformance — not here in the shared base.
   # Recorded Dynamo parser v2 stream-on-batch fixture overlay.
@@ -151,10 +157,7 @@ build_stage_conformance() {
   \cp -f "$TOOLS/markers.py" "$STAGE/tests/parity/markers.py"
   \cp -f "$TOOLS/fixtures.py" "$STAGE/tests/parity/fixtures.py"
   \cp -f "$TOOLS/conformance_table.html.j2" "$STAGE/tests/parity/conformance_table.html.j2"
-  # Static CSS/JS (audit B7) inlined into the page at render time.
-  mkdir -p "$STAGE/tests/parity/assets"
-  \cp -f "$TOOLS/assets/conformance.css" "$STAGE/tests/parity/assets/conformance.css"
-  \cp -f "$TOOLS/assets/conformance.js" "$STAGE/tests/parity/assets/conformance.js"
+  # Shared CSS/JS assets are staged in _build_stage_base (used by both pages).
   _copy_toolcalling_v2_fixtures
   # Current page: reasoning shows the pinned NEW peer versions, in sync with the v2
   # toolcalling tab (both compare against the current engines).

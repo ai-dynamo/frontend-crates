@@ -127,12 +127,27 @@ def _model_label_html(model: str) -> str:
 
 
 def _make_jinja_env() -> Environment:
-    return Environment(
+    env = Environment(
         loader=FileSystemLoader(TEMPLATE_DIR),
         trim_blocks=False,
         lstrip_blocks=True,
         undefined=StrictUndefined,
     )
+    # Shared assets are template globals so every render site (parity table,
+    # reasoning parity, family-filtered) inlines them without repeating the kwargs.
+    env.globals["conformance_css"] = _read_asset("conformance.css")
+    env.globals["conformance_js"] = _read_asset("conformance.js")
+    return env
+
+
+def _read_asset(name: str) -> str:
+    """Inline a shared static asset (conformance.css / conformance.js) into the page.
+
+    Both the v1 parity page and the v2 conformance table render as single
+    self-contained HTML files that inline the SAME `tests/parity/assets/` CSS+JS —
+    no per-page copy. Keeping one source avoids the compare-bar/coloring logic
+    drifting between the two pages (it used to be duplicated inline in each)."""
+    return (TEMPLATE_DIR / "assets" / name).read_text(encoding="utf-8")
 
 
 def _commit_sha() -> str | None:
@@ -1255,7 +1270,7 @@ def render_cell_html(case: dict | None, mode: str, family: str, sub: str) -> str
         ttip = _build_na_tooltip_html(case)
         if not fp:
             return f"{td_open}{cmp_span}{text}{ttip}</td>"
-        href = html_lib.escape(fp)
+        href = html_lib.escape(common.fixture_href(fp))
         return f'{td_open}{cmp_span}<a href="{href}">{text}</a>{ttip}</td>'
 
     fp = case.get("__fixture_path", "")
@@ -1264,7 +1279,7 @@ def render_cell_html(case: dict | None, mode: str, family: str, sub: str) -> str
     ttip = _build_tooltip_html(case, dyn)
     if not fp:
         return f"{td_open}{cmp_span}{text}{ttip}</td>"
-    href = html_lib.escape(fp)
+    href = html_lib.escape(common.fixture_href(fp))
     return f'{td_open}{cmp_span}<a href="{href}">{text}</a>{ttip}</td>'
 
 

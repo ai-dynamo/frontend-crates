@@ -150,9 +150,80 @@ def test_v2_stream_tab_has_v1jail_reference_and_v2_and_peers(charts):
             assert v in seg, f"v2 stream tab missing {impl} {v}"
 
 
+def test_v2_reference_aware_not_implemented_map(charts):
+    # The reference-aware "not implemented" note (shown when the Dynamo v2 parser is the
+    # selected Reference on a family it doesn't support) is driven by window.__PARSER_NI:
+    # the v2 candidate keys -> the exact families its fixture dir covers, plus data-family
+    # on every cell so the JS can map a cell to its family. A regression here (empty map,
+    # all-families map, or missing data-family) silently reverts to the misleading
+    # case-level "not applicable".
+    import json
+
+    v2_dir = _cache_root() / "toolcalling/fixtures-stream-v2/dynamo_rust-0.1.11"
+    if not v2_dir.is_dir():
+        pytest.skip("v2 stream fixture dir not present")
+    fams = sorted(d.name for d in v2_dir.iterdir() if d.is_dir())
+    html = charts["v2"]
+    m = re.search(r"window\.__PARSER_NI = (\{.*?\});", html)
+    assert m, "reference-aware __PARSER_NI map is missing"
+    ni = json.loads(m.group(1))
+    assert ni, "__PARSER_NI is empty — the not-implemented reason won't fire"
+    for key, entry in ni.items():
+        assert "dynamo_rust" in key, f"unexpected limited-coverage parser {key}"
+        assert sorted(entry["families"]) == fams, (
+            f"{key} families {sorted(entry['families'])} != fixture dir {fams}"
+        )
+    assert html.count("data-family=") > 100, "cells lost data-family (NI can't map a cell to its family)"
+
+
+def test_v2_stream_parser_only_covers_implemented_families(charts):
+    # The Dynamo v2 stream parser (dynamo_rust-0.1.11) implements only a handful of
+    # families; its fixture dir holds exactly those. The stream assembly defaults an
+    # absent impl to an empty-but-present block, which used to paint the v2 candidate
+    # green on EVERY family. Guard: the v2 stream candidate must be `na` on the
+    # families its parser doesn't implement, so most cells are na (not all present).
+    import json
+    from html import unescape
+
+    v2_dir = _cache_root() / "toolcalling/fixtures-stream-v2/dynamo_rust-0.1.11"
+    if not v2_dir.is_dir():
+        pytest.skip("v2 stream fixture dir not present")
+    n_v2_families = len([d for d in v2_dir.iterdir() if d.is_dir()])
+    n_all_families = len(
+        [d for d in (_cache_root() / "toolcalling/fixtures-stream-v2/dynamo_rust-3.0.0").iterdir()
+         if d.is_dir()]
+    )
+    assert n_v2_families < n_all_families, "expected v2 to implement fewer families than v1 jail"
+
+    seg = _panel(charts["v2"], "tab-toolcalling-streamv2", _V2_TABS)
+    present = na = 0
+    for blob in re.findall(r'data-cmp="([^"]+)"', seg):
+        try:
+            cmp = json.loads(unescape(blob))
+        except json.JSONDecodeError:
+            continue
+        v = cmp.get("dynamo_rust-0-1-11")
+        if v is None:
+            continue
+        if v.get("na") == 1:
+            na += 1
+        else:
+            present += 1
+    assert na > 0, "v2 stream candidate has NO n/a cells — it is claiming coverage it lacks"
+    # Only ~4 of ~19 families are implemented, so n/a cells must outnumber present ones.
+    assert na > present, (
+        f"v2 stream candidate: {present} present vs {na} n/a — it looks implemented for "
+        f"too many families (v2 dir has {n_v2_families} of {n_all_families})"
+    )
+
+
 def test_v2_no_not_yet_implemented_text(charts):
-    # Un-implemented Dynamo v2 families render as a clean n/a, never the verbose TODO.
-    assert "not yet implemented" not in charts["v2"]
+    # Un-implemented Dynamo v2 families render as a clean n/a in the visible grid/tooltip
+    # HTML — never a verbose TODO baked into a cell. The reference-aware note (shown only
+    # when v2 is the selected Reference) is injected by conformance.js at runtime, so
+    # strip the inlined <script> before checking; its legitimate note text is allowed.
+    visible = re.sub(r"<script>.*?</script>", "", charts["v2"], flags=re.S)
+    assert "not yet implemented" not in visible
 
 
 def test_divergence_notes_use_explanation_label(charts):

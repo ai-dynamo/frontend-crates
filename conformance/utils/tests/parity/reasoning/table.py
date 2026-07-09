@@ -414,12 +414,17 @@ _REASONING_MODE_METADATA = {
 
 
 def _make_jinja_env() -> Environment:
-    return Environment(
+    env = Environment(
         loader=FileSystemLoader(TEMPLATE_DIR),
         trim_blocks=False,
         lstrip_blocks=True,
         undefined=StrictUndefined,
     )
+    # Same shared CSS/JS the v2 table and toolcalling parity page inline.
+    assets = TEMPLATE_DIR / "assets"
+    env.globals["conformance_css"] = (assets / "conformance.css").read_text(encoding="utf-8")
+    env.globals["conformance_js"] = (assets / "conformance.js").read_text(encoding="utf-8")
+    return env
 
 
 def _commit_sha() -> str | None:
@@ -1862,9 +1867,10 @@ def _render_cell_html(
         )
     else:
         marker, _ = _cell(case, family)
-        href = common.LINKS["reasoning_fixtures"] + Path(
-            os.path.relpath(refs[(family, case_id)], FIXTURES)
-        ).as_posix()
+        href = common.fixture_href(
+            "reasoning/fixtures/"
+            + Path(os.path.relpath(refs[(family, case_id)], FIXTURES)).as_posix()
+        )
         tooltip = _tooltip_html(
             case_id,
             family,

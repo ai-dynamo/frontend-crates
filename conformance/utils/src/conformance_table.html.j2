@@ -28,21 +28,7 @@
 {% for panel in panels %}
 <section id="{{ panel.id|e }}" class="tab-panel{% if panel.active %} active{% endif %}" role="tabpanel"{% if tabs|length > 1 %} aria-labelledby="{{ panel.id|e }}-button"{% endif %}{% if panel.candidates %} data-cmp-panel="true"{% endif %}>
 {% if panel.candidates %}
-<div class="cmpctl" role="group" aria-label="Compare — drag chips between buckets">
-  <div class="bucket bucket-A" data-bucket="A" data-limit="1">
-    <div class="bucket-hd">Reference parser</div>
-    <div class="chips">{% for c in panel.candidates %}{% if c.default_bucket == 'A' %}<span class="chip" data-cand="{{ c.key }}" draggable="true">{{ c.label|e }}</span>{% endif %}{% endfor %}</div>
-  </div>
-  <div class="bucket bucket-B" data-bucket="B">
-    <button type="button" class="cmp-swap" data-cmp-swap title="Swap reference and compare-with parser" hidden>⇄</button>
-    <div class="bucket-hd">Compare-with parser(s)</div>
-    <div class="chips">{% for c in panel.candidates %}{% if c.default_bucket == 'B' %}<span class="chip" data-cand="{{ c.key }}" draggable="true">{{ c.label|e }}</span>{% endif %}{% endfor %}</div>
-  </div>
-  <div class="bucket bucket-C" data-bucket="C">
-    <div class="bucket-hd">Other parsers</div>
-    <div class="chips">{% for c in panel.candidates %}{% if c.default_bucket == 'C' %}<span class="chip" data-cand="{{ c.key }}" draggable="true">{{ c.label|e }}</span>{% endif %}{% endfor %}</div>
-  </div>
-</div>
+{% include "_compare_bar.html.j2" %}
 {% endif %}
 <table data-parity-table>
 <thead>
@@ -170,6 +156,7 @@
 {% endif %}
 </section>
 {% endfor %}
+<script>window.__PARSER_NI = {{ parser_ni_json|safe }};</script>
 <script>
 {{ conformance_js|safe }}
 </script>

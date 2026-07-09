@@ -39,12 +39,27 @@
   // of Compare candidates; each cell shows how many selected candidates differ
   // from Base ("=" if none), plus ↯ when Base leaks markup. Tooltip shows Base +
   // each selected candidate. All client-side from each cell's data-cmp payload.
-  // Compare is per-panel: each tab's .cmpctl has its own candidate chips + buckets.
+  // Compare is per-panel: each tab's .cmpctl has its own Reference radios + Compare checkboxes.
   function activePanel() { return document.querySelector('.tab-panel.active'); }
   function panelCtl(panel) { return panel ? panel.querySelector('.cmpctl') : null; }
-  function ctlBase(ctl) { const c = ctl && ctl.querySelector('.bucket-A .chip'); return c ? c.dataset.cand : null; }
+  // Reference = the single checked radio; Compare-with = every checked checkbox.
+  function ctlBase(ctl) { const r = ctl && ctl.querySelector('input.cmp-ref:checked'); return r ? r.value : null; }
   function ctlShown(ctl) {
-    return ctl ? Array.from(ctl.querySelectorAll('.bucket-B .chip')).map(function (x) { return x.dataset.cand; }) : [];
+    return ctl ? Array.from(ctl.querySelectorAll('input.cmp-on:checked')).map(function (x) { return x.value; }) : [];
+  }
+  // The Reference parser can't compare to itself: disable (and flag) its own
+  // Compare checkbox, re-enable every other row's.
+  function syncRefDisable(ctl, base) {
+    ctl.querySelectorAll('input.cmp-on').forEach(function (cb) {
+      const isRef = cb.value === base;
+      // The Reference is always part of the comparison (it's the base everything is
+      // compared against), so its Compare box shows pressed + locked. It's filtered
+      // out of the compare set in applyCtl, so it isn't double-counted.
+      if (isRef) { cb.checked = true; }
+      cb.disabled = isRef;
+      const row = cb.closest('.cmprow');
+      if (row) { row.classList.toggle('is-ref', isRef); }
+    });
   }
   function toggleCands(cell, active, base) {
     cell.querySelectorAll('.ttip .cand').forEach(function (sec) {
@@ -56,24 +71,22 @@
       sec.classList.toggle('cand-base', key !== null && key === base);
     });
   }
-  // Keep each bucket's chips in lexical order regardless of drag/restore order.
-  function sortChips(ctl) {
-    ctl.querySelectorAll('.chips').forEach(function (zone) {
-      Array.from(zone.querySelectorAll('.chip'))
-        .sort(function (a, b) { return a.textContent.trim().localeCompare(b.textContent.trim()); })
-        .forEach(function (chip) { zone.appendChild(chip); });
-    });
-  }
-  // Size Compare-with and Others proportionally to how many chips each holds, so the
-  // fuller bucket gets more width. Base holds one chip and stays content-sized. The
-  // grow factor is floored at 1 so an empty bucket keeps a usable, droppable width.
-  function resizeBuckets(ctl) {
-    const b = ctl.querySelector('.bucket-B');
-    const c = ctl.querySelector('.bucket-C');
-    const nB = ctl.querySelectorAll('.bucket-B .chip').length;
-    const nC = ctl.querySelectorAll('.bucket-C .chip').length;
-    if (b) { b.style.flexGrow = String(Math.max(1, nB)); }
-    if (c) { c.style.flexGrow = String(Math.max(1, nC)); }
+  // Parsers with limited family coverage (Dynamo v2): key -> {label, families}. Drives
+  // the reference-aware "not implemented" reason. Empty on pages without such a parser.
+  const PARSER_NI = window.__PARSER_NI || {};
+  // Show/clear a JS-driven "why n/a" line at the top of a cell's tooltip. Built in JS
+  // (not the server-rendered tooltip) so the reason can change with the Reference.
+  function setWhy(cell, text) {
+    let el = cell.querySelector('.cmp-why');
+    if (!text) { if (el) { el.remove(); } return; }
+    if (!el) {
+      const tip = cell.querySelector('.ttip');
+      if (!tip) { return; }
+      el = document.createElement('div');
+      el.className = 'cmp-why';
+      tip.insertBefore(el, tip.firstChild);
+    }
+    el.textContent = text;
   }
   const cmpDefaults = {};  // panel id -> {base, shown} captured before URL restore
   function _sameLayout(pid, base, shown) {
@@ -103,36 +116,38 @@
     if (!params.has('base_' + pid) && !params.has('cmp_' + pid)) { return; }  // keep defaults
     const base = params.get('base_' + pid);
     const inB = new Set((params.get('cmp_' + pid) || '').split(',').filter(Boolean));
-    const A = ctl.querySelector('.bucket-A .chips');
-    const B = ctl.querySelector('.bucket-B .chips');
-    const C = ctl.querySelector('.bucket-C .chips');
-    ctl.querySelectorAll('.chip').forEach(function (chip) {
-      const k = chip.dataset.cand;
-      if (k === base) { A.appendChild(chip); }
-      else if (inB.has(k)) { B.appendChild(chip); }
-      else { C.appendChild(chip); }
-    });
-  }
-  function updateSwap(ctl) {
-    const btn = ctl.querySelector('.cmp-swap');
-    if (!btn) { return; }
-    btn.hidden = !(ctl.querySelectorAll('.bucket-A .chip').length === 1
-      && ctl.querySelectorAll('.bucket-B .chip').length === 1);
+    ctl.querySelectorAll('input.cmp-ref').forEach(function (r) { r.checked = (r.value === base); });
+    ctl.querySelectorAll('input.cmp-on').forEach(function (cb) { cb.checked = inB.has(cb.value); });
   }
   function applyCtl(panel) {
     const ctl = panelCtl(panel);
     if (!ctl) { return; }
-    sortChips(ctl);
-    resizeBuckets(ctl);
     const base = ctlBase(ctl);
+    syncRefDisable(ctl, base);
     const shown = ctlShown(ctl).filter(function (k) { return k !== base; });
     const active = new Set((base ? [base] : []).concat(shown));
     const counts = { ok: 0, problem: 0, na: 0 };
-    panel.querySelectorAll('td.cell[data-cmp]').forEach(function (cell) {
-      let cmp;
-      try { cmp = JSON.parse(cell.getAttribute('data-cmp')); } catch (e) { return; }
+    // If the selected Reference is a parser with limited family coverage (e.g. the
+    // Dynamo v2 parser), ni holds {label, families}. A cell whose family is not in
+    // that list is "not implemented" — a different reason than case-level "not
+    // applicable", and it wins.
+    const ni = base ? PARSER_NI[base] : null;
+    // Cells carry data-cmp (compare payload) and, on the v2 page, data-family (for the
+    // reference-aware "not implemented" note). The v1 parity page has data-cmp only, so
+    // match either — otherwise v1 cells never get colored.
+    panel.querySelectorAll('td.cell[data-cmp], td.cell[data-family]').forEach(function (cell) {
+      let cmp = {};
+      const raw = cell.getAttribute('data-cmp');
+      if (raw) { try { cmp = JSON.parse(raw); } catch (e) { return; } }
       cell.classList.remove('cmp-eq', 'cmp-leak', 'cmp-na', 'cmp-nobase', 'cmp-donly');
       const marker = cell.querySelector('.cmp-marker .marker-text');
+      const fam = cell.getAttribute('data-family') || '';
+      if (base && ni && ni.families.indexOf(fam) === -1) {
+        cell.classList.add('cmp-na'); if (marker) { marker.textContent = 'x'; }
+        setWhy(cell, ni.label + ' is not yet implemented for family “' + fam + '”');
+        counts.na++; toggleCands(cell, active, base); return;
+      }
+      setWhy(cell, '');
       const bd = base ? cmp[base] : null;
       if (!base) {
         cell.classList.add('cmp-nobase'); if (marker) { marker.textContent = ''; }
@@ -146,74 +161,60 @@
       const avail = shown.map(function (k) { return cmp[k]; }).filter(function (o) { return o && o.na !== 1; });
       const diffs = avail.filter(function (o) { return o.sig !== bd.sig; }).length;
       const leak = bd.leak === 1;
-      // No available peer to compare against = a subtle "·" (Base-only), rendered
-      // neutral gray (cmp-donly) rather than green — there is nothing to conform to.
+      // GREEN = the Reference output is clean (no leaked tool-call markup). That holds
+      // whether or not any Compare is selected, so a lone Reference with 0 Compares is
+      // green too. The marker count is the number of selected Compares that diverge;
+      // with no comparable peer there is simply nothing to count (blank), not gray.
       const donly = avail.length === 0;
-      const txt = donly ? '·' : (diffs === 0 ? '=' : String(diffs));
+      const txt = donly ? '' : (diffs === 0 ? '=' : String(diffs));
       if (marker) { marker.textContent = (leak ? '↯' : '') + txt; }
-      // Color = leak only: red = Base leaks markup, green = clean. Count is the number.
-      cell.classList.add(leak ? 'cmp-leak' : (donly ? 'cmp-donly' : 'cmp-eq'));
-      if (leak) { counts.problem++; } else if (donly) { counts.na++; } else { counts.ok++; }
+      // Color = leak only: red = Reference leaks markup, green = clean.
+      cell.classList.add(leak ? 'cmp-leak' : 'cmp-eq');
+      if (leak) { counts.problem++; } else { counts.ok++; }
       toggleCands(cell, active, base);
     });
     panel.querySelectorAll('[data-overview-count]').forEach(function (el) {
       const k = el.dataset.overviewCount;
       el.textContent = String(k === 'todo' ? 0 : (counts[k] || 0));
     });
-    updateSwap(ctl);
     updateCompareUrl(panel, ctl);
   }
   function applyCompare() { const p = activePanel(); if (p) { applyCtl(p); } }
-  function swapChips(x, y) {
-    const xp = x.parentNode, xn = x.nextSibling, yp = y.parentNode, yn = y.nextSibling;
-    yp.insertBefore(x, yn === x ? xn : yn);
-    xp.insertBefore(y, xn === y ? yn : xn);
+  function _boxFor(ctl, val) {
+    return Array.prototype.find.call(
+      ctl.querySelectorAll('input.cmp-on'), function (x) { return x.value === val; }) || null;
   }
-  function initCompareDnd() {
-    let dragged = null;
-    document.querySelectorAll('.cmpctl .chip').forEach(function (chip) {
-      chip.addEventListener('dragstart', function (e) {
-        dragged = chip; chip.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', chip.dataset.cand || '');
-      });
-      chip.addEventListener('dragend', function () {
-        chip.classList.remove('dragging'); dragged = null;
-        document.querySelectorAll('.chip-over').forEach(function (c) { c.classList.remove('chip-over'); });
-      });
-      // Drop a chip directly onto another chip in the same control = swap them —
-      // except in Others, which always just receives the chip (no swap).
-      const inOthers = function () { return chip.closest('.bucket').dataset.bucket === 'C'; };
-      chip.addEventListener('dragover', function (e) {
-        if (!inOthers() && dragged && dragged !== chip && chip.closest('.cmpctl') === dragged.closest('.cmpctl')) {
-          e.preventDefault(); e.stopPropagation(); chip.classList.add('chip-over');
+  // Picking a new Reference (starring a row): the starred row is the reference, so its
+  // Compare box shows pressed. If the row you just starred was the ONLY compare, the
+  // previous reference becomes the compare (a 1-vs-1 swap); otherwise the previous
+  // reference drops out of the comparison.
+  function handleRefChange(ctl) {
+    const newBase = ctlBase(ctl);
+    const oldBase = ctl.dataset.prevBase || '';
+    const checked = Array.prototype.map.call(
+      ctl.querySelectorAll('input.cmp-on:checked'), function (x) { return x.value; });
+    // Active compares before the switch = checked boxes minus the old ref's (its box is
+    // checked only as the reference's pressed state, not as a real compare).
+    const priorCompares = checked.filter(function (v) { return v !== oldBase; });
+    const isSwap = priorCompares.length === 1 && priorCompares[0] === newBase;
+    const newBox = _boxFor(ctl, newBase);
+    if (newBox) { newBox.checked = true; }
+    if (oldBase && oldBase !== newBase && !isSwap) {
+      const oldBox = _boxFor(ctl, oldBase);
+      if (oldBox) { oldBox.checked = false; }
+    }
+    ctl.dataset.prevBase = newBase || '';
+  }
+  // Re-color the panel whenever a Reference star or Compare checkbox toggles.
+  function initCompareInputs() {
+    document.querySelectorAll('.cmpctl').forEach(function (ctl) {
+      ctl.dataset.prevBase = ctlBase(ctl) || '';
+      ctl.addEventListener('change', function (e) {
+        if (e.target.matches('input.cmp-ref')) { handleRefChange(ctl); }
+        if (e.target.matches('input.cmp-ref, input.cmp-on')) {
+          const panel = ctl.closest('.tab-panel');
+          if (panel) { applyCtl(panel); }
         }
-      });
-      chip.addEventListener('dragleave', function () { chip.classList.remove('chip-over'); });
-      chip.addEventListener('drop', function (e) {
-        if (inOthers() || !dragged || dragged === chip || chip.closest('.cmpctl') !== dragged.closest('.cmpctl')) { return; }
-        e.preventDefault(); e.stopPropagation(); chip.classList.remove('chip-over');
-        swapChips(dragged, chip); applyCompare();
-      });
-    });
-    document.querySelectorAll('.cmpctl .bucket').forEach(function (b) {
-      const zone = b.querySelector('.chips');
-      b.addEventListener('dragover', function (e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; b.classList.add('drop-hover'); });
-      b.addEventListener('dragleave', function () { b.classList.remove('drop-hover'); });
-      b.addEventListener('drop', function (e) {
-        e.preventDefault(); b.classList.remove('drop-hover');
-        if (!dragged || dragged.closest('.cmpctl') !== b.closest('.cmpctl')) { return; }
-        if (b.dataset.bucket === 'A') {
-          const cur = b.querySelector('.chip');
-          if (cur && cur !== dragged) { b.closest('.cmpctl').querySelector('.bucket-B .chips').appendChild(cur); }
-        }
-        zone.appendChild(dragged); applyCompare();
-      });
-    });
-    document.querySelectorAll('.cmpctl .cmp-swap').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        const ctl = btn.closest('.cmpctl');
-        const a = ctl.querySelector('.bucket-A .chip'), bch = ctl.querySelector('.bucket-B .chip');
-        if (a && bch) { swapChips(a, bch); applyCompare(); }
       });
     });
   }
@@ -226,7 +227,7 @@
       cmpDefaults[panel.id] = { base: ctlBase(ctl), shown: ctlShown(ctl).slice() };
       restoreCtlFromUrl(panel, ctl);
     });
-    initCompareDnd();
+    initCompareInputs();
     document.querySelectorAll('.tab-panel').forEach(function (panel) {
       if (panelCtl(panel)) { applyCtl(panel); }
     });
