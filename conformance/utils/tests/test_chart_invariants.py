@@ -196,6 +196,30 @@ def test_v2_reasoning_in_sync_with_toolcalling_peers(charts):
         )
 
 
+def test_v2_batch_tab_stream_candidates_use_current_peers(charts):
+    # The batch tab ("Tool Calling (batch data)") also compares each engine's STREAMING
+    # parser run over the batch text (candidate label "<Engine> <ver> (stream)"). Those
+    # blocks come from the batch-on-stream fixtures, which were frozen at the old engines
+    # (0.23.0 / 0.5.12.post1) long after the batch parsers moved to 0.24.0 / 0.5.14 — so
+    # the tab showed a stale "(stream)" version next to the current "(batch)" one. The
+    # container-captured peers (vllm_python, sglang_python) must carry the CURRENT engine
+    # version on their (stream) candidate. vllm_rust is a source-captured single-version
+    # peer and is intentionally excluded.
+    seg = _panel(charts["v2"], "tab-toolcalling-batch", _V2_TABS)
+    labels = {
+        "vllm": "vLLM Python",
+        "sglang": "SGLang Python",
+    }
+    for impl, vers in _peer_versions("toolcalling/fixtures-batch-v1").items():
+        if impl not in labels:
+            continue
+        newest = max(vers, key=lambda v: tuple(int(x) for x in re.findall(r"\d+", v)))
+        assert f"{labels[impl]} {newest} (stream)" in seg, (
+            f"v2 batch tab stream candidate for {impl} is not the current {newest} "
+            f"— batch-on-stream fixtures need re-capturing at the current engines"
+        )
+
+
 def test_dynamo_version_labels_are_consistent_and_from_fixtures(charts):
     # The same Dynamo parser must show ONE version everywhere — a split (e.g. v1 3.0.0
     # in tool-calling but 4.1.0 in reasoning, or v2 0.1.11 vs 0.1.16) means a label is
