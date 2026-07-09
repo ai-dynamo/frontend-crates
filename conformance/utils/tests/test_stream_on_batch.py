@@ -701,6 +701,7 @@ def test_template_has_compare_picker_and_reasoning_candidates() -> None:
     assert 'data-engine="Dynamo"' in partial or "'Dynamo'" in partial
     assert 'class="cmp-ref"' in partial  # Reference radio
     assert 'class="cmp-on"' in partial  # Compare-with checkbox
+    assert ">compare with<" in partial.lower()
     assert "data-cmp-base" not in partial  # old radio-based control is gone
     # The compare JS drives cells from each cell's data-cmp payload.
     js = (SRC / "assets" / "conformance.js").read_text()
@@ -720,8 +721,8 @@ def test_template_has_compare_picker_and_reasoning_candidates() -> None:
     }
     panels = g._combined_reasoning_panels(hrefs)
     assert {panel["id"] for panel in panels} == {"tab-reasoning-batch", "tab-reasoning-stream"}
+    # No vLLM Rust for reasoning (parser_options already excludes it).
     assert all(panel["parser_options"] == ("dynamo_rust", "vllm_python", "sglang_python") for panel in panels)
-    assert all("vLLM Rust" not in panel["parity_explainer_html"] for panel in panels)
 
 
 def test_template_overview_cells_do_not_expand_from_hidden_marker_text() -> None:
@@ -772,9 +773,14 @@ def test_tab_labels_put_version_after_family() -> None:
     assert html.startswith('TC v2 <span class="tab-sub">')
     assert "(v2)" not in plain
 
-    plain, html = g._tab_label("Reasoning", "batch", None, False, data_word=False)
-    assert plain == "Reasoning v1 (batch on parser)"
+    # Reasoning has a single parser, so its tab drops the "on <parser>-parser" clause
+    # and shows the data word only: "(batch data)" / "(stream data)".
+    plain, html = g._tab_label("Reasoning", "batch", None, False, on_parser=False)
+    assert plain == "Reasoning v1 (batch data)"
     assert html.startswith('Reasoning v1 <span class="tab-sub">')
+    assert "on parser" not in plain and "on parser" not in html
+    stream_plain, _ = g._tab_label("Reasoning", "stream", None, False, on_parser=False)
+    assert stream_plain == "Reasoning v1 (stream data)"
 
 
 def test_common_legend_defines_v1_v2() -> None:
@@ -935,3 +941,60 @@ def test_impl_spec_is_single_identity_source() -> None:
     # vLLM Rust is stream-only: no `V_rb` batch parser option exists anywhere.
     assert "vllm_rust" not in g.BATCH_IMPL_KEYS
     assert "vllm_rust" in g.STREAM_IMPL_KEYS
+
+
+def test_candidate_label_html_colors_mode_word() -> None:
+    """Compare candidate labels color the trailing mode word: (batch) maroon,
+    (stream) NVIDIA green — via cand-batch / cand-stream spans, still HTML-escaped."""
+    assert (
+        g._candidate_label_html("Dynamo v1 Rust 3.0.0 (batch)")
+        == 'Dynamo v1 Rust 3.0.0 (<span class="cand-batch">batch</span>)'
+    )
+    assert (
+        g._candidate_label_html("vLLM Rust 0.23.0 (stream)")
+        == 'vLLM Rust 0.23.0 (<span class="cand-stream">stream</span>)'
+    )
+    # Only the trailing mode parenthetical is recolored; escaping still applies.
+    assert g._candidate_label_html("A & B (batch)").startswith("A &amp; B (")
+    # No mode parenthetical -> unchanged (but escaped).
+    assert g._candidate_label_html("plain label") == "plain label"
+
+
+def test_compare_legend_documents_delta_and_drops_stale_parity_explainer() -> None:
+    """The single compare-model legend documents the Δ divergence count and no longer
+    describes the removed per-parser "names output that differs" markers; and no panel
+    carries the stale parity_explainer_html field."""
+    legend = g._common_legend_html()
+    assert "Δ" in legend, "legend should document the Δ divergence count"
+    assert "names output that differs" not in legend, "stale per-parser marker text gone"
+    hrefs = {
+        k: "#"
+        for k in (
+            "reasoning_fixtures", "reasoning_cases", "reasoning_src", "toolcalling_src",
+            "streaming_harmony_src", "streaming_src", "toolcalling_streaming_cases",
+            "toolcalling_cases", "pyproject_stub",
+        )
+    }
+    # _apply_common_legend gives every panel the same rich legend.
+    panels = [{"id": "tab-a"}, {"id": "tab-b"}, {"id": "tab-toolcalling-batch"}]
+    g._apply_common_legend(panels, hrefs)
+    assert len({p["legend_html"] for p in panels}) == 1, "all tabs share one legend"
+    # Reasoning panels no longer carry the stale per-parser parity-explainer.
+    assert not any(
+        "parity_explainer_html" in p for p in g._combined_reasoning_panels(hrefs)
+    )
+
+
+def test_compare_bar_renders_when_candidate_lacks_label_html() -> None:
+    """The compare bar is shared with the v1 parity page, whose candidates carry no
+    label_html. Under StrictUndefined the template must guard the optional field and
+    fall back to the plain label instead of raising (regression: PR #105)."""
+    bar = (UTILS / "tests" / "parity" / "_compare_bar.html.j2").read_text(encoding="utf-8")
+    env = g.Environment(undefined=g.StrictUndefined, autoescape=True)
+    html = env.from_string(bar).render(
+        panel={
+            "id": "p",
+            "candidates": [{"key": "dynamo_x", "label": "X (batch)", "default_bucket": "A"}],
+        }
+    )
+    assert "cmprow-label" in html and "X (batch)" in html

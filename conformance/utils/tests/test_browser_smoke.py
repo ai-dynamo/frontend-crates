@@ -140,3 +140,43 @@ def test_compare_shows_one_marker_per_cell(driver):
         f"{result['overlap']} cell(s) still show a legacy marker alongside the compare marker"
     )
     assert result["cmpShown"] > 0, "no compare marker is visible in Details view"
+
+
+def test_overview_hides_compare_column(driver):
+    """In Overview (Detailed off) the compare bar shows only the Reference picker;
+    the CMP checkboxes + header are hidden, because an overview cell's color is
+    leak-only (depends on the Reference, not the Compares). Turning Detailed on
+    reveals the CMP column again — the selections themselves are preserved."""
+    driver.execute_script(
+        "document.querySelector('.tab-button[data-tab-target=\"tab-toolcalling-batch\"]').click();"
+    )
+    time.sleep(0.2)
+
+    def set_detailed(on):
+        driver.execute_script(
+            "const v=document.querySelector('[data-view-detailed]');"
+            "if(v && v.checked!==arguments[0]){v.checked=arguments[0]; v.dispatchEvent(new Event('change'));}",
+            on,
+        )
+        time.sleep(0.2)
+
+    def cmp_box_visible():
+        # offsetParent is null when the element (or an ancestor) is display:none.
+        return driver.execute_script(
+            "const p=document.querySelector('.tab-panel.active .cmpctl');"
+            "const box=p && p.querySelector('.cmprow:not(.cmphd) .cmprow-cmp');"
+            "return box ? (box.offsetParent !== null) : null;"
+        )
+
+    def ref_box_visible():
+        return driver.execute_script(
+            "const p=document.querySelector('.tab-panel.active .cmpctl');"
+            "const r=p && p.querySelector('.cmprow:not(.cmphd) .cmprow-ref');"
+            "return r ? (r.offsetParent !== null) : null;"
+        )
+
+    set_detailed(False)
+    assert cmp_box_visible() is False, "CMP column should be hidden in Overview"
+    assert ref_box_visible() is True, "REF picker must still show in Overview"
+    set_detailed(True)
+    assert cmp_box_visible() is True, "CMP column should reappear in Details"

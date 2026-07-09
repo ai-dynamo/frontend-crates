@@ -6,12 +6,12 @@
 <div class="cmpctl" role="group" aria-label="Pick one Reference parser (radio) and any number of Compare-with parsers (checkbox)">
   {% for grp, prefix in [('Dynamo', 'dynamo'), ('vLLM', 'vllm'), ('SGLang', 'sglang')] %}
   <div class="cmpcol" data-engine="{{ grp }}">
-    <div class="cmprow cmphd"><span class="cmphd-ref" title="Reference (pick one)">ref</span><span class="cmphd-cmp" title="Compare-with">cmp</span><span></span></div>
+    <div class="cmprow cmphd"><span class="cmphd-ref" title="Reference (pick one)">ref</span><span class="cmphd-cmp" title="Compare-with">compare with</span></div>
     {% for c in panel.candidates %}{% if c.key.startswith(prefix) %}
     <div class="cmprow{% if c.default_bucket == 'A' %} is-ref{% endif %}">
       <label class="cmprow-ref" title="Set as the Reference parser"><input type="radio" class="cmp-ref" name="ref_{{ panel.id }}" value="{{ c.key }}"{% if c.default_bucket == 'A' %} checked{% endif %}><span class="star" aria-hidden="true">★</span></label>
       <label class="cmprow-cmp" title="Include in Compare-with"><input type="checkbox" class="cmp-on" value="{{ c.key }}"{% if c.default_bucket in ['A', 'B'] %} checked{% endif %}{% if c.default_bucket == 'A' %} disabled{% endif %}></label>
-      <span class="cmprow-label" data-cand="{{ c.key }}">{{ c.label|e }}</span>
+      <span class="cmprow-label" data-cand="{{ c.key }}">{% if c.label_html is defined and c.label_html %}{{ c.label_html|safe }}{% else %}{{ c.label|e }}{% endif %}</span>
     </div>
     {% endif %}{% endfor %}
   </div>
