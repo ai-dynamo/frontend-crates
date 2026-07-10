@@ -998,3 +998,22 @@ def test_compare_bar_renders_when_candidate_lacks_label_html() -> None:
         }
     )
     assert "cmprow-label" in html and "X (batch)" in html
+
+
+def test_transpose_feature_is_wired() -> None:
+    """DIS-2280 Transpose: the toggle, the JS mirror builder, and the CSS all ship
+    in the assets, and the JS integrates with #98's compare engine (applyCtl) rather
+    than the removed per-parser status model."""
+    tmpl = (SRC / "conformance_table.html.j2").read_text(encoding="utf-8")
+    js = (SRC / "assets" / "conformance.js").read_text(encoding="utf-8")
+    css = (SRC / "assets" / "conformance.css").read_text(encoding="utf-8")
+    # toolbar checkbox + case-axis data attrs the mirror's corner label reads
+    assert "data-transpose-toggle" in tmpl
+    assert "data-case-prefix" in tmpl and "data-mode" in tmpl
+    # JS builder + integration with the compare engine
+    assert "buildTransposed" in js and "data-transpose-table" in js
+    assert "if (panelCtl(panel)) { applyCtl(panel); }" in js  # recolor the mirror
+    assert "!cell.closest('[data-transpose-table]')" in js     # don't double-count
+    # CSS shows the mirror in transpose mode and hides the original
+    assert "body.transpose-mode" in css and ".transpose-table" in css
+    assert "sideways-lr" in css  # rotated bottom-up model headers

@@ -21,6 +21,7 @@
 {% endfor %}
 <span class="tabs-right">
   <label class="checkbox-option cmp-detailed"><input type="checkbox" data-view-detailed> Detailed</label>
+  <label class="checkbox-option cmp-transpose"><input type="checkbox" data-transpose-toggle> Transpose</label>
   <button type="button" class="cmp-reset" data-reset title="Clear all selections and reload defaults">Reset</button>
 </span>
 </div>
@@ -30,7 +31,7 @@
 {% if panel.candidates %}
 {% include "_compare_bar.html.j2" %}
 {% endif %}
-<table data-parity-table>
+<table data-parity-table data-case-prefix="{{ panel.case_prefix|default('')|e }}" data-mode="{{ panel.mode|default('')|e }}">
 <thead>
 <tr>{{ panel.group_headers|safe }}</tr>
 <tr>{{ panel.sub_headers|safe }}</tr>

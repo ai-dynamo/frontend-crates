@@ -180,3 +180,123 @@ def test_overview_hides_compare_column(driver):
     assert ref_box_visible() is True, "REF picker must still show in Overview"
     set_detailed(True)
     assert cmp_box_visible() is True, "CMP column should reappear in Details"
+
+
+def _click_tab(driver, panel_id):
+    driver.execute_script(
+        "document.querySelector(arguments[0]).click();",
+        f'.tab-button[data-tab-target="{panel_id}"]',
+    )
+    time.sleep(0.2)
+
+
+def _set_transpose(driver, on):
+    driver.execute_script(
+        "const t=document.querySelector('[data-transpose-toggle]');"
+        "if(t && t.checked!==arguments[0]){t.checked=arguments[0]; t.dispatchEvent(new Event('change'));}",
+        on,
+    )
+    time.sleep(0.2)
+
+
+def test_transpose_builds_mirror_and_colors(driver):
+    """Toggling Transpose builds a mirror in the active panel: models become rotated
+    columns (th.tcol-model), cases become rows (th.trow-case), and the cloned cells
+    are colored by the SAME compare engine (cmp-eq/cmp-leak/cmp-na) — not left blank.
+    This is the DIS-2280 integration with #98's reference/compare model."""
+    _click_tab(driver, "tab-toolcalling-batch")
+    _set_transpose(driver, True)
+    info = driver.execute_script(
+        """
+        const p = document.querySelector('.tab-panel.active');
+        const tt = p.querySelector('table[data-transpose-table]');
+        if (!tt) return {built:false};
+        const cells = tt.querySelectorAll('td.cell');
+        let colored = 0;
+        cells.forEach(function (c) {
+          if (c.classList.contains('cmp-eq') || c.classList.contains('cmp-leak') || c.classList.contains('cmp-na')) colored++;
+        });
+        return {
+          built: true,
+          models: tt.querySelectorAll('th.tcol-model').length,
+          rows: tt.querySelectorAll('th.trow-case').length,
+          cells: cells.length,
+          colored: colored,
+        };
+        """
+    )
+    assert info["built"], "transposed mirror table was not built"
+    assert info["models"] > 1, "expected multiple rotated model columns"
+    assert info["rows"] > 1, "expected multiple case rows"
+    assert info["cells"] > 0 and info["colored"] == info["cells"], (
+        f"every cloned cell should be colored by applyCtl, got {info['colored']}/{info['cells']}"
+    )
+
+
+def test_transpose_does_not_double_overview_counts(driver):
+    """The mirror's cloned cells must not inflate the overview counts (both applyCtl
+    and updateOverviewStats skip cells inside [data-transpose-table])."""
+    _click_tab(driver, "tab-toolcalling-batch")
+    _set_transpose(driver, False)
+    counts = "const p=document.querySelector('.tab-panel.active');return Array.from(p.querySelectorAll('[data-overview-count]')).map(function(e){return e.textContent;});"
+    before = driver.execute_script(counts)
+    _set_transpose(driver, True)
+    after = driver.execute_script(counts)
+    assert before == after, f"overview counts changed when transposing: {before} -> {after}"
+
+
+def test_transpose_recolors_on_reference_change(driver):
+    """Picking a different Reference recolors the mirror too — applyCtl covers it
+    because the mirror lives in the same panel."""
+    _click_tab(driver, "tab-toolcalling-batch")
+    _set_transpose(driver, True)
+    snap = "const tt=document.querySelector('.tab-panel.active table[data-transpose-table]');return Array.from(tt.querySelectorAll('td.cell')).map(function(c){return c.className;});"
+    before = driver.execute_script(snap)
+    changed = driver.execute_script(
+        """
+        const ctl = document.querySelector('.tab-panel.active .cmpctl');
+        const refs = Array.from(ctl.querySelectorAll('input.cmp-ref'));
+        const other = refs.find(function (r) { return !r.checked && !r.disabled; });
+        if (!other) return false;
+        other.checked = true;
+        other.dispatchEvent(new Event('change', {bubbles: true}));
+        return true;
+        """
+    )
+    assert changed, "no alternate Reference available to select"
+    time.sleep(0.3)
+    after = driver.execute_script(snap)
+    assert before != after, "transposed cells did not recolor when the Reference changed"
+
+
+def test_transpose_honors_collapsed_case_group(driver):
+    """A case group collapsed via the column toggle in the original table stays hidden
+    (as rows) in the transposed mirror — the mirror carries data-col-hide-group and
+    re-applies the column state on build (regression: #87 review)."""
+    _click_tab(driver, "tab-toolcalling-batch")
+    _set_transpose(driver, False)
+    key = driver.execute_script(
+        """
+        const p = document.querySelector('.tab-panel.active');
+        const subKeys = new Set(Array.from(p.querySelectorAll('th.case-sub[data-col-hide-group]'))
+          .map(function (e) { return e.dataset.colHideGroup; }));
+        const btn = Array.from(p.querySelectorAll('[data-col-toggle]'))
+          .find(function (b) { return subKeys.has(b.dataset.colToggle); });
+        if (!btn) return null;
+        btn.click();  // collapse this case group
+        return btn.dataset.colToggle;
+        """
+    )
+    assert key, "no case-group column toggle found"
+    _set_transpose(driver, True)
+    hidden = driver.execute_script(
+        """
+        const key = arguments[0];
+        const tt = document.querySelector('.tab-panel.active table[data-transpose-table]');
+        const rows = tt.querySelectorAll('tr[data-col-hide-group="' + key + '"]');
+        if (!rows.length) return null;
+        return Array.from(rows).every(function (r) { return r.classList.contains('col-hidden'); });
+        """,
+        key,
+    )
+    assert hidden is True, f"transposed rows for collapsed group {key} should be hidden"
