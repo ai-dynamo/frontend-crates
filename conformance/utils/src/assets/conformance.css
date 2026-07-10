@@ -148,8 +148,17 @@ body.view-details td.cell.cmp-donly .cmp-marker { color: #9aa1a9; }
 .cmp-why { font-weight: 600; color: #8a4b0b; background: #fdf2e2; border: 1px solid #f0d9b5;
   border-radius: 4px; padding: 4px 6px; margin-bottom: 6px; font-size: 12px; line-height: 1.35;
   white-space: normal; }
-/* Base reference's section is flagged with a marker (same color as the others). */
-.ttip .cand.cand-base .ttip-section::after { content: ' ← base reference'; font-weight: 700; }
+/* The Reference section (and the per-chunk Reference column) is flagged with a
+ * gold ★ (matching the compare-bar Reference star) before the name and `← REF` after. */
+.ttip .cand.cand-base .ttip-section::before { content: '★ '; color: #f5a623; font-weight: 700; }
+.ttip .cand.cand-base .ttip-section::after { content: ' ← REF'; font-weight: 700; }
+.ttip .ttip-ref { font-weight: 700; white-space: nowrap; }
+.ttip .ttip-ref-star { color: #f5a623; font-weight: 700; }
+/* Per-chunk grid column hidden when it isn't in the Reference/Compare-with set. */
+.ttip .ttip-chunks .col-hidden { display: none; }
+/* The Reference candidate column: gold ★ before + `← REF` after its header label. */
+.ttip .ttip-chunks th.col-ref::before { content: '★ '; color: #f5a623; font-weight: 700; }
+.ttip .ttip-chunks th.col-ref::after { content: ' ← REF'; font-weight: 700; white-space: nowrap; }
 .radio-option { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; cursor: pointer; }
 /* The parser-radio JS hides options the active tab doesn't support via `hidden`;
    the explicit display above would otherwise override the default [hidden] rule

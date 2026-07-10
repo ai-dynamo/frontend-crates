@@ -88,12 +88,14 @@ def test_hover_shows_tooltip(driver):
 
 
 def test_compare_candidates_are_per_tab(driver):
-    """Each tab's compare control carries its own candidate chips: the merged Tool
-    Calling (batch data) tab offers a vLLM Rust stream candidate; Reasoning does not."""
+    """Each tab's compare control carries its own candidate rows: the merged Tool
+    Calling (batch data) tab offers a vLLM Rust stream candidate; Reasoning does not.
+    (The candidates were `.chip` elements before the compare-bar rework (#98/#105)
+    replaced them with `.cmprow-label[data-cand]` rows.)"""
     def cand_keys():
         return driver.execute_script(
             "const p=document.querySelector('.tab-panel.active .cmpctl');"
-            "return p?Array.from(p.querySelectorAll('.chip')).map(c=>c.dataset.cand):[];"
+            "return p?Array.from(p.querySelectorAll('.cmprow-label[data-cand]')).map(c=>c.dataset.cand):[];"
         )
 
     def click_tab(panel_id):

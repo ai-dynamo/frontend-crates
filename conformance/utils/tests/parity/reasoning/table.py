@@ -1719,6 +1719,65 @@ def _explanations_for(
     return "\n".join(parts)
 
 
+def _reasoning_candidate_chart_html(
+    case_id: str,
+    family: str,
+    case: dict[str, Any],
+    *,
+    display_family: str | None = None,
+) -> tuple[str, str] | None:
+    """Left-to-right candidate chart (same layout/JS contract as the toolcalling
+    charts): one column per compare candidate (`data-cand` = the compare-bar keys
+    `dynamo`/`vllm`/`sglang`), REF column ordered first + `★ … ← REF`-marked by the
+    shared JS. Batch input is a single text, so there is one `output` row; stream
+    cases additionally list their input chunks (one row each) — the reasoning corpus
+    records final output only, so per-chunk candidate cells stay `—`. A leaking
+    candidate keeps its red `↯` on the column header (the list sections this chart
+    replaces carried it)."""
+    expected = case.get("expected")
+    if not isinstance(expected, dict):
+        return None
+    mode = "stream" if ".stream." in case_id else "batch"
+    header = ""
+    cells = ""
+    for impl in ("dynamo", "vllm", "sglang"):
+        blk = expected.get(impl)
+        label = html_lib.escape(_reasoning_cand_label(impl, mode))
+        leak = (
+            ' <span class="ttip-leak">↯</span>'
+            if isinstance(blk, dict) and _block_leak_reason(blk, family) is not None
+            else ""
+        )
+        header += f'<th data-cand="{impl}">{label}{leak}</th>'
+        body = _format_output_block_html(blk, family, display_family=display_family)
+        note = _explanation(blk)
+        if note:
+            body += "\nexplanation: " + html_lib.escape(str(note))
+        cells += f'<td data-cand="{impl}">{body.replace(chr(10), "<br>")}</td>'
+    rows = []
+    chunks = case.get("chunks")
+    if isinstance(chunks, list) and chunks:
+        chunk_html = _colorize_stream_chunks(chunks, family)
+        empty = "".join(
+            f'<td data-cand="{impl}">—</td>' for impl in ("dynamo", "vllm", "sglang")
+        )
+        for i in range(len(chunks)):
+            rows.append(f'<tr><td class="cin">{chunk_html[i]}</td>{empty}</tr>')
+        rows.append(f'<tr class="ttip-final"><td class="cin">output</td>{cells}</tr>')
+    else:
+        rows.append(
+            f'<tr class="ttip-final"><td class="cin">{_input_text_html(case, family)}</td>{cells}</tr>'
+        )
+    table = (
+        '<table class="ttip-chunks"><thead><tr><th>input</th>'
+        + header
+        + "</tr></thead><tbody>"
+        + "".join(rows)
+        + "</tbody></table>"
+    )
+    return ("Output (recorded from parser = expected)", table)
+
+
 def _tooltip_html(
     case_id: str,
     family: str,
@@ -1776,28 +1835,13 @@ def _tooltip_html(
             ),
         )
     )
-    # Always emit one wrapped section per impl so the shared compare-candidates JS
-    # can toggle the per-impl output block (mirrors generate_conformance_table's
-    # per-candidate `cand cand-<key>` wrapping). The optional 3rd tuple element is
-    # the wrap class, consumed by common.build_parity_tooltip_html's add_section.
-    mode = "stream" if ".stream." in case_id else "batch"
-    output_sections: list[tuple] = []
-    for impl in ("dynamo", "vllm", "sglang"):
-        blk = expected.get(impl)
-        body = _format_output_block_html(blk, family, display_family=display_family)
-        note = _explanation(blk)
-        if note:
-            body += "\nexplanation: " + html_lib.escape(str(note))
-        output_sections.append(
-            (
-                _reasoning_cand_label(impl, mode),
-                body,
-                f"cand cand-{impl}",
-                isinstance(blk, dict) and _block_leak_reason(blk, family) is not None,
-            )
-        )
-    # Show the compare candidates in the same lexical order as the bucket chips.
-    output_sections.sort(key=lambda s: s[0])
+    # The candidate chart (one column per compare candidate, left-to-right) replaces
+    # the old per-impl list sections — its output row carries each candidate's block
+    # + explanation, and its headers keep the per-candidate `↯`. The input lives in
+    # the chart's first column, so the separate Input section is dropped too.
+    chart = _reasoning_candidate_chart_html(
+        case_id, family, case, display_family=display_family
+    )
 
     dynamo_leak = (
         _dynamo_leak_reason(expected, family)
@@ -1807,14 +1851,15 @@ def _tooltip_html(
     return build_parity_tooltip_html(
         head=head,
         description=str(description) if description else None,
-        input_label="Input chunks" if "chunks" in case else "Input",
-        input_html=_input_text_html(case, family),
-        output_sections=output_sections,
+        input_label=None if chart else ("Input chunks" if "chunks" in case else "Input"),
+        input_html=None if chart else _input_text_html(case, family),
+        output_sections=None,
         divergent_reasons=None,
         leak_label="↯ Dynamo leaks",
         leak_text=dynamo_leak
         or ("unresolved" if _has_dynamo_leak(case, family) else None),
         extra_sections=extra_sections,
+        chart=chart,
         refs=[("Ref", case.get("ref")), ("Spec ref", case.get("spec_ref"))],
     )
 

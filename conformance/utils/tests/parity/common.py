@@ -331,6 +331,7 @@ def build_parity_tooltip_html(
     leak_label: str | None = None,
     leak_text: str | None = None,
     extra_sections: list[tuple[str, str]] | None = None,
+    chart: tuple[str, str] | None = None,
     refs: list[tuple[str, Any]] | None = None,
 ) -> str:
     """Build the hover popup used by parser and reasoning parity tables.
@@ -366,6 +367,15 @@ def build_parity_tooltip_html(
 
     for section in output_sections or []:
         add_section(*section)
+
+    # Candidate chart (left-to-right per-candidate output table). Raw table HTML —
+    # not a <pre> section — toggled/REF-ordered by the shared compare JS.
+    if chart:
+        chart_label, chart_html = chart
+        parts.append(
+            f'<div class="ttip-section">{html_lib.escape(chart_label)}:</div>'
+        )
+        parts.append(chart_html)
 
     if divergent_reasons:
         add_section("Divergent reasons", linkify_text_html(divergent_reasons))
