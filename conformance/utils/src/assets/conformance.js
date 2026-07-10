@@ -136,6 +136,9 @@
     // reference-aware "not implemented" note). The v1 parity page has data-cmp only, so
     // match either — otherwise v1 cells never get colored.
     panel.querySelectorAll('td.cell[data-cmp], td.cell[data-family]').forEach(function (cell) {
+      // Cloned cells in the transposed mirror get colored like any other cell,
+      // but must not be tallied into the overview counts (they'd double them).
+      const countThis = !cell.closest('[data-transpose-table]');
       let cmp = {};
       const raw = cell.getAttribute('data-cmp');
       if (raw) { try { cmp = JSON.parse(raw); } catch (e) { return; } }
@@ -145,17 +148,17 @@
       if (base && ni && ni.families.indexOf(fam) === -1) {
         cell.classList.add('cmp-na'); if (marker) { marker.textContent = 'x'; }
         setWhy(cell, ni.label + ' is not yet implemented for family “' + fam + '”');
-        counts.na++; toggleCands(cell, active, base); return;
+        if (countThis) { counts.na++; } toggleCands(cell, active, base); return;
       }
       setWhy(cell, '');
       const bd = base ? cmp[base] : null;
       if (!base) {
         cell.classList.add('cmp-nobase'); if (marker) { marker.textContent = ''; }
-        counts.na++; toggleCands(cell, active, base); return;
+        if (countThis) { counts.na++; } toggleCands(cell, active, base); return;
       }
       if (!bd || bd.na === 1) {
         cell.classList.add('cmp-na'); if (marker) { marker.textContent = 'n/a'; }
-        counts.na++; toggleCands(cell, active, base); return;
+        if (countThis) { counts.na++; } toggleCands(cell, active, base); return;
       }
       // Unavailable candidates never count toward the diff; still shown in tooltip.
       const avail = shown.map(function (k) { return cmp[k]; }).filter(function (o) { return o && o.na !== 1; });
@@ -172,7 +175,7 @@
       if (marker) { marker.textContent = (leak ? '↯' : '') + txt; }
       // Color = leak only: red = Reference leaks markup, green = clean.
       cell.classList.add(leak ? 'cmp-leak' : 'cmp-eq');
-      if (leak) { counts.problem++; } else { counts.ok++; }
+      if (countThis) { if (leak) { counts.problem++; } else { counts.ok++; } }
       toggleCands(cell, active, base);
     });
     panel.querySelectorAll('[data-overview-count]').forEach(function (el) {
@@ -311,6 +314,8 @@
       const versioned = panel.dataset.hasVersions === 'true';
       const counts = {ok: 0, problem: 0, todo: 0, na: 0};
       panel.querySelectorAll('td.cell').forEach(function (cell) {
+        // Skip cloned cells in the transposed mirror; they'd double the tally.
+        if (cell.closest('[data-transpose-table]')) { return; }
         const alias = legacyParserAliases[parser];
         // On a versioned tab, prefer the active version's status; fall back to the
         // pinned attr (and legacy alias) for cells without per-version data.
@@ -645,9 +650,13 @@
     ttip.style.opacity = '';
   }
 
-  document.querySelectorAll('td.cell, td.parser').forEach(function (cell) {
+  function attachTooltip(cell) {
     const ttip = cell.querySelector('.ttip');
     if (!ttip) return;
+    // cloneNode copies the wired flag; guard so re-wiring a clone is a no-op and
+    // originals aren't double-wired.
+    if (cell.dataset.ttipWired === '1') return;
+    cell.dataset.ttipWired = '1';
 
     let showTimer = null;
     let hideTimer = null;
@@ -702,5 +711,245 @@
     cell.addEventListener('pointerleave', scheduleHide);
     cell.addEventListener('focusin', scheduleShow);
     cell.addEventListener('focusout', scheduleHide);
-  });
+  }
+  document.querySelectorAll('td.cell, td.parser').forEach(attachTooltip);
+
+  // ---- Transpose view (DIS-2280) ----
+  // Build a transposed mirror of each panel's table on demand: models become
+  // columns (rotated CCW headers), test cases become rows. Data cells are cloned
+  // from the server-rendered table, so they keep their data-cmp payload and the
+  // compare/coloring engine (applyCtl) recolors them for free — the mirror lives
+  // in the same panel, so applyCtl's cell query already covers it.
+  const transposeToggle = document.querySelector('[data-transpose-toggle]');
+
+  function readTransposeMode() {
+    const requested = new URLSearchParams(window.location.search).get('transpose');
+    return requested === '1' || requested === 'true';
+  }
+
+  function updateTransposeUrl(enabled) {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('transpose');
+    if (enabled) {
+      url.searchParams.set('transpose', '1');
+    }
+    window.history.replaceState(null, '', url.toString());
+  }
+
+  function buildTransposed(table) {
+    const head = table.tHead;
+    const headRows = head ? Array.from(head.rows) : [];
+    const body = table.tBodies[0];
+    if (headRows.length < 2 || !body) {
+      return null;
+    }
+
+    // Case-group key -> human label (from the group-header toggle buttons).
+    const groupLabel = {};
+    Array.from(headRows[0].querySelectorAll('th.case-group')).forEach(function (th) {
+      const btn = th.querySelector('[data-col-label]');
+      groupLabel[th.dataset.colControlGroup] = btn ? btn.dataset.colLabel : th.textContent.trim();
+    });
+    // Ordered sub-cases (the new rows). Each carries its case-group key.
+    const subThs = Array.from(headRows[1].querySelectorAll('th.case-sub'));
+
+    // Models (the new columns), grouped by the body's section banners.
+    const models = [];
+    let curSection = null;
+    Array.from(body.rows).forEach(function (row) {
+      if (row.classList.contains('section')) {
+        curSection = row.textContent.trim();
+        return;
+      }
+      const modelTd = row.querySelector('td.model');
+      if (!modelTd) return;
+      models.push({
+        name: modelTd.textContent.trim(),
+        section: curSection,
+        parserTd: row.querySelector('td.parser'),
+        cells: Array.from(row.querySelectorAll('td.cell'))
+      });
+    });
+    if (!models.length) {
+      return null;
+    }
+    const nModels = models.length;
+
+    const out = document.createElement('table');
+    out.className = 'transpose-table';
+    out.setAttribute('data-transpose-table', '');
+
+    const outHead = out.createTHead();
+
+    // Optional model-section banner row (e.g. "Top-N models" / "Others").
+    const sections = [];
+    models.forEach(function (m) {
+      const last = sections[sections.length - 1];
+      if (last && last.label === m.section) {
+        last.count += 1;
+      } else {
+        sections.push({label: m.section, count: 1});
+      }
+    });
+    if (sections.some(function (s) { return s.label; })) {
+      const r0 = outHead.insertRow();
+      const corner = document.createElement('th');
+      corner.className = 'tcorner-case';
+      r0.appendChild(corner);
+      sections.forEach(function (s) {
+        const th = document.createElement('th');
+        th.className = 'tsection-col';
+        th.colSpan = s.count;
+        th.textContent = s.label || '';
+        r0.appendChild(th);
+      });
+    }
+
+    // Rotated model-name header row. The corner cell labels the case axis with
+    // the panel's case prefix (e.g. "Case TOOLCALLING.batch.*"), rotated the same
+    // way as the model names.
+    const r1 = outHead.insertRow();
+    const cornerCase = document.createElement('th');
+    cornerCase.className = 'tcol-model tcorner-case';
+    let prefix = (table.dataset.casePrefix || '').trim();
+    const mode = (table.dataset.mode || '').trim();
+    // Tool-calling prefixes already carry the case namespace ("TOOLCALLING.batch.");
+    // reasoning's is family-only ("REASONING."), where the namespace is the mode.
+    // Splice the mode in only for that family-only case.
+    if (mode && prefix.split('.').filter(Boolean).length === 1) {
+      prefix = prefix + mode + '.';
+    }
+    const caseLabel = document.createElement('span');
+    caseLabel.className = 'tcol-model-label';
+    const caseLabelLine = document.createElement('span');
+    caseLabelLine.className = 'tcol-model-line';
+    caseLabelLine.textContent = prefix ? ('Case ' + prefix + '*') : 'Case';
+    caseLabel.appendChild(caseLabelLine);
+    const cornerInner = document.createElement('div');
+    cornerInner.className = 'tcol-model-inner';
+    cornerInner.appendChild(caseLabel);
+    cornerCase.appendChild(cornerInner);
+    r1.appendChild(cornerCase);
+    models.forEach(function (m) {
+      const th = document.createElement('th');
+      th.className = 'tcol-model';
+      const label = document.createElement('span');
+      label.className = 'tcol-model-label';
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'tcol-model-name';
+      nameSpan.textContent = m.name;
+      label.appendChild(nameSpan);
+      // Second line: the tool-calling family, lifted from the original parser
+      // cell (without its tooltip). Clone the markup (not just text) so the
+      // parser-source link stays clickable, exactly like the non-transposed view.
+      if (m.parserTd) {
+        const famClone = m.parserTd.cloneNode(true);
+        const famTip = famClone.querySelector('.ttip');
+        if (famTip) famTip.remove();
+        if (famClone.textContent.trim()) {
+          const famSpan = document.createElement('span');
+          famSpan.className = 'tcol-model-family';
+          while (famClone.firstChild) {
+            famSpan.appendChild(famClone.firstChild);
+          }
+          label.appendChild(famSpan);
+        }
+      }
+      const inner = document.createElement('div');
+      inner.className = 'tcol-model-inner';
+      inner.appendChild(label);
+      th.appendChild(inner);
+      // Same hover tooltip as the original parser cell.
+      const srcTip = m.parserTd && m.parserTd.querySelector('.ttip');
+      if (srcTip) {
+        const tipClone = srcTip.cloneNode(true);
+        th.appendChild(tipClone);
+        attachTooltip(th);
+      }
+      r1.appendChild(th);
+    });
+
+    // One body row per sub-case, with a section banner when the group changes.
+    const outBody = out.createTBody();
+    let curGroup = null;
+    subThs.forEach(function (subTh, idx) {
+      const group = subTh.dataset.colHideGroup;
+      if (group !== curGroup) {
+        curGroup = group;
+        const sr = outBody.insertRow();
+        sr.className = 'section';
+        if (group) { sr.setAttribute('data-col-hide-group', group); }
+        const td = document.createElement('td');
+        td.colSpan = 1 + nModels;
+        td.textContent = groupLabel[group] || group || '';
+        sr.appendChild(td);
+      }
+      const tr = outBody.insertRow();
+      // Carry the case-group key so applyColumnState hides this row (and its section
+      // banner) when that group is collapsed via the column toggles — keeps the
+      // transposed view in sync with the original table's show/hide state.
+      if (group) { tr.setAttribute('data-col-hide-group', group); }
+      const caseTh = document.createElement('th');
+      caseTh.className = 'trow-case';
+      const link = subTh.querySelector('a');
+      caseTh.appendChild(link ? link.cloneNode(true) : document.createTextNode(subTh.textContent.trim()));
+      tr.appendChild(caseTh);
+      models.forEach(function (m) {
+        const src = m.cells[idx];
+        if (src) {
+          const clone = src.cloneNode(true);
+          clone.classList.remove('col-hidden');
+          clone.removeAttribute('data-col-hide-group');
+          // cloneNode copies the "already wired" flag; clear it so the clone
+          // gets its own tooltip listeners.
+          clone.removeAttribute('data-ttip-wired');
+          delete clone.dataset.ttipWired;
+          tr.appendChild(clone);
+          attachTooltip(clone);
+        } else {
+          const td = document.createElement('td');
+          td.className = 'cell na';
+          tr.appendChild(td);
+        }
+      });
+    });
+
+    return out;
+  }
+
+  function ensureTransposed(panel) {
+    if (panel.querySelector('table[data-transpose-table]')) return;
+    const orig = panel.querySelector('table[data-parity-table]');
+    if (!orig) return;
+    const transposed = buildTransposed(orig);
+    if (transposed) {
+      orig.insertAdjacentElement('afterend', transposed);
+      // Color the freshly-cloned cells with the panel's current Reference/Compare
+      // selection (applyCtl covers the mirror since it lives in the panel).
+      if (panelCtl(panel)) { applyCtl(panel); }
+      // Apply the current column-collapse state so a case group hidden in the
+      // original table stays hidden (as rows) in the freshly-built mirror.
+      applyColumnState(visibleColumns, false);
+    }
+  }
+
+  function applyTransposeMode(enabled, shouldUpdateUrl) {
+    document.body.classList.toggle('transpose-mode', Boolean(enabled));
+    if (transposeToggle) {
+      transposeToggle.checked = Boolean(enabled);
+    }
+    if (enabled) {
+      document.querySelectorAll('.tab-panel').forEach(ensureTransposed);
+    }
+    if (shouldUpdateUrl) {
+      updateTransposeUrl(Boolean(enabled));
+    }
+  }
+
+  applyTransposeMode(readTransposeMode(), false);
+  if (transposeToggle) {
+    transposeToggle.addEventListener('change', function () {
+      applyTransposeMode(transposeToggle.checked, true);
+    });
+  }
 })();
