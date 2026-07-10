@@ -289,7 +289,8 @@ impl ReasoningParserType {
             ReasoningParserType::MiniMaxM2 => ReasoningParserWrapper {
                 parser: Box::new(
                     BasicReasoningParser::new("<think>".into(), "</think>".into(), true, true)
-                        .with_tool_start_token("<minimax:tool_call>"),
+                        .with_tool_start_token("<minimax:tool_call>")
+                        .with_tool_start_token("<invoke name="),
                 ),
             },
             ReasoningParserType::MiniMaxM3 => ReasoningParserWrapper {
@@ -394,6 +395,39 @@ mod tests {
 
         assert_eq!(result.reasoning_text, "");
         assert_eq!(result.normal_text, tool_call);
+    }
+
+    #[test] // MiniMax M2
+    fn test_minimax_m2_bare_invoke_exits_force_reasoning() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m2");
+        let tool_call =
+            "<invoke name=\"get_weather\"><parameter name=\"city\">NYC</parameter></invoke>";
+        let result =
+            parser.detect_and_parse_reasoning(&format!("I should call weather.{tool_call}"), &[]);
+
+        assert_eq!(result.reasoning_text, "I should call weather.");
+        assert_eq!(result.normal_text, tool_call);
+    }
+
+    #[test] // MiniMax M2
+    fn test_minimax_m2_bare_invoke_streaming_exits_force_reasoning() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m2");
+
+        let r1 = parser.parse_reasoning_streaming_incremental("I should call ", &[]);
+        assert_eq!(r1.reasoning_text, "I should call ");
+        assert_eq!(r1.normal_text, "");
+
+        let r2 = parser.parse_reasoning_streaming_incremental("weather.<invoke na", &[]);
+        assert_eq!(r2.reasoning_text, "weather.");
+        assert_eq!(r2.normal_text, "");
+
+        let tail = "me=\"get_weather\"><parameter name=\"city\">NYC</parameter></invoke>";
+        let r3 = parser.parse_reasoning_streaming_incremental(tail, &[]);
+        assert_eq!(r3.reasoning_text, "");
+        assert_eq!(
+            r3.normal_text,
+            "<invoke name=\"get_weather\"><parameter name=\"city\">NYC</parameter></invoke>"
+        );
     }
 
     #[test] // MiniMax M3
