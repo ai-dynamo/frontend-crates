@@ -625,11 +625,11 @@ def _common_legend_html(
     return (
         "<p><strong>Legend:</strong></p>"
         '<ul class="marker-defs">'
-        '<li><span style="color:#0a7d2c"><strong>green</strong></span> = the selected <strong>Reference</strong> parser output is clean — no tool-call markup leaked into <code>normal_text</code>. A clean Reference is green whether or not any Compare parser is selected.</li>'
-        '<li><span style="color:#b00"><strong>red</strong> (↯)</span> = the Reference parser leaks tool-call markup into <code>normal_text</code>.</li>'
+        '<li><span style="color:#0a7d2c"><strong>green</strong></span> = the selected <strong>Reference</strong> parser output is clean — no structured markup (tool-call or reasoning) leaked into the visible <code>normal_text</code>. A clean Reference is green whether or not any Compare parser is selected.</li>'
+        '<li><span style="color:#b00"><strong>red</strong> (↯)</span> = the Reference parser leaks structured markup (tool-call or reasoning) into the visible <code>normal_text</code>.</li>'
         '<li><span style="color:#aaa"><strong>n/a</strong></span> = the selected Reference is not applicable for this case (for example the Dynamo v2 stream parser is not implemented for this family).</li>'
         '<li><span style="color:#8a6d3b">—</span> missing fixture coverage.</li>'
-        '<li>In the <strong>Detailed</strong> view the number on a cell = how many selected <strong>Compare</strong> parsers diverge from the Reference (<span style="color:#0a7d2c">=</span> means every selected Compare matches). A divergence with no <code>explanation:</code> yet is flagged <span style="color:#b00">?</span> (research needed); <span style="color:#b00">!</span> marks an engine that errors by design; <span style="color:#b00">✗</span> means the parser ran but failed to parse.</li>'
+        '<li>In the <strong>Detailed</strong> view the number on a cell (with a <span style="color:#8a6d3b">Δ</span> suffix, e.g. <span style="color:#8a6d3b">2Δ</span>) = how many selected <strong>Compare</strong> parsers diverge from the Reference (<span style="color:#0a7d2c">=</span> means every selected Compare matches). A divergence with no <code>explanation:</code> yet is flagged <span style="color:#b00">?</span> (research needed); <span style="color:#b00">!</span> marks an engine that errors by design; <span style="color:#b00">✗</span> means the parser ran but failed to parse.</li>'
         '<li><strong>v1</strong> = the stable batch parser crate (<code>parsers/v1/src/...</code>, <code>dynamo-parsers</code>); <strong>v2</strong> = the WIP streaming parser crate (<code>parsers/v2/src/...</code>, <code>dynamo-parsers-v2</code>).</li>'
         '<li><span class="parser-suffix">†</span> no vLLM Python peer parser for this family. &nbsp; <span class="parser-suffix">§</span> no SGLang peer parser for this family. &nbsp; <span class="parser-suffix">‡</span> Nemotron V3 (Ultra) reuses the qwen3_coder parser.</li>'
         "</ul>"
@@ -1898,6 +1898,21 @@ def _full_label(impl: str, version: object, mode: str) -> str:
     return f"{base}{ver} ({mode})"
 
 
+def _candidate_label_html(label: str) -> str:
+    """Escape a compare candidate label and color the trailing mode parenthetical:
+    `batch` maroon, `stream` NVIDIA green (matches the tab-label word coding). The
+    plain `label` stays around for tooltips; only the compare bar uses this HTML."""
+    esc = html_lib.escape(label)
+    m = re.search(r"\(([^)]*)\)\s*$", esc)
+    if not m:
+        return esc
+    s, e = m.span(1)
+    inner = m.group(1)
+    inner = inner.replace("batch", '<span class="cand-batch">batch</span>')
+    inner = inner.replace("stream", '<span class="cand-stream">stream</span>')
+    return esc[:s] + inner + esc[e:]
+
+
 def _dynamo_v2_version() -> str | None:
     """Version label for the Dynamo v2 stream parser, taken from the PUBLISHED fixture
     provenance (the v2-major `dynamo_rust-<ver>` dir, e.g. 0.1.11), NOT the live
@@ -2472,7 +2487,6 @@ def render_html_panel(
     }
     if comparison == "stream_vs_batch":
         panel["details_note_html"] = f"<p>{_stream_parity_explainer_html(parser_stream_context)}</p>"
-        panel["parity_explainer_html"] = ""
     return panel
 
 
@@ -2856,25 +2870,36 @@ def _rewrite_panel_paths(
 
 
 def _tab_label(
-    prefix: str, data: str, parser: str | None, v2: bool, data_word: bool = True
+    prefix: str,
+    data: str,
+    parser: str | None,
+    v2: bool,
+    data_word: bool = True,
+    on_parser: bool = True,
 ) -> tuple[str, str]:
     """Build a tab label as `<prefix> vN (<data> data on <parser>-parser)`.
     Returns (plain, html); the html form wraps the parenthetical in a smaller-font
     span (`tab-sub`) and color-codes the words "batch"/"stream" (`w-batch`/`w-stream`)
     so the two axes are distinguishable. `data` is "batch" or "stream". `parser` is
     "batch"/"stream", or None for a bare "parser" (reasoning has a single parser, not
-    a batch/stream split). `data_word=False` drops the literal " data" word, e.g.
-    reasoning renders `(batch on parser)`."""
+    a batch/stream split). `data_word=False` drops the literal " data" word.
+    `on_parser=False` drops the `on <parser>-parser` clause entirely, so reasoning
+    renders `(batch data)` — the parser axis is meaningless there (one parser)."""
     version = "v2" if v2 else "v1"
     dword = " data" if data_word else ""
 
     def _w(word: str) -> str:
         return f'<span class="w-{word}">{word}</span>'
 
-    parser_plain = f"{parser}-parser" if parser else "parser"
-    parser_html = f"{_w(parser)}-parser" if parser else "parser"
-    plain = f"{prefix} {version} ({data}{dword} on {parser_plain})"
-    sub_html = f"({_w(data)}{dword} on {parser_html})"
+    if on_parser:
+        parser_plain = f"{parser}-parser" if parser else "parser"
+        parser_html = f"{_w(parser)}-parser" if parser else "parser"
+        on_plain = f" on {parser_plain}"
+        on_html = f" on {parser_html}"
+    else:
+        on_plain = on_html = ""
+    plain = f"{prefix} {version} ({data}{dword}{on_plain})"
+    sub_html = f"({_w(data)}{dword}{on_html})"
     return plain, f'{prefix} {version} <span class="tab-sub">{sub_html}</span>'
 
 
@@ -2900,33 +2925,15 @@ def _tab_button(panel: dict[str, Any]) -> str:
     )
 
 
-def _compare_legend_html() -> str:
-    return (
-        "<p><strong>Legend — compare mode:</strong> pick one <strong>Base</strong> and any number of "
-        "<strong>Compare</strong> candidates (parser + version); each cell counts how many selected "
-        "candidates produce different output than Base.</p>"
-        '<ul class="marker-defs">'
-        '<li><span style="color:#0a7d2c">=</span> every selected candidate matches Base.</li>'
-        '<li><span style="color:#8a6d3b">N</span> N selected candidates differ from Base.</li>'
-        '<li><span style="color:#8b949e">·</span> nothing available to compare (Base-only / peers not captured).</li>'
-        '<li><span style="color:#b00">↯</span> Base leaks tool call markup into <code>normal_text</code>.</li>'
-        '<li><span style="color:#aaa">n/a</span> Base has no captured output for this case.</li>'
-        "<li>Unavailable candidates never count toward the number but still appear in the hover tooltip, "
-        "which shows Base plus each selected candidate's output.</li>"
-        "</ul>"
-    )
-
-
 def _apply_common_legend(panels: list[dict[str, Any]], hrefs: dict[str, str]) -> None:
     legend_html = _common_legend_html(
         _peer_version_items(_peer_versions()),
         hrefs["pyproject_stub"],
     )
-    compare_legend = _compare_legend_html()
+    # One legend for every tab: the compare model (Reference vs Compare) is identical
+    # across tabs, so they all get the same rich legend.
     for panel in panels:
-        panel["legend_html"] = (
-            compare_legend if panel.get("id") == "tab-toolcalling-batch" else legend_html
-        )
+        panel["legend_html"] = legend_html
 
 
 def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
@@ -3032,8 +3039,9 @@ def _combined_reasoning_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
         )
         # Reasoning has a single parser (not a batch/stream split), so the parser
         # axis renders as a bare "parser"; only the data axis varies.
-        _r_label, _r_label_html = _tab_label("Reasoning", mode, None, False, data_word=False)
-        mode_word = "stream" if mode == "stream" else "batch"
+        _r_label, _r_label_html = _tab_label(
+            "Reasoning", mode, None, False, on_parser=False
+        )
         panel.update(
             {
                 "id": f"tab-reasoning-{mode}",
@@ -3051,15 +3059,6 @@ def _combined_reasoning_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
                 "case_docs_label": "lib/parsers/REASONING_CASES.md",
                 "case_prefix": "REASONING.",
                 "case_section_id": f"reasoning-{mode}",
-                "parity_explainer_html": (
-                    "<strong>Conformance:</strong> "
-                    '<span style="color:#0a7d2c">=</span> all available reasoning outputs match · '
-                    f'<span style="color:#555">D</span> (Dynamo Rust {mode_word} parser) / '
-                    f'<span style="color:#555">V</span> (vLLM Python {mode_word} parser) / '
-                    f'<span style="color:#555">S</span> (SGLang {mode_word} parser) names output '
-                    "that differs from the selected parser · multiple markers mean multiple peer "
-                    "outputs differ from the selected parser."
-                ),
                 "parser_options": ("dynamo_rust", "vllm_python", "sglang_python"),
             }
         )
@@ -3084,6 +3083,10 @@ def render_combined_html(
         *_combined_reasoning_panels(hrefs),
     ]
     panels[0]["active"] = True
+    # Color the trailing (batch)/(stream) mode word in every compare candidate label.
+    for panel in panels:
+        for cand in panel.get("candidates", []):
+            cand["label_html"] = _candidate_label_html(cand["label"])
 
     now = datetime.datetime.now(zoneinfo.ZoneInfo("America/Los_Angeles"))
     stamp = now.strftime("%Y-%m-%d %H:%M %Z")

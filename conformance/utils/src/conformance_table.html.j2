@@ -99,16 +99,6 @@
   <p class="versions">{{ panel.captured_note|e }}</p>
 {% endif %}
 </div>
-<p class="legend details-only parity-explainer">
-{% if panel.parity_explainer_html is defined and panel.parity_explainer_html %}
-  {{ panel.parity_explainer_html|safe }}
-{% else %}
-  <strong>Conformance:</strong>
-  <span style="color:#0a7d2c">=</span> all available outputs match ·
-  <span style="color:#555">D<sub>RB</sub></span> (Dynamo Rust batch parser) / <span style="color:#555">V<sub>PB</sub></span> (vLLM Python batch parser) / <span style="color:#555">S<sub>RB</sub></span> (SGLang batch parser) names output that differs from the selected parser ·
-  multiple markers mean multiple peer outputs differ from the selected parser.
-{% endif %}
-</p>
 <p class="stats details-only">
   Stats: {{ panel.stats.families }} families × {{ panel.stats.sub_cases }} sub-cases
   = {{ panel.stats.slots }} grid slots ({{ panel.stats.na }} n/a, {{ panel.stats.missing }} missing).

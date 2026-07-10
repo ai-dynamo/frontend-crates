@@ -166,7 +166,9 @@
       // green too. The marker count is the number of selected Compares that diverge;
       // with no comparable peer there is simply nothing to count (blank), not gray.
       const donly = avail.length === 0;
-      const txt = donly ? '' : (diffs === 0 ? '=' : String(diffs));
+      // Δ suffix marks the number as a count of diverging Compare-with parsers,
+      // e.g. "2Δ"; "=" (all agree) and a lone leak "↯" carry no count.
+      const txt = donly ? '' : (diffs === 0 ? '=' : String(diffs) + 'Δ');
       if (marker) { marker.textContent = (leak ? '↯' : '') + txt; }
       // Color = leak only: red = Reference leaks markup, green = clean.
       cell.classList.add(leak ? 'cmp-leak' : 'cmp-eq');

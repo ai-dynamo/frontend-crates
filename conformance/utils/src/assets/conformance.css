@@ -87,6 +87,9 @@ tr.section td { background: #eef; font-weight: bold; text-align: left; }
 .cmprow.cmphd { padding-bottom: 3px; margin-bottom: 3px; border-bottom: 1px solid #e3e8ee; }
 .cmphd-ref, .cmphd-cmp { font-size: 9px; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.03em; color: #8a95a3; text-align: center; }
+/* "COMPARE WITH" is too wide for the 26px checkbox column, so let the header span
+   into the (empty) label column and left-align it over the checkboxes. */
+.cmphd-cmp { grid-column: 2 / 4; text-align: left; white-space: nowrap; padding-left: 3px; }
 .cmprow-ref, .cmprow-cmp { position: relative; display: flex; justify-content: center;
   align-items: center; margin: 0; cursor: pointer; }
 .cmprow input.cmp-on { margin: 0; cursor: pointer; }
@@ -102,9 +105,19 @@ tr.section td { background: #eef; font-weight: bold; text-align: left; }
   text-overflow: ellipsis; padding-left: 4px; }
 .cmprow.is-ref { background: #eef4fc; }
 .cmprow.is-ref .cmprow-label { font-weight: 700; color: #174a86; }
+/* Mode word coding in candidate labels: (batch) maroon, (stream) NVIDIA green. */
+.cmprow-label .cand-batch { color: #800000; }
+.cmprow-label .cand-stream { color: #15803d; }
 /* The Reference's Compare box is checked + locked (can't be unchecked) — keep it
  * clearly visible (pressed), just slightly muted to read as locked. */
 .cmprow input.cmp-on:disabled { opacity: 0.55; }
+/* Overview (non-Detailed) cells show only leak color, which depends solely on the
+ * Reference — the Compare-with count is a Details-only marker. So hide the CMP
+ * column entirely in Overview and keep just the Reference picker (REF), collapsing
+ * the row to two tracks. Compare selections are preserved and reappear in Details. */
+body.view-overview .cmpctl .cmphd-cmp,
+body.view-overview .cmpctl .cmprow-cmp { display: none; }
+body.view-overview .cmpctl .cmprow { grid-template-columns: 26px 1fr; }
 /* Cells: compare coloring wins over the dormant parser-status rules (!important).
  * Numbers are not bold. */
 .cmp-marker { position: absolute; inset: 0; display: none; align-items: center;
@@ -151,8 +164,6 @@ body.view-details td.cell.cmp-donly .cmp-marker { color: #9aa1a9; }
 .view-overview .parity-option { display: none; }
 .view-overview .details-only { display: none; }
 .view-details .summary-only { display: none; }
-.parity-explainer { display: none; }
-.view-details.parity-mode .parity-explainer { display: block; }
 .summary-key { display: inline-block; width: 12px; height: 12px; border: 1px solid rgba(0,0,0,0.22); margin: 0 4px 0 10px; vertical-align: -2px; }
 .summary-key:first-of-type { margin-left: 0; }
 .summary-key.ok { background: #76b884; }
@@ -197,7 +208,7 @@ body.view-details td.cell.cmp-donly .cmp-marker { color: #9aa1a9; }
 /* Smaller-font parenthetical in tab labels, with "batch"/"stream" color-coded so the
    data axis and parser axis read at a glance. */
 .tab-button .tab-sub { font-size: 0.82em; font-weight: 400; }
-.tab-button .w-batch { color: #7c3aed; }
+.tab-button .w-batch { color: #800000; }
 .tab-button .w-stream { color: #15803d; }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
