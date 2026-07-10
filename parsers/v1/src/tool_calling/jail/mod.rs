@@ -1091,6 +1091,10 @@ impl JailedStream {
                             }
                         }
 
+                        // Ordering invariant: per choice, `process_content` emits only
+                        // PassThrough prefix -> ToolCall/Content -> Trailing suffix. The terminal
+                        // normalizer assigns `finish_reason` to the last emission, so this bucket
+                        // order must stay aligned or terminal ownership must move after bucketing.
                         // Emit pass-through prefixes before parsed tool calls.
                         if !passthrough_emissions.is_empty() {
                             let current_metadata = (response.id.clone(), response.event.clone(), response.comment.clone());
