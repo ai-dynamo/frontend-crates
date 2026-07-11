@@ -247,11 +247,13 @@ pub struct Tokenizer(Arc<dyn traits::Tokenizer>);
 
 impl Tokenizer {
     pub fn from_file(file_path: &str) -> Result<Tokenizer> {
-        Self::from_file_with_options(file_path, TokenizerOptions::default())
+        Ok(Tokenizer(create_tokenizer_from_file(file_path)?))
     }
 
     pub fn from_file_with_options(file_path: &str, options: TokenizerOptions) -> Result<Tokenizer> {
-        Ok(Tokenizer(create_tokenizer_from_file(file_path, options)?))
+        Ok(Tokenizer(create_tokenizer_from_file_with_options(
+            file_path, options,
+        )?))
     }
 
     /// Create a stateful sequence object for decoding token_ids into text
@@ -293,7 +295,17 @@ where
 /// - json: HuggingFace tokenizer
 /// - model, tiktoken: tiktoken BPE tokenizer (requires `config.json` with a supported
 ///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25)
-pub fn create_tokenizer_from_file(
+pub fn create_tokenizer_from_file(file_path: &str) -> Result<Arc<dyn traits::Tokenizer>> {
+    create_tokenizer_from_file_with_options(file_path, Default::default())
+}
+
+/// Create a tokenizer from a file path to a tokenizer file with additional tokenizer option.
+/// The file extension is used to determine the tokenizer type.
+/// Supported file types are:
+/// - json: HuggingFace tokenizer
+/// - model, tiktoken: tiktoken BPE tokenizer (requires `config.json` with a supported
+///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25)
+pub fn create_tokenizer_from_file_with_options(
     file_path: &str,
     options: TokenizerOptions,
 ) -> Result<Arc<dyn traits::Tokenizer>> {

@@ -344,11 +344,12 @@ mod tests {
         let plain = HuggingFaceTokenizer::from_file(path).unwrap();
         assert_eq!(ids(&plain.encode("hello").unwrap()), vec![1]);
 
-        let with_bos = HuggingFaceTokenizer::from_file(path)
-            .unwrap()
-            .with_options(TokenizerOptions {
-                add_special_tokens: true,
-            });
+        let with_bos =
+            HuggingFaceTokenizer::from_file(path)
+                .unwrap()
+                .with_options(TokenizerOptions {
+                    add_special_tokens: true,
+                });
         assert_eq!(ids(&with_bos.encode("hello").unwrap()), vec![3, 1]);
         let batch = with_bos.encode_batch(&["hello", "world"]).unwrap();
         assert_eq!(ids(&batch[0]), vec![3, 1]);
