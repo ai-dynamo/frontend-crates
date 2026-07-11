@@ -2,7 +2,13 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    # `pull-request/<n>` is the internal mirror branch copy-pr-bot pushes after a
+    # maintainer runs `/ok to test <sha>`. Running here (not the fork's own
+    # `pull_request` event) is the only way an external contribution gets
+    # `secrets.HF_TOKEN`, which the private fixture dataset download requires.
+    branches:
+      - main
+      - "pull-request/[0-9]+"
   pull_request:
   workflow_dispatch:
 
@@ -10,6 +16,31 @@ permissions:
   contents: read
 
 jobs:
+  # Decide which optional jobs need to run for this change. `conformance-table`
+  # is expensive (downloads the private fixture dataset, renders both charts) and
+  # is only affected by conformance/parser changes, so skip it otherwise.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      conformance: ${{ steps.filter.outputs.conformance }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Detect conformance/parser changes
+        id: filter
+        uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+        with:
+          filters: |
+            conformance:
+              - 'conformance/**'
+              - 'parsers/**'
+              - '.github/workflows/ci.yml'
+
   rust:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -72,6 +103,8 @@ jobs:
   # breakage. Python + pyyaml/jinja2 only — no engines (vLLM/SGLang conformance runs in
   # dynamo's CI lanes; here the engine lanes are on-demand/local).
   conformance-table:
+    needs: changes
+    if: ${{ needs.changes.outputs.conformance == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
