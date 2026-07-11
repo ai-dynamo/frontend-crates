@@ -1738,6 +1738,7 @@ def _reasoning_candidate_chart_html(
     if not isinstance(expected, dict):
         return None
     mode = "stream" if ".stream." in case_id else "batch"
+    has_chunks = isinstance(case.get("chunks"), list) and bool(case.get("chunks"))
     header = ""
     cells = ""
     for impl in ("dynamo", "vllm", "sglang"):
@@ -1748,7 +1749,13 @@ def _reasoning_candidate_chart_html(
             if isinstance(blk, dict) and _block_leak_reason(blk, family) is not None
             else ""
         )
-        header += f'<th data-cand="{impl}">{label}{leak}</th>'
+        note = (
+            ' <span class="ttip-note">(final output only;'
+            " per-chunk timing not recorded)</span>"
+            if has_chunks
+            else ""
+        )
+        header += f'<th data-cand="{impl}">{label}{leak}{note}</th>'
         body = _format_output_block_html(blk, family, display_family=display_family)
         note = _explanation(blk)
         if note:

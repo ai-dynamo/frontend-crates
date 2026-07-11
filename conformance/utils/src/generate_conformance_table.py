@@ -962,10 +962,22 @@ def _version_candidate_chart_html(case: dict, ver_status: dict) -> tuple[str, st
             )
     if not candidates:
         return None
-    header = "".join(
-        f'<th data-cand="{html_lib.escape(key, quote=True)}">{html_lib.escape(label)}</th>'
-        for key, label, _info in candidates
-    )
+    def _col_header(key: str, label: str, info: dict) -> str:
+        note = ""
+        if not info.get("aligned", True):
+            # The capture is emission-packed (fewer rows than input chunks): row
+            # positions are NOT consumer-visible timing, so per-chunk cells stay
+            # empty and the output shows only in the assembled row.
+            note = (
+                ' <span class="ttip-note">(bursts at end of call;'
+                " per-chunk timing not recorded)</span>"
+            )
+        return (
+            f'<th data-cand="{html_lib.escape(key, quote=True)}">'
+            f"{html_lib.escape(label)}{note}</th>"
+        )
+
+    header = "".join(_col_header(key, label, info) for key, label, info in candidates)
     rows = []
     for i, chunk in enumerate(input_chunks):
         inp = chunk_html[i]
@@ -979,7 +991,9 @@ def _version_candidate_chart_html(case: dict, ver_status: dict) -> tuple[str, st
         for key, _label, info in candidates:
             chs = info.get("chunks")
             body = ""
-            if isinstance(chs, list) and i < len(chs):
+            if not info.get("aligned", True):
+                body = "—"  # timing not recorded; output appears in `assembled` only
+            elif isinstance(chs, list) and i < len(chs):
                 body = _render_chunk_deltas(
                     chs[i].get("deltas") or [], chs[i].get("normal_text") or ""
                 )
@@ -2295,8 +2309,27 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
     saved_captured = _CAPTURED_WITH_BY_MODE.get("streamv2")
     result: dict[tuple[str, str], dict[str, dict[str, dict]]] = {}
 
+    def _raw_chunk_counts(impl, version):
+        """{(family, case_id): n_chunks} straight from the <impl>-<version> dir docs.
+        The resolver pads a folded case to the input chunk count, so alignment
+        (did this capture record per-input-chunk timing?) is only visible here."""
+        counts: dict[tuple[str, str], int] = {}
+        vdir = _STREAM_SRC / f"{impl}-{version}"
+        if vdir.is_dir():
+            for fp in vdir.glob("*/*.yaml"):
+                try:
+                    doc = yaml.safe_load(fp.read_text()) or {}
+                except Exception:
+                    continue
+                fam = doc.get("family") or fp.parent.name
+                for cid, vc in (doc.get("cases") or {}).items():
+                    if isinstance(vc, dict) and isinstance(vc.get("chunks"), list):
+                        counts[(fam, cid)] = len(vc["chunks"])
+        return counts
+
     def _record(cases, impl, version):
         slug = toolcalling_table._version_slug(version)
+        raw_counts = _raw_chunk_counts(impl, version)
         # The Dynamo parser is version-split into two DIFFERENT parsers: v2
         # (dynamo_rust-0.1.11) implements only a handful of families, while the v1
         # jail (dynamo_rust-3.0.0) covers all. The stream assembly defaults an absent
@@ -2324,11 +2357,18 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
                     })
             if covered is not None and case.get("__family") not in covered:
                 block, status, vchunks = None, "na", None
+            # Aligned = the raw capture recorded one row per INPUT chunk, so a row
+            # index is real consumer-visible timing. The v1 jail captures are
+            # emission-packed (fewer rows than inputs) — timing NOT recorded.
+            raw_n = raw_counts.get((key[0], case.get("__case_id") or ""))
+            n_input = len(raw) if isinstance(raw, list) else 0
+            aligned = raw_n is None or raw_n == n_input
             result.setdefault(key, {}).setdefault(impl, {})[slug] = {
                 "status": status,
                 "block": block,
                 "version": version,
                 "chunks": vchunks,
+                "aligned": aligned,
             }
 
     def _resolve_and_load(select):

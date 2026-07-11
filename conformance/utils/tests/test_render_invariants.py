@@ -207,3 +207,37 @@ def test_implemented_v2_families_not_marked_inventory_only(rendered_page):
     assert not mislabeled, (
         f"families with a real v2 parser labeled 'inventory only': {sorted(set(mislabeled))}"
     )
+
+
+# --- I8: unaligned captures must not fake per-chunk timing -------------------------
+def test_unaligned_candidates_show_no_per_chunk_timing(rendered_page):
+    """A candidate column whose header carries the 'timing not recorded' note must
+    have NO per-chunk deltas rendered (all cells em-dash outside the assembled row) —
+    the v1 jail's emission-packed captures previously displayed at wrong positions."""
+    html = rendered_page.read_text()
+    noted = 0
+    for seg in html.split('<table class="ttip-chunks">')[1:]:
+        table = seg.split("</table>")[0]
+        m = re.search(
+            r'<th data-cand="([^"]+)">(?:(?!</th>).)*?timing not recorded', table, re.S
+        )
+        if not m:
+            continue
+        noted += 1
+        key = m.group(1)
+        for row in table.split("<tr")[1:]:
+            if 'class="ttip-final"' in row:
+                continue
+            cm = re.search(rf'<td data-cand="{re.escape(key)}">(.*?)</td>', row, re.S)
+            if cm:
+                assert cm.group(1).strip() in ("—", ""), (
+                    f"noted column {key} renders per-chunk data: {cm.group(1)[:80]!r}"
+                )
+    assert noted > 0, "expected at least one 'timing not recorded' column (v1 jail)"
+    # The reasoning tab's final-output-only notes alone must NOT satisfy this guard:
+    # the TC stream tab's v1 jail column (emission-packed capture) must be noted too.
+    html2 = rendered_page.read_text()
+    assert re.search(
+        r'<th data-cand="dynamo_rust-3-0-0">(?:(?!</th>).)*?timing not recorded',
+        html2, re.S,
+    ), "the v1 jail (dynamo_rust-3-0-0) stream column lacks the timing note"

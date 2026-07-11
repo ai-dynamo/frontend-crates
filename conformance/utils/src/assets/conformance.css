@@ -392,3 +392,6 @@ body.view-details .transpose-table td.cell > a { position: absolute; inset: 0; }
 /* Case-group banner rows reuse the original tr.section band, but centered: in the
    transposed layout they span the full model width, so left-aligned reads lost. */
 .transpose-table tr.section td { background: #eef; font-weight: bold; text-align: center; padding-left: 0.5ch; padding-right: 0.5ch; }
+/* Column-header note for candidates whose capture has no per-chunk timing (e.g. the
+ * v1 jail bursts at end-of-call); their per-chunk cells stay em-dashes. */
+.ttip .ttip-note { color: #9aa4b2; font-weight: 400; font-size: 11px; white-space: normal; }
