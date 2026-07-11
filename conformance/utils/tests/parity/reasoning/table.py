@@ -1750,23 +1750,22 @@ def _reasoning_candidate_chart_html(
             else ""
         )
         note = (
-            ' <span class="ttip-note">(final output only;'
-            " per-chunk timing not recorded)</span>"
+            common.timing_note("final output only; per-chunk timing not recorded")
             if has_chunks
             else ""
         )
-        header += f'<th data-cand="{impl}">{label}{leak}{note}</th>'
+        header += common.cand_th(impl, f"{label}{leak}{note}")
         body = _format_output_block_html(blk, family, display_family=display_family)
         note = _explanation(blk)
         if note:
             body += "\nexplanation: " + html_lib.escape(str(note))
-        cells += f'<td data-cand="{impl}">{body.replace(chr(10), "<br>")}</td>'
+        cells += common.cand_td(impl, body.replace(chr(10), "<br>"))
     rows = []
     chunks = case.get("chunks")
     if isinstance(chunks, list) and chunks:
         chunk_html = _colorize_stream_chunks(chunks, family)
         empty = "".join(
-            f'<td data-cand="{impl}">—</td>' for impl in ("dynamo", "vllm", "sglang")
+            common.cand_td(impl, "—") for impl in ("dynamo", "vllm", "sglang")
         )
         for i in range(len(chunks)):
             rows.append(f'<tr><td class="cin">{chunk_html[i]}</td>{empty}</tr>')
@@ -1775,13 +1774,7 @@ def _reasoning_candidate_chart_html(
         rows.append(
             f'<tr class="ttip-final"><td class="cin">{_input_text_html(case, family)}</td>{cells}</tr>'
         )
-    table = (
-        '<table class="ttip-chunks"><thead><tr><th>input</th>'
-        + header
-        + "</tr></thead><tbody>"
-        + "".join(rows)
-        + "</tbody></table>"
-    )
+    table = common.candidate_chart_table(header, rows)
     return ("Output (recorded from parser = expected)", table)
 
 

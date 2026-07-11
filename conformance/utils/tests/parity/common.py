@@ -320,6 +320,45 @@ def ref_text(value: Any) -> str:
     return str(value)
 
 
+# --- Shared candidate-chart scaffold -----------------------------------------
+# Every popup chart (stream per-version, merged batch, reasoning, and the legacy
+# per-impl grid) is the same <table class="ttip-chunks"> with a fixed `input`
+# column plus per-candidate columns; only the columns/rows differ. These helpers
+# own that scaffold so the four builders don't each re-template it (and so the
+# `data-cand` / `data-col-impl` attribute the compare JS keys on can't drift).
+
+
+def cand_th(key: str, inner: str, *, attr: str = "data-cand") -> str:
+    """A candidate-chart column header. `key` becomes the `attr` value the compare
+    JS toggles/reorders; `inner` is already-rendered (escaped) HTML."""
+    return f'<th {attr}="{html_lib.escape(key, quote=True)}">{inner}</th>'
+
+
+def cand_td(key: str, inner: str, *, attr: str = "data-cand") -> str:
+    """A candidate-chart body cell (see cand_th). `inner` is already-rendered HTML."""
+    return f'<td {attr}="{html_lib.escape(key, quote=True)}">{inner}</td>'
+
+
+def timing_note(reason: str) -> str:
+    """The muted `(… per-chunk timing not recorded)` header note the stream charts
+    add to a column whose capture is not per-input-chunk aligned. `reason` is the
+    parenthetical text (e.g. `bursts at end of call; per-chunk timing not recorded`)."""
+    return f' <span class="ttip-note">({html_lib.escape(reason)})</span>'
+
+
+def candidate_chart_table(header_cells: str, body_rows: list[str]) -> str:
+    """Assemble the shared chart <table>: fixed `input` column + per-candidate
+    columns (header_cells), then body_rows. Callers build the columns/rows;
+    the scaffold lives here once."""
+    return (
+        '<table class="ttip-chunks"><thead><tr><th>input</th>'
+        + header_cells
+        + "</tr></thead><tbody>"
+        + "".join(body_rows)
+        + "</tbody></table>"
+    )
+
+
 def build_parity_tooltip_html(
     *,
     head: str,

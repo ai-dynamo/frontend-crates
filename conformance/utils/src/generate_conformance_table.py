@@ -963,19 +963,15 @@ def _version_candidate_chart_html(case: dict, ver_status: dict) -> tuple[str, st
     if not candidates:
         return None
     def _col_header(key: str, label: str, info: dict) -> str:
-        note = ""
-        if not info.get("aligned", True):
-            # The capture is emission-packed (fewer rows than input chunks): row
-            # positions are NOT consumer-visible timing, so per-chunk cells stay
-            # empty and the output shows only in the assembled row.
-            note = (
-                ' <span class="ttip-note">(bursts at end of call;'
-                " per-chunk timing not recorded)</span>"
-            )
-        return (
-            f'<th data-cand="{html_lib.escape(key, quote=True)}">'
-            f"{html_lib.escape(label)}{note}</th>"
+        # The capture is emission-packed (fewer rows than input chunks): row
+        # positions are NOT consumer-visible timing, so per-chunk cells stay
+        # empty and the output shows only in the assembled row.
+        note = (
+            common.timing_note("bursts at end of call; per-chunk timing not recorded")
+            if not info.get("aligned", True)
+            else ""
         )
+        return common.cand_th(key, html_lib.escape(label) + note)
 
     header = "".join(_col_header(key, label, info) for key, label, info in candidates)
     rows = []
@@ -997,24 +993,19 @@ def _version_candidate_chart_html(case: dict, ver_status: dict) -> tuple[str, st
                 body = _render_chunk_deltas(
                     chs[i].get("deltas") or [], chs[i].get("normal_text") or ""
                 )
-            cells += f'<td data-cand="{html_lib.escape(key, quote=True)}">{body}</td>'
+            cells += common.cand_td(key, body)
         rows.append(f'<tr><td class="cin">{inp}</td>{cells}</tr>')
     # `_cand_section_body` (not the bare block formatter) so each candidate's
     # `explanation:` note rides in its column — the chart REPLACES the per-candidate
     # list sections, so nothing the list carried may be lost.
     final_cells = "".join(
-        f'<td data-cand="{html_lib.escape(key, quote=True)}">'
-        f'{_cand_section_body(info.get("block"), family).replace(chr(10), "<br>")}</td>'
+        common.cand_td(
+            key, _cand_section_body(info.get("block"), family).replace(chr(10), "<br>")
+        )
         for key, _label, info in candidates
     )
     rows.append(f'<tr class="ttip-final"><td class="cin">assembled</td>{final_cells}</tr>')
-    table = (
-        '<table class="ttip-chunks"><thead><tr><th>input</th>'
-        + header
-        + "</tr></thead><tbody>"
-        + "".join(rows)
-        + "</tbody></table>"
-    )
+    table = common.candidate_chart_table(header, rows)
     return ("Per-chunk emit (recorded from parser = expected)", table)
 
 
@@ -1029,22 +1020,18 @@ def _merged_candidate_chart_html(case: dict, cmp_items: list) -> tuple[str, str]
         return None
     family = case.get("__family")
     header = "".join(
-        f'<th data-cand="{html_lib.escape(item["key"], quote=True)}">{html_lib.escape(item["label"])}</th>'
-        for item in cmp_items
+        common.cand_th(item["key"], html_lib.escape(item["label"])) for item in cmp_items
     )
     cells = "".join(
-        f'<td data-cand="{html_lib.escape(item["key"], quote=True)}">'
-        f'{_cand_section_body(item.get("block"), family).replace(chr(10), "<br>")}</td>'
+        common.cand_td(
+            item["key"],
+            _cand_section_body(item.get("block"), family).replace(chr(10), "<br>"),
+        )
         for item in cmp_items
     )
     input_html = f"input_text='{colorize_markup(model_text, family)}'"
-    table = (
-        '<table class="ttip-chunks"><thead><tr><th>input</th>'
-        + header
-        + f'</tr></thead><tbody><tr class="ttip-final"><td class="cin">{input_html}</td>'
-        + cells
-        + "</tr></tbody></table>"
-    )
+    final_row = f'<tr class="ttip-final"><td class="cin">{input_html}</td>{cells}</tr>'
+    table = common.candidate_chart_table(header, [final_row])
     return ("Output (recorded from parser = expected)", table)
 
 
@@ -1115,7 +1102,7 @@ def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str,
             )
         else:
             inner = name
-        return f'<th data-col-impl="{impl}">{inner}</th>'
+        return common.cand_th(impl, inner, attr="data-col-impl")
 
     header = base_header + "".join(_col_h(i) for i in impls)
     rows = []
@@ -1138,7 +1125,13 @@ def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str,
         exp = _normalize_impl_mapping(chunk.get("expected") or {})
         nt = _normalize_impl_mapping(chunk.get("normal_text") or {})
         cells = "".join(
-            f'<td data-col-impl="{i2}">{_render_chunk_deltas(_impl_get(exp, i2, []) or [], _impl_get(nt, i2, "") or "")}</td>'
+            common.cand_td(
+                i2,
+                _render_chunk_deltas(
+                    _impl_get(exp, i2, []) or [], _impl_get(nt, i2, "") or ""
+                ),
+                attr="data-col-impl",
+            )
             for i2 in impls
         )
         # The baseline cell (rowspan) is emitted once, on the first body row.
@@ -1149,19 +1142,19 @@ def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str,
     # baseline column on the left (assembled X_s vs Dynamo batch).
     derived = _expected(case)
     final_cells = "".join(
-        f'<td data-col-impl="{i2}">{_format_output_block_html(_impl_get(derived, i2), family).replace(chr(10), "<br>")}</td>'
+        common.cand_td(
+            i2,
+            _format_output_block_html(_impl_get(derived, i2), family).replace(
+                chr(10), "<br>"
+            ),
+            attr="data-col-impl",
+        )
         for i2 in impls
     )
     rows.append(
         f'<tr class="ttip-final"><td class="cin">assembled</td>{baseline_td}{final_cells}</tr>'
     )
-    table = (
-        '<table class="ttip-chunks"><thead><tr><th>input</th>'
-        + header
-        + "</tr></thead><tbody>"
-        + "".join(rows)
-        + "</tbody></table>"
-    )
+    table = common.candidate_chart_table(header, rows)
     if unavailable:
         note = "; ".join(
             f"{_IMPL_DISPLAY[i]}: {_short_unavailable(unavailable[i])}"
