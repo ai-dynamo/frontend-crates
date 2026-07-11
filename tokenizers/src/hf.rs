@@ -6,12 +6,16 @@ use std::path::Path;
 use tokenizers::tokenizer::{AddedToken, Tokenizer as HfTokenizer};
 
 use super::{
-    Encoding, Error, Result, TokenIdType,
+    Encoding, Error, Result, TokenIdType, TokenizerOptions,
     traits::{DecodeResult, Decoder, Encoder, Tokenizer},
 };
 
 pub struct HuggingFaceTokenizer {
     tokenizer: HfTokenizer,
+    /// Construction-time options; see [`TokenizerOptions`]. Defaults preserve
+    /// the historical behavior (e.g. `add_special_tokens: false`). Set via
+    /// [`Tokenizer::with_options`].
+    options: TokenizerOptions,
 }
 
 impl HuggingFaceTokenizer {
@@ -27,11 +31,14 @@ impl HuggingFaceTokenizer {
             merge_special_tokens_from_config(&mut tokenizer, parent);
         }
 
-        Ok(HuggingFaceTokenizer { tokenizer })
+        Ok(Self::from_tokenizer(tokenizer))
     }
 
     pub fn from_tokenizer(tokenizer: HfTokenizer) -> Self {
-        HuggingFaceTokenizer { tokenizer }
+        HuggingFaceTokenizer {
+            tokenizer,
+            options: TokenizerOptions::default(),
+        }
     }
 
     /// Wrap an already-loaded `HfTokenizer` and merge in the sibling
@@ -39,7 +46,7 @@ impl HuggingFaceTokenizer {
     pub fn from_tokenizer_with_model_dir(tokenizer: HfTokenizer, model_dir: &Path) -> Self {
         let mut tokenizer = tokenizer;
         merge_special_tokens_from_config(&mut tokenizer, model_dir);
-        HuggingFaceTokenizer { tokenizer }
+        Self::from_tokenizer(tokenizer)
     }
 }
 
@@ -136,7 +143,7 @@ impl Encoder for HuggingFaceTokenizer {
         // This self.tokenizer is the library
         let encoding = self
             .tokenizer
-            .encode(input, false)
+            .encode(input, self.options.add_special_tokens)
             .map_err(|err| Error::msg(format!("Error tokenizing input: {err}")))?;
 
         Ok(Encoding::Hf(Box::new(encoding)))
@@ -145,7 +152,7 @@ impl Encoder for HuggingFaceTokenizer {
     fn encode_batch(&self, inputs: &[&str]) -> Result<Vec<Encoding>> {
         let hf_encodings = self
             .tokenizer
-            .encode_batch(inputs.to_vec(), false)
+            .encode_batch(inputs.to_vec(), self.options.add_special_tokens)
             .map_err(|err| Error::msg(format!("Error batch tokenizing input: {err}")))?;
 
         let encodings = hf_encodings
@@ -169,11 +176,18 @@ impl Decoder for HuggingFaceTokenizer {
     }
 }
 
-impl Tokenizer for HuggingFaceTokenizer {}
+impl Tokenizer for HuggingFaceTokenizer {
+    /// HF honors [`TokenizerOptions::add_special_tokens`] (BOS/EOS per the
+    /// tokenizer's post-processor template).
+    fn with_options(mut self, options: TokenizerOptions) -> Self {
+        self.options = options;
+        self
+    }
+}
 
 impl From<HfTokenizer> for HuggingFaceTokenizer {
     fn from(tokenizer: HfTokenizer) -> Self {
-        HuggingFaceTokenizer { tokenizer }
+        Self::from_tokenizer(tokenizer)
     }
 }
 
@@ -275,5 +289,85 @@ mod tests {
             decoded_keep.contains("<|special_dropped|>"),
             "non-promoted special:false token must survive skip_special_tokens=true; got {decoded_keep:?}"
         );
+    }
+
+    #[test]
+    fn add_special_tokens_flag_controls_encode() {
+        // WordLevel tokenizer with a TemplateProcessing post-processor that
+        // prepends <bos>. The post-processor only fires when encode is
+        // called with add_special_tokens=true, which is exactly the knob
+        // `TokenizerOptions`/`with_options` exposes.
+        const TOKENIZER_JSON: &str = r#"{
+            "version": "1.0",
+            "truncation": null,
+            "padding": null,
+            "added_tokens": [
+                {"id": 0, "content": "<unk>", "special": true, "single_word": false, "lstrip": false, "rstrip": false, "normalized": false},
+                {"id": 3, "content": "<bos>", "special": true, "single_word": false, "lstrip": false, "rstrip": false, "normalized": false}
+            ],
+            "normalizer": null,
+            "pre_tokenizer": null,
+            "post_processor": {
+                "type": "TemplateProcessing",
+                "single": [
+                    {"SpecialToken": {"id": "<bos>", "type_id": 0}},
+                    {"Sequence": {"id": "A", "type_id": 0}}
+                ],
+                "pair": [
+                    {"SpecialToken": {"id": "<bos>", "type_id": 0}},
+                    {"Sequence": {"id": "A", "type_id": 0}},
+                    {"Sequence": {"id": "B", "type_id": 0}}
+                ],
+                "special_tokens": {
+                    "<bos>": {"id": "<bos>", "ids": [3], "tokens": ["<bos>"]}
+                }
+            },
+            "decoder": null,
+            "model": {
+                "type": "WordLevel",
+                "vocab": {"<unk>": 0, "hello": 1, "world": 2, "<bos>": 3},
+                "unk_token": "<unk>"
+            }
+        }"#;
+
+        let dir = TempDir::new().unwrap();
+        fs::write(dir.path().join("tokenizer.json"), TOKENIZER_JSON).unwrap();
+        let path = dir.path().join("tokenizer.json");
+        let path = path.to_str().unwrap();
+
+        let ids = |enc: &Encoding| match enc {
+            Encoding::Hf(e) => e.get_ids().to_vec(),
+            _ => panic!("expected Hf encoding"),
+        };
+
+        // Default: unchanged historical behavior — no BOS.
+        let plain = HuggingFaceTokenizer::from_file(path).unwrap();
+        assert_eq!(ids(&plain.encode("hello").unwrap()), vec![1]);
+
+        let with_bos = HuggingFaceTokenizer::from_file(path)
+            .unwrap()
+            .with_options(TokenizerOptions {
+                add_special_tokens: true,
+            });
+        assert_eq!(ids(&with_bos.encode("hello").unwrap()), vec![3, 1]);
+        let batch = with_bos.encode_batch(&["hello", "world"]).unwrap();
+        assert_eq!(ids(&batch[0]), vec![3, 1]);
+        assert_eq!(ids(&batch[1]), vec![3, 2]);
+
+        // Same knob through the top-level wrapper: from_file keeps the
+        // historical default, from_file_with_options threads the flag to
+        // construction before the tokenizer goes behind the shared Arc.
+        use crate::Tokenizer as TokenizerWrapper;
+        let wrapper_plain = TokenizerWrapper::from_file(path).unwrap();
+        assert_eq!(ids(&wrapper_plain.encode("hello").unwrap()), vec![1]);
+
+        let wrapper_bos = TokenizerWrapper::from_file_with_options(
+            path,
+            TokenizerOptions {
+                add_special_tokens: true,
+            },
+        )
+        .unwrap();
+        assert_eq!(ids(&wrapper_bos.encode("hello").unwrap()), vec![3, 1]);
     }
 }

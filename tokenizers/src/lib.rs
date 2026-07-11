@@ -130,6 +130,17 @@ pub mod traits {
     }
 
     pub trait Tokenizer: Encoder + Decoder {
+        /// Apply construction-time [`TokenizerOptions`].
+        ///
+        /// The default implementation ignores the options — correct for
+        /// tokenizers with no applicable option.
+        fn with_options(self, options: TokenizerOptions) -> Self
+        where
+            Self: Sized,
+        {
+            let _ = options;
+            self
+        }
         // fn get_vocab_size(&self) -> usize;
         // fn make_unique_clone(&self) -> Box<dyn Tokenizer>;
     }
@@ -217,13 +228,30 @@ impl Encoding {
     }
 }
 
+/// Construction options for [`Tokenizer::from_file_with_options`] /
+/// [`create_tokenizer_from_file`], applied to concrete tokenizers via
+/// [`traits::Tokenizer::with_options`].
+#[derive(Debug, Clone, Copy, Default)]
+pub struct TokenizerOptions {
+    /// Ask the tokenizer to add its declared special tokens (e.g. BOS/EOS via
+    /// the HuggingFace post-processor) during `encode`/`encode_batch`.
+    /// Defaults to `false`, the historical behavior.
+    ///
+    /// Only applicable to HuggingFace tokenizers.
+    pub add_special_tokens: bool,
+}
+
 /// Main tokenizer wrapper that provides a unified interface for different tokenizer implementations
 #[derive(Clone)]
 pub struct Tokenizer(Arc<dyn traits::Tokenizer>);
 
 impl Tokenizer {
     pub fn from_file(file_path: &str) -> Result<Tokenizer> {
-        Ok(Tokenizer(create_tokenizer_from_file(file_path)?))
+        Self::from_file_with_options(file_path, TokenizerOptions::default())
+    }
+
+    pub fn from_file_with_options(file_path: &str, options: TokenizerOptions) -> Result<Tokenizer> {
+        Ok(Tokenizer(create_tokenizer_from_file(file_path, options)?))
     }
 
     /// Create a stateful sequence object for decoding token_ids into text
@@ -265,7 +293,12 @@ where
 /// - json: HuggingFace tokenizer
 /// - model, tiktoken: tiktoken BPE tokenizer (requires `config.json` with a supported
 ///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25)
-pub fn create_tokenizer_from_file(file_path: &str) -> Result<Arc<dyn traits::Tokenizer>> {
+pub fn create_tokenizer_from_file(
+    file_path: &str,
+    options: TokenizerOptions,
+) -> Result<Arc<dyn traits::Tokenizer>> {
+    use traits::Tokenizer as _;
+
     let path = Path::new(file_path);
     let extension = path
         .extension()
@@ -274,11 +307,11 @@ pub fn create_tokenizer_from_file(file_path: &str) -> Result<Arc<dyn traits::Tok
 
     match extension {
         "json" => {
-            let tokenizer = HuggingFaceTokenizer::from_file(file_path)?;
+            let tokenizer = HuggingFaceTokenizer::from_file(file_path)?.with_options(options);
             Ok(Arc::new(tokenizer))
         }
         "model" | "tiktoken" => {
-            let tokenizer = TikTokenTokenizer::from_file_auto(file_path)?;
+            let tokenizer = TikTokenTokenizer::from_file_auto(file_path)?.with_options(options);
             Ok(Arc::new(tokenizer))
         }
         _ => Err(Error::msg(format!(
