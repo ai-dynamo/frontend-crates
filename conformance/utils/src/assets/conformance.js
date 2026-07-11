@@ -275,6 +275,8 @@
     document.querySelectorAll('.tab-panel').forEach(function (panel) {
       if (panelCtl(panel)) { applyCtl(panel); }
     });
+    // Compare model applied — reveal the real colors (see body.cmp-loading CSS).
+    document.body.classList.remove('cmp-loading');
   }
 
   function readDetailed() {
