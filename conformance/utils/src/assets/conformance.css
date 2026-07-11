@@ -162,6 +162,14 @@ body.view-details td.cell.cmp-donly .cmp-marker { color: #9aa1a9; }
 .checkbox-option.cmp-detailed { border: none; background: none; padding: 4px 2px; color: #8a8f98; }
 .checkbox-option.cmp-detailed input { accent-color: #8a8f98; }
 .view-overview .parity-option { display: none; }
+/* The jail tab has no parser perspective, so hide the Parser radios + Conformance
+   toggle while it is active (body.no-parser-perspective, set by the tab JS). */
+.no-parser-perspective .parser-group,
+.no-parser-perspective .parity-option { display: none; }
+/* TC v1 jail tab: per-case green/red of the jail's output now vs golden (#10570).
+   Independent of the parser-radio coloring (this tab has no parser perspective). */
+.view-overview td.cell.jail-ok, .view-details td.cell.jail-ok { background: #76b884; }
+.view-overview td.cell.jail-bad, .view-details td.cell.jail-bad { background: #db7777; }
 .view-overview .details-only { display: none; }
 .view-details .summary-only { display: none; }
 .summary-key { display: inline-block; width: 12px; height: 12px; border: 1px solid rgba(0,0,0,0.22); margin: 0 4px 0 10px; vertical-align: -2px; }

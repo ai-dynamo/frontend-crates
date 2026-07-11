@@ -485,13 +485,55 @@ def _attach_streamv2_batch_expected(cases: dict) -> None:
             case["batch_expected"] = batch_exp.get((family, sub), {})
 
 
-def _derive_stream_expected(case: dict) -> dict:
-    """Assemble case-level {impl: {calls, normal_text}} (or {unavailable}) from
-    the per-chunk `expected.<impl>` deltas and `normal_text.<impl>` fragments.
+def _assemble_stream_block(chunks: list, impl: str) -> dict:
+    """Reconstruct {calls, normal_text} for one impl from its per-chunk deltas.
 
     Tool calls are reconstructed per index: the first delta carrying a `name`
     sets the call name; `arguments` fragments are concatenated and parsed as JSON
     (kept as a raw string if not valid JSON — e.g. a truncated body)."""
+    names: dict[int, str] = {}
+    args: dict[int, str] = {}
+    order: list[int] = []
+    normal = ""
+    for chunk in chunks:
+        chunk_expected = _normalize_impl_mapping(chunk.get("expected") or {})
+        for d in _impl_get(chunk_expected, impl, []) or []:
+            idx = d["index"]
+            if idx not in order:
+                order.append(idx)
+            if d.get("name") is not None:
+                names[idx] = names.get(idx, "") + d["name"]
+            if d.get("arguments") is not None:
+                args[idx] = args.get(idx, "") + d["arguments"]
+        nt = _impl_get(chunk.get("normal_text") or {}, impl)
+        if nt:
+            normal += nt
+    calls = []
+    for idx in order:
+        raw = args.get(idx, "")
+        try:
+            parsed = json.loads(raw) if raw else {}
+        except json.JSONDecodeError:
+            parsed = raw
+        calls.append({"name": names.get(idx, ""), "arguments": parsed})
+    return {"calls": calls, "normal_text": normal}
+
+
+def _impl_has_chunk_data(chunks: list, impl: str) -> bool:
+    return any(
+        impl in _normalize_impl_mapping((chunk.get("expected") or {}))
+        or impl in _normalize_impl_mapping((chunk.get("normal_text") or {}))
+        for chunk in chunks
+        if isinstance(chunk, dict)
+    )
+
+
+def _derive_stream_expected(case: dict) -> dict:
+    """Assemble case-level {impl: {calls, normal_text}} (or {unavailable}) from
+    the per-chunk `expected.<impl>` deltas and `normal_text.<impl>` fragments.
+
+    Also computes `case["jail_raw"]`: the parse-off raw passthrough for the jail
+    (used by the "Show jail" view in the per-chunk chart)."""
     unavailable = case.get("unavailable", {}) or {}
     chunks = case.get("chunks", []) or []
     derived: dict = {}
@@ -500,44 +542,14 @@ def _derive_stream_expected(case: dict) -> dict:
         if impl in unavailable:
             derived[impl] = {"unavailable": unavailable[impl]}
             continue
-        has_chunk_data = any(
-            impl in _normalize_impl_mapping((chunk.get("expected") or {}))
-            or impl in _normalize_impl_mapping((chunk.get("normal_text") or {}))
-            for chunk in chunks
-            if isinstance(chunk, dict)
-        )
+        has_chunk_data = _impl_has_chunk_data(chunks, impl)
         if impl == "vllm_rust" and not has_chunk_data:
             derived[impl] = {"unavailable": VLLM_RUST_UNAVAILABLE}
             continue
         # impl is not in `unavailable` → it was run for this case. Always emit a
         # {calls, normal_text} block, even if empty (emitting zero calls is a real
         # result that may diverge from another impl, not a "not applicable").
-        names: dict[int, str] = {}
-        args: dict[int, str] = {}
-        order: list[int] = []
-        normal = ""
-        for chunk in chunks:
-            chunk_expected = _normalize_impl_mapping(chunk.get("expected") or {})
-            for d in _impl_get(chunk_expected, impl, []) or []:
-                idx = d["index"]
-                if idx not in order:
-                    order.append(idx)
-                if d.get("name") is not None:
-                    names[idx] = names.get(idx, "") + d["name"]
-                if d.get("arguments") is not None:
-                    args[idx] = args.get(idx, "") + d["arguments"]
-            nt = _impl_get(chunk.get("normal_text") or {}, impl)
-            if nt:
-                normal += nt
-        calls = []
-        for idx in order:
-            raw = args.get(idx, "")
-            try:
-                parsed = json.loads(raw) if raw else {}
-            except json.JSONDecodeError:
-                parsed = raw
-            calls.append({"name": names.get(idx, ""), "arguments": parsed})
-        block = {"calls": calls, "normal_text": normal}
+        block = _assemble_stream_block(chunks, impl)
         # Peer divergence from Dynamo parser v2 streaming is captured
         # ground truth, not an un-triaged gap — text vs token streaming differ by
         # design. Tag peer blocks with a reason so the cell shows `S`/`V` (known

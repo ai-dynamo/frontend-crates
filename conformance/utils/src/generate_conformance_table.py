@@ -628,6 +628,21 @@ def _common_legend_html(
         '<li><span style="color:#0a7d2c"><strong>green</strong></span> = the selected <strong>Reference</strong> parser output is clean — no structured markup (tool-call or reasoning) leaked into the visible <code>normal_text</code>. A clean Reference is green whether or not any Compare parser is selected.</li>'
         '<li><span style="color:#b00"><strong>red</strong> (↯)</span> = the Reference parser leaks structured markup (tool-call or reasoning) into the visible <code>normal_text</code>.</li>'
         '<li><span style="color:#aaa"><strong>n/a</strong></span> = the selected Reference is not applicable for this case (for example the Dynamo v2 stream parser is not implemented for this family).</li>'
+        '<li><span style="color:#0a7d2c">=</span> all captured peers match Dynamo Rust.</li>'
+        '<li><span style="color:#8b949e">·</span> Dynamo Rust-only fixture (peers unavailable or not captured).</li>'
+        f'<li><span style="color:#555">{_marker_html("D_rb")}</span> Dynamo Rust v1 batch parser.</li>'
+        f'<li><span style="color:#555">{_marker_html("D_rs")}</span> Dynamo Rust v2 stream parser (parsers_v2).</li>'
+        f'<li><span style="color:#555">{_marker_html("V_pb")}</span> vLLM Python batch parser.</li>'
+        f'<li><span style="color:#555">{_marker_html("V_ps")}</span> vLLM Python stream parser.</li>'
+        f'<li><span style="color:#555">{_marker_html("V_rs")}</span> vLLM Rust stream parser; no <code>V_rb</code> exists.</li>'
+        f'<li><span style="color:#555">{_marker_html("S_rb")}</span> SGLang batch parser.</li>'
+        f'<li><span style="color:#555">{_marker_html("S_rs")}</span> SGLang stream parser.</li>'
+        '<li>A marker means that implementation diverges from the selected parser output; intentional divergences have <code>reason:</code>.</li>'
+        f'<li><span style="color:#b00">?</span> more research needed, for example {_marker_html("V_pb")}? or {_marker_html("S_rs")}? diverges with no <code>reason:</code> yet.</li>'
+        '<li><span style="color:#b00">↯</span> selected parser leaks tool call markup into <code>normal_text</code>; captured peer output can legitimately show imperfect engine behavior.</li>'
+        f'<li><span style="color:#b00">!</span> expected-error suffix, for example {_marker_html("V_pb")}! or {_marker_html("S_rs")}! means the engine crashes by design.</li>'
+        '<li><span style="color:#b00">✗</span> the engine parser ran but <strong>failed to parse</strong> this input (recorded as <code>unavailable: … parser not captured: …</code>); distinct from <span style="color:#aaa">n/a</span> (not run).</li>'
+        '<li><span style="color:#aaa">n/a</span> not applicable.</li>'
         '<li><span style="color:#8a6d3b">—</span> missing fixture coverage.</li>'
         '<li>In the <strong>Detailed</strong> view the number on a cell (with a <span style="color:#8a6d3b">Δ</span> suffix, e.g. <span style="color:#8a6d3b">2Δ</span>) = how many selected <strong>Compare</strong> parsers diverge from the Reference (<span style="color:#0a7d2c">=</span> means every selected Compare matches). A divergence with no <code>explanation:</code> yet is flagged <span style="color:#b00">?</span> (research needed); <span style="color:#b00">!</span> marks an engine that errors by design; <span style="color:#b00">✗</span> means the parser ran but failed to parse.</li>'
         '<li><strong>v1</strong> = the stable batch parser crate (<code>parsers/v1/src/...</code>, <code>dynamo-parsers</code>); <strong>v2</strong> = the WIP streaming parser crate (<code>parsers/v2/src/...</code>, <code>dynamo-parsers-v2</code>).</li>'
@@ -727,6 +742,7 @@ def _dynamo_note_sections(case: dict) -> list[tuple[str, str]]:
     if not note:
         return []
     return [("Dynamo recovery contract", linkify_text_html(str(note)))]
+
 
 
 def _build_tooltip_html(case: dict, dyn, output_kind: str = "batch") -> str:
@@ -2936,6 +2952,156 @@ def _apply_common_legend(panels: list[dict[str, Any]], hrefs: dict[str, str]) ->
         panel["legend_html"] = legend_html
 
 
+def _jail_matches(case: dict) -> bool:
+    """True when the after-#10570 jail output equals the golden (before) output,
+    comparing the WHOLE assembled output: tool calls AND leftover normal_text."""
+    g = case.get("golden") or {}
+    n = case.get("now") or {}
+    return (g.get("calls") or []) == (n.get("calls") or []) and (
+        (g.get("normal_text") or "") == (n.get("normal_text") or "")
+    )
+
+
+def _jail_io_block_html(block, family: str | None) -> str:
+    """The jail's OUTPUT for one case in OpenAI delta terms: `delta.content` (the
+    residual text it passed through) + `delta.tool_calls` (the markup it lifted out
+    into structured calls). Mirrors a ChatCompletionStreamResponse delta."""
+    if not isinstance(block, dict):
+        return html_lib.escape("(no output)")
+    calls = block.get("calls") or []
+    if calls:
+        rendered = ", ".join(
+            f"{c.get('name', '?')}({json.dumps(c.get('arguments', {}), ensure_ascii=False)})"
+            for c in calls
+        )
+        tc_line = html_lib.escape(f"delta.tool_calls=[{rendered}]")
+    else:
+        tc_line = "delta.tool_calls=[]"
+    content_line = f"delta.content='{colorize_markup(block.get('normal_text', '') or '', family)}'"
+    return f"{content_line}\n{tc_line}"
+
+
+def _jail_tooltip_html(case: dict) -> str:
+    family = case.get("__family")
+    cid = case.get("__case_id", "")
+    head = f"{cid} — {family}" if family else cid
+    chunks = case.get("chunks") or []
+    chunk_html = colorize_stream_deltas(chunks, family)
+    lines = []
+    for i, ch in enumerate(chunks):
+        if not isinstance(ch, dict):
+            continue
+        suffix = ""
+        if ch.get("finish_reason"):
+            suffix = " finish_reason=" + html_lib.escape(str(ch["finish_reason"]))
+        # Input is the model stream as deltas: each chunk's text is delta.content.
+        lines.append(f"{i}: delta.content='{chunk_html[i]}'{suffix}")
+    return _build_conformance_tooltip_html(
+        head=head,
+        description=(case.get("description") or "")
+        + " — input deltas (delta.content) → v1 jail → output deltas (delta.content + delta.tool_calls)",
+        input_label="Input (model stream, delta.content per chunk)" if lines else None,
+        input_html="\n".join(lines) if lines else None,
+        output_sections=[
+            ("Jail output — golden (before #10570)", _jail_io_block_html(case.get("golden"), family)),
+            ("Jail output — now (after #10570)", _jail_io_block_html(case.get("now"), family)),
+        ],
+        refs=[("Ref", case.get("ref"))],
+    )
+
+
+def _jail_cell_html(case: dict | None, sub: str) -> str:
+    band = _subcase_band_class("streamv2", sub)
+    col_group = html_lib.escape(_subcase_group_key("streamv2", sub))
+    if not isinstance(case, dict):
+        return f'<td class="cell na {band}" data-col-hide-group="{col_group}"></td>'
+    cls = "jail-ok" if _jail_matches(case) else "jail-bad"
+    return (
+        f'<td class="cell {cls} {band}" data-col-hide-group="{col_group}">'
+        f"{_jail_tooltip_html(case)}</td>"
+    )
+
+
+def _jail_row_html(model: str, family: str, cases: dict, sub_cases: list[str]) -> str:
+    cells = [
+        f'<tr><td class="model" data-col-hide-group="model">{_model_label_html(model)}</td>',
+        _column_placeholder_html("model"),
+        f'<td class="parser" data-col-hide-group="parser">{html_lib.escape(family)}</td>',
+        _column_placeholder_html("parser"),
+    ]
+    for run in _subcase_runs("streamv2", sub_cases):
+        cells.extend(_jail_cell_html(cases.get((family, sub)), sub) for sub in run)
+        cells.append(_column_placeholder_html(_subcase_group_key("streamv2", run[0])))
+    cells.append("</tr>")
+    return "".join(cells)
+
+
+def _jail_panel(hrefs: dict[str, str]) -> dict[str, Any]:
+    """The "TC v1 (stream data on jail)" tab: per-case green/red of the v1 jail's
+    output before vs after #10570, over the same chunk inputs as the v2 stream tab.
+    Green = unchanged by #10570, red = changed. Tooltip shows input/golden/now."""
+    cases, labels = load_all_cases("jail")
+    # Render-time view selector for emitting a before/after page pair.
+    # JAIL_VIEW=after (default): show #10570's output (now), colored red where
+    # it diverges from the golden baseline. JAIL_VIEW=before: show main's
+    # output (golden) by pinning now:=golden, so nothing is red — the baseline
+    # John's PR started from. Used to render CONFORMANCE_v2.{before,after}.html.
+    if os.environ.get("JAIL_VIEW", "after") == "before":
+        for case in cases.values():
+            case["now"] = copy.deepcopy(case.get("golden"))
+    sub_cases = _discover_sub_cases("streamv2", cases)
+    descriptions = _parse_subcase_descriptions("streamv2")
+    top_n, others = _build_display_groups(cases, labels)
+    n_cols = 2 + len(sub_cases)
+    body_rows: list[str] = []
+    if top_n:
+        body_rows.append(f'<tr class="section"><td data-section-span colspan="{n_cols}">Top-N models</td></tr>')
+    body_rows.extend(_jail_row_html(m, f, cases, sub_cases) for m, f in top_n)
+    if others:
+        body_rows.append(f'<tr class="section"><td data-section-span colspan="{n_cols}">Others</td></tr>')
+    body_rows.extend(_jail_row_html(m, f, cases, sub_cases) for m, f in others)
+    return {
+        "id": "tab-toolcalling-jail",
+        "mode": "jail",
+        "label": "TC v1 (stream data on jail)",
+        "label_html": 'TC v1 <span class="tab-sub">(<span class="w-stream">stream</span> data on jail)</span>',
+        "tab_title": "Tool Calling v1 jail: golden (before #10570) vs now (after #10570)",
+        "active": False,
+        "group_headers": _subcase_group_headers_html("streamv2", sub_cases),
+        "sub_headers": _subcase_headers_html("streamv2", sub_cases, descriptions),
+        "body_rows": body_rows,
+        "glossary_groups": _glossary_groups("streamv2", descriptions, sub_cases),
+        "case_section_id": "toolcalling-jail",
+        "case_prefix": "TOOLCALLING.jail.",
+        "case_docs_href": hrefs["toolcalling_streaming_cases"],
+        "case_docs_label": "lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md",
+        "summary_html": (
+            '<span class="summary-key ok" aria-hidden="true"></span>'
+            'green(<span data-overview-count="ok">0</span>) = v1 jail output unchanged by #10570 · '
+            '<span class="summary-key problem" aria-hidden="true"></span>'
+            'red(<span data-overview-count="problem">0</span>) = changed by #10570 · '
+            '<span class="summary-key na" aria-hidden="true"></span>'
+            'gray(<span data-overview-count="na">0</span>) = no jail capture (n/a).'
+        ),
+        "parser_options": (),
+        "toolbar_desc": (
+            'Parser: <strong>v1</strong> Dynamo streaming jail (lib/llm) · Input: <strong>v2</strong> stream '
+            f'fixtures (<a href="{hrefs["toolcalling_stream_fixtures"]}">conformance/toolcalling/fixtures-stream-v2/</a>). '
+            '<span style="color:#0a7d2c">green</span> = jail output unchanged by ai-dynamo/dynamo#10570; '
+            '<span style="color:#b00">red</span> = changed. Hover a cell for input / golden (before) / now (after).'
+        ),
+        "legend_html": (
+            "<p><strong>Legend:</strong> "
+            '<span style="color:#0a7d2c">green</span> = the v1 jail produces the same output now (after '
+            "ai-dynamo/dynamo#10570) as the recorded golden (before #10570); "
+            '<span style="color:#b00">red</span> = #10570 changed the output; '
+            '<span style="color:#aaa">n/a</span> = no jail capture for this case. '
+            "Hover a cell to see the input chunks, the golden output, and the current output.</p>"
+        ),
+        "parity_explainer_html": "",
+    }
+
+
 def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
     panels = []
 
@@ -3012,8 +3178,18 @@ def _combined_toolcalling_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
     )
     panels.append(stream_panel)
 
+    # --- Dynamo v1 streaming jail tab ---
+    # Dedicated tab: golden (before #10570) vs now (after #10570) over v2 stream
+    # chunk inputs. Sits right after the TC v1 batch tab so the two v1 tabs are
+    # adjacent, ahead of the v2 tabs.
+    jail_panel = _jail_panel(hrefs)
+    jail_legend = jail_panel["legend_html"]
+    panels.insert(1, jail_panel)
 
     _apply_common_legend(panels, hrefs)
+    # _apply_common_legend overwrites every panel's legend with the v2 marker legend;
+    # restore the jail tab's own green/red legend.
+    jail_panel["legend_html"] = jail_legend
     return panels
 
 

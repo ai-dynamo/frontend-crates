@@ -482,8 +482,8 @@ def test_sob_cell_two_dimensions_color_and_cross_engine_marker() -> None:
     assert m[f"data-marker-parity-{D}"] == "D_rsV_psS_rs"
     assert m[f"data-marker-parity-{V}"] == "D_rs"
     assert m[f"data-marker-parity-{S}"] == "S_rsD_rs"
-    assert "D<sub>RS</sub>V<sub>PS</sub>S<sub>RS</sub>" in html
-    assert "V<sub>RB</sub>" not in html
+    # Numeric per-engine subscripts: D_rs->D2, V_ps->V1, S_rs->S2, D_rb->D1, S_rb->S1.
+    assert "D<sub>2</sub>V<sub>1</sub>S<sub>2</sub>" in html
     assert "\u1d66" not in html
     # Compare model: coloring is leak-only, so the global cross-impl
     # "X output diverges from X batch" blob is gone (it named engines regardless of
@@ -495,7 +495,7 @@ def test_sob_cell_two_dimensions_color_and_cross_engine_marker() -> None:
     )
     stream_markers = _markers(stream_html)
     assert stream_markers[f"data-marker-parity-{D}"] == "D_rsV_psS_rs"
-    assert "V<sub>PS</sub>S<sub>RS</sub>" in stream_html
+    assert "V<sub>1</sub>S<sub>2</sub>" in stream_html
 
 
 def test_sob_marker_all_consistent_is_equals_and_green() -> None:

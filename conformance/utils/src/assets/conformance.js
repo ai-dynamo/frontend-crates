@@ -300,6 +300,7 @@
     window.history.replaceState(null, '', url.toString());
   }
 
+
   function activeParser() {
     const checked = parserRadios.find(function (radio) {
       return radio.checked;
@@ -316,12 +317,21 @@
       panel.querySelectorAll('td.cell').forEach(function (cell) {
         // Skip cloned cells in the transposed mirror; they'd double the tally.
         if (cell.closest('[data-transpose-table]')) { return; }
-        const alias = legacyParserAliases[parser];
-        // On a versioned tab, prefer the active version's status; fall back to the
-        // pinned attr (and legacy alias) for cells without per-version data.
-        const status = (versioned && slug && cell.getAttribute('data-status-' + parser + '-' + slug))
-          || cell.getAttribute('data-status-' + parser)
-          || (alias ? cell.getAttribute('data-status-' + alias) : null) || 'na';
+        // The jail tab colors cells by jail-ok/jail-bad (golden vs now), not by the
+        // parser-keyed data-status, so count those directly.
+        let status;
+        if (cell.classList.contains('jail-ok')) {
+          status = 'ok';
+        } else if (cell.classList.contains('jail-bad')) {
+          status = 'problem';
+        } else {
+          const alias = legacyParserAliases[parser];
+          // On a versioned tab, prefer the active version's status; fall back to the
+          // pinned attr (and legacy alias) for cells without per-version data.
+          status = (versioned && slug && cell.getAttribute('data-status-' + parser + '-' + slug))
+            || cell.getAttribute('data-status-' + parser)
+            || (alias ? cell.getAttribute('data-status-' + alias) : null) || 'na';
+        }
         counts[status] = (counts[status] || 0) + 1;
       });
       panel.querySelectorAll('[data-overview-count]').forEach(function (el) {
@@ -558,6 +568,13 @@
   }
 
   function syncParserOptions(shouldUpdateUrl) {
+    // A panel with an empty data-parser-options (the jail tab) has no parser
+    // perspective: hide the Parser radios + Conformance toggle for it.
+    const activePanel = tabPanels.find(function (panel) {
+      return panel.classList.contains('active');
+    });
+    const noPerspective = !!activePanel && (activePanel.dataset.parserOptions || '').trim() === '';
+    document.body.classList.toggle('no-parser-perspective', noPerspective);
     const allowed = new Set(activePanelParserOptions());
     parserRadios.forEach(function (radio) {
       const isAllowed = allowed.has(radio.value);

@@ -339,8 +339,20 @@ def _parser_marker_attrs(
     return " ".join(attrs)
 
 
+# Per-engine numeric marker labels. The subscript is a small per-engine index over
+# the engine's (parser, mode) variants rather than a language+mode code, so the
+# markers read D1/D2, V1/V2/V3, S1/S2 (narrower, and the language detail lives in
+# the legend). Keyed by (visible engine letter, language+mode suffix).
+_MARKER_NUMBER: dict[tuple[str, str], str] = {
+    ("D", "rb"): "1", ("D", "rs"): "2",
+    ("V", "pb"): "0", ("V", "ps"): "1", ("V", "rs"): "2",
+    ("S", "rb"): "1", ("S", "rs"): "2",
+}
+
+
 def _marker_html(marker: str) -> str:
-    """Render marker suffixes like `V_ps` and `D_rb` with real HTML subscript."""
+    """Render marker suffixes like `V_ps` and `D_rb` as letter + numeric subscript
+    (e.g. V2, D1) via _MARKER_NUMBER; falls back to the uppercased suffix."""
     parts: list[str] = []
     i = 0
     while i < len(marker):
@@ -353,7 +365,8 @@ def _marker_html(marker: str) -> str:
                 suffix = match.group(0)[1:]
                 marker_len += len(match.group(0))
             if suffix is not None:
-                parts.append(f"{html_lib.escape(ch)}<sub>{html_lib.escape(suffix.upper())}</sub>")
+                label = _MARKER_NUMBER.get((ch, suffix), suffix.upper())
+                parts.append(f"{html_lib.escape(ch)}<sub>{html_lib.escape(label)}</sub>")
                 i += marker_len
                 continue
         parts.append(html_lib.escape(ch))
@@ -422,7 +435,8 @@ def _impl_mode_letter(impl: str) -> str:
 
 
 def _impl_mode_marker_html(impl: str, mode: str) -> str:
-    return f"{_impl_mode_letter(impl)}<sub>{html_lib.escape(IMPL_LANG_MARKER[impl].upper() + mode.upper())}</sub>"
+    # Route through _marker_html so the numeric subscript scheme (D1/V2/…) is shared.
+    return _marker_html(f"{_impl_mode_letter(impl)}{_impl_mode_suffix(impl, mode)}")
 
 
 def _impl_mode_label_html(impl: str, mode: str) -> str:
