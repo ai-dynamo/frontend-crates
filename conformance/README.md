@@ -11,6 +11,12 @@ Parser conformance fixtures, fixture-based Rust tests, and HTML renderers for fr
 
 Parser v1/v2 terminology, migration steps, fixture ownership, and temporary sync rules are documented in [`../docs/PARSERS-V2-MIGRATION-PLAN.md`](../docs/PARSERS-V2-MIGRATION-PLAN.md). New streaming parser authors should also read [`../parsers/v2/README.md`](../parsers/v2/README.md); it explains the vLLM-shaped Rust parser contract, the v2 fixture schema, and the exact `conformance/toolcalling/*` files to add. This README covers conformance layout, render outputs, and test commands.
 
+## Parser paths and modes (universal convention)
+
+- **Dynamo v1** = the batch parser, used two ways: **batch** (the complete text parsed in one call) and **jail+batch** (streaming input is buffered — "jailed" — until a call completes, then batch-parsed and emitted all at once). The jail never streams a call's name/arguments incrementally; only text outside the jail passes through as it arrives.
+- **Dynamo v2** = the **streaming** parser (primary mode): emits text and tool-call deltas per chunk, as input arrives. It can also take batch input (the whole text fed as one chunk) — the `batch-on-stream` rows.
+- In the rendered tables, the TC (stream) tab's **default Reference is Dynamo v1 (jail+batch)** — the one stream path with coverage on every family — so every row shows data by default. Star **Dynamo v2** as the Reference to see v2's streaming coverage; families v2 doesn't implement yet gray out as "not implemented".
+
 ## Layout
 
 ```
@@ -20,7 +26,7 @@ conformance/
 └── utils/                                         # render, check, and record helpers
 ```
 
-Fixture YAMLs are NOT in the repo. They live on HuggingFace (`ai-dynamo/conformance-fixtures`, public) and are downloaded automatically on first use. HF snapshot layout:
+Fixture YAMLs are NOT in the repo. They live on HuggingFace (`ai-dynamo/conformance-fixtures`, private — set a read-capable `HF_TOKEN`) and are downloaded automatically on first use. HF snapshot layout:
 
 ```
 toolcalling/fixtures-batch-v1/<family>/           # v1 tool-calling batch cases
