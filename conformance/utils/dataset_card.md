@@ -35,10 +35,10 @@ This dataset is ready for commercial or non-commercial uses.
 NVIDIA Corporation
 
 ## Dataset Creation Date:
-July 2026 (snapshot `20260708_190827`)
+{{CREATED_PT}} (snapshot `{{STAMP}}`)
 
 ## Version:
-`20260708_190827` — peers: vLLM 0.24.0, SGLang 0.5.14; Dynamo parser crates dynamo-parsers 4.1.x / dynamo-parsers-v2 0.1.x. <br>
+`{{STAMP}}` — peers: {{PEERS}}; Dynamo parser crates {{CRATES}}. <br>
 
 Previous Version(s): earlier dated snapshots were used internally; no prior public versions are published.
 
