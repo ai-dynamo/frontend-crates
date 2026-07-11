@@ -53,15 +53,17 @@ For NVIDIA Dynamo developers and contributors to run **parser conformance and re
 * Hybrid: Manually Collected, Synthetic, Automated <br>
 Hand-authored cases; fuzzer/randomizer-generated cases (a chunking-invariance harness); and expected outputs captured automatically by running the parser implementations. Some cases are adapted from the open-source vLLM and SGLang test suites (attributed per fixture). No data is scraped from users; no real user conversations are included.
 
-** Labeling Method<br>
+** Labeling Method (here: expected-output authoring)<br>
 * Hybrid: Manually-Labelled, Automated <br>
-The "label" for each case is its expected parser output, produced either by hand-authoring the intended result or by capturing the actual parser output at pinned engine versions.
+The "label" for each case is its expected parser output — the structured result a parser implementation must produce for a given input. Labels are produced either by hand-authoring the intended result or by capturing the actual parser output at pinned engine versions.
 
 ## Dataset Format
 Text. YAML (`.yaml`) test-fixture files, distributed as gzip tarballs (`.tar.gz`) pinned by an in-repo SHA-256 manifest.
 
 ## Dataset Quantification
 ~504 authored fixture files / ~1,967 test cases, plus per-engine-version expected-output overlays. Distributed as versioned `.tar.gz` shards plus a single monolith snapshot. A few megabytes total (well under 100 MB).
+
+Feature Count: N/A — test fixtures, not an ML dataset.
 
 ## Reference(s):
 * NVIDIA Dynamo — https://github.com/ai-dynamo/dynamo (the `conformance/` fixtures and `parsers/` crates)
