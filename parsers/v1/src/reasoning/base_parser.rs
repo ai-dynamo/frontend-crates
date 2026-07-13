@@ -53,6 +53,22 @@ fn overlap(s: &str, delim: &str) -> usize {
     0
 }
 
+fn earliest_marker_offset(s: &str, markers: &[String]) -> Option<usize> {
+    markers
+        .iter()
+        .filter(|marker| !marker.is_empty())
+        .filter_map(|marker| s.find(marker))
+        .min()
+}
+
+fn max_marker_overlap(s: &str, markers: &[String]) -> usize {
+    markers
+        .iter()
+        .map(|marker| overlap(s, marker))
+        .max()
+        .unwrap_or(0)
+}
+
 #[derive(Default, Debug, Clone)]
 pub struct BasicReasoningParser {
     think_start_token: String,
@@ -70,10 +86,10 @@ pub struct BasicReasoningParser {
     /// ends for every delimiter pair already; this flag only gates the
     /// streaming path so existing `<think>` stray-close stripping is preserved.
     recover_dangling_end: bool,
-    /// Optional marker that force-exits reasoning mode when encountered inside a
+    /// Optional markers that force-exit reasoning mode when encountered inside a
     /// reasoning block (e.g. Kimi-K2/K2.5 models sometimes emit
     /// `<|tool_calls_section_begin|>` without first closing `</think>`).
-    tool_start_token: Option<String>,
+    tool_start_tokens: Vec<String>,
 }
 
 impl BasicReasoningParser {
@@ -91,14 +107,17 @@ impl BasicReasoningParser {
             _buffer: String::new(),
             stripped_think_start: false,
             recover_dangling_end: false,
-            tool_start_token: None,
+            tool_start_tokens: Vec::new(),
         }
     }
 
     /// Enables force-exit from reasoning when `token` appears inside an open reasoning
     /// block.
     pub fn with_tool_start_token(mut self, token: impl Into<String>) -> Self {
-        self.tool_start_token = Some(token.into());
+        let token = token.into();
+        if !token.is_empty() {
+            self.tool_start_tokens.push(token);
+        }
         self
     }
 
@@ -148,10 +167,7 @@ impl ReasoningParser for BasicReasoningParser {
 
         // If force_reasoning and no start tag, no end tag, and no tool-start marker,
         // treat entire text as reasoning.
-        let has_tool_start = self
-            .tool_start_token
-            .as_deref()
-            .is_some_and(|tok| text.contains(tok));
+        let has_tool_start = earliest_marker_offset(text, &self.tool_start_tokens).is_some();
         if self._in_reasoning
             && !has_think_tag
             && !text.contains(&self.think_end_token)
@@ -188,10 +204,7 @@ impl ReasoningParser for BasicReasoningParser {
                 // Look for the earliest reasoning exit point: either </think> or the
                 // optional tool_start_token (force-exit case).
                 let end_offset = text[cursor..].find(&self.think_end_token);
-                let tool_offset = self
-                    .tool_start_token
-                    .as_deref()
-                    .and_then(|tok| text[cursor..].find(tok));
+                let tool_offset = earliest_marker_offset(&text[cursor..], &self.tool_start_tokens);
 
                 match (end_offset, tool_offset) {
                     (Some(e), Some(t)) if t < e => {
@@ -316,10 +329,7 @@ impl ReasoningParser for BasicReasoningParser {
 
             if self._in_reasoning {
                 let end_idx = current_text.find(self.think_end_token.as_str());
-                let tool_idx = self
-                    .tool_start_token
-                    .as_deref()
-                    .and_then(|tok| current_text.find(tok));
+                let tool_idx = earliest_marker_offset(&current_text, &self.tool_start_tokens);
 
                 // Prefer whichever marker appears first. If only one is present, use it.
                 let force_exit_idx = match (end_idx, tool_idx) {
@@ -352,11 +362,7 @@ impl ReasoningParser for BasicReasoningParser {
                     // force-exit marker isn't split into reasoning text.
                     if self.stream_reasoning {
                         let ol_end = overlap(&current_text, &self.think_end_token);
-                        let ol_tool = self
-                            .tool_start_token
-                            .as_deref()
-                            .map(|tok| overlap(&current_text, tok))
-                            .unwrap_or(0);
+                        let ol_tool = max_marker_overlap(&current_text, &self.tool_start_tokens);
                         let ol = ol_end.max(ol_tool);
                         if ol >= 2 {
                             let safe_end = current_text.len() - ol;

@@ -69,6 +69,7 @@ fn get_reasoning_parser_map() -> &'static HashMap<&'static str, ReasoningParserT
             "minimax_append_think",
             ReasoningParserType::MiniMaxAppendThink,
         );
+        map.insert("minimax_m2", ReasoningParserType::MiniMaxM2);
         // MiniMax M3 thinking blocks use `<mm:think>...</mm:think>`. The chat
         // template pre-fills the opener, so the completion typically emits only
         // the closing marker; dangling-end recovery handles that.
@@ -172,6 +173,9 @@ pub enum ReasoningParserType {
     Mistral,
     Granite,
     MiniMaxAppendThink,
+    /// MiniMax M2 emits reasoning from token one and may transition directly
+    /// into its XML tool-call envelope without a closing reasoning marker.
+    MiniMaxM2,
     /// MiniMax M3 thinking models. `<mm:think>...</mm:think>` delimiters with
     /// streaming dangling-end recovery (the chat template pre-fills the opener).
     MiniMaxM3,
@@ -282,6 +286,13 @@ impl ReasoningParserType {
             ReasoningParserType::MiniMaxAppendThink => ReasoningParserWrapper {
                 parser: Box::new(MiniMaxAppendThinkParser::new()),
             },
+            ReasoningParserType::MiniMaxM2 => ReasoningParserWrapper {
+                parser: Box::new(
+                    BasicReasoningParser::new("<think>".into(), "</think>".into(), true, true)
+                        .with_tool_start_token("<minimax:tool_call>")
+                        .with_tool_start_token("<invoke name="),
+                ),
+            },
             ReasoningParserType::MiniMaxM3 => ReasoningParserWrapper {
                 parser: Box::new(
                     BasicReasoningParser::new(
@@ -349,6 +360,7 @@ mod tests {
             "nemotron_v3",
             "glm45",
             "minimax_append_think",
+            "minimax_m2",
             "minimax_m3",
             "minimax-m3",
             "gemma4",
@@ -357,6 +369,65 @@ mod tests {
         for parser in available_parsers {
             assert!(parsers.contains(&parser));
         }
+    }
+
+    #[test] // MiniMax M2
+    fn test_minimax_m2_force_reasoning_and_tool_transition() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m2");
+        let result = parser.detect_and_parse_reasoning(
+            "I should call weather.</think><minimax:tool_call><invoke name=\"get_weather\"></invoke></minimax:tool_call>",
+            &[],
+        );
+
+        assert_eq!(result.reasoning_text, "I should call weather.");
+        assert_eq!(
+            result.normal_text,
+            "<minimax:tool_call><invoke name=\"get_weather\"></invoke></minimax:tool_call>"
+        );
+    }
+
+    #[test] // MiniMax M2
+    fn test_minimax_m2_tool_start_exits_force_reasoning() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m2");
+        let tool_call =
+            "<minimax:tool_call><invoke name=\"get_weather\"></invoke></minimax:tool_call>";
+        let result = parser.detect_and_parse_reasoning(tool_call, &[]);
+
+        assert_eq!(result.reasoning_text, "");
+        assert_eq!(result.normal_text, tool_call);
+    }
+
+    #[test] // MiniMax M2
+    fn test_minimax_m2_bare_invoke_exits_force_reasoning() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m2");
+        let tool_call =
+            "<invoke name=\"get_weather\"><parameter name=\"city\">NYC</parameter></invoke>";
+        let result =
+            parser.detect_and_parse_reasoning(&format!("I should call weather.{tool_call}"), &[]);
+
+        assert_eq!(result.reasoning_text, "I should call weather.");
+        assert_eq!(result.normal_text, tool_call);
+    }
+
+    #[test] // MiniMax M2
+    fn test_minimax_m2_bare_invoke_streaming_exits_force_reasoning() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m2");
+
+        let r1 = parser.parse_reasoning_streaming_incremental("I should call ", &[]);
+        assert_eq!(r1.reasoning_text, "I should call ");
+        assert_eq!(r1.normal_text, "");
+
+        let r2 = parser.parse_reasoning_streaming_incremental("weather.<invoke na", &[]);
+        assert_eq!(r2.reasoning_text, "weather.");
+        assert_eq!(r2.normal_text, "");
+
+        let tail = "me=\"get_weather\"><parameter name=\"city\">NYC</parameter></invoke>";
+        let r3 = parser.parse_reasoning_streaming_incremental(tail, &[]);
+        assert_eq!(r3.reasoning_text, "");
+        assert_eq!(
+            r3.normal_text,
+            "<invoke name=\"get_weather\"><parameter name=\"city\">NYC</parameter></invoke>"
+        );
     }
 
     #[test] // MiniMax M3
