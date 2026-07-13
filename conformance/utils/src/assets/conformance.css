@@ -87,6 +87,9 @@ tr.section td { background: #eef; font-weight: bold; text-align: left; }
 .cmprow.cmphd { padding-bottom: 3px; margin-bottom: 3px; border-bottom: 1px solid #e3e8ee; }
 .cmphd-ref, .cmphd-cmp { font-size: 9px; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.03em; color: #8a95a3; text-align: center; }
+/* "COMPARE WITH" is too wide for the 26px checkbox column, so let the header span
+   into the (empty) label column and left-align it over the checkboxes. */
+.cmphd-cmp { grid-column: 2 / 4; text-align: left; white-space: nowrap; padding-left: 3px; }
 .cmprow-ref, .cmprow-cmp { position: relative; display: flex; justify-content: center;
   align-items: center; margin: 0; cursor: pointer; }
 .cmprow input.cmp-on { margin: 0; cursor: pointer; }
@@ -102,9 +105,19 @@ tr.section td { background: #eef; font-weight: bold; text-align: left; }
   text-overflow: ellipsis; padding-left: 4px; }
 .cmprow.is-ref { background: #eef4fc; }
 .cmprow.is-ref .cmprow-label { font-weight: 700; color: #174a86; }
+/* Mode word coding in candidate labels: (batch) maroon, (stream) NVIDIA green. */
+.cmprow-label .cand-batch { color: #800000; }
+.cmprow-label .cand-stream { color: #15803d; }
 /* The Reference's Compare box is checked + locked (can't be unchecked) — keep it
  * clearly visible (pressed), just slightly muted to read as locked. */
 .cmprow input.cmp-on:disabled { opacity: 0.55; }
+/* Overview (non-Detailed) cells show only leak color, which depends solely on the
+ * Reference — the Compare-with count is a Details-only marker. So hide the CMP
+ * column entirely in Overview and keep just the Reference picker (REF), collapsing
+ * the row to two tracks. Compare selections are preserved and reappear in Details. */
+body.view-overview .cmpctl .cmphd-cmp,
+body.view-overview .cmpctl .cmprow-cmp { display: none; }
+body.view-overview .cmpctl .cmprow { grid-template-columns: 26px 1fr; }
 /* Cells: compare coloring wins over the dormant parser-status rules (!important).
  * Numbers are not bold. */
 .cmp-marker { position: absolute; inset: 0; display: none; align-items: center;
@@ -151,8 +164,6 @@ body.view-details td.cell.cmp-donly .cmp-marker { color: #9aa1a9; }
 .view-overview .parity-option { display: none; }
 .view-overview .details-only { display: none; }
 .view-details .summary-only { display: none; }
-.parity-explainer { display: none; }
-.view-details.parity-mode .parity-explainer { display: block; }
 .summary-key { display: inline-block; width: 12px; height: 12px; border: 1px solid rgba(0,0,0,0.22); margin: 0 4px 0 10px; vertical-align: -2px; }
 .summary-key:first-of-type { margin-left: 0; }
 .summary-key.ok { background: #76b884; }
@@ -197,7 +208,7 @@ body.view-details td.cell.cmp-donly .cmp-marker { color: #9aa1a9; }
 /* Smaller-font parenthetical in tab labels, with "batch"/"stream" color-coded so the
    data axis and parser axis read at a glance. */
 .tab-button .tab-sub { font-size: 0.82em; font-weight: 400; }
-.tab-button .w-batch { color: #7c3aed; }
+.tab-button .w-batch { color: #800000; }
 .tab-button .w-stream { color: #15803d; }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
@@ -305,3 +316,70 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 .tt-h-call { color: #fb923c; }
 .tt-h-stop { color: #f87171; }
 .tt-h-other { color: #22d3ee; }
+
+/* ---- Transpose view (DIS-2280) ----
+   A client-side transposed mirror of the conformance table: models become
+   columns (names rotated CCW 90°, bottom-up, to save horizontal space) and
+   test cases become rows. The transposed <table> is built in JS by cloning the
+   server-rendered cells, so every data cell keeps its data-cmp payload and the
+   compare engine (applyCtl) recolors it for free — the mirror lives in the same
+   panel, so applyCtl's cell query already covers it. */
+.transpose-table { display: none; }
+body.transpose-mode .tab-panel.active table[data-parity-table]:not([data-transpose-table]) { display: none; }
+body.transpose-mode .tab-panel.active .transpose-table { display: table; }
+/* Bottom-up vertical model headers (rotated CCW). Keep the container horizontal
+   and rotate each line independently; otherwise the model and family spans share
+   one vertical writing-mode box and the shorter line cannot bottom-align itself. */
+.transpose-table th.tcol-model {
+  background: #f5f5f5;
+  text-align: center;
+  padding: 6px 2px 0.5em;
+  vertical-align: bottom;
+  font-family: -apple-system, system-ui, sans-serif;
+  font-size: 12px;
+  position: relative;
+}
+.transpose-table th.tcol-model:hover,
+.transpose-table th.tcol-model:focus-within { z-index: 2000; }
+.transpose-table .tcol-model-inner { display: inline-block; vertical-align: bottom; }
+.transpose-table th.tcol-model .tcol-model-label {
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0;
+  vertical-align: bottom;
+}
+.transpose-table .tcol-model-line,
+.transpose-table .tcol-model-name,
+.transpose-table .tcol-model-family {
+  writing-mode: sideways-lr;
+  white-space: nowrap;
+  display: inline-block;
+  line-height: 1;
+}
+.transpose-table .tcol-model-name { font-weight: 600; }
+/* No forced color: the cloned parser markup keeps its own styling (the parser-
+   source link stays clickable, the parser-base text stays muted). */
+.transpose-table .tcol-model-family { font-size: 11px; font-family: ui-monospace, monospace; }
+.transpose-table .tcol-model-family a { color: inherit; text-decoration: none; }
+.transpose-table .tcol-model-family a:hover { text-decoration: underline; }
+/* Width is view-dependent: Overview shows only a color block, so narrow the model
+   columns hard; Details shows the compare marker text, so let each column
+   shrink-wrap to its content (make the marker in-flow, click-anchor out of flow). */
+body.view-overview .transpose-table td.cell,
+body.view-overview .transpose-table th.tcol-model { width: 30px; min-width: 30px; max-width: 30px; }
+body.view-details .transpose-table td.cell,
+body.view-details .transpose-table th.tcol-model { width: auto; min-width: 22px; max-width: none; }
+body.view-details .transpose-table td.cell { padding: 3px 2px; }
+body.view-details .transpose-table td.cell .cell-marker,
+body.view-details .transpose-table td.cell .cmp-marker { position: static; }
+body.view-details .transpose-table td.cell > a { position: absolute; inset: 0; }
+.transpose-table th.tcorner-case,
+.transpose-table th.tsection-col { background: #f5f5f5; vertical-align: bottom; }
+.transpose-table th.tsection-col { font-family: -apple-system, system-ui, sans-serif; font-size: 12px; }
+.transpose-table th.trow-case { white-space: nowrap; text-align: left; font-weight: 600; }
+.transpose-table th.trow-case a { color: inherit; text-decoration: none; }
+.transpose-table th.trow-case a:hover { background: #ffd; }
+/* Case-group banner rows reuse the original tr.section band, but centered: in the
+   transposed layout they span the full model width, so left-aligned reads lost. */
+.transpose-table tr.section td { background: #eef; font-weight: bold; text-align: center; padding-left: 0.5ch; padding-right: 0.5ch; }

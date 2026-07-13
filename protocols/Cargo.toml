@@ -11,7 +11,7 @@
 [package]
 name = "dynamo-protocols"
 readme = "README.md"
-version = "2.0.1"
+version = "2.0.2"
 edition.workspace = true
 description = "Protocol types for OpenAI-compatible inference APIs with inference-serving extensions."
 authors.workspace = true

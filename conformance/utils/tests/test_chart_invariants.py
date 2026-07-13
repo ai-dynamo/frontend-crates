@@ -86,8 +86,13 @@ def _panel(html: str, panel_id: str, all_ids: tuple[str, ...]) -> str:
 
 
 def _candidates(segment: str) -> list[str]:
-    """Compare-bar candidate labels (chips) within a panel segment."""
-    return re.findall(r'data-cand="[^"]*"[^>]*>([^<]+)</', segment)
+    """Compare-bar candidate labels (chips) within a panel segment. A label may carry
+    one level of inline markup (the colored (batch)/(stream) mode word), so capture the
+    whole label span — allowing a nested <span> — and strip tags for the visible text."""
+    raw = re.findall(
+        r'data-cand="[^"]*"[^>]*>((?:[^<]|<span[^>]*>[^<]*</span>)*)</span>', segment
+    )
+    return [re.sub(r"<[^>]+>", "", r).strip() for r in raw]
 
 
 # A candidate label is "<Engine> <Runtime> <version> (<mode>)". The version token

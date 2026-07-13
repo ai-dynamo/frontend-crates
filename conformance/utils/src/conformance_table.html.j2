@@ -21,6 +21,7 @@
 {% endfor %}
 <span class="tabs-right">
   <label class="checkbox-option cmp-detailed"><input type="checkbox" data-view-detailed> Detailed</label>
+  <label class="checkbox-option cmp-transpose"><input type="checkbox" data-transpose-toggle> Transpose</label>
   <button type="button" class="cmp-reset" data-reset title="Clear all selections and reload defaults">Reset</button>
 </span>
 </div>
@@ -30,7 +31,7 @@
 {% if panel.candidates %}
 {% include "_compare_bar.html.j2" %}
 {% endif %}
-<table data-parity-table>
+<table data-parity-table data-case-prefix="{{ panel.case_prefix|default('')|e }}" data-mode="{{ panel.mode|default('')|e }}">
 <thead>
 <tr>{{ panel.group_headers|safe }}</tr>
 <tr>{{ panel.sub_headers|safe }}</tr>
@@ -99,16 +100,6 @@
   <p class="versions">{{ panel.captured_note|e }}</p>
 {% endif %}
 </div>
-<p class="legend details-only parity-explainer">
-{% if panel.parity_explainer_html is defined and panel.parity_explainer_html %}
-  {{ panel.parity_explainer_html|safe }}
-{% else %}
-  <strong>Conformance:</strong>
-  <span style="color:#0a7d2c">=</span> all available outputs match ·
-  <span style="color:#555">D<sub>RB</sub></span> (Dynamo Rust batch parser) / <span style="color:#555">V<sub>PB</sub></span> (vLLM Python batch parser) / <span style="color:#555">S<sub>RB</sub></span> (SGLang batch parser) names output that differs from the selected parser ·
-  multiple markers mean multiple peer outputs differ from the selected parser.
-{% endif %}
-</p>
 <p class="stats details-only">
   Stats: {{ panel.stats.families }} families × {{ panel.stats.sub_cases }} sub-cases
   = {{ panel.stats.slots }} grid slots ({{ panel.stats.na }} n/a, {{ panel.stats.missing }} missing).

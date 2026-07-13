@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.1.18](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.1.17...dynamo-parsers-v2-v0.1.18) - 2026-07-11
+
+### Bug fixes
+
+- Relax tokio pin =1.48.0 -> 1.48 so consumers can build on tokio 1.52.3+ ([#113](https://github.com/ai-dynamo/frontend-crates/pull/113))
+
+## [0.1.17](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.1.16...dynamo-parsers-v2-v0.1.17) - 2026-07-10
+
+### Miscellaneous
+
+- Updated the following local packages: dynamo-parsers
+
 ## [0.1.16](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.1.15...dynamo-parsers-v2-v0.1.16) - 2026-07-08
 
 ### Features

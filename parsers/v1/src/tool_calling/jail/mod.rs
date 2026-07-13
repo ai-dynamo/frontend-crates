@@ -92,6 +92,16 @@ impl ChoiceEmission {
         }
     }
 
+    /// Get immutable access to the underlying choice.
+    fn choice(&self) -> &ChatChoiceStream {
+        match self {
+            ChoiceEmission::PassThrough(choice) => choice,
+            ChoiceEmission::ToolCall(choice) => choice,
+            ChoiceEmission::Content(choice) => choice,
+            ChoiceEmission::Trailing(choice) => choice,
+        }
+    }
+
     /// Get mutable access to the underlying choice.
     fn choice_mut(&mut self) -> &mut ChatChoiceStream {
         match self {
@@ -100,6 +110,19 @@ impl ChoiceEmission {
             ChoiceEmission::Content(choice) => choice,
             ChoiceEmission::Trailing(choice) => choice,
         }
+    }
+
+    fn is_whitespace_only_content(&self) -> bool {
+        let choice = self.choice();
+        choice.delta.tool_calls.as_ref().is_none_or(Vec::is_empty)
+            && choice.delta.function_call.is_none()
+            && choice.delta.refusal.is_none()
+            && choice.delta.reasoning_content.is_none()
+            && matches!(
+                &choice.delta.content,
+                Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(content))
+                    if content.trim().is_empty()
+            )
     }
 }
 
@@ -444,6 +467,75 @@ impl ChoiceJailState {
         self.accumulated_logprobs = None;
         self.completion_progress.reset();
         std::mem::take(&mut self.accumulated_content)
+    }
+
+    /// Transfer an upstream terminal reason to exactly one emitted choice.
+    ///
+    /// One terminal engine delta can split into a parsed tool call and trailing
+    /// content. Both emissions are derived from the same base choice, so without
+    /// normalization both inherit its finish reason. Terminal formatting
+    /// whitespace after a tool call is also parser framing rather than assistant
+    /// content and should not become a second content delta.
+    fn normalize_terminal_emissions(
+        &self,
+        choice: &ChatChoiceStream,
+        had_tool_calls_before: bool,
+        emissions: &mut Vec<ChoiceEmission>,
+    ) {
+        let Some(finish_reason) = choice.finish_reason else {
+            return;
+        };
+
+        let mut saw_tool_call = had_tool_calls_before;
+        emissions.retain(|emission| {
+            if emission
+                .choice()
+                .delta
+                .tool_calls
+                .as_ref()
+                .is_some_and(|tool_calls| !tool_calls.is_empty())
+            {
+                saw_tool_call = true;
+                return true;
+            }
+
+            !(saw_tool_call && emission.is_whitespace_only_content())
+        });
+
+        // Every split emission was built from `choice`, so remove copied finish
+        // reasons before assigning ownership to the actual final output.
+        for emission in emissions.iter_mut() {
+            emission.choice_mut().finish_reason = None;
+        }
+
+        // A terminal marker may still be buffered. `finalize` owns the finish
+        // reason in that case and reads it from `stream_finish_reason`.
+        if self.is_jailed || !self.partial_match_buffer.is_empty() {
+            return;
+        }
+
+        if emissions.is_empty() {
+            #[allow(deprecated)]
+            let terminal_choice = ChatChoiceStream {
+                index: choice.index,
+                delta: ChatCompletionStreamResponseDelta {
+                    role: None,
+                    content: None,
+                    tool_calls: None,
+                    function_call: None,
+                    refusal: None,
+                    reasoning_content: None,
+                },
+                finish_reason: Some(finish_reason),
+                logprobs: None,
+            };
+            emissions.push(ChoiceEmission::PassThrough(terminal_choice));
+            return;
+        }
+
+        if let Some(terminal_emission) = emissions.last_mut() {
+            terminal_emission.choice_mut().finish_reason = Some(finish_reason);
+        }
     }
 
     fn handle_trailing_content(
@@ -921,7 +1013,13 @@ impl JailedStream {
                                 choice_state.stream_finish_reason = choice.finish_reason;
 
                                 // Process this choice and get emissions
+                                let had_tool_calls_before = choice_state.emitted_tool_calls_count > 0;
                                 let mut emissions = choice_state.process_content(choice, text, &self).await;
+                                choice_state.normalize_terminal_emissions(
+                                    choice,
+                                    had_tool_calls_before,
+                                    &mut emissions,
+                                );
                                 if !emissions.is_empty()
                                     && let Some(reasoning) = choice_state.pending_reasoning_content.take()
                                     && let Some(first) = emissions.first_mut()
@@ -993,7 +1091,20 @@ impl JailedStream {
                             }
                         }
 
-                        // Emit tool calls and content with preserved metadata
+                        // Ordering invariant: per choice, `process_content` emits only
+                        // PassThrough prefix -> ToolCall/Content -> Trailing suffix. The terminal
+                        // normalizer assigns `finish_reason` to the last emission, so this bucket
+                        // order must stay aligned or terminal ownership must move after bucketing.
+                        // Emit pass-through prefixes before parsed tool calls.
+                        if !passthrough_emissions.is_empty() {
+                            let current_metadata = (response.id.clone(), response.event.clone(), response.comment.clone());
+                            let responses = self.emit_choice_emissions(passthrough_emissions, chat_response, current_metadata);
+                            for emitted_response in responses {
+                                yield emitted_response;
+                            }
+                        }
+
+                        // Emit tool calls and content with preserved metadata.
                         if !tool_content_emissions.is_empty() {
                             let preserved_metadata = (
                                 last_annotated_id.clone(),
@@ -1006,7 +1117,7 @@ impl JailedStream {
                             }
                         }
 
-                        // Emit trailing content separately (always as individual chunks)
+                        // Emit trailing content after its parsed tool call.
                         if !trailing_emissions.is_empty() {
                             let preserved_metadata = (
                                 last_annotated_id.clone(),
@@ -1014,15 +1125,6 @@ impl JailedStream {
                                 last_annotated_comment.clone(),
                             );
                             let responses = self.emit_choice_emissions(trailing_emissions, chat_response, preserved_metadata);
-                            for emitted_response in responses {
-                                yield emitted_response;
-                            }
-                        }
-
-                        // Emit pass-through content with current metadata
-                        if !passthrough_emissions.is_empty() {
-                            let current_metadata = (response.id.clone(), response.event.clone(), response.comment.clone());
-                            let responses = self.emit_choice_emissions(passthrough_emissions, chat_response, current_metadata);
                             for emitted_response in responses {
                                 yield emitted_response;
                             }
