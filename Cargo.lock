@@ -985,6 +985,7 @@ dependencies = [
  "tiktoken-rs",
  "tokenizers",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

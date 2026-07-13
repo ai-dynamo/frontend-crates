@@ -37,3 +37,4 @@ tokenizers = { workspace = true, features = [
 
 [dev-dependencies]
 tempfile.workspace = true
+tracing-subscriber.workspace = true

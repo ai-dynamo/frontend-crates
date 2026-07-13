@@ -241,6 +241,59 @@ pub struct TokenizerOptions {
     pub add_special_tokens: bool,
 }
 
+/// L1 prefix-cache configuration used by [`TokenizerConfig`].
+#[derive(Debug, Clone, Copy)]
+pub struct TokenizerCacheConfig {
+    max_memory_bytes: usize,
+    extend_on_hit: bool,
+}
+
+impl TokenizerCacheConfig {
+    pub fn new(max_memory_bytes: usize) -> Self {
+        Self {
+            max_memory_bytes,
+            extend_on_hit: false,
+        }
+    }
+
+    pub fn with_extend(mut self, enabled: bool) -> Self {
+        self.extend_on_hit = enabled;
+        self
+    }
+}
+
+/// Complete construction configuration for the top-level tokenizer factory.
+///
+/// Cache policy belongs here, before the concrete tokenizer is hidden behind a
+/// trait object. In particular, HuggingFace tokenizers configured with
+/// `add_special_tokens=true` stay uncached because the L1 cache tokenizes prompt
+/// segments independently and would apply the post-processor more than once.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct TokenizerConfig {
+    options: TokenizerOptions,
+    cache: Option<TokenizerCacheConfig>,
+}
+
+impl TokenizerConfig {
+    pub fn new(options: TokenizerOptions) -> Self {
+        Self {
+            options,
+            cache: None,
+        }
+    }
+
+    pub fn with_cache(mut self, cache: TokenizerCacheConfig) -> Self {
+        self.cache = Some(cache);
+        self
+    }
+}
+
+impl From<TokenizerOptions> for TokenizerConfig {
+    fn from(options: TokenizerOptions) -> Self {
+        Self::new(options)
+    }
+}
+
 /// Main tokenizer wrapper that provides a unified interface for different tokenizer implementations
 #[derive(Clone)]
 pub struct Tokenizer(Arc<dyn traits::Tokenizer>);
@@ -251,8 +304,12 @@ impl Tokenizer {
     }
 
     pub fn from_file_with_options(file_path: &str, options: TokenizerOptions) -> Result<Tokenizer> {
-        Ok(Tokenizer(create_tokenizer_from_file_with_options(
-            file_path, options,
+        Self::from_file_with_config(file_path, options.into())
+    }
+
+    pub fn from_file_with_config(file_path: &str, config: TokenizerConfig) -> Result<Tokenizer> {
+        Ok(Tokenizer(create_tokenizer_from_file_with_config(
+            file_path, config,
         )?))
     }
 
@@ -309,6 +366,18 @@ pub fn create_tokenizer_from_file_with_options(
     file_path: &str,
     options: TokenizerOptions,
 ) -> Result<Arc<dyn traits::Tokenizer>> {
+    create_tokenizer_from_file_with_config(file_path, options.into())
+}
+
+/// Create a tokenizer with both concrete-tokenizer options and optional L1 caching.
+///
+/// When a HuggingFace tokenizer requests `add_special_tokens=true`, caching is
+/// bypassed at construction time. If a cache was requested, this emits one warning;
+/// encoding itself does not log.
+pub fn create_tokenizer_from_file_with_config(
+    file_path: &str,
+    config: TokenizerConfig,
+) -> Result<Arc<dyn traits::Tokenizer>> {
     use traits::Tokenizer as _;
 
     let path = Path::new(file_path);
@@ -319,12 +388,45 @@ pub fn create_tokenizer_from_file_with_options(
 
     match extension {
         "json" => {
-            let tokenizer = HuggingFaceTokenizer::from_file(file_path)?.with_options(options);
-            Ok(Arc::new(tokenizer))
+            let tokenizer =
+                HuggingFaceTokenizer::from_file(file_path)?.with_options(config.options);
+
+            if config.options.add_special_tokens {
+                if config.cache.is_some() {
+                    tracing::warn!(
+                        target: "tokenizer",
+                        "add_special_tokens=true is incompatible with tokenizer caching; using uncached HuggingFace tokenizer"
+                    );
+                }
+                return Ok(Arc::new(tokenizer));
+            }
+
+            match config.cache {
+                Some(cache) => {
+                    let special_tokens = tokenizer.special_tokens();
+                    let tokenizer: Arc<dyn traits::Tokenizer> = Arc::new(tokenizer);
+                    Ok(Arc::new(
+                        CachedTokenizer::new(tokenizer, special_tokens, cache.max_memory_bytes)
+                            .with_extend(cache.extend_on_hit),
+                    ))
+                }
+                None => Ok(Arc::new(tokenizer)),
+            }
         }
         "model" | "tiktoken" => {
-            let tokenizer = TikTokenTokenizer::from_file_auto(file_path)?.with_options(options);
-            Ok(Arc::new(tokenizer))
+            let tokenizer =
+                TikTokenTokenizer::from_file_auto(file_path)?.with_options(config.options);
+            match config.cache {
+                Some(cache) => {
+                    let special_tokens = tokenizer.special_tokens().to_vec();
+                    let tokenizer: Arc<dyn traits::Tokenizer> = Arc::new(tokenizer);
+                    Ok(Arc::new(
+                        CachedTokenizer::new(tokenizer, special_tokens, cache.max_memory_bytes)
+                            .with_extend(cache.extend_on_hit),
+                    ))
+                }
+                None => Ok(Arc::new(tokenizer)),
+            }
         }
         _ => Err(Error::msg(format!(
             "Unsupported tokenizer file type: .{extension}"

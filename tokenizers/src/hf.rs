@@ -48,6 +48,19 @@ impl HuggingFaceTokenizer {
         merge_special_tokens_from_config(&mut tokenizer, model_dir);
         Self::from_tokenizer(tokenizer)
     }
+
+    pub(crate) fn special_tokens(&self) -> Vec<String> {
+        let mut special_tokens: Vec<String> = self
+            .tokenizer
+            .get_added_tokens_decoder()
+            .values()
+            .filter(|token| token.special)
+            .map(|token| token.content.clone())
+            .collect();
+        special_tokens.sort();
+        special_tokens.dedup();
+        special_tokens
+    }
 }
 
 /// Promote `tokenizer_config.json`'s `special: true` `added_tokens_decoder`
