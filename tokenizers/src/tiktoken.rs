@@ -140,7 +140,11 @@ impl Decoder for TikTokenTokenizer {
     }
 }
 
-impl Tokenizer for TikTokenTokenizer {}
+impl Tokenizer for TikTokenTokenizer {
+    fn validate_prefix_cache(&self) -> Result<()> {
+        Ok(())
+    }
+}
 
 /// Parse a tiktoken model file (base64-encoded token + rank per line).
 fn parse_tiktoken_file(path: &str) -> Result<FxHashMap<Vec<u8>, u32>> {

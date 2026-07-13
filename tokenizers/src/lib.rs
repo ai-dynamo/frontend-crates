@@ -130,6 +130,14 @@ pub mod traits {
     }
 
     pub trait Tokenizer: Encoder + Decoder {
+        /// Validate that this tokenizer can be safely wrapped in the prefix cache.
+        ///
+        /// Implementations must explicitly opt in by returning `Ok(())`, or
+        /// return an error explaining why the tokenizer is incompatible.
+        fn validate_prefix_cache(&self) -> Result<()> {
+            Err(Error::msg("tokenizer does not support prefix caching"))
+        }
+
         /// Apply construction-time [`TokenizerOptions`].
         ///
         /// The default implementation ignores the options — correct for

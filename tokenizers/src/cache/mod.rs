@@ -11,10 +11,10 @@
 
 //! Tokenizer caching layer (L1: prefix matching at special-token boundaries).
 //!
-//! Wraps any [`Tokenizer`] in a cache that records prefix tokenizations at every
-//! special-token boundary. On a hit, the cached prefix tokens are merged with a
-//! fresh encode of the trailing suffix only — turning O(N) tokenization work
-//! into O(suffix_len) when prompts share a system prefix.
+//! Wraps a cache-compatible [`Tokenizer`] in a cache that records prefix
+//! tokenizations at every special-token boundary. On a hit, the cached prefix
+//! tokens are merged with a fresh encode of the trailing suffix only — turning
+//! O(N) tokenization work into O(suffix_len) when prompts share a system prefix.
 //!
 //! # Correctness
 //!
@@ -104,19 +104,26 @@ impl CachedTokenizer {
     /// without touching the cache or its counters.
     ///
     /// `max_memory_bytes` is the L1 cache byte budget.
+    ///
+    /// # Errors
+    ///
+    /// Returns the inner tokenizer's compatibility error when it cannot be
+    /// safely wrapped in the prefix cache.
     pub fn new(
         inner: Arc<dyn Tokenizer>,
         special_tokens: Vec<String>,
         max_memory_bytes: usize,
-    ) -> Self {
+    ) -> Result<Self> {
+        inner.validate_prefix_cache()?;
+
         let l1_enabled = !special_tokens.is_empty();
-        Self {
+        Ok(Self {
             inner,
             l1: L1Cache::new(max_memory_bytes, special_tokens),
             l1_enabled,
             extend_on_hit: false,
             token_observer: None,
-        }
+        })
     }
 
     /// Enable partial-hit extension. When on, a partial cache hit also caches the
@@ -280,7 +287,11 @@ mod tests {
         }
     }
 
-    impl Tokenizer for FailingTokenizer {}
+    impl Tokenizer for FailingTokenizer {
+        fn validate_prefix_cache(&self) -> Result<()> {
+            Ok(())
+        }
+    }
 
     const TINYLLAMA_PATH: &str = concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -307,14 +318,36 @@ mod tests {
     }
 
     #[test]
+    fn rejects_hf_tokenizer_that_adds_special_tokens() {
+        let tokenizer: Arc<dyn Tokenizer> = Arc::new(
+            HuggingFaceTokenizer::from_file(TINYLLAMA_PATH)
+                .expect("load TinyLlama")
+                .with_options(crate::TokenizerOptions {
+                    add_special_tokens: true,
+                }),
+        );
+
+        let result = CachedTokenizer::new(tokenizer, specials(), 4096);
+        let Err(error) = result else {
+            panic!("add_special_tokens=true must be rejected");
+        };
+        assert_eq!(
+            error.to_string(),
+            "HuggingFace tokenizers configured with add_special_tokens=true must remain uncached"
+        );
+    }
+
+    #[test]
     fn empty_specials_passes_through_correctly() {
         // L1 disabled by empty specials list — encode must produce correct ids
         // AND short-circuit to the inner tokenizer (no miss-counter bump, no
         // insert attempt). Otherwise the tiktoken integration would log a
         // miss per request with zero hits forever.
         let tok = inner();
-        let (cached, events) =
-            collect_token_usage(CachedTokenizer::new(tok.clone(), Vec::new(), 4096));
+        let (cached, events) = collect_token_usage(
+            CachedTokenizer::new(tok.clone(), Vec::new(), 4096)
+                .expect("TinyLlama must support prefix caching"),
+        );
         let s = "<s>hello world</s>";
         let a = cached.encode(s).unwrap();
         let b = tok.encode(s).unwrap();
@@ -338,6 +371,7 @@ mod tests {
             let hit_counter = hits.clone();
             let miss_counter = misses.clone();
             let cached = CachedTokenizer::new(tok, specials(), 64 * 1024)
+                .expect("TinyLlama must support prefix caching")
                 .with_extend(extend_on_hit)
                 .with_observer(
                     Arc::new(move || {
@@ -379,8 +413,10 @@ mod tests {
     #[test]
     fn token_observer_does_not_report_failed_encodes() {
         let tokenizer: Arc<dyn Tokenizer> = Arc::new(FailingTokenizer);
-        let (cached, events) =
-            collect_token_usage(CachedTokenizer::new(tokenizer, specials(), 4096));
+        let (cached, events) = collect_token_usage(
+            CachedTokenizer::new(tokenizer, specials(), 4096)
+                .expect("test tokenizer explicitly supports prefix caching"),
+        );
 
         assert!(cached.encode("<s>this fails</s>").is_err());
         assert!(events.lock().unwrap().is_empty());
@@ -389,7 +425,8 @@ mod tests {
     #[test]
     fn two_turn_chat_correctness_and_hit() {
         let tok = inner();
-        let cached = CachedTokenizer::new(tok.clone(), specials(), 64 * 1024);
+        let cached = CachedTokenizer::new(tok.clone(), specials(), 64 * 1024)
+            .expect("TinyLlama must support prefix caching");
 
         let template = "<s>system\nYou are helpful.</s><s>user\n";
         let first = format!("{template}First question?</s>");
@@ -414,7 +451,8 @@ mod tests {
     #[test]
     fn decode_passes_through() {
         let tok = inner();
-        let cached = CachedTokenizer::new(tok.clone(), specials(), 4096);
+        let cached = CachedTokenizer::new(tok.clone(), specials(), 4096)
+            .expect("TinyLlama must support prefix caching");
         let enc = cached.encode("<s>hello</s>").unwrap();
         let direct = tok.decode(enc.token_ids(), false).unwrap();
         let through = cached.decode(enc.token_ids(), false).unwrap();
@@ -424,8 +462,10 @@ mod tests {
     #[test]
     fn encode_batch_uses_cache() {
         let tok = inner();
-        let (cached, events) =
-            collect_token_usage(CachedTokenizer::new(tok.clone(), specials(), 64 * 1024));
+        let (cached, events) = collect_token_usage(
+            CachedTokenizer::new(tok.clone(), specials(), 64 * 1024)
+                .expect("TinyLlama must support prefix caching"),
+        );
         let shared = "<s>system\nShared persona.</s><s>user\n";
         let inputs = [
             format!("{shared}q1</s>"),
