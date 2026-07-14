@@ -177,6 +177,15 @@ impl Decoder for HuggingFaceTokenizer {
 }
 
 impl Tokenizer for HuggingFaceTokenizer {
+    fn validate_prefix_cache(&self) -> Result<()> {
+        if self.options.add_special_tokens {
+            return Err(Error::msg(
+                "HuggingFace tokenizers configured with add_special_tokens=true must remain uncached",
+            ));
+        }
+        Ok(())
+    }
+
     /// HF honors [`TokenizerOptions::add_special_tokens`] (BOS/EOS per the
     /// tokenizer's post-processor template).
     fn with_options(mut self, options: TokenizerOptions) -> Self {

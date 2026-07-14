@@ -49,8 +49,8 @@ let delta = sequence.append_token_id(1337)
 ## Prefix caching with `CachedTokenizer`
 
 Multi-turn chat workloads re-tokenize a large shared prefix (system prompt +
-prior turns) on every request. `CachedTokenizer` wraps any tokenizer and caches
-prefix tokenizations at special-token boundaries (e.g. `<|im_start|>`,
+prior turns) on every request. `CachedTokenizer` wraps a compatible tokenizer and
+caches prefix tokenizations at special-token boundaries (e.g. `<|im_start|>`,
 `<|im_end|>`, `<s>`, `</s>`). On a hit it merges the cached prefix tokens with a
 fresh encode of the trailing suffix only.
 
@@ -72,7 +72,8 @@ let inner: Arc<dyn Tokenizer> = Arc::new(hf);
 // An empty list disables caching: encode/encode_batch pass straight through.
 let specials = vec!["<|im_start|>".to_string(), "<|im_end|>".to_string()];
 
-let cached = CachedTokenizer::new(inner, specials, 256 * 1024 * 1024); // 256 MiB budget
+let cached = CachedTokenizer::new(inner, specials, 256 * 1024 * 1024)
+    .expect("tokenizer must support prefix caching"); // 256 MiB budget
 
 let encoding = cached.encode("<|im_start|>system\nYou are helpful.<|im_end|>")
     .expect("encode");
@@ -93,7 +94,8 @@ let tiktoken = TikTokenTokenizer::from_file_auto("/path/to/tiktoken.model")
     .expect("load tokenizer");
 let specials = tiktoken.special_tokens().to_vec();
 let inner: Arc<dyn Tokenizer> = Arc::new(tiktoken);
-let cached = CachedTokenizer::new(inner, specials, 256 * 1024 * 1024);
+let cached = CachedTokenizer::new(inner, specials, 256 * 1024 * 1024)
+    .expect("tokenizer must support prefix caching");
 ```
 
 Entries are evicted by approximate LRU once `max_memory_bytes` is exceeded. The

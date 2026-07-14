@@ -58,7 +58,7 @@ const DEEPSEEK_PATH: &str = concat!(
 /// tokenizer config registers Kimi's ChatML boundaries as CoreBPE special tokens.
 const TIKTOKEN_PATH: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../llm/tests/data/sample-models/mock-tiktoken/tiktoken.model"
+    "/tests/data/sample-models/mock-tiktoken/tiktoken.model"
 );
 
 /// A tokenizer fixture together with the formatter that re-keys the chat corpus into
@@ -233,7 +233,8 @@ const SETUPS: &[Setup] = &[
 
 fn build_cached_setup(setup: &Setup) -> (Arc<dyn Tokenizer>, CachedTokenizer) {
     let (base, specials) = (setup.build)();
-    let cached = CachedTokenizer::new(base.clone(), specials, 50 * 1024 * 1024);
+    let cached = CachedTokenizer::new(base.clone(), specials, 50 * 1024 * 1024)
+        .expect("fixture tokenizer must support prefix caching");
     (base, cached)
 }
 
@@ -378,7 +379,8 @@ fn cache_disabled_by_empty_specials_is_transparent() {
     // because the relevant code path is the wrapper, not the tokenizer.
     for setup in SETUPS {
         let (base, _specials) = (setup.build)();
-        let cached = CachedTokenizer::new(base.clone(), Vec::new(), 4096);
+        let cached = CachedTokenizer::new(base.clone(), Vec::new(), 4096)
+            .expect("fixture tokenizer must support prefix caching");
         for (i, raw_turn) in CHAT_TURNS.iter().enumerate() {
             let turn = (setup.render)(raw_turn);
             let plain = base.encode(&turn).unwrap().token_ids().to_vec();
@@ -424,8 +426,9 @@ fn extend_on_hit_matches_uncached_across_growing_turns() {
     let turns = growing_chat_turns(12);
     for setup in SETUPS {
         let (base, specials) = (setup.build)();
-        let cached =
-            CachedTokenizer::new(base.clone(), specials, 50 * 1024 * 1024).with_extend(true);
+        let cached = CachedTokenizer::new(base.clone(), specials, 50 * 1024 * 1024)
+            .expect("fixture tokenizer must support prefix caching")
+            .with_extend(true);
 
         for (i, raw_turn) in turns.iter().enumerate() {
             let turn = (setup.render)(raw_turn);
@@ -496,7 +499,9 @@ fn extend_on_partial_hit_adds_exactly_one_entry() {
     let turns = growing_chat_turns(6);
     for setup in SETUPS {
         let (base, specials) = (setup.build)();
-        let cached = CachedTokenizer::new(base, specials, 50 * 1024 * 1024).with_extend(true);
+        let cached = CachedTokenizer::new(base, specials, 50 * 1024 * 1024)
+            .expect("fixture tokenizer must support prefix caching")
+            .with_extend(true);
 
         // Turn 0: miss path populates the cache at every boundary.
         let _ = cached.encode(&(setup.render)(&turns[0])).unwrap();
@@ -557,7 +562,9 @@ fn extend_correct_with_deepseek_tool_calls() {
     .iter()
     .map(|s| s.to_string())
     .collect();
-    let cached = CachedTokenizer::new(base.clone(), specials, 8 * 1024 * 1024).with_extend(true);
+    let cached = CachedTokenizer::new(base.clone(), specials, 8 * 1024 * 1024)
+        .expect("DeepSeek fixture must support prefix caching")
+        .with_extend(true);
 
     // The tool-call-begin marker must be an atomic special the cache can split on.
     let tool_begin = base
@@ -639,8 +646,9 @@ fn extend_transparent_to_plaintext_tool_markup() {
 
         let build = || {
             let (base, specials) = (setup.build)();
-            let cached =
-                CachedTokenizer::new(base.clone(), specials, 50 * 1024 * 1024).with_extend(true);
+            let cached = CachedTokenizer::new(base.clone(), specials, 50 * 1024 * 1024)
+                .expect("fixture tokenizer must support prefix caching")
+                .with_extend(true);
             (base, cached)
         };
 

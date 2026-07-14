@@ -57,7 +57,11 @@ impl Decoder for FastTokenizer {
     }
 }
 
-impl Tokenizer for FastTokenizer {}
+impl Tokenizer for FastTokenizer {
+    fn validate_prefix_cache(&self) -> Result<()> {
+        Ok(())
+    }
+}
 
 #[cfg(test)]
 mod tests {
