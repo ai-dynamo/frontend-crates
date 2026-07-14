@@ -385,8 +385,12 @@ def main():
             cleanup_old_loose(token, args.repo, args.dry_run)
 
         if args.keep_last > 0:
-            print(f"\nPruning old snapshots in {args.repo} (keep_last={args.keep_last})…")
-            prune_old_snapshots(token, args.repo, args.keep_last, args.dry_run)
+            print(f"\nPruning old snapshots in {args.repo} (keep last {args.keep_last})…")
+            if token:
+                prune_old_snapshots(token, args.repo, args.keep_last, args.dry_run)
+            else:
+                # tokenless --dry-run can't list the private repo; keep it working
+                print("  [dry-run] no token, skipping snapshot listing")
 
         manifest = {
             "snapshot": stamp,

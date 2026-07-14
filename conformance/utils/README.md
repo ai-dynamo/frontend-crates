@@ -232,8 +232,8 @@ After re-capturing YAML locally with `capture.sh`, publish a new snapshot and co
 ```bash
 # 1. Re-capture (see capture.sh commands above)
 
-# 2. Publish to HF — requires a write-capable token
-export HF_TOKEN=<your-write-token>
+# 2. Publish to HF — requires a write-capable token (kept at ~/.cache/huggingface/token.write)
+export HF_TOKEN=$(cat ~/.cache/huggingface/token.write)
 python3 conformance/utils/src/package_and_publish.py
 
 # 3. Commit the manifest pin
@@ -242,6 +242,8 @@ git commit -m "fixtures: snapshot <stamp printed by publish script>"
 ```
 
 The publish script builds deterministic per-version shard tarballs plus a monolith `all-<stamp>.tar.gz`, uploads each blob individually (one commit per blob on HF), and writes the new manifest. Unchanged shards are LFS-deduped by HF and are not re-uploaded.
+
+After uploading, the script prunes old `all-<stamp>.tar.gz` monoliths from the HF repo, keeping only the `--keep-last N` most recent (default 5; `--keep-last 0` disables pruning). Shard tarballs live at fixed paths and are overwritten in place, so only the stamped monoliths accumulate. Pruning never touches the snapshot pinned by the committed manifest as long as it is within the last N.
 
 ### Add new fixtures (new SGLang / vLLM / Dynamo family)
 
