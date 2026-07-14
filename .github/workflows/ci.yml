@@ -103,7 +103,7 @@ jobs:
   # dynamo's CI lanes; here the engine lanes are on-demand/local).
   conformance-table:
     needs: changes
-    if: ${{ needs.changes.outputs.conformance == 'true' }}
+    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
