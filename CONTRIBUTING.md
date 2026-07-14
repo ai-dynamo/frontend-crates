@@ -11,14 +11,14 @@ This repository contains three independently published Rust crates — `dynamo-p
 
 ## Source of Truth and Sync Direction
 
-The code under `protocols/`, `tokenizers/`, and `renderer/` currently mirrors `lib/{protocols,tokenizers,renderer}/` from [ai-dynamo/dynamo](https://github.com/ai-dynamo/dynamo). The canonical sync direction is **dynamo → frontend-crates**, one-way and manual, driven by [`scripts/sync-from-dynamo.sh`](scripts/sync-from-dynamo.sh).
+The code under `protocols/` and `renderer/` currently mirrors `lib/{protocols,renderer}/` from [ai-dynamo/dynamo](https://github.com/ai-dynamo/dynamo). The canonical sync direction is **dynamo → frontend-crates**, one-way and manual, driven by [`scripts/sync-from-dynamo.sh`](scripts/sync-from-dynamo.sh).
 
-The parser crates under `parsers/` (`parsers/v1` = `dynamo-parsers`, `parsers/v2` = `dynamo-parsers-v2`, `parsers/v2-py` = the test-only binding) are **frontend-crates-owned** — the sync script no longer touches them. See [`docs/PARSERS-V2-MIGRATION-PLAN.md`](docs/PARSERS-V2-MIGRATION-PLAN.md).
+The parser crates under `parsers/` (`parsers/v1` = `dynamo-parsers`, `parsers/v2` = `dynamo-parsers-v2`, `parsers/v2-py` = the test-only binding) and the `tokenizers/` crate are **frontend-crates-owned** — the sync script no longer touches them. `tokenizers/` was detached when its tokenizer fixtures moved from the top-level `llm/tests/data` into `tokenizers/tests/data`. See [`docs/PARSERS-V2-MIGRATION-PLAN.md`](docs/PARSERS-V2-MIGRATION-PLAN.md).
 
 What this means for contributors:
 
-- **Changes to synced crate source code (`protocols/src/**`, `tokenizers/src/**`, `renderer/src/**`)** should be opened as PRs against [ai-dynamo/dynamo](https://github.com/ai-dynamo/dynamo) in the corresponding `lib/` directory. Once merged upstream, the sync script pulls them into this repository for the next published release.
-- **Changes to parser source (`parsers/v1/src/**`, `parsers/v2/src/**`)** are made here directly — parsers are no longer synced from Dynamo.
+- **Changes to synced crate source code (`protocols/src/**`, `renderer/src/**`)** should be opened as PRs against [ai-dynamo/dynamo](https://github.com/ai-dynamo/dynamo) in the corresponding `lib/` directory. Once merged upstream, the sync script pulls them into this repository for the next published release.
+- **Changes to parser and tokenizer source (`parsers/v1/src/**`, `parsers/v2/src/**`, `tokenizers/src/**`)** are made here directly — those crates are no longer synced from Dynamo.
 - **Changes to repository scaffolding** — crate `Cargo.toml` metadata, `examples/dynamo-demo-server/`, `scripts/`, `.github/`, docs in this repo, the sync tooling itself — should be opened as PRs here.
 
 If you're not sure where a change belongs, open the PR in either place and we'll route it.

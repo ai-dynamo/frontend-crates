@@ -1,13 +1,13 @@
 ---
 name: sync-from-dynamo
-description: Resolve sync drift between frontend-crates and ai-dynamo/dynamo. Pulls lib/{protocols,tokenizers,renderer} src+tests (and tokenizer test fixtures) up to dynamo main, fixes the diverged-Cargo.toml / fixture breakage the new code introduces, verifies the full CI gate, and opens a sync PR. Use when sync-check fails, a `sync-drift` issue is open, or someone asks to "sync from dynamo". NOTE: parsers/ and conformance/utils/ are NOT in scope — see PARSERS-SYNC.md.
+description: Resolve sync drift between frontend-crates and ai-dynamo/dynamo. Pulls lib/{protocols,renderer} src+tests up to dynamo main, fixes the diverged-Cargo.toml breakage the new code introduces, verifies the full CI gate, and opens a sync PR. Use when sync-check fails, a `sync-drift` issue is open, or someone asks to "sync from dynamo". NOTE: parsers/, tokenizers/, and conformance/utils/ are NOT in scope (frontend-crates-owned) — see PARSERS-SYNC.md.
 ---
 
 # Skill: Sync from dynamo
 
 ## Purpose
 
-`frontend-crates` mirrors three dynamo library crates (`lib/protocols`, `lib/tokenizers`, `lib/renderer`). An hourly `sync-check` workflow opens a `sync-drift` issue when dynamo `main` advances past what this repo mirrors. This skill restores the mirror: apply the sync, fix whatever the new upstream code needs to build/test standalone, prove the CI gate passes, and open a PR.
+`frontend-crates` mirrors two dynamo library crates (`lib/protocols`, `lib/renderer`). (`tokenizers/` and `parsers/` were detached and are now frontend-crates-owned.) An hourly `sync-check` workflow opens a `sync-drift` issue when dynamo `main` advances past what this repo mirrors. This skill restores the mirror: apply the sync, fix whatever the new upstream code needs to build/test standalone, prove the CI gate passes, and open a PR.
 
 **`parsers/` and `conformance/utils/` are not part of this automated sync.** Do not include them here. For the temporary v1 parser/harness sync and the post-release migration plan, follow `PARSERS-SYNC.md`.
 
@@ -20,10 +20,9 @@ description: Resolve sync drift between frontend-crates and ai-dynamo/dynamo. Pu
 
 ## Key facts
 
-- **Only `src/` and `tests/` are synced** for the three crates. Each crate's `Cargo.toml`, `README.md`, `CLAUDE.md`, `AGENTS.md` are **intentionally diverged** (inlined for standalone publishing) — the script flags them as `NOTE:` lines and never overwrites them.
-- **New upstream code is the usual source of breakage.** Synced `src/` may reference a dependency or an `async-openai` feature the diverged `Cargo.toml` doesn't enable yet, or load a test fixture via a dynamo monorepo path (`$CARGO_MANIFEST_DIR/../llm/tests/data/...`). The script syncs code verbatim; you patch the diverged `Cargo.toml`s and mirror fixtures so it builds.
-- **Never hand-edit synced files** (`src/`, `tests/`) to make them build — they'll just drift again next sync. Fix the local-owned side instead (workspace + crate `Cargo.toml`, fixtures).
-- `scripts/sync-from-dynamo.sh` also mirrors `llm/tests/data/sample-models/` (tokenizer fixtures the synced tests load), so fixture drift is caught like code drift.
+- **Only `src/` and `tests/` are synced** for both crates. Each crate's `Cargo.toml`, `README.md`, `CLAUDE.md`, `AGENTS.md` are **intentionally diverged** (inlined for standalone publishing) — the script flags them as `NOTE:` lines and never overwrites them.
+- **New upstream code is the usual source of breakage.** Synced `src/` may reference a dependency or an `async-openai` feature the diverged `Cargo.toml` doesn't enable yet. The script syncs code verbatim; you patch the diverged `Cargo.toml`s so it builds.
+- **Never hand-edit synced files** (`src/`, `tests/`) to make them build — they'll just drift again next sync. Fix the local-owned side instead (workspace + crate `Cargo.toml`).
 
 ## Workflow
 
@@ -61,7 +60,6 @@ Resolve failures by patching the **local-owned** side, not synced code:
 
 - **`unresolved import async_openai::types::<x>`** — dynamo enabled a new `async-openai` feature. Diff the feature lists and add the missing one to `protocols/Cargo.toml`: `diff "$DYN/lib/protocols/Cargo.toml" protocols/Cargo.toml`
 - **`unresolved import <crate>` / `unlinked crate <x>`** — new code pulled in a dependency. Add it to the workspace `[workspace.dependencies]` in `./Cargo.toml` (match dynamo's version: `grep '^<crate>' "$DYN/Cargo.toml"`) and to the consuming crate's `Cargo.toml` (`<crate>.workspace = true`).
-- **`No such file or directory` loading a tokenizer in tests** — the synced test loads a fixture via `.../llm/tests/data/sample-models/...`. The sync script mirrors that tree; re-run `--apply`, or manually: `rsync -a --delete "$DYN/lib/llm/tests/data/sample-models/" llm/tests/data/sample-models/`
 
 ### 5. Run the full CI gate locally
 
