@@ -27,7 +27,7 @@ use dynamo_tokenizers::{
 
 const TINYLLAMA_PATH: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../llm/tests/data/sample-models/TinyLlama_v1.1/tokenizer.json"
+    "/tests/data/sample-models/TinyLlama_v1.1/tokenizer.json"
 );
 
 /// In-tree mock Llama-3.1 fixture. Has the full set of Llama-3.1 special tokens
@@ -39,7 +39,7 @@ const TINYLLAMA_PATH: &str = concat!(
 /// segments tokenize.
 const LLAMA31_PATH: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../llm/tests/data/sample-models/mock-llama-3.1-8b-instruct/tokenizer.json"
+    "/tests/data/sample-models/mock-llama-3.1-8b-instruct/tokenizer.json"
 );
 
 /// In-tree mock DeepSeek-R1 fixture. Empty BPE vocab like mock-llama-3.1, but registers
@@ -51,7 +51,7 @@ const LLAMA31_PATH: &str = concat!(
 /// hold for non-ASCII special tokens.
 const DEEPSEEK_PATH: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../llm/tests/data/sample-models/mock-deepseek-r1/tokenizer.json"
+    "/tests/data/sample-models/mock-deepseek-r1/tokenizer.json"
 );
 
 /// In-tree mock Kimi TikToken fixture. Its byte-pair ranks cover ordinary text and its

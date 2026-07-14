@@ -1,8 +1,8 @@
 name: sync-check
 
 # Runs the dry-run sync against ai-dynamo/dynamo main and fails if dynamo's
-# lib/{protocols,tokenizers,renderer}/{src,tests} have drifted from this repo's
-# copies.
+# lib/{protocols,renderer}/{src,tests} have drifted from this repo's copies.
+# (tokenizers/ and parsers/ are frontend-crates-owned and not synced.)
 #
 # On the hourly cron schedule, drift also opens a tracking issue (and the
 # issue gets auto-closed when the sync is restored). PRs and manual runs
