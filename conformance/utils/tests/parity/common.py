@@ -320,6 +320,45 @@ def ref_text(value: Any) -> str:
     return str(value)
 
 
+# --- Shared candidate-chart scaffold -----------------------------------------
+# Every popup chart (stream per-version, merged batch, reasoning, and the legacy
+# per-impl grid) is the same <table class="ttip-chunks"> with a fixed `input`
+# column plus per-candidate columns; only the columns/rows differ. These helpers
+# own that scaffold so the four builders don't each re-template it (and so the
+# `data-cand` / `data-col-impl` attribute the compare JS keys on can't drift).
+
+
+def cand_th(key: str, inner: str, *, attr: str = "data-cand") -> str:
+    """A candidate-chart column header. `key` becomes the `attr` value the compare
+    JS toggles/reorders; `inner` is already-rendered (escaped) HTML."""
+    return f'<th {attr}="{html_lib.escape(key, quote=True)}">{inner}</th>'
+
+
+def cand_td(key: str, inner: str, *, attr: str = "data-cand") -> str:
+    """A candidate-chart body cell (see cand_th). `inner` is already-rendered HTML."""
+    return f'<td {attr}="{html_lib.escape(key, quote=True)}">{inner}</td>'
+
+
+def timing_note(reason: str) -> str:
+    """The muted `(… per-chunk timing not recorded)` header note the stream charts
+    add to a column whose capture is not per-input-chunk aligned. `reason` is the
+    parenthetical text (e.g. `bursts at end of call; per-chunk timing not recorded`)."""
+    return f' <span class="ttip-note">({html_lib.escape(reason)})</span>'
+
+
+def candidate_chart_table(header_cells: str, body_rows: list[str]) -> str:
+    """Assemble the shared chart <table>: fixed `input` column + per-candidate
+    columns (header_cells), then body_rows. Callers build the columns/rows;
+    the scaffold lives here once."""
+    return (
+        '<table class="ttip-chunks"><thead><tr><th>input</th>'
+        + header_cells
+        + "</tr></thead><tbody>"
+        + "".join(body_rows)
+        + "</tbody></table>"
+    )
+
+
 def build_parity_tooltip_html(
     *,
     head: str,
@@ -331,6 +370,7 @@ def build_parity_tooltip_html(
     leak_label: str | None = None,
     leak_text: str | None = None,
     extra_sections: list[tuple[str, str]] | None = None,
+    chart: tuple[str, str] | None = None,
     refs: list[tuple[str, Any]] | None = None,
 ) -> str:
     """Build the hover popup used by parser and reasoning parity tables.
@@ -366,6 +406,15 @@ def build_parity_tooltip_html(
 
     for section in output_sections or []:
         add_section(*section)
+
+    # Candidate chart (left-to-right per-candidate output table). Raw table HTML —
+    # not a <pre> section — toggled/REF-ordered by the shared compare JS.
+    if chart:
+        chart_label, chart_html = chart
+        parts.append(
+            f'<div class="ttip-section">{html_lib.escape(chart_label)}:</div>'
+        )
+        parts.append(chart_html)
 
     if divergent_reasons:
         add_section("Divergent reasons", linkify_text_html(divergent_reasons))

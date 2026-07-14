@@ -76,9 +76,11 @@ tr.section td { background: #eef; font-weight: bold; text-align: left; }
  * Reference star (acts as a radio, one across all columns) + a Compare checkbox
  * (any number) + the label; the ref/cmp header labels sit directly over the two
  * control columns. */
-.cmpctl { display: flex; align-items: stretch; margin: 16px 0 10px;
+.cmpctl { display: inline-flex; align-items: stretch; margin: 16px 0 10px; max-width: 100%;
   border: 1px solid #d0d7de; background: #f8fafc; border-radius: 6px; padding: 5px 0; }
-.cmpcol { flex: 1 1 0; min-width: 0; padding: 0 12px; }
+/* Each engine column shrink-wraps to its longest label — no full-width stretch and
+ * no dead space trailing the checkbox+label rows. */
+.cmpcol { flex: 0 0 auto; min-width: 0; padding: 0 12px; }
 .cmpcol + .cmpcol { border-left: 1px solid #dde3ea; }
 /* header + data rows share the same grid so ref/cmp headers align over the star
  * and checkbox columns. */
@@ -148,8 +150,17 @@ body.view-details td.cell.cmp-donly .cmp-marker { color: #9aa1a9; }
 .cmp-why { font-weight: 600; color: #8a4b0b; background: #fdf2e2; border: 1px solid #f0d9b5;
   border-radius: 4px; padding: 4px 6px; margin-bottom: 6px; font-size: 12px; line-height: 1.35;
   white-space: normal; }
-/* Base reference's section is flagged with a marker (same color as the others). */
-.ttip .cand.cand-base .ttip-section::after { content: ' ← base reference'; font-weight: 700; }
+/* The Reference section (and the per-chunk Reference column) is flagged with a
+ * gold ★ (matching the compare-bar Reference star) before the name and `← REF` after. */
+.ttip .cand.cand-base .ttip-section::before { content: '★ '; color: #f5a623; font-weight: 700; }
+.ttip .cand.cand-base .ttip-section::after { content: ' ← REF'; font-weight: 700; }
+.ttip .ttip-ref { font-weight: 700; white-space: nowrap; }
+.ttip .ttip-ref-star { color: #f5a623; font-weight: 700; }
+/* Per-chunk grid column hidden when it isn't in the Reference/Compare-with set. */
+.ttip .ttip-chunks .col-hidden { display: none; }
+/* The Reference candidate column: gold ★ before + `← REF` after its header label. */
+.ttip .ttip-chunks th.col-ref::before { content: '★ '; color: #f5a623; font-weight: 700; }
+.ttip .ttip-chunks th.col-ref::after { content: ' ← REF'; font-weight: 700; white-space: nowrap; }
 .radio-option { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; cursor: pointer; }
 /* The parser-radio JS hides options the active tab doesn't support via `hidden`;
    the explicit display above would otherwise override the default [hidden] rule
@@ -383,3 +394,17 @@ body.view-details .transpose-table td.cell > a { position: absolute; inset: 0; }
 /* Case-group banner rows reuse the original tr.section band, but centered: in the
    transposed layout they span the full model width, so left-aligned reads lost. */
 .transpose-table tr.section td { background: #eef; font-weight: bold; text-align: center; padding-left: 0.5ch; padding-right: 0.5ch; }
+/* Column-header note for candidates whose capture has no per-chunk timing (e.g. the
+ * v1 jail bursts at end-of-call); their per-chunk cells stay em-dashes. */
+.ttip .ttip-note { color: #9aa4b2; font-weight: 400; font-size: 11px; white-space: normal; }
+
+/* Fresh-load state: the server-rendered pinned colors are NOT the compare model the
+ * page settles on — showing them first reads as a false green that then flips.
+ * Until the first applyCtl pass, cells render neutral and a loading note shows;
+ * conformance.js removes body.cmp-loading when the compare model has been applied. */
+body.cmp-loading td.cell { background: #eef0f3 !important; }
+body.cmp-loading td.cell .cmp-marker, body.cmp-loading td.cell .cell-marker { visibility: hidden; }
+.cmp-loading-note { display: none; }
+body.cmp-loading .cmp-loading-note { display: block; position: fixed; top: 8px; right: 12px;
+  background: #fff7e0; border: 1px solid #e5c765; color: #7a5d00; padding: 4px 10px;
+  border-radius: 4px; font: 12px ui-monospace, monospace; z-index: 99; }

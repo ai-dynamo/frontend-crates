@@ -61,15 +61,54 @@
       if (row) { row.classList.toggle('is-ref', isRef); }
     });
   }
+  // Compare keys are `<impl>-s-<version>` / `<impl>-b-<version>` (or `<impl>-s`); the
+  // per-chunk grid columns are keyed by bare impl. Strip the mode+version suffix.
+  function implOf(key) { return key ? key.replace(/-[sb](-.*)?$/, '') : key; }
   function toggleCands(cell, active, base) {
+    let baseSec = null;
     cell.querySelectorAll('.ttip .cand').forEach(function (sec) {
       const cls = Array.from(sec.classList).find(function (c) { return c.indexOf('cand-') === 0; });
       const key = cls ? cls.slice(5) : null;
       sec.classList.toggle('cand-on', key !== null && active.has(key));
       // Mark the Base reference's section so the tooltip flags which output the
       // others are being compared against.
-      sec.classList.toggle('cand-base', key !== null && key === base);
+      const isBase = key !== null && key === base;
+      sec.classList.toggle('cand-base', isBase);
+      if (isBase) { baseSec = sec; }
     });
+    // The Reference reads FIRST: move its section ahead of its sibling candidates.
+    if (baseSec) {
+      const first = baseSec.parentNode.querySelector('.cand');
+      if (first && first !== baseSec) { baseSec.parentNode.insertBefore(baseSec, first); }
+    }
+    // Per-chunk grid: show only the columns in the Reference + Compare-with selection.
+    const grid = cell.querySelector('.ttip-chunks');
+    if (grid) {
+      const cands = grid.querySelectorAll('[data-cand]');
+      if (cands.length) {
+        // Candidate-column grid: columns ARE the (impl, version) candidates. Show the
+        // Reference + each checked compare-with, flag the Reference column, and move
+        // it first (right after the input column) in every row.
+        cands.forEach(function (el) {
+          const key = el.getAttribute('data-cand');
+          el.classList.toggle('col-hidden', !active.has(key));
+          el.classList.toggle('col-ref', key === base);
+        });
+        if (base) {
+          grid.querySelectorAll('tr').forEach(function (tr) {
+            const el = tr.querySelector('[data-cand="' + base + '"]');
+            const first = tr.querySelector('[data-cand]');
+            if (el && first && first !== el) { tr.insertBefore(el, first); }
+          });
+        }
+      } else {
+        // Legacy impl-column grid: show columns whose engine is active.
+        const activeImpls = new Set(Array.from(active).map(implOf));
+        grid.querySelectorAll('[data-col-impl]').forEach(function (el) {
+          el.classList.toggle('col-hidden', !activeImpls.has(el.getAttribute('data-col-impl')));
+        });
+      }
+    }
   }
   // Parsers with limited family coverage (Dynamo v2): key -> {label, families}. Drives
   // the reference-aware "not implemented" reason. Empty on pages without such a parser.
@@ -236,6 +275,8 @@
     document.querySelectorAll('.tab-panel').forEach(function (panel) {
       if (panelCtl(panel)) { applyCtl(panel); }
     });
+    // Compare model applied — reveal the real colors (see body.cmp-loading CSS).
+    document.body.classList.remove('cmp-loading');
   }
 
   function readDetailed() {

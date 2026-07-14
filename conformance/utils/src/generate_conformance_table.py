@@ -729,6 +729,27 @@ def _dynamo_note_sections(case: dict) -> list[tuple[str, str]]:
     return [("Dynamo recovery contract", linkify_text_html(str(note)))]
 
 
+
+# Candidate labels look like "vLLM Python 0.23.0 (stream)". Sort sections by engine
+# (label prefix) ascending, then version DESCENDING within the engine — matching the
+# compare bar's latest-first ordering. Two stable passes: version-desc, then prefix.
+_CAND_LABEL_VER_RE = re.compile(r"^(.*?)(\d[\w.\-]*)(\s*\(.*\))?\s*$")
+
+
+def _sort_candidate_sections(sections: list) -> None:
+    def parts(label: str):
+        m = _CAND_LABEL_VER_RE.match(label)
+        if not m:
+            return (label, "0", "")
+        return (m.group(1), m.group(2) or "0", m.group(3) or "")
+
+    sections.sort(
+        key=lambda sec: toolcalling_table._version_sort_key(parts(sec[0])[1]),
+        reverse=True,
+    )
+    sections.sort(key=lambda sec: (parts(sec[0])[0], parts(sec[0])[2]))
+
+
 def _build_tooltip_html(case: dict, dyn, output_kind: str = "batch") -> str:
     """Rich HTML hover tooltip: head, input (colorized), per-engine output,
     divergence reasons. Returns the full `<div class="ttip">...</div>`.
@@ -837,13 +858,19 @@ def _build_tooltip_html(case: dict, dyn, output_kind: str = "batch") -> str:
                 )
             )
 
-    # Show the compare candidates in the same lexical order as the bucket chips.
+    # Engine ascending, version DESCENDING within the engine (latest first),
+    # matching the compare-bar ordering.
     if cmp_items or ver_status:
-        output_sections.sort(key=lambda s: s[0])
+        _sort_candidate_sections(output_sections)
 
     reasons = _tooltip_for(case, dyn, impl_keys) if isinstance(dyn, dict) else ""
 
     chart = _per_chunk_chart_html(case, output_kind)
+    # A CANDIDATE chart (columns = compare candidates, `data-cand`-keyed) already
+    # carries every candidate's output + explanation in its assembled/output row,
+    # so the per-candidate list sections above it would repeat the same info —
+    # drop them. Legacy impl-column charts keep the sections for versioned cells.
+    cand_chart = chart is not None and "data-cand" in chart[1]
 
     dyn_leak = _dynamo_tool_call_leak(dyn) if isinstance(dyn, dict) else None
     return _build_conformance_tooltip_html(
@@ -854,12 +881,16 @@ def _build_tooltip_html(case: dict, dyn, output_kind: str = "batch") -> str:
         # When the chart is shown it carries a final "assembled" row per impl, so
         # the separate per-engine output blocks would be redundant — drop them.
         # Exception: versioned candidates (__ver_status) keep their per-candidate
-        # `cand cand-<impl>-<slug>` sections so the compare selection can toggle each
-        # version's assembled output alongside the chart.
+        # `cand cand-<impl>-<slug>` sections ONLY while the chart is impl-keyed;
+        # a candidate chart replaces them entirely.
         output_sections=(
-            output_sections
-            if (ver_status or cmp_items)
-            else (None if chart else output_sections)
+            None
+            if cand_chart
+            else (
+                output_sections
+                if (ver_status or cmp_items)
+                else (None if chart else output_sections)
+            )
         ),
         # In the compare model each candidate's reason lives in its own section
         # (via _cand_section_body), so suppress the global cross-engine blob that
@@ -905,12 +936,124 @@ def _render_chunk_deltas(deltas: list, normal_text: str) -> str:
     return "   ".join(parts) if parts else "—"
 
 
+def _version_candidate_chart_html(case: dict, ver_status: dict) -> tuple[str, str] | None:
+    """Per-chunk grid whose columns are the per-version CANDIDATES from `__ver_status`
+    (one per `(impl, version)`, key `{impl}-{slug}` matching the compare-bar). Each
+    column shows that version's per-chunk deltas (captured in `_stream_version_status_map`)
+    and, in the final `assembled` row, its assembled output. The JS shows only the
+    Reference + checked compare-with columns and marks the Reference. First column is the
+    shared input (delta_text)."""
+    input_chunks = [c for c in (case.get("chunks") or []) if isinstance(c, dict)]
+    if not input_chunks:
+        return None
+    family = case.get("__family")
+    chunk_html = colorize_stream_deltas(input_chunks, family)
+    candidates = []  # (key, label, info)
+    for impl in ("dynamo_rust", "vllm_rust", "vllm_python", "sglang_python"):
+        # Engine columns in canonical order; within an engine, LATEST version first.
+        entries = sorted(
+            (ver_status.get(impl) or {}).items(),
+            key=lambda kv: toolcalling_table._version_sort_key(str(kv[1].get("version") or "0")),
+            reverse=True,
+        )
+        for slug, info in entries:
+            candidates.append(
+                (f"{impl}-{slug}", _full_label(impl, info.get("version"), "stream"), info)
+            )
+    if not candidates:
+        return None
+    def _col_header(key: str, label: str, info: dict) -> str:
+        # The capture is emission-packed (fewer rows than input chunks): row
+        # positions are NOT consumer-visible timing, so per-chunk cells stay
+        # empty and the output shows only in the assembled row.
+        note = (
+            common.timing_note("bursts at end of call; per-chunk timing not recorded")
+            if not info.get("aligned", True)
+            else ""
+        )
+        return common.cand_th(key, html_lib.escape(label) + note)
+
+    header = "".join(_col_header(key, label, info) for key, label, info in candidates)
+    rows = []
+    for i, chunk in enumerate(input_chunks):
+        inp = chunk_html[i]
+        if chunk.get("finish_reason"):
+            inp += (
+                ' <span class="fr">finish='
+                + html_lib.escape(str(chunk["finish_reason"]))
+                + "</span>"
+            )
+        cells = ""
+        for key, _label, info in candidates:
+            chs = info.get("chunks")
+            body = ""
+            if not info.get("aligned", True):
+                body = "—"  # timing not recorded; output appears in `assembled` only
+            elif isinstance(chs, list) and i < len(chs):
+                body = _render_chunk_deltas(
+                    chs[i].get("deltas") or [], chs[i].get("normal_text") or ""
+                )
+            cells += common.cand_td(key, body)
+        rows.append(f'<tr><td class="cin">{inp}</td>{cells}</tr>')
+    # `_cand_section_body` (not the bare block formatter) so each candidate's
+    # `explanation:` note rides in its column — the chart REPLACES the per-candidate
+    # list sections, so nothing the list carried may be lost.
+    final_cells = "".join(
+        common.cand_td(
+            key, _cand_section_body(info.get("block"), family).replace(chr(10), "<br>")
+        )
+        for key, _label, info in candidates
+    )
+    rows.append(f'<tr class="ttip-final"><td class="cin">assembled</td>{final_cells}</tr>')
+    table = common.candidate_chart_table(header, rows)
+    return ("Per-chunk emit (recorded from parser = expected)", table)
+
+
+def _merged_candidate_chart_html(case: dict, cmp_items: list) -> tuple[str, str] | None:
+    """Candidate chart for the merged batch tab: same left-to-right layout as the
+    stream chart, but batch input is a single text (one "chunk"), so there is one
+    `output` row — each candidate's full result side by side. Columns are the
+    `__cmp` candidates (`data-cand` keys match the compare bar), toggled/REF-marked
+    by the same JS as the stream chart."""
+    model_text = case.get("model_text")
+    if not isinstance(model_text, str) or not model_text or not cmp_items:
+        return None
+    family = case.get("__family")
+    header = "".join(
+        common.cand_th(item["key"], html_lib.escape(item["label"])) for item in cmp_items
+    )
+    cells = "".join(
+        common.cand_td(
+            item["key"],
+            _cand_section_body(item.get("block"), family).replace(chr(10), "<br>"),
+        )
+        for item in cmp_items
+    )
+    input_html = f"input_text='{colorize_markup(model_text, family)}'"
+    final_row = f'<tr class="ttip-final"><td class="cin">{input_html}</td>{cells}</tr>'
+    table = common.candidate_chart_table(header, [final_row])
+    return ("Output (recorded from parser = expected)", table)
+
+
 def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str, str] | None:
     """Per-chunk breakdown as a compact table: one row per chunk, first column the
     input delta_text, then one column per available impl (Dynamo Rust, vLLM Rust,
     vLLM Python, SGLang)
     showing what it emitted at that chunk. Returns (label, table_html), or None for
     non per-chunk stream cases. No inter-tag whitespace (keeps the markup tight)."""
+    # Stream tab: columns are the per-version CANDIDATES (from __ver_status), so the
+    # popup shows the Reference + each checked compare-with (e.g. Dynamo v1 vs v2).
+    ver_status = case.get("__ver_status")
+    if ver_status and case.get("chunks"):
+        cand = _version_candidate_chart_html(case, ver_status)
+        if cand is not None:
+            return cand
+    # Merged batch tab: same chart, single-output row (batch input is "one chunk").
+    cmp_items = case.get("__cmp")
+    if cmp_items and not case.get("chunks"):
+        cand = _merged_candidate_chart_html(case, cmp_items)
+        if cand is not None:
+            return cand
     chunks = case.get("chunks")
     if not (isinstance(chunks, list) and chunks):
         return None
@@ -938,7 +1081,7 @@ def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str,
     baseline_td = ""
     base_header = ""
     if show_baseline:
-        base_header = f'<th class="cbase-h">baseline<br>{_impl_mode_label_html(BASELINE_IMPL, _BATCH_MODE_MARKER)}</th>'
+        base_header = f'<th class="cbase-h">baseline<br>{html_lib.escape(_IMPL_DISPLAY[BASELINE_IMPL])} batch parser</th>'
         baseline_body = _format_output_block_html(dyn_batch, family).replace(
             chr(10), "<br>"
         )
@@ -946,9 +1089,22 @@ def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str,
             f'<td class="cbase" rowspan="{n_body_rows}">{baseline_body}</td>'
         )
     mode_marker = _STREAM_MODE_MARKER if output_kind == "stream" else _BATCH_MODE_MARKER
-    header = base_header + "".join(
-        f"<th>{_impl_mode_label_html(i, mode_marker)}</th>" for i in impls
-    )
+    parse_mode = "stream" if mode_marker == _STREAM_MODE_MARKER else "batch"
+
+    # Full parser names (no cryptic D_RS/V_RS/… tags); the Dynamo column is the
+    # Reference the peer columns are compared against, so flag it `← REF`.
+    def _col_h(impl: str) -> str:
+        name = html_lib.escape(f"{_IMPL_DISPLAY[impl]} {parse_mode} parser")
+        if impl == BASELINE_IMPL:
+            inner = (
+                '<span class="ttip-ref-star">★</span> '
+                f'{name} <span class="ttip-ref">← REF</span>'
+            )
+        else:
+            inner = name
+        return common.cand_th(impl, inner, attr="data-col-impl")
+
+    header = base_header + "".join(_col_h(i) for i in impls)
     rows = []
     for i, chunk in enumerate(chunks):
         if not isinstance(chunk, dict):
@@ -969,7 +1125,13 @@ def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str,
         exp = _normalize_impl_mapping(chunk.get("expected") or {})
         nt = _normalize_impl_mapping(chunk.get("normal_text") or {})
         cells = "".join(
-            f"<td>{_render_chunk_deltas(_impl_get(exp, i2, []) or [], _impl_get(nt, i2, '') or '')}</td>"
+            common.cand_td(
+                i2,
+                _render_chunk_deltas(
+                    _impl_get(exp, i2, []) or [], _impl_get(nt, i2, "") or ""
+                ),
+                attr="data-col-impl",
+            )
             for i2 in impls
         )
         # The baseline cell (rowspan) is emitted once, on the first body row.
@@ -980,19 +1142,19 @@ def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str,
     # baseline column on the left (assembled X_s vs Dynamo batch).
     derived = _expected(case)
     final_cells = "".join(
-        f"<td>{_format_output_block_html(_impl_get(derived, i2), family).replace(chr(10), '<br>')}</td>"
+        common.cand_td(
+            i2,
+            _format_output_block_html(_impl_get(derived, i2), family).replace(
+                chr(10), "<br>"
+            ),
+            attr="data-col-impl",
+        )
         for i2 in impls
     )
     rows.append(
         f'<tr class="ttip-final"><td class="cin">assembled</td>{baseline_td}{final_cells}</tr>'
     )
-    table = (
-        '<table class="ttip-chunks"><thead><tr><th>input</th>'
-        + header
-        + "</tr></thead><tbody>"
-        + "".join(rows)
-        + "</tbody></table>"
-    )
+    table = common.candidate_chart_table(header, rows)
     if unavailable:
         note = "; ".join(
             f"{_IMPL_DISPLAY[i]}: {_short_unavailable(unavailable[i])}"
@@ -1313,6 +1475,15 @@ def _parser_label_markdown(
     return f"{family}{suff}"
 
 
+# Dynamo parser v2 stream parsers with a standard `push`/`finish` text path:
+# family -> (backend label, source file under parsers/v2/src/tool_calling/, format marker).
+# Families with bespoke paths (harmony token-id/text, deepseek_v4 DSML note) keep their
+# dedicated branches below; new standard families belong here, not in new if-branches.
+_V2_STREAM_PARSER_CELLS: dict[str, tuple[str, str, str]] = {
+    "qwen3_coder": ("Qwen3CoderToolStreamParser text path", "qwen3_coder.rs", "Qwen XML"),
+}
+
+
 def _parser_cell_html(
     family: str,
     refs: dict[str, tuple[str, int]],
@@ -1370,6 +1541,18 @@ def _parser_cell_html(
             "push",
             fixtures,
             note,
+        )
+    v2_cell = _V2_STREAM_PARSER_CELLS.get(family)
+    if v2_cell and stream_context in ("streamv2", "batch_on_stream"):
+        backend, source_file, marker = v2_cell
+        fixtures = "v2 stream fixtures" if stream_context == "streamv2" else "v1 batch fixtures"
+        note = (
+            f"TC stream row. It consumes {marker} text chunks and emits per-chunk tool-call deltas."
+            if stream_context == "streamv2"
+            else f"TC batch-on-stream row. It feeds each v1 batch fixture's full text through the v2 {marker} streaming parser."
+        )
+        return _v2_parser_cell_html(
+            row_label, family, backend, source_file, "push", fixtures, note
         )
     if stream_context in ("streamv2", "batch_on_stream"):
         # No Dynamo parser v2 stream parser for this family yet. Inventory-only
@@ -1974,18 +2157,19 @@ def _impl_candidate_items(
 
 
 def _candidate_items() -> list[dict[str, str]]:
-    """Ordered comparison candidates for the batch tab: Dynamo, then vLLM/SGLang
-    versions ascending. Each: {key, impl, version, slug, label, short, default_bucket}.
+    """Ordered comparison candidates for the batch tab: Dynamo, then vLLM/SGLang —
+    within each engine versions run LATEST-FIRST (0.24.0 before 0.23.0). Each:
+    {key, impl, version, slug, label, short, default_bucket}.
 
-    Default layout: A (reference) = the first candidate (Dynamo); B (compare with) =
-    the latest version of each peer impl; C (others) = the remaining older versions."""
+    Default layout: A (reference) = the first candidate (Dynamo's latest); B (compare
+    with) = the latest version of each peer impl; C (others) = the older versions."""
     impl_versions = _batch_impl_versions()
     latest = {lg: (vers[-1] if vers else None) for lg, vers in impl_versions.items()}
     out: list[dict[str, str]] = []
     first = True
     for legacy in ("dynamo", "vllm", "sglang"):
         canon = _VERSION_LEGACY_TO_CANON.get(legacy)
-        for v in impl_versions.get(legacy, []):
+        for v in reversed(impl_versions.get(legacy, [])):
             slug = toolcalling_table._version_slug(v)
             if first:
                 bucket = "A"
@@ -2048,7 +2232,8 @@ def _stream_candidate_items() -> list[dict[str, str]]:
     latest = {i: (vs[-1] if vs else None) for i, vs in impl_versions.items()}
     out: list[dict[str, str]] = []
     for impl in ("dynamo_rust", "vllm_rust", "vllm_python", "sglang_python"):
-        for v in impl_versions.get(impl, []):
+        # Within an engine, versions run LATEST-FIRST (0.24.0 before 0.23.0).
+        for v in reversed(impl_versions.get(impl, [])):
             slug = toolcalling_table._version_slug(v)
             if impl == BASELINE_IMPL:
                 # Dynamo v1 (jail+batch) is the default reference; v2 goes to compare.
@@ -2117,8 +2302,27 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
     saved_captured = _CAPTURED_WITH_BY_MODE.get("streamv2")
     result: dict[tuple[str, str], dict[str, dict[str, dict]]] = {}
 
+    def _raw_chunk_counts(impl, version):
+        """{(family, case_id): n_chunks} straight from the <impl>-<version> dir docs.
+        The resolver pads a folded case to the input chunk count, so alignment
+        (did this capture record per-input-chunk timing?) is only visible here."""
+        counts: dict[tuple[str, str], int] = {}
+        vdir = _STREAM_SRC / f"{impl}-{version}"
+        if vdir.is_dir():
+            for fp in vdir.glob("*/*.yaml"):
+                try:
+                    doc = yaml.safe_load(fp.read_text()) or {}
+                except Exception:
+                    continue
+                fam = doc.get("family") or fp.parent.name
+                for cid, vc in (doc.get("cases") or {}).items():
+                    if isinstance(vc, dict) and isinstance(vc.get("chunks"), list):
+                        counts[(fam, cid)] = len(vc["chunks"])
+        return counts
+
     def _record(cases, impl, version):
         slug = toolcalling_table._version_slug(version)
+        raw_counts = _raw_chunk_counts(impl, version)
         # The Dynamo parser is version-split into two DIFFERENT parsers: v2
         # (dynamo_rust-0.1.11) implements only a handful of families, while the v1
         # jail (dynamo_rust-3.0.0) covers all. The stream assembly defaults an absent
@@ -2129,12 +2333,35 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
         for key, case in cases.items():
             block = _impl_get(case.get("expected") or {}, impl)
             status = _overview_status(case, impl)
+            # Capture this impl's per-chunk deltas at THIS version so the tooltip's
+            # per-chunk grid can show a column per (impl, version) candidate.
+            vchunks = None
+            raw = case.get("chunks")
+            if isinstance(raw, list):
+                vchunks = []
+                for ch in raw:
+                    if not isinstance(ch, dict):
+                        continue
+                    exp = _normalize_impl_mapping(ch.get("expected") or {})
+                    nt = _normalize_impl_mapping(ch.get("normal_text") or {})
+                    vchunks.append({
+                        "deltas": _impl_get(exp, impl, []) or [],
+                        "normal_text": _impl_get(nt, impl, "") or "",
+                    })
             if covered is not None and case.get("__family") not in covered:
-                block, status = None, "na"
+                block, status, vchunks = None, "na", None
+            # Aligned = the raw capture recorded one row per INPUT chunk, so a row
+            # index is real consumer-visible timing. The v1 jail captures are
+            # emission-packed (fewer rows than inputs) — timing NOT recorded.
+            raw_n = raw_counts.get((key[0], case.get("__case_id") or ""))
+            n_input = len(raw) if isinstance(raw, list) else 0
+            aligned = raw_n is None or raw_n == n_input
             result.setdefault(key, {}).setdefault(impl, {})[slug] = {
                 "status": status,
                 "block": block,
                 "version": version,
+                "chunks": vchunks,
+                "aligned": aligned,
             }
 
     def _resolve_and_load(select):
@@ -2288,7 +2515,13 @@ def _attach_merged_cmp(cases: dict) -> None:
         items: list[dict] = []
         ver_status = case.get("__ver_status") or {}
         for impl in ("dynamo_rust", "vllm_python", "sglang_python"):
-            for slug, info in (ver_status.get(impl) or {}).items():
+            # Within an engine, LATEST version first (matches the compare bar).
+            entries = sorted(
+                (ver_status.get(impl) or {}).items(),
+                key=lambda kv: toolcalling_table._version_sort_key(str(kv[1].get("version") or "0")),
+                reverse=True,
+            )
+            for slug, info in entries:
                 items.append({
                     "key": f"{impl}-b-{slug}",
                     "label": _full_label(impl, info['version'], "batch"),
@@ -2517,13 +2750,18 @@ def _build_sob_tooltip(case: dict, marker_context: str | None = None) -> str:
     # `chunks:`. When it's present it already shows both X_s and X_b, so the
     # separate per-engine blocks below would be redundant — skip them.
     chart = _per_chunk_chart_html(case, "stream")
+    # A CANDIDATE chart (data-cand columns = the compare candidates) already carries
+    # each candidate's per-chunk emit + assembled output (with explanation) in its
+    # own toggleable/REF-ordered column — the per-candidate list sections would
+    # repeat it one by one, so they are dropped when that chart rendered.
+    cand_chart = chart is not None and "data-cand" in chart[1]
     sections: list[tuple] = []
     ver_status = case.get("__ver_status") or {}
-    if ver_status:
+    if ver_status and not cand_chart:
         # Versioned candidates (impl×engine-version, e.g. vLLM 0.23.0 vs 0.24.0):
         # one toggleable section each showing that version's assembled stream output.
-        # Kept alongside the chart so the Base/Compare selection reveals each
-        # candidate — the stream analogue of the batch tab's per-version blocks.
+        # Kept alongside a legacy impl-keyed chart so the Base/Compare selection
+        # reveals each candidate — the stream analogue of the batch per-version blocks.
         for impl in ("dynamo_rust", "vllm_rust", "vllm_python", "sglang_python"):
             for slug, info in (ver_status.get(impl) or {}).items():
                 blk = info["block"]
@@ -2547,8 +2785,8 @@ def _build_sob_tooltip(case: dict, marker_context: str | None = None) -> str:
                     (f"{lbl} (batch)", _format_output_block_html(bblk, family), f"cand cand-{impl}",
                      isinstance(bblk, dict) and _block_tool_call_leaks(bblk))
                 )
-    # Show the compare candidates in the same lexical order as the bucket chips.
-    sections.sort(key=lambda s: s[0])
+    # Engine ascending, version DESCENDING within the engine (latest first).
+    _sort_candidate_sections(sections)
     return _build_conformance_tooltip_html(
         head=head,
         description=desc,

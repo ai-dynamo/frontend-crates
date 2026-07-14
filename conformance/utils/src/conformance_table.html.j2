@@ -8,7 +8,8 @@
 {{ impl_status_css|safe }}
 </style>
 </head>
-<body class="view-overview parser-dynamo_rust">
+<body class="view-overview parser-dynamo_rust cmp-loading">
+<div class="cmp-loading-note">loading&hellip; applying the compare model (colors are not final)</div>
 <h1>{% if title_html is defined and title_html %}{{ title_html|safe }}{% else %}{{ title|e }}{% endif %}</h1>
 <p class="generated">
   Auto-generated on {{ stamp|e }}{% if sha %} on commit <a href="https://github.com/ai-dynamo/frontend-crates/commit/{{ sha|e }}"><code>{{ short_sha|e }}</code></a>{% endif %}:

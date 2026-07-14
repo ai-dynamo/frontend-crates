@@ -88,6 +88,17 @@ def _merge_impl(base_doc, vdoc, impl):
         if isinstance(bc.get("unavailable"), dict):
             bc["unavailable"].pop(impl, None)
         bchunks = bc.get("chunks") or []
+        # Clear the impl from EVERY base chunk before applying this version's chunks.
+        # A version doc may carry FEWER chunks than the base (the v1 jail records 2
+        # chunks against a 6-chunk input while the v2 anchor emits in chunk 3); the
+        # per-index overwrite below never reaches the tail chunks, so without this
+        # clear the lower version's deltas survive there and assembly concatenates
+        # both versions (the `get_weatherget_weather` doubling).
+        for ch in bchunks:
+            if isinstance(ch, dict):
+                (ch.get("expected") or {}).pop(impl, None)
+                if isinstance(ch.get("normal_text"), dict):
+                    ch["normal_text"].pop(impl, None)
         for i, ve in enumerate(vc.get("chunks") or []):
             if i >= len(bchunks) or not isinstance(bchunks[i], dict):
                 continue

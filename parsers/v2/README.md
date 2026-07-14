@@ -4,7 +4,7 @@ Rust crate for Dynamo-owned token-incremental tool-call parsers. This is the v2 
 
 This README is the canonical parser documentation for the workspace. The goals, family taxonomy, and how-to-add-a-parser guidance below cover both the v1 batch crate (`../parsers/`) and this v2 streaming crate, and `../parsers/README.md` defers here.
 
-**Two parser paths exist today.** v1 (`../parsers/`) is the **jail-and-buffer** path still in use: it buffers the entire model output, then parses it. v2 (this crate) is the **pure-streaming** path — token-incremental, and still under development. The two are kept in agreement (goal 8 below). v1 is not being merged into v2; when v2 is done it will fully replace v1, and all v1 code and docs will be removed outright. Put new parser work and documentation here, not in v1.
+**Two parser paths exist today (universal convention).** v1 (`../parsers/`) is the **batch** parser, used two ways: plain **batch** (complete text parsed in one call) and **jail+batch** (streaming input is buffered — "jailed" — until a call completes, then batch-parsed and emitted all at once; a call is never streamed incrementally). v2 (this crate) is the **streaming** parser — its primary mode emits deltas per chunk as input arrives, and it can also take batch input (the whole text as one chunk, the batch-on-stream path). v2 is still under development. The two are kept in agreement (goal 8 below). v1 is not being merged into v2; when v2 is done it will fully replace v1, and all v1 code and docs will be removed outright. Put new parser work and documentation here, not in v1.
 
 ## Parser goals (read first)
 
