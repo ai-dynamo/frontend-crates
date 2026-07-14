@@ -58,7 +58,7 @@ const DEEPSEEK_PATH: &str = concat!(
 /// tokenizer config registers Kimi's ChatML boundaries as CoreBPE special tokens.
 const TIKTOKEN_PATH: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../llm/tests/data/sample-models/mock-tiktoken/tiktoken.model"
+    "/tests/data/sample-models/mock-tiktoken/tiktoken.model"
 );
 
 /// A tokenizer fixture together with the formatter that re-keys the chat corpus into
