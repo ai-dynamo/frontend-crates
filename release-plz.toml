@@ -2,8 +2,11 @@
 
 [workspace]
 # Validate proposed bumps against the public API diff via cargo-semver-checks.
-# If a `fix:` or `chore:` commit actually removed/renamed a pub item, the
-# release fails before anything is published.
+# If a `fix:` or `chore:` commit actually removed/renamed a pub item, the bump
+# fails before anything is published. STILL ACTIVE after DIS-2414: CI no longer
+# runs `release-plz update`, but this check runs whenever a human runs
+# `release-plz update` locally to compute a manual bump — that's where SemVer
+# safety now lives.
 semver_check = true
 
 # Only commits matching this regex count toward "is there anything to release"

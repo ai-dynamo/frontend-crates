@@ -31,6 +31,19 @@ jobs:
     # but isn't yet on crates.io. `release-plz release` is a no-op when every
     # crate's version is already published, so running on every push to main
     # is safe and cheap.
+    #
+    # Why manual: auto-bumping every merge (the old `release-plz update` step)
+    # was flaky and undesirable — it churned versions on every push, burned
+    # version space (dynamo-parsers-v2 went 0.1.17 -> 0.1.21 in days), and made
+    # downstream pins (e.g. vLLM's `dynamo-parsers-v2 = =0.1.x`) go stale
+    # constantly. A human deciding when/what to bump keeps versions meaningful.
+    #
+    # NOTE: dropping `release-plz update` from CI does NOT drop SemVer safety.
+    # `semver_check = true` in release-plz.toml is STILL used — it validates the
+    # proposed bump against the crate's real public-API diff (removed/renamed
+    # pub items force a major bump) when a human runs `release-plz update`
+    # locally to compute the manual bump. The check just moved from CI to that
+    # local step; publishing here never needs cargo-semver-checks. No worries.
     steps:
       - name: Generate release app token
         id: release-token
