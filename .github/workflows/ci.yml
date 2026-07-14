@@ -98,6 +98,41 @@ jobs:
       - name: Verify crates are publishable
         run: cargo publish --workspace --dry-run --locked
 
+  # Public-API SemVer gate. With version bumps now manual (DIS-2414), nothing in
+  # CI auto-computes the required bump anymore, so this job is the safety net:
+  # cargo-semver-checks compares each publishable crate's current public API
+  # against its latest crates.io release and fails if the change needs a bigger
+  # bump than the crate's [package] version reflects. A breaking change must
+  # therefore also bump the version IN THE SAME PR, before merge — a stricter,
+  # earlier gate than the old post-merge `release-plz update` check it replaces.
+  # Runs on stable via RUSTC_BOOTSTRAP (cargo-semver-checks handles this); the
+  # three `publish = false` crates are skipped automatically.
+  semver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # cargo-semver-checks builds each crate's rustdoc; mirror the `rust` job's
+      # fixture token in case a build path pulls the private dataset.
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Install Rust
+        run: rustup toolchain install
+
+      - name: Install cargo-semver-checks
+        run: |
+          curl -sSLf https://github.com/obi1kenobi/cargo-semver-checks/releases/download/v0.48.0/cargo-semver-checks-x86_64-unknown-linux-gnu.tar.gz \
+            | tar xz -C /usr/local/bin
+          cargo-semver-checks --version
+
+      - name: Install fixture download dependencies
+        run: pip install --quiet huggingface_hub
+
+      - name: Check public API SemVer
+        run: cargo semver-checks --workspace
+
   # Render-smoke for the vendored conformance-table generator. Catches generator/fixture
   # breakage. Python + pyyaml/jinja2 only — no engines (vLLM/SGLang conformance runs in
   # dynamo's CI lanes; here the engine lanes are on-demand/local).

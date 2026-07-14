@@ -5,8 +5,9 @@
 # If a `fix:` or `chore:` commit actually removed/renamed a pub item, the bump
 # fails before anything is published. STILL ACTIVE after DIS-2414: CI no longer
 # runs `release-plz update`, but this check runs whenever a human runs
-# `release-plz update` locally to compute a manual bump — that's where SemVer
-# safety now lives.
+# `release-plz update` locally to compute a manual bump. The primary automated
+# SemVer gate now lives in the `semver` job of .github/workflows/ci.yml, which
+# runs cargo-semver-checks on every PR.
 semver_check = true
 
 # Only commits matching this regex count toward "is there anything to release"
