@@ -4,7 +4,7 @@
 [package]
 name = "dynamo-renderer"
 readme = "README.md"
-version = "1.3.11"
+version = "1.3.12"
 edition.workspace = true
 description = "Standalone OpenAI chat-template / prompt formatting (HF chat_template via minijinja)."
 authors.workspace = true
