@@ -243,7 +243,7 @@ git commit -m "fixtures: snapshot <stamp printed by publish script>"
 
 The publish script builds deterministic per-version shard tarballs plus a monolith `all-<stamp>.tar.gz`, uploads each blob individually (one commit per blob on HF), and writes the new manifest. Unchanged shards are LFS-deduped by HF and are not re-uploaded.
 
-After uploading, the script prunes old `all-<stamp>.tar.gz` monoliths from the HF repo, keeping only the `--keep-last N` most recent (default 5; `--keep-last 0` disables pruning). Shard tarballs live at fixed paths and are overwritten in place, so only the stamped monoliths accumulate. Pruning never touches the snapshot pinned by the committed manifest as long as it is within the last N.
+After uploading, the script prunes old `all-<stamp>.tar.gz` monoliths from the HF repo, keeping only the `--keep-last N` most recent (default 5; `--keep-last 0` disables pruning). Shard tarballs live at fixed paths and are overwritten in place, so only the stamped monoliths accumulate. The snapshot pinned by `conformance/fixtures-manifest.json` is never deleted, even when it falls outside the last N — checkouts on the committed manifest still download it.
 
 ### Add new fixtures (new SGLang / vLLM / Dynamo family)
 

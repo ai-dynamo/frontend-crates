@@ -258,10 +258,13 @@ def cleanup_old_loose(token, repo_id, dry_run):
     print(f"  Deleted {len(to_delete)} old loose files.")
 
 
-def prune_old_snapshots(token, repo_id, keep_last, dry_run):
+def prune_old_snapshots(token, repo_id, keep_last, dry_run, pinned=None):
     """Delete all but the keep_last most recent all-<stamp>.tar.gz monoliths from the HF repo.
 
     Stamps are YYYYMMDD_HHMMSS, so lexicographic order == chronological order.
+    The pinned monolith (manifest `all_tarball`) is NEVER deleted, even when it
+    falls outside the keep_last window — every checkout on the committed manifest
+    still downloads it.
     """
     try:
         from huggingface_hub import HfApi, CommitOperationDelete
@@ -278,6 +281,9 @@ def prune_old_snapshots(token, repo_id, keep_last, dry_run):
         and re.fullmatch(r"all-\d{8}_\d{6}\.tar\.gz", e.path)
     )
     to_delete = snapshots[:-keep_last]
+    if pinned in to_delete:
+        print(f"  keeping {pinned} — pinned by {MANIFEST_REL}")
+        to_delete = [p for p in to_delete if p != pinned]
     if not to_delete:
         print(f"  {len(snapshots)} snapshot(s) present, nothing to prune.")
         return
@@ -387,7 +393,13 @@ def main():
         if args.keep_last > 0:
             print(f"\nPruning old snapshots in {args.repo} (keep last {args.keep_last})…")
             if token:
-                prune_old_snapshots(token, args.repo, args.keep_last, args.dry_run)
+                # The working-tree manifest still holds the committed pin here —
+                # the new manifest is written below, after pruning.
+                pinned = None
+                pinned_manifest = ROOT / MANIFEST_REL
+                if pinned_manifest.exists():
+                    pinned = json.loads(pinned_manifest.read_text()).get("all_tarball")
+                prune_old_snapshots(token, args.repo, args.keep_last, args.dry_run, pinned=pinned)
             else:
                 # tokenless --dry-run can't list the private repo; keep it working
                 print("  [dry-run] no token, skipping snapshot listing")
