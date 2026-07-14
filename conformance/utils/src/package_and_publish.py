@@ -18,7 +18,8 @@ Shard layout (relative to HF repo root):
 Usage:
   export HF_TOKEN=<your-write-token>
   python3 package_and_publish.py [--dry-run] [--snapshot YYYYMMDD_HHMMSS]
-  python3 package_and_publish.py --cleanup-old   # delete old loose files from HF repo
+  python3 package_and_publish.py --cleanup-old        # delete old loose files from HF repo
+  python3 package_and_publish.py --keep-last 5        # prune old all-*.tar.gz after publish (default: 5)
 
 HF_TOKEN must be set to a write-capable token before running. The script does not
 search personal token caches — callers are responsible for exporting the right token.
@@ -257,6 +258,47 @@ def cleanup_old_loose(token, repo_id, dry_run):
     print(f"  Deleted {len(to_delete)} old loose files.")
 
 
+def prune_old_snapshots(token, repo_id, keep_last, dry_run):
+    """Delete all but the keep_last most recent all-<stamp>.tar.gz monoliths from the HF repo.
+
+    Stamps are YYYYMMDD_HHMMSS, so lexicographic order == chronological order.
+    """
+    try:
+        from huggingface_hub import HfApi, CommitOperationDelete
+    except ImportError:
+        sys.exit("huggingface_hub is not installed.")
+
+    api = HfApi(token=token)
+    # Monoliths live at the repo root; non-recursive listing is enough.
+    entries = api.list_repo_tree(repo_id=repo_id, repo_type="dataset")
+    snapshots = sorted(
+        e.path
+        for e in entries
+        if hasattr(e, "size")  # RepoFile (not RepoFolder)
+        and re.fullmatch(r"all-\d{8}_\d{6}\.tar\.gz", e.path)
+    )
+    to_delete = snapshots[:-keep_last]
+    if not to_delete:
+        print(f"  {len(snapshots)} snapshot(s) present, nothing to prune.")
+        return
+
+    print(f"  {len(snapshots)} snapshots present, pruning {len(to_delete)} (keeping {keep_last} most recent):")
+    for path in to_delete:
+        print(f"    {path}")
+
+    if dry_run:
+        print("  [dry-run] skipping delete")
+        return
+
+    api.create_commit(
+        repo_id=repo_id,
+        repo_type="dataset",
+        operations=[CommitOperationDelete(path_in_repo=p) for p in to_delete],
+        commit_message=f"fixtures: prune old snapshots, keep last {keep_last}",
+    )
+    print(f"  Deleted {len(to_delete)} old snapshot(s).")
+
+
 def main():
     ap = argparse.ArgumentParser(
         description="Package and publish conformance fixtures to HuggingFace"
@@ -269,6 +311,13 @@ def main():
         "--cleanup-old",
         action="store_true",
         help="Delete old non-tarball files from HF repo after publishing",
+    )
+    ap.add_argument(
+        "--keep-last",
+        type=int,
+        default=5,
+        metavar="N",
+        help="After publishing, prune old all-<stamp>.tar.gz monoliths, keeping the N most recent (default: 5; 0 = disable)",
     )
     args = ap.parse_args()
 
@@ -334,6 +383,10 @@ def main():
         if args.cleanup_old:
             print(f"\nCleaning up old loose files in {args.repo}…")
             cleanup_old_loose(token, args.repo, args.dry_run)
+
+        if args.keep_last > 0:
+            print(f"\nPruning old snapshots in {args.repo} (keep_last={args.keep_last})…")
+            prune_old_snapshots(token, args.repo, args.keep_last, args.dry_run)
 
         manifest = {
             "snapshot": stamp,
