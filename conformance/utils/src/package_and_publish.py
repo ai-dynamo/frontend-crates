@@ -39,6 +39,10 @@ from pathlib import Path
 # conformance/utils/src/ -> repo root: 4 .parent calls (strip filename, then 3 dirs)
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
 MANIFEST_REL = Path("conformance") / "fixtures-manifest.json"
+# Source of truth for the HF dataset card. Published as the dataset's README.md
+# so the rendered card stays in sync with the repo instead of being hand-edited
+# on the Hub.
+DATASET_CARD_REL = Path("conformance") / "utils" / "dataset_card.md"
 DEFAULT_REPO = "ai-dynamo/conformance-fixtures"
 
 # Fixture trees that get one shard tarball per immediate subdir
@@ -216,6 +220,46 @@ def upload_blobs(token, repo_id, blobs_dir, commit_msg, dry_run):
     print(f"  Upload complete.")
 
 
+def upload_readme(token, repo_id, stamp, created_pt, crates, peers, dry_run):
+    """Publish the in-repo dataset card as the HF dataset README (the rendered card).
+
+    Renders {{STAMP}}, {{CREATED_PT}}, {{CRATES}}, {{PEERS}} placeholders so the
+    live card always reflects the current snapshot's version metadata.
+
+    `cleanup_old_loose` deliberately keeps README.md on the Hub; this keeps it
+    authoritative from the repo instead, so the card never drifts from source.
+    """
+    card = ROOT / DATASET_CARD_REL
+    if not card.is_file():
+        sys.exit(f"dataset card not found: {card}")
+
+    peers_str = ", ".join(f"{k} {v}" for k, v in sorted(peers.items()))
+    crates_str = ", ".join(f"{k} {v}" for k, v in sorted(crates.items()))
+    rendered = (
+        card.read_text()
+        .replace("{{STAMP}}", stamp)
+        .replace("{{CREATED_PT}}", created_pt)
+        .replace("{{PEERS}}", peers_str)
+        .replace("{{CRATES}}", crates_str)
+    )
+
+    if dry_run:
+        print(f"  [dry-run] would upload {DATASET_CARD_REL} -> README.md (stamp={stamp})")
+        return
+    from huggingface_hub import HfApi
+    import io
+
+    api = HfApi(token=token)
+    api.upload_file(
+        path_or_fileobj=io.BytesIO(rendered.encode()),
+        path_in_repo="README.md",
+        repo_id=repo_id,
+        repo_type="dataset",
+        commit_message=f"docs: sync dataset card from repo (snapshot {stamp})",
+    )
+    print(f"  README.md <- {DATASET_CARD_REL} (stamp={stamp})")
+
+
 def cleanup_old_loose(token, repo_id, dry_run):
     """Delete non-tarball files from the HF repo (clears the old loose YAML mirror)."""
     try:
@@ -330,6 +374,9 @@ def main():
 
         print(f"\nUploading to {args.repo}…")
         upload_blobs(token, args.repo, blobs_dir, f"fixtures: snapshot {stamp}", args.dry_run)
+
+        print("\nUploading dataset card…")
+        upload_readme(token, args.repo, stamp, created_pt, crates, peers, args.dry_run)
 
         if args.cleanup_old:
             print(f"\nCleaning up old loose files in {args.repo}…")
