@@ -293,6 +293,9 @@ td.cell:hover, td.parser:hover, td.cell:focus-within, td.parser:focus-within { z
     visibility: visible;
     opacity: 1;
 }
+/* cursor:pointer marks the cell as tappable so iOS/iPadOS Safari fires the `click`
+   event for tap-to-pin (it withholds click on non-interactive elements otherwise). */
+td.cell, td.parser { cursor: pointer; }
 /* Tap-to-pin (touch / mobile): a pinned tooltip stays open until ✕ or an outside
    tap. Give it room for the close button and let it scroll if it's tall. */
 .ttip-pinned { padding-top: 26px; max-height: 80vh; overflow: auto; }

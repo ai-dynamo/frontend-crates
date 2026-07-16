@@ -839,10 +839,18 @@
       }, hideDelayMs);
     }
 
-    // Tap (or click) toggles a pinned tooltip. Let real controls inside the cell
-    // (parser-source links, compare checkboxes) work normally.
+    // Tap (or click) toggles a pinned tooltip. Taps INSIDE the tooltip (its links,
+    // the ✕) behave normally. On touch there's no hover, so a tap on the cell must
+    // open the tooltip instead of following the cell's own parser-source link —
+    // preventDefault blocks that navigation. On desktop, a click on the cell link
+    // still navigates; a click on the cell body pins.
     cell.addEventListener('click', function (e) {
-      if (e.target.closest('a, button, input, label')) { return; }
+      if (e.target.closest('.ttip')) { return; }
+      if (!hoverCapable) {
+        e.preventDefault();
+      } else if (e.target.closest('a, button, input, label')) {
+        return;
+      }
       if (ttip.classList.contains('ttip-pinned')) { unpin(); } else { pin(); }
     });
     // Hover show/hide only where hover exists; on touch it just flickers. A pinned
