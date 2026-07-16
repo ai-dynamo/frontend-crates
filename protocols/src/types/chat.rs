@@ -278,7 +278,12 @@ pub enum ImageDetail {
     High,
 }
 
-/// Image content part -- uses our extended `ImageUrl` with `url::Url` and `uuid`.
+/// Image content part.
+///
+/// vLLM's OpenAI-compatible server accepts an optional top-level `uuid` on the
+/// media content part. For cache-hit-only requests, `image_url` is null and
+/// `uuid` carries the cache key. This is a vLLM extension, not part of the
+/// OpenAI Chat Completions API.
 #[derive(Debug, Serialize, Deserialize, Clone, Builder, PartialEq)]
 #[builder(name = "ChatCompletionRequestMessageContentPartImageArgs")]
 #[builder(pattern = "mutable")]
@@ -286,13 +291,19 @@ pub enum ImageDetail {
 #[builder(derive(Debug))]
 #[builder(build_fn(error = "OpenAIError"))]
 pub struct ChatCompletionRequestMessageContentPartImage {
-    pub image_url: ImageUrl,
+    #[builder(default)]
+    #[serde(default)]
+    pub image_url: Option<ImageUrl>,
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// vLLM-only multimodal processor-cache identity.
+    pub uuid: Option<String>,
 }
 
-/// Image URL with `url::Url` type and optional UUID.
+/// Image URL with `url::Url` type and a legacy optional UUID.
 ///
-/// Differs from upstream: uses `url::Url` instead of `String`, adds `uuid` field
-/// for tracking multimodal assets through the pipeline.
+/// New callers should put vLLM processor-cache identities on
+/// [`ChatCompletionRequestMessageContentPartImage::uuid`].
 #[derive(Debug, Serialize, Deserialize, Clone, Builder, PartialEq)]
 #[builder(name = "ImageUrlArgs")]
 #[builder(pattern = "mutable")]
@@ -302,6 +313,7 @@ pub struct ChatCompletionRequestMessageContentPartImage {
 pub struct ImageUrl {
     pub url: Url,
     pub detail: Option<ImageDetail>,
+    #[deprecated(note = "use the content-part `uuid` field for vLLM cache identities")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uuid: Option<Uuid>,
 }
@@ -503,6 +515,7 @@ pub enum ChatCompletionMessageContent {
 pub struct VideoUrl {
     pub url: Url,
     pub detail: Option<ImageDetail>,
+    #[deprecated(note = "use the content-part `uuid` field for vLLM cache identities")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uuid: Option<Uuid>,
 }
@@ -514,7 +527,13 @@ pub struct VideoUrl {
 #[builder(derive(Debug))]
 #[builder(build_fn(error = "OpenAIError"))]
 pub struct ChatCompletionRequestMessageContentPartVideo {
-    pub video_url: VideoUrl,
+    #[builder(default)]
+    #[serde(default)]
+    pub video_url: Option<VideoUrl>,
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// vLLM-only multimodal processor-cache identity.
+    pub uuid: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Builder, PartialEq)]
@@ -525,6 +544,7 @@ pub struct ChatCompletionRequestMessageContentPartVideo {
 #[builder(build_fn(error = "OpenAIError"))]
 pub struct AudioUrl {
     pub url: Url,
+    #[deprecated(note = "use the content-part `uuid` field for vLLM cache identities")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uuid: Option<Uuid>,
 }
@@ -536,7 +556,13 @@ pub struct AudioUrl {
 #[builder(derive(Debug))]
 #[builder(build_fn(error = "OpenAIError"))]
 pub struct ChatCompletionRequestMessageContentPartAudioUrl {
-    pub audio_url: AudioUrl,
+    #[builder(default)]
+    #[serde(default)]
+    pub audio_url: Option<AudioUrl>,
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// vLLM-only multimodal processor-cache identity.
+    pub uuid: Option<String>,
 }
 
 // -- Extended request/response types --
@@ -1085,5 +1111,220 @@ mod tests {
             }))
             .unwrap();
         assert_eq!(delta.arguments.as_deref(), Some("{\"location\":\"SF\"}"));
+    }
+
+    fn parse_content_part(json: serde_json::Value) -> ChatCompletionRequestUserMessageContentPart {
+        serde_json::from_value(json).expect("content part deserialization failed")
+    }
+
+    #[test]
+    fn image_url_url_and_top_level_uuid() {
+        let part = parse_content_part(serde_json::json!({
+            "type": "image_url",
+            "image_url": {"url": "https://x.example/y.png"},
+            "uuid": "image-123"
+        }));
+
+        match part {
+            ChatCompletionRequestUserMessageContentPart::ImageUrl(part) => {
+                assert_eq!(part.uuid.as_deref(), Some("image-123"));
+                assert_eq!(
+                    part.image_url.as_ref().map(|image| image.url.as_str()),
+                    Some("https://x.example/y.png")
+                );
+            }
+            _ => panic!("expected image_url part"),
+        }
+    }
+
+    #[test]
+    fn image_url_null_and_top_level_uuid() {
+        let part = parse_content_part(serde_json::json!({
+            "type": "image_url",
+            "image_url": null,
+            "uuid": "sku-1234-a"
+        }));
+
+        match part {
+            ChatCompletionRequestUserMessageContentPart::ImageUrl(part) => {
+                assert!(part.image_url.is_none());
+                assert_eq!(part.uuid.as_deref(), Some("sku-1234-a"));
+            }
+            _ => panic!("expected image_url part"),
+        }
+    }
+
+    #[test]
+    fn image_url_null_without_uuid_deserializes_for_use_site_validation() {
+        let part = parse_content_part(serde_json::json!({
+            "type": "image_url",
+            "image_url": null
+        }));
+
+        match part {
+            ChatCompletionRequestUserMessageContentPart::ImageUrl(part) => {
+                assert!(part.image_url.is_none());
+                assert!(part.uuid.is_none());
+            }
+            _ => panic!("expected image_url part"),
+        }
+    }
+
+    #[test]
+    fn image_url_serialize_uuid_only_uses_null_image_url() {
+        let part = ChatCompletionRequestMessageContentPartImage {
+            image_url: None,
+            uuid: Some("image-123".to_string()),
+        };
+        let json = serde_json::to_value(part).unwrap();
+
+        assert!(json["image_url"].is_null());
+        assert_eq!(json["uuid"], "image-123");
+    }
+
+    #[test]
+    fn cached_media_builders_allow_omitting_urls() {
+        let image = ChatCompletionRequestMessageContentPartImageArgs::default()
+            .uuid("image-123")
+            .build()
+            .unwrap();
+        let video = ChatCompletionRequestMessageContentPartVideoArgs::default()
+            .uuid("video-123")
+            .build()
+            .unwrap();
+        let audio = ChatCompletionRequestMessageContentPartAudioUrlArgs::default()
+            .uuid("audio-123")
+            .build()
+            .unwrap();
+
+        let image_json = serde_json::to_value(image).unwrap();
+        let video_json = serde_json::to_value(video).unwrap();
+        let audio_json = serde_json::to_value(audio).unwrap();
+        assert!(image_json["image_url"].is_null());
+        assert!(video_json["video_url"].is_null());
+        assert!(audio_json["audio_url"].is_null());
+    }
+
+    #[test]
+    fn image_url_uuid_accepts_opaque_string() {
+        let part = parse_content_part(serde_json::json!({
+            "type": "image_url",
+            "image_url": {"url": "https://x.example/y.png"},
+            "uuid": "img-ac3921de680bb217"
+        }));
+
+        match part {
+            ChatCompletionRequestUserMessageContentPart::ImageUrl(part) => {
+                assert_eq!(part.uuid.as_deref(), Some("img-ac3921de680bb217"));
+            }
+            _ => panic!("expected image_url part"),
+        }
+    }
+
+    #[test]
+    fn url_conversions_preserve_required_urls() {
+        let image: ImageUrl = "https://x.example/image.png".into();
+        let video: VideoUrl = "https://x.example/video.mp4".into();
+        let audio: AudioUrl = "https://x.example/audio.wav".into();
+
+        assert_eq!(image.url.as_str(), "https://x.example/image.png");
+        assert_eq!(video.url.as_str(), "https://x.example/video.mp4");
+        assert_eq!(audio.url.as_str(), "https://x.example/audio.wav");
+    }
+
+    #[test]
+    fn legacy_nested_media_uuids_remain_accepted() {
+        let legacy_uuid = "92b888ad-e64a-478f-b688-5091e16544e3";
+
+        for (part_type, media_field, url) in [
+            ("image_url", "image_url", "https://x.example/image.png"),
+            ("video_url", "video_url", "https://x.example/video.mp4"),
+            ("audio_url", "audio_url", "https://x.example/audio.wav"),
+        ] {
+            let part = parse_content_part(serde_json::json!({
+                "type": part_type,
+                (media_field): {"url": url, "uuid": legacy_uuid}
+            }));
+            let json = serde_json::to_value(part).unwrap();
+
+            assert_eq!(json[media_field]["url"], url);
+            assert_eq!(json[media_field]["uuid"], legacy_uuid);
+            assert!(json.get("uuid").is_none());
+        }
+    }
+
+    #[test]
+    fn video_url_null_and_top_level_uuid() {
+        let part = parse_content_part(serde_json::json!({
+            "type": "video_url",
+            "video_url": null,
+            "uuid": "video-cache-key"
+        }));
+
+        match part {
+            ChatCompletionRequestUserMessageContentPart::VideoUrl(part) => {
+                assert!(part.video_url.is_none());
+                assert_eq!(part.uuid.as_deref(), Some("video-cache-key"));
+            }
+            _ => panic!("expected video_url part"),
+        }
+    }
+
+    #[test]
+    fn audio_url_null_and_top_level_uuid() {
+        let part = parse_content_part(serde_json::json!({
+            "type": "audio_url",
+            "audio_url": null,
+            "uuid": "audio-cache-key"
+        }));
+
+        match part {
+            ChatCompletionRequestUserMessageContentPart::AudioUrl(part) => {
+                assert!(part.audio_url.is_none());
+                assert_eq!(part.uuid.as_deref(), Some("audio-cache-key"));
+            }
+            _ => panic!("expected audio_url part"),
+        }
+    }
+
+    #[test]
+    fn message_content_array_preserves_uuid_alignment() {
+        let payload = serde_json::json!({
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "describe these"},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": "https://x.example/img1.png"},
+                    "uuid": "image-1"
+                },
+                {"type": "image_url", "image_url": null, "uuid": "image-1"}
+            ]
+        });
+        let message: ChatCompletionRequestUserMessage = serde_json::from_value(payload).unwrap();
+        let ChatCompletionRequestUserMessageContent::Array(parts) = message.content else {
+            panic!("expected content array");
+        };
+
+        assert_eq!(parts.len(), 3);
+        match &parts[1] {
+            ChatCompletionRequestUserMessageContentPart::ImageUrl(part) => {
+                assert!(
+                    part.image_url
+                        .as_ref()
+                        .map(|image| image.url.as_str())
+                        .is_some()
+                );
+                assert_eq!(part.uuid.as_deref(), Some("image-1"));
+            }
+            _ => panic!("parts[1] should be image_url"),
+        }
+        match &parts[2] {
+            ChatCompletionRequestUserMessageContentPart::ImageUrl(part) => {
+                assert!(part.image_url.is_none());
+                assert_eq!(part.uuid.as_deref(), Some("image-1"));
+            }
+            _ => panic!("parts[2] should be image_url"),
+        }
     }
 }
