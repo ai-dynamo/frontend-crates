@@ -2246,19 +2246,38 @@ _STREAM_SRC = (
 )
 
 
+_PATCH_SUFFIX_RE = re.compile(r"\.patch\d+$")
+
+
+def _base_stream_version(ver: str) -> str:
+    """A `X.patchN` capture is the SAME parser binary re-run to backfill newer
+    cases onto version `X` (e.g. 0.1.11.patch1 = the 0.1.11 binary on streamv2.5.h).
+    It folds onto `X` for display — it is not a standalone candidate version. The
+    on-disk shard stays separate so the pristine `X` capture is never rewritten;
+    the resolver folds the overlay because it sorts equal to `X`."""
+    return _PATCH_SUFFIX_RE.sub("", ver)
+
+
 @functools.lru_cache(maxsize=1)
 def _impl_version_families() -> dict:
     """{impl: [(version_raw, slug, frozenset(families)), ...]} discovered from
     fixtures-stream-v2/<impl>-<version>/<family>/. Lets a genuinely "not
     implemented yet" candidate (a family a LATER version of the same impl added)
-    be told apart from a plain missing capture."""
-    out: dict = {}
+    be told apart from a plain missing capture. `.patchN` overlays merge into
+    their base version's family set."""
+    merged: dict = {}
     if _STREAM_SRC.is_dir():
         for d in _STREAM_SRC.iterdir():
             if not d.is_dir() or d.name == "inputs" or "-" not in d.name:
                 continue
             impl, ver = d.name.split("-", 1)
+            base = _base_stream_version(ver)
             fams = frozenset(f.name for f in d.iterdir() if f.is_dir())
+            merged.setdefault(impl, {}).setdefault(base, set()).update(fams)
+    out: dict = {}
+    for impl, by_ver in merged.items():
+        for ver, fams in by_ver.items():
+            fams = frozenset(fams)
             out.setdefault(impl, []).append(
                 (ver, toolcalling_table._version_slug(ver), fams)
             )
@@ -2298,7 +2317,10 @@ def _stream_impl_versions() -> dict[str, list[str]]:
             if not d.is_dir() or d.name == "inputs" or "-" not in d.name:
                 continue
             impl, ver = d.name.split("-", 1)
-            found.setdefault(impl, []).append(ver)
+            # `.patchN` overlays are NOT standalone candidates — they fold onto their
+            # base version (the resolver merges them since they sort equal). Collapse
+            # to the base so only real versions become compare columns.
+            found.setdefault(impl, []).append(_base_stream_version(ver))
     for impl in list(found):
         found[impl] = sorted(set(found[impl]), key=toolcalling_table._version_sort_key)
     order = ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python")

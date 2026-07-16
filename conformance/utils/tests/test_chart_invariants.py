@@ -168,6 +168,16 @@ def test_v2_batch_tab_has_all_peer_versions(charts):
             assert v in seg, f"v2 batch tab missing {impl} {v}"
 
 
+def test_patch_overlay_folds_into_base_version_not_a_separate_candidate(charts):
+    # A `X.patchN` capture (the same binary re-run to backfill newer cases onto X)
+    # must fold into X's column for display, never appear as its own candidate.
+    seg = _panel(charts["v2"], "tab-toolcalling-streamv2", _V2_TABS)
+    assert "patch" not in seg.lower(), (
+        "a .patchN overlay leaked into the stream tab as a standalone candidate; "
+        "it must fold onto its base version's column"
+    )
+
+
 def test_older_v2_version_reads_not_implemented_yet_on_later_added_family(charts):
     # A candidate at an older v2 version (0.1.11) on a family a LATER version
     # (0.1.22) added must render "(not implemented yet)", NOT the generic
