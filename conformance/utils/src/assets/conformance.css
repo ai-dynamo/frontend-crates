@@ -293,6 +293,28 @@ td.cell:hover, td.parser:hover, td.cell:focus-within, td.parser:focus-within { z
     visibility: visible;
     opacity: 1;
 }
+/* Tap-to-pin (touch / mobile): a pinned tooltip stays open until ✕ or an outside
+   tap. Give it room for the close button and let it scroll if it's tall. */
+.ttip-pinned { padding-top: 26px; max-height: 80vh; overflow: auto; }
+.ttip-close {
+    position: absolute;
+    top: 3px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.16);
+    color: #e5e7eb;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    display: none;
+    z-index: 1;
+}
+.ttip-close:hover { background: rgba(255,255,255,0.30); }
+.ttip-pinned .ttip-close { display: block; }
 td.cell .ttip a, td.parser .ttip a { color: #bfdbfe; text-decoration: none; border-bottom: 1.5px solid currentColor; padding-bottom: 1px; display: inline; }
 td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: transparent; }
 .ttip-head { font-weight: bold; margin-bottom: 4px; color: #fbbf24; }

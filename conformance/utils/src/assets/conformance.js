@@ -742,6 +742,18 @@
     ttip.style.opacity = '';
   }
 
+  // Touch devices have no hover, so the tooltip is opened by TAP and pinned open
+  // (with an ✕ to close) rather than shown on pointerenter. Desktop keeps hover;
+  // a click there also pins (handy for reading a big tooltip without holding the
+  // mouse still). Only one tooltip is pinned at a time.
+  const hoverCapable = window.matchMedia('(hover: hover)').matches;
+  let pinnedCell = null;
+  function unpinCell(c) { if (c && c._ttipUnpin) { c._ttipUnpin(); } }
+  document.addEventListener('click', function (e) {
+    // A click anywhere outside a cell (and not on a pinned tooltip) closes the pin.
+    if (pinnedCell && !e.target.closest('td.cell, td.parser')) { unpinCell(pinnedCell); }
+  });
+
   function attachTooltip(cell) {
     const ttip = cell.querySelector('.ttip');
     if (!ttip) return;
@@ -754,6 +766,34 @@
     let hideTimer = null;
     let isActive = false;
     let isVisible = false;
+
+    // ✕ close button (shown only while pinned) — inserted once per tooltip.
+    if (!ttip.querySelector('.ttip-close')) {
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.className = 'ttip-close';
+      x.setAttribute('aria-label', 'Close');
+      x.textContent = '✕';
+      x.addEventListener('click', function (e) { e.stopPropagation(); unpin(); });
+      ttip.insertBefore(x, ttip.firstChild);
+    }
+
+    function pin() {
+      if (pinnedCell && pinnedCell !== cell) { unpinCell(pinnedCell); }
+      clearTimers();
+      place(cell);
+      ttip.classList.add('ttip-visible', 'ttip-pinned');
+      isVisible = true;
+      isActive = true;
+      pinnedCell = cell;
+    }
+    function unpin() {
+      ttip.classList.remove('ttip-visible', 'ttip-pinned');
+      isVisible = false;
+      isActive = false;
+      if (pinnedCell === cell) { pinnedCell = null; }
+    }
+    cell._ttipUnpin = unpin;
 
     function clearTimers() {
       if (showTimer !== null) {
@@ -799,10 +839,26 @@
       }, hideDelayMs);
     }
 
-    cell.addEventListener('pointerenter', scheduleShow);
-    cell.addEventListener('pointerleave', scheduleHide);
-    cell.addEventListener('focusin', scheduleShow);
-    cell.addEventListener('focusout', scheduleHide);
+    // Tap (or click) toggles a pinned tooltip. Let real controls inside the cell
+    // (parser-source links, compare checkboxes) work normally.
+    cell.addEventListener('click', function (e) {
+      if (e.target.closest('a, button, input, label')) { return; }
+      if (ttip.classList.contains('ttip-pinned')) { unpin(); } else { pin(); }
+    });
+    // Hover show/hide only where hover exists; on touch it just flickers. A pinned
+    // tooltip ignores hover leave so it stays until ✕ / outside tap.
+    if (hoverCapable) {
+      cell.addEventListener('pointerenter', function () {
+        if (!ttip.classList.contains('ttip-pinned')) { scheduleShow(); }
+      });
+      cell.addEventListener('pointerleave', function () {
+        if (!ttip.classList.contains('ttip-pinned')) { scheduleHide(); }
+      });
+      cell.addEventListener('focusin', scheduleShow);
+      cell.addEventListener('focusout', function () {
+        if (!ttip.classList.contains('ttip-pinned')) { scheduleHide(); }
+      });
+    }
   }
   document.querySelectorAll('td.cell, td.parser').forEach(attachTooltip);
 
