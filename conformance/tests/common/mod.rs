@@ -97,9 +97,15 @@ pub fn version_dirs_ascending(root: &Path, prefix: &str) -> Vec<PathBuf> {
         .map(|e| e.path())
         .filter(|p| {
             p.is_dir()
-                && p.file_name()
-                    .and_then(|n| n.to_str())
-                    .is_some_and(|n| n.starts_with(prefix))
+                && p.file_name().and_then(|n| n.to_str()).is_some_and(|n| {
+                    // `<ver>.patchN` dirs are DISPLAY-ONLY overlays: an OLD parser
+                    // binary re-run to backfill a newer case onto version `<ver>`
+                    // (e.g. dynamo_v2-0.1.11.patch1 = the 0.1.11 binary on streamv2.5.h,
+                    // rendered under the 0.1.11 column in HTML). They are NOT the current
+                    // parser, so they must never join this "latest capture wins" fold —
+                    // otherwise a stale old-binary result can shadow the real latest.
+                    n.starts_with(prefix) && !n.contains(".patch")
+                })
         })
         .map(|p| {
             let key: Vec<u64> = p

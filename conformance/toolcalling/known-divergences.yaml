@@ -144,7 +144,11 @@ minimax_m2:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.2.c:
     stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.5.b:
+    stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.5.f:
+    stream_vs_batch: *svb-recovery
+  TOOLCALLING.batch.5.g:
     stream_vs_batch: *svb-recovery
   TOOLCALLING.batch.8.b:
     stream_vs_batch: *svb-surrounding-text
