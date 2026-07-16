@@ -220,7 +220,17 @@ impl Gemma4ToolStreamParser {
         }
         let tail = &self.buffer[skip..];
         let wrapped = tail.find(TOOL_CALL_START).map(|rel| rel + skip);
-        let bare = first_bare_call_opener_in(tail).map(|rel| rel + skip);
+        // A bare `call:` at the very start of a WRAPPED block's tail is the
+        // block's OWN body (`<|tool_call>call:...`), not a next call. Without
+        // this skip, every complete wrapped block truncated its own end-scan
+        // and detoured through drop + bare-recovery (correct output, but two
+        // misleading warnings per call and a dead Wrapped emit path).
+        let mut bare = first_bare_call_opener_in(tail);
+        if kind == Block::Wrapped && bare == Some(0) {
+            bare = first_bare_call_opener_in(&tail[CALL_PREFIX.len()..])
+                .map(|rel| rel + CALL_PREFIX.len());
+        }
+        let bare = bare.map(|rel| rel + skip);
         match (wrapped, bare) {
             (Some(w), Some(b)) => Some(w.min(b)),
             (Some(w), None) => Some(w),

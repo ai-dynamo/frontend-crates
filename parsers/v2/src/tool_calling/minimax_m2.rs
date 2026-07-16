@@ -294,13 +294,16 @@ fn reorder_arguments(arguments: &str, function: &str) -> String {
     let mut parts: Vec<String> = Vec::new();
     let mut seen: HashSet<String> = HashSet::new();
     for name in source_parameter_order(function) {
-        if let Some(val) = obj.get(&name) {
+        // seen.insert guards a REPEATED parameter tag (same name twice in the
+        // source): the v1 object holds one value per key, so emit it once.
+        if let Some(val) = obj.get(&name)
+            && seen.insert(name.clone())
+        {
             parts.push(format!(
                 "{}:{}",
                 serde_json::to_string(&name).unwrap_or_default(),
                 serde_json::to_string(val).unwrap_or_default()
             ));
-            seen.insert(name);
         }
     }
     // Append any keys not matched in source order (defensive; normally empty).
@@ -363,6 +366,28 @@ mod tests {
         }
         out.append(parser.finish().expect("finish"));
         out
+    }
+
+    #[test]
+    fn repeated_parameter_name_emits_key_once() {
+        // A model that repeats `<parameter name="location">` must not produce
+        // duplicate keys in the serialized arguments (the v1 object holds one
+        // value per key; the reorder pass must emit it once).
+        let out = parse_chunks(
+            &weather_tools(),
+            &["<minimax:tool_call>\n<invoke name=\"get_weather\">\
+               \n<parameter name=\"location\">NYC</parameter>\
+               \n<parameter name=\"location\">NYC</parameter>\
+               \n</invoke>\n</minimax:tool_call>"],
+        );
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 1);
+        let args = merged.calls[0].arguments.clone();
+        assert_eq!(
+            args.matches("\"location\"").count(),
+            1,
+            "duplicate key in arguments: {args}"
+        );
     }
 
     #[test]
