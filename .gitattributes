@@ -1,0 +1,2 @@
+# Conformance fixture shards are stored in Git LFS (binary tarballs).
+conformance/fixtures/**/*.tar.gz filter=lfs diff=lfs merge=lfs -text

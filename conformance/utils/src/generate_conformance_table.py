@@ -22,7 +22,7 @@ Reads every `tests/parity/toolcalling/fixtures/<family>/TOOLCALLING.batch*.yaml`
 the conformance table.
 
 Cell markers (Dynamo Rust + vLLM Rust + vLLM Python + SGLang):
-  =     peer block matches the Dynamo Rust block (`expected.dynamo_rust`)
+  =     peer block matches the Dynamo baseline block (`expected.dynamo_v1` batch / `expected.dynamo_v2` stream)
   D_rb      Dynamo Rust batch parser output diverges from the selected parser
   D_rs      Dynamo Rust stream parser output diverges from the selected parser
   V_pb      vLLM Python batch parser output diverges from the selected parser
@@ -105,8 +105,11 @@ RUST_TOOL_CALLING_DIR = REPO_ROOT / "lib/parsers/src/tool_calling"
 # single source of truth (audit B1). build_stage_conformance stages impls.py next to
 # this file so the import works from the staged tests/parity layout too.
 from impls import (  # noqa: E402
-    BASELINE_IMPL,
+    BASELINE_BATCH_IMPL,
+    BASELINE_IMPLS,
+    BASELINE_STREAM_IMPL,
     BATCH_IMPL_KEYS,
+    baseline_impl,
     ENGINE_LETTER,
     IMPL_DISPLAY,
     IMPL_KEYS,
@@ -522,7 +525,7 @@ def cell_for(
     if case is None:
         return "—"
     expected = _expected(case)
-    dyn = _impl_get(expected, BASELINE_IMPL)
+    dyn = _impl_get(expected, baseline_impl(impl_keys))
     if not isinstance(dyn, dict):
         return "n/a"
     # Dynamo parser v2 unavailable for this case: distinguish "not yet implemented"
@@ -532,7 +535,7 @@ def cell_for(
         return "…" if _is_todo_unavailable(dyn) else "n/a"
     parts: list[str] = []
     peer_kinds: dict[str, str] = {}
-    for impl in (peer for peer in impl_keys if peer != BASELINE_IMPL):
+    for impl in (peer for peer in impl_keys if peer not in BASELINE_IMPLS):
         kind, unknown = peer_status(case, dyn, impl)
         peer_kinds[impl] = kind
         letter = (
@@ -579,7 +582,7 @@ def render_row(
 
 _LEGEND_MD = (
     "**Legend:** "
-    "`=` all captured peers match Dynamo Rust (`expected.dynamo_rust`) · "
+    "`=` all captured peers match the Dynamo baseline (v1 batch / v2 stream) · "
     "`·` Dynamo Rust-only fixture (peers unavailable or not captured) · "
     "`D_rb` (Dynamo Rust batch parser) · "
     "`D_rs` (Dynamo Rust stream parser) · "
@@ -676,6 +679,32 @@ def _short_unavailable(reason: object) -> str:
     return "n/a" if "not yet implemented" in r else r
 
 
+_WS_TAG_SPLIT = re.compile(r"(<[^>]+>)")
+_WS_MARKS = {
+    "\r": '<span class="wsmk">\u240d</span>',      # ␍ carriage return
+    "\n": '<span class="wsmk">\u21b5</span>',      # ↵ replaces the break — trailing
+    #      newlines read inline as ↵↵ instead of blank lines inside the quotes
+    "\t": '<span class="wsmk">\u21e5</span>',      # ⇥ tab
+    " ": '<span class="wsmk wsmk-sp">\u00a0</span>',  # space: chip background only
+    #      (nbsp so adjacent space chips don't collapse; no dot glyph needed)
+}
+_WS_CHARS = re.compile(r"[\r\n\t ]")
+
+
+def _mark_ws(html_text: str) -> str:
+    """Make whitespace visible in popup OUTPUT strings: ↵ newline, ␍ CR, ⇥ tab,
+    · space. A one-space vs two-space or trailing-newline divergence between
+    candidates is otherwise invisible in the diff popup. Only text OUTSIDE HTML
+    tags is touched (the input is already-escaped HTML with styling spans), and
+    the marks are `.wsmk` (faint, user-select:none) so copied text stays clean."""
+    parts = _WS_TAG_SPLIT.split(html_text)
+    for i in range(0, len(parts), 2):  # even indices = text nodes
+        # Single-pass substitution: sequential str.replace would re-process the
+        # markup inserted by earlier marks (the space in `<span class=...`).
+        parts[i] = _WS_CHARS.sub(lambda m: _WS_MARKS[m.group(0)], parts[i])
+    return "".join(parts)
+
+
 def _format_output_block_html(block, family: str | None = None) -> str:
     """HTML rendering of an `expected.<impl>` block for tooltips.
     Applies _colorize_xml to `normal_text` so raw model output the engine
@@ -697,10 +726,12 @@ def _format_output_block_html(block, family: str | None = None) -> str:
             f"{c.get('name', '?')}({json.dumps(c.get('arguments', {}), ensure_ascii=False)})"
             for c in calls
         )
-        calls_line = html_lib.escape(f"calls=[{rendered}]")
+        calls_line = common.field_html(
+            "calls", html_lib.escape(f"[{rendered}]"), quoted=False
+        )
     else:
-        calls_line = "calls=[]"
-    nt_line = f"normal_text='{colorize_markup(nt, family)}'"
+        calls_line = common.field_html("calls", "[]", quoted=False)
+    nt_line = common.field_html("normal_text", _mark_ws(colorize_markup(nt, family)))
     return f"{nt_line}\n{calls_line}"
 
 
@@ -712,7 +743,7 @@ def _cand_section_body(block, family: str | None = None) -> str:
     body = _format_output_block_html(block, family)
     note = _explanation(block)
     if note:
-        body += "\nexplanation: " + html_lib.escape(str(note))
+        body += '\n<span class="expl">explanation: ' + html_lib.escape(str(note)) + "</span>"
     return body
 
 
@@ -770,7 +801,7 @@ def _build_tooltip_html(case: dict, dyn, output_kind: str = "batch") -> str:
     model_text = case.get("model_text")
     if isinstance(model_text, str) and model_text:
         input_label = "Input"
-        input_html = f"input_text='{colorize_markup(model_text, family)}'"
+        input_html = common.field_html("input_text", colorize_markup(model_text, family))
     chunks = case.get("chunks")
     if isinstance(chunks, list) and chunks:
         chunk_lines = []
@@ -833,7 +864,7 @@ def _build_tooltip_html(case: dict, dyn, output_kind: str = "batch") -> str:
         # Compare model (batch tab): one section per candidate (parser+version),
         # each wrapped in cand-<key> and toggled by the Base/Compare selection so
         # the tooltip shows exactly the candidates being compared.
-        for impl in ("dynamo_rust", "vllm_rust", "vllm_python", "sglang_python"):
+        for impl in ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python"):
             for slug, info in (ver_status.get(impl) or {}).items():
                 key = f"{impl}-{slug}"
                 output_sections.append((
@@ -918,7 +949,7 @@ def _render_chunk_deltas(deltas: list, normal_text: str) -> str:
         if not isinstance(d, dict):
             continue
         if d.get("name") is not None:
-            tag = "name=" + html_lib.escape(repr(d["name"]))
+            tag = common.field_html("name", html_lib.escape(str(d["name"])))
             if d.get("id"):
                 tag += " (id)"
             parts.append(tag)
@@ -927,12 +958,14 @@ def _render_chunk_deltas(deltas: list, normal_text: str) -> str:
     frags = [f for f in arg_frags if f]
     if frags:
         spans = "".join(
-            f'<span class="frag{i % 4}">{html_lib.escape(f)}</span>'
+            f'<span class="frag{i % 4}">{_mark_ws(html_lib.escape(f))}</span>'
             for i, f in enumerate(frags)
         )
-        parts.append(f"args='{spans}'")
+        parts.append(common.field_html("args", spans))
     if normal_text:
-        parts.append("normal_text=" + html_lib.escape(repr(normal_text)))
+        parts.append(
+            common.field_html("normal_text", _mark_ws(html_lib.escape(normal_text)))
+        )
     return "   ".join(parts) if parts else "—"
 
 
@@ -949,7 +982,7 @@ def _version_candidate_chart_html(case: dict, ver_status: dict) -> tuple[str, st
     family = case.get("__family")
     chunk_html = colorize_stream_deltas(input_chunks, family)
     candidates = []  # (key, label, info)
-    for impl in ("dynamo_rust", "vllm_rust", "vllm_python", "sglang_python"):
+    for impl in ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python"):
         # Engine columns in canonical order; within an engine, LATEST version first.
         entries = sorted(
             (ver_status.get(impl) or {}).items(),
@@ -1029,7 +1062,7 @@ def _merged_candidate_chart_html(case: dict, cmp_items: list) -> tuple[str, str]
         )
         for item in cmp_items
     )
-    input_html = f"input_text='{colorize_markup(model_text, family)}'"
+    input_html = common.field_html("input_text", colorize_markup(model_text, family))
     final_row = f'<tr class="ttip-final"><td class="cin">{input_html}</td>{cells}</tr>'
     table = common.candidate_chart_table(header, [final_row])
     return ("Output (recorded from parser = expected)", table)
@@ -1073,7 +1106,7 @@ def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str,
     # placed immediately left of the stream columns as a fixed reference. The
     # streaming parser's job is to reconstruct this batch parse, so it sits beside
     # the per-chunk emit for a direct side-by-side. One cell spans every row.
-    dyn_batch = _impl_get(case.get("batch_expected") or {}, BASELINE_IMPL)
+    dyn_batch = _impl_get(case.get("batch_expected") or {}, BASELINE_BATCH_IMPL)
     show_baseline = isinstance(dyn_batch, dict) and (
         "calls" in dyn_batch or "normal_text" in dyn_batch
     )
@@ -1081,7 +1114,7 @@ def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str,
     baseline_td = ""
     base_header = ""
     if show_baseline:
-        base_header = f'<th class="cbase-h">baseline<br>{html_lib.escape(_IMPL_DISPLAY[BASELINE_IMPL])} batch parser</th>'
+        base_header = f'<th class="cbase-h">baseline<br>{html_lib.escape(_IMPL_DISPLAY[BASELINE_BATCH_IMPL])} batch parser</th>'
         baseline_body = _format_output_block_html(dyn_batch, family).replace(
             chr(10), "<br>"
         )
@@ -1095,7 +1128,7 @@ def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str,
     # Reference the peer columns are compared against, so flag it `← REF`.
     def _col_h(impl: str) -> str:
         name = html_lib.escape(f"{_IMPL_DISPLAY[impl]} {parse_mode} parser")
-        if impl == BASELINE_IMPL:
+        if impl in BASELINE_IMPLS:
             inner = (
                 '<span class="ttip-ref-star">★</span> '
                 f'{name} <span class="ttip-ref">← REF</span>'
@@ -1179,7 +1212,7 @@ def _tooltip_for(case: dict, dyn: dict, impl_keys: tuple[str, ...] = IMPL_KEYS) 
         "normal_text": dyn.get("normal_text") or "",
     }
     expected = _expected(case)
-    for impl in (peer for peer in impl_keys if peer != BASELINE_IMPL):
+    for impl in (peer for peer in impl_keys if peer not in BASELINE_IMPLS):
         block = _impl_get(expected, impl)
         if not isinstance(block, dict) or block is dyn:
             continue
@@ -1309,7 +1342,10 @@ def render_cell_html(
         ttip = _build_missing_tooltip_html(mode, family, sub)
         return f"{td_open}{marker_spans}{display_text}{ttip}</td>"
 
-    dyn = _impl_get(case.get("expected") or {}, BASELINE_IMPL)
+    dyn = _impl_get(
+        case.get("expected") or {},
+        baseline_impl(_impl_keys_for_output_kind(output_kind)),
+    )
     if not isinstance(dyn, dict):
         # n/a stub: case has only `explanation:` (no `expected:` block).
         fp = case.get("__fixture_path", "")
@@ -1917,12 +1953,19 @@ def _peer_version_items(versions: dict[str, str]) -> list[tuple[str, str]]:
 # batch impl keys the cells + radios use. Discovery/slug/sort helpers are shared
 # with the parity page via toolcalling_table.
 _VERSION_LEGACY_TO_CANON = {
-    "dynamo": "dynamo_rust",
+    "dynamo_v1": "dynamo_v1",
+    "dynamo_v2": "dynamo_v2",
+    "vllm_python": "vllm_python",
+    "vllm_rust": "vllm_rust",
+    "sglang_python": "sglang_python",
+    # legacy spellings, accepted on read
+    "dynamo": "dynamo_v1",
+    "dynamo_rust": "dynamo_v2",
     "vllm": "vllm_python",
     "sglang": "sglang_python",
 }
 _IMPL_VERSION_RADIO_LABEL = {
-    "dynamo_rust": "Dynamo Rust",
+    "dynamo_v1": "Dynamo v1 Rust",
     "vllm_python": "vLLM Python",
     "sglang_python": "SGLang Python",
 }
@@ -2024,7 +2067,8 @@ def _impl_version_items() -> list[dict[str, object]]:
 # each selected candidate's output. All of it is computed client-side from the
 # compact per-cell `data-cmp` payload below, so any base/compare combination works.
 _CANDIDATE_SHORT = {
-    "dynamo_rust": "Dynamo",
+    "dynamo_v1": "Dynamo v1",
+    "dynamo_v2": "Dynamo v2",
     "vllm_rust": "vLLM Rust",
     "vllm_python": "vLLM",
     "sglang_python": "SGLang",
@@ -2037,46 +2081,25 @@ _CANDIDATE_SHORT = {
 # purely by the trailing "(mode)". Dynamo's parsers are Rust crates (dynamo-parsers
 # v1 3.0.0, dynamo-parsers-v2 0.1.11); the version disambiguates v1 vs v2.
 _ENGINE_RUNTIME = {
-    "dynamo_rust": "Dynamo Rust",
+    "dynamo_v1": "Dynamo v1 Rust",
+    "dynamo_v2": "Dynamo v2 Rust",
     "vllm_rust": "vLLM Rust",
     "vllm_python": "vLLM Python",
     "sglang_python": "SGLang Python",
 }
 
 
-def _dynamo_vtag(version: object) -> str | None:
-    """v1 vs v2 tag for a Dynamo parser version: the dynamo-parsers-v2 crate (0.x) = v2,
-    the dynamo-parsers crate (3.x) = v1. Returns None when the version is unknown so a
-    version-less synthetic case just reads '(mode)'.
-
-    Classify by major version rather than string-matching the live parsers_v2/Cargo.toml
-    version. The two crates occupy disjoint major ranges (0.x vs 3.x), and a captured
-    fixture dir (e.g. dynamo_rust-0.1.11) keeps its capture-time version even after the
-    crate is bumped — matching the current Cargo version would silently mis-tag a
-    not-yet-recaptured dir as v1 (and, worse, drop it into the v1 reference bucket)."""
-    if not version:
-        return None
-    try:
-        major = int(str(version).split(".")[0])
-    except ValueError:
-        return None
-    return "v2" if major == 0 else "v1"
 
 
 def _full_label(impl: str, version: object, mode: str) -> str:
     base = _ENGINE_RUNTIME.get(impl, _CANDIDATE_SHORT.get(impl, impl))
-    # Dynamo carries a v1/v2 crate tag between the engine and runtime, e.g.
-    # "Dynamo v1 Rust 3.0.0 (batch)" vs "Dynamo v2 Rust 0.1.11 (stream)". The v1 parser
-    # run against stream data goes through the streaming jail (buffer then v1 batch
-    # parse), so on the stream tab it reads "(jail+batch)". Peers have no crate
-    # split and stay "<Engine> <Runtime> <version> (<mode>)".
-    if impl == BASELINE_IMPL:
-        vtag = _dynamo_vtag(version)
-        if vtag:
-            eng, _, rt = base.partition(" ")  # "Dynamo" / "Rust" -> "Dynamo <vtag> Rust"
-            base = f"{eng} {vtag} {rt}".strip()
-            if vtag == "v1" and mode == "stream":
-                mode = "jail+batch"
+    # The v1/v2 generation is part of the impl key (dynamo_v1/dynamo_v2), so the
+    # display already reads "Dynamo v1 Rust 3.0.0 (batch)" / "Dynamo v2 Rust
+    # 0.1.11 (stream)". The one remaining special case: v1 run against stream
+    # data goes through the streaming jail (buffer, then v1 batch parse), so on
+    # the stream tab its mode reads "(jail+batch)".
+    if impl == BASELINE_BATCH_IMPL and mode == "stream":
+        mode = "jail+batch"
     ver = f" {version}" if version else ""
     return f"{base}{ver} ({mode})"
 
@@ -2098,7 +2121,7 @@ def _candidate_label_html(label: str) -> str:
 
 def _dynamo_v2_version() -> str | None:
     """Version label for the Dynamo v2 stream parser, taken from the PUBLISHED fixture
-    provenance (the v2-major `dynamo_rust-<ver>` dir, e.g. 0.1.11), NOT the live
+    provenance (the `dynamo_v2-<ver>` dir, e.g. 0.1.11), NOT the live
     parsers/v2/Cargo.toml.
 
     Sourcing from the fixtures keeps every "Dynamo v2 Rust … (stream)" label on the page
@@ -2106,16 +2129,14 @@ def _dynamo_v2_version() -> str | None:
     captured data. Reading the live crate makes the label drift ahead — the page would
     show 0.1.16 in one place and the real captured 0.1.11 in another the moment the crate
     is bumped before a re-capture/republish."""
-    for v in _stream_impl_versions().get(BASELINE_IMPL, []):
-        if _dynamo_vtag(v) == "v2":
-            return v
-    return None
+    vs = _stream_impl_versions().get(BASELINE_STREAM_IMPL, [])
+    return vs[0] if vs else None
 
 
 def _v2_display_version(impl: str) -> str | None:
     """Display version for a v2-tab candidate: Dynamo -> the v2 crate version;
     peers -> the engine version they were captured against."""
-    if impl == BASELINE_IMPL:
+    if impl == BASELINE_STREAM_IMPL:
         return _dynamo_v2_version()
     return _clean_version((_CAPTURED_WITH_BY_MODE.get("streamv2") or {}).get(impl))
 
@@ -2164,17 +2185,16 @@ def _candidate_items() -> list[dict[str, str]]:
     Default layout: A (reference) = the first candidate (Dynamo's latest); B (compare
     with) = the latest version of each peer impl; C (others) = the older versions."""
     impl_versions = _batch_impl_versions()
-    latest = {lg: (vers[-1] if vers else None) for lg, vers in impl_versions.items()}
+    latest = {k: (vers[-1] if vers else None) for k, vers in impl_versions.items()}
     out: list[dict[str, str]] = []
     first = True
-    for legacy in ("dynamo", "vllm", "sglang"):
-        canon = _VERSION_LEGACY_TO_CANON.get(legacy)
-        for v in reversed(impl_versions.get(legacy, [])):
+    for canon in ("dynamo_v1", "vllm_python", "sglang_python"):
+        for v in reversed(impl_versions.get(canon, [])):
             slug = toolcalling_table._version_slug(v)
             if first:
                 bucket = "A"
                 first = False
-            elif v == latest.get(legacy):
+            elif v == latest.get(canon):
                 bucket = "B"
             else:
                 bucket = "C"
@@ -2197,7 +2217,8 @@ def _candidate_items() -> list[dict[str, str]]:
 # <impl>-<version>/ (per-impl expected; lowest version = full anchor, higher =
 # changed-only). resolve_stream_fixtures.py reconstructs a flat tree for any selected
 # version set — the stream analogue of resolve_fixtures.py + the batch __ver_status map.
-# Read from the HuggingFace download cache (fixtures aren't in the repo since DIS-2310);
+# Read from the fixture extraction cache (loose YAMLs aren't in the repo; the LFS
+# tarballs under conformance/fixtures/ are extracted there on first use);
 # _common.sh exports CONFORMANCE_FIXTURES_ROOT. Without this the stream tab's versioned
 # candidates come up empty and the Base/Compare parser selector doesn't render.
 _STREAM_SRC = (
@@ -2208,7 +2229,7 @@ _STREAM_SRC = (
 def _stream_impl_versions() -> dict[str, list[str]]:
     """{stream_impl: versions ascending} discovered from the fixtures-stream-v2/
     <impl>-<version>/ dirs (no hardcoded anchor — the baseline is whichever version is
-    lowest). Ordered dynamo_rust, vllm_rust, vllm_python, sglang_python (canonical
+    lowest). Ordered dynamo_v1, dynamo_v2, vllm_rust, vllm_python, sglang_python (canonical
     stream column order)."""
     found: dict[str, list[str]] = {}
     if _STREAM_SRC.is_dir():
@@ -2219,7 +2240,7 @@ def _stream_impl_versions() -> dict[str, list[str]]:
             found.setdefault(impl, []).append(ver)
     for impl in list(found):
         found[impl] = sorted(set(found[impl]), key=toolcalling_table._version_sort_key)
-    order = ("dynamo_rust", "vllm_rust", "vllm_python", "sglang_python")
+    order = ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python")
     return {i: found[i] for i in order if i in found}
 
 
@@ -2231,14 +2252,14 @@ def _stream_candidate_items() -> list[dict[str, str]]:
     impl_versions = _stream_impl_versions()
     latest = {i: (vs[-1] if vs else None) for i, vs in impl_versions.items()}
     out: list[dict[str, str]] = []
-    for impl in ("dynamo_rust", "vllm_rust", "vllm_python", "sglang_python"):
+    for impl in ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python"):
         # Within an engine, versions run LATEST-FIRST (0.24.0 before 0.23.0).
         for v in reversed(impl_versions.get(impl, [])):
             slug = toolcalling_table._version_slug(v)
-            if impl == BASELINE_IMPL:
-                # Dynamo v1 (jail+batch) is the default reference; v2 goes to compare.
-                bucket = "A" if _dynamo_vtag(v) == "v1" else "B"
-            elif v == latest.get(impl):
+            if impl == BASELINE_BATCH_IMPL:
+                # Dynamo v1 (jail+batch) is the default reference on this tab.
+                bucket = "A"
+            elif impl == BASELINE_STREAM_IMPL or v == latest.get(impl):
                 bucket = "B"
             else:
                 bucket = "C"
@@ -2255,7 +2276,7 @@ def _stream_version_families(impl: str, version: str) -> set[str] | None:
     authoritative coverage for that parser build. `None` if the dir is absent (don't
     gate). Used to mark the Dynamo v2 stream candidate `na` on families its parser
     doesn't implement, since the dir only contains the families it produced output
-    for (dynamo_rust-0.1.11 = the v2-supported handful; dynamo_rust-3.0.0 = all)."""
+    for (dynamo_v2-0.1.11 = the v2-supported handful; dynamo_v1-3.0.0 = all)."""
     d = _STREAM_SRC / f"{impl}-{version}"
     if not d.is_dir():
         return None
@@ -2268,18 +2289,21 @@ def _parser_ni_map() -> dict:
     compare JS uses it to render a per-family "not implemented" reason when such a
     parser is the selected Reference, instead of the case-level "not applicable"
     (which is about whether the test case fits the family, not whether the parser
-    exists). Coverage is the authoritative `dynamo_rust-<v2>` fixture dir family list."""
+    exists). Coverage is the authoritative `dynamo_v2-<ver>` fixture dir family list."""
     v2ver = _dynamo_v2_version()
     if not v2ver:
         return {}
-    fams = sorted(_stream_version_families(BASELINE_IMPL, v2ver) or [])
+    fams = sorted(_stream_version_families(BASELINE_STREAM_IMPL, v2ver) or [])
     if not fams:
         return {}
     slug = toolcalling_table._version_slug(v2ver)
-    entry = {"label": _full_label(BASELINE_IMPL, v2ver, "stream"), "families": fams}
+    entry = {"label": _full_label(BASELINE_STREAM_IMPL, v2ver, "stream"), "families": fams}
     # The v2 candidate key differs by tab: "<impl>-s-<slug>" on the batch
     # (stream-on-batch) tab, bare "<impl>-<slug>" on the stream tab.
-    return {f"{BASELINE_IMPL}-s-{slug}": entry, f"{BASELINE_IMPL}-{slug}": entry}
+    return {
+        f"{BASELINE_STREAM_IMPL}-s-{slug}": entry,
+        f"{BASELINE_STREAM_IMPL}-{slug}": entry,
+    }
 
 
 def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, dict]]]:
@@ -2287,7 +2311,7 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
 
     Resolve each versioned peer @ each of its versions (others pinned) and re-run
     load_all_cases("streamv2") so keys match the rendered table (same assembly +
-    split-parent normalization). Single-version impls (dynamo_rust, vllm_rust) are
+    split-parent normalization). Single-version impls (dynamo_v2, vllm_rust) are
     recorded once from the pinned resolve. `block` is the assembled per-impl
     {calls, normal_text} used for the per-cell `data-cmp` signature."""
     impl_versions = _stream_impl_versions()
@@ -2323,13 +2347,13 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
     def _record(cases, impl, version):
         slug = toolcalling_table._version_slug(version)
         raw_counts = _raw_chunk_counts(impl, version)
-        # The Dynamo parser is version-split into two DIFFERENT parsers: v2
-        # (dynamo_rust-0.1.11) implements only a handful of families, while the v1
-        # jail (dynamo_rust-3.0.0) covers all. The stream assembly defaults an absent
+        # Dynamo v1 and v2 are DIFFERENT parsers: v2 (dynamo_v2-0.1.11)
+        # implements only a handful of families, while the v1 jail
+        # (dynamo_v1-3.0.0) covers all. The stream assembly defaults an absent
         # impl to an empty-but-present block, which would paint the v2 parser green on
         # families it doesn't implement. Gate on the version dir's actual family list
         # so uncovered families read `na` (not implemented), not a clean empty output.
-        covered = _stream_version_families(impl, version) if impl == BASELINE_IMPL else None
+        covered = _stream_version_families(impl, version) if impl in BASELINE_IMPLS else None
         for key, case in cases.items():
             block = _impl_get(case.get("expected") or {}, impl)
             status = _overview_status(case, impl)
@@ -2465,11 +2489,11 @@ def _stream_on_batch_versions() -> dict[str, str]:
     out: dict[str, str] = {}
     dynv = _dynamo_v2_version()
     if dynv:
-        out[BASELINE_IMPL] = dynv
+        out[BASELINE_STREAM_IMPL] = dynv
     for fp in sorted(STREAM_ON_BATCH_FIXTURES.glob("*/TOOLCALLING.batch*.yaml")):
         doc = yaml.safe_load(fp.read_text()) or {}
         for impl, ver in (doc.get("captured_with") or {}).items():
-            if impl == BASELINE_IMPL or impl not in STREAM_IMPL_KEYS:
+            if impl == BASELINE_STREAM_IMPL or impl not in STREAM_IMPL_KEYS:
                 continue
             cv = _clean_version(ver)
             if cv:
@@ -2514,7 +2538,7 @@ def _attach_merged_cmp(cases: dict) -> None:
             continue
         items: list[dict] = []
         ver_status = case.get("__ver_status") or {}
-        for impl in ("dynamo_rust", "vllm_python", "sglang_python"):
+        for impl in ("dynamo_v1", "vllm_python", "sglang_python"):
             # Within an engine, LATEST version first (matches the compare bar).
             entries = sorted(
                 (ver_status.get(impl) or {}).items(),
@@ -2739,7 +2763,7 @@ def _build_sob_tooltip(case: dict, marker_context: str | None = None) -> str:
     desc = case.get("description") or ""
     model_text = case.get("model_text")
     input_html = (
-        f"input_text='{colorize_markup(model_text, family)}'"
+        common.field_html("input_text", colorize_markup(model_text, family))
         if isinstance(model_text, str) and model_text
         else None
     )
@@ -2762,7 +2786,7 @@ def _build_sob_tooltip(case: dict, marker_context: str | None = None) -> str:
         # one toggleable section each showing that version's assembled stream output.
         # Kept alongside a legacy impl-keyed chart so the Base/Compare selection
         # reveals each candidate — the stream analogue of the batch per-version blocks.
-        for impl in ("dynamo_rust", "vllm_rust", "vllm_python", "sglang_python"):
+        for impl in ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python"):
             for slug, info in (ver_status.get(impl) or {}).items():
                 blk = info["block"]
                 sections.append((
@@ -2817,16 +2841,16 @@ def _stream_on_batch_expected(overlay_case: dict, has_batch_text: bool = True) -
     """
     expected: dict = {}
     overlay_case = _normalize_impl_mapping(overlay_case)
-    dynamo = _impl_get(overlay_case, BASELINE_IMPL)
+    dynamo = _impl_get(overlay_case, BASELINE_STREAM_IMPL)
     if isinstance(dynamo, dict) and ("calls" in dynamo or "normal_text" in dynamo):
-        expected[BASELINE_IMPL] = {
+        expected[BASELINE_STREAM_IMPL] = {
             "calls": dynamo.get("calls") or [],
             "normal_text": dynamo.get("normal_text") or "",
         }
     elif not has_batch_text:
-        expected[BASELINE_IMPL] = {"unavailable": "No batch model_text for this case."}
+        expected[BASELINE_STREAM_IMPL] = {"unavailable": "No batch model_text for this case."}
     else:
-        expected[BASELINE_IMPL] = {
+        expected[BASELINE_STREAM_IMPL] = {
             "unavailable": "Dynamo parser v2 stream parser not yet implemented for this family"
         }
     for impl in PEER_IMPL_KEYS:
@@ -3297,7 +3321,7 @@ def _combined_reasoning_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
                 "case_docs_label": "lib/parsers/REASONING_CASES.md",
                 "case_prefix": "REASONING.",
                 "case_section_id": f"reasoning-{mode}",
-                "parser_options": ("dynamo_rust", "vllm_python", "sglang_python"),
+                "parser_options": ("dynamo_v1", "vllm_python", "sglang_python"),
             }
         )
         panels.append(panel)

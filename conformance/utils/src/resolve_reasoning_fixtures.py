@@ -39,7 +39,16 @@ def split_impl_ver(dirname: str):
 
 
 # The captured_with key each impl records its engine version under.
-_CAPTURED_KEY = {"vllm": "vllm_python", "sglang": "sglang_python"}
+# Legacy short keys map to canonical; canonical keys stamp themselves (without
+# this, a canonical select like vllm_python-0.24.0 stamped vllm_python_python).
+_CAPTURED_KEY = {
+    "vllm": "vllm_python",
+    "sglang": "sglang_python",
+    "vllm_python": "vllm_python",
+    "sglang_python": "sglang_python",
+    "dynamo_v1": "dynamo_v1",
+    "dynamo_v2": "dynamo_v2",
+}
 
 
 def _stamp_captured_with(out: Path, impl: str, version: str) -> None:
@@ -47,7 +56,7 @@ def _stamp_captured_with(out: Path, impl: str, version: str) -> None:
     real (non-unavailable) expected.<impl> block, so the reasoning tab labels the peer
     candidate with the SELECTED version. Without this the anchor's captured_with stays
     put and the label wouldn't move between the old (v1) and new (v2) selections."""
-    key = _CAPTURED_KEY.get(impl, f"{impl}_python")
+    key = _CAPTURED_KEY.get(impl, impl if "_" in impl else f"{impl}_python")
     for fp in out.glob("*/*.yaml"):
         doc = load(fp)
         cases = doc.get("cases") or {}

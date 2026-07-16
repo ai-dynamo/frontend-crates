@@ -111,7 +111,7 @@ def _delta_flow(d: dict) -> str:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source", required=True)
-    ap.add_argument("--dynamo", dest="dynamo_rust")
+    ap.add_argument("--dynamo", dest="dynamo_v2")
     ap.add_argument("--dynamo-rust")
     ap.add_argument("--vllm-rust")
     ap.add_argument("--vllm-rust-source", help="vLLM source checkout root; defaults to VLLM_RUST_SOURCE")
@@ -132,7 +132,7 @@ def main():
     model_label = args.label or src.get("model_label", family)
 
     caps = {
-        "dynamo_rust": _norm_dynamo(_load(args.dynamo_rust)),
+        "dynamo_v2": _norm_dynamo(_load(args.dynamo_v2)),
         "vllm_rust": _load(args.vllm_rust),
         "vllm_python": _load(args.vllm_python),
         "sglang_python": _load(args.sglang),

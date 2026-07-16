@@ -30,14 +30,17 @@ pub fn collect_yaml(dir: &Path, out: &mut Vec<PathBuf>) {
 ///
 /// Priority:
 /// 1. `CONFORMANCE_FIXTURES_ROOT` env var — set by `check.sh` after it has
-///    already downloaded and verified the cache.
-/// 2. HF cache at `~/.cache/dynamo/conformance-fixtures/` (or `$XDG_CACHE_HOME`).
-///    If the `toolcalling/` subdir is missing, runs `download_fixtures.py`
-///    automatically. A `flock` on `/tmp/dynamo-conformance-download.lock`
-///    serializes parallel test binaries so only one download runs at a time.
+///    already extracted and verified the cache.
+/// 2. Cache at `~/.cache/dynamo/conformance-fixtures/` (or `$XDG_CACHE_HOME`),
+///    kept current by running `extract_fixtures.py` every time (extracts the
+///    in-repo LFS shard store; no network). The script exits instantly on a
+///    cache hit and re-extracts when the committed manifest pin moved — an
+///    exists-check here would silently test against a stale snapshot. A
+///    `flock` on `/tmp/dynamo-conformance-extract.lock` serializes parallel
+///    test binaries so only one extraction runs at a time.
 ///
-/// If the download fails (e.g. no HF credentials), the test panics with a
-/// message that includes the exact command to retry after setting `HF_TOKEN`.
+/// If extraction fails (e.g. shards are un-pulled git-lfs pointers), the test
+/// panics with the exact command to fix the checkout.
 pub fn ensure_fixtures() -> PathBuf {
     if let Ok(r) = std::env::var("CONFORMANCE_FIXTURES_ROOT") {
         return PathBuf::from(r);
@@ -50,20 +53,12 @@ pub fn ensure_fixtures() -> PathBuf {
         })
         .join("dynamo/conformance-fixtures");
 
-    if cache_root.join("toolcalling").is_dir() {
-        return cache_root;
-    }
+    let script = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("utils/src/extract_fixtures.py");
 
-    let script = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("utils/src/download_fixtures.py");
-    eprintln!(
-        "[conformance] fixtures not cached — downloading (first run only): {}",
-        script.display()
-    );
-
-    // flock serializes parallel test binaries so only one download runs.
+    // flock serializes parallel test binaries so only one extraction runs.
     let status = std::process::Command::new("flock")
         .args([
-            "/tmp/dynamo-conformance-download.lock",
+            "/tmp/dynamo-conformance-extract.lock",
             "python3",
             script.to_str().expect("non-UTF-8 script path"),
         ])
@@ -72,8 +67,8 @@ pub fn ensure_fixtures() -> PathBuf {
 
     if !status.success() {
         panic!(
-            "fixture download failed (exit {}). Set HF_TOKEN and retry:\n  \
-             export HF_TOKEN=<read-token>\n  python3 {}",
+            "fixture extraction failed (exit {}). If the shards are git-lfs \
+             pointers, run:\n  git lfs install && git lfs pull\nthen retry:\n  python3 {}",
             status.code().unwrap_or(-1),
             script.display()
         );

@@ -15,10 +15,21 @@
     return radio.value;
   }));
   const legacyParserAliases = {
-    dynamo_rust: 'dynamo',
+    dynamo_v1: 'dynamo',
+    dynamo_v2: 'dynamo_rust',
     vllm_python: 'vllm',
     sglang_python: 'sglang'
   };
+  // The Dynamo baselines: default parser = whichever baseline the tab offers
+  // (dynamo_v1 on batch tabs, dynamo_v2 on stream tabs).
+  const BASELINE_PARSERS = ['dynamo_v1', 'dynamo_v2'];
+  function defaultParser(allowed) {
+    const pool = allowed ? Array.from(allowed) : parserRadios.map(function (r) { return r.value; });
+    for (const b of BASELINE_PARSERS) {
+      if (pool.indexOf(b) !== -1) { return b; }
+    }
+    return pool.length ? pool[0] : '';
+  }
   const parityToggle = document.querySelector('[data-parity-toggle]');
 
   // Per-impl version radios (TC v1 tab). impl -> { slugs: [...], default: slug }.
@@ -287,7 +298,7 @@
   function readActiveParser() {
     const params = new URLSearchParams(window.location.search);
     const requested = params.get('parser') || params.get('perspective');
-    return parserKeys.has(requested) ? requested : 'dynamo_rust';
+    return parserKeys.has(requested) ? requested : defaultParser();
   }
 
   function readParityMode() {
@@ -308,7 +319,7 @@
     const url = new URL(window.location.href);
     url.searchParams.delete('parser');
     url.searchParams.delete('perspective');
-    if (parser !== 'dynamo_rust') {
+    if (BASELINE_PARSERS.indexOf(parser) === -1) {
       url.searchParams.set('parser', parser);
     }
     window.history.replaceState(null, '', url.toString());
@@ -345,7 +356,7 @@
     const checked = parserRadios.find(function (radio) {
       return radio.checked;
     });
-    return checked ? checked.value : 'dynamo_rust';
+    return checked ? checked.value : defaultParser();
   }
 
   function updateOverviewStats() {
@@ -400,7 +411,7 @@
   }
 
   function applyParser(parser, shouldUpdateUrl) {
-    const active = parserKeys.has(parser) ? parser : 'dynamo_rust';
+    const active = parserKeys.has(parser) ? parser : defaultParser();
     parserKeys.forEach(function (key) {
       document.body.classList.toggle('parser-' + key, active === key);
     });
@@ -610,7 +621,7 @@
     });
     const current = activeParser();
     if (!allowed.has(current)) {
-      const fallback = allowed.has('dynamo_rust') ? 'dynamo_rust' : Array.from(allowed)[0];
+      const fallback = defaultParser(allowed);
       applyParser(fallback, shouldUpdateUrl);
     } else {
       updateOverviewStats();

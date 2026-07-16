@@ -29,22 +29,36 @@ class ImplSpec:
     modes: tuple[str, ...]   # tabs this impl participates in: batch and/or stream
 
 
-BASELINE_IMPL = "dynamo_rust"
+# Dynamo v1 and v2 are COMPLETELY SEPARATE implementations (no shared code), so
+# they are separate impls — exactly like vllm_python vs vllm_rust. v1
+# (dynamo-parsers: batch + jail) is interim and will be removed at v2 parity;
+# v2 (dynamo-parsers-v2: streaming) is the ultimate implementation (WIP). The
+# baseline the peers are compared against is therefore MODE-dependent: v1 on
+# the batch tabs, v2 on the stream tabs.
+BASELINE_BATCH_IMPL = "dynamo_v1"
+BASELINE_STREAM_IMPL = "dynamo_v2"
+BASELINE_IMPLS: tuple[str, ...] = (BASELINE_BATCH_IMPL, BASELINE_STREAM_IMPL)
 
 # Order is the canonical column order across the matrix. vLLM Rust is stream-only
 # (no batch parser exists), so it is absent from the batch tabs. SGLang's language
 # subscript is `r` by existing convention (not `p`) — preserved deliberately.
 IMPL_SPECS: tuple[ImplSpec, ...] = (
-    ImplSpec("dynamo_rust", "dynamo", "dynamo", "rust", "Dynamo Rust", "D", "r", ("batch", "stream")),
+    ImplSpec("dynamo_v1", "dynamo", "dynamo", "rust", "Dynamo v1 Rust", "D", "r", ("batch",)),
+    ImplSpec("dynamo_v2", "dynamo_rust", "dynamo", "rust", "Dynamo v2 Rust", "D", "r", ("stream",)),
     ImplSpec("vllm_rust", None, "vllm", "rust", "vLLM Rust", "R", "r", ("stream",)),
     ImplSpec("vllm_python", "vllm", "vllm", "python", "vLLM Python", "V", "p", ("batch", "stream")),
     ImplSpec("sglang_python", "sglang", "sglang", "python", "SGLang Python", "S", "r", ("batch", "stream")),
 )
 
+
+def baseline_impl(impl_keys: tuple[str, ...]) -> str:
+    """The Dynamo baseline for a tab's impl-key tuple (v1 for batch, v2 for stream)."""
+    return next(k for k in impl_keys if k in BASELINE_IMPLS)
+
 IMPL_KEYS: tuple[str, ...] = tuple(s.key for s in IMPL_SPECS)
 STREAM_IMPL_KEYS: tuple[str, ...] = tuple(s.key for s in IMPL_SPECS if "stream" in s.modes)
 BATCH_IMPL_KEYS: tuple[str, ...] = tuple(s.key for s in IMPL_SPECS if "batch" in s.modes)
-PEER_IMPL_KEYS: tuple[str, ...] = tuple(k for k in IMPL_KEYS if k != BASELINE_IMPL)
+PEER_IMPL_KEYS: tuple[str, ...] = tuple(k for k in IMPL_KEYS if k not in BASELINE_IMPLS)
 LEGACY_IMPL_ALIASES: dict[str, str] = {s.legacy_key: s.key for s in IMPL_SPECS if s.legacy_key}
 IMPL_DISPLAY: dict[str, str] = {s.key: s.display for s in IMPL_SPECS}
 ENGINE_LETTER: dict[str, str] = {s.key: s.marker_letter for s in IMPL_SPECS}
@@ -52,7 +66,7 @@ IMPL_LANG_MARKER: dict[str, str] = {s.key: s.marker_lang for s in IMPL_SPECS}
 # Aliases validate.py accepts on a `--impl` flag: peers only (Dynamo is not validated
 # via validate.py; it goes through cargo test).
 FIXTURE_IMPL_ALIASES: dict[str, str] = {
-    s.legacy_key: s.key for s in IMPL_SPECS if s.legacy_key and s.key != BASELINE_IMPL
+    s.legacy_key: s.key for s in IMPL_SPECS if s.legacy_key and s.key not in BASELINE_IMPLS
 }
 
 

@@ -15,7 +15,7 @@ versions are DERIVED from the downloaded fixture dirs (not hard-coded), so the
 guard keeps working across version bumps.
 
 Skips when fixtures aren't downloaded (the CI conformance-table job downloads them;
-locally, run `python3 conformance/utils/src/download_fixtures.py` first).
+locally, run `python3 conformance/utils/src/extract_fixtures.py` first).
 """
 import os
 import re
@@ -39,7 +39,7 @@ def _cache_root() -> Path:
 
 _HAVE_FIXTURES = (_cache_root() / "toolcalling").is_dir()
 pytestmark = pytest.mark.skipif(
-    not _HAVE_FIXTURES, reason="fixtures not downloaded (run download_fixtures.py)"
+    not _HAVE_FIXTURES, reason="fixtures not extracted (run extract_fixtures.py)"
 )
 
 

@@ -39,7 +39,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 TEMPLATE_DIR = REPO_ROOT / "tests/parity"
 
 DisplayRow = dict[str, str | None]
-_IMPL_DISPLAY = {"dynamo": "Dynamo", "vllm": "vLLM", "sglang": "SGLang"}
+_IMPL_DISPLAY = {"dynamo_v1": "Dynamo", "vllm_python": "vLLM", "sglang_python": "SGLang"}
 
 CASE_GROUPS = [
     (
@@ -506,7 +506,7 @@ def _reasoning_cmp_json(case: dict[str, Any] | None, family: str | None) -> str:
     if not isinstance(expected, dict):
         return ""
     raw: dict[str, dict[str, Any]] = {}
-    for impl in ("dynamo", "vllm", "sglang"):
+    for impl in ("dynamo_v1", "vllm_python", "sglang_python"):
         if impl not in expected:
             continue
         block = expected.get(impl)
@@ -585,7 +585,7 @@ def _block_leak_reason(block: dict[str, Any], family: str | None) -> str | None:
 
 
 def _dynamo_leak_reason(expected: dict[str, Any], family: str | None) -> str | None:
-    dynamo = expected.get("dynamo", {})
+    dynamo = expected.get("dynamo_v1", {})
     if not isinstance(dynamo, dict):
         return None
     return _block_leak_reason(dynamo, family)
@@ -616,7 +616,7 @@ def _overview_status(case: dict[str, Any] | None, family: str | None, impl: str)
 def _overview_status_attrs(case: dict[str, Any] | None, family: str | None) -> str:
     return " ".join(
         f'data-status-{impl}="{_overview_status(case, family, impl)}"'
-        for impl in ("dynamo", "vllm", "sglang")
+        for impl in ("dynamo_v1", "vllm_python", "sglang_python")
     )
 
 
@@ -636,17 +636,17 @@ def _selected_parity_marker(
     expected = case.get("expected", {})
     outputs = {
         impl: _canonical_reasoning_output(expected.get(impl))
-        for impl in ("dynamo", "vllm", "sglang")
+        for impl in ("dynamo_v1", "vllm_python", "sglang_python")
     }
     if any(value is None for value in outputs.values()):
         return None
-    if outputs["dynamo"] == outputs["vllm"] == outputs["sglang"]:
+    if outputs["dynamo_v1"] == outputs["vllm_python"] == outputs["sglang_python"]:
         return "="
     selected = outputs[impl]
     peers = (
-        ("dynamo", "D"),
-        ("vllm", "V"),
-        ("sglang", "S"),
+        ("dynamo_v1", "D"),
+        ("vllm_python", "V"),
+        ("sglang_python", "S"),
     )
     marker = "".join(
         letter for peer, letter in peers if peer != impl and outputs[peer] != selected
@@ -693,8 +693,8 @@ def _parser_marker(case: dict[str, Any] | None, family: str | None, impl: str) -
         return "✗"
     if _block_leak_reason(block, family):
         return "↯"
-    if impl == "dynamo":
-        peers = (expected.get("vllm"), expected.get("sglang"))
+    if impl == "dynamo_v1":
+        peers = (expected.get("vllm_python"), expected.get("sglang_python"))
         if all(isinstance(peer, dict) and "unavailable" in peer for peer in peers):
             return "·"
     return ""
@@ -703,11 +703,11 @@ def _parser_marker(case: dict[str, Any] | None, family: str | None, impl: str) -
 def _parser_marker_attrs(case: dict[str, Any] | None, family: str | None) -> str:
     attrs = [
         f'data-marker-{impl}="{html_lib.escape(_parser_marker(case, family, impl))}"'
-        for impl in ("dynamo", "vllm", "sglang")
+        for impl in ("dynamo_v1", "vllm_python", "sglang_python")
     ]
     attrs.extend(
         f'data-marker-parity-{impl}="{html_lib.escape(_parity_marker(case, family, impl))}"'
-        for impl in ("dynamo", "vllm", "sglang")
+        for impl in ("dynamo_v1", "vllm_python", "sglang_python")
     )
     return " ".join(attrs)
 
@@ -834,13 +834,13 @@ def _derive_no_peer_sets(rows: dict[str, dict[str, Any]]) -> tuple[set[str], set
         family
         for family, row in rows.items()
         if family not in _FAMILY_TO_VLLM_REASONING
-        and all_unavailable(row["cases"], "vllm")
+        and all_unavailable(row["cases"], "vllm_python")
     }
     no_sglang = {
         family
         for family, row in rows.items()
         if family not in _FAMILY_TO_SGLANG_REASONING
-        and all_unavailable(row["cases"], "sglang")
+        and all_unavailable(row["cases"], "sglang_python")
     }
     return no_vllm, no_sglang
 
@@ -878,9 +878,9 @@ def _case_has_parser_input(case: dict[str, Any]) -> bool:
 def _python_peer_has_parser(family: str | None, impl: str) -> bool:
     if family is None:
         return False
-    if impl == "vllm":
+    if impl == "vllm_python":
         return family in _FAMILY_TO_VLLM_REASONING
-    if impl == "sglang":
+    if impl == "sglang_python":
         return family in _FAMILY_TO_SGLANG_REASONING
     return False
 
@@ -900,7 +900,7 @@ def _python_exception_impls(
     if _case_has_parser_input(case):
         return ()
     return tuple(
-        impl for impl in ("vllm", "sglang") if _python_peer_has_parser(family, impl)
+        impl for impl in ("vllm_python", "sglang_python") if _python_peer_has_parser(family, impl)
     )
 
 
@@ -908,7 +908,7 @@ def _python_exception_marker(
     case: dict[str, Any] | None,
     family: str | None,
 ) -> str:
-    letters = {"vllm": "V", "sglang": "S"}
+    letters = {"vllm_python": "V", "sglang_python": "S"}
     return "".join(
         f"{letters[impl]}✗" for impl in _python_exception_impls(case, family)
     )
@@ -918,7 +918,7 @@ def _python_exception_tooltip_lines(
     case: dict[str, Any] | None,
     family: str | None,
 ) -> list[str]:
-    names = {"vllm": "vLLM Python", "sglang": "SGLang Python"}
+    names = {"vllm_python": "vLLM Python", "sglang_python": "SGLang Python"}
     return [
         f"{names[impl]}: parser exception — KeyError: 'model_text'"
         for impl in _python_exception_impls(case, family)
@@ -941,14 +941,14 @@ def _cell(case: dict[str, Any] | None, family: str | None = None) -> tuple[str, 
         return "?", "fixture has no expected block"
 
     expected = case["expected"]
-    dynamo = expected["dynamo"]
+    dynamo = expected["dynamo_v1"]
     dynamo_leak = _has_dynamo_leak(case, family)
     dynamo_leak_reason = _dynamo_leak_reason(expected, family) if dynamo_leak else None
     markers = []
     unavailable = 0
     tooltip_parts = [case.get("description", "")]
 
-    for impl, letter in (("vllm", "V"), ("sglang", "S")):
+    for impl, letter in (("vllm_python", "V"), ("sglang_python", "S")):
         spec = expected[impl]
         if "unavailable" in spec:
             unavailable += 1
@@ -1506,10 +1506,13 @@ def _colorize_reasoning_markup(value: str, family: str | None) -> str:
 
 
 def _format_value_html(name: str, value: Any, family: str | None = None) -> str:
+    # One convention for every output field (reasoning_text included): blue
+    # label + single quotes, exactly like normal_text/input_text.
     if isinstance(value, str):
-        return f'{html_lib.escape(name)}="{_colorize_reasoning_markup(value, family)}"'
+        inner = _colorize_reasoning_markup(value, family)
+        return common.field_html(html_lib.escape(name), inner)
     rendered = html_lib.escape(json.dumps(value, ensure_ascii=False))
-    return f"{html_lib.escape(name)}={rendered}"
+    return common.field_html(html_lib.escape(name), rendered, quoted=False)
 
 
 def _display_family_mapping_note(family: str, display_family: str | None) -> str:
@@ -1682,7 +1685,7 @@ def _tooltip_for(
     dynamo_leak = _has_dynamo_leak(case, family)
     expected = case.get("expected", {})
     dynamo_leak_reason = _dynamo_leak_reason(expected, family) if dynamo_leak else None
-    for impl in ("vllm", "sglang"):
+    for impl in ("vllm_python", "sglang_python"):
         block = expected.get(impl)
         if not isinstance(block, dict) or block is dyn:
             continue
@@ -1741,7 +1744,7 @@ def _reasoning_candidate_chart_html(
     has_chunks = isinstance(case.get("chunks"), list) and bool(case.get("chunks"))
     header = ""
     cells = ""
-    for impl in ("dynamo", "vllm", "sglang"):
+    for impl in ("dynamo_v1", "vllm_python", "sglang_python"):
         blk = expected.get(impl)
         label = html_lib.escape(_reasoning_cand_label(impl, mode))
         leak = (
@@ -1758,14 +1761,14 @@ def _reasoning_candidate_chart_html(
         body = _format_output_block_html(blk, family, display_family=display_family)
         note = _explanation(blk)
         if note:
-            body += "\nexplanation: " + html_lib.escape(str(note))
+            body += '\n<span class="expl">explanation: ' + html_lib.escape(str(note)) + "</span>"
         cells += common.cand_td(impl, body.replace(chr(10), "<br>"))
     rows = []
     chunks = case.get("chunks")
     if isinstance(chunks, list) and chunks:
         chunk_html = _colorize_stream_chunks(chunks, family)
         empty = "".join(
-            common.cand_td(impl, "—") for impl in ("dynamo", "vllm", "sglang")
+            common.cand_td(impl, "—") for impl in ("dynamo_v1", "vllm_python", "sglang_python")
         )
         for i in range(len(chunks)):
             rows.append(f'<tr><td class="cin">{chunk_html[i]}</td>{empty}</tr>')
@@ -1820,7 +1823,7 @@ def _tooltip_html(
         )
 
     expected = case["expected"]
-    dyn = expected.get("dynamo")
+    dyn = expected.get("dynamo_v1")
     # Per-candidate reasons live in each candidate's own toggleable section below (so
     # they show only when that candidate is selected), not in a global cross-engine
     # "Explanations" blob that would name engines outside the Base/Compare selection.
@@ -2373,9 +2376,9 @@ def _mode_label(mode: str) -> str:
 # reasoning parser is a Rust crate (dynamo-parsers 3.0.0); vLLM/SGLang reasoning
 # parsers are Python. Full label: "<base> <version> (<mode>)".
 _REASONING_ENGINE_RUNTIME = {
-    "dynamo": "Dynamo Rust",
-    "vllm": "vLLM Python",
-    "sglang": "SGLang Python",
+    "dynamo_v1": "Dynamo Rust",
+    "vllm_python": "vLLM Python",
+    "sglang_python": "SGLang Python",
 }
 
 
@@ -2386,7 +2389,7 @@ def _reasoning_version_by_impl() -> dict[str, str | None]:
     section labels can carry the same version as the compare chips without reloading
     fixtures per cell."""
     rows, _, _ = _load()
-    return {"dynamo": _dynamo_v1_version(), **_peer_captured_versions(rows)}
+    return {"dynamo_v1": _dynamo_v1_version(), **_peer_captured_versions(rows)}
 
 
 def _reasoning_cand_label(impl: str, mode: str) -> str:
@@ -2395,7 +2398,7 @@ def _reasoning_cand_label(impl: str, mode: str) -> str:
     Dynamo's reasoning parser is the v1 crate (dynamo-parsers 3.x), so it reads
     "Dynamo Rust v1 3.0.0 (batch)" / "(stream)"; peers have no crate split."""
     base = _REASONING_ENGINE_RUNTIME.get(impl, _IMPL_DISPLAY[impl])
-    if impl == "dynamo":
+    if impl == "dynamo_v1":
         eng, _, rt = base.partition(" ")  # "Dynamo" / "Rust" -> "Dynamo v1 Rust"
         base = f"{eng} v1 {rt}".strip()
     ver = _reasoning_version_by_impl().get(impl)
@@ -2424,14 +2427,14 @@ def _panel_candidates(
             expected = case.get("expected") if isinstance(case, dict) else None
             if not isinstance(expected, dict):
                 continue
-            for impl in ("dynamo", "vllm", "sglang"):
+            for impl in ("dynamo_v1", "vllm_python", "sglang_python"):
                 if impl in expected:
                     present.add(impl)
     # Version sourcing (Dynamo from the v1 crate Cargo.toml, peers from the fixtures'
     # captured_with) and the full label are shared with the tooltip sections via
     # _reasoning_cand_label so chips and pop-up keys read identically.
     candidates: list[dict[str, str]] = []
-    for impl in ("dynamo", "vllm", "sglang"):
+    for impl in ("dynamo_v1", "vllm_python", "sglang_python"):
         if impl not in present:
             continue
         candidates.append(
@@ -2453,7 +2456,7 @@ def _peer_captured_versions(rows: dict[str, dict[str, Any]]) -> dict[str, str]:
     engine is available, so there is no older reasoning image to support a
     two-version compare -- each candidate just carries its real captured version.
     The last non-empty value wins if fixtures ever disagree."""
-    key_by_impl = {"vllm": "vllm_python", "sglang": "sglang_python"}
+    key_by_impl = {"vllm_python": "vllm_python", "sglang_python": "sglang_python"}
     out: dict[str, str] = {}
     for row in rows.values():
         captured = row.get("captured_with") or {}
@@ -2483,7 +2486,7 @@ def _dynamo_v1_version() -> str | None:
     versions = [
         d.name.split("-", 1)[1]
         for d in root.iterdir()
-        if d.is_dir() and d.name.startswith("dynamo-")
+        if d.is_dir() and d.name.startswith("dynamo_v1-")
     ]
     if not versions:
         return None

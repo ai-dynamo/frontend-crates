@@ -49,10 +49,10 @@ def _make_tree(root: Path) -> None:
         ]}},
     })
     # v2 anchor (lowest version): emits name then args in chunk 3.
-    _write(root / "dynamo_rust-0.1.11" / FAMILY / NAME, {
+    _write(root / "dynamo_v2-0.1.11" / FAMILY / NAME, {
         "family": FAMILY,
         "mode": "streamv2",
-        "captured_with": {"dynamo_rust": "0.1.11"},
+        "captured_with": {"dynamo_v2": "0.1.11"},
         "cases": {CASE: {"chunks": [
             {"expected": []},
             {"expected": []},
@@ -65,12 +65,12 @@ def _make_tree(root: Path) -> None:
             {"expected": []},
         ]}},
     })
-    # v1 overlay (higher version): a DIFFERENT parser, and its doc carries FEWER
-    # chunks than the base — the shape that triggered the bug.
-    _write(root / "dynamo_rust-3.0.0" / FAMILY / NAME, {
+    # Higher version of the SAME impl (a re-record), whose doc carries FEWER
+    # chunks than the anchor — the shape that triggered the fold-doubling bug.
+    _write(root / "dynamo_v2-0.2.0" / FAMILY / NAME, {
         "family": FAMILY,
         "mode": "streamv2",
-        "captured_with": {"dynamo_rust": "3.0.0"},
+        "captured_with": {"dynamo_v2": "0.2.0"},
         "cases": {CASE: {"chunks": [
             {"expected": [
                 {"index": 0, "id": True, "name": "get_weather",
@@ -82,10 +82,10 @@ def _make_tree(root: Path) -> None:
 
 
 def _dynamo_deltas(folded_case: dict) -> list[tuple[int, dict]]:
-    """(chunk_index, delta) for every dynamo_rust delta in the folded case."""
+    """(chunk_index, delta) for every dynamo_v2 delta in the folded case."""
     out = []
     for i, ch in enumerate(folded_case.get("chunks") or []):
-        for delta in ((ch.get("expected") or {}).get("dynamo_rust") or []):
+        for delta in ((ch.get("expected") or {}).get("dynamo_v2") or []):
             out.append((i, delta))
     return out
 
@@ -95,13 +95,13 @@ def test_higher_version_with_fewer_chunks_fully_replaces_lower(tmp_path):
     out = tmp_path / "out"
     _make_tree(root)
 
-    resolve(root, out, select=["dynamo_rust-3.0.0"])
+    resolve(root, out, select=["dynamo_v2-0.2.0"])
 
     folded = yaml.safe_load((out / FAMILY / NAME).read_text())
     case = folded["cases"][CASE]
     deltas = _dynamo_deltas(case)
 
-    # Exactly the 3.0.0 doc's content: ONE delta, in chunk 0 — no v2 residue anywhere.
+    # Exactly the 0.2.0 doc's content: ONE delta, in chunk 0 — no anchor residue anywhere.
     assert [i for i, _ in deltas] == [0], (
         f"v2 anchor deltas leaked into tail chunks: indices {[i for i, _ in deltas]}"
     )
@@ -118,7 +118,7 @@ def test_lower_target_keeps_anchor_untouched(tmp_path):
     out = tmp_path / "out"
     _make_tree(root)
 
-    resolve(root, out, select=["dynamo_rust-0.1.11"])
+    resolve(root, out, select=["dynamo_v2-0.1.11"])
 
     folded = yaml.safe_load((out / FAMILY / NAME).read_text())
     deltas = _dynamo_deltas(folded["cases"][CASE])

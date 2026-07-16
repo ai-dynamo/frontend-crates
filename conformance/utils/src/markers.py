@@ -18,7 +18,8 @@ import re
 from typing import Any
 
 from impls import (
-    BASELINE_IMPL,
+    BASELINE_IMPLS,
+    BASELINE_STREAM_IMPL,
     BATCH_IMPL_KEYS,
     ENGINE_LETTER,
     IMPL_DISPLAY,
@@ -313,7 +314,7 @@ def _parser_marker(case: dict | None, impl: str) -> str:
         return "✗" if isinstance(block["error"], dict) else "!"
     if _block_tool_call_leaks(block):
         return "↯"
-    if impl == BASELINE_IMPL:
+    if impl in BASELINE_IMPLS:
         peers = [_impl_get(expected, peer) for peer in PEER_IMPL_KEYS]
         if all(
             peer is None or (isinstance(peer, dict) and "unavailable" in peer)
@@ -544,4 +545,4 @@ def _sob_marker_spans(case: dict | None, marker_context: str | None = None) -> s
 
 def _sob_cell_text(case: dict | None, marker_context: str | None = None) -> str:
     """Static/overview cell text: the Dynamo cross-engine marker (=, V_ps/V_rs/S_rs, …)."""
-    return _stream_xeng_marker(case, BASELINE_IMPL, marker_context)
+    return _stream_xeng_marker(case, BASELINE_STREAM_IMPL, marker_context)

@@ -3,7 +3,7 @@
 
 //! Stream parser on BATCH samples: feed each batch fixture's full
 //! `model_text` to the streaming parser and assert the assembled tool calls match
-//! the BATCH parser's `expected.dynamo`. This is the streaming-vs-batch
+//! the BATCH parser's `expected.dynamo_v1`. This is the streaming-vs-batch
 //! consistency check — the stream parser, given the complete output, must land on
 //! the same calls as the batch parser.
 
@@ -37,7 +37,7 @@ struct Case {
 
 #[derive(Deserialize)]
 struct Expected {
-    dynamo: EngineExpected,
+    dynamo_v1: EngineExpected,
 }
 
 #[derive(Deserialize)]
@@ -58,7 +58,7 @@ struct ExpCall {
 #[test]
 fn toolcalling_batch_via_stream_parity() {
     // Versioned corpus (inputs/ + <impl>-<version>/): read the shared inputs and fold
-    // Dynamo v1's `expected.dynamo` from the (single) dynamo-<version>/ dir back in.
+    // Dynamo v1's `expected.dynamo_v1` from the (single) dynamo_v1-<version>/ dir back in.
     let batch_root = common::ensure_fixtures().join("toolcalling/fixtures-batch-v1");
     let inputs_root = batch_root.join("inputs");
     let dyn_dir = std::fs::read_dir(batch_root)
@@ -68,9 +68,9 @@ fn toolcalling_batch_via_stream_parity() {
             p.is_dir()
                 && p.file_name()
                     .and_then(|n| n.to_str())
-                    .is_some_and(|n| n.starts_with("dynamo-"))
+                    .is_some_and(|n| n.starts_with("dynamo_v1-"))
         })
-        .expect("no dynamo-<version> dir under fixtures-batch-v1");
+        .expect("no dynamo_v1-<version> dir under fixtures-batch-v1");
     let mut files = Vec::new();
     collect_yaml(&inputs_root, &mut files);
     files.sort();
@@ -129,12 +129,12 @@ fn toolcalling_batch_via_stream_parity() {
             let got = parse_stream_result(&fx.family, text).unwrap();
             let want = EngineResult {
                 calls: expected
-                    .dynamo
+                    .dynamo_v1
                     .calls
                     .iter()
                     .map(|c| (c.name.clone(), c.arguments.clone()))
                     .collect(),
-                normal_text: expected.dynamo.normal_text.clone(),
+                normal_text: expected.dynamo_v1.normal_text.clone(),
             };
 
             let known_id = format!("{}:{cid}", fx.family);

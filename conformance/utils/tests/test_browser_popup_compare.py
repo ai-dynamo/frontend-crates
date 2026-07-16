@@ -29,8 +29,8 @@ pytestmark = pytest.mark.skipif(
     reason="no headless Chrome available",
 )
 
-V2_KEY = "dynamo_rust-0-1-11"
-V1_KEY = "dynamo_rust-3-0-0"
+V2_KEY = "dynamo_v2-0-1-11"
+V1_KEY = "dynamo_v1-3-0-0"
 
 
 @pytest.fixture(scope="module")
@@ -256,7 +256,7 @@ def test_reasoning_tabs_use_candidate_chart(driver):
         _open_tab(driver, target)
         order = _grid_column_order(driver)
         assert order, f"{target}: no candidate chart found"
-        assert set(order) <= {"dynamo", "vllm", "sglang"}, (
+        assert set(order) <= {"dynamo_v1", "vllm_python", "sglang_python"}, (
             f"{target}: unexpected candidate keys {order}"
         )
         assert not _chart_tooltip_has_cand_list(driver), (

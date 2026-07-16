@@ -9,13 +9,13 @@
 //! impl with a Rust streaming parser) and asserts:
 //!
 //! 1. **Per-chunk emit, token path** — feeding `delta_token_ids` per chunk
-//!    produces exactly `expected.dynamo` for that chunk.
+//!    produces exactly `expected.dynamo_v1` for that chunk.
 //! 2. **Per-chunk emit, text path** — feeding `delta_text` per chunk produces
 //!    the same per-chunk emit (exercises `parse_tool_call_streaming_text`).
 //! 3. **Assembled** — concatenating the per-chunk deltas yields the expected
 //!    final calls.
 //!
-//! Cases with `unavailable.dynamo` (e.g. character-split fixtures a token parser
+//! Cases with `unavailable.dynamo_v2` (e.g. character-split fixtures a token parser
 //! can't consume per-chunk) are skipped for Dynamo. vLLM/SGLang per-chunk data in
 //! the fixtures is captured from the engines in their containers, not re-run here.
 
@@ -84,9 +84,9 @@ struct FixtureDelta {
 }
 
 // The corpus is versioned (inputs/ + <impl>-<version>/): the shared per-chunk
-// delta_text lives in inputs/, Dynamo's per-chunk expected in dynamo_rust-<ver>/.
-// These structs load the Dynamo version dir so we can fold `expected.dynamo_rust`
-// (and `unavailable.dynamo_rust`) back into the inputs Fixture before parsing.
+// delta_text lives in inputs/, Dynamo's per-chunk expected in dynamo_v2-<ver>/.
+// These structs load the Dynamo version dir so we can fold `expected.dynamo_v2`
+// (and `unavailable.dynamo_v2`) back into the inputs Fixture before parsing.
 #[derive(Deserialize)]
 struct DynFixture {
     #[serde(default)]
@@ -109,8 +109,8 @@ struct DynChunk {
     normal_text: Option<String>,
 }
 
-/// Fold Dynamo's expected (from dynamo_rust-<ver>/<family>/<name>) into an inputs
-/// Fixture, keyed under "dynamo_rust" per chunk + case, so the rest of the test —
+/// Fold Dynamo's expected (from dynamo_v2-<ver>/<family>/<name>) into an inputs
+/// Fixture, keyed under "dynamo_v2" per chunk + case, so the rest of the test —
 /// written for the old bundled layout — is unchanged.
 fn merge_dynamo(fx: &mut Fixture, dyn_dir: &Path, rel: &Path) {
     let dfp = dyn_dir.join(rel);
@@ -123,16 +123,16 @@ fn merge_dynamo(fx: &mut Fixture, dyn_dir: &Path, rel: &Path) {
             continue;
         };
         if let Some(reason) = dcase.unavailable {
-            case.unavailable.insert("dynamo_rust".to_string(), reason);
+            case.unavailable.insert("dynamo_v2".to_string(), reason);
             continue;
         }
         for (i, dchunk) in dcase.chunks.into_iter().enumerate() {
             if let Some(chunk) = case.chunks.get_mut(i) {
                 chunk
                     .expected
-                    .insert("dynamo_rust".to_string(), dchunk.expected);
+                    .insert("dynamo_v2".to_string(), dchunk.expected);
                 if let Some(nt) = dchunk.normal_text {
-                    chunk.normal_text.insert("dynamo_rust".to_string(), nt);
+                    chunk.normal_text.insert("dynamo_v2".to_string(), nt);
                 }
             }
         }
@@ -211,22 +211,22 @@ struct EmittedDelta {
     arguments: Option<String>,
 }
 
-// The v2 stream overlay is fully canonical (`dynamo_rust`); the legacy `dynamo`
+// The v2 stream overlay is fully canonical (`dynamo_v2`); the legacy `dynamo`
 // fallback was dropped as part of the v2 key migration. The v1 batch corpus
 // (read by `parity_toolcalling_batch_via_stream.rs`) stays legacy and is untouched.
 fn dynamo_expected(expected: &BTreeMap<String, Vec<FixtureDelta>>) -> Option<&Vec<FixtureDelta>> {
-    expected.get("dynamo_rust")
+    expected.get("dynamo_v2")
 }
 
 fn dynamo_normal_text(normal_text: &BTreeMap<String, String>) -> &str {
     normal_text
-        .get("dynamo_rust")
+        .get("dynamo_v2")
         .map(String::as_str)
         .unwrap_or("")
 }
 
 fn dynamo_unavailable(unavailable: &BTreeMap<String, String>) -> bool {
-    unavailable.contains_key("dynamo_rust")
+    unavailable.contains_key("dynamo_v2")
 }
 
 /// Derive the assembled calls from the fixture's per-chunk expected dynamo deltas.
@@ -317,15 +317,15 @@ fn emitted_from_result(result: ToolParseResult) -> Vec<EmittedDelta> {
 #[test]
 fn toolcalling_stream_parity() {
     // Versioned corpus: shared chunks in inputs/, Dynamo's expected in the
-    // dynamo_rust-<version>/ dirs. This test drives the Dynamo parser *v2*, so fold in
-    // the lowest dynamo_rust version (the v2 crate, 0.1.11) — the higher 3.0.0 dir is
+    // dynamo_v2-<version>/ dirs. This test drives the Dynamo parser *v2*, so fold in
+    // the lowest dynamo_v2 version (the v2 crate, 0.1.11) — the higher 3.0.0 dir is
     // the v1 jail candidate, tested elsewhere.
     let sv2 = common::ensure_fixtures().join("toolcalling/fixtures-stream-v2");
     let inputs_root = sv2.join("inputs");
     let ver_key = |p: &Path| -> Vec<u64> {
         p.file_name()
             .and_then(|n| n.to_str())
-            .and_then(|n| n.strip_prefix("dynamo_rust-"))
+            .and_then(|n| n.strip_prefix("dynamo_v2-"))
             .map(|v| v.split('.').map(|x| x.parse().unwrap_or(0)).collect())
             .unwrap_or_default()
     };
@@ -336,10 +336,10 @@ fn toolcalling_stream_parity() {
             p.is_dir()
                 && p.file_name()
                     .and_then(|n| n.to_str())
-                    .is_some_and(|n| n.starts_with("dynamo_rust-"))
+                    .is_some_and(|n| n.starts_with("dynamo_v2-"))
         })
         .min_by_key(|p| ver_key(p))
-        .expect("no dynamo_rust-<version> dir under fixtures-stream-v2");
+        .expect("no dynamo_v2-<version> dir under fixtures-stream-v2");
     let mut files = Vec::new();
     collect_yaml(&inputs_root, &mut files);
     files.sort();
@@ -375,7 +375,7 @@ fn toolcalling_stream_parity() {
         eprintln!("fixture {}", fixture_name(path));
 
         // `harmony` drives the token-id path; `harmony_text` drives the text path.
-        // Both must match their own per-chunk `expected.dynamo` data.
+        // Both must match their own per-chunk `expected.dynamo_v1` data.
         let is_text = fx.family == "harmony_text";
 
         for (cid, case) in &fx.cases {

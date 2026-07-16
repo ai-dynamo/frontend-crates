@@ -22,7 +22,7 @@ for batch-on-stream.
 This clones every harmony token case into harmony_text verbatim — same chunks,
 same vLLM/SGLang per-chunk `expected` and `normal_text` (those are recorded
 against these exact chunk boundaries, so they stay valid) — swapping ONLY
-`expected.dynamo_rust` / `normal_text.dynamo_rust` for the text-path recording from
+`expected.dynamo_v2` / `normal_text.dynamo_v2` for the text-path recording from
 `record_dynamo_stream --text`. The result: the two rows cover an identical
 scenario grid through both parser paths, the table columns align, and the text
 path's per-chunk emit is regression-locked. The prior hand-authored text cases
@@ -55,7 +55,7 @@ TEXT_DIR = os.path.join(
     REPO_ROOT, "conformance/toolcalling/fixtures-stream-v2/harmony_text"
 )
 # Peer impls carried verbatim from the token fixture (their per-chunk data is
-# tied to these exact chunk boundaries). dynamo_rust is re-recorded via the text path.
+# tied to these exact chunk boundaries). dynamo_v2 is re-recorded via the text path.
 PEER_IMPLS = ("vllm_python", "sglang_python")
 MODEL_LABEL = "gpt-oss (harmony, text)"
 
@@ -133,16 +133,16 @@ def emit_case(lines, cid, case, text_rec):
         src_exp = chunk.get("expected", {}) or {}
         src_nt = chunk.get("normal_text", {}) or {}
 
-        # expected: dynamo_rust (text path) first, then peers verbatim from the token fixture.
+        # expected: dynamo_v2 (text path) first, then peers verbatim from the token fixture.
         lines.append("      expected:")
-        _emit_deltas(lines, "dynamo_rust", dyn_deltas)
+        _emit_deltas(lines, "dynamo_v2", dyn_deltas)
         for impl in PEER_IMPLS:
             _emit_deltas(lines, impl, src_exp.get(impl, []))
 
-        # normal_text: dynamo_rust (text path) + peers verbatim, only when non-empty.
+        # normal_text: dynamo_v2 (text path) + peers verbatim, only when non-empty.
         nt_lines = []
         if dyn_normal:
-            nt_lines.append(f"        dynamo_rust: {_q(dyn_normal)}")
+            nt_lines.append(f"        dynamo_v2: {_q(dyn_normal)}")
         for impl in PEER_IMPLS:
             if src_nt.get(impl):
                 nt_lines.append(f"        {impl}: {_q(src_nt[impl])}")

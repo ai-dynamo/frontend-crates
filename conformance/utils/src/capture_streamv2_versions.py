@@ -5,7 +5,7 @@
 changed-only overlays, so the stream tab can compare peer versions (0.23.0 vs
 0.24.0, 0.5.12.post1 vs 0.5.14) the way the batch tab already does.
 
-The HF-downloaded anchor fixtures in `fixtures-stream-v2/inputs/<family>/TOOLCALLING.streamv2.*.yaml`
+The extracted anchor fixtures in `fixtures-stream-v2/inputs/<family>/TOOLCALLING.streamv2.*.yaml`
 are the ANCHOR (the older version: vLLM 0.23.0 / SGLang 0.5.12.post1). This tool
 feeds each anchor fixture's chunks back through the parser IN THE CURRENT container
 (one engine import per container, via capture_driver's plumbing), diffs each chunk's
