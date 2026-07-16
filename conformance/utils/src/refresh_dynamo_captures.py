@@ -21,7 +21,7 @@ Modes (any subset; default all):
 
 The tree is the working copy that package_and_publish.py packages
 (conformance/toolcalling/...). If a fixture tree is missing there, it is first
-copied from the HF snapshot cache (CONFORMANCE_FIXTURES_ROOT or
+copied from the fixture cache (CONFORMANCE_FIXTURES_ROOT or
 ~/.cache/dynamo/conformance-fixtures) so peer data carries over unchanged.
 
 Usage:
@@ -78,7 +78,7 @@ def ensure_tree(name: str) -> Path:
     if not (dst / "inputs").is_dir() and not any(dst.glob("*/*.yaml")):
         src = cache_root() / "toolcalling" / name
         if not src.is_dir():
-            raise SystemExit(f"{src} not cached — run download_fixtures.py first")
+            raise SystemExit(f"{src} not cached — run extract_fixtures.py first")
         print(f"[refresh] copying {src} -> {dst}")
         shutil.copytree(src, dst, dirs_exist_ok=True)
     return dst
