@@ -152,14 +152,19 @@ impl DeepSeekV4ToolStreamParser {
             // so inter-call text — e.g. the single separator space before the
             // next block — flows through verbatim, matching the v1 jail+batch
             // output.
-            if self.suppress_normal_text
-                && let Some(pos) = self.buffer.find(BLOCK_END)
-            {
+            // A stray/orphan close (`BLOCK_END`) before any opener is malformed
+            // double-close markup. Drop it so it can NEVER leak into normal_text;
+            // when suppression is off, first emit the natural text preceding it.
+            // Clear the latch either way (the markup context has ended).
+            if let Some(pos) = self.buffer.find(BLOCK_END) {
                 let next_open = [BLOCK_START, INVOKE_START_PREFIX]
                     .into_iter()
                     .filter_map(|m| self.buffer.find(m))
                     .min();
                 if next_open.is_none_or(|open| pos < open) {
+                    if !self.suppress_normal_text && pos > 0 {
+                        out.normal_text.push_str(&self.buffer[..pos]);
+                    }
                     self.buffer.drain(..pos + BLOCK_END.len());
                     self.suppress_normal_text = false;
                     continue;
@@ -367,6 +372,27 @@ mod tests {
         }
         out.append(parser.finish().expect("finish"));
         out
+    }
+
+    #[test]
+    fn stray_double_close_never_leaks() {
+        // A well-formed call, then a DUPLICATE (orphan) close before any prose:
+        // the stray `</｜DSML｜tool_calls>` is malformed markup and must be
+        // dropped, never pushed into normal_text, while the trailing prose after
+        // it flows through.
+        let out = parse_chunks(&[
+            "<｜DSML｜tool_calls> <｜DSML｜invoke name=\"get_weather\">\
+             <｜DSML｜parameter name=\"location\" string=\"true\">NYC</｜DSML｜parameter>\
+             </｜DSML｜invoke> </｜DSML｜tool_calls>",
+            " </｜DSML｜tool_calls>done",
+        ]);
+        let normal_text = out.normal_text.clone();
+        assert_eq!(out.coalesce_calls().calls.len(), 1);
+        assert!(
+            !normal_text.contains("DSML"),
+            "stray close leaked into normal_text: {normal_text:?}"
+        );
+        assert!(normal_text.contains("done"));
     }
 
     #[test]

@@ -114,14 +114,19 @@ impl Qwen3CoderToolStreamParser {
             // Consume the orphan close and clear the latch so inter-call text —
             // e.g. the single separator space before the next `<tool_call>` —
             // flows through verbatim, matching the v1 jail+batch output.
-            if self.suppress_normal_text
-                && let Some(pos) = self.buffer.find(BLOCK_END)
-            {
+            // A stray/orphan close (`BLOCK_END`) before any opener is malformed
+            // double-close markup. Drop it so it can NEVER leak into normal_text;
+            // when suppression is off, first emit the natural text preceding it.
+            // Clear the latch either way (the markup context has ended).
+            if let Some(pos) = self.buffer.find(BLOCK_END) {
                 let next_open = [BLOCK_START, FUNCTION_START]
                     .into_iter()
                     .filter_map(|m| self.buffer.find(m))
                     .min();
                 if next_open.is_none_or(|open| pos < open) {
+                    if !self.suppress_normal_text && pos > 0 {
+                        out.normal_text.push_str(&self.buffer[..pos]);
+                    }
                     self.buffer.drain(..pos + BLOCK_END.len());
                     self.suppress_normal_text = false;
                     continue;
