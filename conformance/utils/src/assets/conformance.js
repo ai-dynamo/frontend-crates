@@ -155,7 +155,10 @@
     // Only record params when this panel differs from its default layout, so the
     // default state keeps a clean URL (and Reset lands on an empty query).
     if (!_sameLayout(pid, base, b)) {
-      if (base) { url.searchParams.set('base_' + pid, base); }
+      // A null base is a deliberate "no reference" state (the star was toggled off),
+      // distinct from the default layout — record it as an empty sentinel so a reload
+      // restores no-ref instead of falling back to the default reference.
+      url.searchParams.set('base_' + pid, base || '');
       if (b.length) { url.searchParams.set('cmp_' + pid, b.join(',')); }
     }
     window.history.replaceState(null, '', url.toString());
@@ -260,10 +263,35 @@
     }
     ctl.dataset.prevBase = newBase || '';
   }
+  // Toggling the current Reference star OFF (clicking the already-selected star):
+  // drop the previous reference's pressed Compare box and clear the base. With no
+  // base, applyCtl paints every cell cmp-nobase, so the whole panel clears.
+  function handleRefUncheck(ctl) {
+    const oldBase = ctl.dataset.prevBase || '';
+    if (oldBase) {
+      const oldBox = _boxFor(ctl, oldBase);
+      if (oldBox) { oldBox.checked = false; }
+    }
+    ctl.dataset.prevBase = '';
+  }
   // Re-color the panel whenever a Reference star or Compare checkbox toggles.
   function initCompareInputs() {
     document.querySelectorAll('.cmpctl').forEach(function (ctl) {
       ctl.dataset.prevBase = ctlBase(ctl) || '';
+      // Radios don't fire `change` when you click the already-checked one, and there's
+      // no native "uncheck". Capture the pre-click state on mousedown; on click, if it
+      // was already the Reference, uncheck it and drive the update ourselves.
+      ctl.querySelectorAll('input.cmp-ref').forEach(function (r) {
+        r.addEventListener('mousedown', function () { r.dataset.wasChecked = r.checked ? '1' : '0'; });
+        r.addEventListener('click', function () {
+          if (r.dataset.wasChecked === '1') {
+            r.checked = false;
+            handleRefUncheck(ctl);
+            const panel = ctl.closest('.tab-panel');
+            if (panel) { applyCtl(panel); }
+          }
+        });
+      });
       ctl.addEventListener('change', function (e) {
         if (e.target.matches('input.cmp-ref')) { handleRefChange(ctl); }
         if (e.target.matches('input.cmp-ref, input.cmp-on')) {

@@ -210,6 +210,57 @@ def test_v1_assembled_is_not_doubled(driver):
     assert "get_weatherget_weather" not in text, f"doubled v1 output on the page: {text!r}"
 
 
+def _active_base(driver):
+    """The active panel's selected Reference key, or None when no star is chosen."""
+    return driver.execute_script(
+        """
+        const ctl = document.querySelector('.tab-panel.active .cmpctl');
+        const r = ctl && ctl.querySelector('input.cmp-ref:checked');
+        return r ? r.value : null;
+        """
+    )
+
+
+def test_clicking_the_active_star_again_clears_the_reference(driver):
+    # A radio has no native uncheck; clicking the already-selected Reference star must
+    # toggle it OFF -> no base -> every cell paints cmp-nobase (the panel clears).
+    _open_stream_tab(driver)
+    _select(driver, V2_KEY, [])
+    assert _active_base(driver) == V2_KEY, "precondition: V2 should be the Reference"
+
+    # A real click fires mousedown then click, which the unstar handler relies on.
+    clicked = driver.execute_script(
+        """
+        const ctl = document.querySelector('.tab-panel.active .cmpctl');
+        const r = ctl && ctl.querySelector('input.cmp-ref:checked');
+        if (!r) { return false; }
+        r.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+        r.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+        return true;
+        """
+    )
+    assert clicked, "no checked Reference star to click"
+    time.sleep(0.3)
+
+    assert _active_base(driver) is None, "clicking the active star again must clear the Reference"
+    # With no base, applyCtl paints every scored cell cmp-nobase and nothing else.
+    counts = driver.execute_script(
+        """
+        const tab = document.querySelector('.tab-panel.active');
+        const cells = tab.querySelectorAll('td.cell[data-cmp]');
+        let nobase = 0, colored = 0;
+        cells.forEach(c => {
+          if (c.classList.contains('cmp-nobase')) { nobase++; }
+          if (c.classList.contains('cmp-eq') || c.classList.contains('cmp-leak')) { colored++; }
+        });
+        return {total: cells.length, nobase, colored};
+        """
+    )
+    assert counts["total"] > 0, "no scored cells in the stream tab"
+    assert counts["colored"] == 0, f"cells still colored after clearing the Reference: {counts}"
+    assert counts["nobase"] == counts["total"], f"not all cells cleared to cmp-nobase: {counts}"
+
+
 def test_unchecking_compare_hides_its_column(driver):
     _open_stream_tab(driver)
     _select(driver, V2_KEY, [V1_KEY])
