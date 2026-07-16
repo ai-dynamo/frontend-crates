@@ -333,7 +333,9 @@ fn parse_nested_minimax_xml(
     let mut stack = vec![StackItem {
         tag: None,
         value: root_value,
-        texts: if leading_text.is_empty() {
+        // Whitespace-only leading text is pretty-print formatting, not a value:
+        // treat it as empty so it never becomes a spurious `$text` / array item.
+        texts: if leading_text.trim().is_empty() {
             Vec::new()
         } else {
             vec![leading_text.to_string()]
@@ -355,7 +357,9 @@ fn parse_nested_minimax_xml(
                     break;
                 }
             }
-            if !trailing_text.is_empty() {
+            // Skip whitespace-only formatting between tags; otherwise it would
+            // append a spurious array element (or `$text`) to the parent node.
+            if !trailing_text.trim().is_empty() {
                 stack
                     .last_mut()
                     .expect("stack has current item")
@@ -384,14 +388,14 @@ fn parse_nested_minimax_xml(
             stack.push(StackItem {
                 tag: Some(tag),
                 value: child_value,
-                texts: if trailing_text.is_empty() {
+                texts: if trailing_text.trim().is_empty() {
                     Vec::new()
                 } else {
                     vec![trailing_text.to_string()]
                 },
                 schema: child_schema,
             });
-        } else if !chunk.is_empty() {
+        } else if !chunk.trim().is_empty() {
             stack
                 .last_mut()
                 .expect("stack has current item")
@@ -536,13 +540,18 @@ fn get_arguments_config(func_name: &str, tools: Option<&[ToolDefinition]>) -> Ma
 fn convert_scalar_value(raw: &str, schema: Option<&Value>) -> Value {
     let value = html_unescape(raw);
     let trimmed = value.trim();
-    if trimmed.eq_ignore_ascii_case("null") {
-        return Value::Null;
-    }
 
+    // Without a schema we cannot know the intended type, so preserve the literal
+    // text (including the string "null") instead of inventing a JSON null.
     let Some(schema) = schema else {
         return Value::String(value);
     };
+
+    // Only collapse the literal "null" into JSON null when the schema actually
+    // permits null. A `string`-typed parameter keeps the literal value "null".
+    if trimmed.eq_ignore_ascii_case("null") && schema_permits_null(schema) {
+        return Value::Null;
+    }
 
     if schema_has_type(Some(schema), "string") || schema_has_type(Some(schema), "enum") {
         return Value::String(value);
@@ -597,6 +606,20 @@ fn convert_scalar_value(raw: &str, schema: Option<&Value>) -> Value {
     }
 
     Value::String(value)
+}
+
+// Reports whether the schema allows a JSON null, so the literal string "null"
+// may be coerced. An explicit `null` type, `nullable: true`, or a `null` member
+// of an `anyOf`/`oneOf` permits it; so does a schema with no `type` (and no
+// `anyOf`/`oneOf`), which is unconstrained. An explicit `string` type does not.
+fn schema_permits_null(schema: &Value) -> bool {
+    if schema_has_type(Some(schema), "null") {
+        return true;
+    }
+    if schema.get("nullable").and_then(Value::as_bool) == Some(true) {
+        return true;
+    }
+    schema.get("type").is_none() && schema.get("anyOf").is_none() && schema.get("oneOf").is_none()
 }
 
 // Checks JSON Schema `type`, `anyOf`, and `oneOf` for a target primitive/container type.
@@ -655,4 +678,76 @@ fn html_unescape(s: &str) -> String {
         .replace("&quot;", "\"")
         .replace("&#x27;", "'")
         .replace("&#39;", "'")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    // Namespace token emitted before every M3 tag; keeps the test inputs readable.
+    const TOK: &str = "]<]minimax[>[";
+
+    // Finding 1: pretty-printed nested arguments must not turn inter-tag
+    // formatting whitespace into a spurious `$text` property or array element.
+    #[test]
+    fn pretty_printed_nested_object_has_no_spurious_whitespace_text() {
+        let config = MiniMaxM3ParserConfig::default();
+        // Leading whitespace before the first tag and newlines/indent between the
+        // sibling tags, exactly as a model would emit when pretty-printing.
+        let raw = format!("\n  {TOK}<a>1{TOK}</a>\n  {TOK}<b>2{TOK}</b>\n");
+        let parsed = parse_nested_minimax_xml(&raw, None, &config);
+        assert_eq!(parsed, json!({ "a": "1", "b": "2" }));
+        // No `$text` (or `$$text`) key should have been synthesized from whitespace.
+        let obj = parsed.as_object().expect("object value");
+        assert!(
+            obj.keys().all(|k| !k.contains("$text")),
+            "unexpected whitespace $text key in {parsed}"
+        );
+    }
+
+    #[test]
+    fn pretty_printed_nested_array_has_no_spurious_whitespace_item() {
+        let config = MiniMaxM3ParserConfig::default();
+        let schema = json!({ "type": "array", "items": { "type": "string" } });
+        // Whitespace between `</item>` and the next `<item>` previously became an
+        // extra array element via the end-tag trailing-text append.
+        let raw = format!("\n  {TOK}<item>a{TOK}</item>\n  {TOK}<item>b{TOK}</item>\n");
+        let parsed = parse_nested_minimax_xml(&raw, Some(schema), &config);
+        assert_eq!(parsed, json!(["a", "b"]));
+    }
+
+    // Finding 2: honor the schema before coercing the literal string "null".
+    #[test]
+    fn string_typed_null_stays_a_string() {
+        let schema = json!({ "type": "string" });
+        assert_eq!(
+            convert_scalar_value("null", Some(&schema)),
+            json!("null"),
+            "a string-typed parameter must keep the literal value \"null\""
+        );
+    }
+
+    #[test]
+    fn nullable_typed_null_becomes_json_null() {
+        // Explicit null type, a `["string", "null"]` union, and `nullable: true`
+        // all permit null and should coerce.
+        for schema in [
+            json!({ "type": "null" }),
+            json!({ "type": ["string", "null"] }),
+            json!({ "type": "string", "nullable": true }),
+        ] {
+            assert_eq!(
+                convert_scalar_value("null", Some(&schema)),
+                Value::Null,
+                "nullable schema {schema} should coerce \"null\" to JSON null"
+            );
+        }
+    }
+
+    #[test]
+    fn schemaless_null_stays_a_string() {
+        // With no schema the intended type is unknown, so the literal is preserved.
+        assert_eq!(convert_scalar_value("null", None), json!("null"));
+    }
 }

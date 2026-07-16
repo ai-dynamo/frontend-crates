@@ -4,7 +4,7 @@
 // Reference implementation:
 // https://github.com/sgl-project/sglang/blob/44da737770e4bcd9bfa27751f0a0751c9b5c06e1/python/sglang/srt/function_call/qwen3_coder_detector.py
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use num_traits::ToPrimitive;
 use regex::Regex;
@@ -13,7 +13,9 @@ use uuid::Uuid;
 
 use super::super::ToolDefinition;
 use super::super::config::XmlParserConfig;
-use super::parsed_value::{ParsedValue, is_integer_literal, raw_number_literal};
+use super::parsed_value::{
+    ParsedValue, coerce_integer_literal, is_integer_literal, raw_number_literal,
+};
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 
 /// Build a `<start>name>(body)<end>` regex pattern. When `strict` is false,
@@ -78,13 +80,14 @@ pub fn try_tool_call_parse_xml(
     {
         let calls = parse_tool_call_block(message, config, tools).unwrap_or_default();
         if !calls.is_empty() {
-            // Preserve narration before the first `<function=...>` tag so
-            // streaming output isn't dropped on the back-off path.
-            let prefix = message
-                .split_once(config.function_start_token.as_str())
-                .map(|(p, _)| p.to_string())
-                .unwrap_or_default();
-            return Ok((calls, Some(prefix)));
+            // Preserve narration BEFORE the first `<function=...>` tag AND any
+            // text AFTER the recovered closing marker so streaming output isn't
+            // dropped on the back-off path.
+            let marker_idx = message
+                .find(config.function_start_token.as_str())
+                .unwrap_or(0);
+            let text = bare_recovery_surrounding_text(message, marker_idx, config);
+            return Ok((calls, Some(text)));
         }
     }
 
@@ -251,7 +254,32 @@ fn recover_bare_xml_calls_in_span(
         kept_prefix_bytes = marker_idx,
         "XML recovery: recovered complete bare function block(s) before a later outer wrapper"
     );
-    Ok(Some((span[..marker_idx].to_string(), calls)))
+    // Keep BOTH the prefix before the marker AND any narration after the
+    // recovered close — otherwise trailing text in the gap is dropped.
+    let text = bare_recovery_surrounding_text(span, marker_idx, config);
+    Ok(Some((text, calls)))
+}
+
+/// Natural-language text preserved around a recovered bare-function block: the
+/// prefix before the function-start marker at `marker_idx`, plus any narration
+/// after the last recovered close marker (`</function>` or `</tool_call>`).
+/// Both bare-call recovery paths would otherwise treat everything from the first
+/// function marker onward as consumed and drop trailing text.
+fn bare_recovery_surrounding_text(
+    span: &str,
+    marker_idx: usize,
+    config: &XmlParserConfig,
+) -> String {
+    let prefix = &span[..marker_idx];
+    let consumed_end = [
+        config.function_end_token.as_str(),
+        config.tool_call_end_token.as_str(),
+    ]
+    .into_iter()
+    .filter_map(|tok| span.rfind(tok).map(|i| i + tok.len()))
+    .max();
+    let trailing = consumed_end.map(|end| &span[end..]).unwrap_or("");
+    format!("{prefix}{trailing}")
 }
 
 /// Parse a single tool call block
@@ -492,24 +520,30 @@ fn convert_param_value(
     }
 
     // Get the type from schema.
-    // If a parameter uses "anyOf"/"oneOf" instead of a direct "type", there is no
-    // top-level "type" key. Treat it as "object" so the value goes through JSON
-    // parsing rather than being returned as a double-encoded string.
     let param_schema = param_config.get(param_name);
-    let param_type = param_schema
+    let direct_type = param_schema
         .and_then(|v| v.get("type"))
         .and_then(|t| t.as_str())
-        .map(|t| t.to_lowercase())
-        .unwrap_or_else(|| {
-            if param_schema
-                .map(|v| v.get("anyOf").is_some() || v.get("oneOf").is_some())
-                .unwrap_or(false)
-            {
-                "object".to_string()
-            } else {
-                "string".to_string()
+        .map(|t| t.to_lowercase());
+
+    let param_type = match direct_type {
+        Some(t) => t,
+        None => {
+            // No scalar `type` string. The schema may still constrain the value
+            // via a union: `anyOf`/`oneOf`, a `type: [..]` array, or OpenAPI
+            // `nullable`. Resolve the allowed alternatives and coerce ONLY to a
+            // type the union permits — a bare `42` for `anyOf:[string,null]`
+            // must stay the string "42", not become the JSON number 42. When no
+            // union is present, fall back to the documented string behavior.
+            if let Some(schema) = param_schema {
+                let allowed = collect_allowed_types(schema);
+                if !allowed.is_empty() {
+                    return coerce_union_value(&param_value, &allowed);
+                }
             }
-        });
+            "string".to_string()
+        }
+    };
 
     // The follow `match` block follows this rough pattern for each block:
     // 1. Match `param_type` against predefined string representations of each type,
@@ -530,9 +564,13 @@ fn convert_param_value(
             || t.starts_with("short")
             || t.starts_with("unsigned") =>
         {
-            match param_value.parse::<i64>() {
-                Ok(int_val) => Value::Number(int_val.into()).into(),
-                Err(_) => {
+            // Preserve large integers as JSON numbers. `coerce_integer_literal`
+            // parses to i64 when it fits and falls back to a raw numeric literal
+            // (via `serde_json::value::RawValue`) for values outside i64 range,
+            // so a 21-digit argument stays a JSON number instead of a string.
+            match coerce_integer_literal(&param_value) {
+                Some(coerced) => coerced,
+                None => {
                     tracing::warn!(
                         "Parsed value '{}' of parameter '{}' is not an integer in tool '{}', degenerating to string.",
                         param_value,
@@ -666,6 +704,162 @@ fn convert_param_value(
     }
 }
 
+/// Coarse JSON-schema type category, used to resolve union (`anyOf`/`oneOf`/
+/// `type: [..]`/`nullable`) schemas to the set of types they actually allow.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum SchemaType {
+    String,
+    Integer,
+    Number,
+    Boolean,
+    Object,
+    Array,
+    Null,
+}
+
+/// Map a schema type name (including the aliases `convert_param_value`
+/// recognizes) to its category. Unknown names return `None`.
+fn categorize_type(name: &str) -> Option<SchemaType> {
+    let t = name.to_lowercase();
+    let t = t.as_str();
+    if matches!(t, "string" | "str" | "text" | "varchar" | "char" | "enum") {
+        Some(SchemaType::String)
+    } else if matches!(t, "boolean" | "bool" | "binary") {
+        Some(SchemaType::Boolean)
+    } else if matches!(t, "null" | "none") {
+        Some(SchemaType::Null)
+    } else if t.starts_with("int")
+        || t.starts_with("uint")
+        || t.starts_with("long")
+        || t.starts_with("short")
+        || t.starts_with("unsigned")
+    {
+        Some(SchemaType::Integer)
+    } else if t.starts_with("num") || t.starts_with("float") {
+        Some(SchemaType::Number)
+    } else if t == "object" || t.starts_with("dict") {
+        Some(SchemaType::Object)
+    } else if t == "array" || t == "arr" || t.starts_with("list") {
+        Some(SchemaType::Array)
+    } else {
+        None
+    }
+}
+
+/// Collect the set of types a (possibly union) schema allows, walking
+/// `type` (string or array), `anyOf`/`oneOf` branches, and OpenAPI `nullable`.
+fn collect_allowed_types(schema: &Value) -> HashSet<SchemaType> {
+    let mut out = HashSet::new();
+    collect_allowed_types_into(schema, &mut out);
+    out
+}
+
+fn collect_allowed_types_into(schema: &Value, out: &mut HashSet<SchemaType>) {
+    if let Some(ty) = schema.get("type") {
+        if let Some(name) = ty.as_str() {
+            if let Some(cat) = categorize_type(name) {
+                out.insert(cat);
+            }
+        } else if let Some(arr) = ty.as_array() {
+            for item in arr.iter().filter_map(Value::as_str) {
+                if let Some(cat) = categorize_type(item) {
+                    out.insert(cat);
+                }
+            }
+        }
+    }
+    for key in ["anyOf", "oneOf"] {
+        if let Some(options) = schema.get(key).and_then(Value::as_array) {
+            for option in options {
+                collect_allowed_types_into(option, out);
+            }
+        }
+    }
+    if schema.get("nullable").and_then(Value::as_bool) == Some(true) {
+        out.insert(SchemaType::Null);
+    }
+}
+
+/// The category a parsed JSON value belongs to (integers report as `Integer`).
+fn value_category(v: &Value) -> SchemaType {
+    match v {
+        Value::String(_) => SchemaType::String,
+        Value::Bool(_) => SchemaType::Boolean,
+        Value::Number(n) => {
+            if n.is_i64() || n.is_u64() {
+                SchemaType::Integer
+            } else {
+                SchemaType::Number
+            }
+        }
+        Value::Object(_) => SchemaType::Object,
+        Value::Array(_) => SchemaType::Array,
+        Value::Null => SchemaType::Null,
+    }
+}
+
+fn value_matches(v: &Value, allowed: &HashSet<SchemaType>) -> bool {
+    let cat = value_category(v);
+    // An integer literal also satisfies a `number` constraint.
+    allowed.contains(&cat) || (cat == SchemaType::Integer && allowed.contains(&SchemaType::Number))
+}
+
+/// Coerce a raw XML value to one of the types a union schema allows. Tries
+/// structured (object/array) parsing only when the union permits it, then
+/// integer, number, and boolean, and finally falls back to a string. A value
+/// that matches none of the allowed types degenerates to a string (documented
+/// behavior) rather than being force-parsed into a disallowed JSON type.
+fn coerce_union_value(value: &str, allowed: &HashSet<SchemaType>) -> ParsedValue {
+    // `null` is already handled by the caller before schema lookup.
+    if allowed.contains(&SchemaType::Object) || allowed.contains(&SchemaType::Array) {
+        if let Ok(json_val) = serde_json::from_str::<Value>(value)
+            && value_matches(&json_val, allowed)
+        {
+            return json_val.into();
+        }
+        if let Ok(json_val) = try_literal_eval(value)
+            && value_matches(&json_val, allowed)
+        {
+            return json_val.into();
+        }
+    }
+
+    if allowed.contains(&SchemaType::Integer)
+        && is_integer_literal(value)
+        && let Some(coerced) = coerce_integer_literal(value)
+    {
+        return coerced;
+    }
+
+    if allowed.contains(&SchemaType::Number) {
+        if is_integer_literal(value)
+            && let Some(coerced) = coerce_integer_literal(value)
+        {
+            return coerced;
+        }
+        if let Ok(f) = value.parse::<f64>() {
+            if f.fract() == 0.0
+                && f.is_finite()
+                && let Some(i) = f.to_i64()
+            {
+                return Value::Number(i.into()).into();
+            }
+            if let Some(num) = serde_json::Number::from_f64(f) {
+                return Value::Number(num).into();
+            }
+        }
+    }
+
+    if allowed.contains(&SchemaType::Boolean) {
+        let lower = value.to_lowercase();
+        if lower == "true" || lower == "false" {
+            return Value::Bool(lower == "true").into();
+        }
+    }
+
+    Value::String(value.to_string()).into()
+}
+
 /// Try to parse a value similar to Python's ast.literal_eval.
 /// This is a simplified version that handles common cases.
 fn try_literal_eval(s: &str) -> Result<Value, ()> {
@@ -674,14 +868,82 @@ fn try_literal_eval(s: &str) -> Result<Value, ()> {
         return Ok(val);
     }
 
-    // Try to handle Python-style literals (single quotes, True/False/None)
-    let normalized = s
-        .replace('\'', "\"") // Replace single quotes with double quotes
-        .replace("True", "true")
-        .replace("False", "false")
-        .replace("None", "null");
+    // Try to handle Python-style literals (single quotes, True/False/None).
+    // Tokenize so the keyword rewrites only touch code OUTSIDE quoted strings —
+    // a global `replace` would corrupt real data (`{'message': 'True story'}`
+    // must NOT become `{"message": "true story"}`).
+    let normalized = normalize_python_literal(s);
 
     serde_json::from_str::<Value>(&normalized).map_err(|_| ())
+}
+
+/// Convert a Python-style literal into a JSON-ish string: swap single-quote
+/// string delimiters for double quotes and rewrite the bareword constants
+/// `True`/`False`/`None` -> `true`/`false`/`null`, but ONLY outside quoted
+/// strings. String contents (including any literal `True`/`None` words, embedded
+/// quotes, and backslash escapes) are preserved verbatim so real argument data
+/// isn't mangled.
+fn normalize_python_literal(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut chars = s.chars().peekable();
+    // The quote char that opened the current string, if we're inside one.
+    let mut string_delim: Option<char> = None;
+    // Accumulates a run of identifier chars so we can match whole keywords only.
+    let mut ident = String::new();
+
+    // Flush a pending bareword, rewriting the Python constants.
+    fn flush_ident(ident: &mut String, out: &mut String) {
+        match ident.as_str() {
+            "True" => out.push_str("true"),
+            "False" => out.push_str("false"),
+            "None" => out.push_str("null"),
+            other => out.push_str(other),
+        }
+        ident.clear();
+    }
+
+    while let Some(c) = chars.next() {
+        if let Some(delim) = string_delim {
+            // Inside a string: copy verbatim, tracking escapes and the close.
+            if c == '\\' {
+                out.push(c);
+                if let Some(escaped) = chars.next() {
+                    out.push(escaped);
+                }
+            } else if c == delim {
+                // Close the string; JSON always uses double quotes.
+                out.push('"');
+                string_delim = None;
+            } else if c == '"' {
+                // A literal double quote inside a single-quoted string must be
+                // escaped once we re-delimit with double quotes.
+                out.push_str("\\\"");
+            } else {
+                out.push(c);
+            }
+            continue;
+        }
+
+        if c.is_alphanumeric() || c == '_' {
+            ident.push(c);
+            continue;
+        }
+        if !ident.is_empty() {
+            flush_ident(&mut ident, &mut out);
+        }
+
+        if c == '\'' || c == '"' {
+            // Open a string; emit a double quote as the JSON delimiter.
+            out.push('"');
+            string_delim = Some(c);
+        } else {
+            out.push(c);
+        }
+    }
+    if !ident.is_empty() {
+        flush_ident(&mut ident, &mut out);
+    }
+    out
 }
 
 /// Safely parse a value - tries JSON, then falls back to string.
@@ -745,5 +1007,141 @@ mod strip_quotes_tests {
         assert_eq!(strip_quotes("\"\""), "");
         assert_eq!(strip_quotes("bare"), "bare");
         assert_eq!(strip_quotes("\"mismatch'"), "\"mismatch'");
+    }
+}
+
+#[cfg(test)]
+mod coderabbit_fix_tests {
+    use super::*;
+    use serde_json::json;
+
+    fn one_param(name: &str, schema: Value) -> HashMap<String, Value> {
+        let mut m = HashMap::new();
+        m.insert(name.to_string(), schema);
+        m
+    }
+
+    fn ser(pv: &ParsedValue) -> String {
+        serde_json::to_string(pv).unwrap()
+    }
+
+    // Finding 1: integer-schema values outside i64 range stay JSON numbers.
+    #[test]
+    fn large_integer_schema_value_stays_a_number() {
+        let cfg = one_param("x", json!({"type": "integer"}));
+        // 21 digits — well past i64::MAX. Old code degenerated this to a string.
+        let pv = convert_param_value("123456789012345678901", "x", &cfg, "f");
+        assert_eq!(ser(&pv), "123456789012345678901");
+        assert_ne!(ser(&pv), "\"123456789012345678901\"");
+
+        // In-range integers and non-numeric fallback still behave.
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "42");
+        assert_eq!(ser(&convert_param_value("abc", "x", &cfg, "f")), "\"abc\"");
+    }
+
+    // Finding 2: Python keyword rewrites must not touch quoted string contents.
+    #[test]
+    fn python_keywords_inside_strings_are_preserved() {
+        let v = try_literal_eval("{'message': 'True story'}").unwrap();
+        assert_eq!(v, json!({"message": "True story"}));
+
+        // Bare constants OUTSIDE strings still convert.
+        let v = try_literal_eval("[True, False, None]").unwrap();
+        assert_eq!(v, json!([true, false, null]));
+
+        // Full path through convert_param_value with an object schema.
+        let cfg = one_param("x", json!({"type": "object"}));
+        let pv = convert_param_value("{'message': 'True story'}", "x", &cfg, "f");
+        assert_eq!(ser(&pv), r#"{"message":"True story"}"#);
+        // The previously-wrong "true story" must NOT appear.
+        assert!(!ser(&pv).contains("true story"));
+    }
+
+    // Finding 3: union schemas coerce only to an allowed alternative.
+    #[test]
+    fn union_schema_coerces_to_allowed_type_only() {
+        // anyOf [string, null] + "42": stays a string (was the JSON number 42).
+        let cfg = one_param(
+            "x",
+            json!({"anyOf": [{"type": "string"}, {"type": "null"}]}),
+        );
+        let pv = convert_param_value("42", "x", &cfg, "f");
+        assert_eq!(ser(&pv), "\"42\"");
+        assert_ne!(ser(&pv), "42");
+
+        // anyOf [integer, null] + "42": becomes a number.
+        let cfg = one_param(
+            "x",
+            json!({"anyOf": [{"type": "integer"}, {"type": "null"}]}),
+        );
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "42");
+
+        // oneOf [object, null] + object literal: still JSON-parsed.
+        let cfg = one_param(
+            "x",
+            json!({"oneOf": [{"type": "object"}, {"type": "null"}]}),
+        );
+        assert_eq!(
+            ser(&convert_param_value("{\"a\": 1}", "x", &cfg, "f")),
+            r#"{"a":1}"#
+        );
+
+        // type: ["number", "null"] + "3.14": becomes a float.
+        let cfg = one_param("x", json!({"type": ["number", "null"]}));
+        assert_eq!(ser(&convert_param_value("3.14", "x", &cfg, "f")), "3.14");
+
+        // No alternative matches "42" -> documented string fallback.
+        let cfg = one_param(
+            "x",
+            json!({"anyOf": [{"type": "boolean"}, {"type": "null"}]}),
+        );
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "\"42\"");
+    }
+
+    fn bare_config() -> XmlParserConfig {
+        XmlParserConfig {
+            backoff_when_no_wrapper: true,
+            allow_eof_recovery: true,
+            ..XmlParserConfig::default()
+        }
+    }
+
+    fn str_tool(name: &str) -> ToolDefinition {
+        ToolDefinition {
+            name: name.to_string(),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {"k": {"type": "string"}},
+            })),
+        }
+    }
+
+    // Finding 4, path A: back-off recovery keeps trailing narration.
+    #[test]
+    fn backoff_recovery_preserves_trailing_text() {
+        let tools = vec![str_tool("get_weather")];
+        // No outer <tool_call> wrapper -> is_bare_function_mode fires (path A).
+        let message = "Before<function=get_weather><parameter=k>v</parameter></function>After";
+        let (calls, content) =
+            try_tool_call_parse_xml(message, &bare_config(), Some(&tools)).unwrap();
+        assert_eq!(calls.len(), 1);
+        // Old code returned only the prefix "Before" and dropped "After".
+        assert_eq!(content.as_deref(), Some("BeforeAfter"));
+    }
+
+    // Finding 4, path B: gap recovery before a later wrapper keeps trailing text.
+    #[test]
+    fn gap_recovery_preserves_trailing_text() {
+        let tools = vec![str_tool("a"), str_tool("b")];
+        // A bare function in the gap, then a real <tool_call> block. The " mid "
+        // narration after the recovered </function> must survive.
+        let message = "Intro<function=a><parameter=k>v</parameter></function> mid \
+            <tool_call><function=b><parameter=k>v</parameter></function></tool_call>";
+        let (calls, content) =
+            try_tool_call_parse_xml(message, &bare_config(), Some(&tools)).unwrap();
+        assert_eq!(calls.len(), 2);
+        let content = content.unwrap();
+        assert!(content.contains("Intro"), "prefix kept: {content:?}");
+        assert!(content.contains("mid"), "trailing kept: {content:?}");
     }
 }

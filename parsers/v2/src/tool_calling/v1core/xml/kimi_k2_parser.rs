@@ -15,30 +15,31 @@ use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 
 static ID_REGEX: OnceLock<Regex> = OnceLock::new();
 
-static TOOL_CALL_REGEX: OnceLock<Regex> = OnceLock::new();
-
-/// Returns the cached regex that captures `function_id` (e.g. `functions.get_weather:0`) and
+/// Builds the regex that captures `function_id` (e.g. `functions.get_weather:0`) and
 /// `arguments` (JSON object) between the configured `call_start`, `argument_begin`, and
 /// `call_end` tokens.
 ///
 /// The `function_id` pattern `[\w.\-]+:\d+` matches the `functions.name:index` format used by
 /// Kimi K2, consistent with sglang's reference implementation. The hyphen is included to
 /// support function names with dashes (common in MCP tools, e.g. `mcp__portal__search-documents`).
-fn get_tool_call_regex(config: &KimiK2ParserConfig) -> &'static Regex {
-    TOOL_CALL_REGEX.get_or_init(|| {
-        // Arguments capture is intentionally permissive (`.*?`) rather than
-        // `\{...\}` so that truncated JSON (e.g. `{"location":"NYC` from
-        // max_tokens / EOS) still matches. The downstream `serde_json::from_str`
-        // is the validator: well-formed payloads parse, malformed/truncated
-        // ones fall back to the raw-string arguments path.
-        let pattern = format!(
-            r"(?s){}\s*(?P<function_id>[\w.\-]+:\d+)\s*{}\s*(?P<arguments>.*?)\s*{}",
-            regex::escape(&config.call_start),
-            regex::escape(&config.argument_begin),
-            regex::escape(&config.call_end),
-        );
-        Regex::new(&pattern).expect("Failed to compile kimi k2 tool call regex")
-    })
+///
+/// The regex is built per-config (an owned `Regex`, not a `OnceLock`-cached
+/// `&'static`) because its delimiters come from the caller's
+/// `KimiK2ParserConfig`. A global cache would freeze the FIRST caller's tokens
+/// and then silently parse every later config with the wrong delimiters.
+fn get_tool_call_regex(config: &KimiK2ParserConfig) -> Regex {
+    // Arguments capture is intentionally permissive (`.*?`) rather than
+    // `\{...\}` so that truncated JSON (e.g. `{"location":"NYC` from
+    // max_tokens / EOS) still matches. The downstream `serde_json::from_str`
+    // is the validator: well-formed payloads parse, malformed/truncated
+    // ones fall back to the raw-string arguments path.
+    let pattern = format!(
+        r"(?s){}\s*(?P<function_id>[\w.\-]+:\d+)\s*{}\s*(?P<arguments>.*?)\s*{}",
+        regex::escape(&config.call_start),
+        regex::escape(&config.argument_begin),
+        regex::escape(&config.call_end),
+    );
+    Regex::new(&pattern).expect("Failed to compile kimi k2 tool call regex")
 }
 
 fn get_id_regex() -> &'static Regex {
@@ -158,7 +159,11 @@ fn extract_tool_calls(
                     "Kimi K2 parser recovered complete call(s) without section_begin"
                 );
                 calls.append(&mut recovered);
-                return Ok((text[..marker_idx].trim().to_string(), calls));
+                // Keep the leading text verbatim (no trim): the whitespace
+                // before a recovered bare call belongs to the visible answer,
+                // e.g. "Before. <|tool_call_begin|>..." must keep its trailing
+                // space so the rendered content is "Before. ", not "Before.".
+                return Ok((text[..marker_idx].to_string(), calls));
             }
         }
         return Ok((text[..marker_idx].trim().to_string(), calls));
@@ -257,7 +262,11 @@ fn recover_bare_kimi_calls_in_span(
         kept_prefix_bytes = marker_idx,
         "Kimi K2 parser recovered complete bare call(s) before a later section_begin"
     );
-    Ok(Some((span[..marker_idx].trim().to_string(), recovered)))
+    // Keep the leading text verbatim (no trim): whitespace before a recovered
+    // bare call is part of the visible answer. This prefix is pushed into
+    // `normal_parts` and, because calls are non-empty, flows to the output
+    // untrimmed (see the join in `extract_tool_calls`).
+    Ok(Some((span[..marker_idx].to_string(), recovered)))
 }
 
 fn first_orphan_kimi_marker_index(text: &str, config: &KimiK2ParserConfig) -> Option<usize> {
@@ -358,4 +367,95 @@ fn parse_section_block(
     }
 
     Ok(results)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Finding 1 regression: the tool-call regex must be built from the config
+    /// passed on each call, never frozen by a global cache. Two configs with
+    /// different delimiters must each parse with THEIR OWN tokens. A
+    /// `OnceLock`-cached regex would parse the second config with the first
+    /// config's delimiters and silently fail.
+    #[test]
+    fn test_regex_not_frozen_across_configs() {
+        // Config A: default Kimi K2 delimiters.
+        let config_a = KimiK2ParserConfig::default();
+
+        // Config B: entirely different delimiters (angle-bracket style).
+        let config_b = KimiK2ParserConfig {
+            call_start: "[[CALL]]".to_string(),
+            call_end: "[[/CALL]]".to_string(),
+            argument_begin: "[[ARGS]]".to_string(),
+            ..KimiK2ParserConfig::default()
+        };
+
+        let msg_a = "<|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"location\":\"NYC\"}<|tool_call_end|>";
+        let msg_b = "[[CALL]]functions.get_time:0[[ARGS]]{\"zone\":\"UTC\"}[[/CALL]]";
+
+        // Parse A first so its delimiters would be the ones a global cache locks in.
+        let (calls_a, _) = try_tool_call_parse_kimi_k2(msg_a, &config_a, None).unwrap();
+        assert_eq!(calls_a.len(), 1, "config A should parse its own delimiters");
+        assert_eq!(calls_a[0].function.name, "get_weather");
+
+        // Now parse B with B's delimiters. With a frozen cache this yields zero
+        // calls (regex still expects config A's tokens).
+        let (calls_b, _) = try_tool_call_parse_kimi_k2(msg_b, &config_b, None).unwrap();
+        assert_eq!(
+            calls_b.len(),
+            1,
+            "config B must parse with its OWN delimiters, not config A's frozen ones"
+        );
+        assert_eq!(calls_b[0].function.name, "get_time");
+        assert_eq!(calls_b[0].function.arguments, "{\"zone\":\"UTC\"}");
+
+        // And config A must STILL parse correctly afterward (both directions).
+        let (calls_a2, _) = try_tool_call_parse_kimi_k2(msg_a, &config_a, None).unwrap();
+        assert_eq!(calls_a2.len(), 1);
+        assert_eq!(calls_a2[0].function.name, "get_weather");
+    }
+
+    /// Finding 2 regression: whitespace before a recovered bare call (no
+    /// `section_begin`) belongs to the visible answer and must survive. The
+    /// trailing space in "Before. " must not be trimmed away.
+    #[test]
+    fn test_leading_whitespace_preserved_before_bare_call() {
+        let config = KimiK2ParserConfig::default();
+
+        // Bare call (no section_begin) preceded by prose with a trailing space.
+        let msg = "Before. <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"location\":\"NYC\"}<|tool_call_end|>";
+        let (calls, content) = try_tool_call_parse_kimi_k2(msg, &config, None).unwrap();
+
+        assert_eq!(calls.len(), 1, "bare call should be recovered");
+        assert_eq!(calls[0].function.name, "get_weather");
+        assert_eq!(
+            content.as_deref(),
+            Some("Before. "),
+            "trailing space before the recovered bare call must be preserved"
+        );
+    }
+
+    /// Finding 2 regression for the second recovery path: a bare call in the
+    /// gap BEFORE a later real section. The whitespace in the gap prose must
+    /// survive into the joined normal text.
+    #[test]
+    fn test_leading_whitespace_preserved_before_bare_call_in_gap() {
+        let config = KimiK2ParserConfig::default();
+
+        // Bare call in a gap, followed by a real section further along.
+        let msg = "Hi. <|tool_call_begin|>functions.a:0<|tool_call_argument_begin|>{}<|tool_call_end|> then <|tool_calls_section_begin|><|tool_call_begin|>functions.b:0<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>";
+        let (calls, content) = try_tool_call_parse_kimi_k2(msg, &config, None).unwrap();
+
+        assert_eq!(calls.len(), 2, "both bare and sectioned calls recovered");
+        assert_eq!(calls[0].function.name, "a");
+        assert_eq!(calls[1].function.name, "b");
+        // "Hi. " keeps its trailing space; " then " between the recovered bare
+        // call and the section is preserved verbatim too.
+        let content = content.unwrap();
+        assert!(
+            content.starts_with("Hi. "),
+            "gap prose whitespace before recovered bare call must be preserved, got {content:?}"
+        );
+    }
 }

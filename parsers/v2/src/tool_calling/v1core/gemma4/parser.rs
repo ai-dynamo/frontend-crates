@@ -11,9 +11,6 @@
 // `<|"|>`-delimited strings, bare unquoted keys, nested objects/arrays,
 // multiple calls concatenated without separators.
 
-use std::sync::OnceLock;
-
-use regex::Regex;
 use serde_json::{Map, Value};
 use uuid::Uuid;
 
@@ -24,22 +21,6 @@ pub(crate) const TOOL_CALL_START: &str = "<|tool_call>";
 pub(crate) const TOOL_CALL_END: &str = "<tool_call|>";
 pub(crate) const STRING_DELIM: &str = "<|\"|>";
 pub(crate) const CALL_PREFIX: &str = "call:";
-
-static TOOL_CALL_REGEX: OnceLock<Regex> = OnceLock::new();
-
-/// Captures the function-name + raw-args body of a single complete tool call.
-/// `(?s)` enables dot-all so nested arg bodies that span newlines parse correctly.
-fn tool_call_regex() -> &'static Regex {
-    TOOL_CALL_REGEX.get_or_init(|| {
-        let pattern = format!(
-            r"(?s){}{}(?P<name>[\w\-\.]+)\{{(?P<args>.*?)\}}{}",
-            regex::escape(TOOL_CALL_START),
-            regex::escape(CALL_PREFIX),
-            regex::escape(TOOL_CALL_END),
-        );
-        Regex::new(&pattern).expect("Failed to compile gemma4 tool call regex")
-    })
-}
 
 fn parse_gemma_call_parts(
     name: &str,
@@ -216,9 +197,10 @@ fn has_bare_call_body_start(input: &str) -> bool {
 
 /// Returns the position immediately after the last *complete* tool-call match
 /// in `chunk`, or `None` if no complete call has arrived yet (caller should
-/// keep accumulating). The regex requires `}<tool_call|>` adjacency, so a bare
-/// `<tool_call|>` literal embedded inside a `<|"|>` string value does not
-/// false-trigger a "section complete" signal here — matches upstream.
+/// keep accumulating). The string-aware balanced scanner requires `}<tool_call|>`
+/// adjacency at the real object close, so a bare `<tool_call|>` literal embedded
+/// inside a `<|"|>` string value does not false-trigger a "section complete"
+/// signal here — matches upstream.
 pub fn find_tool_call_end_position_gemma4(chunk: &str) -> Option<usize> {
     let mut cursor = 0usize;
     let mut last_end = None;
@@ -357,49 +339,68 @@ fn recover_calls_in_span(
 /// drop behavior: a gap that still contains gemma4 markup tokens after the
 /// complete calls are removed is suppressed rather than echoed verbatim.
 ///
-/// The `}<tool_call|>` adjacency requirement in the regex means embedded
-/// `<tool_call|>` literals inside string-typed args (e.g. a `description`
-/// field documenting the tool-call format) don't truncate the match
-/// prematurely.
+/// Primary extraction uses the string-aware balanced scanner
+/// (`find_balanced_args_end`), so a `}<tool_call|>` sequence embedded inside a
+/// `<|"|>`-delimited string arg (e.g. a `description` field documenting the
+/// tool-call format) is treated as data and does not truncate the call early.
 pub fn try_tool_call_parse_gemma4(
     message: &str,
     tools: Option<&[ToolDefinition]>,
 ) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
-    let regex = tool_call_regex();
     let mut calls = Vec::new();
     let mut first_tool_start = None;
     // Byte spans of every complete (parsed or recovered) tool-call block, used
     // to subtract markup from the assembled normal_text below.
     let mut removed_spans: Vec<(usize, usize)> = Vec::new();
-    let mut cursor = 0usize;
+    // `gap_start` is the end of the last complete call (start of the current
+    // natural-text gap); `scan` is where we look for the next start marker.
+    let mut gap_start = 0usize;
+    let mut scan = 0usize;
 
-    for caps in regex.captures_iter(message) {
-        if let Some(m) = caps.get(0) {
-            recover_calls_in_span(
-                &message[cursor..m.start()],
-                cursor,
-                false,
-                tools,
-                &mut calls,
-                &mut first_tool_start,
-                &mut removed_spans,
-            )?;
-            first_tool_start.get_or_insert(m.start());
-            removed_spans.push((m.start(), m.end()));
-            cursor = m.end();
-        }
-        let name = caps.name("name").map(|m| m.as_str()).unwrap_or_default();
-        if name.is_empty() {
-            continue;
-        }
-        let args_raw = caps.name("args").map(|m| m.as_str()).unwrap_or("");
+    // Primary extraction: walk each `<|tool_call>` start marker and resolve the
+    // matching end with the string-aware balanced scanner (`find_balanced_args_end`
+    // via `parse_recoverable_call_at`) rather than a lazy `.*?}<tool_call|>` regex.
+    // A `}<tool_call|>` sequence embedded inside a `<|"|>`-delimited string value
+    // is data, not a terminator, so it must NOT truncate the call — the scanner
+    // ignores braces/markers while `in_string`, matching upstream vLLM.
+    while scan < message.len() {
+        let Some(rel) = message[scan..].find(TOOL_CALL_START) else {
+            break;
+        };
+        let start = scan + rel;
 
-        calls.push(parse_gemma_call_parts(name, args_raw, tools)?);
+        // A complete call requires both the start marker and the `<tool_call|>`
+        // end after the balanced args body.
+        match parse_recoverable_call_at(&message[start..], false, false) {
+            Some((name, args_raw, consumed)) => {
+                // Recover any missing-start (bare `call:`) blocks in the gap that
+                // precedes this complete call, preserving natural text between them.
+                recover_calls_in_span(
+                    &message[gap_start..start],
+                    gap_start,
+                    false,
+                    tools,
+                    &mut calls,
+                    &mut first_tool_start,
+                    &mut removed_spans,
+                )?;
+                first_tool_start.get_or_insert(start);
+                removed_spans.push((start, start + consumed));
+                calls.push(parse_gemma_call_parts(name, args_raw, tools)?);
+                gap_start = start + consumed;
+                scan = start + consumed;
+            }
+            // This start marker did not resolve to a complete call (e.g. no end
+            // marker yet, or an invalid name); leave it in the current gap and
+            // keep scanning past the marker. It is handled by span recovery / the
+            // no-leak markup drop below.
+            None => scan = start + TOOL_CALL_START.len(),
+        }
     }
 
     recover_calls_in_span(
-        &message[cursor..],
-        cursor,
+        &message[gap_start..],
+        gap_start,
         true,
         tools,
         &mut calls,
@@ -733,5 +734,38 @@ fn parse_number(cur: &mut Cursor) -> anyhow::Result<Value> {
     } else {
         let i: i64 = lex.parse()?;
         Ok(serde_json::json!(i))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A string-typed argument whose *value* literally contains the
+    /// `}<tool_call|>` end-marker sequence must NOT truncate the call there:
+    /// the terminator inside a `<|"|>`-delimited string is data, and the real
+    /// close is the `}<tool_call|>` that follows the closing string delimiter.
+    ///
+    /// This is the CodeRabbit regression: a lazy `.*?}<tool_call|>` regex stops
+    /// at the first `}<tool_call|>`, even inside a string, yielding truncated
+    /// arguments and a too-short removal span. The balanced, string-aware
+    /// scanner ignores the terminator while `in_string`.
+    #[test]
+    fn end_marker_sequence_inside_string_arg_does_not_truncate() {
+        let message = "before <|tool_call>call:doc{note:<|\"|>use }<tool_call|> to end<|\"|>}<tool_call|> after";
+
+        let (calls, normal_text) = try_tool_call_parse_gemma4(message, None).unwrap();
+
+        assert_eq!(calls.len(), 1, "exactly one complete call");
+        assert_eq!(calls[0].function.name, "doc");
+        // Arguments must be COMPLETE — the embedded `}<tool_call|>` stays inside
+        // the string value rather than terminating the call early.
+        assert_eq!(
+            calls[0].function.arguments,
+            r#"{"note":"use }<tool_call|> to end"}"#
+        );
+        // Removal span must cover the ENTIRE call block (start marker through the
+        // real end marker), so surrounding prose survives and no markup leaks.
+        assert_eq!(normal_text.as_deref(), Some("before  after"));
     }
 }
