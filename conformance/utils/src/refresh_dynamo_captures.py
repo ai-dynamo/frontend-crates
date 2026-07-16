@@ -303,6 +303,21 @@ def refresh_batch_on_stream(v2_ver: str) -> None:
             continue
         for fp in sorted(fam_dir.glob("TOOLCALLING.batch*.yaml")):
             doc = yaml.safe_load(fp.read_text())
+            # Refuse a partial refresh: if the recorder omitted a case that already
+            # carries a dynamo_v2 capture, folding would leave that stale value in
+            # place while captured_with advances to v2_ver — publishing a mixed,
+            # lying snapshot. Fail before touching provenance.
+            stale = [
+                cid
+                for cid, case in (doc.get("cases") or {}).items()
+                if isinstance(case, dict) and "dynamo_v2" in case and cid not in rec
+            ]
+            if stale:
+                raise SystemExit(
+                    f"[batch-on-stream] {family}: recorder omitted cases {sorted(stale)} "
+                    f"that already have a dynamo_v2 capture in {fp.name}; refusing to "
+                    f"publish a partial refresh under {v2_ver}"
+                )
             changed = False
             for cid, case in (doc.get("cases") or {}).items():
                 if cid in rec and isinstance(case, dict):

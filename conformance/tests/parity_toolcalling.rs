@@ -119,9 +119,24 @@ async fn toolcalling_batch_parity() {
         // <name>, ascending) into the shared inputs cases — the latest version wins per case.
         let rel = path.strip_prefix(&inputs_root).unwrap();
         for dyn_dir in &dyn_dirs {
-            let dyn_fx = std::fs::read_to_string(dyn_dir.join(rel))
-                .ok()
-                .and_then(|t| serde_yaml::from_str::<Fixture>(&t).ok());
+            // Only a MISSING overlay is benign (this version simply didn't touch
+            // this family). A corrupt YAML or a real I/O error must fail loudly —
+            // swallowing it lets a stale older expectation win and pass falsely.
+            let dp = dyn_dir.join(rel);
+            let dyn_fx = match std::fs::read_to_string(&dp) {
+                Ok(t) => match serde_yaml::from_str::<Fixture>(&t) {
+                    Ok(f) => Some(f),
+                    Err(e) => {
+                        failures.push(format!("{}: dynamo overlay parse error: {e}", dp.display()));
+                        None
+                    }
+                },
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
+                Err(e) => {
+                    failures.push(format!("{}: dynamo overlay read error: {e}", dp.display()));
+                    None
+                }
+            };
             if let Some(dfx) = dyn_fx {
                 for (cid, dcase) in dfx.cases {
                     if let (Some(c), Some(exp)) = (fx.cases.get_mut(&cid), dcase.expected) {

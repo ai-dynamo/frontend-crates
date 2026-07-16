@@ -114,10 +114,14 @@ struct DynChunk {
 /// written for the old bundled layout — is unchanged.
 fn merge_dynamo(fx: &mut Fixture, dyn_dir: &Path, rel: &Path) {
     let dfp = dyn_dir.join(rel);
-    let Ok(text) = std::fs::read_to_string(&dfp) else {
-        return;
+    // A missing overlay is benign; any other I/O error must surface, not vanish.
+    let text = match std::fs::read_to_string(&dfp) {
+        Ok(t) => t,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return,
+        Err(e) => panic!("{}: dynamo overlay read error: {e}", dfp.display()),
     };
-    let dyn_fx: DynFixture = serde_yaml::from_str(&text).unwrap();
+    let dyn_fx: DynFixture = serde_yaml::from_str(&text)
+        .unwrap_or_else(|e| panic!("{}: dynamo overlay parse error: {e}", dfp.display()));
     for (cid, dcase) in dyn_fx.cases {
         let Some(case) = fx.cases.get_mut(&cid) else {
             continue;
@@ -126,6 +130,10 @@ fn merge_dynamo(fx: &mut Fixture, dyn_dir: &Path, rel: &Path) {
             case.unavailable.insert("dynamo_v2".to_string(), reason);
             continue;
         }
+        // Dirs fold ascending (latest wins). A later capture that supplies
+        // expectations must clear any unavailability an OLDER capture recorded,
+        // otherwise the case is silently skipped despite being supported now.
+        case.unavailable.remove("dynamo_v2");
         for (i, dchunk) in dcase.chunks.into_iter().enumerate() {
             if let Some(chunk) = case.chunks.get_mut(i) {
                 chunk

@@ -33,8 +33,11 @@ fn build_block_pattern(start: &str, end: &str, strict: bool) -> String {
 /// Strip surrounding quotes from a string if present
 fn strip_quotes(s: &str) -> &str {
     let trimmed = s.trim();
-    if (trimmed.starts_with('"') && trimmed.ends_with('"'))
-        || (trimmed.starts_with('\'') && trimmed.ends_with('\''))
+    // Require at least two bytes: a lone `"` or `'` satisfies both starts_with and
+    // ends_with on the SAME char, and `trimmed[1..len-1]` = `trimmed[1..0]` panics.
+    if trimmed.len() >= 2
+        && ((trimmed.starts_with('"') && trimmed.ends_with('"'))
+            || (trimmed.starts_with('\'') && trimmed.ends_with('\'')))
     {
         &trimmed[1..trimmed.len() - 1]
     } else {
@@ -722,4 +725,25 @@ fn html_unescape(s: &str) -> String {
         .replace("&quot;", "\"")
         .replace("&#x27;", "'")
         .replace("&#39;", "'")
+}
+
+#[cfg(test)]
+mod strip_quotes_tests {
+    use super::strip_quotes;
+
+    #[test]
+    fn single_quote_char_does_not_panic() {
+        // Regression: a lone quote matched both ends and sliced [1..0] -> panic.
+        assert_eq!(strip_quotes("'"), "'");
+        assert_eq!(strip_quotes("\""), "\"");
+    }
+
+    #[test]
+    fn strips_matched_pairs_only() {
+        assert_eq!(strip_quotes("\"hi\""), "hi");
+        assert_eq!(strip_quotes("'hi'"), "hi");
+        assert_eq!(strip_quotes("\"\""), "");
+        assert_eq!(strip_quotes("bare"), "bare");
+        assert_eq!(strip_quotes("\"mismatch'"), "\"mismatch'");
+    }
 }
