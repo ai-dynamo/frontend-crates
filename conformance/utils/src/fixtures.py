@@ -219,6 +219,12 @@ BATCH_SUB_CASE_GROUPS = [
             "5.e",
             "5.f",
             "5.g",
+            # streamv2.5.h (split orphan close) is streaming-only but shares the 5.*
+            # Malformed band. TODO: group by parent number (5) instead of listing every
+            # 5.<letter>, and dedup this list against tests/parity/toolcalling/table.py
+            # (two copies of BATCH_SUB_CASE_GROUPS drift — a new sub-case must be added
+            # to BOTH today).
+            "5.h",
         ),
     ),
     (
