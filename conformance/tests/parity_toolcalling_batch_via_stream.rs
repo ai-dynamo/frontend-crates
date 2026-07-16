@@ -107,25 +107,33 @@ fn toolcalling_batch_via_stream_parity() {
     //   The streaming peers (vLLM/SGLang) stream surrounding text the same way v2
     //   does, and the HTML batch-on-stream tab compares calls only, so all of these
     //   render green there.
-    #[rustfmt::skip]
-    let known: &[(&str, &[&str])] = &[
-        ("deepseek_v4", &["2.b", "2.c", "5.f", "5.g", "8.b", "8.c", "8.d"]),
-        ("gemma4",      &["2.c", "5.g", "8.a", "8.b", "8.c", "8.d"]),
-        ("glm47",       &["2.c", "4.d", "8.b", "8.c", "8.d", "13"]),
-        ("harmony",     &["3", "8.a", "8.b", "8.d", "9.b"]),
-        ("kimi_k2",     &["2.c", "5.g", "8.b", "8.c", "8.d"]),
-        ("minimax_m2",  &["2.b", "2.c", "5.f", "8.b", "8.c", "8.d"]),
-        ("minimax_m3",  &["2.c", "5.f", "8.b", "8.c"]),
-        ("qwen3_coder", &["2.a", "2.c", "2.d", "5.d", "5.e", "5.f", "8.b", "8.c", "8.d", "10"]),
-    ];
-    let known_divergences: std::collections::BTreeSet<String> = known
+    // The allowlist lives in conformance/toolcalling/known-divergences.yaml (the
+    // same file the HTML renderer reads): every `stream_vs_batch:` entry is one
+    // allowed `family:case` divergence, and its note is what the batch-on-stream
+    // tab shows on the cell. An entry with an empty note fails here, so a new
+    // divergence can only be allowed WITH its documentation.
+    let kd_path =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("toolcalling/known-divergences.yaml");
+    let kd: BTreeMap<String, BTreeMap<String, BTreeMap<String, String>>> =
+        serde_yaml::from_str(&std::fs::read_to_string(&kd_path).unwrap()).unwrap();
+    let known_divergences: std::collections::BTreeSet<String> = kd
         .iter()
         .flat_map(|(fam, cases)| {
-            cases
-                .iter()
-                .map(move |c| format!("{fam}:TOOLCALLING.batch.{c}"))
+            cases.iter().filter_map(move |(cid, keys)| {
+                let note = keys.get("stream_vs_batch")?;
+                assert!(
+                    !note.trim().is_empty(),
+                    "{fam}:{cid}: empty stream_vs_batch note in known-divergences.yaml"
+                );
+                Some(format!("{fam}:{cid}"))
+            })
         })
         .collect();
+    assert!(
+        !known_divergences.is_empty(),
+        "no stream_vs_batch entries parsed from {}",
+        kd_path.display()
+    );
 
     let mut total = 0usize;
     let mut consistent = 0usize;

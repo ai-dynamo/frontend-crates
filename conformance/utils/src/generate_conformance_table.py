@@ -1332,6 +1332,15 @@ def render_cell_html(
     cmp_attr = f' data-cmp="{cmp_json}"' if cmp_json else ""
     cmp_span = '<span class="cmp-marker"><span class="marker-text"></span></span>' if cmp_json else ""
     marker_spans = cmp_span + marker_spans
+    # Documented v1-vs-v2 divergence (known-divergences.yaml): calls agree, so the
+    # cell is green, but normal_text differs by design — mark it as KNOWN. The
+    # span sits outside .marker-text, so the compare JS never overwrites it. Set
+    # on the sob cases and propagated to the merged batch-tab case.
+    if isinstance(case, dict) and case.get("__known_divergence"):
+        marker_spans += (
+            '<span class="kdiv" title="Known v1-vs-v2 divergence: calls agree, '
+            "normal_text differs by design — see the popup's explanation\">≠</span>"
+        )
     # data-family lets the compare JS tell "not implemented" (the selected Reference
     # parser doesn't support this family) apart from the case-level "not applicable".
     fam_attr = f' data-family="{html_lib.escape(str(family or ""))}"'
@@ -2281,25 +2290,31 @@ def _stream_candidate_items() -> list[dict[str, str]]:
 
 @functools.lru_cache(maxsize=1)
 def _stream_divergence_notes() -> dict:
-    """Hand-maintained sidecar notes for known Dynamo v2-vs-jail stream
-    divergences (conformance/toolcalling/stream-divergence-explanations.yaml,
+    """Hand-maintained sidecar notes for known Dynamo divergences
+    (conformance/toolcalling/known-divergences.yaml,
     read from the REAL repo root via FRONTEND_CRATES_ROOT — this module runs
     from the staged copy). Applied at render time so the notes survive capture
     re-records. {family: {case_id: {"v2"|"jail": note}}}."""
     root = os.environ.get("FRONTEND_CRATES_ROOT")
     if not root:
         return {}
-    path = Path(root) / "conformance/toolcalling/stream-divergence-explanations.yaml"
+    path = Path(root) / "conformance/toolcalling/known-divergences.yaml"
     if not path.exists():
         return {}
     return yaml.safe_load(path.read_text()) or {}
+
+
+def _known_divergence_note(family: str, case_id: str, key: str) -> str | None:
+    """One note from known-divergences.yaml: `v2`/`jail` for the stream-tab
+    Dynamo candidates, `stream_vs_batch` for the batch-tab v1-vs-v2 allowlist."""
+    return ((_stream_divergence_notes().get(family) or {}).get(case_id) or {}).get(key)
 
 
 def _stream_divergence_note(family: str, case_id: str, impl: str) -> str | None:
     """The sidecar note for one (family, case, dynamo candidate) — `v2` = the
     dynamo_v2 stream parser, `jail` = the dynamo_v1 jail+batch reference."""
     gen = "v2" if impl == BASELINE_STREAM_IMPL else "jail"
-    return ((_stream_divergence_notes().get(family) or {}).get(case_id) or {}).get(gen)
+    return _known_divergence_note(family, case_id, gen)
 
 
 def _stream_version_families(impl: str, version: str) -> set[str] | None:
@@ -2615,6 +2630,8 @@ def _attach_merged_cmp(cases: dict) -> None:
                 })
         sob = sob_cases.get(key)
         if sob is not None:
+            if sob.get("__known_divergence"):
+                case["__known_divergence"] = True
             expected = _expected(sob)
             for impl in STREAM_IMPL_KEYS:
                 ver = stream_versions.get(impl)
@@ -2983,6 +3000,19 @@ def _build_stream_on_batch_cases(batch_cases: dict) -> dict:
             ),
             "batch_expected": _normalize_impl_mapping(bcase.get("expected") or {}),
         }
+        # A documented v1-batch vs v2-stream divergence (the batch-via-stream
+        # parity allowlist): note the v2 block (popup `explanation:`) and flag
+        # the case so the cell renders the `≠` known-divergence suffix. The
+        # generator promotes a bare parent id to `.a` — fall back like the
+        # overlay lookup above so `…batch.13` matches the promoted `…batch.13.a`.
+        note = _known_divergence_note(family, cid, "stream_vs_batch")
+        if note is None and cid.endswith(".a"):
+            note = _known_divergence_note(family, cid[:-2], "stream_vs_batch")
+        if note:
+            blk = cases[(family, sub)]["expected"].get(BASELINE_STREAM_IMPL)
+            if isinstance(blk, dict) and "unavailable" not in blk:
+                blk["explanation"] = note
+            cases[(family, sub)]["__known_divergence"] = True
     return cases
 
 

@@ -441,6 +441,9 @@ def _stream_parity_explainer_html(marker_context: str | None) -> str:
     del marker_context
     return (
         "Red means that engine's stream parser diverges from its batch parser. "
+        "A <code>≠</code> corner mark is a KNOWN v1-vs-v2 divergence "
+        "(known-divergences.yaml): calls agree, normal_text differs by design — "
+        "the popup's v2 block carries the explanation. "
         "There is no <code>V_rb</code>; vLLM Rust has stream parser capture only. "
         "Harmony captured against vLLM 0.23.0 / SGLang 0.5.12.post1."
     )

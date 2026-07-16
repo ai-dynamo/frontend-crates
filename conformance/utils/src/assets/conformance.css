@@ -27,7 +27,7 @@ th a:hover { background: #ffd; }
 td.model, td.parser { white-space: nowrap; }
 td.parser a { color: inherit; text-decoration: none; }
 td.parser a:hover { background: #ffd; }
-td.cell { text-align: center; width: 44px; min-width: 44px; max-width: 44px; font-weight: 400; }
+td.cell { position: relative; text-align: center; width: 44px; min-width: 44px; max-width: 44px; font-weight: 400; }
 /* One color = one meaning, whether or not the cell has compare data. A cell without
    `data-cmp` (an n/a stub or a missing fixture) must read exactly like a compare cell
    of the same meaning: gray = n/a, light-gray = Base-only, near-white = missing. The
@@ -125,6 +125,11 @@ body.view-overview .cmpctl .cmprow { grid-template-columns: 26px 1fr; }
  * Numbers are not bold. */
 .cmp-marker { position: absolute; inset: 0; display: none; align-items: center;
   justify-content: center; color: #111; pointer-events: none; font-weight: 400; }
+/* Known v1-vs-v2 divergence suffix (batch-on-stream tab, from
+ * known-divergences.yaml): calls agree (cell stays green) but normal_text
+ * differs by design. Muted corner glyph; the popup carries the explanation. */
+td.cell .kdiv { position: absolute; top: 0; right: 1px; font-size: 9px;
+  line-height: 1.1; color: #375a7f; opacity: 0.75; pointer-events: none; }
 td.cell[data-cmp] .cell-marker { display: none !important; }
 body.view-details td.cell .cmp-marker { display: flex; }
 td.cell.cmp-eq { background: #76b884 !important; }

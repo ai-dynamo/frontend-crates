@@ -729,7 +729,7 @@ def test_template_has_compare_picker_and_reasoning_candidates() -> None:
 def test_template_overview_cells_do_not_expand_from_hidden_marker_text() -> None:
     # Static styles now live in the CSS asset, inlined at render (audit B7).
     css = (SRC / "assets" / "conformance.css").read_text()
-    assert "td.cell { text-align: center; width: 44px; min-width: 44px; max-width: 44px;" in css
+    assert "td.cell { position: relative; text-align: center; width: 44px; min-width: 44px; max-width: 44px;" in css
     assert ".view-overview td.cell { font-size: 0; line-height: 0; }" in css
     assert ".view-overview td.cell .cell-marker { display: none; }" in css
     assert ".view-overview td.cell .ttip { font-size: 12px; line-height: 1.4; }" in css

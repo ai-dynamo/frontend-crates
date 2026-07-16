@@ -1,0 +1,219 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Hand-maintained notes for KNOWN divergences between Dynamo parser generations
+# (v1 = dynamo-parsers batch+jail, frozen and slated for removal; v2 =
+# dynamo-parsers-v2 streaming, the ultimate implementation).
+#
+# Applied at RENDER time (generate_conformance_table reads this via
+# FRONTEND_CRATES_ROOT), never written into the recorded capture YAMLs — so the
+# notes survive every capture re-record. The popup shows each note as a muted
+# `explanation:` annotation on that candidate's column, and the cell loses its
+# `?` research-needed suffix.
+#
+# Do NOT add entries for UN-TRIAGED defects: a divergence without an
+# explanation renders `?` (research needed), which is the correct signal.
+# Example of a deliberate omission: gemma4 TOOLCALLING.streamv2.5.g, where the
+# v1 jail corrupts the recovered prose ("I will checkthat.") — that is a jail
+# bug still under investigation, not a behavior to document away.
+#
+# A TRIAGED v1 defect is different: v1 is frozen and slated for deletion (v2 is
+# the independent replacement, see the "v1-v2-independent-no-shared-code" rule),
+# so a known-wrong v1 output that will NOT be fixed gets a `jail:` note that
+# STARTS with "FIXME (v1 defect, wontfix — v1 is being removed):". It documents
+# WHY the reference is wrong and that v2 is the correct side, instead of leaving
+# a bare `?` that reads as "nobody looked yet". Keep the FIXME prefix so the note
+# reads as a known bug, not sanctioned behavior.
+#
+# The same defect across families = ONE note: anchor the first occurrence
+# (&name) and alias (*name) the rest, so the wording has a single source.
+#
+# Schema: family -> case id -> key -> note. Keys:
+#   v2   = stream-tab note on the Dynamo v2 stream candidate (dynamo_v2-* dirs)
+#   jail = stream-tab note on the Dynamo v1 jail+batch reference (dynamo_v1-* dirs)
+#   stream_vs_batch = KNOWN v1-batch vs v2-stream divergence on a TOOLCALLING.batch.*
+#        case. Consumed by BOTH:
+#          - conformance/tests/parity_toolcalling_batch_via_stream.rs — the entries
+#            ARE the allowlist (an undocumented divergence fails; a stale entry
+#            fails; an entry with an empty note fails), and
+#          - the batch-on-stream tab — the cell gets a muted `≠` known-divergence
+#            suffix and the v2 candidate's popup block carries the note.
+
+# case 7 is the typed-argument test: the v1 XML path emits every parameter
+# value as a raw string and never applies the tool's JSON-Schema types; v2
+# reads the declared type and coerces correctly.
+
+deepseek_v4:
+  TOOLCALLING.batch.2.b:
+    stream_vs_batch: &svb-surrounding-text >-
+      v2 (stream) preserves the model's prose AROUND tool calls verbatim —
+      before the first call, between calls, and after the last — where the v1
+      batch parser drops or truncates it. Calls identical; normal_text-only
+      divergence, intended.
+  TOOLCALLING.batch.2.c:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.5.f:
+    stream_vs_batch: &svb-recovery >-
+      Bare-call recovery: v2 recovers the un-wrapped invoke and keeps the
+      separator/prefix text; the strict v1 batch path drops the call or trims
+      the text. Intended.
+  TOOLCALLING.batch.5.g:
+    stream_vs_batch: *svb-recovery
+  TOOLCALLING.batch.8.b:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.8.c:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.8.d:
+    stream_vs_batch: *svb-surrounding-text
+
+gemma4:
+  TOOLCALLING.batch.2.c:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.5.g:
+    stream_vs_batch: *svb-recovery
+  TOOLCALLING.batch.8.a:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.8.b:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.8.c:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.8.d:
+    stream_vs_batch: *svb-surrounding-text
+
+glm47:
+  TOOLCALLING.batch.2.c:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.4.d:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.8.b:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.8.c:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.8.d:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.13:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.streamv2.7.a:
+    jail: &jail-stringifies-scalars >-
+      FIXME (v1 defect, wontfix — v1 is being removed): the jail emits
+      passengers="2" and first_class="true" as STRINGS. The book_flight schema
+      declares passengers:integer and first_class:boolean, so the correct
+      arguments are the number 2 and boolean true (what v2 emits). The v1 XML
+      path never applies the schema types; a strict tool endpoint rejects the
+      quoted values.
+  TOOLCALLING.streamv2.7.f:
+    jail: &jail-stringifies-bigint >-
+      FIXME (v1 defect, wontfix — v1 is being removed): the jail emits count as
+      the STRING "9007199254740993" instead of the integer 9007199254740993 the
+      schema declares — number -> string is plain wrong. It is a large integer
+      (> 2^53), and v2 preserves it EXACTLY as a JSON number (lossless raw-number
+      handling); a number-typed param must be a JSON number, never a quoted
+      string.
+
+harmony:
+  TOOLCALLING.batch.3:
+    stream_vs_batch: >-
+      Bare-prose answer with no Harmony framing: v2 passes the user's whole
+      answer through (dropping it was the DIS-2322 text-loss class); v1 batch
+      returns "". Intended — text loss is the worse failure.
+  TOOLCALLING.batch.8.a:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.8.b:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.8.d:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.9.b:
+    stream_vs_batch: >-
+      Whitespace-only input: v2 passes the bare whitespace through as
+      normal_text; v1 batch returns "". Intended.
+
+kimi_k2:
+  TOOLCALLING.batch.2.c:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.5.g:
+    stream_vs_batch: *svb-recovery
+  TOOLCALLING.batch.8.b:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.8.c:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.8.d:
+    stream_vs_batch: *svb-surrounding-text
+
+minimax_m2:
+  TOOLCALLING.batch.2.b:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.2.c:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.5.f:
+    stream_vs_batch: *svb-recovery
+  TOOLCALLING.batch.8.b:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.8.c:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.8.d:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.streamv2.7.a:
+    jail: *jail-stringifies-scalars
+  TOOLCALLING.streamv2.7.f:
+    jail: *jail-stringifies-bigint
+
+minimax_m3:
+  TOOLCALLING.batch.2.c:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.5.f:
+    stream_vs_batch: *svb-recovery
+  TOOLCALLING.batch.8.b:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.8.c:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.streamv2.7.a:
+    jail: *jail-stringifies-scalars
+  TOOLCALLING.streamv2.7.d:
+    jail: >-
+      FIXME (v1 defect, wontfix — v1 is being removed): same type-fidelity bug
+      on NESTED values — the jail emits items as ["1","2","3"] and
+      config.nested as "true" (strings), where the schema types are an integer
+      array and a boolean. v2 emits [1,2,3] and true. The v1 XML path stringifies
+      every leaf value instead of applying the declared types.
+  TOOLCALLING.streamv2.7.e:
+    jail: >-
+      FIXME (v1 defect, wontfix — v1 is being removed): same type-fidelity bug on
+      deeply-nested values (scores arrays, enabled/retry flags): the jail
+      stringifies every leaf ("true", "1"...) instead of applying the schema
+      types v2 emits as numbers/booleans/null.
+  TOOLCALLING.streamv2.7.f:
+    jail: *jail-stringifies-bigint
+
+qwen3_coder:
+  TOOLCALLING.batch.2.a:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.2.c:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.2.d:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.5.d:
+    stream_vs_batch: *svb-recovery
+  TOOLCALLING.batch.5.e:
+    stream_vs_batch: *svb-recovery
+  TOOLCALLING.batch.5.f:
+    stream_vs_batch: *svb-recovery
+  TOOLCALLING.batch.8.b:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.8.c:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.8.d:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.10:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.streamv2.5.e:
+    v2: >-
+      Both trailing spaces are model text: one ends the prose before the first
+      block, one separates "</tool_call>" from the truncated second
+      "<tool_call>". The stream parser emitted the inter-block space the moment
+      the first block closed and cannot retroactively unsend it when the next
+      block turns out truncated; the jail sees the whole tail before emitting
+      and swallows that space with the dropped block.
+  TOOLCALLING.streamv2.7.a:
+    jail: *jail-stringifies-scalars
+  TOOLCALLING.streamv2.7.f:
+    jail: *jail-stringifies-bigint
