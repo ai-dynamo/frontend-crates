@@ -168,6 +168,17 @@ def test_v2_batch_tab_has_all_peer_versions(charts):
             assert v in seg, f"v2 batch tab missing {impl} {v}"
 
 
+def test_older_v2_version_reads_not_implemented_yet_on_later_added_family(charts):
+    # A candidate at an older v2 version (0.1.11) on a family a LATER version
+    # (0.1.22) added must render "(not implemented yet)", NOT the generic
+    # "(no expectation)" — so comparing versions makes the coverage gap legible.
+    seg = _panel(charts["v2"], "tab-toolcalling-streamv2", _V2_TABS)
+    assert "(not implemented yet)" in seg, (
+        "stream tab lost the '(not implemented yet)' render for a family added "
+        "in a later v2 version (older-vs-newer version comparison)"
+    )
+
+
 def test_v2_stream_tab_has_v1jail_reference_and_v2_and_peers(charts):
     seg = _panel(charts["v2"], "tab-toolcalling-streamv2", _V2_TABS)
     jail_dir = _dynamo_v1_jail_stream_dir()

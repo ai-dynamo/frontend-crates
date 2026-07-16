@@ -706,11 +706,16 @@ def _mark_ws(html_text: str) -> str:
     return "".join(parts)
 
 
-def _format_output_block_html(block, family: str | None = None) -> str:
+def _format_output_block_html(block, family: str | None = None, key: str | None = None) -> str:
     """HTML rendering of an `expected.<impl>` block for tooltips.
     Applies _colorize_xml to `normal_text` so raw model output the engine
     failed to parse shows the same tag coloring as the input."""
     if not isinstance(block, dict):
+        # An absent block on a version that predates this family (a LATER version of
+        # the same impl captured it) reads "(not implemented yet)"; otherwise it's a
+        # plain missing capture.
+        if _version_not_implemented(key, family):
+            return html_lib.escape("(not implemented yet)")
         return html_lib.escape("(no expectation)")
     if block.get("unavailable"):
         # Un-implemented Dynamo v2 family reads as a plain "n/a" (no "unavailable:"
@@ -736,12 +741,12 @@ def _format_output_block_html(block, family: str | None = None) -> str:
     return f"{nt_line}\n{calls_line}"
 
 
-def _cand_section_body(block, family: str | None = None) -> str:
+def _cand_section_body(block, family: str | None = None, key: str | None = None) -> str:
     """A compare candidate's tooltip section body: its output block plus its own
     `explanation:` (when present). The note lives INSIDE the candidate's toggleable
     section — so it shows only when that candidate is selected — instead of a global
     cross-engine "Divergent reasons" blob that would name unselected engines."""
-    body = _format_output_block_html(block, family)
+    body = _format_output_block_html(block, family, key)
     note = _explanation(block)
     if note:
         body += '\n<span class="expl">explanation: ' + html_lib.escape(str(note)) + "</span>"
@@ -1034,7 +1039,8 @@ def _version_candidate_chart_html(case: dict, ver_status: dict) -> tuple[str, st
     # list sections, so nothing the list carried may be lost.
     final_cells = "".join(
         common.cand_td(
-            key, _cand_section_body(info.get("block"), family).replace(chr(10), "<br>")
+            key,
+            _cand_section_body(info.get("block"), family, key).replace(chr(10), "<br>"),
         )
         for key, _label, info in candidates
     )
@@ -1059,7 +1065,7 @@ def _merged_candidate_chart_html(case: dict, cmp_items: list) -> tuple[str, str]
     cells = "".join(
         common.cand_td(
             item["key"],
-            _cand_section_body(item.get("block"), family).replace(chr(10), "<br>"),
+            _cand_section_body(item.get("block"), family, item["key"]).replace(chr(10), "<br>"),
         )
         for item in cmp_items
     )
@@ -2238,6 +2244,47 @@ def _candidate_items() -> list[dict[str, str]]:
 _STREAM_SRC = (
     toolcalling_table._fixtures_cache_root() / "toolcalling/fixtures-stream-v2"
 )
+
+
+@functools.lru_cache(maxsize=1)
+def _impl_version_families() -> dict:
+    """{impl: [(version_raw, slug, frozenset(families)), ...]} discovered from
+    fixtures-stream-v2/<impl>-<version>/<family>/. Lets a genuinely "not
+    implemented yet" candidate (a family a LATER version of the same impl added)
+    be told apart from a plain missing capture."""
+    out: dict = {}
+    if _STREAM_SRC.is_dir():
+        for d in _STREAM_SRC.iterdir():
+            if not d.is_dir() or d.name == "inputs" or "-" not in d.name:
+                continue
+            impl, ver = d.name.split("-", 1)
+            fams = frozenset(f.name for f in d.iterdir() if f.is_dir())
+            out.setdefault(impl, []).append(
+                (ver, toolcalling_table._version_slug(ver), fams)
+            )
+    return out
+
+
+def _version_not_implemented(key: str | None, family: str | None) -> bool:
+    """True when candidate `key` (`<impl>-<slug>`) lacks `family` but a LATER
+    version of the SAME impl captured it — the family was added after this
+    version, so an absent block reads "(not implemented yet)", not the generic
+    "(no expectation)". (Comparing e.g. Dynamo v2 0.1.11 vs 0.1.22 on Gemma/GLM.)"""
+    if not key or not family:
+        return False
+    impl, _, slug = key.partition("-")
+    entries = _impl_version_families().get(impl)
+    if not entries:
+        return False
+    here = next((e for e in entries if e[1] == slug), None)
+    if here is None or family in here[2]:
+        return False
+    tk = toolcalling_table._version_sort_key(here[0])
+    return any(
+        family in e[2]
+        for e in entries
+        if toolcalling_table._version_sort_key(e[0]) > tk
+    )
 
 
 def _stream_impl_versions() -> dict[str, list[str]]:
