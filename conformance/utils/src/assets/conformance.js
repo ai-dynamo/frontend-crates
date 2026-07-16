@@ -290,10 +290,17 @@
         label.addEventListener('mousedown', function () { r.dataset.wasChecked = r.checked ? '1' : '0'; });
         label.addEventListener('click', function () {
           if (r.dataset.wasChecked !== '1') { return; }
+          r.dataset.wasChecked = '0';
+          // Only clear the Reference when nothing else is selected to compare against.
+          // With one or more Compare checkboxes active (its own pressed box excepted)
+          // there's still a chart to show, so the star stays put.
+          const otherCompares = Array.prototype.filter.call(
+            ctl.querySelectorAll('input.cmp-on:checked'),
+            function (cb) { return cb.value !== r.value; });
+          if (otherCompares.length > 0) { return; }
           // The browser (re)activates the radio as the click's default action AFTER this
           // listener, so an inline uncheck gets clobbered. Defer it to the next tick so
           // it lands after activation: uncheck, clear the base, repaint cmp-nobase.
-          r.dataset.wasChecked = '0';
           setTimeout(function () {
             r.checked = false;
             handleRefUncheck(ctl);

@@ -264,6 +264,41 @@ def test_clicking_the_active_star_again_clears_the_reference(driver):
     assert counts["nobase"] == counts["total"], f"not all cells cleared to cmp-nobase: {counts}"
 
 
+def _click_active_star(driver):
+    return driver.execute_script(
+        """
+        const ctl = document.querySelector('.tab-panel.active .cmpctl');
+        const r = ctl && ctl.querySelector('input.cmp-ref:checked');
+        const label = r && (r.closest('label') || r.parentElement);
+        const star = label && (label.querySelector('.star') || label);
+        if (!star) { return false; }
+        star.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+        star.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+        return true;
+        """
+    )
+
+
+def test_active_star_stays_when_a_compare_is_selected(driver):
+    # With a Compare checkbox active there's still a chart to show, so clicking the
+    # active star must NOT clear the Reference (only an empty compare set may unstar).
+    _open_stream_tab(driver)
+    _select(driver, V2_KEY, [V1_KEY])
+    assert _active_base(driver) == V2_KEY, "precondition: V2 is the Reference"
+
+    assert _click_active_star(driver), "no checked Reference star to click"
+    time.sleep(0.3)
+    assert _active_base(driver) == V2_KEY, (
+        "star must stay while a Compare checkbox is selected"
+    )
+
+    # Clear the compare, THEN the same click gesture must unstar (empty set path).
+    _select(driver, V2_KEY, [])
+    assert _click_active_star(driver)
+    time.sleep(0.3)
+    assert _active_base(driver) is None, "with no compares, clicking the star must clear it"
+
+
 def test_unchecking_compare_hides_its_column(driver):
     _open_stream_tab(driver)
     _select(driver, V2_KEY, [V1_KEY])
