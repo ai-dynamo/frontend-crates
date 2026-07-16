@@ -23,7 +23,9 @@ fixtures-stream-v2/
                                                      # full anchor, higher = changed-only
 ```
 
-Current version dirs: `dynamo_v2-0.1.11` (Dynamo v2 stream parser), `dynamo_v1-3.0.0` (Dynamo v1 batch parser run against stream data via the streaming jail — captured by `capture_dynamo_jail_stream.py` / the `record_dynamo_jail_stream` bin), `vllm_rust-0.23.0`, `vllm_python-0.23.0` + `vllm_python-0.24.0`, `sglang_python-0.5.12.post1` + `sglang_python-0.5.14`. So the stream tab compares the v1 batch parser (jailed), the v2 stream parser, and the peer stream parsers on the same chunk inputs.
+Current version dirs: `dynamo_v2-<version>` (Dynamo v2 stream parser, at its capture-time crate version — refreshed by `refresh_dynamo_captures.py stream` whenever the v2 parser output changes; the shard version SYNCS with `parsers/v2/Cargo.toml`), `dynamo_v1-3.0.0` (Dynamo v1 batch parser run against stream data via the streaming jail — captured by `capture_dynamo_jail_stream.py` / the `record_dynamo_jail_stream` bin), `vllm_rust-0.23.0`, `vllm_python-0.23.0` + `vllm_python-0.24.0`, `sglang_python-0.5.12.post1` + `sglang_python-0.5.14`. So the stream tab compares the v1 batch parser (jailed), the v2 stream parser, and the peer stream parsers on the same chunk inputs.
+
+**Version dirs are append-only.** A re-record adds the current crate version's dir NEXT TO the old ones (e.g. `dynamo_v2-0.1.11` and `dynamo_v2-0.1.22` coexist) — never delete an existing version dir; the chart renders each as a candidate and readers fold versions ascending within an impl (latest wins per case; `dynamo_v1` and `dynamo_v2` are separate impls and never fold together).
 
 `resolve_stream_fixtures.py` copies `inputs/` and folds each impl's version dirs (ascending, up to the selected version) back into the shared chunks — the stream analogue of `resolve_fixtures.py`. Every impl is included at its lowest version by default; `--select <impl>-<version>` bumps a specific impl higher. Readers see the assembled flat tree.
 

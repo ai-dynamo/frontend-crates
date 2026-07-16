@@ -166,5 +166,9 @@ pub(super) fn extract_calls_via_regex(
         });
     }
     residual.push_str(&text[cursor..]);
-    (out, residual.trim().to_string())
+    // Residual is returned VERBATIM — the boundary space touching an extracted
+    // call span (e.g. the trailing space before the last call's envelope in
+    // batch case 8.d) is model text the v1 jail passes through; trimming here
+    // silently dropped it before the protocol-strip pass ever saw it.
+    (out, residual)
 }

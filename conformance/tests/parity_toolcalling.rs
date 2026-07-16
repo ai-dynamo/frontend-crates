@@ -81,21 +81,16 @@ fn norm_text(s: Option<&str>) -> String {
 #[tokio::test(flavor = "multi_thread")]
 async fn toolcalling_batch_parity() {
     // Versioned corpus (inputs/ + <impl>-<version>/): shared model_text/tools live in
-    // inputs/, Dynamo v1's expected in the (single) dynamo_v1-<version>/ dir. Read inputs
-    // and fold Dynamo's expected back in; the version dirs' peer-only files are not
-    // top-level fixtures here.
+    // inputs/, Dynamo v1's expected in the dynamo_v1-<version>/ dirs. Old version dirs
+    // are capture history (never deleted); fold them ASCENDING so the latest
+    // capture's expected wins per case.
     let batch_root = common::ensure_fixtures().join("toolcalling/fixtures-batch-v1");
     let inputs_root = batch_root.join("inputs");
-    let dyn_dir = std::fs::read_dir(batch_root)
-        .unwrap()
-        .filter_map(|e| e.ok().map(|e| e.path()))
-        .find(|p| {
-            p.is_dir()
-                && p.file_name()
-                    .and_then(|n| n.to_str())
-                    .is_some_and(|n| n.starts_with("dynamo_v1-"))
-        })
-        .expect("no dynamo_v1-<version> dir under fixtures-batch-v1");
+    let dyn_dirs = common::version_dirs_ascending(&batch_root, "dynamo_v1-");
+    assert!(
+        !dyn_dirs.is_empty(),
+        "no dynamo_v1-<version> dir under fixtures-batch-v1"
+    );
     let mut files = Vec::new();
     collect_yaml(&inputs_root, &mut files);
     files.sort();
@@ -120,16 +115,18 @@ async fn toolcalling_batch_parity() {
         if fx.mode != "batch" {
             continue;
         }
-        // Fold Dynamo v1's `expected.dynamo_v1` (from dynamo_v1-<version>/<family>/<name>)
-        // into the shared inputs cases.
+        // Fold Dynamo v1's `expected.dynamo_v1` (from each dynamo_v1-<version>/<family>/
+        // <name>, ascending) into the shared inputs cases — the latest version wins per case.
         let rel = path.strip_prefix(&inputs_root).unwrap();
-        let dyn_fx = std::fs::read_to_string(dyn_dir.join(rel))
-            .ok()
-            .and_then(|t| serde_yaml::from_str::<Fixture>(&t).ok());
-        if let Some(dfx) = dyn_fx {
-            for (cid, dcase) in dfx.cases {
-                if let (Some(c), Some(exp)) = (fx.cases.get_mut(&cid), dcase.expected) {
-                    c.expected = Some(exp);
+        for dyn_dir in &dyn_dirs {
+            let dyn_fx = std::fs::read_to_string(dyn_dir.join(rel))
+                .ok()
+                .and_then(|t| serde_yaml::from_str::<Fixture>(&t).ok());
+            if let Some(dfx) = dyn_fx {
+                for (cid, dcase) in dfx.cases {
+                    if let (Some(c), Some(exp)) = (fx.cases.get_mut(&cid), dcase.expected) {
+                        c.expected = Some(exp);
+                    }
                 }
             }
         }

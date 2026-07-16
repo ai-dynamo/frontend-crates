@@ -37,6 +37,8 @@ toolcalling/fixtures-batch-on-stream-v2/<family>/ # v2 complete-text-through-str
 reasoning/fixtures-v1/inputs/<family>/            # v1 reasoning cases
 ```
 
+**Capture version dirs are append-only — NEVER delete or overwrite an existing `<impl>-<version>/` dir when re-recording.** Every version dir (`dynamo-3.0.0` AND `dynamo-5.0.0`, `dynamo_rust-0.1.11` AND `dynamo_rust-0.1.21`, `vllm-0.23.0` AND `vllm-0.24.0`, …) is capture history: the chart renders each one as a comparison candidate, and readers fold them ascending so the latest capture wins per case. Re-recording after a parser change writes the CURRENT crate version's dir alongside the old ones (`refresh_dynamo_captures.py` / `capture_dynamo_jail_stream.py` do this); re-recording at the same version replaces that one dir only. Deleting an old version dir silently destroys the chart's version-comparison columns — it happened once (dynamo-3.0.0 / dynamo_rust-0.1.11 / dynamo_rust-3.0.0 were wiped by a refresh and had to be restored from a previous HF snapshot) and the tooling has since been made additive. If a dir looks obsolete, it still is not yours to delete: old HF snapshots keep it either way, but the pinned snapshot is what the chart shows.
+
 ## Render Outputs
 
 | Output | Command | Parser version | Fixture version |

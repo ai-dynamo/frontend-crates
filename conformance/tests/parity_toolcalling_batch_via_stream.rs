@@ -13,7 +13,7 @@ mod common;
 use common::{collect_yaml, fixture_name};
 
 use dynamo_parsers_v2::{
-    HarmonyToolStreamParser, ToolCallDelta, ToolParseResult, assemble_tool_calls,
+    HarmonyToolStreamParser, Tool, ToolCallDelta, ToolParseResult, assemble_tool_calls,
     create_tool_parser_for_family,
 };
 use serde::Deserialize;
@@ -33,6 +33,11 @@ struct Case {
     model_text: Option<String>,
     #[serde(default)]
     expected: Option<Expected>,
+    // The schema-dependent parsers (glm47, kimi_k2, qwen3_coder, minimax_m2, …)
+    // need the tool schema to coerce argument types the way the v1 batch parser
+    // did; the batch fixture carries it per case.
+    #[serde(default)]
+    tools: Vec<Tool>,
 }
 
 #[derive(Deserialize)]
@@ -58,35 +63,69 @@ struct ExpCall {
 #[test]
 fn toolcalling_batch_via_stream_parity() {
     // Versioned corpus (inputs/ + <impl>-<version>/): read the shared inputs and fold
-    // Dynamo v1's `expected.dynamo_v1` from the (single) dynamo_v1-<version>/ dir back in.
+    // Dynamo v1's `expected.dynamo_v1` from the dynamo_v1-<version>/ dirs back in,
+    // ASCENDING — old version dirs are capture history, the latest wins per case.
     let batch_root = common::ensure_fixtures().join("toolcalling/fixtures-batch-v1");
     let inputs_root = batch_root.join("inputs");
-    let dyn_dir = std::fs::read_dir(batch_root)
-        .unwrap()
-        .filter_map(|e| e.ok().map(|e| e.path()))
-        .find(|p| {
-            p.is_dir()
-                && p.file_name()
-                    .and_then(|n| n.to_str())
-                    .is_some_and(|n| n.starts_with("dynamo_v1-"))
-        })
-        .expect("no dynamo_v1-<version> dir under fixtures-batch-v1");
+    let dyn_dirs = common::version_dirs_ascending(&batch_root, "dynamo_v1-");
+    assert!(
+        !dyn_dirs.is_empty(),
+        "no dynamo_v1-<version> dir under fixtures-batch-v1"
+    );
     let mut files = Vec::new();
     collect_yaml(&inputs_root, &mut files);
     files.sort();
 
-    // Batch samples where the streaming parser deliberately differs from the
-    // strict batch parser. Removing an entry asserts that stream and batch now
-    // agree on that sample.
+    // Batch samples where the v2 STREAMING parser deliberately differs from the
+    // v1 BATCH parser. This compares BOTH calls and normal_text; the HTML
+    // batch-on-stream tab compares calls only, so the `normal_text`-only entries
+    // below still render green there. Removing an entry asserts stream and batch
+    // now agree.
     //
-    // The DSv4 stream parser now buffers each invoke until `</｜DSML｜invoke>` and
-    // drops a call truncated before its close (v1 parity), so the former 5.c /
-    // 5.e truncation divergences are gone. The remaining entry:
-    //   5.g: bare invoke after prose — the stream parser recovers it while the
-    //        strict batch parser drops it (pre-existing recovery divergence,
-    //        unrelated to truncation).
-    let known_divergences: std::collections::BTreeSet<&str> =
-        ["deepseek_v4:TOOLCALLING.batch.5.g"].into_iter().collect();
+    // v1 and v2 are INDEPENDENT parsers with NO shared code (v2 owns its
+    // extraction in `parsers/v2/.../v1core`; v1 is unchanged from its release and
+    // slated for deletion). They differ BY DESIGN on how much text around a tool
+    // call survives:
+    //   * v2 (streaming) preserves the model's text AROUND tool calls VERBATIM —
+    //     the prose BEFORE the first call, BETWEEN consecutive calls, and AFTER the
+    //     last one, plus bare whitespace-only and un-framed bare-prose answers.
+    //   * v1 (batch), unchanged, drops most of that surrounding/inter-call text and
+    //     trims boundary whitespace.
+    // So the divergences below are almost all `normal_text`-only, and are the
+    // expected v1-vs-v2 difference — NOT a regression. The dominant families of
+    // entry:
+    //   *:2.b/2.c/2.d (multi-call): v2 keeps the inter-call / trailing prose
+    //        ("Both:  Done."), v1 keeps only the leading fragment ("Both:").
+    //   *:8.b/8.c/8.d (call then trailing prose): v2 keeps "... Let me know if you
+    //        need more.", v1 returns "".
+    //   *:5.f/5.g (bare call recovery): v2 recovers the bare invoke and keeps the
+    //        separator/prefix space; v1's strict batch path drops or trims it.
+    //   *:9.b (whitespace-only input): v2 passes the bare whitespace through; v1
+    //        returns "".
+    //   harmony 3 (un-framed whole answer, DIS-2322 class): v2 passes the answer
+    //        through; v1 returns "". Text loss is the worse failure.
+    //   The streaming peers (vLLM/SGLang) stream surrounding text the same way v2
+    //   does, and the HTML batch-on-stream tab compares calls only, so all of these
+    //   render green there.
+    #[rustfmt::skip]
+    let known: &[(&str, &[&str])] = &[
+        ("deepseek_v4", &["2.b", "2.c", "5.f", "5.g", "8.b", "8.c", "8.d"]),
+        ("gemma4",      &["2.c", "5.g", "8.a", "8.b", "8.c", "8.d"]),
+        ("glm47",       &["2.c", "4.d", "8.b", "8.c", "8.d", "13"]),
+        ("harmony",     &["3", "8.a", "8.b", "8.d", "9.b"]),
+        ("kimi_k2",     &["2.c", "5.g", "8.b", "8.c", "8.d"]),
+        ("minimax_m2",  &["2.b", "2.c", "5.f", "8.b", "8.c", "8.d"]),
+        ("minimax_m3",  &["2.c", "5.f", "8.b", "8.c"]),
+        ("qwen3_coder", &["2.a", "2.c", "2.d", "5.d", "5.e", "5.f", "8.b", "8.c", "8.d", "10"]),
+    ];
+    let known_divergences: std::collections::BTreeSet<String> = known
+        .iter()
+        .flat_map(|(fam, cases)| {
+            cases
+                .iter()
+                .map(move |c| format!("{fam}:TOOLCALLING.batch.{c}"))
+        })
+        .collect();
 
     let mut total = 0usize;
     let mut consistent = 0usize;
@@ -103,17 +142,27 @@ fn toolcalling_batch_via_stream_parity() {
                 continue;
             }
         };
-        if !(fx.family == "harmony" || fx.family == "deepseek_v4") || fx.mode != "batch" {
+        if fx.mode != "batch" {
+            continue;
+        }
+        // Data-driven coverage (reuse the family registry, no hardcoded list):
+        // harmony runs the token/text Harmony path; every other family is
+        // exercised iff `create_tool_parser_for_family` can build a v2 parser for
+        // it. Registering a new family there auto-adds it to this stream-on-batch
+        // consistency check.
+        if fx.family != "harmony" && create_tool_parser_for_family(&fx.family, &[]).is_err() {
             continue;
         }
         let rel = path.strip_prefix(&inputs_root).unwrap();
-        let dyn_fx = std::fs::read_to_string(dyn_dir.join(rel))
-            .ok()
-            .and_then(|t| serde_yaml::from_str::<Fixture>(&t).ok());
-        if let Some(dfx) = dyn_fx {
-            for (cid, dcase) in dfx.cases {
-                if let (Some(c), Some(exp)) = (fx.cases.get_mut(&cid), dcase.expected) {
-                    c.expected = Some(exp);
+        for dyn_dir in &dyn_dirs {
+            let dyn_fx = std::fs::read_to_string(dyn_dir.join(rel))
+                .ok()
+                .and_then(|t| serde_yaml::from_str::<Fixture>(&t).ok());
+            if let Some(dfx) = dyn_fx {
+                for (cid, dcase) in dfx.cases {
+                    if let (Some(c), Some(exp)) = (fx.cases.get_mut(&cid), dcase.expected) {
+                        c.expected = Some(exp);
+                    }
                 }
             }
         }
@@ -126,7 +175,7 @@ fn toolcalling_batch_via_stream_parity() {
             };
             total += 1;
 
-            let got = parse_stream_result(&fx.family, text).unwrap();
+            let got = parse_stream_result(&fx.family, text, &case.tools).unwrap();
             let want = EngineResult {
                 calls: expected
                     .dynamo_v1
@@ -190,6 +239,7 @@ struct EngineResult {
 fn parse_stream_result(
     family: &str,
     text: &str,
+    tools: &[Tool],
 ) -> Result<EngineResult, Box<dyn std::error::Error>> {
     if family == "harmony" {
         let mut parser = HarmonyToolStreamParser::new()?;
@@ -209,7 +259,7 @@ fn parse_stream_result(
         });
     }
 
-    let mut parser = create_tool_parser_for_family(family, &[])?;
+    let mut parser = create_tool_parser_for_family(family, tools)?;
     let mut result = parser.push(text)?;
     result.append(parser.finish()?);
     Ok(EngineResult {

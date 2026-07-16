@@ -295,7 +295,10 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 .ttip-pre { margin: 2px 0 0 0; white-space: pre-wrap; word-break: break-word; font-family: inherit; color: #e5e7eb; }
 /* Per-chunk emit chart: input | Dynamo Rust | vLLM Rust | vLLM Python | SGLang, one row per chunk. */
 .ttip-chunks { border-collapse: collapse; margin: 3px 0 0 0; font-size: 11px; width: 100%; }
-.ttip-chunks th, .ttip-chunks td { border: 1px solid #475569; padding: 2px 5px; text-align: left; vertical-align: top; }
+/* pre-wrap so runs of spaces in emitted text render faithfully — HTML collapsing
+   made a whitespace-only divergence (e.g. a double vs single trailing space)
+   invisible: two cells LOOKED identical while their compare signatures differed. */
+.ttip-chunks th, .ttip-chunks td { border: 1px solid #475569; padding: 2px 5px; text-align: left; vertical-align: top; white-space: pre-wrap; }
 .ttip-chunks th { background: #1e293b; color: #93c5fd; font-weight: 600; }
 .ttip-chunks td { color: #e5e7eb; }
 .ttip-chunks td.cin { color: #cbd5e1; max-width: 22em; word-break: break-word; }

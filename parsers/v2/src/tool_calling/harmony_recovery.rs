@@ -82,7 +82,11 @@ pub(super) fn strip_harmony_protocol_from_normal_text(text: &str, reason: &'stat
         return text.to_string();
     }
 
-    let cleaned = cleaned.trim().to_string();
+    // Only the protocol envelopes are removed — the surrounding plain text is
+    // kept VERBATIM, including the boundary space touching a stripped envelope
+    // (e.g. `"I will check the weather. "` before `<|channel|>` keeps its
+    // trailing space). The v1 jail passes that text through untouched; trimming
+    // here made the stream output lose model-emitted whitespace.
     tracing::warn!(
         family = "harmony",
         reason,
@@ -95,19 +99,21 @@ pub(super) fn strip_harmony_protocol_from_normal_text(text: &str, reason: &'stat
 }
 
 pub(super) fn normal_text_after_parse_failure(text: &str, reason: &'static str) -> String {
+    // No calls were parsed: strip any protocol residue and pass the remaining
+    // plain text through VERBATIM. Marker-free text (a model answering in bare
+    // prose without Harmony framing, or a whitespace-only response) is the
+    // user's content and cannot leak markup by definition — dropping it here
+    // used to swallow whole answers (the DIS-2322 class). The v1 jail passes
+    // such text through untouched; the strict v1 batch parser still drops it —
+    // that divergence is documented in the batch-via-stream allowlist.
     let cleaned = strip_harmony_protocol_from_normal_text(text, reason);
-    if cleaned.trim().is_empty() {
-        return String::new();
-    }
     if cleaned == text && !text.trim().is_empty() {
         tracing::warn!(
             family = "harmony",
             reason,
             original_len = text.len(),
-            "dropped bare text without a Harmony final/commentary message"
+            "passing through bare text without a Harmony final/commentary message"
         );
-        String::new()
-    } else {
-        cleaned
     }
+    cleaned
 }

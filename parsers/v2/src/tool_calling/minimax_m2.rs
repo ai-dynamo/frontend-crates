@@ -1,21 +1,22 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Streaming XML tool-call parser for Qwen3-Coder.
+//! Streaming XML tool-call parser for MiniMax-M2.
 //!
-//! Qwen3-Coder emits tool calls as
-//!   `<tool_call> <function=NAME> <parameter=KEY>value</parameter> ... </function> </tool_call>`
-//! plus a bare `<function=...></function>` back-off form when the outer wrapper
-//! is absent (shared with nemotron_nano).
+//! MiniMax emits tool calls as
+//!   `<minimax:tool_call> <invoke name="NAME"> <parameter name="KEY">value</parameter> ... </invoke> </minimax:tool_call>`
+//! plus a bare `<invoke name="..."></invoke>` back-off form when the outer
+//! wrapper is absent (the v1 config sets `backoff_when_no_wrapper`).
 //!
 //! The streaming concern (buffering, chunk-split marker safety, normal_text
 //! suppression) is owned here. The per-block value typing is delegated to the v1
-//! batch XML parser `try_tool_call_parse_xml`, so a streamed call matches exactly
-//! what the batch parser produces (the DIS-2209 bar). Arguments are re-serialized
-//! in the source parameter order because the v1 parser builds them from a
-//! `HashMap` whose key order is non-deterministic; streaming fixtures store the
-//! arguments as an exact JSON string, so order has to be pinned to the
-//! model-emitted order (the order vLLM's Rust parser also preserves).
+//! batch XML parser `try_tool_call_parse_xml` driven by the same MiniMax config
+//! `dynamo_parsers` uses for batch parsing, so a streamed call matches exactly
+//! what the batch parser produces. Arguments are re-serialized in source
+//! `<parameter name="...">` order because the v1 parser builds them from a
+//! `HashMap` whose key order is non-deterministic; the fixtures store the
+//! arguments as an exact JSON string, so order is pinned to the model-emitted
+//! order (the order vLLM's Rust parser also preserves).
 
 use std::collections::HashSet;
 
@@ -23,14 +24,31 @@ use crate::tool_calling::v1core::{ToolDefinition, XmlParserConfig, try_tool_call
 
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
 
-const BLOCK_START: &str = "<tool_call>";
-const BLOCK_END: &str = "</tool_call>";
-const FUNCTION_START: &str = "<function=";
-const FUNCTION_END: &str = "</function>";
-const PARAMETER_START: &str = "<parameter=";
+const BLOCK_START: &str = "<minimax:tool_call>";
+const BLOCK_END: &str = "</minimax:tool_call>";
+const FUNCTION_START: &str = "<invoke name=";
+const FUNCTION_END: &str = "</invoke>";
+const PARAMETER_START: &str = "<parameter name=";
 
-/// Stream parser for Qwen3-Coder XML tool calls.
-pub struct Qwen3CoderToolStreamParser {
+/// MiniMax-M2 parser config, identical to `dynamo_parsers`' batch config so the
+/// streamed value typing matches the v1 batch parser exactly.
+fn minimax_config() -> XmlParserConfig {
+    XmlParserConfig {
+        tool_call_start_token: BLOCK_START.to_string(),
+        tool_call_end_token: BLOCK_END.to_string(),
+        function_start_token: FUNCTION_START.to_string(),
+        function_end_token: FUNCTION_END.to_string(),
+        parameter_start_token: PARAMETER_START.to_string(),
+        parameter_end_token: "</parameter>".to_string(),
+        allow_eof_recovery: false,
+        strict_match: true,
+        passthrough_when_no_function: false,
+        backoff_when_no_wrapper: true,
+    }
+}
+
+/// Stream parser for MiniMax-M2 XML tool calls.
+pub struct MiniMaxM2ToolStreamParser {
     buffer: String,
     in_block: bool,
     suppress_normal_text: bool,
@@ -39,14 +57,14 @@ pub struct Qwen3CoderToolStreamParser {
     tools: Vec<ToolDefinition>,
 }
 
-impl Qwen3CoderToolStreamParser {
+impl MiniMaxM2ToolStreamParser {
     pub fn new(tools: &[Tool]) -> Self {
         Self {
             buffer: String::new(),
             in_block: false,
             suppress_normal_text: false,
             next_index: 0,
-            config: XmlParserConfig::default(),
+            config: minimax_config(),
             tools: tools.iter().map(ToolDefinition::from).collect(),
         }
     }
@@ -56,13 +74,13 @@ impl Qwen3CoderToolStreamParser {
 
         loop {
             if self.in_block {
-                // Close the block once no more complete functions precede its end.
+                // Close the block once no more complete invokes precede its end.
                 if let Some(end) = self.buffer.find(BLOCK_END) {
-                    let function_before_end = self
+                    let invoke_before_end = self
                         .buffer
                         .find(FUNCTION_START)
                         .is_some_and(|start| start < end);
-                    if !function_before_end {
+                    if !invoke_before_end {
                         // Complete block fully closed: drop its markup and resume
                         // keeping natural text (inter-block / trailing). Any later
                         // block re-enters `in_block` and re-suppresses its markup.
@@ -77,8 +95,8 @@ impl Qwen3CoderToolStreamParser {
                 let Some(start) = self.buffer.find(FUNCTION_START) else {
                     if flush {
                         tracing::warn!(
-                            why = "qwen3_coder_block_without_complete_function",
-                            "Qwen3-Coder stream dropped incomplete block at EOF"
+                            why = "minimax_m2_block_without_complete_invoke",
+                            "MiniMax-M2 stream dropped incomplete block at EOF"
                         );
                         self.buffer.clear();
                         self.in_block = false;
@@ -91,8 +109,8 @@ impl Qwen3CoderToolStreamParser {
                 let Some(end) = self.buffer.find(FUNCTION_END) else {
                     if flush {
                         tracing::warn!(
-                            why = "qwen3_coder_incomplete_function",
-                            "Qwen3-Coder stream dropped incomplete function at EOF"
+                            why = "minimax_m2_incomplete_invoke",
+                            "MiniMax-M2 stream dropped incomplete invoke at EOF"
                         );
                         self.buffer.clear();
                         self.in_block = false;
@@ -109,11 +127,11 @@ impl Qwen3CoderToolStreamParser {
                 continue;
             }
 
-            // A recovered bare function suppresses its trailing markup; its stray
-            // `</tool_call>` close (cases 5.b/5.f) ENDS that markup context.
+            // A recovered bare invoke suppresses its trailing markup; its stray
+            // `</minimax:tool_call>` close (cases 5.b/5.f) ENDS that markup context.
             // Consume the orphan close and clear the latch so inter-call text —
-            // e.g. the single separator space before the next `<tool_call>` —
-            // flows through verbatim, matching the v1 jail+batch output.
+            // e.g. the single separator space before the next block — flows
+            // through verbatim, matching the v1 jail+batch output.
             if self.suppress_normal_text
                 && let Some(pos) = self.buffer.find(BLOCK_END)
             {
@@ -129,12 +147,12 @@ impl Qwen3CoderToolStreamParser {
             }
 
             let block_start = self.buffer.find(BLOCK_START);
-            let bare_function_start = self.buffer.find(FUNCTION_START);
-            let next_marker = match (block_start, bare_function_start) {
+            let bare_invoke_start = self.buffer.find(FUNCTION_START);
+            let next_marker = match (block_start, bare_invoke_start) {
                 (Some(b), Some(f)) if b <= f => Some((b, Marker::Block)),
-                (Some(_), Some(f)) => Some((f, Marker::BareFunction)),
+                (Some(_), Some(f)) => Some((f, Marker::BareInvoke)),
                 (Some(b), None) => Some((b, Marker::Block)),
-                (None, Some(f)) => Some((f, Marker::BareFunction)),
+                (None, Some(f)) => Some((f, Marker::BareInvoke)),
                 (None, None) => None,
             };
 
@@ -169,12 +187,12 @@ impl Qwen3CoderToolStreamParser {
                     self.in_block = true;
                     self.suppress_normal_text = true;
                 }
-                Marker::BareFunction => {
+                Marker::BareInvoke => {
                     let Some(end) = self.buffer.find(FUNCTION_END) else {
                         if flush {
                             tracing::warn!(
-                                why = "qwen3_coder_incomplete_bare_function",
-                                "Qwen3-Coder stream dropped incomplete bare function at EOF"
+                                why = "minimax_m2_incomplete_bare_invoke",
+                                "MiniMax-M2 stream dropped incomplete bare invoke at EOF"
                             );
                             self.buffer.clear();
                         }
@@ -184,9 +202,9 @@ impl Qwen3CoderToolStreamParser {
                     self.buffer.drain(..end + FUNCTION_END.len());
                     if let Some(delta) = self.parse_function_delta(&function)? {
                         tracing::warn!(
-                            why = "qwen3_coder_bare_function_recovery",
+                            why = "minimax_m2_bare_invoke_recovery",
                             tool_index = delta.tool_index,
-                            "Qwen3-Coder stream recovered a complete bare function"
+                            "MiniMax-M2 stream recovered a complete bare invoke"
                         );
                         out.calls.push(delta);
                         self.next_index += 1;
@@ -199,10 +217,10 @@ impl Qwen3CoderToolStreamParser {
         Ok(out)
     }
 
-    /// Parse one complete `<function=...></function>` block into a delta.
+    /// Parse one complete `<invoke name="...">...</invoke>` block into a delta.
     ///
-    /// Wraps the function in `<tool_call>` so the v1 parser always takes its
-    /// normal wrapped path, then re-orders the arguments to source order.
+    /// Wraps the invoke in `<minimax:tool_call>` so the v1 parser always takes
+    /// its normal wrapped path, then re-orders the arguments to source order.
     fn parse_function_delta(&self, function: &str) -> anyhow::Result<Option<ToolCallDelta>> {
         let wrapped = format!("{BLOCK_START}{function}{BLOCK_END}");
         let (calls, _content) = try_tool_call_parse_xml(&wrapped, &self.config, Some(&self.tools))?;
@@ -218,7 +236,7 @@ impl Qwen3CoderToolStreamParser {
     }
 }
 
-impl ToolParser for Qwen3CoderToolStreamParser {
+impl ToolParser for MiniMaxM2ToolStreamParser {
     fn create(tools: &[Tool]) -> anyhow::Result<Box<dyn ToolParser>>
     where
         Self: Sized + 'static,
@@ -243,7 +261,7 @@ impl ToolParser for Qwen3CoderToolStreamParser {
 #[derive(Clone, Copy)]
 enum Marker {
     Block,
-    BareFunction,
+    BareInvoke,
 }
 
 /// Longest non-empty proper prefix of a start marker that `text` ends with, so a
@@ -264,7 +282,8 @@ fn marker_prefix_suffix_len(text: &str) -> usize {
         .unwrap_or(0)
 }
 
-/// Re-serialize a v1 arguments JSON object in source `<parameter=...>` order.
+/// Re-serialize a v1 arguments JSON object in source `<parameter name="...">`
+/// order.
 fn reorder_arguments(arguments: &str, function: &str) -> String {
     let Ok(value) = serde_json::from_str::<serde_json::Value>(arguments) else {
         return arguments.to_string();
@@ -297,23 +316,25 @@ fn reorder_arguments(arguments: &str, function: &str) -> String {
     format!("{{{}}}", parts.join(","))
 }
 
-/// Parameter names in the order they appear in a function block.
+/// Parameter names in the order they appear in an invoke block.
 fn source_parameter_order(function: &str) -> Vec<String> {
     let mut names = Vec::new();
     let mut cursor = 0;
     while let Some(rel) = function[cursor..].find(PARAMETER_START) {
         let start = cursor + rel + PARAMETER_START.len();
-        let Some(header_end) = function[start..].find('>') else {
+        let rest = &function[start..];
+        let Some(after_quote) = rest.strip_prefix('"') else {
+            cursor = start;
+            continue;
+        };
+        let Some(name_end) = after_quote.find('"') else {
             break;
         };
-        let name = function[start..start + header_end]
-            .trim()
-            .trim_matches('"')
-            .trim();
+        let name = after_quote[..name_end].trim();
         if !name.is_empty() {
             names.push(name.to_string());
         }
-        cursor = start + header_end + 1;
+        cursor = start + 1 + name_end + 1;
     }
     names
 }
@@ -335,7 +356,7 @@ mod tests {
     }
 
     fn parse_chunks(tools: &[Tool], chunks: &[&str]) -> ToolParseResult {
-        let mut parser = Qwen3CoderToolStreamParser::new(tools);
+        let mut parser = MiniMaxM2ToolStreamParser::new(tools);
         let mut out = ToolParseResult::default();
         for chunk in chunks {
             out.append(parser.push(chunk).expect("push"));
@@ -349,18 +370,18 @@ mod tests {
         let out = parse_chunks(
             &weather_tools(),
             &[
-                "<tool_call> <function=get_weather>",
-                " <parameter=location>",
-                " NYC </parameter> </function>",
-                " </tool_call>",
+                "<minimax:tool_call>\n<invoke name=\"get_weather\">",
+                "\n<parameter name=\"location\">",
+                "NYC</parameter>\n</invoke>",
+                "\n</minimax:tool_call>",
             ],
         );
         assert_eq!(out.normal_text, "");
-        assert_eq!(out.calls.len(), 1);
-        assert_eq!(out.calls[0].tool_index, 0);
-        assert_eq!(out.calls[0].name.as_deref(), Some("get_weather"));
-        // Value is schema-typed (string) and trimmed, matching the v1 batch parser.
-        assert_eq!(out.calls[0].arguments, r#"{"location":"NYC"}"#);
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 1);
+        assert_eq!(merged.calls[0].tool_index, 0);
+        assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
+        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
     }
 
     #[test]
@@ -369,28 +390,28 @@ mod tests {
             &weather_tools(),
             &[
                 "I will",
-                " check the weather. <tool_call>",
-                " <function=get_weather>",
-                " <parameter=location>NYC</parameter> </function> </tool_call>",
+                " check the weather. <minimax:tool_call>",
+                "\n<invoke name=\"get_weather\">",
+                "\n<parameter name=\"location\">NYC</parameter>\n</invoke>\n</minimax:tool_call>",
             ],
         );
         assert_eq!(out.normal_text, "I will check the weather. ");
-        assert_eq!(out.calls.len(), 1);
+        assert_eq!(out.coalesce_calls().calls.len(), 1);
     }
 
     #[test]
-    fn recovers_complete_bare_function() {
+    fn emits_two_calls_in_one_block() {
         let out = parse_chunks(
             &weather_tools(),
             &[
-                "I will check that. <function=get_weather>",
-                " <parameter=location>NYC</parameter>",
-                " </function>",
+                "<minimax:tool_call>\n<invoke name=\"get_weather\">\n<parameter name=\"location\">NYC</parameter>\n</invoke>",
+                "\n<invoke name=\"get_weather\">\n<parameter name=\"location\">LA</parameter>\n</invoke>\n</minimax:tool_call>",
             ],
         );
-        assert_eq!(out.normal_text, "I will check that. ");
-        assert_eq!(out.calls.len(), 1);
-        assert_eq!(out.calls[0].arguments, r#"{"location":"NYC"}"#);
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 2);
+        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
+        assert_eq!(merged.calls[1].arguments, r#"{"location":"LA"}"#);
     }
 
     #[test]
@@ -399,7 +420,7 @@ mod tests {
         let out = parse_chunks(
             &weather_tools(),
             &[
-                "<tool_call> <function=get_weather> <parameter=location>NYC</parameter> </function> </tool_call>",
+                "<minimax:tool_call>\n<invoke name=\"get_weather\">\n<parameter name=\"location\">NYC</parameter>\n</invoke>\n</minimax:tool_call>",
                 " Let me know if you need more.",
             ],
         );
@@ -414,8 +435,8 @@ mod tests {
         let out = parse_chunks(
             &weather_tools(),
             &[
-                "I will check the weather. <tool_call> <function=get_weather> <parameter=location>NYC</parameter> </function> </tool_call>",
-                " Then check LA weather. <tool_call> <function=get_weather> <parameter=location>LA</parameter> </function> </tool_call>",
+                "I will check the weather. <minimax:tool_call>\n<invoke name=\"get_weather\">\n<parameter name=\"location\">NYC</parameter>\n</invoke>\n</minimax:tool_call>",
+                " Then check LA weather. <minimax:tool_call>\n<invoke name=\"get_weather\">\n<parameter name=\"location\">LA</parameter>\n</invoke>\n</minimax:tool_call>",
             ],
         );
         assert_eq!(
@@ -429,12 +450,12 @@ mod tests {
     }
 
     #[test]
-    fn suppresses_incomplete_function_at_eof() {
+    fn suppresses_incomplete_invoke_at_eof() {
         let out = parse_chunks(
             &weather_tools(),
             &[
-                "<tool_call> <function=get_weather>",
-                " <parameter=location> NY",
+                "<minimax:tool_call>\n<invoke name=\"get_weather\">",
+                "\n<parameter name=\"location\">NY",
             ],
         );
         assert_eq!(out.normal_text, "");
@@ -443,8 +464,6 @@ mod tests {
 
     #[test]
     fn preserves_source_parameter_order() {
-        // path, old_str, new_str, command is deliberately NOT alphabetical: the
-        // serialized arguments must keep the model-emitted parameter order.
         let tools = vec![Tool {
             name: "file_editor".to_string(),
             description: None,
@@ -462,17 +481,18 @@ mod tests {
         let out = parse_chunks(
             &tools,
             &[
-                "<tool_call> <function=file_editor>",
-                " <parameter=path>/app/x.go</parameter>",
-                " <parameter=old_str>foo</parameter>",
-                " <parameter=new_str>bar</parameter>",
-                " <parameter=command>str_replace</parameter>",
-                " </function> </tool_call>",
+                "<minimax:tool_call>\n<invoke name=\"file_editor\">",
+                "\n<parameter name=\"path\">/app/x.go</parameter>",
+                "\n<parameter name=\"old_str\">foo</parameter>",
+                "\n<parameter name=\"new_str\">bar</parameter>",
+                "\n<parameter name=\"command\">str_replace</parameter>",
+                "\n</invoke>\n</minimax:tool_call>",
             ],
         );
-        assert_eq!(out.calls.len(), 1);
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 1);
         assert_eq!(
-            out.calls[0].arguments,
+            merged.calls[0].arguments,
             r#"{"path":"/app/x.go","old_str":"foo","new_str":"bar","command":"str_replace"}"#
         );
     }

@@ -12,8 +12,10 @@ test_browser_smoke.py).
 """
 from __future__ import annotations
 
+import os
 import shutil
 import time
+from pathlib import Path
 
 import pytest
 
@@ -29,8 +31,32 @@ pytestmark = pytest.mark.skipif(
     reason="no headless Chrome available",
 )
 
-V2_KEY = "dynamo_v2-0-1-11"
-V1_KEY = "dynamo_v1-3-0-0"
+def _dynamo_key(impl: str) -> str:
+    """Candidate key of the LATEST stream capture dir for a Dynamo impl
+    (`dynamo_v1` = jail reference, `dynamo_v2` = stream parser); older version
+    dirs are capture history and render as extra candidates."""
+    root = Path(
+        os.environ.get("CONFORMANCE_FIXTURES_ROOT")
+        or Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
+        / "dynamo/conformance-fixtures"
+    )
+    import re as _re
+
+    dirs = [
+        d
+        for d in (root / "toolcalling/fixtures-stream-v2").glob(f"{impl}-*")
+        if d.is_dir()
+    ]
+    latest = max(
+        dirs, key=lambda d: [int(x) for x in _re.findall(r"\d+", d.name)], default=None
+    )
+    if latest is None:
+        pytest.skip("dynamo stream fixture dirs not cached", allow_module_level=True)
+    return latest.name.replace(".", "-")
+
+
+V2_KEY = _dynamo_key("dynamo_v2")
+V1_KEY = _dynamo_key("dynamo_v1")
 
 
 @pytest.fixture(scope="module")

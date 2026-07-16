@@ -10,8 +10,11 @@
 //! (dynamo-parsers, moved here by DIS-2296). This recorder drives it over the same
 //! per-chunk `delta_text` inputs the v2 stream tab uses.
 //!
-//! JSON in (one family per invocation):
-//!   {"family": "hermes", "cases": {"TOOLCALLING.streamv2.1.a": ["delta1", "delta2", ...]}}
+//! JSON in (one family per invocation; `tools` carries the case's schemas so the
+//! jail's batch parse coerces argument types):
+//!   {"family": "hermes",
+//!    "cases": {"TOOLCALLING.streamv2.1.a": {"chunks": ["delta1", ...],
+//!                                           "tools": [{"name", "parameters"?, "strict"?}]}}}
 //! JSON out (per output chunk the jail emits — it coalesces, so the count differs
 //! from the input; downstream assembles by concatenating per index):
 //!   {"TOOLCALLING.streamv2.1.a": [{"deltas": [{"index", "id"?, "name"?, "arguments"?}], "normal_text"}]}
@@ -20,6 +23,7 @@
 
 use std::collections::BTreeMap;
 
+use dynamo_parsers::tool_calling::ToolDefinition;
 use dynamo_parsers::tool_calling::jail::{Annotated, JailedStream};
 use dynamo_protocols::types::{
     ChatChoiceStream, ChatCompletionMessageContent, ChatCompletionStreamResponseDelta,
@@ -31,8 +35,29 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize)]
 struct Input {
     family: String,
-    /// case id -> the per-chunk `delta_text` stream (same inputs as the v2 stream tab).
-    cases: BTreeMap<String, Vec<String>>,
+    /// case id -> per-chunk `delta_text` stream + the case's tool schemas (same
+    /// inputs as the v2 stream tab). The schemas MUST ride along: the jail's
+    /// batch parse coerces argument types from them, and a schema-less capture
+    /// records every argument as a string (`"2"`, `"true"`), diverging from the
+    /// typed output every schema-aware parser produces.
+    cases: BTreeMap<String, CaseIn>,
+}
+
+#[derive(Deserialize)]
+struct CaseIn {
+    chunks: Vec<String>,
+    #[serde(default)]
+    tools: Vec<RawTool>,
+}
+
+// ToolDefinition does not derive Deserialize, so deserialize into this and build it.
+#[derive(Deserialize)]
+struct RawTool {
+    name: String,
+    #[serde(default)]
+    parameters: Option<serde_json::Value>,
+    #[serde(default)]
+    strict: Option<bool>,
 }
 
 #[derive(Serialize)]
@@ -100,14 +125,28 @@ fn mock_chunk(
     }
 }
 
-async fn record_case(family: &str, chunks: &[String]) -> Vec<ChunkEmit> {
-    let mut inputs: Vec<_> = chunks
+async fn record_case(family: &str, case: &CaseIn) -> Vec<ChunkEmit> {
+    let mut inputs: Vec<_> = case
+        .chunks
         .iter()
         .map(|t| mock_chunk(Some(t.clone()), false))
         .collect();
     inputs.push(mock_chunk(None, true));
 
-    let jail = JailedStream::builder().tool_call_parser(family).build();
+    let tools: Vec<ToolDefinition> = case
+        .tools
+        .iter()
+        .map(|t| ToolDefinition {
+            name: t.name.clone(),
+            parameters: t.parameters.clone(),
+            strict: t.strict,
+        })
+        .collect();
+    let mut builder = JailedStream::builder().tool_call_parser(family);
+    if !tools.is_empty() {
+        builder = builder.tool_definitions(tools);
+    }
+    let jail = builder.build();
     let out: Vec<Annotated<CreateChatCompletionStreamResponse>> =
         jail.apply(futures::stream::iter(inputs)).collect().await;
 
@@ -149,8 +188,8 @@ async fn main() -> anyhow::Result<()> {
     let input: Input = serde_json::from_str(&std::fs::read_to_string(&path)?)?;
 
     let mut out: BTreeMap<String, Vec<ChunkEmit>> = BTreeMap::new();
-    for (cid, chunks) in &input.cases {
-        out.insert(cid.clone(), record_case(&input.family, chunks).await);
+    for (cid, case) in &input.cases {
+        out.insert(cid.clone(), record_case(&input.family, case).await);
     }
     println!("{}", serde_json::to_string_pretty(&out)?);
     Ok(())

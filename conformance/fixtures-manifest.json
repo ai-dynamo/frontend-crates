@@ -1,15 +1,35 @@
 {
-  "snapshot": "20260715_154151",
-  "created_pt": "2026-07-15 15:41:51 America/Los_Angeles",
+  "snapshot": "20260715_183303",
+  "created_pt": "2026-07-15 18:33:03 America/Los_Angeles",
   "crates": {
     "dynamo-parsers": "5.0.1",
-    "dynamo-parsers-v2": "0.1.21"
+    "dynamo-parsers-v2": "0.1.22"
   },
   "peers": {
     "vllm": "0.24.0",
     "sglang": "0.5.14"
   },
   "shards": [
+    {
+      "path": "reasoning/fixtures-v1/inputs.tar.gz",
+      "sha256": "347d5b5f83d366b05ddec10bba245dd3a09ff57947ae3ea0f94153f0b369fdc5",
+      "size": 16426
+    },
+    {
+      "path": "reasoning/fixtures-v1/sglang_python-0.5.14.tar.gz",
+      "sha256": "fd2f27d59a967b01a783d3081323a5b38fab1912aa6ba39541b84967037e3037",
+      "size": 719
+    },
+    {
+      "path": "reasoning/fixtures-v1/vllm_python-0.24.0.tar.gz",
+      "sha256": "62036973c4dda5289fae6e23b645201439561f06400b01b44164055f4777a8bc",
+      "size": 1368
+    },
+    {
+      "path": "toolcalling/fixtures-batch-on-stream-v2.tar.gz",
+      "sha256": "ca3f863df80647ab171a3a3ab7ae58839fbfabe0aae942c7299cb20751850bf7",
+      "size": 15168
+    },
     {
       "path": "toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz",
       "sha256": "65290c8070e6a5f7b50665375a99335257625419b672fc2379bb77506b2f14b2",
@@ -51,6 +71,11 @@
       "size": 2827
     },
     {
+      "path": "toolcalling/fixtures-stream-v2/dynamo_v2-0.1.22.tar.gz",
+      "sha256": "f778b635439449da7bd75fb6e1cf5c20ed7437927d4d5d160ed816b089d1dacc",
+      "size": 5733
+    },
+    {
       "path": "toolcalling/fixtures-stream-v2/inputs.tar.gz",
       "sha256": "e5c3242c563105085ccd54433d1ce4d298acd4b54a5a50c4484da377c95e1136",
       "size": 34838
@@ -79,26 +104,6 @@
       "path": "toolcalling/fixtures-stream-v2/vllm_rust-0.23.0.tar.gz",
       "sha256": "933169ec4c61990545d9b3231b6faf4f7f8a3bc246883010aafb62a86261149b",
       "size": 12854
-    },
-    {
-      "path": "reasoning/fixtures-v1/inputs.tar.gz",
-      "sha256": "347d5b5f83d366b05ddec10bba245dd3a09ff57947ae3ea0f94153f0b369fdc5",
-      "size": 16426
-    },
-    {
-      "path": "reasoning/fixtures-v1/sglang_python-0.5.14.tar.gz",
-      "sha256": "fd2f27d59a967b01a783d3081323a5b38fab1912aa6ba39541b84967037e3037",
-      "size": 719
-    },
-    {
-      "path": "reasoning/fixtures-v1/vllm_python-0.24.0.tar.gz",
-      "sha256": "62036973c4dda5289fae6e23b645201439561f06400b01b44164055f4777a8bc",
-      "size": 1368
-    },
-    {
-      "path": "toolcalling/fixtures-batch-on-stream-v2.tar.gz",
-      "sha256": "9b982d94e37fde5041fba9c2952881e4bf4993896d45e48955172a261d5465c4",
-      "size": 15172
     }
   ]
 }

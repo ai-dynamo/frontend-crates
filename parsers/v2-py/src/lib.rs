@@ -53,7 +53,7 @@
 //!     return DeltaMessage(tool_calls=tool_calls)
 //! ```
 
-use dynamo_parsers::tool_calling::ToolCallResponseChunk;
+use dynamo_parsers_v2::ToolCallResponseChunk;
 use pyo3::prelude::*;
 
 // Import the Rust crate under an alias to avoid the name collision with the
