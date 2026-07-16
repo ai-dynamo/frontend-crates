@@ -114,7 +114,7 @@ harmony:
   TOOLCALLING.batch.3:
     stream_vs_batch: >-
       Bare-prose answer with no Harmony framing: v2 passes the user's whole
-      answer through (dropping it was the DIS-2322 text-loss class); v1 batch
+      answer through (dropping it was the whole-answer text-loss class); v1 batch
       returns "". Intended — text loss is the worse failure.
   TOOLCALLING.batch.8.a:
     stream_vs_batch: *svb-surrounding-text

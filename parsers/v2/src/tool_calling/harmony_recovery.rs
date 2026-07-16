@@ -103,7 +103,7 @@ pub(super) fn normal_text_after_parse_failure(text: &str, reason: &'static str) 
     // plain text through VERBATIM. Marker-free text (a model answering in bare
     // prose without Harmony framing, or a whitespace-only response) is the
     // user's content and cannot leak markup by definition — dropping it here
-    // used to swallow whole answers (the DIS-2322 class). The v1 jail passes
+    // used to swallow whole answers (the whole-answer-drop class). The v1 jail passes
     // such text through untouched; the strict v1 batch parser still drops it —
     // that divergence is documented in the batch-via-stream allowlist.
     let cleaned = strip_harmony_protocol_from_normal_text(text, reason);

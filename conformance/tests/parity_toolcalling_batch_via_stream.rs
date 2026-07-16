@@ -102,7 +102,7 @@ fn toolcalling_batch_via_stream_parity() {
     //        separator/prefix space; v1's strict batch path drops or trims it.
     //   *:9.b (whitespace-only input): v2 passes the bare whitespace through; v1
     //        returns "".
-    //   harmony 3 (un-framed whole answer, DIS-2322 class): v2 passes the answer
+    //   harmony 3 (un-framed whole answer, whole-answer-drop class): v2 passes the answer
     //        through; v1 returns "". Text loss is the worse failure.
     //   The streaming peers (vLLM/SGLang) stream surrounding text the same way v2
     //   does, and the HTML batch-on-stream tab compares calls only, so all of these

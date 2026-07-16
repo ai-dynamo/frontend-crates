@@ -306,7 +306,7 @@ def refresh_batch_on_stream(v2_ver: str) -> None:
             changed = False
             for cid, case in (doc.get("cases") or {}).items():
                 if cid in rec and isinstance(case, dict):
-                    # dynamo_rust leads each case block, like the previously
+                    # dynamo_v2 leads each case block, like the previously
                     # captured families.
                     case.pop("dynamo_v2", None)
                     new_case = {"dynamo_v2": rec[cid], **case}
