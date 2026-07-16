@@ -263,6 +263,23 @@ def test_clicking_the_active_star_again_clears_the_reference(driver):
     assert counts["colored"] == 0, f"cells still colored after clearing the Reference: {counts}"
     assert counts["nobase"] == counts["total"], f"not all cells cleared to cmp-nobase: {counts}"
 
+    # Invariant: with no Reference, no Compare-with is possible — every compare box is
+    # unchecked + disabled, so the only next action is starring a new Reference.
+    boxes = driver.execute_script(
+        """
+        const ctl = document.querySelector('.tab-panel.active .cmpctl');
+        let enabled = 0, checked = 0;
+        ctl.querySelectorAll('input.cmp-on').forEach(cb => {
+          if (!cb.disabled) { enabled++; }
+          if (cb.checked) { checked++; }
+        });
+        return {enabled, checked};
+        """
+    )
+    assert boxes == {"enabled": 0, "checked": 0}, (
+        f"with no Reference, all compare boxes must be disabled + unchecked, got {boxes}"
+    )
+
 
 def _click_active_star(driver):
     return driver.execute_script(
@@ -277,6 +294,63 @@ def _click_active_star(driver):
         return true;
         """
     )
+
+
+def _click_star(driver, key):
+    """Native-ish click on a specific row's ★ label (mousedown + click)."""
+    return driver.execute_script(
+        """
+        const key = arguments[0];
+        for (const r of document.querySelectorAll('.tab-panel.active .cmpctl .cmprow')) {
+          const rad = r.querySelector('.cmp-ref');
+          if (rad && rad.value === key) {
+            const star = rad.closest('label').querySelector('.star');
+            star.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+            star.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+            return true;
+          }
+        }
+        return false;
+        """,
+        key,
+    )
+
+
+def _row_state(driver, key):
+    return driver.execute_script(
+        """
+        const key = arguments[0];
+        const r = Array.from(document.querySelectorAll('.tab-panel.active .cmpctl .cmprow'))
+          .find(x => x.querySelector('.cmp-ref') && x.querySelector('.cmp-ref').value === key);
+        if (!r) { return null; }
+        return {
+          isRef: r.classList.contains('is-ref'),
+          refChecked: r.querySelector('.cmp-ref').checked,
+          cmpChecked: r.querySelector('.cmp-on').checked,
+          cmpDisabled: r.querySelector('.cmp-on').disabled,
+        };
+        """,
+        key,
+    )
+
+
+def test_switching_star_keeps_old_ref_as_checked_compare(driver):
+    # Moving the star to a new row makes that row the Reference and demotes the OLD
+    # Reference to a normal CHECKED compare box (new-ref vs old-ref), not a dropout.
+    _open_stream_tab(driver)
+    _select(driver, V2_KEY, [])
+    assert _active_base(driver) == V2_KEY, "precondition: V2 is the Reference"
+
+    assert _click_star(driver, V1_KEY), "no V1 star to click"
+    time.sleep(0.3)
+
+    assert _active_base(driver) == V1_KEY, "clicking V1's star must make V1 the Reference"
+    old = _row_state(driver, V2_KEY)
+    assert old == {"isRef": False, "refChecked": False, "cmpChecked": True, "cmpDisabled": False}, (
+        f"old ref V2 must become an enabled, checked compare box, got {old}"
+    )
+    new = _row_state(driver, V1_KEY)
+    assert new["isRef"] and new["refChecked"], f"V1 must be the new Reference, got {new}"
 
 
 def test_active_star_stays_when_a_compare_is_selected(driver):

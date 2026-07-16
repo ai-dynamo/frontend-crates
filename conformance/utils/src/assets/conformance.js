@@ -67,7 +67,12 @@
       // compared against), so its Compare box shows pressed + locked. It's filtered
       // out of the compare set in applyCtl, so it isn't double-counted.
       if (isRef) { cb.checked = true; }
-      cb.disabled = isRef;
+      // Invariant: a Compare-with can never exist without a Reference. With no base
+      // (the cleared state) every box is unchecked + locked, so the only possible
+      // action is starring a new Reference. With a base, the ref's box is the locked
+      // one and every other row is free to toggle.
+      if (!base) { cb.checked = false; }
+      cb.disabled = isRef || !base;
       const row = cb.closest('.cmprow');
       if (row) { row.classList.toggle('is-ref', isRef); }
     });
@@ -243,24 +248,14 @@
       ctl.querySelectorAll('input.cmp-on'), function (x) { return x.value === val; }) || null;
   }
   // Picking a new Reference (starring a row): the starred row is the reference, so its
-  // Compare box shows pressed. If the row you just starred was the ONLY compare, the
-  // previous reference becomes the compare (a 1-vs-1 swap); otherwise the previous
-  // reference drops out of the comparison.
+  // Compare box shows pressed. The PREVIOUS reference stays in the comparison as a normal
+  // checked Compare box, so moving the star to a new row keeps the old one visible
+  // (you're now comparing new-ref vs old-ref). syncRefDisable re-enables the old ref's
+  // box on the next applyCtl; leaving it checked here is what turns it into a compare.
   function handleRefChange(ctl) {
     const newBase = ctlBase(ctl);
-    const oldBase = ctl.dataset.prevBase || '';
-    const checked = Array.prototype.map.call(
-      ctl.querySelectorAll('input.cmp-on:checked'), function (x) { return x.value; });
-    // Active compares before the switch = checked boxes minus the old ref's (its box is
-    // checked only as the reference's pressed state, not as a real compare).
-    const priorCompares = checked.filter(function (v) { return v !== oldBase; });
-    const isSwap = priorCompares.length === 1 && priorCompares[0] === newBase;
     const newBox = _boxFor(ctl, newBase);
     if (newBox) { newBox.checked = true; }
-    if (oldBase && oldBase !== newBase && !isSwap) {
-      const oldBox = _boxFor(ctl, oldBase);
-      if (oldBox) { oldBox.checked = false; }
-    }
     ctl.dataset.prevBase = newBase || '';
   }
   // Toggling the current Reference star OFF (clicking the already-selected star):
