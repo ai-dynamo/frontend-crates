@@ -2441,7 +2441,7 @@ def _panel_candidates(
             {
                 "key": impl,
                 "label": _reasoning_cand_label(impl, mode),
-                "default_bucket": "A" if not candidates else "B",
+                "default_bucket": "A" if not candidates else "C",
             }
         )
     return candidates

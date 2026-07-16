@@ -128,8 +128,9 @@ body.view-overview .cmpctl .cmprow { grid-template-columns: 26px 1fr; }
 /* Known v1-vs-v2 divergence suffix (batch-on-stream tab, from
  * known-divergences.yaml): calls agree (cell stays green) but normal_text
  * differs by design. Muted corner glyph; the popup carries the explanation. */
-td.cell .kdiv { position: absolute; top: 0; right: 1px; font-size: 9px;
+td.cell .kdiv { display: none; position: absolute; top: 0; right: 1px; font-size: 9px;
   line-height: 1.1; color: #375a7f; opacity: 0.75; pointer-events: none; }
+body.view-details td.cell .kdiv { display: block; }
 td.cell[data-cmp] .cell-marker { display: none !important; }
 body.view-details td.cell .cmp-marker { display: flex; }
 td.cell.cmp-eq { background: #76b884 !important; }

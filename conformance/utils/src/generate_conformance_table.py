@@ -2178,8 +2178,9 @@ def _impl_candidate_items(
     impl_keys: tuple[str, ...], versions: dict[str, str] | None = None
 ) -> list[dict[str, str]]:
     """Candidates for a non-versioned tab: one per impl key, labeled with the
-    captured version when available (e.g. 'vLLM Rust 0.23.0'). First = Base (A),
-    the rest default to Compare-with (B)."""
+    captured version when available (e.g. 'vLLM Rust 0.23.0'). First = Base (A);
+    everything else starts UNSELECTED (C) — the default view is just the Dynamo
+    reference, and the reader opts into comparisons."""
     versions = versions or {}
     out: list[dict[str, str]] = []
     for i, impl in enumerate(impl_keys):
@@ -2188,7 +2189,7 @@ def _impl_candidate_items(
         out.append({
             "key": impl,
             "label": f"{short} {ver}" if ver else short,
-            "default_bucket": "A" if i == 0 else "B",
+            "default_bucket": "A" if i == 0 else "C",
         })
     return out
 
@@ -2198,10 +2199,9 @@ def _candidate_items() -> list[dict[str, str]]:
     within each engine versions run LATEST-FIRST (0.24.0 before 0.23.0). Each:
     {key, impl, version, slug, label, short, default_bucket}.
 
-    Default layout: A (reference) = the first candidate (Dynamo's latest); B (compare
-    with) = the latest version of each peer impl; C (others) = the older versions."""
+    Default layout: A (reference) = the first candidate (Dynamo's latest);
+    everything else starts UNSELECTED (C) — the reader opts into comparisons."""
     impl_versions = _batch_impl_versions()
-    latest = {k: (vers[-1] if vers else None) for k, vers in impl_versions.items()}
     out: list[dict[str, str]] = []
     first = True
     for canon in ("dynamo_v1", "vllm_python", "sglang_python"):
@@ -2210,8 +2210,6 @@ def _candidate_items() -> list[dict[str, str]]:
             if first:
                 bucket = "A"
                 first = False
-            elif v == latest.get(canon):
-                bucket = "B"
             else:
                 bucket = "C"
             out.append({
@@ -2262,24 +2260,20 @@ def _stream_impl_versions() -> dict[str, list[str]]:
 
 def _stream_candidate_items() -> list[dict[str, str]]:
     """Versioned comparison candidates for the stream tab. Keyed <impl>-<slug> like
-    the batch tab. Default layout: A (reference) = Dynamo v1 (jail+batch, 3.0.0) — the
-    parser that has stream coverage on every family; B (compare) = Dynamo v2 + the
-    latest of each peer; C (others) = older peer versions."""
+    the batch tab. Default layout: A (reference) = the LATEST Dynamo v2 stream
+    capture (this is v2's tab); everything else — the v1 jail reference, the
+    peers, and older versions — starts UNSELECTED (C), the reader opts in."""
     impl_versions = _stream_impl_versions()
     latest = {i: (vs[-1] if vs else None) for i, vs in impl_versions.items()}
-    # Old version dirs are capture HISTORY: only the LATEST capture of each
-    # Dynamo impl gets a prime bucket — the latest v1 (jail+batch) is the default
-    # reference, the latest v2 the default compare; older versions join the
-    # peers' history in C.
     out: list[dict[str, str]] = []
     for impl in ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python"):
         # Within an engine, versions run LATEST-FIRST (0.24.0 before 0.23.0).
         for v in reversed(impl_versions.get(impl, [])):
             slug = toolcalling_table._version_slug(v)
-            if impl == BASELINE_BATCH_IMPL:
-                bucket = "A" if v == latest.get(impl) else "C"
+            if impl == BASELINE_STREAM_IMPL and v == latest.get(impl):
+                bucket = "A"
             else:
-                bucket = "B" if v == latest.get(impl) else "C"
+                bucket = "C"
             out.append({
                 "key": f"{impl}-{slug}",
                 "label": _full_label(impl, v, "stream"),
