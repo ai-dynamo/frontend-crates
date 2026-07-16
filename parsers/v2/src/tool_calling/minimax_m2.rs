@@ -274,10 +274,14 @@ enum Marker {
     BareInvoke,
 }
 
-/// Longest non-empty proper prefix of a start marker that `text` ends with, so a
+/// Longest non-empty proper prefix of a marker that `text` ends with, so a
 /// marker split across chunk boundaries is held back instead of leaked as text.
+/// `BLOCK_END` is included: a lone orphan `</minimax:tool_call>` that arrives
+/// split across chunks must be retained whole so the orphan-close path (which
+/// strips it and never lets it leak) can match it — otherwise the partial suffix
+/// is emitted as normal_text and the marker leaks.
 fn marker_prefix_suffix_len(text: &str) -> usize {
-    [BLOCK_START, FUNCTION_START]
+    [BLOCK_START, FUNCTION_START, BLOCK_END]
         .into_iter()
         .filter_map(|marker| {
             marker
@@ -569,6 +573,43 @@ mod tests {
         assert_eq!(
             merged.calls[0].arguments,
             r#"{"path":"/app/x.go","old_str":"foo","new_str":"bar","command":"str_replace"}"#
+        );
+    }
+
+    #[test]
+    fn strips_lone_orphan_close_in_prose_whole_marker() {
+        // A lone orphan `</minimax:tool_call>` in prose (no matching open, no
+        // preceding recoverable invoke) must be stripped, never leaked, even when
+        // it arrives as one whole marker.
+        let out = parse_chunks(
+            &weather_tools(),
+            &["I will", " check that. ", "</minimax:tool_call>", " ok"],
+        );
+        assert_eq!(out.normal_text, "I will check that.  ok");
+        assert!(out.calls.is_empty());
+        assert!(
+            !out.normal_text.contains("minimax") && !out.normal_text.contains("tool_call"),
+            "orphan close leaked into normal_text: {}",
+            out.normal_text
+        );
+    }
+
+    #[test]
+    fn strips_lone_orphan_close_in_prose_split_marker() {
+        // Same lone orphan `</minimax:tool_call>`, but split across a chunk
+        // boundary (`</minimax:tool` + `_call> ok`). The partial close suffix must
+        // be held back whole (BLOCK_END is in the holdback list) so the
+        // orphan-close path can strip it; nothing leaks into normal_text.
+        let out = parse_chunks(
+            &weather_tools(),
+            &["I will", " check that. ", "</minimax:tool", "_call> ok", ""],
+        );
+        assert_eq!(out.normal_text, "I will check that.  ok");
+        assert!(out.calls.is_empty());
+        assert!(
+            !out.normal_text.contains("minimax") && !out.normal_text.contains("tool_call"),
+            "orphan close leaked into normal_text: {}",
+            out.normal_text
         );
     }
 }

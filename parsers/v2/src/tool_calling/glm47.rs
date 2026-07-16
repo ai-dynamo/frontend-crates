@@ -70,6 +70,29 @@ impl Glm47ToolStreamParser {
             let wrapped_start = self.buffer.find(BLOCK_START);
             let bare = self.bare_anchor(wrapped_start);
 
+            // A lone `</tool_call>` (BLOCK_END) with no wrapped opener before it
+            // and no recoverable bare call anchoring it is a TRUE orphan close:
+            // malformed markup that must never leak into normal_text. In GLM
+            // `</tool_call>` doubles as the close of a bare call (it is in
+            // ORPHAN_ANCHORS), so only strip it when `bare_anchor` finds no bare
+            // body before it — otherwise the bare arm below recovers the call. A
+            // bare body always has a function-name identifier before its first
+            // orphan marker, so `bare.is_none()` reliably means "no bare call".
+            // Emit the preceding prose when not suppressing, drain through the
+            // marker, clear suppression, and continue. Mirrors the orphan-close
+            // idiom in `minimax_m3`.
+            if bare.is_none()
+                && let Some(pos) = self.buffer.find(BLOCK_END)
+                && wrapped_start.is_none_or(|open| pos < open)
+            {
+                if !self.suppress_normal_text && pos > 0 {
+                    out.normal_text.push_str(&self.buffer[..pos]);
+                }
+                self.buffer.drain(..pos + BLOCK_END.len());
+                self.suppress_normal_text = false;
+                continue;
+            }
+
             match (wrapped_start, bare) {
                 // Bare anchor comes first (or there is no wrapped opener).
                 // `bare_anchor` only returns `Some` when the bare body precedes
@@ -754,6 +777,29 @@ mod tests {
         assert_eq!(merged.calls.len(), 1);
         assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
         assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
+    }
+
+    #[test]
+    fn strips_split_orphan_close_marker() {
+        // A lone `</tool_call>` (BLOCK_END) in prose with NO matching
+        // `<tool_call>` opener and NO recoverable bare call before it is a true
+        // orphan close (here split across a chunk boundary: `</tool` | `_call>`).
+        // It must be stripped, never leaked into normal_text, and yield no calls.
+        let out = parse_chunks(
+            &weather_tools(),
+            &["I will", " check that. ", "</tool", "_call> ok", ""],
+        );
+        assert_eq!(
+            out.normal_text, "I will check that.  ok",
+            "orphan </tool_call> leaked into normal_text: {:?}",
+            out.normal_text
+        );
+        assert!(out.calls.is_empty(), "orphan close must not produce a call");
+        assert!(
+            !out.normal_text.contains("tool_call") && !out.normal_text.contains("arg_"),
+            "tool markup leaked: {:?}",
+            out.normal_text
+        );
     }
 
     #[test]
