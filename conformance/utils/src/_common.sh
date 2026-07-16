@@ -25,12 +25,23 @@ TOOLS="$ROOT/conformance/utils/src"
 # re-extracts when the committed manifest pin moved — otherwise a render after
 # pulling new shards would silently use a stale snapshot.
 FIXTURES_ROOT="${XDG_CACHE_HOME:-$HOME/.cache}/dynamo/conformance-fixtures"
-python3 "$TOOLS/extract_fixtures.py" >/dev/null || {
-  echo "[conformance] fixture extraction failed. If shards are LFS pointers, run:" >&2
-  echo "  git lfs install && git lfs pull" >&2
-  exit 1
-}
-# Export so cargo test subprocesses can find the cache without re-downloading.
+# extract_fixtures prints THIS manifest's snapshot dir on stdout. Point readers at
+# that exact dir, NOT the shared `<cache>/toolcalling` symlink: sibling checkouts
+# pinning a different snapshot race to repoint that symlink, so a render could read
+# an older snapshot mid-flight (e.g. one missing dynamo_v2-0.1.22). Reading the
+# pinned snapshot dir directly is immune to that race.
+FIXTURES_SNAP=$(python3 "$TOOLS/extract_fixtures.py" 2>/dev/null | tail -1)
+if [ -z "$FIXTURES_SNAP" ] || [ ! -d "$FIXTURES_SNAP/toolcalling" ]; then
+  # Fall back to a plain extract (and the symlink) if the snapshot path is unusable.
+  python3 "$TOOLS/extract_fixtures.py" >/dev/null || {
+    echo "[conformance] fixture extraction failed. If shards are LFS pointers, run:" >&2
+    echo "  git lfs install && git lfs pull" >&2
+    exit 1
+  }
+else
+  FIXTURES_ROOT="$FIXTURES_SNAP"
+fi
+# Export so cargo test subprocesses read the same pinned snapshot.
 export CONFORMANCE_FIXTURES_ROOT="$FIXTURES_ROOT"
 # Ephemeral build tree stays at conformance/utils/.stage (UTILS), not inside src/,
 # so CI and .gitignore find it where they always have.
