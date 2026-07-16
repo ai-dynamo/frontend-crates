@@ -171,10 +171,14 @@ def test_v2_batch_tab_has_all_peer_versions(charts):
 def test_patch_overlay_folds_into_base_version_not_a_separate_candidate(charts):
     # A `X.patchN` capture (the same binary re-run to backfill newer cases onto X)
     # must fold into X's column for display, never appear as its own candidate.
+    # (A provenance footnote may still name the source shard — that's fine; the
+    # CANDIDATE labels are what must not carry a patch version.)
     seg = _panel(charts["v2"], "tab-toolcalling-streamv2", _V2_TABS)
-    assert "patch" not in seg.lower(), (
-        "a .patchN overlay leaked into the stream tab as a standalone candidate; "
-        "it must fold onto its base version's column"
+    labels = re.findall(r"Dynamo v2 Rust [0-9A-Za-z.]+ \(stream\)", seg)
+    patched = [lbl for lbl in labels if "patch" in lbl]
+    assert not patched, (
+        f"a .patchN overlay leaked into the stream tab as a standalone candidate "
+        f"{patched}; it must fold onto its base version's column"
     )
 
 
