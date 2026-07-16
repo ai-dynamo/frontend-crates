@@ -4,7 +4,7 @@
 """Schema validation for the v2 overlay fixtures (audit D3).
 
 The frontend-crate-owned v2 overlays (`fixtures-stream-v2/`,
-`fixtures-batch-on-stream-v2/`) must use canonical impl keys only — `dynamo_rust`,
+`fixtures-batch-on-stream-v2/`) must use canonical impl keys only — `dynamo_v2`,
 `vllm_python`, `sglang_python`, `vllm_rust` — never the legacy `dynamo`/`vllm`/`sglang`
 spellings. The renderer accepts both via aliases (the v1 Dynamo-synced corpus still
 uses legacy keys), so legacy keys in a v2 overlay are silent drift; this validator

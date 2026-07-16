@@ -17,10 +17,11 @@ th.case-sub.case-band-1, td.cell.case-band-1 { background: #ffffff; }
    fragment gets a distinct color (cycled) so a merged multi-delta chunk shows its
    boundaries, without a ×N count. Render only inside the dark tooltip; all are
    bright accents, none the default text gray, so every merged piece stands out. */
-.frag0 { color: #7dd3fc; }  /* sky */
-.frag1 { color: #fbbf24; }  /* amber */
-.frag2 { color: #86efac; }  /* green */
-.frag3 { color: #f0abfc; }  /* pink */
+/* args fragment values stay WHITE (same convention as name='...': colored
+   label+quotes, plain value). Chunk boundaries survive as a whisper-subtle
+   alternating dotted underline instead of the old 4-color rotation. */
+.frag0, .frag1, .frag2, .frag3 { color: inherit; }
+.frag1, .frag3 { border-bottom: 1px dotted #475569; }
 th a { color: inherit; text-decoration: none; }
 th a:hover { background: #ffd; }
 td.model, td.parser { white-space: nowrap; }
@@ -408,3 +409,22 @@ body.cmp-loading td.cell .cmp-marker, body.cmp-loading td.cell .cell-marker { vi
 body.cmp-loading .cmp-loading-note { display: block; position: fixed; top: 8px; right: 12px;
   background: #fff7e0; border: 1px solid #e5c765; color: #7a5d00; padding: 4px 10px;
   border-radius: 4px; font: 12px ui-monospace, monospace; z-index: 99; }
+
+/* Whitespace markers in popup OUTPUT strings (↵ ␍ ⇥ ·): rendered as small
+   highlighted chips — a steel-blue background block against the dark tooltip
+   (#0b1220..#1e293b) makes every space/tab/return unmistakable, the way diff
+   tools highlight whitespace. user-select:none keeps the marks out of copied
+   text. */
+.ttip .wsmk {
+  background: #2f4f7a;
+  color: #d6e6ff;
+  border-radius: 2px;
+  padding: 0 1px;
+  user-select: none;
+}
+
+/* Popup output field labels + their quotes (reasoning_text, normal_text,
+   input_text, calls, args, name — one convention): the blue input-text color.
+   Fixture `explanation:` notes are secondary -> gray. */
+.ttip .fldl { color: #93c5fd; }
+.ttip .expl { color: #9ca3af; }

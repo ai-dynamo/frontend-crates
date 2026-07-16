@@ -11,7 +11,7 @@ Standalone Rust crates for building OpenAI/Anthropic-compatible inference server
 
 Each crate is independently published to crates.io and can be adopted on its own. Only `dynamo-renderer` has internal deps — it depends on `dynamo-protocols` and re-exports `dynamo-tokenizers` for convenience; `dynamo-protocols`, `dynamo-tokenizers`, and `dynamo-parsers` are leaf crates with no internal deps. The repository itself is a Cargo workspace so shared dependency versions, CI checks, and the demo build stay consistent.
 
-The three parser crates live under `parsers/`: `parsers/v1` is the stable, published `dynamo-parsers`. `parsers/v2` (`dynamo-parsers-v2`) is the **work-in-progress** pure-streaming parser on a `0.x` line — use `dynamo-parsers` (v1) for anything real. `parsers/v2-py` is a test-only PyO3 binding for the conformance harness and is **not published**. See [`docs/PARSERS-V2-MIGRATION-PLAN.md`](./docs/PARSERS-V2-MIGRATION-PLAN.md).
+The three parser crates live under `parsers/`: `parsers/v1` is the stable, published `dynamo-parsers`. `parsers/v2` (`dynamo-parsers-v2`) is the **work-in-progress** pure-streaming parser on a `0.x` line — use `dynamo-parsers` (v1) for anything real. **v1 is interim**: once v2 reaches parity, v1 (batch + jail) is removed outright — v2 is the ultimate implementation, and new parser work goes there. `parsers/v2-py` is a test-only PyO3 binding for the conformance harness and is **not published**. See [`docs/PARSERS-V2-MIGRATION-PLAN.md`](./docs/PARSERS-V2-MIGRATION-PLAN.md).
 
 ## Layout
 

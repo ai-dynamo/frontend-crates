@@ -23,7 +23,7 @@ fixtures-stream-v2/
                                                      # full anchor, higher = changed-only
 ```
 
-Current version dirs: `dynamo_rust-0.1.11` (Dynamo v2 stream parser), `dynamo_rust-3.0.0` (Dynamo v1 batch parser run against stream data via the streaming jail — captured by `capture_dynamo_jail_stream.py` / the `record_dynamo_jail_stream` bin), `vllm_rust-0.23.0`, `vllm_python-0.23.0` + `vllm_python-0.24.0`, `sglang_python-0.5.12.post1` + `sglang_python-0.5.14`. So the stream tab compares the v1 batch parser (jailed), the v2 stream parser, and the peer stream parsers on the same chunk inputs.
+Current version dirs: `dynamo_v2-0.1.11` (Dynamo v2 stream parser), `dynamo_v1-3.0.0` (Dynamo v1 batch parser run against stream data via the streaming jail — captured by `capture_dynamo_jail_stream.py` / the `record_dynamo_jail_stream` bin), `vllm_rust-0.23.0`, `vllm_python-0.23.0` + `vllm_python-0.24.0`, `sglang_python-0.5.12.post1` + `sglang_python-0.5.14`. So the stream tab compares the v1 batch parser (jailed), the v2 stream parser, and the peer stream parsers on the same chunk inputs.
 
 `resolve_stream_fixtures.py` copies `inputs/` and folds each impl's version dirs (ascending, up to the selected version) back into the shared chunks — the stream analogue of `resolve_fixtures.py`. Every impl is included at its lowest version by default; `--select <impl>-<version>` bumps a specific impl higher. Readers see the assembled flat tree.
 
@@ -60,7 +60,7 @@ A delta is `{index, name?, arguments?}`. The v2 Rust core delta does not include
 
 ## Parser Keys
 
-- `expected.dynamo_rust` is Dynamo parser v2 output.
+- `expected.dynamo_v2` is Dynamo parser v2 output; `expected.dynamo_v1` (inside `dynamo_v1-<ver>/`) is the v1 jail reference.
 - `expected.vllm_rust` is vLLM Rust stream parser output captured from the checked-out `vllm-tool-parser` crate. There is no separate `V_rb`.
 - `expected.vllm_python` is vLLM Python stream parser output from the pinned Python package.
 - `expected.sglang_python` is SGLang Python stream parser output from the pinned Python package.

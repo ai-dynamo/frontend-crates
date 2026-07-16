@@ -5,36 +5,38 @@ SPDX-License-Identifier: Apache-2.0
 
 # Releasing
 
-Releases of `dynamo-protocols`, `dynamo-parsers`, `dynamo-tokenizers`, and
-`dynamo-renderer` to crates.io are automated by `.github/workflows/release.yml`. This document
-covers what the workflow does, what one-time setup it requires, and how to
-recover when it goes wrong.
+Releases of `dynamo-protocols`, `dynamo-parsers`, `dynamo-parsers-v2`,
+`dynamo-tokenizers`, and `dynamo-renderer` to crates.io are automated by
+`.github/workflows/release.yml`. This document covers what the workflow does,
+what one-time setup it requires, and how to recover when it goes wrong.
 
 ## What happens on every push to `main`
 
 1. The `release` workflow runs.
-2. `release-plz update` inspects commits since the last per-crate release tag
-   (e.g. `dynamo-protocols-v0.1.0`) and proposes version bumps for any crate
-   whose **packaged contents** changed. Packaged contents are spelled out
-   via `include = [...]` in each crate's `Cargo.toml`: `src/**/*`,
-   `Cargo.toml`, and `README.md`. Anything outside that list — `tests/`,
-   root `README.md`, `.github/`, `scripts/`, `deny.toml`, non-published
-   workspace crates (`conformance/` and `examples/dynamo-demo-server/`), and
-   contributor docs outside the packaged crate include list — does not trigger a
-   release. A second filter, `release_commits` in `release-plz.toml`, only
-   considers commits whose messages start with `feat:`, `fix:`, `perf:`,
-   `refactor:`, or `sync:`. That filter keeps `chore:` / `ci:` / `build:` /
-   `test:` / `docs:` commits — including dependabot's `chore(deps):` bumps
-   that only touch `Cargo.lock` — from triggering releases.
+2. The workflow decides **per crate, path-scoped** (DIS-2414). For each publishable workspace crate it compares the crate's `Cargo.toml` version against the crate's latest release tag (e.g. `dynamo-protocols-v2.0.2`):
+   - **version ≠ last tag** → the version was **manually pegged** in a PR. The workflow does not touch it; the publish step ships exactly that version. See "Manual version peg" below.
+   - **version == last tag, no changes under the crate's own directory** since that tag → nothing happens. In particular, a change to one crate never re-releases its dependents: all inter-crate deps are caret reqs, so a compatible bump never requires a dependent re-release (the old blanket `release-plz update` cascaded these, churning versions of crates whose code never changed).
+   - **version == last tag, changes under the crate's own directory** → `release-plz update -p <crate>` bumps that crate only. Within the crate, release-plz still applies its own two filters: only **packaged contents** count (the `include = [...]` list in the crate's `Cargo.toml`: `src/**/*`, `Cargo.toml`, `README.md` — not `tests/` etc.), and only commits matching `release_commits` in `release-plz.toml` count (`feat:`, `fix:`, `perf:`, `refactor:`, `sync:`, plus — temporarily, for the dynamo→frontend-crates transition — `chore:`). If neither filter passes, no bump is proposed even though the directory changed.
 3. If any bumps were proposed, the workflow commits them with an informative
    subject listing every crate whose version changed this run — e.g.
    `chore: release dynamo-protocols v1.4.0, dynamo-renderer v1.3.1` (with
-   `Signed-off-by:` for DCO) — pushes to `main`, then runs `release-plz
-   release` to publish to crates.io and create per-crate git tags. GitHub
-   Releases are disabled (`git_release_enable = false`); the per-crate
-   `CHANGELOG.md` files plus the `*-v*` tags are the release record.
-4. The push from step 3 retriggers the workflow. A recursion guard on the
+   `Signed-off-by:` for DCO) — and pushes to `main`.
+4. `release-plz release` always runs (not gated on step 3 — a merge that only
+   manually pegged a version produces no bump commit but must still publish).
+   It publishes every crate whose `Cargo.toml` version isn't on crates.io yet
+   and creates the per-crate git tags; it's a no-op otherwise. GitHub Releases
+   are disabled (`git_release_enable = false`); the per-crate `CHANGELOG.md`
+   files plus the `*-v*` tags are the release record.
+5. The push from step 3 retriggers the workflow. A recursion guard on the
    `chore: release` commit message short-circuits the second run.
+
+## Manual version peg (fixture-synced releases)
+
+To release a crate at a **specific, deliberate version** — e.g. so a conformance fixture snapshot (`conformance/fixtures/`, git-lfs) and the crates.io release carry the same pegged number — edit the crate's `version` in its `Cargo.toml` in your PR (any jump you want: patch, minor, major). On merge, the workflow sees the version differs from the last release tag, skips any auto-bump for that crate, and publishes exactly that version. `Cargo.toml` is the single source of truth: fixture provenance embeds the built crate's version, so both artifacts stay in sync by construction.
+
+The same mechanism covers a crate's **first release**: a crate with no release tag yet is never auto-bumped — set its version manually and merge.
+
+Note: a manual peg skips the auto-changelog; add a `CHANGELOG.md` entry in the same PR if the release warrants one.
 
 ## Bump policy
 
@@ -43,7 +45,7 @@ tag. SemVer treats `0.x` versions specially (the minor slot is the de-facto
 breaking position), so the bump depends on whether a crate has reached `1.0.0`.
 
 `dynamo-protocols`, `dynamo-parsers`, `dynamo-tokenizers`, and
-`dynamo-renderer` are all at `1.x` (standard SemVer):
+`dynamo-renderer` are all at `1.x`+ (standard SemVer):
 
 | Commit                          | Bump from 1.3.0 |
 | ------------------------------- | --------------- |
@@ -51,6 +53,8 @@ breaking position), so the bump depends on whether a crate has reached `1.0.0`.
 | `feat:`                         | 1.4.0 (minor)   |
 | `feat!:` / `BREAKING CHANGE:`   | 2.0.0 (major)   |
 | `chore:`, `ci:`, `build:`, etc. | no bump         |
+
+`dynamo-parsers-v2` is at `0.x`, where the minor slot is the breaking position (cargo treats `0.1.21 -> 0.2.0` as breaking, `0.1.21 -> 0.1.22` as compatible), so compatible changes bump the patch slot and breaking changes bump the minor slot. Lifecycle note: v1 (`dynamo-parsers`) is interim and will be removed outright once v2 reaches parity; v2 is the ultimate implementation (WIP), so expect its `0.x` line to keep moving while v1 stays quiet. Downstream exact pins like vLLM's `dynamo-parsers-v2 = "=0.1.x"` only move when their owners update them — another reason auto-bumps stay scoped to crates whose own code changed.
 
 ### What `cargo-semver-checks` validates
 
@@ -87,8 +91,8 @@ These admin actions must be done before the workflow can run end-to-end.
      read them.
 
 2. **Configure trusted publishing on crates.io.** For each published crate
-   (`dynamo-protocols`, `dynamo-parsers`, `dynamo-tokenizers`,
-   `dynamo-renderer`), go to
+   (`dynamo-protocols`, `dynamo-parsers`, `dynamo-parsers-v2`,
+   `dynamo-tokenizers`, `dynamo-renderer`), go to
    crates.io → crate Settings → Trusted Publishers → add a GitHub trusted
    publisher with:
    - Repository: `ai-dynamo/frontend-crates`

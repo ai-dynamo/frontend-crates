@@ -7,10 +7,10 @@ then assembles fixtures. Runs on the HOST (docker exec), not inside a container.
 
 Modes (`--mode`):
   stream           Per-chunk vLLM Python + vLLM Rust + SGLang Python streaming for configured families;
-                   captures into local fixture trees, then publish to HuggingFace via package_and_publish.py
+                   captures into local fixture trees, then commit to the in-repo LFS store via package_fixtures.py
                    (Dynamo parser v2 marked unavailable/TODO). Calls build_stream_fixtures.py.
   batch-on-stream  Each family's batch text through each engine's streaming parser;
-                   captures into local fixture trees, then publish to HuggingFace via package_and_publish.py
+                   captures into local fixture trees, then commit to the in-repo LFS store via package_fixtures.py
                    (optionally with Dynamo Rust recorder JSON).
   merge            Merge the three per-engine flat stream-on-batch captures
                    (--dynamo-rust/--vllm-python/--sglang JSON) into the nested
@@ -208,12 +208,12 @@ def _select_fixtures(fixtures, args):
 
 def _run_stream(args):
     here = os.path.dirname(os.path.abspath(__file__))
-    # A3: stream-capture SEEDS are the HF-downloaded v1 corpus's shared stream inputs
+    # A3: stream-capture SEEDS are the extracted v1 corpus's shared stream inputs
     # (`fixtures-batch-v1/inputs/<family>/TOOLCALLING.stream.*.yaml`) —
     # the chunking derives from the same model_text. Captured per-chunk output is
-    # written locally, then published to HuggingFace via package_and_publish.py.
+    # written locally, then committed to the in-repo LFS store via package_fixtures.py.
     # To add a new family's stream case, add its TOOLCALLING.stream.*.yaml seed
-    # under the HF fixtures-batch-v1/inputs/ tree and re-publish.
+    # under the fixtures-batch-v1/inputs/ tree and re-package.
     conf = os.path.join(args.root, "conformance/toolcalling/fixtures-batch-v1/inputs")
     _copy_worker((args.vllm_container, args.sglang_container))
     vllm_rust_source_version = _vllm_rust_source_version(_vllm_rust_source_arg(args))
@@ -254,7 +254,7 @@ def _run_stream(args):
 
             cmd = ["python3", os.path.join(here, "build_stream_fixtures.py"),
                    "--source", fp, "--out", outfp,
-                   "--unavailable", f"dynamo_rust={args.dynamo_todo}"]
+                   "--unavailable", f"dynamo_v2={args.dynamo_todo}"]
             if vllm_rust_source:
                 cmd += _impl_args(
                     "vllm_rust", family, VLLM_RUST.get(family),
@@ -294,7 +294,7 @@ def _block_for(impl, family, parser, entry):
     return {}
 
 
-def _load_dynamo_rust(path):
+def _load_dynamo_v2(path):
     if not path:
         return {}
     with open(path) as f:
@@ -309,10 +309,10 @@ def _dynamo_cases_for_family(data, family):
     return data
 
 
-def _write_overlay(src, outfp, vllm_entry, vllm_rust_entry, sglang_entry, versions, dynamo_rust):
+def _write_overlay(src, outfp, vllm_entry, vllm_rust_entry, sglang_entry, versions, dynamo_v2):
     doc = yaml.safe_load(open(src))
     family = doc["family"]
-    dynamo_cases = _dynamo_cases_for_family(dynamo_rust, family)
+    dynamo_cases = _dynamo_cases_for_family(dynamo_v2, family)
     out = {
         "family": family,
         "mode": "batch-on-stream",
@@ -325,7 +325,7 @@ def _write_overlay(src, outfp, vllm_entry, vllm_rust_entry, sglang_entry, versio
     if versions.get("vllm_rust"):
         out["captured_with"]["vllm_rust"] = versions["vllm_rust"]
     if dynamo_cases:
-        out["captured_with"]["dynamo_rust"] = "Dynamo parser v2"
+        out["captured_with"]["dynamo_v2"] = "Dynamo parser v2"
 
     vllm_parser = _parser_for("vllm", family)
     vllm_rust_parser = VLLM_RUST.get(family)
@@ -337,7 +337,7 @@ def _write_overlay(src, outfp, vllm_entry, vllm_rust_entry, sglang_entry, versio
     for cid, case in (doc.get("cases") or {}).items():
         row = {}
         if cid in dynamo_cases:
-            row["dynamo_rust"] = dynamo_cases[cid]
+            row["dynamo_v2"] = dynamo_cases[cid]
         if not versions.get("vllm_rust"):
             row["vllm_rust"] = {
                 "unavailable": _vllm_rust_unavailable(None)
@@ -404,7 +404,7 @@ def _run_batch_on_stream(args):
     sglang_ver, sglang_caps = _container_capture(
         args.sglang_container, "sglang", "batch-on-stream", jobs["sglang"], args.work)
 
-    dynamo_rust = _load_dynamo_rust(args.dynamo_rust_json)
+    dynamo_v2 = _load_dynamo_v2(args.dynamo_v2_json)
     versions = {"vllm_python": vllm_ver, "sglang_python": sglang_ver}
     if vllm_rust_ver or vllm_rust_source_version:
         versions["vllm_rust"] = vllm_rust_ver or vllm_rust_source_version
@@ -415,7 +415,7 @@ def _run_batch_on_stream(args):
         _write_overlay(
             src, outfp, vllm_caps.get(src, {}), vllm_rust_caps.get(src, {}),
             sglang_caps.get(src, {}),
-            versions, dynamo_rust)
+            versions, dynamo_v2)
         print(f"  wrote {family}/{os.path.basename(src)}", file=sys.stderr)
 
 
@@ -424,7 +424,7 @@ def _run_batch_on_stream(args):
 # --------------------------------------------------------------------------- #
 def _run_merge(args):
     layers = {
-        "dynamo_rust": json.load(open(args.dynamo_rust)),
+        "dynamo_v2": json.load(open(args.dynamo_v2)),
         "vllm_python": json.load(open(args.vllm_python)),
         "sglang_python": json.load(open(args.sglang)),
     }
@@ -452,10 +452,14 @@ def main():
     ap.add_argument("--sglang-container", default="sglang-localdev")
     ap.add_argument("--vllm-rust-source", help="vLLM source checkout root; defaults to VLLM_RUST_SOURCE")
     ap.add_argument("--dynamo-todo", help="stream: Dynamo unavailable/TODO reason")
-    ap.add_argument("--dynamo-rust-json", help="batch-on-stream: Dynamo Rust recorder JSON")
-    ap.add_argument("--dynamo-harmony-json", dest="dynamo_rust_json", help=argparse.SUPPRESS)
+    ap.add_argument(
+        "--dynamo-rust-json",
+        dest="dynamo_v2_json",
+        help="batch-on-stream: Dynamo v2 recorder JSON (flag name kept for CLI compat)",
+    )
+    ap.add_argument("--dynamo-harmony-json", dest="dynamo_v2_json", help=argparse.SUPPRESS)
     # merge
-    ap.add_argument("--dynamo", dest="dynamo_rust")
+    ap.add_argument("--dynamo", dest="dynamo_v2")
     ap.add_argument("--dynamo-rust")
     ap.add_argument("--vllm", dest="vllm_python")
     ap.add_argument("--vllm-python")
@@ -465,7 +469,7 @@ def main():
 
     # Per-mode required args (argparse can't express "required only for some modes").
     if args.mode == "merge":
-        missing = [n for n in ("dynamo_rust", "vllm_python", "sglang", "output") if not getattr(args, n)]
+        missing = [n for n in ("dynamo_v2", "vllm_python", "sglang", "output") if not getattr(args, n)]
         if missing:
             ap.error("--mode merge requires --dynamo-rust --vllm-python --sglang -o/--output")
         _run_merge(args)

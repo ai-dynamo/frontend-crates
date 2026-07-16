@@ -12,7 +12,7 @@ engine versions. The captured fixtures were frozen at vLLM 0.23.0 / SGLang
 `vLLM Python 0.23.0 (stream)` / `SGLang Python 0.5.12.post1 (stream)`.
 
 This re-captures ONLY the two container engines and rewrites their per-case blocks
-plus their `captured_with` stamps, leaving the `vllm_rust` and `dynamo_rust` blocks
+plus their `captured_with` stamps, leaving the `vllm_rust` and `dynamo_v2` blocks
 (and their `captured_with`) untouched — those are not container captures and did
 not change. Run against the running dev containers:
 

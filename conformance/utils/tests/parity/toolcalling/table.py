@@ -84,8 +84,8 @@ TOOLCALLING_CASES_MD = REPO_ROOT / "lib/parsers/TOOLCALLING_CASES.md"
 PYPROJECT_TOML = REPO_ROOT / "pyproject.toml"
 TEMPLATE_DIR = REPO_ROOT / "tests/parity"
 
-# The versioned fixture source (inputs/ + per-impl <impl>-<version>/ dirs) now lives
-# in the HuggingFace download cache, not the repo. `_common.sh` exports
+# The versioned fixture source (inputs/ + per-impl <impl>-<version>/ dirs) lives in
+# the fixture extraction cache (from the in-repo LFS store). `_common.sh` exports
 # CONFORMANCE_FIXTURES_ROOT (the cache root); fall back to the standard cache path for
 # standalone runs. Used to power the per-impl version radios: we resolve each version
 # snapshot and re-run the load path so cell keys align exactly with the rendered
@@ -94,7 +94,7 @@ _FRONTEND_CRATES_ROOT = Path(os.environ.get("FRONTEND_CRATES_ROOT", str(REPO_ROO
 
 
 def _fixtures_cache_root() -> Path:
-    """HuggingFace fixture download cache root (`~/.cache/dynamo/conformance-fixtures`
+    """Fixture extraction cache root (`~/.cache/dynamo/conformance-fixtures`
     or `$XDG_CACHE_HOME/...`). `_common.sh` exports CONFORMANCE_FIXTURES_ROOT pointing
     here; honor it first so staged renders and standalone runs agree."""
     env = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
@@ -176,16 +176,17 @@ def _peer_versions() -> dict[str, str]:
     if not PYPROJECT_TOML.exists():
         return out
     text = PYPROJECT_TOML.read_text()
-    for name in ("vllm", "sglang"):
+    # keys are canonical impl keys; the regex names are the pip package names
+    for name, impl in (("vllm", "vllm_python"), ("sglang", "sglang_python")):
         m = re.search(rf'"{name}(?:\[[^\]]*\])?==([0-9][^"]*)"', text)
         if m:
-            out[name] = m.group(1)
+            out[impl] = m.group(1)
     return out
 
 
 # --- per-impl version snapshots (version radios) --------------------------------
 # The impls the version radios cover, in display order.
-_VERSION_IMPLS = ("dynamo", "vllm", "sglang")
+_VERSION_IMPLS = ("dynamo_v1", "vllm_python", "sglang_python")
 
 
 def _version_slug(version: str) -> str:
@@ -203,7 +204,7 @@ def _version_sort_key(version: str) -> tuple:
 
 def _impl_versions() -> dict[str, list[str]]:
     """Discover the versions present per impl from the fixture source dirs,
-    ascending. E.g. {"dynamo": ["3.0.0"], "vllm": ["0.23.0", "0.24.0"], ...}."""
+    ascending. E.g. {"dynamo_v1": ["3.0.0"], "vllm_python": ["0.23.0", "0.24.0"], ...}."""
     found: dict[str, list[str]] = {}
     if not _SRC_FIXTURES.is_dir():
         return found
@@ -654,8 +655,8 @@ def _derive_no_peer_sets(cases: dict) -> tuple[set[str], set[str]]:
                 return False
         return True
 
-    no_vllm = {fam for fam, cs in by_family.items() if all_unavail(cs, "vllm")}
-    no_sglang = {fam for fam, cs in by_family.items() if all_unavail(cs, "sglang")}
+    no_vllm = {fam for fam, cs in by_family.items() if all_unavail(cs, "vllm_python")}
+    no_sglang = {fam for fam, cs in by_family.items() if all_unavail(cs, "sglang_python")}
     return no_vllm, no_sglang
 
 
@@ -810,7 +811,7 @@ def _overview_status(case: dict | None, impl: str) -> str:
 def _overview_status_attrs(case: dict | None) -> str:
     parts = [
         f'data-status-{impl}="{_overview_status(case, impl)}"'
-        for impl in ("dynamo", "vllm", "sglang")
+        for impl in ("dynamo_v1", "vllm_python", "sglang_python")
     ]
     # Per-version status (data-status-<impl>-<slug>) drives the version radios.
     # Absent on missing/None cells — the CSS falls back to the pinned attr above.
@@ -839,17 +840,17 @@ def _selected_parity_marker(case: dict | None, impl: str) -> str | None:
     expected = case.get("expected", {})
     outputs = {
         impl: _canonical_tool_output(expected.get(impl))
-        for impl in ("dynamo", "vllm", "sglang")
+        for impl in ("dynamo_v1", "vllm_python", "sglang_python")
     }
     if any(value is None for value in outputs.values()):
         return None
-    if outputs["dynamo"] == outputs["vllm"] == outputs["sglang"]:
+    if outputs["dynamo_v1"] == outputs["vllm_python"] == outputs["sglang_python"]:
         return "="
     selected = outputs[impl]
     peers = (
-        ("dynamo", "D"),
-        ("vllm", "V"),
-        ("sglang", "S"),
+        ("dynamo_v1", "D"),
+        ("vllm_python", "V"),
+        ("sglang_python", "S"),
     )
     marker = "".join(
         letter for peer, letter in peers if peer != impl and outputs[peer] != selected
@@ -886,8 +887,8 @@ def _parser_marker(case: dict | None, impl: str) -> str:
         return "✗"
     if _block_tool_call_leaks(block):
         return "↯"
-    if impl == "dynamo":
-        peers = (expected.get("vllm"), expected.get("sglang"))
+    if impl == "dynamo_v1":
+        peers = (expected.get("vllm_python"), expected.get("sglang_python"))
         if all(isinstance(peer, dict) and "unavailable" in peer for peer in peers):
             return "·"
     return ""
@@ -896,11 +897,11 @@ def _parser_marker(case: dict | None, impl: str) -> str:
 def _parser_marker_attrs(case: dict | None) -> str:
     attrs = [
         f'data-marker-{impl}="{html_lib.escape(_parser_marker(case, impl))}"'
-        for impl in ("dynamo", "vllm", "sglang")
+        for impl in ("dynamo_v1", "vllm_python", "sglang_python")
     ]
     attrs.extend(
         f'data-marker-parity-{impl}="{html_lib.escape(_parity_marker(case, impl))}"'
-        for impl in ("dynamo", "vllm", "sglang")
+        for impl in ("dynamo_v1", "vllm_python", "sglang_python")
     )
     # Per-version details markers (↯/✗/=/V/S) so the details view tracks the
     # selected version, not just the pinned one.
@@ -920,11 +921,11 @@ def _parser_marker_attrs(case: dict | None) -> str:
 def cell_for(case: dict | None) -> str:
     if case is None:
         return "—"
-    dyn = case.get("expected", {}).get("dynamo")
+    dyn = case.get("expected", {}).get("dynamo_v1")
     if not isinstance(dyn, dict):
         return "n/a"
-    v_kind, v_unknown = peer_status(case, dyn, "vllm")
-    s_kind, s_unknown = peer_status(case, dyn, "sglang")
+    v_kind, v_unknown = peer_status(case, dyn, "vllm_python")
+    s_kind, s_unknown = peer_status(case, dyn, "sglang_python")
 
     parts: list[str] = []
     if v_kind == "div":
@@ -1015,7 +1016,7 @@ def render_markdown(
     return "\n".join(lines)
 
 
-_IMPL_DISPLAY = {"dynamo": "Dynamo", "vllm": "vLLM", "sglang": "SGLang"}
+_IMPL_DISPLAY = {"dynamo_v1": "Dynamo", "vllm_python": "vLLM", "sglang_python": "SGLang"}
 
 
 def _format_output_block_html(block, family: str | None = None) -> str:
@@ -1035,10 +1036,12 @@ def _format_output_block_html(block, family: str | None = None) -> str:
             f"{c.get('name', '?')}({json.dumps(c.get('arguments', {}), ensure_ascii=False)})"
             for c in calls
         )
-        calls_line = html_lib.escape(f"calls=[{rendered}]")
+        calls_line = common.field_html(
+            "calls", html_lib.escape(f"[{rendered}]"), quoted=False
+        )
     else:
-        calls_line = "calls=[]"
-    nt_line = f"normal_text='{colorize_markup(nt, family)}'"
+        calls_line = common.field_html("calls", "[]", quoted=False)
+    nt_line = common.field_html("normal_text", colorize_markup(nt, family))
     return f"{nt_line}\n{calls_line}"
 
 
@@ -1049,7 +1052,7 @@ def _cand_section_body(block, family: str | None = None) -> str:
     body = _format_output_block_html(block, family)
     note = _explanation(block)
     if note:
-        body += "\nexplanation: " + html_lib.escape(str(note))
+        body += '\n<span class="expl">explanation: ' + html_lib.escape(str(note)) + "</span>"
     return body
 
 
@@ -1069,7 +1072,7 @@ def _build_tooltip_html(case: dict, dyn) -> str:
     model_text = case.get("model_text")
     if isinstance(model_text, str) and model_text:
         input_label = "Input"
-        input_html = f"input_text='{colorize_markup(model_text, family)}'"
+        input_html = common.field_html("input_text", colorize_markup(model_text, family))
     chunks = case.get("chunks")
     if isinstance(chunks, list) and chunks:
         chunk_lines = []
@@ -1100,7 +1103,7 @@ def _build_tooltip_html(case: dict, dyn) -> str:
         and not expected[i].get("unavailable")
         and "error" not in expected[i]
         and _norm(expected[i]) == n_dyn
-        for i in ("dynamo", "vllm", "sglang")
+        for i in ("dynamo_v1", "vllm_python", "sglang_python")
     )
 
     ver_status = case.get("__ver_status") or {}
@@ -1112,9 +1115,9 @@ def _build_tooltip_html(case: dict, dyn) -> str:
         # exactly the candidates being compared. Labels match the chips
         # (e.g. "Dynamo Rust v1 3.0.0 (batch)").
         _mode = "stream" if ".stream." in (case.get("__case_id") or "") else "batch"
-        for impl in ("dynamo", "vllm", "sglang"):
+        for impl in ("dynamo_v1", "vllm_python", "sglang_python"):
             base = _PARITY_CAND_BASE.get(impl, _IMPL_DISPLAY[impl])
-            if impl == "dynamo":
+            if impl == "dynamo_v1":
                 eng, _, rt = base.partition(" ")  # -> "Dynamo v1 Rust"
                 base = f"{eng} v1 {rt}".strip()
             for slug, info in (ver_status.get(impl) or {}).items():
@@ -1132,7 +1135,7 @@ def _build_tooltip_html(case: dict, dyn) -> str:
             ("All engines parity", _format_output_block_html(dyn, family))
         )
     else:
-        for impl in ("dynamo", "vllm", "sglang"):
+        for impl in ("dynamo_v1", "vllm_python", "sglang_python"):
             output_sections.append(
                 (
                     _IMPL_DISPLAY[impl],
@@ -1175,7 +1178,7 @@ def _tooltip_for(case: dict, dyn: dict) -> str:
         "calls": dyn.get("calls") or [],
         "normal_text": dyn.get("normal_text") or "",
     }
-    for impl in ("vllm", "sglang"):
+    for impl in ("vllm_python", "sglang_python"):
         block = case.get("expected", {}).get(impl)
         if not isinstance(block, dict) or block is dyn:
             continue
@@ -1263,7 +1266,7 @@ def render_cell_html(case: dict | None, mode: str, family: str, sub: str) -> str
         ttip = _build_missing_tooltip_html(mode, family, sub)
         return f"{td_open}{cmp_span}{text}{ttip}</td>"
 
-    dyn = case.get("expected", {}).get("dynamo")
+    dyn = case.get("expected", {}).get("dynamo_v1")
     if not isinstance(dyn, dict):
         # n/a stub: case has only `explanation:` (no `expected:` block).
         fp = case.get("__fixture_path", "")
@@ -1674,10 +1677,10 @@ def _glossary_groups(
 
 
 def _peer_version_items(versions: dict[str, str]) -> list[tuple[str, str]]:
-    return [(name, versions[name]) for name in ("vllm", "sglang") if name in versions]
+    return [(name, versions[name]) for name in ("vllm_python", "sglang_python") if name in versions]
 
 
-_IMPL_RADIO_LABEL = {"dynamo": "Dynamo", "vllm": "vLLM", "sglang": "SGLang"}
+_IMPL_RADIO_LABEL = {"dynamo_v1": "Dynamo", "vllm_python": "vLLM", "sglang_python": "SGLang"}
 
 
 def _impl_version_items() -> list[dict[str, object]]:
@@ -1710,7 +1713,7 @@ def _impl_version_items() -> list[dict[str, object]]:
 # parsers; the standardized label is "<base> <version> (<mode>)" (e.g.
 # "Dynamo Rust 3.0.0 (batch)"), matching the conformance page. Dynamo's parser is a
 # Rust crate (dynamo-parsers 3.0.0).
-_PARITY_CAND_BASE = {"dynamo": "Dynamo Rust", "vllm": "vLLM Python", "sglang": "SGLang Python"}
+_PARITY_CAND_BASE = {"dynamo_v1": "Dynamo Rust", "vllm_python": "vLLM Python", "sglang_python": "SGLang Python"}
 
 
 def _candidate_items(mode: str = "batch") -> list[dict[str, str]]:
@@ -1731,7 +1734,7 @@ def _candidate_items(mode: str = "batch") -> list[dict[str, str]]:
         base = _PARITY_CAND_BASE.get(impl, _IMPL_RADIO_LABEL.get(impl, impl))
         # Parity runs the v1 Dynamo crate (dynamo-parsers 3.x), so Dynamo reads
         # "Dynamo v1 Rust 3.0.0 (batch)" / "(stream)"; peers have no crate split.
-        if impl == "dynamo":
+        if impl == "dynamo_v1":
             eng, _, rt = base.partition(" ")  # -> "Dynamo v1 Rust"
             base = f"{eng} v1 {rt}".strip()
         for v in impl_versions.get(impl, []):

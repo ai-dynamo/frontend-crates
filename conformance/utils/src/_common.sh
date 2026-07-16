@@ -19,17 +19,17 @@ export FRONTEND_CRATES_ROOT="$ROOT"
 # tests/ and lib/ stay at conformance/utils/ (Dynamo-sync targets); the rest is in src/.
 UTILS="$ROOT/conformance/utils"
 TOOLS="$ROOT/conformance/utils/src"
-# Fixture trees are cached in ~/.cache/dynamo/conformance-fixtures/ (downloaded
-# from HuggingFace on first use via download_fixtures.py).
+# Fixture trees are cached in ~/.cache/dynamo/conformance-fixtures/ (extracted
+# from the in-repo LFS shard store via extract_fixtures.py). Run it every time,
+# not only when the cache is empty: it exits instantly on a cache hit, and it
+# re-extracts when the committed manifest pin moved — otherwise a render after
+# pulling new shards would silently use a stale snapshot.
 FIXTURES_ROOT="${XDG_CACHE_HOME:-$HOME/.cache}/dynamo/conformance-fixtures"
-if [ ! -d "$FIXTURES_ROOT/toolcalling" ]; then
-  echo "[conformance] fixtures not cached — downloading from HuggingFace (first run only)..." >&2
-  python3 "$TOOLS/download_fixtures.py" || {
-    echo "[conformance] download failed. Set HF_TOKEN to a read token and retry:" >&2
-    echo "  export HF_TOKEN=<read-token>" >&2
-    exit 1
-  }
-fi
+python3 "$TOOLS/extract_fixtures.py" >/dev/null || {
+  echo "[conformance] fixture extraction failed. If shards are LFS pointers, run:" >&2
+  echo "  git lfs install && git lfs pull" >&2
+  exit 1
+}
 # Export so cargo test subprocesses can find the cache without re-downloading.
 export CONFORMANCE_FIXTURES_ROOT="$FIXTURES_ROOT"
 # Ephemeral build tree stays at conformance/utils/.stage (UTILS), not inside src/,
@@ -80,7 +80,7 @@ _resolve_toolcalling_fixtures() {
   dynamo_v=$(grep -m1 -E '^version = ' "$ROOT/parsers/v1/Cargo.toml" | sed -E 's/.*"([^"]+)".*/\1/')
   python3 "$TOOLS/resolve_fixtures.py" \
     --fixtures-root "$FIXTURES_ROOT/toolcalling/fixtures-batch-v1" \
-    --out "$out" --select "dynamo-${dynamo_v}" "vllm-${vllm_v}" "sglang-${sglang_v}"
+    --out "$out" --select "dynamo_v1-${dynamo_v}" "vllm_python-${vllm_v}" "sglang_python-${sglang_v}"
 }
 
 # Reasoning fixtures are versioned like toolcalling: inputs/ = the OLD (v1-era) anchor,
@@ -90,7 +90,7 @@ _resolve_reasoning_fixtures() {
   local out="$1" vllm_v="$2" sglang_v="$3"; mkdir -p "$out"
   python3 "$TOOLS/resolve_reasoning_fixtures.py" \
     --fixtures-root "$FIXTURES_ROOT/reasoning/fixtures-v1" \
-    --out "$out" --select "vllm-${vllm_v}" "sglang-${sglang_v}"
+    --out "$out" --select "vllm_python-${vllm_v}" "sglang_python-${sglang_v}"
 }
 
 # The OLD (v1-era) reasoning peer versions = the anchor's captured_with stamps in
@@ -119,7 +119,7 @@ _copy_toolcalling_v2_fixtures() {
   # inputs/ (shared per-chunk delta_text) + <impl>-<version>/ (per-impl expected;
   # lowest version = full anchor, higher = changed-only). Resolve the PINNED (latest)
   # peer versions into the flat tree the renderer expects; single-version impls
-  # (dynamo_rust, vllm_rust) default to their lowest. The generator re-resolves each
+  # (dynamo_v2, vllm_rust) default to their lowest. The generator re-resolves each
   # version for the compare model.
   local sv2="$FIXTURES_ROOT/toolcalling/fixtures-stream-v2"
   if [ -d "$sv2" ]; then

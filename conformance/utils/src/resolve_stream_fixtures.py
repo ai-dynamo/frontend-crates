@@ -19,7 +19,7 @@ impl merge its version dirs ascending up to the target, folding that impl's per-
 `expected`/`normal_text` back into the shared chunks and stamping
 `captured_with[impl] = target`. Every impl present is included at its LOWEST version by
 default; `--select <impl>-<version>` bumps a specific impl to that version. So a
-single-version impl (vllm_rust, dynamo_rust) needs no explicit select.
+single-version impl (vllm_rust, dynamo_v2) needs no explicit select.
 Readers (load_all_cases("streamv2")) consume the flat output unchanged.
 """
 import argparse

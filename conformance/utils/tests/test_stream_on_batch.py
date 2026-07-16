@@ -41,9 +41,10 @@ if str(SRC) not in sys.path:
 
 
 def _fixtures_cache_root() -> Path:
-    """HuggingFace fixture download cache root. Fixture YAMLs live on HF (not the
-    repo) since DIS-2310, so path-existence checks resolve against the cache.
-    `_common.sh` exports CONFORMANCE_FIXTURES_ROOT pointing here."""
+    """Fixture extraction cache root. Fixture YAMLs are extracted from the
+    in-repo LFS shard store (conformance/fixtures/), so path-existence checks
+    resolve against the cache. `_common.sh` exports CONFORMANCE_FIXTURES_ROOT
+    pointing here."""
     env = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
     if env:
         return Path(env)
@@ -69,7 +70,7 @@ from tests.parity.reasoning import table as reasoning_table  # noqa: E402
 
 _TODO_MSG = "Dynamo parser v2 stream parser not yet implemented for this family"
 # Identity comes from impls.py via the generator's re-export (audit B1).
-D, R, V, S = g.IMPL_KEYS
+D1, D, R, V, S = g.IMPL_KEYS  # D1 = dynamo_v1 (batch baseline), D = dynamo_v2 (stream baseline)
 IMPLS = g.IMPL_KEYS
 
 
@@ -87,11 +88,11 @@ def test_reasoning_python_exceptions_render_as_na() -> None:
     assert "vLLM Python: parser exception" in tooltip
     assert "SGLang Python: parser exception" in tooltip
 
-    assert reasoning_table._parser_marker(case, "gpt_oss", "dynamo") == "n/a"
-    assert reasoning_table._parser_marker(case, "gpt_oss", "vllm") == "✗"
-    assert reasoning_table._parser_marker(case, "gpt_oss", "sglang") == "✗"
-    assert reasoning_table._overview_status(case, "gpt_oss", "vllm") == "problem"
-    assert reasoning_table._overview_status(case, "gpt_oss", "sglang") == "problem"
+    assert reasoning_table._parser_marker(case, "gpt_oss", "dynamo_v1") == "n/a"
+    assert reasoning_table._parser_marker(case, "gpt_oss", "vllm_python") == "✗"
+    assert reasoning_table._parser_marker(case, "gpt_oss", "sglang_python") == "✗"
+    assert reasoning_table._overview_status(case, "gpt_oss", "vllm_python") == "problem"
+    assert reasoning_table._overview_status(case, "gpt_oss", "sglang_python") == "problem"
 
 
 def test_reasoning_python_exception_rendering_respects_missing_peer_parser() -> None:
@@ -103,8 +104,8 @@ def test_reasoning_python_exception_rendering_respects_missing_peer_parser() -> 
     # Grid marker is n/a regardless of which peers raised; the exception detail is in
     # the tooltip / dormant per-engine markers only.
     assert reasoning_table._cell(case, "kimi")[0] == "n/a"
-    assert reasoning_table._parser_marker(case, "kimi", "vllm") == "n/a"
-    assert reasoning_table._parser_marker(case, "kimi", "sglang") == "✗"
+    assert reasoning_table._parser_marker(case, "kimi", "vllm_python") == "n/a"
+    assert reasoning_table._parser_marker(case, "kimi", "sglang_python") == "✗"
 
 
 def test_reasoning_python_exception_cell_uses_na_class_and_tooltip() -> None:
@@ -125,8 +126,8 @@ def test_reasoning_python_exception_cell_uses_na_class_and_tooltip() -> None:
     assert ">n/a<" in html
     assert ">V✗S✗<" not in html
     # Dormant per-engine data attributes still record the peer exceptions.
-    assert 'data-marker-vllm="✗"' in html
-    assert 'data-status-vllm="problem"' in html
+    assert 'data-marker-vllm_python="✗"' in html
+    assert 'data-status-vllm_python="problem"' in html
     assert "Python parser exceptions" in html
     assert "KeyError: &#x27;model_text&#x27;" in html
 
@@ -143,10 +144,10 @@ def test_readme_documents_vllm_rust_capture_flow() -> None:
         "captured_with.vllm_rust",
         "expected.vllm_rust",
         "conformance/utils/render_table_v2.sh",
-        "The verification-only path reads HF-downloaded fixtures and reports mismatches",
+        "The verification-only path reads the extracted fixtures and reports mismatches",
         "it does not run vLLM Rust",
         "conformance/utils/check.sh dynamo stream",
-        "vLLM Python vs Rust is an HF fixture comparison",
+        "vLLM Python vs Rust is a fixture comparison",
         "capture.sh",
         "Parser Implementations",
         "Dynamo v1",
@@ -361,7 +362,7 @@ def test_build_stream_fixture_uses_vllm_rust_capture(monkeypatch, tmp_path) -> N
 # _stream_on_batch_expected: overlay -> standard expected block
 # --------------------------------------------------------------------------- #
 def test_expected_dynamo_absent_renders_as_todo() -> None:
-    exp = g._stream_on_batch_expected({"vllm": {"calls": []}, "sglang": {"calls": []}})
+    exp = g._stream_on_batch_expected({"vllm_python": {"calls": []}, "sglang_python": {"calls": []}})
     assert g._is_todo_unavailable(exp[D])
     assert "unavailable" in exp[R]
     # New captures write the `explanation` key (not the legacy `reason`).
@@ -501,7 +502,7 @@ def test_sob_cell_two_dimensions_color_and_cross_engine_marker() -> None:
 def test_sob_marker_all_consistent_is_equals_and_green() -> None:
     case = _sobcase(
         stream={i: _calls("f") for i in IMPLS},
-        batch={i: _calls("f") for i in IMPLS},
+        batch={i: _calls("f") for i in (D1, V, S)},
     )
     m = _markers(
         g.render_cell_html(
@@ -523,7 +524,7 @@ def test_sob_dynamo_na_when_no_v2_parser() -> None:
             V: _calls("f"),
             S: _calls("f"),
         },
-        batch={i: _calls("f") for i in (D, V, S)},
+        batch={i: _calls("f") for i in (D1, V, S)},
     )
     assert g._sob_status(case, D) == "na"
     # dynamo unavailable -> marker is a clean n/a, no distinct "…" TODO marker
@@ -539,7 +540,7 @@ def test_sob_leak_marks_red_and_lightning() -> None:
             V: _calls("f"),
             S: _calls("f"),
         },
-        batch={i: _calls("f") for i in (D, V, S)},
+        batch={i: _calls("f") for i in (D1, V, S)},
     )
     m = _markers(
         g.render_cell_html(
@@ -553,7 +554,7 @@ def test_sob_leak_marks_red_and_lightning() -> None:
 def test_vllm_python_leak_marks_red_and_lightning() -> None:
     case = _xcase(
         {
-            D: {"calls": [], "normal_text": ""},
+            D1: {"calls": [], "normal_text": ""},
             V: {"calls": [], "normal_text": "<tool_call>leaked", "reason": "leak"},
             S: {"calls": [], "normal_text": ""},
         }
@@ -567,16 +568,16 @@ def test_vllm_python_leak_marks_red_and_lightning() -> None:
 def test_sob_tooltip_labels_stream_and_batch() -> None:
     case = _sobcase(
         stream={i: _calls("f") for i in IMPLS},
-        batch={i: _calls("f") for i in IMPLS},
+        batch={i: _calls("f") for i in (D1, V, S)},
     )
     ttip = g._build_sob_tooltip(case)
     # Sections now use the standardized "<Engine> <Runtime> <version> (<mode>)" candidate
     # label (same key as the Base/Compare buckets), wrapped as cand-<impl> so the
     # selection can toggle them. The version comes from fixture provenance and may be
     # absent for a synthetic case with no captured_with, so match it optionally.
-    for lbl in ("Dynamo Rust", "vLLM Rust", "vLLM Python", "SGLang Python"):
+    for lbl in ("Dynamo v1 Rust", "Dynamo v2 Rust", "vLLM Rust", "vLLM Python", "SGLang Python"):
         assert re.search(rf"{re.escape(lbl)}(?: \S+)? \(stream\):", ttip), f"missing {lbl} (stream)"
-    for lbl in ("Dynamo Rust", "vLLM Python", "SGLang Python"):
+    for lbl in ("Dynamo v1 Rust", "vLLM Python", "SGLang Python"):
         assert re.search(rf"{re.escape(lbl)}(?: \S+)? \(batch\):", ttip), f"missing {lbl} (batch)"
     assert not re.search(r"vLLM Rust(?: \S+)? \(batch\):", ttip)
     assert "V<sub>RB</sub>" not in ttip
@@ -628,14 +629,14 @@ def test_stream_v2_x_marker_shows_vllm_rust_error_message() -> None:
 # cross-engine conformance (batch / stream tabs)
 # --------------------------------------------------------------------------- #
 def test_cross_engine_all_three_agree() -> None:
-    case = _xcase({i: {"calls": [], "normal_text": ""} for i in (D, V, S)})
-    assert g._selected_parity_marker(case, D) == "="
+    case = _xcase({i: {"calls": [], "normal_text": ""} for i in (D1, V, S)})
+    assert g._selected_parity_marker(case, D1) == "="
 
 
 def test_cross_engine_requires_all_three_present() -> None:
     case = _xcase(
         {
-            D: {"unavailable": "x"},
+            D1: {"unavailable": "x"},
             V: {"calls": [{"name": "f", "arguments": {}}], "normal_text": ""},
             S: {"calls": [], "normal_text": ""},
         }
@@ -648,12 +649,12 @@ def test_cross_engine_requires_all_three_present() -> None:
 def test_cross_engine_divergence_letters() -> None:
     case = _xcase(
         {
-            D: {"calls": [{"name": "f", "arguments": {}}], "normal_text": ""},
+            D1: {"calls": [{"name": "f", "arguments": {}}], "normal_text": ""},
             V: {"calls": [], "normal_text": ""},
             S: {"calls": [], "normal_text": ""},
         }
     )
-    assert g._selected_parity_marker(case, D) == "V_pbS_rb"
+    assert g._selected_parity_marker(case, D1) == "V_pbS_rb"
     assert g._selected_parity_marker(case, V) == "D_rb"
 
 
@@ -722,7 +723,7 @@ def test_template_has_compare_picker_and_reasoning_candidates() -> None:
     panels = g._combined_reasoning_panels(hrefs)
     assert {panel["id"] for panel in panels} == {"tab-reasoning-batch", "tab-reasoning-stream"}
     # No vLLM Rust for reasoning (parser_options already excludes it).
-    assert all(panel["parser_options"] == ("dynamo_rust", "vllm_python", "sglang_python") for panel in panels)
+    assert all(panel["parser_options"] == ("dynamo_v1", "vllm_python", "sglang_python") for panel in panels)
 
 
 def test_template_overview_cells_do_not_expand_from_hidden_marker_text() -> None:
@@ -815,7 +816,7 @@ def test_template_cells_do_not_clip_hover_tooltips() -> None:
 
 
 def test_toolcalling_parser_options_are_mode_specific() -> None:
-    assert g._impl_keys_for_output_kind("batch") == (D, V, S)
+    assert g._impl_keys_for_output_kind("batch") == (D1, V, S)
     assert g._impl_keys_for_output_kind("stream") == (D, R, V, S)
 
 
@@ -834,12 +835,12 @@ _STALE_COMMAND_NAMES = (
 def test_readme_fixture_paths_exist() -> None:
     """D1: every concrete conformance/*.yaml path in the doc set resolves (A2 regression).
 
-    Fixture YAMLs live on HuggingFace (not the repo) since DIS-2310, so fixture paths
-    resolve against the download cache; skip if the cache isn't populated yet."""
+    Fixture YAMLs are extracted from the in-repo LFS shard store, so fixture paths
+    resolve against the extraction cache; skip if the cache isn't populated yet."""
     if not (_fixtures_cache_root() / "toolcalling").is_dir():
         import pytest
 
-        pytest.skip("fixtures not downloaded (run download_fixtures.py)")
+        pytest.skip("fixtures not extracted (run extract_fixtures.py)")
     for doc in _DOC_FILES:
         if not doc.exists():
             continue
@@ -912,12 +913,12 @@ def test_every_stream_family_has_registry_row_and_fixtures() -> None:
     families live under `inputs/`; the sibling `<impl>-<version>/` dirs are per-impl
     expected, not families (resolve_stream_fixtures.py folds them into the inputs)."""
     registry = yaml.safe_load((SRC / "parser_families.yaml").read_text())["families"]
-    # Fixtures live on HuggingFace since DIS-2310; resolve against the download cache.
+    # Fixtures are extracted from the in-repo LFS store; resolve against the cache.
     inputs_root = _fixtures_cache_root() / "toolcalling" / "fixtures-stream-v2" / "inputs"
     if not inputs_root.is_dir():
         import pytest
 
-        pytest.skip("fixtures not downloaded (run download_fixtures.py)")
+        pytest.skip("fixtures not extracted (run extract_fixtures.py)")
     for fam_dir in sorted(p for p in inputs_root.iterdir() if p.is_dir()):
         assert fam_dir.name in registry, f"family {fam_dir.name} has no parser_families.yaml row"
     for fam, spec in registry.items():
@@ -936,7 +937,11 @@ def test_impl_spec_is_single_identity_source() -> None:
         assert g.ENGINE_LETTER[s.key] == s.marker_letter
         assert g.IMPL_LANG_MARKER[s.key] == s.marker_lang
         assert s.legacy_key is None or impls.LEGACY_IMPL_ALIASES[s.legacy_key] == s.key
-    assert len({s.marker_letter for s in impls.IMPL_SPECS}) == len(impls.IMPL_SPECS)
+    # Marker letters are unique per MODE: dynamo_v1 (batch) and dynamo_v2
+    # (stream) intentionally share "D" but never appear in the same tab.
+    for mode in ("batch", "stream"):
+        letters = [s.marker_letter for s in impls.IMPL_SPECS if mode in s.modes]
+        assert len(set(letters)) == len(letters), mode
     assert len({s.display for s in impls.IMPL_SPECS}) == len(impls.IMPL_SPECS)
     # vLLM Rust is stream-only: no `V_rb` batch parser option exists anywhere.
     assert "vllm_rust" not in g.BATCH_IMPL_KEYS

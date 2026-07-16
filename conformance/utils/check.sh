@@ -4,7 +4,7 @@
 #
 # check.sh <dynamo|vllm|sglang|all> [batch|stream|all] [--container N|--pip] [--dry-run]
 #   Run a parser against the committed fixtures and report pass/fail (read-only).
-#     dynamo [batch|stream|all]  Dynamo Rust parser vs expected.dynamo_rust / expected.dynamo (cargo test)
+#     dynamo [batch|stream|all]  Dynamo Rust parser vs expected.dynamo_v2 / expected.dynamo_v1 (cargo test)
 #     vllm   [--container N|--pip]   vLLM Python parser vs expected.vllm_python / expected.vllm
 #     sglang [--container N|--pip]   SGLang Python parser vs expected.sglang_python
 #     all    [--container-vllm N --container-sglang M] [--allow-peer-failures]

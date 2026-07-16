@@ -49,7 +49,7 @@ DOUBLED = re.compile(r"calls=\[(\w+?)\1\(")
 def _dynamo_version_dirs() -> list[tuple[str, Path]]:
     out = []
     for d in STREAM_SRC.iterdir():
-        if d.is_dir() and d.name.startswith("dynamo_rust-"):
+        if d.is_dir() and d.name.startswith("dynamo_v2-"):
             out.append((d.name.split("-", 1)[1], d))
     out.sort(key=lambda t: version_key(t[0]))
     return out
@@ -92,10 +92,10 @@ def test_grid_candidate_keys_match_compare_bar(rendered_page):
 def test_fold_reproduces_each_dynamo_version_exactly():
     versions = _dynamo_version_dirs()
     if len(versions) < 2:
-        pytest.skip("needs at least two dynamo_rust version dirs")
+        pytest.skip("needs at least two dynamo_v2 version dirs")
     top_ver, top_dir = versions[-1]
     with tempfile.TemporaryDirectory() as tmp:
-        resolve(STREAM_SRC, tmp, select=[f"dynamo_rust-{top_ver}"])
+        resolve(STREAM_SRC, tmp, select=[f"dynamo_v2-{top_ver}"])
         for vfp in top_dir.glob("*/*.yaml"):
             folded_fp = Path(tmp) / vfp.parent.name / vfp.name
             if not folded_fp.exists():
@@ -109,7 +109,7 @@ def test_fold_reproduces_each_dynamo_version_exactly():
                 got = [
                     (i, d)
                     for i, ch in enumerate(got_case.get("chunks") or [])
-                    for d in ((ch.get("expected") or {}).get("dynamo_rust") or [])
+                    for d in ((ch.get("expected") or {}).get("dynamo_v2") or [])
                 ]
                 want = [
                     (i, d)
@@ -117,7 +117,7 @@ def test_fold_reproduces_each_dynamo_version_exactly():
                     for d in (ch.get("expected") or [])
                 ]
                 assert got == want, (
-                    f"{vfp.parent.name}/{vfp.name} {cid}: folded dynamo_rust deltas "
+                    f"{vfp.parent.name}/{vfp.name} {cid}: folded dynamo_v2 deltas "
                     f"differ from the {top_ver} doc (lower-version residue?)\n"
                     f"  got:  {got}\n  want: {want}"
                 )
@@ -127,7 +127,7 @@ def test_fold_reproduces_each_dynamo_version_exactly():
 def test_ref_covered_families_have_populated_stream_cells(rendered_page):
     versions = _dynamo_version_dirs()
     if not versions:
-        pytest.skip("no dynamo_rust version dirs")
+        pytest.skip("no dynamo_v2 version dirs")
     _ver, anchor_dir = versions[0]  # lowest version = the default REF
     covered = {p.name for p in anchor_dir.iterdir() if p.is_dir()}
     panel = _panel(rendered_page.read_text(), "tab-toolcalling-streamv2")
@@ -238,6 +238,6 @@ def test_unaligned_candidates_show_no_per_chunk_timing(rendered_page):
     # the TC stream tab's v1 jail column (emission-packed capture) must be noted too.
     html2 = rendered_page.read_text()
     assert re.search(
-        r'<th data-cand="dynamo_rust-3-0-0">(?:(?!</th>).)*?timing not recorded',
+        r'<th data-cand="dynamo_v1-3-0-0">(?:(?!</th>).)*?timing not recorded',
         html2, re.S,
-    ), "the v1 jail (dynamo_rust-3-0-0) stream column lacks the timing note"
+    ), "the v1 jail (dynamo_v1-3-0-0) stream column lacks the timing note"

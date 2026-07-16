@@ -57,9 +57,10 @@ def _hrefs_for_output(output_path: Path, artifact_root: Path) -> dict[str, str]:
     }
 
 
-# Fixtures aren't in the repo — they're published to HuggingFace as tarballs and
-# extracted into the local cache (~/.cache/dynamo/conformance-fixtures/, or
-# $CONFORMANCE_FIXTURES_ROOT). HF stores only the tarballs (no per-file blob URL), so a
+# Fixture YAMLs aren't loose in the repo — they're LFS tarballs under
+# conformance/fixtures/, extracted into the local cache
+# (~/.cache/dynamo/conformance-fixtures/, or $CONFORMANCE_FIXTURES_ROOT). The store
+# holds only the tarballs (no per-file URL), so a
 # per-cell YAML link points at the extracted file in that cache via file://. The
 # rendered `__fixture_path` is the flat resolved-tree path the readers use; remap it to
 # the versioned cache layout (the shared `inputs/` tree carries the model_text /
@@ -326,6 +327,20 @@ def ref_text(value: Any) -> str:
 # column plus per-candidate columns; only the columns/rows differ. These helpers
 # own that scaffold so the four builders don't each re-template it (and so the
 # `data-cand` / `data-col-impl` attribute the compare JS keys on can't drift).
+
+
+def field_html(name: str, inner_html: str, *, cls: str = "fldl", quoted: bool = True) -> str:
+    """Uniform `name='value'` rendering for popup output fields. One convention
+    everywhere (reasoning_text/normal_text/input_text/calls/args/name alike):
+    SINGLE quotes, label + quotes in the blue input-text convention ("fldl").
+    `quoted=False` for non-string values (lists/JSON) colors the label only."""
+    if not quoted:
+        return f'<span class="{cls}">{name}=</span>{inner_html}'
+    return (
+        f'<span class="{cls}">{name}=&#39;</span>'
+        f"{inner_html}"
+        f'<span class="{cls}">&#39;</span>'
+    )
 
 
 def cand_th(key: str, inner: str, *, attr: str = "data-cand") -> str:
