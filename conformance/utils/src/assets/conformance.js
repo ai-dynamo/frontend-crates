@@ -279,17 +279,27 @@
     document.querySelectorAll('.cmpctl').forEach(function (ctl) {
       ctl.dataset.prevBase = ctlBase(ctl) || '';
       // Radios don't fire `change` when you click the already-checked one, and there's
-      // no native "uncheck". Capture the pre-click state on mousedown; on click, if it
-      // was already the Reference, uncheck it and drive the update ourselves.
+      // no native "uncheck". The visible control is the ★ label; the radio is offscreen,
+      // so the real pointer lands on the LABEL and the radio gets only a synthesized
+      // click (never a mousedown). Wire both listeners to the label: record the pre-click
+      // state on mousedown, and on click, if it was already the Reference, prevent the
+      // re-activation, uncheck it, and drive the update ourselves.
       ctl.querySelectorAll('input.cmp-ref').forEach(function (r) {
-        r.addEventListener('mousedown', function () { r.dataset.wasChecked = r.checked ? '1' : '0'; });
-        r.addEventListener('click', function () {
-          if (r.dataset.wasChecked === '1') {
+        const label = r.closest('label') || r.parentElement;
+        if (!label) { return; }
+        label.addEventListener('mousedown', function () { r.dataset.wasChecked = r.checked ? '1' : '0'; });
+        label.addEventListener('click', function () {
+          if (r.dataset.wasChecked !== '1') { return; }
+          // The browser (re)activates the radio as the click's default action AFTER this
+          // listener, so an inline uncheck gets clobbered. Defer it to the next tick so
+          // it lands after activation: uncheck, clear the base, repaint cmp-nobase.
+          r.dataset.wasChecked = '0';
+          setTimeout(function () {
             r.checked = false;
             handleRefUncheck(ctl);
             const panel = ctl.closest('.tab-panel');
             if (panel) { applyCtl(panel); }
-          }
+          }, 0);
         });
       });
       ctl.addEventListener('change', function (e) {

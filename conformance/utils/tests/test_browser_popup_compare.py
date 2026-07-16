@@ -228,14 +228,17 @@ def test_clicking_the_active_star_again_clears_the_reference(driver):
     _select(driver, V2_KEY, [])
     assert _active_base(driver) == V2_KEY, "precondition: V2 should be the Reference"
 
-    # A real click fires mousedown then click, which the unstar handler relies on.
+    # Click the visible ★ LABEL (what a user actually clicks), NOT the offscreen radio —
+    # the radio gets only a synthesized click, so the handler must key off the label.
     clicked = driver.execute_script(
         """
         const ctl = document.querySelector('.tab-panel.active .cmpctl');
         const r = ctl && ctl.querySelector('input.cmp-ref:checked');
-        if (!r) { return false; }
-        r.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
-        r.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+        const label = r && (r.closest('label') || r.parentElement);
+        const star = label && (label.querySelector('.star') || label);
+        if (!star) { return false; }
+        star.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+        star.dispatchEvent(new MouseEvent('click', {bubbles: true}));
         return true;
         """
     )
