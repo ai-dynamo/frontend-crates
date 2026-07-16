@@ -213,7 +213,12 @@ impl MiniMaxM2ToolStreamParser {
                         );
                         out.calls.push(delta);
                         self.next_index += 1;
-                        self.suppress_normal_text = true;
+                        // Do NOT latch suppression after a bare invoke: when the
+                        // optional outer close (`BLOCK_END`) is absent, later
+                        // narration (e.g. ` Done.`) must still reach normal_text.
+                        // A stray `BLOCK_END` that DOES follow is stripped by the
+                        // orphan-close handling above, so the close never leaks.
+                        self.suppress_normal_text = false;
                     }
                 }
             }
@@ -490,6 +495,46 @@ mod tests {
         );
         assert_eq!(out.normal_text, "");
         assert!(out.calls.is_empty());
+    }
+
+    #[test]
+    fn bare_invoke_preserves_trailing_text() {
+        // A bare `<invoke>...</invoke>` (no outer wrapper) followed by narration:
+        // the call is recovered AND the trailing ` Done.` survives in normal_text
+        // (the bare-invoke path must not latch normal-text suppression).
+        let out = parse_chunks(
+            &weather_tools(),
+            &[
+                "<invoke name=\"get_weather\">\n<parameter name=\"location\">NYC</parameter>\n</invoke>",
+                " Done.",
+            ],
+        );
+        assert_eq!(out.normal_text, " Done.");
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 1);
+        assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
+        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
+    }
+
+    #[test]
+    fn bare_invoke_with_orphan_close_preserves_trailing_text() {
+        // Bare invoke followed by a stray outer close then narration: the orphan
+        // `</minimax:tool_call>` is stripped (never leaks) and ` Done.` survives.
+        let out = parse_chunks(
+            &weather_tools(),
+            &[
+                "<invoke name=\"get_weather\">\n<parameter name=\"location\">NYC</parameter>\n</invoke></minimax:tool_call> Done.",
+            ],
+        );
+        assert_eq!(out.normal_text, " Done.");
+        assert!(
+            !out.normal_text.contains("minimax:tool_call"),
+            "orphan close leaked into normal_text: {}",
+            out.normal_text
+        );
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 1);
+        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
     }
 
     #[test]

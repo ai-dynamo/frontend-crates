@@ -157,13 +157,16 @@ impl Glm47ToolStreamParser {
                     continue;
                 }
                 // No opener and no bare anchor: emit buffered text, but hold back
-                // a trailing partial `<tool_call>` (split across this chunk
-                // boundary) unless flushing.
+                // anything split across this chunk boundary that the next chunk
+                // could turn into a tool call — a partial marker, a partial
+                // orphan anchor plus the bare function name before it, or a
+                // trailing bare identifier awaiting its `<arg_key>` — unless
+                // flushing.
                 (None, None) => {
                     let keep = if flush {
                         0
                     } else {
-                        marker_prefix_suffix_len(&self.buffer)
+                        trailing_holdback_len(&self.buffer)
                     };
                     let emit_len = self.buffer.len().saturating_sub(keep);
                     if emit_len > 0 {
@@ -261,18 +264,64 @@ struct BareAnchor {
     name_start: usize,
 }
 
-/// Longest non-empty proper prefix of the block start marker that `text` ends
-/// with, so a marker split across chunk boundaries is held back instead of
-/// leaked as text.
-fn marker_prefix_suffix_len(text: &str) -> usize {
-    BLOCK_START
+/// Number of trailing bytes to withhold from normal_text at a chunk boundary so
+/// a marker or bare function name split across the boundary is not leaked.
+///
+/// Reached only when the buffer holds no complete `<tool_call>` opener and no
+/// complete orphan anchor. Three overlapping split cases must be retained:
+///   * a partial `<tool_call>` opener (`<too`);
+///   * a partial orphan anchor (`<arg`, `</too`, ...) — and the bare
+///     function-name identifier immediately before it, since the next chunk may
+///     complete the anchor and make that identifier the call name;
+///   * a trailing bare identifier with no marker yet (`get_weather`), which the
+///     next chunk may anchor with `<arg_key>`.
+///
+/// All framing markers start with `<`, so a lone trailing `<` is treated as a
+/// possible orphan anchor and the preceding identifier is held too. Mirrors the
+/// v1 `first_orphan_glm47_marker_index` recovery policy: emit nothing that could
+/// be the prefix of an orphan anchor or a pending bare call. Held-back bytes are
+/// flushed on the next chunk (or at EOF), so the concatenated normal_text is
+/// unchanged — only its chunk boundaries shift.
+fn trailing_holdback_len(text: &str) -> usize {
+    // Longest proper-prefix of any framing marker that `text` ends with, and
+    // whether that partial suffix could belong to an orphan anchor.
+    let mut marker_keep = 0;
+    let mut orphan_partial = false;
+    for marker in [
+        BLOCK_START,
+        BLOCK_END,
+        ARG_KEY_START,
+        ARG_KEY_END,
+        ARG_VALUE_START,
+    ] {
+        let is_orphan = marker != BLOCK_START;
+        for len in 1..marker.len() {
+            if text.ends_with(&marker[..len]) {
+                if len > marker_keep {
+                    marker_keep = len;
+                    orphan_partial = is_orphan;
+                } else if len == marker_keep && is_orphan {
+                    orphan_partial = true;
+                }
+            }
+        }
+    }
+
+    // Hold the preceding bare identifier when the partial suffix could be an
+    // orphan anchor, or when there is no partial marker at all (a bare name
+    // still awaiting its `<arg_key>`).
+    if !orphan_partial && marker_keep != 0 {
+        return marker_keep;
+    }
+    let ident_end = text.len() - marker_keep;
+    let name_start = text[..ident_end]
         .char_indices()
-        .map(|(idx, _)| idx)
-        .filter(|idx| *idx > 0)
-        .filter(|idx| *idx < BLOCK_START.len())
         .rev()
-        .find(|&len| text.ends_with(&BLOCK_START[..len]))
-        .unwrap_or(0)
+        .take_while(|(_, ch)| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
+        .last()
+        .map(|(idx, _)| idx)
+        .unwrap_or(ident_end);
+    text.len() - name_start
 }
 
 /// Re-serialize a v1 arguments JSON object in source `<arg_key>...</arg_key>`
@@ -647,5 +696,82 @@ mod tests {
         );
         assert_eq!(out.normal_text, "");
         assert!(out.calls.is_empty());
+    }
+
+    #[test]
+    fn retains_bare_name_across_boundary_before_arg_key() {
+        // Boundary falls BETWEEN the bare function name and its `<arg_key>`:
+        // the name must be held (not emitted as normal_text) until the next
+        // chunk supplies the anchor, or the bare call is lost.
+        let mut parser = Glm47ToolStreamParser::new(&weather_tools());
+        let first = parser.push("get_weather").expect("push");
+        assert_eq!(
+            first.normal_text, "",
+            "pending bare name must not leak before its <arg_key>"
+        );
+        assert!(first.calls.is_empty());
+        let second = parser
+            .push("<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>")
+            .expect("push");
+        assert_eq!(second.normal_text, "");
+        let out = {
+            let mut o = ToolParseResult::default();
+            o.append(first);
+            o.append(second);
+            o.append(parser.finish().expect("finish"));
+            o
+        };
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 1);
+        assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
+        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
+    }
+
+    #[test]
+    fn retains_bare_name_across_boundary_inside_arg_key() {
+        // Boundary splits `<arg_key>` itself (`<arg` | `_key>`): both the
+        // partial orphan anchor AND the bare name before it must be held, so
+        // neither the name nor the `<arg` markup leaks into normal_text.
+        let mut parser = Glm47ToolStreamParser::new(&weather_tools());
+        let first = parser.push("get_weather<arg").expect("push");
+        assert_eq!(
+            first.normal_text, "",
+            "name + partial <arg_key> must be held across the split"
+        );
+        assert!(first.calls.is_empty());
+        let second = parser
+            .push("_key>location</arg_key><arg_value>NYC</arg_value></tool_call>")
+            .expect("push");
+        assert_eq!(second.normal_text, "");
+        let out = {
+            let mut o = ToolParseResult::default();
+            o.append(first);
+            o.append(second);
+            o.append(parser.finish().expect("finish"));
+            o
+        };
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 1);
+        assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
+        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
+    }
+
+    #[test]
+    fn retains_bare_name_across_boundary_at_lone_angle() {
+        // The ambiguous split `get_weather<` | `arg_key>...`: a lone trailing
+        // `<` could open either `<tool_call>` or an orphan anchor, so the name
+        // is held until disambiguated. Here it resolves to a bare call.
+        let out = parse_chunks(
+            &weather_tools(),
+            &[
+                "get_weather<",
+                "arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>",
+            ],
+        );
+        assert_eq!(out.normal_text, "");
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 1);
+        assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
+        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
     }
 }

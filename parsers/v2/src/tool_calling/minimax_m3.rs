@@ -265,12 +265,15 @@ enum Marker {
     BareInvoke,
 }
 
-/// Longest non-empty proper prefix of a start marker that `text` ends with, so a
+/// Longest non-empty proper prefix of an M3 marker that `text` ends with, so a
 /// marker split across chunk boundaries is held back instead of leaked as text.
-/// Both M3 start markers begin with the namespace token, so this also holds back
-/// a split `]<]minimax[>[` run.
+/// All three markers begin with the namespace token, so this also holds back a
+/// split `]<]minimax[>[` run. `BLOCK_END` is included: after a bare-invoke
+/// recovery latches `suppress_normal_text`, a split closing marker must be
+/// retained whole so the orphan-close path (which clears the latch) can match it
+/// — otherwise its remainder is unrecognizable and later prose is dropped.
 fn marker_prefix_suffix_len(text: &str) -> usize {
-    [BLOCK_START, FUNCTION_START]
+    [BLOCK_START, FUNCTION_START, BLOCK_END]
         .into_iter()
         .filter_map(|marker| {
             marker
@@ -456,6 +459,30 @@ mod tests {
             ],
         );
         assert_eq!(out.normal_text, "I will check that. ");
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 1);
+        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
+    }
+
+    #[test]
+    fn holds_back_split_orphan_close_after_bare_invoke() {
+        // 5.g-shaped, but the orphan `BLOCK_END` close is split across two chunk
+        // boundaries while `suppress_normal_text` is latched by the bare-invoke
+        // recovery. The split close must be held back whole so the orphan-close
+        // path can consume it and clear the latch; otherwise its remainder is
+        // unrecognizable, suppression stays on, and the trailing prose is dropped.
+        let out = parse_chunks(
+            &weather_tools(),
+            &[
+                "I will check that. ]<]minimax[>[<invoke name=\"get_weather\">\n]<]minimax[>[<location>NYC]<]minimax[>[</location>\n]<]minimax[>[</invoke>\n]<]minimax",
+                "[>[</tool",
+                "_call>Here is the weather.",
+            ],
+        );
+        // The close marker never leaks, and the trailing prose survives.
+        assert_eq!(out.normal_text, "I will check that. Here is the weather.");
+        assert!(!out.normal_text.contains("tool_call"));
+        assert!(!out.normal_text.contains("minimax"));
         let merged = out.coalesce_calls();
         assert_eq!(merged.calls.len(), 1);
         assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);

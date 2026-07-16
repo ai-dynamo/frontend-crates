@@ -90,6 +90,23 @@ impl KimiK2ToolStreamParser {
             .min_by_key(|(p, _)| *p)
     }
 
+    /// Earliest COMPLETE orphan close/inner marker in `self.buffer` — a
+    /// `call_end`, an `argument_begin`, or any `section_end` variant — returning
+    /// `(position, matched_token_len)`. These only appear legitimately inside an
+    /// open section; outside one they are stray grammar markup to be stripped.
+    /// Mirrors the v1 batch parser's `first_orphan_kimi_marker_index` (minus
+    /// `call_start`, which the bare-call recovery path already opens).
+    fn find_orphan_close(&self) -> Option<(usize, usize)> {
+        [
+            self.config.call_end.as_str(),
+            self.config.argument_begin.as_str(),
+        ]
+        .into_iter()
+        .chain(self.config.section_end_variants.iter().map(String::as_str))
+        .filter_map(|m| self.buffer.find(m).map(|p| (p, m.len())))
+        .min_by_key(|(p, _)| *p)
+    }
+
     fn drain(&mut self, flush: bool) -> anyhow::Result<ToolParseResult> {
         let mut out = ToolParseResult::default();
 
@@ -172,6 +189,32 @@ impl KimiK2ToolStreamParser {
                 }
                 self.suppress_normal_text = true;
                 continue;
+            }
+
+            // Not in a section. A COMPLETE orphan close/inner marker (`call_end`,
+            // `argument_begin`, or a `section_end` variant) that arrives outside
+            // any open section is stray double-close markup: the `next_marker`
+            // lookup below only recognizes section-start variants and `call_start`,
+            // so such an orphan would otherwise flow straight into `normal_text`.
+            // Strip it, mirroring the v1 batch parser's
+            // `first_orphan_kimi_marker_index` policy. Emit any genuine text before
+            // it (unless suppressing), drain through the marker, and clear the
+            // suppression latch — the markup context has ended.
+            if let Some((pos, len)) = self.find_orphan_close() {
+                let next_open = self
+                    .find_section_start()
+                    .map(|(p, _)| p)
+                    .into_iter()
+                    .chain(self.buffer.find(self.config.call_start.as_str()))
+                    .min();
+                if next_open.is_none_or(|open| pos < open) {
+                    if !self.suppress_normal_text && pos > 0 {
+                        out.normal_text.push_str(&self.buffer[..pos]);
+                    }
+                    self.buffer.drain(..pos + len);
+                    self.suppress_normal_text = false;
+                    continue;
+                }
             }
 
             // Not in a section. Look for the earliest section-start variant, or a
@@ -485,6 +528,39 @@ mod tests {
             ],
         );
         assert_eq!(out.normal_text, "");
+        assert!(out.calls.is_empty());
+    }
+
+    #[test]
+    fn strips_orphan_call_end_outside_section() {
+        // A complete orphan `call_end` with no open section is stray double-close
+        // markup: it must be stripped, never leaked, and the surrounding genuine
+        // prose preserved (v1 `first_orphan_kimi_marker_index` parity).
+        let out = parse_chunks(
+            &weather_tools(),
+            &["Here you go.", "<|tool_call_end|>", "All set."],
+        );
+        assert_eq!(out.normal_text, "Here you go.All set.");
+        assert!(out.calls.is_empty());
+    }
+
+    #[test]
+    fn strips_orphan_argument_begin_outside_section() {
+        let out = parse_chunks(
+            &weather_tools(),
+            &["Here you go.", "<|tool_call_argument_begin|>", "All set."],
+        );
+        assert_eq!(out.normal_text, "Here you go.All set.");
+        assert!(out.calls.is_empty());
+    }
+
+    #[test]
+    fn strips_orphan_section_end_outside_section() {
+        let out = parse_chunks(
+            &weather_tools(),
+            &["Here you go.", "<|tool_calls_section_end|>", "All set."],
+        );
+        assert_eq!(out.normal_text, "Here you go.All set.");
         assert!(out.calls.is_empty());
     }
 

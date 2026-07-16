@@ -251,10 +251,12 @@ enum Marker {
     BareFunction,
 }
 
-/// Longest non-empty proper prefix of a start marker that `text` ends with, so a
+/// Longest non-empty proper prefix of a marker that `text` ends with, so a
 /// marker split across chunk boundaries is held back instead of leaked as text.
+/// `BLOCK_END` is included so a split stray/orphan close (consumed and dropped by
+/// the orphan-close handler once complete) never emits its first half as text.
 fn marker_prefix_suffix_len(text: &str) -> usize {
-    [BLOCK_START, FUNCTION_START]
+    [BLOCK_START, BLOCK_END, FUNCTION_START]
         .into_iter()
         .filter_map(|marker| {
             marker
@@ -444,6 +446,22 @@ mod tests {
         );
         assert_eq!(out.normal_text, "");
         assert!(out.calls.is_empty());
+    }
+
+    #[test]
+    fn holds_back_split_orphan_close() {
+        // A stray/orphan `</tool_call>` split across a chunk boundary with no tool
+        // call open must NOT leak its first half ("</tool") into normal_text: the
+        // partial close is held back until the next chunk completes the marker, at
+        // which point the orphan-close handler drops it entirely.
+        let out = parse_chunks(&weather_tools(), &["done </tool", "_call> ok"]);
+        assert!(out.calls.is_empty());
+        assert!(
+            !out.normal_text.contains('<'),
+            "markup fragment leaked into normal_text: {:?}",
+            out.normal_text
+        );
+        assert_eq!(out.normal_text, "done  ok");
     }
 
     #[test]
