@@ -157,7 +157,11 @@ impl KimiK2ToolStreamParser {
                     );
                     self.buffer.drain(..se_pos + se_len);
                     self.in_section = false;
-                    self.suppress_normal_text = true;
+                    // The section is CLOSED here — narration after it is the
+                    // user's text, same as the clean-close path above. Keeping
+                    // the latch on dropped trailing prose after a malformed
+                    // section (text loss is the worse failure).
+                    self.suppress_normal_text = false;
                     continue;
                 }
                 let call = self.buffer[..end + self.config.call_end.len()].to_string();

@@ -287,13 +287,16 @@ fn reorder_arguments(arguments: &str, block: &str) -> String {
     let mut parts: Vec<String> = Vec::new();
     let mut seen: HashSet<String> = HashSet::new();
     for name in source_arg_key_order(block) {
-        if let Some(val) = obj.get(&name) {
+        // seen.insert guards a REPEATED key in the source (the v1 object holds
+        // one value per key): emit it once.
+        if let Some(val) = obj.get(&name)
+            && seen.insert(name.clone())
+        {
             parts.push(format!(
                 "{}:{}",
                 serde_json::to_string(&name).unwrap_or_default(),
                 serde_json::to_string(val).unwrap_or_default()
             ));
-            seen.insert(name);
         }
     }
     // Append any keys not matched in source order (defensive; normally empty).
@@ -351,6 +354,26 @@ mod tests {
         }
         out.append(parser.finish().expect("finish"));
         out
+    }
+
+    #[test]
+    fn repeated_arg_key_emits_key_once() {
+        // A repeated <arg_key> must not produce duplicate keys in the arguments.
+        let out = parse_chunks(
+            &weather_tools(),
+            &[
+                "<tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value>\
+               <arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>",
+            ],
+        );
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 1);
+        let args = merged.calls[0].arguments.clone();
+        assert_eq!(
+            args.matches("\"location\"").count(),
+            1,
+            "duplicate key in arguments: {args}"
+        );
     }
 
     #[test]
