@@ -1,6 +1,6 @@
 {
-  "snapshot": "20260716_165310",
-  "created_pt": "2026-07-16 16:53:10 America/Los_Angeles",
+  "snapshot": "20260717_094525",
+  "created_pt": "2026-07-17 09:45:25 America/Los_Angeles",
   "crates": {
     "dynamo-parsers": "5.0.1",
     "dynamo-parsers-v2": "0.1.22"
@@ -27,13 +27,18 @@
     },
     {
       "path": "toolcalling/fixtures-batch-on-stream-v2.tar.gz",
-      "sha256": "ca3f863df80647ab171a3a3ab7ae58839fbfabe0aae942c7299cb20751850bf7",
-      "size": 15168
+      "sha256": "0d3a76abadf557d406a0c7f501207ad56c8ed4c2005263deb47b50380966069d",
+      "size": 15175
     },
     {
       "path": "toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz",
       "sha256": "65290c8070e6a5f7b50665375a99335257625419b672fc2379bb77506b2f14b2",
       "size": 10667
+    },
+    {
+      "path": "toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1.tar.gz",
+      "sha256": "3a6a2740d91a5b573cc9ee02b66cedaf33f424b95c61418d5150773d271f8619",
+      "size": 9821
     },
     {
       "path": "toolcalling/fixtures-batch-v1/inputs.tar.gz",
