@@ -65,6 +65,10 @@ deepseek_v4:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.8.d:
     stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.9.b:
+    stream_vs_batch: &svb-whitespace-only >-
+      Whitespace-only input: v2 passes the bare whitespace through as
+      normal_text; v1 batch returns "". Intended.
 
 gemma4:
   TOOLCALLING.batch.2.c:
@@ -79,6 +83,8 @@ gemma4:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.8.d:
     stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.9.b:
+    stream_vs_batch: *svb-whitespace-only
 
 glm47:
   TOOLCALLING.batch.2.c:
@@ -91,6 +97,8 @@ glm47:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.8.d:
     stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.9.b:
+    stream_vs_batch: *svb-whitespace-only
   TOOLCALLING.batch.13:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.streamv2.7.a:
@@ -122,10 +130,6 @@ harmony:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.8.d:
     stream_vs_batch: *svb-surrounding-text
-  TOOLCALLING.batch.9.b:
-    stream_vs_batch: >-
-      Whitespace-only input: v2 passes the bare whitespace through as
-      normal_text; v1 batch returns "". Intended.
 
 kimi_k2:
   TOOLCALLING.batch.2.c:
@@ -138,6 +142,8 @@ kimi_k2:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.8.d:
     stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.9.b:
+    stream_vs_batch: *svb-whitespace-only
 
 minimax_m2:
   TOOLCALLING.batch.2.b:
@@ -156,6 +162,8 @@ minimax_m2:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.8.d:
     stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.9.b:
+    stream_vs_batch: *svb-whitespace-only
   TOOLCALLING.streamv2.7.a:
     jail: *jail-stringifies-scalars
   TOOLCALLING.streamv2.7.f:
@@ -165,6 +173,8 @@ minimax_m3:
   TOOLCALLING.batch.2.c:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.5.f:
+    stream_vs_batch: *svb-recovery
+  TOOLCALLING.batch.5.g:
     stream_vs_batch: *svb-recovery
   TOOLCALLING.batch.8.b:
     stream_vs_batch: *svb-surrounding-text
