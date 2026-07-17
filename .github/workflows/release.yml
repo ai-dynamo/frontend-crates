@@ -80,6 +80,15 @@ jobs:
       #     commits, writes the changelog, and runs cargo-semver-checks)
       - name: Bump versions for crates whose own files changed
         run: |
+          # `--allow-dirty` below is intentional: each package update leaves
+          # its version/changelog edits for the final combined release commit.
+          # Fail here so it cannot mask changes that predate this loop.
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --short
+            echo "Release checkout must start clean."
+            exit 1
+          fi
+
           members=$(sed -n '/^members = \[/,/^]/p' Cargo.toml | grep -oE '"[^"]+"' | tr -d '"')
           for dir in $members; do
             grep -q '^publish *= *false' "$dir/Cargo.toml" && continue
@@ -104,7 +113,7 @@ jobs:
               echo "$name: no changes under $dir/ or the root Cargo.toml since $last"
             else
               echo "$name: changes under $dir/ (or root Cargo.toml) since $last -> auto-bump"
-              release-plz update -p "$name"
+              release-plz update --allow-dirty -p "$name"
             fi
           done
 
