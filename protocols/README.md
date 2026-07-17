@@ -5,6 +5,8 @@ Request/response types for OpenAI- and Anthropic-compatible inference servers. B
 ## What's included
 
 - **Chat Completions** — multimodal content, reasoning content (DeepSeek-R1 / QwQ), continuous usage stats, tool-calling.
+- **Batch API** — re-exported from upstream.
+- **Files API** — re-exported from upstream.
 - **Responses API** — input chain owned (relaxed for Codex / Agents SDK); output chain re-exported from upstream.
 - **Completions** — re-exported.
 - **Anthropic Messages** — fully owned (no upstream equivalent).
