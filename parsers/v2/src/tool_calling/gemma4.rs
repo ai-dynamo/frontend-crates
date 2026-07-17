@@ -29,8 +29,7 @@
 //! exact JSON string in the model-emitted order (the order vLLM's Rust parser also
 //! preserves), so order has to be pinned to source order.
 
-use std::collections::HashSet;
-
+use crate::tool_calling::scan::reorder_arguments;
 use crate::tool_calling::v1core::ToolDefinition;
 use crate::tool_calling::v1core::gemma4::{
     detect_tool_call_start_gemma4, find_tool_call_end_position_gemma4, try_tool_call_parse_gemma4,
@@ -249,14 +248,19 @@ impl Gemma4ToolStreamParser {
     }
 
     /// Bytes to hold back from the tail when no complete opener is present: the
-    /// longest of a trailing partial `<|tool_call>` prefix, or a trailing boundary
+    /// longest of a trailing partial `<|tool_call>` prefix, a trailing boundary
     /// `call:`-prefixed run that `detect_tool_call_start_gemma4` thinks may still
     /// grow into a tool call (so a bare call whose end marker has not yet arrived
-    /// is buffered, not leaked).
+    /// is buffered, not leaked), or a trailing run the v1 probe cannot see YET —
+    /// a partial `call:` prefix or a `call:NAME` tail still awaiting its `{`.
+    /// Without that last component, streaming in small chunks releases `c`,
+    /// `ca`, ... as normal_text before `call:` can ever accumulate, and a bare
+    /// call that single-shot parsing recovers is lost (streamv2.5.b/f/g).
     fn opener_holdback_len(&self) -> usize {
         let partial_start = start_marker_suffix_len(&self.buffer);
         let partial_bare = pending_bare_call_suffix_len(&self.buffer);
-        partial_start.max(partial_bare)
+        let partial_opener = partial_bare_opener_suffix_len(&self.buffer);
+        partial_start.max(partial_bare).max(partial_opener)
     }
 
     /// Parse one complete call block into a delta, delegating name + value typing
@@ -288,7 +292,7 @@ impl Gemma4ToolStreamParser {
                 "Gemma 4 stream recovered a bare call (no <|tool_call> opener) instead of leaking it as normal_text"
             );
         }
-        let arguments = reorder_arguments(&call.function.arguments, block);
+        let arguments = reorder_arguments(&call.function.arguments, &source_key_order(block));
         out.calls.push(ToolCallDelta {
             tool_index: self.next_index,
             name: Some(call.function.name),
@@ -394,43 +398,29 @@ fn pending_bare_call_suffix_len(text: &str) -> usize {
     best
 }
 
-/// Re-serialize a v1 arguments JSON object in source key order. The v1 parser
-/// emits alphabetically-sorted keys (`serde_json::Map` is a `BTreeMap` here); the
-/// fixtures want the model-emitted order, so we read the top-level key order
-/// directly from the call body and rebuild the JSON in that order.
-fn reorder_arguments(arguments: &str, block: &str) -> String {
-    let Ok(value) = serde_json::from_str::<serde_json::Value>(arguments) else {
-        return arguments.to_string();
-    };
-    let Some(obj) = value.as_object() else {
-        return arguments.to_string();
-    };
-    let mut parts: Vec<String> = Vec::new();
-    let mut seen: HashSet<String> = HashSet::new();
-    for name in source_key_order(block) {
-        // seen.insert guards a REPEATED key in the source (the v1 object holds
-        // one value per key): emit it once.
-        if let Some(val) = obj.get(&name)
-            && seen.insert(name.clone())
-        {
-            parts.push(format!(
-                "{}:{}",
-                serde_json::to_string(&name).unwrap_or_default(),
-                serde_json::to_string(val).unwrap_or_default()
-            ));
+/// Trailing run that may still grow into a recoverable bare call but that the
+/// v1 probes cannot detect yet: a partial `call:` prefix at a word boundary
+/// (`c`, `ca`, ..., `call:`), or a complete boundary `call:` followed only by
+/// identifier characters (the function name, awaiting its `{`). Once the `{`
+/// arrives, `detect_tool_call_start_gemma4` takes over via
+/// `pending_bare_call_suffix_len`. Held-back bytes are flushed on the next
+/// chunk (or at EOF), so the concatenated normal_text is unchanged — only its
+/// chunk boundaries shift.
+fn partial_bare_opener_suffix_len(text: &str) -> usize {
+    for len in (1..=CALL_PREFIX.len()).rev() {
+        if text.ends_with(&CALL_PREFIX[..len]) && is_call_boundary(text, text.len() - len) {
+            return len;
         }
     }
-    // Append any keys not matched in source order (defensive; normally empty).
-    for (key, val) in obj {
-        if !seen.contains(key) {
-            parts.push(format!(
-                "{}:{}",
-                serde_json::to_string(key).unwrap_or_default(),
-                serde_json::to_string(val).unwrap_or_default()
-            ));
-        }
+    if let Some(idx) = text.rfind(CALL_PREFIX)
+        && is_call_boundary(text, idx)
+        && text[idx + CALL_PREFIX.len()..]
+            .chars()
+            .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
+    {
+        return text.len() - idx;
     }
-    format!("{{{}}}", parts.join(","))
+    0
 }
 
 /// Top-level argument key names in the order they appear in a Gemma 4 call body

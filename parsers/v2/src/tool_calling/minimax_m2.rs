@@ -9,17 +9,25 @@
 //! wrapper is absent (the v1 config sets `backoff_when_no_wrapper`).
 //!
 //! The streaming concern (buffering, chunk-split marker safety, normal_text
-//! suppression) is owned here. The per-block value typing is delegated to the v1
-//! batch XML parser `try_tool_call_parse_xml` driven by the same MiniMax config
-//! `dynamo_parsers` uses for batch parsing, so a streamed call matches exactly
-//! what the batch parser produces. Arguments are re-serialized in source
+//! suppression) is owned by the shared [`scan::WrappedBlockScanner`]. The
+//! per-block value typing is delegated to the v1 batch XML parser
+//! `try_tool_call_parse_xml` driven by the same MiniMax config `dynamo_parsers`
+//! uses for batch parsing, so a streamed call matches exactly what the batch
+//! parser produces. Arguments are re-serialized in source
 //! `<parameter name="...">` order because the v1 parser builds them from a
 //! `HashMap` whose key order is non-deterministic; the fixtures store the
 //! arguments as an exact JSON string, so order is pinned to the model-emitted
 //! order (the order vLLM's Rust parser also preserves).
+//!
+//! M2-specific semantics (explicit spec fields, not copy drift): a bare-invoke
+//! recovery CLEARS the suppression latch — when the optional outer close is
+//! absent, later narration (e.g. ` Done.`) must still reach normal_text; a
+//! stray close that does follow is stripped by the orphan-close handling.
 
-use std::collections::HashSet;
-
+use crate::tool_calling::scan::{
+    BareRecoveryLatch, InvokeEmitter, InvokeLatch, WrappedBlockScanner, WrappedBlockSpec,
+    reorder_arguments,
+};
 use crate::tool_calling::v1core::{ToolDefinition, XmlParserConfig, try_tool_call_parse_xml};
 
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
@@ -47,202 +55,73 @@ fn minimax_config() -> XmlParserConfig {
     }
 }
 
-/// Stream parser for MiniMax-M2 XML tool calls.
-pub struct MiniMaxM2ToolStreamParser {
-    buffer: String,
-    in_block: bool,
-    suppress_normal_text: bool,
-    next_index: usize,
+fn spec() -> WrappedBlockSpec {
+    WrappedBlockSpec {
+        family: "minimax_m2",
+        block_starts: vec![BLOCK_START.to_string()],
+        block_ends: vec![BLOCK_END.to_string()],
+        invoke_start: FUNCTION_START.to_string(),
+        invoke_end: FUNCTION_END.to_string(),
+        orphan_markers: vec![BLOCK_END.to_string()],
+        // BLOCK_END is held back too: a lone orphan close that arrives split
+        // across chunks must be retained whole so the orphan-close path (which
+        // strips it and never lets it leak) can match it.
+        holdback_markers: vec![
+            BLOCK_START.to_string(),
+            FUNCTION_START.to_string(),
+            BLOCK_END.to_string(),
+        ],
+        bare_recovery_latch: BareRecoveryLatch::Clear,
+        invoke_latch: InvokeLatch::IfEmitted,
+        drop_invoke_crossing_block_end: false,
+    }
+}
+
+/// Value-typing hook: wraps one complete `<invoke ...>...</invoke>` in the
+/// block markers so the v1 parser takes its normal wrapped path, then re-orders
+/// the arguments to source order.
+struct M2Emitter {
     config: XmlParserConfig,
     tools: Vec<ToolDefinition>,
+}
+
+impl InvokeEmitter for M2Emitter {
+    fn parse_invoke(
+        &self,
+        invoke: &str,
+        tool_index: usize,
+    ) -> anyhow::Result<Option<ToolCallDelta>> {
+        let wrapped = format!("{BLOCK_START}{invoke}{BLOCK_END}");
+        let (calls, _content) = try_tool_call_parse_xml(&wrapped, &self.config, Some(&self.tools))?;
+        let Some(call) = calls.into_iter().next() else {
+            return Ok(None);
+        };
+        let arguments =
+            reorder_arguments(&call.function.arguments, &source_parameter_order(invoke));
+        Ok(Some(ToolCallDelta {
+            tool_index,
+            name: Some(call.function.name),
+            arguments,
+        }))
+    }
+}
+
+/// Stream parser for MiniMax-M2 XML tool calls.
+pub struct MiniMaxM2ToolStreamParser {
+    scanner: WrappedBlockScanner<M2Emitter>,
 }
 
 impl MiniMaxM2ToolStreamParser {
     pub fn new(tools: &[Tool]) -> Self {
         Self {
-            buffer: String::new(),
-            in_block: false,
-            suppress_normal_text: false,
-            next_index: 0,
-            config: minimax_config(),
-            tools: tools.iter().map(ToolDefinition::from).collect(),
+            scanner: WrappedBlockScanner::new(
+                spec(),
+                M2Emitter {
+                    config: minimax_config(),
+                    tools: tools.iter().map(ToolDefinition::from).collect(),
+                },
+            ),
         }
-    }
-
-    fn drain(&mut self, flush: bool) -> anyhow::Result<ToolParseResult> {
-        let mut out = ToolParseResult::default();
-
-        loop {
-            if self.in_block {
-                // Close the block once no more complete invokes precede its end.
-                if let Some(end) = self.buffer.find(BLOCK_END) {
-                    let invoke_before_end = self
-                        .buffer
-                        .find(FUNCTION_START)
-                        .is_some_and(|start| start < end);
-                    if !invoke_before_end {
-                        // Complete block fully closed: drop its markup and resume
-                        // keeping natural text (inter-block / trailing). Any later
-                        // block re-enters `in_block` and re-suppresses its markup.
-                        // Matches the v1 batch parser (cases 8.b/8.c/8.d).
-                        self.buffer.drain(..end + BLOCK_END.len());
-                        self.in_block = false;
-                        self.suppress_normal_text = false;
-                        continue;
-                    }
-                }
-
-                let Some(start) = self.buffer.find(FUNCTION_START) else {
-                    if flush {
-                        tracing::warn!(
-                            why = "minimax_m2_block_without_complete_invoke",
-                            "MiniMax-M2 stream dropped incomplete block at EOF"
-                        );
-                        self.buffer.clear();
-                        self.in_block = false;
-                    }
-                    break;
-                };
-                if start > 0 {
-                    self.buffer.drain(..start);
-                }
-                let Some(end) = self.buffer.find(FUNCTION_END) else {
-                    if flush {
-                        tracing::warn!(
-                            why = "minimax_m2_incomplete_invoke",
-                            "MiniMax-M2 stream dropped incomplete invoke at EOF"
-                        );
-                        self.buffer.clear();
-                        self.in_block = false;
-                    }
-                    break;
-                };
-                let function = self.buffer[..end + FUNCTION_END.len()].to_string();
-                self.buffer.drain(..end + FUNCTION_END.len());
-                if let Some(delta) = self.parse_function_delta(&function)? {
-                    out.calls.push(delta);
-                    self.next_index += 1;
-                    self.suppress_normal_text = true;
-                }
-                continue;
-            }
-
-            // A recovered bare invoke suppresses its trailing markup; its stray
-            // `</minimax:tool_call>` close (cases 5.b/5.f) ENDS that markup context.
-            // Consume the orphan close and clear the latch so inter-call text —
-            // e.g. the single separator space before the next block — flows
-            // through verbatim, matching the v1 jail+batch output.
-            // A stray/orphan close (`BLOCK_END`) before any opener is malformed
-            // double-close markup. Drop it so it can NEVER leak into normal_text;
-            // when suppression is off, first emit the natural text preceding it.
-            // Clear the latch either way (the markup context has ended).
-            if let Some(pos) = self.buffer.find(BLOCK_END) {
-                let next_open = [BLOCK_START, FUNCTION_START]
-                    .into_iter()
-                    .filter_map(|m| self.buffer.find(m))
-                    .min();
-                if next_open.is_none_or(|open| pos < open) {
-                    if !self.suppress_normal_text && pos > 0 {
-                        out.normal_text.push_str(&self.buffer[..pos]);
-                    }
-                    self.buffer.drain(..pos + BLOCK_END.len());
-                    self.suppress_normal_text = false;
-                    continue;
-                }
-            }
-
-            let block_start = self.buffer.find(BLOCK_START);
-            let bare_invoke_start = self.buffer.find(FUNCTION_START);
-            let next_marker = match (block_start, bare_invoke_start) {
-                (Some(b), Some(f)) if b <= f => Some((b, Marker::Block)),
-                (Some(_), Some(f)) => Some((f, Marker::BareInvoke)),
-                (Some(b), None) => Some((b, Marker::Block)),
-                (None, Some(f)) => Some((f, Marker::BareInvoke)),
-                (None, None) => None,
-            };
-
-            let Some((start, marker)) = next_marker else {
-                // No marker present: emit buffered text, but hold back a trailing
-                // partial marker (split across this chunk boundary) unless flushing.
-                let keep = if flush {
-                    0
-                } else {
-                    marker_prefix_suffix_len(&self.buffer)
-                };
-                let emit_len = self.buffer.len().saturating_sub(keep);
-                if emit_len > 0 {
-                    if !self.suppress_normal_text {
-                        out.normal_text.push_str(&self.buffer[..emit_len]);
-                    }
-                    self.buffer.drain(..emit_len);
-                }
-                break;
-            };
-
-            if start > 0 {
-                if !self.suppress_normal_text {
-                    out.normal_text.push_str(&self.buffer[..start]);
-                }
-                self.buffer.drain(..start);
-            }
-
-            match marker {
-                Marker::Block => {
-                    self.buffer.drain(..BLOCK_START.len());
-                    self.in_block = true;
-                    self.suppress_normal_text = true;
-                }
-                Marker::BareInvoke => {
-                    let Some(end) = self.buffer.find(FUNCTION_END) else {
-                        if flush {
-                            tracing::warn!(
-                                why = "minimax_m2_incomplete_bare_invoke",
-                                "MiniMax-M2 stream dropped incomplete bare invoke at EOF"
-                            );
-                            self.buffer.clear();
-                        }
-                        break;
-                    };
-                    let function = self.buffer[..end + FUNCTION_END.len()].to_string();
-                    self.buffer.drain(..end + FUNCTION_END.len());
-                    if let Some(delta) = self.parse_function_delta(&function)? {
-                        tracing::warn!(
-                            why = "minimax_m2_bare_invoke_recovery",
-                            tool_index = delta.tool_index,
-                            "MiniMax-M2 stream recovered a complete bare invoke"
-                        );
-                        out.calls.push(delta);
-                        self.next_index += 1;
-                        // Do NOT latch suppression after a bare invoke: when the
-                        // optional outer close (`BLOCK_END`) is absent, later
-                        // narration (e.g. ` Done.`) must still reach normal_text.
-                        // A stray `BLOCK_END` that DOES follow is stripped by the
-                        // orphan-close handling above, so the close never leaks.
-                        self.suppress_normal_text = false;
-                    }
-                }
-            }
-        }
-
-        Ok(out)
-    }
-
-    /// Parse one complete `<invoke name="...">...</invoke>` block into a delta.
-    ///
-    /// Wraps the invoke in `<minimax:tool_call>` so the v1 parser always takes
-    /// its normal wrapped path, then re-orders the arguments to source order.
-    fn parse_function_delta(&self, function: &str) -> anyhow::Result<Option<ToolCallDelta>> {
-        let wrapped = format!("{BLOCK_START}{function}{BLOCK_END}");
-        let (calls, _content) = try_tool_call_parse_xml(&wrapped, &self.config, Some(&self.tools))?;
-        let Some(call) = calls.into_iter().next() else {
-            return Ok(None);
-        };
-        let arguments = reorder_arguments(&call.function.arguments, function);
-        Ok(Some(ToolCallDelta {
-            tool_index: self.next_index,
-            name: Some(call.function.name),
-            arguments,
-        }))
     }
 }
 
@@ -259,78 +138,12 @@ impl ToolParser for MiniMaxM2ToolStreamParser {
     }
 
     fn push(&mut self, chunk: &str) -> anyhow::Result<ToolParseResult> {
-        self.buffer.push_str(chunk);
-        self.drain(false)
+        self.scanner.push(chunk)
     }
 
     fn finish(&mut self) -> anyhow::Result<ToolParseResult> {
-        self.drain(true)
+        self.scanner.finish()
     }
-}
-
-#[derive(Clone, Copy)]
-enum Marker {
-    Block,
-    BareInvoke,
-}
-
-/// Longest non-empty proper prefix of a marker that `text` ends with, so a
-/// marker split across chunk boundaries is held back instead of leaked as text.
-/// `BLOCK_END` is included: a lone orphan `</minimax:tool_call>` that arrives
-/// split across chunks must be retained whole so the orphan-close path (which
-/// strips it and never lets it leak) can match it — otherwise the partial suffix
-/// is emitted as normal_text and the marker leaks.
-fn marker_prefix_suffix_len(text: &str) -> usize {
-    [BLOCK_START, FUNCTION_START, BLOCK_END]
-        .into_iter()
-        .filter_map(|marker| {
-            marker
-                .char_indices()
-                .map(|(idx, _)| idx)
-                .filter(|idx| *idx > 0)
-                .filter(|idx| *idx < marker.len())
-                .rev()
-                .find(|&len| text.ends_with(&marker[..len]))
-        })
-        .max()
-        .unwrap_or(0)
-}
-
-/// Re-serialize a v1 arguments JSON object in source `<parameter name="...">`
-/// order.
-fn reorder_arguments(arguments: &str, function: &str) -> String {
-    let Ok(value) = serde_json::from_str::<serde_json::Value>(arguments) else {
-        return arguments.to_string();
-    };
-    let Some(obj) = value.as_object() else {
-        return arguments.to_string();
-    };
-    let mut parts: Vec<String> = Vec::new();
-    let mut seen: HashSet<String> = HashSet::new();
-    for name in source_parameter_order(function) {
-        // seen.insert guards a REPEATED parameter tag (same name twice in the
-        // source): the v1 object holds one value per key, so emit it once.
-        if let Some(val) = obj.get(&name)
-            && seen.insert(name.clone())
-        {
-            parts.push(format!(
-                "{}:{}",
-                serde_json::to_string(&name).unwrap_or_default(),
-                serde_json::to_string(val).unwrap_or_default()
-            ));
-        }
-    }
-    // Append any keys not matched in source order (defensive; normally empty).
-    for (key, val) in obj {
-        if !seen.contains(key) {
-            parts.push(format!(
-                "{}:{}",
-                serde_json::to_string(key).unwrap_or_default(),
-                serde_json::to_string(val).unwrap_or_default()
-            ));
-        }
-    }
-    format!("{{{}}}", parts.join(","))
 }
 
 /// Parameter names in the order they appear in an invoke block.
