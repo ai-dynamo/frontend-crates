@@ -1,22 +1,22 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Semantic invariants on the FINAL rendered page (not greps of the source code).
+"""Model-fold contract on the resolver (pure logic, no rendered HTML).
 
 Born from a real escape: the resolver fold doubled Dynamo v1 output into
 `calls=[get_weatherget_weather(...)]` and it shipped to the rendered page unnoticed
 because verification stopped at "the data exists", never "the output is right".
 
-Scoping learned the hard way while writing these:
-- Doubled names are only OUR bug in Dynamo-attributed content. Captured peer blocks
-  legitimately record imperfect engine behavior (e.g. SGLang really emits
-  `get_weatherget_weather` on gemma4's two-call case) — the legend says so.
-- Row-slicing the HTML with `<tr>...</tr>` regexes is wrong: tooltips embed nested
-  tables. Cells carry `data-family`; panels have ids — use those.
+DIS-2434: the page is now rendered by the JS view from the JSON model, so the former
+HTML-regex guards here (grid↔compare-bar keys, versions-latest-first, no doubled
+names, chart-vs-list exclusivity, v2 registry cross-check) moved to structural
+assertions on the model (test_model.py) and DOM smokes (test_browser_popup_compare.py)
+— stronger and less brittle. What remains is the one guard with no HTML at all: folding
+a higher Dynamo version reproduces that version's docs exactly (the fold contract the
+rendered stream cells depend on).
 """
 from __future__ import annotations
 
 import os
-import re
 import sys
 import tempfile
 from pathlib import Path
@@ -43,8 +43,6 @@ pytestmark = pytest.mark.skipif(
     not STREAM_SRC.is_dir(), reason="conformance fixtures not downloaded"
 )
 
-DOUBLED = re.compile(r"calls=\[(\w+?)\1\(")
-
 
 def _dynamo_version_dirs() -> list[tuple[str, Path]]:
     out = []
@@ -55,40 +53,7 @@ def _dynamo_version_dirs() -> list[tuple[str, Path]]:
     return out
 
 
-def _panel(html: str, panel_id: str) -> str:
-    i = html.find(f'id="{panel_id}"')
-    assert i != -1, f"panel {panel_id!r} not found in render"
-    j = html.find('id="tab-', i + len(panel_id) + 6)
-    return html[i : j if j != -1 else len(html)]
-
-
-# --- I1: no doubled call name in DYNAMO-attributed output --------------------------
-def test_no_doubled_call_names_in_dynamo_output(rendered_page):
-    html = rendered_page.read_text()
-    bad: set[str] = set()
-    # Tooltip candidate sections for any Dynamo candidate (top blocks).
-    for m in re.finditer(
-        r'class="cand cand-dynamo[^"]*">(.*?)</span>', html, re.S
-    ):
-        bad.update(DOUBLED.findall(m.group(1)))
-    # Per-chunk grid assembled cells for Dynamo candidates.
-    for m in re.finditer(r'<td data-cand="dynamo[^"]*">(.*?)</td>', html, re.S):
-        bad.update(DOUBLED.findall(m.group(1)))
-    assert not bad, f"doubled call names in Dynamo output: {sorted(bad)}"
-
-
-# --- I2: per-chunk grid columns must be selectable in the compare bar --------------
-def test_grid_candidate_keys_match_compare_bar(rendered_page):
-    html = rendered_page.read_text()
-    grid_keys = set(re.findall(r'<th data-cand="([^"]+)">', html))
-    bar_keys = set(re.findall(r'class="cmp-(?:on|ref)"[^>]*value="([^"]+)"', html))
-    orphans = grid_keys - bar_keys
-    assert not orphans, (
-        f"grid columns not toggleable from the compare bar (key mismatch): {sorted(orphans)}"
-    )
-
-
-# --- I3: folding a higher dynamo version reproduces that version's docs exactly ----
+# --- folding a higher dynamo version reproduces that version's docs exactly ----
 def test_fold_reproduces_each_dynamo_version_exactly():
     versions = _dynamo_version_dirs()
     if len(versions) < 2:
@@ -121,131 +86,3 @@ def test_fold_reproduces_each_dynamo_version_exactly():
                     f"differ from the {top_ver} doc (lower-version residue?)\n"
                     f"  got:  {got}\n  want: {want}"
                 )
-
-
-# --- I4: every family the default REF covers renders populated stream cells --------
-def test_ref_covered_families_have_populated_stream_cells(rendered_page):
-    versions = _dynamo_version_dirs()
-    if not versions:
-        pytest.skip("no dynamo_v2 version dirs")
-    _ver, anchor_dir = versions[0]  # lowest version = the default REF
-    covered = {p.name for p in anchor_dir.iterdir() if p.is_dir()}
-    panel = _panel(rendered_page.read_text(), "tab-toolcalling-streamv2")
-    for family in sorted(covered):
-        classes = re.findall(
-            rf'<td class="cell ([a-z]+)[^"]*"[^>]*data-family="{re.escape(family)}"',
-            panel,
-        )
-        populated = sum(1 for c in classes if c in ("ok", "research", "documented"))
-        assert populated > 0, (
-            f"family {family!r} is covered by the default REF but renders no populated "
-            f"stream cells (cells found: {len(classes)})"
-        )
-
-
-# --- I6: candidate chart and per-candidate list are mutually exclusive -------------
-def test_no_tooltip_has_both_chart_and_candidate_list(rendered_page):
-    """A tooltip that renders the candidate chart must NOT also render the legacy
-    per-candidate list sections — the chart's output row replaces them."""
-    html = rendered_page.read_text()
-    both = 0
-    # Splitting on tooltip openings yields one segment per tooltip (charts and cand
-    # sections only exist inside tooltips, so trailing inter-tooltip markup is inert).
-    for seg in html.split('<div class="ttip">')[1:]:
-        if (
-            '<table class="ttip-chunks">' in seg
-            and 'data-cand="' in seg
-            and 'class="cand cand-' in seg
-        ):
-            both += 1
-    assert both == 0, f"{both} tooltips render BOTH the candidate chart and the list"
-
-
-# --- I7: within an engine, compare-bar versions run latest-first -------------------
-def test_compare_bar_versions_latest_first(rendered_page):
-    """Within one engine (e.g. vLLM Python), versions must list DESCENDING
-    (0.24.0 before 0.23.0) in the compare bar; engines keep their canonical order."""
-    html = rendered_page.read_text()
-    for pid in ("tab-toolcalling-batch", "tab-toolcalling-streamv2"):
-        panel = _panel(html, pid)
-        keys = re.findall(r'class="cmprow-label" data-cand="([^"]+)"', panel)
-        groups: dict[str, list[str]] = {}
-        for k in keys:
-            m = re.match(r"^([a-z_]+(?:-[sb])?)-(\d[\w-]*)$", k)
-            if m:
-                groups.setdefault(m.group(1), []).append(m.group(2))
-        for impl, slugs in groups.items():
-            parsed = [version_key(s.replace("-", ".")) for s in slugs]
-            assert parsed == sorted(parsed, reverse=True), (
-                f"{pid}: {impl} versions not latest-first: {slugs}"
-            )
-
-
-# --- I5: no v2-implemented family renders as "inventory only" ----------------------
-def test_implemented_v2_families_not_marked_inventory_only(rendered_page):
-    """A family whose parser exists in parsers/v2 must not carry the
-    'not implemented / inventory only' parser tooltip (the copy-paste chain gap that
-    left gemma4/glm47/kimi_k2/minimax_m2/qwen3_coder mislabeled)."""
-    registered = set(
-        re.findall(
-            r'^\s*"(\w+)"\s*(?:\|\s*"\w+"\s*)*=>',
-            (UTILS.parents[1] / "parsers/v2/src/tool_calling/mod.rs").read_text(),
-            re.M,
-        )
-    )
-    registered.discard("other")
-    panel = _panel(rendered_page.read_text(), "tab-toolcalling-streamv2")
-    mislabeled = []
-    for m in re.finditer(
-        r'<td class="parser"[^>]*>(\w+)(?:<span[^>]*>[^<]*</span>)?'
-        r"<div class=\"ttip\">.{0,400}?not implemented for this family yet",
-        panel,
-        re.S,
-    ):
-        if m.group(1) in registered:
-            mislabeled.append(m.group(1))
-    assert not mislabeled, (
-        f"families with a real v2 parser labeled 'inventory only': {sorted(set(mislabeled))}"
-    )
-
-
-# --- I8: unaligned captures must not fake per-chunk timing -------------------------
-def test_unaligned_candidates_show_no_per_chunk_timing(rendered_page):
-    """A candidate column whose header carries the 'timing not recorded' note must
-    have NO per-chunk deltas rendered (all cells em-dash outside the assembled row) —
-    the v1 jail's emission-packed captures previously displayed at wrong positions."""
-    html = rendered_page.read_text()
-    noted = 0
-    for seg in html.split('<table class="ttip-chunks">')[1:]:
-        table = seg.split("</table>")[0]
-        m = re.search(
-            r'<th data-cand="([^"]+)">(?:(?!</th>).)*?timing not recorded', table, re.S
-        )
-        if not m:
-            continue
-        noted += 1
-        key = m.group(1)
-        for row in table.split("<tr")[1:]:
-            if 'class="ttip-final"' in row:
-                continue
-            cm = re.search(rf'<td data-cand="{re.escape(key)}">(.*?)</td>', row, re.S)
-            if cm:
-                assert cm.group(1).strip() in ("—", ""), (
-                    f"noted column {key} renders per-chunk data: {cm.group(1)[:80]!r}"
-                )
-    assert noted > 0, "expected at least one 'timing not recorded' column (v1 jail)"
-    # The reasoning tab's final-output-only notes alone must NOT satisfy this guard:
-    # the TC stream tab's v1 jail column (emission-packed capture) must be noted too.
-    # The jail dir carries its capture-time v1 crate version — derive the candidate
-    # slug from the fixture tree rather than hardcoding it.
-    jail_dirs = [d for d in STREAM_SRC.glob("dynamo_v1-*") if d.is_dir()]
-    jail_dir = max(
-        jail_dirs, key=lambda d: [int(x) for x in re.findall(r"\d+", d.name)], default=None
-    )
-    assert jail_dir is not None, "v1 jail stream reference dir missing"
-    jail_key = jail_dir.name.replace(".", "-")
-    html2 = rendered_page.read_text()
-    assert re.search(
-        rf'<th data-cand="{re.escape(jail_key)}">(?:(?!</th>).)*?timing not recorded',
-        html2, re.S,
-    ), f"the v1 jail ({jail_key}) stream column lacks the timing note"

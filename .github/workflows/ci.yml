@@ -133,10 +133,9 @@ jobs:
       # live Cargo.toml), all peer versions present, no "not yet implemented", coloring
       # intact, and the model's structural invariants (DIS-2434). Reuse the HTML above.
       # See test_chart_invariants.py / test_model.py / test_stream_on_batch.py.
-      - name: Chart + model invariants
+      - name: Model + parser invariants
         run: |
           PATH="/tmp/pvenv/bin:$PATH" python3 -m pytest \
-            conformance/utils/tests/test_chart_invariants.py \
             conformance/utils/tests/test_model.py \
             conformance/utils/tests/test_stream_on_batch.py -q
 

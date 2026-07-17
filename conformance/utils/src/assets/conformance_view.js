@@ -69,6 +69,12 @@
   // thousands of per-cell listeners.
   var _ttipModels = {};
   var _ttipSeq = 0;
+  // Whether this page carries a reference-aware not-implemented map (v2 only); gates
+  // `data-family` emission so the v1 overview count matches its server render.
+  var _usesFamily = false;
+  // Per-page summary legend (the "green(N)…" strip under the grid); each generator
+  // supplies its own HTML so the legacy v1 page keeps its "match Base" wording.
+  var _summaryLegendHtml = null;
 
   function registerTooltip(td, model) {
     var id = String(++_ttipSeq);
@@ -386,9 +392,13 @@
     // kind 'cell' or 'missing': a real (comparable) cell.
     td.className = ('cell ' + (cell.band || '')).trim();
     td.setAttribute('data-col-hide-group', cell.col_group || '');
-    // data-family is always present (even ""), so the compare engine can tell a
-    // "not implemented for family X" case apart from a case-level n/a.
-    td.setAttribute('data-family', cell.family || '');
+    // data-family drives ONLY the reference-aware "not implemented for family X" note
+    // (the PARSER_NI path). Emit it only on pages that carry a parser_ni map (the v2
+    // page) — on the v1 page it has no consumer and would make applyCtl count every
+    // no-cmp missing cell as n/a (inflating the overview count vs the server render).
+    if (_usesFamily) {
+      td.setAttribute('data-family', cell.family || '');
+    }
     if (cell.cmp) {
       // setAttribute stores the raw JSON; getAttribute (conformance.js) returns it
       // verbatim for JSON.parse — no manual attribute escaping needed.
@@ -500,6 +510,9 @@
   // Copied verbatim from conformance_table.html.j2 so conformance.js finds the
   // same data-overview-count spans it writes tallies into.
   function summaryLegendHtml() {
+    // Prefer the page-supplied summary legend (each generator emits its own so the v1
+    // "match Base" wording + its stats line survive); fall back to the v2 text.
+    if (_summaryLegendHtml) { return _summaryLegendHtml; }
     return '<p class="legend summary-only">'
       + '<span class="summary-key ok" aria-hidden="true"></span>green(<span data-overview-count="ok">0</span>)'
       + ' = selected implementation output is clean · '
@@ -604,6 +617,9 @@
     if (!modelEl) { return; }  // server HTML already present; nothing to build.
     var page = JSON.parse(modelEl.textContent);
     if (!page || !page.tabs || !page.tabs.length) { return; }
+
+    _usesFamily = !!(page.parser_ni && Object.keys(page.parser_ni).length);
+    _summaryLegendHtml = (page.meta && page.meta.summary_legend_html) || null;
 
     var multiTab = page.tabs.length > 1;
     var newNodes = [];

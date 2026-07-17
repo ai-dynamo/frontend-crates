@@ -481,6 +481,10 @@ def test_reasoning_tabs_use_candidate_chart(driver):
 def test_tooltip_builds_lazily_on_first_interaction(driver):
     """A data cell's `.ttip` is EMPTY until first interaction (DIS-2434 lazy popups),
     then builds a candidate chart with per-candidate columns."""
+    # The module-scoped driver is shared, so a prior test may have already built this
+    # tab's tooltips; reload to a fresh DOM where nothing has been interacted with.
+    driver.refresh()
+    time.sleep(1.0)
     _open_tab(driver, "toolcalling-batch")
     before = driver.execute_script(
         """

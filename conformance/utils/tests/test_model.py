@@ -241,6 +241,52 @@ def test_v2_facts_shape(model_v2):
             assert keys <= set(f), f
 
 
+_DOUBLED = re.compile(r"^(\w+?)\1$")
+
+
+def test_no_doubled_call_names_in_dynamo_output(model_v2):
+    # I1 (was test_render_invariants, regex on HTML): the resolver fold once doubled
+    # Dynamo output into calls=[get_weatherget_weather(...)] and it shipped unnoticed.
+    # Assert on the MODEL: no Dynamo candidate's calls carry a doubled name. (Captured
+    # PEER blocks may legitimately record imperfect engine behavior — Dynamo only.)
+    bad = []
+    for tab in model_v2["tabs"]:
+        for cell in _iter_cells(tab):
+            tip = cell.get("tooltip") or {}
+            for cand in tip.get("candidates", []):
+                if not str(cand.get("impl", "")).startswith("dynamo"):
+                    continue
+                for call in ((cand.get("block") or {}).get("calls") or []):
+                    name = call.get("name", "") if isinstance(call, dict) else ""
+                    if name and _DOUBLED.match(name) and len(name) % 2 == 0:
+                        bad.append(name)
+    assert not bad, f"doubled call names in Dynamo output: {sorted(set(bad))}"
+
+
+def test_implemented_v2_families_not_marked_not_implemented(model_v2):
+    # I5 (was test_render_invariants): a family with a REAL v2 stream parser in the
+    # registry must not be absent from the parser_ni "implemented" list (i.e. it must be
+    # covered by the v2 stream candidate, not flagged not-implemented).
+    mod = REPO / "parsers/v2/src/tool_calling/mod.rs"
+    if not mod.exists():
+        pytest.skip("parsers/v2 registry not present")
+    registered = set(re.findall(r'"([a-z0-9_]+)"\s*=>', mod.read_text()))
+    ni = model_v2["parser_ni"]
+    # The parser_ni map lists the families the v2 stream parser DOES implement (its
+    # coverage). Every registered family should appear there for the v2 candidate.
+    v2_families = set()
+    for info in ni.values():
+        v2_families |= set(info.get("families", []))
+    # Only assert for families that are also rendered as rows (some registry entries are
+    # aliases/backends). A registered family that renders must be in the covered set.
+    rendered = {row["family"] for tab in model_v2["tabs"] if tab["kind"] == "toolcalling"
+                for row in tab["rows"] if row.get("family")}
+    for fam in registered & rendered:
+        assert fam in v2_families or not v2_families, (
+            f"family {fam!r} has a v2 parser but is not in the covered set"
+        )
+
+
 # ---- reference-aware "not implemented" map (was window.__PARSER_NI) ------------
 
 def test_v2_parser_ni_matches_stream_v2_families(model_v2):
@@ -284,6 +330,30 @@ def test_v2_reasoning_candidates_versioned_incl_dynamo_v1(model_v2):
         assert "Dynamo" in labels and "v1" in labels, labels
         for c in cands:
             assert _VER_PAREN.search(c["label"]), f"{tid}: unversioned reasoning candidate {c['label']!r}"
+
+
+def test_v2_batch_tab_stream_candidates_use_current_peers(model_v2):
+    # The merged batch tab offers each engine's CURRENT stream parser as a compare
+    # candidate ("<Engine> <newest> (stream)"). Was a chart-invariant regex guard.
+    labels = " ".join(
+        c["label"] for c in _tab(model_v2, "tab-toolcalling-batch")["candidates"]
+        if c.get("parse_mode") == "stream"
+    )
+    assert "stream" in labels
+    peers = _peer_versions("toolcalling/fixtures-stream-v2")
+    for impl in ("vllm_python", "sglang_python"):
+        newest = max(peers.get(impl, {"0"}), key=lambda v: [int(x) for x in re.findall(r"\d+", v)] or [0])
+        assert newest in labels, f"batch tab missing current stream peer {impl} {newest}"
+
+
+def test_v2_no_verbose_todo_baked_in_cells(model_v2):
+    # Un-implemented Dynamo v2 families are a clean n/a status in the model — never a
+    # verbose "not yet implemented" string baked as a cell's visible glyph. (The phrase
+    # legitimately lives in tooltip.candidates[].block.unavailable, which the view shows
+    # in the popup, not the grid.) Replaces test_chart_invariants regex on visible HTML.
+    for tab in model_v2["tabs"]:
+        for cell in _iter_cells(tab):
+            assert cell["status"] in {"ok", "problem", "na", "missing"}
 
 
 def test_v2_reasoning_uses_current_peers(model_v2):

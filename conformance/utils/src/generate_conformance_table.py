@@ -3925,24 +3925,15 @@ def render_combined_html(
         artifact_root,
         "tests/parity/CONFORMANCE.html",
     )
-    hrefs = common.set_links(resolved_output_path, artifact_root)
-    panels = [
-        *_combined_toolcalling_panels(hrefs),
-        *_combined_reasoning_panels(hrefs),
-    ]
-    panels[0]["active"] = True
-    # Color the trailing (batch)/(stream) mode word in every compare candidate label.
-    for panel in panels:
-        for cand in panel.get("candidates", []):
-            cand["label_html"] = _candidate_label_html(cand["label"])
+    common.set_links(resolved_output_path, artifact_root)
 
     now = datetime.datetime.now(zoneinfo.ZoneInfo("America/Los_Angeles"))
     stamp = now.strftime("%Y-%m-%d %H:%M %Z")
     sha = _commit_sha()
 
-    # DIS-2434: the JSON data model (phases 1-2 emit it alongside the Python-rendered
-    # HTML; phase 3 the JS view renders solely from it). Built from the SAME loaded
-    # cases + comparison semantics as the panels above.
+    # DIS-2434: the page is now rendered ENTIRELY by the JS view from this JSON model —
+    # the Python HTML emitters (render_html_panel/render_cell_html/tooltip builders) are
+    # gone; the template emits a skeleton and the model blob, the view builds the DOM.
     page_model = build_combined_model(
         output_path=output_path, artifact_root=artifact_root, stamp=stamp, sha=sha)
     model_json = _model.to_script_json(page_model)
@@ -3957,17 +3948,15 @@ def render_combined_html(
             conformance_css=_read_asset("conformance.css"),
             conformance_js=_read_asset("conformance.js"),
             conformance_view_js=_read_asset("conformance_view.js"),
-            impl_status_css=_impl_status_css(),
             sha=sha,
             short_sha=sha[:12] if sha else "",
             command="conformance/utils/render_table_v2.sh",
             output=_display_path(resolved_output_path, artifact_root),
-            tabs=[_tab_button(panel) for panel in panels],
-            panels=panels,
-            impl_versions=_impl_version_items(),
-            candidate_items=_candidate_items(),
+            tabs=[],
+            panels=[],
             parser_ni_json=json.dumps(_parser_ni_map()),
             model_json=model_json,
+            js_view=True,
         )
     )
     return _scrub_visible_conformance_text(html)

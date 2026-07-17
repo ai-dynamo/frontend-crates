@@ -5,7 +5,6 @@
 <title>{{ title|e }}</title>
 <style>
 {{ conformance_css|safe }}
-{{ impl_status_css|safe }}
 </style>
 </head>
 <body class="view-overview parser-dynamo_rust cmp-loading">
@@ -15,6 +14,10 @@
   Auto-generated on {{ stamp|e }}{% if sha %} on commit <a href="https://github.com/ai-dynamo/frontend-crates/commit/{{ sha|e }}"><code>{{ short_sha|e }}</code></a>{% endif %}:
   <code>{{ command|e }} &gt; {{ output|e }}</code>
 </p>
+{% if not js_view %}
+{# DIS-2434: when the JS view is active it builds the tabs + panels from the inlined
+   model blob; the server emits only the page skeleton here. Kept behind a flag so the
+   single-mode/family-filter dev renders (no model) still get the server-rendered table. #}
 {% if tabs|length > 1 %}
 <div class="tabs" role="tablist">
 {% for tab in tabs %}
@@ -148,6 +151,7 @@
 {% endif %}
 </section>
 {% endfor %}
+{% endif %}{# not js_view #}
 {% if model_json is defined and model_json %}
 <script type="application/json" id="conformance-model">{{ model_json|safe }}</script>
 {% endif %}

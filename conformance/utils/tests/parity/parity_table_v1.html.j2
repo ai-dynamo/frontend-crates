@@ -21,6 +21,8 @@ td.cell { text-align: center; min-width: 24px; font-weight: 400; }
 {% if intro_html is defined and intro_html %}
 {{ intro_html|safe }}
 {% endif %}
+{% if not js_view %}
+{# DIS-2434: the JS view builds tabs + panels from the inlined model when active. #}
 {% if tabs|length > 1 %}
 <div class="tabs" role="tablist">
 {% for tab in tabs %}
@@ -148,6 +150,7 @@ td.cell { text-align: center; min-width: 24px; font-weight: 400; }
 {% endif %}
 </section>
 {% endfor %}
+{% endif %}{# not js_view #}
 {% if model_json is defined and model_json %}
 <script type="application/json" id="conformance-model">{{ model_json|safe }}</script>
 {% endif %}

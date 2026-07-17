@@ -162,24 +162,37 @@ def build_combined_model(stamp: str, sha: str | None) -> dict:
         })
         tabs.append(tab)
     tabs[0]["active"] = True
+    # The v1 PARITY page keeps its own "match Base" summary legend + stats line (the v2
+    # page uses the JS view's default text). data-overview-count spans are filled by
+    # applyCtl. Mirrors the summary-only block in parity_table_v1.html.j2.
+    v1_summary_legend = (
+        '<p class="legend summary-only"><strong>Overview:</strong> '
+        '<span class="summary-key ok" aria-hidden="true"></span>green = selected candidates match Base · '
+        '<span class="summary-key problem" aria-hidden="true"></span>red = Base leaks parser markup · '
+        '<span class="summary-key na" aria-hidden="true"></span>gray = not applicable, unavailable, or missing fixture.</p>'
+        '<p class="stats summary-only">Stats for selected comparison: '
+        '<span style="color:#0a7d2c" data-overview-count="ok">0</span> green · '
+        '<span style="color:#b00" data-overview-count="problem">0</span> red · '
+        '<span style="color:#555" data-overview-count="na">0</span> gray.</p>'
+    )
     meta = {"title": "Dynamo Parser Parity Table", "stamp": stamp, "sha": sha,
             "short_sha": sha[:12] if sha else "",
             "command": "python3 tests/parity/generate_parity_table.py all --html",
             "output": "tests/parity/PARITY.html",
+            "summary_legend_html": v1_summary_legend,
             "generated_by": "generate_parity_table_v1.build_combined_model"}
     return model.build_page(meta, tabs, parser_ni={}, legend_html="")
 
 
 def render_combined_html() -> str:
     common.set_links(_PUBLISHED_OUTPUT, REPO_ROOT)
-    panels = [*_combined_toolcalling_panels(), *_combined_reasoning_panels()]
-    panels[0]["active"] = True
 
     now = datetime.datetime.now(zoneinfo.ZoneInfo("America/Los_Angeles"))
     stamp = now.strftime("%Y-%m-%d %H:%M %Z")
     sha = toolcalling_table._commit_sha()
 
-    # DIS-2434: the JSON data model, emitted as an inlined blob alongside the HTML.
+    # DIS-2434: the page is rendered entirely by the JS view from this JSON model; the
+    # template emits a skeleton + the model blob (no server-rendered tabs/panels).
     model_json = model.to_script_json(build_combined_model(stamp, sha))
 
     return (
@@ -192,13 +205,14 @@ def render_combined_html() -> str:
             short_sha=sha[:12] if sha else "",
             command="python3 tests/parity/generate_parity_table.py all --html",
             output="tests/parity/PARITY.html",
-            tabs=[_tab_button(panel) for panel in panels],
-            panels=panels,
+            tabs=[],
+            panels=[],
             peer_versions=toolcalling_table._peer_version_items(
                 toolcalling_table._peer_versions()
             ),
             peer_versions_href=common.LINKS["pyproject_stub"],
             model_json=model_json,
+            js_view=True,
         )
     )
 
