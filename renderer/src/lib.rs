@@ -36,10 +36,12 @@ use std::sync::Arc;
 pub use dynamo_tokenizers;
 
 pub mod deepseek;
+pub mod inkling;
 mod template;
 
 pub use template::{
     ChatTemplate, ChatTemplateValue, ContextMixins, deepseek_formatter_for, may_be_fix_tool_schema,
+    native_formatter_for,
 };
 
 /// Selects which context-mixin behaviors a template renders with.
@@ -110,6 +112,12 @@ pub trait OAIChatLikeRequest {
         None
     }
     fn response_format(&self) -> Option<Value> {
+        None
+    }
+
+    /// OpenAI-compatible reasoning-effort control, when the request type
+    /// exposes it as a top-level field.
+    fn reasoning_effort(&self) -> Option<Value> {
         None
     }
 
