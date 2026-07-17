@@ -28,6 +28,9 @@ from tests.parity import common  # noqa: E402
 from tests.parity.reasoning import table as reasoning_table  # noqa: E402
 from tests.parity.toolcalling import table as toolcalling_table  # noqa: E402
 
+import model  # noqa: E402  (DIS-2434 JSON model: schema + serialization)
+import re as _re
+
 # Published location of the v1 PARITY page (rendered into .stage/, then copied to
 # conformance/PARITY.html). Links resolve relative to this destination.
 _PUBLISHED_OUTPUT = REPO_ROOT / "conformance" / "PARITY.html"
@@ -101,6 +104,72 @@ def _combined_reasoning_panels() -> list[dict[str, Any]]:
     return panels
 
 
+_MODE_PAREN_RE = _re.compile(r"\(([^)]*)\)\s*$")
+_LABEL_VERSION_RE = _re.compile(r"(\d[\w.]*)\s*\([^)]*\)\s*$")
+
+
+def _candidate_model(items: list[dict]) -> list[dict]:
+    out = []
+    for it in items:
+        key = it["key"]
+        label = it["label"]
+        m = _MODE_PAREN_RE.search(label)
+        pm = None
+        if m:
+            pm = "stream" if "stream" in m.group(1) else ("batch" if "batch" in m.group(1) else None)
+        vm = _LABEL_VERSION_RE.search(label)
+        grp = next((p for p in ("dynamo", "vllm", "sglang") if key.startswith(p)), key)
+        out.append({"key": key, "impl": grp, "label": label,
+                    "label_html": html_lib.escape(label),
+                    "default_bucket": it.get("default_bucket", "C"),
+                    "version": it.get("version") or (vm.group(1) if vm else None),
+                    "parse_mode": pm})
+    return out
+
+
+def build_combined_model(stamp: str, sha: str | None) -> dict:
+    """Whole-page JSON model for the v1 PARITY page (DIS-2434), same schema as v2."""
+    r_rows, r_columns, r_refs = reasoning_table._load()
+    r_no_vllm, r_no_sglang = reasoning_table._derive_no_peer_sets(r_rows)
+    tabs: list[dict] = []
+    for mode in ("batch", "stream"):
+        tab = toolcalling_table.build_model_panel(mode)
+        tab.update({
+            "label": f"TC {mode}", "label_html": f"TC {mode}",
+            "tab_title": f"Tool Calling {mode}",
+            "case_prefix": f"TOOLCALLING.{mode}.", "case_section_id": f"toolcalling-{mode}",
+            "case_docs_href": common.LINKS["toolcalling_cases"],
+            "case_docs_label": "lib/parsers/TOOLCALLING_CASES.md",
+            "candidates": _candidate_model(tab.get("candidates", [])),
+            "captured_note": "", "toolbar_desc_html": None, "details_note_html": None,
+            "active": False,
+        })
+        tabs.append(tab)
+    for mode in ("batch", "stream"):
+        mode_columns = reasoning_table._columns_for_mode(r_columns, mode)
+        tab = reasoning_table.build_model_panel(
+            r_rows, mode_columns, r_refs, r_no_vllm, r_no_sglang, mode=mode, active=False)
+        tab.update({
+            "id": f"tab-reasoning-{mode}",
+            "label": f"Reasoning {mode}", "label_html": f"Reasoning {mode}",
+            "tab_title": f"Reasoning {mode}",
+            "case_prefix": "REASONING.", "case_section_id": f"reasoning-{mode}",
+            "case_docs_href": common.LINKS["reasoning_cases"],
+            "case_docs_label": "lib/parsers/REASONING_CASES.md",
+            "candidates": _candidate_model(tab.get("candidates", [])),
+            "captured_note": "", "toolbar_desc_html": None, "details_note_html": None,
+            "active": False,
+        })
+        tabs.append(tab)
+    tabs[0]["active"] = True
+    meta = {"title": "Dynamo Parser Parity Table", "stamp": stamp, "sha": sha,
+            "short_sha": sha[:12] if sha else "",
+            "command": "python3 tests/parity/generate_parity_table.py all --html",
+            "output": "tests/parity/PARITY.html",
+            "generated_by": "generate_parity_table_v1.build_combined_model"}
+    return model.build_page(meta, tabs, parser_ni={}, legend_html="")
+
+
 def render_combined_html() -> str:
     common.set_links(_PUBLISHED_OUTPUT, REPO_ROOT)
     panels = [*_combined_toolcalling_panels(), *_combined_reasoning_panels()]
@@ -109,6 +178,9 @@ def render_combined_html() -> str:
     now = datetime.datetime.now(zoneinfo.ZoneInfo("America/Los_Angeles"))
     stamp = now.strftime("%Y-%m-%d %H:%M %Z")
     sha = toolcalling_table._commit_sha()
+
+    # DIS-2434: the JSON data model, emitted as an inlined blob alongside the HTML.
+    model_json = model.to_script_json(build_combined_model(stamp, sha))
 
     return (
         toolcalling_table._make_jinja_env()
@@ -126,6 +198,7 @@ def render_combined_html() -> str:
                 toolcalling_table._peer_versions()
             ),
             peer_versions_href=common.LINKS["pyproject_stub"],
+            model_json=model_json,
         )
     )
 

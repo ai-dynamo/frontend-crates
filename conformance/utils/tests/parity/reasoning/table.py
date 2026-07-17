@@ -2539,6 +2539,214 @@ def _html_panel(
     }
 
 
+# ===== Structured JSON model builders (DIS-2434) ================================
+# Same-schema model tab as the toolcalling path (model.make_cell); the reasoning
+# verdict/comparison semantics stay here (this module's _cell/_overview_status/
+# _reasoning_cmp_json), so nothing is reimplemented in JS.
+import model  # noqa: E402  (schema + cell normalizer; leaf module staged alongside)
+
+_REASONING_IMPLS = ("dynamo_v1", "vllm_python", "sglang_python")
+
+
+def _cand_engine_group(key: str) -> str:
+    for prefix in ("dynamo", "vllm", "sglang"):
+        if key.startswith(prefix):
+            return prefix
+    return key
+
+
+def _reasoning_output_model(blk: object) -> dict | None:
+    if not isinstance(blk, dict):
+        return None
+    out: dict[str, Any] = {}
+    if "unavailable" in blk:
+        out["unavailable"] = blk["unavailable"]
+    if "error" in blk:
+        out["error"] = blk["error"]
+    if "reasoning_text" in blk or "normal_text" in blk:
+        out["reasoning_text"] = blk.get("reasoning_text") or ""
+        out["normal_text"] = blk.get("normal_text") or ""
+    expl = _explanation(blk)
+    if expl:
+        out["explanation"] = expl
+    return out or None
+
+
+def _reasoning_facts(case: dict[str, Any], family: str | None) -> list[dict]:
+    expected = case.get("expected") if isinstance(case, dict) else None
+    expected = expected if isinstance(expected, dict) else {}
+    dyn = expected.get("dynamo_v1")
+    dyn_canon = _canonical(dyn) if isinstance(dyn, dict) and "unavailable" not in dyn and "error" not in dyn else None
+    facts = []
+    for impl in _REASONING_IMPLS:
+        blk = expected.get(impl)
+        concrete = isinstance(blk, dict) and "unavailable" not in blk and "error" not in blk
+        if impl == "dynamo_v1":
+            agrees: bool | None = True
+        elif not concrete or dyn_canon is None:
+            agrees = None
+        else:
+            agrees = _canonical(blk) == dyn_canon
+        reason = _explanation(blk) if isinstance(blk, dict) else None
+        facts.append({
+            "impl": impl,
+            "status": _overview_status(case, family, impl),
+            "present": concrete,
+            "agrees": agrees,
+            "intentional": reason is not None,
+            "reason": reason,
+            "leak": bool(_block_leak_reason(blk, family)) if isinstance(blk, dict) else False,
+            "error_kind": (
+                "expected_error" if (isinstance(blk, dict) and "error" in blk)
+                else ("unavailable" if (isinstance(blk, dict) and "unavailable" in blk) else None)
+            ),
+        })
+    return facts
+
+
+def _reasoning_cell_model(
+    case: dict[str, Any] | None,
+    family: str,
+    case_id: str,
+    refs: dict[tuple[str, str], Path],
+    mode: str,
+    display_family: str | None = None,
+) -> dict:
+    group_key = _case_group_key(case_id)
+    band = _case_band_class(case_id)
+    head = f"{case_id} — {display_family or family}"
+    if case is None:
+        return model.missing_cell(case_id, family, group_key, band, head=head)
+    href = common.fixture_href(
+        "reasoning/fixtures/"
+        + Path(os.path.relpath(refs[(family, case_id)], FIXTURES)).as_posix()
+    )
+    cmp_raw = _reasoning_cmp_json(case, family)
+    cmp = json.loads(html_lib.unescape(cmp_raw)) if cmp_raw else None
+    expected = case.get("expected") if isinstance(case, dict) else None
+    candidates = []
+    if isinstance(expected, dict):
+        for impl in _REASONING_IMPLS:
+            if impl not in expected:
+                continue
+            candidates.append({
+                "key": impl,
+                "label": _reasoning_cand_label(impl, mode),
+                "impl": _cand_engine_group(impl),
+                "version": _reasoning_version_by_impl().get(impl),
+                "parse_mode": mode,
+                "block": _reasoning_output_model(expected.get(impl)),
+                "leak": bool(_block_leak_reason(expected.get(impl), family)),
+            })
+    reasons = [
+        {"impl": f["impl"], "label": _REASONING_ENGINE_RUNTIME.get(f["impl"], f["impl"]),
+         "reason": f["reason"], "intentional": f["intentional"]}
+        for f in _reasoning_facts(case, family)
+        if f["impl"] != "dynamo_v1" and f["agrees"] is False and f["reason"]
+    ]
+    model_text = case.get("model_text")
+    tooltip = {
+        "head": head,
+        "description": case.get("description") or "",
+        "input": {"kind": "text" if model_text else None, "text": model_text,
+                  "chunks": None, "family": family},
+        "candidates": candidates,
+        "baseline": None,
+        "reasons": reasons,
+        "dynamo_notes": [],
+        "refs": [r for r in (("Ref", case.get("ref")), ("Spec ref", case.get("spec_ref"))) if r[1]],
+        "leak_note": None,
+        "na_note": _explanation(case) if "expected" not in case else None,
+    }
+    return model.make_cell(
+        kind="cell", case_id=case_id, family=family, sub=case_id,
+        col_group=group_key, band=band, fixture_href=href,
+        status=_overview_status(case, family, "dynamo_v1"),
+        cmp=cmp, facts=_reasoning_facts(case, family), tooltip=tooltip,
+    )
+
+
+def _reasoning_columns_model(columns: list[str], descriptions: dict[str, str]) -> tuple[list[dict], list[dict]]:
+    groups: list[dict] = []
+    cols: list[dict] = []
+    for run in _case_runs(columns):
+        gk = _case_group_key(run[0])
+        groups.append({"key": gk, "label": _case_group_label(run[0]),
+                       "band": _case_band_class(run[0]), "span": len(run)})
+        for case_id in run:
+            cols.append({"sub": case_id, "group_key": gk,
+                         "band": _case_band_class(case_id),
+                         "label": _display_case_id(case_id),
+                         "desc": descriptions.get(case_id) or descriptions.get(case_id.split(".")[0]) or ""})
+    return groups, cols
+
+
+def build_model_panel(
+    rows: dict[str, dict[str, Any]],
+    columns: list[str],
+    refs: dict[tuple[str, str], Path],
+    no_vllm: set[str],
+    no_sglang: set[str],
+    *,
+    mode: str,
+    active: bool,
+) -> dict:
+    """Reasoning tab as a structured model dict (schema shared with toolcalling)."""
+    descriptions = _parse_case_descriptions()
+    top_n, others, reasoning_only = _build_display_groups(rows)
+    display_rows = [*top_n, *others, *reasoning_only]
+    column_groups, cols = _reasoning_columns_model(columns, descriptions)
+    model_rows: list[dict] = []
+    for label, section_rows in (("Top-N models", top_n), ("Others", others), ("Reasoning-only", reasoning_only)):
+        if not section_rows:
+            continue
+        model_rows.append({"section": label, "model_label": label, "model_label_html": "",
+                           "family": None, "parser": None, "cells": {}})
+        for row in section_rows:
+            tool_family = row["tool_family"]
+            reasoning_family = row["reasoning_family"]
+            cells: dict[str, dict] = {}
+            for case_id in columns:
+                if reasoning_family is None:
+                    cells[case_id] = model.make_cell(
+                        kind="cell", case_id=case_id, family=tool_family, sub=case_id,
+                        col_group=_case_group_key(case_id), band=_case_band_class(case_id),
+                        status="na",
+                        tooltip={"head": case_id, "description": "", "input": {"kind": None},
+                                 "candidates": [], "baseline": None, "reasons": [],
+                                 "dynamo_notes": [], "refs": [], "leak_note": None,
+                                 "na_note": "No reasoning parser for this family."},
+                    )
+                else:
+                    cases = rows[reasoning_family]["cases"]
+                    display_family = _display_reasoning_family(tool_family, reasoning_family)
+                    cells[case_id] = _reasoning_cell_model(
+                        cases.get(case_id), reasoning_family, case_id, refs, mode,
+                        display_family=display_family,
+                    )
+            model_rows.append({
+                "section": None,
+                "model_label": str(row["model_label"]),
+                "model_label_html": _model_label_html(str(row["model_label"])),
+                "family": reasoning_family or tool_family,
+                "parser": {"html": _parser_cell_html(tool_family, reasoning_family, no_vllm, no_sglang)},
+                "cells": cells,
+            })
+    return {
+        "id": f"tab-{mode}",
+        "kind": "reasoning",
+        "mode": mode,
+        "label": _mode_label(mode),
+        "active": active,
+        "column_groups": column_groups,
+        "columns": cols,
+        "rows": model_rows,
+        "stats": _compute_stats(rows, columns, display_rows),
+        "glossary": _glossary_groups(descriptions, columns),
+        "candidates": _panel_candidates(rows, columns, display_rows, mode),
+    }
+
+
 def _html(
     rows: dict[str, dict[str, Any]],
     columns: list[str],

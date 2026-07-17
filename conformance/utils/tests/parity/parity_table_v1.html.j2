@@ -148,8 +148,16 @@ td.cell { text-align: center; min-width: 24px; font-weight: 400; }
 {% endif %}
 </section>
 {% endfor %}
+{% if model_json is defined and model_json %}
+<script type="application/json" id="conformance-model">{{ model_json|safe }}</script>
+{% endif %}
 <script>
 {{ conformance_js }}
 </script>
+{% if conformance_view_js is defined and conformance_view_js %}
+<script>
+{{ conformance_view_js }}
+</script>
+{% endif %}
 </body>
 </html>

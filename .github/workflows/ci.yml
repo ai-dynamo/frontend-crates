@@ -128,14 +128,16 @@ jobs:
           echo "conformance matrix rendered: $(wc -c < "$OUT") bytes"
           cp "$OUT" conformance/utils/CONFORMITY.html
 
-      # Structural regression guard on the rendered charts: parser selectors present,
-      # every candidate versioned from fixture provenance (not the live Cargo.toml),
-      # all peer versions present, no "not yet implemented", coloring intact. Reuses the
-      # HTML rendered above. See conformance/utils/tests/test_chart_invariants.py.
-      - name: Chart invariants
+      # Structural regression guards on the rendered charts + JSON data model: parser
+      # selectors present, every candidate versioned from fixture provenance (not the
+      # live Cargo.toml), all peer versions present, no "not yet implemented", coloring
+      # intact, and the model's structural invariants (DIS-2434). Reuse the HTML above.
+      # See test_chart_invariants.py / test_model.py / test_stream_on_batch.py.
+      - name: Chart + model invariants
         run: |
           PATH="/tmp/pvenv/bin:$PATH" python3 -m pytest \
             conformance/utils/tests/test_chart_invariants.py \
+            conformance/utils/tests/test_model.py \
             conformance/utils/tests/test_stream_on_batch.py -q
 
       - name: Upload conformance matrix

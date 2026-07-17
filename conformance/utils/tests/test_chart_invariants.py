@@ -80,6 +80,18 @@ def _peer_versions(tree: str) -> dict[str, set[str]]:
     return out
 
 
+def _strip_model_blob(html: str) -> str:
+    """Drop the inlined `<script type="application/json" id="conformance-model">` data
+    blob (DIS-2434). These legacy guards assert on the VISIBLE page HTML; the model blob
+    is machine data the JS view consumes (its `explanation`/`unavailable` fields legitimately
+    contain strings like "not yet implemented") and must not be scanned as page text. The
+    structural guards on the model itself live in test_model.py."""
+    return re.sub(
+        r'<script type="application/json" id="conformance-model">.*?</script>',
+        "", html, flags=re.S,
+    )
+
+
 @pytest.fixture(scope="module")
 def charts() -> dict[str, str]:
     """Render both charts once (or reuse the CI job's output if already present)."""
@@ -93,7 +105,10 @@ def charts() -> dict[str, str]:
         subprocess.run(
             [str(UTILS / "render_table_v2.sh")], check=True, capture_output=True, cwd=REPO
         )
-    return {"v1": v1_path.read_text(encoding="utf-8"), "v2": v2_path.read_text(encoding="utf-8")}
+    return {
+        "v1": _strip_model_blob(v1_path.read_text(encoding="utf-8")),
+        "v2": _strip_model_blob(v2_path.read_text(encoding="utf-8")),
+    }
 
 
 def _panel(html: str, panel_id: str, all_ids: tuple[str, ...]) -> str:

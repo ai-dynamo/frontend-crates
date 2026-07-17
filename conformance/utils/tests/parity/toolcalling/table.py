@@ -1977,6 +1977,145 @@ def _load_html_panel(
     )
 
 
+# ===== Structured JSON model builder (DIS-2434, v1 PARITY page) =================
+# Same-schema model tab as the v2 toolcalling path (model.make_cell). The v1 fork
+# keeps its own comparison semantics here (this module's _overview_status / cmp /
+# _candidate_sig); phase 3 unifies both pages onto one model.py path.
+import model  # noqa: E402  (schema + cell normalizer; leaf module staged alongside)
+
+
+def _cand_engine_group_tc(key: str) -> str:
+    for prefix in ("dynamo", "vllm", "sglang"):
+        if key.startswith(prefix):
+            return prefix
+    return key
+
+
+def _v1_output_block_model(blk: object) -> dict | None:
+    if not isinstance(blk, dict):
+        return None
+    out: dict[str, Any] = {}
+    if "unavailable" in blk:
+        out["unavailable"] = blk["unavailable"]
+    if "error" in blk:
+        out["error"] = blk["error"]
+    if "calls" in blk or "normal_text" in blk:
+        out["calls"] = blk.get("calls") or []
+        out["normal_text"] = blk.get("normal_text") or ""
+    expl = _explanation(blk)
+    if expl:
+        out["explanation"] = expl
+    return out or None
+
+
+def _v1_columns_model(mode: str, sub_cases: list[str], descriptions: dict[str, str]) -> tuple[list[dict], list[dict]]:
+    groups: list[dict] = []
+    cols: list[dict] = []
+    for run in _subcase_runs(mode, sub_cases):
+        gk = _subcase_group_key(mode, run[0])
+        groups.append({"key": gk, "label": _subcase_group_label(mode, run[0]),
+                       "band": _subcase_band_class(mode, run[0]), "span": len(run)})
+        for sub in run:
+            cols.append({"sub": sub, "group_key": gk, "band": _subcase_band_class(mode, sub),
+                         "label": sub,
+                         "desc": descriptions.get(sub) or descriptions.get(sub.split(".")[0]) or ""})
+    return groups, cols
+
+
+def _v1_cell_model(case: dict | None, mode: str, family: str, sub: str,
+                   cand_label_by_key: dict[str, str]) -> dict:
+    group_key = _subcase_group_key(mode, sub)
+    band = _subcase_band_class(mode, sub)
+    if case is None:
+        return model.missing_cell(sub, family, group_key, band,
+                                  head=f"TOOLCALLING.{mode}.{sub}")
+    ver = case.get("__ver_status") or {}
+    cmp_raw = _candidate_cmp_json(case)
+    cmp = json.loads(html_lib.unescape(cmp_raw)) if cmp_raw else None
+    candidates = []
+    for impl in ("dynamo_v1", "vllm_python", "sglang_python"):
+        for slug, info in (ver.get(impl) or {}).items():
+            key = f"{impl}-{slug}"
+            candidates.append({
+                "key": key, "label": cand_label_by_key.get(key, key),
+                "impl": _cand_engine_group_tc(key), "version": info.get("version"),
+                "parse_mode": mode, "block": _v1_output_block_model(info.get("block")),
+                "leak": isinstance(info.get("block"), dict) and _block_tool_call_leaks(info["block"]),
+            })
+    facts = [{"impl": impl, "status": _overview_status(case, impl), "present": None,
+              "agrees": None, "intentional": None, "reason": None, "leak": False,
+              "error_kind": None} for impl in _VERSION_IMPLS]
+    fp = case.get("__fixture_path", "")
+    href = common.fixture_href(fp) if fp else None
+    tooltip = {
+        "head": f"{case.get('__case_id','')} — {family}",
+        "description": case.get("description") or "",
+        "input": {"kind": "text" if case.get("model_text") else None,
+                  "text": case.get("model_text"), "chunks": None, "family": family},
+        "candidates": candidates, "baseline": None, "reasons": [],
+        "dynamo_notes": [], "refs": [], "leak_note": None, "na_note": None,
+    }
+    return model.make_cell(kind="cell", case_id=case.get("__case_id"), family=family,
+                           sub=sub, col_group=group_key, band=band, fixture_href=href,
+                           status=_overview_status(case, "dynamo_v1"), cmp=cmp,
+                           facts=facts, tooltip=tooltip)
+
+
+def build_model_panel(mode: str, active: bool = False) -> dict:
+    """v1 toolcalling tab as a structured model dict (schema shared with v2/reasoning)."""
+    cases, labels = load_all_cases(mode)
+    ver_status = _version_status_map(mode)
+    for key, case in cases.items():
+        if isinstance(case, dict) and key in ver_status:
+            case["__ver_status"] = ver_status[key]
+    sub_cases = _discover_sub_cases(mode, cases)
+    no_vllm, no_sglang = _derive_no_peer_sets(cases)
+    top_n, others = _build_display_groups(cases, labels)
+    descriptions = _parse_subcase_descriptions(mode)
+    refs = _build_family_to_rust_ref()
+    inheritance = _build_family_inheritance(refs)
+    column_groups, cols = _v1_columns_model(mode, sub_cases, descriptions)
+    cand_items = _candidate_items(mode)
+    cand_label_by_key = {c["key"]: c["label"] for c in cand_items}
+
+    def row_model(model_label: str, family: str) -> dict:
+        cells = {
+            sub: _v1_cell_model(cases.get((family, sub)), mode, family, sub, cand_label_by_key)
+            for sub in sub_cases
+        }
+        return {
+            "section": None,
+            "model_label": model_label,
+            "model_label_html": _model_label_html(model_label),
+            "family": family,
+            "parser": {"html": _parser_cell_html(family, refs, no_vllm, no_sglang, inheritance)},
+            "cells": cells,
+        }
+
+    rows: list[dict] = []
+    if top_n:
+        rows.append({"section": "Top-N models", "model_label": "Top-N models",
+                     "model_label_html": "", "family": None, "parser": None, "cells": {}})
+        rows.extend(row_model(m, f) for m, f in top_n)
+    if others:
+        rows.append({"section": "Others", "model_label": "Others",
+                     "model_label_html": "", "family": None, "parser": None, "cells": {}})
+        rows.extend(row_model(m, f) for m, f in others)
+
+    all_families = [f for _, f in top_n] + [f for _, f in others]
+    return {
+        "id": f"tab-toolcalling-{mode}",
+        "kind": "toolcalling",
+        "mode": mode,
+        "column_groups": column_groups,
+        "columns": cols,
+        "rows": rows,
+        "stats": _compute_stats(cases, sub_cases, all_families),
+        "glossary": _glossary_groups(mode, descriptions, sub_cases),
+        "candidates": cand_items,
+    }
+
+
 def render_html(modes: list[str], family_filter: str | None = None) -> str:
     panels = [
         _load_html_panel(mode, active=(i == 0), family_filter=family_filter)

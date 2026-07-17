@@ -148,9 +148,17 @@
 {% endif %}
 </section>
 {% endfor %}
+{% if model_json is defined and model_json %}
+<script type="application/json" id="conformance-model">{{ model_json|safe }}</script>
+{% endif %}
 <script>window.__PARSER_NI = {{ parser_ni_json|safe }};</script>
 <script>
 {{ conformance_js|safe }}
 </script>
+{% if conformance_view_js is defined and conformance_view_js %}
+<script>
+{{ conformance_view_js|safe }}
+</script>
+{% endif %}
 </body>
 </html>

@@ -63,6 +63,11 @@ _build_stage_base() {
   mkdir -p "$STAGE/tests/parity/assets"
   \cp -f "$TOOLS/assets/conformance.css" "$STAGE/tests/parity/assets/conformance.css"
   \cp -f "$TOOLS/assets/conformance.js" "$STAGE/tests/parity/assets/conformance.js"
+  # DIS-2434 JSON data model + JS view: model.py builds it (imported by BOTH pages via
+  # reasoning_table), conformance_view.js renders it. Staged here so v1 + v2 both find them.
+  \cp -f "$TOOLS/model.py" "$STAGE/tests/parity/model.py"
+  [ -f "$TOOLS/assets/conformance_view.js" ] && \
+    \cp -f "$TOOLS/assets/conformance_view.js" "$STAGE/tests/parity/assets/conformance_view.js" || true
   # Reasoning fixtures are resolved per page (v1 = old anchor peers, v2 = pinned new
   # peers) by build_stage_v1 / build_stage_conformance — not here in the shared base.
   # Recorded Dynamo parser v2 stream-on-batch fixture overlay.

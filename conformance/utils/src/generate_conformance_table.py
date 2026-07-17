@@ -123,6 +123,7 @@ from impls import (  # noqa: E402
 
 # Comparison + marker semantics live in markers.py (audit B5); re-exported here so the
 # rendering code below and the test suite keep referring to them as module attributes.
+import markers  # noqa: E402  (module handle: structured comparison model, DIS-2434)
 from markers import (  # noqa: E402,F401
     VLLM_RUST_UNAVAILABLE,
     _BATCH_MODE_MARKER,
@@ -2543,54 +2544,22 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
     return result
 
 
-def _canon_call_for_sig(call):
-    """A call with its `arguments` decoded when it is a JSON string, so the
-    signature compares argument VALUES, not serialization bytes. The v1 parser
-    serializes arguments from a HashMap (key order varies per capture) while the
-    v2 stream parser pins source order — byte-comparing the strings flagged a
-    divergence on every multi-arg call even when the decoded values were
-    identical. `sort_keys=True` in the dump then makes key order irrelevant;
-    genuine value/type differences (e.g. `"2"` vs `2`) still differ."""
-    if not isinstance(call, dict):
-        return call
-    args = call.get("arguments")
-    if isinstance(args, str):
-        try:
-            return {**call, "arguments": json.loads(args)}
-        except (json.JSONDecodeError, ValueError):
-            return call
-    return call
-
-
-def _candidate_sig(block) -> str:
-    """Canonical signature of a candidate's output; equal signatures = same output."""
-    if not isinstance(block, dict) or "unavailable" in block:
-        return "na"
-    if "error" in block:
-        return f"err:{block.get('error')}"
-    calls = [_canon_call_for_sig(c) for c in block.get("calls") or []]
-    return json.dumps(
-        {"calls": calls, "normal_text": block.get("normal_text") or ""},
-        sort_keys=True, ensure_ascii=False,
-    )
+# Comparison-signature semantics moved to markers.py (DIS-2434): single-sourced with
+# the structured comparison model the JS view consumes. Re-exported here so existing
+# callers and tests keep referring to them as module attributes.
+_canon_call_for_sig = markers._canon_call_for_sig
+_candidate_sig = markers.candidate_sig
 
 
 def _cmp_json_from_blocks(blocks: dict) -> str:
     """Per-cell `data-cmp` payload from {candidate_key: block}: {key: {sig, leak, na}}.
-    `sig` is a per-cell group id (candidates with identical output share an id);
-    `na` (unavailable) is excluded from the diff count but still shown in the tooltip."""
+    The structured dict comes from `markers.cmp_model`; the legacy page HTML-escapes a
+    compact `json.dumps` of it into the `data-cmp` attribute."""
     if not blocks:
         return ""
-    ids: dict[str, int] = {}
-    out: dict[str, dict] = {}
-    for key, block in blocks.items():
-        sig = _candidate_sig(block)
-        out[key] = {
-            "sig": ids.setdefault(sig, len(ids)),
-            "leak": 1 if (isinstance(block, dict) and _block_tool_call_leaks(block)) else 0,
-            "na": 1 if sig == "na" else 0,
-        }
-    return html_lib.escape(json.dumps(out, separators=(",", ":")), quote=True)
+    return html_lib.escape(
+        json.dumps(markers.cmp_model(blocks), separators=(",", ":")), quote=True
+    )
 
 
 def _candidate_cmp_json(case: dict | None) -> str:
@@ -3143,11 +3112,12 @@ def _filter_family(
     )
 
 
-def _load_html_panel(
-    mode: str,
-    active: bool = False,
-    family_filter: str | None = None,
-) -> tuple[str, dict[str, object], bool]:
+def _load_panel_cases(
+    mode: str, family_filter: str | None = None
+) -> dict[str, object]:
+    """Load + augment the cases for one toolcalling tab. Shared by the HTML renderer
+    (`_load_html_panel`) and the JSON model builder so both see the identical
+    ver_status / merged-cmp attachment and display grouping."""
     cases, labels = load_all_cases(mode)
     cases, labels = _filter_family(cases, labels, family_filter)
     # TC v1 (batch) tab: attach per-impl per-version status so cells can emit
@@ -3169,20 +3139,39 @@ def _load_html_panel(
         for key, case in cases.items():
             if isinstance(case, dict) and key in ver_status:
                 case["__ver_status"] = ver_status[key]
-    has_cases = bool(cases)
     sub_cases = _discover_sub_cases(mode, cases)
     no_vllm, no_sglang = _derive_no_peer_sets(cases)
     top_n, others = _build_display_groups(cases, labels)
     # The streamv2 tab uses the stream comparison: color = stream-vs-own-batch,
     # conformance marker = cross-engine stream agreement (`Y_s`).
     comparison = "stream_vs_batch" if mode == "streamv2" else "cross_engine"
+    return {
+        "mode": mode,
+        "cases": cases,
+        "labels": labels,
+        "sub_cases": sub_cases,
+        "no_vllm": no_vllm,
+        "no_sglang": no_sglang,
+        "top_n": top_n,
+        "others": others,
+        "comparison": comparison,
+        "has_cases": bool(cases),
+    }
+
+
+def _load_html_panel(
+    mode: str,
+    active: bool = False,
+    family_filter: str | None = None,
+) -> tuple[str, dict[str, object], bool]:
+    spec = _load_panel_cases(mode, family_filter)
     return (
         mode,
         render_html_panel(
-            mode, cases, sub_cases, no_vllm, no_sglang, top_n, others, active,
-            comparison=comparison,
+            mode, spec["cases"], spec["sub_cases"], spec["no_vllm"], spec["no_sglang"],
+            spec["top_n"], spec["others"], active, comparison=spec["comparison"],
         ),
-        has_cases,
+        spec["has_cases"],
     )
 
 
@@ -3484,6 +3473,448 @@ def _combined_reasoning_panels(hrefs: dict[str, str]) -> list[dict[str, Any]]:
     return panels
 
 
+# ===== Structured JSON model builders (DIS-2434) ================================
+# Python computes the model; the JS view renders it. The comparison SEMANTICS stay in
+# markers.py (cmp_model / comparison_facts / _overview_status / _sob_status); these
+# functions orchestrate them into the schema documented in model.py. No verdict logic
+# is reimplemented in JS.
+import model as _model  # noqa: E402  (schema + serialization; leaf module)
+
+_MODE_PAREN_RE = re.compile(r"\(([^)]*)\)\s*$")
+_LABEL_VERSION_RE = re.compile(r"(\d[\w.]*)\s*\([^)]*\)\s*$")
+
+
+def _cand_engine_group(key: str) -> str:
+    for prefix in ("dynamo", "vllm", "sglang"):
+        if key.startswith(prefix):
+            return prefix
+    return key.split("-")[0]
+
+
+def _parse_mode_of_label(label: str) -> str | None:
+    m = _MODE_PAREN_RE.search(label)
+    if not m:
+        return None
+    inner = m.group(1)
+    if "stream" in inner:
+        return "stream"
+    if "batch" in inner:  # includes "jail+batch"
+        return "batch"
+    return None
+
+
+def _version_of_label(label: str) -> str | None:
+    m = _LABEL_VERSION_RE.search(label)
+    return m.group(1) if m else None
+
+
+def _candidate_model(items: list[dict]) -> list[dict]:
+    """Normalize a compare-bar candidate list to the model schema. The version is taken
+    from the source item when present, else parsed from the label ("… 3.0.0 (batch)")
+    so every candidate carries a `version` the view + guards can rely on."""
+    out = []
+    for it in items:
+        key = it["key"]
+        label = it["label"]
+        out.append({
+            "key": key,
+            "impl": _cand_engine_group(key),
+            "label": label,
+            "label_html": _candidate_label_html(label),
+            "default_bucket": it.get("default_bucket", "C"),
+            "version": it.get("version") or _version_of_label(label),
+            "parse_mode": _parse_mode_of_label(label),
+        })
+    return out
+
+
+def _columns_model(mode: str, sub_cases: list[str]) -> tuple[list[dict], list[dict]]:
+    descriptions = _parse_subcase_descriptions(mode)
+    groups: list[dict] = []
+    cols: list[dict] = []
+    for run in _subcase_runs(mode, sub_cases):
+        col_group = _subcase_group_key(mode, run[0])
+        groups.append({
+            "key": col_group,
+            "label": _subcase_group_label(mode, run[0]),
+            "band": _subcase_band_class(mode, run[0]),
+            "span": len(run),
+        })
+        for sub in run:
+            cols.append({
+                "sub": sub,
+                "group_key": col_group,
+                "band": _subcase_band_class(mode, sub),
+                "label": sub,
+                "desc": descriptions.get(sub) or descriptions.get(sub.split(".")[0]) or "",
+            })
+    return groups, cols
+
+
+def _output_block_model(blk: object) -> dict | None:
+    """A candidate's expected output block reduced to the model's raw fields."""
+    if not isinstance(blk, dict):
+        return None
+    out: dict[str, Any] = {}
+    if "unavailable" in blk:
+        out["unavailable"] = blk["unavailable"]
+    if "error" in blk:
+        out["error"] = blk["error"]
+    if "calls" in blk or "normal_text" in blk:
+        out["calls"] = blk.get("calls") or []
+        out["normal_text"] = blk.get("normal_text") or ""
+    expl = _explanation(blk)
+    if expl:
+        out["explanation"] = expl
+    return out or None
+
+
+def _cell_candidate_meta(case: dict, output_kind: str) -> tuple[dict, list[dict]]:
+    """Reproduce render_cell_html's candidate selection as STRUCTURED data: return
+    (cmp_blocks, cand_meta). `cmp_blocks` = {cand_key: raw_block} for markers.cmp_model;
+    `cand_meta` is the ordered per-candidate tooltip list {key,label,impl,version,block,
+    leak}. Mirrors the __cmp / __ver_status / per-impl branches exactly so the compare
+    keys line up with the compare-bar candidates and the JS cand-<key> sections."""
+    meta: list[dict] = []
+    cmp_items = case.get("__cmp")
+    ver_status = case.get("__ver_status")
+    if cmp_items:
+        for item in cmp_items:
+            meta.append({"key": item["key"], "label": item["label"],
+                         "version": None, "block_raw": item["block"]})
+    elif ver_status:
+        for impl in ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python"):
+            for slug, info in (ver_status.get(impl) or {}).items():
+                meta.append({"key": f"{impl}-{slug}",
+                             "label": _full_label(impl, info["version"], "batch"),
+                             "version": info["version"], "block_raw": info["block"]})
+    else:
+        expected = _expected(case)
+        for impl in STREAM_IMPL_KEYS:
+            meta.append({"key": impl, "label": f"{_IMPL_DISPLAY[impl]} {output_kind}",
+                         "version": _v2_display_version(impl), "block_raw": _impl_get(expected, impl)})
+    cmp_blocks = {m["key"]: m["block_raw"] for m in meta}
+    for m in meta:
+        blk = m.pop("block_raw")
+        m["impl"] = _cand_engine_group(m["key"])
+        m["parse_mode"] = _parse_mode_of_label(m["label"])
+        m["leak"] = isinstance(blk, dict) and _block_tool_call_leaks(blk)
+        m["block"] = _output_block_model(blk)
+    return cmp_blocks, meta
+
+
+def _chunk_model(chunk: dict) -> dict:
+    return {
+        "delta_text": chunk.get("delta_text", ""),
+        "delta_token_ids": chunk.get("delta_token_ids"),
+        "finish_reason": chunk.get("finish_reason"),
+        # Per-impl streamed deltas + residual normal_text drive the per-chunk chart.
+        "expected": _normalize_impl_mapping(chunk.get("expected") or {}),
+        "normal_text": (
+            _normalize_impl_mapping(chunk["normal_text"])
+            if isinstance(chunk.get("normal_text"), dict)
+            else chunk.get("normal_text")
+        ),
+    }
+
+
+def _input_model(case: dict) -> dict:
+    family = case.get("__family")
+    chunks = case.get("chunks")
+    if isinstance(chunks, list) and chunks:
+        return {"kind": "chunks", "text": None, "family": family,
+                "chunks": [_chunk_model(c) for c in chunks if isinstance(c, dict)]}
+    model_text = case.get("model_text")
+    if isinstance(model_text, str) and model_text:
+        return {"kind": "text", "text": model_text, "chunks": None, "family": family}
+    return {"kind": None, "text": None, "chunks": None, "family": family}
+
+
+def _toolcalling_tooltip_model(case: dict, output_kind: str, cand_meta: list[dict],
+                               dyn: object) -> dict:
+    family = case.get("__family")
+    case_id = case.get("__case_id", "")
+    head = f"{case_id} — {family}" if (case_id and family) else (case_id or str(family or ""))
+    impl_keys = _impl_keys_for_output_kind(output_kind)
+    baseline = baseline_impl(impl_keys)
+    reasons = [
+        {"impl": f["impl"], "label": _IMPL_DISPLAY.get(f["impl"], f["impl"]),
+         "reason": f["reason"], "intentional": f["intentional"]}
+        for f in markers.comparison_facts(case, impl_keys, baseline)
+        if f["impl"] != baseline and f["agrees"] is False and f["reason"]
+    ]
+    dyn_leak = _dynamo_tool_call_leak(dyn) if isinstance(dyn, dict) else None
+    baseline_block = None
+    dyn_batch = _impl_get(case.get("batch_expected") or {}, BASELINE_BATCH_IMPL)
+    if isinstance(dyn_batch, dict) and ("calls" in dyn_batch or "normal_text" in dyn_batch):
+        baseline_block = {"impl": BASELINE_BATCH_IMPL,
+                          "label": f"{_IMPL_DISPLAY[BASELINE_BATCH_IMPL]} batch parser",
+                          "block": _output_block_model(dyn_batch)}
+    return {
+        "head": head,
+        "description": case.get("description") or "",
+        "input": _input_model(case),
+        "candidates": cand_meta,
+        "baseline": baseline_block,
+        "reasons": reasons,
+        "dynamo_notes": [[lbl, txt] for lbl, txt in _dynamo_note_sections(case)],
+        "refs": [[lbl, val] for lbl, val in (("Ref", case.get("ref")),
+                                             ("Spec ref", case.get("spec_ref"))) if val],
+        "leak_note": str(dyn_leak) if dyn_leak else None,
+        "na_note": None,
+    }
+
+
+def _toolcalling_cell_model(case: dict | None, mode: str, family: str, sub: str,
+                            output_kind: str, comparison: str,
+                            href_rewrite) -> dict:
+    col_group = _subcase_group_key(mode, sub)
+    band = _subcase_band_class(mode, sub)
+    if case is None:
+        return _model.missing_cell(sub, family, col_group, band,
+                                   head=f"TOOLCALLING.{mode}.{sub}")
+    impl_keys = _impl_keys_for_output_kind(output_kind)
+    baseline = baseline_impl(impl_keys)
+    sob = comparison == "stream_vs_batch"
+    cmp_blocks, cand_meta = _cell_candidate_meta(case, output_kind)
+    cmp = markers.cmp_model(cmp_blocks) if cmp_blocks else None
+    facts = markers.comparison_facts(case, impl_keys, baseline)
+    status = _sob_status(case, BASELINE_STREAM_IMPL) if sob else _overview_status(case, baseline)
+    dyn = _impl_get(case.get("expected") or {}, baseline)
+    fp = case.get("__fixture_path", "")
+    href = href_rewrite(common.fixture_href(fp)) if fp else None
+    if not isinstance(dyn, dict):
+        # n/a stub: case has only `explanation:` (no `expected:` block).
+        tooltip = {"head": f"{case.get('__case_id','')} — {family}",
+                   "description": case.get("description") or "",
+                   "input": _input_model(case), "candidates": [], "baseline": None,
+                   "reasons": [], "dynamo_notes": [], "refs": [], "leak_note": None,
+                   "na_note": _explanation(case)}
+        return _model.make_cell(kind="cell", case_id=case.get("__case_id"), family=family,
+                                sub=sub, col_group=col_group, band=band, fixture_href=href,
+                                status=status, cmp=cmp, facts=facts, tooltip=tooltip,
+                                known_divergence=bool(case.get("__known_divergence")))
+    tooltip = _toolcalling_tooltip_model(case, output_kind, cand_meta, dyn)
+    return _model.make_cell(kind="cell", case_id=case.get("__case_id"), family=family,
+                            sub=sub, col_group=col_group, band=band, fixture_href=href,
+                            status=status, cmp=cmp, facts=facts, tooltip=tooltip,
+                            known_divergence=bool(case.get("__known_divergence")))
+
+
+def _toolcalling_tab_model(spec: dict, href_rewrite, parser_stream_context: str) -> dict:
+    mode = spec["mode"]
+    cases = spec["cases"]
+    sub_cases = spec["sub_cases"]
+    comparison = spec["comparison"]
+    no_vllm, no_sglang = spec["no_vllm"], spec["no_sglang"]
+    output_kind = "batch" if parser_stream_context == "batch" else "stream"
+    cell_text = (
+        (lambda case: _sob_cell_text(case, parser_stream_context))
+        if comparison == "stream_vs_batch"
+        else cell_for
+    )
+    refs = _build_family_to_rust_ref()
+    inheritance = _build_family_inheritance(refs)
+    column_groups, cols = _columns_model(mode, sub_cases)
+
+    def row_model(model_label: str, family: str) -> dict:
+        all_todo = sub_cases and all(
+            cell_text(cases.get((family, sub))) == "…" for sub in sub_cases
+        )
+        peer_output_exists = any(
+            _has_peer_output(cases.get((family, sub))) for sub in sub_cases
+        )
+        cells: dict[str, dict] = {}
+        for sub in sub_cases:
+            if all_todo and not peer_output_exists:
+                cells[sub] = _model.blank_cell(sub, _subcase_group_key(mode, sub),
+                                               _subcase_band_class(mode, sub))
+            else:
+                cells[sub] = _toolcalling_cell_model(
+                    cases.get((family, sub)), mode, family, sub, output_kind,
+                    comparison, href_rewrite,
+                )
+        return {
+            "section": None,
+            "model_label": model_label,
+            "model_label_html": _model_label_html(model_label),
+            "family": family,
+            "parser": {"html": href_rewrite(_parser_cell_html(
+                family, refs, no_vllm, no_sglang, inheritance,
+                stream_context=parser_stream_context))},
+            "cells": cells,
+        }
+
+    rows: list[dict] = []
+    if spec["top_n"]:
+        rows.append({"section": "Top-N models", "model_label": "Top-N models",
+                     "model_label_html": "", "family": None, "parser": None, "cells": {}})
+        rows.extend(row_model(m, f) for m, f in spec["top_n"])
+    if spec["others"]:
+        rows.append({"section": "Others", "model_label": "Others",
+                     "model_label_html": "", "family": None, "parser": None, "cells": {}})
+        rows.extend(row_model(m, f) for m, f in spec["others"])
+
+    all_families = [f for _, f in spec["top_n"]] + [f for _, f in spec["others"]]
+    stats = _compute_stats(cases, sub_cases, all_families, cell_text=cell_text)
+    return {
+        "id": f"tab-{mode}",
+        "kind": "toolcalling",
+        "mode": mode,
+        "column_groups": column_groups,
+        "columns": cols,
+        "rows": rows,
+        "stats": stats,
+        "glossary": _glossary_groups(mode, _parse_subcase_descriptions(mode), sub_cases),
+    }
+
+
+def _fixture_href_rewriter(stage_dir: str, fixture_href_root: str):
+    def rewrite(text: str) -> str:
+        return text.replace(
+            f'href="{stage_dir}/fixtures/', f'href="{fixture_href_root}'
+        ).replace('href="fixtures/', f'href="{fixture_href_root}')
+    return rewrite
+
+
+def _plain_href_rewriter(stage_dir: str, fixture_href_root: str):
+    """A bare fixture href (no href="...") rewriter for cell links."""
+    def rewrite(href: str | None) -> str | None:
+        if not href:
+            return href
+        return href.replace(f"{stage_dir}/fixtures/", fixture_href_root).replace(
+            "fixtures/", fixture_href_root, 1
+        ) if href.startswith((f"{stage_dir}/fixtures/", "fixtures/")) else href
+    return rewrite
+
+
+def build_combined_model(output_path: Path | None = None,
+                         artifact_root: Path | None = None,
+                         *, stamp: str, sha: str | None) -> dict:
+    """Assemble the whole-page JSON model (both toolcalling tabs + both reasoning
+    tabs). Same loaded data + comparison semantics as render_combined_html."""
+    artifact_root = (artifact_root or REPO_ROOT).resolve()
+    resolved_output_path = _resolve_output_path(
+        output_path, artifact_root, "tests/parity/CONFORMANCE.html")
+    hrefs = common.set_links(resolved_output_path, artifact_root)
+
+    tabs: list[dict] = []
+
+    # --- Tool Calling (batch data): merged v1-batch + v2-stream-on-batch ---
+    batch_spec = _load_panel_cases("batch")
+    batch_href = _plain_href_rewriter("toolcalling", hrefs["toolcalling_fixtures"])
+    batch_tab = _toolcalling_tab_model(batch_spec, batch_href, parser_stream_context="batch")
+    batch_tab.update({
+        "id": "tab-toolcalling-batch",
+        "label": "Tool Calling (batch data)",
+        "label_html": ('Tool Calling <span class="tab-sub">'
+                       '(<span class="w-batch">batch</span> data)</span>'),
+        "tab_title": ("Tool Calling (batch data): v1 batch parsers plus v2 stream "
+                      "parsers on the same v1 batch fixtures"),
+        "case_prefix": "TOOLCALLING.batch.",
+        "case_section_id": "toolcalling-batch",
+        "case_docs_href": hrefs["toolcalling_cases"],
+        "case_docs_label": "lib/parsers/TOOLCALLING_CASES.md",
+        "candidates": _candidate_model(_merged_candidate_items()),
+        "captured_note": _captured_note("batch"),
+        "toolbar_desc_html": (
+            f'Parsers: <strong>v1</strong> Dynamo-synced batch '
+            f'(<a href="{hrefs["toolcalling_src"]}">parsers/src/tool_calling/</a>) '
+            f'plus <strong>v2</strong> streaming on the same batch text '
+            f'(<a href="{hrefs["streaming_src"]}">parsers_v2/src/tool_calling/*</a>) · '
+            f'Input: <strong>v1</strong> batch fixtures '
+            f'(<a href="{hrefs["toolcalling_fixtures"]}">conformance/toolcalling/fixtures-batch-v1/</a>).'),
+        "details_note_html": None,
+    })
+    tabs.append(batch_tab)
+
+    # --- Tool Calling (stream data): per-chunk streamv2 ---
+    stream_spec = _load_panel_cases("streamv2")
+    stream_href = _plain_href_rewriter("toolcalling", hrefs["toolcalling_stream_fixtures"])
+    stream_tab = _toolcalling_tab_model(stream_spec, stream_href, parser_stream_context="streamv2")
+    stream_tab.update({
+        "id": "tab-toolcalling-streamv2",
+        "label": "Tool Calling (stream data)",
+        "label_html": ('Tool Calling <span class="tab-sub">'
+                       '(<span class="w-stream">stream</span> data)</span>'),
+        "tab_title": "Tool Calling (stream data): Dynamo parser v2 on v2 stream fixtures",
+        "case_prefix": "TOOLCALLING.streamv2.",
+        "case_section_id": "toolcalling-streamv2",
+        "case_docs_href": hrefs["toolcalling_streaming_cases"],
+        "case_docs_label": "lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md",
+        "candidates": _candidate_model(_stream_candidate_items()),
+        "captured_note": _captured_note("streamv2"),
+        "toolbar_desc_html": (
+            f'Parser: <strong>v2</strong> Dynamo parser v2 token-incremental streaming '
+            f'(<a href="{hrefs["streaming_src"]}">parsers_v2/src/tool_calling/*</a>) · '
+            f'Input: <strong>v2</strong> stream fixtures '
+            f'(<a href="{hrefs["toolcalling_stream_fixtures"]}">conformance/toolcalling/fixtures-stream-v2/</a>).'),
+        "details_note_html": f"<p>{_stream_parity_explainer_html('streamv2')}</p>",
+    })
+    tabs.append(stream_tab)
+
+    # --- Reasoning tabs (delegated to the v1 reasoning module's model builder) ---
+    r_rows, r_columns, r_refs = reasoning_table._load()
+    r_no_vllm, r_no_sglang = reasoning_table._derive_no_peer_sets(r_rows)
+    reasoning_href = _plain_href_rewriter("reasoning", hrefs["reasoning_fixtures"])
+    for rmode in ("batch", "stream"):
+        mode_columns = reasoning_table._columns_for_mode(r_columns, rmode)
+        rtab = reasoning_table.build_model_panel(
+            r_rows, mode_columns, r_refs, r_no_vllm, r_no_sglang, mode=rmode, active=False)
+        # Rebase fixture cell links + parser-cell links onto the reasoning root.
+        for row in rtab["rows"]:
+            if row.get("parser") and row["parser"].get("html"):
+                row["parser"]["html"] = _fixture_href_rewriter("reasoning", hrefs["reasoning_fixtures"])(row["parser"]["html"])
+            for cell in row.get("cells", {}).values():
+                if cell.get("fixture_href"):
+                    cell["fixture_href"] = reasoning_href(cell["fixture_href"])
+        _r_label, _r_label_html = _tab_label("Reasoning", rmode, None, False, on_parser=False)
+        rtab.update({
+            "id": f"tab-reasoning-{rmode}",
+            "label": _r_label,
+            "label_html": _r_label_html,
+            "tab_title": f"Reasoning {rmode}: v1 code on v1 fixtures",
+            "case_prefix": "REASONING.",
+            "case_section_id": f"reasoning-{rmode}",
+            "case_docs_href": hrefs["reasoning_cases"],
+            "case_docs_label": "lib/parsers/REASONING_CASES.md",
+            "candidates": _candidate_model(rtab.get("candidates", [])),
+            "captured_note": "",
+            "toolbar_desc_html": (
+                f'Parser: <strong>v1</strong> Dynamo-synced reasoning parser '
+                f'(<a href="{hrefs["reasoning_src"]}">parsers/v1/src/reasoning/</a>) · '
+                f'Input: <strong>v1</strong> reasoning fixtures '
+                f'(<a href="{hrefs["reasoning_fixtures"]}">conformance/reasoning/fixtures/</a>).'),
+            "details_note_html": None,
+        })
+        tabs.append(rtab)
+
+    if tabs:
+        tabs[0]["active"] = True
+
+    meta = {
+        "title": "Dynamo Parser v2 Conformance Table",
+        "stamp": stamp,
+        "sha": sha,
+        "short_sha": sha[:12] if sha else "",
+        "command": "conformance/utils/render_table_v2.sh",
+        "output": _display_path(resolved_output_path, artifact_root),
+        "generated_by": "generate_conformance_table.build_combined_model",
+    }
+    legend_html = _common_legend_html(_peer_version_items(_peer_versions()))
+    return _model.build_page(meta, tabs, parser_ni=_parser_ni_map(),
+                             legend_html=legend_html)
+
+
+def _captured_note(mode: str) -> str:
+    captured = _CAPTURED_WITH_BY_MODE.get(mode) or {}
+    if not captured:
+        return ""
+    pairs = ", ".join(f"{impl} {ver}" for impl, ver in sorted(captured.items()))
+    return (f"Peer streaming output captured against: {pairs}. "
+            "A divergence is relative to these versions; re-capture when bumping.")
+
+
 def render_combined_html(
     output_path: Path | None = None,
     artifact_root: Path | None = None,
@@ -3509,6 +3940,13 @@ def render_combined_html(
     stamp = now.strftime("%Y-%m-%d %H:%M %Z")
     sha = _commit_sha()
 
+    # DIS-2434: the JSON data model (phases 1-2 emit it alongside the Python-rendered
+    # HTML; phase 3 the JS view renders solely from it). Built from the SAME loaded
+    # cases + comparison semantics as the panels above.
+    page_model = build_combined_model(
+        output_path=output_path, artifact_root=artifact_root, stamp=stamp, sha=sha)
+    model_json = _model.to_script_json(page_model)
+
     html = (
         _make_jinja_env()
         .get_template("conformance_table.html.j2")
@@ -3528,6 +3966,7 @@ def render_combined_html(
             impl_versions=_impl_version_items(),
             candidate_items=_candidate_items(),
             parser_ni_json=json.dumps(_parser_ni_map()),
+            model_json=model_json,
         )
     )
     return _scrub_visible_conformance_text(html)

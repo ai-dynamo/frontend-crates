@@ -549,3 +549,123 @@ def _sob_marker_spans(case: dict | None, marker_context: str | None = None) -> s
 def _sob_cell_text(case: dict | None, marker_context: str | None = None) -> str:
     """Static/overview cell text: the Dynamo cross-engine marker (=, V_ps/V_rs/S_rs, …)."""
     return _stream_xeng_marker(case, BASELINE_STREAM_IMPL, marker_context)
+
+
+# --- Structured comparison model (DIS-2434) --------------------------------------
+# The JSON data model + JS view replace the `D_rb`/`V_ps` marker mini-language: the
+# model carries STRUCTURED comparison facts and the view decides how to display them.
+# These functions are the single source of the per-cell comparison payload; the old
+# glyph/attr emitters above are retired once every page renders from the model.
+
+
+def _canon_call_for_sig(call: object) -> object:
+    """A call with its `arguments` decoded when it is a JSON string, so the signature
+    compares argument VALUES, not serialization bytes. The v1 parser serializes
+    arguments from a HashMap (key order varies per capture) while the v2 stream parser
+    pins source order — byte-comparing the strings flagged a divergence on every
+    multi-arg call even when the decoded values were identical. `sort_keys=True` in the
+    dump then makes key order irrelevant; genuine value/type differences (e.g. `"2"` vs
+    `2`) still differ."""
+    if not isinstance(call, dict):
+        return call
+    args = call.get("arguments")
+    if isinstance(args, str):
+        try:
+            return {**call, "arguments": json.loads(args)}
+        except (json.JSONDecodeError, ValueError):
+            return call
+    return call
+
+
+def candidate_sig(block: object) -> str:
+    """Canonical signature of a candidate's output; equal signatures = same output."""
+    if not isinstance(block, dict) or "unavailable" in block:
+        return "na"
+    if "error" in block:
+        return f"err:{block.get('error')}"
+    calls = [_canon_call_for_sig(c) for c in block.get("calls") or []]
+    return json.dumps(
+        {"calls": calls, "normal_text": block.get("normal_text") or ""},
+        sort_keys=True, ensure_ascii=False,
+    )
+
+
+def cmp_model(blocks: dict) -> dict[str, dict]:
+    """Per-cell compare payload from {candidate_key: block}: {key: {sig, leak, na}}.
+    `sig` is a per-cell group id (candidates with identical output share an id); `na`
+    (unavailable) is excluded from the diff count but still shown in the tooltip. This
+    is the structured form the JS view consumes directly (the old page HTML-escaped a
+    `json.dumps` of the same dict into `data-cmp`)."""
+    ids: dict[str, int] = {}
+    out: dict[str, dict] = {}
+    for key, block in blocks.items():
+        sig = candidate_sig(block)
+        out[key] = {
+            "sig": ids.setdefault(sig, len(ids)),
+            "leak": 1 if (isinstance(block, dict) and _block_tool_call_leaks(block)) else 0,
+            "na": 1 if sig == "na" else 0,
+        }
+    return out
+
+
+def _error_kind(block: object) -> str | None:
+    """Classify an expected block's error/unavailable signal for the model facts:
+    `parser_error` (peer parser ran and threw), `expected_error` (declared error),
+    `unavailable` (benign: no parser/text/source), or None."""
+    if not isinstance(block, dict):
+        return None
+    if "unavailable" in block:
+        return "parser_error" if _is_parser_error_unavailable(block) else "unavailable"
+    if "error" in block:
+        return "parser_error" if isinstance(block["error"], dict) else "expected_error"
+    return None
+
+
+def comparison_facts(
+    case: dict | None,
+    impl_keys: tuple[str, ...],
+    baseline: str,
+) -> list[dict]:
+    """Structured per-impl comparison facts for one cell — the retired marker strings'
+    replacement. One entry per impl in `impl_keys`:
+      impl        — implementation key
+      status      — overview status: ok | problem | na
+      present     — the impl recorded a concrete output block for this case
+      agrees      — output value-equals the baseline impl's output (None if either side
+                    has no concrete output to compare)
+      intentional — the divergence is documented (block has an `explanation`/`reason`)
+      reason      — that explanation text, if any
+      leak        — the block leaks tool-call markup into normal_text
+      error_kind  — parser_error | expected_error | unavailable | None
+    The VIEW turns these into whatever glyph/label it wants; Python keeps deciding the
+    agree/intentional/status semantics (single source, no JS reimplementation)."""
+    if not isinstance(case, dict) or "expected" not in case:
+        return [
+            {"impl": impl, "status": "na", "present": False, "agrees": None,
+             "intentional": False, "reason": None, "leak": False, "error_kind": None}
+            for impl in impl_keys
+        ]
+    expected = _expected(case)
+    base_block = _impl_get(expected, baseline)
+    base_out = _canonical_tool_output(base_block)
+    facts: list[dict] = []
+    for impl in impl_keys:
+        block = _impl_get(expected, impl)
+        out = _canonical_tool_output(block)
+        agrees: bool | None
+        if out is None or base_out is None:
+            agrees = None if impl != baseline else True
+        else:
+            agrees = out == base_out
+        reason = _explanation(block) if isinstance(block, dict) else None
+        facts.append({
+            "impl": impl,
+            "status": _overview_status(case, impl),
+            "present": out is not None,
+            "agrees": agrees,
+            "intentional": reason is not None,
+            "reason": reason,
+            "leak": isinstance(block, dict) and _block_tool_call_leaks(block),
+            "error_kind": _error_kind(block),
+        })
+    return facts
