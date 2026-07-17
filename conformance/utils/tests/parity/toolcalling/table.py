@@ -137,6 +137,8 @@ def _make_jinja_env() -> Environment:
     # reasoning parity, family-filtered) inlines them without repeating the kwargs.
     env.globals["conformance_css"] = _read_asset("conformance.css")
     env.globals["conformance_js"] = _read_asset("conformance.js")
+    # DIS-2434 JS view: builds the DOM from the model blob before conformance.js wires it.
+    env.globals["conformance_view_js"] = _read_asset("conformance_view.js")
     return env
 
 

@@ -151,13 +151,14 @@ td.cell { text-align: center; min-width: 24px; font-weight: 400; }
 {% if model_json is defined and model_json %}
 <script type="application/json" id="conformance-model">{{ model_json|safe }}</script>
 {% endif %}
-<script>
-{{ conformance_js }}
-</script>
 {% if conformance_view_js is defined and conformance_view_js %}
+{# JS view (DIS-2434): builds the DOM from the model blob BEFORE conformance.js wires it. #}
 <script>
 {{ conformance_view_js }}
 </script>
 {% endif %}
+<script>
+{{ conformance_js }}
+</script>
 </body>
 </html>

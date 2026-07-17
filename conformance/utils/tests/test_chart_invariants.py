@@ -81,15 +81,21 @@ def _peer_versions(tree: str) -> dict[str, set[str]]:
 
 
 def _strip_model_blob(html: str) -> str:
-    """Drop the inlined `<script type="application/json" id="conformance-model">` data
-    blob (DIS-2434). These legacy guards assert on the VISIBLE page HTML; the model blob
-    is machine data the JS view consumes (its `explanation`/`unavailable` fields legitimately
-    contain strings like "not yet implemented") and must not be scanned as page text. The
+    """Drop the inlined machine-data / JS-asset `<script>`s (DIS-2434) so these legacy
+    guards scan only the VISIBLE page HTML. Removes the `application/json` model blob
+    (its `explanation`/`unavailable` fields legitimately contain strings like "not yet
+    implemented") and the inlined `conformance.js` / `conformance_view.js` source (whose
+    string literals contain `data-cand="…"` etc. that would pollute the candidate/version
+    regexes). Keeps the `window.__PARSER_NI` data script (one guard reads it). The
     structural guards on the model itself live in test_model.py."""
-    return re.sub(
-        r'<script type="application/json" id="conformance-model">.*?</script>',
-        "", html, flags=re.S,
+    html = re.sub(
+        r'<script type="application/json"[^>]*>.*?</script>', "", html, flags=re.S,
     )
+
+    def _drop_code(m: "re.Match[str]") -> str:
+        return m.group(0) if "__PARSER_NI" in m.group(0) else ""
+
+    return re.sub(r"<script>.*?</script>", _drop_code, html, flags=re.S)
 
 
 @pytest.fixture(scope="module")

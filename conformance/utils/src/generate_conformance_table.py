@@ -3956,6 +3956,7 @@ def render_combined_html(
             stamp=stamp,
             conformance_css=_read_asset("conformance.css"),
             conformance_js=_read_asset("conformance.js"),
+            conformance_view_js=_read_asset("conformance_view.js"),
             impl_status_css=_impl_status_css(),
             sha=sha,
             short_sha=sha[:12] if sha else "",

@@ -152,13 +152,14 @@
 <script type="application/json" id="conformance-model">{{ model_json|safe }}</script>
 {% endif %}
 <script>window.__PARSER_NI = {{ parser_ni_json|safe }};</script>
-<script>
-{{ conformance_js|safe }}
-</script>
 {% if conformance_view_js is defined and conformance_view_js %}
+{# JS view (DIS-2434): builds the DOM from the model blob BEFORE conformance.js wires it. #}
 <script>
 {{ conformance_view_js|safe }}
 </script>
 {% endif %}
+<script>
+{{ conformance_js|safe }}
+</script>
 </body>
 </html>
