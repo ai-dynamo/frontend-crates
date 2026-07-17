@@ -31,6 +31,22 @@ use self::minimax_m2::MiniMaxM2ToolStreamParser;
 use self::minimax_m3::MiniMaxM3ToolStreamParser;
 use self::qwen3_coder::Qwen3CoderToolStreamParser;
 
+/// Every family name `create_tool_parser_for_family` accepts, exactly one entry
+/// per match arm. Test harnesses iterate this to enforce coverage: a family
+/// registered below without sweep/parity coverage must fail the suite, not
+/// silently skip (`registered_families_all_create` guards const/match drift).
+pub const REGISTERED_FAMILIES: &[&str] = &[
+    "harmony",
+    "harmony_text",
+    "deepseek_v4",
+    "qwen3_coder",
+    "minimax_m2",
+    "minimax_m3",
+    "gemma4",
+    "glm47",
+    "kimi_k2",
+];
+
 /// Create the Dynamo v2 tool parser for a conformance family.
 pub fn create_tool_parser_for_family(
     family: &str,
@@ -54,4 +70,22 @@ pub fn create_tool_parser_for_family(
         return Ok(DebugToolParser::wrap(family, parser));
     }
     Ok(parser)
+}
+
+#[cfg(test)]
+mod registry_tests {
+    use super::*;
+
+    /// Guard `REGISTERED_FAMILIES` against drifting from the match in
+    /// `create_tool_parser_for_family`: every listed family must construct.
+    /// (The reverse direction — an arm missing from the const — is caught by
+    /// the conformance sweep, which fails a family with zero swept cases.)
+    #[test]
+    fn registered_families_all_create() {
+        for family in REGISTERED_FAMILIES {
+            create_tool_parser_for_family(family, &[]).unwrap_or_else(|e| {
+                panic!("REGISTERED_FAMILIES entry '{family}' does not create: {e}")
+            });
+        }
+    }
 }
