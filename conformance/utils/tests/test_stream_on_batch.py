@@ -812,7 +812,11 @@ def test_template_cells_do_not_clip_hover_tooltips() -> None:
     assert cell_rule is not None
     assert "overflow: hidden" not in cell_rule.group(1)
     assert ".ttip-visible" in css
-    assert "cell.addEventListener('pointerenter', scheduleShow);" in js
+    # Hover-show is now gated on hover-capable devices (touch uses tap-to-pin), so
+    # the listener is wired inside a `matchMedia('(hover: hover)')` branch rather
+    # than as a bare top-level call. Assert both the gate and the pointerenter wiring.
+    assert "matchMedia('(hover: hover)')" in js
+    assert "cell.addEventListener('pointerenter'" in js
 
 
 def test_toolcalling_parser_options_are_mode_specific() -> None:
