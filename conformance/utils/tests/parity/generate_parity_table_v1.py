@@ -155,28 +155,23 @@ def main(argv: list[str] | None = None) -> None:
     )
     parser.add_argument(
         "stage",
-        choices=("all", "toolcalling", "reasoning"),
+        choices=("all",),
         help="Parity stage to render.",
     )
     args, rest = parser.parse_known_args(argv)
 
-    if args.stage == "all":
-        stage_parser = argparse.ArgumentParser(
-            description="Generate the combined Dynamo parser parity HTML page.",
-        )
-        stage_parser.add_argument(
-            "--html",
-            action="store_true",
-            help="Emit the combined HTML page.",
-        )
-        stage_args = stage_parser.parse_args(rest)
-        if not stage_args.html:
-            parser.error("stage 'all' currently supports --html only")
-        print(render_combined_html())
-        return
-
-    stage_table = toolcalling_table if args.stage == "toolcalling" else reasoning_table
-    stage_table.main(rest)
+    stage_parser = argparse.ArgumentParser(
+        description="Generate the combined Dynamo parser parity HTML page.",
+    )
+    stage_parser.add_argument(
+        "--html",
+        action="store_true",
+        help="Emit the combined HTML page.",
+    )
+    stage_args = stage_parser.parse_args(rest)
+    if not stage_args.html:
+        parser.error("stage 'all' currently supports --html only")
+    print(render_combined_html())
 
 
 if __name__ == "__main__":

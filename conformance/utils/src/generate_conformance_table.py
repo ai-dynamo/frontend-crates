@@ -2162,43 +2162,38 @@ def main(argv: list[str] | None = None) -> None:
     )
     parser.add_argument(
         "stage",
-        choices=("all", "toolcalling", "reasoning"),
+        choices=("all",),
         help="Conformance stage to render.",
     )
     args, rest = parser.parse_known_args(argv)
 
-    if args.stage == "all":
-        stage_parser = argparse.ArgumentParser(
-            description="Generate the combined frontend-crate parser conformance HTML page.",
+    stage_parser = argparse.ArgumentParser(
+        description="Generate the combined frontend-crate parser conformance HTML page.",
+    )
+    stage_parser.add_argument(
+        "--html",
+        action="store_true",
+        help="Emit the combined HTML page.",
+    )
+    stage_parser.add_argument(
+        "--output-path",
+        type=Path,
+        help="Output file path used to compute relative links. The HTML is still written to stdout.",
+    )
+    stage_parser.add_argument(
+        "--artifact-root",
+        type=Path,
+        help="Repo root that output links should target. Defaults to the staged repo root.",
+    )
+    stage_args = stage_parser.parse_args(rest)
+    if not stage_args.html:
+        parser.error("stage 'all' currently supports --html only")
+    print(
+        render_combined_html(
+            output_path=stage_args.output_path,
+            artifact_root=stage_args.artifact_root,
         )
-        stage_parser.add_argument(
-            "--html",
-            action="store_true",
-            help="Emit the combined HTML page.",
-        )
-        stage_parser.add_argument(
-            "--output-path",
-            type=Path,
-            help="Output file path used to compute relative links. The HTML is still written to stdout.",
-        )
-        stage_parser.add_argument(
-            "--artifact-root",
-            type=Path,
-            help="Repo root that output links should target. Defaults to the staged repo root.",
-        )
-        stage_args = stage_parser.parse_args(rest)
-        if not stage_args.html:
-            parser.error("stage 'all' currently supports --html only")
-        print(
-            render_combined_html(
-                output_path=stage_args.output_path,
-                artifact_root=stage_args.artifact_root,
-            )
-        )
-        return
-
-    stage_table = toolcalling_table if args.stage == "toolcalling" else reasoning_table
-    stage_table.main(rest)
+    )
 
 
 if __name__ == "__main__":
