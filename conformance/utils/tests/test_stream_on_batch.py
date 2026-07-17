@@ -108,28 +108,19 @@ def test_reasoning_python_exception_rendering_respects_missing_peer_parser() -> 
     assert reasoning_table._parser_marker(case, "kimi", "sglang_python") == "✗"
 
 
-def test_reasoning_python_exception_cell_uses_na_class_and_tooltip() -> None:
-    case = {
-        "description": "No parser input",
-        "reason": "not applicable",
-    }
+def test_reasoning_na_stub_cell_is_na_not_peer_exception_marker() -> None:
+    # An n/a-stub reasoning case (no Dynamo `expected` block) is a plain neutral n/a from
+    # the Dynamo-as-reference view — never a peer-exception marker in the grid. The page
+    # is JS-rendered now, so assert on the verdict + the model cell (the peer exception
+    # detail rides in the model tooltip, which the view shows in the popup).
+    case = {"description": "No parser input", "reason": "not applicable"}
+    assert reasoning_table._cell(case, "gpt_oss")[0] == "n/a"
     refs = {("gpt_oss", "REASONING.batch.2.d"): reasoning_table.SCRIPT_DIR / "fake.yaml"}
-
-    html = reasoning_table._render_cell_html(
-        case,
-        "gpt_oss",
-        "REASONING.batch.2.d",
-        refs,
+    cell = reasoning_table._reasoning_cell_model(
+        case, "gpt_oss", "REASONING.batch.2.d", refs, "batch"
     )
-
-    assert 'class="cell na ' in html
-    assert ">n/a<" in html
-    assert ">V✗S✗<" not in html
-    # Dormant per-engine data attributes still record the peer exceptions.
-    assert 'data-marker-vllm_python="✗"' in html
-    assert 'data-status-vllm_python="problem"' in html
-    assert "Python parser exceptions" in html
-    assert "KeyError: &#x27;model_text&#x27;" in html
+    assert cell["status"] == "na"
+    assert cell["tooltip"]["na_note"] == "not applicable"
 
 
 def test_readme_documents_vllm_rust_capture_flow() -> None:
@@ -464,39 +455,20 @@ def test_sob_cell_two_dimensions_color_and_cross_engine_marker() -> None:
             S: _calls(),
         },
     )
-    html = g.render_cell_html(
-        case, "batch", "harmony", "5.d", "stream", "stream_vs_batch", "batch_on_stream"
-    )
-    m = _markers(html)
-    # DEFAULT: leak-only (all clean) -> empty, never a letter
-    assert m[f"data-marker-{D}"] == ""
-    assert m[f"data-marker-{V}"] == ""
-    assert m[f"data-marker-{S}"] == ""
-    # COLOR: stream-vs-own-batch divergence is red (problem); agreement is green (ok)
-    assert m[f"data-status-{D}"] == "problem"
-    assert m[f"data-status-{V}"] == "ok"
-    assert m[f"data-status-{S}"] == "problem"
-    # MARKER (Conformance): own stream-vs-batch token (X_rs/X_ps when stream != own batch) +
-    # cross-engine stream outputs. dynamo: diverges from its batch (D_rs) and from both
-    # peer stream outputs (V_psS_rs). vllm: matches its batch, differs only from dynamo
-    # (D_rs). sglang: diverges from its batch (S_rs), differs only from dynamo stream output (D_rs).
-    assert m[f"data-marker-parity-{D}"] == "D_rsV_psS_rs"
-    assert m[f"data-marker-parity-{V}"] == "D_rs"
-    assert m[f"data-marker-parity-{S}"] == "S_rsD_rs"
-    assert "D<sub>RS</sub>V<sub>PS</sub>S<sub>RS</sub>" in html
-    assert "V<sub>RB</sub>" not in html
-    assert "\u1d66" not in html
-    # Compare model: coloring is leak-only, so the global cross-impl
-    # "X output diverges from X batch" blob is gone (it named engines regardless of
-    # the Base/Compare selection); per-candidate reasons live in their own sections.
-    assert "output diverges from" not in html
-
-    stream_html = g.render_cell_html(
-        case, "streamv2", "harmony", "5.d", "stream", "stream_vs_batch", "streamv2"
-    )
-    stream_markers = _markers(stream_html)
-    assert stream_markers[f"data-marker-parity-{D}"] == "D_rsV_psS_rs"
-    assert "V<sub>PS</sub>S<sub>RS</sub>" in stream_html
+    # The page no longer bakes these into HTML (DIS-2434 \u2014 the JS view derives them);
+    # assert directly on the comparison SEMANTICS (the verdict functions the model uses).
+    # DEFAULT marker: leak-only (all clean) -> empty.
+    assert g._parser_marker(case, D) == ""
+    assert g._parser_marker(case, V) == ""
+    assert g._parser_marker(case, S) == ""
+    # COLOR: stream-vs-own-batch divergence is red (problem); agreement is green (ok).
+    assert g._sob_status(case, D) == "problem"
+    assert g._sob_status(case, V) == "ok"
+    assert g._sob_status(case, S) == "problem"
+    # Cross-engine stream marker (own stream-vs-batch token X_rs/X_ps + peers that differ).
+    assert g._stream_xeng_marker(case, D, "batch_on_stream") == "D_rsV_psS_rs"
+    assert g._stream_xeng_marker(case, V, "batch_on_stream") == "D_rs"
+    assert g._stream_xeng_marker(case, S, "batch_on_stream") == "S_rsD_rs"
 
 
 def test_sob_marker_all_consistent_is_equals_and_green() -> None:
@@ -504,15 +476,10 @@ def test_sob_marker_all_consistent_is_equals_and_green() -> None:
         stream={i: _calls("f") for i in IMPLS},
         batch={i: _calls("f") for i in (D1, V, S)},
     )
-    m = _markers(
-        g.render_cell_html(
-            case, "batch", "harmony", "1", "stream", "stream_vs_batch", "batch_on_stream"
-        )
-    )
     for impl in IMPLS:
-        assert m[f"data-marker-{impl}"] == ""  # default: nothing
-        assert m[f"data-marker-parity-{impl}"] == "="  # conformance: consistent
-        assert m[f"data-status-{impl}"] == "ok"  # green
+        assert g._parser_marker(case, impl) == ""  # default: nothing
+        assert g._stream_xeng_marker(case, impl, "batch_on_stream") == "="  # consistent
+        assert g._sob_status(case, impl) == "ok"  # green
 
 
 def test_sob_dynamo_na_when_no_v2_parser() -> None:
@@ -542,13 +509,8 @@ def test_sob_leak_marks_red_and_lightning() -> None:
         },
         batch={i: _calls("f") for i in (D1, V, S)},
     )
-    m = _markers(
-        g.render_cell_html(
-            case, "batch", "harmony", "1", "stream", "stream_vs_batch", "batch_on_stream"
-        )
-    )
-    assert m[f"data-marker-{D}"] == "↯"  # leak shows in default
-    assert m[f"data-status-{D}"] == "problem"  # red
+    assert g._parser_marker(case, D) == "↯"  # leak shows in default
+    assert g._sob_status(case, D) == "problem"  # red
 
 
 def test_vllm_python_leak_marks_red_and_lightning() -> None:
@@ -559,39 +521,21 @@ def test_vllm_python_leak_marks_red_and_lightning() -> None:
             S: {"calls": [], "normal_text": ""},
         }
     )
-    m = _markers(g.render_cell_html(case, "batch", "fam", "1", "batch", "cross_engine"))
-    assert m[f"data-status-{V}"] == "problem"
-    assert m[f"data-marker-{V}"] == "↯"
-    assert m[f"data-marker-parity-{V}"] == "↯D_rbS_rb"
-
-
-def test_sob_tooltip_labels_stream_and_batch() -> None:
-    case = _sobcase(
-        stream={i: _calls("f") for i in IMPLS},
-        batch={i: _calls("f") for i in (D1, V, S)},
-    )
-    ttip = g._build_sob_tooltip(case)
-    # Sections now use the standardized "<Engine> <Runtime> <version> (<mode>)" candidate
-    # label (same key as the Base/Compare buckets), wrapped as cand-<impl> so the
-    # selection can toggle them. The version comes from fixture provenance and may be
-    # absent for a synthetic case with no captured_with, so match it optionally.
-    for lbl in ("Dynamo v1 Rust", "Dynamo v2 Rust", "vLLM Rust", "vLLM Python", "SGLang Python"):
-        assert re.search(rf"{re.escape(lbl)}(?: \S+)? \(stream\):", ttip), f"missing {lbl} (stream)"
-    for lbl in ("Dynamo v1 Rust", "vLLM Python", "SGLang Python"):
-        assert re.search(rf"{re.escape(lbl)}(?: \S+)? \(batch\):", ttip), f"missing {lbl} (batch)"
-    assert not re.search(r"vLLM Rust(?: \S+)? \(batch\):", ttip)
-    assert "V<sub>RB</sub>" not in ttip
-    assert "cand cand-vllm_rust" in ttip
+    assert g._overview_status(case, V) == "problem"
+    assert g._parser_marker(case, V) == "↯"
+    assert g._parity_marker(case, V, g.BATCH_IMPL_KEYS, "b") == "↯D_rbS_rb"
 
 
 def test_stream_v2_x_marker_shows_vllm_rust_error_message() -> None:
+    # A peer `unavailable` block whose reason shows the parser was invoked and THREW
+    # gets the `✗` error marker (distinct from a benign n/a). The message is surfaced in
+    # the model tooltip (JS-rendered); assert on the verdict + the model's output block.
     error = "vLLM Rust parser not captured: tool parser parsing failed: invalid Hermes"
     case = {
         "__family": "hermes",
         "__case_id": "TOOLCALLING.streamv2.4.a",
         "__fixture_path": "toolcalling/fixtures-stream-v2/hermes/TOOLCALLING.streamv2.4.yaml",
         "description": "demo",
-        "unavailable": {R: error},
         "expected": {
             D: {"calls": [], "normal_text": ""},
             R: {"unavailable": error},
@@ -599,30 +543,15 @@ def test_stream_v2_x_marker_shows_vllm_rust_error_message() -> None:
             S: {"calls": [], "normal_text": ""},
         },
         "chunks": [
-            {
-                "delta_text": "<tool_call>not json</tool_call>",
-                "expected": {D: [], V: [], S: []},
-            }
+            {"delta_text": "<tool_call>not json</tool_call>", "expected": {D: [], V: [], S: []}}
         ],
-        "batch_expected": {
-            D: {"calls": [], "normal_text": ""},
-        },
+        "batch_expected": {D: {"calls": [], "normal_text": ""}},
     }
-
-    html = g.render_cell_html(
-        case,
-        "streamv2",
-        "hermes",
-        "4.a",
-        "stream",
-        "stream_vs_batch",
-        "streamv2",
-    )
-
-    assert f'data-marker-{R}="✗"' in html
-    assert f'data-status-{R}="problem"' in html
-    assert '<div class="ttip-unavail">' in html
-    assert error in html
+    assert g._parser_marker(case, R) == "✗"  # invoked-and-threw error marker
+    assert g._sob_status(case, R) == "problem"  # red
+    # The error message rides in the model's candidate output block (view shows it).
+    block = g._output_block_model(case["expected"][R])
+    assert block and block.get("unavailable") == error
 
 
 # --------------------------------------------------------------------------- #
@@ -720,10 +649,19 @@ def test_template_has_compare_picker_and_reasoning_candidates() -> None:
         "toolcalling_cases": "#",
         "pyproject_stub": "#",
     }
-    panels = g._combined_reasoning_panels(hrefs)
-    assert {panel["id"] for panel in panels} == {"tab-reasoning-batch", "tab-reasoning-stream"}
-    # No vLLM Rust for reasoning (parser_options already excludes it).
-    assert all(panel["parser_options"] == ("dynamo_v1", "vllm_python", "sglang_python") for panel in panels)
+    # Reasoning tabs are built by reasoning_table.build_model_panel (the model path);
+    # two tabs, candidates limited to dynamo/vllm/sglang (no vLLM Rust for reasoning).
+    r_rows, r_columns, r_refs = reasoning_table._load()
+    r_no_vllm, r_no_sglang = reasoning_table._derive_no_peer_sets(r_rows)
+    kinds, cand_impls = [], set()
+    for mode in ("batch", "stream"):
+        cols = reasoning_table._columns_for_mode(r_columns, mode)
+        tab = reasoning_table.build_model_panel(
+            r_rows, cols, r_refs, r_no_vllm, r_no_sglang, mode=mode, active=False)
+        kinds.append(tab["kind"])
+        cand_impls |= {c["impl"] for c in tab["candidates"]}
+    assert kinds == ["reasoning", "reasoning"]
+    assert cand_impls <= {"dynamo", "vllm", "sglang"}  # no vLLM Rust for reasoning
 
 
 def test_template_overview_cells_do_not_expand_from_hidden_marker_text() -> None:
@@ -740,32 +678,6 @@ def test_template_detail_cells_fit_conformance_markers() -> None:
     css = (SRC / "assets" / "conformance.css").read_text()
     assert ".view-details td.cell { color: transparent; }" in css
     assert ".view-details td.cell .cell-marker .marker-text { display: inline-block; color: inherit; white-space: nowrap; }" in css
-
-
-def test_conformance_marker_hide_rule_ordered_after_status_show() -> None:
-    """In Conformance mode the per-engine status markers and the cross-engine parity
-    markers are absolutely positioned in the same cell box. The rule that hides the
-    status marker (`.view-details.parity-mode td.cell .cell-marker { display: none }`)
-    has equal specificity to the status-marker show rules, so it MUST appear after
-    them and before the parity-marker show rules, or both render and visibly overlap.
-    Regression guard for the B7 asset-extraction reorder. The rule lives in the
-    generated CSS (one source of truth), not the static asset."""
-    css = g._impl_status_css()
-    lines = css.splitlines()
-    hide = [i for i, l in enumerate(lines)
-            if l.strip() == ".view-details.parity-mode td.cell .cell-marker { display: none; }"]
-    status_show = [i for i, l in enumerate(lines)
-                   if ".marker-" in l and "parity" not in l and "display: flex" in l]
-    parity_show = [i for i, l in enumerate(lines)
-                   if "marker-parity-" in l and "display: flex" in l]
-    assert hide, "hide-in-parity rule must be emitted by _impl_status_css()"
-    assert max(status_show) < hide[0] < min(parity_show), (
-        "hide-in-parity rule must sit after the status-show rules and before the parity-show rules"
-    )
-    # One source of truth: the static asset must NOT also carry this rule (it would
-    # inline before the generated block and lose the specificity tie).
-    asset = (SRC / "assets" / "conformance.css").read_text()
-    assert ".parity-mode td.cell .cell-marker { display: none; }" not in asset
 
 
 def test_tab_labels_put_version_after_family() -> None:
@@ -976,22 +888,9 @@ def test_compare_legend_documents_delta_and_drops_stale_parity_explainer() -> No
     legend = g._common_legend_html()
     assert "Δ" in legend, "legend should document the Δ divergence count"
     assert "names output that differs" not in legend, "stale per-parser marker text gone"
-    hrefs = {
-        k: "#"
-        for k in (
-            "reasoning_fixtures", "reasoning_cases", "reasoning_src", "toolcalling_src",
-            "streaming_harmony_src", "streaming_src", "toolcalling_streaming_cases",
-            "toolcalling_cases", "pyproject_stub",
-        )
-    }
-    # _apply_common_legend gives every panel the same rich legend.
-    panels = [{"id": "tab-a"}, {"id": "tab-b"}, {"id": "tab-toolcalling-batch"}]
-    g._apply_common_legend(panels, hrefs)
-    assert len({p["legend_html"] for p in panels}) == 1, "all tabs share one legend"
-    # Reasoning panels no longer carry the stale per-parser parity-explainer.
-    assert not any(
-        "parity_explainer_html" in p for p in g._combined_reasoning_panels(hrefs)
-    )
+    # One legend for the whole page: the model carries a single `legend_html` (built once
+    # from _common_legend_html) that every tab shares — no per-panel parity-explainer.
+    assert "parity_explainer" not in legend
 
 
 def test_compare_bar_renders_when_candidate_lacks_label_html() -> None:

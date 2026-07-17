@@ -1708,20 +1708,6 @@ def _tooltip_for(
     return "\n".join(parts)
 
 
-def _explanations_for(
-    case: dict[str, Any],
-    dyn: dict[str, Any],
-    family: str | None,
-) -> str:
-    parts = []
-    peer_reasons = _tooltip_for(case, dyn, family)
-    if peer_reasons:
-        parts.append(peer_reasons)
-    if isinstance(_explanation(dyn), str) and not _has_dynamo_leak(case, family):
-        parts.append(f"Dynamo: {_explanation(dyn)}")
-    return "\n".join(parts)
-
-
 def _reasoning_candidate_chart_html(
     case_id: str,
     family: str,

@@ -70,10 +70,6 @@ FIXTURE_IMPL_ALIASES: dict[str, str] = {
 }
 
 
-def canonical_impl_key(impl: str) -> str:
-    return LEGACY_IMPL_ALIASES.get(impl, impl)
-
-
 # B11: the capture wrapper stamps this marker into an `unavailable` reason when a
 # peer parser was invoked and THREW (as opposed to not running). The renderer
 # matches this SAME constant — a shared contract, not a private guessed regex — to

@@ -1689,32 +1689,6 @@ def _peer_version_items(versions: dict[str, str]) -> list[tuple[str, str]]:
 _IMPL_RADIO_LABEL = {"dynamo_v1": "Dynamo", "vllm_python": "vLLM", "sglang_python": "SGLang"}
 
 
-def _impl_version_items() -> list[dict[str, object]]:
-    """Version-radio model for the template: one entry per impl, each with its
-    versions (ascending) and which slug is the default (pinned = latest)."""
-    impl_versions = _impl_versions()
-    pinned = _pinned_versions(impl_versions)
-    items: list[dict[str, object]] = []
-    for impl, versions in impl_versions.items():
-        default = pinned.get(impl)
-        items.append(
-            {
-                "impl": impl,
-                "label": _IMPL_RADIO_LABEL.get(impl, impl),
-                "default_slug": _version_slug(default) if default else "",
-                "versions": [
-                    {
-                        "version": v,
-                        "slug": _version_slug(v),
-                        "default": v == default,
-                    }
-                    for v in versions
-                ],
-            }
-        )
-    return items
-
-
 # Candidate label base per parity impl: "<Engine> <Runtime>". Parity runs the v1
 # parsers; the standardized label is "<base> <version> (<mode>)" (e.g.
 # "Dynamo Rust 3.0.0 (batch)"), matching the conformance page. Dynamo's parser is a

@@ -173,21 +173,6 @@ def _impl_keys_for_output_kind(output_kind: str) -> tuple[str, ...]:
     return BATCH_IMPL_KEYS if output_kind == "batch" else STREAM_IMPL_KEYS
 
 
-def _overview_status_attrs(case: dict | None, impl_keys: tuple[str, ...] = BATCH_IMPL_KEYS) -> str:
-    parts = [
-        f'data-status-{impl}="{_overview_status(case, impl)}"'
-        for impl in impl_keys
-    ]
-    # Per-version status (data-status-<impl>-<slug>) powers the TC v1 version radios.
-    # Only batch cases carry __ver_status; other cells fall back to the pinned attr.
-    ver_status = case.get("__ver_status") if isinstance(case, dict) else None
-    if ver_status:
-        for impl, by_slug in ver_status.items():
-            for slug, info in by_slug.items():
-                parts.append(f'data-status-{impl}-{slug}="{info["status"]}"')
-    return " ".join(parts)
-
-
 def _canonical_tool_output(block: object) -> dict | None:
     if not isinstance(block, dict) or "unavailable" in block or "error" in block:
         return None
@@ -324,73 +309,6 @@ def _parser_marker(case: dict | None, impl: str) -> str:
     return ""
 
 
-def _parser_marker_attrs(
-    case: dict | None,
-    impl_keys: tuple[str, ...] = BATCH_IMPL_KEYS,
-    marker_mode: str | None = _BATCH_MODE_MARKER,
-) -> str:
-    attrs = [
-        f'data-marker-{impl}="{html_lib.escape(_parser_marker(case, impl))}"'
-        for impl in impl_keys
-    ]
-    attrs.extend(
-        f'data-marker-parity-{impl}="{html_lib.escape(_parity_marker(case, impl, impl_keys, marker_mode))}"'
-        for impl in impl_keys
-    )
-    return " ".join(attrs)
-
-
-def _marker_html(marker: str) -> str:
-    """Render marker suffixes like `V_ps` and `D_rb` with real HTML subscript."""
-    parts: list[str] = []
-    i = 0
-    while i < len(marker):
-        ch = marker[i]
-        if ch in set(ENGINE_LETTER.values()):
-            suffix = None
-            marker_len = 1
-            match = re.match(r"_(?:[rp][sb])", marker[i + 1 :])
-            if match:
-                suffix = match.group(0)[1:]
-                marker_len += len(match.group(0))
-            if suffix is not None:
-                parts.append(f"{html_lib.escape(ch)}<sub>{html_lib.escape(suffix.upper())}</sub>")
-                i += marker_len
-                continue
-        parts.append(html_lib.escape(ch))
-        i += 1
-    return "".join(parts)
-
-
-def _marker_span_html(
-    markers: dict[str, str],
-    parity_markers: dict[str, str],
-    impl_keys: tuple[str, ...] = BATCH_IMPL_KEYS,
-) -> str:
-    parts: list[str] = []
-    for impl in impl_keys:
-        parts.append(
-            f'<span class="cell-marker marker-{impl}"><span class="marker-text">{_marker_html(markers[impl])}</span></span>'
-        )
-    for impl in impl_keys:
-        parts.append(
-            f'<span class="cell-marker marker-parity-{impl}"><span class="marker-text">{_marker_html(parity_markers[impl])}</span></span>'
-        )
-    return "".join(parts)
-
-
-def _parser_marker_spans(
-    case: dict | None,
-    impl_keys: tuple[str, ...] = BATCH_IMPL_KEYS,
-    marker_mode: str | None = _BATCH_MODE_MARKER,
-) -> str:
-    return _marker_span_html(
-        {impl: _parser_marker(case, impl) for impl in impl_keys},
-        {impl: _parity_marker(case, impl, impl_keys, marker_mode) for impl in impl_keys},
-        impl_keys,
-    )
-
-
 def _norm_calls(calls: list) -> list[tuple]:
     """Normalize a calls list to [(name, canonical-json-args)] for equality."""
     out = []
@@ -420,15 +338,6 @@ def _impl_mode_letter(impl: str) -> str:
     # vLLM Python and vLLM Rust share the visible `V` prefix; the subscript carries
     # the implementation language (`p`/`r`).
     return "V" if impl == "vllm_rust" else ENGINE_LETTER[impl]
-
-
-def _impl_mode_marker_html(impl: str, mode: str) -> str:
-    return f"{_impl_mode_letter(impl)}<sub>{html_lib.escape(IMPL_LANG_MARKER[impl].upper() + mode.upper())}</sub>"
-
-
-def _impl_mode_label_html(impl: str, mode: str) -> str:
-    parse_mode = "stream" if mode == _STREAM_MODE_MARKER else "batch"
-    return f"{_impl_mode_marker_html(impl, mode)} ({_IMPL_DISPLAY[impl]} {parse_mode} parser)"
 
 
 def _stream_cross_suffix(impl: str, marker_context: str | None) -> str:
@@ -477,13 +386,6 @@ def _sob_status(case: dict | None, impl: str) -> str:
     return "ok" if consistent else "problem"
 
 
-def _sob_status_attrs(case: dict | None) -> str:
-    return " ".join(
-        f'data-status-{impl}="{_sob_status(case, impl)}"'
-        for impl in IMPL_KEYS
-    )
-
-
 def _stream_xeng_marker(case: dict | None, impl: str, marker_context: str | None = None) -> str:
     """Conformance marker for the stream tabs, two parts concatenated:
       - own-batch: `X_rs`/`X_ps` when this engine's stream diverges from its OWN batch
@@ -521,29 +423,6 @@ def _stream_xeng_marker(case: dict | None, impl: str, marker_context: str | None
             if e in available and e != impl and available[e] != selected
         )
     return leak + (own + cross or "=")
-
-
-def _sob_marker_attrs(case: dict | None, marker_context: str | None = None) -> str:
-    # Default marker (Conformance OFF) = leak-only, same as every tab. Conformance
-    # marker (Conformance ON) = cross-engine output agreement; the color
-    # (data-status) carries the stream-vs-own-batch result.
-    attrs = [
-        f'data-marker-{impl}="{html_lib.escape(_parser_marker(case, impl))}"'
-        for impl in IMPL_KEYS
-    ]
-    attrs.extend(
-        f'data-marker-parity-{impl}="{html_lib.escape(_stream_xeng_marker(case, impl, marker_context))}"'
-        for impl in IMPL_KEYS
-    )
-    return " ".join(attrs)
-
-
-def _sob_marker_spans(case: dict | None, marker_context: str | None = None) -> str:
-    return _marker_span_html(
-        {impl: _parser_marker(case, impl) for impl in IMPL_KEYS},
-        {impl: _stream_xeng_marker(case, impl, marker_context) for impl in IMPL_KEYS},
-        IMPL_KEYS,
-    )
 
 
 def _sob_cell_text(case: dict | None, marker_context: str | None = None) -> str:

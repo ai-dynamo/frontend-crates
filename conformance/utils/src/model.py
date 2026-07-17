@@ -183,18 +183,3 @@ def build_page(meta: dict, tabs: list[dict], *, parser_ni: dict | None = None,
         "legend_html": legend_html,
         "tabs": tabs,
     }
-
-
-# --- Validation helpers used by tests + the generators ---------------------------
-
-def iter_cells(page: dict):
-    """Yield (tab, row, sub, cell) for every real (kind=='cell') cell in the page."""
-    for tab in page["tabs"]:
-        for row in tab["rows"]:
-            for sub, cell in row.get("cells", {}).items():
-                if cell.get("kind") == "cell":
-                    yield tab, row, sub, cell
-
-
-def candidate_keys(tab: dict) -> set[str]:
-    return {c["key"] for c in tab["candidates"]}
