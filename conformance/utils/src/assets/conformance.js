@@ -67,7 +67,12 @@
       // compared against), so its Compare box shows pressed + locked. It's filtered
       // out of the compare set in applyCtl, so it isn't double-counted.
       if (isRef) { cb.checked = true; }
-      cb.disabled = isRef;
+      // Invariant: a Compare-with can never exist without a Reference. With no base
+      // (the cleared state) every box is unchecked + locked, so the only possible
+      // action is starring a new Reference. With a base, the ref's box is the locked
+      // one and every other row is free to toggle.
+      if (!base) { cb.checked = false; }
+      cb.disabled = isRef || !base;
       const row = cb.closest('.cmprow');
       if (row) { row.classList.toggle('is-ref', isRef); }
     });
@@ -155,7 +160,10 @@
     // Only record params when this panel differs from its default layout, so the
     // default state keeps a clean URL (and Reset lands on an empty query).
     if (!_sameLayout(pid, base, b)) {
-      if (base) { url.searchParams.set('base_' + pid, base); }
+      // A null base is a deliberate "no reference" state (the star was toggled off),
+      // distinct from the default layout — record it as an empty sentinel so a reload
+      // restores no-ref instead of falling back to the default reference.
+      url.searchParams.set('base_' + pid, base || '');
       if (b.length) { url.searchParams.set('cmp_' + pid, b.join(',')); }
     }
     window.history.replaceState(null, '', url.toString());
@@ -240,30 +248,62 @@
       ctl.querySelectorAll('input.cmp-on'), function (x) { return x.value === val; }) || null;
   }
   // Picking a new Reference (starring a row): the starred row is the reference, so its
-  // Compare box shows pressed. If the row you just starred was the ONLY compare, the
-  // previous reference becomes the compare (a 1-vs-1 swap); otherwise the previous
-  // reference drops out of the comparison.
+  // Compare box shows pressed. The PREVIOUS reference stays in the comparison as a normal
+  // checked Compare box, so moving the star to a new row keeps the old one visible
+  // (you're now comparing new-ref vs old-ref). syncRefDisable re-enables the old ref's
+  // box on the next applyCtl; leaving it checked here is what turns it into a compare.
   function handleRefChange(ctl) {
     const newBase = ctlBase(ctl);
-    const oldBase = ctl.dataset.prevBase || '';
-    const checked = Array.prototype.map.call(
-      ctl.querySelectorAll('input.cmp-on:checked'), function (x) { return x.value; });
-    // Active compares before the switch = checked boxes minus the old ref's (its box is
-    // checked only as the reference's pressed state, not as a real compare).
-    const priorCompares = checked.filter(function (v) { return v !== oldBase; });
-    const isSwap = priorCompares.length === 1 && priorCompares[0] === newBase;
     const newBox = _boxFor(ctl, newBase);
     if (newBox) { newBox.checked = true; }
-    if (oldBase && oldBase !== newBase && !isSwap) {
+    ctl.dataset.prevBase = newBase || '';
+  }
+  // Toggling the current Reference star OFF (clicking the already-selected star):
+  // drop the previous reference's pressed Compare box and clear the base. With no
+  // base, applyCtl paints every cell cmp-nobase, so the whole panel clears.
+  function handleRefUncheck(ctl) {
+    const oldBase = ctl.dataset.prevBase || '';
+    if (oldBase) {
       const oldBox = _boxFor(ctl, oldBase);
       if (oldBox) { oldBox.checked = false; }
     }
-    ctl.dataset.prevBase = newBase || '';
+    ctl.dataset.prevBase = '';
   }
   // Re-color the panel whenever a Reference star or Compare checkbox toggles.
   function initCompareInputs() {
     document.querySelectorAll('.cmpctl').forEach(function (ctl) {
       ctl.dataset.prevBase = ctlBase(ctl) || '';
+      // Radios don't fire `change` when you click the already-checked one, and there's
+      // no native "uncheck". The visible control is the ★ label; the radio is offscreen,
+      // so the real pointer lands on the LABEL and the radio gets only a synthesized
+      // click (never a mousedown). Wire both listeners to the label: record the pre-click
+      // state on mousedown, and on click, if it was already the Reference, prevent the
+      // re-activation, uncheck it, and drive the update ourselves.
+      ctl.querySelectorAll('input.cmp-ref').forEach(function (r) {
+        const label = r.closest('label') || r.parentElement;
+        if (!label) { return; }
+        label.addEventListener('mousedown', function () { r.dataset.wasChecked = r.checked ? '1' : '0'; });
+        label.addEventListener('click', function () {
+          if (r.dataset.wasChecked !== '1') { return; }
+          r.dataset.wasChecked = '0';
+          // Only clear the Reference when nothing else is selected to compare against.
+          // With one or more Compare checkboxes active (its own pressed box excepted)
+          // there's still a chart to show, so the star stays put.
+          const otherCompares = Array.prototype.filter.call(
+            ctl.querySelectorAll('input.cmp-on:checked'),
+            function (cb) { return cb.value !== r.value; });
+          if (otherCompares.length > 0) { return; }
+          // The browser (re)activates the radio as the click's default action AFTER this
+          // listener, so an inline uncheck gets clobbered. Defer it to the next tick so
+          // it lands after activation: uncheck, clear the base, repaint cmp-nobase.
+          setTimeout(function () {
+            r.checked = false;
+            handleRefUncheck(ctl);
+            const panel = ctl.closest('.tab-panel');
+            if (panel) { applyCtl(panel); }
+          }, 0);
+        });
+      });
       ctl.addEventListener('change', function (e) {
         if (e.target.matches('input.cmp-ref')) { handleRefChange(ctl); }
         if (e.target.matches('input.cmp-ref, input.cmp-on')) {
@@ -702,6 +742,18 @@
     ttip.style.opacity = '';
   }
 
+  // Touch devices have no hover, so the tooltip is opened by TAP and pinned open
+  // (with an ✕ to close) rather than shown on pointerenter. Desktop keeps hover;
+  // a click there also pins (handy for reading a big tooltip without holding the
+  // mouse still). Only one tooltip is pinned at a time.
+  const hoverCapable = window.matchMedia('(hover: hover)').matches;
+  let pinnedCell = null;
+  function unpinCell(c) { if (c && c._ttipUnpin) { c._ttipUnpin(); } }
+  document.addEventListener('click', function (e) {
+    // A click anywhere outside a cell (and not on a pinned tooltip) closes the pin.
+    if (pinnedCell && !e.target.closest('td.cell, td.parser')) { unpinCell(pinnedCell); }
+  });
+
   function attachTooltip(cell) {
     const ttip = cell.querySelector('.ttip');
     if (!ttip) return;
@@ -714,6 +766,34 @@
     let hideTimer = null;
     let isActive = false;
     let isVisible = false;
+
+    // ✕ close button (shown only while pinned) — inserted once per tooltip.
+    if (!ttip.querySelector('.ttip-close')) {
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.className = 'ttip-close';
+      x.setAttribute('aria-label', 'Close');
+      x.textContent = '✕';
+      x.addEventListener('click', function (e) { e.stopPropagation(); unpin(); });
+      ttip.insertBefore(x, ttip.firstChild);
+    }
+
+    function pin() {
+      if (pinnedCell && pinnedCell !== cell) { unpinCell(pinnedCell); }
+      clearTimers();
+      place(cell);
+      ttip.classList.add('ttip-visible', 'ttip-pinned');
+      isVisible = true;
+      isActive = true;
+      pinnedCell = cell;
+    }
+    function unpin() {
+      ttip.classList.remove('ttip-visible', 'ttip-pinned');
+      isVisible = false;
+      isActive = false;
+      if (pinnedCell === cell) { pinnedCell = null; }
+    }
+    cell._ttipUnpin = unpin;
 
     function clearTimers() {
       if (showTimer !== null) {
@@ -759,10 +839,34 @@
       }, hideDelayMs);
     }
 
-    cell.addEventListener('pointerenter', scheduleShow);
-    cell.addEventListener('pointerleave', scheduleHide);
-    cell.addEventListener('focusin', scheduleShow);
-    cell.addEventListener('focusout', scheduleHide);
+    // Tap (or click) toggles a pinned tooltip. Taps INSIDE the tooltip (its links,
+    // the ✕) behave normally. On touch there's no hover, so a tap on the cell must
+    // open the tooltip instead of following the cell's own parser-source link —
+    // preventDefault blocks that navigation. On desktop, a click on the cell link
+    // still navigates; a click on the cell body pins.
+    cell.addEventListener('click', function (e) {
+      if (e.target.closest('.ttip')) { return; }
+      if (!hoverCapable) {
+        e.preventDefault();
+      } else if (e.target.closest('a, button, input, label')) {
+        return;
+      }
+      if (ttip.classList.contains('ttip-pinned')) { unpin(); } else { pin(); }
+    });
+    // Hover show/hide only where hover exists; on touch it just flickers. A pinned
+    // tooltip ignores hover leave so it stays until ✕ / outside tap.
+    if (hoverCapable) {
+      cell.addEventListener('pointerenter', function () {
+        if (!ttip.classList.contains('ttip-pinned')) { scheduleShow(); }
+      });
+      cell.addEventListener('pointerleave', function () {
+        if (!ttip.classList.contains('ttip-pinned')) { scheduleHide(); }
+      });
+      cell.addEventListener('focusin', scheduleShow);
+      cell.addEventListener('focusout', function () {
+        if (!ttip.classList.contains('ttip-pinned')) { scheduleHide(); }
+      });
+    }
   }
   document.querySelectorAll('td.cell, td.parser').forEach(attachTooltip);
 

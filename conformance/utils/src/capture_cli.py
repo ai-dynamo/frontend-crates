@@ -97,10 +97,14 @@ def main(argv=None):
     b = sub.add_parser("batch-on-stream")
     add_peer_opts(b)
     g = b.add_mutually_exclusive_group()
-    # Public flag names stay --dynamo-rust-json / --capture-dynamo-rust-json for
-    # CLI compat; the dests follow the dynamo_v2 impl rename.
-    g.add_argument("--dynamo-rust-json", dest="dynamo_v2_json")
-    g.add_argument("--capture-dynamo-rust-json", dest="capture_dynamo_v2_json")
+    # Primary flags follow the dynamo_v2 impl rename; the old --dynamo-rust-json
+    # spellings stay as aliases. Explicit dest = what the code below reads.
+    g.add_argument("--dynamo-v2-json", "--dynamo-rust-json", dest="dynamo_v2_json")
+    g.add_argument(
+        "--capture-dynamo-v2-json",
+        "--capture-dynamo-rust-json",
+        dest="capture_dynamo_v2_json",
+    )
 
     ds = sub.add_parser("dynamo-stream")
     ds.add_argument("--fixture", required=True)
@@ -121,7 +125,7 @@ def main(argv=None):
         if args.capture_dynamo_v2_json:
             _cargo_bin("record_batch_via_stream", [], dry, output=args.capture_dynamo_v2_json)
             dynamo_v2_json = args.capture_dynamo_v2_json
-        extra = ["--dynamo-rust-json", dynamo_v2_json] if dynamo_v2_json else []
+        extra = ["--dynamo-v2-json", dynamo_v2_json] if dynamo_v2_json else []
         _driver("batch-on-stream", args, dry, extra=extra)
     elif args.cmd == "dynamo-stream":
         extra = ["--", args.fixture] + (["--text"] if args.text else [])

@@ -236,8 +236,16 @@ def test_unaligned_candidates_show_no_per_chunk_timing(rendered_page):
     assert noted > 0, "expected at least one 'timing not recorded' column (v1 jail)"
     # The reasoning tab's final-output-only notes alone must NOT satisfy this guard:
     # the TC stream tab's v1 jail column (emission-packed capture) must be noted too.
+    # The jail dir carries its capture-time v1 crate version — derive the candidate
+    # slug from the fixture tree rather than hardcoding it.
+    jail_dirs = [d for d in STREAM_SRC.glob("dynamo_v1-*") if d.is_dir()]
+    jail_dir = max(
+        jail_dirs, key=lambda d: [int(x) for x in re.findall(r"\d+", d.name)], default=None
+    )
+    assert jail_dir is not None, "v1 jail stream reference dir missing"
+    jail_key = jail_dir.name.replace(".", "-")
     html2 = rendered_page.read_text()
     assert re.search(
-        r'<th data-cand="dynamo_v1-3-0-0">(?:(?!</th>).)*?timing not recorded',
+        rf'<th data-cand="{re.escape(jail_key)}">(?:(?!</th>).)*?timing not recorded',
         html2, re.S,
-    ), "the v1 jail (dynamo_v1-3-0-0) stream column lacks the timing note"
+    ), f"the v1 jail ({jail_key}) stream column lacks the timing note"

@@ -254,21 +254,36 @@ def test_transpose_recolors_on_reference_change(driver):
     _set_transpose(driver, True)
     snap = "const tt=document.querySelector('.tab-panel.active table[data-transpose-table]');return Array.from(tt.querySelectorAll('td.cell')).map(function(c){return c.className;});"
     before = driver.execute_script(snap)
-    changed = driver.execute_script(
-        """
-        const ctl = document.querySelector('.tab-panel.active .cmpctl');
-        const refs = Array.from(ctl.querySelectorAll('input.cmp-ref'));
-        const other = refs.find(function (r) { return !r.checked && !r.disabled; });
-        if (!other) return false;
-        other.checked = true;
-        other.dispatchEvent(new Event('change', {bubbles: true}));
-        return true;
-        """
+    # Try EVERY alternate Reference until one recolors: adjacent capture
+    # generations (e.g. Dynamo v1 batch 3.0.0 vs 5.0.0 — old version dirs are
+    # kept as history) can be near-identical, so the FIRST alternate may
+    # legitimately produce the same colors.
+    n_refs = driver.execute_script(
+        "const ctl=document.querySelector('.tab-panel.active .cmpctl');"
+        "return ctl.querySelectorAll('input.cmp-ref').length;"
     )
-    assert changed, "no alternate Reference available to select"
-    time.sleep(0.3)
-    after = driver.execute_script(snap)
-    assert before != after, "transposed cells did not recolor when the Reference changed"
+    assert n_refs > 1, "no alternate Reference available to select"
+    recolored = False
+    for idx in range(n_refs):
+        changed = driver.execute_script(
+            """
+            const idx = arguments[0];
+            const ctl = document.querySelector('.tab-panel.active .cmpctl');
+            const r = Array.from(ctl.querySelectorAll('input.cmp-ref'))[idx];
+            if (!r || r.checked || r.disabled) return false;
+            r.checked = true;
+            r.dispatchEvent(new Event('change', {bubbles: true}));
+            return true;
+            """,
+            idx,
+        )
+        if not changed:
+            continue
+        time.sleep(0.3)
+        if driver.execute_script(snap) != before:
+            recolored = True
+            break
+    assert recolored, "transposed cells did not recolor for ANY alternate Reference"
 
 
 def test_transpose_honors_collapsed_case_group(driver):

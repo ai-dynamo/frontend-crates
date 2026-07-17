@@ -37,6 +37,8 @@ toolcalling/fixtures-batch-on-stream-v2/<family>/ # v2 complete-text-through-str
 reasoning/fixtures-v1/inputs/<family>/            # v1 reasoning cases
 ```
 
+**Capture version dirs are append-only — NEVER delete or overwrite an existing `<impl>-<version>/` dir when re-recording.** Every version dir (`dynamo_v1-3.0.0` AND `dynamo_v2-0.1.11` AND `dynamo_v2-0.1.22`, `vllm_python-0.23.0` AND `vllm_python-0.24.0`, …) is capture history: the chart renders each one as a comparison candidate, and readers fold them ascending WITHIN an impl so the latest capture wins per case (`dynamo_v1` and `dynamo_v2` are separate impls and never fold together). Re-recording after a parser change writes the CURRENT crate version's dir alongside the old ones (`refresh_dynamo_captures.py` / `capture_dynamo_jail_stream.py` do this); re-recording at the same version replaces that one dir only. Deleting an old version dir silently destroys the chart's version-comparison columns — it happened once (version dirs were wiped by a refresh and had to be restored) and the tooling has since been made additive. If a dir looks obsolete, it still is not yours to delete: the git-lfs store keeps it, and the manifest-pinned snapshot is what the chart shows.
+
 ## Render Outputs
 
 | Output | Command | Parser version | Fixture version |
@@ -115,3 +117,31 @@ The `rust` CI job checks out the LFS store (`lfs: true`), extracts the manifest-
 - `parity_toolcalling_batch_via_stream`: v2 code vs the `fixtures-batch-on-stream-v2` expectations.
 
 A parser change that alters output fails CI until the fixtures are re-captured and committed (workflow 2) — CI compares Dynamo against the pinned shard YAMLs, nothing else. The `conformance-table` CI job additionally re-renders both HTML pages from the same pinned store and runs the chart-invariant guards (`utils/tests/test_chart_invariants.py`).
+
+### 5. Add a new test case (e.g. a new `TOOLCALLING.streamv2.5.h`)
+
+A "case" is one `<num>.<letter>` sub-case shared across families. Adding one is FOUR edits, in order:
+
+1. **Input.** Add the case to `toolcalling/fixtures-stream-v2/inputs/<family>/TOOLCALLING.streamv2.<N>.yaml` for each family it applies to — the shared per-chunk `delta_text` (schema in [`toolcalling/fixtures-stream-v2/README.md`](toolcalling/fixtures-stream-v2/README.md#fixture-schema)). Batch cases go under `toolcalling/fixtures-batch-v1/inputs/<family>/` instead.
+2. **Description.** Add a bullet to `utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md` (or the batch/reasoning CASES.md) — the HTML "Case descriptions" section renders it, and the tooltip links to it.
+3. **Grouping (easy to miss).** Add the case id to its band in **`utils/src/fixtures.py`** `BATCH_SUB_CASE_GROUPS` (the streamv2 tab reuses the batch taxonomy). If you skip this, the column still renders but sorts to the FAR RIGHT as an "unknown" case instead of beside its `<num>.*` siblings. **The same list is duplicated in `utils/tests/parity/toolcalling/table.py` — edit BOTH** (the v2 render reads `fixtures.py`'s copy; the v1 parity page reads `table.py`'s). TODO: dedup these into one shared table so a case is one edit; until then a new `<num>.<letter>` should ideally key on its parent `<num>`, not enumerate every letter.
+4. **Capture + package.** `refresh_dynamo_captures.py stream` (records the Dynamo v2 output for the new case), then `package_fixtures.py`, then commit store + manifest. Peer engines (vLLM/SGLang) only cover the new case once re-captured against containers (workflow 1); until then the peer cells read `(no expectation)`.
+
+### 6. Backfill an OLD parser version onto a new case (`.patchN` overlays)
+
+To show what an already-released parser version would have produced on a case that didn't exist at its release (e.g. render Dynamo v2 `0.1.11`'s behavior on the new `5.h`), WITHOUT rewriting the pristine `0.1.11` shard:
+
+1. Build the old binary: `git worktree add <path> <release-commit>` (find it via `git log -S'version = "0.1.11"' -- '**/Cargo.toml'`), then `cargo build -p dynamo-parsers-v2 --bin record_dynamo_stream` there.
+2. Run that binary on the new-case input, and write the result into a NEW dir named `dynamo_v2-<ver>.patchN/` (`captured_with: <ver>.patchN`) — a full copy of the base `<ver>` capture plus the backfilled case. The pristine `dynamo_v2-<ver>/` shard stays byte-identical.
+3. `package_fixtures.py` → a `dynamo_v2-<ver>.patchN.tar.gz` shard. Commit.
+
+How `.patchN` is treated: **HTML** folds it into its base `<ver>` display column (it's the same binary, just re-run — `_base_stream_version` / `_impl_version_families` in `generate_conformance_table.py`), so it is NOT a separate candidate. **Parity tests** EXCLUDE `.patchN` dirs entirely (`version_dirs_ascending` in `tests/common/mod.rs`) — they validate the CURRENT parser, and a `.patchN` is an old binary that must never shadow the latest capture.
+
+### 7. Classify a v1-batch vs v2-stream difference (`known-divergences.yaml`)
+
+`parity_toolcalling_batch_via_stream` compares the v2 stream parser on batch text against v1's `expected.dynamo_v1`. v1 and v2 differ **by design** (v2 preserves surrounding/inter-call prose that v1 batch trims; v2 recovers bare calls v1 drops). When a case legitimately diverges, add it to `toolcalling/known-divergences.yaml` under `<family> → TOOLCALLING.batch.<case> → stream_vs_batch: <note>` (reuse the `*svb-surrounding-text` / `*svb-recovery` anchors). An entry with a note is an allowed, documented difference; a MISSING entry fails the test — so the file is also the audit trail of "v2 improved on v1 here." Do NOT add an entry to paper over an actual regression (v2 dropping text, leaking markup, corrupting args) — fix the parser instead.
+
+### Invariants the tooling now enforces (so you don't have to remember)
+
+- **Renders/tests read the manifest-pinned snapshot dir directly**, not the shared `<cache>/toolcalling` symlink — sibling `frontend-crates*` checkouts pinning other snapshots used to race to repoint it, so a render could read a snapshot missing the newest version. Enforced in `utils/src/_common.sh`.
+- **`package_fixtures.py` recomputes the sha256 of every kept shard from disk**, never copying the prior manifest's value — a restored/re-pinned store file can no longer produce a manifest that lies about its content (which broke `extract_fixtures`' sha-verify).

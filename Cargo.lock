@@ -911,23 +911,23 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "anyhow",
- "dynamo-parsers",
+ "num-traits",
  "openai-harmony",
  "regex",
  "serde",
  "serde_json",
  "serde_yaml",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
 name = "dynamo-parsers-v2-py"
 version = "0.1.12"
 dependencies = [
- "dynamo-parsers",
  "dynamo-parsers-v2",
  "pyo3",
 ]

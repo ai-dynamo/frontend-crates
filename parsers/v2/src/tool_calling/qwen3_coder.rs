@@ -19,7 +19,7 @@
 
 use std::collections::HashSet;
 
-use dynamo_parsers::tool_calling::{ToolDefinition, XmlParserConfig, try_tool_call_parse_xml};
+use crate::tool_calling::v1core::{ToolDefinition, XmlParserConfig, try_tool_call_parse_xml};
 
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
 
@@ -47,14 +47,7 @@ impl Qwen3CoderToolStreamParser {
             suppress_normal_text: false,
             next_index: 0,
             config: XmlParserConfig::default(),
-            tools: tools
-                .iter()
-                .map(|t| ToolDefinition {
-                    name: t.name.clone(),
-                    parameters: Some(t.parameters.clone()),
-                    strict: t.strict,
-                })
-                .collect(),
+            tools: tools.iter().map(ToolDefinition::from).collect(),
         }
     }
 
@@ -70,9 +63,13 @@ impl Qwen3CoderToolStreamParser {
                         .find(FUNCTION_START)
                         .is_some_and(|start| start < end);
                     if !function_before_end {
+                        // Complete block fully closed: drop its markup and resume
+                        // keeping natural text (inter-block / trailing). Any later
+                        // block re-enters `in_block` and re-suppresses its markup.
+                        // Matches the v1 batch parser (cases 8.b/8.c/8.d).
                         self.buffer.drain(..end + BLOCK_END.len());
                         self.in_block = false;
-                        self.suppress_normal_text = true;
+                        self.suppress_normal_text = false;
                         continue;
                     }
                 }
@@ -110,6 +107,30 @@ impl Qwen3CoderToolStreamParser {
                     self.suppress_normal_text = true;
                 }
                 continue;
+            }
+
+            // A recovered bare function suppresses its trailing markup; its stray
+            // `</tool_call>` close (cases 5.b/5.f) ENDS that markup context.
+            // Consume the orphan close and clear the latch so inter-call text —
+            // e.g. the single separator space before the next `<tool_call>` —
+            // flows through verbatim, matching the v1 jail+batch output.
+            // A stray/orphan close (`BLOCK_END`) before any opener is malformed
+            // double-close markup. Drop it so it can NEVER leak into normal_text;
+            // when suppression is off, first emit the natural text preceding it.
+            // Clear the latch either way (the markup context has ended).
+            if let Some(pos) = self.buffer.find(BLOCK_END) {
+                let next_open = [BLOCK_START, FUNCTION_START]
+                    .into_iter()
+                    .filter_map(|m| self.buffer.find(m))
+                    .min();
+                if next_open.is_none_or(|open| pos < open) {
+                    if !self.suppress_normal_text && pos > 0 {
+                        out.normal_text.push_str(&self.buffer[..pos]);
+                    }
+                    self.buffer.drain(..pos + BLOCK_END.len());
+                    self.suppress_normal_text = false;
+                    continue;
+                }
             }
 
             let block_start = self.buffer.find(BLOCK_START);
@@ -230,10 +251,12 @@ enum Marker {
     BareFunction,
 }
 
-/// Longest non-empty proper prefix of a start marker that `text` ends with, so a
+/// Longest non-empty proper prefix of a marker that `text` ends with, so a
 /// marker split across chunk boundaries is held back instead of leaked as text.
+/// `BLOCK_END` is included so a split stray/orphan close (consumed and dropped by
+/// the orphan-close handler once complete) never emits its first half as text.
 fn marker_prefix_suffix_len(text: &str) -> usize {
-    [BLOCK_START, FUNCTION_START]
+    [BLOCK_START, BLOCK_END, FUNCTION_START]
         .into_iter()
         .filter_map(|marker| {
             marker
@@ -378,6 +401,41 @@ mod tests {
     }
 
     #[test]
+    fn preserves_trailing_text_after_block() {
+        // 8.b: trailing narration after a complete block flows into normal_text.
+        let out = parse_chunks(
+            &weather_tools(),
+            &[
+                "<tool_call> <function=get_weather> <parameter=location>NYC</parameter> </function> </tool_call>",
+                " Let me know if you need more.",
+            ],
+        );
+        assert_eq!(out.normal_text, " Let me know if you need more.");
+        assert_eq!(out.coalesce_calls().calls.len(), 1);
+    }
+
+    #[test]
+    fn preserves_inter_call_and_trailing_text() {
+        // 8.d: narration between two complete blocks flows into normal_text;
+        // both calls are emitted with distinct indices.
+        let out = parse_chunks(
+            &weather_tools(),
+            &[
+                "I will check the weather. <tool_call> <function=get_weather> <parameter=location>NYC</parameter> </function> </tool_call>",
+                " Then check LA weather. <tool_call> <function=get_weather> <parameter=location>LA</parameter> </function> </tool_call>",
+            ],
+        );
+        assert_eq!(
+            out.normal_text,
+            "I will check the weather.  Then check LA weather. "
+        );
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 2);
+        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
+        assert_eq!(merged.calls[1].arguments, r#"{"location":"LA"}"#);
+    }
+
+    #[test]
     fn suppresses_incomplete_function_at_eof() {
         let out = parse_chunks(
             &weather_tools(),
@@ -388,6 +446,22 @@ mod tests {
         );
         assert_eq!(out.normal_text, "");
         assert!(out.calls.is_empty());
+    }
+
+    #[test]
+    fn holds_back_split_orphan_close() {
+        // A stray/orphan `</tool_call>` split across a chunk boundary with no tool
+        // call open must NOT leak its first half ("</tool") into normal_text: the
+        // partial close is held back until the next chunk completes the marker, at
+        // which point the orphan-close handler drops it entirely.
+        let out = parse_chunks(&weather_tools(), &["done </tool", "_call> ok"]);
+        assert!(out.calls.is_empty());
+        assert!(
+            !out.normal_text.contains('<'),
+            "markup fragment leaked into normal_text: {:?}",
+            out.normal_text
+        );
+        assert_eq!(out.normal_text, "done  ok");
     }
 
     #[test]

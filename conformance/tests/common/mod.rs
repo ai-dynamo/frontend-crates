@@ -84,3 +84,42 @@ pub fn fixture_name(path: &Path) -> String {
         .display()
         .to_string()
 }
+
+/// Version-sorted capture dirs for one impl prefix (e.g. `dynamo-` under
+/// fixtures-batch-v1, `dynamo_v2-` under fixtures-stream-v2), ASCENDING by
+/// numeric version. Multiple dirs per impl are capture HISTORY (never deleted);
+/// readers fold them ascending so the latest capture wins per case.
+pub fn version_dirs_ascending(root: &Path, prefix: &str) -> Vec<PathBuf> {
+    let mut dirs: Vec<(Vec<u64>, PathBuf)> = std::fs::read_dir(root)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| {
+            p.is_dir()
+                && p.file_name().and_then(|n| n.to_str()).is_some_and(|n| {
+                    // `<ver>.patchN` dirs are DISPLAY-ONLY overlays: an OLD parser
+                    // binary re-run to backfill a newer case onto version `<ver>`
+                    // (e.g. dynamo_v2-0.1.11.patch1 = the 0.1.11 binary on streamv2.5.h,
+                    // rendered under the 0.1.11 column in HTML). They are NOT the current
+                    // parser, so they must never join this "latest capture wins" fold —
+                    // otherwise a stale old-binary result can shadow the real latest.
+                    n.starts_with(prefix) && !n.contains(".patch")
+                })
+        })
+        .map(|p| {
+            let key: Vec<u64> = p
+                .file_name()
+                .and_then(|n| n.to_str())
+                .and_then(|n| n.strip_prefix(prefix))
+                .unwrap_or("")
+                .split(|c: char| !c.is_ascii_digit())
+                .filter(|s| !s.is_empty())
+                .map(|s| s.parse().unwrap_or(0))
+                .collect();
+            (key, p)
+        })
+        .collect();
+    dirs.sort();
+    dirs.into_iter().map(|(_, p)| p).collect()
+}

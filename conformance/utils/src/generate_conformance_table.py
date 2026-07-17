@@ -62,6 +62,7 @@ from __future__ import annotations
 import argparse
 import copy
 import datetime
+import functools
 import html as html_lib
 import json
 import os
@@ -548,7 +549,7 @@ def cell_for(
         elif kind == "err":
             parts.append(f"{letter}!")
 
-    # `explanation:` on the `expected.dynamo_rust` block flags Dynamo parser v2 output as
+    # `explanation:` on the `expected.dynamo_v2` block flags Dynamo parser v2 output as
     # leaking tool call markup only when it also leaves residual
     # `normal_text`. The Dynamo parser v2 can have non-leak reasons for dropped malformed
     # markup, so don't mark those as `↯`.
@@ -705,11 +706,16 @@ def _mark_ws(html_text: str) -> str:
     return "".join(parts)
 
 
-def _format_output_block_html(block, family: str | None = None) -> str:
+def _format_output_block_html(block, family: str | None = None, key: str | None = None) -> str:
     """HTML rendering of an `expected.<impl>` block for tooltips.
     Applies _colorize_xml to `normal_text` so raw model output the engine
     failed to parse shows the same tag coloring as the input."""
     if not isinstance(block, dict):
+        # An absent block on a version that predates this family (a LATER version of
+        # the same impl captured it) reads "(not implemented yet)"; otherwise it's a
+        # plain missing capture.
+        if _version_not_implemented(key, family):
+            return html_lib.escape("(not implemented yet)")
         return html_lib.escape("(no expectation)")
     if block.get("unavailable"):
         # Un-implemented Dynamo v2 family reads as a plain "n/a" (no "unavailable:"
@@ -735,12 +741,12 @@ def _format_output_block_html(block, family: str | None = None) -> str:
     return f"{nt_line}\n{calls_line}"
 
 
-def _cand_section_body(block, family: str | None = None) -> str:
+def _cand_section_body(block, family: str | None = None, key: str | None = None) -> str:
     """A compare candidate's tooltip section body: its output block plus its own
     `explanation:` (when present). The note lives INSIDE the candidate's toggleable
     section — so it shows only when that candidate is selected — instead of a global
     cross-engine "Divergent reasons" blob that would name unselected engines."""
-    body = _format_output_block_html(block, family)
+    body = _format_output_block_html(block, family, key)
     note = _explanation(block)
     if note:
         body += '\n<span class="expl">explanation: ' + html_lib.escape(str(note)) + "</span>"
@@ -801,11 +807,11 @@ def _build_tooltip_html(case: dict, dyn, output_kind: str = "batch") -> str:
     model_text = case.get("model_text")
     if isinstance(model_text, str) and model_text:
         input_label = "Input"
-        input_html = common.field_html("input_text", colorize_markup(model_text, family))
+        input_html = common.field_html("input_text", _mark_ws(colorize_markup(model_text, family)))
     chunks = case.get("chunks")
     if isinstance(chunks, list) and chunks:
         chunk_lines = []
-        chunk_html = colorize_stream_deltas(chunks, family)
+        chunk_html = [_mark_ws(h) for h in colorize_stream_deltas(chunks, family)]
         for i, chunk in enumerate(chunks):
             if not isinstance(chunk, dict):
                 continue
@@ -980,7 +986,7 @@ def _version_candidate_chart_html(case: dict, ver_status: dict) -> tuple[str, st
     if not input_chunks:
         return None
     family = case.get("__family")
-    chunk_html = colorize_stream_deltas(input_chunks, family)
+    chunk_html = [_mark_ws(h) for h in colorize_stream_deltas(input_chunks, family)]
     candidates = []  # (key, label, info)
     for impl in ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python"):
         # Engine columns in canonical order; within an engine, LATEST version first.
@@ -1033,7 +1039,8 @@ def _version_candidate_chart_html(case: dict, ver_status: dict) -> tuple[str, st
     # list sections, so nothing the list carried may be lost.
     final_cells = "".join(
         common.cand_td(
-            key, _cand_section_body(info.get("block"), family).replace(chr(10), "<br>")
+            key,
+            _cand_section_body(info.get("block"), family, key).replace(chr(10), "<br>"),
         )
         for key, _label, info in candidates
     )
@@ -1058,11 +1065,11 @@ def _merged_candidate_chart_html(case: dict, cmp_items: list) -> tuple[str, str]
     cells = "".join(
         common.cand_td(
             item["key"],
-            _cand_section_body(item.get("block"), family).replace(chr(10), "<br>"),
+            _cand_section_body(item.get("block"), family, item["key"]).replace(chr(10), "<br>"),
         )
         for item in cmp_items
     )
-    input_html = common.field_html("input_text", colorize_markup(model_text, family))
+    input_html = common.field_html("input_text", _mark_ws(colorize_markup(model_text, family)))
     final_row = f'<tr class="ttip-final"><td class="cin">{input_html}</td>{cells}</tr>'
     table = common.candidate_chart_table(header, [final_row])
     return ("Output (recorded from parser = expected)", table)
@@ -1101,7 +1108,7 @@ def _per_chunk_chart_html(case: dict, output_kind: str = "stream") -> tuple[str,
             unavailable.setdefault(impl, block["unavailable"])
     impls = [i for i in IMPL_KEYS if i not in unavailable]
 
-    chunk_html = colorize_stream_deltas(chunks, family)
+    chunk_html = [_mark_ws(h) for h in colorize_stream_deltas(chunks, family)]
     # Baseline column: the Dynamo BATCH result (no chunks — just the result),
     # placed immediately left of the stream columns as a fixed reference. The
     # streaming parser's job is to reconstruct this batch parse, so it sits beside
@@ -1331,6 +1338,15 @@ def render_cell_html(
     cmp_attr = f' data-cmp="{cmp_json}"' if cmp_json else ""
     cmp_span = '<span class="cmp-marker"><span class="marker-text"></span></span>' if cmp_json else ""
     marker_spans = cmp_span + marker_spans
+    # Documented v1-vs-v2 divergence (known-divergences.yaml): calls agree, so the
+    # cell is green, but normal_text differs by design — mark it as KNOWN. The
+    # span sits outside .marker-text, so the compare JS never overwrites it. Set
+    # on the sob cases and propagated to the merged batch-tab case.
+    if isinstance(case, dict) and case.get("__known_divergence"):
+        marker_spans += (
+            '<span class="kdiv" title="Known v1-vs-v2 divergence: calls agree, '
+            "normal_text differs by design — see the popup's explanation\">≠</span>"
+        )
     # data-family lets the compare JS tell "not implemented" (the selected Reference
     # parser doesn't support this family) apart from the case-level "not applicable".
     fam_attr = f' data-family="{html_lib.escape(str(family or ""))}"'
@@ -1516,6 +1532,11 @@ def _parser_label_markdown(
 # Families with bespoke paths (harmony token-id/text, deepseek_v4 DSML note) keep their
 # dedicated branches below; new standard families belong here, not in new if-branches.
 _V2_STREAM_PARSER_CELLS: dict[str, tuple[str, str, str]] = {
+    "gemma4": ("Gemma4ToolStreamParser text path", "gemma4.rs", "Gemma"),
+    "glm47": ("Glm47ToolStreamParser text path", "glm47.rs", "GLM XML"),
+    "kimi_k2": ("KimiK2ToolStreamParser text path", "kimi_k2.rs", "Kimi XML"),
+    "minimax_m2": ("MiniMaxM2ToolStreamParser text path", "minimax_m2.rs", "MiniMax XML"),
+    "minimax_m3": ("MiniMaxM3ToolStreamParser text path", "minimax_m3.rs", "MiniMax-M3 XML"),
     "qwen3_coder": ("Qwen3CoderToolStreamParser text path", "qwen3_coder.rs", "Qwen XML"),
 }
 
@@ -2129,8 +2150,9 @@ def _dynamo_v2_version() -> str | None:
     captured data. Reading the live crate makes the label drift ahead — the page would
     show 0.1.16 in one place and the real captured 0.1.11 in another the moment the crate
     is bumped before a re-capture/republish."""
+    # Versions are ascending; the LATEST capture is the current v2 parser build.
     vs = _stream_impl_versions().get(BASELINE_STREAM_IMPL, [])
-    return vs[0] if vs else None
+    return vs[-1] if vs else None
 
 
 def _v2_display_version(impl: str) -> str | None:
@@ -2162,8 +2184,9 @@ def _impl_candidate_items(
     impl_keys: tuple[str, ...], versions: dict[str, str] | None = None
 ) -> list[dict[str, str]]:
     """Candidates for a non-versioned tab: one per impl key, labeled with the
-    captured version when available (e.g. 'vLLM Rust 0.23.0'). First = Base (A),
-    the rest default to Compare-with (B)."""
+    captured version when available (e.g. 'vLLM Rust 0.23.0'). First = Base (A);
+    everything else starts UNSELECTED (C) — the default view is just the Dynamo
+    reference, and the reader opts into comparisons."""
     versions = versions or {}
     out: list[dict[str, str]] = []
     for i, impl in enumerate(impl_keys):
@@ -2172,7 +2195,7 @@ def _impl_candidate_items(
         out.append({
             "key": impl,
             "label": f"{short} {ver}" if ver else short,
-            "default_bucket": "A" if i == 0 else "B",
+            "default_bucket": "A" if i == 0 else "C",
         })
     return out
 
@@ -2182,10 +2205,9 @@ def _candidate_items() -> list[dict[str, str]]:
     within each engine versions run LATEST-FIRST (0.24.0 before 0.23.0). Each:
     {key, impl, version, slug, label, short, default_bucket}.
 
-    Default layout: A (reference) = the first candidate (Dynamo's latest); B (compare
-    with) = the latest version of each peer impl; C (others) = the older versions."""
+    Default layout: A (reference) = the first candidate (Dynamo's latest);
+    everything else starts UNSELECTED (C) — the reader opts into comparisons."""
     impl_versions = _batch_impl_versions()
-    latest = {k: (vers[-1] if vers else None) for k, vers in impl_versions.items()}
     out: list[dict[str, str]] = []
     first = True
     for canon in ("dynamo_v1", "vllm_python", "sglang_python"):
@@ -2194,8 +2216,6 @@ def _candidate_items() -> list[dict[str, str]]:
             if first:
                 bucket = "A"
                 first = False
-            elif v == latest.get(canon):
-                bucket = "B"
             else:
                 bucket = "C"
             out.append({
@@ -2226,6 +2246,66 @@ _STREAM_SRC = (
 )
 
 
+_PATCH_SUFFIX_RE = re.compile(r"\.patch\d+$")
+
+
+def _base_stream_version(ver: str) -> str:
+    """A `X.patchN` capture is the SAME parser binary re-run to backfill newer
+    cases onto version `X` (e.g. 0.1.11.patch1 = the 0.1.11 binary on streamv2.5.h).
+    It folds onto `X` for display — it is not a standalone candidate version. The
+    on-disk shard stays separate so the pristine `X` capture is never rewritten;
+    the resolver folds the overlay because it sorts equal to `X`."""
+    return _PATCH_SUFFIX_RE.sub("", ver)
+
+
+@functools.lru_cache(maxsize=1)
+def _impl_version_families() -> dict:
+    """{impl: [(version_raw, slug, frozenset(families)), ...]} discovered from
+    fixtures-stream-v2/<impl>-<version>/<family>/. Lets a genuinely "not
+    implemented yet" candidate (a family a LATER version of the same impl added)
+    be told apart from a plain missing capture. `.patchN` overlays merge into
+    their base version's family set."""
+    merged: dict = {}
+    if _STREAM_SRC.is_dir():
+        for d in _STREAM_SRC.iterdir():
+            if not d.is_dir() or d.name == "inputs" or "-" not in d.name:
+                continue
+            impl, ver = d.name.split("-", 1)
+            base = _base_stream_version(ver)
+            fams = frozenset(f.name for f in d.iterdir() if f.is_dir())
+            merged.setdefault(impl, {}).setdefault(base, set()).update(fams)
+    out: dict = {}
+    for impl, by_ver in merged.items():
+        for ver, fams in by_ver.items():
+            fams = frozenset(fams)
+            out.setdefault(impl, []).append(
+                (ver, toolcalling_table._version_slug(ver), fams)
+            )
+    return out
+
+
+def _version_not_implemented(key: str | None, family: str | None) -> bool:
+    """True when candidate `key` (`<impl>-<slug>`) lacks `family` but a LATER
+    version of the SAME impl captured it — the family was added after this
+    version, so an absent block reads "(not implemented yet)", not the generic
+    "(no expectation)". (Comparing e.g. Dynamo v2 0.1.11 vs 0.1.22 on Gemma/GLM.)"""
+    if not key or not family:
+        return False
+    impl, _, slug = key.partition("-")
+    entries = _impl_version_families().get(impl)
+    if not entries:
+        return False
+    here = next((e for e in entries if e[1] == slug), None)
+    if here is None or family in here[2]:
+        return False
+    tk = toolcalling_table._version_sort_key(here[0])
+    return any(
+        family in e[2]
+        for e in entries
+        if toolcalling_table._version_sort_key(e[0]) > tk
+    )
+
+
 def _stream_impl_versions() -> dict[str, list[str]]:
     """{stream_impl: versions ascending} discovered from the fixtures-stream-v2/
     <impl>-<version>/ dirs (no hardcoded anchor — the baseline is whichever version is
@@ -2237,7 +2317,10 @@ def _stream_impl_versions() -> dict[str, list[str]]:
             if not d.is_dir() or d.name == "inputs" or "-" not in d.name:
                 continue
             impl, ver = d.name.split("-", 1)
-            found.setdefault(impl, []).append(ver)
+            # `.patchN` overlays are NOT standalone candidates — they fold onto their
+            # base version (the resolver merges them since they sort equal). Collapse
+            # to the base so only real versions become compare columns.
+            found.setdefault(impl, []).append(_base_stream_version(ver))
     for impl in list(found):
         found[impl] = sorted(set(found[impl]), key=toolcalling_table._version_sort_key)
     order = ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python")
@@ -2246,9 +2329,9 @@ def _stream_impl_versions() -> dict[str, list[str]]:
 
 def _stream_candidate_items() -> list[dict[str, str]]:
     """Versioned comparison candidates for the stream tab. Keyed <impl>-<slug> like
-    the batch tab. Default layout: A (reference) = Dynamo v1 (jail+batch, 3.0.0) — the
-    parser that has stream coverage on every family; B (compare) = Dynamo v2 + the
-    latest of each peer; C (others) = older peer versions."""
+    the batch tab. Default layout: A (reference) = the LATEST Dynamo v2 stream
+    capture (this is v2's tab); everything else — the v1 jail reference, the
+    peers, and older versions — starts UNSELECTED (C), the reader opts in."""
     impl_versions = _stream_impl_versions()
     latest = {i: (vs[-1] if vs else None) for i, vs in impl_versions.items()}
     out: list[dict[str, str]] = []
@@ -2256,11 +2339,8 @@ def _stream_candidate_items() -> list[dict[str, str]]:
         # Within an engine, versions run LATEST-FIRST (0.24.0 before 0.23.0).
         for v in reversed(impl_versions.get(impl, [])):
             slug = toolcalling_table._version_slug(v)
-            if impl == BASELINE_BATCH_IMPL:
-                # Dynamo v1 (jail+batch) is the default reference on this tab.
+            if impl == BASELINE_STREAM_IMPL and v == latest.get(impl):
                 bucket = "A"
-            elif impl == BASELINE_STREAM_IMPL or v == latest.get(impl):
-                bucket = "B"
             else:
                 bucket = "C"
             out.append({
@@ -2269,6 +2349,35 @@ def _stream_candidate_items() -> list[dict[str, str]]:
                 "default_bucket": bucket,
             })
     return out
+
+
+@functools.lru_cache(maxsize=1)
+def _stream_divergence_notes() -> dict:
+    """Hand-maintained sidecar notes for known Dynamo divergences
+    (conformance/toolcalling/known-divergences.yaml,
+    read from the REAL repo root via FRONTEND_CRATES_ROOT — this module runs
+    from the staged copy). Applied at render time so the notes survive capture
+    re-records. {family: {case_id: {"v2"|"jail": note}}}."""
+    root = os.environ.get("FRONTEND_CRATES_ROOT")
+    if not root:
+        return {}
+    path = Path(root) / "conformance/toolcalling/known-divergences.yaml"
+    if not path.exists():
+        return {}
+    return yaml.safe_load(path.read_text()) or {}
+
+
+def _known_divergence_note(family: str, case_id: str, key: str) -> str | None:
+    """One note from known-divergences.yaml: `v2`/`jail` for the stream-tab
+    Dynamo candidates, `stream_vs_batch` for the batch-tab v1-vs-v2 allowlist."""
+    return ((_stream_divergence_notes().get(family) or {}).get(case_id) or {}).get(key)
+
+
+def _stream_divergence_note(family: str, case_id: str, impl: str) -> str | None:
+    """The sidecar note for one (family, case, dynamo candidate) — `v2` = the
+    dynamo_v2 stream parser, `jail` = the dynamo_v1 jail+batch reference."""
+    gen = "v2" if impl == BASELINE_STREAM_IMPL else "jail"
+    return _known_divergence_note(family, case_id, gen)
 
 
 def _stream_version_families(impl: str, version: str) -> set[str] | None:
@@ -2374,6 +2483,17 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
                     })
             if covered is not None and case.get("__family") not in covered:
                 block, status, vchunks = None, "na", None
+            # Attach the hand-maintained sidecar note for a KNOWN v2-vs-jail
+            # divergence to this candidate's block, so the popup explains the Δ
+            # and the cell drops its `?` research-needed suffix.
+            if impl in (BASELINE_BATCH_IMPL, BASELINE_STREAM_IMPL) and isinstance(
+                block, dict
+            ):
+                note = _stream_divergence_note(
+                    case.get("__family") or key[0], case.get("__case_id") or "", impl
+                )
+                if note:
+                    block = {**block, "explanation": note}
             # Aligned = the raw capture recorded one row per INPUT chunk, so a row
             # index is real consumer-visible timing. The v1 jail captures are
             # emission-packed (fewer rows than inputs) — timing NOT recorded.
@@ -2423,14 +2543,34 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
     return result
 
 
+def _canon_call_for_sig(call):
+    """A call with its `arguments` decoded when it is a JSON string, so the
+    signature compares argument VALUES, not serialization bytes. The v1 parser
+    serializes arguments from a HashMap (key order varies per capture) while the
+    v2 stream parser pins source order — byte-comparing the strings flagged a
+    divergence on every multi-arg call even when the decoded values were
+    identical. `sort_keys=True` in the dump then makes key order irrelevant;
+    genuine value/type differences (e.g. `"2"` vs `2`) still differ."""
+    if not isinstance(call, dict):
+        return call
+    args = call.get("arguments")
+    if isinstance(args, str):
+        try:
+            return {**call, "arguments": json.loads(args)}
+        except (json.JSONDecodeError, ValueError):
+            return call
+    return call
+
+
 def _candidate_sig(block) -> str:
     """Canonical signature of a candidate's output; equal signatures = same output."""
     if not isinstance(block, dict) or "unavailable" in block:
         return "na"
     if "error" in block:
         return f"err:{block.get('error')}"
+    calls = [_canon_call_for_sig(c) for c in block.get("calls") or []]
     return json.dumps(
-        {"calls": block.get("calls") or [], "normal_text": block.get("normal_text") or ""},
+        {"calls": calls, "normal_text": block.get("normal_text") or ""},
         sort_keys=True, ensure_ascii=False,
     )
 
@@ -2553,6 +2693,8 @@ def _attach_merged_cmp(cases: dict) -> None:
                 })
         sob = sob_cases.get(key)
         if sob is not None:
+            if sob.get("__known_divergence"):
+                case["__known_divergence"] = True
             expected = _expected(sob)
             for impl in STREAM_IMPL_KEYS:
                 ver = stream_versions.get(impl)
@@ -2921,6 +3063,19 @@ def _build_stream_on_batch_cases(batch_cases: dict) -> dict:
             ),
             "batch_expected": _normalize_impl_mapping(bcase.get("expected") or {}),
         }
+        # A documented v1-batch vs v2-stream divergence (the batch-via-stream
+        # parity allowlist): note the v2 block (popup `explanation:`) and flag
+        # the case so the cell renders the `≠` known-divergence suffix. The
+        # generator promotes a bare parent id to `.a` — fall back like the
+        # overlay lookup above so `…batch.13` matches the promoted `…batch.13.a`.
+        note = _known_divergence_note(family, cid, "stream_vs_batch")
+        if note is None and cid.endswith(".a"):
+            note = _known_divergence_note(family, cid[:-2], "stream_vs_batch")
+        if note:
+            blk = cases[(family, sub)]["expected"].get(BASELINE_STREAM_IMPL)
+            if isinstance(blk, dict) and "unavailable" not in blk:
+                blk["explanation"] = note
+            cases[(family, sub)]["__known_divergence"] = True
     return cases
 
 

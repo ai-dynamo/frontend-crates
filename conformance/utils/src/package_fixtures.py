@@ -232,8 +232,16 @@ def merge_shards(built, prune):
     if manifest_path.exists():
         prior = json.loads(manifest_path.read_text()).get("shards", [])
         for s in prior:
-            if s["path"] not in built_paths and (FIXTURES_DIR / s["path"]).exists():
-                merged.append(s)
+            fp = FIXTURES_DIR / s["path"]
+            if s["path"] not in built_paths and fp.exists():
+                # RECOMPUTE the sha/size from the on-disk file — never trust the prior
+                # manifest's value. A kept shard's store file can change between runs
+                # (git restore, a re-pin, a manual swap); copying the old sha would
+                # publish a manifest that lies about the content and makes
+                # extract_fixtures' sha-verify fail or serve stale data.
+                merged.append(
+                    {"path": s["path"], "sha256": sha256_file(fp), "size": fp.stat().st_size}
+                )
     merged.sort(key=lambda s: s["path"])
     return merged
 

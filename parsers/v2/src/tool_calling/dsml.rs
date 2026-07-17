@@ -23,6 +23,18 @@ const PARAMETER_END: &str = "</｜DSML｜parameter>";
 /// `name` delta is emitted immediately before the `arguments` delta (both once
 /// the call closes), so consumers still coalesce the two by `tool_index` — the
 /// same wire shape Harmony uses (`name`-first, then arguments fragment).
+///
+/// `normal_text` keeps natural-language text from COMPLETE tool-call blocks
+/// verbatim — prefix before the first block, text BETWEEN blocks, and text
+/// AFTER the last block — and strips only the block markup. This matches the v1
+/// batch DSML parser's "remove the complete-block markup spans, keep surrounding
+/// text" rule (cases 2.b/2.c/8.b/8.c/8.d).
+///
+/// `suppress_normal_text` is the latch that distinguishes the two contracts:
+/// it is cleared when a COMPLETE block closes (so the next inter/trailing text
+/// flows through) but stays LATCHED through degraded recovery (bare invoke /
+/// orphan markers), preserving the v1 batch parser's drop-without-leak behavior
+/// for malformed/unrecoverable input.
 pub struct DeepSeekV4ToolStreamParser {
     buffer: String,
     in_block: bool,
@@ -85,7 +97,6 @@ impl DeepSeekV4ToolStreamParser {
                 });
                 self.next_index += 1;
                 self.open_invoke = None;
-                self.suppress_normal_text = true;
                 continue;
             }
 
@@ -96,9 +107,12 @@ impl DeepSeekV4ToolStreamParser {
                         .find(INVOKE_START_PREFIX)
                         .is_some_and(|start| start < end);
                     if !invoke_before_end {
+                        // Complete block fully closed: drop its markup and resume
+                        // keeping natural text (inter-block / trailing). Any later
+                        // block re-enters `in_block` and re-suppresses its markup.
                         self.buffer.drain(..end + BLOCK_END.len());
                         self.in_block = false;
-                        self.suppress_normal_text = true;
+                        self.suppress_normal_text = false;
                         continue;
                     }
                 }
@@ -132,6 +146,31 @@ impl DeepSeekV4ToolStreamParser {
                 continue;
             }
 
+            // A recovered bare invoke latches suppression for its orphan markup
+            // tail; the stray `</｜DSML｜tool_calls>` close (cases 5.b/5.f) ENDS
+            // that markup context. Consume the orphan close and clear the latch
+            // so inter-call text — e.g. the single separator space before the
+            // next block — flows through verbatim, matching the v1 jail+batch
+            // output.
+            // A stray/orphan close (`BLOCK_END`) before any opener is malformed
+            // double-close markup. Drop it so it can NEVER leak into normal_text;
+            // when suppression is off, first emit the natural text preceding it.
+            // Clear the latch either way (the markup context has ended).
+            if let Some(pos) = self.buffer.find(BLOCK_END) {
+                let next_open = [BLOCK_START, INVOKE_START_PREFIX]
+                    .into_iter()
+                    .filter_map(|m| self.buffer.find(m))
+                    .min();
+                if next_open.is_none_or(|open| pos < open) {
+                    if !self.suppress_normal_text && pos > 0 {
+                        out.normal_text.push_str(&self.buffer[..pos]);
+                    }
+                    self.buffer.drain(..pos + BLOCK_END.len());
+                    self.suppress_normal_text = false;
+                    continue;
+                }
+            }
+
             let block_start = self.buffer.find(BLOCK_START);
             let bare_invoke_start = self.buffer.find(INVOKE_START_PREFIX);
             let next_marker = match (block_start, bare_invoke_start) {
@@ -143,6 +182,9 @@ impl DeepSeekV4ToolStreamParser {
             };
 
             let Some((start, marker)) = next_marker else {
+                // Outside any block / open invoke: keep natural text verbatim
+                // unless suppression is latched (degraded recovery). Retain a
+                // trailing partial-marker so we don't emit half a fence mid-stream.
                 let keep = if flush {
                     0
                 } else {
@@ -159,6 +201,8 @@ impl DeepSeekV4ToolStreamParser {
             };
 
             if start > 0 {
+                // Text before the next marker: natural text (prefix / inter-block /
+                // trailing), kept verbatim unless suppression is latched.
                 if !self.suppress_normal_text {
                     out.normal_text.push_str(&self.buffer[..start]);
                 }
@@ -173,6 +217,10 @@ impl DeepSeekV4ToolStreamParser {
                 }
                 Marker::BareInvoke => match self.open_invoke_header()? {
                     Some(tool_index) => {
+                        // Degraded recovery: latch suppression so the orphan
+                        // markup tail around a bare invoke is dropped, not leaked
+                        // (matches the v1 batch recovery contract).
+                        self.suppress_normal_text = true;
                         tracing::warn!(
                             why = "dsv4_bare_invoke_recovery",
                             tool_index,
@@ -210,7 +258,6 @@ impl DeepSeekV4ToolStreamParser {
         self.buffer.drain(..header_len);
         let tool_index = self.next_index;
         self.open_invoke = Some((tool_index, name));
-        self.suppress_normal_text = true;
         Ok(Some(tool_index))
     }
 }
@@ -325,6 +372,27 @@ mod tests {
         }
         out.append(parser.finish().expect("finish"));
         out
+    }
+
+    #[test]
+    fn stray_double_close_never_leaks() {
+        // A well-formed call, then a DUPLICATE (orphan) close before any prose:
+        // the stray `</｜DSML｜tool_calls>` is malformed markup and must be
+        // dropped, never pushed into normal_text, while the trailing prose after
+        // it flows through.
+        let out = parse_chunks(&[
+            "<｜DSML｜tool_calls> <｜DSML｜invoke name=\"get_weather\">\
+             <｜DSML｜parameter name=\"location\" string=\"true\">NYC</｜DSML｜parameter>\
+             </｜DSML｜invoke> </｜DSML｜tool_calls>",
+            " </｜DSML｜tool_calls>done",
+        ]);
+        let normal_text = out.normal_text.clone();
+        assert_eq!(out.coalesce_calls().calls.len(), 1);
+        assert!(
+            !normal_text.contains("DSML"),
+            "stray close leaked into normal_text: {normal_text:?}"
+        );
+        assert!(normal_text.contains("done"));
     }
 
     #[test]

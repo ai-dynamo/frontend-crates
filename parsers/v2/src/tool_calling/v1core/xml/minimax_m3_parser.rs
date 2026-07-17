@@ -1,0 +1,753 @@
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+use serde_json::{Map, Number, Value};
+use uuid::Uuid;
+
+use super::super::ToolDefinition;
+use super::super::config::MiniMaxM3ParserConfig;
+use super::parsed_value::{coerce_integer_literal, raw_number_literal};
+use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
+
+// Main entry point: strips normal prefix text and turns M3 tool markup into tool-call responses.
+pub fn try_tool_call_parse_minimax_m3(
+    message: &str,
+    config: &MiniMaxM3ParserConfig,
+    tools: Option<&[ToolDefinition]>,
+) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
+    // `normal_text` is the model text with each complete tool-call block removed
+    // (from `]<]minimax[>[<tool_call>` through `]<]minimax[>[</tool_call>`),
+    // keeping the surrounding text verbatim: the prefix before the first block,
+    // text BETWEEN blocks, and text AFTER the last block. Text INSIDE a block
+    // that is not a complete invoke (narration between invokes, junk like batch
+    // case 4.a) is part of the markup block and stays dropped, like the other
+    // families. Malformed / unterminated blocks keep drop-without-leak: their
+    // markup never reaches normal_text.
+    let tool_call_start = tool_call_start(config);
+    let tool_call_end = tool_call_end(config);
+    let mut calls: Vec<ToolCallResponse> = Vec::new();
+    let mut normal_parts: Vec<String> = Vec::new();
+    let mut cursor = 0;
+
+    while cursor <= message.len() {
+        let Some(start_rel) = message[cursor..].find(tool_call_start.as_str()) else {
+            // No more blocks: this gap is the prefix (no block at all), the text
+            // after the last `</tool_call>`, or both. A bare invoke run in the
+            // gap (missing `<tool_call>` opener — cases 5.b/5.g) is recovered;
+            // otherwise a stray orphan marker is dropped without leaking, keeping
+            // the text before it.
+            push_gap(
+                &message[cursor..],
+                config,
+                tools,
+                &mut normal_parts,
+                &mut calls,
+            )?;
+            break;
+        };
+        let abs_start = cursor + start_rel;
+        push_gap(
+            &message[cursor..abs_start],
+            config,
+            tools,
+            &mut normal_parts,
+            &mut calls,
+        )?;
+
+        let block_start = abs_start + tool_call_start.len();
+        match message[block_start..].find(tool_call_end.as_str()) {
+            Some(end_rel) => {
+                calls.extend(parse_invokes(
+                    &message[block_start..block_start + end_rel],
+                    config,
+                    tools,
+                )?);
+                cursor = block_start + end_rel + tool_call_end.len();
+            }
+            None => {
+                // Unterminated block: parse it only under EOF recovery; either
+                // way its markup tail never leaks into normal_text.
+                if config.allow_eof_recovery {
+                    calls.extend(parse_invokes(&message[block_start..], config, tools)?);
+                }
+                break;
+            }
+        }
+    }
+
+    let normal_text = normal_parts.join("");
+    let normal_text = if calls.is_empty() {
+        normal_text.trim().to_string()
+    } else {
+        normal_text
+    };
+    Ok((calls, Some(normal_text)))
+}
+
+/// Fold one between-block gap into `normal_parts` / `calls`: recover a bare
+/// invoke run (keeping its prose prefix), else drop from a stray orphan marker
+/// onward (drop-without-leak), else keep the gap text verbatim.
+fn push_gap(
+    gap: &str,
+    config: &MiniMaxM3ParserConfig,
+    tools: Option<&[ToolDefinition]>,
+    normal_parts: &mut Vec<String>,
+    calls: &mut Vec<ToolCallResponse>,
+) -> anyhow::Result<()> {
+    if gap.is_empty() {
+        return Ok(());
+    }
+    if let Some((prefix, recovered)) = recover_orphan_invokes_in_span(gap, config, tools)? {
+        normal_parts.push(prefix);
+        calls.extend(recovered);
+    } else if let Some(marker_idx) = first_orphan_minimax_m3_marker_index(gap, config) {
+        normal_parts.push(gap[..marker_idx].trim_end().to_string());
+    } else {
+        normal_parts.push(gap.to_string());
+    }
+    Ok(())
+}
+
+// Builds the configured outer tool-call start marker.
+fn tool_call_start(config: &MiniMaxM3ParserConfig) -> String {
+    format!("{}<{}>", config.namespace_token, config.tool_call_tag)
+}
+
+// Builds the configured outer tool-call end marker.
+fn tool_call_end(config: &MiniMaxM3ParserConfig) -> String {
+    format!("{}</{}>", config.namespace_token, config.tool_call_tag)
+}
+
+// Builds the marker that introduces an individual function invocation before attributes.
+fn invoke_start(config: &MiniMaxM3ParserConfig) -> String {
+    format!("{}<invoke", config.namespace_token)
+}
+
+// Builds the marker that closes an individual function invocation.
+fn invoke_end(config: &MiniMaxM3ParserConfig) -> String {
+    format!("{}</invoke>", config.namespace_token)
+}
+
+// Builds the shared namespace prefix that starts any M3 XML-ish tag.
+fn parameter_start(config: &MiniMaxM3ParserConfig) -> String {
+    format!("{}<", config.namespace_token)
+}
+
+fn first_orphan_minimax_m3_marker_index(
+    text: &str,
+    config: &MiniMaxM3ParserConfig,
+) -> Option<usize> {
+    [
+        tool_call_end(config),
+        invoke_start(config),
+        invoke_end(config),
+        parameter_start(config),
+    ]
+    .iter()
+    .filter_map(|marker| text.find(marker.as_str()))
+    .min()
+}
+
+fn recover_orphan_invokes_in_span(
+    span: &str,
+    config: &MiniMaxM3ParserConfig,
+    tools: Option<&[ToolDefinition]>,
+) -> anyhow::Result<Option<(String, Vec<ToolCallResponse>)>> {
+    let Some(marker_idx) = first_orphan_minimax_m3_marker_index(span, config) else {
+        return Ok(None);
+    };
+
+    let marker_tail = &span[marker_idx..];
+    if !marker_tail.starts_with(invoke_start(config).as_str()) {
+        return Ok(None);
+    }
+    if !marker_tail.contains(tool_call_end(config).as_str()) && !config.allow_eof_recovery {
+        return Ok(None);
+    }
+
+    let calls = parse_invokes(marker_tail, config, tools)?;
+    if calls.is_empty() {
+        return Ok(None);
+    }
+
+    Ok(Some((span[..marker_idx].trim_end().to_string(), calls)))
+}
+
+// Extracts one or more `<invoke name="...">` blocks from the outer tool-call block.
+fn parse_invokes(
+    block: &str,
+    config: &MiniMaxM3ParserConfig,
+    tools: Option<&[ToolDefinition]>,
+) -> anyhow::Result<Vec<ToolCallResponse>> {
+    let invoke_start = invoke_start(config);
+    let invoke_end = invoke_end(config);
+    let mut calls = Vec::new();
+    let mut cursor = 0;
+
+    while let Some(start_rel) = block[cursor..].find(invoke_start.as_str()) {
+        let tag_attrs_start = cursor + start_rel + invoke_start.len();
+        let Some(tag_end_rel) = block[tag_attrs_start..].find('>') else {
+            break;
+        };
+        let tag_attrs = &block[tag_attrs_start..tag_attrs_start + tag_end_rel];
+        let function_name = parse_invoke_name(tag_attrs);
+        let body_start = tag_attrs_start + tag_end_rel + 1;
+        let Some(body_end_rel) = block[body_start..].find(invoke_end.as_str()) else {
+            break;
+        };
+        let body_end = body_start + body_end_rel;
+        let function_body = &block[body_start..body_end];
+
+        if let Some(function_name) = function_name
+            && !function_name.is_empty()
+        {
+            let arguments = parse_parameters(&function_name, function_body, config, tools)?;
+            calls.push(ToolCallResponse {
+                id: format!("call-{}", Uuid::new_v4()),
+                tp: ToolCallType::Function,
+                function: CalledFunction {
+                    name: function_name,
+                    arguments: serde_json::to_string(&Value::Object(arguments))?,
+                },
+            });
+        }
+
+        cursor = body_end + invoke_end.len();
+    }
+
+    Ok(calls)
+}
+
+// Reads the `name` attribute from `<invoke ...>` using vLLM-compatible quoting variants.
+fn parse_invoke_name(tag_attrs: &str) -> Option<String> {
+    let attrs = tag_attrs.trim_start();
+    let after_name = attrs.strip_prefix("name")?.trim_start();
+    let value = after_name.strip_prefix('=')?.trim_start();
+
+    if let Some(value) = value.strip_prefix('"') {
+        return value.find('"').map(|end| value[..end].trim().to_string());
+    }
+    if let Some(value) = value.strip_prefix('\'') {
+        return value.find('\'').map(|end| value[..end].trim().to_string());
+    }
+
+    let end = value.find(char::is_whitespace).unwrap_or(value.len());
+    if end == 0 {
+        None
+    } else {
+        Some(value[..end].trim().to_string())
+    }
+}
+
+// Extracts MiniMax M3 parameter tags, where each parameter name is the tag name itself.
+fn parse_parameters(
+    function_name: &str,
+    body: &str,
+    config: &MiniMaxM3ParserConfig,
+    tools: Option<&[ToolDefinition]>,
+) -> anyhow::Result<Map<String, Value>> {
+    let parameter_start = parameter_start(config);
+    let param_config = get_arguments_config(function_name, tools);
+    let mut parameters = Map::new();
+    let mut cursor = 0;
+
+    while let Some(start_rel) = body[cursor..].find(parameter_start.as_str()) {
+        let start = cursor + start_rel + parameter_start.len();
+        if body[start..].starts_with('/') {
+            cursor = start + 1;
+            continue;
+        }
+
+        let Some(name_end_rel) = body[start..].find('>') else {
+            break;
+        };
+        let parameter_name = &body[start..start + name_end_rel];
+        if parameter_name.is_empty() || parameter_name.contains(char::is_whitespace) {
+            cursor = start + name_end_rel + 1;
+            continue;
+        }
+
+        let value_start = start + name_end_rel + 1;
+        let parameter_end = format!("{}</{}>", config.namespace_token, parameter_name);
+        let Some(value_end_rel) = body[value_start..].find(parameter_end.as_str()) else {
+            break;
+        };
+        let value_end = value_start + value_end_rel;
+        let raw_value = &body[value_start..value_end];
+        let schema = param_config.get(parameter_name);
+        let value = parse_parameter_value(raw_value, schema, config);
+        insert_parameter(&mut parameters, parameter_name.to_string(), value);
+
+        cursor = value_end + parameter_end.len();
+    }
+
+    Ok(parameters)
+}
+
+// Preserves duplicate XML tags by collecting repeated values into arrays.
+fn insert_parameter(parameters: &mut Map<String, Value>, key: String, value: Value) {
+    if let Some(existing) = parameters.remove(&key) {
+        let merged = match existing {
+            Value::Array(mut values) => {
+                values.push(value);
+                Value::Array(values)
+            }
+            existing => Value::Array(vec![existing, value]),
+        };
+        parameters.insert(key, merged);
+    } else {
+        parameters.insert(key, value);
+    }
+}
+
+// Chooses scalar conversion or nested XML parsing based on whether the value contains M3 tags.
+fn parse_parameter_value(
+    raw: &str,
+    schema: Option<&Value>,
+    config: &MiniMaxM3ParserConfig,
+) -> Value {
+    if raw.contains(parameter_start(config).as_str()) {
+        parse_nested_minimax_xml(raw, schema.cloned(), config)
+    } else {
+        convert_scalar_value(raw, schema)
+    }
+}
+
+// Parses nested parameter bodies such as arrays of `<item>` objects into JSON values.
+fn parse_nested_minimax_xml(
+    raw: &str,
+    schema: Option<Value>,
+    config: &MiniMaxM3ParserConfig,
+) -> Value {
+    let chunks: Vec<&str> = raw.split(config.namespace_token.as_str()).collect();
+    let leading_text = chunks.first().copied().unwrap_or_default();
+    let root_value = if schema_has_type(schema.as_ref(), "array")
+        && chunks
+            .get(1)
+            .is_some_and(|chunk| chunk.starts_with("<item>"))
+    {
+        Some(StackValue::Array(Vec::new()))
+    } else {
+        Some(StackValue::Object(Map::new()))
+    };
+    let mut stack = vec![StackItem {
+        tag: None,
+        value: root_value,
+        // Whitespace-only leading text is pretty-print formatting, not a value:
+        // treat it as empty so it never becomes a spurious `$text` / array item.
+        texts: if leading_text.trim().is_empty() {
+            Vec::new()
+        } else {
+            vec![leading_text.to_string()]
+        },
+        schema,
+    }];
+
+    for (chunk_index, chunk) in chunks.iter().enumerate().skip(1) {
+        if chunk.starts_with("</") {
+            let (tag, trailing_text) = split_end_tag_chunk(chunk);
+            while stack.len() > 1 {
+                let item = stack.pop().expect("stack has child item");
+                let matched = item.tag.as_deref() == Some(tag.as_str());
+                stack
+                    .last_mut()
+                    .expect("stack has parent item")
+                    .append(item);
+                if matched {
+                    break;
+                }
+            }
+            // Skip whitespace-only formatting between tags; otherwise it would
+            // append a spurious array element (or `$text`) to the parent node.
+            if !trailing_text.trim().is_empty() {
+                stack
+                    .last_mut()
+                    .expect("stack has current item")
+                    .append_text(trailing_text);
+            }
+        } else if chunk.starts_with('<') {
+            let (tag, trailing_text) = split_start_tag_chunk(chunk);
+            if tag.is_empty() {
+                continue;
+            }
+            let child_schema = stack
+                .last()
+                .expect("stack has current item")
+                .schema_for_child(tag.as_str());
+            let child_value = if schema_has_type(child_schema.as_ref(), "array")
+                && chunks
+                    .get(chunk_index + 1)
+                    .is_some_and(|next| next.starts_with("<item>"))
+            {
+                Some(StackValue::Array(Vec::new()))
+            } else if schema_has_type(child_schema.as_ref(), "object") {
+                Some(StackValue::Object(Map::new()))
+            } else {
+                None
+            };
+            stack.push(StackItem {
+                tag: Some(tag),
+                value: child_value,
+                texts: if trailing_text.trim().is_empty() {
+                    Vec::new()
+                } else {
+                    vec![trailing_text.to_string()]
+                },
+                schema: child_schema,
+            });
+        } else if !chunk.trim().is_empty() {
+            stack
+                .last_mut()
+                .expect("stack has current item")
+                .append_text(chunk);
+        }
+    }
+
+    while stack.len() > 1 {
+        let item = stack.pop().expect("stack has child item");
+        stack
+            .last_mut()
+            .expect("stack has parent item")
+            .append(item);
+    }
+
+    stack.pop().expect("root item exists").into_value()
+}
+
+// Splits a start-tag chunk into its tag name and any text after `>`.
+fn split_start_tag_chunk(chunk: &str) -> (String, &str) {
+    let Some(gt) = chunk.find('>') else {
+        return (chunk.trim_start_matches('<').to_string(), "");
+    };
+    (chunk[1..gt].to_string(), &chunk[gt + 1..])
+}
+
+// Splits an end-tag chunk into its tag name and any text after `>`.
+fn split_end_tag_chunk(chunk: &str) -> (String, &str) {
+    let Some(gt) = chunk.find('>') else {
+        return (chunk.trim_start_matches("</").to_string(), "");
+    };
+    (chunk[2..gt].to_string(), &chunk[gt + 1..])
+}
+
+#[derive(Debug)]
+enum StackValue {
+    Object(Map<String, Value>),
+    Array(Vec<Value>),
+}
+
+#[derive(Debug)]
+struct StackItem {
+    tag: Option<String>,
+    value: Option<StackValue>,
+    texts: Vec<String>,
+    schema: Option<Value>,
+}
+
+impl StackItem {
+    // Converts a stack node into the JSON value it represents.
+    fn into_value(self) -> Value {
+        match self.value {
+            None => convert_scalar_value(self.texts.join("").as_str(), self.schema.as_ref()),
+            Some(StackValue::Object(mut map)) => {
+                if !self.texts.is_empty() {
+                    let mut text_key = "$text".to_string();
+                    while map.contains_key(&text_key) {
+                        text_key = format!("${text_key}");
+                    }
+                    map.insert(text_key, Value::String(self.texts.join("")));
+                }
+                Value::Object(map)
+            }
+            Some(StackValue::Array(values)) => Value::Array(values),
+        }
+    }
+
+    // Attaches a completed child node to the current object, array, or implicit object.
+    fn append(&mut self, item: StackItem) {
+        let key = item.tag.clone().unwrap_or_default();
+        let value = item.into_value();
+        match self.value.as_mut() {
+            None => {
+                let mut map = Map::new();
+                map.insert(key, value);
+                self.value = Some(StackValue::Object(map));
+            }
+            Some(StackValue::Object(map)) => insert_parameter(map, key, value),
+            Some(StackValue::Array(values)) => values.push(value),
+        }
+    }
+
+    // Adds text to the current node, coercing array items through item schema when available.
+    fn append_text(&mut self, text: &str) {
+        if let Some(StackValue::Array(values)) = self.value.as_mut() {
+            let item_schema = schema_array_item(self.schema.as_ref());
+            values.push(convert_scalar_value(text, item_schema.as_ref()));
+        } else {
+            self.texts.push(text.to_string());
+        }
+    }
+
+    // Finds the schema that should be used for a nested child tag.
+    fn schema_for_child(&self, tag: &str) -> Option<Value> {
+        if tag == "item"
+            && let Some(item_schema) = schema_array_item(self.schema.as_ref())
+        {
+            return Some(item_schema);
+        }
+
+        let schema = self.schema.as_ref()?;
+        if let Some(child_schema) = schema
+            .get("properties")
+            .and_then(|properties| properties.get(tag))
+        {
+            return Some(child_schema.clone());
+        }
+
+        schema
+            .get("additionalProperties")
+            .filter(|additional| additional.is_object())
+            .cloned()
+    }
+}
+
+// Looks up the selected tool's parameter schema so parsed strings can be type-coerced.
+fn get_arguments_config(func_name: &str, tools: Option<&[ToolDefinition]>) -> Map<String, Value> {
+    let Some(tools) = tools else {
+        return Map::new();
+    };
+
+    for tool in tools {
+        if tool.name == func_name {
+            let Some(params) = &tool.parameters else {
+                return Map::new();
+            };
+            if let Some(properties) = params.get("properties").and_then(Value::as_object) {
+                return properties.clone();
+            }
+            if let Some(params_obj) = params.as_object() {
+                return params_obj.clone();
+            }
+            return Map::new();
+        }
+    }
+
+    tracing::warn!("Tool '{}' is not defined in the tools list.", func_name);
+    Map::new()
+}
+
+// Converts a scalar XML text value into the schema-expected JSON type when possible.
+fn convert_scalar_value(raw: &str, schema: Option<&Value>) -> Value {
+    let value = html_unescape(raw);
+    let trimmed = value.trim();
+
+    // Without a schema we cannot know the intended type, so preserve the literal
+    // text (including the string "null") instead of inventing a JSON null.
+    let Some(schema) = schema else {
+        return Value::String(value);
+    };
+
+    // Only collapse the literal "null" into JSON null when the schema actually
+    // permits null. A `string`-typed parameter keeps the literal value "null".
+    if trimmed.eq_ignore_ascii_case("null") && schema_permits_null(schema) {
+        return Value::Null;
+    }
+
+    if schema_has_type(Some(schema), "string") || schema_has_type(Some(schema), "enum") {
+        return Value::String(value);
+    }
+    if schema_has_type(Some(schema), "integer") {
+        return coerce_integer_literal(trimmed)
+            .and_then(|parsed| serde_json::to_value(parsed).ok())
+            .unwrap_or(Value::String(value));
+    }
+    if schema_has_type(Some(schema), "number") {
+        if let Some(parsed) = coerce_integer_literal(trimmed)
+            && let Ok(json) = serde_json::to_value(parsed)
+        {
+            return json;
+        }
+        if let Ok(number) = trimmed.parse::<f64>()
+            && let Some(number) = Number::from_f64(number)
+        {
+            return Value::Number(number);
+        }
+        if let Some(parsed) = raw_number_literal(trimmed)
+            && let Ok(json) = serde_json::to_value(parsed)
+        {
+            return json;
+        }
+        return Value::String(value);
+    }
+    if schema_has_type(Some(schema), "boolean") {
+        return match trimmed.to_ascii_lowercase().as_str() {
+            "true" => Value::Bool(true),
+            "1" => Value::Bool(true),
+            "false" => Value::Bool(false),
+            "0" => Value::Bool(false),
+            _ => Value::String(value),
+        };
+    }
+    if schema_has_type(Some(schema), "object") {
+        if trimmed.is_empty() {
+            return Value::Object(Map::new());
+        }
+        if let Ok(json) = serde_json::from_str::<Value>(trimmed) {
+            return json;
+        }
+    }
+    if schema_has_type(Some(schema), "array") {
+        if trimmed.is_empty() {
+            return Value::Array(Vec::new());
+        }
+        if let Ok(json) = serde_json::from_str::<Value>(trimmed) {
+            return json;
+        }
+    }
+
+    Value::String(value)
+}
+
+// Reports whether the schema allows a JSON null, so the literal string "null"
+// may be coerced. An explicit `null` type, `nullable: true`, or a `null` member
+// of an `anyOf`/`oneOf` permits it; so does a schema with no `type` (and no
+// `anyOf`/`oneOf`), which is unconstrained. An explicit `string` type does not.
+fn schema_permits_null(schema: &Value) -> bool {
+    if schema_has_type(Some(schema), "null") {
+        return true;
+    }
+    if schema.get("nullable").and_then(Value::as_bool) == Some(true) {
+        return true;
+    }
+    schema.get("type").is_none() && schema.get("anyOf").is_none() && schema.get("oneOf").is_none()
+}
+
+// Checks JSON Schema `type`, `anyOf`, and `oneOf` for a target primitive/container type.
+fn schema_has_type(schema: Option<&Value>, expected: &str) -> bool {
+    let Some(schema) = schema else {
+        return false;
+    };
+    if let Some(ty) = schema.get("type") {
+        if ty.as_str() == Some(expected) {
+            return true;
+        }
+        if let Some(types) = ty.as_array()
+            && types.iter().any(|ty| ty.as_str() == Some(expected))
+        {
+            return true;
+        }
+    }
+    for key in ["anyOf", "oneOf"] {
+        if let Some(options) = schema.get(key).and_then(Value::as_array)
+            && options
+                .iter()
+                .any(|option| schema_has_type(Some(option), expected))
+        {
+            return true;
+        }
+    }
+    false
+}
+
+// Finds the schema for array elements, including schemas wrapped in `anyOf` or `oneOf`.
+fn schema_array_item(schema: Option<&Value>) -> Option<Value> {
+    schema
+        .and_then(|schema| schema.get("items"))
+        .cloned()
+        .or_else(|| {
+            schema.and_then(|schema| {
+                for key in ["anyOf", "oneOf"] {
+                    if let Some(options) = schema.get(key).and_then(Value::as_array) {
+                        for option in options {
+                            if let Some(items) = option.get("items") {
+                                return Some(items.clone());
+                            }
+                        }
+                    }
+                }
+                None
+            })
+        })
+}
+
+// Decodes common XML/HTML entities so tool arguments receive the intended literal text.
+fn html_unescape(s: &str) -> String {
+    s.replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&amp;", "&")
+        .replace("&quot;", "\"")
+        .replace("&#x27;", "'")
+        .replace("&#39;", "'")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    // Namespace token emitted before every M3 tag; keeps the test inputs readable.
+    const TOK: &str = "]<]minimax[>[";
+
+    // Finding 1: pretty-printed nested arguments must not turn inter-tag
+    // formatting whitespace into a spurious `$text` property or array element.
+    #[test]
+    fn pretty_printed_nested_object_has_no_spurious_whitespace_text() {
+        let config = MiniMaxM3ParserConfig::default();
+        // Leading whitespace before the first tag and newlines/indent between the
+        // sibling tags, exactly as a model would emit when pretty-printing.
+        let raw = format!("\n  {TOK}<a>1{TOK}</a>\n  {TOK}<b>2{TOK}</b>\n");
+        let parsed = parse_nested_minimax_xml(&raw, None, &config);
+        assert_eq!(parsed, json!({ "a": "1", "b": "2" }));
+        // No `$text` (or `$$text`) key should have been synthesized from whitespace.
+        let obj = parsed.as_object().expect("object value");
+        assert!(
+            obj.keys().all(|k| !k.contains("$text")),
+            "unexpected whitespace $text key in {parsed}"
+        );
+    }
+
+    #[test]
+    fn pretty_printed_nested_array_has_no_spurious_whitespace_item() {
+        let config = MiniMaxM3ParserConfig::default();
+        let schema = json!({ "type": "array", "items": { "type": "string" } });
+        // Whitespace between `</item>` and the next `<item>` previously became an
+        // extra array element via the end-tag trailing-text append.
+        let raw = format!("\n  {TOK}<item>a{TOK}</item>\n  {TOK}<item>b{TOK}</item>\n");
+        let parsed = parse_nested_minimax_xml(&raw, Some(schema), &config);
+        assert_eq!(parsed, json!(["a", "b"]));
+    }
+
+    // Finding 2: honor the schema before coercing the literal string "null".
+    #[test]
+    fn string_typed_null_stays_a_string() {
+        let schema = json!({ "type": "string" });
+        assert_eq!(
+            convert_scalar_value("null", Some(&schema)),
+            json!("null"),
+            "a string-typed parameter must keep the literal value \"null\""
+        );
+    }
+
+    #[test]
+    fn nullable_typed_null_becomes_json_null() {
+        // Explicit null type, a `["string", "null"]` union, and `nullable: true`
+        // all permit null and should coerce.
+        for schema in [
+            json!({ "type": "null" }),
+            json!({ "type": ["string", "null"] }),
+            json!({ "type": "string", "nullable": true }),
+        ] {
+            assert_eq!(
+                convert_scalar_value("null", Some(&schema)),
+                Value::Null,
+                "nullable schema {schema} should coerce \"null\" to JSON null"
+            );
+        }
+    }
+
+    #[test]
+    fn schemaless_null_stays_a_string() {
+        // With no schema the intended type is unknown, so the literal is preserved.
+        assert_eq!(convert_scalar_value("null", None), json!("null"));
+    }
+}

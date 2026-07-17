@@ -38,6 +38,30 @@ def _cache_root() -> Path:
 
 
 _HAVE_FIXTURES = (_cache_root() / "toolcalling").is_dir()
+
+
+def _ver_key(d: Path) -> list[int]:
+    return [int(x) for x in re.findall(r"\d+", d.name.split("-", 1)[1])]
+
+
+def _dynamo_v2_stream_dir() -> Path | None:
+    """The LATEST Dynamo v2 stream capture dir (`dynamo_v2-*`) — older version
+    dirs are capture history."""
+    sv2 = _cache_root() / "toolcalling/fixtures-stream-v2"
+    if not sv2.is_dir():
+        return None
+    dirs = [d for d in sv2.glob("dynamo_v2-*") if d.is_dir()]
+    return max(dirs, key=_ver_key, default=None)
+
+
+def _dynamo_v1_jail_stream_dir() -> Path | None:
+    """The LATEST Dynamo v1 jail+batch stream reference dir (`dynamo_v1-*`) —
+    older version dirs are capture history."""
+    sv2 = _cache_root() / "toolcalling/fixtures-stream-v2"
+    if not sv2.is_dir():
+        return None
+    dirs = [d for d in sv2.glob("dynamo_v1-*") if d.is_dir()]
+    return max(dirs, key=_ver_key, default=None)
 pytestmark = pytest.mark.skipif(
     not _HAVE_FIXTURES, reason="fixtures not extracted (run extract_fixtures.py)"
 )
@@ -144,12 +168,42 @@ def test_v2_batch_tab_has_all_peer_versions(charts):
             assert v in seg, f"v2 batch tab missing {impl} {v}"
 
 
+def test_patch_overlay_folds_into_base_version_not_a_separate_candidate(charts):
+    # A `X.patchN` capture (the same binary re-run to backfill newer cases onto X)
+    # must fold into X's column for display, never appear as its own candidate.
+    # (A provenance footnote may still name the source shard — that's fine; the
+    # CANDIDATE labels are what must not carry a patch version.)
+    seg = _panel(charts["v2"], "tab-toolcalling-streamv2", _V2_TABS)
+    labels = re.findall(r"Dynamo v2 Rust [0-9A-Za-z.]+ \(stream\)", seg)
+    patched = [lbl for lbl in labels if "patch" in lbl]
+    assert not patched, (
+        f"a .patchN overlay leaked into the stream tab as a standalone candidate "
+        f"{patched}; it must fold onto its base version's column"
+    )
+
+
+def test_older_v2_version_reads_not_implemented_yet_on_later_added_family(charts):
+    # A candidate at an older v2 version (0.1.11) on a family a LATER version
+    # (0.1.22) added must render "(not implemented yet)", NOT the generic
+    # "(no expectation)" — so comparing versions makes the coverage gap legible.
+    seg = _panel(charts["v2"], "tab-toolcalling-streamv2", _V2_TABS)
+    assert "(not implemented yet)" in seg, (
+        "stream tab lost the '(not implemented yet)' render for a family added "
+        "in a later v2 version (older-vs-newer version comparison)"
+    )
+
+
 def test_v2_stream_tab_has_v1jail_reference_and_v2_and_peers(charts):
     seg = _panel(charts["v2"], "tab-toolcalling-streamv2", _V2_TABS)
-    assert "Dynamo v1 Rust 3.0.0 (jail+batch)" in seg, "v2 stream tab lost its v1-jail reference"
+    jail_dir = _dynamo_v1_jail_stream_dir()
+    assert jail_dir is not None, "v1 jail stream reference dir missing"
+    jail_ver = jail_dir.name.split("-", 1)[1]
+    assert f"Dynamo v1 Rust {jail_ver} (jail+batch)" in seg, (
+        "v2 stream tab lost its v1-jail reference"
+    )
     assert "Dynamo v2 Rust" in seg and "(stream)" in seg, "v2 stream tab lost the Dynamo v2 candidate"
     for impl, vers in _peer_versions("toolcalling/fixtures-stream-v2").items():
-        if impl in ("dynamo_rust",):
+        if impl in ("dynamo_v1", "dynamo_v2"):
             continue
         for v in vers:
             assert v in seg, f"v2 stream tab missing {impl} {v}"
@@ -164,8 +218,8 @@ def test_v2_reference_aware_not_implemented_map(charts):
     # case-level "not applicable".
     import json
 
-    v2_dir = _cache_root() / "toolcalling/fixtures-stream-v2/dynamo_rust-0.1.11"
-    if not v2_dir.is_dir():
+    v2_dir = _dynamo_v2_stream_dir()
+    if v2_dir is None:
         pytest.skip("v2 stream fixture dir not present")
     fams = sorted(d.name for d in v2_dir.iterdir() if d.is_dir())
     html = charts["v2"]
@@ -174,7 +228,7 @@ def test_v2_reference_aware_not_implemented_map(charts):
     ni = json.loads(m.group(1))
     assert ni, "__PARSER_NI is empty — the not-implemented reason won't fire"
     for key, entry in ni.items():
-        assert "dynamo_rust" in key, f"unexpected limited-coverage parser {key}"
+        assert "dynamo_v2" in key, f"unexpected limited-coverage parser {key}"
         assert sorted(entry["families"]) == fams, (
             f"{key} families {sorted(entry['families'])} != fixture dir {fams}"
         )
@@ -182,7 +236,7 @@ def test_v2_reference_aware_not_implemented_map(charts):
 
 
 def test_v2_stream_parser_only_covers_implemented_families(charts):
-    # The Dynamo v2 stream parser (dynamo_rust-0.1.11) implements only a handful of
+    # The Dynamo v2 stream parser (dynamo_v2-*) implements only a subset of the
     # families; its fixture dir holds exactly those. The stream assembly defaults an
     # absent impl to an empty-but-present block, which used to paint the v2 candidate
     # green on EVERY family. Guard: the v2 stream candidate must be `na` on the
@@ -190,16 +244,16 @@ def test_v2_stream_parser_only_covers_implemented_families(charts):
     import json
     from html import unescape
 
-    v2_dir = _cache_root() / "toolcalling/fixtures-stream-v2/dynamo_rust-0.1.11"
-    if not v2_dir.is_dir():
+    v2_dir = _dynamo_v2_stream_dir()
+    if v2_dir is None:
         pytest.skip("v2 stream fixture dir not present")
     n_v2_families = len([d for d in v2_dir.iterdir() if d.is_dir()])
-    n_all_families = len(
-        [d for d in (_cache_root() / "toolcalling/fixtures-stream-v2/dynamo_rust-3.0.0").iterdir()
-         if d.is_dir()]
-    )
+    v1_jail_dir = _dynamo_v1_jail_stream_dir()
+    assert v1_jail_dir is not None, "v1 jail stream reference dir missing"
+    n_all_families = len([d for d in v1_jail_dir.iterdir() if d.is_dir()])
     assert n_v2_families < n_all_families, "expected v2 to implement fewer families than v1 jail"
 
+    v2_key = v2_dir.name.replace(".", "-")
     seg = _panel(charts["v2"], "tab-toolcalling-streamv2", _V2_TABS)
     present = na = 0
     for blob in re.findall(r'data-cmp="([^"]+)"', seg):
@@ -207,7 +261,7 @@ def test_v2_stream_parser_only_covers_implemented_families(charts):
             cmp = json.loads(unescape(blob))
         except json.JSONDecodeError:
             continue
-        v = cmp.get("dynamo_rust-0-1-11")
+        v = cmp.get(v2_key)
         if v is None:
             continue
         if v.get("na") == 1:
@@ -301,15 +355,14 @@ def test_dynamo_version_labels_are_consistent_and_from_fixtures(charts):
     # in tool-calling but 4.1.0 in reasoning, or v2 0.1.11 vs 0.1.16) means a label is
     # reading the live Cargo.toml, which drifts ahead of the published fixtures, instead
     # of the fixture provenance. The version must also actually exist as a captured dir.
-    fixture_v1 = _peer_versions("toolcalling/fixtures-batch-v1").get("dynamo", set())
-    fixture_v2 = {
-        v for v in _peer_versions("toolcalling/fixtures-stream-v2").get("dynamo_rust", set())
-        if v.split(".", 1)[0] == "0"  # v2 crate = 0.x major
-    }
+    fixture_v1 = _peer_versions("toolcalling/fixtures-batch-v1").get("dynamo_v1", set())
+    fixture_v2 = _peer_versions("toolcalling/fixtures-stream-v2").get("dynamo_v2", set())
     for page in ("v1", "v2"):
         for tag, expected in (("Dynamo v1 Rust", fixture_v1), ("Dynamo v2 Rust", fixture_v2)):
             seen = set(re.findall(rf"{tag} (\S+) \(", charts[page]))
-            assert len(seen) <= 1, f"{page}: {tag} has inconsistent versions: {seen}"
+            # Multiple versions per tag are expected — capture HISTORY renders as
+            # per-version candidates (like the vLLM 0.23/0.24 peers). The invariant
+            # is provenance: every shown version must exist as a captured dir.
             if seen and expected:
                 assert seen <= expected, (
                     f"{page}: {tag} version {seen} is not a captured fixture version "

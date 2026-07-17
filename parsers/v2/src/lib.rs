@@ -8,8 +8,17 @@ pub mod tool_calling;
 pub use tool_calling::create_tool_parser_for_family;
 pub use tool_calling::debug::{DEBUG_ENV, debug_enabled};
 pub use tool_calling::dsml::DeepSeekV4ToolStreamParser;
+pub use tool_calling::gemma4::Gemma4ToolStreamParser;
+pub use tool_calling::glm47::Glm47ToolStreamParser;
 pub use tool_calling::harmony::{
     HarmonyToolStreamParser, ToolStreamResult, assemble_tool_calls, decode_harmony, encode_harmony,
 };
+pub use tool_calling::kimi_k2::KimiK2ToolStreamParser;
+pub use tool_calling::minimax_m2::MiniMaxM2ToolStreamParser;
+pub use tool_calling::minimax_m3::MiniMaxM3ToolStreamParser;
 pub use tool_calling::qwen3_coder::Qwen3CoderToolStreamParser;
 pub use tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser, ToolParserInput};
+// Vendored batch-extraction types that surface in the public streaming API
+// (e.g. `ToolStreamResult::tool_call_chunks`). v2 owns these now — see
+// `tool_calling::v1core`.
+pub use tool_calling::{CalledFunctionStream, ToolCallResponseChunk, ToolCallType};

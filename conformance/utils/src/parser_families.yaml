@@ -18,14 +18,14 @@ families:
   deepseek_v3_1:  {vllm_python: deepseek_v31,   vllm_rust: deepseek_v31, sglang_python: deepseekv31, dynamo_v2: null,        preferred_input: text}
   deepseek_v3_2:  {vllm_python: deepseek_v32,   vllm_rust: deepseek_v32, sglang_python: deepseekv32, dynamo_v2: null,        preferred_input: text}
   deepseek_v4:    {vllm_python: deepseek_v4,    vllm_rust: deepseek_v4,  sglang_python: deepseekv4,  dynamo_v2: deepseek_v4, preferred_input: text}
-  gemma4:         {vllm_python: gemma4,         vllm_rust: gemma4,       sglang_python: gemma4,      dynamo_v2: null,        preferred_input: text}
-  glm47:          {vllm_python: glm47,          vllm_rust: glm47,        sglang_python: glm47,       dynamo_v2: null,        preferred_input: text}
+  gemma4:         {vllm_python: gemma4,         vllm_rust: gemma4,       sglang_python: gemma4,      dynamo_v2: gemma4,      preferred_input: text}
+  glm47:          {vllm_python: glm47,          vllm_rust: glm47,        sglang_python: glm47,       dynamo_v2: glm47,       preferred_input: text}
   hermes:         {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: hermes,      dynamo_v2: null,        preferred_input: text}
   jamba:          {vllm_python: jamba,          vllm_rust: null,         sglang_python: null,        dynamo_v2: null,        preferred_input: text}
-  kimi_k2:        {vllm_python: kimi_k2,        vllm_rust: kimi_k2,      sglang_python: kimi_k2,     dynamo_v2: null,        preferred_input: text}
+  kimi_k2:        {vllm_python: kimi_k2,        vllm_rust: kimi_k2,      sglang_python: kimi_k2,     dynamo_v2: kimi_k2,     preferred_input: text}
   llama3_json:    {vllm_python: llama3_json,    vllm_rust: llama3_json,  sglang_python: llama3,      dynamo_v2: null,        preferred_input: text}
-  minimax_m2:     {vllm_python: minimax_m2,     vllm_rust: minimax_m2,   sglang_python: minimax-m2,  dynamo_v2: null,        preferred_input: text}
-  minimax_m3:     {vllm_python: minimax_m3,     vllm_rust: null,         sglang_python: minimax-m3,  dynamo_v2: null,        preferred_input: text}
+  minimax_m2:     {vllm_python: minimax_m2,     vllm_rust: minimax_m2,   sglang_python: minimax-m2,  dynamo_v2: minimax_m2,  preferred_input: text}
+  minimax_m3:     {vllm_python: minimax_m3,     vllm_rust: null,         sglang_python: minimax-m3,  dynamo_v2: minimax_m3,  preferred_input: text}
   mistral:        {vllm_python: mistral,        vllm_rust: mistral,      sglang_python: mistral,     dynamo_v2: null,        preferred_input: text}
   nemotron_deci:  {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: null,        dynamo_v2: null,        preferred_input: text}
   nemotron_nano:  {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: null,        dynamo_v2: null,        preferred_input: text}

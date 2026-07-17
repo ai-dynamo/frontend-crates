@@ -27,7 +27,7 @@ th a:hover { background: #ffd; }
 td.model, td.parser { white-space: nowrap; }
 td.parser a { color: inherit; text-decoration: none; }
 td.parser a:hover { background: #ffd; }
-td.cell { text-align: center; width: 44px; min-width: 44px; max-width: 44px; font-weight: 400; }
+td.cell { position: relative; text-align: center; width: 44px; min-width: 44px; max-width: 44px; font-weight: 400; }
 /* One color = one meaning, whether or not the cell has compare data. A cell without
    `data-cmp` (an n/a stub or a missing fixture) must read exactly like a compare cell
    of the same meaning: gray = n/a, light-gray = Base-only, near-white = missing. The
@@ -125,6 +125,12 @@ body.view-overview .cmpctl .cmprow { grid-template-columns: 26px 1fr; }
  * Numbers are not bold. */
 .cmp-marker { position: absolute; inset: 0; display: none; align-items: center;
   justify-content: center; color: #111; pointer-events: none; font-weight: 400; }
+/* Known v1-vs-v2 divergence suffix (batch-on-stream tab, from
+ * known-divergences.yaml): calls agree (cell stays green) but normal_text
+ * differs by design. Muted corner glyph; the popup carries the explanation. */
+td.cell .kdiv { display: none; position: absolute; top: 0; right: 1px; font-size: 9px;
+  line-height: 1.1; color: #375a7f; opacity: 0.75; pointer-events: none; }
+body.view-details td.cell .kdiv { display: block; }
 td.cell[data-cmp] .cell-marker { display: none !important; }
 body.view-details td.cell .cmp-marker { display: flex; }
 td.cell.cmp-eq { background: #76b884 !important; }
@@ -287,6 +293,31 @@ td.cell:hover, td.parser:hover, td.cell:focus-within, td.parser:focus-within { z
     visibility: visible;
     opacity: 1;
 }
+/* cursor:pointer marks the cell as tappable so iOS/iPadOS Safari fires the `click`
+   event for tap-to-pin (it withholds click on non-interactive elements otherwise). */
+td.cell, td.parser { cursor: pointer; }
+/* Tap-to-pin (touch / mobile): a pinned tooltip stays open until ✕ or an outside
+   tap. Give it room for the close button and let it scroll if it's tall. */
+.ttip-pinned { padding-top: 26px; max-height: 80vh; overflow: auto; }
+.ttip-close {
+    position: absolute;
+    top: 3px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.16);
+    color: #e5e7eb;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    display: none;
+    z-index: 1;
+}
+.ttip-close:hover { background: rgba(255,255,255,0.30); }
+.ttip-pinned .ttip-close { display: block; }
 td.cell .ttip a, td.parser .ttip a { color: #bfdbfe; text-decoration: none; border-bottom: 1.5px solid currentColor; padding-bottom: 1px; display: inline; }
 td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: transparent; }
 .ttip-head { font-weight: bold; margin-bottom: 4px; color: #fbbf24; }
@@ -295,7 +326,10 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 .ttip-pre { margin: 2px 0 0 0; white-space: pre-wrap; word-break: break-word; font-family: inherit; color: #e5e7eb; }
 /* Per-chunk emit chart: input | Dynamo Rust | vLLM Rust | vLLM Python | SGLang, one row per chunk. */
 .ttip-chunks { border-collapse: collapse; margin: 3px 0 0 0; font-size: 11px; width: 100%; }
-.ttip-chunks th, .ttip-chunks td { border: 1px solid #475569; padding: 2px 5px; text-align: left; vertical-align: top; }
+/* pre-wrap so runs of spaces in emitted text render faithfully — HTML collapsing
+   made a whitespace-only divergence (e.g. a double vs single trailing space)
+   invisible: two cells LOOKED identical while their compare signatures differed. */
+.ttip-chunks th, .ttip-chunks td { border: 1px solid #475569; padding: 2px 5px; text-align: left; vertical-align: top; white-space: pre-wrap; }
 .ttip-chunks th { background: #1e293b; color: #93c5fd; font-weight: 600; }
 .ttip-chunks td { color: #e5e7eb; }
 .ttip-chunks td.cin { color: #cbd5e1; max-width: 22em; word-break: break-word; }

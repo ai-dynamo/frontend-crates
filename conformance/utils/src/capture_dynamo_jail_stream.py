@@ -49,7 +49,9 @@ PARSER_NAME = {"harmony_text": "harmony"}
 
 
 def dynamo_v1_version(repo: Path) -> str:
-    m = re.search(r'^version\s*=\s*"([^"]+)"', (repo / "parsers" / "Cargo.toml").read_text(), re.M)
+    m = re.search(
+        r'^version\s*=\s*"([^"]+)"', (repo / "parsers" / "v1" / "Cargo.toml").read_text(), re.M
+    )
     return m.group(1)
 
 
@@ -108,9 +110,14 @@ def main(argv=None):
                 for cid in cases:
                     out_cases[cid] = {"unavailable": UNAVAILABLE_MSG.format(family=family)}
             else:
-                # {cid: [delta_text per chunk]} for the recorder
+                # {cid: {chunks, tools}} for the recorder — the tool schemas MUST
+                # ride along or the jail's batch parse records untyped (string)
+                # arguments, diverging from every schema-aware parser.
                 bin_in = {
-                    cid: [ch.get("delta_text", "") for ch in (c.get("chunks") or [])]
+                    cid: {
+                        "chunks": [ch.get("delta_text", "") for ch in (c.get("chunks") or [])],
+                        "tools": c.get("tools") or [],
+                    }
                     for cid, c in cases.items()
                 }
                 recorded = run_bin(repo, PARSER_NAME.get(family, family), bin_in)

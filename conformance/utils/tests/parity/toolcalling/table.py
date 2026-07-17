@@ -475,6 +475,10 @@ BATCH_SUB_CASE_GROUPS = [
             "5.e",
             "5.f",
             "5.g",
+            # 5.h is streaming-only (no batch.5.h) but the v2 stream tab reuses the
+            # batch taxonomy, so it must be ordered here beside 5.g — otherwise it
+            # sorts to the far right as an "unknown" case, away from its 5.* siblings.
+            "5.h",
         ),
     ),
     (

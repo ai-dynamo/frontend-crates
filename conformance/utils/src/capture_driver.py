@@ -453,9 +453,10 @@ def main():
     ap.add_argument("--vllm-rust-source", help="vLLM source checkout root; defaults to VLLM_RUST_SOURCE")
     ap.add_argument("--dynamo-todo", help="stream: Dynamo unavailable/TODO reason")
     ap.add_argument(
+        "--dynamo-v2-json",
         "--dynamo-rust-json",
         dest="dynamo_v2_json",
-        help="batch-on-stream: Dynamo v2 recorder JSON (flag name kept for CLI compat)",
+        help="batch-on-stream: Dynamo v2 recorder JSON (old spelling kept as alias)",
     )
     ap.add_argument("--dynamo-harmony-json", dest="dynamo_v2_json", help=argparse.SUPPRESS)
     # merge

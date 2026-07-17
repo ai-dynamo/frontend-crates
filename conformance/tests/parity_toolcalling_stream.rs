@@ -25,9 +25,9 @@ use std::path::Path;
 mod common;
 use common::{collect_yaml, fixture_name};
 
-use dynamo_parsers::tool_calling::ToolCallResponseChunk;
 use dynamo_parsers_v2::{
-    HarmonyToolStreamParser, Tool, ToolCallDelta, ToolParseResult, create_tool_parser_for_family,
+    HarmonyToolStreamParser, Tool, ToolCallDelta, ToolCallResponseChunk, ToolParseResult,
+    create_tool_parser_for_family,
 };
 use serde::Deserialize;
 use serde_json::Value;
@@ -114,10 +114,14 @@ struct DynChunk {
 /// written for the old bundled layout — is unchanged.
 fn merge_dynamo(fx: &mut Fixture, dyn_dir: &Path, rel: &Path) {
     let dfp = dyn_dir.join(rel);
-    let Ok(text) = std::fs::read_to_string(&dfp) else {
-        return;
+    // A missing overlay is benign; any other I/O error must surface, not vanish.
+    let text = match std::fs::read_to_string(&dfp) {
+        Ok(t) => t,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return,
+        Err(e) => panic!("{}: dynamo overlay read error: {e}", dfp.display()),
     };
-    let dyn_fx: DynFixture = serde_yaml::from_str(&text).unwrap();
+    let dyn_fx: DynFixture = serde_yaml::from_str(&text)
+        .unwrap_or_else(|e| panic!("{}: dynamo overlay parse error: {e}", dfp.display()));
     for (cid, dcase) in dyn_fx.cases {
         let Some(case) = fx.cases.get_mut(&cid) else {
             continue;
@@ -126,6 +130,10 @@ fn merge_dynamo(fx: &mut Fixture, dyn_dir: &Path, rel: &Path) {
             case.unavailable.insert("dynamo_v2".to_string(), reason);
             continue;
         }
+        // Dirs fold ascending (latest wins). A later capture that supplies
+        // expectations must clear any unavailability an OLDER capture recorded,
+        // otherwise the case is silently skipped despite being supported now.
+        case.unavailable.remove("dynamo_v2");
         for (i, dchunk) in dcase.chunks.into_iter().enumerate() {
             if let Some(chunk) = case.chunks.get_mut(i) {
                 chunk
@@ -317,29 +325,17 @@ fn emitted_from_result(result: ToolParseResult) -> Vec<EmittedDelta> {
 #[test]
 fn toolcalling_stream_parity() {
     // Versioned corpus: shared chunks in inputs/, Dynamo's expected in the
-    // dynamo_v2-<version>/ dirs. This test drives the Dynamo parser *v2*, so fold in
-    // the lowest dynamo_v2 version (the v2 crate, 0.1.11) — the higher 3.0.0 dir is
-    // the v1 jail candidate, tested elsewhere.
+    // dynamo_v2-<version>/ dirs. This test drives the Dynamo parser *v2*; with the
+    // impl-key split every dynamo_v2-* dir belongs to it (the v1 jail reference has
+    // its own dynamo_v1-* namespace, tested elsewhere). Old version dirs are capture
+    // history, folded ASCENDING so the latest capture wins per case.
     let sv2 = common::ensure_fixtures().join("toolcalling/fixtures-stream-v2");
     let inputs_root = sv2.join("inputs");
-    let ver_key = |p: &Path| -> Vec<u64> {
-        p.file_name()
-            .and_then(|n| n.to_str())
-            .and_then(|n| n.strip_prefix("dynamo_v2-"))
-            .map(|v| v.split('.').map(|x| x.parse().unwrap_or(0)).collect())
-            .unwrap_or_default()
-    };
-    let dyn_dir = std::fs::read_dir(sv2)
-        .unwrap()
-        .filter_map(|e| e.ok().map(|e| e.path()))
-        .filter(|p| {
-            p.is_dir()
-                && p.file_name()
-                    .and_then(|n| n.to_str())
-                    .is_some_and(|n| n.starts_with("dynamo_v2-"))
-        })
-        .min_by_key(|p| ver_key(p))
-        .expect("no dynamo_v2-<version> dir under fixtures-stream-v2");
+    let dyn_dirs = common::version_dirs_ascending(&sv2, "dynamo_v2-");
+    assert!(
+        !dyn_dirs.is_empty(),
+        "no dynamo_v2-<version> dir under fixtures-stream-v2"
+    );
     let mut files = Vec::new();
     collect_yaml(&inputs_root, &mut files);
     files.sort();
@@ -363,13 +359,18 @@ fn toolcalling_stream_parity() {
             }
         };
         let rel = path.strip_prefix(&inputs_root).unwrap();
-        merge_dynamo(&mut fx, &dyn_dir, rel);
-        if !(fx.family == "harmony"
-            || fx.family == "harmony_text"
-            || fx.family == "deepseek_v4"
-            || fx.family == "qwen3_coder")
-            || !matches!(fx.mode.as_deref(), Some("stream" | "streamv2"))
-        {
+        for dyn_dir in &dyn_dirs {
+            merge_dynamo(&mut fx, dyn_dir, rel);
+        }
+        if !matches!(fx.mode.as_deref(), Some("stream" | "streamv2")) {
+            continue;
+        }
+        // Data-driven coverage (reuse the family registry, no hardcoded list):
+        // harmony/harmony_text run the token-native path below; every other
+        // family is exercised iff `create_tool_parser_for_family` can build a v2
+        // parser for it. Registering a new family there auto-adds it here.
+        let is_harmony = fx.family == "harmony" || fx.family == "harmony_text";
+        if !is_harmony && create_tool_parser_for_family(&fx.family, &[]).is_err() {
             continue;
         }
         eprintln!("fixture {}", fixture_name(path));

@@ -12,8 +12,10 @@ test_browser_smoke.py).
 """
 from __future__ import annotations
 
+import os
 import shutil
 import time
+from pathlib import Path
 
 import pytest
 
@@ -29,8 +31,32 @@ pytestmark = pytest.mark.skipif(
     reason="no headless Chrome available",
 )
 
-V2_KEY = "dynamo_v2-0-1-11"
-V1_KEY = "dynamo_v1-3-0-0"
+def _dynamo_key(impl: str) -> str:
+    """Candidate key of the LATEST stream capture dir for a Dynamo impl
+    (`dynamo_v1` = jail reference, `dynamo_v2` = stream parser); older version
+    dirs are capture history and render as extra candidates."""
+    root = Path(
+        os.environ.get("CONFORMANCE_FIXTURES_ROOT")
+        or Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
+        / "dynamo/conformance-fixtures"
+    )
+    import re as _re
+
+    dirs = [
+        d
+        for d in (root / "toolcalling/fixtures-stream-v2").glob(f"{impl}-*")
+        if d.is_dir()
+    ]
+    latest = max(
+        dirs, key=lambda d: [int(x) for x in _re.findall(r"\d+", d.name)], default=None
+    )
+    if latest is None:
+        pytest.skip("dynamo stream fixture dirs not cached", allow_module_level=True)
+    return latest.name.replace(".", "-")
+
+
+V2_KEY = _dynamo_key("dynamo_v2")
+V1_KEY = _dynamo_key("dynamo_v1")
 
 
 @pytest.fixture(scope="module")
@@ -182,6 +208,169 @@ def test_v1_assembled_is_not_doubled(driver):
     text = _assembled_text(driver, V1_KEY)
     assert text is not None, "no assembled cell for the Dynamo v1 candidate"
     assert "get_weatherget_weather" not in text, f"doubled v1 output on the page: {text!r}"
+
+
+def _active_base(driver):
+    """The active panel's selected Reference key, or None when no star is chosen."""
+    return driver.execute_script(
+        """
+        const ctl = document.querySelector('.tab-panel.active .cmpctl');
+        const r = ctl && ctl.querySelector('input.cmp-ref:checked');
+        return r ? r.value : null;
+        """
+    )
+
+
+def test_clicking_the_active_star_again_clears_the_reference(driver):
+    # A radio has no native uncheck; clicking the already-selected Reference star must
+    # toggle it OFF -> no base -> every cell paints cmp-nobase (the panel clears).
+    _open_stream_tab(driver)
+    _select(driver, V2_KEY, [])
+    assert _active_base(driver) == V2_KEY, "precondition: V2 should be the Reference"
+
+    # Click the visible ★ LABEL (what a user actually clicks), NOT the offscreen radio —
+    # the radio gets only a synthesized click, so the handler must key off the label.
+    clicked = driver.execute_script(
+        """
+        const ctl = document.querySelector('.tab-panel.active .cmpctl');
+        const r = ctl && ctl.querySelector('input.cmp-ref:checked');
+        const label = r && (r.closest('label') || r.parentElement);
+        const star = label && (label.querySelector('.star') || label);
+        if (!star) { return false; }
+        star.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+        star.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+        return true;
+        """
+    )
+    assert clicked, "no checked Reference star to click"
+    time.sleep(0.3)
+
+    assert _active_base(driver) is None, "clicking the active star again must clear the Reference"
+    # With no base, applyCtl paints every scored cell cmp-nobase and nothing else.
+    counts = driver.execute_script(
+        """
+        const tab = document.querySelector('.tab-panel.active');
+        const cells = tab.querySelectorAll('td.cell[data-cmp]');
+        let nobase = 0, colored = 0;
+        cells.forEach(c => {
+          if (c.classList.contains('cmp-nobase')) { nobase++; }
+          if (c.classList.contains('cmp-eq') || c.classList.contains('cmp-leak')) { colored++; }
+        });
+        return {total: cells.length, nobase, colored};
+        """
+    )
+    assert counts["total"] > 0, "no scored cells in the stream tab"
+    assert counts["colored"] == 0, f"cells still colored after clearing the Reference: {counts}"
+    assert counts["nobase"] == counts["total"], f"not all cells cleared to cmp-nobase: {counts}"
+
+    # Invariant: with no Reference, no Compare-with is possible — every compare box is
+    # unchecked + disabled, so the only next action is starring a new Reference.
+    boxes = driver.execute_script(
+        """
+        const ctl = document.querySelector('.tab-panel.active .cmpctl');
+        let enabled = 0, checked = 0;
+        ctl.querySelectorAll('input.cmp-on').forEach(cb => {
+          if (!cb.disabled) { enabled++; }
+          if (cb.checked) { checked++; }
+        });
+        return {enabled, checked};
+        """
+    )
+    assert boxes == {"enabled": 0, "checked": 0}, (
+        f"with no Reference, all compare boxes must be disabled + unchecked, got {boxes}"
+    )
+
+
+def _click_active_star(driver):
+    return driver.execute_script(
+        """
+        const ctl = document.querySelector('.tab-panel.active .cmpctl');
+        const r = ctl && ctl.querySelector('input.cmp-ref:checked');
+        const label = r && (r.closest('label') || r.parentElement);
+        const star = label && (label.querySelector('.star') || label);
+        if (!star) { return false; }
+        star.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+        star.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+        return true;
+        """
+    )
+
+
+def _click_star(driver, key):
+    """Native-ish click on a specific row's ★ label (mousedown + click)."""
+    return driver.execute_script(
+        """
+        const key = arguments[0];
+        for (const r of document.querySelectorAll('.tab-panel.active .cmpctl .cmprow')) {
+          const rad = r.querySelector('.cmp-ref');
+          if (rad && rad.value === key) {
+            const star = rad.closest('label').querySelector('.star');
+            star.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+            star.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+            return true;
+          }
+        }
+        return false;
+        """,
+        key,
+    )
+
+
+def _row_state(driver, key):
+    return driver.execute_script(
+        """
+        const key = arguments[0];
+        const r = Array.from(document.querySelectorAll('.tab-panel.active .cmpctl .cmprow'))
+          .find(x => x.querySelector('.cmp-ref') && x.querySelector('.cmp-ref').value === key);
+        if (!r) { return null; }
+        return {
+          isRef: r.classList.contains('is-ref'),
+          refChecked: r.querySelector('.cmp-ref').checked,
+          cmpChecked: r.querySelector('.cmp-on').checked,
+          cmpDisabled: r.querySelector('.cmp-on').disabled,
+        };
+        """,
+        key,
+    )
+
+
+def test_switching_star_keeps_old_ref_as_checked_compare(driver):
+    # Moving the star to a new row makes that row the Reference and demotes the OLD
+    # Reference to a normal CHECKED compare box (new-ref vs old-ref), not a dropout.
+    _open_stream_tab(driver)
+    _select(driver, V2_KEY, [])
+    assert _active_base(driver) == V2_KEY, "precondition: V2 is the Reference"
+
+    assert _click_star(driver, V1_KEY), "no V1 star to click"
+    time.sleep(0.3)
+
+    assert _active_base(driver) == V1_KEY, "clicking V1's star must make V1 the Reference"
+    old = _row_state(driver, V2_KEY)
+    assert old == {"isRef": False, "refChecked": False, "cmpChecked": True, "cmpDisabled": False}, (
+        f"old ref V2 must become an enabled, checked compare box, got {old}"
+    )
+    new = _row_state(driver, V1_KEY)
+    assert new["isRef"] and new["refChecked"], f"V1 must be the new Reference, got {new}"
+
+
+def test_active_star_stays_when_a_compare_is_selected(driver):
+    # With a Compare checkbox active there's still a chart to show, so clicking the
+    # active star must NOT clear the Reference (only an empty compare set may unstar).
+    _open_stream_tab(driver)
+    _select(driver, V2_KEY, [V1_KEY])
+    assert _active_base(driver) == V2_KEY, "precondition: V2 is the Reference"
+
+    assert _click_active_star(driver), "no checked Reference star to click"
+    time.sleep(0.3)
+    assert _active_base(driver) == V2_KEY, (
+        "star must stay while a Compare checkbox is selected"
+    )
+
+    # Clear the compare, THEN the same click gesture must unstar (empty set path).
+    _select(driver, V2_KEY, [])
+    assert _click_active_star(driver)
+    time.sleep(0.3)
+    assert _active_base(driver) is None, "with no compares, clicking the star must clear it"
 
 
 def test_unchecking_compare_hides_its_column(driver):

@@ -729,7 +729,7 @@ def test_template_has_compare_picker_and_reasoning_candidates() -> None:
 def test_template_overview_cells_do_not_expand_from_hidden_marker_text() -> None:
     # Static styles now live in the CSS asset, inlined at render (audit B7).
     css = (SRC / "assets" / "conformance.css").read_text()
-    assert "td.cell { text-align: center; width: 44px; min-width: 44px; max-width: 44px;" in css
+    assert "td.cell { position: relative; text-align: center; width: 44px; min-width: 44px; max-width: 44px;" in css
     assert ".view-overview td.cell { font-size: 0; line-height: 0; }" in css
     assert ".view-overview td.cell .cell-marker { display: none; }" in css
     assert ".view-overview td.cell .ttip { font-size: 12px; line-height: 1.4; }" in css
@@ -812,7 +812,11 @@ def test_template_cells_do_not_clip_hover_tooltips() -> None:
     assert cell_rule is not None
     assert "overflow: hidden" not in cell_rule.group(1)
     assert ".ttip-visible" in css
-    assert "cell.addEventListener('pointerenter', scheduleShow);" in js
+    # Hover-show is now gated on hover-capable devices (touch uses tap-to-pin), so
+    # the listener is wired inside a `matchMedia('(hover: hover)')` branch rather
+    # than as a bare top-level call. Assert both the gate and the pointerenter wiring.
+    assert "matchMedia('(hover: hover)')" in js
+    assert "cell.addEventListener('pointerenter'" in js
 
 
 def test_toolcalling_parser_options_are_mode_specific() -> None:
