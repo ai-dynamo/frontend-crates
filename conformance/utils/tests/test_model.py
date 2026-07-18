@@ -17,16 +17,22 @@ render them if absent, mirroring test_chart_invariants).
 Expected peer versions are DERIVED from the downloaded fixture dirs (not hard-coded),
 so the guards keep working across version bumps.
 """
+import copy
 import json
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 UTILS = Path(__file__).resolve().parents[1]
 REPO = UTILS.parents[1]
+if str(UTILS / "src") not in sys.path:
+    sys.path.insert(0, str(UTILS / "src"))
+
+import model as model_mod  # noqa: E402
 
 
 def _cache_root() -> Path:
@@ -48,13 +54,24 @@ _MODEL_RE = re.compile(
 )
 
 
-def _read_model(page_path: Path, render_script: str) -> dict:
+def _read_model_raw(page_path: Path, render_script: str) -> dict:
     if not page_path.exists():
         subprocess.run([str(UTILS / render_script)], check=True, capture_output=True, cwd=REPO)
     html = page_path.read_text(encoding="utf-8")
     m = _MODEL_RE.search(html)
     assert m, f"{page_path.name}: no conformance-model blob"
     return json.loads(m.group(1))
+
+
+def _read_model(page_path: Path, render_script: str) -> dict:
+    # The blob is compacted (schema 2); every structural guard asserts on the
+    # HYDRATED shape — exactly what the JS view renders after hydratePage.
+    return model_mod.hydrate_page(_read_model_raw(page_path, render_script))
+
+
+@pytest.fixture(scope="module")
+def model_v2_raw() -> dict:
+    return _read_model_raw(REPO / "conformance/CONFORMANCE_v2.html", "render_table_v2.sh")
 
 
 @pytest.fixture(scope="module")
@@ -97,9 +114,80 @@ _VER_PAREN = re.compile(r"\b\d[\w.]*\s+\([^)]+\)\s*$")
 # ---- schema + shape -----------------------------------------------------------
 
 def test_v2_schema_and_meta(model_v2):
-    assert model_v2["schema"] == 1
+    assert model_v2["schema"] == 2
     meta = model_v2["meta"]
     assert meta["title"] and meta["stamp"] and meta["command"]
+
+
+# ---- schema-2 compaction (model.py _compact_page <-> hydrate_page) --------------
+
+def test_compaction_roundtrip_is_identity():
+    # compact -> hydrate must reproduce the original page exactly (modulo the added
+    # compaction keys), or the JS view would render different VALUES than Python
+    # computed. Synthetic page exercising every compaction move: interned strings,
+    # cand_meta dedup (incl. a conflicting label kept inline), fixture_href prefix,
+    # and the composed-head drop.
+    long_a = "explanation text repeated across cells x"
+    long_b = "another repeated reason string y"
+    def cand(key, label, expl):
+        return {"key": key, "label": label, "impl": "dynamo", "version": "1",
+                "parse_mode": "batch", "block": {"explanation": expl}}
+    def cell(case, fam, href, label2):
+        return {
+            "kind": "cell", "case_id": case, "family": fam, "sub": "1",
+            "col_group": "core", "band": "b", "fixture_href": href, "status": "ok",
+            "cmp": None, "known_divergence": False,
+            "facts": [{"impl": "dynamo", "reason": long_b}],
+            "tooltip": {
+                "head": f"{case} — {fam}", "description": long_a,
+                "input": {"kind": "text", "text": long_a},
+                "candidates": [cand("k1", "L1", long_a), cand("k2", label2, long_b)],
+                "baseline": None, "reasons": [{"label": long_b, "reason": long_a}],
+                "dynamo_notes": [[long_b, long_a]], "refs": [["r", 7]],
+                "leak_note": None, "na_note": None,
+            },
+        }
+    tabs = [{
+        "id": "t", "kind": "toolcalling", "label": "T", "rows": [
+            {"model_label": "m", "cells": {
+                "1": cell("C.1", "famA", "https://x/fixtures/famA/1.yaml", "L2"),
+                "2": cell("C.2", "famB", "https://x/fixtures/famB/2.yaml", "L2-conflict"),
+            }},
+        ], "columns": [], "candidates": [], "stats": {},
+    }]
+    original = copy.deepcopy(tabs)
+    page = model_mod.build_page({"title": "t", "stamp": "s", "command": "c"}, tabs)
+    # Compacted on the wire: strings interned, meta hoisted, head dropped.
+    assert page["strings"], "expected interned strings"
+    assert page["tabs"][0]["cand_meta"]["k1"]["label"] == "L1"
+    assert "label" not in page["tabs"][0]["cand_meta"].get("k2", {}), \
+        "conflicting label must stay inline"
+    assert page["tabs"][0]["fixture_href_base"].endswith("/fixtures/")
+    first_tip = page["tabs"][0]["rows"][0]["cells"]["1"]["tooltip"]
+    assert "head" not in first_tip
+    # Round-trip: hydrate restores every VALUE the producers computed.
+    hydrated = model_mod.hydrate_page(json.loads(json.dumps(page)))
+    for tab_orig, tab_hyd in zip(original, hydrated["tabs"]):
+        for row_orig, row_hyd in zip(tab_orig["rows"], tab_hyd["rows"]):
+            assert row_orig["cells"] == row_hyd["cells"]
+
+
+def test_v2_blob_is_compacted_and_hydrates_clean(model_v2_raw):
+    # The real rendered blob actually uses the compaction (page-size guard) ...
+    assert model_v2_raw.get("strings"), "blob should carry an interned-string table"
+    assert any(t.get("cand_meta") for t in model_v2_raw["tabs"])
+    # ... and hydration leaves no unresolved index anywhere (every interned slot is
+    # a string again, every tooltip candidate has its meta back).
+    hydrated = model_mod.hydrate_page(copy.deepcopy(model_v2_raw))
+    for container, key in model_mod._iter_intern_slots(hydrated):
+        v = model_mod._slot_get(container, key)
+        assert not isinstance(v, int) or isinstance(v, bool), (key, v)
+    for tab in hydrated["tabs"]:
+        for row in tab["rows"]:
+            for cell in (row.get("cells") or {}).values():
+                tip = cell.get("tooltip")
+                for cand in (tip.get("candidates") or []) if tip else []:
+                    assert cand.get("label"), f"candidate {cand.get('key')} lost its label"
 
 
 def test_v2_all_tabs_present(model_v2):

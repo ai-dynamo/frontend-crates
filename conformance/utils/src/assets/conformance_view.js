@@ -4,9 +4,8 @@
 // from the inlined JSON model (`<script id="conformance-model">`). This runs at
 // parse time, BEFORE conformance.js, and produces the exact DOM (classes/attrs)
 // that conformance.js queries — so the interactivity script wires against it
-// unmodified. If the model blob is absent, we leave the server-rendered DOM in
-// place (phases 1-2 still server-render the panels; we swap them for model-built
-// ones so the two stay byte-compatible from conformance.js's point of view).
+// unmodified. The template emits only the page skeleton + the model blob; this
+// view is the sole renderer of the tabs bar and panels.
 (function () {
   // --- Escaping helpers ------------------------------------------------------
   // Every plain-text value from the model is escaped before insertion. Fields
@@ -611,11 +610,57 @@
     return tmp.firstChild;
   }
 
+  // --- Schema-2 hydration (mirror of model.py hydrate_page) -------------------
+  // The blob is COMPACTED (model.py _compact_page): repeated long strings live once
+  // in page.strings (slots hold int indexes), per-cell tooltip-candidate meta lives
+  // once per tab in tab.cand_meta, fixture_hrefs keep only their suffix under
+  // tab.fixture_href_base, and the standard "<case_id> — <family>" head is dropped.
+  // Hydrating once right after JSON.parse restores the schema-1 shape in memory, so
+  // every builder below (and conformance.js) is untouched by the compaction.
+  // KEEP THE SLOT LIST IN SYNC with model.py _iter_intern_slots.
+  function hydratePage(page) {
+    var strings = page.strings || [];
+    function S(container, key) {
+      if (typeof container[key] === 'number') { container[key] = strings[container[key]]; }
+    }
+    (page.tabs || []).forEach(function (tab) {
+      var meta = tab.cand_meta || {};
+      var base = tab.fixture_href_base || '';
+      (tab.rows || []).forEach(function (row) {
+        var cells = row.cells || {};
+        Object.keys(cells).forEach(function (sub) {
+          var cell = cells[sub];
+          if (base && cell.fixture_href) { cell.fixture_href = base + cell.fixture_href; }
+          (cell.facts || []).forEach(function (f) { S(f, 'reason'); });
+          var tip = cell.tooltip;
+          if (!tip) { return; }
+          S(tip, 'description'); S(tip, 'na_note'); S(tip, 'leak_note');
+          if (tip.input) { S(tip.input, 'text'); }
+          (tip.reasons || []).forEach(function (r) { S(r, 'label'); S(r, 'reason'); });
+          (tip.dynamo_notes || []).forEach(function (pair) { S(pair, 0); S(pair, 1); });
+          var blocks = (tip.candidates || []).map(function (c) { return c.block; });
+          if (tip.baseline) { blocks.push(tip.baseline.block); }
+          blocks.forEach(function (b) { if (b) { S(b, 'explanation'); S(b, 'unavailable'); } });
+          (tip.candidates || []).forEach(function (c) {
+            var fields = meta[c.key] || {};
+            for (var f in fields) {
+              if (!(f in c)) { c[f] = fields[f]; }
+            }
+          });
+          if (!('head' in tip) && cell.case_id && cell.family) {
+            tip.head = cell.case_id + ' — ' + cell.family;
+          }
+        });
+      });
+    });
+    return page;
+  }
+
   // --- Entry point -----------------------------------------------------------
   try {
     var modelEl = document.getElementById('conformance-model');
-    if (!modelEl) { return; }  // server HTML already present; nothing to build.
-    var page = JSON.parse(modelEl.textContent);
+    if (!modelEl) { return; }  // no model blob; nothing to build.
+    var page = hydratePage(JSON.parse(modelEl.textContent));
     if (!page || !page.tabs || !page.tabs.length) { return; }
 
     _usesFamily = !!(page.parser_ni && Object.keys(page.parser_ni).length);

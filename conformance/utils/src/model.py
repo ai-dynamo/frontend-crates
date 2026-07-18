@@ -14,7 +14,8 @@ Schema (top-down)
 =================
 
 page = {
-  "schema": 1,                       # bumped on breaking model changes
+  "schema": 2,                       # bumped on breaking model changes
+  "strings": [str, ...],             # interned-string table (see Compaction below)
   "meta": {
     "title": str,
     "stamp": str,                    # "YYYY-MM-DD HH:MM PDT"
@@ -105,13 +106,43 @@ per-chunk = {"deltas":[{index,name?,arguments?}], "normal_text":str}
 
 The model is the ONLY thing Python emits per DIS-2434 phase 3; while phases 1-2 keep
 the Python-rendered HTML, `build_page`/`to_script_json` add the blob additively.
+
+Compaction (schema 2)
+=====================
+
+`build_page` runs `_compact_page` so the inlined blob doesn't repeat itself; the JS
+view's `hydratePage` (conformance_view.js) is the exact mirror and restores the
+schema-1 shape in memory before anything renders, so no other consumer changes.
+Python consumers of the raw blob (tests) call `hydrate_page` below. Four moves:
+
+  page["strings"]            interned string table. Long (>=16 chars) strings that
+                             occur 2+ times across the interned slots (see
+                             `_iter_intern_slots`) are stored once and the slot holds
+                             the int index. These slots are str|None by schema, so an
+                             int is unambiguous.
+  tab["cand_meta"]           { cand_key: {label/impl/version/parse_mode} } — per-cell
+                             tooltip candidates repeat these identically for every
+                             cell; they're stored once per tab and stripped from the
+                             cells (kept inline only if a cell ever disagrees).
+  tab["fixture_href_base"]   common directory prefix of the tab's fixture_href links;
+                             cells keep only the suffix.
+  tooltip["head"]            dropped when it equals "<case_id> — <family>" (the
+                             overwhelmingly common case); hydration recomposes it.
 """
 from __future__ import annotations
 
 import json
-from typing import Any, Callable
+import os.path
+from typing import Any, Callable, Iterator
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+
+# Interning: only strings at least this long are table-worthy (shorter ones cost as
+# much as the index reference).
+_INTERN_MIN_LEN = 16
+
+# Tooltip-candidate fields that repeat identically for every cell of a tab.
+_CAND_META_FIELDS = ("label", "impl", "version", "parse_mode")
 
 
 def to_script_json(page: dict) -> str:
@@ -176,10 +207,158 @@ def build_page(meta: dict, tabs: list[dict], *, parser_ni: dict | None = None,
         for req in ("id", "kind", "label", "rows", "columns", "candidates", "stats"):
             if req not in tab:
                 raise ValueError(f"model tab #{i} missing required key {req!r}")
-    return {
+    return _compact_page({
         "schema": SCHEMA_VERSION,
         "meta": meta,
         "parser_ni": parser_ni or {},
         "legend_html": legend_html,
         "tabs": tabs,
-    }
+    })
+
+
+# --- Schema-2 compaction (mirrored by hydratePage in conformance_view.js) -----------
+
+def _iter_cells(page: dict) -> Iterator[tuple[dict, dict]]:
+    for tab in page["tabs"]:
+        for row in tab.get("rows", []):
+            for cell in (row.get("cells") or {}).values():
+                yield tab, cell
+
+
+def _iter_intern_slots(page: dict) -> Iterator[tuple[Any, Any]]:
+    """Yield every (container, key) slot whose string value may be interned. All of
+    these are str|None by schema, so an int index is unambiguous. `refs` values are
+    deliberately NOT interned (they may hold arbitrary fixture-provenance types).
+    KEEP IN SYNC with hydratePage in conformance_view.js."""
+    for _tab, cell in _iter_cells(page):
+        for fact in cell.get("facts") or []:
+            yield fact, "reason"
+        tip = cell.get("tooltip")
+        if not tip:
+            continue
+        yield tip, "description"
+        yield tip, "na_note"
+        yield tip, "leak_note"
+        if tip.get("input"):
+            yield tip["input"], "text"
+        for r in tip.get("reasons") or []:
+            yield r, "label"
+            yield r, "reason"
+        for pair in tip.get("dynamo_notes") or []:
+            yield pair, 0
+            yield pair, 1
+        blocks = [c.get("block") for c in tip.get("candidates") or []]
+        if tip.get("baseline"):
+            blocks.append(tip["baseline"].get("block"))
+        for b in blocks:
+            if isinstance(b, dict):
+                yield b, "explanation"
+                yield b, "unavailable"
+
+
+def _slot_get(container: Any, key: Any) -> Any:
+    try:
+        return container[key]
+    except (KeyError, IndexError, TypeError):
+        return None
+
+
+def _compact_page(page: dict) -> dict:
+    # Intern repeated long strings into one page-level table.
+    counts: dict[str, int] = {}
+    for container, key in _iter_intern_slots(page):
+        v = _slot_get(container, key)
+        if isinstance(v, str) and len(v) >= _INTERN_MIN_LEN:
+            counts[v] = counts.get(v, 0) + 1
+    strings: list[str] = []
+    index: dict[str, int] = {}
+    for container, key in _iter_intern_slots(page):
+        v = _slot_get(container, key)
+        if isinstance(v, str) and counts.get(v, 0) >= 2:
+            if v not in index:
+                index[v] = len(strings)
+                strings.append(v)
+            container[key] = index[v]
+    if strings:
+        page["strings"] = strings
+
+    for tab in page["tabs"]:
+        cells = [cell for row in tab.get("rows", [])
+                 for cell in (row.get("cells") or {}).values()]
+
+        # Tooltip-candidate meta: identical for every cell -> once per tab.
+        meta: dict[str, dict] = {}
+        conflicts: set[tuple[str, str]] = set()
+        def _tip_cands(cell: dict) -> list[dict]:
+            tip = cell.get("tooltip")
+            return (tip.get("candidates") or []) if tip else []
+        for cell in cells:
+            for cand in _tip_cands(cell):
+                key = cand.get("key")
+                if not key:
+                    continue
+                slot = meta.setdefault(key, {})
+                for f in _CAND_META_FIELDS:
+                    if f not in cand:
+                        continue
+                    if f in slot and slot[f] != cand[f]:
+                        conflicts.add((key, f))
+                    else:
+                        slot.setdefault(f, cand[f])
+        cand_meta = {k: {f: v for f, v in fields.items() if (k, f) not in conflicts}
+                     for k, fields in meta.items()}
+        cand_meta = {k: fs for k, fs in cand_meta.items() if fs}
+        if cand_meta:
+            tab["cand_meta"] = cand_meta
+            for cell in cells:
+                for cand in _tip_cands(cell):
+                    for f, v in (cand_meta.get(cand.get("key")) or {}).items():
+                        if f in cand and cand[f] == v:
+                            del cand[f]
+
+        # fixture_href: hoist the common directory prefix.
+        hrefs = [c["fixture_href"] for c in cells if c.get("fixture_href")]
+        if len(hrefs) >= 2:
+            prefix = os.path.commonprefix(hrefs)
+            prefix = prefix[: prefix.rfind("/") + 1]
+            if len(prefix) >= 8:
+                tab["fixture_href_base"] = prefix
+                for c in cells:
+                    if c.get("fixture_href"):
+                        c["fixture_href"] = c["fixture_href"][len(prefix):]
+
+        # head: drop when it is the standard "<case_id> — <family>" composition.
+        for cell in cells:
+            tip = cell.get("tooltip")
+            if (tip and cell.get("case_id") and cell.get("family")
+                    and tip.get("head") == f"{cell['case_id']} — {cell['family']}"):
+                del tip["head"]
+    return page
+
+
+def hydrate_page(page: dict) -> dict:
+    """Restore the schema-1 shape in place (inverse of `_compact_page`). Python
+    consumers of the raw blob (tests) call this; the JS view runs the mirrored
+    hydratePage right after JSON.parse."""
+    strings = page.get("strings") or []
+    for container, key in _iter_intern_slots(page):
+        v = _slot_get(container, key)
+        if isinstance(v, int) and not isinstance(v, bool):
+            container[key] = strings[v]
+    for tab in page["tabs"]:
+        cand_meta = tab.get("cand_meta") or {}
+        base = tab.get("fixture_href_base") or ""
+        for row in tab.get("rows", []):
+            for cell in (row.get("cells") or {}).values():
+                if base and cell.get("fixture_href"):
+                    cell["fixture_href"] = base + cell["fixture_href"]
+                tip = cell.get("tooltip")
+                if not tip:
+                    continue
+                for cand in tip.get("candidates") or []:
+                    for f, v in (cand_meta.get(cand.get("key")) or {}).items():
+                        if f not in cand:
+                            cand[f] = v
+                if ("head" not in tip and cell.get("case_id") and cell.get("family")):
+                    tip["head"] = f"{cell['case_id']} — {cell['family']}"
+    return page
