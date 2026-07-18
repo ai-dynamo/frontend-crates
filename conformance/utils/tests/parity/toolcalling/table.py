@@ -72,7 +72,6 @@ from tests.parity.common import TOP_N_TOOL_CALLING_FAMILIES as TOP_N_FAMILIES
 REPO_ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures"
 TOOLCALLING_CASES_MD = REPO_ROOT / "lib/parsers/TOOLCALLING_CASES.md"
-PYPROJECT_TOML = REPO_ROOT / "pyproject.toml"
 TEMPLATE_DIR = REPO_ROOT / "tests/parity"
 
 # The versioned fixture source (inputs/ + per-impl <impl>-<version>/ dirs) lives in
@@ -157,24 +156,6 @@ def _commit_sha() -> str | None:
         return out or None
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None
-
-
-def _peer_versions() -> dict[str, str]:
-    """Extract pinned vllm / sglang versions from pyproject.toml.
-
-    Matches a line like `"vllm[flashinfer,runai,otel]==X.Y.Z",` (TOML is
-    not parsed — the regex is sufficient and avoids a tomllib import on
-    older Pythons running this script outside a Python 3.11+ env)."""
-    out: dict[str, str] = {}
-    if not PYPROJECT_TOML.exists():
-        return out
-    text = PYPROJECT_TOML.read_text()
-    # keys are canonical impl keys; the regex names are the pip package names
-    for name, impl in (("vllm", "vllm_python"), ("sglang", "sglang_python")):
-        m = re.search(rf'"{name}(?:\[[^\]]*\])?==([0-9][^"]*)"', text)
-        if m:
-            out[impl] = m.group(1)
-    return out
 
 
 # --- per-impl version snapshots (version radios) --------------------------------
@@ -1199,10 +1180,6 @@ def _glossary_groups(
         }
         for run in _subcase_runs(mode, sub_cases)
     ]
-
-
-def _peer_version_items(versions: dict[str, str]) -> list[tuple[str, str]]:
-    return [(name, versions[name]) for name in ("vllm_python", "sglang_python") if name in versions]
 
 
 _IMPL_RADIO_LABEL = {"dynamo_v1": "Dynamo", "vllm_python": "vLLM", "sglang_python": "SGLang"}

@@ -137,14 +137,7 @@ def render_combined_html() -> str:
             short_sha=sha[:12] if sha else "",
             command="python3 tests/parity/generate_parity_table.py all --html",
             output="tests/parity/PARITY.html",
-            tabs=[],
-            panels=[],
-            peer_versions=toolcalling_table._peer_version_items(
-                toolcalling_table._peer_versions()
-            ),
-            peer_versions_href=common.LINKS["pyproject_stub"],
             model_json=model_json,
-            js_view=True,
         )
     )
 

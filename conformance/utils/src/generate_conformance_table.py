@@ -2146,11 +2146,8 @@ def render_combined_html(
             short_sha=sha[:12] if sha else "",
             command="conformance/utils/render_table_v2.sh",
             output=_display_path(resolved_output_path, artifact_root),
-            tabs=[],
-            panels=[],
             parser_ni_json=json.dumps(_parser_ni_map()),
             model_json=model_json,
-            js_view=True,
         )
     )
     return _scrub_visible_conformance_text(html)

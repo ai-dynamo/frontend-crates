@@ -621,18 +621,23 @@ def test_build_cases_carries_stream_and_batch(monkeypatch) -> None:
 
 
 def test_template_has_compare_picker_and_reasoning_candidates() -> None:
-    # The compare bar is a SHARED Jinja partial (used by both the v2 conformance
-    # table and the v1 parity page): one column per engine, each parser row a
-    # Reference radio + Compare-with checkbox. The drag/drop buckets are gone.
+    # The compare bar is built by the JS view (compareBarHtml, shared by both the v2
+    # conformance table and the v1 parity page): one column per engine, each parser
+    # row a Reference radio + Compare-with checkbox. The server template is a
+    # skeleton only — no server-rendered bar, no old drag/drop buckets.
     template = (SRC / "conformance_table.html.j2").read_text()
-    assert '{% include "_compare_bar.html.j2" %}' in template
     assert "data-bucket" not in template  # old drag/drop buckets are gone
-    partial = (UTILS / "tests" / "parity" / "_compare_bar.html.j2").read_text()
-    assert 'data-engine="Dynamo"' in partial or "'Dynamo'" in partial
-    assert 'class="cmp-ref"' in partial  # Reference radio
-    assert 'class="cmp-on"' in partial  # Compare-with checkbox
-    assert ">compare with<" in partial.lower()
-    assert "data-cmp-base" not in partial  # old radio-based control is gone
+    assert "_compare_bar" not in template  # server-rendered bar partial is gone
+    view = (SRC / "assets" / "conformance_view.js").read_text()
+    assert "function compareBarHtml" in view
+    assert "'Dynamo'" in view and "'vLLM'" in view and "'SGLang'" in view
+    assert 'class="cmp-ref"' in view  # Reference radio
+    assert 'class="cmp-on"' in view  # Compare-with checkbox
+    assert ">compare with<" in view.lower()
+    assert "data-cmp-base" not in view  # old radio-based control is gone
+    # v1 parity candidates carry no label_html; the view must fall back to the
+    # plain label instead of failing (regression: PR #105).
+    assert "c.label_html || escapeHtml(c.label" in view
     # The compare JS drives cells from each cell's data-cmp payload.
     js = (SRC / "assets" / "conformance.js").read_text()
     assert "function applyCtl" in js
@@ -893,31 +898,17 @@ def test_compare_legend_documents_delta_and_drops_stale_parity_explainer() -> No
     assert "parity_explainer" not in legend
 
 
-def test_compare_bar_renders_when_candidate_lacks_label_html() -> None:
-    """The compare bar is shared with the v1 parity page, whose candidates carry no
-    label_html. Under StrictUndefined the template must guard the optional field and
-    fall back to the plain label instead of raising (regression: PR #105)."""
-    bar = (UTILS / "tests" / "parity" / "_compare_bar.html.j2").read_text(encoding="utf-8")
-    env = g.Environment(undefined=g.StrictUndefined, autoescape=True)
-    html = env.from_string(bar).render(
-        panel={
-            "id": "p",
-            "candidates": [{"key": "dynamo_x", "label": "X (batch)", "default_bucket": "A"}],
-        }
-    )
-    assert "cmprow-label" in html and "X (batch)" in html
-
-
 def test_transpose_feature_is_wired() -> None:
     """DIS-2280 Transpose: the toggle, the JS mirror builder, and the CSS all ship
     in the assets, and the JS integrates with #98's compare engine (applyCtl) rather
     than the removed per-parser status model."""
-    tmpl = (SRC / "conformance_table.html.j2").read_text(encoding="utf-8")
+    view = (SRC / "assets" / "conformance_view.js").read_text(encoding="utf-8")
     js = (SRC / "assets" / "conformance.js").read_text(encoding="utf-8")
     css = (SRC / "assets" / "conformance.css").read_text(encoding="utf-8")
     # toolbar checkbox + case-axis data attrs the mirror's corner label reads
-    assert "data-transpose-toggle" in tmpl
-    assert "data-case-prefix" in tmpl and "data-mode" in tmpl
+    # (the JS view builds the toolbar + table; the template is a skeleton)
+    assert "data-transpose-toggle" in view
+    assert "data-case-prefix" in view and "data-mode" in view
     # JS builder + integration with the compare engine
     assert "buildTransposed" in js and "data-transpose-table" in js
     assert "if (panelCtl(panel)) { applyCtl(panel); }" in js  # recolor the mirror
