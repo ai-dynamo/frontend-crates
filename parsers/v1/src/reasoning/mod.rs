@@ -21,6 +21,11 @@ pub use minimax_append_think_parser::MiniMaxAppendThinkParser;
 /// `KimiK2ParserConfig::default().section_start` in `crate::tool_calling::config`.
 pub(crate) const KIMI_K2_TOOL_SECTION_BEGIN: &str = "<|tool_calls_section_begin|>";
 
+/// MiniMax M3 namespace token that prefixes its native XML tool-call tags.
+/// The reasoning parser treats this as an alternate boundary because the model
+/// can begin a tool call without first emitting `</mm:think>`.
+pub(crate) const MINIMAX_M3_TOOL_NAMESPACE: &str = "]<]minimax[>[";
+
 static REASONING_PARSER_MAP: OnceLock<HashMap<&'static str, ReasoningParserType>> = OnceLock::new();
 
 /// Initialize the global reasoning parser map
@@ -301,7 +306,8 @@ impl ReasoningParserType {
                         false,
                         true,
                     )
-                    .with_dangling_end_recovery(),
+                    .with_dangling_end_recovery()
+                    .with_tool_start_token(MINIMAX_M3_TOOL_NAMESPACE),
                 ),
             },
             ReasoningParserType::Gemma4 => ReasoningParserWrapper {
@@ -464,6 +470,72 @@ mod tests {
 
         assert_eq!(result.reasoning_text, "reason");
         assert_eq!(result.normal_text, "answer");
+    }
+
+    #[test] // MiniMax M3
+    fn test_minimax_m3_native_tool_namespace_ends_prompt_prefilled_reasoning() {
+        for parser_name in ["minimax_m3", "minimax-m3"] {
+            let mut parser = ReasoningParserType::get_reasoning_parser_from_name(parser_name);
+            parser.set_in_reasoning(true);
+
+            let input = format!(
+                "reasoning{MINIMAX_M3_TOOL_NAMESPACE}<tool_call>\n\
+                 {MINIMAX_M3_TOOL_NAMESPACE}<invoke name=\"get_weather\">"
+            );
+            let result = parser.detect_and_parse_reasoning(&input, &[]);
+
+            assert_eq!(result.reasoning_text, "reasoning");
+            assert_eq!(
+                result.normal_text,
+                format!(
+                    "{MINIMAX_M3_TOOL_NAMESPACE}<tool_call>\n\
+                     {MINIMAX_M3_TOOL_NAMESPACE}<invoke name=\"get_weather\">"
+                )
+            );
+        }
+    }
+
+    #[test] // MiniMax M3
+    fn test_minimax_m3_native_tool_namespace_is_lossless_across_stream_chunks() {
+        let chunkings = [
+            vec![
+                "reasoning".to_string(),
+                MINIMAX_M3_TOOL_NAMESPACE.to_string(),
+                "<tool_call>".to_string(),
+            ],
+            vec![
+                "reasoning]<]mini".to_string(),
+                "max[>[".to_string(),
+                "<tool_call>".to_string(),
+            ],
+        ];
+
+        for chunks in chunkings {
+            let mut parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m3");
+            parser.set_in_reasoning(true);
+
+            let results: Vec<_> = chunks
+                .iter()
+                .map(|chunk| parser.parse_reasoning_streaming_incremental(chunk, &[]))
+                .collect();
+
+            assert_eq!(
+                results
+                    .iter()
+                    .map(|result| result.reasoning_text.as_str())
+                    .collect::<String>(),
+                "reasoning",
+                "namespace chunking {chunks:?} leaked into reasoning"
+            );
+            assert_eq!(
+                results
+                    .iter()
+                    .map(|result| result.normal_text.as_str())
+                    .collect::<String>(),
+                format!("{MINIMAX_M3_TOOL_NAMESPACE}<tool_call>"),
+                "namespace chunking {chunks:?} was not preserved for the tool parser"
+            );
+        }
     }
 
     #[test] // MiniMax M3
