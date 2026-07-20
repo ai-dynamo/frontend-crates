@@ -18,13 +18,5 @@
 #
 # Schema: family -> case id -> note.
 
-gemma4:
-  TOOLCALLING.streamv2.5.b: &gemma4-bare-call-chunked "FIXME (chunked side wrong): bare-call recovery (a `call:...` body with no `<|tool_call>` opener) only fires when the whole pattern is already in the buffer. Streamed in small chunks, the prose flush releases `c`, `ca`, ... before `call:` can accumulate, so the chunked parse emits the call body as normal_text while the single-shot parse recovers the call. Fix: the opener holdback must also hold suffixes that are prefixes of `call:` (planned in the shared-streaming-core refactor)."
-  TOOLCALLING.streamv2.5.f: *gemma4-bare-call-chunked
-  TOOLCALLING.streamv2.5.g: *gemma4-bare-call-chunked
-
 glm47:
   TOOLCALLING.streamv2.5.h: "FIXME (single-shot side wrong): on `I will check that. </tool_call> ok` the single-shot parse misreads the prose word `that.` as a bare function name attached to the orphan `</tool_call>` and emits a call named `that.`; the chunked path strips the orphan close and preserves the prose, which is the correct output. Fix requires tightening single-shot bare-name recovery and re-recording the dynamo_v2 overlay for this case."
-
-deepseek_v4:
-  TOOLCALLING.streamv2.5.f: "FIXME (chunked side wrong): whitespace-only normal_text between two adjacent `<｜DSML｜tool_calls>` blocks is dropped when a chunk boundary lands inside it; the single-shot parse preserves the ` ` separator. The inter-block text emission in the drain loop loses held-back whitespace when the next block opener completes across a split (planned fix in the shared-streaming-core refactor)."
