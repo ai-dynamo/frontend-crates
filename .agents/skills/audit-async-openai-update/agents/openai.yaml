@@ -1,0 +1,4 @@
+interface:
+  display_name: "Audit async-openai Updates"
+  short_description: "Audit Dynamo overrides after async-openai bumps"
+  default_prompt: "Use $audit-async-openai-update to audit this async-openai dependency bump and identify removable Dynamo protocol overrides."
