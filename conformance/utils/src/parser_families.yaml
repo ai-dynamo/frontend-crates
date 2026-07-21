@@ -37,3 +37,77 @@ families:
   # harmony-specific flow, not the peer maps above; listed for registry coverage.
   harmony:        {vllm_python: null,           vllm_rust: null,         sglang_python: null,        dynamo_v2: harmony,      preferred_input: tokens}
   harmony_text:   {vllm_python: null,           vllm_rust: null,         sglang_python: null,        dynamo_v2: harmony,      preferred_input: text}
+
+# Family grammar tokens (DIS-2442): the single source both derived registries consume.
+#   * markers.py builds the tool-call leak detector (_TOOL_CALL_MARKUP_RE) from the
+#     union of every family's tokens — an undeclared token makes a markup leak render
+#     as a clean green cell.
+#   * tests/parity/markup.py consults the family's pairs/singletons when its heuristic
+#     classifier cannot type a token — an unclassifiable token renders as a red
+#     tt-orphan in the conformance popups (looks like a parse error).
+# Keys per family (all optional, but the family key itself is REQUIRED — the coverage
+# lint fails families without an entry; use an explicit {} for markup-less grammars):
+#   pairs:      [[open, close], ...] exact-literal open/close token pairs
+#   singletons: [tok, ...]           standalone tokens with no open/close semantics
+#   leak:       [s, ...]             extra substrings for the leak detector only —
+#                                    prefixes of parameterized tags (e.g. "<invoke"),
+#                                    tokens the colorizer already handles specially
+markers:
+  deepseek_v3:
+    pairs: [["<｜tool▁calls▁begin｜>", "<｜tool▁calls▁end｜>"], ["<｜tool▁call▁begin｜>", "<｜tool▁call▁end｜>"]]
+    singletons: ["<｜tool▁sep｜>"]
+  deepseek_v3_1:
+    pairs: [["<｜tool▁calls▁begin｜>", "<｜tool▁calls▁end｜>"], ["<｜tool▁call▁begin｜>", "<｜tool▁call▁end｜>"]]
+    singletons: ["<｜tool▁sep｜>"]
+  deepseek_v3_2:
+    pairs: [["<｜DSML｜function_calls>", "</｜DSML｜function_calls>"]]
+    leak: ["<｜DSML｜", "</｜DSML｜"]
+  deepseek_v4:
+    pairs: [["<｜DSML｜tool_calls>", "</｜DSML｜tool_calls>"]]
+    leak: ["<｜DSML｜", "</｜DSML｜"]
+  gemma4:
+    pairs: [["<|tool_call>", "<tool_call|>"]]
+    leak: ['<|"|>']
+  glm47:
+    pairs: [["<tool_call>", "</tool_call>"], ["<arg_key>", "</arg_key>"], ["<arg_value>", "</arg_value>"]]
+  hermes:
+    pairs: [["<tool_call>", "</tool_call>"]]
+  jamba:
+    pairs: [["<tool_calls>", "</tool_calls>"]]
+  kimi_k2:
+    pairs: [["<|tool_calls_section_begin|>", "<|tool_calls_section_end|>"], ["<|tool_call_begin|>", "<|tool_call_end|>"]]
+    singletons: ["<|tool_call_argument_begin|>"]
+  llama3_json:
+    singletons: ["<|python_tag|>"]
+  minimax_m2:
+    pairs: [["<minimax:tool_call>", "</minimax:tool_call>"]]
+    leak: ["<invoke", "</invoke", "<parameter", "</parameter"]
+  minimax_m3:
+    pairs: [["<tool_call>", "</tool_call>"]]
+    singletons: ["]<]minimax[>["]
+    leak: ["<invoke", "</invoke"]
+  mistral:
+    pairs: [["[TOOL_CALLS]", "[/TOOL_CALLS]"]]
+  nemotron_deci:
+    pairs: [["<TOOLCALL>", "</TOOLCALL>"]]
+  nemotron_nano:
+    pairs: [["<tool_call>", "</tool_call>"]]
+    leak: ["<function=", "</function", "<parameter=", "</parameter"]
+  phi4:
+    leak: ["functools["]
+  # Pythonic output is a bare `[func(...)]` python list — no grammar markup exists to
+  # leak or colorize; explicit empty declaration.
+  pythonic: {}
+  qwen25:
+    pairs: [["<tool_call>", "</tool_call>"]]
+  qwen3_coder:
+    pairs: [["<tool_call>", "</tool_call>"]]
+    leak: ["<function=", "</function", "<parameter=", "</parameter"]
+  # Harmony's linear turn tokens pseudo-pair (`<|start|>` closes with `<|end|>` /
+  # `<|return|>` / `<|call|>`) — richer than the pairs/singletons schema, so the
+  # colorizer keeps its dedicated harmony logic and the tokens are declared for the
+  # leak detector only.
+  harmony:
+    leak: ["<|start|>", "<|channel|>", "<|constrain|>", "<|message|>", "<|end|>", "<|return|>", "<|call|>"]
+  harmony_text:
+    leak: ["<|start|>", "<|channel|>", "<|constrain|>", "<|message|>", "<|end|>", "<|return|>", "<|call|>"]

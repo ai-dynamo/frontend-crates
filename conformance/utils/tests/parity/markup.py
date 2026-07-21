@@ -7,7 +7,10 @@ from __future__ import annotations
 
 import html as html_lib
 import re
+from pathlib import Path
 from typing import Any
+
+import yaml
 
 # MiniMax M3 prefixes every structural tag with the `]<]minimax[>[` namespace
 # special token (tokenizer id 200058), e.g. `]<]minimax[>[<tool_call>`. It must
@@ -108,10 +111,53 @@ def _colorize_harmony(text: str) -> str:
     return "".join(pieces)
 
 
+# Declared per-family grammar tokens from the parser-family registry (DIS-2442).
+# Consulted BEFORE the heuristic classifier, so a token the heuristics cannot type
+# (e.g. Inkling's `<|message_model|>`: pipe-both-sides, no `_begin`/`_end` suffix)
+# renders with its declared pairing/coloring instead of as a red `tt-orphan` that
+# looks like a parse error. Registering a family's tokens in parser_families.yaml
+# is the ONLY step; this module derives its classification from that file.
+def _parser_families_path() -> Path:
+    """In the repo this module lives at tests/parity/ with the registry at
+    ../../src/; the render stage keeps that shape (<stage>/src/). The same-dir
+    candidate covers flat copies (mirrors markers._parser_families_path)."""
+    here = Path(__file__).resolve()
+    for cand in (
+        here.parent / "parser_families.yaml",
+        here.parents[2] / "src" / "parser_families.yaml",
+    ):
+        if cand.is_file():
+            return cand
+    raise FileNotFoundError(f"parser_families.yaml not found relative to {here}")
+
+
+_FAMILY_MARKERS: dict[str, dict] = (
+    yaml.safe_load(_parser_families_path().read_text()).get("markers") or {}
+)
+_declared_cache: dict[str, dict[str, tuple[str, str]]] = {}
+
+
+def _declared_lookup(family: str | None) -> dict[str, tuple[str, str]]:
+    """Full-token -> (kind, pair_id) table for the family's declared markers."""
+    if not family or family not in _FAMILY_MARKERS:
+        return {}
+    table = _declared_cache.get(family)
+    if table is None:
+        decl = _FAMILY_MARKERS[family]
+        table = {}
+        for open_tok, close_tok in decl.get("pairs") or []:
+            table[open_tok] = ("open", open_tok)
+            table[close_tok] = ("close", open_tok)
+        for tok in decl.get("singletons") or []:
+            table[tok] = ("singleton", tok)
+        _declared_cache[family] = table
+    return table
+
+
 def colorize_markup(text: str, family: str | None = None) -> str:
     if family == "harmony" and _HARMONY_TOKEN_RE.search(text):
         return _colorize_harmony(text)
-    return _colorize_xml(text)
+    return _colorize_xml(text, family)
 
 
 def _strip_suffix(s: str, suffixes: tuple[str, ...]) -> str | None:
@@ -175,19 +221,22 @@ def _tag_kind_and_name(inner: str) -> tuple[str | None, str, str | None]:
     return ("open", _name_of(inner), None)
 
 
-def _colorize_xml(text: str) -> str:
+def _colorize_xml(text: str, family: str | None = None) -> str:
     """HTML-escape `text` and wrap each `<...>` token in a span.
     Paired open/close (stack match by tag name) -> class 'tt-paired'.
     Unmatched close, or open that never closes -> class 'tt-orphan'.
 
-    Pairs standard XML (`<X>...</X>`) AND alt pipe-marker conventions:
+    The family's declared markers (parser_families.yaml `markers:`) classify a
+    token first; heuristics cover undeclared/parameterized tokens. Heuristics
+    pair standard XML (`<X>...</X>`) AND alt pipe-marker conventions:
       `<|X>...<X|>`          (boundary ASCII pipes)
       `<|X_begin|>...<|X_end|>`  (both-side pipes with _begin/_end suffix)
     Lenient pop-through: a close looks down the stack for the nearest
     name-match; anything un-closed above it is marked orphan. Lets
-    no-close singletons (e.g. `<|tool_call_argument_begin|>`) localize
-    their orphan-ness without poisoning the surrounding pairs.
+    no-close singletons localize their orphan-ness without poisoning the
+    surrounding pairs.
     """
+    declared = _declared_lookup(family)
     pieces: list[str] = []
     stack: list[tuple[str, int]] = []
     last = 0
@@ -199,7 +248,11 @@ def _colorize_xml(text: str) -> str:
             pieces.append(f'<span class="{_NS_CLASS}">{html_lib.escape(tok)}</span>')
             last = m.end()
             continue
-        kind, pair_id, color_override = _tag_kind_and_name(tok[1:-1])
+        hit = declared.get(tok)
+        if hit is not None:
+            kind, pair_id, color_override = hit[0], hit[1], None
+        else:
+            kind, pair_id, color_override = _tag_kind_and_name(tok[1:-1])
         esc = html_lib.escape(tok)
         if kind is None:
             pieces.append(f'<span class="tt-orphan">{esc}</span>')
@@ -263,7 +316,8 @@ def _colorize_xml(text: str) -> str:
     return "".join(pieces)
 
 
-def _xml_token_intervals(text: str) -> list[dict[str, Any]]:
+def _xml_token_intervals(text: str, family: str | None = None) -> list[dict[str, Any]]:
+    declared = _declared_lookup(family)
     intervals: list[dict[str, Any]] = []
     stack: list[tuple[str, int]] = []
     for match in _TAG_RE.finditer(text):
@@ -274,7 +328,11 @@ def _xml_token_intervals(text: str) -> list[dict[str, Any]]:
             )
             continue
         idx = len(intervals)
-        kind, pair_id, _color_override = _tag_kind_and_name(tok[1:-1])
+        hit = declared.get(tok)
+        if hit is not None:
+            kind, pair_id = hit
+        else:
+            kind, pair_id, _color_override = _tag_kind_and_name(tok[1:-1])
         intervals.append({"start": match.start(), "end": match.end(), "class": None})
         if kind is None:
             intervals[idx]["class"] = "tt-orphan"
@@ -342,7 +400,7 @@ def _harmony_intervals(text: str) -> list[dict[str, Any]]:
 def _markup_intervals(text: str, family: str | None) -> list[dict[str, Any]]:
     if family == "harmony" and _HARMONY_TOKEN_RE.search(text):
         return _harmony_intervals(text)
-    return _xml_token_intervals(text)
+    return _xml_token_intervals(text, family)
 
 
 def _render_harmony_interval_slice(

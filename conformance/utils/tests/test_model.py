@@ -32,16 +32,30 @@ REPO = UTILS.parents[1]
 if str(UTILS / "src") not in sys.path:
     sys.path.insert(0, str(UTILS / "src"))
 
+import check_family_coverage as _cfc  # noqa: E402
 import model as model_mod  # noqa: E402
 
 
+def _resolve_cache_root() -> Path:
+    """Manifest-pinned snapshot dir — NEVER the shared `<cache>/toolcalling`
+    symlink, which sibling checkouts race to repoint mid-run (the peer-version
+    guards below flaked exactly that way; see conformance/README "Invariants").
+    Honors CONFORMANCE_FIXTURES_ROOT (exported by _common.sh). Falls back to the
+    symlink path when extraction is impossible so _HAVE_FIXTURES turns into a
+    clean skip instead of a collection error."""
+    try:
+        return _cfc.resolve_fixtures_root()
+    except (SystemExit, subprocess.CalledProcessError):
+        xdg = os.environ.get("XDG_CACHE_HOME")
+        base = Path(xdg) if xdg else Path.home() / ".cache"
+        return base / "dynamo/conformance-fixtures"
+
+
+_CACHE_ROOT = _resolve_cache_root()
+
+
 def _cache_root() -> Path:
-    env = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
-    if env:
-        return Path(env)
-    xdg = os.environ.get("XDG_CACHE_HOME")
-    base = Path(xdg) if xdg else Path.home() / ".cache"
-    return base / "dynamo/conformance-fixtures"
+    return _CACHE_ROOT
 
 
 _HAVE_FIXTURES = (_cache_root() / "toolcalling").is_dir()
