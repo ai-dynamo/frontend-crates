@@ -9,16 +9,19 @@
 //! is absent (shared with nemotron_nano).
 //!
 //! The streaming concern (buffering, chunk-split marker safety, normal_text
-//! suppression) is owned here. The per-block value typing is delegated to the v1
-//! batch XML parser `try_tool_call_parse_xml`, so a streamed call matches exactly
-//! what the batch parser produces (the DIS-2209 bar). Arguments are re-serialized
-//! in the source parameter order because the v1 parser builds them from a
-//! `HashMap` whose key order is non-deterministic; streaming fixtures store the
-//! arguments as an exact JSON string, so order has to be pinned to the
-//! model-emitted order (the order vLLM's Rust parser also preserves).
+//! suppression) is owned by the shared [`scan::WrappedBlockScanner`]. The
+//! per-block value typing is delegated to the v1 batch XML parser
+//! `try_tool_call_parse_xml`, so a streamed call matches exactly what the batch
+//! parser produces (the DIS-2209 bar). Arguments are re-serialized in the
+//! source parameter order because the v1 parser builds them from a `HashMap`
+//! whose key order is non-deterministic; streaming fixtures store the arguments
+//! as an exact JSON string, so order has to be pinned to the model-emitted
+//! order (the order vLLM's Rust parser also preserves).
 
-use std::collections::HashSet;
-
+use crate::tool_calling::scan::{
+    BareRecoveryLatch, InvokeEmitter, InvokeLatch, WrappedBlockScanner, WrappedBlockSpec,
+    reorder_arguments,
+};
 use crate::tool_calling::v1core::{ToolDefinition, XmlParserConfig, try_tool_call_parse_xml};
 
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
@@ -29,197 +32,73 @@ const FUNCTION_START: &str = "<function=";
 const FUNCTION_END: &str = "</function>";
 const PARAMETER_START: &str = "<parameter=";
 
-/// Stream parser for Qwen3-Coder XML tool calls.
-pub struct Qwen3CoderToolStreamParser {
-    buffer: String,
-    in_block: bool,
-    suppress_normal_text: bool,
-    next_index: usize,
+fn spec() -> WrappedBlockSpec {
+    WrappedBlockSpec {
+        family: "qwen3_coder",
+        block_starts: vec![BLOCK_START.to_string()],
+        block_ends: vec![BLOCK_END.to_string()],
+        invoke_start: FUNCTION_START.to_string(),
+        invoke_end: FUNCTION_END.to_string(),
+        orphan_markers: vec![BLOCK_END.to_string()],
+        // BLOCK_END is held back too so a split stray/orphan close (consumed
+        // and dropped by the orphan-close handler once complete) never emits
+        // its first half as text.
+        holdback_markers: vec![
+            BLOCK_START.to_string(),
+            BLOCK_END.to_string(),
+            FUNCTION_START.to_string(),
+        ],
+        bare_recovery_latch: BareRecoveryLatch::Set,
+        invoke_latch: InvokeLatch::IfEmitted,
+        drop_invoke_crossing_block_end: false,
+    }
+}
+
+/// Value-typing hook: wraps one complete `<function=...></function>` block in
+/// `<tool_call>` so the v1 parser takes its normal wrapped path, then re-orders
+/// the arguments to source order.
+struct Qwen3Emitter {
     config: XmlParserConfig,
     tools: Vec<ToolDefinition>,
+}
+
+impl InvokeEmitter for Qwen3Emitter {
+    fn parse_invoke(
+        &self,
+        invoke: &str,
+        tool_index: usize,
+    ) -> anyhow::Result<Option<ToolCallDelta>> {
+        let wrapped = format!("{BLOCK_START}{invoke}{BLOCK_END}");
+        let (calls, _content) = try_tool_call_parse_xml(&wrapped, &self.config, Some(&self.tools))?;
+        let Some(call) = calls.into_iter().next() else {
+            return Ok(None);
+        };
+        let arguments =
+            reorder_arguments(&call.function.arguments, &source_parameter_order(invoke));
+        Ok(Some(ToolCallDelta {
+            tool_index,
+            name: Some(call.function.name),
+            arguments,
+        }))
+    }
+}
+
+/// Stream parser for Qwen3-Coder XML tool calls.
+pub struct Qwen3CoderToolStreamParser {
+    scanner: WrappedBlockScanner<Qwen3Emitter>,
 }
 
 impl Qwen3CoderToolStreamParser {
     pub fn new(tools: &[Tool]) -> Self {
         Self {
-            buffer: String::new(),
-            in_block: false,
-            suppress_normal_text: false,
-            next_index: 0,
-            config: XmlParserConfig::default(),
-            tools: tools.iter().map(ToolDefinition::from).collect(),
+            scanner: WrappedBlockScanner::new(
+                spec(),
+                Qwen3Emitter {
+                    config: XmlParserConfig::default(),
+                    tools: tools.iter().map(ToolDefinition::from).collect(),
+                },
+            ),
         }
-    }
-
-    fn drain(&mut self, flush: bool) -> anyhow::Result<ToolParseResult> {
-        let mut out = ToolParseResult::default();
-
-        loop {
-            if self.in_block {
-                // Close the block once no more complete functions precede its end.
-                if let Some(end) = self.buffer.find(BLOCK_END) {
-                    let function_before_end = self
-                        .buffer
-                        .find(FUNCTION_START)
-                        .is_some_and(|start| start < end);
-                    if !function_before_end {
-                        // Complete block fully closed: drop its markup and resume
-                        // keeping natural text (inter-block / trailing). Any later
-                        // block re-enters `in_block` and re-suppresses its markup.
-                        // Matches the v1 batch parser (cases 8.b/8.c/8.d).
-                        self.buffer.drain(..end + BLOCK_END.len());
-                        self.in_block = false;
-                        self.suppress_normal_text = false;
-                        continue;
-                    }
-                }
-
-                let Some(start) = self.buffer.find(FUNCTION_START) else {
-                    if flush {
-                        tracing::warn!(
-                            why = "qwen3_coder_block_without_complete_function",
-                            "Qwen3-Coder stream dropped incomplete block at EOF"
-                        );
-                        self.buffer.clear();
-                        self.in_block = false;
-                    }
-                    break;
-                };
-                if start > 0 {
-                    self.buffer.drain(..start);
-                }
-                let Some(end) = self.buffer.find(FUNCTION_END) else {
-                    if flush {
-                        tracing::warn!(
-                            why = "qwen3_coder_incomplete_function",
-                            "Qwen3-Coder stream dropped incomplete function at EOF"
-                        );
-                        self.buffer.clear();
-                        self.in_block = false;
-                    }
-                    break;
-                };
-                let function = self.buffer[..end + FUNCTION_END.len()].to_string();
-                self.buffer.drain(..end + FUNCTION_END.len());
-                if let Some(delta) = self.parse_function_delta(&function)? {
-                    out.calls.push(delta);
-                    self.next_index += 1;
-                    self.suppress_normal_text = true;
-                }
-                continue;
-            }
-
-            // A recovered bare function suppresses its trailing markup; its stray
-            // `</tool_call>` close (cases 5.b/5.f) ENDS that markup context.
-            // Consume the orphan close and clear the latch so inter-call text —
-            // e.g. the single separator space before the next `<tool_call>` —
-            // flows through verbatim, matching the v1 jail+batch output.
-            // A stray/orphan close (`BLOCK_END`) before any opener is malformed
-            // double-close markup. Drop it so it can NEVER leak into normal_text;
-            // when suppression is off, first emit the natural text preceding it.
-            // Clear the latch either way (the markup context has ended).
-            if let Some(pos) = self.buffer.find(BLOCK_END) {
-                let next_open = [BLOCK_START, FUNCTION_START]
-                    .into_iter()
-                    .filter_map(|m| self.buffer.find(m))
-                    .min();
-                if next_open.is_none_or(|open| pos < open) {
-                    if !self.suppress_normal_text && pos > 0 {
-                        out.normal_text.push_str(&self.buffer[..pos]);
-                    }
-                    self.buffer.drain(..pos + BLOCK_END.len());
-                    self.suppress_normal_text = false;
-                    continue;
-                }
-            }
-
-            let block_start = self.buffer.find(BLOCK_START);
-            let bare_function_start = self.buffer.find(FUNCTION_START);
-            let next_marker = match (block_start, bare_function_start) {
-                (Some(b), Some(f)) if b <= f => Some((b, Marker::Block)),
-                (Some(_), Some(f)) => Some((f, Marker::BareFunction)),
-                (Some(b), None) => Some((b, Marker::Block)),
-                (None, Some(f)) => Some((f, Marker::BareFunction)),
-                (None, None) => None,
-            };
-
-            let Some((start, marker)) = next_marker else {
-                // No marker present: emit buffered text, but hold back a trailing
-                // partial marker (split across this chunk boundary) unless flushing.
-                let keep = if flush {
-                    0
-                } else {
-                    marker_prefix_suffix_len(&self.buffer)
-                };
-                let emit_len = self.buffer.len().saturating_sub(keep);
-                if emit_len > 0 {
-                    if !self.suppress_normal_text {
-                        out.normal_text.push_str(&self.buffer[..emit_len]);
-                    }
-                    self.buffer.drain(..emit_len);
-                }
-                break;
-            };
-
-            if start > 0 {
-                if !self.suppress_normal_text {
-                    out.normal_text.push_str(&self.buffer[..start]);
-                }
-                self.buffer.drain(..start);
-            }
-
-            match marker {
-                Marker::Block => {
-                    self.buffer.drain(..BLOCK_START.len());
-                    self.in_block = true;
-                    self.suppress_normal_text = true;
-                }
-                Marker::BareFunction => {
-                    let Some(end) = self.buffer.find(FUNCTION_END) else {
-                        if flush {
-                            tracing::warn!(
-                                why = "qwen3_coder_incomplete_bare_function",
-                                "Qwen3-Coder stream dropped incomplete bare function at EOF"
-                            );
-                            self.buffer.clear();
-                        }
-                        break;
-                    };
-                    let function = self.buffer[..end + FUNCTION_END.len()].to_string();
-                    self.buffer.drain(..end + FUNCTION_END.len());
-                    if let Some(delta) = self.parse_function_delta(&function)? {
-                        tracing::warn!(
-                            why = "qwen3_coder_bare_function_recovery",
-                            tool_index = delta.tool_index,
-                            "Qwen3-Coder stream recovered a complete bare function"
-                        );
-                        out.calls.push(delta);
-                        self.next_index += 1;
-                        self.suppress_normal_text = true;
-                    }
-                }
-            }
-        }
-
-        Ok(out)
-    }
-
-    /// Parse one complete `<function=...></function>` block into a delta.
-    ///
-    /// Wraps the function in `<tool_call>` so the v1 parser always takes its
-    /// normal wrapped path, then re-orders the arguments to source order.
-    fn parse_function_delta(&self, function: &str) -> anyhow::Result<Option<ToolCallDelta>> {
-        let wrapped = format!("{BLOCK_START}{function}{BLOCK_END}");
-        let (calls, _content) = try_tool_call_parse_xml(&wrapped, &self.config, Some(&self.tools))?;
-        let Some(call) = calls.into_iter().next() else {
-            return Ok(None);
-        };
-        let arguments = reorder_arguments(&call.function.arguments, function);
-        Ok(Some(ToolCallDelta {
-            tool_index: self.next_index,
-            name: Some(call.function.name),
-            arguments,
-        }))
     }
 }
 
@@ -236,72 +115,12 @@ impl ToolParser for Qwen3CoderToolStreamParser {
     }
 
     fn push(&mut self, chunk: &str) -> anyhow::Result<ToolParseResult> {
-        self.buffer.push_str(chunk);
-        self.drain(false)
+        self.scanner.push(chunk)
     }
 
     fn finish(&mut self) -> anyhow::Result<ToolParseResult> {
-        self.drain(true)
+        self.scanner.finish()
     }
-}
-
-#[derive(Clone, Copy)]
-enum Marker {
-    Block,
-    BareFunction,
-}
-
-/// Longest non-empty proper prefix of a marker that `text` ends with, so a
-/// marker split across chunk boundaries is held back instead of leaked as text.
-/// `BLOCK_END` is included so a split stray/orphan close (consumed and dropped by
-/// the orphan-close handler once complete) never emits its first half as text.
-fn marker_prefix_suffix_len(text: &str) -> usize {
-    [BLOCK_START, BLOCK_END, FUNCTION_START]
-        .into_iter()
-        .filter_map(|marker| {
-            marker
-                .char_indices()
-                .map(|(idx, _)| idx)
-                .filter(|idx| *idx > 0)
-                .filter(|idx| *idx < marker.len())
-                .rev()
-                .find(|&len| text.ends_with(&marker[..len]))
-        })
-        .max()
-        .unwrap_or(0)
-}
-
-/// Re-serialize a v1 arguments JSON object in source `<parameter=...>` order.
-fn reorder_arguments(arguments: &str, function: &str) -> String {
-    let Ok(value) = serde_json::from_str::<serde_json::Value>(arguments) else {
-        return arguments.to_string();
-    };
-    let Some(obj) = value.as_object() else {
-        return arguments.to_string();
-    };
-    let mut parts: Vec<String> = Vec::new();
-    let mut seen: HashSet<String> = HashSet::new();
-    for name in source_parameter_order(function) {
-        if let Some(val) = obj.get(&name) {
-            parts.push(format!(
-                "{}:{}",
-                serde_json::to_string(&name).unwrap_or_default(),
-                serde_json::to_string(val).unwrap_or_default()
-            ));
-            seen.insert(name);
-        }
-    }
-    // Append any keys not matched in source order (defensive; normally empty).
-    for (key, val) in obj {
-        if !seen.contains(key) {
-            parts.push(format!(
-                "{}:{}",
-                serde_json::to_string(key).unwrap_or_default(),
-                serde_json::to_string(val).unwrap_or_default()
-            ));
-        }
-    }
-    format!("{{{}}}", parts.join(","))
 }
 
 /// Parameter names in the order they appear in a function block.
