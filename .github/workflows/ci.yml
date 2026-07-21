@@ -114,30 +114,15 @@ jobs:
           # the render + guard steps extract them locally on first use.
           lfs: true
 
-      - name: Render conformance matrix (no engines)
+      # Single stable entry point: render both charts, structural sanity, fixture-
+      # coverage + marker-registration lint (DIS-2442), chart-invariant guards.
+      # Add/change conformance gates in check.sh's run_ci(), NOT here — this
+      # workflow step should never need another edit for a new gate.
+      - name: Conformance gate (render + lint + invariants)
         run: |
           python3 -m venv /tmp/pvenv
           /tmp/pvenv/bin/pip install --quiet pyyaml jinja2 pytest
-          PATH="/tmp/pvenv/bin:$PATH" conformance/utils/render_table_v1.sh
-          PATH="/tmp/pvenv/bin:$PATH" conformance/utils/render_table_v2.sh
-          OUT=conformance/PARITY_v1.html
-          test -s "$OUT"
-          grep -q "TOOLCALLING.batch" "$OUT"
-          grep -q "REASONING.batch" "$OUT"
-          test -s conformance/CONFORMANCE_v2.html
-          echo "conformance matrix rendered: $(wc -c < "$OUT") bytes"
-          cp "$OUT" conformance/utils/CONFORMITY.html
-
-      # Structural regression guards on the rendered charts + JSON data model: parser
-      # selectors present, every candidate versioned from fixture provenance (not the
-      # live Cargo.toml), all peer versions present, no "not yet implemented", coloring
-      # intact, and the model's structural invariants (DIS-2434). Reuse the HTML above.
-      # See test_chart_invariants.py / test_model.py / test_stream_on_batch.py.
-      - name: Model + parser invariants
-        run: |
-          PATH="/tmp/pvenv/bin:$PATH" python3 -m pytest \
-            conformance/utils/tests/test_model.py \
-            conformance/utils/tests/test_stream_on_batch.py -q
+          PATH="/tmp/pvenv/bin:$PATH" conformance/utils/check.sh ci
 
       - name: Upload conformance matrix
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

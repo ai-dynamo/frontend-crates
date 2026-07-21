@@ -194,11 +194,11 @@ In order:
 1. Read the model's tool-call output spec and its tokenizer / special-token behavior — token boundaries decide whether the parser is text- or token-native.
 2. Inspect the vLLM **Rust** parser first: `Tool`, `ToolCallDelta`, `ToolParseResult`, and `ToolParser` are the API target (Rust vs. Rust). Do not shape the parser like vLLM Python wire deltas.
 3. Inspect vLLM **Python** and **SGLang** for behavior and coverage — they are the peer references the matrix compares against.
-4. Decide the parser family id and peer parser names; add a row to `conformance/utils/src/parser_families.yaml` (`vllm_python` / `vllm_rust` / `sglang_python` / `dynamo_v2` / `preferred_input`).
+4. Decide the parser family id and peer parser names; add a row to `conformance/utils/src/parser_families.yaml` (`vllm_python` / `vllm_rust` / `sglang_python` / `dynamo_v2` / `preferred_input`), AND declare the family's grammar tokens in the `markers:` section of the same file (`pairs` / `singletons` / `leak`; explicit `{}` for markup-less grammars). The `↯` leak detector and the popup token coloring are derived from that declaration — skipping it makes leaks render as clean cells and every token render as a red orphan, and `check.sh coverage` fails on it.
 5. Implement `parsers/v2/src/tool_calling/<family>.rs`, returning `ToolParseResult` from every chunk; start from `harmony.rs` (token/channel grammar) or `dsml.rs` (text incremental state machine).
 6. Register the family in `create_tool_parser_for_family` in `parsers/v2/src/tool_calling/mod.rs`; override `prefers_tokens()` if the parser is token-native.
 7. Add Rust unit tests for: one call, multiple calls, partial chunks, malformed recovery, `normal_text`, and EOF.
-8. Add or update fixture files (see "Which Fixture Do I Edit?").
+8. Add or update fixture files (see "Which Fixture Do I Edit?"). What "complete" means is machine-readable: `conformance/case-taxonomy.yaml` lists every case group and sub-case with requiredness. Run `conformance/utils/check.sh coverage --family <family>` — its FAIL list IS your fixture TODO list; a case your grammar cannot express gets a placeholder entry with an `explanation:` instead of silence.
 9. Capture one case (`conformance/utils/capture.sh dynamo-stream --fixture … --output …`), inspect, fix the parser, then capture all peer behavior (`capture.sh stream` / `capture.sh batch-on-stream`, optionally `--family <family>`).
 10. Verify (`conformance/utils/check.sh`), render the HTML matrix (`conformance/utils/render_table_v2.sh`), and record any intentional divergence (see "How To Record Divergences").
 
@@ -228,10 +228,11 @@ A divergent peer block with no `reason:` renders `?` (research needed) — never
 For a new parser family, done means:
 
 - Rust parser unit tests pass and the Dynamo fixture tests pass.
+- `conformance/utils/check.sh coverage --family <family>` passes: every group/sub-case in `conformance/case-taxonomy.yaml` is covered or carries an explicit n/a `explanation:` (this includes the stream-v2 corpus — a family with batch fixtures only FAILS), and the family's `markers:` are declared in `parser_families.yaml`.
 - vLLM Python / SGLang live checks pass, or each failure is explicitly recorded (`error`/`unavailable` with exact text).
 - vLLM Rust captures include the source tag/commit in `captured_with` when available.
-- The HTML matrix is regenerated locally and has no unexplained `?` and no accidental tool-call markup leaks (`↯`).
-- Case descriptions exist for every new sub-case.
+- The HTML matrix is regenerated locally and has no unexplained `?`, no accidental tool-call markup leaks (`↯`), and no red-orphan tokens in the popups (undeclared markers).
+- Case descriptions exist for every new sub-case, and any NEW case group/sub-case is added to `conformance/case-taxonomy.yaml` in the same PR (the coverage lint fails on IDs unknown to the taxonomy).
 
 ## Commands
 

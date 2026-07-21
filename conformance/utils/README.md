@@ -74,6 +74,12 @@ conformance/utils/check.sh vllm --container vllm-localdev
 # Example: check SGLang Python batch and stream behavior against extracted legacy `expected.sglang` and v2 `expected.sglang_python` blocks.
 conformance/utils/check.sh sglang --container sglang-localdev
 
+# Fixture-coverage + marker-registration lint: diffs each family's case IDs against
+# conformance/case-taxonomy.yaml and checks its `markers:` declaration in
+# parser_families.yaml. Default is all families; --family narrows it.
+conformance/utils/check.sh coverage
+conformance/utils/check.sh coverage --family gemma4
+
 # Formats Rust changes.
 cargo fmt
 

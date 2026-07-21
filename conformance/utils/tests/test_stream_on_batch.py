@@ -41,16 +41,11 @@ if str(SRC) not in sys.path:
 
 
 def _fixtures_cache_root() -> Path:
-    """Fixture extraction cache root. Fixture YAMLs are extracted from the
-    in-repo LFS shard store (conformance/fixtures/), so path-existence checks
-    resolve against the cache. `_common.sh` exports CONFORMANCE_FIXTURES_ROOT
-    pointing here."""
-    env = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
-    if env:
-        return Path(env)
-    xdg = os.environ.get("XDG_CACHE_HOME")
-    base = Path(xdg) if xdg else Path.home() / ".cache"
-    return base / "dynamo/conformance-fixtures"
+    """Manifest-pinned fixture snapshot dir (honors CONFORMANCE_FIXTURES_ROOT,
+    which `_common.sh` exports). Resolved via check_family_coverage's shared
+    resolver — never the shared `<cache>/toolcalling` symlink, which sibling
+    checkouts race to repoint mid-run (conformance/README "Invariants")."""
+    return cfc.resolve_fixtures_root()
 
 
 def _resolve_conformance_ref(ref: str) -> Path:
@@ -63,6 +58,7 @@ def _resolve_conformance_ref(ref: str) -> Path:
 
 import build_stream_fixtures as b  # noqa: E402
 import capture_vllm_rust as r  # noqa: E402
+import check_family_coverage as cfc  # noqa: E402
 import generate_conformance_table as g  # noqa: E402
 import impls  # noqa: E402
 import validate_fixtures as vf  # noqa: E402

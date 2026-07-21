@@ -57,6 +57,10 @@ _build_stage_base() {
   # COPY the vendored python package so resolved __file__ -> REPO_ROOT == $STAGE.
   \cp -Rf "$UTILS/tests/parity" "$STAGE/tests/parity"
   \cp -f "$UTILS/tests/__init__.py" "$STAGE/tests/__init__.py"
+  # Family marker declarations (DIS-2442): the staged tests/parity/markup.py resolves
+  # its registry at <stage-root>/src/parser_families.yaml, mirroring the repo layout.
+  mkdir -p "$STAGE/src"
+  \cp -f "$TOOLS/parser_families.yaml" "$STAGE/src/parser_families.yaml"
   # Shared static CSS/JS inlined into BOTH pages at render time (v1 parity + v2
   # conformance both read tests/parity/assets/*). Staged here in the base so the v1
   # render finds them too — the compare-bar/coloring logic lives in one place now.
