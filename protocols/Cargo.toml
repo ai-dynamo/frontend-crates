@@ -24,10 +24,12 @@ include = ["src/**/*", "Cargo.toml", "README.md"]
 [dependencies]
 # Upstream OpenAI types (types-only, no HTTP client)
 async-openai = { workspace = true, features = [
+    "batch-types",
     "chat-completion-types",
     "response-types",
     "completion-types",
     "embedding-types",
+    "file-types",
     "image-types",
     "realtime-types",
 ] }
