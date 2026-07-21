@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [5.1.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v5.1.0...dynamo-parsers-v5.1.1) - 2026-07-21
+
+### Miscellaneous
+
+- Update Cargo.lock dependencies
+
+## [5.1.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v5.0.1...dynamo-parsers-v5.1.0) - 2026-07-17
+
+### Features
+
+- *(parsers-v2)* Streaming tool-call parsers for Gemma 4, GLM, Kimi K2, MiniMax M2/M3 (preserve surrounding text) ([#80](https://github.com/ai-dynamo/frontend-crates/pull/80))
+
 ## [5.0.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v5.0.0...dynamo-parsers-v5.0.1) - 2026-07-14
 
 ### Miscellaneous

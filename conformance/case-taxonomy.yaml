@@ -1,0 +1,344 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Machine-readable case taxonomy for the conformance fixture corpus (DIS-2442).
+#
+# This file enumerates what "complete fixture coverage" means for a parser family.
+# Before it existed the taxonomy lived implicitly in the union of `description:`
+# fields across ~20 families' fixture YAMLs, and every new-parser PR re-discovered
+# it during review (PR #120: batch groups 6/8/30 and the whole stream-v2 corpus
+# were missing and no tool could say so). `check_family_coverage.py --family <f>`
+# diffs a family's case IDs against this file and fails on unexplained gaps.
+#
+# Semantics:
+#   * A case ID is COVERED when the family's fixture YAML has an entry with real
+#     input (`model_text` for batch, `chunks` for stream).
+#   * A case entry WITHOUT real input is a placeholder and MUST carry an
+#     `explanation:`. Description containing "not yet authored" = acknowledged
+#     TODO (lint warns); anything else = explicit n/a (lint passes).
+#   * `required: true` on a case: every family must have the entry (real or
+#     placeholder). `required: true` on a group: every family must have at least
+#     one entry in the group (real or a group-level n/a placeholder such as
+#     `TOOLCALLING.batch.30`).
+#   * `applies_if_real_in: <suite>`: the group is required only for families that
+#     have at least one REAL case in the same-numbered group of that suite
+#     (e.g. stream group 30 applies iff the family authored real batch 30.x).
+#   * Case keys are the ID suffix after the suite prefix; "" is the bare group
+#     case (e.g. TOOLCALLING.batch.10).
+#
+# Editing rules: when a fixture PR introduces a new group or sub-case, add it here
+# in the same PR (the lint fails on case IDs unknown to the taxonomy). Keep
+# descriptions family-neutral; family-specific phrasing belongs in the fixture's
+# own `description:`.
+
+version: 1
+
+suites:
+  toolcalling.batch:
+    prefix: TOOLCALLING.batch
+    fixtures: conformance/fixtures/toolcalling/fixtures-batch-v1
+    groups:
+      "1":
+        title: Single tool call (happy path)
+        required: true
+        cases:
+          "": {desc: Single tool call (happy path), required: true}
+      "2":
+        title: Multiple / parallel calls
+        required: true
+        cases:
+          a: {desc: Parallel calls inside one wrapper / JSON array, required: true}
+          b: {desc: Two back-to-back fence/wrapper pairs, required: true, note: n/a placeholder where the grammar has no repeated-fence form}
+          c: {desc: Parallel calls with surrounding narration, required: true}
+          d: {desc: Same name twice (id distinctness), required: true}
+      "3":
+        title: No tool call (plain text)
+        required: true
+        cases:
+          "": {desc: No tool call (plain text passthrough), required: true}
+      "4":
+        title: Malformed call bodies
+        required: true
+        cases:
+          a: {desc: Wrapper with garbage / no parsable body, required: true}
+          b: {desc: Unterminated / invalid JSON in the call body, required: true}
+          c: {desc: Missing function-name key or token, required: true}
+          d: {desc: Missing a grammar-specific structural close (tag / fence), required: true}
+          e: {desc: Malformed prefix followed by a valid complete call, required: true, note: n/a placeholder where recovery has no meaning for the grammar}
+          f: {desc: Tool name emitted in a wrong-but-adjacent syntax (e.g. XML tag instead of function=), required: true, note: n/a placeholder where the grammar has no adjacent form}
+      "5":
+        title: Truncation and unbalanced markers
+        required: true
+        cases:
+          a: {desc: Missing end marker after a complete body (EOF recovery), required: true}
+          b: {desc: Orphan close marker without a matching open, required: true}
+          c: {desc: Truncation mid-arguments, required: true}
+          d: {desc: 'Multi-call, last call missing only the end marker (body complete)', required: true}
+          e: {desc: 'Multi-call, last call truncated mid-argument value', required: true}
+          f: {desc: Bare valid call before a complete wrapped call, required: false}
+          g: {desc: Orphan close marker after prefix prose, required: false}
+      "6":
+        title: Empty arguments
+        required: true
+        cases:
+          a: {desc: 'Canonical empty arguments ("arguments": {} or grammar equivalent)', required: true}
+          b: {desc: Whitespace inside the empty-arguments form, required: true}
+          c: {desc: Arguments key/section absent entirely, required: true}
+      "7":
+        title: Argument type and shape edges
+        required: true
+        cases:
+          a: {desc: Standard scalar types (string + int + bool), required: true}
+          b: {desc: Unicode + escaped characters in a string value, required: true}
+          c: {desc: Schema mismatch — string value where schema declares integer, required: true}
+          d: {desc: Nested object + array values, required: true}
+          e: {desc: Large / deep argument payload, required: true}
+          f: {desc: Numeric precision edge preserves integer-like literal, required: true}
+      "8":
+        title: Narration around calls
+        required: true
+        cases:
+          a: {desc: Narration before the tool call only, required: true}
+          b: {desc: Narration after the tool call only, required: true}
+          c: {desc: Narration both before and after (sandwich), required: true}
+          d: {desc: Narration between multiple tool calls, required: true}
+      "9":
+        title: Empty / blank input
+        required: true
+        cases:
+          a: {desc: Empty model text, required: true}
+          b: {desc: Blank / whitespace-only model text, required: true}
+      "10":
+        title: Duplicate calls
+        required: true
+        cases:
+          "": {desc: Duplicate calls (same name twice), required: true}
+      "13":
+        title: Unknown tool names
+        required: true
+        cases:
+          "": {desc: Unknown tool name absent from supplied tools, required: false}
+          a: {desc: Unknown-only call under default parser behavior, required: false}
+          b: {desc: Explicit forward-unknown-tools mode, required: false}
+          c: {desc: Mixed known and unknown calls in one response, required: true}
+          d: {desc: Unknown native tool index, required: false}
+      "30":
+        title: Own-grammar delimiters inside a string argument (single call)
+        required: true
+        note: Families whose grammar carries string-valued arguments author real 30.x cases; others carry a group-level n/a placeholder (bare .30 case).
+        cases:
+          "": {desc: Group-level n/a placeholder for grammars without string-argument delimiters, required: false}
+          a: {desc: Call/body separator characters inside one argument string value, required: false}
+          b: {desc: Structural delimiters (closing braces/brackets/tags) inside one argument string value, required: false}
+          c: {desc: The family's own tool-call marker text inside one argument string value, required: false}
+      "31":
+        title: Own-grammar delimiters inside a string argument (multi-call)
+        required: true
+        note: Same applicability as group 30, with later calls after the delimiter-carrying argument.
+        cases:
+          "": {desc: Group-level n/a placeholder for grammars without string-argument delimiters, required: false}
+          a: {desc: Multi-call response with a call separator inside the first argument string, required: false}
+          b: {desc: Multi-call response with structural delimiters inside one argument string value, required: false}
+
+  toolcalling.stream:
+    prefix: TOOLCALLING.streamv2
+    fixtures: conformance/fixtures/toolcalling/fixtures-stream-v2
+    groups:
+      "1":
+        title: Single tool call (happy path)
+        required: true
+        cases:
+          "": {desc: Single tool call (happy path), required: true}
+      "2":
+        title: Multiple / parallel calls
+        required: true
+        cases:
+          a: {desc: Parallel calls inside one wrapper / JSON array, required: true}
+          b: {desc: Two back-to-back fence/wrapper pairs, required: false}
+          c: {desc: Parallel calls with surrounding narration, required: true}
+          d: {desc: Same name twice (id distinctness), required: true}
+      "3":
+        title: No tool call (plain text)
+        required: true
+        cases:
+          "": {desc: No tool call (plain text passthrough), required: true}
+      "4":
+        title: Malformed call bodies
+        required: true
+        cases:
+          a: {desc: Wrapper with garbage / no parsable body, required: true}
+          b: {desc: Unterminated / invalid JSON in the call body, required: false}
+          c: {desc: Missing function-name key or token, required: false}
+          d: {desc: Missing a grammar-specific structural close (tag / fence), required: false}
+          e: {desc: Malformed prefix followed by a valid complete call, required: false}
+          f: {desc: Tool name emitted in a wrong-but-adjacent syntax, required: false}
+      "5":
+        title: Truncation and unbalanced markers
+        required: true
+        cases:
+          a: {desc: Missing end marker after a complete body (EOF recovery), required: true}
+          b: {desc: Orphan close marker without a matching open, required: true}
+          c: {desc: Truncation mid-arguments, required: true}
+          d: {desc: 'Multi-call, last call missing only the end marker (body complete)', required: true}
+          e: {desc: 'Multi-call, last call truncated mid-argument value', required: true}
+          f: {desc: Bare valid call before a complete wrapped call, required: false}
+          g: {desc: Orphan close marker after prefix prose, required: false}
+          h: {desc: Orphan close marker split across chunks after prefix prose, required: false}
+      "6":
+        title: Empty arguments
+        required: true
+        cases:
+          a: {desc: 'Canonical empty arguments ("arguments": {} or grammar equivalent)', required: true}
+          b: {desc: Whitespace inside the empty-arguments form, required: true}
+          c: {desc: Arguments key/section absent entirely, required: false}
+      "7":
+        title: Argument type and shape edges
+        required: true
+        cases:
+          a: {desc: Standard scalar types (string + int + bool), required: true}
+          b: {desc: Unicode + escaped characters in a string value, required: true}
+          c: {desc: Schema mismatch — string value where schema declares integer, required: false}
+          d: {desc: Nested object + array values, required: false}
+          e: {desc: Large / deep argument payload, required: false}
+          f: {desc: Numeric precision edge preserves integer-like literal, required: false}
+      "8":
+        title: Narration around calls
+        required: true
+        cases:
+          a: {desc: Narration before the tool call only, required: true}
+          b: {desc: Narration after the tool call only, required: true}
+          c: {desc: Narration both before and after (sandwich), required: true}
+          d: {desc: Narration between multiple tool calls, required: true}
+      "9":
+        title: Empty / blank input
+        required: true
+        cases:
+          a: {desc: Empty model text, required: true}
+          b: {desc: Blank / whitespace-only model text, required: true}
+      "10":
+        title: Duplicate calls
+        required: true
+        cases:
+          "": {desc: Duplicate calls (same name twice), required: true}
+      "13":
+        title: Unknown tool names
+        required: true
+        cases:
+          "": {desc: Unknown tool name absent from supplied tools, required: false}
+          a: {desc: Unknown-only call under default parser behavior, required: false}
+          c: {desc: Mixed known and unknown calls in one response, required: false}
+      "30":
+        title: Own-grammar delimiters inside a string argument (single call)
+        applies_if_real_in: toolcalling.batch
+        cases:
+          a: {desc: Call/body separator characters inside one argument string value, required: false}
+          b: {desc: Structural delimiters inside one argument string value, required: false}
+          c: {desc: The family's own tool-call marker text inside one argument string value, required: false}
+      "31":
+        title: Own-grammar delimiters inside a string argument (multi-call)
+        applies_if_real_in: toolcalling.batch
+        cases:
+          a: {desc: Multi-call response with a call separator inside the first argument string, required: false}
+          b: {desc: Multi-call response with structural delimiters inside one argument string value, required: false}
+      "50":
+        title: Chunk-boundary splits
+        required: true
+        cases:
+          "": {desc: Complete single tool call with a grammar token split across chunk boundaries, required: true}
+
+  reasoning.batch:
+    prefix: REASONING.batch
+    fixtures: conformance/fixtures/reasoning/fixtures-v1
+    groups:
+      "1":
+        title: Empty / plain input
+        required: true
+        cases:
+          a: {desc: Empty input, required: true}
+          b: {desc: Plain text without reasoning markers, required: true}
+      "2":
+        title: Reasoning-span content variants
+        required: true
+        cases:
+          a: {desc: Explicit reasoning span (or force-reasoning equivalent), required: true}
+          b: {desc: Normal prefix before a reasoning block, required: false}
+          c: {desc: Reasoning followed by normal answer text, required: true}
+          d: {desc: Normal text around the reasoning span, required: true}
+          e: {desc: Empty reasoning block, required: true}
+          f: {desc: Complex reasoning content with Unicode and newlines, required: true}
+      "3":
+        title: Tool-call handoff
+        required: true
+        cases:
+          a: {desc: Reasoning followed by downstream tool-call text, required: true}
+          b: {desc: Tool-call section marker force-exits an open reasoning block, required: true}
+          c: {desc: Recipientless commentary channel is visible normal text (Harmony-shaped grammars), required: true}
+          d: {desc: Directed commentary tool call is not visible normal text (Harmony-shaped grammars), required: true}
+          e: {desc: Directed analysis tool call is handed off to the tool-call parser (Harmony-shaped grammars), required: true}
+          f: {desc: Analysis / directed commentary / final answer channel sequencing (Harmony-shaped grammars), required: true}
+      "4":
+        title: Dangling close markers
+        required: true
+        cases:
+          "": {desc: Dangling end marker without an opening reasoning marker, required: true}
+      "5":
+        title: Unterminated reasoning
+        required: true
+        cases:
+          "": {desc: Missing end marker keeps the remaining text as reasoning, required: true}
+      "6":
+        title: Multiple spans and stray markers
+        required: true
+        cases:
+          a: {desc: Multiple reasoning spans, required: true}
+          b: {desc: Stray end marker after a complete reasoning span (unbalanced tag), required: true}
+
+  reasoning.stream:
+    prefix: REASONING.stream
+    fixtures: conformance/fixtures/reasoning/fixtures-v1
+    groups:
+      "1":
+        title: Empty / plain input
+        required: true
+        cases:
+          a: {desc: Empty stream chunk, required: true}
+          b: {desc: Plain text without reasoning markers, required: true}
+      "2":
+        title: Reasoning spans across chunks
+        required: true
+        cases:
+          a: {desc: Single reasoning block across chunks, required: true}
+          b: {desc: Multiple reasoning spans across chunks, required: true}
+          c: {desc: Stray end marker after a complete reasoning span across chunks (unbalanced tag), required: true}
+      "3":
+        title: Marker splits across chunks
+        required: true
+        cases:
+          a: {desc: Start marker split across chunks, required: true}
+          b: {desc: End marker split across chunks, required: true}
+          c: {desc: Partial start-marker prefix later becomes normal text, required: true}
+      "4":
+        title: Dangling markers and downstream boundaries
+        required: true
+        cases:
+          "": {desc: Dangling end marker split across chunks, required: false}
+          a: {desc: Close marker only is stripped as prompt-prefilled reasoning close, required: true}
+          b: {desc: Downstream tool-call boundary split across chunks, required: true}
+          c: {desc: Two directed downstream tool calls in one stream, required: true}
+          d: {desc: Partial downstream boundary recovery, required: true}
+
+# Suites a family is exempt from entirely, with the reason (renders as n/a, not a
+# gap). Toolcalling suites are otherwise expected for every parser_families.yaml row.
+suite_exemptions:
+  harmony_text:
+    toolcalling.batch: harmony_text is the text-driven conformance variant of harmony; the v1 batch corpus is captured under the harmony family.
+
+# Pre-taxonomy coverage gaps, grandfathered so the lint stays green on the current
+# corpus while still holding NEW families to the full bar. Each entry is a backfill
+# TODO; remove the ID from the list when the fixture lands.
+known_gaps:
+  toolcalling.stream:
+    llama3_json: ["5.b"]
+    minimax_m3: ["2.a", "2.c", "2.d", "4.a", "5.b", "5.c", "5.d", "5.e", "6.a", "6.b", "8.a", "8.b", "8.c", "8.d", "50"]
+  reasoning.stream:
+    minimax_m3: ["4.b", "4.c", "4.d"]

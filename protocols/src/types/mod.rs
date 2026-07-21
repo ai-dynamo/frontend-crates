@@ -25,6 +25,12 @@ pub use completion::*;
 // re-exported from `async_openai::types::embeddings::*`.
 pub use embeddings::*;
 
+// Batches: re-exported wholesale from async-openai (no Dynamo overrides).
+pub use async_openai::types::batches::*;
+
+// Files: re-exported wholesale from async-openai (no Dynamo overrides).
+pub use async_openai::types::files::*;
+
 // Images: re-exported wholesale from async-openai (no Dynamo overrides).
 pub use async_openai::types::images::*;
 

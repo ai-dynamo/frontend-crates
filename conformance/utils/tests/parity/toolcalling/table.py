@@ -53,9 +53,7 @@ PARITY.{md,html} are for local viewing only; don't check them in.
 
 from __future__ import annotations
 
-import argparse
 import copy
-import datetime
 import html as html_lib
 import json
 import os
@@ -63,7 +61,6 @@ import re
 import subprocess
 import sys
 import tempfile
-import zoneinfo
 from pathlib import Path
 
 import yaml
@@ -71,17 +68,10 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from tests.parity import common
 from tests.parity.common import TOP_N_TOOL_CALLING_FAMILIES as TOP_N_FAMILIES
-from tests.parity.common import (
-    build_parity_tooltip_html,
-    linkify_text_html,
-    parity_cell_class,
-)
-from tests.parity.markup import colorize_markup, colorize_stream_deltas
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures"
 TOOLCALLING_CASES_MD = REPO_ROOT / "lib/parsers/TOOLCALLING_CASES.md"
-PYPROJECT_TOML = REPO_ROOT / "pyproject.toml"
 TEMPLATE_DIR = REPO_ROOT / "tests/parity"
 
 # The versioned fixture source (inputs/ + per-impl <impl>-<version>/ dirs) lives in
@@ -137,6 +127,8 @@ def _make_jinja_env() -> Environment:
     # reasoning parity, family-filtered) inlines them without repeating the kwargs.
     env.globals["conformance_css"] = _read_asset("conformance.css")
     env.globals["conformance_js"] = _read_asset("conformance.js")
+    # DIS-2434 JS view: builds the DOM from the model blob before conformance.js wires it.
+    env.globals["conformance_view_js"] = _read_asset("conformance_view.js")
     return env
 
 
@@ -164,24 +156,6 @@ def _commit_sha() -> str | None:
         return out or None
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None
-
-
-def _peer_versions() -> dict[str, str]:
-    """Extract pinned vllm / sglang versions from pyproject.toml.
-
-    Matches a line like `"vllm[flashinfer,runai,otel]==X.Y.Z",` (TOML is
-    not parsed — the regex is sufficient and avoids a tomllib import on
-    older Pythons running this script outside a Python 3.11+ env)."""
-    out: dict[str, str] = {}
-    if not PYPROJECT_TOML.exists():
-        return out
-    text = PYPROJECT_TOML.read_text()
-    # keys are canonical impl keys; the regex names are the pip package names
-    for name, impl in (("vllm", "vllm_python"), ("sglang", "sglang_python")):
-        m = re.search(rf'"{name}(?:\[[^\]]*\])?==([0-9][^"]*)"', text)
-        if m:
-            out[impl] = m.group(1)
-    return out
 
 
 # --- per-impl version snapshots (version radios) --------------------------------
@@ -812,21 +786,6 @@ def _overview_status(case: dict | None, impl: str) -> str:
     return "ok"
 
 
-def _overview_status_attrs(case: dict | None) -> str:
-    parts = [
-        f'data-status-{impl}="{_overview_status(case, impl)}"'
-        for impl in ("dynamo_v1", "vllm_python", "sglang_python")
-    ]
-    # Per-version status (data-status-<impl>-<slug>) drives the version radios.
-    # Absent on missing/None cells — the CSS falls back to the pinned attr above.
-    ver_status = (case or {}).get("__ver_status") if isinstance(case, dict) else None
-    if ver_status:
-        for impl, by_slug in ver_status.items():
-            for slug, info in by_slug.items():
-                parts.append(f'data-status-{impl}-{slug}="{info["status"]}"')
-    return " ".join(parts)
-
-
 def _canonical_tool_output(block: object) -> dict | None:
     if not isinstance(block, dict) or "unavailable" in block or "error" in block:
         return None
@@ -898,30 +857,6 @@ def _parser_marker(case: dict | None, impl: str) -> str:
     return ""
 
 
-def _parser_marker_attrs(case: dict | None) -> str:
-    attrs = [
-        f'data-marker-{impl}="{html_lib.escape(_parser_marker(case, impl))}"'
-        for impl in ("dynamo_v1", "vllm_python", "sglang_python")
-    ]
-    attrs.extend(
-        f'data-marker-parity-{impl}="{html_lib.escape(_parity_marker(case, impl))}"'
-        for impl in ("dynamo_v1", "vllm_python", "sglang_python")
-    )
-    # Per-version details markers (↯/✗/=/V/S) so the details view tracks the
-    # selected version, not just the pinned one.
-    ver_status = (case or {}).get("__ver_status") if isinstance(case, dict) else None
-    if ver_status:
-        for impl, by_slug in ver_status.items():
-            for slug, info in by_slug.items():
-                attrs.append(
-                    f'data-marker-{impl}-{slug}="{html_lib.escape(info["marker"])}"'
-                )
-                attrs.append(
-                    f'data-marker-parity-{impl}-{slug}="{html_lib.escape(info["parity_marker"])}"'
-                )
-    return " ".join(attrs)
-
-
 def cell_for(case: dict | None) -> str:
     if case is None:
         return "—"
@@ -959,20 +894,6 @@ def cell_for(case: dict | None) -> str:
     return "="
 
 
-def render_row(
-    model: str,
-    family: str,
-    cases: dict,
-    sub_cases: list[str],
-    no_vllm: set[str],
-    no_sglang: set[str],
-    inheritance: dict[str, dict],
-) -> str:
-    cells = [cell_for(cases.get((family, sub))) for sub in sub_cases]
-    parser_label = _parser_label_markdown(family, no_vllm, no_sglang, inheritance)
-    return f"| {model} | {parser_label} | " + " | ".join(cells) + " |"
-
-
 _LEGEND_MD = (
     "**Legend:** "
     "`=` all captured peers match Dynamo · "
@@ -993,301 +914,7 @@ _LEGEND_MD = (
 )
 
 
-def render_markdown(
-    cases: dict,
-    sub_cases: list[str],
-    no_vllm: set[str],
-    no_sglang: set[str],
-    top_n: list[tuple[str, str]],
-    others: list[tuple[str, str]],
-) -> str:
-    inheritance = _build_family_inheritance(_build_family_to_rust_ref())
-    header = "| model | Tool calling family | " + " | ".join(sub_cases) + " |"
-    sep = "|---|---|" + ":-:|" * len(sub_cases)
-    lines = [header, sep]
-    lines.append("| **Top-N models** |   |" + "   |" * len(sub_cases))
-    for model, fam in top_n:
-        lines.append(
-            render_row(model, fam, cases, sub_cases, no_vllm, no_sglang, inheritance)
-        )
-    lines.append("| **Others** |   |" + "   |" * len(sub_cases))
-    for model, fam in others:
-        lines.append(
-            render_row(model, fam, cases, sub_cases, no_vllm, no_sglang, inheritance)
-        )
-    lines.append("")
-    lines.append(_LEGEND_MD)
-    return "\n".join(lines)
-
-
 _IMPL_DISPLAY = {"dynamo_v1": "Dynamo", "vllm_python": "vLLM", "sglang_python": "SGLang"}
-
-
-def _format_output_block_html(block, family: str | None = None) -> str:
-    """HTML rendering of an `expected.<impl>` block for tooltips.
-    Applies _colorize_xml to `normal_text` so raw model output the engine
-    failed to parse shows the same tag coloring as the input."""
-    if not isinstance(block, dict):
-        return html_lib.escape("(no expectation)")
-    if block.get("unavailable"):
-        return html_lib.escape(f"unavailable: {block['unavailable']}")
-    if "error" in block:
-        return html_lib.escape(f"error matching {block['error']!r}")
-    nt = block.get("normal_text", "") or ""
-    calls = block.get("calls") or []
-    if calls:
-        rendered = ", ".join(
-            f"{c.get('name', '?')}({json.dumps(c.get('arguments', {}), ensure_ascii=False)})"
-            for c in calls
-        )
-        calls_line = common.field_html(
-            "calls", html_lib.escape(f"[{rendered}]"), quoted=False
-        )
-    else:
-        calls_line = common.field_html("calls", "[]", quoted=False)
-    nt_line = common.field_html("normal_text", colorize_markup(nt, family))
-    return f"{nt_line}\n{calls_line}"
-
-
-def _cand_section_body(block, family: str | None = None) -> str:
-    """A compare candidate's tooltip section body: its output block plus its own
-    `explanation:` (when present), so the note shows only when that candidate is
-    selected instead of via a global cross-engine blob naming unselected engines."""
-    body = _format_output_block_html(block, family)
-    note = _explanation(block)
-    if note:
-        body += '\n<span class="expl">explanation: ' + html_lib.escape(str(note)) + "</span>"
-    return body
-
-
-def _build_tooltip_html(case: dict, dyn) -> str:
-    """Rich HTML hover tooltip: head, input (colorized), per-engine output,
-    divergence reasons. Returns the full `<div class="ttip">...</div>`."""
-    case_id = case.get("__case_id", "")
-    family = case.get("__family")
-    desc = case.get("description") or ""
-    if case_id and family:
-        head = f"{case_id} — {family}"
-    else:
-        head = case_id or str(family or "")
-
-    input_label = None
-    input_html = None
-    model_text = case.get("model_text")
-    if isinstance(model_text, str) and model_text:
-        input_label = "Input"
-        input_html = common.field_html("input_text", colorize_markup(model_text, family))
-    chunks = case.get("chunks")
-    if isinstance(chunks, list) and chunks:
-        chunk_lines = []
-        chunk_html = colorize_stream_deltas(chunks, family)
-        for i, chunk in enumerate(chunks):
-            if not isinstance(chunk, dict):
-                continue
-            suffix = ""
-            if chunk.get("finish_reason"):
-                suffix = " finish_reason=" + html_lib.escape(
-                    str(chunk["finish_reason"])
-                )
-            chunk_lines.append(f"{i}: delta_text='{chunk_html[i]}'{suffix}")
-        input_label = "Input chunks"
-        input_html = "\n".join(chunk_lines)
-
-    expected = case.get("expected") or {}
-
-    def _norm(b):
-        return {
-            "calls": b.get("calls") or [],
-            "normal_text": b.get("normal_text") or "",
-        }
-
-    n_dyn = _norm(dyn) if isinstance(dyn, dict) else None
-    all_engines_parity = isinstance(dyn, dict) and all(
-        isinstance(expected.get(i), dict)
-        and not expected[i].get("unavailable")
-        and "error" not in expected[i]
-        and _norm(expected[i]) == n_dyn
-        for i in ("dynamo_v1", "vllm_python", "sglang_python")
-    )
-
-    ver_status = case.get("__ver_status") or {}
-
-    output_sections: list[tuple] = []
-    if ver_status:
-        # Compare model: one section per candidate (impl+version), each wrapped in
-        # cand-<key> and toggled by the Base/Compare selection so the tooltip shows
-        # exactly the candidates being compared. Labels match the chips
-        # (e.g. "Dynamo Rust v1 3.0.0 (batch)").
-        _mode = "stream" if ".stream." in (case.get("__case_id") or "") else "batch"
-        for impl in ("dynamo_v1", "vllm_python", "sglang_python"):
-            base = _PARITY_CAND_BASE.get(impl, _IMPL_DISPLAY[impl])
-            if impl == "dynamo_v1":
-                eng, _, rt = base.partition(" ")  # -> "Dynamo v1 Rust"
-                base = f"{eng} v1 {rt}".strip()
-            for slug, info in (ver_status.get(impl) or {}).items():
-                key = f"{impl}-{slug}"
-                output_sections.append(
-                    (
-                        f'{base} {info["version"]} ({_mode})',
-                        _cand_section_body(info["block"], family),
-                        f"cand cand-{key}",
-                        isinstance(info["block"], dict) and _block_tool_call_leaks(info["block"]),
-                    )
-                )
-    elif all_engines_parity:
-        output_sections.append(
-            ("All engines parity", _format_output_block_html(dyn, family))
-        )
-    else:
-        for impl in ("dynamo_v1", "vllm_python", "sglang_python"):
-            output_sections.append(
-                (
-                    _IMPL_DISPLAY[impl],
-                    _format_output_block_html(expected.get(impl), family),
-                )
-            )
-
-    # Show the compare candidates in the same lexical order as the bucket chips.
-    if ver_status:
-        output_sections.sort(key=lambda s: s[0])
-
-    reasons = _tooltip_for(case, dyn) if isinstance(dyn, dict) else ""
-
-    dyn_leak = _dynamo_tool_call_leak(dyn) if isinstance(dyn, dict) else None
-    return build_parity_tooltip_html(
-        head=head,
-        description=desc,
-        input_label=input_label,
-        input_html=input_html,
-        output_sections=output_sections,
-        # Compare model: each candidate's reason is in its own section, so suppress
-        # the global cross-engine blob that would name engines not in the selection.
-        divergent_reasons=None if ver_status else (reasons or None),
-        leak_label="↯ Dynamo tool call leaks",
-        leak_text=str(dyn_leak) if dyn_leak else None,
-        refs=[("Ref", case.get("ref")), ("Spec ref", case.get("spec_ref"))],
-    )
-
-
-def _tooltip_for(case: dict, dyn: dict) -> str:
-    """Build the hover-tooltip text for a divergent cell.
-
-    Each non-matching, non-unavailable peer contributes one line:
-      vllm: <reason>                        # `explanation:` field present
-      vllm: UNKNOWN — divergent ...         # divergent, no reason
-      vllm: parser exception matching '...' # `error:` field present
-    """
-    parts: list[str] = []
-    n_dyn = {
-        "calls": dyn.get("calls") or [],
-        "normal_text": dyn.get("normal_text") or "",
-    }
-    for impl in ("vllm_python", "sglang_python"):
-        block = case.get("expected", {}).get(impl)
-        if not isinstance(block, dict) or block is dyn:
-            continue
-        if "unavailable" in block:
-            continue
-        name = _IMPL_DISPLAY.get(impl, impl)
-        if "error" in block:
-            parts.append(f"{name}: parser exception matching {block['error']!r}")
-            continue
-        # Don't rely on PyYAML preserving anchor identity (the `block is dyn`
-        # check above is the fast path; value equality is the safety net).
-        n_block = {
-            "calls": block.get("calls") or [],
-            "normal_text": block.get("normal_text") or "",
-        }
-        if n_block == n_dyn:
-            continue
-        note = _explanation(block)
-        if note:
-            parts.append(f"{name}: {note}")
-        elif "calls" in block or "normal_text" in block:
-            parts.append(f"{name}: (research-needed — no `explanation:` field yet)")
-    return "\n".join(parts)
-
-
-def _build_na_tooltip_html(case: dict) -> str:
-    """Tooltip for an n/a stub case (only `explanation:` in YAML, no `expected:`
-    block). Renders case id + description + the note. Used when the cell
-    is n/a because the scenario doesn't apply to the family's parser syntax."""
-    case_id = case.get("__case_id", "")
-    desc = case.get("description") or ""
-    head = f"{case_id} — {desc}" if (case_id and desc) else (case_id or desc)
-    reason = _explanation(case) or "n/a (no explanation given)"
-    return build_parity_tooltip_html(
-        head=head,
-        extra_sections=[("Why not applicable", linkify_text_html(str(reason)))],
-        refs=[("Ref", case.get("ref")), ("Spec ref", case.get("spec_ref"))],
-    )
-
-
-def _build_missing_tooltip_html(mode: str, family: str, sub: str) -> str:
-    """Tooltip for an absent fixture entry.
-
-    This is intentionally distinct from an explicit n/a stub. Missing means
-    the table has no fixture data for this family/case; explicit n/a means a
-    fixture author recorded why the case does not apply.
-    """
-    case_id = f"TOOLCALLING.{mode}.{sub}"
-    return build_parity_tooltip_html(
-        head=f"{case_id} — {family}",
-        extra_sections=[
-            (
-                "Missing fixture",
-                html_lib.escape(
-                    "No fixture entry exists for this family/case. If the case "
-                    "is intentionally not applicable, add an explicit n/a stub "
-                    "with description: and explanation: so the table can explain it."
-                ),
-            )
-        ],
-    )
-
-
-def render_cell_html(case: dict | None, mode: str, family: str, sub: str) -> str:
-    text = cell_for(case)
-    cls = parity_cell_class(text)
-    band_cls = _subcase_band_class(mode, sub)
-    col_group = html_lib.escape(_subcase_group_key(mode, sub))
-    status_attrs = _overview_status_attrs(case)
-    marker_attrs = _parser_marker_attrs(case)
-    # Compare model: embed the per-candidate signature payload + a JS-filled marker
-    # span. JS colors the cell and fills the count from the Base/Compare selection.
-    cmp_json = "" if case is None else _candidate_cmp_json(case)
-    cmp_attr = f' data-cmp="{cmp_json}"' if cmp_json else ""
-    cmp_span = (
-        '<span class="cmp-marker"><span class="marker-text"></span></span>'
-        if cmp_json
-        else ""
-    )
-    td_open = (
-        f'<td class="cell {cls} {band_cls}" data-col-hide-group="{col_group}"{cmp_attr} '
-        f"{status_attrs} {marker_attrs}>"
-    )
-    if case is None:
-        ttip = _build_missing_tooltip_html(mode, family, sub)
-        return f"{td_open}{cmp_span}{text}{ttip}</td>"
-
-    dyn = case.get("expected", {}).get("dynamo_v1")
-    if not isinstance(dyn, dict):
-        # n/a stub: case has only `explanation:` (no `expected:` block).
-        fp = case.get("__fixture_path", "")
-        ttip = _build_na_tooltip_html(case)
-        if not fp:
-            return f"{td_open}{cmp_span}{text}{ttip}</td>"
-        href = html_lib.escape(common.fixture_href(fp))
-        return f'{td_open}{cmp_span}<a href="{href}">{text}</a>{ttip}</td>'
-
-    fp = case.get("__fixture_path", "")
-    # Case id + description live in the rich CSS tooltip head — don't also
-    # set `title=` on the link, or browsers stack a native tooltip on top.
-    ttip = _build_tooltip_html(case, dyn)
-    if not fp:
-        return f"{td_open}{cmp_span}{text}{ttip}</td>"
-    href = html_lib.escape(common.fixture_href(fp))
-    return f'{td_open}{cmp_span}<a href="{href}">{text}</a>{ttip}</td>'
 
 
 def _parser_inheritance_tooltip_html(
@@ -1423,19 +1050,6 @@ def _shared_backend_short(info: dict | None) -> str | None:
     return None
 
 
-def _parser_label_markdown(
-    family: str,
-    no_vllm: set[str],
-    no_sglang: set[str],
-    inheritance: dict[str, dict],
-) -> str:
-    suff = family_suffix(family, no_vllm, no_sglang)
-    short = _shared_backend_short(inheritance.get(family))
-    if short:
-        return f"{short} -> {family}{suff}"
-    return f"{family}{suff}"
-
-
 def _parser_cell_html(
     family: str,
     refs: dict[str, tuple[str, int]],
@@ -1486,32 +1100,6 @@ def _parser_cell_html(
     )
 
 
-def render_row_html(
-    model: str,
-    family: str,
-    mode: str,
-    cases: dict,
-    sub_cases: list[str],
-    refs: dict[str, tuple[str, int]],
-    no_vllm: set[str],
-    no_sglang: set[str],
-    inheritance: dict[str, dict],
-) -> str:
-    cells = [
-        f'<tr><td class="model" data-col-hide-group="model">{_model_label_html(model)}</td>',
-        _column_placeholder_html("model"),
-        _parser_cell_html(family, refs, no_vllm, no_sglang, inheritance),
-        _column_placeholder_html("parser"),
-    ]
-    for run in _subcase_runs(mode, sub_cases):
-        cells.extend(
-            render_cell_html(cases.get((family, sub)), mode, family, sub) for sub in run
-        )
-        cells.append(_column_placeholder_html(_subcase_group_key(mode, run[0])))
-    cells.append("</tr>")
-    return "".join(cells)
-
-
 def _parse_subcase_descriptions(mode: str) -> dict[str, str]:
     """Parse `lib/parsers/TOOLCALLING_CASES.md` for per-case descriptions.
 
@@ -1555,18 +1143,6 @@ def _parse_subcase_descriptions(mode: str) -> dict[str, str]:
     return out
 
 
-def _subcase_header_html(mode: str, sub: str, descriptions: dict[str, str]) -> str:
-    desc = descriptions.get(sub) or descriptions.get(sub.split(".")[0]) or ""
-    href = common.LINKS["toolcalling_cases"]
-    title = html_lib.escape(desc) if desc else ""
-    band_cls = _subcase_band_class(mode, sub)
-    col_group = html_lib.escape(_subcase_group_key(mode, sub))
-    return (
-        f'<th class="case-sub {band_cls}" data-col-hide-group="{col_group}">'
-        f'<a href="{href}" title="{title}">{html_lib.escape(sub)}</a></th>'
-    )
-
-
 def _subcase_group_label(mode: str, sub: str) -> str:
     return _group_by_sub(mode).get(sub, "Other")
 
@@ -1584,80 +1160,6 @@ def _subcase_runs(mode: str, sub_cases: list[str]) -> list[list[str]]:
         runs.append(sub_cases[start:end])
         start = end
     return runs
-
-
-def _column_placeholder_html(key: str, tag: str = "td") -> str:
-    key_attr = html_lib.escape(key)
-    return (
-        f'<{tag} class="col-placeholder col-hidden" '
-        f'data-col-placeholder-group="{key_attr}"></{tag}>'
-    )
-
-
-def _column_control_header_html(
-    key: str,
-    label: str,
-    *,
-    default_visible: bool,
-    css_class: str = "",
-    colspan: int | None = None,
-) -> str:
-    key_attr = html_lib.escape(key)
-    visible = "true" if default_visible else "false"
-    classes = " ".join(part for part in ("column-control", css_class) if part)
-    span_size = colspan if colspan is not None else 1
-    if colspan is not None:
-        span_attr = f'colspan="{colspan}" data-expanded-colspan="{colspan}"'
-    else:
-        span_attr = 'rowspan="2"'
-    return (
-        f'<th class="{html_lib.escape(classes)}" data-col-control-group="{key_attr}" '
-        f"{span_attr}>"
-        f'<button type="button" class="col-toggle" data-col-toggle="{key_attr}" '
-        f'data-col-label="{html_lib.escape(label)}" data-col-span="{span_size}" '
-        f'data-default-visible="{visible}" aria-pressed="{visible}" '
-        f'aria-label="{"Collapse" if default_visible else "Expand"} '
-        f'{html_lib.escape(label)} column">'
-        '<span class="col-toggle-symbol" aria-hidden="true"></span>'
-        f'<span class="col-toggle-label">{html_lib.escape(label)}</span>'
-        "</button></th>"
-    )
-
-
-def _subcase_group_headers_html(mode: str, sub_cases: list[str]) -> str:
-    """Build semantic group headers spanning the displayed sub-case columns."""
-    spans: list[str] = [
-        _column_control_header_html("model", "Model", default_visible=True),
-        _column_control_header_html(
-            "parser", "Tool calling family", default_visible=True
-        ),
-    ]
-    for run in _subcase_runs(mode, sub_cases):
-        label = _subcase_group_label(mode, run[0])
-        band_cls = _subcase_band_class(mode, run[0])
-        col_group = html_lib.escape(_subcase_group_key(mode, run[0]))
-        spans.append(
-            _column_control_header_html(
-                col_group,
-                label,
-                default_visible=True,
-                css_class=f"case-group {band_cls}",
-                colspan=len(run),
-            )
-        )
-    return "".join(spans)
-
-
-def _subcase_headers_html(
-    mode: str, sub_cases: list[str], descriptions: dict[str, str]
-) -> str:
-    headers: list[str] = []
-    for run in _subcase_runs(mode, sub_cases):
-        headers.extend(_subcase_header_html(mode, sub, descriptions) for sub in run)
-        headers.append(
-            _column_placeholder_html(_subcase_group_key(mode, run[0]), tag="th")
-        )
-    return "".join(headers)
 
 
 def _glossary_groups(
@@ -1680,37 +1182,7 @@ def _glossary_groups(
     ]
 
 
-def _peer_version_items(versions: dict[str, str]) -> list[tuple[str, str]]:
-    return [(name, versions[name]) for name in ("vllm_python", "sglang_python") if name in versions]
-
-
 _IMPL_RADIO_LABEL = {"dynamo_v1": "Dynamo", "vllm_python": "vLLM", "sglang_python": "SGLang"}
-
-
-def _impl_version_items() -> list[dict[str, object]]:
-    """Version-radio model for the template: one entry per impl, each with its
-    versions (ascending) and which slug is the default (pinned = latest)."""
-    impl_versions = _impl_versions()
-    pinned = _pinned_versions(impl_versions)
-    items: list[dict[str, object]] = []
-    for impl, versions in impl_versions.items():
-        default = pinned.get(impl)
-        items.append(
-            {
-                "impl": impl,
-                "label": _IMPL_RADIO_LABEL.get(impl, impl),
-                "default_slug": _version_slug(default) if default else "",
-                "versions": [
-                    {
-                        "version": v,
-                        "slug": _version_slug(v),
-                        "default": v == default,
-                    }
-                    for v in versions
-                ],
-            }
-        )
-    return items
 
 
 # Candidate label base per parity impl: "<Engine> <Runtime>". Parity runs the v1
@@ -1854,224 +1326,143 @@ def _compute_stats(
     return s
 
 
-def _mode_label(mode: str) -> str:
-    if mode == "batch":
-        return "TOOLCALLING.batch.*"
-    if mode == "stream":
-        return "TOOLCALLING.stream.*"
-    return mode
+# ===== Structured JSON model builder (DIS-2434, v1 PARITY page) =================
+# Same-schema model tab as the v2 toolcalling path (model.make_cell). The v1 fork
+# keeps its own comparison semantics here (this module's _overview_status / cmp /
+# _candidate_sig); phase 3 unifies both pages onto one model.py path.
+import model  # noqa: E402  (schema + cell normalizer; leaf module staged alongside)
 
 
-def render_html_panel(
-    mode: str,
-    cases: dict,
-    sub_cases: list[str],
-    no_vllm: set[str],
-    no_sglang: set[str],
-    top_n: list[tuple[str, str]],
-    others: list[tuple[str, str]],
-    active: bool = False,
-) -> dict[str, object]:
-    """Render one tab panel for one parser fixture mode."""
-    descriptions = _parse_subcase_descriptions(mode)
-    refs = _build_family_to_rust_ref()
-    inheritance = _build_family_inheritance(refs)
+def _cand_engine_group_tc(key: str) -> str:
+    for prefix in ("dynamo", "vllm", "sglang"):
+        if key.startswith(prefix):
+            return prefix
+    return key
 
-    group_headers = _subcase_group_headers_html(mode, sub_cases)
-    sub_headers = _subcase_headers_html(mode, sub_cases, descriptions)
-    n_cols = 2 + len(sub_cases)
 
-    body_rows: list[str] = []
-    if top_n:
-        body_rows.append(
-            f'<tr class="section"><td data-section-span colspan="{n_cols}">'
-            "Top-N models</td></tr>"
-        )
-    for model, fam in top_n:
-        body_rows.append(
-            render_row_html(
-                model,
-                fam,
-                mode,
-                cases,
-                sub_cases,
-                refs,
-                no_vllm,
-                no_sglang,
-                inheritance,
-            )
-        )
-    if others:
-        body_rows.append(
-            f'<tr class="section"><td data-section-span colspan="{n_cols}">'
-            "Others</td></tr>"
-        )
-    for model, fam in others:
-        body_rows.append(
-            render_row_html(
-                model,
-                fam,
-                mode,
-                cases,
-                sub_cases,
-                refs,
-                no_vllm,
-                no_sglang,
-                inheritance,
-            )
-        )
+def _v1_output_block_model(blk: object) -> dict | None:
+    if not isinstance(blk, dict):
+        return None
+    out: dict[str, Any] = {}
+    if "unavailable" in blk:
+        out["unavailable"] = blk["unavailable"]
+    if "error" in blk:
+        out["error"] = blk["error"]
+    if "calls" in blk or "normal_text" in blk:
+        out["calls"] = blk.get("calls") or []
+        out["normal_text"] = blk.get("normal_text") or ""
+    expl = _explanation(blk)
+    if expl:
+        out["explanation"] = expl
+    return out or None
 
-    all_families = [fam for _, fam in top_n] + [fam for _, fam in others]
-    stats = _compute_stats(cases, sub_cases, all_families)
 
-    panel_id = f"tab-{mode}"
-    return {
-        "id": panel_id,
-        "mode": mode,
-        "label": _mode_label(mode),
-        "active": active,
-        "group_headers": group_headers,
-        "sub_headers": sub_headers,
-        "body_rows": body_rows,
-        "stats": stats,
-        "glossary_groups": _glossary_groups(mode, descriptions, sub_cases),
-        "candidates": _candidate_items(mode),
+def _v1_columns_model(mode: str, sub_cases: list[str], descriptions: dict[str, str]) -> tuple[list[dict], list[dict]]:
+    groups: list[dict] = []
+    cols: list[dict] = []
+    for run in _subcase_runs(mode, sub_cases):
+        gk = _subcase_group_key(mode, run[0])
+        groups.append({"key": gk, "label": _subcase_group_label(mode, run[0]),
+                       "band": _subcase_band_class(mode, run[0]), "span": len(run)})
+        for sub in run:
+            cols.append({"sub": sub, "group_key": gk, "band": _subcase_band_class(mode, sub),
+                         "label": sub,
+                         "desc": descriptions.get(sub) or descriptions.get(sub.split(".")[0]) or ""})
+    return groups, cols
+
+
+def _v1_cell_model(case: dict | None, mode: str, family: str, sub: str,
+                   cand_label_by_key: dict[str, str]) -> dict:
+    group_key = _subcase_group_key(mode, sub)
+    band = _subcase_band_class(mode, sub)
+    if case is None:
+        return model.missing_cell(sub, family, group_key, band,
+                                  head=f"TOOLCALLING.{mode}.{sub}")
+    ver = case.get("__ver_status") or {}
+    cmp_raw = _candidate_cmp_json(case)
+    cmp = json.loads(html_lib.unescape(cmp_raw)) if cmp_raw else None
+    candidates = []
+    for impl in ("dynamo_v1", "vllm_python", "sglang_python"):
+        for slug, info in (ver.get(impl) or {}).items():
+            key = f"{impl}-{slug}"
+            candidates.append({
+                "key": key, "label": cand_label_by_key.get(key, key),
+                "impl": _cand_engine_group_tc(key), "version": info.get("version"),
+                "parse_mode": mode, "block": _v1_output_block_model(info.get("block")),
+                "leak": isinstance(info.get("block"), dict) and _block_tool_call_leaks(info["block"]),
+            })
+    facts = [{"impl": impl, "status": _overview_status(case, impl), "present": None,
+              "agrees": None, "intentional": None, "reason": None, "leak": False,
+              "error_kind": None} for impl in _VERSION_IMPLS]
+    fp = case.get("__fixture_path", "")
+    href = common.fixture_href(fp) if fp else None
+    tooltip = {
+        "head": f"{case.get('__case_id','')} — {family}",
+        "description": case.get("description") or "",
+        "input": {"kind": "text" if case.get("model_text") else None,
+                  "text": case.get("model_text"), "chunks": None, "family": family},
+        "candidates": candidates, "baseline": None, "reasons": [],
+        "dynamo_notes": [], "refs": [], "leak_note": None, "na_note": None,
     }
+    return model.make_cell(kind="cell", case_id=case.get("__case_id"), family=family,
+                           sub=sub, col_group=group_key, band=band, fixture_href=href,
+                           status=_overview_status(case, "dynamo_v1"), cmp=cmp,
+                           facts=facts, tooltip=tooltip)
 
 
-def _filter_family(
-    cases: dict[tuple[str, str], dict],
-    labels: dict[str, str],
-    family_filter: str | None,
-) -> tuple[dict[tuple[str, str], dict], dict[str, str]]:
-    if family_filter is None:
-        return cases, labels
-    return (
-        {k: v for k, v in cases.items() if k[0] == family_filter},
-        {k: v for k, v in labels.items() if k == family_filter},
-    )
-
-
-def _load_html_panel(
-    mode: str,
-    active: bool = False,
-    family_filter: str | None = None,
-) -> tuple[str, dict[str, object], bool]:
+def build_model_panel(mode: str, active: bool = False) -> dict:
+    """v1 toolcalling tab as a structured model dict (schema shared with v2/reasoning)."""
     cases, labels = load_all_cases(mode)
-    cases, labels = _filter_family(cases, labels, family_filter)
-    # Attach per-impl per-version status so each cell can emit data-status-<impl>-<slug>.
     ver_status = _version_status_map(mode)
     for key, case in cases.items():
         if isinstance(case, dict) and key in ver_status:
             case["__ver_status"] = ver_status[key]
-    has_cases = bool(cases)
     sub_cases = _discover_sub_cases(mode, cases)
     no_vllm, no_sglang = _derive_no_peer_sets(cases)
     top_n, others = _build_display_groups(cases, labels)
-    return (
-        mode,
-        render_html_panel(
-            mode, cases, sub_cases, no_vllm, no_sglang, top_n, others, active
-        ),
-        has_cases,
-    )
+    descriptions = _parse_subcase_descriptions(mode)
+    refs = _build_family_to_rust_ref()
+    inheritance = _build_family_inheritance(refs)
+    column_groups, cols = _v1_columns_model(mode, sub_cases, descriptions)
+    cand_items = _candidate_items(mode)
+    cand_label_by_key = {c["key"]: c["label"] for c in cand_items}
 
+    def row_model(model_label: str, family: str) -> dict:
+        cells = {
+            sub: _v1_cell_model(cases.get((family, sub)), mode, family, sub, cand_label_by_key)
+            for sub in sub_cases
+        }
+        return {
+            "section": None,
+            "model_label": model_label,
+            "model_label_html": _model_label_html(model_label),
+            "family": family,
+            "parser": {"html": _parser_cell_html(family, refs, no_vllm, no_sglang, inheritance)},
+            "cells": cells,
+        }
 
-def render_html(modes: list[str], family_filter: str | None = None) -> str:
-    panels = [
-        _load_html_panel(mode, active=(i == 0), family_filter=family_filter)
-        for i, mode in enumerate(modes)
-    ]
-    if family_filter and not any(has_cases for _mode, _panel, has_cases in panels):
-        raise SystemExit(f"no parser fixtures found for family={family_filter!r}")
+    rows: list[dict] = []
+    if top_n:
+        rows.append({"section": "Top-N models", "model_label": "Top-N models",
+                     "model_label_html": "", "family": None, "parser": None, "cells": {}})
+        rows.extend(row_model(m, f) for m, f in top_n)
+    if others:
+        rows.append({"section": "Others", "model_label": "Others",
+                     "model_label_html": "", "family": None, "parser": None, "cells": {}})
+        rows.extend(row_model(m, f) for m, f in others)
 
-    now = datetime.datetime.now(zoneinfo.ZoneInfo("America/Los_Angeles"))
-    stamp = now.strftime("%Y-%m-%d %H:%M %Z")
-    title = (
-        f"Dynamo {family_filter} Tool Calling Parser - Parity Table"
-        if family_filter
-        else "Dynamo Tool Calling Parser - Parity Table"
-    )
-    command = "python3 tests/parity/generate_parity_table_v1.py toolcalling --html"
-    output = "tests/parity/toolcalling/PARITY.html"
-    if family_filter:
-        command += f" --family {family_filter}"
-        output = f"tests/parity/toolcalling/PARITY.{family_filter}.html"
-
-    sha = _commit_sha()
-
-    if len(modes) == 1:
-        command += f" --mode {modes[0]}"
-        output = f"tests/parity/toolcalling/PARITY.{modes[0]}.html"
-        if family_filter:
-            output = f"tests/parity/toolcalling/PARITY.{family_filter}.{modes[0]}.html"
-
-    tabs = []
-    for i, (mode, _panel, _has_cases) in enumerate(panels):
-        panel_id = f"tab-{mode}"
-        active = " active" if i == 0 else ""
-        selected = "true" if i == 0 else "false"
-        tabs.append(
-            f'<button class="tab-button{active}" id="{panel_id}-button" '
-            f'type="button" role="tab" aria-selected="{selected}" '
-            f'data-tab-target="{panel_id}">{html_lib.escape(_mode_label(mode))}</button>'
-        )
-
-    return (
-        _make_jinja_env()
-        .get_template("parity_table_v1.html.j2")
-        .render(
-            title=title,
-            stamp=stamp,
-            sha=sha,
-            short_sha=sha[:12] if sha else "",
-            command=command,
-            output=output,
-            tabs=tabs,
-            panels=[panel for _mode, panel, _has_cases in panels],
-            peer_versions=_peer_version_items(_peer_versions()),
-        )
-    )
-
-
-def main(argv: list[str] | None = None) -> None:
-    p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    p.add_argument(
-        "--html",
-        action="store_true",
-        help="Emit HTML (clickable + tooltips) instead of Markdown.",
-    )
-    p.add_argument(
-        "--family",
-        help="Render only one parser family, e.g. harmony.",
-    )
-    p.add_argument(
-        "--mode",
-        choices=("all", "batch", "stream"),
-        help=(
-            "Fixture mode to render. For HTML, default is all parser modes as "
-            "tabs. For Markdown, default is batch."
-        ),
-    )
-    args = p.parse_args(argv)
-
-    if args.html:
-        modes = ["batch", "stream"] if args.mode in (None, "all") else [args.mode]
-        print(render_html(modes, family_filter=args.family))
-        return
-
-    if args.mode == "all":
-        p.error("--mode all is only supported with --html")
-    mode = args.mode or "batch"
-
-    cases, labels = load_all_cases(mode)
-    cases, labels = _filter_family(cases, labels, args.family)
-    if args.family and not cases:
-        raise SystemExit(f"no parser fixtures found for family={args.family!r}")
-    sub_cases = _discover_sub_cases(mode, cases)
-    no_vllm, no_sglang = _derive_no_peer_sets(cases)
-    top_n, others = _build_display_groups(cases, labels)
-    print(render_markdown(cases, sub_cases, no_vllm, no_sglang, top_n, others))
+    all_families = [f for _, f in top_n] + [f for _, f in others]
+    return {
+        "id": f"tab-toolcalling-{mode}",
+        "kind": "toolcalling",
+        "mode": mode,
+        "column_groups": column_groups,
+        "columns": cols,
+        "rows": rows,
+        "stats": _compute_stats(cases, sub_cases, all_families),
+        "glossary": _glossary_groups(mode, descriptions, sub_cases),
+        "candidates": cand_items,
+    }
 
 
 if __name__ == "__main__":

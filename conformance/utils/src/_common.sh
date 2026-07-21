@@ -57,12 +57,21 @@ _build_stage_base() {
   # COPY the vendored python package so resolved __file__ -> REPO_ROOT == $STAGE.
   \cp -Rf "$UTILS/tests/parity" "$STAGE/tests/parity"
   \cp -f "$UTILS/tests/__init__.py" "$STAGE/tests/__init__.py"
+  # Family marker declarations (DIS-2442): the staged tests/parity/markup.py resolves
+  # its registry at <stage-root>/src/parser_families.yaml, mirroring the repo layout.
+  mkdir -p "$STAGE/src"
+  \cp -f "$TOOLS/parser_families.yaml" "$STAGE/src/parser_families.yaml"
   # Shared static CSS/JS inlined into BOTH pages at render time (v1 parity + v2
   # conformance both read tests/parity/assets/*). Staged here in the base so the v1
   # render finds them too — the compare-bar/coloring logic lives in one place now.
   mkdir -p "$STAGE/tests/parity/assets"
   \cp -f "$TOOLS/assets/conformance.css" "$STAGE/tests/parity/assets/conformance.css"
   \cp -f "$TOOLS/assets/conformance.js" "$STAGE/tests/parity/assets/conformance.js"
+  # DIS-2434 JSON data model + JS view: model.py builds it (imported by BOTH pages via
+  # reasoning_table), conformance_view.js renders it. Staged here so v1 + v2 both find them.
+  \cp -f "$TOOLS/model.py" "$STAGE/tests/parity/model.py"
+  [ -f "$TOOLS/assets/conformance_view.js" ] && \
+    \cp -f "$TOOLS/assets/conformance_view.js" "$STAGE/tests/parity/assets/conformance_view.js" || true
   # Reasoning fixtures are resolved per page (v1 = old anchor peers, v2 = pinned new
   # peers) by build_stage_v1 / build_stage_conformance — not here in the shared base.
   # Recorded Dynamo parser v2 stream-on-batch fixture overlay.
