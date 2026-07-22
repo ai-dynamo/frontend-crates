@@ -12,6 +12,8 @@
 //!
 //! This crate provides types for multiple inference API protocols:
 //! - **OpenAI Chat Completions & Completions** (via upstream `async-openai` re-exports + extensions)
+//! - **OpenAI Batch API** (via upstream `async-openai` re-exports)
+//! - **OpenAI Files API** (via upstream `async-openai` re-exports)
 //! - **OpenAI Responses API** (via upstream `async-openai` re-exports)
 //! - **Anthropic Messages API** (fully custom)
 //!

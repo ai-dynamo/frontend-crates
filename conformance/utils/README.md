@@ -74,6 +74,12 @@ conformance/utils/check.sh vllm --container vllm-localdev
 # Example: check SGLang Python batch and stream behavior against extracted legacy `expected.sglang` and v2 `expected.sglang_python` blocks.
 conformance/utils/check.sh sglang --container sglang-localdev
 
+# Fixture-coverage + marker-registration lint: diffs each family's case IDs against
+# conformance/case-taxonomy.yaml and checks its `markers:` declaration in
+# parser_families.yaml. Default is all families; --family narrows it.
+conformance/utils/check.sh coverage
+conformance/utils/check.sh coverage --family gemma4
+
 # Formats Rust changes.
 cargo fmt
 
@@ -200,7 +206,9 @@ Run these from `conformance/utils/`:
 | `check.sh` | Runs Dynamo, vLLM Python, and SGLang checks against staged fixtures. |
 | `capture.sh` | Consistent entry point for capturing parser behavior and refreshing v2 fixtures. |
 
-The implementation lives under `src/` — don't run these directly unless you're developing the harness: `_common.sh`, the renderer (`generate_conformance_table.py` + `impls.py` / `markers.py` / `fixtures.py`, `conformance_table.html.j2` + `assets/`), the capture chain (`capture_cli.py` / `capture_driver.py` / `capture.py` / `capture_vllm_rust.py`), the fixture builders (`build_stream_fixtures.py` / `fill_streamv2.py` / `gen_harmony_text_fixtures.py`), the validators (`validate.py` / `validate_fixtures.py`), and the data files (`parser_families.yaml`, `pyproject.stub.toml`). `tests/` and `lib/` stay at the top level because they are Dynamo-sync targets.
+The implementation lives under `src/` — don't run these directly unless you're developing the harness: `_common.sh`, the renderer (`generate_conformance_table.py` + `impls.py` / `markers.py` / `fixtures.py` / `model.py`, `conformance_table.html.j2` + `assets/`), the capture chain (`capture_cli.py` / `capture_driver.py` / `capture.py` / `capture_vllm_rust.py`), the fixture builders (`build_stream_fixtures.py` / `fill_streamv2.py` / `gen_harmony_text_fixtures.py`), the validators (`validate.py` / `validate_fixtures.py`), and the data files (`parser_families.yaml`, `pyproject.stub.toml`). `tests/` and `lib/` stay at the top level because they are Dynamo-sync targets.
+
+**Render architecture (DIS-2434).** Python computes ONE documented JSON data model — the whole page (both the v2 conformance table and the v1 parity page) — and the templates inline it as a single `<script type="application/json" id="conformance-model">` blob. A JS view (`assets/conformance_view.js`) parses that blob and builds the tabs, table, cells, compare bar, legend, and popups (popups lazily on hover); `assets/conformance.js` then wires the compare engine, tab switching, column toggles, URL state, and transpose. The comparison/parity SEMANTICS stay in Python (`markers.py`/`impls.py` are the single source of truth) — `model.py` orchestrates them into the schema documented at the top of `model.py`; the view only decides display. The former `D_rb`/`V_ps` marker mini-language (encoded `data-marker-parity-*` attribute strings) is gone: cells carry structured comparison facts and the view renders the glyphs. `file://` keeps working (the model is inlined, no fetch). Greppability of the rendered `.html` is an explicit non-goal. Structural guards on the model live in `tests/test_model.py`; a few selenium DOM smokes live in `tests/test_browser_*.py`.
 
 ## Fixture Store (git-lfs)
 

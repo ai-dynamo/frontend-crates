@@ -116,8 +116,28 @@ def _select(driver, ref_key, cmp_keys):
     time.sleep(0.3)
 
 
+# Popups build lazily on first interaction (DIS-2434), so a test that scans tooltip
+# DOM must first materialize the active panel's tooltips. The JS view exposes
+# window.__buildTooltip(td); building is idempotent and reflects the current
+# Reference/Compare selection (each build nudges applyCtl).
+_BUILD_TOOLTIPS = """
+if (window.__buildTooltip) {
+  var cells = document.querySelectorAll('.tab-panel.active td.cell[data-ttip-id]');
+  // A handful is enough: every real cell's chart carries all candidate columns, and
+  // the scans read the FIRST candidate grid. Bounded so the build stays fast.
+  for (var i = 0; i < cells.length && i < 12; i++) { window.__buildTooltip(cells[i]); }
+}
+"""
+
+
+def _build_active_tooltips(driver):
+    driver.execute_script(_BUILD_TOOLTIPS)
+    time.sleep(0.2)
+
+
 def _grid_column_order(driver):
     """Visible [data-cand] header keys of the first candidate grid, in DOM order."""
+    _build_active_tooltips(driver)
     return driver.execute_script(
         """
         const tab = document.querySelector('.tab-panel.active') || document;
@@ -135,6 +155,7 @@ def _grid_column_order(driver):
 def _chart_tooltip_has_cand_list(driver):
     """True if any tooltip in the active panel contains BOTH a candidate grid and
     the legacy per-candidate list sections (they must be mutually exclusive)."""
+    _build_active_tooltips(driver)
     return driver.execute_script(
         """
         const tab = document.querySelector('.tab-panel.active') || document;
@@ -150,6 +171,7 @@ def _chart_tooltip_has_cand_list(driver):
 
 def _grid_state(driver):
     """{key: {hidden, ref}} for the first candidate grid in the active panel."""
+    _build_active_tooltips(driver)
     return driver.execute_script(
         """
         const tab = document.querySelector('.tab-panel.active') || document;
@@ -171,6 +193,7 @@ def _grid_state(driver):
 
 
 def _assembled_text(driver, key):
+    _build_active_tooltips(driver)
     return driver.execute_script(
         """
         const key = arguments[0];
@@ -451,3 +474,78 @@ def test_reasoning_tabs_use_candidate_chart(driver):
         assert not _chart_tooltip_has_cand_list(driver), (
             f"{target}: tooltip shows BOTH chart and legacy list"
         )
+
+
+# --- DIS-2434 phase-2 smokes: lazy popup build + model-faithful content ---------
+
+def test_tooltip_builds_lazily_on_first_interaction(driver):
+    """A data cell's `.ttip` is EMPTY until first interaction (DIS-2434 lazy popups),
+    then builds a candidate chart with per-candidate columns."""
+    # The module-scoped driver is shared, so a prior test may have already built this
+    # tab's tooltips; reload to a fresh DOM where nothing has been interacted with.
+    driver.refresh()
+    time.sleep(1.0)
+    _open_tab(driver, "toolcalling-batch")
+    before = driver.execute_script(
+        """
+        const td = document.querySelector('.tab-panel.active td.cell[data-ttip-id]');
+        const t = td.querySelector('.ttip');
+        // conformance.js may insert a .ttip-close/.cmp-why into the empty .ttip at wire
+        // time; the CONTENT (head + candidate chart) is what must be deferred.
+        return {noContent: !t.querySelector('.ttip-chunks') && !t.querySelector('.ttip-head')};
+        """
+    )
+    assert before["noContent"], "tooltip content was built eagerly (should be lazy)"
+    built = driver.execute_script(
+        """
+        const td = document.querySelector('.tab-panel.active td.cell[data-ttip-id]');
+        window.__buildTooltip(td);
+        const t = td.querySelector('.ttip');
+        return {chart: !!t.querySelector('.ttip-chunks'),
+                thCand: t.querySelectorAll('.ttip-chunks th[data-cand]').length,
+                head: !!t.querySelector('.ttip-head')};
+        """
+    )
+    assert built["chart"] and built["thCand"] > 0 and built["head"], f"lazy build incomplete: {built}"
+
+
+def test_popup_columns_match_compare_bar_candidates(driver):
+    """The popup chart's candidate columns are exactly the tab's compare-bar candidate
+    keys — the popup renders from the same model as the selector."""
+    _open_tab(driver, "toolcalling-batch")
+    result = driver.execute_script(
+        _BUILD_TOOLTIPS + """
+        const tab = document.querySelector('.tab-panel.active');
+        const barKeys = Array.from(tab.querySelectorAll('.cmpctl .cmprow-label[data-cand]'))
+          .map(function (e) { return e.getAttribute('data-cand'); }).sort();
+        let gridKeys = null;
+        for (const grid of tab.querySelectorAll('.ttip-chunks')) {
+          const ths = grid.querySelectorAll('th[data-cand]');
+          if (ths.length) { gridKeys = Array.from(ths).map(function (t) { return t.getAttribute('data-cand'); }).sort(); break; }
+        }
+        return {barKeys: barKeys, gridKeys: gridKeys};
+        """
+    )
+    assert result["gridKeys"], "no candidate chart built"
+    assert result["gridKeys"] == result["barKeys"], (
+        f"popup columns {result['gridKeys']} != compare-bar candidates {result['barKeys']}"
+    )
+
+
+def test_no_doubled_assembled_call_names_in_dom(driver):
+    """I1 in DOM form: no assembled popup cell shows a doubled call name
+    (get_weatherget_weather) — the streaming-fold bug guard, on the live page."""
+    _open_stream_tab(driver)
+    _select(driver, V2_KEY, [V1_KEY])
+    dupes = driver.execute_script(
+        _BUILD_TOOLTIPS + """
+        const tab = document.querySelector('.tab-panel.active');
+        const bad = [];
+        tab.querySelectorAll('.ttip-chunks tr.ttip-final td[data-cand]').forEach(function (td) {
+          const m = td.textContent.match(/([a-z_]+)\\1/);
+          if (m && m[1].length > 3) { bad.push(td.textContent.slice(0, 60)); }
+        });
+        return bad;
+        """
+    )
+    assert not dupes, f"doubled assembled call names in the DOM: {dupes[:3]}"

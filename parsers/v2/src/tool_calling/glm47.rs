@@ -18,8 +18,7 @@
 //! fixtures store the arguments as an exact JSON string, so order is pinned to
 //! the model-emitted order (the order vLLM's Rust parser also preserves).
 
-use std::collections::HashSet;
-
+use crate::tool_calling::scan::reorder_arguments;
 use crate::tool_calling::v1core::{Glm47ParserConfig, ToolDefinition, try_tool_call_parse_glm47};
 
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
@@ -249,7 +248,7 @@ impl Glm47ToolStreamParser {
         let Some(call) = calls.into_iter().next() else {
             return Ok(None);
         };
-        let arguments = reorder_arguments(&call.function.arguments, block);
+        let arguments = reorder_arguments(&call.function.arguments, &source_arg_key_order(block));
         Ok(Some(ToolCallDelta {
             tool_index: self.next_index,
             name: Some(call.function.name),
@@ -345,43 +344,6 @@ fn trailing_holdback_len(text: &str) -> usize {
         .map(|(idx, _)| idx)
         .unwrap_or(ident_end);
     text.len() - name_start
-}
-
-/// Re-serialize a v1 arguments JSON object in source `<arg_key>...</arg_key>`
-/// order.
-fn reorder_arguments(arguments: &str, block: &str) -> String {
-    let Ok(value) = serde_json::from_str::<serde_json::Value>(arguments) else {
-        return arguments.to_string();
-    };
-    let Some(obj) = value.as_object() else {
-        return arguments.to_string();
-    };
-    let mut parts: Vec<String> = Vec::new();
-    let mut seen: HashSet<String> = HashSet::new();
-    for name in source_arg_key_order(block) {
-        // seen.insert guards a REPEATED key in the source (the v1 object holds
-        // one value per key): emit it once.
-        if let Some(val) = obj.get(&name)
-            && seen.insert(name.clone())
-        {
-            parts.push(format!(
-                "{}:{}",
-                serde_json::to_string(&name).unwrap_or_default(),
-                serde_json::to_string(val).unwrap_or_default()
-            ));
-        }
-    }
-    // Append any keys not matched in source order (defensive; normally empty).
-    for (key, val) in obj {
-        if !seen.contains(key) {
-            parts.push(format!(
-                "{}:{}",
-                serde_json::to_string(key).unwrap_or_default(),
-                serde_json::to_string(val).unwrap_or_default()
-            ));
-        }
-    }
-    format!("{{{}}}", parts.join(","))
 }
 
 /// Argument key names in the order they appear in a tool-call block.
