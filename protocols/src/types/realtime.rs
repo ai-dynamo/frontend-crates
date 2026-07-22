@@ -51,3 +51,34 @@ impl EventType for RealtimeClientEvent {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn session_update_accepts_null_turn_detection() {
+        let event: RealtimeClientEvent = serde_json::from_value(serde_json::json!({
+            "type": "session.update",
+            "session": {
+                "type": "transcription",
+                "audio": {
+                    "input": {
+                        "format": { "type": "audio/pcm", "rate": 24000 },
+                        "transcription": { "model": "whisper-1" },
+                        "turn_detection": null
+                    }
+                }
+            }
+        }))
+        .expect("null turn_detection should be accepted");
+
+        let RealtimeClientEvent::SessionUpdate(update) = event else {
+            panic!("expected session.update");
+        };
+        let Session::RealtimeTranscriptionSession(session) = update.session else {
+            panic!("expected transcription session");
+        };
+        assert!(session.audio.input.turn_detection.is_none());
+    }
+}
