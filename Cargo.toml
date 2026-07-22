@@ -41,7 +41,7 @@ derive_builder = "0.20"
 # (0.x crates would use minor precision, e.g. `"0.1"`.)
 dynamo-parsers = { path = "parsers/v1", version = "5" }
 dynamo-protocols = { path = "protocols", version = "4" }
-dynamo-renderer = { path = "renderer", version = "2" }
+dynamo-renderer = { path = "renderer", version = "3" }
 dynamo-tokenizers = { path = "tokenizers", version = "1" }
 either = { version = "1.13", features = ["serde"] }
 fastokens = "0.2.0"
