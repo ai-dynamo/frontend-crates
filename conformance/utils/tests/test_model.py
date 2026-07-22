@@ -343,6 +343,21 @@ def test_v2_facts_shape(model_v2):
             assert keys <= set(f), f
 
 
+def test_v2_deepseek_v4_streamv2_parser_links_dsml(model_v2):
+    # Migrated from test_stream_on_batch.test_dsv4_v2_parser_cell_links_dsml_parser, which
+    # called g._parser_cell_html directly. Assert the same fact on the built model: the
+    # deepseek_v4 streamv2 parser cell links the DSML parser source and is NOT flagged
+    # unimplemented (the DeepSeek-v4 v2 stream parser exists, at dsml.rs).
+    tab = _tab(model_v2, "tab-toolcalling-streamv2")
+    htmls = [r["parser"]["html"] for r in tab["rows"]
+             if r.get("family") == "deepseek_v4" and r.get("parser")]
+    assert htmls, "no deepseek_v4 row with a parser cell in the streamv2 tab"
+    html = htmls[0]
+    assert "DeepSeekV4ToolStreamParser text path" in html
+    assert "parsers/v2/src/tool_calling/dsml.rs" in html
+    assert "not implemented" not in html
+
+
 _DOUBLED = re.compile(r"^(\w+?)\1$")
 
 

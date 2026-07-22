@@ -70,6 +70,11 @@ _build_stage_base() {
   # DIS-2434 JSON data model + JS view: model.py builds it (imported by BOTH pages via
   # reasoning_table), conformance_view.js renders it. Staged here so v1 + v2 both find them.
   \cp -f "$TOOLS/model.py" "$STAGE/tests/parity/model.py"
+  # DIS-2477: markers.py (comparison/facts semantics) + impls.py (identity) are the
+  # single source both pages use. Staged in the base so the v1 toolcalling table can
+  # import markers instead of forking its own comparison copies.
+  \cp -f "$TOOLS/impls.py" "$STAGE/tests/parity/impls.py"
+  \cp -f "$TOOLS/markers.py" "$STAGE/tests/parity/markers.py"
   [ -f "$TOOLS/assets/conformance_view.js" ] && \
     \cp -f "$TOOLS/assets/conformance_view.js" "$STAGE/tests/parity/assets/conformance_view.js" || true
   # Reasoning fixtures are resolved per page (v1 = old anchor peers, v2 = pinned new
@@ -173,8 +178,7 @@ build_stage_conformance() {
   # Keep the current conformance harness owned by conformance/utils while presenting
   # it in Dynamo's staged tests/parity layout for imports and template lookup.
   \cp -f "$TOOLS/generate_conformance_table.py" "$STAGE/tests/parity/generate_conformance_table.py"
-  \cp -f "$TOOLS/impls.py" "$STAGE/tests/parity/impls.py"
-  \cp -f "$TOOLS/markers.py" "$STAGE/tests/parity/markers.py"
+  # impls.py + markers.py staged in _build_stage_base (shared by both pages, DIS-2477).
   \cp -f "$TOOLS/fixtures.py" "$STAGE/tests/parity/fixtures.py"
   \cp -f "$TOOLS/conformance_table.html.j2" "$STAGE/tests/parity/conformance_table.html.j2"
   # Shared CSS/JS assets are staged in _build_stage_base (used by both pages).

@@ -17,8 +17,11 @@ Contract pinned here:
         engine's stream differs from its own batch) and cross-engine output
         tokens (`D_rs`/`V_ps`/`V_rs`/`S_rs`), `=` when all agree.
 
-The stream tabs flow through the same render_cell_html/render_row_html/
-render_html_panel pipeline as the others; only the `comparison` strategy differs.
+These are marker/status SEMANTICS tests: they assert on the comparison functions in
+`markers.py` (via the generator's re-exports) and on the structured model the JS view
+consumes — not on any server-rendered HTML (the Python HTML emitters were retired in
+DIS-2434; the page is one JSON model + a JS view). Model-shape guards live in
+`test_model.py`.
 """
 
 from __future__ import annotations
@@ -151,10 +154,6 @@ def test_readme_documents_vllm_rust_capture_flow() -> None:
         "Harmony is not the intended scope limit",
     ):
         assert required in text
-
-
-def _markers(html: str) -> dict[str, str]:
-    return dict(re.findall(r'(data-(?:status|marker(?:-parity)?)-\w+)="([^"]*)"', html))
 
 
 def _xcase(expected: dict) -> dict:
@@ -396,18 +395,9 @@ def test_explanation_and_legacy_reason_both_recognized() -> None:
         assert kind == "div" and unknown is False, key
 
 
-def test_dsv4_v2_parser_cell_links_dsml_parser() -> None:
-    html = g._parser_cell_html(
-        "deepseek_v4",
-        {},
-        set(),
-        set(),
-        {},
-        stream_context="streamv2",
-    )
-    assert "DeepSeekV4ToolStreamParser text path" in html
-    assert "parsers/v2/src/tool_calling/dsml.rs" in html
-    assert "not implemented" not in html
+# test_dsv4_v2_parser_cell_links_dsml_parser moved to test_model.py as a model/view
+# assertion (test_v2_deepseek_v4_streamv2_parser_links_dsml) — it now checks the parser
+# cell in the built model rather than calling the _parser_cell_html emitter directly.
 
 
 # --------------------------------------------------------------------------- #

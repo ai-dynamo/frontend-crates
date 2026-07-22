@@ -55,7 +55,6 @@ from __future__ import annotations
 
 import copy
 import html as html_lib
-import json
 import os
 import re
 import subprocess
@@ -66,6 +65,7 @@ from pathlib import Path
 import yaml
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
+import markers  # single source for comparison/leak/facts semantics (DIS-2477)
 from tests.parity import common
 from tests.parity.common import TOP_N_TOOL_CALLING_FAMILIES as TOP_N_FAMILIES
 
@@ -248,12 +248,12 @@ def _version_status_map(mode: str) -> dict[tuple[str, str], dict[str, dict[str, 
                     FIXTURES = saved
             for key, case in cases.items():
                 block = (case.get("expected") or {}).get(impl)
+                # Only `block` + `version` are consumed downstream (candidate charts
+                # + cmp payload in _v1_cell_model); the old per-slug status/marker
+                # glyphs were dead output — the JS view derives display from facts.
                 result.setdefault(key, {}).setdefault(impl, {})[slug] = {
-                    "status": _overview_status(case, impl),
                     "block": block,
                     "version": version,
-                    "marker": _parser_marker(case, impl),
-                    "parity_marker": _parity_marker(case, impl),
                 }
     return result
 
@@ -702,159 +702,15 @@ def _build_display_groups(
     return top_n, others
 
 
-def peer_status(case: dict, dyn: dict, impl: str) -> tuple[str, bool]:
-    """Returns (kind, is_unknown).
-
-    kind:
-      'na'      — peer key missing from `expected:` (block not recorded)
-      'match'   — peer is anchor ref to dynamo, or value-equal to dynamo
-      'unavail' — peer block is `{unavailable: <msg>}`
-      'err'     — peer block is `{error: <substring>}`
-      'div'     — peer block is a concrete divergent {calls, normal_text}
-    is_unknown is True iff kind == 'div' AND block has no `explanation:`.
-    """
-    block = case.get("expected", {}).get(impl)
-    if block is None:
-        return ("na", False)
-    if block is dyn:
-        return ("match", False)
-    if not isinstance(block, dict):
-        return ("na", False)
-    if "unavailable" in block:
-        return ("unavail", False)
-    if "error" in block:
-        return ("err", False)
-    if "calls" in block or "normal_text" in block:
-        # Value-equal to dynamo (non-anchor)? Treat as match.
-        n_block = {
-            "calls": block.get("calls") or [],
-            "normal_text": block.get("normal_text") or "",
-        }
-        n_dyn = {
-            "calls": dyn.get("calls") or [],
-            "normal_text": dyn.get("normal_text") or "",
-        }
-        if n_block == n_dyn:
-            return ("match", False)
-        return ("div", _explanation(block) is None)
-    return ("na", False)
-
-
-_TOOL_CALL_MARKUP_RE = re.compile(
-    r"</?tool_call|</?tool_calls|<\|tool_call|<\|tool_calls|"
-    r"<\|(?:channel|message|call|python_tag)\|>|"
-    r"</?TOOLCALL|TOOL_CALLS|<｜(?:DSML｜)?(?:tool|tool▁call|tool▁calls)|"
-    r"<｜DSML｜|</?minimax:tool_call|</?invoke|</?arg_key|</?arg_value"
-)
-
-
-def _explanation(block: object) -> str | None:
-    """The intentional-divergence note on an expected block. `explanation` is the
-    current key; `reason` is the legacy spelling still present in older fixtures. Read
-    both (explanation wins); new fixtures/captures write `explanation`."""
-    if not isinstance(block, dict):
-        return None
-    v = block.get("explanation")
-    return v if v is not None else block.get("reason")
-
-
-def _dynamo_tool_call_leak(dyn: dict) -> str | None:
-    normal_text = dyn.get("normal_text")
-    note = _explanation(dyn)
-    if not note or not isinstance(normal_text, str):
-        return None
-    if not _TOOL_CALL_MARKUP_RE.search(normal_text):
-        return None
-    return str(note)
-
-
-def _block_tool_call_leaks(block: dict) -> bool:
-    normal_text = block.get("normal_text")
-    return isinstance(normal_text, str) and bool(
-        _TOOL_CALL_MARKUP_RE.search(normal_text)
-    )
-
-
-def _overview_status(case: dict | None, impl: str) -> str:
-    if case is None or "expected" not in case:
-        return "na"
-    block = case.get("expected", {}).get(impl)
-    if not isinstance(block, dict) or "unavailable" in block:
-        return "na"
-    if "error" in block or _block_tool_call_leaks(block):
-        return "problem"
-    return "ok"
-
-
-def _canonical_tool_output(block: object) -> dict | None:
-    if not isinstance(block, dict) or "unavailable" in block or "error" in block:
-        return None
-    if "calls" not in block and "normal_text" not in block:
-        return None
-    return {
-        "calls": block.get("calls") or [],
-        "normal_text": block.get("normal_text") or "",
-    }
-
-
-def _selected_parity_marker(case: dict | None, impl: str) -> str | None:
-    if case is None or "expected" not in case:
-        return None
-    expected = case.get("expected", {})
-    outputs = {
-        impl: _canonical_tool_output(expected.get(impl))
-        for impl in ("dynamo_v1", "vllm_python", "sglang_python")
-    }
-    if any(value is None for value in outputs.values()):
-        return None
-    if outputs["dynamo_v1"] == outputs["vllm_python"] == outputs["sglang_python"]:
-        return "="
-    selected = outputs[impl]
-    peers = (
-        ("dynamo_v1", "D"),
-        ("vllm_python", "V"),
-        ("sglang_python", "S"),
-    )
-    marker = "".join(
-        letter for peer, letter in peers if peer != impl and outputs[peer] != selected
-    )
-    return marker or "="
-
-
-def _selected_parity_suffix(case: dict | None, impl: str) -> str:
-    if case is None or "expected" not in case:
-        return ""
-    block = case.get("expected", {}).get(impl)
-    if isinstance(block, dict) and _block_tool_call_leaks(block):
-        return "↯"
-    return ""
-
-
-def _parity_marker(case: dict | None, impl: str) -> str:
-    marker = _selected_parity_marker(case, impl)
-    if marker is None:
-        return _parser_marker(case, impl)
-    return _selected_parity_suffix(case, impl) + marker
-
-
-def _parser_marker(case: dict | None, impl: str) -> str:
-    if case is None:
-        return "—"
-    if "expected" not in case:
-        return "n/a"
-    expected = case.get("expected", {})
-    block = expected.get(impl)
-    if not isinstance(block, dict) or "unavailable" in block:
-        return "n/a"
-    if "error" in block:
-        return "✗"
-    if _block_tool_call_leaks(block):
-        return "↯"
-    if impl == "dynamo_v1":
-        peers = (expected.get("vllm_python"), expected.get("sglang_python"))
-        if all(isinstance(peer, dict) and "unavailable" in peer for peer in peers):
-            return "·"
-    return ""
+# DIS-2477: comparison / leak / status semantics are single-sourced in markers.py.
+# The v1 toolcalling table used to fork its own copies of these here (some diverged:
+# no parser-error branch, a hardcoded leak regex, no JSON-arg canonicalization). Route
+# the local names to the shared implementations so both pages share one source of truth.
+peer_status = markers.peer_status
+_explanation = markers._explanation
+_dynamo_tool_call_leak = markers._dynamo_tool_call_leak
+_block_tool_call_leaks = markers._block_tool_call_leaks
+_overview_status = markers._overview_status
 
 
 def cell_for(case: dict | None) -> str:
@@ -1236,51 +1092,19 @@ def _candidate_items(mode: str = "batch") -> list[dict[str, str]]:
     return out
 
 
-def _candidate_sig(block) -> str:
-    """Canonical signature of a candidate's output; equal signatures = same output."""
-    if not isinstance(block, dict) or "unavailable" in block:
-        return "na"
-    if "error" in block:
-        return f"err:{block.get('error')}"
-    return json.dumps(
-        {
-            "calls": block.get("calls") or [],
-            "normal_text": block.get("normal_text") or "",
-        },
-        sort_keys=True,
-        ensure_ascii=False,
-    )
-
-
-def _cmp_json_from_blocks(blocks: dict) -> str:
-    """Per-cell `data-cmp` payload from {candidate_key: block}: {key: {sig, leak, na}}.
-    `sig` is a per-cell group id (candidates with identical output share an id);
-    `na` (unavailable) is excluded from the diff count but still shown in the tooltip."""
-    if not blocks:
-        return ""
-    ids: dict[str, int] = {}
-    out: dict[str, dict] = {}
-    for key, block in blocks.items():
-        sig = _candidate_sig(block)
-        out[key] = {
-            "sig": ids.setdefault(sig, len(ids)),
-            "leak": 1 if (isinstance(block, dict) and _block_tool_call_leaks(block)) else 0,
-            "na": 1 if sig == "na" else 0,
-        }
-    return html_lib.escape(json.dumps(out, separators=(",", ":")), quote=True)
-
-
-def _candidate_cmp_json(case: dict | None) -> str:
-    """Versioned per-cell payload: candidate key = `<impl>-<version_slug>`."""
+def _candidate_cmp_json(case: dict | None) -> dict | None:
+    """Versioned per-cell compare payload {`<impl>-<slug>`: {sig, leak, na}}, built by
+    the shared markers.cmp_model (canonical JSON-arg signatures single-sourced there —
+    the v1 fork used to byte-compare serialized args and flag false divergences)."""
     ver = (case or {}).get("__ver_status") if isinstance(case, dict) else None
     if not ver:
-        return ""
+        return None
     blocks = {
         f"{impl}-{slug}": info.get("block")
         for impl, by_slug in ver.items()
         for slug, info in by_slug.items()
     }
-    return _cmp_json_from_blocks(blocks)
+    return markers.cmp_model(blocks) if blocks else None
 
 
 def _compute_stats(
@@ -1327,9 +1151,9 @@ def _compute_stats(
 
 
 # ===== Structured JSON model builder (DIS-2434, v1 PARITY page) =================
-# Same-schema model tab as the v2 toolcalling path (model.make_cell). The v1 fork
-# keeps its own comparison semantics here (this module's _overview_status / cmp /
-# _candidate_sig); phase 3 unifies both pages onto one model.py path.
+# Same-schema model tab as the v2 toolcalling path (model.make_cell). Comparison
+# semantics (status / cmp / facts) are single-sourced in markers.py (DIS-2477) — both
+# pages now share one comparison path.
 import model  # noqa: E402  (schema + cell normalizer; leaf module staged alongside)
 
 
@@ -1379,8 +1203,7 @@ def _v1_cell_model(case: dict | None, mode: str, family: str, sub: str,
         return model.missing_cell(sub, family, group_key, band,
                                   head=f"TOOLCALLING.{mode}.{sub}")
     ver = case.get("__ver_status") or {}
-    cmp_raw = _candidate_cmp_json(case)
-    cmp = json.loads(html_lib.unescape(cmp_raw)) if cmp_raw else None
+    cmp = _candidate_cmp_json(case)
     candidates = []
     for impl in ("dynamo_v1", "vllm_python", "sglang_python"):
         for slug, info in (ver.get(impl) or {}).items():
@@ -1391,9 +1214,9 @@ def _v1_cell_model(case: dict | None, mode: str, family: str, sub: str,
                 "parse_mode": mode, "block": _v1_output_block_model(info.get("block")),
                 "leak": isinstance(info.get("block"), dict) and _block_tool_call_leaks(info["block"]),
             })
-    facts = [{"impl": impl, "status": _overview_status(case, impl), "present": None,
-              "agrees": None, "intentional": None, "reason": None, "leak": False,
-              "error_kind": None} for impl in _VERSION_IMPLS]
+    # Structured comparison facts, single-sourced in markers (was a stub here with only
+    # `status` filled; markers computes real present/agrees/intentional/reason/leak).
+    facts = markers.comparison_facts(case, markers.BATCH_IMPL_KEYS, "dynamo_v1")
     fp = case.get("__fixture_path", "")
     href = common.fixture_href(fp) if fp else None
     tooltip = {
