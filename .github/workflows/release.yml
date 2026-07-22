@@ -63,57 +63,117 @@ jobs:
             | tar xz -C /usr/local/bin
           cargo-semver-checks --version
 
-      # Path-scoped auto-bump (DIS-2414). A blanket `release-plz update` cascades:
-      # a change to one crate re-releases its dependents even when their code
-      # didn't change (all inter-crate deps are caret reqs, so a compatible bump
-      # never requires re-releasing a dependent). That churned versions — e.g.
-      # dynamo-parsers-v2 went 0.1.17 -> 0.1.21 in days, and v1/v2 were bumped
-      # in lockstep despite sharing no code. Instead, run `release-plz update
-      # -p <crate>` only for crates whose OWN directory changed since their last
-      # release tag, and never touch a version a human already bumped:
-      #   - version != last release tag  -> manually PEGGED: leave it alone;
-      #     the publish step below ships exactly that version (same number the
-      #     HF fixture upload embeds — Cargo.toml is the single source of truth)
-      #   - version == last tag, no changes under the crate dir -> nothing
-      #   - version == last tag, changes under the crate dir -> auto-bump this
-      #     crate only (release-plz still sizes the bump from conventional
-      #     commits, writes the changelog, and runs cargo-semver-checks)
-      - name: Bump versions for crates whose own files changed
+      # Native release-plz cascade. With MAJOR-precision workspace pins (root
+      # Cargo.toml, e.g. dynamo-protocols = { version = "4" }) a single blanket
+      # `release-plz update` does the right thing per crate:
+      #   - bumps each crate whose OWN packaged source changed, sized from
+      #     Conventional Commits (gated by release_commits) and validated by
+      #     cargo-semver-checks;
+      #   - re-releases a dependent ONLY when a workspace dependency's MAJOR
+      #     changes: a compatible bump leaves the `"4"` requirement text unchanged
+      #     so nothing is touched (no churn); a breaking bump rewrites it to `"5"`
+      #     and cascades a PATCH bump;
+      #   - respects a MANUAL PEG (local version already ahead of the last
+      #     published release -> "only changelog will be updated", published
+      #     as-is — the fixture-synced release flow) and FIRST releases (an
+      #     untagged crate stays put).
+      - name: Update versions (release-plz)
         run: |
-          # `--allow-dirty` below is intentional: each package update leaves
-          # its version/changelog edits for the final combined release commit.
-          # Fail here so it cannot mask changes that predate this loop.
           if [ -n "$(git status --porcelain)" ]; then
             git status --short
             echo "Release checkout must start clean."
             exit 1
           fi
+          release-plz update
 
-          members=$(sed -n '/^members = \[/,/^]/p' Cargo.toml | grep -oE '"[^"]+"' | tr -d '"')
-          for dir in $members; do
+      # release-plz can only PATCH-cascade a dependent on a breaking dependency
+      # release: it cannot see that the dependency's types leak into the
+      # dependent's OWN public API ("dependency-surface drift" — cargo-semver-
+      # checks misses it too, so it can't size the bump either). So for HEAVY
+      # dependents — crates that re-export or expose a dependency's public types
+      # — a MAJOR dependency bump must force a MAJOR bump of the dependent.
+      #
+      # HEAVY entries are "<dir>:<dep-crate>[,<dep-crate>...]". dynamo-renderer
+      # exposes dynamo-protocols types (OAIChatLikeRequest::typed_messages) and
+      # re-exports dynamo-tokenizers (renderer/src/lib.rs), so a protocols OR a
+      # tokenizers major forces a renderer major. Add a crate here when it
+      # starts exposing another workspace crate's types in its public API.
+      - name: Escalate heavy dependents on a breaking dependency major
+        run: |
+          HEAVY="renderer:dynamo-protocols,dynamo-tokenizers"
+
+          # Safety-net: warn if a NON-heavy published crate looks like it exposes
+          # a workspace dependency's types in its public API (`pub use <dep>`, or a
+          # `pub` item naming `<dep>::Type`). Such a crate needs to be HEAVY too,
+          # or a breaking <dep> release would ship it as a semver-wrong PATCH.
+          # Heuristic only (misses trait-method signatures and glob re-exports) —
+          # a nudge to keep the HEAVY list honest, never a gate.
+          heavy_dirs=$(for e in $HEAVY; do echo "${e%%:*}"; done)
+          for dir in $(sed -n '/^members = \[/,/^]/p' Cargo.toml | grep -oE '"[^"]+"' | tr -d '"'); do
             grep -q '^publish *= *false' "$dir/Cargo.toml" && continue
+            printf '%s\n' $heavy_dirs | grep -qx "$dir" && continue
+            sname=$(grep -m1 '^name *=' "$dir/Cargo.toml" | sed -E 's/.*"([^"]+)".*/\1/')
+            for dep in $(awk '/^\[dependencies\]/{f=1;next}/^\[/{f=0}f' "$dir/Cargo.toml" | grep -oE 'dynamo-[a-z0-9-]+' | sort -u | grep -vx "$sname" || true); do
+              mod=$(echo "$dep" | tr '-' '_')
+              if grep -rqE "pub use (::)?${mod}\b|pub [^;{=]*\b${mod}::" "$dir/src" 2>/dev/null; then
+                echo "::warning::$sname (dir '$dir') appears to expose $dep types in its public API but is NOT on the HEAVY list. A breaking $dep release would ship $sname as a semver-wrong PATCH — if it re-exports/returns $dep types, add \"$dir:$dep\" to HEAVY in this step."
+              fi
+            done
+          done
+
+          maj() { echo "${1%%.*}"; }
+          # version string of workspace dep $1 from a root Cargo.toml on stdin
+          # (handles both "4" and "4.0.0" precision).
+          pin() { grep -E "^[[:space:]]*$1[[:space:]]*=" | grep -oE 'version[[:space:]]*=[[:space:]]*"[^"]+"' | head -1 | sed -E 's/.*"([^"]+)".*/\1/'; }
+
+          for entry in $HEAVY; do
+            dir="${entry%%:*}"; deps="${entry#*:}"
             name=$(grep -m1 '^name *=' "$dir/Cargo.toml" | sed -E 's/.*"([^"]+)".*/\1/')
-            ver=$(grep -m1 '^version *=' "$dir/Cargo.toml" | sed -E 's/.*"([^"]+)".*/\1/')
-            # Exact-match this crate's tags: the glob "dynamo-parsers-v*" would
-            # also match dynamo-parsers-v2-v0.1.21, so require <name>-v<semver>.
-            last=$(git tag -l "$name-v*" | grep -E "^$name-v[0-9]+\.[0-9]+\.[0-9]+$" | sort -V | tail -1)
-            if [ -z "$last" ]; then
-              echo "$name: no release tag yet -> first release is manual, skipping"
-            elif [ "$ver" != "${last#"$name"-v}" ]; then
-              echo "$name: $ver != last released ${last#"$name"-v} -> manually pegged"
-              # A manual peg bypasses release-plz update — the only path that
-              # runs cargo-semver-checks — so validate here that the pegged
-              # jump is big enough for the actual API diff vs the last release.
-              cargo semver-checks check-release --package "$name" --baseline-rev "$last"
-              echo "$name: peg passes semver-checks, publish as-is"
-            # The root Cargo.toml is part of every crate's change scope:
-            # workspace-inherited dependency versions and [workspace.package]
-            # metadata land in the published manifest of each member crate.
-            elif git diff --quiet "$last"..HEAD -- "$dir" Cargo.toml; then
-              echo "$name: no changes under $dir/ or the root Cargo.toml since $last"
+            last=$(git tag -l "$name-v*" | grep -E "^$name-v[0-9]+\.[0-9]+\.[0-9]+$" | sort -V | tail -1 || true)
+            if [ -z "$last" ]; then echo "$name: no release tag yet -> first release is manual"; continue; fi
+            lastver="${last#"$name"-v}"
+            curver=$(grep -m1 '^version *=' "$dir/Cargo.toml" | sed -E 's/.*"([^"]+)".*/\1/')
+            # Already a major bump over the last release (own breaking change, or
+            # a prior escalation this run)? Then there is nothing to force.
+            if [ "$(maj "$curver")" -gt "$(maj "$lastver")" ]; then
+              echo "$name: already a major bump ($lastver -> $curver)"; continue
+            fi
+
+            forced=""
+            OLDIFS=$IFS; IFS=','
+            for dep in $deps; do
+              old=$(git show "$last:Cargo.toml" | pin "$dep" || true)
+              new=$(pin "$dep" < Cargo.toml || true)
+              if [ -z "$old" ] || [ -z "$new" ]; then continue; fi
+              if [ "$(maj "$new")" -gt "$(maj "$old")" ]; then
+                echo "$name: heavy dependency $dep majored ($old -> $new) since $last"
+                forced=yes
+              fi
+            done
+            IFS=$OLDIFS
+
+            if [ -n "$forced" ]; then
+              # In the normal flow release-plz has already PATCH-cascaded this
+              # crate (a fresh top changelog entry), and set-version just relabels
+              # that pending entry to the major. If release-plz did NOT re-release
+              # it this run (working-tree version still equals HEAD), there is no
+              # pending entry and set-version would instead rewrite the last
+              # RELEASED entry — corrupting changelog history. That happens only in
+              # a one-time catch-up (a dependency major that predates this commit,
+              # e.g. right after enabling this workflow); skip and let a human ship
+              # the major once rather than clobber history.
+              headver=$(git show "HEAD:$dir/Cargo.toml" 2>/dev/null | grep -m1 '^version *=' | sed -E 's/.*"([^"]+)".*/\1/')
+              if [ "$curver" = "$headver" ]; then
+                echo "::warning::$name needs a major re-release for a breaking dependency, but release-plz did not cascade it this run (the dependency major predates this commit). Skipping auto-escalation; ship a one-off manual major release (merge a 'chore($name)!: release' PR). Future breaking bumps escalate automatically."
+                continue
+              fi
+              target="$(( $(maj "$lastver") + 1 )).0.0"
+              echo "$name: forcing major re-release $lastver -> $target"
+              release-plz set-version "$name@$target"
+              # release-plz 0.3.158 set-version does not refresh Cargo.lock.
+              cargo update --workspace >/dev/null 2>&1 || true
             else
-              echo "$name: changes under $dir/ (or root Cargo.toml) since $last -> auto-bump"
-              release-plz update --allow-dirty -p "$name"
+              echo "$name: no heavy dependency majored since $last -> no escalation"
             fi
           done
 
