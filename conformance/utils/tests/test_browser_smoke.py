@@ -236,8 +236,8 @@ def test_transpose_builds_mirror_and_colors(driver):
 
 
 def test_transpose_does_not_double_overview_counts(driver):
-    """The mirror's cloned cells must not inflate the overview counts (both applyCtl
-    and updateOverviewStats skip cells inside [data-transpose-table])."""
+    """The mirror's cloned cells must not inflate the overview counts (applyCtl skips
+    cells inside [data-transpose-table] when counting)."""
     _click_tab(driver, "tab-toolcalling-batch")
     _set_transpose(driver, False)
     counts = "const p=document.querySelector('.tab-panel.active');return Array.from(p.querySelectorAll('[data-overview-count]')).map(function(e){return e.textContent;});"
