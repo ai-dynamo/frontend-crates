@@ -14,12 +14,16 @@ repository.workspace = true
 keywords = ["llm", "tokenizer", "huggingface", "tiktoken", "inference"]
 include = ["src/**/*", "Cargo.toml", "README.md"]
 
+[features]
+gigatoken = ["dep:gigatoken"]
+
 [dependencies]
 aho-corasick.workspace = true
 anyhow.workspace = true
 blake3.workspace = true
 moka = { workspace = true, features = ["sync"] }
 fastokens.workspace = true
+gigatoken = { package = "gigatoken", git = "https://github.com/marcelroed/gigatoken.git", rev = "ecf968da2b7300e33f90e8bd9c96a11a335a01ae", optional = true }
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json.workspace = true
 strum = { workspace = true, features = ["derive"] }
@@ -36,4 +40,10 @@ tokenizers = { workspace = true, features = [
 ] }
 
 [dev-dependencies]
+criterion = "0.8"
 tempfile.workspace = true
+
+[[bench]]
+name = "gigatoken_models"
+harness = false
+required-features = ["gigatoken"]

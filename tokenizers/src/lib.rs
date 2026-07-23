@@ -3,6 +3,8 @@
 
 pub mod cache;
 pub mod fastokens;
+#[cfg(feature = "gigatoken")]
+pub mod gigatoken;
 pub mod hf;
 pub mod tiktoken;
 
@@ -19,6 +21,8 @@ pub use anyhow::{Error, Result};
 
 pub use cache::{CacheTokenUsage, CacheTokenUsageFn, CachedTokenizer, L1CacheStats};
 pub use fastokens::FastTokenizer;
+#[cfg(feature = "gigatoken")]
+pub use gigatoken::GigatokenTokenizer;
 pub use hf::HuggingFaceTokenizer;
 pub use tiktoken::TikTokenTokenizer;
 pub use traits::DecodeResult;

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-// PyO3 0.22 macro expansion still emits `unsafe_op_in_unsafe_fn` under Rust 2024.
+// PyO3 macro expansion may emit `unsafe_op_in_unsafe_fn` under Rust 2024.
 #![allow(unsafe_op_in_unsafe_fn)]
 
 //! PyO3 Python bindings for `dynamo-parsers-v2`.
@@ -70,7 +70,7 @@ use dynamo_parsers_v2::ToolStreamResult;
 /// `function_name`. All subsequent deltas for the same `index` carry only
 /// `function_arguments`. This is the OpenAI streaming contract:
 /// name is committed once, arguments are streamed as fragments.
-#[pyclass(name = "ToolCallChunk", get_all, frozen)]
+#[pyclass(name = "ToolCallChunk", get_all, frozen, skip_from_py_object)]
 #[derive(Clone, Debug)]
 pub struct PyToolCallChunk {
     /// Zero-based call index. Parallel tool calls use different indices.
