@@ -14,12 +14,7 @@ use uuid::Uuid;
 use super::super::ToolDefinition;
 use super::super::config::InklingParserConfig;
 use super::super::response::{CalledFunction, ToolCallResponse, ToolCallType};
-
-pub(crate) const MESSAGE_MODEL: &str = "<|message_model|>";
-pub(crate) const INVOKE: &str = "<|content_invoke_tool_json|>";
-pub(crate) const END_MESSAGE: &str = "<|end_message|>";
-
-const MIN_PARTIAL_MARKER_LEN: usize = 3;
+use super::tokens::{END_MESSAGE, END_SAMPLING, INVOKE, MESSAGE_MODEL};
 
 /// `args` is a `RawValue` to preserve the argument bytes verbatim.
 #[derive(serde::Deserialize)]
@@ -38,11 +33,12 @@ pub fn detect_tool_call_start_inkling(chunk: &str, _config: &InklingParserConfig
     false
 }
 
+/// True when `chunk` ends with a non-empty proper prefix of `marker`: a tool-open
+/// marker split across chunks. Any prefix length counts (down to a lone `<`), so a
+/// split at `<` or `<|` is still recognized as a partial start rather than emitted
+/// as unrecoverable normal text.
 fn ends_with_partial_marker(chunk: &str, marker: &str) -> bool {
     for (i, _) in marker.char_indices().skip(1) {
-        if i < MIN_PARTIAL_MARKER_LEN {
-            continue;
-        }
         if chunk.ends_with(&marker[..i]) {
             return true;
         }
@@ -50,11 +46,46 @@ fn ends_with_partial_marker(chunk: &str, marker: &str) -> bool {
     false
 }
 
-pub fn find_tool_call_end_position_inkling(chunk: &str, _config: &InklingParserConfig) -> usize {
-    chunk
-        .rfind(END_MESSAGE)
-        .map(|pos| pos + END_MESSAGE.len())
-        .unwrap_or(chunk.len())
+/// Byte offset immediately after the last complete tool-call block, or `None`
+/// until a JSON-complete call followed by its `<|end_message|>` fence has arrived.
+///
+/// Looking for the token with `rfind` is not sufficient: the same literal can
+/// legally occur inside a JSON string argument. The shared helper below finds a
+/// fence only after the deserializer's complete-value boundary.
+pub fn find_tool_call_end_position_inkling(
+    chunk: &str,
+    _config: &InklingParserConfig,
+) -> Option<usize> {
+    find_complete_tool_call_end(chunk)
+}
+
+/// Return the end of the last JSON-complete, fenced Inkling call in `message`.
+///
+/// This is `pub(crate)` because the reasoning parser must use the exact same
+/// boundary before forwarding a tool block to the downstream tool-call parser.
+/// Keeping the boundary shared prevents the reasoning stage from truncating a
+/// call on marker-looking text inside an argument.
+pub(crate) fn find_complete_tool_call_end(message: &str) -> Option<usize> {
+    let mut search_from = 0;
+    let mut last_end = None;
+
+    while let Some(rel) = message[search_from..].find(INVOKE) {
+        let json_start = search_from + rel + INVOKE.len();
+        if let Some((_, block_end)) = delimited_json_span(message, json_start) {
+            last_end = Some(block_end);
+            search_from = block_end;
+        } else {
+            // This opener is incomplete or malformed. Keep scanning so a later
+            // well-formed block can still be recovered (batch.4.e), but always
+            // advance at least one byte to avoid re-matching the same opener.
+            search_from = json_start.min(message.len());
+            if search_from == message.len() {
+                break;
+            }
+        }
+    }
+
+    last_end
 }
 
 pub fn try_tool_call_parse_inkling(
@@ -63,34 +94,55 @@ pub fn try_tool_call_parse_inkling(
     _tools: Option<&[ToolDefinition]>,
 ) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
     let Some(invoke_pos) = message.find(INVOKE) else {
-        return Ok((vec![], Some(message.to_string())));
+        // These are parser-owned protocol tokens even when an opener is absent.
+        // Do not leak an orphan close/header/turn terminator as user-visible text.
+        return Ok((vec![], Some(strip_outer_framing(message))));
     };
 
     // Start the stripped span at the `<|message_model|>NAME` header when present, so
     // it never leaks into normal_text.
     let header_pos = message[..invoke_pos].rfind(MESSAGE_MODEL);
     let block_start = header_pos.unwrap_or(invoke_pos);
-    let mut prefix = message[..block_start].trim_end().to_string();
+    let mut prefix = strip_outer_framing(message[..block_start].trim_end());
 
     let mut calls = Vec::new();
     let mut cursor = block_start;
     while let Some(rel) = message[cursor..].find(INVOKE) {
         let json_start = cursor + rel + INVOKE.len();
-        let (json_str, next_cursor) = match message[json_start..].find(END_MESSAGE) {
-            Some(end_rel) => {
-                let end = json_start + end_rel;
-                (&message[json_start..end], Some(end + END_MESSAGE.len()))
+        let complete_json_end = json_value_end(message, json_start);
+        let delimited = delimited_json_span(message, json_start);
+
+        // A malformed block may still be followed by a valid block. Skip through
+        // its raw fence so the next loop can recover the later call. This fallback
+        // is never used to claim a call: parsing below only happens when the JSON
+        // value itself is complete.
+        let next_cursor = delimited.map(|(_, end)| end).or_else(|| {
+            if complete_json_end.is_none() {
+                message[json_start..]
+                    .find(END_MESSAGE)
+                    .map(|rel| json_start + rel + END_MESSAGE.len())
+            } else {
+                None
             }
-            None => (&message[json_start..], None),
+        });
+
+        let Some(json_end) = complete_json_end else {
+            match next_cursor {
+                Some(next) => {
+                    cursor = next;
+                    continue;
+                }
+                None => break,
+            }
         };
 
         // Unterminated call: recover only on the finalize path; mid-stream drop it so
         // the jail doesn't claim a call before `<|end_message|>` arrives.
-        if next_cursor.is_none() && !config.allow_eof_recovery {
+        if delimited.is_none() && !config.allow_eof_recovery {
             break;
         }
 
-        if let Some(call) = parse_inkling_call(json_str)? {
+        if let Some(call) = parse_inkling_call(&message[json_start..json_end])? {
             calls.push(call);
         }
 
@@ -117,6 +169,39 @@ pub fn try_tool_call_parse_inkling(
     }
 
     Ok((calls, Some(prefix)))
+}
+
+/// Remove Inkling framing tokens owned by the tool-call layer. Content-kind
+/// markers are intentionally left to the reasoning parser, which runs first in
+/// the serving pipeline.
+fn strip_outer_framing(text: &str) -> String {
+    [MESSAGE_MODEL, END_MESSAGE, END_SAMPLING]
+        .into_iter()
+        .fold(text.to_string(), |out, marker| out.replace(marker, ""))
+}
+
+/// Absolute byte offset after the first complete JSON value beginning at
+/// `json_start`, or `None` while the value is incomplete/malformed.
+fn json_value_end(message: &str, json_start: usize) -> Option<usize> {
+    let raw = message.get(json_start..)?;
+    let mut stream = serde_json::Deserializer::from_str(raw).into_iter::<serde::de::IgnoredAny>();
+    match stream.next() {
+        Some(Ok(_)) => Some(json_start + stream.byte_offset()),
+        _ => None,
+    }
+}
+
+/// `(json_end, block_end)` for a complete JSON value followed only by optional
+/// whitespace and the real block fence.
+fn delimited_json_span(message: &str, json_start: usize) -> Option<(usize, usize)> {
+    let json_end = json_value_end(message, json_start)?;
+    let tail = message.get(json_end..)?;
+    let whitespace = tail.len() - tail.trim_start().len();
+    let fence_start = json_end + whitespace;
+    message
+        .get(fence_start..)?
+        .starts_with(END_MESSAGE)
+        .then_some((json_end, fence_start + END_MESSAGE.len()))
 }
 
 // Streaming deserializer so a complete object parses despite trailing bytes (missing
@@ -274,6 +359,78 @@ mod tests {
     }
 
     #[test]
+    fn end_message_position_is_none_until_fence_arrives() {
+        // No `<|end_message|>` yet: an incomplete call must not look complete, so the
+        // end-position is `None` (the jail keeps accumulating). Once the fence lands,
+        // it returns the offset just past it.
+        let cfg = InklingParserConfig::default();
+        let partial = r#"<|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{}}"#;
+        assert_eq!(find_tool_call_end_position_inkling(partial, &cfg), None);
+        let complete = format!("{partial}{END_MESSAGE}");
+        assert_eq!(
+            find_tool_call_end_position_inkling(&complete, &cfg),
+            Some(complete.len())
+        );
+    }
+
+    #[test]
+    fn partial_open_marker_split_at_angle_bracket_is_detected() {
+        // A tool-open marker split at `<` or `<|` must still register as a partial
+        // start, else those bytes stream as unrecoverable normal text.
+        let cfg = InklingParserConfig::default();
+        assert!(detect_tool_call_start_inkling("<", &cfg));
+        assert!(detect_tool_call_start_inkling("<|", &cfg));
+        assert!(detect_tool_call_start_inkling("Let me check.<", &cfg));
+        // Reassembling the split chunks parses the call cleanly.
+        let chunks = [
+            "<",
+            r#"|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{}}<|end_message|>"#,
+        ];
+        let joined = chunks.concat();
+        let (calls, normal) =
+            try_tool_call_parse_inkling(&joined, &InklingParserConfig::default(), None).unwrap();
+        assert_eq!(normal.as_deref(), Some(""));
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].function.name, "get_weather");
+    }
+
+    #[test]
+    fn end_message_literal_inside_string_arg_does_not_truncate() {
+        // `<|end_message|>` inside a JSON string argument must not be mistaken for the
+        // block fence: the call parses and the argument bytes survive verbatim.
+        let input = r#"<|content_invoke_tool_json|>{"name":"echo","args":{"text":"a<|end_message|>b"}}<|end_message|>"#;
+        let (calls, normal) =
+            try_tool_call_parse_inkling(input, &InklingParserConfig::default(), None).unwrap();
+        assert_eq!(normal.as_deref(), Some(""));
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].function.name, "echo");
+        assert_eq!(
+            calls[0].function.arguments,
+            r#"{"text":"a<|end_message|>b"}"#
+        );
+    }
+
+    #[test]
+    fn inner_end_message_without_real_fence_is_not_complete_mid_stream() {
+        let input =
+            r#"<|content_invoke_tool_json|>{"name":"echo","args":{"text":"a<|end_message|>b"}}"#;
+        let cfg = InklingParserConfig::default();
+        assert_eq!(find_tool_call_end_position_inkling(input, &cfg), None);
+
+        let (calls, normal) = try_tool_call_parse_inkling(input, &cfg, None).unwrap();
+        assert!(calls.is_empty());
+        assert_eq!(normal.as_deref(), Some(""));
+
+        // Finalization may recover the complete JSON body without the outer fence.
+        let (calls, _) = try_tool_call_parse_inkling(input, &recovery_config(), None).unwrap();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(
+            calls[0].function.arguments,
+            r#"{"text":"a<|end_message|>b"}"#
+        );
+    }
+
+    #[test]
     fn headerless_prefix_prose_is_kept_when_not_the_name() {
         // A header-less prefix that is NOT the tool name is real prose, kept verbatim
         // (only an exact name match is treated as the redundant header).
@@ -282,5 +439,15 @@ mod tests {
             try_tool_call_parse_inkling(input, &InklingParserConfig::default(), None).unwrap();
         assert_eq!(normal.as_deref(), Some("here you go book_flight"));
         assert_eq!(calls.len(), 1);
+    }
+
+    #[test]
+    fn orphan_outer_framing_is_stripped_without_an_invoke() {
+        let input =
+            "prefix <|end_message|> middle <|message_model|> suffix<|content_model_end_sampling|>";
+        let (calls, normal) =
+            try_tool_call_parse_inkling(input, &InklingParserConfig::default(), None).unwrap();
+        assert!(calls.is_empty());
+        assert_eq!(normal.as_deref(), Some("prefix  middle  suffix"));
     }
 }

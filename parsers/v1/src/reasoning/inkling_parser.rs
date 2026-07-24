@@ -10,14 +10,14 @@
 //! into `normal_text` (framing intact): the reasoning parser runs before the tool-call
 //! parser, which extracts calls from that `normal_text`.
 
+use crate::tool_calling::inkling::find_complete_tool_call_end;
+use crate::tool_calling::inkling::tokens::{
+    END_MESSAGE, END_SAMPLING, INVOKE as CONTENT_INVOKE, MESSAGE_MODEL,
+};
 use crate::{ParserResult, ReasoningParser};
 
-const MESSAGE_MODEL: &str = "<|message_model|>";
 const CONTENT_THINKING: &str = "<|content_thinking|>";
 const CONTENT_TEXT: &str = "<|content_text|>";
-const CONTENT_INVOKE: &str = "<|content_invoke_tool_json|>";
-const END_MESSAGE: &str = "<|end_message|>";
-const END_SAMPLING: &str = "<|content_model_end_sampling|>";
 const CONTENT_IMAGE: &str = "<|content_image|>";
 const CONTENT_AUDIO: &str = "<|content_audio_input|>";
 
@@ -55,6 +55,9 @@ enum State {
     InContent,
     /// Passed through verbatim (framing included) for the downstream tool parser.
     InToolBlock,
+    /// Non-text placeholder block (image/audio): consumed to its `<|end_message|>`
+    /// and emitted to neither channel, so no framing or payload leaks.
+    InDiscard,
 }
 
 #[derive(Debug, Clone)]
@@ -101,6 +104,15 @@ fn is_partial_leading_marker(s: &str) -> bool {
             .any(|m| m.len() > s.len() && m.starts_with(s))
 }
 
+/// At EOF, preserve only the ambiguous prefixes that are also ordinary prose.
+/// A longer prefix has committed to parser-owned markup and must not leak.
+fn flush_ambiguous_marker_prefix(s: &str) -> String {
+    match s {
+        "<" | "<|" => s.to_string(),
+        _ => String::new(),
+    }
+}
+
 fn find_earliest(s: &str, markers: &[&str]) -> Option<(usize, usize)> {
     markers
         .iter()
@@ -131,6 +143,15 @@ fn content_type_undecided(rem: &str) -> bool {
         .any(|t| t.len() > rem.len() && t.starts_with(rem))
 }
 
+/// A real block header precedes the tool delimiter. A marker-looking string
+/// inside the JSON arguments comes after the delimiter and must not win routing.
+fn has_header_before_invoke(s: &str) -> bool {
+    match s.find(MESSAGE_MODEL) {
+        Some(header) => s.find(CONTENT_INVOKE).is_none_or(|invoke| header < invoke),
+        None => false,
+    }
+}
+
 impl InklingReasoningParser {
     /// Drive the state machine, holding a trailing partial marker (or an undecided
     /// post-`<|message_model|>` region) in `self.buffer` for the next chunk.
@@ -147,14 +168,23 @@ impl InklingReasoningParser {
                     if self.buffer.starts_with(MESSAGE_MODEL) {
                         // The block already carries a real header; route via Idle.
                         self.state = State::Idle;
-                    } else if CONTENT_MARKERS.iter().any(|m| self.buffer.starts_with(m))
-                        || self.buffer.contains(CONTENT_INVOKE)
-                    {
-                        // Header-less structured block: `<|content_thinking|>` /
-                        // `<|content_text|>` at the head, or `NAME<|content_invoke_tool_json|>`
-                        // (name first). Re-insert the consumed `<|message_model|>` so the
-                        // Idle router sends reasoning to reasoning, content to content, and
-                        // the tool block verbatim (with a header the tool parser can strip).
+                    } else if CONTENT_MARKERS.iter().any(|m| self.buffer.starts_with(m)) {
+                        // A header-less structured block at the head always belongs
+                        // to the consumed generation primer, even if later blocks
+                        // contain their own real `<|message_model|>` headers.
+                        self.buffer.insert_str(0, MESSAGE_MODEL);
+                        self.state = State::Idle;
+                    } else if has_header_before_invoke(&self.buffer) {
+                        // Prose precedes a real `<|message_model|>` header later in the
+                        // buffer. Hand off to Idle, which emits the clean prefix to
+                        // normal_text and strips/routes the block (no framing leak).
+                        // Check this before a later INVOKE so a real header wins over
+                        // reconstructing a synthetic one at the start of the prose.
+                        self.state = State::Idle;
+                    } else if self.buffer.contains(CONTENT_INVOKE) {
+                        // Header-less tool block: `NAME<|content_invoke_tool_json|>`
+                        // (name first). Re-insert the consumed `<|message_model|>` so
+                        // Idle passes the tool block with a header the tool parser strips.
                         self.buffer.insert_str(0, MESSAGE_MODEL);
                         self.state = State::Idle;
                     } else {
@@ -176,12 +206,19 @@ impl InklingReasoningParser {
                         } else if rem.starts_with(CONTENT_TEXT) {
                             self.buffer = self.buffer[rem_start + CONTENT_TEXT.len()..].into();
                             self.state = State::InContent;
+                        } else if rem.starts_with(CONTENT_IMAGE) {
+                            self.buffer = self.buffer[rem_start + CONTENT_IMAGE.len()..].into();
+                            self.state = State::InDiscard;
+                        } else if rem.starts_with(CONTENT_AUDIO) {
+                            self.buffer = self.buffer[rem_start + CONTENT_AUDIO.len()..].into();
+                            self.state = State::InDiscard;
                         } else if content_type_undecided(rem) {
                             // Routing undecided; hold from `<|message_model|>`.
                             self.buffer = self.buffer[pos..].into();
                             break;
                         } else {
-                            // Tool-call block: preserve verbatim with its header.
+                            // Tool-call block (`NAME<|content_invoke_tool_json|>...`):
+                            // preserve verbatim with its header for the tool parser.
                             self.buffer = self.buffer[pos..].into();
                             self.state = State::InToolBlock;
                         }
@@ -215,15 +252,29 @@ impl InklingReasoningParser {
                     }
                 }
                 State::InToolBlock => {
-                    if let Some(idx) = self.buffer.find(END_MESSAGE) {
-                        let upto = idx + END_MESSAGE.len();
+                    // Hold the complete block until a JSON-aware boundary is known.
+                    // A raw `find(END_MESSAGE)` is unsafe because that literal can
+                    // legally occur inside a JSON string argument. The downstream
+                    // tool jail buffers this same span, so holding it here adds no
+                    // user-visible content latency.
+                    if let Some(upto) = find_complete_tool_call_end(&self.buffer) {
                         normal.push_str(&self.buffer[..upto]);
                         self.buffer = self.buffer[upto..].into();
                         self.state = State::Idle;
                     } else {
+                        break;
+                    }
+                }
+                State::InDiscard => {
+                    // Non-text placeholder payload: emit nothing to either channel.
+                    if let Some(idx) = self.buffer.find(END_MESSAGE) {
+                        self.buffer = self.buffer[idx + END_MESSAGE.len()..].into();
+                        self.state = State::Idle;
+                    } else {
+                        // Drop the payload; keep only a trailing partial `<|end_message|>`
+                        // so the fence is still detected across the chunk boundary.
                         let hold = overlap(&self.buffer, END_MESSAGE);
                         let split = self.buffer.len() - hold;
-                        normal.push_str(&self.buffer[..split]);
                         self.buffer = self.buffer[split..].into();
                         break;
                     }
@@ -273,6 +324,9 @@ impl ReasoningParser for InklingReasoningParser {
 
     fn finish_reasoning_stream(&mut self) -> ParserResult {
         if self.buffer.is_empty() {
+            // A wrapper is normally request-scoped, but leave it safe to reuse:
+            // the next turn again begins after the consumed generation primer.
+            self.state = State::Primed;
             return ParserResult::default();
         }
         let buffered = std::mem::take(&mut self.buffer);
@@ -284,24 +338,46 @@ impl ReasoningParser for InklingReasoningParser {
                     ParserResult::default()
                 } else {
                     ParserResult {
-                        normal_text: buffered,
+                        // A complete stray framing token is parser-owned markup,
+                        // even when no opening header ever established a state.
+                        // Strip it just as Idle does; ordinary marker-less prose
+                        // passes through unchanged.
+                        normal_text: strip_framing(&buffered),
                         reasoning_text: String::new(),
                     }
                 }
             }
-            // Block truncated before its `<|end_message|>`: flush what we have.
+            // While a block is open, `run` already emitted all ordinary payload and
+            // retained only a suffix that could complete an end marker. At EOF,
+            // preserve ambiguous prose (`<` / `<|`) but drop longer committed framing.
             State::InReasoning => ParserResult {
-                reasoning_text: buffered,
+                reasoning_text: flush_ambiguous_marker_prefix(&buffered),
                 normal_text: String::new(),
             },
-            State::InContent | State::InToolBlock => ParserResult {
+            State::InContent => ParserResult {
+                normal_text: flush_ambiguous_marker_prefix(&buffered),
+                reasoning_text: String::new(),
+            },
+            // Unlike reasoning/content, an unfinished tool block is buffered in
+            // full for downstream EOF recovery.
+            State::InToolBlock => ParserResult {
                 normal_text: buffered,
                 reasoning_text: String::new(),
             },
-            // Idle leftover is a held partial marker: parser-owned markup, so drop it.
-            State::Idle => ParserResult::default(),
+            // Truncated non-text placeholder block: only a held partial `<|end_message|>`
+            // remains (payload already dropped), so emit nothing.
+            State::InDiscard => ParserResult::default(),
+            // Idle leftover is a held proper prefix of a framing marker. `<` / `<|` is
+            // the ambiguous pre-commitment prefix shared by every marker and is commonly
+            // legitimate trailing prose, so preserve it as content (it is not a complete
+            // framing token, so nothing leaks). A longer prefix (e.g. `<|content_th`) is
+            // committed markup from a truncated header and is dropped so it can't leak.
+            State::Idle => ParserResult {
+                normal_text: flush_ambiguous_marker_prefix(&buffered),
+                reasoning_text: String::new(),
+            },
         };
-        self.state = State::Idle;
+        self.state = State::Primed;
         result
     }
 }
@@ -558,6 +634,198 @@ mod tests {
     }
 
     #[test]
+    fn batch_image_block_does_not_leak_into_normal_text() {
+        // Image/audio blocks are non-text placeholder data: neither framing nor payload
+        // may reach the content channel. Only the following text block surfaces.
+        let mut parser = InklingReasoningParser::new();
+        let result = parser.detect_and_parse_reasoning(
+            "<|message_model|><|content_image|>IMGDATA<|end_message|><|message_model|><|content_text|>done<|end_message|>",
+            &[],
+        );
+        assert_eq!(result.normal_text, "done");
+        assert_eq!(result.reasoning_text, "");
+        assert!(!result.normal_text.contains("IMGDATA"));
+        assert_no_framing_leak(&result.normal_text);
+    }
+
+    #[test]
+    fn batch_audio_block_does_not_leak_into_normal_text() {
+        let mut parser = InklingReasoningParser::new();
+        let result = parser.detect_and_parse_reasoning(
+            "<|message_model|><|content_audio_input|>AUDIOBYTES<|end_message|><|message_model|><|content_text|>hi<|end_message|>",
+            &[],
+        );
+        assert_eq!(result.normal_text, "hi");
+        assert_eq!(result.reasoning_text, "");
+        assert!(!result.normal_text.contains("AUDIOBYTES"));
+        assert_no_framing_leak(&result.normal_text);
+    }
+
+    #[test]
+    fn streaming_image_block_split_does_not_leak() {
+        let (reasoning, normal) = run_stream(&[
+            "<|message_model|><|content_ima",
+            "ge|>IMG<|end_mess",
+            "age|><|message_model|><|content_text|>ok<|end_message|>",
+        ]);
+        assert_eq!(normal, "ok");
+        assert_eq!(reasoning, "");
+        assert!(!normal.contains("IMG"));
+        assert_no_framing_leak(&normal);
+    }
+
+    #[test]
+    fn batch_prose_before_first_header_is_kept_clean() {
+        // Prose emitted before the first real `<|message_model|>` must surface as
+        // normal_text with the framing stripped; the thinking block routes to reasoning.
+        let mut parser = InklingReasoningParser::new();
+        let result = parser.detect_and_parse_reasoning(
+            "Hello. <|message_model|><|content_thinking|>think<|end_message|><|message_model|><|content_text|>done<|end_message|>",
+            &[],
+        );
+        assert_eq!(result.normal_text, "Hello. done");
+        assert_eq!(result.reasoning_text, "think");
+        assert_no_framing_leak(&result.normal_text);
+        assert_no_framing_leak(&result.reasoning_text);
+    }
+
+    #[test]
+    fn streaming_prose_before_first_header_is_kept_clean() {
+        let (reasoning, normal) = run_stream(&[
+            "Hello. <|message_model|><|content_thinking|>th",
+            "ink<|end_message|>",
+        ]);
+        assert_eq!(normal, "Hello. ");
+        assert_eq!(reasoning, "think");
+        assert_no_framing_leak(&normal);
+        assert_no_framing_leak(&reasoning);
+    }
+
+    #[test]
+    fn batch_prose_before_first_tool_header_routes_without_synthetic_header() {
+        let block = r#"<|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>"#;
+        let mut parser = InklingReasoningParser::new();
+        let result = parser.detect_and_parse_reasoning(&format!("Hello. {block}"), &[]);
+        assert_eq!(result.reasoning_text, "");
+        assert_eq!(result.normal_text, format!("Hello. {block}"));
+    }
+
+    #[test]
+    fn streaming_trailing_partial_angle_bracket_is_preserved_as_content() {
+        // A stream ending in a lone `<|` after a completed block is ambiguous
+        // pre-commitment prose, not a completed marker, so it is preserved as content
+        // (it can never be a full framing token, so nothing leaks). Longer committed
+        // header fragments are still dropped (see the Idle finish comment).
+        let (reasoning, normal) = run_stream(&["<|content_text|>ans<|end_message|>", "<|"]);
+        assert_eq!(normal, "ans<|");
+        assert_eq!(reasoning, "");
+    }
+
+    #[test]
+    fn streaming_trailing_truncated_header_fragment_is_dropped() {
+        // A committed header fragment (`<|content_th`) from a truncated block is
+        // parser-owned markup and must not leak into content.
+        let (reasoning, normal) =
+            run_stream(&["<|content_text|>ans<|end_message|>", "<|content_th"]);
+        assert_eq!(normal, "ans");
+        assert_eq!(reasoning, "");
+        assert_no_framing_leak(&normal);
+    }
+
+    #[test]
+    fn streaming_truncated_end_marker_is_dropped_from_open_blocks() {
+        let (reasoning, normal) = run_stream(&["<|content_thinking|>reason<|end_mes"]);
+        assert_eq!(reasoning, "reason");
+        assert_eq!(normal, "");
+
+        let (reasoning, normal) = run_stream(&["<|content_text|>answer<|end_mes"]);
+        assert_eq!(reasoning, "");
+        assert_eq!(normal, "answer");
+    }
+
+    #[test]
+    fn streaming_ambiguous_short_prefix_is_preserved_inside_open_block() {
+        let (reasoning, normal) = run_stream(&["<|content_text|>answer<|"]);
+        assert_eq!(reasoning, "");
+        assert_eq!(normal, "answer<|");
+    }
+
+    #[test]
+    fn streaming_parser_can_be_reused_after_finish() {
+        let mut parser = InklingReasoningParser::new();
+        let first = parser
+            .parse_reasoning_streaming_incremental("<|content_text|>first<|end_message|>", &[]);
+        assert_eq!(first.normal_text, "first");
+        let finished = parser.finish_reasoning_stream();
+        assert_eq!(finished.reasoning_text, "");
+        assert_eq!(finished.normal_text, "");
+
+        let second = parser.parse_reasoning_streaming_incremental(
+            "<|content_thinking|>second<|end_message|>",
+            &[],
+        );
+        assert_eq!(second.reasoning_text, "second");
+        assert_eq!(second.normal_text, "");
+    }
+
+    #[test]
+    fn streaming_matches_batch_at_every_single_split_boundary() {
+        let cases = [
+            REASONING_ANSWER,
+            REASONING_TOOL,
+            "<|content_thinking|>reason<|end_message|><|message_model|><|content_text|>answer<|end_message|>",
+            r#"<|message_model|>echo<|content_invoke_tool_json|>{"name":"echo","args":{"text":"a<|end_message|>b"}}<|end_message|>"#,
+            "<|message_model|><|content_image|>IMG<|end_message|><|message_model|><|content_text|>done<|end_message|>",
+        ];
+
+        for input in cases {
+            let mut batch_parser = InklingReasoningParser::new();
+            let expected = batch_parser.detect_and_parse_reasoning(input, &[]);
+            for split in input
+                .char_indices()
+                .map(|(idx, _)| idx)
+                .chain(std::iter::once(input.len()))
+            {
+                let (reasoning, normal) = run_stream(&[&input[..split], &input[split..]]);
+                assert_eq!(
+                    (reasoning, normal),
+                    (
+                        expected.reasoning_text.clone(),
+                        expected.normal_text.clone()
+                    ),
+                    "batch/stream mismatch at byte {split} for {input:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn tool_marker_literal_inside_json_survives_reasoning_stage() {
+        let block = r#"<|message_model|>echo<|content_invoke_tool_json|>{"name":"echo","args":{"text":"a<|end_message|>b"}}<|end_message|>"#;
+        let mut parser = InklingReasoningParser::new();
+        let batch = parser.detect_and_parse_reasoning(block, &[]);
+        assert_eq!(batch.reasoning_text, "");
+        assert_eq!(batch.normal_text, block);
+
+        let (reasoning, normal) = run_stream(&[
+            r#"<|message_model|>echo<|content_invoke_tool_json|>{"name":"echo","args":{"text":"a<|end_message|>"#,
+            r#"b"}}<|end_message|>"#,
+        ]);
+        assert_eq!(reasoning, "");
+        assert_eq!(normal, block);
+    }
+
+    #[test]
+    fn header_marker_literal_inside_headerless_tool_json_does_not_retarget_routing() {
+        let input = r#"echo<|content_invoke_tool_json|>{"name":"echo","args":{"text":"a<|message_model|>b"}}<|end_message|>"#;
+        let expected = format!("{MESSAGE_MODEL}{input}");
+        let mut parser = InklingReasoningParser::new();
+        let result = parser.detect_and_parse_reasoning(input, &[]);
+        assert_eq!(result.reasoning_text, "");
+        assert_eq!(result.normal_text, expected);
+    }
+
+    #[test]
     fn batch_empty_and_whitespace_stay_clean() {
         let mut parser = InklingReasoningParser::new();
         let empty = parser.detect_and_parse_reasoning("", &[]);
@@ -566,5 +834,13 @@ mod tests {
         let ws = parser.detect_and_parse_reasoning("   ", &[]);
         assert_eq!(ws.reasoning_text, "");
         assert_eq!(ws.normal_text, "");
+    }
+
+    #[test]
+    fn dangling_end_marker_is_stripped_without_an_open_block() {
+        let mut parser = InklingReasoningParser::new();
+        let result = parser.detect_and_parse_reasoning(END_MESSAGE, &[]);
+        assert_eq!(result.reasoning_text, "");
+        assert_eq!(result.normal_text, "");
     }
 }

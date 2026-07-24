@@ -1234,12 +1234,12 @@ impl JailedStream {
     /// version predates that exported field, so it can't be read yet; extend the
     /// list when a new family opts into the never-leak contract.
     // TODO: read `discard_unparseable_wrapper` from the parser config and drop
-    // this name allowlist (hermes/qwen25/jamba) once the `dynamo-parsers`
+    // this name allowlist (hermes/qwen25/jamba/inkling) once the `dynamo-parsers`
     // dependency is bumped to a version that exports the field.
     fn suppresses_tool_call_markup(&self) -> bool {
         matches!(
             self.tool_call_parser.as_deref(),
-            Some("hermes") | Some("qwen25") | Some("jamba")
+            Some("hermes") | Some("qwen25") | Some("jamba") | Some("inkling")
         )
     }
 
@@ -1364,6 +1364,31 @@ impl JailedStream {
     ) -> JailCompletion {
         match &self.jail_mode {
             JailMode::MarkerBased => {
+                // Inkling's end token may legally appear inside a JSON string
+                // argument, so the generic lexical marker scan cannot decide
+                // completion for this family. Delegate the boundary to the
+                // Inkling parser, which requires a complete JSON value followed
+                // by the real outer fence. This also keeps a complete JSON body
+                // without its fence jailed until finalize/EOF recovery.
+                if self.tool_call_parser.as_deref() == Some("inkling") {
+                    let Some(split_pos) =
+                        find_tool_call_end_position(accumulated_content, Some("inkling"))
+                    else {
+                        return JailCompletion::Incomplete;
+                    };
+                    let marker_parse_result = match self
+                        .parse_marker_tool_calls(&accumulated_content[..split_pos])
+                        .await
+                    {
+                        Ok(parsed) if !parsed.0.is_empty() => Some(Ok(parsed)),
+                        _ => None,
+                    };
+                    return JailCompletion::Complete(CompletedJail {
+                        split_pos,
+                        marker_parse_result,
+                    });
+                }
+
                 if let Some(parsed) = progress.pending_parse.take() {
                     match self
                         .completion_from_parsed_tool_calls(accumulated_content, parsed)
@@ -2171,6 +2196,13 @@ impl JailedStreamBuilder {
             if let Some(config) = parser_map.get(parser_name.as_str()) {
                 // Add start tokens from the parser config
                 all_patterns.extend(config.parser_config.tool_call_start_tokens());
+                if parser_name == "inkling" {
+                    // Catch an orphan `<|end_message|>` even though it is not a
+                    // tool-call opener. Otherwise a split close token bypasses
+                    // the jail and leaks as normal content. The Inkling parser
+                    // strips the parser-owned token when the stream finalizes.
+                    all_patterns.extend(config.parser_config.tool_call_end_tokens());
+                }
                 if let ParserConfig::Glm47(glm_config) = &config.parser_config
                     && let Some(tools) = self.tool_definitions.as_ref()
                 {

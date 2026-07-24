@@ -75,6 +75,9 @@ markers:
     pairs: [["<tool_call>", "</tool_call>"], ["<arg_key>", "</arg_key>"], ["<arg_value>", "</arg_value>"]]
   hermes:
     pairs: [["<tool_call>", "</tool_call>"]]
+  inkling:
+    pairs: [["<|content_invoke_tool_json|>", "<|end_message|>"]]
+    singletons: ["<|message_model|>", "<|content_model_end_sampling|>"]
   jamba:
     pairs: [["<tool_calls>", "</tool_calls>"]]
   kimi_k2:

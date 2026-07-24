@@ -417,7 +417,7 @@ pub fn find_tool_call_end_position(chunk: &str, parser_str: Option<&str>) -> Opt
             ),
             ParserConfig::Gemma4 => find_tool_call_end_position_gemma4(chunk),
             ParserConfig::Inkling(inkling_config) => {
-                Some(find_tool_call_end_position_inkling(chunk, inkling_config))
+                find_tool_call_end_position_inkling(chunk, inkling_config)
             }
         },
         None => Some(chunk.len()),

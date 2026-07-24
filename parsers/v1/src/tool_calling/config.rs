@@ -368,6 +368,10 @@ pub enum ParserConfig {
     Gemma4,
     /// Inkling uses `<|message_model|>NAME<|content_invoke_tool_json|>{...}<|end_message|>`
     /// framing around a `{"name":..., "args":{...}}` JSON object.
+    ///
+    /// This must be paired with the `inkling` reasoning parser: the shared
+    /// `<|message_model|>` token also opens thinking, text, image, and audio blocks,
+    /// which the reasoning stage routes before the tool jail sees them.
     Inkling(InklingParserConfig),
 }
 
@@ -814,7 +818,9 @@ impl ToolCallConfig {
     }
 
     /// Inkling tool calls: `args` (not `arguments`) plus a redundant `<|message_model|>`
-    /// header rule out the generic JSON parser. Grammar: [`crate::tool_calling::inkling`].
+    /// header rule out the generic JSON parser. Must be paired with the `inkling`
+    /// reasoning parser; see [`ParserConfig::Inkling`]. Grammar:
+    /// [`crate::tool_calling::inkling`].
     pub fn inkling() -> Self {
         Self {
             parser_config: ParserConfig::Inkling(InklingParserConfig::default()),
