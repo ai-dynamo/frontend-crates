@@ -308,6 +308,9 @@ impl Default for KimiK2ParserConfig {
     }
 }
 
+/// MiniMax M3 namespace token that prefixes its native XML tool-call tags.
+pub(crate) const MINIMAX_M3_TOOL_NAMESPACE: &str = "]<]minimax[>[";
+
 /// Configuration for MiniMax M3 namespace-token XML tool calls.
 ///
 /// Format:
@@ -332,7 +335,7 @@ pub struct MiniMaxM3ParserConfig {
 impl Default for MiniMaxM3ParserConfig {
     fn default() -> Self {
         Self {
-            namespace_token: "]<]minimax[>[".to_string(),
+            namespace_token: MINIMAX_M3_TOOL_NAMESPACE.to_string(),
             tool_call_tag: "tool_call".to_string(),
             allow_eof_recovery: false,
         }

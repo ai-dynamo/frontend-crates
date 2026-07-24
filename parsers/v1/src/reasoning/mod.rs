@@ -10,6 +10,7 @@ mod granite_parser;
 mod minimax_append_think_parser;
 
 // Re-export main types and functions for convenience
+pub(crate) use crate::tool_calling::config::MINIMAX_M3_TOOL_NAMESPACE;
 pub use base_parser::BasicReasoningParser;
 pub use gemma4_parser::Gemma4ReasoningParser;
 pub use gpt_oss_parser::{GptOssReasoningParser, harmony_terminator_token_ids};
@@ -20,11 +21,6 @@ pub use minimax_append_think_parser::MiniMaxAppendThinkParser;
 /// registration and its test fixtures so both stay in sync. Mirrors
 /// `KimiK2ParserConfig::default().section_start` in `crate::tool_calling::config`.
 pub(crate) const KIMI_K2_TOOL_SECTION_BEGIN: &str = "<|tool_calls_section_begin|>";
-
-/// MiniMax M3 namespace token that prefixes its native XML tool-call tags.
-/// The reasoning parser treats this as an alternate boundary because the model
-/// can begin a tool call without first emitting `</mm:think>`.
-pub(crate) const MINIMAX_M3_TOOL_NAMESPACE: &str = "]<]minimax[>[";
 
 static REASONING_PARSER_MAP: OnceLock<HashMap<&'static str, ReasoningParserType>> = OnceLock::new();
 
@@ -307,6 +303,7 @@ impl ReasoningParserType {
                         true,
                     )
                     .with_dangling_end_recovery()
+                    // M3 can begin a native tool call without `</mm:think>`.
                     .with_tool_start_token(MINIMAX_M3_TOOL_NAMESPACE),
                 ),
             },
@@ -475,40 +472,50 @@ mod tests {
     #[test] // MiniMax M3
     fn test_minimax_m3_native_tool_namespace_ends_prompt_prefilled_reasoning() {
         for parser_name in ["minimax_m3", "minimax-m3"] {
-            let mut parser = ReasoningParserType::get_reasoning_parser_from_name(parser_name);
-            parser.set_in_reasoning(true);
+            for prompt_prefilled_state_set in [false, true] {
+                let mut parser = ReasoningParserType::get_reasoning_parser_from_name(parser_name);
+                if prompt_prefilled_state_set {
+                    parser.set_in_reasoning(true);
+                }
 
-            let input = format!(
-                "reasoning{MINIMAX_M3_TOOL_NAMESPACE}<tool_call>\n\
-                 {MINIMAX_M3_TOOL_NAMESPACE}<invoke name=\"get_weather\">"
-            );
-            let result = parser.detect_and_parse_reasoning(&input, &[]);
-
-            assert_eq!(result.reasoning_text, "reasoning");
-            assert_eq!(
-                result.normal_text,
-                format!(
-                    "{MINIMAX_M3_TOOL_NAMESPACE}<tool_call>\n\
+                let input = format!(
+                    "reasoning{MINIMAX_M3_TOOL_NAMESPACE}<tool_call>\n\
                      {MINIMAX_M3_TOOL_NAMESPACE}<invoke name=\"get_weather\">"
-                )
-            );
+                );
+                let result = parser.detect_and_parse_reasoning(&input, &[]);
+
+                assert_eq!(
+                    result.reasoning_text, "reasoning",
+                    "parser {parser_name}, prompt-prefilled state set: \
+                     {prompt_prefilled_state_set}"
+                );
+                assert_eq!(
+                    result.normal_text,
+                    format!(
+                        "{MINIMAX_M3_TOOL_NAMESPACE}<tool_call>\n\
+                         {MINIMAX_M3_TOOL_NAMESPACE}<invoke name=\"get_weather\">"
+                    ),
+                    "parser {parser_name}, prompt-prefilled state set: \
+                     {prompt_prefilled_state_set}"
+                );
+            }
         }
     }
 
     #[test] // MiniMax M3
     fn test_minimax_m3_native_tool_namespace_is_lossless_across_stream_chunks() {
-        let chunkings = [
+        let mut chunkings = vec![vec![
+            "reasoning".to_string(),
+            MINIMAX_M3_TOOL_NAMESPACE.to_string(),
+            "<tool_call>".to_string(),
+        ]];
+        chunkings.extend((1..MINIMAX_M3_TOOL_NAMESPACE.len()).map(|split| {
+            let (namespace_prefix, namespace_suffix) = MINIMAX_M3_TOOL_NAMESPACE.split_at(split);
             vec![
-                "reasoning".to_string(),
-                MINIMAX_M3_TOOL_NAMESPACE.to_string(),
-                "<tool_call>".to_string(),
-            ],
-            vec![
-                "reasoning]<]mini".to_string(),
-                "max[>[".to_string(),
-                "<tool_call>".to_string(),
-            ],
-        ];
+                format!("reasoning{namespace_prefix}"),
+                format!("{namespace_suffix}<tool_call>"),
+            ]
+        }));
 
         for chunks in chunkings {
             let mut parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m3");
@@ -535,6 +542,124 @@ mod tests {
                 format!("{MINIMAX_M3_TOOL_NAMESPACE}<tool_call>"),
                 "namespace chunking {chunks:?} was not preserved for the tool parser"
             );
+        }
+    }
+
+    #[test] // MiniMax M3
+    fn test_minimax_m3_native_tool_namespace_recovers_implicit_streaming_reasoning() {
+        for parser_name in ["minimax_m3", "minimax-m3"] {
+            let chunkings = [
+                vec![format!("reasoning{MINIMAX_M3_TOOL_NAMESPACE}<tool_call>")],
+                vec![
+                    "reasoning]".to_string(),
+                    "<]minimax[>[<tool_call>".to_string(),
+                ],
+            ];
+
+            for chunks in chunkings {
+                let mut parser = ReasoningParserType::get_reasoning_parser_from_name(parser_name);
+                let results: Vec<_> = chunks
+                    .iter()
+                    .map(|chunk| parser.parse_reasoning_streaming_incremental(chunk, &[]))
+                    .collect();
+
+                assert_eq!(
+                    results
+                        .iter()
+                        .map(|result| result.reasoning_text.as_str())
+                        .collect::<String>(),
+                    "reasoning",
+                    "parser {parser_name}, chunks {chunks:?}"
+                );
+                assert_eq!(
+                    results
+                        .iter()
+                        .map(|result| result.normal_text.as_str())
+                        .collect::<String>(),
+                    format!("{MINIMAX_M3_TOOL_NAMESPACE}<tool_call>"),
+                    "parser {parser_name}, chunks {chunks:?}"
+                );
+            }
+        }
+    }
+
+    #[test] // MiniMax M3
+    fn test_minimax_m3_partial_implicit_namespace_fakeout_is_normal() {
+        for finish_after_prefix in [false, true] {
+            let mut parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m3");
+
+            let first = parser.parse_reasoning_streaming_incremental("plain]", &[]);
+            let second = if finish_after_prefix {
+                parser.finish_reasoning_stream()
+            } else {
+                parser.parse_reasoning_streaming_incremental("not-a-namespace", &[])
+            };
+
+            assert_eq!(
+                format!("{}{}", first.reasoning_text, second.reasoning_text),
+                ""
+            );
+            assert_eq!(
+                format!("{}{}", first.normal_text, second.normal_text),
+                if finish_after_prefix {
+                    "plain]"
+                } else {
+                    "plain]not-a-namespace"
+                }
+            );
+        }
+    }
+
+    #[test] // MiniMax M3
+    fn test_minimax_m3_explicit_normal_state_disables_implicit_namespace_recovery() {
+        let input = format!("normal{MINIMAX_M3_TOOL_NAMESPACE}<tool_call>");
+
+        let mut batch_parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m3");
+        batch_parser.set_in_reasoning(false);
+        let batch = batch_parser.detect_and_parse_reasoning(&input, &[]);
+
+        let mut stream_parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m3");
+        stream_parser.set_in_reasoning(false);
+        let streamed = stream_parser.parse_reasoning_streaming_incremental(&input, &[]);
+
+        for result in [batch, streamed] {
+            assert_eq!(result.reasoning_text, "");
+            assert_eq!(result.normal_text, input);
+        }
+    }
+
+    #[test] // MiniMax M3
+    fn test_minimax_m3_native_tool_namespace_with_empty_reasoning() {
+        let input = format!("{MINIMAX_M3_TOOL_NAMESPACE}<tool_call>");
+
+        let mut batch_parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m3");
+        batch_parser.set_in_reasoning(true);
+        let batch = batch_parser.detect_and_parse_reasoning(&input, &[]);
+
+        let mut stream_parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m3");
+        stream_parser.set_in_reasoning(true);
+        let streamed = stream_parser.parse_reasoning_streaming_incremental(&input, &[]);
+
+        for result in [batch, streamed] {
+            assert_eq!(result.reasoning_text, "");
+            assert_eq!(result.normal_text, input);
+        }
+    }
+
+    #[test] // MiniMax M3
+    fn test_minimax_m3_namespace_after_explicit_end_keeps_normal_prefix() {
+        let input = format!("reason</mm:think>answer{MINIMAX_M3_TOOL_NAMESPACE}<tool_call>");
+        let expected_normal = format!("answer{MINIMAX_M3_TOOL_NAMESPACE}<tool_call>");
+
+        let mut batch_parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m3");
+        let batch = batch_parser.detect_and_parse_reasoning(&input, &[]);
+
+        let mut stream_parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m3");
+        let streamed = stream_parser.parse_reasoning_streaming_incremental(&input, &[]);
+
+        for result in [batch, streamed] {
+            assert_eq!(result.reasoning_text, "reason");
+            assert_eq!(result.normal_text, expected_normal);
         }
     }
 
