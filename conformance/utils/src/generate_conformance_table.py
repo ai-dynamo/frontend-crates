@@ -347,6 +347,8 @@ def cell_for(
         )
         if kind == "div":
             parts.append(f"{letter}?" if unknown else letter)
+        elif kind == "exception":
+            parts.append(f"{letter}✗")
         elif kind == "err":
             parts.append(f"{letter}!")
 
@@ -1765,6 +1767,8 @@ def _output_block_model(blk: object) -> dict | None:
     out: dict[str, Any] = {}
     if "unavailable" in blk:
         out["unavailable"] = blk["unavailable"]
+    if "exception" in blk:
+        out["exception"] = blk["exception"]
     if "error" in blk:
         out["error"] = blk["error"]
     if "calls" in blk or "normal_text" in blk:

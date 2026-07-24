@@ -255,6 +255,7 @@ def _iter_intern_slots(page: dict) -> Iterator[tuple[Any, Any]]:
             if isinstance(b, dict):
                 yield b, "explanation"
                 yield b, "unavailable"
+                yield b, "exception"
 
 
 def _slot_get(container: Any, key: Any) -> Any:

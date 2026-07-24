@@ -523,11 +523,12 @@ def test_vllm_python_leak_marks_red_and_lightning() -> None:
     assert facts[S]["agrees"] is True
 
 
-def test_stream_v2_x_marker_shows_vllm_rust_error_message() -> None:
-    # A peer `unavailable` block whose reason shows the parser was invoked and THREW
-    # gets the `✗` error marker (distinct from a benign n/a). The message is surfaced in
-    # the model tooltip (JS-rendered); assert on the verdict + the model's output block.
-    error = "vLLM Rust parser not captured: tool parser parsing failed: invalid Hermes"
+def test_stream_v2_x_marker_shows_vllm_rust_exception_message() -> None:
+    # A peer `exception` block (the parser EXISTS, RAN, and RAISED — distinct from a
+    # benign `unavailable`) gets the `✗` error marker. The verbatim message (the named
+    # vLLM Rust crate variant) is surfaced in the model tooltip (JS-rendered); assert on
+    # the verdict + the model's output block carrying it verbatim.
+    exc = 'ToolParserError::ParsingFailed (near " not")'
     case = {
         "__family": "hermes",
         "__case_id": "TOOLCALLING.streamv2.4.a",
@@ -535,7 +536,7 @@ def test_stream_v2_x_marker_shows_vllm_rust_error_message() -> None:
         "description": "demo",
         "expected": {
             D: {"calls": [], "normal_text": ""},
-            R: {"unavailable": error},
+            R: {"exception": exc},
             V: {"calls": [], "normal_text": ""},
             S: {"calls": [], "normal_text": ""},
         },
@@ -544,11 +545,34 @@ def test_stream_v2_x_marker_shows_vllm_rust_error_message() -> None:
         ],
         "batch_expected": {D: {"calls": [], "normal_text": ""}},
     }
-    assert g._parser_marker(case, R) == "✗"  # invoked-and-threw error marker
+    assert g._parser_marker(case, R) == "✗"  # ran-and-threw error marker
     assert g._sob_status(case, R) == "problem"  # red
-    # The error message rides in the model's candidate output block (view shows it).
+    assert g._overview_status(case, R) == "problem"
+    # The exception rides verbatim in the model's candidate output block (view shows it).
     block = g._output_block_model(case["expected"][R])
-    assert block and block.get("unavailable") == error
+    assert block and block.get("exception") == exc
+
+
+def test_exception_reference_with_parsed_peer_reddens_cmp() -> None:
+    # When the selected Reference parser THREW but a compared parser produced real
+    # output, that is a genuine disagreement: the cmp payload marks the thrown Reference
+    # `err=1` (NOT `na`), and its signature differs from a parsed peer's, so the JS view
+    # reddens the cell. A genuinely-missing (`unavailable`) parser stays `na` (grey).
+    blocks = {
+        R: {"exception": 'ToolParserError::ParsingFailed (near " not")'},
+        D: {"calls": [{"name": "get_weather", "arguments": {}}], "normal_text": ""},
+        V: {"unavailable": "no vLLM Python parser for family X"},
+    }
+    cmp = g.markers.cmp_model(blocks)
+    # thrown Reference: not na, flagged err; a real peer is neither na nor err.
+    assert cmp[R]["err"] == 1 and cmp[R]["na"] == 0
+    assert cmp[D]["err"] == 0 and cmp[D]["na"] == 0
+    # a genuinely-missing parser is still na (grey), never a delta.
+    assert cmp[V]["na"] == 1 and cmp[V]["err"] == 0
+    # the thrown Reference and the parsed peer have different signatures (a delta).
+    assert cmp[R]["sig"] != cmp[D]["sig"]
+    # an exception's signature carries the verbatim message (diagnostic, not collapsed).
+    assert g.markers.candidate_sig(blocks[R]).startswith("exc:ToolParserError::ParsingFailed")
 
 
 # --------------------------------------------------------------------------- #

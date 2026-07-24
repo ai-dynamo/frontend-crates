@@ -499,12 +499,19 @@ def _derive_stream_expected(case: dict) -> dict:
     sets the call name; `arguments` fragments are concatenated and parsed as JSON
     (kept as a raw string if not valid JSON — e.g. a truncated body)."""
     unavailable = case.get("unavailable", {}) or {}
+    exception = case.get("exception", {}) or {}
     chunks = case.get("chunks", []) or []
     derived: dict = {}
     unavailable = _normalize_impl_mapping(unavailable)
+    exception = _normalize_impl_mapping(exception)
     for impl in IMPL_KEYS:
         if impl in unavailable:
             derived[impl] = {"unavailable": unavailable[impl]}
+            continue
+        # The parser ran and threw: a concrete failure block (surfaced verbatim), NOT a
+        # benign "not applicable". `exception` and `unavailable` are mutually exclusive.
+        if impl in exception:
+            derived[impl] = {"exception": exception[impl]}
             continue
         has_chunk_data = any(
             impl in _normalize_impl_mapping((chunk.get("expected") or {}))

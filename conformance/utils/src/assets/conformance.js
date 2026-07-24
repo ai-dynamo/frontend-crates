@@ -183,8 +183,24 @@
         cell.classList.add('cmp-na'); if (marker) { marker.textContent = 'n/a'; }
         if (countThis) { counts.na++; } toggleCands(cell, active, base); return;
       }
-      // Unavailable candidates never count toward the diff; still shown in tooltip.
-      const avail = shown.map(function (k) { return cmp[k]; }).filter(function (o) { return o && o.na !== 1; });
+      // Unavailable candidates (na) and candidates that ran-and-threw (err) never count
+      // toward the diff against a clean Reference; both are still shown in the tooltip.
+      const avail = shown.map(function (k) { return cmp[k]; })
+        .filter(function (o) { return o && o.na !== 1 && o.err !== 1; });
+      // The Reference parser itself RAN and THREW (err=1). A selected Compare that PARSED
+      // (a real, non-error output) is a genuine disagreement with the failed Reference ->
+      // red (a delta), not grey n/a. If nothing parsed to disagree with (no Compares, or
+      // every Compare also threw / is unavailable), there is no delta -> neutral grey.
+      if (bd.err === 1) {
+        if (avail.length > 0) {
+          cell.classList.add('cmp-leak'); if (marker) { marker.textContent = String(avail.length) + 'Δ'; }
+          if (countThis) { counts.problem++; }
+        } else {
+          cell.classList.add('cmp-na'); if (marker) { marker.textContent = 'n/a'; }
+          if (countThis) { counts.na++; }
+        }
+        toggleCands(cell, active, base); return;
+      }
       const diffs = avail.filter(function (o) { return o.sig !== bd.sig; }).length;
       const leak = bd.leak === 1;
       // GREEN = the Reference output is clean (no leaked tool-call markup). That holds

@@ -23,7 +23,8 @@ For tool-calling, the important fields are:
 | `expected.vllm_python` | vLLM Python parser output captured from the pinned Python package. |
 | `expected.sglang_python` | SGLang Python parser output captured from the pinned Python package. |
 | `captured_with.*` | Parser version used when output was captured. |
-| `unavailable.*` | A parser was not available or is intentionally TODO for this case. |
+| `unavailable.*` | The parser does NOT exist for this family (no detector / not exposed), or is an intentional TODO. Benign — the cell renders grey `n/a`. |
+| `exception.*` | The parser EXISTS and was run but RAISED on this input. `<msg>` is the verbatim exception (for vLLM Rust the named crate variant, e.g. `ToolParserError::ParsingFailed (near " not")`; for the Python peers `<ExceptionType>: <message>`). Distinct from `unavailable`: it renders the `✗` error marker, and when it is the selected Reference and a compared parser produced real output the cell reddens (a genuine disagreement), rather than grey `n/a`. |
 
 Fixture locations:
 

@@ -324,7 +324,9 @@ def test_v2_cmp_payload_shape(model_v2):
     for t in model_v2["tabs"]:
         for cell in _iter_cells(t):
             for key, entry in (cell.get("cmp") or {}).items():
-                assert set(entry) == {"sig", "leak", "na"}, entry
+                # `err` flags a candidate that ran and THREW (an `exception` block): not
+                # `na`, so a threw-Reference vs a parsed peer reddens the cell.
+                assert set(entry) == {"sig", "leak", "na", "err"}, entry
                 assert isinstance(entry["sig"], int)
 
 

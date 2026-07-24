@@ -77,8 +77,15 @@ def _merge_impl(base_doc, vdoc, impl):
         # parsers, not a refinement. Cases NOT listed here keep the lower version (the
         # normal changed-only-overlay behavior for peers). The two dynamo dirs cover
         # identical case sets, so v1 cleanly supersedes v2 with no stale-v2 leakage.
-        if "unavailable" in vc:
-            bc.setdefault("unavailable", {})[impl] = vc["unavailable"]
+        # `unavailable` (no such parser) and `exception` (parser ran and threw) are both
+        # case-level, per-impl states that supersede any lower-version chunk data. They
+        # are mutually exclusive for a given impl, so applying one clears the other.
+        if "unavailable" in vc or "exception" in vc:
+            state = "unavailable" if "unavailable" in vc else "exception"
+            other = "exception" if state == "unavailable" else "unavailable"
+            bc.setdefault(state, {})[impl] = vc[state]
+            if isinstance(bc.get(other), dict):
+                bc[other].pop(impl, None)
             for ch in bc.get("chunks") or []:
                 if isinstance(ch, dict):
                     (ch.get("expected") or {}).pop(impl, None)
@@ -87,6 +94,8 @@ def _merge_impl(base_doc, vdoc, impl):
             continue
         if isinstance(bc.get("unavailable"), dict):
             bc["unavailable"].pop(impl, None)
+        if isinstance(bc.get("exception"), dict):
+            bc["exception"].pop(impl, None)
         bchunks = bc.get("chunks") or []
         # Clear the impl from EVERY base chunk before applying this version's chunks.
         # A version doc may carry FEWER chunks than the base (the v1 jail records 2

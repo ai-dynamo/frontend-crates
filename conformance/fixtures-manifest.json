@@ -1,9 +1,9 @@
 {
-  "snapshot": "20260723_181253",
-  "created_pt": "2026-07-23 18:12:53 America/Los_Angeles",
+  "snapshot": "20260724_093417",
+  "created_pt": "2026-07-24 09:34:17 America/Los_Angeles",
   "crates": {
-    "dynamo-parsers": "5.1.0",
-    "dynamo-parsers-v2": "0.1.22"
+    "dynamo-parsers": "5.1.2",
+    "dynamo-parsers-v2": "0.1.23"
   },
   "peers": {
     "vllm": "0.25.1",
@@ -127,13 +127,13 @@
     },
     {
       "path": "toolcalling/fixtures-stream-v2/vllm_rust-0.23.0.tar.gz",
-      "sha256": "933169ec4c61990545d9b3231b6faf4f7f8a3bc246883010aafb62a86261149b",
-      "size": 12854
+      "sha256": "d2e9a567453112fcd46cab1f46f5a696cb39016f69feb23137f9a84f33a9c5a5",
+      "size": 12841
     },
     {
       "path": "toolcalling/fixtures-stream-v2/vllm_rust-0.25.1.tar.gz",
-      "sha256": "278f713cde4416b745044dd6f8644955e3ebdab8755a82578ccf88d56a4a2e63",
-      "size": 918
+      "sha256": "e5f4caeb5ff94cc14fae40b4d727ed342be242b3805abe597c4248ace86ba5fb",
+      "size": 2191
     }
   ]
 }

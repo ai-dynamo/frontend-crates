@@ -1663,6 +1663,11 @@ def _reasoning_cmp_from_blocks(
             "leak": 1 if (isinstance(block, dict) and _block_leak_reason(block, family)) else 0,
             # na = None/unavailable; still shown, but excluded from the diff count.
             "na": 1 if sig == "na" else 0,
+            # `err` keeps the cmp payload shape uniform with the tool-calling tabs
+            # (markers.cmp_model). The reasoning tab surfaces parser exceptions through
+            # its own `_python_exception_marker`, not the exception-block red path, so
+            # this stays 0 here.
+            "err": 0,
         }
     return out
 

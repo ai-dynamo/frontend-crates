@@ -574,10 +574,13 @@ def _rust_norm_deltas(deltas):
 
 
 def _rust_anchor_case_form(case):
-    """Comparable form of a vllm_rust anchor case. Both engines marking a case
-    unavailable counts as 'no divergence' regardless of message wording."""
+    """Comparable form of a vllm_rust anchor case. `unavailable` (no such parser) folds
+    by wording-independent identity; an `exception` (parser ran and threw) carries its
+    verbatim message so a changed error message across versions is a real divergence."""
     if "unavailable" in case:
         return ("unavail",)
+    if "exception" in case:
+        return ("exception", case["exception"])
     chunks = [
         (_rust_norm_deltas(ch.get("expected")), ch.get("normal_text") or "")
         for ch in (case.get("chunks") or [])
@@ -587,16 +590,19 @@ def _rust_anchor_case_form(case):
 
 
 def _rust_captured_case_form(cap):
-    """Comparable form of one probe case result (chunk list or {error})."""
+    """Comparable form of one probe case result (chunk list or {error}). A probe
+    `{error}` is a parser that RAN and threw -> `exception` (carry the message)."""
     if isinstance(cap, dict):  # {"error": ...}
-        return ("unavail",)
+        return ("exception", cap["error"])
     return ("chunks", [(_rust_norm_deltas(ch.get("deltas")), ch.get("normal_text") or "") for ch in cap])
 
 
 def _rust_captured_case_doc(cap):
-    """0.23.0-shaped case dict for the overlay from one probe case result."""
+    """0.23.0-shaped case dict for the overlay from one probe case result. A thrown
+    parser is recorded as a verbatim `exception` (the named `ToolParserError` variant),
+    NOT `unavailable` — the parser exists and ran, it just failed on this input."""
     if isinstance(cap, dict):  # {"error": ...}
-        return {"unavailable": f"vllm_rust parser not captured: {cap['error']}"}
+        return {"exception": cap["error"]}
     chunks = []
     for ch in cap:
         entry = {"expected": _rust_norm_deltas(ch.get("deltas"))}

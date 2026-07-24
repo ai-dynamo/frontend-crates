@@ -93,11 +93,12 @@ def peer_status(case: dict, dyn: dict, impl: str) -> tuple[str, bool]:
     """Returns (kind, is_unknown).
 
     kind:
-      'na'      — peer key missing from `expected:` (block not recorded)
-      'match'   — peer is anchor ref to Dynamo Rust, or value-equal to Dynamo Rust
-      'unavail' — peer block is `{unavailable: <msg>}`
-      'err'     — peer block is `{error: <substring>}`
-      'div'     — peer block is a concrete divergent {calls, normal_text}
+      'na'        — peer key missing from `expected:` (block not recorded)
+      'match'     — peer is anchor ref to Dynamo Rust, or value-equal to Dynamo Rust
+      'unavail'   — peer block is `{unavailable: <msg>}` (parser does not exist here)
+      'exception' — peer block is `{exception: <msg>}` (parser ran and RAISED)
+      'err'       — peer block is `{error: <substring>}`
+      'div'       — peer block is a concrete divergent {calls, normal_text}
     is_unknown is True iff kind == 'div' AND block has no `explanation:`.
     """
     block = _impl_get(case.get("expected") or {}, impl)
@@ -109,6 +110,8 @@ def peer_status(case: dict, dyn: dict, impl: str) -> tuple[str, bool]:
         return ("na", False)
     if "unavailable" in block:
         return ("unavail", False)
+    if "exception" in block:
+        return ("exception", False)
     if "error" in block:
         return ("err", False)
     if "calls" in block or "normal_text" in block:
@@ -202,6 +205,14 @@ def _block_tool_call_leaks(block: dict) -> bool:
     )
 
 
+def _is_exception(block: object) -> bool:
+    """The parser EXISTS for this family, RAN, and RAISED — a distinct signal from
+    `unavailable` (no such parser). `<msg>` is the verbatim exception (for vLLM Rust the
+    named crate variant, e.g. `ToolParserError::ParsingFailed (near " not")`; for the
+    Python peers `<ExceptionType>: <message>`)."""
+    return isinstance(block, dict) and "exception" in block
+
+
 def _overview_status(case: dict | None, impl: str) -> str:
     if case is None or "expected" not in case:
         return "na"
@@ -213,7 +224,8 @@ def _overview_status(case: dict | None, impl: str) -> str:
         # n/a (like the v1 table, which has no "TODO" concept) — not a distinct
         # orange "todo" state.
         return "na"
-    if "error" in block or _block_tool_call_leaks(block):
+    # A parser that ran and threw is a real problem (distinct from a benign n/a).
+    if _is_exception(block) or "error" in block or _block_tool_call_leaks(block):
         return "problem"
     return "ok"
 
@@ -223,7 +235,8 @@ def _impl_keys_for_output_kind(output_kind: str) -> tuple[str, ...]:
 
 
 def _canonical_tool_output(block: object) -> dict | None:
-    if not isinstance(block, dict) or "unavailable" in block or "error" in block:
+    if (not isinstance(block, dict) or "unavailable" in block
+            or "exception" in block or "error" in block):
         return None
     if "calls" not in block and "normal_text" not in block:
         return None
@@ -279,6 +292,9 @@ def _parser_marker(case: dict | None, impl: str) -> str:
         # Un-implemented Dynamo v2 family: plain neutral n/a, no distinct "…" TODO
         # marker (matches the v1 table's clean look; see _overview_status).
         return "n/a"
+    if _is_exception(block):
+        # The parser ran and threw -> the same `✗` error marker as a structured error.
+        return "✗"
     if "error" in block:
         # B11: a structured (dict) error = a peer parser ran and threw -> `✗`;
         # a plain-string error is a declared expected-error -> `!`.
@@ -364,7 +380,7 @@ def _sob_status(case: dict | None, impl: str) -> str:
         if _is_parser_error_unavailable(stream):
             return "problem"
         return "na"
-    if "error" in stream or _block_tool_call_leaks(stream):
+    if _is_exception(stream) or "error" in stream or _block_tool_call_leaks(stream):
         return "problem"
     consistent = _sob_calls_consistent(case, impl)
     if consistent is None:
@@ -451,6 +467,10 @@ def candidate_sig(block: object) -> str:
     """Canonical signature of a candidate's output; equal signatures = same output."""
     if not isinstance(block, dict) or "unavailable" in block:
         return "na"
+    if "exception" in block:
+        # A parser that RAN and threw is NOT `na`: it is a concrete (failed) result, so
+        # a peer with real output genuinely disagrees with it (colored, not excluded).
+        return f"exc:{block.get('exception')}"
     if "error" in block:
         return f"err:{block.get('error')}"
     calls = [_canon_call_for_sig(c) for c in block.get("calls") or []]
@@ -474,6 +494,10 @@ def cmp_model(blocks: dict) -> dict[str, dict]:
             "sig": ids.setdefault(sig, len(ids)),
             "leak": 1 if (isinstance(block, dict) and _block_tool_call_leaks(block)) else 0,
             "na": 1 if sig == "na" else 0,
+            # `err` = this candidate ran and THREW. Not `na` (it produced a concrete
+            # failure), so the view reddens the cell when a threw-Reference is compared
+            # against a peer that parsed. See conformance.js applyCtl.
+            "err": 1 if _is_exception(block) else 0,
         }
     return out
 
@@ -486,6 +510,8 @@ def _error_kind(block: object) -> str | None:
         return None
     if "unavailable" in block:
         return "parser_error" if _is_parser_error_unavailable(block) else "unavailable"
+    if "exception" in block:
+        return "parser_error"
     if "error" in block:
         return "parser_error" if isinstance(block["error"], dict) else "expected_error"
     return None

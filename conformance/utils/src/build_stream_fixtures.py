@@ -190,21 +190,27 @@ def main():
             L.append("    tools:")
             L.append(_indent(yaml.safe_dump(case["tools"], default_flow_style=False,
                                             allow_unicode=True, sort_keys=False).rstrip(), 4))
-        # unavailable block
+        # unavailable block (parser does NOT exist for this family)
         case_unavail = dict(unavail)
-        # Per-case capture errors: the probe emits {"error": ...} for a case the
-        # parser rejected (e.g. garbage/incomplete tool call). That's expected
-        # behavior for some edge cases, not a chunk list — record it as a
-        # case-level unavailable so the per-chunk loop below skips the impl.
+        # Per-case capture errors: the probe emits {"error": ...} for a case the parser
+        # RAN on and REJECTED (e.g. garbage/incomplete tool call). That is a thrown
+        # parser exception, not a missing parser — record it as a case-level `exception`
+        # (the verbatim error; vLLM Rust's is the named `ToolParserError` variant) so the
+        # per-chunk loop below skips the impl and the renderer surfaces it distinctly.
+        case_exception = {}
         for impl in IMPL_KEYS:
             if impl in case_unavail or impl in na_impls:
                 continue
             cap = caps.get(impl, {}).get(cid)
             if isinstance(cap, dict):
-                case_unavail[impl] = f"{impl} parser not captured: {cap.get('error', 'capture failed')}"
+                case_exception[impl] = cap.get("error", "capture failed")
         if case_unavail:
             L.append("    unavailable:")
             for impl, reason in case_unavail.items():
+                L.append(f"      {impl}: {_q(reason)}")
+        if case_exception:
+            L.append("    exception:")
+            for impl, reason in case_exception.items():
                 L.append(f"      {impl}: {_q(reason)}")
         # chunks
         L.append("    chunks:")
@@ -220,7 +226,7 @@ def main():
             exp_lines = []
             nt_lines = []
             for impl in IMPL_KEYS:
-                if impl in case_unavail or impl in na_impls:
+                if impl in case_unavail or impl in case_exception or impl in na_impls:
                     continue
                 cap = caps.get(impl, {}).get(cid)
                 if cap is None:

@@ -160,6 +160,20 @@ fn output_chunk(result: &ToolParserOutput) -> OutputChunk {
     }
 }
 
+// A thrown parser error, named by its crate enum variant so the fixture surfaces the
+// real diagnostic (e.g. `ToolParserError::ParsingFailed (near " not")`) instead of a
+// bare, type-less message. Downcast the anyhow wrapper back to the crate error; fall
+// back to the anyhow chain only for errors this probe can't name.
+fn error_detail(error: &anyhow::Error) -> String {
+    match error.downcast_ref::<vllm_parser::tool::ToolParserError>() {
+        Some(vllm_parser::tool::ToolParserError::ParsingFailed { message }) => {
+            format!("ToolParserError::ParsingFailed ({message})")
+        }
+        Some(other) => format!("ToolParserError::{other:?}"),
+        None => format!("{error:#}"),
+    }
+}
+
 fn assembled_call_map(result: &ToolParserOutput) -> Vec<Value> {
     let mut order = Vec::<usize>::new();
     let mut names = BTreeMap::<usize, String>::new();
@@ -212,7 +226,7 @@ fn run_stream(input: Input) -> anyhow::Result<Value> {
                 out.insert(case_id, value);
             }
             Err(error) => {
-                out.insert(case_id, json!({"error": format!("{error:#}")}));
+                out.insert(case_id, json!({"error": error_detail(&error)}));
             }
         }
     }
@@ -244,7 +258,7 @@ fn run_batch_on_stream(input: Input) -> anyhow::Result<Value> {
             }
             Ok(None) => {}
             Err(error) => {
-                out.insert(case_id, json!({"error": format!("{error:#}")}));
+                out.insert(case_id, json!({"error": error_detail(&error)}));
             }
         }
     }
