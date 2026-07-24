@@ -1,12 +1,12 @@
 {
-  "snapshot": "20260717_113426",
-  "created_pt": "2026-07-17 11:34:26 America/Los_Angeles",
+  "snapshot": "20260723_181253",
+  "created_pt": "2026-07-23 18:12:53 America/Los_Angeles",
   "crates": {
-    "dynamo-parsers": "5.0.1",
+    "dynamo-parsers": "5.1.0",
     "dynamo-parsers-v2": "0.1.22"
   },
   "peers": {
-    "vllm": "0.24.0",
+    "vllm": "0.25.1",
     "sglang": "0.5.14"
   },
   "shards": [
@@ -26,9 +26,14 @@
       "size": 1368
     },
     {
+      "path": "reasoning/fixtures-v1/vllm_python-0.25.1.tar.gz",
+      "sha256": "df40f4c9c5063cddab25698e56ea494aaeb85dc996c708bf0e25cdc2d030c05a",
+      "size": 1482
+    },
+    {
       "path": "toolcalling/fixtures-batch-on-stream-v2.tar.gz",
-      "sha256": "ca3f863df80647ab171a3a3ab7ae58839fbfabe0aae942c7299cb20751850bf7",
-      "size": 15168
+      "sha256": "873ccf49f794c36648ecd607ae1e91d262f60f7afb2cdae9d9294639539bcc45",
+      "size": 16176
     },
     {
       "path": "toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz",
@@ -64,6 +69,11 @@
       "path": "toolcalling/fixtures-batch-v1/vllm_python-0.24.0.tar.gz",
       "sha256": "aa07d8530555c6742da8625a3b49385e05408410a45a843cec339997b520aa89",
       "size": 2258
+    },
+    {
+      "path": "toolcalling/fixtures-batch-v1/vllm_python-0.25.1.tar.gz",
+      "sha256": "519bf164e6ccbc0fa25ff47309e844c7c6153772fb41803690861f514fa49ca1",
+      "size": 2656
     },
     {
       "path": "toolcalling/fixtures-stream-v2/dynamo_v1-3.0.0.tar.gz",
@@ -111,9 +121,19 @@
       "size": 3468
     },
     {
+      "path": "toolcalling/fixtures-stream-v2/vllm_python-0.25.1.tar.gz",
+      "sha256": "7e62b75679e22d7ad781674606bf72ea7e3d475463ffd4da6f985bfb45f83315",
+      "size": 5382
+    },
+    {
       "path": "toolcalling/fixtures-stream-v2/vllm_rust-0.23.0.tar.gz",
       "sha256": "933169ec4c61990545d9b3231b6faf4f7f8a3bc246883010aafb62a86261149b",
       "size": 12854
+    },
+    {
+      "path": "toolcalling/fixtures-stream-v2/vllm_rust-0.25.1.tar.gz",
+      "sha256": "278f713cde4416b745044dd6f8644955e3ebdab8755a82578ccf88d56a4a2e63",
+      "size": 918
     }
   ]
 }

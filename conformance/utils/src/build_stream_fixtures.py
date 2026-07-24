@@ -62,10 +62,10 @@ def _vllm_rust_source_version(source):
     if not source:
         return None
     root = Path(source).expanduser().resolve()
-    crate = root / "rust/src/tool-parser/Cargo.toml"
+    crate = root / "rust/src/parser/Cargo.toml"
     if not crate.exists():
         raise SystemExit(
-            f"vLLM Rust source path {root} does not contain rust/src/tool-parser/Cargo.toml"
+            f"vLLM Rust source path {root} does not contain rust/src/parser/Cargo.toml"
         )
     try:
         sha = subprocess.check_output(

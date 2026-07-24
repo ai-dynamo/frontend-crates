@@ -97,7 +97,13 @@ Change parser code under `parsers/v2/` when Dynamo behavior is wrong. When fixtu
 
 Use the same pattern for capture commands: `conformance/utils/capture.sh <target> ...`. The `stream` and `batch-on-stream` targets capture v2 fixture YAMLs locally. The `dynamo-stream`, `dynamo-batch-on-stream`, and `token-ids` targets capture local Dynamo Rust behavior or token IDs. After capturing, rebuild + commit the shard store with `package_fixtures.py`.
 
-`capture.sh` is not the v1 batch rewrite tool. Dynamo v1 batch, vLLM Python batch, and SGLang Python batch are verified in Section 1 against extracted fixtures. Update those YAMLs locally and re-package when the expected batch output changes.
+`capture.sh` is not the v1 batch rewrite tool for the Dynamo `expected.dynamo_v1` blocks — those are verified in Section 1 against extracted fixtures; update the YAMLs locally and re-package when the expected batch output changes.
+
+Peer (vLLM Python) columns, by contrast, are re-captured as changed-only version overlays against a new engine version, mirroring `capture_streamv2_versions.py` (TC stream):
+- `capture_batch_versions.py` — runs vLLM's non-streaming `extract_tool_calls` over the `fixtures-batch-v1/inputs/` seeds and writes `fixtures-batch-v1/vllm_python-<ver>/` (TC batch tab).
+- `capture_reasoning_versions.py` — runs vLLM's reasoning parser over the `reasoning/fixtures-v1/inputs/` seeds and writes `reasoning/fixtures-v1/vllm_python-<ver>/` (Reasoning tab).
+
+Both read the version live from the container's `vllm.__version__`, write only cases that diverge from the lowest-version anchor, never touch existing version dirs (append-only), and skip (never fabricate) cases the parser can't run in-container. Run them against `vllm-localdev`, then `package_fixtures.py`.
 
 Harmony fixture paths below are examples only. Harmony is not the intended scope limit. As DS4 and the other v2 stream parsers land, use the same commands with those fixture paths and families.
 

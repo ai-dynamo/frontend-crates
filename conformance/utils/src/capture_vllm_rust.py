@@ -4,8 +4,10 @@
 """Capture fixture output through the vLLM Rust tool-parser crate.
 
 This runs on the host. It builds a small temporary Rust binary that depends on
-`vllm-tool-parser` by path from a checked-out vLLM source tree, then feeds the
-fixture cases to the requested parser.
+`vllm-parser` by path from a checked-out vLLM source tree (crate renamed from
+`vllm-tool-parser` and moved to `rust/src/parser` in vLLM 0.25.x; the tool
+parsers now live under `vllm_parser::tool`), then feeds the fixture cases to the
+requested parser.
 """
 
 from __future__ import annotations
@@ -34,10 +36,11 @@ use std::io::{self, Read};
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use vllm_tool_parser::{
+use vllm_parser::tool::{
     DeepSeekV31ToolParser, DeepSeekV32ToolParser, DeepSeekV3ToolParser, DeepSeekV4ToolParser,
-    Gemma4ToolParser, Glm47MoeToolParser, HermesToolParser, KimiK2ToolParser,
-    Llama3JsonToolParser, MinimaxM2ToolParser, MistralToolParser, Qwen3CoderToolParser,
+    Glm45MoeToolParser, Glm47MoeToolParser, Granite4ToolParser, HermesToolParser, HyV3ToolParser,
+    Internlm2ToolParser, KimiK2ToolParser, Llama3JsonToolParser, MinimaxM2ToolParser,
+    MinimaxM3ToolParser, MistralToolParser, Phi4MiniJsonToolParser, Qwen3CoderToolParser,
     Qwen3XmlToolParser, Tool, ToolCallDelta, ToolParser, ToolParserOutput,
 };
 
@@ -110,53 +113,63 @@ fn create_parser(parser: &str, tools: &[Tool]) -> anyhow::Result<Box<dyn ToolPar
         "deepseek_v31" | "deepseek_v3_1" => Ok(DeepSeekV31ToolParser::create(tools)?),
         "deepseek_v32" | "deepseek_v3_2" => Ok(DeepSeekV32ToolParser::create(tools)?),
         "deepseek_v4" => Ok(DeepSeekV4ToolParser::create(tools)?),
-        "gemma4" => Ok(Gemma4ToolParser::create(tools)?),
+        // gemma4 lost its `tool::ToolParser` implementation in vLLM 0.25.0: it is now
+        // a native unified parser (`vllm_parser::unified::Gemma4UnifiedParser`) driven
+        // by a different, tokenizer-backed API and cannot be built through this probe.
+        "gemma4" => anyhow::bail!(
+            "gemma4 moved to the native unified parser in vLLM 0.25.0; \
+             not exposed via the tool::ToolParser probe"
+        ),
+        "glm45" | "glm45_moe" => Ok(Glm45MoeToolParser::create(tools)?),
         "glm47" | "glm47_moe" => Ok(Glm47MoeToolParser::create(tools)?),
+        "granite4" => Ok(Granite4ToolParser::create(tools)?),
         "hermes" => Ok(HermesToolParser::create(tools)?),
+        "hy_v3" => Ok(HyV3ToolParser::create(tools)?),
+        "internlm2" => Ok(Internlm2ToolParser::create(tools)?),
         "kimi_k2" => Ok(KimiK2ToolParser::create(tools)?),
         "llama3_json" => Ok(Llama3JsonToolParser::create(tools)?),
         "minimax_m2" => Ok(MinimaxM2ToolParser::create(tools)?),
+        "minimax_m3" => Ok(MinimaxM3ToolParser::create(tools)?),
         "mistral" => Ok(MistralToolParser::create(tools)?),
+        "phi4" | "phi4_mini_json" => Ok(Phi4MiniJsonToolParser::create(tools)?),
         "qwen3_coder" => Ok(Qwen3CoderToolParser::create(tools)?),
         "qwen3_xml" => Ok(Qwen3XmlToolParser::create(tools)?),
         _ => anyhow::bail!("unsupported vLLM Rust parser: {parser}"),
     }
 }
 
-fn output_delta(delta: ToolCallDelta) -> OutputDelta {
+// vLLM 0.25.x reworked `ToolParserOutput` into an ordered `events` list; the tool
+// calls and plain text are read back through the `calls()` / `normal_text()`
+// accessors rather than the old public `calls` / `normal_text` fields.
+fn output_delta(delta: &ToolCallDelta) -> OutputDelta {
     OutputDelta {
         index: delta.tool_index,
-        name: delta.name,
+        name: delta.name.clone(),
         arguments: if delta.arguments.is_empty() {
             None
         } else {
-            Some(delta.arguments)
+            Some(delta.arguments.clone())
         },
     }
 }
 
-fn output_chunk(result: ToolParserOutput) -> OutputChunk {
+fn output_chunk(result: &ToolParserOutput) -> OutputChunk {
     OutputChunk {
-        deltas: result.calls.into_iter().map(output_delta).collect(),
-        normal_text: result.normal_text,
+        deltas: result.calls().into_iter().map(output_delta).collect(),
+        normal_text: result.normal_text(),
     }
 }
 
-fn append_result(out: &mut ToolParserOutput, mut next: ToolParserOutput) {
-    out.normal_text.push_str(&next.normal_text);
-    out.calls.append(&mut next.calls);
-}
-
-fn assembled_call_map(result: ToolParserOutput) -> Vec<Value> {
+fn assembled_call_map(result: &ToolParserOutput) -> Vec<Value> {
     let mut order = Vec::<usize>::new();
     let mut names = BTreeMap::<usize, String>::new();
     let mut args = BTreeMap::<usize, String>::new();
-    for call in result.calls {
+    for call in result.calls() {
         if !order.contains(&call.tool_index) {
             order.push(call.tool_index);
         }
-        if let Some(name) = call.name {
-            names.entry(call.tool_index).or_default().push_str(&name);
+        if let Some(name) = &call.name {
+            names.entry(call.tool_index).or_default().push_str(name);
         }
         args.entry(call.tool_index).or_default().push_str(&call.arguments);
     }
@@ -188,9 +201,9 @@ fn run_stream(input: Input) -> anyhow::Result<Value> {
                 let mut result = ToolParserOutput::default();
                 parser.parse_into(&chunk.delta_text, &mut result)?;
                 if chunk.finish_reason.is_some() {
-                    append_result(&mut result, parser.finish()?);
+                    result.append(parser.finish()?);
                 }
-                chunks.push(output_chunk(result));
+                chunks.push(output_chunk(&result));
             }
             Ok(serde_json::to_value(chunks)?)
         })();
@@ -215,9 +228,9 @@ fn run_batch_on_stream(input: Input) -> anyhow::Result<Value> {
             let mut result = ToolParserOutput::default();
             if let Some(model_text) = case.model_text {
                 parser.parse_into(&model_text, &mut result)?;
-                append_result(&mut result, parser.finish()?);
-                let normal_text = std::mem::take(&mut result.normal_text);
-                let calls = assembled_call_map(result);
+                result.append(parser.finish()?);
+                let normal_text = result.normal_text();
+                let calls = assembled_call_map(&result);
                 return Ok(Some(json!({
                     "calls": calls,
                     "normal_text": normal_text,
@@ -274,7 +287,7 @@ edition = "2024"
 anyhow = "1"
 serde = {{ version = "1", features = ["derive"] }}
 serde_json = "1"
-vllm-tool-parser = {{ path = {json.dumps(str(crate_path))} }}
+vllm-parser = {{ path = {json.dumps(str(crate_path))} }}
 """
     (project_dir / "Cargo.toml").write_text(textwrap.dedent(cargo_toml).lstrip(), encoding="utf-8")
     (project_dir / "src/main.rs").write_text(RUST_MAIN, encoding="utf-8")
@@ -282,9 +295,9 @@ vllm-tool-parser = {{ path = {json.dumps(str(crate_path))} }}
 
 def _run_probe(source: str, payload: dict, work: str | None) -> dict:
     root = Path(source).expanduser().resolve()
-    crate_path = root / "rust/src/tool-parser"
+    crate_path = root / "rust/src/parser"
     if not crate_path.joinpath("Cargo.toml").exists():
-        raise SystemExit(f"vLLM Rust source path {root} does not contain rust/src/tool-parser/Cargo.toml")
+        raise SystemExit(f"vLLM Rust source path {root} does not contain rust/src/parser/Cargo.toml")
     work_root = Path(work) if work else Path(tempfile.mkdtemp(prefix="vllm_rust_probe_"))
     project_dir = work_root / "probe"
     input_path = work_root / "vllm_rust_probe_input.json"

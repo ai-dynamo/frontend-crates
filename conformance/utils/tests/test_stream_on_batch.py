@@ -225,9 +225,9 @@ def test_vllm_rust_batch_capture_groups_by_parser(monkeypatch, tmp_path) -> None
 
 def test_build_stream_fixture_records_vllm_rust_source(monkeypatch, tmp_path) -> None:
     source_root = tmp_path / "vllm-src"
-    (source_root / "rust/src/tool-parser").mkdir(parents=True)
-    (source_root / "rust/src/tool-parser/Cargo.toml").write_text(
-        "[package]\nname = 'vllm-tool-parser'\n",
+    (source_root / "rust/src/parser").mkdir(parents=True)
+    (source_root / "rust/src/parser/Cargo.toml").write_text(
+        "[package]\nname = 'vllm-parser'\n",
         encoding="utf-8",
     )
     source = tmp_path / "source.yaml"
@@ -276,9 +276,9 @@ def test_build_stream_fixture_records_vllm_rust_source(monkeypatch, tmp_path) ->
 
 def test_build_stream_fixture_uses_vllm_rust_capture(monkeypatch, tmp_path) -> None:
     source_root = tmp_path / "vllm-src"
-    (source_root / "rust/src/tool-parser").mkdir(parents=True)
-    (source_root / "rust/src/tool-parser/Cargo.toml").write_text(
-        "[package]\nname = 'vllm-tool-parser'\n",
+    (source_root / "rust/src/parser").mkdir(parents=True)
+    (source_root / "rust/src/parser/Cargo.toml").write_text(
+        "[package]\nname = 'vllm-parser'\n",
         encoding="utf-8",
     )
     source = tmp_path / "source.yaml"
