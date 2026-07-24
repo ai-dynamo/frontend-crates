@@ -4,9 +4,16 @@
 
 This module owns the *comparison* logic — given the captured `expected:` blocks for
 each implementation, decide each cell's status (`ok`/`problem`/`na`/`todo`), the
-per-engine parser marker (`=`, `↯`, `!`, `✗`, `n/a`, `…`, `·`), and the cross-engine
-conformance markers (`D_rb`, `V_ps`, `S_rs`, …). It is deliberately split out from the
-HTML rendering so a UI change cannot accidentally change parser comparison logic.
+per-engine parser marker (`=`, `↯`, `!`, `✗`, `n/a`, `…`, `·`), and the structured
+cross-engine comparison facts (`comparison_facts()`) that the JSON model/JS view
+render. It is deliberately split out from the HTML rendering so a UI change cannot
+accidentally change parser comparison logic.
+
+The page never shows the old parser-marker shorthand codes (the per-engine
+subscript letters). `cell_for` / `_stream_xeng_marker` still emit those compact
+strings, but only as an INTERNAL representation the stats aggregator buckets on
+(`_compute_stats`); user-facing terminology uses the full descriptive labels
+("vLLM Python stream parser", "Dynamo Rust batch parser", …).
 
 Identity (keys/aliases/display/letters) comes from `impls.py`; this module has no
 dependency on the rendering, fixture-loading, or tooltip code, so it is the leaf of
@@ -226,69 +233,6 @@ def _canonical_tool_output(block: object) -> dict | None:
     }
 
 
-def _selected_parity_marker(
-    case: dict | None,
-    impl: str,
-    impl_keys: tuple[str, ...] = BATCH_IMPL_KEYS,
-    marker_mode: str | None = _BATCH_MODE_MARKER,
-) -> str | None:
-    """Cross-engine conformance marker (batch / stream tabs): the letters of the
-    other engines whose canonical output differs from the selected one (`=` when
-    all three agree). Returns None — the caller falls back to the per-engine status
-    marker — when any engine lacks output. (The stream tabs do NOT use this; their
-    color carries stream-vs-own-batch (`_sob_status`) and their marker carries
-    cross-engine STREAM agreement (`_stream_xeng_marker`).)
-    """
-    if case is None or "expected" not in case:
-        return None
-    if impl not in impl_keys:
-        return None
-    expected = _expected(case)
-    outputs = {
-        eng: _canonical_tool_output(_impl_get(expected, eng))
-        for eng in impl_keys
-    }
-    if outputs.get(impl) is None:
-        return None
-    available = {eng: out for eng, out in outputs.items() if out is not None}
-    if len(available) < 2:
-        return None
-    if len({json.dumps(out, ensure_ascii=False, sort_keys=True) for out in available.values()}) == 1:
-        return "="
-    selected = outputs[impl]
-    marker = "".join(
-        (
-            _impl_mode_letter(peer) + _impl_mode_suffix(peer, marker_mode)
-            if marker_mode is not None
-            else ENGINE_LETTER[peer]
-        )
-        for peer in impl_keys
-        if peer != impl and outputs[peer] is not None and outputs[peer] != selected
-    )
-    return marker or "="
-
-
-def _selected_parity_suffix(case: dict | None, impl: str) -> str:
-    if case is None or "expected" not in case:
-        return ""
-    block = _impl_get(case.get("expected") or {}, impl)
-    if isinstance(block, dict) and _block_tool_call_leaks(block):
-        return "↯"
-    return ""
-
-
-def _parity_marker(
-    case: dict | None,
-    impl: str,
-    impl_keys: tuple[str, ...] = BATCH_IMPL_KEYS,
-    marker_mode: str | None = _BATCH_MODE_MARKER,
-) -> str:
-    marker = _selected_parity_marker(case, impl, impl_keys, marker_mode)
-    if marker is None:
-        return _parser_marker(case, impl)
-    return _selected_parity_suffix(case, impl) + marker
-
-
 def _is_todo_unavailable(block: object) -> bool:
     """True when a dynamo unavailable block is a not-yet-implemented TODO
     (v2 streaming work), not a structural n/a."""
@@ -365,11 +309,11 @@ def _norm_calls(calls: list) -> list[tuple]:
 #   COLOR (data-status): each engine's STREAM parse vs its OWN BATCH parse — green if
 #     the stream reconstructs the batch result, red if it diverges (mirrors the
 #     `parity_toolcalling_batch_via_stream` Rust test).
-#   MARKER (Conformance toggle): each engine's output vs the OTHER engines' outputs —
-#     `=` when the available streams agree, else the differing engines' letters with a
-#     two-letter suffix. The suffix is implementation language (`r` Rust, `p` Python)
-#     plus parse mode (`s` stream, `b` batch). The default marker (toggle off) stays
-#     leak-only.
+#   AGREEMENT: each engine's output vs the OTHER engines' outputs — they agree, or the
+#     differing engines diverge. `_stream_xeng_marker` encodes this as a compact
+#     INTERNAL string (a per-engine letter + a language/parse-mode subscript) that only
+#     `_compute_stats` buckets on; it is never shown to users. The page renders the
+#     structured `comparison_facts()` with full descriptive labels instead.
 
 
 def _impl_mode_suffix(impl: str, mode: str) -> str:
@@ -395,7 +339,7 @@ def _stream_parity_explainer_html(marker_context: str | None) -> str:
         "A <code>≠</code> corner mark is a KNOWN v1-vs-v2 divergence "
         "(known-divergences.yaml): calls agree, normal_text differs by design — "
         "the popup's v2 block carries the explanation. "
-        "There is no <code>V_rb</code>; vLLM Rust has stream parser capture only. "
+        "vLLM Rust has no batch parser; it is captured as a stream parser only. "
         "Harmony captured against vLLM 0.23.0 / SGLang 0.5.12.post1."
     )
 
@@ -429,12 +373,15 @@ def _sob_status(case: dict | None, impl: str) -> str:
 
 
 def _stream_xeng_marker(case: dict | None, impl: str, marker_context: str | None = None) -> str:
-    """Conformance marker for the stream tabs, two parts concatenated:
-      - own-batch: `X_rs`/`X_ps` when this engine's stream diverges from its OWN batch
-        parse (the same condition that reddens the cell — e.g. `D_rs` for Dynamo).
-      - cross-engine: the OTHER engines' letters with a context suffix (`V_ps` for
-        vLLM Python stream output, including batch-on-stream) for engines whose output differs
-        from this one (needs >=2 available outputs).
+    """Internal compact agreement string for the stream tabs — NOT user-facing (only
+    `_compute_stats` buckets on it; the page renders `comparison_facts()` instead).
+    Two parts concatenated:
+      - own-batch: a per-engine token when this engine's stream diverges from its OWN
+        batch parse (the same condition that reddens the cell — e.g. Dynamo's stream
+        parser disagreeing with its own batch parser).
+      - cross-engine: a token per OTHER engine (stream parser output, including
+        batch-on-stream) whose output differs from this one (needs >=2 available
+        outputs).
     Returns the `↯` leak prefix + own-batch token + cross-engine tokens, `=` when
     none, or the per-engine status marker (`n/a`) when this engine has no
     stream output."""
@@ -445,13 +392,13 @@ def _stream_xeng_marker(case: dict | None, impl: str, marker_context: str | None
     if not isinstance(sel_block, dict) or "unavailable" in sel_block:
         return _parser_marker(case, impl)
     leak = "↯" if _block_tool_call_leaks(sel_block) else ""
-    # own-batch divergence (X_rs/X_ps): this engine's stream != its own batch parse.
+    # own-batch divergence token: this engine's stream != its own batch parse.
     own = (
         _impl_mode_letter(impl) + _impl_mode_suffix(impl, _STREAM_MODE_MARKER)
         if _sob_calls_consistent(case, impl) is False
         else ""
     )
-    # cross-engine (Y_rs/Y_ps or Y_rb/Y_pb): other engines whose output differs from this one.
+    # cross-engine tokens: other engines whose output differs from this one.
     outputs = {
         e: _canonical_tool_output(_impl_get(expected, e)) for e in IMPL_KEYS
     }
@@ -468,15 +415,17 @@ def _stream_xeng_marker(case: dict | None, impl: str, marker_context: str | None
 
 
 def _sob_cell_text(case: dict | None, marker_context: str | None = None) -> str:
-    """Static/overview cell text: the Dynamo cross-engine marker (=, V_ps/V_rs/S_rs, …)."""
+    """Internal stats-bucketing text keyed on the Dynamo baseline's cross-engine
+    agreement string (`=` when everything agrees). Consumed only by `_compute_stats`."""
     return _stream_xeng_marker(case, BASELINE_STREAM_IMPL, marker_context)
 
 
 # --- Structured comparison model (DIS-2434) --------------------------------------
-# The JSON data model + JS view replace the `D_rb`/`V_ps` marker mini-language: the
-# model carries STRUCTURED comparison facts and the view decides how to display them.
-# These functions are the single source of the per-cell comparison payload; the old
-# glyph/attr emitters above are retired once every page renders from the model.
+# The JSON data model + JS view replace the old parser-marker shorthand mini-language:
+# the model carries STRUCTURED comparison facts and the view decides how to display
+# them with full descriptive labels. These functions are the single source of the
+# per-cell comparison payload; the compact `cell_for` / `_stream_xeng_marker` strings
+# survive only as an internal stats-bucketing representation.
 
 
 def _canon_call_for_sig(call: object) -> object:

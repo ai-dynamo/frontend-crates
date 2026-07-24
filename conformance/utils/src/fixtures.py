@@ -546,9 +546,9 @@ def _derive_stream_expected(case: dict) -> dict:
         block = {"calls": calls, "normal_text": normal}
         # Peer divergence from Dynamo parser v2 streaming is captured
         # ground truth, not an un-triaged gap — text vs token streaming differ by
-        # design. Tag peer blocks with a reason so the cell shows `S`/`V` (known
-        # divergence), never `S_rs?`/`V_ps?` (research-needed). The per-chunk `expected`
-        # in the fixture is the detailed evidence.
+        # design. Tag peer blocks with a reason so the cell reads as a documented
+        # (known) divergence, never research-needed. The per-chunk `expected` in the
+        # fixture is the detailed evidence.
         if impl in PEER_IMPL_KEYS:
             block["explanation"] = (
                 f"Captured from the {IMPL_DISPLAY[impl]} streaming parser. Streaming output differs "

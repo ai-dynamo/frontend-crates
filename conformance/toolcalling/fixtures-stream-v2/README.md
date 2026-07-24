@@ -63,7 +63,7 @@ A delta is `{index, name?, arguments?}`. The v2 Rust core delta does not include
 ## Parser Keys
 
 - `expected.dynamo_v2` is Dynamo parser v2 output; `expected.dynamo_v1` (inside `dynamo_v1-<ver>/`) is the v1 jail reference.
-- `expected.vllm_rust` is vLLM Rust stream parser output captured from the checked-out `vllm-tool-parser` crate. There is no separate `V_rb`.
+- `expected.vllm_rust` is vLLM Rust stream parser output captured from the checked-out `vllm-tool-parser` crate. vLLM Rust has no separate batch parser.
 - `expected.vllm_python` is vLLM Python stream parser output from the pinned Python package.
 - `expected.sglang_python` is SGLang Python stream parser output from the pinned Python package.
 - `unavailable.<impl>` or `expected.<impl>.unavailable` records a parser that does not exist, cannot run, or failed before output was available.

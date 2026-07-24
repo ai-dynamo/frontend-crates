@@ -7,8 +7,9 @@ table, tabs, compare bar, and popups from it. Comparison/parity SEMANTICS stay i
 Python (`markers.py`/`impls.py` are the single source of truth) — this module
 orchestrates them into a clean, documented, greppable structure and serializes it as
 one inlined `<script type="application/json">` blob (so `file://` keeps working, no
-fetch). The old `D_rb`/`V_ps` marker mini-language is gone: cells carry STRUCTURED
-comparison facts and the view decides how to display them.
+fetch). The old parser-marker shorthand mini-language is gone: cells carry STRUCTURED
+comparison facts and the view decides how to display them with full descriptive
+labels (e.g. "vLLM Python batch parser", "Dynamo Rust stream parser").
 
 Schema (top-down)
 =================

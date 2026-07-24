@@ -2,38 +2,26 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-"""Generate the conformance table (matrix of cell markers) from the YAML fixtures.
+"""Generate the conformance table from the YAML fixtures.
 
-================================================================================
-EXAMPLE OUTPUT (truncated; illustrative, NOT a snapshot of current fixtures
-— run the script for the real table):
+Reads every `tests/parity/toolcalling/fixtures/<family>/TOOLCALLING.batch*.yaml` and
+emits the conformance table. The HTML page (`--html`) is rendered ENTIRELY by the JS
+view from a single JSON data model (DIS-2434): Python computes structured per-cell
+`comparison_facts()` (see `markers.py`) and the view renders the glyphs with full
+descriptive labels ("vLLM Python batch parser", "Dynamo Rust stream parser", …).
 
-    | model          | parser     | 1 | 2.a | 2.b | 2.c | ... | 9 | 10 |
-    |---|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-    | **Top-N models** |   |   |   |   |   |   |   |   |
-    | Kimi K2.6      | kimi_k2    | = | =   | =   | V_pbS_rb | ... | = | =  |
-    | gpt-oss        | harmony †  | S_rb | S_rb | n/a | S_rb? | ... | = | S_rb |
-    | **Others** |   |   |   |   |   |   |   |   |
-    | Mistral series | mistral    | S_rb | S_rb | n/a | V_pbS_rb | ... | = | S_rb |
+There is no user-facing parser-marker shorthand mini-language. `cell_for` /
+`_stream_xeng_marker` still emit compact per-engine agreement strings, but purely as
+an INTERNAL representation that `_compute_stats` buckets on — those strings never
+reach the page.
 
-================================================================================
-
-Reads every `tests/parity/toolcalling/fixtures/<family>/TOOLCALLING.batch*.yaml` and emits
-the conformance table.
-
-Cell markers (Dynamo Rust + vLLM Rust + vLLM Python + SGLang):
-  =     peer block matches the Dynamo baseline block (`expected.dynamo_v1` batch / `expected.dynamo_v2` stream)
-  D_rb      Dynamo Rust batch parser output diverges from the selected parser
-  D_rs      Dynamo Rust stream parser output diverges from the selected parser
-  V_pb      vLLM Python batch parser output diverges from the selected parser
-  V_ps      vLLM Python stream parser output diverges from the selected parser
-  V_rs      vLLM Rust stream parser output diverges from the selected parser; no V_rb exists
-  S_rb      SGLang batch parser output diverges from the selected parser
-  S_rs      SGLang stream parser output diverges from the selected parser
-  ?         suffix means the divergent block has no `explanation:` yet
-        (research-needed; we observed it but haven't classified it)
-  !         suffix means the parser has `error: <substring>` (expected to crash)
-  Combined markers, for example V_pbS_rb, mean multiple implementations diverge
+Per-cell status semantics:
+  =     every compared parser matches the Dynamo baseline (`expected.dynamo_v1` batch
+        / `expected.dynamo_v2` stream)
+  ↯     the selected parser leaks tool-call markup into the visible `normal_text`
+  ?     the divergence has no `explanation:` yet (research-needed)
+  !     the parser has `error: <substring>` (expected to crash)
+  ✗     the parser ran but failed to parse
   ·     Dynamo Rust-only fixture; peer blocks are unavailable or not captured
   n/a   family/case doesn't apply
   —     no fixture entry exists for this family/case yet
@@ -146,10 +134,7 @@ from markers import (  # noqa: E402,F401
     _norm_calls,
     _normalize_impl_mapping,
     _overview_status,
-    _parity_marker,
     _parser_marker,
-    _selected_parity_marker,
-    _selected_parity_suffix,
     _sob_calls_consistent,
     _sob_cell_text,
     _sob_status,
@@ -914,9 +899,6 @@ def _batch_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, str
                         "block": block,
                         "version": version,
                         "marker": _parser_marker(case, canon),
-                        "parity_marker": _parity_marker(
-                            case, canon, BATCH_IMPL_KEYS, _BATCH_MODE_MARKER
-                        ),
                     }
     finally:
         fixtures.FIXTURES = saved_fixtures
@@ -1449,6 +1431,9 @@ def _compute_stats(
             s["real"] += 1
             if text == "=":
                 s["parity"] += 1
+            # `text` here is the internal compact agreement string from `cell_for` /
+            # `_stream_xeng_marker` (never shown to users). A bare Dynamo-only token —
+            # `·`, or the Dynamo batch/stream sentinel — buckets as dynamo_only.
             elif text == "·" or text in {"D", "D_rb", "D_rs"}:
                 s["dynamo_only"] += 1
             elif "!" in text:
@@ -1469,9 +1454,9 @@ def _stream_on_batch_expected(overlay_case: dict, has_batch_text: bool = True) -
     The overlay records each engine's STREAMING parse of the v1 batch text. Some
     overlay rows are taxonomy placeholders with no batch `model_text`; render
     those as structural unavailability instead of claiming the parser is missing.
-    Peer outputs are tagged with a `reason` so the
-    conformance marker reads as an intentional divergence (`V_ps`/`S_rs`), not
-    research-needed (`V_ps?`/`S_rs?`) — text-vs-token streaming differs by design.
+    Peer outputs are tagged with a `reason` so the divergence reads as intentional
+    (a documented difference), not research-needed — text-vs-token streaming differs
+    by design.
     """
     expected: dict = {}
     overlay_case = _normalize_impl_mapping(overlay_case)
@@ -1615,7 +1600,8 @@ def _load_panel_cases(
     no_vllm, no_sglang = _derive_no_peer_sets(cases)
     top_n, others = _build_display_groups(cases, labels)
     # The streamv2 tab uses the stream comparison: color = stream-vs-own-batch,
-    # conformance marker = cross-engine stream agreement (`Y_s`).
+    # agreement = cross-engine stream agreement (each engine's stream parser vs the
+    # others').
     comparison = "stream_vs_batch" if mode == "streamv2" else "cross_engine"
     return {
         "mode": mode,

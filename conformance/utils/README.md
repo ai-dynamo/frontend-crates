@@ -181,25 +181,18 @@ Use the generated matrix to inspect vLLM Python vs vLLM Rust behavior. `check.sh
 
 ## Matrix Legend
 
-The matrix has four parser identities:
+Each cell compares the parser implementations for one model family and case. The page carries **structured comparison facts** (`markers.comparison_facts()` in `src/markers.py`) — a per-implementation record of `status` (ok / problem / na), whether it `agrees` with the Dynamo baseline, whether a divergence is `intentional` (documented), whether it `leak`s tool-call markup, and its `error_kind`. The JS view (`assets/conformance_view.js`) turns those facts into the glyphs and popups, and labels every parser with its full descriptive name. There is no shorthand code to memorize.
 
-| Selector | Marker form |
-|---|---|
-| Dynamo Rust | `D_rs` (Dynamo Rust stream parser), `D_rb` (Dynamo Rust batch parser). |
-| vLLM Rust | `V_rs` (vLLM Rust stream parser). There is no `V_rb`; vLLM Rust batch-style complete parsing delegates through streaming `parse_into(full_output, ...)` and `finish()` in vLLM Rust 0.23.0. |
-| vLLM Python | `V_ps` (vLLM Python stream parser), `V_pb` (vLLM Python batch parser). |
-| SGLang | `S_rs` (SGLang stream parser), `S_rb` (SGLang batch parser). |
+The implementations shown per cell:
 
-HTML markers use real subscripts, for example `D<sub>RS</sub>`, `D<sub>RB</sub>`, `V<sub>PS</sub>`, `V<sub>PB</sub>`, `V<sub>RS</sub>`, `S<sub>RS</sub>`, and `S<sub>RB</sub>`. Non-HTML output uses `D_rs`, `D_rb`, `V_ps`, `V_pb`, `V_rs`, `S_rs`, and `S_rb`.
+| Implementation | Batch parser | Stream parser |
+|---|---|---|
+| Dynamo | Dynamo v1 batch parser (`dynamo-parsers`); Dynamo v1 jail+batch for the stream-on-batch overlay. | Dynamo v2 stream parser (`dynamo-parsers-v2`). |
+| vLLM Python | vLLM Python batch parser. | vLLM Python stream parser. |
+| vLLM Rust | none — vLLM Rust has no separate batch parser; batch-style complete parsing delegates through streaming `parse_into(full_output, ...)` and `finish()` in vLLM Rust 0.23.0. | vLLM Rust stream parser. |
+| SGLang | SGLang batch parser. | SGLang stream parser. |
 
-vLLM shorthand:
-
-| Name | Meaning |
-|---|---|
-| `V_ps` | vLLM Python stream parser. |
-| `V_pb` | vLLM Python batch parser. |
-| `V_rs` | vLLM Rust stream parser. |
-| `V_rb` | vLLM Rust batch parser does not exist as a separate captured implementation. |
+A cell's status glyphs: `=` (every compared parser matches the Dynamo baseline), `↯` (the parser leaks tool-call markup into the visible `normal_text`), `!` (a declared expected-error), `✗` (the parser ran but failed to parse), `·` (Dynamo-only fixture; peers unavailable), `n/a` (case doesn't apply), `—` (no fixture yet). In the Detailed view a cell shows how many selected Compare parsers diverge from the Reference.
 
 ## Scripts
 
@@ -214,7 +207,7 @@ Run these from `conformance/utils/`:
 
 The implementation lives under `src/` — don't run these directly unless you're developing the harness: `_common.sh`, the renderer (`generate_conformance_table.py` + `impls.py` / `markers.py` / `fixtures.py` / `model.py`, `conformance_table.html.j2` + `assets/`), the capture chain (`capture_cli.py` / `capture_driver.py` / `capture.py` / `capture_vllm_rust.py`), the fixture builders (`build_stream_fixtures.py` / `fill_streamv2.py` / `gen_harmony_text_fixtures.py`), the validators (`validate.py` / `validate_fixtures.py`), and the data files (`parser_families.yaml`, `pyproject.stub.toml`). `tests/` and `lib/` stay at the top level because they are Dynamo-sync targets.
 
-**Render architecture (DIS-2434).** Python computes ONE documented JSON data model — the whole page (both the v2 conformance table and the v1 parity page) — and the templates inline it as a single `<script type="application/json" id="conformance-model">` blob. A JS view (`assets/conformance_view.js`) parses that blob and builds the tabs, table, cells, compare bar, legend, and popups (popups lazily on hover); `assets/conformance.js` then wires the compare engine, tab switching, column toggles, URL state, and transpose. The comparison/parity SEMANTICS stay in Python (`markers.py`/`impls.py` are the single source of truth) — `model.py` orchestrates them into the schema documented at the top of `model.py`; the view only decides display. The former `D_rb`/`V_ps` marker mini-language (encoded `data-marker-parity-*` attribute strings) is gone: cells carry structured comparison facts and the view renders the glyphs. `file://` keeps working (the model is inlined, no fetch). Greppability of the rendered `.html` is an explicit non-goal. Structural guards on the model live in `tests/test_model.py`; a few selenium DOM smokes live in `tests/test_browser_*.py`.
+**Render architecture (DIS-2434).** Python computes ONE documented JSON data model — the whole page (both the v2 conformance table and the v1 parity page) — and the templates inline it as a single `<script type="application/json" id="conformance-model">` blob. A JS view (`assets/conformance_view.js`) parses that blob and builds the tabs, table, cells, compare bar, legend, and popups (popups lazily on hover); `assets/conformance.js` then wires the compare engine, tab switching, column toggles, URL state, and transpose. The comparison/parity SEMANTICS stay in Python (`markers.py`/`impls.py` are the single source of truth) — `model.py` orchestrates them into the schema documented at the top of `model.py`; the view only decides display. The former parser-marker shorthand mini-language (encoded `data-marker-parity-*` attribute strings) is gone: cells carry structured comparison facts and the view renders the glyphs with full descriptive parser labels. `file://` keeps working (the model is inlined, no fetch). Greppability of the rendered `.html` is an explicit non-goal. Structural guards on the model live in `tests/test_model.py`; a few selenium DOM smokes live in `tests/test_browser_*.py`.
 
 ## Fixture Store (git-lfs)
 
