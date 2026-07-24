@@ -822,9 +822,27 @@ impl ToolCallConfig {
     /// reasoning parser; see [`ParserConfig::Inkling`]. Grammar:
     /// [`crate::tool_calling::inkling`].
     pub fn inkling() -> Self {
+        // Inkling emits one tool call as
+        //   NAME<|content_invoke_tool_json|>{"name": "NAME", "args": {..}}<|end_message|>
+        // The leading <|message_model|> is the prompt's generation primer and the bare
+        // NAME header is redundant free text (the JSON `name` is authoritative), so guided
+        // decoding triggers on the <|content_invoke_tool_json|> marker and constrains the
+        // JSON body + fence. Note the args key is `args`, not `arguments`.
         Self {
             parser_config: ParserConfig::Inkling(InklingParserConfig::default()),
-            structural_tag_builder: None,
+            structural_tag_builder: Some(StructuralTagBuilder::TriggeredTags(
+                TriggeredTagsConfig {
+                    begin_template: format!(
+                        "<|content_invoke_tool_json|>{{\"name\": \"{}\", \"args\": ",
+                        TOOL_NAME_PLACEHOLDER
+                    ),
+                    end_template: "}<|end_message|>".to_string(),
+                    triggers: vec!["<|content_invoke_tool_json|>".to_string()],
+                    content_style: JsonSchemaStyle::Json,
+                    tool_call_ban_tokens: vec!["<|content_invoke_tool_json|>".to_string()],
+                    reasoning_end: Some("<|end_message|>".to_string()),
+                },
+            )),
         }
     }
 }
