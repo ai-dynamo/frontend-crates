@@ -1354,7 +1354,7 @@ def _panel_candidates(
                     "default_bucket": "A" if not candidates else "C",
                 }
             )
-    return candidates
+    return _sort_reasoning_candidates(candidates)
 
 
 def _peer_captured_versions(rows: dict[str, dict[str, Any]]) -> dict[str, str]:
@@ -1444,6 +1444,31 @@ def _reasoning_version_sort_key(version: str) -> tuple:
     release = tuple(int(x) for x in m.group(1).split(".")) if m else ()
     post = int(m.group(2)) if m and m.group(2) else 0
     return (release, post)
+
+
+def _reasoning_candidate_name_key(label: str) -> str:
+    """Parser name for ordering: the display label minus its trailing version token and
+    "(mode)" suffix. "vLLM Python 0.25.1 (batch)" -> "vllm python". Mirrors
+    generate_conformance_table._candidate_name_key so the two tabs order candidates the
+    same way: PARSERS alphabetically (Dynamo < SGLang < vLLM)."""
+    base = re.sub(r"\s*\([^)]*\)\s*$", "", label)   # drop "(batch)"/"(stream)"
+    base = re.sub(r"\s+\d[\w.]*$", "", base)          # drop the trailing version token
+    return base.lower()
+
+
+_REASONING_CANDIDATE_VERSION_RE = re.compile(r"\s(\d[\w.]*)\s*(?:\([^)]*\))?\s*$")
+
+
+def _sort_reasoning_candidates(items: list[dict]) -> list[dict]:
+    """Order reasoning compare candidates PARSER-alphabetically with versions
+    LATEST-FIRST within each parser. Two stable passes: version DESC first, then a
+    stable name sort that groups by parser and preserves version-desc inside each group.
+    Mirrors generate_conformance_table._sort_candidates. Keys/default_bucket untouched."""
+    def _ver_key(it: dict):
+        m = _REASONING_CANDIDATE_VERSION_RE.search(it["label"])
+        return _reasoning_version_sort_key(m.group(1)) if m else ()
+    ordered = sorted(items, key=_ver_key, reverse=True)
+    return sorted(ordered, key=lambda it: _reasoning_candidate_name_key(it["label"]))
 
 
 @functools.lru_cache(maxsize=1)
@@ -1667,7 +1692,7 @@ def _reasoning_cell_model(
         else []
     )
     cmp = _reasoning_cmp_from_blocks(blocks, family) or None
-    candidates = [
+    candidates = _sort_reasoning_candidates([
         {
             "key": key,
             "label": _reasoning_cand_label(impl, mode, version),
@@ -1678,7 +1703,7 @@ def _reasoning_cell_model(
             "leak": bool(_block_leak_reason(block, family)) if isinstance(block, dict) else False,
         }
         for key, impl, version, block in blocks
-    ]
+    ])
     reasons = [
         {"impl": f["impl"], "label": _REASONING_ENGINE_RUNTIME.get(f["impl"], f["impl"]),
          "reason": f["reason"], "intentional": f["intentional"]}

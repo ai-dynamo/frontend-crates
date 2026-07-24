@@ -997,6 +997,33 @@ def _clean_version(v: object) -> str | None:
     return token if re.match(r"\d", token) else None
 
 
+def _candidate_name_key(label: str) -> str:
+    """Parser name for ordering: the display label minus its trailing version token and
+    "(mode)" suffix. "vLLM Rust 0.25.1 (stream)" -> "vllm rust". Sorting candidates on
+    this puts PARSERS alphabetically (Dynamo < SGLang < vLLM Python < vLLM Rust)."""
+    base = re.sub(r"\s*\([^)]*\)\s*$", "", label)   # drop "(batch)"/"(stream)"/"(jail+batch)"
+    base = re.sub(r"\s+\d[\w.]*$", "", base)          # drop the trailing version token
+    return base.lower()
+
+
+_CANDIDATE_VERSION_RE = re.compile(r"\s(\d[\w.]*)\s*(?:\([^)]*\))?\s*$")
+
+
+def _sort_candidates(items: list[dict]) -> list[dict]:
+    """Order compare candidates PARSER-alphabetically with versions LATEST-FIRST within
+    each parser. Two stable passes: version DESC first, then a stable name sort that
+    groups by parser and preserves the version-desc order inside each group. The version
+    pass runs EXPLICITLY — one call site (_cell_candidate_meta over __ver_status) feeds
+    versions ascending, so relying on a stable name-sort alone would keep them ascending.
+    Reference (bucket A) stays first because Dynamo sorts ahead of the peers. Keys and
+    default_bucket flags are untouched; only display order moves."""
+    def _ver_key(it: dict):
+        m = _CANDIDATE_VERSION_RE.search(it["label"])
+        return toolcalling_table._version_sort_key(m.group(1)) if m else ()
+    ordered = sorted(items, key=_ver_key, reverse=True)
+    return sorted(ordered, key=lambda it: _candidate_name_key(it["label"]))
+
+
 def _candidate_items() -> list[dict[str, str]]:
     """Ordered comparison candidates for the batch tab: Dynamo, then vLLM/SGLang —
     within each engine versions run LATEST-FIRST (0.24.0 before 0.23.0). Each:
@@ -1024,7 +1051,7 @@ def _candidate_items() -> list[dict[str, str]]:
                 "label": _full_label(canon, v, "batch"),
                 "default_bucket": bucket,
             })
-    return out
+    return _sort_candidates(out)
 
 
 # --- per-impl version snapshots for the TC v2 (stream) tab ----------------------
@@ -1097,7 +1124,7 @@ def _stream_candidate_items() -> list[dict[str, str]]:
                 "label": _full_label(impl, v, "stream"),
                 "default_bucket": bucket,
             })
-    return out
+    return _sort_candidates(out)
 
 
 @functools.lru_cache(maxsize=1)
@@ -1347,7 +1374,7 @@ def _merged_candidate_items() -> list[dict[str, str]]:
             "label": _full_label(impl, ver, "stream"),
             "default_bucket": "C",
         })
-    return out
+    return _sort_candidates(out)
 
 
 def _attach_merged_cmp(cases: dict) -> None:
@@ -1773,6 +1800,7 @@ def _cell_candidate_meta(case: dict, output_kind: str) -> tuple[dict, list[dict]
         for impl in STREAM_IMPL_KEYS:
             meta.append({"key": impl, "label": f"{_IMPL_DISPLAY[impl]} {output_kind}",
                          "version": _v2_display_version(impl), "block_raw": _impl_get(expected, impl)})
+    meta = _sort_candidates(meta)
     cmp_blocks = {m["key"]: m["block_raw"] for m in meta}
     for m in meta:
         blk = m.pop("block_raw")
