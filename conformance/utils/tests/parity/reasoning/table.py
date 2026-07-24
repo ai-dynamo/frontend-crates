@@ -12,6 +12,8 @@ import json
 import os
 import re
 import subprocess
+import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -483,39 +485,6 @@ def _reasoning_cmp_sig(block: Any) -> str:
     if isinstance(block, dict) and "error" in block:
         return f"err:{block.get('error')}"
     return _canonical(block)
-
-
-def _reasoning_cmp_json(case: dict[str, Any] | None, family: str | None) -> str:
-    """Per-cell `data-cmp` payload for the reasoning panels, mirroring
-    generate_conformance_table._candidate_cmp_json but keyed on the legacy
-    reasoning impl keys (dynamo/vllm/sglang): {impl: {"sig": int, "leak": 0|1,
-    "na": 0|1}}. `sig` is a per-cell group id (impls sharing an id have identical
-    output). Only impls that appear in this cell's `expected` are included."""
-    if not isinstance(case, dict) or "expected" not in case:
-        return ""
-    expected = case.get("expected", {})
-    if not isinstance(expected, dict):
-        return ""
-    raw: dict[str, dict[str, Any]] = {}
-    for impl in ("dynamo_v1", "vllm_python", "sglang_python"):
-        if impl not in expected:
-            continue
-        block = expected.get(impl)
-        sig = _reasoning_cmp_sig(block)
-        raw[impl] = {
-            "s": sig,
-            "leak": 1 if (isinstance(block, dict) and _block_leak_reason(block, family)) else 0,
-            # na = None/unavailable; still shown, but excluded from the diff count.
-            "na": 1 if sig == "na" else 0,
-        }
-    if not raw:
-        return ""
-    ids: dict[str, int] = {}
-    out = {
-        impl: {"sig": ids.setdefault(e["s"], len(ids)), "leak": e["leak"], "na": e["na"]}
-        for impl, e in raw.items()
-    }
-    return html_lib.escape(json.dumps(out, separators=(",", ":")), quote=True)
 
 
 _DEFAULT_REASONING_MARKUP_RE = re.compile(r"</?think>")
@@ -1312,17 +1281,33 @@ def _reasoning_version_by_impl() -> dict[str, str | None]:
     return {"dynamo_v1": _dynamo_v1_version(), **_peer_captured_versions(rows)}
 
 
-def _reasoning_cand_label(impl: str, mode: str) -> str:
+def _reasoning_cand_label(impl: str, mode: str, version: str | None = None) -> str:
     """Full compare-candidate label "<Engine> <Runtime> <version> (<mode>)", shared
     by the chips and the tooltip sections so the pop-up keys match the buckets.
     Dynamo's reasoning parser is the v1 crate (dynamo-parsers 3.x), so it reads
-    "Dynamo Rust v1 3.0.0 (batch)" / "(stream)"; peers have no crate split."""
+    "Dynamo Rust v1 3.0.0 (batch)" / "(stream)"; peers have no crate split. `version`
+    is passed explicitly by the per-version candidate path (a peer engine now fans out
+    over several captured versions); it falls back to the single captured version for
+    callers that don't distinguish versions."""
     base = _REASONING_ENGINE_RUNTIME.get(impl, _IMPL_DISPLAY[impl])
     if impl == "dynamo_v1":
         eng, _, rt = base.partition(" ")  # "Dynamo" / "Rust" -> "Dynamo v1 Rust"
         base = f"{eng} v1 {rt}".strip()
-    ver = _reasoning_version_by_impl().get(impl)
+    ver = version if version is not None else _reasoning_version_by_impl().get(impl)
     return f"{base} {ver} ({mode})" if ver else f"{base} ({mode})"
+
+
+def _reasoning_candidate_versions(impl: str) -> list[str | None]:
+    """The versions to emit as compare candidates for `impl`, LATEST-FIRST. Dynamo v1
+    is single-version (the published crate); each peer (vLLM/SGLang) fans out over its
+    captured reasoning fixture version dirs (e.g. vLLM 0.25.1, 0.24.0). Falls back to
+    the single captured/crate version when no version dirs are staged (bare unit run)."""
+    if impl == "dynamo_v1":
+        return [_dynamo_v1_version()]
+    vers = _reasoning_impl_versions().get(impl)
+    if vers:
+        return list(reversed(vers))  # LATEST-first, mirroring _candidate_items
+    return [_reasoning_version_by_impl().get(impl)]
 
 
 def _panel_candidates(
@@ -1331,11 +1316,14 @@ def _panel_candidates(
     display_rows: list[DisplayRow],
     mode: str,
 ) -> list[dict[str, str]]:
-    """Ordered compare-candidates for this panel: Dynamo, vLLM, SGLang — but only
-    impls that appear in at least one displayed cell's `expected`. The first
-    included candidate is the reference bucket "A"; all others default to "B".
-    Labels are "<Engine> <Runtime> <version> (<mode>)" to match the other tabs.
-    Mirrors generate_conformance_table._candidate_items (default_bucket layout)."""
+    """Ordered compare-candidates for this panel: Dynamo v1, then each vLLM/SGLang
+    (impl, version) LATEST-first — but only impls that appear in at least one displayed
+    cell's `expected`. Keyed "<impl>-<slug>" so a peer's multiple captured versions are
+    each independently selectable (vLLM Python 0.24.0 AND 0.25.1). The first included
+    candidate is the reference bucket "A"; all others default to "C". Labels are
+    "<Engine> <Runtime> <version> (<mode>)". Mirrors
+    generate_conformance_table._candidate_items (per-(impl, version), LATEST-first,
+    default_bucket layout)."""
     present: set[str] = set()
     for row in display_rows:
         reasoning_family = row["reasoning_family"]
@@ -1350,20 +1338,22 @@ def _panel_candidates(
             for impl in ("dynamo_v1", "vllm_python", "sglang_python"):
                 if impl in expected:
                     present.add(impl)
-    # Version sourcing (Dynamo from the v1 crate Cargo.toml, peers from the fixtures'
-    # captured_with) and the full label are shared with the tooltip sections via
+    # Version sourcing (Dynamo from the published crate, peers from the discovered
+    # fixture version dirs) and the full label are shared with the tooltip sections via
     # _reasoning_cand_label so chips and pop-up keys read identically.
     candidates: list[dict[str, str]] = []
     for impl in ("dynamo_v1", "vllm_python", "sglang_python"):
         if impl not in present:
             continue
-        candidates.append(
-            {
-                "key": impl,
-                "label": _reasoning_cand_label(impl, mode),
-                "default_bucket": "A" if not candidates else "C",
-            }
-        )
+        for version in _reasoning_candidate_versions(impl):
+            slug = _reasoning_version_slug(version) if version else "current"
+            candidates.append(
+                {
+                    "key": f"{impl}-{slug}",
+                    "label": _reasoning_cand_label(impl, mode, version),
+                    "default_bucket": "A" if not candidates else "C",
+                }
+            )
     return candidates
 
 
@@ -1414,10 +1404,125 @@ def _dynamo_v1_version() -> str | None:
     return max(versions, key=lambda v: tuple(int(x) for x in re.findall(r"\d+", v)))
 
 
+# --- per-version reasoning peers (multi-version compare, DIS-2408) --------------
+# The reasoning fixture corpus is versioned per peer, exactly like the toolcalling
+# batch corpus: reasoning/fixtures-v1/inputs/ (anchor) + <impl>-<version>/ overlays.
+# The batch tab renders EVERY captured (impl, version) as a selectable compare
+# candidate; the reasoning tabs mirror that here so the reader can pick, e.g., vLLM
+# Python 0.24.0 vs 0.25.1. Dynamo v1 is single-version (one Rust crate, from the
+# published fixtures), so only the peers (vLLM/SGLang) fan out over version dirs.
+_REASONING_VERSION_PEERS = ("vllm_python", "sglang_python")
+
+# The resolver script (resolve_reasoning_fixtures.py) lives in the repo, not the
+# staged tree; find it via the FRONTEND_CRATES_ROOT the harness exports (mirrors
+# toolcalling.table._RESOLVE_SRC_DIR). The versioned fixture source lives in the
+# extraction cache (CONFORMANCE_FIXTURES_ROOT), never the staged flat tree.
+_RESOLVE_SRC_DIR = (
+    Path(os.environ.get("FRONTEND_CRATES_ROOT", str(REPO_ROOT))) / "conformance/utils/src"
+)
+
+
+def _reasoning_fixtures_v1_root() -> Path | None:
+    """The versioned reasoning fixture source (inputs/ + <impl>-<version>/ overlays)
+    in the extraction cache. None when the cache is not staged (e.g. a bare unit run)."""
+    cache = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
+    if not cache:
+        return None
+    root = Path(cache) / "reasoning" / "fixtures-v1"
+    return root if root.is_dir() else None
+
+
+def _reasoning_version_slug(version: str) -> str:
+    """CSS/DOM-safe token for a version, e.g. 0.25.1 -> 0-25-1 (mirrors
+    toolcalling.table._version_slug so the two tabs' candidate keys read alike)."""
+    return re.sub(r"[^0-9A-Za-z]+", "-", version).strip("-")
+
+
+def _reasoning_version_sort_key(version: str) -> tuple:
+    """Order versions like 0.5.12.post1 < 0.5.14 < 0.24.0 < 0.25.1 < 3.0.0."""
+    m = re.match(r"(\d+(?:\.\d+)*)(?:[.-]?post(\d+))?", version)
+    release = tuple(int(x) for x in m.group(1).split(".")) if m else ()
+    post = int(m.group(2)) if m and m.group(2) else 0
+    return (release, post)
+
+
+@functools.lru_cache(maxsize=1)
+def _reasoning_impl_versions() -> dict[str, list[str]]:
+    """{peer_impl: [versions ascending]} discovered from the reasoning fixture version
+    dirs (reasoning/fixtures-v1/<impl>-<version>/). E.g. {"vllm_python": ["0.24.0",
+    "0.25.1"], "sglang_python": ["0.5.14"]}. Dynamo v1 is single-version and handled
+    separately (see _dynamo_v1_version). Mirrors toolcalling.table._impl_versions."""
+    root = _reasoning_fixtures_v1_root()
+    found: dict[str, list[str]] = {}
+    if root is None:
+        return found
+    for d in root.iterdir():
+        if not d.is_dir() or d.name == "inputs" or "-" not in d.name:
+            continue
+        impl, version = d.name.split("-", 1)
+        if impl in _REASONING_VERSION_PEERS:
+            found.setdefault(impl, []).append(version)
+    for impl in found:
+        found[impl] = sorted(set(found[impl]), key=_reasoning_version_sort_key)
+    return {impl: found[impl] for impl in _REASONING_VERSION_PEERS if impl in found}
+
+
+@functools.lru_cache(maxsize=1)
+def _reasoning_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, dict]]]:
+    """{(family, case_id): {peer_impl: {version_slug: {block, version}}}} for the
+    reasoning peers.
+
+    For each peer impl@version (every OTHER peer pinned to its latest) resolve the
+    versioned corpus via resolve_reasoning_fixtures.py, re-run `_load()` so keys match
+    the rendered (pinned) table exactly, and capture that impl's expected block per
+    case. This is the reasoning analogue of the toolcalling batch tab's
+    `_batch_version_status_map`, so reasoning cells can carry per-version compare data
+    and the pop-ups resolve each version's real output."""
+    impl_versions = _reasoning_impl_versions()
+    root = _reasoning_fixtures_v1_root()
+    resolver = _RESOLVE_SRC_DIR / "resolve_reasoning_fixtures.py"
+    if not impl_versions or root is None or not resolver.exists():
+        return {}
+    pinned = {impl: vers[-1] for impl, vers in impl_versions.items() if vers}
+    global FIXTURES
+    result: dict[tuple[str, str], dict[str, dict[str, dict]]] = {}
+    for impl, versions in impl_versions.items():
+        for version in versions:
+            slug = _reasoning_version_slug(version)
+            # Pin every other peer at its latest so the cell reflects only THIS
+            # peer's version change (matches the batch tab's per-version isolation).
+            select = [
+                f"{other}-{version if other == impl else pinned[other]}"
+                for other in impl_versions
+            ]
+            with tempfile.TemporaryDirectory() as tmp:
+                subprocess.run(
+                    [sys.executable, str(resolver),
+                     "--fixtures-root", str(root),
+                     "--out", tmp, "--select", *select],
+                    check=True, capture_output=True,
+                )
+                saved = FIXTURES
+                FIXTURES = Path(tmp)
+                try:
+                    rows, _columns, _refs = _load()
+                finally:
+                    FIXTURES = saved
+            for family, row in rows.items():
+                for case_id, case in row["cases"].items():
+                    expected = case.get("expected") if isinstance(case, dict) else None
+                    block = expected.get(impl) if isinstance(expected, dict) else None
+                    result.setdefault((family, case_id), {}).setdefault(impl, {})[slug] = {
+                        "block": block,
+                        "version": version,
+                    }
+    return result
+
+
 # ===== Structured JSON model builders (DIS-2434) ================================
 # Same-schema model tab as the toolcalling path (model.make_cell); the reasoning
 # verdict/comparison semantics stay here (this module's _cell/_overview_status/
-# _reasoning_cmp_json), so nothing is reimplemented in JS.
+# _reasoning_cmp_from_blocks), so nothing is reimplemented in JS.
 import model  # noqa: E402  (schema + cell normalizer; leaf module staged alongside)
 
 _REASONING_IMPLS = ("dynamo_v1", "vllm_python", "sglang_python")
@@ -1479,6 +1584,64 @@ def _reasoning_facts(case: dict[str, Any], family: str | None) -> list[dict]:
     return facts
 
 
+def _reasoning_cell_versioned_blocks(
+    case: dict[str, Any], family: str, case_id: str
+) -> list[tuple[str, str, str | None, Any]]:
+    """Ordered [(cand_key, impl, version, block)] for one cell: Dynamo v1 (single
+    version, block straight from the cell's expected), then each present peer version
+    LATEST-first with the block resolved for THAT engine version (from the per-version
+    status map). Only impls present in this cell's `expected` are emitted, and keys
+    ("<impl>-<slug>") line up with `_panel_candidates` so the compare chips and the
+    cell's cmp payload share candidate keys. Mirrors the toolcalling batch tab's
+    _cell_candidate_meta over __ver_status."""
+    expected = case.get("expected") if isinstance(case, dict) else None
+    expected = expected if isinstance(expected, dict) else {}
+    cell_status = _reasoning_version_status_map().get((family, case_id), {})
+    impl_versions = _reasoning_impl_versions()
+    out: list[tuple[str, str, str | None, Any]] = []
+    for impl in _REASONING_IMPLS:
+        if impl not in expected:
+            continue
+        if impl == "dynamo_v1":
+            ver = _dynamo_v1_version()
+            slug = _reasoning_version_slug(ver) if ver else "current"
+            out.append((f"{impl}-{slug}", impl, ver, expected.get(impl)))
+            continue
+        vers = impl_versions.get(impl)
+        if vers:
+            for v in reversed(vers):  # LATEST-first
+                slug = _reasoning_version_slug(v)
+                info = cell_status.get(impl, {}).get(slug)
+                block = info["block"] if info else expected.get(impl)
+                out.append((f"{impl}-{slug}", impl, v, block))
+        else:
+            ver = _reasoning_version_by_impl().get(impl)
+            slug = _reasoning_version_slug(ver) if ver else "current"
+            out.append((f"{impl}-{slug}", impl, ver, expected.get(impl)))
+    return out
+
+
+def _reasoning_cmp_from_blocks(
+    blocks: list[tuple[str, str, str | None, Any]], family: str | None
+) -> dict[str, dict]:
+    """Per-cell `data-cmp` payload keyed by candidate key ("<impl>-<slug>"): {key:
+    {sig, leak, na}}. `sig` is a per-cell group id (candidates with identical output —
+    e.g. two peer versions that parse the same — share an id). Mirrors markers.cmp_model
+    over the reasoning {reasoning_text, normal_text} block shape and family-specific
+    leak detection, replacing the impl-keyed _reasoning_cmp_json for the versioned tab."""
+    ids: dict[str, int] = {}
+    out: dict[str, dict] = {}
+    for key, _impl, _ver, block in blocks:
+        sig = _reasoning_cmp_sig(block)
+        out[key] = {
+            "sig": ids.setdefault(sig, len(ids)),
+            "leak": 1 if (isinstance(block, dict) and _block_leak_reason(block, family)) else 0,
+            # na = None/unavailable; still shown, but excluded from the diff count.
+            "na": 1 if sig == "na" else 0,
+        }
+    return out
+
+
 def _reasoning_cell_model(
     case: dict[str, Any] | None,
     family: str,
@@ -1496,23 +1659,26 @@ def _reasoning_cell_model(
         "reasoning/fixtures/"
         + Path(os.path.relpath(refs[(family, case_id)], FIXTURES)).as_posix()
     )
-    cmp_raw = _reasoning_cmp_json(case, family)
-    cmp = json.loads(html_lib.unescape(cmp_raw)) if cmp_raw else None
-    expected = case.get("expected") if isinstance(case, dict) else None
-    candidates = []
-    if isinstance(expected, dict):
-        for impl in _REASONING_IMPLS:
-            if impl not in expected:
-                continue
-            candidates.append({
-                "key": impl,
-                "label": _reasoning_cand_label(impl, mode),
-                "impl": _cand_engine_group(impl),
-                "version": _reasoning_version_by_impl().get(impl),
-                "parse_mode": mode,
-                "block": _reasoning_output_model(expected.get(impl)),
-                "leak": bool(_block_leak_reason(expected.get(impl), family)),
-            })
+    # Per-version compare candidates for this cell (Dynamo v1 + each peer version),
+    # keyed "<impl>-<slug>" so cmp keys match the compare-bar candidate keys.
+    blocks = (
+        _reasoning_cell_versioned_blocks(case, family, case_id)
+        if isinstance(case, dict) and "expected" in case
+        else []
+    )
+    cmp = _reasoning_cmp_from_blocks(blocks, family) or None
+    candidates = [
+        {
+            "key": key,
+            "label": _reasoning_cand_label(impl, mode, version),
+            "impl": _cand_engine_group(impl),
+            "version": version,
+            "parse_mode": mode,
+            "block": _reasoning_output_model(block),
+            "leak": bool(_block_leak_reason(block, family)) if isinstance(block, dict) else False,
+        }
+        for key, impl, version, block in blocks
+    ]
     reasons = [
         {"impl": f["impl"], "label": _REASONING_ENGINE_RUNTIME.get(f["impl"], f["impl"]),
          "reason": f["reason"], "intentional": f["intentional"]}
