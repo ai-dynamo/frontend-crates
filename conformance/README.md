@@ -91,11 +91,29 @@ The four routine loops. All of them end the same way: `package_fixtures.py` rebu
 
 ### 1. Capture a new vLLM/SGLang engine version (new peer shards)
 
-1. Pin the new engine version in `utils/src/pyproject.stub.toml` — peer versions are read from there, never hardcoded.
-2. Re-capture against containers running the new engines: `capture.sh stream` / `capture.sh batch-on-stream` (peer-only refresh of the batch-on-stream tree: `recapture_batch_on_stream.py`, which preserves the `vllm_rust`/`dynamo_v2` blocks).
-3. Captures land as a NEW `<impl>-<newver>/` dir next to the existing ones — never edit or delete old version dirs. Lowest dir = full anchor, higher dirs = changed-only overlays; `resolve_*.py` folds them at read time.
-4. `package_fixtures.py` → a new `<impl>-<newver>.tar.gz` shard appears in the store; existing shards are untouched (byte-identical rebuilds thanks to deterministic tars). Commit store + manifest.
-5. Nothing else to wire up: the next `render_table_v2.sh` / `cargo test` runs `extract_fixtures.py` automatically and follows the manifest pin (re-extracts on a pin move, retargets the cache symlinks, instant on a hit), and the generator discovers the new `<impl>-<newver>` dir as a new candidate column with its version label taken from fixture provenance.
+**The rule is ALL corpora, ALL families.** A new vLLM/SGLang version must land on EVERY tab — `TC batch (v1)`, `TC stream (v2)`, `TC batch-on-stream (v2)`, AND `Reasoning` — so the table stays consistent across tabs. Refreshing one tab and leaving the others behind is a bug, not a shortcut: every tab is multi-version and renders each captured version as its own comparison candidate.
+
+0. **Rebase onto `main` FIRST.** The conformance renderer + capture tooling change often (the whole page was rewritten in DIS-2434; the marker layer in #127). Capturing on a stale base means redoing the render/verify against a since-rewritten generator. Rebase, then capture.
+1. **Pin the version** in `utils/src/pyproject.stub.toml` (peer versions are read from there, never hardcoded). This stub is synced from dynamo's `pyproject.toml`; the value should match dynamo's own vLLM/SGLang pin.
+2. **Bring up the engine containers at the new versions and extract the corpus** so the capture seeds are on disk. Parser capture needs NO GPU — it feeds stored model-text through the parser, not the model:
+   ```bash
+   docker run -d --name vllm-localdev   --entrypoint sleep <vllm-image>   infinity
+   docker run -d --name sglang-localdev --entrypoint sleep <sglang-image> infinity
+   python3 conformance/utils/src/extract_fixtures.py   # materialize inputs the capturers read
+   ```
+3. **Capture EVERY corpus** — one command per corpus × peer. Each writes a NEW `<impl>-<newver>/` version dir (append-only; see the rule above). Capturers read the version LIVE from the container's `vllm.__version__` / `sglang.__version__`, write only cases that DIVERGE from the lowest-version anchor, never touch existing dirs, and skip (never fabricate) cases a parser can't run in-container.
+
+   | Tab | vLLM Python | vLLM Rust | SGLang |
+   |---|---|---|---|
+   | `TC stream (v2)` | `capture_streamv2_versions.py` † | `capture_vllm_rust_versions.py` ‡ | `capture_streamv2_versions.py` † |
+   | `TC batch (v1)` | `capture_batch_versions.py` | — (no Rust batch parser) | (v1 batch YAML, verified via `check.sh`) |
+   | `TC batch-on-stream (v2)` | `recapture_batch_on_stream.py` (in-place, single-snapshot) | `recapture_batch_on_stream.py` | `recapture_batch_on_stream.py` |
+   | `Reasoning` | `capture_reasoning_versions.py` | — | `capture_reasoning_versions.py` |
+
+   † `capture_streamv2_versions.py` writes `fixtures-stream-v2/overlays/<impl>-<newver>/`; **promote** it to the top level (`mv .../overlays/<impl>-<newver> .../<impl>-<newver>`) so `package_fixtures.py` shards it (it only shards `inputs/` and `<impl>-<version>/` immediate subdirs).
+   ‡ vLLM Rust is source-only: set `VLLM_RUST_SOURCE=<vllm checkout at the tag>` first. In vLLM ≥ 0.25 the crate is `vllm-parser` at `rust/src/parser` (was `vllm-tool-parser` at `rust/src/tool-parser`), and `ToolParserOutput` is an ordered events list. A parser that moved to the native `unified::` interface between releases is marked unavailable via the `tool::` probe — expected, not a failure.
+4. **Package:** `package_fixtures.py` → new `<impl>-<newver>.tar.gz` shards appear; existing shards rebuild byte-identical (deterministic tars, mtime=0). Commit `conformance/fixtures/` + `conformance/fixtures-manifest.json` together.
+5. **Verify the new version shows on ALL tabs.** The generator discovers each `<impl>-<newver>/` dir as its own candidate. Run `render_table_v2.sh` and confirm the new version is a Reference/Compare candidate on all four tabs (grep the rendered HTML), then `python3 -m pytest conformance/utils/tests/` and `check.sh dynamo all`. `test_model.py::test_v2_reasoning_uses_current_peers` specifically guards that the Reasoning tab surfaces every peer version dir — if it fails after you add a version, the tab lost multi-version rendering.
 
 ### 2. Fix a Dynamo parser and refresh its expected outputs
 

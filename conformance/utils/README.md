@@ -99,11 +99,14 @@ Use the same pattern for capture commands: `conformance/utils/capture.sh <target
 
 `capture.sh` is not the v1 batch rewrite tool for the Dynamo `expected.dynamo_v1` blocks — those are verified in Section 1 against extracted fixtures; update the YAMLs locally and re-package when the expected batch output changes.
 
-Peer (vLLM Python) columns, by contrast, are re-captured as changed-only version overlays against a new engine version, mirroring `capture_streamv2_versions.py` (TC stream):
-- `capture_batch_versions.py` — runs vLLM's non-streaming `extract_tool_calls` over the `fixtures-batch-v1/inputs/` seeds and writes `fixtures-batch-v1/vllm_python-<ver>/` (TC batch tab).
-- `capture_reasoning_versions.py` — runs vLLM's reasoning parser over the `reasoning/fixtures-v1/inputs/` seeds and writes `reasoning/fixtures-v1/vllm_python-<ver>/` (Reasoning tab).
+Peer columns, by contrast, are re-captured as changed-only version overlays against a new engine version. There is one version-capturer per corpus (all mirror `capture_streamv2_versions.py`, TC stream) — a full refresh runs ALL of them so every tab gets the new version (see [`../README.md`](../README.md#fixture-workflows) workflow 1 for the ordered runbook):
+- `capture_streamv2_versions.py` — vLLM Python + SGLang stream parsers over the streamv2 anchors → `fixtures-stream-v2/overlays/<impl>-<ver>/` (promote to top-level `<impl>-<ver>/` before packaging).
+- `capture_vllm_rust_versions.py` — the vLLM Rust stream parser over the streamv2 anchors → `fixtures-stream-v2/vllm_rust-<ver>/` (needs `VLLM_RUST_SOURCE`, see below).
+- `capture_batch_versions.py` — vLLM's non-streaming `extract_tool_calls` over the `fixtures-batch-v1/inputs/` seeds → `fixtures-batch-v1/vllm_python-<ver>/` (TC batch tab).
+- `capture_reasoning_versions.py` — vLLM's reasoning parser over the `reasoning/fixtures-v1/inputs/` seeds → `reasoning/fixtures-v1/vllm_python-<ver>/` (Reasoning tab; this tab is multi-version — both old and new versions must render).
+- `recapture_batch_on_stream.py` — refreshes the single-snapshot batch-on-stream tree in place (preserves the `vllm_rust`/`dynamo_v2` blocks).
 
-Both read the version live from the container's `vllm.__version__`, write only cases that diverge from the lowest-version anchor, never touch existing version dirs (append-only), and skip (never fabricate) cases the parser can't run in-container. Run them against `vllm-localdev`, then `package_fixtures.py`.
+All read the version live from the container's `vllm.__version__` / `sglang.__version__`, write only cases that diverge from the lowest-version anchor, never touch existing version dirs (append-only), and skip (never fabricate) cases the parser can't run in-container. Run them against `vllm-localdev` / `sglang-localdev`, then `package_fixtures.py`.
 
 Harmony fixture paths below are examples only. Harmony is not the intended scope limit. As DS4 and the other v2 stream parsers land, use the same commands with those fixture paths and families.
 
@@ -141,22 +144,24 @@ The `stream` and `batch-on-stream` targets update YAML. The `dynamo-stream`, `dy
 Use this before capture commands that refresh `expected.vllm_rust`.
 
 ```bash
-# Downloads the vLLM source tree used for current Rust captures.
-git clone https://github.com/vllm-project/vllm.git ~/dynamo/vllm-0.23.0
+# Download the vLLM source tree and check out the target tag (use ~/dev, not ~/dynamo).
+git clone https://github.com/vllm-project/vllm.git ~/dev/vllm-<ver>
+git -C ~/dev/vllm-<ver> checkout v<ver>          # e.g. v0.25.1
 
-# Checks out the pinned vLLM version.
-git -C ~/dynamo/vllm-0.23.0 checkout v0.23.0
-
-# Confirms the Rust tool-parser crate exists.
-test -f ~/dynamo/vllm-0.23.0/rust/src/tool-parser/Cargo.toml
+# Confirm the Rust parser crate exists. The crate + path moved in vLLM 0.25:
+#   >= 0.25:  crate `vllm-parser`      at rust/src/parser/Cargo.toml
+#   <  0.25:  crate `vllm-tool-parser` at rust/src/tool-parser/Cargo.toml
+test -f ~/dev/vllm-<ver>/rust/src/parser/Cargo.toml   # 0.25.x layout
 
 # Makes capture scripts pick up this checkout.
-export VLLM_RUST_SOURCE=~/dynamo/vllm-0.23.0
+export VLLM_RUST_SOURCE=~/dev/vllm-<ver>
 
 # Shows the source version that will be stamped into YAML.
 git -C "$VLLM_RUST_SOURCE" describe --tags --exact-match
 git -C "$VLLM_RUST_SOURCE" rev-parse HEAD
 ```
+
+The crate build may need a sibling crate materialized if the checkout is sparse (0.25.x's `vllm-parser` depends on `vllm-tokenizer`: `git -C "$VLLM_RUST_SOURCE" sparse-checkout add rust/src/tokenizer`). Parsers that moved to the native `unified::` interface in a release (e.g. gemma4 in 0.25) have no `tool::ToolParser` and are recorded unavailable — expected, not a capture failure.
 
 The local checkout path is not written to YAML or HTML. Fixtures record only the vLLM tag and commit under `captured_with.vllm_rust`.
 
