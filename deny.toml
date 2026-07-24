@@ -11,7 +11,6 @@ allow = [
     "CC0-1.0",
     "CDLA-Permissive-2.0",
     "ISC",
-    "LGPL-3.0-only",
     "MIT",
     "MPL-2.0",
     "NCSA",

@@ -4,12 +4,9 @@
 use super::super::ToolDefinition;
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 use regex::Regex;
-use rustpython_parser::{
-    Mode,
-    ast::{Constant, Expr, Mod},
-    parse,
-};
-use serde_json::{Number, Value, json};
+use ruff_python_ast::{Expr, Number as PythonNumber};
+use ruff_python_parser::parse_expression;
+use serde_json::{Number as JsonNumber, Value, json};
 use std::sync::OnceLock;
 
 static PYTHONIC_REGEX: OnceLock<Regex> = OnceLock::new();
@@ -41,32 +38,16 @@ fn get_regex_matches(message: &str) -> Vec<String> {
 }
 
 pub fn parse_tool_calls(src: &str) -> anyhow::Result<Vec<ToolCallResponse>> {
-    let ast = parse(src, Mode::Expression, "<input>")?;
-
-    /*
-    AST: Expression(ModExpression {
-        range: (),
-        body: List(ExprList {
-            range: 0..25,
-            elts: [Call(...), Call(...)]
-            ctx: Load
-        })
-    })
-    */
-    let body = match ast {
-        Mod::Expression(mod_expr) => mod_expr.body,
-        _ => return Ok(vec![]),
-    };
-
-    let elts = match *body {
-        Expr::List(expr_list) => expr_list.elts,
+    let parsed = parse_expression(src)?;
+    let elts = match parsed.expr() {
+        Expr::List(expr_list) => &expr_list.elts,
         _ => return Ok(vec![]),
     };
 
     let mut res = Vec::with_capacity(elts.len());
     for (idx, elt) in elts.iter().enumerate() {
         let (func, keywords) = match elt {
-            Expr::Call(call) => (&call.func, &call.keywords),
+            Expr::Call(call) => (&call.func, &call.arguments.keywords),
             _ => continue,
         };
 
@@ -110,24 +91,25 @@ pub fn parse_tool_calls(src: &str) -> anyhow::Result<Vec<ToolCallResponse>> {
 
 fn const_expr(e: &Expr) -> Result<Value, Box<dyn std::error::Error>> {
     match e {
-        Expr::Constant(constant) => Ok(match &constant.value {
-            Constant::Bool(b) => json!(b),
-            Constant::None => Value::Null,
-            Constant::Int(i) => {
-                // Try to downcast to i64/u64; fallback to string if out of range
-                use num_traits::ToPrimitive;
-                if let Some(v) = i.to_i64() {
-                    Value::Number(Number::from(v))
-                } else if let Some(v) = i.to_u64() {
-                    Value::Number(Number::from(v))
+        Expr::BooleanLiteral(literal) => Ok(json!(literal.value)),
+        Expr::NoneLiteral(_) => Ok(Value::Null),
+        Expr::NumberLiteral(literal) => Ok(match &literal.value {
+            PythonNumber::Int(i) => {
+                // Ruff stores large integers as their source text, so the
+                // existing i64/u64-or-string behavior does not need a bigint
+                // dependency.
+                if let Some(v) = i.as_i64() {
+                    Value::Number(JsonNumber::from(v))
+                } else if let Some(v) = i.as_u64() {
+                    Value::Number(JsonNumber::from(v))
                 } else {
                     Value::String(i.to_string())
                 }
             }
-            Constant::Float(f) => json!(f),
-            Constant::Str(s) => json!(s),
-            _ => return Err("unsupported constant type".into()),
+            PythonNumber::Float(f) => json!(f),
+            PythonNumber::Complex { .. } => return Err("unsupported constant type".into()),
         }),
+        Expr::StringLiteral(literal) => Ok(json!(literal.value.to_str())),
         // Handle Python lists as expressions, not constants
         Expr::List(expr_list) => {
             let list_values: Result<Vec<Value>, Box<dyn std::error::Error>> =
@@ -137,10 +119,9 @@ fn const_expr(e: &Expr) -> Result<Value, Box<dyn std::error::Error>> {
         // Handle Python dictionaries as expressions, not constants
         Expr::Dict(expr_dict) => {
             let mut dict_map = std::collections::HashMap::new();
-            for (key_expr, value_expr) in expr_dict.keys.iter().zip(expr_dict.values.iter()) {
+            for item in &expr_dict.items {
                 // Keys should be strings for JSON compatibility
-                // Handle the case where key_expr is Option<Expr>
-                let key = match key_expr {
+                let key = match &item.key {
                     Some(k) => match const_expr(k)? {
                         Value::String(s) => s,
                         other => other.to_string(),
@@ -151,7 +132,7 @@ fn const_expr(e: &Expr) -> Result<Value, Box<dyn std::error::Error>> {
                         );
                     }
                 };
-                let value = const_expr(value_expr)?;
+                let value = const_expr(&item.value)?;
                 dict_map.insert(key, value);
             }
             Ok(json!(dict_map))
@@ -369,6 +350,32 @@ mod tests {
         let (name, args) = extract_name_and_args(result[1].clone());
         assert_eq!(name, "bar");
         assert_eq!(args["x"], json!({"x": 3, "y": {"e": "f"}}));
+    }
+
+    #[test]
+    fn test_parse_tool_call_parse_pythonic_scalar_literals() {
+        let message = concat!(
+            "[foo(flag=True, empty=None, ratio=1.5, text='hello', ",
+            "huge=18446744073709551616)]"
+        );
+        let (result, _) = try_tool_call_parse_pythonic(message, None).unwrap();
+        let (name, args) = extract_name_and_args(result[0].clone());
+
+        assert_eq!(name, "foo");
+        assert_eq!(args["flag"], true);
+        assert_eq!(args["empty"], Value::Null);
+        assert_eq!(args["ratio"], 1.5);
+        assert_eq!(args["text"], "hello");
+        assert_eq!(args["huge"], "18446744073709551616");
+    }
+
+    #[test]
+    fn test_parse_tool_calls_skips_unsupported_arguments() {
+        let result = parse_tool_calls("[foo(valid=1, computed=1 + 2, **extra)]").unwrap();
+        let (name, args) = extract_name_and_args(result[0].clone());
+
+        assert_eq!(name, "foo");
+        assert_eq!(args, json!({"valid": 1}));
     }
 }
 
