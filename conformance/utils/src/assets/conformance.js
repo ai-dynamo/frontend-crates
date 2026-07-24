@@ -10,41 +10,6 @@
     return button.dataset.colToggle;
   })));
   const viewCheckboxes = Array.from(document.querySelectorAll('[data-view-detailed]'));
-  const parserRadios = Array.from(document.querySelectorAll('[data-parser-toggle]'));
-  const parserKeys = new Set(parserRadios.map(function (radio) {
-    return radio.value;
-  }));
-  const legacyParserAliases = {
-    dynamo_v1: 'dynamo',
-    dynamo_v2: 'dynamo_rust',
-    vllm_python: 'vllm',
-    sglang_python: 'sglang'
-  };
-  // The Dynamo baselines: default parser = whichever baseline the tab offers
-  // (dynamo_v1 on batch tabs, dynamo_v2 on stream tabs).
-  const BASELINE_PARSERS = ['dynamo_v1', 'dynamo_v2'];
-  function defaultParser(allowed) {
-    const pool = allowed ? Array.from(allowed) : parserRadios.map(function (r) { return r.value; });
-    for (const b of BASELINE_PARSERS) {
-      if (pool.indexOf(b) !== -1) { return b; }
-    }
-    return pool.length ? pool[0] : '';
-  }
-  const parityToggle = document.querySelector('[data-parity-toggle]');
-
-  // Per-impl version radios (TC v1 tab). impl -> { slugs: [...], default: slug }.
-  const versionRadios = Array.from(document.querySelectorAll('[data-version-toggle]'));
-  const versionImpls = {};
-  versionRadios.forEach(function (radio) {
-    const impl = radio.dataset.versionImpl;
-    if (!versionImpls[impl]) { versionImpls[impl] = { slugs: [], default: null }; }
-    versionImpls[impl].slugs.push(radio.value);
-    if (radio.checked) { versionImpls[impl].default = radio.value; }
-  });
-  const activeVersion = {};
-  Object.keys(versionImpls).forEach(function (impl) {
-    activeVersion[impl] = versionImpls[impl].default || versionImpls[impl].slugs[0];
-  });
 
   // Compare-any-combination model (TC v1 batch tab): pick one Base and any number
   // of Compare candidates; each cell shows how many selected candidates differ
@@ -335,17 +300,6 @@
     return new URLSearchParams(window.location.search).get('view') === 'details';
   }
 
-  function readActiveParser() {
-    const params = new URLSearchParams(window.location.search);
-    const requested = params.get('parser') || params.get('perspective');
-    return parserKeys.has(requested) ? requested : defaultParser();
-  }
-
-  function readParityMode() {
-    const requested = new URLSearchParams(window.location.search).get('parity');
-    return requested === '1' || requested === 'true';
-  }
-
   function updateViewUrl(detailed) {
     const url = new URL(window.location.href);
     url.searchParams.delete('view');
@@ -353,92 +307,6 @@
       url.searchParams.set('view', 'details');
     }
     window.history.replaceState(null, '', url.toString());
-  }
-
-  function updateParserUrl(parser) {
-    const url = new URL(window.location.href);
-    url.searchParams.delete('parser');
-    url.searchParams.delete('perspective');
-    if (BASELINE_PARSERS.indexOf(parser) === -1) {
-      url.searchParams.set('parser', parser);
-    }
-    window.history.replaceState(null, '', url.toString());
-  }
-
-  function updateParityUrl(enabled) {
-    const url = new URL(window.location.href);
-    url.searchParams.delete('parity');
-    if (enabled) {
-      url.searchParams.set('parity', '1');
-    }
-    window.history.replaceState(null, '', url.toString());
-  }
-
-  function readActiveVersion(impl) {
-    const info = versionImpls[impl];
-    if (!info) { return null; }
-    const requested = new URLSearchParams(window.location.search).get('ver-' + impl);
-    if (requested && info.slugs.indexOf(requested) !== -1) { return requested; }
-    return info.default || info.slugs[0];
-  }
-
-  function updateVersionUrl(impl, slug) {
-    const info = versionImpls[impl];
-    const url = new URL(window.location.href);
-    url.searchParams.delete('ver-' + impl);
-    if (info && slug !== info.default) {
-      url.searchParams.set('ver-' + impl, slug);
-    }
-    window.history.replaceState(null, '', url.toString());
-  }
-
-  function activeParser() {
-    const checked = parserRadios.find(function (radio) {
-      return radio.checked;
-    });
-    return checked ? checked.value : defaultParser();
-  }
-
-  function updateOverviewStats() {
-    const parser = activeParser();
-    const slug = activeVersion[parser];
-    document.querySelectorAll('.tab-panel').forEach(function (panel) {
-      const versioned = panel.dataset.hasVersions === 'true';
-      const counts = {ok: 0, problem: 0, todo: 0, na: 0};
-      panel.querySelectorAll('td.cell').forEach(function (cell) {
-        // Skip cloned cells in the transposed mirror; they'd double the tally.
-        if (cell.closest('[data-transpose-table]')) { return; }
-        const alias = legacyParserAliases[parser];
-        // On a versioned tab, prefer the active version's status; fall back to the
-        // pinned attr (and legacy alias) for cells without per-version data.
-        const status = (versioned && slug && cell.getAttribute('data-status-' + parser + '-' + slug))
-          || cell.getAttribute('data-status-' + parser)
-          || (alias ? cell.getAttribute('data-status-' + alias) : null) || 'na';
-        counts[status] = (counts[status] || 0) + 1;
-      });
-      panel.querySelectorAll('[data-overview-count]').forEach(function (el) {
-        el.textContent = String(counts[el.dataset.overviewCount] || 0);
-      });
-    });
-  }
-
-  function applyVersion(impl, slug, shouldUpdateUrl) {
-    const info = versionImpls[impl];
-    if (!info) { return; }
-    const active = info.slugs.indexOf(slug) !== -1 ? slug : (info.default || info.slugs[0]);
-    activeVersion[impl] = active;
-    info.slugs.forEach(function (s) {
-      document.body.classList.toggle('verv-' + impl + '-' + s, s === active);
-    });
-    versionRadios.forEach(function (radio) {
-      if (radio.dataset.versionImpl === impl) {
-        radio.checked = radio.value === active;
-      }
-    });
-    updateOverviewStats();
-    if (shouldUpdateUrl) {
-      updateVersionUrl(impl, active);
-    }
   }
 
   function applyView(detailed, shouldUpdateUrl) {
@@ -450,46 +318,7 @@
     }
   }
 
-  function applyParser(parser, shouldUpdateUrl) {
-    const active = parserKeys.has(parser) ? parser : defaultParser();
-    parserKeys.forEach(function (key) {
-      document.body.classList.toggle('parser-' + key, active === key);
-    });
-    Object.keys(legacyParserAliases).forEach(function (key) {
-      document.body.classList.toggle('parser-' + legacyParserAliases[key], active === key);
-    });
-    parserRadios.forEach(function (radio) {
-      radio.checked = radio.value === active;
-    });
-    updateOverviewStats();
-    if (shouldUpdateUrl) {
-      updateParserUrl(active);
-    }
-  }
-
-  function applyParityMode(enabled, shouldUpdateUrl) {
-    document.body.classList.toggle('parity-mode', Boolean(enabled));
-    if (parityToggle) {
-      parityToggle.checked = Boolean(enabled);
-    }
-    if (shouldUpdateUrl) {
-      updateParityUrl(Boolean(enabled));
-    }
-  }
-
   applyView(readDetailed(), false);
-  applyParser(readActiveParser(), false);
-  Object.keys(versionImpls).forEach(function (impl) {
-    applyVersion(impl, readActiveVersion(impl), false);
-  });
-  applyParityMode(readParityMode(), false);
-  versionRadios.forEach(function (radio) {
-    radio.addEventListener('change', function () {
-      if (radio.checked) {
-        applyVersion(radio.dataset.versionImpl, radio.value, true);
-      }
-    });
-  });
   initCompare();
   viewCheckboxes.forEach(function (cb) {
     cb.addEventListener('change', function () { applyView(cb.checked, true); });
@@ -504,18 +333,6 @@
       window.location.href = u.href;  // reload at defaults, same tab
     });
   });
-  parserRadios.forEach(function (radio) {
-    radio.addEventListener('change', function () {
-      if (radio.checked) {
-        applyParser(radio.value, true);
-      }
-    });
-  });
-  if (parityToggle) {
-    parityToggle.addEventListener('change', function () {
-      applyParityMode(parityToggle.checked, true);
-    });
-  }
 
   function defaultVisibleColumns() {
     const visible = new Set();
@@ -637,36 +454,6 @@
 
   const tabButtons = Array.from(document.querySelectorAll('.tab-button'));
   const tabPanels = Array.from(document.querySelectorAll('.tab-panel'));
-
-  function activePanelParserOptions() {
-    const activePanel = tabPanels.find(function (panel) {
-      return panel.classList.contains('active');
-    });
-    const raw = activePanel ? activePanel.dataset.parserOptions || '' : '';
-    const options = raw.split(',').filter(function (key) {
-      return parserKeys.has(key);
-    });
-    return options.length > 0 ? options : Array.from(parserKeys);
-  }
-
-  function syncParserOptions(shouldUpdateUrl) {
-    const allowed = new Set(activePanelParserOptions());
-    parserRadios.forEach(function (radio) {
-      const isAllowed = allowed.has(radio.value);
-      radio.disabled = !isAllowed;
-      const label = radio.closest('[data-parser-option]');
-      if (label) {
-        label.hidden = !isAllowed;
-      }
-    });
-    const current = activeParser();
-    if (!allowed.has(current)) {
-      const fallback = defaultParser(allowed);
-      applyParser(fallback, shouldUpdateUrl);
-    } else {
-      updateOverviewStats();
-    }
-  }
 
   function readActiveTab() {
     const params = new URLSearchParams(window.location.search);

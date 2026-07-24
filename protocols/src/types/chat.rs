@@ -57,6 +57,7 @@ pub use async_openai::types::chat::{
     CompletionUsage,
     FunctionObject,
     FunctionObjectArgs,
+    ImageDetail,
     InputAudio,
     InputAudioFormat,
     Logprobs,
@@ -267,16 +268,6 @@ pub struct ChatCompletionMessageToolCallChunk {
 // ---------------------------------------------------------------------------
 // Types with structural differences from upstream (kept locally)
 // ---------------------------------------------------------------------------
-
-/// Image detail level. Kept locally because upstream uses different field types in ImageUrl.
-#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
-#[serde(rename_all = "lowercase")]
-pub enum ImageDetail {
-    #[default]
-    Auto,
-    Low,
-    High,
-}
 
 /// Image content part.
 ///
@@ -676,17 +667,8 @@ pub enum ChatCompletionRequestMessage {
     Function(ChatCompletionRequestFunctionMessage),
 }
 
-/// Response tier enum for responses (distinct from request `ServiceTier`).
-///
-/// Not in upstream -- backends report which tier actually served the request.
-#[derive(Clone, Serialize, Debug, Deserialize, PartialEq)]
-#[serde(rename_all = "lowercase")]
-pub enum ServiceTierResponse {
-    Scale,
-    Default,
-    Flex,
-    Priority,
-}
+/// Backward-compatible name for the service tier reported in responses.
+pub type ServiceTierResponse = ServiceTier;
 
 /// Chat completion response message with multimodal content and reasoning.
 ///

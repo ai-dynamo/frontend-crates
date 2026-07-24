@@ -5,6 +5,7 @@
 
 use serde_json::{Map, Value};
 
+use crate::tool_calling::scan;
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
 
 const BLOCK_START: &str = "<｜DSML｜tool_calls>";
@@ -310,20 +311,14 @@ enum Marker {
     BareInvoke,
 }
 
+/// BLOCK_END is held back too: under a bare-invoke suppression latch, a split
+/// orphan `</｜DSML｜tool_calls>` used to be DISCARDED char-by-char (the drain
+/// drops suppressed text), so the complete close never assembled, the latch
+/// never cleared, and the whitespace between adjacent blocks was silently
+/// dropped (streamv2.5.f). Retaining the partial close lets the orphan-close
+/// path match it and clear the latch, exactly like the wrapped families.
 fn marker_prefix_suffix_len(text: &str) -> usize {
-    [BLOCK_START, INVOKE_START_PREFIX]
-        .into_iter()
-        .filter_map(|marker| {
-            marker
-                .char_indices()
-                .map(|(idx, _)| idx)
-                .filter(|idx| *idx > 0)
-                .filter(|idx| *idx < marker.len())
-                .rev()
-                .find(|&len| text.ends_with(&marker[..len]))
-        })
-        .max()
-        .unwrap_or(0)
+    scan::marker_prefix_suffix_len(text, [BLOCK_START, INVOKE_START_PREFIX, BLOCK_END])
 }
 
 fn parse_parameters(body: &str) -> anyhow::Result<Map<String, Value>> {
