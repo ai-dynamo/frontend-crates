@@ -303,6 +303,7 @@ impl ReasoningParserType {
                         true,
                     )
                     .with_dangling_end_recovery()
+                    .with_implicit_tool_start_recovery()
                     // M3 can begin a native tool call without `</mm:think>`.
                     .with_tool_start_token(MINIMAX_M3_TOOL_NAMESPACE),
                 ),
@@ -548,15 +549,38 @@ mod tests {
     #[test] // MiniMax M3
     fn test_minimax_m3_native_tool_namespace_recovers_implicit_streaming_reasoning() {
         for parser_name in ["minimax_m3", "minimax-m3"] {
-            let chunkings = [
-                vec![format!("reasoning{MINIMAX_M3_TOOL_NAMESPACE}<tool_call>")],
-                vec![
-                    "reasoning]".to_string(),
-                    "<]minimax[>[<tool_call>".to_string(),
-                ],
+            let cases = [
+                (
+                    vec![format!("reasoning{MINIMAX_M3_TOOL_NAMESPACE}<tool_call>")],
+                    "reasoning",
+                ),
+                (
+                    vec![
+                        "reasoning]".to_string(),
+                        "<]minimax[>[<tool_call>".to_string(),
+                    ],
+                    "reasoning",
+                ),
+                (
+                    vec![
+                        "reasoning".to_string(),
+                        format!("{MINIMAX_M3_TOOL_NAMESPACE}<tool_call>"),
+                    ],
+                    "reasoning",
+                ),
+                (
+                    vec![
+                        "let ".to_string(),
+                        "me ".to_string(),
+                        "think".to_string(),
+                        MINIMAX_M3_TOOL_NAMESPACE.to_string(),
+                        "<tool_call>".to_string(),
+                    ],
+                    "let me think",
+                ),
             ];
 
-            for chunks in chunkings {
+            for (chunks, expected_reasoning) in cases {
                 let mut parser = ReasoningParserType::get_reasoning_parser_from_name(parser_name);
                 let results: Vec<_> = chunks
                     .iter()
@@ -568,7 +592,7 @@ mod tests {
                         .iter()
                         .map(|result| result.reasoning_text.as_str())
                         .collect::<String>(),
-                    "reasoning",
+                    expected_reasoning,
                     "parser {parser_name}, chunks {chunks:?}"
                 );
                 assert_eq!(
@@ -584,6 +608,22 @@ mod tests {
     }
 
     #[test] // MiniMax M3
+    fn test_minimax_m3_implicit_streaming_recovery_waits_for_a_decisive_boundary() {
+        let chunks = ["see item [1]", " and [2]", " and [3]", " done."];
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m3");
+
+        for chunk in chunks {
+            let result = parser.parse_reasoning_streaming_incremental(chunk, &[]);
+            assert_eq!(result.reasoning_text, "");
+            assert_eq!(result.normal_text, "");
+        }
+
+        let finished = parser.finish_reasoning_stream();
+        assert_eq!(finished.reasoning_text, "");
+        assert_eq!(finished.normal_text, "see item [1] and [2] and [3] done.");
+    }
+
+    #[test] // MiniMax M3
     fn test_minimax_m3_partial_implicit_namespace_fakeout_is_normal() {
         for finish_after_prefix in [false, true] {
             let mut parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m3");
@@ -594,13 +634,24 @@ mod tests {
             } else {
                 parser.parse_reasoning_streaming_incremental("not-a-namespace", &[])
             };
+            let finished = if finish_after_prefix {
+                ParserResult::default()
+            } else {
+                parser.finish_reasoning_stream()
+            };
 
             assert_eq!(
-                format!("{}{}", first.reasoning_text, second.reasoning_text),
+                format!(
+                    "{}{}{}",
+                    first.reasoning_text, second.reasoning_text, finished.reasoning_text
+                ),
                 ""
             );
             assert_eq!(
-                format!("{}{}", first.normal_text, second.normal_text),
+                format!(
+                    "{}{}{}",
+                    first.normal_text, second.normal_text, finished.normal_text
+                ),
                 if finish_after_prefix {
                     "plain]"
                 } else {
@@ -608,6 +659,23 @@ mod tests {
                 }
             );
         }
+    }
+
+    #[test] // MiniMax M3
+    fn test_minimax_m3_explicit_normal_state_streams_each_chunk_immediately() {
+        let chunks = ["see item [1]", " and [2]", " and [3]", " done."];
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m3");
+        parser.set_in_reasoning(false);
+
+        for chunk in chunks {
+            let result = parser.parse_reasoning_streaming_incremental(chunk, &[]);
+            assert_eq!(result.reasoning_text, "");
+            assert_eq!(result.normal_text, chunk);
+        }
+
+        let finished = parser.finish_reasoning_stream();
+        assert_eq!(finished.reasoning_text, "");
+        assert_eq!(finished.normal_text, "");
     }
 
     #[test] // MiniMax M3
@@ -733,17 +801,19 @@ mod tests {
     }
 
     #[test] // MiniMax M3
-    fn test_minimax_m3_streaming_partial_start_prefix_becomes_normal_text() {
+    fn test_minimax_m3_streaming_partial_start_prefix_becomes_normal_text_at_eof() {
         let mut parser = ReasoningParserType::get_reasoning_parser_from_name("minimax_m3");
 
         let r1 = parser.parse_reasoning_streaming_incremental("plain <mm:th", &[]);
         let r2 = parser.parse_reasoning_streaming_incremental("esis answer", &[]);
+        let finished = parser.finish_reasoning_stream();
 
-        assert_eq!(format!("{}{}", r1.reasoning_text, r2.reasoning_text), "");
-        assert_eq!(
-            format!("{}{}", r1.normal_text, r2.normal_text),
-            "plain <mm:thesis answer"
-        );
+        assert_eq!(r1.reasoning_text, "");
+        assert_eq!(r1.normal_text, "");
+        assert_eq!(r2.reasoning_text, "");
+        assert_eq!(r2.normal_text, "");
+        assert_eq!(finished.reasoning_text, "");
+        assert_eq!(finished.normal_text, "plain <mm:thesis answer");
     }
 
     #[test] // REASONING.batch.2.c

@@ -88,7 +88,10 @@ pub struct BasicReasoningParser {
     recover_dangling_end: bool,
     /// Whether a configured tool marker may still be the first visible
     /// boundary of prompt-prefilled reasoning.
-    /// Consumed once normal text or an explicit boundary establishes state.
+    /// Consumed once caller-provided state or an explicit boundary establishes
+    /// state. Until then, streaming input remains ambiguous and is buffered:
+    /// bytes emitted as normal text cannot later be reclassified as reasoning
+    /// if a tool marker arrives in a subsequent chunk.
     recover_tool_start_without_opener: bool,
     /// Optional markers that force-exit reasoning mode when encountered inside a
     /// reasoning block (e.g. Kimi-K2/K2.5 models sometimes emit
@@ -126,10 +129,19 @@ impl BasicReasoningParser {
         self
     }
 
-    /// Enables streaming dangling-close recovery and implicit tool-marker
-    /// recovery in both parsing paths.
+    /// Enables streaming dangling-close recovery.
     pub fn with_dangling_end_recovery(mut self) -> Self {
         self.recover_dangling_end = true;
+        self
+    }
+
+    /// Allows a configured tool marker to be the first visible boundary of
+    /// prompt-prefilled reasoning in both batch and streaming parsing.
+    ///
+    /// Streaming input before that boundary is buffered until a start, close,
+    /// tool marker, or EOF establishes whether it is reasoning or normal text.
+    /// Callers with authoritative state should use `set_in_reasoning` instead.
+    pub fn with_implicit_tool_start_recovery(mut self) -> Self {
         self.recover_tool_start_without_opener = true;
         self
     }
@@ -471,47 +483,42 @@ impl ReasoningParser for BasicReasoningParser {
                     continue;
                 }
 
+                // With implicit tool-start recovery, all bytes before the first
+                // decisive boundary are ambiguous. A future chunk may contain
+                // the tool marker and retroactively establish that the entire
+                // prefix was prompt-prefilled reasoning. Because streaming
+                // deltas cannot retract previously emitted normal text, retain
+                // the complete prefix until a boundary or EOF decides it.
+                if self.recover_tool_start_without_opener {
+                    break;
+                }
+
                 // No complete marker — check for partial at end of buffer.
                 // The partial could be a prefix of either <think> or </think>
-                // (both start with `<`) or, for implicit-reasoning recovery, a
-                // configured tool marker. Use the widest applicable overlap.
+                // (both start with `<`). Use the widest applicable overlap.
                 let ol_start = overlap(&current_text, &self.think_start_token);
                 let ol_end = overlap(&current_text, &self.think_end_token);
-                let ol_tool = if self.recover_tool_start_without_opener {
-                    max_marker_overlap(&current_text, &self.tool_start_tokens)
-                } else {
-                    0
-                };
-                let ol_boundary = ol_end.max(ol_tool);
-                let ol = ol_start.max(ol_boundary);
+                let ol = ol_start.max(ol_end);
                 // Keep the historical >= 2 gate for think markers so a lone
-                // `<` passes through, while preserving a configured tool marker
-                // from its first byte.
-                if ol_start >= 2 || ol_end >= 2 || ol_tool >= 1 {
-                    // An implicit close/tool boundary determines whether every
+                // `<` passes through.
+                if ol_start >= 2 || ol_end >= 2 {
+                    // An implicit close boundary determines whether every
                     // preceding byte is reasoning. Keep the whole undecided
                     // prefix until the next chunk confirms or rejects it;
                     // emitting the prefix now would make a marker fakeout
                     // impossible to restore as normal text.
-                    if self.recover_dangling_end
-                        && ol_boundary > ol_start
-                        && (ol_end >= 2 || ol_tool >= 1)
-                    {
+                    if self.recover_dangling_end && ol_end > ol_start {
                         break;
                     }
 
                     let safe_end = current_text.len() - ol;
                     if safe_end > 0 {
                         accumulated_normal.push_str(&current_text[..safe_end]);
-                        self.recover_tool_start_without_opener = false;
                     }
                     self._buffer = current_text[safe_end..].to_string();
                 } else {
                     accumulated_normal.push_str(&current_text);
                     self._buffer.clear();
-                    if !current_text.is_empty() {
-                        self.recover_tool_start_without_opener = false;
-                    }
                 }
                 break;
             }
@@ -1519,6 +1526,25 @@ mod tests {
         let r2 = parser.parse_reasoning_streaming_incremental(second_chunk, &[]);
         assert_eq!(r2.reasoning_text, "");
         assert_eq!(r2.normal_text, format!("{tool_start_token}x"));
+    }
+
+    #[test]
+    fn test_dangling_end_builder_does_not_enable_implicit_tool_start_recovery() {
+        fn parser() -> BasicReasoningParser {
+            BasicReasoningParser::new("<think>".to_string(), "</think>".to_string(), false, true)
+                .with_dangling_end_recovery()
+                .with_tool_start_token("<tool>")
+        }
+
+        let mut batch_parser = parser();
+        let batch = batch_parser.detect_and_parse_reasoning("normal<tool>", &[]);
+        assert_eq!(batch.reasoning_text, "");
+        assert_eq!(batch.normal_text, "normal<tool>");
+
+        let mut stream_parser = parser();
+        let streamed = stream_parser.parse_reasoning_streaming_incremental("normal<tool>", &[]);
+        assert_eq!(streamed.reasoning_text, "");
+        assert_eq!(streamed.normal_text, "normal<tool>");
     }
 
     #[test] // REASONING.stream.3.c, helper
