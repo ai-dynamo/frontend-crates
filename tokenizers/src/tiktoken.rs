@@ -193,10 +193,10 @@ fn detect_bpe_pattern(directory: &Path) -> Result<&'static str> {
         // it still ships the Kimi tiktoken tokenizer file, so the KIMI_PATTERN BPE regex is the
         // correct pattern to use.  No pure DeepSeek V3 model uses tiktoken.model files
         // (they use tokenizer.json instead) so this match is safe.
-        "kimi" | "kimi_k2" | "kimi_k25" | "deepseek_v3" => Ok(KIMI_PATTERN),
+        "kimi" | "kimi_k2" | "kimi_k25" | "kimi_linear" | "deepseek_v3" => Ok(KIMI_PATTERN),
         _ => Err(Error::msg(format!(
             "Unsupported tiktoken model_type '{model_type}'. \
-             Currently supported: kimi, kimi_k2, kimi_k25, deepseek_v3. \
+             Currently supported: kimi, kimi_k2, kimi_k25, kimi_linear, deepseek_v3. \
              To add a new model type, extend detect_bpe_pattern() in lib/tokenizers/src/tiktoken.rs \
              with the appropriate BPE regex pattern. \
              Alternatively, provide a tokenizer.json (HuggingFace format) instead."
@@ -473,6 +473,13 @@ mod tests {
         create_test_config(dir.path(), "unknown_model");
         let result = detect_bpe_pattern(dir.path());
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_detect_bpe_pattern_kimi_linear() {
+        let dir = tempfile::tempdir().unwrap();
+        create_test_config(dir.path(), "kimi_linear");
+        assert_eq!(detect_bpe_pattern(dir.path()).unwrap(), KIMI_PATTERN);
     }
 
     #[test]
