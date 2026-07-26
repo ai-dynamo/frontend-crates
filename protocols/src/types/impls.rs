@@ -11,8 +11,10 @@ use super::{
     ChatCompletionRequestAssistantMessageContent, ChatCompletionRequestMessage,
     ChatCompletionRequestMessageContentPartAudio, ChatCompletionRequestMessageContentPartAudioUrl,
     ChatCompletionRequestMessageContentPartImage, ChatCompletionRequestMessageContentPartText,
-    ChatCompletionRequestMessageContentPartVideo, ChatCompletionRequestUserMessageContentPart,
-    ChatCompletionToolChoiceOption, ChatCompletionToolType, FunctionName, ImageUrl, VideoUrl,
+    ChatCompletionRequestMessageContentPartVideo, ChatCompletionRequestToolMessage,
+    ChatCompletionRequestToolMessageContent, ChatCompletionRequestToolMessageContentPart,
+    ChatCompletionRequestUserMessageContentPart, ChatCompletionToolChoiceOption,
+    ChatCompletionToolType, FunctionName, ImageUrl, VideoUrl,
 };
 
 use crate::error::OpenAIError;
@@ -99,6 +101,40 @@ impl From<async_openai::types::chat::ChatCompletionRequestToolMessage>
     for ChatCompletionRequestMessage
 {
     fn from(value: async_openai::types::chat::ChatCompletionRequestToolMessage) -> Self {
+        Self::Tool(value.into())
+    }
+}
+
+impl From<async_openai::types::chat::ChatCompletionRequestToolMessage>
+    for ChatCompletionRequestToolMessage
+{
+    fn from(value: async_openai::types::chat::ChatCompletionRequestToolMessage) -> Self {
+        let content = match value.content {
+            async_openai::types::chat::ChatCompletionRequestToolMessageContent::Text(text) => {
+                ChatCompletionRequestToolMessageContent::Text(text)
+            }
+            async_openai::types::chat::ChatCompletionRequestToolMessageContent::Array(parts) => {
+                ChatCompletionRequestToolMessageContent::Array(
+                    parts
+                        .into_iter()
+                        .map(|part| match part {
+                            async_openai::types::chat::ChatCompletionRequestToolMessageContentPart::Text(
+                                text,
+                            ) => ChatCompletionRequestToolMessageContentPart::Text(text),
+                        })
+                        .collect(),
+                )
+            }
+        };
+        Self {
+            content,
+            tool_call_id: value.tool_call_id,
+        }
+    }
+}
+
+impl From<ChatCompletionRequestToolMessage> for ChatCompletionRequestMessage {
+    fn from(value: ChatCompletionRequestToolMessage) -> Self {
         Self::Tool(value)
     }
 }
