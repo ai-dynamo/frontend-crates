@@ -4139,10 +4139,20 @@ fahrenheit
                 .collect()
                 .await;
 
+            // DeepSeek V3.2/V4 require the outer DSML wrapper (`require_wrapper`):
+            // a bare `<｜DSML｜invoke>` with no opening `<｜DSML｜tool_calls>` is not a
+            // conformant tool call, so it is dropped — the markup is still jailed
+            // (never leaked into content), just no call is recovered. Every other
+            // parser here recovers the bare call.
+            let expected_calls: Vec<String> = if parser == "deepseek_v4" {
+                vec![]
+            } else {
+                vec!["get_weather".to_string()]
+            };
             assert_eq!(
                 tool_call_names(&results),
-                vec!["get_weather".to_string()],
-                "{label}: expected recovered get_weather call"
+                expected_calls,
+                "{label}: recovered-call expectation"
             );
             assert_eq!(
                 test_utils::reconstruct_content(&results),

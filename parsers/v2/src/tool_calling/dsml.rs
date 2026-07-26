@@ -45,16 +45,35 @@ pub struct DeepSeekV4ToolStreamParser {
     /// while we buffer the body and wait for `</｜DSML｜invoke>`. Nothing is
     /// emitted until the close arrives; if it never does, the call is dropped.
     open_invoke: Option<(usize, String)>,
+    /// Spec-strict mode (DeepSeek DSML): when `true`, a bare `<｜DSML｜invoke>`
+    /// without the outer `<｜DSML｜tool_calls>` wrapper is NOT a conformant tool
+    /// call — it is dropped and its markup suppressed instead of recovered,
+    /// matching the v1 batch parser's `require_wrapper`. Production DeepSeek-V4
+    /// (`create`) is strict; `new()` stays lenient for the generic recovery path.
+    require_wrapper: bool,
 }
 
 impl DeepSeekV4ToolStreamParser {
     pub fn new() -> Self {
+        Self::with_require_wrapper(false)
+    }
+
+    /// Spec-strict constructor: a bare `<｜DSML｜invoke>` without the outer
+    /// `<｜DSML｜tool_calls>` wrapper is dropped (markup suppressed) rather than
+    /// recovered. This is the production DeepSeek-V4 behavior (see `create`);
+    /// `new()` stays lenient so the generic bare-invoke recovery path is testable.
+    pub fn new_strict() -> Self {
+        Self::with_require_wrapper(true)
+    }
+
+    fn with_require_wrapper(require_wrapper: bool) -> Self {
         Self {
             buffer: String::new(),
             in_block: false,
             suppress_normal_text: false,
             next_index: 0,
             open_invoke: None,
+            require_wrapper,
         }
     }
 
@@ -216,29 +235,46 @@ impl DeepSeekV4ToolStreamParser {
                     self.in_block = true;
                     self.suppress_normal_text = true;
                 }
-                Marker::BareInvoke => match self.open_invoke_header()? {
-                    Some(tool_index) => {
-                        // Degraded recovery: latch suppression so the orphan
-                        // markup tail around a bare invoke is dropped, not leaked
-                        // (matches the v1 batch recovery contract).
+                Marker::BareInvoke => {
+                    if self.require_wrapper {
+                        // Spec-strict (DeepSeek DSML): a bare invoke without the
+                        // outer <｜DSML｜tool_calls> wrapper is not a conformant
+                        // tool call. Consume the marker prefix and latch
+                        // suppression so the orphan invoke markup is dropped, not
+                        // leaked, and no call is emitted — matching the v1 batch
+                        // `require_wrapper` rule.
+                        self.buffer.drain(..INVOKE_START_PREFIX.len());
                         self.suppress_normal_text = true;
                         tracing::warn!(
-                            why = "dsv4_bare_invoke_recovery",
-                            tool_index,
-                            "DSML stream recovering a bare invoke (buffered until close)"
+                            why = "dsv4_bare_invoke_rejected_require_wrapper",
+                            "DSML stream dropping bare invoke without outer wrapper (require_wrapper)"
                         );
+                        continue;
                     }
-                    None => {
-                        if flush {
+                    match self.open_invoke_header()? {
+                        Some(tool_index) => {
+                            // Degraded recovery: latch suppression so the orphan
+                            // markup tail around a bare invoke is dropped, not
+                            // leaked (matches the v1 batch recovery contract).
+                            self.suppress_normal_text = true;
                             tracing::warn!(
-                                why = "dsv4_incomplete_bare_invoke",
-                                "DSML stream dropped incomplete bare invoke at EOF"
+                                why = "dsv4_bare_invoke_recovery",
+                                tool_index,
+                                "DSML stream recovering a bare invoke (buffered until close)"
                             );
-                            self.buffer.clear();
                         }
-                        break;
+                        None => {
+                            if flush {
+                                tracing::warn!(
+                                    why = "dsv4_incomplete_bare_invoke",
+                                    "DSML stream dropped incomplete bare invoke at EOF"
+                                );
+                                self.buffer.clear();
+                            }
+                            break;
+                        }
                     }
-                },
+                }
             }
         }
 
@@ -288,7 +324,9 @@ impl ToolParser for DeepSeekV4ToolStreamParser {
     where
         Self: Sized + 'static,
     {
-        Ok(Box::new(Self::new()))
+        // Production DeepSeek-V4 is spec-strict: bare invokes without the outer
+        // wrapper are not conformant tool calls.
+        Ok(Box::new(Self::new_strict()))
     }
 
     fn preserve_special_tokens(&self) -> bool {
@@ -367,6 +405,71 @@ mod tests {
         }
         out.append(parser.finish().expect("finish"));
         out
+    }
+
+    fn parse_chunks_strict(chunks: &[&str]) -> ToolParseResult {
+        let mut parser = DeepSeekV4ToolStreamParser::new_strict();
+        let mut out = ToolParseResult::default();
+        for chunk in chunks {
+            out.append(parser.push(chunk).expect("push"));
+        }
+        out.append(parser.finish().expect("finish"));
+        out
+    }
+
+    /// Spec-strict (production DeepSeek-V4 via `create`/`new_strict`): a bare
+    /// `<｜DSML｜invoke>` with no outer `<｜DSML｜tool_calls>` wrapper is not a
+    /// conformant call — dropped, its markup suppressed, nothing leaked. Contrast
+    /// with `recovers_complete_bare_invoke` (lenient `new()`).
+    #[test]
+    fn strict_drops_bare_invoke_without_wrapper() {
+        let out = parse_chunks_strict(&[
+            "I will check that. <｜DSML｜invoke name=\"get_weather\">",
+            " <｜DSML｜parameter name=\"location\" string=\"true\">NYC</｜DSML｜parameter>",
+            " </｜DSML｜invoke>",
+        ]);
+        let normal_text = out.normal_text.clone();
+        assert!(
+            out.coalesce_calls().calls.is_empty(),
+            "bare invoke without wrapper must not become a call"
+        );
+        assert!(
+            !normal_text.contains("DSML"),
+            "orphan DSML markup leaked into normal_text: {normal_text:?}"
+        );
+        assert_eq!(normal_text, "I will check that. ");
+    }
+
+    /// Strict mode still parses a properly wrapped streamed call.
+    #[test]
+    fn strict_still_parses_wrapped_call() {
+        let out = parse_chunks_strict(&[
+            "<｜DSML｜tool_calls> <｜DSML｜invoke name=\"get_weather\">",
+            " <｜DSML｜parameter name=\"location\" string=\"true\">NYC</｜DSML｜parameter> </｜DSML｜invoke>",
+            " </｜DSML｜tool_calls>",
+        ]);
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 1);
+        assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
+        assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
+    }
+
+    /// Strict mode: a bare invoke preceding a wrapped block is dropped; the
+    /// wrapped block still parses and no markup leaks.
+    #[test]
+    fn strict_drops_bare_invoke_before_wrapped_block() {
+        let out = parse_chunks_strict(&[
+            "<｜DSML｜invoke name=\"orphan\"> <｜DSML｜parameter name=\"x\" string=\"true\">1</｜DSML｜parameter> </｜DSML｜invoke>",
+            " <｜DSML｜tool_calls> <｜DSML｜invoke name=\"wrapped\"> <｜DSML｜parameter name=\"y\" string=\"true\">2</｜DSML｜parameter> </｜DSML｜invoke> </｜DSML｜tool_calls>",
+        ]);
+        let normal_text = out.normal_text.clone();
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 1, "only the wrapped invoke is a call");
+        assert_eq!(merged.calls[0].name.as_deref(), Some("wrapped"));
+        assert!(
+            !normal_text.contains("DSML"),
+            "orphan markup leaked: {normal_text:?}"
+        );
     }
 
     #[test]
