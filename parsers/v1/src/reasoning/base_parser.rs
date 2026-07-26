@@ -229,8 +229,17 @@ impl ReasoningParser for BasicReasoningParser {
                         exited_on_tool_start = true;
                     }
                     (None, None) => {
-                        // No end token — rest is reasoning (truncated)
-                        reasoning_parts.push(&text[cursor..]);
+                        // Emit only reasoning content that cannot still become a
+                        // tool-call start marker once more bytes arrive.
+                        let reasoning_tail = &text[cursor..];
+                        let tool_overlap =
+                            max_marker_overlap(reasoning_tail, &self.tool_start_tokens);
+                        if tool_overlap > 0 {
+                            let safe_end = reasoning_tail.len() - tool_overlap;
+                            reasoning_parts.push(&reasoning_tail[..safe_end]);
+                        } else {
+                            reasoning_parts.push(reasoning_tail);
+                        }
                         cursor = text.len();
                     }
                 }
@@ -364,7 +373,7 @@ impl ReasoningParser for BasicReasoningParser {
                         let ol_end = overlap(&current_text, &self.think_end_token);
                         let ol_tool = max_marker_overlap(&current_text, &self.tool_start_tokens);
                         let ol = ol_end.max(ol_tool);
-                        if ol >= 2 {
+                        if ol_end >= 2 || ol_tool > 0 {
                             let safe_end = current_text.len() - ol;
                             if safe_end > 0 {
                                 accumulated_reasoning.push_str(&current_text[..safe_end]);

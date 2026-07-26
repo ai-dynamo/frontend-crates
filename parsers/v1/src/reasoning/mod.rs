@@ -20,6 +20,7 @@ pub use minimax_append_think_parser::MiniMaxAppendThinkParser;
 /// registration and its test fixtures so both stay in sync. Mirrors
 /// `KimiK2ParserConfig::default().section_start` in `crate::tool_calling::config`.
 pub(crate) const KIMI_K2_TOOL_SECTION_BEGIN: &str = "<|tool_calls_section_begin|>";
+pub(crate) const DEEPSEEK_TOOL_SECTION_BEGIN: &str = "<｜DSML｜";
 
 static REASONING_PARSER_MAP: OnceLock<HashMap<&'static str, ReasoningParserType>> = OnceLock::new();
 
@@ -235,7 +236,10 @@ impl ReasoningParserType {
             // distinct variant so V4-specific divergence has somewhere to land.
             // See `ReasoningParserType::DeepSeekV4` docstring for rationale.
             ReasoningParserType::DeepSeekV4 => ReasoningParserWrapper {
-                parser: Box::new(basic_parser),
+                parser: Box::new(
+                    BasicReasoningParser::new("<think>".into(), "</think>".into(), false, true)
+                        .with_tool_start_token(DEEPSEEK_TOOL_SECTION_BEGIN),
+                ),
             },
             ReasoningParserType::NemotronDeci => ReasoningParserWrapper {
                 parser: Box::new(basic_parser),
@@ -369,6 +373,68 @@ mod tests {
         for parser in available_parsers {
             assert!(parsers.contains(&parser));
         }
+    }
+
+    #[test]
+    fn test_deepseek_v4_detect_and_parse_exits_reasoning_on_dsml_tool_start() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("deepseek_v4");
+        let result = parser.detect_and_parse_reasoning(
+            "<think>need a tool<｜DSML｜tool_calls>\n<｜DSML｜invoke name=\"bash\">",
+            &[],
+        );
+
+        assert_eq!(result.reasoning_text, "need a tool");
+        assert_eq!(
+            result.normal_text,
+            "<｜DSML｜tool_calls>\n<｜DSML｜invoke name=\"bash\">"
+        );
+    }
+
+    #[test]
+    fn test_deepseek_v4_detect_and_parse_drops_dangling_dsml_tool_prefix() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("deepseek_v4");
+        let result = parser.detect_and_parse_reasoning("<think>need a tool<", &[]);
+
+        assert_eq!(result.reasoning_text, "need a tool");
+        assert_eq!(result.normal_text, "");
+    }
+
+    #[test]
+    fn test_deepseek_v4_streaming_exits_reasoning_on_split_dsml_tool_start() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("deepseek_v4");
+        parser.set_in_reasoning(true);
+
+        let chunks = ["need a tool", "<", "｜DSML｜tool_calls>\nX"];
+        let mut reasoning = String::new();
+        let mut normal = String::new();
+
+        for chunk in chunks {
+            let result = parser.parse_reasoning_streaming_incremental(chunk, &[]);
+            reasoning.push_str(&result.reasoning_text);
+            normal.push_str(&result.normal_text);
+        }
+
+        assert_eq!(reasoning, "need a tool");
+        assert_eq!(normal, "<｜DSML｜tool_calls>\nX");
+    }
+
+    #[test]
+    fn test_deepseek_v4_streaming_does_not_drop_non_dsml_lone_angle() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("deepseek_v4");
+        parser.set_in_reasoning(true);
+
+        let chunks = ["literal", "<", "not dsml"];
+        let mut reasoning = String::new();
+        let mut normal = String::new();
+
+        for chunk in chunks {
+            let result = parser.parse_reasoning_streaming_incremental(chunk, &[]);
+            reasoning.push_str(&result.reasoning_text);
+            normal.push_str(&result.normal_text);
+        }
+
+        assert_eq!(reasoning, "literal<not dsml");
+        assert_eq!(normal, "");
     }
 
     #[test] // MiniMax M2

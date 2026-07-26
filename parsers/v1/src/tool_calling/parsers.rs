@@ -385,9 +385,7 @@ pub fn find_tool_call_end_position(chunk: &str, parser_str: Option<&str>) -> Opt
             ParserConfig::Xml(xml_config) => {
                 Some(find_tool_call_end_position_xml(chunk, xml_config))
             }
-            ParserConfig::Dsml(dsml_config) => {
-                Some(find_tool_call_end_position_dsml(chunk, dsml_config))
-            }
+            ParserConfig::Dsml(dsml_config) => find_tool_call_end_position_dsml(chunk, dsml_config),
             ParserConfig::Glm47(glm47_config) => {
                 Some(find_tool_call_end_position_glm47(chunk, glm47_config))
             }
