@@ -1,10 +1,10 @@
 # release-plz configuration. See https://release-plz.dev/docs/config
 
 [workspace]
-# Validate proposed bumps against the public API diff via cargo-semver-checks.
-# If a `fix:` or `chore:` commit actually removed/renamed a pub item, the
-# release fails before anything is published.
-semver_check = true
+# Frontend crates are consumed in lockstep by Dynamo. Maintainers choose any
+# major-version transition explicitly; release-plz otherwise uses the
+# conventional-commit minor/patch bump for every crate.
+semver_check = false
 
 # Only commits matching this regex count toward "is there anything to release".
 # TEMPORARY (transition only): `chore` is included so `chore: trivial parser
@@ -26,13 +26,6 @@ git_release_enable = false
 # Defaults we accept explicitly for clarity:
 # changelog_update = true
 # publish = true
-
-# `dynamo-protocols` is consumed in lockstep by Dynamo. Maintainers choose any
-# major-version transition explicitly; release-plz should otherwise use the
-# conventional-commit minor/patch bump.
-[[package]]
-name = "dynamo-protocols"
-semver_check = false
 
 # Non-published workspace crates must opt out of release-plz publishing too;
 # release-plz validates this against each crate's Cargo.toml.
