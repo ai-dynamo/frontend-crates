@@ -351,10 +351,13 @@ impl DeepSeekV4Formatter {
         let v = args.get("reasoning_effort")?;
         match v.as_str() {
             Some("max") | Some("xhigh") => Some(ReasoningEffort::Max),
-            Some("high") => Some(ReasoningEffort::High),
-            // Explicit "no extra effort" levels from the OpenAI-style range —
-            // valid input, no prompt preamble, and no warning.
-            Some("none") | Some("minimal") | Some("low") | Some("medium") => None,
+            // DeepSeek V4 only natively distinguishes none/high/max, so the
+            // OpenAI-style intermediate levels map to "high" — the model still
+            // reasons, it just doesn't get the max-effort preamble.
+            Some("high") | Some("minimal") | Some("low") | Some("medium") => {
+                Some(ReasoningEffort::High)
+            }
+            Some("none") => None,
             _ => {
                 tracing::warn!(
                     value = ?v,
@@ -795,10 +798,10 @@ mod tests {
         assert_eq!(effort("max"), Some(ReasoningEffort::Max));
         assert_eq!(effort("xhigh"), Some(ReasoningEffort::Max));
         assert_eq!(effort("high"), Some(ReasoningEffort::High));
+        assert_eq!(effort("minimal"), Some(ReasoningEffort::High));
+        assert_eq!(effort("low"), Some(ReasoningEffort::High));
+        assert_eq!(effort("medium"), Some(ReasoningEffort::High));
         assert_eq!(effort("none"), None);
-        assert_eq!(effort("minimal"), None);
-        assert_eq!(effort("low"), None);
-        assert_eq!(effort("medium"), None);
         assert_eq!(effort("bogus"), None);
     }
 
