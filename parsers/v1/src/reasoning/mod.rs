@@ -7,6 +7,7 @@ mod base_parser;
 mod gemma4_parser;
 mod gpt_oss_parser;
 mod granite_parser;
+mod inkling_parser;
 mod minimax_append_think_parser;
 
 // Re-export main types and functions for convenience
@@ -14,6 +15,7 @@ pub use base_parser::BasicReasoningParser;
 pub use gemma4_parser::Gemma4ReasoningParser;
 pub use gpt_oss_parser::{GptOssReasoningParser, harmony_terminator_token_ids};
 pub use granite_parser::GraniteReasoningParser;
+pub use inkling_parser::InklingReasoningParser;
 pub use minimax_append_think_parser::MiniMaxAppendThinkParser;
 
 /// Kimi-K2/K2.5 tool-call section marker. Shared between the `kimi_k25` reasoning-parser
@@ -80,6 +82,8 @@ fn get_reasoning_parser_map() -> &'static HashMap<&'static str, ReasoningParserT
         // `--dyn-tool-call-parser gemma4` for end-to-end Gemma 4 support.
         map.insert("gemma4", ReasoningParserType::Gemma4);
         map.insert("gemma-4", ReasoningParserType::Gemma4);
+        // Block-structured, not a `<think>` prefix, so not a BasicReasoningParser.
+        map.insert("inkling", ReasoningParserType::Inkling);
         map
     })
 }
@@ -182,6 +186,9 @@ pub enum ReasoningParserType {
     /// Google Gemma 4 thinking models. Custom `<|channel>...<channel|>`
     /// delimiters with a `thought\n` role-label prefix stripped by the parser.
     Gemma4,
+    /// Inkling (thinkingmachines/Inkling-NVFP4): block-structured reasoning, tool-call
+    /// blocks passed through verbatim. See [`crate::reasoning::inkling_parser`].
+    Inkling,
 }
 
 #[derive(std::fmt::Debug)]
@@ -307,6 +314,9 @@ impl ReasoningParserType {
             ReasoningParserType::Gemma4 => ReasoningParserWrapper {
                 parser: Box::new(Gemma4ReasoningParser::new()),
             },
+            ReasoningParserType::Inkling => ReasoningParserWrapper {
+                parser: Box::new(InklingReasoningParser::new()),
+            },
         }
     }
 
@@ -365,10 +375,36 @@ mod tests {
             "minimax-m3",
             "gemma4",
             "gemma-4",
+            "inkling",
         ];
         for parser in available_parsers {
             assert!(parsers.contains(&parser));
         }
+    }
+
+    #[test] // Inkling
+    fn test_inkling_detect_and_parse() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("inkling");
+        let result = parser.detect_and_parse_reasoning(
+            "<|message_model|><|content_thinking|>thinking<|end_message|><|message_model|><|content_text|>answer<|end_message|><|content_model_end_sampling|>",
+            &[],
+        );
+        assert_eq!(result.reasoning_text, "thinking");
+        assert_eq!(result.normal_text, "answer");
+    }
+
+    #[test] // Inkling
+    fn test_inkling_preserves_tool_block() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("inkling");
+        let result = parser.detect_and_parse_reasoning(
+            r#"<|message_model|><|content_thinking|>use weather</a><|end_message|><|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>"#,
+            &[],
+        );
+        assert_eq!(result.reasoning_text, "use weather</a>");
+        assert_eq!(
+            result.normal_text,
+            r#"<|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"Paris"}}<|end_message|>"#
+        );
     }
 
     #[test] // MiniMax M2

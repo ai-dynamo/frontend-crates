@@ -696,6 +696,148 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_inkling_end_marker_inside_json_string_does_not_end_jail() {
+        let chunks = vec![
+            create_mock_response_chunk(
+                r#"<|message_model|>echo<|content_invoke_tool_json|>{"name":"echo","args":{"text":"a"#
+                    .to_string(),
+                0,
+            ),
+            // This is argument data, not the outer fence.
+            create_mock_response_chunk("<|end_message|>".to_string(), 0),
+            create_mock_response_chunk(r#"b"}}"#.to_string(), 0),
+            // Only this marker closes the tool block.
+            create_mock_response_chunk("<|end_message|>".to_string(), 0),
+        ];
+
+        let jail = JailedStream::builder().tool_call_parser("inkling").build();
+        let results: Vec<_> = jail
+            .apply_with_finish_reason(stream::iter(chunks))
+            .collect()
+            .await;
+
+        let tool_chunk = results
+            .iter()
+            .find(|result| test_utils::has_tool_call(result))
+            .expect("Inkling call should be emitted after the real outer fence");
+        test_utils::assert_tool_call(
+            tool_chunk,
+            "echo",
+            serde_json::json!({"text": "a<|end_message|>b"}),
+        );
+        assert_eq!(test_utils::reconstruct_content(&results), "");
+    }
+
+    #[tokio::test]
+    async fn test_inkling_inner_marker_without_outer_fence_waits_for_finalize() {
+        let chunks = vec![
+            create_mock_response_chunk(
+                r#"<|message_model|>echo<|content_invoke_tool_json|>{"name":"echo","args":{"text":"a"#
+                    .to_string(),
+                0,
+            ),
+            create_mock_response_chunk("<|end_message|>".to_string(), 0),
+            create_mock_response_chunk(r#"b"}}"#.to_string(), 0),
+            create_final_response_chunk(0),
+        ];
+
+        let jail = JailedStream::builder().tool_call_parser("inkling").build();
+        let results: Vec<_> = jail
+            .apply_with_finish_reason(stream::iter(chunks))
+            .collect()
+            .await;
+
+        let tool_chunk = results
+            .iter()
+            .find(|result| test_utils::has_tool_call(result))
+            .expect("complete JSON should recover only when the stream finalizes");
+        test_utils::assert_tool_call(
+            tool_chunk,
+            "echo",
+            serde_json::json!({"text": "a<|end_message|>b"}),
+        );
+        assert_eq!(test_utils::reconstruct_content(&results), "");
+    }
+
+    #[tokio::test]
+    async fn test_inkling_orphan_end_marker_split_is_stripped() {
+        let chunks = vec![
+            create_mock_response_chunk("prefix ".to_string(), 0),
+            create_mock_response_chunk("<|end_".to_string(), 0),
+            create_mock_response_chunk("message|>".to_string(), 0),
+            create_mock_response_chunk(" suffix".to_string(), 0),
+            create_final_response_chunk(0),
+        ];
+
+        let jail = JailedStream::builder().tool_call_parser("inkling").build();
+        let results: Vec<_> = jail
+            .apply_with_finish_reason(stream::iter(chunks))
+            .collect()
+            .await;
+
+        assert_eq!(test_utils::reconstruct_content(&results), "prefix suffix");
+        assert!(!test_utils::reconstruct_content(&results).contains("<|end_message|>"));
+    }
+
+    #[tokio::test]
+    async fn test_inkling_every_single_split_boundary_emits_the_same_call() {
+        let input = r#"<|message_model|>echo<|content_invoke_tool_json|>{"name":"echo","args":{"text":"a<|end_message|>b"}}<|end_message|>"#;
+
+        for split in input
+            .char_indices()
+            .map(|(idx, _)| idx)
+            .skip(1)
+            .chain(std::iter::once(input.len()))
+        {
+            let chunks = vec![
+                create_mock_response_chunk(input[..split].to_string(), 0),
+                create_mock_response_chunk(input[split..].to_string(), 0),
+                create_final_response_chunk(0),
+            ];
+            let jail = JailedStream::builder().tool_call_parser("inkling").build();
+            let results: Vec<_> = jail
+                .apply_with_finish_reason(stream::iter(chunks))
+                .collect()
+                .await;
+
+            let tool_chunk = results
+                .iter()
+                .find(|result| test_utils::has_tool_call(result))
+                .unwrap_or_else(|| panic!("no tool call when split at byte {split}"));
+            test_utils::assert_tool_call(
+                tool_chunk,
+                "echo",
+                serde_json::json!({"text": "a<|end_message|>b"}),
+            );
+            assert_eq!(
+                test_utils::reconstruct_content(&results),
+                "",
+                "unexpected content when split at byte {split}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_inkling_partial_opener_mismatch_releases_plain_text() {
+        let chunks = vec![
+            create_mock_response_chunk("plain <".to_string(), 0),
+            create_mock_response_chunk("not-a-marker".to_string(), 0),
+            create_final_response_chunk(0),
+        ];
+        let jail = JailedStream::builder().tool_call_parser("inkling").build();
+        let results: Vec<_> = jail
+            .apply_with_finish_reason(stream::iter(chunks))
+            .collect()
+            .await;
+
+        assert_eq!(
+            test_utils::reconstruct_content(&results),
+            "plain <not-a-marker"
+        );
+        assert!(!results.iter().any(test_utils::has_tool_call));
+    }
+
+    #[tokio::test]
     async fn test_jailed_stream_mistral_parser() {
         // Tests Mistral format tool call parsing with [{ pattern
         // Input: "Sure, I can help. " + "[{\"name\": \"calculate\", \"arguments\": {\"expression\": \"2+2\"}}]" + " The calculation is done."
