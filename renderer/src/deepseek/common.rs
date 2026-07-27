@@ -539,6 +539,16 @@ pub(crate) fn inject_tools_and_response_format(
         .transpose()
         .context("Failed to convert tools to JSON")?;
 
+    // OpenAI semantics for `tool_choice: "none"`: the model must not call
+    // tools. Strip the tool definitions from the prompt so the model never
+    // sees the DSML tool instructions and cannot emit raw tool markup.
+    // response_format is kept intact. Mirrors the jinja path's
+    // exclude_tools_when_tool_choice_none handling (template/oai.rs).
+    let tools_json = match req.tool_choice() {
+        Some(ref tc) if tc.as_str() == Some("none") => None,
+        _ => tools_json,
+    };
+
     let response_format_json = req
         .response_format()
         .map(|rf| serde_json::to_value(&rf))
