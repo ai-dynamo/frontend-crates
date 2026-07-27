@@ -333,7 +333,7 @@ impl ToolResultContent {
                 .into_iter()
                 .filter_map(|b| match b {
                     ToolResultContentBlock::Text { text } => Some(text),
-                    ToolResultContentBlock::Other(_) => None,
+                    ToolResultContentBlock::Image { .. } | ToolResultContentBlock::Other(_) => None,
                 })
                 .collect::<Vec<_>>()
                 .join(""),
@@ -342,14 +342,75 @@ impl ToolResultContent {
 }
 
 /// A content block within a `tool_result.content` array.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
+#[derive(Debug, Clone)]
 pub enum ToolResultContentBlock {
     Text {
         text: String,
     },
-    /// Catch-all for non-text blocks (images, etc.) in tool results.
+    /// Image returned by a tool.
+    Image {
+        source: AnthropicImageSource,
+    },
+    /// Catch-all for other non-text blocks in tool results.
     Other(serde_json::Value),
+}
+
+impl Serialize for ToolResultContentBlock {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Text { text } => serde_json::json!({
+                "type": "text",
+                "text": text,
+            })
+            .serialize(serializer),
+            Self::Image { source } => serde_json::json!({
+                "type": "image",
+                "source": source,
+            })
+            .serialize(serializer),
+            Self::Other(value) => value.serialize(serializer),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for ToolResultContentBlock {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = serde_json::Value::deserialize(deserializer)?;
+        match value.get("type").and_then(|value| value.as_str()) {
+            Some("text") => {
+                let text = value
+                    .get("text")
+                    .and_then(|value| value.as_str())
+                    .ok_or_else(|| serde::de::Error::missing_field("text"))?;
+                Ok(Self::Text {
+                    text: text.to_string(),
+                })
+            }
+            Some("image") => {
+                let source = value
+                    .get("source")
+                    .cloned()
+                    .ok_or_else(|| serde::de::Error::missing_field("source"))
+                    .and_then(|value| {
+                        serde_json::from_value(value).map_err(serde::de::Error::custom)
+                    })?;
+                Ok(Self::Image { source })
+            }
+            None => match value.get("text").and_then(|value| value.as_str()) {
+                Some(text) => Ok(Self::Text {
+                    text: text.to_string(),
+                }),
+                None => Ok(Self::Other(value)),
+            },
+            _ => Ok(Self::Other(value)),
+        }
+    }
 }
 
 /// Custom deserializer for `AnthropicContentBlock` that handles unknown types
@@ -861,6 +922,7 @@ fn estimate_block_len(block: &AnthropicContentBlock) -> usize {
                     .iter()
                     .map(|b| match b {
                         ToolResultContentBlock::Text { text } => text.len(),
+                        ToolResultContentBlock::Image { .. } => 256,
                         ToolResultContentBlock::Other(v) => v.to_string().len(),
                     })
                     .sum(),
@@ -897,5 +959,40 @@ mod tests {
         let nvext = request.nvext.expect("opaque nvext value");
         assert_eq!(nvext["unknown_future_extension"]["nested"], true);
         assert_eq!(nvext["agent_context"]["trajectory_id"], 7);
+    }
+
+    #[test]
+    fn tool_result_blocks_preserve_image_and_reject_document() {
+        let input = serde_json::json!([
+            {"type": "text", "text": "Screenshot captured"},
+            {
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": "image/png",
+                    "data": "aGVsbG8="
+                }
+            },
+            {
+                "type": "document",
+                "source": {
+                    "type": "base64",
+                    "media_type": "application/pdf",
+                    "data": "aGVsbG8="
+                }
+            }
+        ]);
+        let content: ToolResultContent = serde_json::from_value(input.clone()).unwrap();
+
+        let ToolResultContent::Blocks(blocks) = &content else {
+            panic!("expected content blocks");
+        };
+        assert!(matches!(blocks[1], ToolResultContentBlock::Image { .. }));
+        assert!(matches!(blocks[2], ToolResultContentBlock::Other(_)));
+        assert_eq!(serde_json::to_value(content).unwrap(), input);
+
+        let legacy: ToolResultContentBlock =
+            serde_json::from_value(serde_json::json!({"text": "legacy"})).unwrap();
+        assert!(matches!(legacy, ToolResultContentBlock::Text { .. }));
     }
 }

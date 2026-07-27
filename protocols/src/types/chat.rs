@@ -45,10 +45,6 @@ pub use async_openai::types::chat::{
     ChatCompletionRequestSystemMessageArgs,
     ChatCompletionRequestSystemMessageContent,
     ChatCompletionRequestSystemMessageContentPart,
-    ChatCompletionRequestToolMessage,
-    ChatCompletionRequestToolMessageArgs,
-    ChatCompletionRequestToolMessageContent,
-    ChatCompletionRequestToolMessageContentPart,
     ChatCompletionResponseMessageAudio,
     ChatCompletionTokenLogprob,
     Choice,
@@ -307,6 +303,59 @@ pub struct ImageUrl {
     #[deprecated(note = "use the content-part `uuid` field for vLLM cache identities")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uuid: Option<Uuid>,
+}
+
+/// Tool message content part with media observation support.
+///
+/// OpenAI's schema currently limits tool content parts to text, but
+/// OpenAI-compatible multimodal backends also accept image, video, and audio
+/// observations returned by tools.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(tag = "type")]
+#[serde(rename_all = "snake_case")]
+pub enum ChatCompletionRequestToolMessageContentPart {
+    Text(ChatCompletionRequestMessageContentPartText),
+    ImageUrl(ChatCompletionRequestMessageContentPartImage),
+    VideoUrl(ChatCompletionRequestMessageContentPartVideo),
+    AudioUrl(ChatCompletionRequestMessageContentPartAudioUrl),
+}
+
+/// Tool message content, extended to preserve media observations.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(untagged)]
+pub enum ChatCompletionRequestToolMessageContent {
+    Text(String),
+    Array(Vec<ChatCompletionRequestToolMessageContentPart>),
+}
+
+impl Default for ChatCompletionRequestToolMessageContent {
+    fn default() -> Self {
+        Self::Text(String::new())
+    }
+}
+
+impl From<&str> for ChatCompletionRequestToolMessageContent {
+    fn from(value: &str) -> Self {
+        Self::Text(value.into())
+    }
+}
+
+impl From<String> for ChatCompletionRequestToolMessageContent {
+    fn from(value: String) -> Self {
+        Self::Text(value)
+    }
+}
+
+/// Tool message using Dynamo's media-capable content type.
+#[derive(Debug, Serialize, Deserialize, Default, Clone, Builder, PartialEq)]
+#[builder(name = "ChatCompletionRequestToolMessageArgs")]
+#[builder(pattern = "mutable")]
+#[builder(setter(into, strip_option), default)]
+#[builder(derive(Debug))]
+#[builder(build_fn(error = "OpenAIError"))]
+pub struct ChatCompletionRequestToolMessage {
+    pub content: ChatCompletionRequestToolMessageContent,
+    pub tool_call_id: String,
 }
 
 #[derive(Clone, Serialize, Default, Debug, Deserialize, PartialEq)]
@@ -1308,5 +1357,54 @@ mod tests {
             }
             _ => panic!("parts[2] should be image_url"),
         }
+    }
+
+    #[test]
+    fn tool_message_accepts_media_content() {
+        let message: ChatCompletionRequestMessage = serde_json::from_value(serde_json::json!({
+            "role": "tool",
+            "tool_call_id": "call_media",
+            "content": [
+                {"type": "text", "text": "Screenshot captured"},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "data:image/png;base64,aGVsbG8="
+                    }
+                },
+                {
+                    "type": "video_url",
+                    "video_url": {
+                        "url": "https://example.com/clip.mp4"
+                    }
+                },
+                {
+                    "type": "audio_url",
+                    "audio_url": {
+                        "url": "https://example.com/audio.wav"
+                    }
+                }
+            ]
+        }))
+        .unwrap();
+
+        let ChatCompletionRequestMessage::Tool(tool) = message else {
+            panic!("expected tool message");
+        };
+        let ChatCompletionRequestToolMessageContent::Array(parts) = tool.content else {
+            panic!("expected array content");
+        };
+        assert!(matches!(
+            parts[1],
+            ChatCompletionRequestToolMessageContentPart::ImageUrl(_)
+        ));
+        assert!(matches!(
+            parts[2],
+            ChatCompletionRequestToolMessageContentPart::VideoUrl(_)
+        ));
+        assert!(matches!(
+            parts[3],
+            ChatCompletionRequestToolMessageContentPart::AudioUrl(_)
+        ));
     }
 }
