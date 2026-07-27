@@ -650,6 +650,22 @@ mod tests {
     }
 
     #[test]
+    fn ignores_unsupported_reasoning_effort_values() {
+        for value in [json!(true), json!("invalid"), json!(null)] {
+            let mut request = Request::new(json!([{
+                "role": "user",
+                "content": "test"
+            }]));
+            request.reasoning_effort = Some(value);
+
+            assert_eq!(
+                InklingFormatter.render(&request).unwrap(),
+                "<|message_user|><|content_text|>test<|end_message|><|message_model|>"
+            );
+        }
+    }
+
+    #[test]
     fn tool_choice_none_suppresses_declarations() {
         let mut request = Request::new(json!([
             {
