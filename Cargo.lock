@@ -949,6 +949,7 @@ dependencies = [
  "serde_yaml",
  "tracing",
  "uuid",
+ "winnow",
 ]
 
 [[package]]

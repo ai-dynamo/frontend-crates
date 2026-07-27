@@ -17,3 +17,4 @@ regex = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true, features = ["v4", "serde"] }
 num-traits = { workspace = true }
+winnow = { workspace = true }
