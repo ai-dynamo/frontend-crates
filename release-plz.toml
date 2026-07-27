@@ -27,6 +27,13 @@ git_release_enable = false
 # changelog_update = true
 # publish = true
 
+# `dynamo-protocols` is consumed in lockstep by Dynamo. Maintainers choose any
+# major-version transition explicitly; release-plz should otherwise use the
+# conventional-commit minor/patch bump.
+[[package]]
+name = "dynamo-protocols"
+semver_check = false
+
 # Non-published workspace crates must opt out of release-plz publishing too;
 # release-plz validates this against each crate's Cargo.toml.
 [[package]]
