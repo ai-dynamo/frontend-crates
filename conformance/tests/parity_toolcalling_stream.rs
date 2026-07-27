@@ -139,8 +139,19 @@ fn merge_dynamo(fx: &mut Fixture, dyn_dir: &Path, rel: &Path) {
                 chunk
                     .expected
                     .insert("dynamo_v2".to_string(), dchunk.expected);
-                if let Some(nt) = dchunk.normal_text {
-                    chunk.normal_text.insert("dynamo_v2".to_string(), nt);
+                // Latest-wins applies to `normal_text` too: an ABSENT value in the
+                // newer capture means "this chunk emits no visible text", which must
+                // clear whatever an older capture recorded. Only inserting on Some()
+                // made the field write-only — a chunk that legitimately stopped
+                // emitting text kept the stale older string, so the test compared the
+                // newest deltas against a previous capture's normal_text.
+                match dchunk.normal_text {
+                    Some(nt) => {
+                        chunk.normal_text.insert("dynamo_v2".to_string(), nt);
+                    }
+                    None => {
+                        chunk.normal_text.remove("dynamo_v2");
+                    }
                 }
             }
         }

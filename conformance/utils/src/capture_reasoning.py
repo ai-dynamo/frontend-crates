@@ -57,6 +57,14 @@ _REASONING_MARKER_IDS = {
     # Gemma 4 channel markers (used by the ParserEngine adapter's boundary check).
     "<|channel>": 209,
     "<channel|>": 210,
+    # vLLM 0.23.0's Gemma4 parser resolves these three ids in its constructor
+    # (self.vocab["<|turn>"] / ["<|tool_call>"] / ["<|tool_response>"]); without them the
+    # mock tokenizer raises KeyError and every gemma4 case captures as an error instead of
+    # a result. Later vLLM releases dropped the lookups, which is why it only bites 0.23.0.
+    "<|turn>": 211,
+    "<|tool_call>": 212,
+    "<tool_call|>": 213,
+    "<|tool_response>": 214,
 }
 _MARKERS_BY_LENGTH = sorted(_REASONING_MARKER_IDS, key=len, reverse=True)
 

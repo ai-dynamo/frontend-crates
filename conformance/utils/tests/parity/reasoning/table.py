@@ -1519,12 +1519,25 @@ def _reasoning_cell_model(
         for f in _reasoning_facts(case, family)
         if f["impl"] != "dynamo_v1" and f["agrees"] is False and f["reason"]
     ]
+    # Batch cases carry `model_text`; stream cases carry `chunks` as raw delta STRINGS
+    # (e.g. ["<mm:thi", "nk>reason</mm:think>answer"]). The streamed input is their
+    # concatenation — join it so the reasoning-stream input cell isn't blank.
     model_text = case.get("model_text")
+    chunk_list = None
+    if not model_text:
+        chunks = case.get("chunks")
+        if isinstance(chunks, list) and all(isinstance(c, str) for c in chunks):
+            model_text = "".join(chunks)
+            # Keep the boundaries too. Joining is right for display and coloring (both
+            # must resolve across chunks), but discarding the split left the reader with
+            # no way to see where one chunk ended — the popup looked like one blob.
+            # Shape matches the toolcalling corpus so the view has one code path.
+            chunk_list = [{"delta_text": c} for c in chunks]
     tooltip = {
         "head": head,
         "description": case.get("description") or "",
         "input": {"kind": "text" if model_text else None, "text": model_text,
-                  "chunks": None, "family": family},
+                  "chunks": chunk_list, "family": family},
         "candidates": candidates,
         "baseline": None,
         "reasons": reasons,
@@ -1549,10 +1562,19 @@ def _reasoning_columns_model(columns: list[str], descriptions: dict[str, str]) -
         groups.append({"key": gk, "label": _case_group_label(run[0]),
                        "band": _case_band_class(run[0]), "span": len(run)})
         for case_id in run:
+            # `descriptions` is keyed by the DOC id (`batch.1.a`), not the full case id
+            # (`REASONING.batch.1.a`) — every other reader here goes through
+            # _case_doc_id. Looking up the full id never matched, and the old fallback
+            # `case_id.split(".")[0]` degraded to the literal "REASONING", so reasoning
+            # column headers carried an empty description while the text sat unused in
+            # REASONING_CASES.md. Fall back to the parent case (`batch.1`) like the
+            # tool-calling side does.
+            doc_id = _case_doc_id(case_id)
             cols.append({"sub": case_id, "group_key": gk,
                          "band": _case_band_class(case_id),
                          "label": _display_case_id(case_id),
-                         "desc": descriptions.get(case_id) or descriptions.get(case_id.split(".")[0]) or ""})
+                         "desc": descriptions.get(doc_id)
+                                 or descriptions.get(doc_id.rsplit(".", 1)[0]) or ""})
     return groups, cols
 
 

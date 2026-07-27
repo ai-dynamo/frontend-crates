@@ -83,7 +83,11 @@ from tests.parity.common import (
     linkify_text_html,
     parity_cell_class,
 )
-from tests.parity.markup import colorize_markup, colorize_stream_deltas
+from tests.parity.markup import (
+    colorize_markup,
+    colorize_stream_deltas,
+    declared_markers,
+)
 from tests.parity.reasoning import table as reasoning_table
 from tests.parity.toolcalling import table as toolcalling_table
 
@@ -498,7 +502,13 @@ def _parser_inheritance_tooltip_html(
             "Note: filed under xml/ but does not use the shared xml::parser; "
             f"it has its own ParserConfig::{html_lib.escape(variant)} variant."
         )
-    tooltip_lines.extend(_tool_parser_tree_lines(family, info, effective_backend))
+    # The tree draws with box-drawing characters and only lines up in a fixed-width
+    # font, so it opts back into monospace while the prose around it stays proportional.
+    tree_lines = _tool_parser_tree_lines(family, info, effective_backend)
+    if tree_lines:
+        tooltip_lines.append(
+            '<span class="ttip-tree">' + "\n".join(tree_lines).strip("\n") + "</span>"
+        )
 
     if effective_backend == family:
         head_text = f"`{family}`"
@@ -703,7 +713,7 @@ def _v2_parser_cell_html(
     tooltip = (
         '<div class="ttip">'
         f'<div class="ttip-head">`{html_lib.escape(family)}` (v2 stream)</div>'
-        '<pre class="ttip-pre">'
+        '<pre class="ttip-pre ttip-note">'
         f"Fixtures: {html_lib.escape(fixtures)}.\n"
         f"Tool calling parser row: {html_lib.escape(family)}\n"
         f"Effective parser/backend: {html_lib.escape(backend)}\n"
@@ -723,7 +733,7 @@ def _v2_missing_stream_parser_cell_html(family: str) -> str:
     tooltip = (
         '<div class="ttip">'
         f'<div class="ttip-head">`{label}` (v2 stream)</div>'
-        '<pre class="ttip-pre">'
+        '<pre class="ttip-pre ttip-note">'
         "Dynamo parser v2 is not implemented for this family yet.\n"
         "This row is inventory only; no v1 parser code runs on this tab."
         "</pre></div>"
@@ -1777,10 +1787,15 @@ def _cell_candidate_meta(case: dict, output_kind: str) -> tuple[dict, list[dict]
             meta.append({"key": item["key"], "label": item["label"],
                          "version": None, "block_raw": item["block"]})
     elif ver_status:
+        # The mode is the TAB's, not a constant: this branch also serves the streamv2
+        # tab, where dynamo_v2 and vllm_rust are stream-only impls (impls.py IMPL_SPECS)
+        # and can never be "(batch)". Hardcoding it made the tooltip header contradict
+        # the compare bar, which builds the same candidates via _stream_candidate_items.
+        # _full_label still maps dynamo_v1 on stream data to "(jail+batch)".
         for impl in ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python"):
             for slug, info in (ver_status.get(impl) or {}).items():
                 meta.append({"key": f"{impl}-{slug}",
-                             "label": _full_label(impl, info["version"], "batch"),
+                             "label": _full_label(impl, info["version"], output_kind),
                              "version": info["version"], "block_raw": info["block"]})
     else:
         expected = _expected(case)
@@ -1819,7 +1834,11 @@ def _input_model(case: dict) -> dict:
         return {"kind": "chunks", "text": None, "family": family,
                 "chunks": [_chunk_model(c) for c in chunks if isinstance(c, dict)]}
     model_text = case.get("model_text")
-    if isinstance(model_text, str) and model_text:
+    # An EMPTY model_text is still a text input, not a missing one — dropping it to
+    # `kind: None` made `TOOLCALLING.batch.9.a` ("Empty model text") indistinguishable
+    # from a case with no fixture, so the grammar popup reported "no input recorded"
+    # for every family instead of "empty input".
+    if isinstance(model_text, str):
         return {"kind": "text", "text": model_text, "chunks": None, "family": family}
     return {"kind": None, "text": None, "chunks": None, "family": family}
 
@@ -2130,6 +2149,9 @@ def render_combined_html(
     # gone; the template emits a skeleton and the model blob, the view builds the DOM.
     page_model = build_combined_model(
         output_path=output_path, artifact_root=artifact_root, stamp=stamp, sha=sha)
+    # Per-family declared markers (pairs/singletons) for the JS colorizer's declared
+    # lookup — the same table markup.py's _declared_lookup consults server-side.
+    page_model["family_markers"] = declared_markers()
     model_json = _model.to_script_json(page_model)
 
     html = (
@@ -2141,6 +2163,7 @@ def render_combined_html(
             stamp=stamp,
             conformance_css=_read_asset("conformance.css"),
             conformance_js=_read_asset("conformance.js"),
+            colorize_js=_read_asset("colorize.js"),
             conformance_view_js=_read_asset("conformance_view.js"),
             sha=sha,
             short_sha=sha[:12] if sha else "",
