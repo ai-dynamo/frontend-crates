@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [4.0.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v3.0.0...dynamo-renderer-v4.0.0) - 2026-07-27
+
+### Changed
+
+- **Breaking:** Public request types exposed by `OAIChatLikeRequest` now use `dynamo-protocols` 5.x; consumers must upgrade `dynamo-protocols` when moving to `dynamo-renderer` 4.0.0.
+
+### Miscellaneous
+
+- Updated the following local packages: dynamo-protocols
+
 ## [3.0.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v2.0.0...dynamo-renderer-v3.0.0) - 2026-07-22
 
 ### Changed
