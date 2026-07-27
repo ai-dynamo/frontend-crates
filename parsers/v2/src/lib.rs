@@ -24,7 +24,8 @@ pub use tool_calling::{REGISTERED_FAMILIES, create_tool_parser_for_family};
 // `tool_calling::v1core`.
 pub use tool_calling::{CalledFunctionStream, ToolCallResponseChunk, ToolCallType};
 pub use unified::{
-    KIMI_K3_FAMILY, KimiK3StructuralTagBuilder, KimiK3UnifiedParser, UnifiedParser,
-    UnifiedParserEvent, UnifiedParserOutput, UnifiedParserPrefill, UnifiedStructuralTagBuilder,
+    KIMI_K3_FAMILY, KimiK3StructuralTagBuilder, KimiK3UnifiedParser, QWEN3_CODER_FAMILY,
+    QWEN3_REASONING_FAMILY, Qwen3CoderUnifiedParser, UnifiedParser, UnifiedParserEvent,
+    UnifiedParserOutput, UnifiedParserPrefill, UnifiedStructuralTagBuilder,
     UnifiedToolCallFormatContext, UnifiedToolChoice, create_unified_parser_for_family,
 };

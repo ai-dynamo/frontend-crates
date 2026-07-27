@@ -12,7 +12,7 @@ pub mod kimi_k2;
 pub mod minimax_m2;
 pub mod minimax_m3;
 pub mod qwen3_coder;
-mod scan;
+pub(crate) mod scan;
 pub mod traits;
 /// Vendored batch extraction copied from v1 so v2 is standalone (see module docs).
 mod v1core;

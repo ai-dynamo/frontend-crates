@@ -19,8 +19,8 @@
 //! order (the order vLLM's Rust parser also preserves).
 
 use crate::tool_calling::scan::{
-    BareRecoveryLatch, InvokeEmitter, InvokeLatch, WrappedBlockScanner, WrappedBlockSpec,
-    reorder_arguments,
+    BareRecoveryLatch, InvokeEmitter, InvokeLatch, WrappedBlockScanner, WrappedBlockSink,
+    WrappedBlockSpec, reorder_arguments,
 };
 use crate::tool_calling::v1core::{ToolDefinition, XmlParserConfig, try_tool_call_parse_xml};
 
@@ -99,6 +99,21 @@ impl Qwen3CoderToolStreamParser {
                 },
             ),
         }
+    }
+
+    pub(crate) fn push_into<S: WrappedBlockSink>(
+        &mut self,
+        chunk: &str,
+        output: &mut S,
+    ) -> anyhow::Result<()> {
+        self.scanner.push_into(chunk, output)
+    }
+
+    pub(crate) fn finish_into<S: WrappedBlockSink>(
+        &mut self,
+        output: &mut S,
+    ) -> anyhow::Result<()> {
+        self.scanner.finish_into(output)
     }
 }
 

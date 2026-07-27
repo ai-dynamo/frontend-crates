@@ -7,9 +7,11 @@
 //! when one input chunk contains multiple assistant channels.
 
 mod kimi_k3;
+mod qwen3_coder;
 mod scan;
 
 pub use kimi_k3::{KIMI_K3_FAMILY, KimiK3StructuralTagBuilder, KimiK3UnifiedParser};
+pub use qwen3_coder::{QWEN3_CODER_FAMILY, QWEN3_REASONING_FAMILY, Qwen3CoderUnifiedParser};
 
 use serde_json::Value;
 
@@ -165,6 +167,7 @@ pub fn create_unified_parser_for_family(
 ) -> anyhow::Result<Box<dyn UnifiedParser>> {
     match family {
         KIMI_K3_FAMILY => KimiK3UnifiedParser::create(tools),
+        QWEN3_CODER_FAMILY => Qwen3CoderUnifiedParser::create(tools),
         other => anyhow::bail!("no Dynamo unified parser for family '{other}'"),
     }
 }

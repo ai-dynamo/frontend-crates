@@ -33,6 +33,21 @@ use std::collections::HashSet;
 
 use crate::tool_calling::traits::{ToolCallDelta, ToolParseResult};
 
+pub(crate) trait WrappedBlockSink {
+    fn push_text(&mut self, text: &str);
+    fn push_call(&mut self, call: ToolCallDelta);
+}
+
+impl WrappedBlockSink for ToolParseResult {
+    fn push_text(&mut self, text: &str) {
+        self.normal_text.push_str(text);
+    }
+
+    fn push_call(&mut self, call: ToolCallDelta) {
+        self.calls.push(call);
+    }
+}
+
 /// Longest non-empty proper prefix of any `marker` that `text` ends with, so a
 /// marker split across chunk boundaries is held back instead of leaked as
 /// normal_text. Closing markers belong in the list too: a split stray/orphan
@@ -200,17 +215,35 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     }
 
     pub(crate) fn push(&mut self, chunk: &str) -> anyhow::Result<ToolParseResult> {
+        let mut output = ToolParseResult::default();
         self.buffer.push_str(chunk);
-        self.drain(false)
+        self.drain(false, &mut output)?;
+        Ok(output)
+    }
+
+    pub(crate) fn push_into<S: WrappedBlockSink>(
+        &mut self,
+        chunk: &str,
+        output: &mut S,
+    ) -> anyhow::Result<()> {
+        self.buffer.push_str(chunk);
+        self.drain(false, output)
     }
 
     pub(crate) fn finish(&mut self) -> anyhow::Result<ToolParseResult> {
-        self.drain(true)
+        let mut output = ToolParseResult::default();
+        self.drain(true, &mut output)?;
+        Ok(output)
     }
 
-    fn drain(&mut self, flush: bool) -> anyhow::Result<ToolParseResult> {
-        let mut out = ToolParseResult::default();
+    pub(crate) fn finish_into<S: WrappedBlockSink>(
+        &mut self,
+        output: &mut S,
+    ) -> anyhow::Result<()> {
+        self.drain(true, output)
+    }
 
+    fn drain<S: WrappedBlockSink>(&mut self, flush: bool, output: &mut S) -> anyhow::Result<()> {
         loop {
             if self.in_block {
                 let invoke_start = self.buffer.find(self.spec.invoke_start.as_str());
@@ -274,7 +307,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 let invoke = self.buffer[..end + self.spec.invoke_end.len()].to_string();
                 self.buffer.drain(..end + self.spec.invoke_end.len());
                 if let Some(delta) = self.emitter.parse_invoke(&invoke, self.next_index)? {
-                    out.calls.push(delta);
+                    output.push_call(delta);
                     self.next_index += 1;
                     if self.spec.invoke_latch == InvokeLatch::IfEmitted {
                         self.suppress_normal_text = true;
@@ -299,7 +332,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     .min();
                 if next_open.is_none_or(|open| pos < open) {
                     if !self.suppress_normal_text && pos > 0 {
-                        out.normal_text.push_str(&self.buffer[..pos]);
+                        output.push_text(&self.buffer[..pos]);
                     }
                     self.buffer.drain(..pos + len);
                     self.suppress_normal_text = false;
@@ -331,7 +364,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 let emit_len = self.buffer.len().saturating_sub(keep);
                 if emit_len > 0 {
                     if !self.suppress_normal_text {
-                        out.normal_text.push_str(&self.buffer[..emit_len]);
+                        output.push_text(&self.buffer[..emit_len]);
                     }
                     self.buffer.drain(..emit_len);
                 }
@@ -340,7 +373,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
             if start > 0 {
                 if !self.suppress_normal_text {
-                    out.normal_text.push_str(&self.buffer[..start]);
+                    output.push_text(&self.buffer[..start]);
                 }
                 self.buffer.drain(..start);
             }
@@ -372,7 +405,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             tool_index = delta.tool_index,
                             "stream recovered a complete bare invoke"
                         );
-                        out.calls.push(delta);
+                        output.push_call(delta);
                         self.next_index += 1;
                         self.suppress_normal_text =
                             self.spec.bare_recovery_latch == BareRecoveryLatch::Set;
@@ -381,6 +414,6 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             }
         }
 
-        Ok(out)
+        Ok(())
     }
 }
