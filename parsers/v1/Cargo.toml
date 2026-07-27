@@ -4,7 +4,7 @@
 [package]
 name = "dynamo-parsers"
 readme = "README.md"
-version = "6.0.1"
+version = "6.0.2"
 edition.workspace = true
 description = "Reasoning and tool-calling parsers for OpenAI-compatible inference output."
 authors.workspace = true
