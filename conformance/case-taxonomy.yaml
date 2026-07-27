@@ -113,6 +113,13 @@ suites:
         required: true
         cases:
           "": {desc: Duplicate calls (same name twice), required: true}
+      "11":
+        title: Grammar-specific tool-name and header edges
+        required: false
+        cases:
+          a: {desc: Redundant outer tool name disagrees with the structured body name, required: false}
+          b: {desc: Structured body carries an empty tool name, required: false}
+          c: {desc: Generation-primer call omits the outer message header, required: false}
       "13":
         title: Unknown tool names
         required: true
@@ -220,6 +227,12 @@ suites:
         required: true
         cases:
           "": {desc: Duplicate calls (same name twice), required: true}
+      "11":
+        title: Grammar-specific tool-name and header edges
+        cases:
+          a: {desc: Redundant outer tool name disagrees with the structured body name, required: false}
+          b: {desc: Structured body carries an empty tool name, required: false}
+          c: {desc: Generation-primer call omits the outer message header, required: false}
       "13":
         title: Unknown tool names
         required: true
@@ -292,6 +305,12 @@ suites:
         cases:
           a: {desc: Multiple reasoning spans, required: true}
           b: {desc: Stray end marker after a complete reasoning span (unbalanced tag), required: true}
+      "7":
+        title: Model-specific framing anchors
+        required: false
+        cases:
+          "": {desc: Real generated reasoning trace in the model's native framing, required: false}
+          a: {desc: Non-text placeholder block is consumed without leaking payload or framing, required: false}
 
   reasoning.stream:
     prefix: REASONING.stream
@@ -317,6 +336,7 @@ suites:
           a: {desc: Start marker split across chunks, required: true}
           b: {desc: End marker split across chunks, required: true}
           c: {desc: Partial start-marker prefix later becomes normal text, required: true}
+          d: {desc: Ambiguous short marker prefix at end of stream is preserved as text, required: false}
       "4":
         title: Dangling markers and downstream boundaries
         required: true

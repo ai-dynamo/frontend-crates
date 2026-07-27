@@ -13,6 +13,10 @@ use super::harmony::{
     detect_tool_call_start_harmony, find_tool_call_end_position_harmony,
     parse_tool_calls_harmony_complete,
 };
+use super::inkling::{
+    detect_tool_call_start_inkling, find_tool_call_end_position_inkling,
+    try_tool_call_parse_inkling,
+};
 use super::json::{
     detect_tool_call_start_json, find_tool_call_end_position_json, try_tool_call_parse_json,
 };
@@ -65,6 +69,7 @@ pub fn get_tool_parser_map() -> &'static HashMap<&'static str, ToolCallConfig> {
         map.insert("kimi_k2", ToolCallConfig::kimi_k2());
         map.insert("gemma4", ToolCallConfig::gemma4());
         map.insert("gemma-4", ToolCallConfig::gemma4());
+        map.insert("inkling", ToolCallConfig::inkling());
         map.insert("default", ToolCallConfig::default());
         map.insert("nemotron_nano", ToolCallConfig::qwen3_coder()); // nemotron nano follows qwen3_coder format
         map.insert("qwen25", ToolCallConfig::qwen25()); // qwen2.5 uses the same <tool_call>...</tool_call> format as hermes but never leaks markup; EOF-recovery opt-out is keyed by name in detect_and_parse_tool_call_with_recovery_options
@@ -126,6 +131,11 @@ pub async fn try_tool_call_parse(
             let (results, normal_content) = try_tool_call_parse_gemma4(message, tools)?;
             Ok((results, normal_content))
         }
+        ParserConfig::Inkling(inkling_config) => {
+            let (results, normal_content) =
+                try_tool_call_parse_inkling(message, inkling_config, tools)?;
+            Ok((results, normal_content))
+        }
     }
 }
 
@@ -182,6 +192,11 @@ pub async fn detect_and_parse_tool_call_with_recovery(
             let mut c = c.clone();
             c.allow_eof_recovery = true;
             ParserConfig::MiniMaxM3(c)
+        }
+        ParserConfig::Inkling(c) => {
+            let mut c = c.clone();
+            c.allow_eof_recovery = true;
+            ParserConfig::Inkling(c)
         }
         // GLM-4.7 intentionally omitted: match upstream vLLM/SGLang behavior
         // (drop the call when </tool_call> is missing).
@@ -284,6 +299,9 @@ pub fn detect_tool_call_start(chunk: &str, parser_str: Option<&str>) -> anyhow::
                 Ok(detect_tool_call_start_minimax_m3(chunk, minimax_config))
             }
             ParserConfig::Gemma4 => Ok(detect_tool_call_start_gemma4(chunk)),
+            ParserConfig::Inkling(inkling_config) => {
+                Ok(detect_tool_call_start_inkling(chunk, inkling_config))
+            }
         },
         None => anyhow::bail!(
             "Parser '{}' is not implemented. Available parsers: {:?}",
@@ -398,6 +416,9 @@ pub fn find_tool_call_end_position(chunk: &str, parser_str: Option<&str>) -> Opt
                 find_tool_call_end_position_minimax_m3(chunk, minimax_config),
             ),
             ParserConfig::Gemma4 => find_tool_call_end_position_gemma4(chunk),
+            ParserConfig::Inkling(inkling_config) => {
+                find_tool_call_end_position_inkling(chunk, inkling_config)
+            }
         },
         None => Some(chunk.len()),
     }
@@ -446,6 +467,7 @@ mod tests {
             "kimi_k2",
             "gemma4",
             "gemma-4",
+            "inkling",
             "qwen25",
         ];
         for parser in available_parsers {
