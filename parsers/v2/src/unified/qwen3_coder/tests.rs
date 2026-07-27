@@ -260,3 +260,19 @@ fn incomplete_required_guided_json_recovers_as_text() {
         vec![UnifiedParserEvent::Text(input.to_string())]
     );
 }
+
+#[test]
+fn incomplete_named_guided_json_recovers_as_text() {
+    let input = r#"{"city":"Tok"#;
+    assert_eq!(
+        parse_guided(
+            UnifiedParserPrefill::Response,
+            UnifiedToolOutputMode::GuidedJson {
+                named_tool: Some("get_weather"),
+            },
+            &[input]
+        )
+        .events,
+        vec![UnifiedParserEvent::Text(input.to_string())]
+    );
+}

@@ -141,7 +141,10 @@ impl Qwen3CoderUnifiedParser {
         let calls = match &self.tool_output_mode {
             ToolOutputMode::GuidedJson {
                 named_tool: Some(name),
-            } => vec![(name.clone(), payload.to_string())],
+            } => serde_json::from_str::<Box<RawValue>>(payload)
+                .ok()
+                .map(|arguments| vec![(name.clone(), arguments.get().to_string())])
+                .unwrap_or_default(),
             ToolOutputMode::GuidedJson { named_tool: None } => {
                 parse_required_guided_calls(payload)?
             }
