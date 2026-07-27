@@ -93,6 +93,17 @@ pub enum UnifiedToolChoice<'a> {
     Named(&'a str),
 }
 
+/// Tool-call wire format the backend will emit for this request.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum UnifiedToolOutputMode<'a> {
+    /// Model-native tool-call markup.
+    #[default]
+    Native,
+    /// Guided bare JSON. Named choices emit only the selected tool's arguments;
+    /// required choices emit objects containing a tool name and arguments.
+    GuidedJson { named_tool: Option<&'a str> },
+}
+
 /// Request-scoped structural-guidance inputs.
 #[derive(Debug, Clone, Copy)]
 pub struct UnifiedToolCallFormatContext<'a> {
@@ -123,6 +134,16 @@ pub trait UnifiedParser: Send {
 
     fn initialize(&mut self, _prefill: UnifiedParserPrefill) -> anyhow::Result<()> {
         Ok(())
+    }
+
+    /// Initialize request-scoped parser state, including the backend's actual
+    /// tool-call wire format.
+    fn initialize_with_output_mode(
+        &mut self,
+        prefill: UnifiedParserPrefill,
+        _tool_output_mode: UnifiedToolOutputMode<'_>,
+    ) -> anyhow::Result<()> {
+        self.initialize(prefill)
     }
 
     fn preserve_special_tokens(&self) -> bool {
