@@ -76,8 +76,8 @@ jobs:
       #     HF fixture upload embeds — Cargo.toml is the single source of truth)
       #   - version == last tag, no changes under the crate dir -> nothing
       #   - version == last tag, changes under the crate dir -> auto-bump this
-      #     crate only (release-plz still sizes the bump from conventional
-      #     commits, writes the changelog, and runs cargo-semver-checks)
+      #     crate only (release-plz sizes the bump from conventional commits
+      #     and writes the changelog)
       - name: Bump versions for crates whose own files changed
         run: |
           # `--allow-dirty` below is intentional: each package update leaves
@@ -101,9 +101,8 @@ jobs:
               echo "$name: no release tag yet -> first release is manual, skipping"
             elif [ "$ver" != "${last#"$name"-v}" ]; then
               echo "$name: $ver != last released ${last#"$name"-v} -> manually pegged"
-              # A manual peg bypasses release-plz update — the only path that
-              # runs cargo-semver-checks — so validate here that the pegged
-              # jump is big enough for the actual API diff vs the last release.
+              # A manual peg bypasses release-plz update, so validate here that
+              # the pegged jump is big enough for the API diff vs the last release.
               cargo semver-checks check-release --package "$name" --baseline-rev "$last"
               echo "$name: peg passes semver-checks, publish as-is"
             # The root Cargo.toml is part of every crate's change scope:

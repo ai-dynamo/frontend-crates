@@ -32,7 +32,7 @@ what one-time setup it requires, and how to recover when it goes wrong.
 
 ## Manual version peg (fixture-synced releases)
 
-To release a crate at a **specific, deliberate version** — e.g. so a conformance fixture snapshot (`conformance/fixtures/`, git-lfs) and the crates.io release carry the same pegged number — edit the crate's `version` in its `Cargo.toml` in your PR (any jump you want: patch, minor, major). On merge, the workflow sees the version differs from the last release tag, skips any auto-bump for that crate, and publishes exactly that version. `Cargo.toml` is the single source of truth: fixture provenance embeds the built crate's version, so both artifacts stay in sync by construction.
+To release a crate at a **specific, deliberate version** — e.g. so a conformance fixture snapshot (`conformance/fixtures/`, git-lfs) and the crates.io release carry the same pegged number — edit the crate's `version` in its `Cargo.toml` in your PR (any jump you want: patch, minor, major). On merge, the workflow sees the version differs from the last release tag, skips any auto-bump for that crate, verifies that the chosen version is large enough for the public API diff, then publishes exactly that version. `Cargo.toml` is the single source of truth: fixture provenance embeds the built crate's version, so both artifacts stay in sync by construction.
 
 The same mechanism covers a crate's **first release**: a crate with no release tag yet is never auto-bumped — set its version manually and merge.
 
@@ -40,9 +40,11 @@ Note: a manual peg skips the auto-changelog; add a `CHANGELOG.md` entry in the s
 
 ## Bump policy
 
-release-plz applies SemVer to the Conventional Commits since each crate's last
-tag. SemVer treats `0.x` versions specially (the minor slot is the de-facto
-breaking position), so the bump depends on whether a crate has reached `1.0.0`.
+release-plz sizes automatic releases from the Conventional Commits since each
+crate's last tag. Automatic API-diff checking is deliberately disabled for all
+frontend crates: API changes never silently escalate a release to major. SemVer
+treats `0.x` versions specially (the minor slot is the de-facto breaking
+position), so the bump depends on whether a crate has reached `1.0.0`.
 
 `dynamo-protocols`, `dynamo-parsers`, `dynamo-tokenizers`, and
 `dynamo-renderer` are all at `1.x`+ (standard SemVer):
@@ -56,24 +58,23 @@ breaking position), so the bump depends on whether a crate has reached `1.0.0`.
 
 `dynamo-parsers-v2` is at `0.x`, where the minor slot is the breaking position (cargo treats `0.1.21 -> 0.2.0` as breaking, `0.1.21 -> 0.1.22` as compatible), so compatible changes bump the patch slot and breaking changes bump the minor slot. Lifecycle note: v1 (`dynamo-parsers`) is interim and will be removed outright once v2 reaches parity; v2 is the ultimate implementation (WIP), so expect its `0.x` line to keep moving while v1 stays quiet. Downstream exact pins like vLLM's `dynamo-parsers-v2 = "=0.1.x"` only move when their owners update them — another reason auto-bumps stay scoped to crates whose own code changed.
 
-### What `cargo-semver-checks` validates
+### Major versions are explicit
 
-After release-plz picks a bump, it runs `cargo-semver-checks` against the
-last published version on crates.io. If the proposed bump is too small for
-the API change it sees, the workflow fails before publishing anything.
+Choose a major release deliberately in one of two ways:
 
-- **Catches:** removed/renamed pub items, signature changes, narrowed
-  visibility, removed trait method defaults, and similar structural breaks
-  that were labeled `fix:`/`chore:` instead of `feat!:`.
-- **Does NOT catch:** behavioral changes with unchanged signatures, new
-  panic conditions, MSRV bumps, dependency-surface drift, some trait
-  default-impl subtleties. For these, the contributor must label the commit
-  `feat!:` / `fix!:` themselves.
+- Use a breaking Conventional Commit (`feat!:`/`fix!:` or a `BREAKING CHANGE:` trailer). This still selects a major bump; remove the `!` when the intended release is minor.
+- Manually peg the next major version in the crate's `Cargo.toml`. The workflow publishes that exact version after validating its public API diff against the previous tag.
 
-When `cargo-semver-checks` fails, fix the underlying commit: open a PR that
-amends or adds a follow-up commit with the correct label (e.g. add a
-`feat!:` or `fix!:` with a `BREAKING CHANGE:` trailer), merge, and the next
-workflow run will pick up the right bump.
+Review public API changes manually before choosing the commit label. Automatic minor and patch releases do not run `cargo-semver-checks`.
+
+### Manual-peg validation
+
+For an existing crate whose `Cargo.toml` version differs from its last tag, the
+workflow runs `cargo semver-checks check-release` before publishing. It catches
+removed or renamed pub items, signature changes, narrowed visibility, removed
+trait method defaults, and similar structural breaks. It does not catch
+behavioral changes with unchanged signatures, new panic conditions, MSRV bumps,
+dependency-surface drift, or some trait default-impl subtleties.
 
 ## One-time setup (bootstrap)
 
@@ -163,8 +164,5 @@ gymnastics.
 they trigger releases. By default this maps to a patch bump. If an upstream
 sync introduces a breaking API change, the human running `sync-from-dynamo.sh`
 must amend the commit message to `sync!(<crate>):` or add a
-`BREAKING CHANGE:` trailer so the right bump is chosen. If
-`cargo-semver-checks` catches a structural break that wasn't labeled
-correctly, the publish will fail and you'll need to follow up with a
-correctly-labeled commit (see "What `cargo-semver-checks` validates"
-above).
+`BREAKING CHANGE:` trailer so the right bump is chosen. Automatic sync releases
+do not run `cargo-semver-checks`, so label public API changes deliberately.
