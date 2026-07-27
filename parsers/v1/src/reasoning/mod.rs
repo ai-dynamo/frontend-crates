@@ -58,6 +58,11 @@ fn get_reasoning_parser_map() -> &'static HashMap<&'static str, ReasoningParserT
         map.insert("nemotron_deci", ReasoningParserType::NemotronDeci);
         map.insert("kimi", ReasoningParserType::Kimi);
         map.insert("kimi_k25", ReasoningParserType::KimiK25);
+        // Kimi K3 uses XTML channel markers. The generation prompt normally
+        // consumes the opening `think` channel, so callers should pair this
+        // parser with `set_in_reasoning(true)` when thinking is enabled.
+        map.insert("kimi_k3", ReasoningParserType::KimiK3);
+        map.insert("kimi-k3", ReasoningParserType::KimiK3);
         map.insert("step3", ReasoningParserType::Step3);
         map.insert("mistral", ReasoningParserType::Mistral);
         map.insert("granite", ReasoningParserType::Granite);
@@ -170,6 +175,9 @@ pub enum ReasoningParserType {
     NemotronDeci,
     Kimi,
     KimiK25,
+    /// Kimi K3 XTML reasoning channel:
+    /// `<|open|>think<|sep|>...<|close|>think<|sep|>`.
+    KimiK3,
     Mistral,
     Granite,
     MiniMaxAppendThink,
@@ -252,6 +260,37 @@ impl ReasoningParserType {
                 parser: Box::new(
                     BasicReasoningParser::new("<think>".into(), "</think>".into(), true, true)
                         .with_tool_start_token(KIMI_K2_TOOL_SECTION_BEGIN),
+                ),
+            },
+            ReasoningParserType::KimiK3 => ReasoningParserWrapper {
+                parser: Box::new(
+                    BasicReasoningParser::new(
+                        "<|open|>think<|sep|>".into(),
+                        "<|close|>think<|sep|>".into(),
+                        false,
+                        true,
+                    )
+                    // The official encoding opens `response` after `think`.
+                    // Treat that structural delimiter as a bounded recovery
+                    // point if a malformed completion omitted the think close.
+                    .with_tool_start_token("<|open|>response<|sep|>")
+                    .with_tool_start_token("<|open|>tools<|sep|>")
+                    .with_tool_start_token("<|open|>call")
+                    // Canonical K3 structural closers are never reasoning.
+                    // Route an orphan suffix to the K3 jail so it can consume
+                    // the protocol framing instead of exposing it to clients.
+                    .with_tool_start_token("<|close|>response<|sep|>")
+                    .with_tool_start_token("<|close|>argument<|sep|>")
+                    .with_tool_start_token("<|close|>call<|sep|>")
+                    .with_tool_start_token("<|close|>tools<|sep|>")
+                    .with_tool_start_token("<|close|>message<|sep|>")
+                    .with_tool_start_token("<|end_of_msg|>")
+                    // FIXME: Look into cleaner v2 / unified parser approach
+                    .with_single_char_marker_buffering()
+                    // The prompt normally consumes the think opener. This
+                    // fallback still classifies the prefix correctly if a
+                    // caller did not initialize per-request parser state.
+                    .with_dangling_end_recovery(),
                 ),
             },
             ReasoningParserType::Mistral => ReasoningParserWrapper {
@@ -352,6 +391,8 @@ mod tests {
             "nemotron_deci",
             "kimi",
             "kimi_k25",
+            "kimi_k3",
+            "kimi-k3",
             "step3",
             "mistral",
             "granite",
@@ -697,6 +738,190 @@ mod tests {
         let result = parser.detect_and_parse_reasoning("<think>thinking</think>answer", &[]);
         assert_eq!(result.reasoning_text, "thinking");
         assert_eq!(result.normal_text, "answer");
+    }
+
+    #[test]
+    fn test_kimi_k3_explicit_reasoning_channel() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("kimi_k3");
+        let result = parser.detect_and_parse_reasoning(
+            "<|open|>think<|sep|>check weather<|close|>think<|sep|><|open|>response<|sep|>It is raining.<|close|>response<|sep|>",
+            &[],
+        );
+
+        assert_eq!(result.reasoning_text, "check weather");
+        assert_eq!(
+            result.normal_text,
+            "<|open|>response<|sep|>It is raining.<|close|>response<|sep|>"
+        );
+    }
+
+    #[test]
+    fn test_kimi_k3_prompt_prefilled_reasoning_channel() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("kimi-k3");
+        parser.set_in_reasoning(true);
+
+        let result = parser.parse_reasoning_streaming_incremental(
+            "check weather<|close|>think<|sep|><|open|>response<|sep|>It is raining.",
+            &[],
+        );
+
+        assert_eq!(result.reasoning_text, "check weather");
+        assert_eq!(result.normal_text, "<|open|>response<|sep|>It is raining.");
+    }
+
+    #[test]
+    fn test_kimi_k3_streaming_dangling_close_split_across_chunks() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("kimi_k3");
+
+        let first = parser.parse_reasoning_streaming_incremental("check weather<|close|>thi", &[]);
+        let second = parser.parse_reasoning_streaming_incremental(
+            "nk<|sep|><|open|>response<|sep|>It is raining.",
+            &[],
+        );
+
+        assert_eq!(
+            format!("{}{}", first.reasoning_text, second.reasoning_text),
+            "check weather"
+        );
+        assert_eq!(
+            format!("{}{}", first.normal_text, second.normal_text),
+            "<|open|>response<|sep|>It is raining."
+        );
+    }
+
+    #[test]
+    fn test_kimi_k3_thinking_disabled_is_normal_text() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("kimi_k3");
+        let response = "answer<|close|>response<|sep|><|close|>message<|sep|>";
+        let result = parser.detect_and_parse_reasoning(response, &[]);
+
+        assert_eq!(result.reasoning_text, "");
+        assert_eq!(result.normal_text, response);
+    }
+
+    #[test]
+    fn test_kimi_k3_response_marker_recovers_missing_think_close() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("kimi_k3");
+        parser.set_in_reasoning(true);
+        let result = parser
+            .detect_and_parse_reasoning("check weather<|open|>response<|sep|>It is raining.", &[]);
+
+        assert_eq!(result.reasoning_text, "check weather");
+        assert_eq!(result.normal_text, "<|open|>response<|sep|>It is raining.");
+    }
+
+    #[test]
+    fn test_kimi_k3_streaming_response_marker_is_independent_of_chunk_boundaries() {
+        let response = "<|open|>response<|sep|>323";
+
+        for (split, _) in response.char_indices().skip(1) {
+            let mut parser = ReasoningParserType::get_reasoning_parser_from_name("kimi_k3");
+            parser.set_in_reasoning(true);
+
+            let first = parser.parse_reasoning_streaming_incremental("thinking", &[]);
+            let marker_prefix =
+                parser.parse_reasoning_streaming_incremental(&response[..split], &[]);
+            let marker_suffix =
+                parser.parse_reasoning_streaming_incremental(&response[split..], &[]);
+
+            assert_eq!(
+                format!(
+                    "{}{}{}",
+                    first.reasoning_text,
+                    marker_prefix.reasoning_text,
+                    marker_suffix.reasoning_text
+                ),
+                "thinking",
+                "split at byte {split} misclassified the K3 response as reasoning"
+            );
+            assert_eq!(
+                format!(
+                    "{}{}{}",
+                    first.normal_text, marker_prefix.normal_text, marker_suffix.normal_text
+                ),
+                response,
+                "split at byte {split} lost the K3 response boundary"
+            );
+        }
+    }
+
+    #[test]
+    fn test_kimi_k3_orphan_structural_closers_do_not_leak_into_reasoning() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("kimi_k3");
+        parser.set_in_reasoning(true);
+
+        let result = parser.parse_reasoning_streaming_incremental(
+            concat!(
+                "choose the unit",
+                "<|close|>argument<|sep|>",
+                "<|close|>call<|sep|>",
+                "<|close|>tools<|sep|>"
+            ),
+            &[],
+        );
+
+        assert_eq!(result.reasoning_text, "choose the unit");
+        assert!(
+            result.normal_text.contains("<|close|>argument<|sep|>"),
+            "reserved K3 closers must be handed to the K3 jail"
+        );
+    }
+
+    #[test]
+    fn test_kimi_k3_single_char_marker_buffering_preserves_literal_at_eof() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("kimi_k3");
+        parser.set_in_reasoning(true);
+
+        let streamed = parser.parse_reasoning_streaming_incremental("literal<", &[]);
+        let finished = parser.finish_reasoning_stream();
+
+        assert_eq!(streamed.reasoning_text, "literal");
+        assert_eq!(streamed.normal_text, "");
+        assert_eq!(finished.reasoning_text, "<");
+        assert_eq!(finished.normal_text, "");
+    }
+
+    #[test]
+    fn test_non_k3_single_char_marker_behavior_is_unchanged() {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("qwen3");
+        parser.set_in_reasoning(true);
+
+        let streamed = parser.parse_reasoning_streaming_incremental("literal<", &[]);
+        let finished = parser.finish_reasoning_stream();
+
+        assert_eq!(streamed.reasoning_text, "literal<");
+        assert_eq!(streamed.normal_text, "");
+        assert_eq!(finished.reasoning_text, "");
+        assert_eq!(finished.normal_text, "");
+    }
+
+    #[test]
+    fn test_kimi_k3_reasoning_output_composes_with_tool_parser() {
+        let output = concat!(
+            "<|open|>think<|sep|>use the calculator<|close|>think<|sep|>",
+            "<|open|>response<|sep|>I will calculate.<|close|>response<|sep|>",
+            "<|open|>tools<|sep|>",
+            "<|open|>call tool=\"calc\" index=\"1\"<|sep|>",
+            "<|open|>argument key=\"x\" type=\"number\"<|sep|>42",
+            "<|close|>argument<|sep|><|close|>call<|sep|>",
+            "<|close|>tools<|sep|><|close|>message<|sep|><|end_of_msg|>"
+        );
+        let mut reasoning = ReasoningParserType::KimiK3.get_reasoning_parser();
+        let split = reasoning.detect_and_parse_reasoning(output, &[]);
+
+        let (calls, content) = crate::tool_calling::try_tool_call_parse_kimi_k3(
+            &split.normal_text,
+            &crate::tool_calling::KimiK3ParserConfig::default(),
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(split.reasoning_text, "use the calculator");
+        assert_eq!(content.as_deref(), Some("I will calculate."));
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].id, "calc:0");
+        assert_eq!(calls[0].function.name, "calc");
+        assert_eq!(calls[0].function.arguments, r#"{"x":42}"#);
     }
 
     #[test] // TOOLCALLING.fmt.3 — token-spelling differences across model variants

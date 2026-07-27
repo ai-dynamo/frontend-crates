@@ -25,6 +25,35 @@ pub use traits::DecodeResult;
 
 pub type TokenIdType = u32;
 
+/// One independently encoded prompt segment.
+///
+/// Some model protocols use the same textual spelling both for structural
+/// control tokens and for untrusted message content. `allow_special` keeps that
+/// distinction through prompt rendering so a tokenizer can encode protocol
+/// structure atomically without interpreting user-provided marker text as
+/// control tokens.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EncodeSegment {
+    pub text: String,
+    pub allow_special: bool,
+}
+
+impl EncodeSegment {
+    pub fn ordinary(text: impl Into<String>) -> Self {
+        Self {
+            text: text.into(),
+            allow_special: false,
+        }
+    }
+
+    pub fn control(text: impl Into<String>) -> Self {
+        Self {
+            text: text.into(),
+            allow_special: true,
+        }
+    }
+}
+
 /// Represents the type of tokenizer being used
 #[derive(Debug)]
 pub enum TokenizerType {
@@ -65,6 +94,19 @@ pub mod traits {
     pub trait Encoder: Send + Sync {
         fn encode(&self, input: &str) -> Result<Encoding>;
         fn encode_batch(&self, inputs: &[&str]) -> Result<Vec<Encoding>>;
+
+        /// Encode prompt segments while preserving their special-token policy.
+        ///
+        /// Tokenizers without a segment-sensitive protocol retain the historic
+        /// behavior by encoding the concatenated prompt. Segment-sensitive
+        /// implementations override this method.
+        fn encode_segments(&self, segments: &[EncodeSegment]) -> Result<Encoding> {
+            let input: String = segments
+                .iter()
+                .map(|segment| segment.text.as_str())
+                .collect();
+            self.encode(&input)
+        }
     }
 
     /// Result of decoding token IDs to text.
@@ -302,7 +344,7 @@ where
 /// Supported file types are:
 /// - json: HuggingFace tokenizer
 /// - model, tiktoken: tiktoken BPE tokenizer (requires `config.json` with a supported
-///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25)
+///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3)
 pub fn create_tokenizer_from_file(file_path: &str) -> Result<Arc<dyn traits::Tokenizer>> {
     create_tokenizer_from_file_with_options(file_path, Default::default())
 }
@@ -312,7 +354,7 @@ pub fn create_tokenizer_from_file(file_path: &str) -> Result<Arc<dyn traits::Tok
 /// Supported file types are:
 /// - json: HuggingFace tokenizer
 /// - model, tiktoken: tiktoken BPE tokenizer (requires `config.json` with a supported
-///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25)
+///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3)
 pub fn create_tokenizer_from_file_with_options(
     file_path: &str,
     options: TokenizerOptions,

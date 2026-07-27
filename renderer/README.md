@@ -3,7 +3,7 @@
 ## Introduction
 `dynamo-renderer` turns OpenAI-style chat requests into model-ready prompt strings. It is the *encode* side of inference serving: messages + tools + generation settings in, a fully-rendered prompt out. It is standalone, so an external OpenAI frontend can reuse Dynamo's prompt formatting without pulling in the Dynamo runtime.
 
-It renders HuggingFace `chat_template` jinja2 (via `minijinja` + `minijinja-contrib` pycompat) and also ships native Rust formatters for DeepSeek families whose repos ship no usable template. The crate is a *bridge* between OpenAI request types (`dynamo-protocols`) and the template engine; it does **not** depend on tokenizer internals, though it re-exports `dynamo-tokenizers` for one-import convenience.
+It renders HuggingFace `chat_template` jinja2 (via `minijinja` + `minijinja-contrib` pycompat) and also ships native Rust formatters for model families such as DeepSeek and Kimi K3 whose repos ship no usable Jinja template. The crate is a *bridge* between OpenAI request types (`dynamo-protocols`) and the template engine; Kimi K3 additionally returns segment-aware prompts so structural XTML tokens and ordinary user text remain distinct through tokenization.
 
 ## Features
 - **HF chat templates**: faithful `apply_chat_template` rendering, including tool-use and generation-prompt handling.

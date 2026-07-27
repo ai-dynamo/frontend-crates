@@ -248,6 +248,12 @@ impl Encoder for CachedTokenizer {
         // belongs here, not inside `encode`.
         inputs.iter().map(|&i| self.encode(i)).collect()
     }
+
+    fn encode_segments(&self, segments: &[crate::EncodeSegment]) -> Result<Encoding> {
+        // Segment boundaries and allow_special policy are semantic input, not
+        // merely cache boundaries. Delegate intact to the concrete tokenizer.
+        self.inner.encode_segments(segments)
+    }
 }
 
 impl Decoder for CachedTokenizer {

@@ -564,7 +564,13 @@ fn deepseek_v4_config_builds_tool_calls_block() {
 fn parser_map_structural_tag_smoke() {
     let map = crate::tool_calling::parsers::get_tool_parser_map();
     let tools = sample_tools();
-    let names = ["hermes", "qwen3_coder", "deepseek_v3_2", "deepseek_v4"];
+    let names = [
+        "hermes",
+        "qwen3_coder",
+        "deepseek_v3_2",
+        "deepseek_v4",
+        "kimi_k3",
+    ];
 
     for name in names {
         let builder = map

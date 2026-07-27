@@ -86,6 +86,13 @@ pub struct BasicReasoningParser {
     /// ends for every delimiter pair already; this flag only gates the
     /// streaming path so existing `<think>` stray-close stripping is preserved.
     recover_dangling_end: bool,
+    /// Whether a one-byte delimiter prefix should be buffered across chunks.
+    ///
+    /// The generic parser normally requires at least two matching bytes so a
+    /// lone `<` can flow directly into XML-like tool-call formats. Kimi K3's
+    /// reserved markers all begin with `<|`, so its configuration can safely
+    /// hold a trailing `<` for one chunk without changing other model families.
+    buffer_single_char_marker_prefix: bool,
     /// Optional markers that force-exit reasoning mode when encountered inside a
     /// reasoning block (e.g. Kimi-K2/K2.5 models sometimes emit
     /// `<|tool_calls_section_begin|>` without first closing `</think>`).
@@ -107,6 +114,7 @@ impl BasicReasoningParser {
             _buffer: String::new(),
             stripped_think_start: false,
             recover_dangling_end: false,
+            buffer_single_char_marker_prefix: false,
             tool_start_tokens: Vec::new(),
         }
     }
@@ -125,6 +133,14 @@ impl BasicReasoningParser {
     /// opener routes the preceding text to reasoning instead of normal text.
     pub fn with_dangling_end_recovery(mut self) -> Self {
         self.recover_dangling_end = true;
+        self
+    }
+
+    /// Buffer a one-byte prefix of a configured reasoning delimiter or exit
+    /// marker. Intended for model formats whose reserved markers share an
+    /// unambiguous multi-byte prefix, such as Kimi K3's `<|...` markers.
+    pub fn with_single_char_marker_buffering(mut self) -> Self {
+        self.buffer_single_char_marker_prefix = true;
         self
     }
 }
@@ -364,7 +380,7 @@ impl ReasoningParser for BasicReasoningParser {
                         let ol_end = overlap(&current_text, &self.think_end_token);
                         let ol_tool = max_marker_overlap(&current_text, &self.tool_start_tokens);
                         let ol = ol_end.max(ol_tool);
-                        if ol >= 2 {
+                        if ol >= 2 || (self.buffer_single_char_marker_prefix && ol == 1) {
                             let safe_end = current_text.len() - ol;
                             if safe_end > 0 {
                                 accumulated_reasoning.push_str(&current_text[..safe_end]);
@@ -427,7 +443,7 @@ impl ReasoningParser for BasicReasoningParser {
                 let ol_start = overlap(&current_text, &self.think_start_token);
                 let ol_end = overlap(&current_text, &self.think_end_token);
                 let ol = ol_start.max(ol_end);
-                if ol >= 2 {
+                if ol >= 2 || (self.buffer_single_char_marker_prefix && ol == 1) {
                     let safe_end = current_text.len() - ol;
                     if safe_end > 0 {
                         if self.recover_dangling_end && ol_end > ol_start {

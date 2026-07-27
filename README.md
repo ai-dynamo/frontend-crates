@@ -6,8 +6,8 @@ Standalone Rust crates for building OpenAI/Anthropic-compatible inference server
 | -- | -- |
 | [`dynamo-protocols`](./protocols/)   | Request/response types for OpenAI Chat / Completions / Responses + Anthropic Messages. Built on `async-openai` v0.34 with inference-serving extensions. |
 | [`dynamo-tokenizers`](./tokenizers/) | HuggingFace + tiktoken + FastTokenizer wrappers with fast incremental detokenization and prefix-caching for shared-prefix workloads. |
-| [`dynamo-parsers`](./parsers/v1/)    | Reasoning + tool-calling parsers across 18+ model families (DeepSeek R1/V4, Qwen3, GPT-OSS, Kimi K2, Gemma 4, Llama, Hermes, ...). The stable batch parser — the *decode* side, and the crate to depend on. |
-| [`dynamo-renderer`](./renderer/)     | Chat-template / prompt rendering: OpenAI chat requests → model-ready prompt strings via HF `chat_template` (minijinja), plus native DeepSeek formatters. The *encode* side. |
+| [`dynamo-parsers`](./parsers/v1/)    | Reasoning + tool-calling parsers across 18+ model families (DeepSeek R1/V4, Qwen3, GPT-OSS, Kimi K2/K3, Gemma 4, Llama, Hermes, ...). The stable batch parser — the *decode* side, and the crate to depend on. |
+| [`dynamo-renderer`](./renderer/)     | Chat-template / prompt rendering: OpenAI chat requests → model-ready prompts via HF `chat_template` (minijinja), plus native DeepSeek and Kimi K3 formatters. The *encode* side. |
 
 Each crate is independently published to crates.io and can be adopted on its own. Only `dynamo-renderer` has internal deps — it depends on `dynamo-protocols` and re-exports `dynamo-tokenizers` for convenience; `dynamo-protocols`, `dynamo-tokenizers`, and `dynamo-parsers` are leaf crates with no internal deps. The repository itself is a Cargo workspace so shared dependency versions, CI checks, and the demo build stay consistent.
 

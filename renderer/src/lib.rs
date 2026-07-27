@@ -14,8 +14,8 @@
 //! ([`ChatTemplate`]).
 //!
 //! This crate is a *bridge* between OpenAI request types ([`dynamo_protocols`])
-//! and the HF chat-template engine ([`minijinja`]); it does not depend on
-//! tokenizer internals. `dynamo-tokenizers` is re-exported for convenience.
+//! and prompt rendering. Most formatters return text; segment-sensitive native
+//! formats can preserve tokenizer policy through [`RenderedPrompt`].
 
 // TODO:
 // 1. Query if `add_generation_prompt` is present in the prompt template
@@ -32,14 +32,15 @@ use std::sync::Arc;
 /// Re-export of `dynamo-tokenizers` as a one-import convenience: consumers that
 /// want both tokenization and chat templating can reach the tokenizer types via
 /// `dynamo_renderer::dynamo_tokenizers::*` without adding a second dependency.
-/// This crate does not otherwise use the tokenizer internals.
 pub use dynamo_tokenizers;
 
 pub mod deepseek;
+pub mod kimi_k3;
 mod template;
 
 pub use template::{
-    ChatTemplate, ChatTemplateValue, ContextMixins, deepseek_formatter_for, may_be_fix_tool_schema,
+    ChatTemplate, ChatTemplateValue, ContextMixins, deepseek_formatter_for, kimi_k3_formatter_for,
+    may_be_fix_tool_schema,
 };
 
 /// Selects which context-mixin behaviors a template renders with.
@@ -90,6 +91,75 @@ pub enum PromptInput {
     Tokens(TokenInput),
     Text(TextInput),
 }
+
+/// A rendered prompt plus its optional tokenization boundaries.
+///
+/// Most model families return plain text and use the tokenizer's normal global
+/// encoding behavior. Segment-sensitive protocols such as Kimi K3 additionally
+/// retain which spans may be interpreted as special tokens.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RenderedPrompt {
+    text: String,
+    segments: Option<Vec<dynamo_tokenizers::EncodeSegment>>,
+}
+
+impl RenderedPrompt {
+    pub fn text(text: String) -> Self {
+        Self {
+            text,
+            segments: None,
+        }
+    }
+
+    pub fn segmented(segments: Vec<dynamo_tokenizers::EncodeSegment>) -> Self {
+        let text = segments
+            .iter()
+            .map(|segment| segment.text.as_str())
+            .collect();
+        Self {
+            text,
+            segments: Some(segments),
+        }
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.text
+    }
+
+    pub fn segments(&self) -> Option<&[dynamo_tokenizers::EncodeSegment]> {
+        self.segments.as_deref()
+    }
+
+    pub fn into_text(self) -> String {
+        self.text
+    }
+}
+
+/// A prompt-rendering failure caused by the request rather than server state.
+///
+/// Callers can downcast an [`anyhow::Error`] to this type and map it to their
+/// protocol's invalid-request status without treating every template failure as
+/// a client error.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PromptRenderError {
+    InvalidRequest(String),
+}
+
+impl PromptRenderError {
+    pub fn invalid_request(message: impl Into<String>) -> Self {
+        Self::InvalidRequest(message.into())
+    }
+}
+
+impl std::fmt::Display for PromptRenderError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::InvalidRequest(message) => f.write_str(message),
+        }
+    }
+}
+
+impl std::error::Error for PromptRenderError {}
 
 /// Trait that defines a request that can map to an OpenAI-like request.
 ///
@@ -143,12 +213,30 @@ pub trait OAIPromptFormatter: Send + Sync + 'static {
     fn supports_add_generation_prompt(&self) -> bool;
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String>;
 
+    fn render_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<RenderedPrompt> {
+        self.render(req).map(RenderedPrompt::text)
+    }
+
     /// Per-family image-placeholder template used when the chat template
     /// requires string content and the request contains images. `{n}` in
     /// the template is the 1-based image index. `None` when the
     /// formatter has no flatten strategy — MM-aware routing falls back
     /// to text-prefix routing for those families.
     fn image_placeholder_template(&self) -> Option<&'static str> {
+        None
+    }
+
+    /// Per-family single token that stands in for one image when the serving
+    /// engine repeats it up to the image's feature count instead of rebuilding
+    /// the model's native media sequence from
+    /// [`Self::image_placeholder_template`].
+    ///
+    /// Engines differ in which of the two they consume, so the worker declares
+    /// its contract and the preprocessor substitutes this token for the marker
+    /// only when the worker asked for it. `None` (the default for every
+    /// formatter except Kimi K3) means the marker is always passed through
+    /// untouched.
+    fn image_pad_token(&self) -> Option<&'static str> {
         None
     }
 }

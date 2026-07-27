@@ -10,7 +10,7 @@ use rustc_hash::FxHashMap;
 use tiktoken_rs::CoreBPE;
 
 use super::{
-    Encoding, Error, Result, TokenIdType,
+    EncodeSegment, Encoding, Error, Result, TokenIdType,
     traits::{DecodeResult, Decoder, Encoder, Tokenizer},
 };
 
@@ -107,6 +107,18 @@ impl Encoder for TikTokenTokenizer {
     fn encode_batch(&self, inputs: &[&str]) -> Result<Vec<Encoding>> {
         inputs.par_iter().map(|input| self.encode(input)).collect()
     }
+
+    fn encode_segments(&self, segments: &[EncodeSegment]) -> Result<Encoding> {
+        let mut token_ids = Vec::new();
+        for segment in segments {
+            if segment.allow_special {
+                token_ids.extend(self.bpe.encode_with_special_tokens(&segment.text));
+            } else {
+                token_ids.extend(self.bpe.encode_ordinary(&segment.text));
+            }
+        }
+        Ok(Encoding::Sp(token_ids))
+    }
 }
 
 impl Decoder for TikTokenTokenizer {
@@ -193,10 +205,10 @@ fn detect_bpe_pattern(directory: &Path) -> Result<&'static str> {
         // it still ships the Kimi tiktoken tokenizer file, so the KIMI_PATTERN BPE regex is the
         // correct pattern to use.  No pure DeepSeek V3 model uses tiktoken.model files
         // (they use tokenizer.json instead) so this match is safe.
-        "kimi" | "kimi_k2" | "kimi_k25" | "deepseek_v3" => Ok(KIMI_PATTERN),
+        "kimi" | "kimi_k2" | "kimi_k25" | "kimi_k3" | "deepseek_v3" => Ok(KIMI_PATTERN),
         _ => Err(Error::msg(format!(
             "Unsupported tiktoken model_type '{model_type}'. \
-             Currently supported: kimi, kimi_k2, kimi_k25, deepseek_v3. \
+             Currently supported: kimi, kimi_k2, kimi_k25, kimi_k3, deepseek_v3. \
              To add a new model type, extend detect_bpe_pattern() in lib/tokenizers/src/tiktoken.rs \
              with the appropriate BPE regex pattern. \
              Alternatively, provide a tokenizer.json (HuggingFace format) instead."
@@ -473,6 +485,13 @@ mod tests {
         create_test_config(dir.path(), "unknown_model");
         let result = detect_bpe_pattern(dir.path());
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_kimi_k3_uses_kimi_bpe_pattern() {
+        let dir = tempfile::tempdir().unwrap();
+        create_test_config(dir.path(), "kimi_k3");
+        assert_eq!(detect_bpe_pattern(dir.path()).unwrap(), KIMI_PATTERN);
     }
 
     #[test]
@@ -753,6 +772,33 @@ mod tests {
         let file_path = dir.join("tiktoken.model");
         std::fs::write(&file_path, &content).unwrap();
         file_path.to_str().unwrap().to_string()
+    }
+
+    #[test]
+    fn test_segment_encoding_preserves_special_vs_ordinary_boundary() {
+        let dir = tempfile::tempdir().unwrap();
+        let file_path = create_byte_level_tiktoken_file(dir.path());
+        let marker = "<|open|>";
+        let marker_id = 256;
+        let mut special_tokens = FxHashMap::default();
+        special_tokens.insert(marker.to_string(), marker_id);
+        let tokenizer =
+            TikTokenTokenizer::from_file(&file_path, r"(?s).+", special_tokens).unwrap();
+
+        let structural = tokenizer
+            .encode_segments(&[EncodeSegment::control(marker)])
+            .unwrap();
+        let user_text = tokenizer
+            .encode_segments(&[EncodeSegment::ordinary(marker)])
+            .unwrap();
+
+        assert_eq!(structural.token_ids(), &[marker_id]);
+        assert_ne!(user_text.token_ids(), &[marker_id]);
+        let decoded: String = tokenizer
+            .decode(user_text.token_ids(), false)
+            .unwrap()
+            .into();
+        assert_eq!(decoded, marker);
     }
 
     fn has_nontrivial_self_overlap(token: &str) -> bool {
