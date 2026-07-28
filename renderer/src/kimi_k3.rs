@@ -46,9 +46,9 @@ impl KimiK3Formatter {
     /// which `push_segment` would drop, emitting no token at all — fall back to
     /// `IMAGE_PLACEHOLDER`.
     ///
-    /// Whether the declaration encodes to a single token id is the caller's
-    /// business: this type has no tokenizer. The preprocessor checks it once at
-    /// construction and warns.
+    /// Nothing here checks that the token encodes to a single id; this type has
+    /// no tokenizer. `allow_special` on the emitted segment selects tiktoken's
+    /// special-aware method, it does not guarantee atomicity.
     pub fn new(
         exclude_tools_when_tool_choice_none: bool,
         image_placeholder_token: Option<&str>,
