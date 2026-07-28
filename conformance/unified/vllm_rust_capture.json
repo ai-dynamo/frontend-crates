@@ -1,0 +1,4627 @@
+{
+  "vllm_rust_version": "0.25.1",
+  "results": {
+    "UNIFIED.arg_marker_in_string.gemma4": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "run",
+          "arguments": {
+            "cmd": "git log }<tool_call|> --oneline"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "run",
+            "arguments": "{\"cmd\":\"git log }<tool_call|> --oneline\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.arg_marker_in_string.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "run",
+          "arguments": {
+            "cmd": "git log <|tool_call_end|> --oneline"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "run",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"cmd\": \"git log "
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "<|tool_call_end|>"
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": " --oneline\"}"
+          }
+        ],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.arg_marker_in_string.qwen3": {
+      "assembled": [],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)",
+      "error": "UnifiedParserError::Tool(ParsingFailed { message: \"near \\\"\\\\n<function=run>\\\\n<parameter=cmd>\\\\ngit log </tool_call> --oneline\\\\n</parameter>\\\\n</fu\\\": \" })"
+    },
+    "UNIFIED.arg_unicode.gemma4": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "S\u00e3o Paulo \u6771\u4eac"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"S\u00e3o Paulo \u6771\u4eac\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.arg_unicode.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "S\u00e3o Paulo \u6771\u4eac"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"city\": \"S\u00e3o Paulo \u6771\u4eac\"}"
+          }
+        ],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.arg_unicode.qwen3": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "S\u00e3o Paulo \u6771\u4eac"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"S\u00e3o Paulo \u6771\u4eac\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.content_then_reason.gemma4": {
+      "assembled": [
+        {
+          "kind": "text",
+          "text": "Hello there. "
+        },
+        {
+          "kind": "reasoning",
+          "text": "let me recall"
+        },
+        {
+          "kind": "text",
+          "text": "The capital is Paris."
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "Hello there. "
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "let me recall"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "text",
+            "text": "The capital is Paris."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.content_then_reason.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "let me recall"
+        },
+        {
+          "kind": "text",
+          "text": "Hello there. The capital is Paris."
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "Hello there. "
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "let me recall"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "text",
+            "text": "The capital is Paris."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.content_then_reason.qwen3": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "let me recall"
+        },
+        {
+          "kind": "text",
+          "text": "Hello there. The capital is Paris."
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "Hello there. "
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "let me recall"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "text",
+            "text": "The capital is Paris."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.content_then_reason_then_tool.gemma4": {
+      "assembled": [
+        {
+          "kind": "text",
+          "text": "Sure, one sec. "
+        },
+        {
+          "kind": "reasoning",
+          "text": "checking the forecast"
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "Sure, one sec. "
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "checking the forecast"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.content_then_reason_then_tool.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "checking the forecast"
+        },
+        {
+          "kind": "text",
+          "text": "Sure, one sec. "
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "Sure, one sec. "
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "checking the forecast"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"city\": \"Paris\"}"
+          }
+        ],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.content_then_reason_then_tool.qwen3": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "checking the forecast"
+        },
+        {
+          "kind": "text",
+          "text": "Sure, one sec. "
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "Sure, one sec. "
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "checking the forecast"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.empty_args.gemma4": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {}
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.empty_args.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {}
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{}"
+          }
+        ],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.empty_args.qwen3": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {}
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.interstitial_text.gemma4": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "a"
+        },
+        {
+          "kind": "text",
+          "text": "Here you go: "
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "a"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "text",
+            "text": "Here you go: "
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.interstitial_text.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "a"
+        },
+        {
+          "kind": "text",
+          "text": "Here you go: "
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "a"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "text",
+            "text": "Here you go: "
+          }
+        ],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"city\": \"Paris\"}"
+          }
+        ],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.interstitial_text.qwen3": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "a"
+        },
+        {
+          "kind": "text",
+          "text": "Here you go: "
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "a"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "text",
+            "text": "Here you go: "
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.narrated_calls.gemma4": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        },
+        {
+          "kind": "text",
+          "text": " then I'll run "
+        },
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "text",
+          "text": " and "
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "y": "2"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": " then I'll run "
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": "{\"x\":\"1\"}"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": " and "
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "g",
+            "arguments": "{\"y\":\"2\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.narrated_calls.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"city\": \"Paris\"}"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.narrated_calls.qwen3": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        },
+        {
+          "kind": "text",
+          "text": " then I'll run "
+        },
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "text",
+          "text": " and "
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "y": "2"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": " then I'll run "
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": "{\"x\":\"1\"}"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": " and "
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "g",
+            "arguments": "{\"y\":\"2\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.orphan_close_after_prose.gemma4": {
+      "assembled": [
+        {
+          "kind": "text",
+          "text": "I will check that. <tool_call|>"
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "I will check that. "
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": "<tool_call|>"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.orphan_close_after_prose.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "text",
+          "text": "I will check that. <|tool_call_end|>"
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "I will check that. "
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": "<|tool_call_end|>"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.orphan_close_after_prose.qwen3": {
+      "assembled": [
+        {
+          "kind": "text",
+          "text": "I will check that. </tool_call>"
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "I will check that. "
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": "</tool_call>"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_after_tool.gemma4": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "Look it up."
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        },
+        {
+          "kind": "reasoning",
+          "text": "Now answer."
+        },
+        {
+          "kind": "text",
+          "text": "It's 18C."
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "Look it up."
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "Now answer."
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "text",
+            "text": "It's 18C."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.reason_after_tool.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "Look it up.Now answer."
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "Look it up."
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"city\": \"Paris\"}"
+          }
+        ],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "Now answer."
+          }
+        ],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_after_tool.qwen3": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "Look it up.Now answer."
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        },
+        {
+          "kind": "text",
+          "text": "It's 18C."
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "Look it up."
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "Now answer."
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "text",
+            "text": "It's 18C."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_between_calls.gemma4": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "reasoning",
+          "text": "mid"
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "y": "2"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": "{\"x\":\"1\"}"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "mid"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "g",
+            "arguments": "{\"y\":\"2\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.reason_between_calls.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "mid"
+        },
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"x\": \"1\"}"
+          }
+        ],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "mid"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_between_calls.qwen3": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "mid"
+        },
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "y": "2"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": "{\"x\":\"1\"}"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "mid"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "g",
+            "arguments": "{\"y\":\"2\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_interleaved.gemma4": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "A"
+        },
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "reasoning",
+          "text": "B"
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "y": "2"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "A"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": "{\"x\":\"1\"}"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "B"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "g",
+            "arguments": "{\"y\":\"2\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.reason_interleaved.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "AB"
+        },
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "A"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"x\": \"1\"}"
+          }
+        ],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "B"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_interleaved.qwen3": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "AB"
+        },
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "y": "2"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "A"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": "{\"x\":\"1\"}"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "B"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "g",
+            "arguments": "{\"y\":\"2\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_markup_in_arg.gemma4": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "log",
+          "arguments": {
+            "note": "<|channel>thought\nreconsider<channel|>"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "log",
+            "arguments": "{\"note\":\"<|channel>thought\\nreconsider<channel|>\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.reason_markup_in_arg.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "reconsider"
+        },
+        {
+          "kind": "tool_call",
+          "name": "log",
+          "arguments": {
+            "note": ""
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "log",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"note\": \""
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "reconsider"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "\"}"
+          }
+        ],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_markup_in_arg.qwen3": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "reconsider"
+        },
+        {
+          "kind": "tool_call",
+          "name": "log",
+          "arguments": {
+            "note": ""
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "reconsider"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "log",
+            "arguments": "{\"note\":\"\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_markup_in_arg_with_text.gemma4": {
+      "assembled": [
+        {
+          "kind": "text",
+          "text": "Logging now: "
+        },
+        {
+          "kind": "tool_call",
+          "name": "log",
+          "arguments": {
+            "note": "<|channel>thought\nreconsider<channel|>"
+          }
+        },
+        {
+          "kind": "text",
+          "text": " done."
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "Logging now: "
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "log",
+            "arguments": "{\"note\":\"<|channel>thought\\nreconsider<channel|>\"}"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": " done."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.reason_markup_in_arg_with_text.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "reconsider"
+        },
+        {
+          "kind": "text",
+          "text": "Logging now: "
+        },
+        {
+          "kind": "tool_call",
+          "name": "log",
+          "arguments": {
+            "note": ""
+          }
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "Logging now: "
+          }
+        ],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "log",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"note\": \""
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "reconsider"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "\"}"
+          }
+        ],
+        [],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_markup_in_arg_with_text.qwen3": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "reconsider"
+        },
+        {
+          "kind": "text",
+          "text": "Logging now: "
+        },
+        {
+          "kind": "tool_call",
+          "name": "log",
+          "arguments": {
+            "note": ""
+          }
+        },
+        {
+          "kind": "text",
+          "text": " done."
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "Logging now: "
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "reconsider"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "log",
+            "arguments": "{\"note\":\"\"}"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": " done."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_only.gemma4": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "just thinking, no answer"
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "just thinking, no answer"
+          }
+        ],
+        []
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.reason_only.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "just thinking, no answer"
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "just thinking, no answer"
+          }
+        ],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_only.qwen3": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "just thinking, no answer"
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "just thinking, no answer"
+          }
+        ],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_then_content.gemma4": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "let me think"
+        },
+        {
+          "kind": "text",
+          "text": "The answer is 42."
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "let me think"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "text",
+            "text": "The answer is 42."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.reason_then_content.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "let me think"
+        },
+        {
+          "kind": "text",
+          "text": "The answer is 42."
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "let me think"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "text",
+            "text": "The answer is 42."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_then_content.qwen3": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "let me think"
+        },
+        {
+          "kind": "text",
+          "text": "The answer is 42."
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "let me think"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "text",
+            "text": "The answer is 42."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_then_tool.gemma4": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "Check weather."
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "Check weather."
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.reason_then_tool.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "Check weather."
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "Check weather."
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"city\": \"Paris\"}"
+          }
+        ],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_then_tool.qwen3": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "Check weather."
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "Check weather."
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_tool_reason_tool_reason.gemma4": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "A"
+        },
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "reasoning",
+          "text": "B"
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "y": "2"
+          }
+        },
+        {
+          "kind": "reasoning",
+          "text": "C"
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "A"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": "{\"x\":\"1\"}"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "B"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "g",
+            "arguments": "{\"y\":\"2\"}"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "C"
+          }
+        ],
+        []
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.reason_tool_reason_tool_reason.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "ABC"
+        },
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "A"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"x\": \"1\"}"
+          }
+        ],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "B"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "C"
+          }
+        ],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_tool_reason_tool_reason.qwen3": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "ABC"
+        },
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "y": "2"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "A"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": "{\"x\":\"1\"}"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "B"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "g",
+            "arguments": "{\"y\":\"2\"}"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "C"
+          }
+        ],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_tool_text_reason_tool.gemma4": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "A"
+        },
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "text",
+          "text": "working on it"
+        },
+        {
+          "kind": "reasoning",
+          "text": "B"
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "y": "2"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "A"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": "{\"x\":\"1\"}"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": "working on it"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "B"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "g",
+            "arguments": "{\"y\":\"2\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.reason_tool_text_reason_tool.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "AB"
+        },
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "A"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"x\": \"1\"}"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "B"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_tool_text_reason_tool.qwen3": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "AB"
+        },
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "text",
+          "text": "working on it"
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "y": "2"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "A"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": "{\"x\":\"1\"}"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": "working on it"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "B"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "g",
+            "arguments": "{\"y\":\"2\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_unterminated.gemma4": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "thinking but stream ends"
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "thinking but stream ends"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.reason_unterminated.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "thinking but stream ends"
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "thinking but stream ends"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.reason_unterminated.qwen3": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "thinking but stream ends"
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "thinking but stream ends"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.text_before_tool.gemma4": {
+      "assembled": [
+        {
+          "kind": "text",
+          "text": "On it: "
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "On it: "
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.text_before_tool.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "text",
+          "text": "On it: "
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "On it: "
+          }
+        ],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"city\": \"Paris\"}"
+          }
+        ],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.text_before_tool.qwen3": {
+      "assembled": [
+        {
+          "kind": "text",
+          "text": "On it: "
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "On it: "
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.text_between_calls.gemma4": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "text",
+          "text": " then "
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "y": "2"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": "{\"x\":\"1\"}"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": " then "
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "g",
+            "arguments": "{\"y\":\"2\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.text_between_calls.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"x\": \"1\"}"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.text_between_calls.qwen3": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "text",
+          "text": " then "
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "y": "2"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": "{\"x\":\"1\"}"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": " then "
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "g",
+            "arguments": "{\"y\":\"2\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.text_only.gemma4": {
+      "assembled": [
+        {
+          "kind": "text",
+          "text": "The answer is 42, no tools needed."
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "The answer is 42, no tools needed."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.text_only.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "text",
+          "text": "The answer is 42, no tools needed."
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "The answer is 42, no tools needed."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.text_only.qwen3": {
+      "assembled": [
+        {
+          "kind": "text",
+          "text": "The answer is 42, no tools needed."
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "The answer is 42, no tools needed."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.text_reason_tool_text_reason_tool.gemma4": {
+      "assembled": [
+        {
+          "kind": "text",
+          "text": "Sure. "
+        },
+        {
+          "kind": "reasoning",
+          "text": "check A"
+        },
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "text",
+          "text": " and "
+        },
+        {
+          "kind": "reasoning",
+          "text": "check B"
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "y": "2"
+          }
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "Sure. "
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "check A"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": "{\"x\":\"1\"}"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": " and "
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "check B"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "g",
+            "arguments": "{\"y\":\"2\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.text_reason_tool_text_reason_tool.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "check Acheck B"
+        },
+        {
+          "kind": "text",
+          "text": "Sure. "
+        },
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "Sure. "
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "check A"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"x\": \"1\"}"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "check B"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.text_reason_tool_text_reason_tool.qwen3": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "check Acheck B"
+        },
+        {
+          "kind": "text",
+          "text": "Sure. "
+        },
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "text",
+          "text": " and "
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "y": "2"
+          }
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "Sure. "
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "check A"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": "{\"x\":\"1\"}"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": " and "
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "check B"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "g",
+            "arguments": "{\"y\":\"2\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.text_sandwich.gemma4": {
+      "assembled": [
+        {
+          "kind": "text",
+          "text": "Before. "
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        },
+        {
+          "kind": "text",
+          "text": " After."
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "Before. "
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": " After."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.text_sandwich.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "text",
+          "text": "Before. "
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "Before. "
+          }
+        ],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"city\": \"Paris\"}"
+          }
+        ],
+        [],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.text_sandwich.qwen3": {
+      "assembled": [
+        {
+          "kind": "text",
+          "text": "Before. "
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        },
+        {
+          "kind": "text",
+          "text": " After."
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "Before. "
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": " After."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.tool_in_reason.gemma4": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "I should check. "
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        },
+        {
+          "kind": "text",
+          "text": " now answer<channel|>"
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "I should check. "
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": " now answer"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": "<channel|>"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.tool_in_reason.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "I should check. <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|> now answer"
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "I should check. "
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "<|tool_calls_section_begin|>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "<|tool_call_begin|>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "functions.get_weather:0"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "<|tool_call_argument_begin|>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "{\"city\": \"Paris\"}"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "<|tool_call_end|>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "<|tool_calls_section_end|>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": " now answer"
+          }
+        ],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.tool_in_reason.qwen3": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "I should check. <tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call> now answer"
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "I should check. "
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "<tool_call>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "\n"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "<function=get_weather>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "\n"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "<parameter=city>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "\nParis\n"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "</parameter>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "\n"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "</function>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "\n"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "</tool_call>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": " now answer"
+          }
+        ],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.tool_in_reason_with_text.gemma4": {
+      "assembled": [
+        {
+          "kind": "text",
+          "text": "Sure. "
+        },
+        {
+          "kind": "reasoning",
+          "text": "I should check. "
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        },
+        {
+          "kind": "text",
+          "text": " now answer<channel|> Here you go."
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "Sure. "
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "I should check. "
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": " now answer"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": "<channel|>"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": " Here you go."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.tool_in_reason_with_text.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "I should check. <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|> now answer"
+        },
+        {
+          "kind": "text",
+          "text": "Sure.  Here you go."
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "Sure. "
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "I should check. "
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "<|tool_calls_section_begin|>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "<|tool_call_begin|>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "functions.get_weather:0"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "<|tool_call_argument_begin|>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "{\"city\": \"Paris\"}"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "<|tool_call_end|>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "<|tool_calls_section_end|>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": " now answer"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "text",
+            "text": " Here you go."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.tool_in_reason_with_text.qwen3": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "I should check. <tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call> now answer"
+        },
+        {
+          "kind": "text",
+          "text": "Sure.  Here you go."
+        }
+      ],
+      "chunks": [
+        [
+          {
+            "kind": "text",
+            "text": "Sure. "
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "I should check. "
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "<tool_call>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "\n"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "<function=get_weather>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "\n"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "<parameter=city>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "\nParis\n"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "</parameter>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "\n"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "</function>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "\n"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": "</tool_call>"
+          }
+        ],
+        [
+          {
+            "kind": "reasoning",
+            "text": " now answer"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "text",
+            "text": " Here you go."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.tool_no_close.gemma4": {
+      "assembled": [],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (UnifiedParser)",
+      "error": "UnifiedParserError::ParsingFailed { message: \"incomplete Gemma4 tool call\" }"
+    },
+    "UNIFIED.tool_no_close.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"city\": \"Paris\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)",
+      "error": "UnifiedParserError::Tool(ParsingFailed { message: \"incomplete Kimi K2 tool call\" })"
+    },
+    "UNIFIED.tool_no_close.qwen3": {
+      "assembled": [],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)",
+      "error": "UnifiedParserError::Tool(ParsingFailed { message: \"incomplete Qwen Coder tool call\" })"
+    },
+    "UNIFIED.tool_only.gemma4": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.tool_only.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"city\": \"Paris\"}"
+          }
+        ],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.tool_only.qwen3": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.trailing_text_after_tool.gemma4": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        },
+        {
+          "kind": "text",
+          "text": "The forecast shows clear skies for the rest of the week."
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": "The forecast shows clear skies for the rest of the week."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.trailing_text_after_tool.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"city\": \"Paris\"}"
+          }
+        ],
+        [],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.trailing_text_after_tool.qwen3": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        },
+        {
+          "kind": "text",
+          "text": "The forecast shows clear skies for the rest of the week."
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": "The forecast shows clear skies for the rest of the week."
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.truncated_tool_eof.gemma4": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "ok"
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "ok"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (UnifiedParser)",
+      "error": "UnifiedParserError::ParsingFailed { message: \"incomplete Gemma4 tool call\" }"
+    },
+    "UNIFIED.truncated_tool_eof.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "ok"
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": "{\"city\": \"Par"
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "ok"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"city\": \"Par"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)",
+      "error": "UnifiedParserError::Tool(ParsingFailed { message: \"incomplete Kimi K2 tool call\" })"
+    },
+    "UNIFIED.truncated_tool_eof.qwen3": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "ok"
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "ok"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)",
+      "error": "UnifiedParserError::Tool(ParsingFailed { message: \"incomplete Qwen Coder tool call\" })"
+    },
+    "UNIFIED.two_calls.gemma4": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "y": "2"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": "{\"x\":\"1\"}"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "g",
+            "arguments": "{\"y\":\"2\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.two_calls.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"x\": \"1\"}"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.two_calls.qwen3": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "y": "2"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "f",
+            "arguments": "{\"x\":\"1\"}"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "g",
+            "arguments": "{\"y\":\"2\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.two_calls_same_name.gemma4": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Tokyo"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Tokyo\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.two_calls_same_name.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": ""
+          }
+        ],
+        [
+          {
+            "kind": "tool_call",
+            "name": null,
+            "arguments": "{\"city\": \"Paris\"}"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.two_calls_same_name.qwen3": {
+      "assembled": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Tokyo"
+          }
+        }
+      ],
+      "chunks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Paris\"}"
+          }
+        ],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [
+          {
+            "kind": "tool_call",
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Tokyo\"}"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.two_reason_spans.gemma4": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "first thought"
+        },
+        {
+          "kind": "text",
+          "text": "interlude "
+        },
+        {
+          "kind": "reasoning",
+          "text": "second thought"
+        },
+        {
+          "kind": "text",
+          "text": "done"
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "first thought"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "text",
+            "text": "interlude "
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "second thought"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "text",
+            "text": "done"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (UnifiedParser)"
+    },
+    "UNIFIED.two_reason_spans.kimi_k2": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "first thoughtsecond thought"
+        },
+        {
+          "kind": "text",
+          "text": "interlude done"
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "first thought"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "text",
+            "text": "interlude "
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "second thought"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "text",
+            "text": "done"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    },
+    "UNIFIED.two_reason_spans.qwen3": {
+      "assembled": [
+        {
+          "kind": "reasoning",
+          "text": "first thoughtsecond thought"
+        },
+        {
+          "kind": "text",
+          "text": "interlude done"
+        }
+      ],
+      "chunks": [
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "first thought"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "text",
+            "text": "interlude "
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "reasoning",
+            "text": "second thought"
+          }
+        ],
+        [],
+        [
+          {
+            "kind": "text",
+            "text": "done"
+          }
+        ]
+      ],
+      "parser": "vLLM Rust (CombinedParser)"
+    }
+  }
+}

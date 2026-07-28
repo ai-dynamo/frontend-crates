@@ -78,13 +78,27 @@
           el.classList.toggle('col-hidden', !active.has(key));
           el.classList.toggle('col-ref', key === base);
         });
-        if (base) {
-          grid.querySelectorAll('tr').forEach(function (tr) {
-            const el = tr.querySelector('[data-cand="' + base + '"]');
-            const first = tr.querySelector('[data-cand]');
-            if (el && first && first !== el) { tr.insertBefore(el, first); }
-          });
+        // Stable re-sort: Reference first, then the rest in their declaration order
+        // (data-cand-order). Using a stable key avoids the cumulative scramble that a
+        // move-to-front produces when the Reference is toggled repeatedly.
+        // Order: a pinned column (the golden oracle) is always leftmost, THEN the
+        // selected Reference, THEN the rest in declaration order (alphabetical here).
+        function _colRank(el) {
+          if (el.getAttribute('data-cand-pin') === '1') { return 0; }
+          if (el.getAttribute('data-cand') === base) { return 1; }
+          return 2;
         }
+        grid.querySelectorAll('tr').forEach(function (tr) {
+          const cols = Array.prototype.slice.call(tr.querySelectorAll('[data-cand]'));
+          if (!cols.length) { return; }
+          cols.sort(function (a, b) {
+            const ra = _colRank(a), rb = _colRank(b);
+            if (ra !== rb) { return ra - rb; }
+            return (parseInt(a.getAttribute('data-cand-order'), 10) || 0)
+              - (parseInt(b.getAttribute('data-cand-order'), 10) || 0);
+          });
+          cols.forEach(function (el) { tr.appendChild(el); });
+        });
       } else {
         // Legacy impl-column grid: show columns whose engine is active.
         const activeImpls = new Set(Array.from(active).map(implOf));
@@ -188,7 +202,11 @@
       }
       // Unavailable candidates never count toward the diff; still shown in tooltip.
       const avail = shown.map(function (k) { return cmp[k]; }).filter(function (o) { return o && o.na !== 1; });
-      const diffs = avail.filter(function (o) { return o.sig !== bd.sig; }).length;
+      // NΔ always counts shown engines that diverge from GOLDEN (the fixed reference),
+      // independent of which engine is starred. When there is no golden (other tabs), fall
+      // back to the selected reference. The star only drives the red/leak focus (bd).
+      const refSig = (cmp.golden ? cmp.golden.sig : bd.sig);
+      const diffs = avail.filter(function (o) { return o.sig !== refSig; }).length;
       const leak = bd.leak === 1;
       // GREEN = the Reference output is clean (no leaked tool-call markup). That holds
       // whether or not any Compare is selected, so a lone Reference with 0 Compares is
@@ -198,15 +216,51 @@
       // Δ suffix marks the number as a count of diverging Compare-with parsers,
       // e.g. "2Δ"; "=" (all agree) and a lone leak "↯" carry no count.
       const txt = donly ? '' : (diffs === 0 ? '=' : String(diffs) + 'Δ');
-      if (marker) { marker.textContent = (leak ? '↯' : '') + txt; }
-      // Color = leak only: red = Reference leaks markup, green = clean.
-      cell.classList.add(leak ? 'cmp-leak' : 'cmp-eq');
-      if (countThis) { if (leak) { counts.problem++; } else { counts.ok++; } }
+      // Color = leak only. Normally that is the Reference's leak. On the Unified tab
+      // (data-red-on-leak) the Reference is the golden oracle, which never leaks, so
+      // red keys on whether a SHOWN parser leaked markup — NOT on delta. Ordering/
+      // content divergences still show their NΔ count, but stay green.
+      // Red iff the REFERENCE parser leaks markup. Star an engine to see its own leaks;
+      // a leaking Compare-with parser does NOT red the cell (that's the compare's problem,
+      // not the reference's). Same rule on every tab.
+      const leaked = leak;
+      if (marker) { marker.textContent = (leaked ? '↯' : '') + txt; }
+      const problem = leaked;
+      cell.classList.add(problem ? 'cmp-leak' : 'cmp-eq');
+      if (countThis) { if (problem) { counts.problem++; } else { counts.ok++; } }
       toggleCands(cell, active, base);
     });
     panel.querySelectorAll('[data-overview-count]').forEach(function (el) {
       const k = el.dataset.overviewCount;
       el.textContent = String(k === 'todo' ? 0 : (counts[k] || 0));
+    });
+    // Column grammar popups (header hover): output columns are one-per-candidate. golden
+    // is PINNED (always shown, leftmost); the rest show only when active (Reference +
+    // selected compares). Flag the Reference column and order golden -> REF -> the rest,
+    // the same rule the cell-popup candidate grid uses.
+    panel.querySelectorAll('table.ttip-grammar').forEach(function (tbl) {
+      tbl.querySelectorAll('[data-cand]').forEach(function (el) {
+        const key = el.getAttribute('data-cand');
+        const pinned = el.getAttribute('data-cand-pin') === '1';
+        el.classList.toggle('col-hidden', !(pinned || active.has(key)));
+        el.classList.toggle('col-ref', key === base);
+      });
+      function _gRank(el) {
+        if (el.getAttribute('data-cand-pin') === '1') { return 0; }
+        if (el.getAttribute('data-cand') === base) { return 1; }
+        return 2;
+      }
+      tbl.querySelectorAll('tr').forEach(function (tr) {
+        const cols = Array.prototype.slice.call(tr.querySelectorAll('[data-cand]'));
+        if (!cols.length) { return; }
+        cols.sort(function (a, b) {
+          const ra = _gRank(a), rb = _gRank(b);
+          if (ra !== rb) { return ra - rb; }
+          return (parseInt(a.getAttribute('data-cand-order'), 10) || 0)
+            - (parseInt(b.getAttribute('data-cand-order'), 10) || 0);
+        });
+        cols.forEach(function (el) { tr.appendChild(el); });
+      });
     });
     updateCompareUrl(panel, ctl);
   }

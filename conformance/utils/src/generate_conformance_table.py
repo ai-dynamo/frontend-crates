@@ -75,6 +75,13 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+# PERF: this render loads thousands of fixture YAMLs (the stream version-status map
+# re-loads every peer version); PyYAML's pure-Python SafeLoader dominates the wall
+# clock. Route safe_load through libyaml's CSafeLoader (identical result, ~15x faster)
+# when the C extension is present. fixtures.py / markers.py call `yaml.safe_load` at
+# call time, so patching the module here covers them too.
+if hasattr(yaml, "CSafeLoader"):
+    yaml.safe_load = lambda _s, _loader=yaml.CSafeLoader: yaml.load(_s, Loader=_loader)
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from tests.parity import common
@@ -2001,6 +2008,457 @@ def _plain_href_rewriter(stage_dir: str, fixture_href_root: str):
     return rewrite
 
 
+_UNIFIED_LEAK_MARKERS = ("<|", "|>", "<think>", "</think>", "◁", "<channel", "channel|>")
+
+
+def _unified_classify(family: str, golden: list, got: list) -> str:
+    """Classify a captured event list against the golden oracle. Python port of
+    the Rust `classify` in tests/unified_render.rs so vLLM (captured) and Dynamo
+    (LIVE-in-Rust) are scored the same way against GOLDEN."""
+    if golden == got:
+        return "MATCH"
+
+    # Gemma4's reasoning channel opens with `<|channel>thought\n`; a correct parse
+    # consumes the whole opener. If the label `thought\n` survives into extracted
+    # reasoning/text, the channel marker leaked (golden never contains it).
+    markers = _UNIFIED_LEAK_MARKERS + (("thought\n",) if family == "gemma4" else ())
+
+    def _leaks(evs):
+        return any(e.get("kind") in ("text", "reasoning")
+                   and any(m in (e.get("text") or "") for m in markers)
+                   for e in evs)
+
+    if _leaks(got):
+        return "LEAK"
+
+    def _rcount(evs):
+        return sum(1 for e in evs if e.get("kind") == "reasoning")
+
+    if _rcount(got) < _rcount(golden):
+        return "MERGE"
+
+    def _calls(evs):
+        return [(e.get("name"), json.dumps(e.get("arguments"), sort_keys=True))
+                for e in evs if e.get("kind") == "tool_call"]
+
+    gc, tc = _calls(golden), _calls(got)
+    if (len(gc) == len(tc) and all(a[0] == b[0] for a, b in zip(gc, tc))
+            and any(a[1] != b[1] for a, b in zip(gc, tc))):
+        return "ARG_MISMATCH"
+
+    def _cat(evs, want_reason):
+        kind = "reasoning" if want_reason else "text"
+        return "".join((e.get("text") or "") for e in evs if e.get("kind") == kind)
+
+    if _cat(golden, True) == _cat(got, True) and _cat(golden, False) == _cat(got, False):
+        return "ORDER"
+    return "LOSS"
+
+
+def _assemble_stream(chunk_deltas: list) -> list:
+    """Assemble the FINAL ordered event list from a parser's per-chunk STREAMED deltas
+    (not its batch final message). Coalesces consecutive reasoning/text runs and joins
+    per-call tool-argument fragments (a delta with a name starts a new call; nameless
+    arg deltas append to the current one). This is what a streaming client actually
+    receives — and, unlike the batch assembly, it preserves reasoning<->tool order."""
+    events: list = []
+    cur_tool = None  # index in `events` of the tool call currently receiving arg deltas
+    for deltas in chunk_deltas:
+        for dl in deltas or []:
+            k = dl.get("kind")
+            if k in ("reasoning", "text"):
+                cur_tool = None
+                if events and events[-1]["kind"] == k:
+                    events[-1]["text"] += dl.get("text") or ""
+                else:
+                    events.append({"kind": k, "text": dl.get("text") or ""})
+            elif k == "tool_call":
+                name, args = dl.get("name"), dl.get("arguments")
+                if name:  # a name delta opens a new call
+                    events.append({"kind": "tool_call", "name": name, "_raw": args or ""})
+                    cur_tool = len(events) - 1
+                elif cur_tool is not None and args:
+                    events[cur_tool]["_raw"] += args
+    for e in events:
+        if e["kind"] == "tool_call":
+            raw = e.pop("_raw", "")
+            if isinstance(raw, (dict, list)):
+                e["arguments"] = raw
+            elif not (raw or "").strip():
+                e["arguments"] = {}
+            else:
+                try:
+                    e["arguments"] = json.loads(raw)
+                except (ValueError, TypeError):
+                    e["arguments"] = raw
+    return events
+
+
+def _load_capture(artifact_root: Path, name: str, version_key: str) -> tuple[dict, str | None]:
+    """Load a persisted LIVE capture artifact under conformance/unified/. Returns
+    (results_by_id, version). Empty if absent."""
+    cp = artifact_root / "conformance/unified" / name
+    if not cp.exists():
+        return {}, None
+    data = json.loads(cp.read_text())
+    return data.get("results", {}), data.get(version_key)
+
+
+def _load_vllm_capture(artifact_root: Path) -> tuple[dict, str | None]:
+    """vLLM Python parser capture (capture_vllm_unified.py, ParserManager combined path)."""
+    return _load_capture(artifact_root, "vllm_capture.json", "vllm_version")
+
+
+def _load_vllm_rust_capture(artifact_root: Path) -> tuple[dict, str | None]:
+    """vLLM Rust unified capture (capture_vllm_rust_unified.py). gemma4 = native
+    Gemma4UnifiedParser; other families = CombinedParser. Each result carries a
+    `parser` string ("vLLM Rust (UnifiedParser)" / "(CombinedParser)")."""
+    return _load_capture(artifact_root, "vllm_rust_capture.json", "vllm_rust_version")
+
+
+def _load_sglang_capture(artifact_root: Path) -> tuple[dict, str | None]:
+    """SGLang Python capture (capture_sglang_unified.py). SGLang has no unified parser —
+    always a reasoning detector then a tool detector (Combined/split)."""
+    return _load_capture(artifact_root, "sglang_capture.json", "sglang_version")
+
+
+def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
+    """Build the Unified (reasoning + tools) tab from the Rust-produced results feed
+    (`conformance/unified/unified_results.json`). Reference = the authored GOLDEN
+    oracle; Compare = Dynamo today (LIVE) and vLLM 0.25.x (LIVE). A cell is red only
+    when a shown parser LEAKED markup (data-red-on-leak); ordering/content divergences
+    show their NΔ count but stay green."""
+    import hashlib
+    jp = artifact_root / "conformance/unified/unified_results.json"
+    if not jp.exists():
+        return None
+    data = json.loads(jp.read_text())
+    cases = data.get("cases", [])
+    if not cases:
+        return None
+
+    vllm_cap, vllm_version = _load_vllm_capture(artifact_root)
+    vllm_live = bool(vllm_cap)
+    vllm_ver_label = vllm_version or "0.25.x"
+
+    vrust_cap, vrust_version = _load_vllm_rust_capture(artifact_root)
+    vrust_live = bool(vrust_cap)
+    vrust_ver_label = vrust_version or "0.25.x"
+
+    sgl_cap, sgl_version = _load_sglang_capture(artifact_root)
+    sgl_live = bool(sgl_cap)
+    sgl_ver_label = sgl_version or "0.5.x"
+
+    def _sig(events) -> int:
+        return int(hashlib.md5(json.dumps(events, sort_keys=True).encode()).hexdigest()[:8], 16)
+
+    scenarios: list[str] = []
+    families: list[str] = []
+    scn_desc: dict[str, str] = {}
+    by_key: dict[tuple[str, str], dict] = {}
+    for c in cases:
+        s, f = c["scenario"], c["family"]
+        if s not in scenarios:
+            scenarios.append(s)
+            scn_desc[s] = c["description"]
+        if f not in families:
+            families.append(f)
+        by_key[(f, s)] = c
+
+    # Short numbered taxonomy (group.sub), grouped like the other tabs. See
+    # lib/parsers/UNIFIED_CASES.md.
+    # Groups 1-9 mirror the tool-calling STREAM taxonomy (TOOLCALLING.streamv2.N) as
+    # tool-only unified cases — UNIFIED subsumes STREAM. Group 10 is the reasoning axis
+    # (REASONING.*). Group 11 is UNIQUE to unified: reasoning<->tool interleaving that
+    # neither STREAM (no reasoning) nor REASONING (no ordered tool events) can express.
+    UNIFIED_TAX = {
+        # Group 1 — Single call
+        "tool_only": (1, "a"),
+        # Group 2 — Multiple calls (streamv2.2)
+        "two_calls": (2, "a"), "two_calls_same_name": (2, "b"),
+        # Group 3 — No call (streamv2.3)
+        "text_only": (3, "a"),
+        # Group 5 — Truncation / recovery (streamv2.5)
+        "truncated_tool_eof": (5, "a"), "tool_no_close": (5, "b"),
+        "orphan_close_after_prose": (5, "c"),
+        # Group 6 — Empty body (streamv2.6)
+        "empty_args": (6, "a"),
+        # Group 7 — Argument fidelity (streamv2.7)
+        "arg_unicode": (7, "a"), "arg_marker_in_string": (7, "b"),
+        # Group 8 — Content / narration position (streamv2.8)
+        "text_before_tool": (8, "a"), "trailing_text_after_tool": (8, "b"),
+        "text_sandwich": (8, "c"), "text_between_calls": (8, "d"),
+        "narrated_calls": (8, "e"),
+        # Group 10 — Reasoning span (REASONING.*), reasoning-only
+        "reason_only": (10, "a"), "reason_then_content": (10, "b"),
+        "two_reason_spans": (10, "c"), "reason_unterminated": (10, "d"),
+        # Group 11 — Reasoning <-> tool interleaving (UNIQUE to unified)
+        "reason_then_tool": (11, "a"), "reason_after_tool": (11, "b"),
+        "reason_interleaved": (11, "c"), "reason_tool_text_reason_tool": (11, "d"),
+        "interstitial_text": (11, "e"), "content_then_reason_then_tool": (11, "f"),
+        "content_then_reason": (11, "g"), "reason_tool_reason_tool_reason": (11, "h"),
+        "reason_between_calls": (11, "i"), "text_reason_tool_text_reason_tool": (11, "j"),
+        # Group 12 — Adversarial nesting (a marker of one channel inside another)
+        "reason_markup_in_arg": (12, "a"), "tool_in_reason": (12, "b"),
+        "reason_markup_in_arg_with_text": (12, "c"), "tool_in_reason_with_text": (12, "d"),
+    }
+    # Axis prefix makes each group's channel explicit: "TC" = tool-calling only (groups
+    # 1-9 mirror the tool STREAM suite), "Reasoning" = reasoning only, groups 11-12 mix both.
+    UNIFIED_GROUP_LABEL = {
+        1: "TC Single call", 2: "TC Multiple calls", 3: "TC No call",
+        4: "TC Malformed envelope", 5: "TC Truncation / recovery", 6: "TC Empty body",
+        7: "TC Argument fidelity", 8: "TC Content position",
+        10: "Reasoning span",
+        11: "Reasoning ↔ tool interleaving", 12: "Adversarial nesting (reasoning + tool)",
+    }
+
+    def _tax(s):
+        return UNIFIED_TAX.get(s, (9, s))
+
+    def _band(group_num):
+        return "case-band-0" if group_num % 2 == 1 else "case-band-1"
+
+    ordered = sorted(scenarios, key=_tax)
+    columns = []
+    for s in ordered:
+        g, sub = _tax(s)
+        columns.append({"sub": s, "group_key": f"unified_g{g}", "band": _band(g),
+                        "label": f"{g}.{sub}", "desc": scn_desc.get(s, "")})
+    column_groups = []
+    seen_groups = []
+    for s in ordered:
+        g, _sub = _tax(s)
+        if g not in seen_groups:
+            seen_groups.append(g)
+            column_groups.append({"key": f"unified_g{g}",
+                                  "label": UNIFIED_GROUP_LABEL.get(g, "Other"),
+                                  "band": _band(g),
+                                  "span": sum(1 for x in ordered if _tax(x)[0] == g)})
+
+    def _cand(key, label, bucket):
+        return {"key": key, "impl": key, "label": label, "label_html": label,
+                "default_bucket": bucket, "version": None, "parse_mode": "unified"}
+    # Alphabetical by label so non-Reference popup columns sort alphabetically
+    # (the selected Reference is pulled to the left by the view).
+    # NOT "unified" — vLLM 0.25.x parses only gemma4 with a native UnifiedParser; qwen3
+    # and kimi_k2 go through its CombinedParser (split). The column is vLLM's LIVE output
+    # however it parses internally.
+    # Names follow the convention <Engine> [version] (<parser/mode>). The vLLM Rust
+    # column's per-family variant (UnifiedParser for gemma4, CombinedParser otherwise)
+    # can't fit one fixed column label, so it's shown per family in the tooltip.
+    dynamo_ver_label = _dynamo_v2_version() or "0.1.x"
+    dynamo_label = f"Dynamo v2 Rust {dynamo_ver_label} (stream, orig)"
+    vllm_label = (f"vLLM Python {vllm_ver_label} (batch, Combined)" if vllm_live
+                  else "vLLM Python 0.25.x (expected)")
+    vrust_label = f"vLLM Rust {vrust_ver_label} (stream, Combined & Unified)"
+    candidates = [
+        _cand("dynamo", dynamo_label, "B"),  # Compare-on by default
+        _cand("golden", "GOLDEN (oracle)", "A"),  # Reference (default)
+        _cand("vllm", vllm_label, "B"),  # Compare-on by default
+    ]
+    if vrust_live:
+        # impl="vllm" groups it under the vLLM engine column of the compare bar (a second
+        # row next to vLLM Python); key stays "vllm_rust" for the cmp/chunk/chart lookups.
+        rc = _cand("vllm_rust", vrust_label, "B")
+        rc["impl"] = "vllm"
+        candidates.append(rc)
+    if sgl_live:
+        candidates.append(_cand("sglang", f"SGLang Python {sgl_ver_label} (stream, Combined)", "B"))
+    _TODO = ("TODO: adopt a unified parser for this family (Dynamo v2 is moving to a "
+             "per-family mixture — native unified where available, split elsewhere). "
+             "Today's split parses ALL reasoning first, so reasoning between/after tool "
+             "calls is merged up front and loses its position. One state machine per stream "
+             "(owning reasoning+content+tools) fixes this by construction.")
+
+    rows = []
+    for f in families:
+        cells = {}
+        for s in scenarios:
+            c = by_key.get((f, s))
+            if not c:
+                continue
+            gold = c["golden"]
+            # Assemble every engine's FINAL from its STREAMED per-chunk deltas (not its
+            # batch final message). For Dynamo this is decisive: streaming preserves the
+            # reasoning<->tool order that the batch assembly (detect_and_parse_reasoning)
+            # collapses. Verdict is recomputed against GOLDEN on the streamed assembly.
+            dyn_chunk_deltas = [ch.get("dynamo") or [] for ch in (c.get("chunks") or [])]
+            dyn = _assemble_stream(dyn_chunk_deltas)
+            gsig, dsig = _sig(gold), _sig(dyn)
+            dverd = _unified_classify(f, gold, dyn)
+            # vLLM: LIVE captured events (batch parse() -> assembled), scored against
+            # GOLDEN the same way as Dynamo. Falls back to the documented hypothesis
+            # from expect.vllm when no capture is present.
+            # vLLM Python's streaming parser (ParserEngine) is TOKEN-ID based — its
+            # incremental lexer scans real token IDs, not text — so a text-only stub
+            # tokenizer can't faithfully drive its stream (reasoning never surfaces, a
+            # capture artifact, not a defect). The other engines are text-based and stub
+            # faithfully. So use vLLM Python's faithful BATCH parse() assembled here; its
+            # per-chunk stream is omitted (can't be captured without the real tokenizer).
+            cap = vllm_cap.get(c["id"]) if vllm_live else None
+            vllm_chunks = []
+            vllm_events = cap.get("assembled") if cap else None
+            if vllm_events is not None:
+                vverd = _unified_classify(f, gold, vllm_events)
+                vsig = _sig(vllm_events)
+            else:
+                vverd = c.get("vllm_verdict") or "MATCH"
+                vsig = gsig if vverd == "MATCH" else (gsig ^ 0x5A5A5A5A)
+            # vLLM Rust (native Gemma4UnifiedParser for gemma4, CombinedParser otherwise).
+            rcap = vrust_cap.get(c["id"]) if vrust_live else None
+            vrust_chunks = (rcap.get("chunks") if rcap else None) or []
+            vrust_events = _assemble_stream(vrust_chunks) if rcap else None
+            vrust_parser = (rcap.get("parser") if rcap else None) or "vLLM Rust"
+            vrust_err = rcap.get("error") if rcap else None
+            if vrust_events is not None:
+                rverd = "ERROR" if vrust_err else _unified_classify(f, gold, vrust_events)
+                # A hard-error assembles to []; golden can also be [] (partial dropped),
+                # so _sig would collide and NΔ would mask the ERROR as a match. XOR a
+                # sentinel to force a divergence — the verbatim exception shows in the popup.
+                rsig = (_sig(vrust_events) ^ 0xE44) if vrust_err else _sig(vrust_events)
+            # SGLang Python (Combined: reasoning detector -> tool detector), streamed.
+            scap = sgl_cap.get(c["id"]) if sgl_live else None
+            sgl_chunks = (scap.get("chunks") if scap else None) or []
+            sgl_events = _assemble_stream(sgl_chunks) if scap else None
+            sgl_err = scap.get("error") if scap else None
+            if sgl_events is not None:
+                sverd = "ERROR" if sgl_err else _unified_classify(f, gold, sgl_events)
+                ssig = (_sig(sgl_events) ^ 0xE44) if sgl_err else _sig(sgl_events)
+            cmp = {
+                "golden": {"sig": gsig, "leak": 0, "na": 0},
+                "dynamo": {"sig": dsig, "leak": 1 if dverd == "LEAK" else 0, "na": 0},
+                "vllm": {"sig": vsig, "leak": 1 if vverd == "LEAK" else 0, "na": 0},
+            }
+            if vrust_events is not None:
+                cmp["vllm_rust"] = {"sig": rsig, "leak": 1 if rverd == "LEAK" else 0, "na": 0}
+            if sgl_events is not None:
+                cmp["sglang"] = {"sig": ssig, "leak": 1 if sverd == "LEAK" else 0, "na": 0}
+            desc = c["description"]
+            if c.get("policy_tags"):
+                desc = f"{desc}  [policy: {', '.join(c['policy_tags'])}]"
+            chunk_rows = [
+                {"delta_text": ch["delta_text"], "finish_reason": None,
+                 "expected": {"dynamo": ch.get("dynamo") or [],
+                              "vllm": (vllm_chunks[i] if i < len(vllm_chunks) else []),
+                              "vllm_rust": (vrust_chunks[i] if i < len(vrust_chunks) else []),
+                              "sglang": (sgl_chunks[i] if i < len(sgl_chunks) else [])}}
+                for i, ch in enumerate(c.get("chunks") or [])
+            ]
+            reasons = []
+            if dverd in ("MERGE", "ORDER"):
+                reasons.append({
+                    "label": "stream vs final message",
+                    "reason": ("per-chunk deltas stream IN ORDER (see the chunk rows), but Dynamo's "
+                               "final message merges all reasoning into one reasoning_content field "
+                               "(the assembled row) — losing the reasoning/tool interleaving. The "
+                               "UnifiedParser keeps one ordered stream, so the final message preserves order."),
+                })
+            if vllm_live and vverd != "MATCH":
+                reasons.append({
+                    "label": f"vLLM {vllm_ver_label} diverges too",
+                    "reason": ("vLLM's batch parse() assembled message (captured LIVE) is measured "
+                               "against the same GOLDEN oracle and also diverges here — so vLLM is not "
+                               "the ground truth. Common vLLM failure modes: batch parse() drops content "
+                               "after a tool call (LOSS), merges/leaks reasoning channel markers (MERGE/LEAK), "
+                               "or truncates a string arg at a marker-looking substring (ARG_MISMATCH)."),
+                })
+            g_num, g_sub = _tax(s)
+            tooltip = {
+                "head": f'UNIFIED.{g_num}.{g_sub} ({s}) — {f}',
+                "description": desc,
+                "input": {"kind": "chunks", "text": c["input"], "chunks": chunk_rows, "family": f},
+                "candidates": [
+                    {"key": "dynamo", "label": f"{dynamo_label}; v1 reasoning + v2 tool", "impl": "dynamo",
+                     "version": None, "parse_mode": "unified", "leak": dverd == "LEAK",
+                     "block": {"events": dyn, "verdict": dverd,
+                               "todo": _TODO if dverd != "MATCH" else None}},
+                    {"key": "golden", "label": "GOLDEN (oracle)", "impl": "golden",
+                     "version": None, "parse_mode": "unified", "leak": False,
+                     "pin_first": True,  # oracle is always the leftmost popup column
+                     "block": {"events": gold}},
+                    {"key": "vllm", "label": vllm_label, "impl": "vllm",
+                     "version": vllm_ver_label, "parse_mode": "unified", "leak": vverd == "LEAK",
+                     "block": ({"events": vllm_events, "verdict": vverd,
+                                "note": c.get("vllm_note")}
+                               if vllm_events is not None
+                               else {"expected": vverd, "note": c.get("vllm_note")})},
+                ] + ([
+                    {"key": "vllm_rust",
+                     "label": f"vLLM Rust {vrust_ver_label} (stream, {vrust_parser.replace('vLLM Rust ', '').strip('()')})",
+                     "impl": "vllm_rust", "version": vrust_ver_label, "parse_mode": "unified",
+                     "leak": rverd == "LEAK",
+                     "block": ({"error": vrust_err} if vrust_err else
+                               {"events": vrust_events, "verdict": rverd})},
+                ] if vrust_events is not None else []) + ([
+                    {"key": "sglang", "label": f"SGLang Python {sgl_ver_label} (stream, Combined)",
+                     "impl": "sglang", "version": sgl_ver_label, "parse_mode": "unified",
+                     "leak": sverd == "LEAK",
+                     "block": ({"error": sgl_err} if sgl_err else
+                               {"events": sgl_events, "verdict": sverd})},
+                ] if sgl_events is not None else []),
+                "baseline": None, "reasons": reasons, "dynamo_notes": [], "refs": [],
+                "leak_note": None, "na_note": None,
+            }
+            cells[s] = {
+                "kind": "cell", "case_id": f"UNIFIED.{g_num}.{g_sub}", "family": f, "sub": s,
+                "col_group": f"unified_g{g_num}", "band": _band(g_num),
+                "status": "ok", "red_on_leak": True,
+                "cmp": cmp, "facts": [], "tooltip": tooltip,
+            }
+        rows.append({"family": f, "model_label": f, "model_label_html": f, "section": None,
+                     "parser": None, "cells": cells})
+
+    total = sum(len(r["cells"]) for r in rows)
+    stats = {"families": len(families), "sub_cases": len(scenarios), "slots": total,
+             "real": total, "parity": 0, "dynamo_only": 0, "documented": 0,
+             "research": 0, "errors": 0, "na": 0, "missing": 0}
+    cases_href = str(hrefs.get("reasoning_cases", "#")).replace("REASONING_CASES", "UNIFIED_CASES")
+
+    # "Case descriptions" section under the table, grouped by taxonomy — same shape as
+    # every other tab's glossary ([{label, rows:[(short_id, description), ...]}]). The
+    # view prepends case_prefix ("UNIFIED."), so short_id is the numbered id (e.g. "1.a").
+    unified_glossary = []
+    for grp in column_groups:
+        gnum = int(grp["key"].removeprefix("unified_g"))
+        grp_rows = [(f"{_tax(s)[0]}.{_tax(s)[1]}", scn_desc.get(s, ""))
+                    for s in ordered if _tax(s)[0] == gnum]
+        unified_glossary.append({"label": grp["label"], "rows": grp_rows})
+
+    return {
+        "id": "tab-unified", "kind": "unified", "active": False, "mode": "unified",
+        "no_parser_col": True,  # parser variant is already encoded in each engine's name
+        "label": "Unified (reasoning + tools)",
+        "label_html": 'Unified <span class="tab-sub">(reasoning + tools)</span>',
+        "tab_title": ("Unified: one ordered event stream (reasoning + content + tool calls) "
+                      "measured against the GOLDEN oracle"),
+        "columns": columns, "column_groups": column_groups,
+        "candidates": candidates, "rows": rows, "stats": stats, "glossary": unified_glossary,
+        "case_prefix": "UNIFIED.", "case_section_id": "unified",
+        "case_docs_href": cases_href, "case_docs_label": "lib/parsers/UNIFIED_CASES.md",
+        "captured_note": (
+            (f"vLLM Python {vllm_ver_label} captured LIVE (ParserManager combined path). "
+             if vllm_live else "")
+            + (f"vLLM Rust {vrust_ver_label} captured LIVE from the `vllm-parser` crate — "
+               "gemma4 via the native Gemma4UnifiedParser, other families via CombinedParser. "
+               if vrust_live else "")
+            + (f"SGLang Python {sgl_ver_label} captured LIVE (reasoning detector -> tool "
+               "detector, Combined)." if sgl_live else "")),
+        "toolbar_desc_html": (
+            'Reference = <strong>GOLDEN</strong> (authored oracle, best-effort recovery) · '
+            'Compare = <strong>Dynamo v2 Rust (orig)</strong> (v1 reasoning over the whole '
+            'stream, then the v2 tool parser; no unified parser yet), '
+            f'<strong>vLLM Python {vllm_ver_label} (Combined)</strong>'
+            + (f', and <strong>vLLM Rust {vrust_ver_label}</strong> (native '
+               '<strong>UnifiedParser</strong> for gemma4, <strong>CombinedParser</strong> '
+               'otherwise)' if vrust_live else '')
+            + '. A cell is red only when a shown parser LEAKED markup; ordering/content '
+            'divergences show their NΔ count but stay green. The native gemma4 UnifiedParser '
+            '(vLLM Rust) is the only column that reproduces the golden order on the '
+            'reasoning↔tool cases.'),
+        "details_note_html": None,
+    }
+
+
 def build_combined_model(output_path: Path | None = None,
                          artifact_root: Path | None = None,
                          *, stamp: str, sha: str | None) -> dict:
@@ -2101,6 +2559,11 @@ def build_combined_model(output_path: Path | None = None,
             "details_note_html": None,
         })
         tabs.append(rtab)
+
+    # --- Unified (reasoning + tools) tab: golden oracle vs Dynamo (LIVE) + vLLM ---
+    unified_tab = _unified_tab_model(artifact_root, hrefs)
+    if unified_tab:
+        tabs.append(unified_tab)
 
     if tabs:
         tabs[0]["active"] = True
