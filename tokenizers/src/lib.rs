@@ -47,21 +47,6 @@ impl<'a> EncodeSegment<'a> {
     }
 }
 
-/// Options for encoding an already-rendered segmented prompt.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct SegmentEncodingOptions {
-    /// Preserve legacy tiktoken chunk boundaries on very long inputs.
-    pub tiktoken_safe: bool,
-}
-
-impl Default for SegmentEncodingOptions {
-    fn default() -> Self {
-        Self {
-            tiktoken_safe: true,
-        }
-    }
-}
-
 /// Represents the type of tokenizer being used
 #[derive(Debug)]
 pub enum TokenizerType {
@@ -108,11 +93,7 @@ pub mod traits {
         ///
         /// Backends must not implement this by concatenating the segments:
         /// doing so lets control-token-looking user content become structural.
-        fn encode_segments(
-            &self,
-            _segments: &[EncodeSegment<'_>],
-            _options: SegmentEncodingOptions,
-        ) -> Result<Encoding> {
+        fn encode_segments(&self, _segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
             Err(Error::msg(
                 "tokenizer backend does not support segmented encoding",
             ))

@@ -20,7 +20,7 @@ remain distinct:
 
 ```rust
 use dynamo_tokenizers::{
-    BasetenTokenizer, EncodeSegment, SegmentEncodingOptions,
+    BasetenTokenizer, EncodeSegment,
     traits::Encoder,
 };
 
@@ -30,13 +30,11 @@ let segments = [
     EncodeSegment::new(user_message, false),
     EncodeSegment::new("<|close|>message<|sep|><|end_of_msg|>", true),
 ];
-let encoding =
-    tokenizer.encode_segments(&segments, SegmentEncodingOptions::default())?;
+let encoding = tokenizer.encode_segments(&segments)?;
 ```
 
-The default segmented mode preserves legacy tiktoken chunk boundaries for
-long-input ID parity. Set `tiktoken_safe: false` only when those artificial
-boundaries are not required.
+Segmented encoding preserves legacy tiktoken chunk boundaries for long-input
+token-ID parity, as required by Kimi K3.
 
 ## Quick start
 

@@ -6,7 +6,7 @@
 use std::path::Path;
 
 use super::{
-    EncodeSegment, Encoding, Error, Result, SegmentEncodingOptions, TokenIdType, TokenizerOptions,
+    EncodeSegment, Encoding, Error, Result, TokenIdType, TokenizerOptions,
     traits::{DecodeResult, Decoder, Encoder, Tokenizer},
 };
 
@@ -44,22 +44,14 @@ impl Encoder for BasetenTokenizer {
             .map_err(|e| Error::msg(format!("Baseten tokenizer batch encode error: {e}")))
     }
 
-    fn encode_segments(
-        &self,
-        segments: &[EncodeSegment<'_>],
-        options: SegmentEncodingOptions,
-    ) -> Result<Encoding> {
+    fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
         let segments = segments
             .iter()
             .map(|segment| (segment.text, segment.allow_special));
-        let ids = if options.tiktoken_safe {
-            self.tokenizer
-                .encode_segments_tiktoken_safe(segments, self.options.add_special_tokens)
-        } else {
-            self.tokenizer
-                .encode_segments(segments, self.options.add_special_tokens)
-        }
-        .map_err(|e| Error::msg(format!("Baseten tokenizer segment encode error: {e}")))?;
+        let ids = self
+            .tokenizer
+            .encode_segments_tiktoken_safe(segments, self.options.add_special_tokens)
+            .map_err(|e| Error::msg(format!("Baseten tokenizer segment encode error: {e}")))?;
         Ok(Encoding::Sp(ids))
     }
 }
@@ -204,9 +196,7 @@ mod tests {
             EncodeSegment::new(" world!", true),
         ];
 
-        let segmented = tokenizer
-            .encode_segments(&segments, SegmentEncodingOptions::default())
-            .unwrap();
+        let segmented = tokenizer.encode_segments(&segments).unwrap();
         let flattened = tokenizer.encode("Hello<ctl> world!").unwrap();
 
         assert_ne!(
@@ -254,7 +244,7 @@ mod tests {
 
         let plain = BasetenTokenizer::from_file(path.to_str().unwrap()).unwrap();
         let plain_ids = plain
-            .encode_segments(&segments, SegmentEncodingOptions::default())
+            .encode_segments(&segments)
             .unwrap()
             .token_ids()
             .to_vec();
@@ -265,10 +255,7 @@ mod tests {
                 add_special_tokens: true,
             });
         assert_eq!(
-            with_bos
-                .encode_segments(&segments, SegmentEncodingOptions::default())
-                .unwrap()
-                .token_ids(),
+            with_bos.encode_segments(&segments).unwrap().token_ids(),
             [&[23], plain_ids.as_slice()].concat()
         );
     }
