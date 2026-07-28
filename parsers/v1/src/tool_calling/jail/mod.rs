@@ -2357,13 +2357,16 @@ where
         builder = builder.tool_definitions(tool_definitions);
     }
 
+    // A named tool choice is an API constraint, regardless of which parsing
+    // path handles the model output. Drop calls to any other tool.
+    if let Some(ChatCompletionToolChoiceOption::Named(named)) = tool_choice.as_ref() {
+        builder = builder.named_tool_filter(named.function.name.clone());
+    }
+
     // When structural_tag is active, the model output is already constrained by
     // guided decoding into a model-specific format. Always use the marker-based
     // parser to extract tool calls from that format.
     if uses_tool_call_structural_tag {
-        if let Some(ChatCompletionToolChoiceOption::Named(named)) = tool_choice.as_ref() {
-            builder = builder.named_tool_filter(named.function.name.clone());
-        }
         if let Some(parser) = tool_call_parser {
             builder = builder.tool_call_parser(parser);
         }
@@ -2387,9 +2390,7 @@ where
         // like qwen3_coder).
         match tool_choice {
             Some(ChatCompletionToolChoiceOption::Named(named)) => {
-                builder = builder
-                    .tool_choice_named(named.function.name.clone())
-                    .named_tool_filter(named.function.name.clone());
+                builder = builder.tool_choice_named(named.function.name.clone());
                 if let Some(parser) = tool_call_parser {
                     builder = builder.tool_call_parser(parser);
                 }
@@ -2515,7 +2516,10 @@ mod tests {
         )
     }
 
-    async fn apply_named_kimi_k3(tool_name: &str) -> Vec<(String, String)> {
+    async fn apply_named_kimi_k3(
+        tool_name: &str,
+        uses_tool_call_structural_tag: bool,
+    ) -> Vec<(String, String)> {
         let payload = kimi_k3_tool_call(tool_name);
         let split = payload.len() / 2;
         let chunks = vec![text_chunk(&payload[..split]), text_chunk(&payload[split..])];
@@ -2523,7 +2527,7 @@ mod tests {
             Some("kimi_k3".to_string()),
             Some(named_choice("get_weather")),
             None,
-            true,
+            uses_tool_call_structural_tag,
             stream::iter(chunks),
         )
         .collect()
@@ -2533,7 +2537,7 @@ mod tests {
 
     #[tokio::test]
     async fn named_kimi_k3_structural_tag_path_keeps_matching_tool() {
-        let calls = apply_named_kimi_k3("get_weather").await;
+        let calls = apply_named_kimi_k3("get_weather", true).await;
 
         assert_eq!(calls.len(), 1);
         assert_eq!(calls[0].0, "get_weather");
@@ -2542,11 +2546,30 @@ mod tests {
 
     #[tokio::test]
     async fn named_kimi_k3_structural_tag_path_filters_wrong_tool() {
-        let calls = apply_named_kimi_k3("search").await;
+        let calls = apply_named_kimi_k3("search", true).await;
 
         assert!(
             calls.is_empty(),
             "a backend-emitted tool that violates named tool_choice must be dropped"
+        );
+    }
+
+    #[tokio::test]
+    async fn named_kimi_k3_native_path_keeps_matching_tool() {
+        let calls = apply_named_kimi_k3("get_weather", false).await;
+
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].0, "get_weather");
+        assert_eq!(calls[0].1, r#"{"city":"Berlin"}"#);
+    }
+
+    #[tokio::test]
+    async fn named_kimi_k3_native_path_filters_wrong_tool() {
+        let calls = apply_named_kimi_k3("search", false).await;
+
+        assert!(
+            calls.is_empty(),
+            "a native K3 call that violates named tool_choice must be dropped"
         );
     }
 
