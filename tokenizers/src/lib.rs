@@ -287,10 +287,11 @@ impl Encoding {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TokenizerOptions {
     /// Ask the tokenizer to add its declared special tokens (e.g. BOS/EOS via
-    /// the HuggingFace post-processor) during `encode`/`encode_batch`.
+    /// its post-processor) during `encode`, `encode_batch`, and supported
+    /// `encode_segments` calls.
     /// Defaults to `false`, the historical behavior.
     ///
-    /// Only applicable to HuggingFace tokenizers.
+    /// Applicable to Hugging Face and Baseten tokenizers.
     pub add_special_tokens: bool,
 }
 
