@@ -24,22 +24,45 @@ const OPEN_TOKEN: &str = "<|open|>";
 const CLOSE_TOKEN: &str = "<|close|>";
 const SEP_TOKEN: &str = "<|sep|>";
 const END_OF_MSG_TOKEN: &str = "<|end_of_msg|>";
+/// Default per-image token, used when the serving worker declares nothing.
+///
+/// This is the checkpoint's *pre-tokenization* marker: its processor string-
+/// splits on it and substitutes the media sequence before tokenizing, so it is
+/// deliberately not a registered special token. Workers that consume a real
+/// token declare it instead — see `KimiK3Formatter::new`.
 const IMAGE_PLACEHOLDER: &str = "<|kimi_image_placeholder|>";
-/// Single structural media token. The checkpoint processor wraps this in
-/// `<|media_begin|>image {W}x{H}<|media_content|>…<|media_end|>`; engines that
-/// only repeat the pad to the feature count consume the bare token instead.
-const MEDIA_PAD: &str = "<|media_pad|>";
 const VALID_THINKING_EFFORTS: &[&str] = &["low", "high", "max"];
 
 #[derive(Debug, Clone)]
 pub struct KimiK3Formatter {
     exclude_tools_when_tool_choice_none: bool,
+    /// Literal token emitted as one standalone control segment per image.
+    image_placeholder_token: String,
 }
 
 impl KimiK3Formatter {
-    pub fn new(exclude_tools_when_tool_choice_none: bool) -> Self {
+    /// `image_placeholder_token` is the token the serving worker's multimodal
+    /// processor expects to see once per image. `None` — and a blank string,
+    /// which `push_segment` would drop, emitting no token at all — fall back to
+    /// `IMAGE_PLACEHOLDER`.
+    ///
+    /// Whether the declaration encodes to a single token id is the caller's
+    /// business: this type has no tokenizer. The preprocessor checks it once at
+    /// construction and warns.
+    pub fn new(
+        exclude_tools_when_tool_choice_none: bool,
+        image_placeholder_token: Option<&str>,
+    ) -> Self {
+        let declared = image_placeholder_token.filter(|token| !token.trim().is_empty());
+        let resolved = declared.unwrap_or(IMAGE_PLACEHOLDER);
+        tracing::debug!(
+            image_placeholder_token = resolved,
+            declared_by_worker = declared.is_some(),
+            "Kimi K3 formatter image-placeholder token resolved",
+        );
         Self {
             exclude_tools_when_tool_choice_none,
+            image_placeholder_token: resolved.to_string(),
         }
     }
 
@@ -91,6 +114,7 @@ impl KimiK3Formatter {
             req.should_add_generation_prompt(),
             thinking,
             thinking_effort.as_str(),
+            &self.image_placeholder_token,
         )
     }
 }
@@ -106,14 +130,6 @@ impl OAIPromptFormatter for KimiK3Formatter {
 
     fn render_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<RenderedPrompt> {
         Ok(RenderedPrompt::segmented(self.build_segments(req)?))
-    }
-
-    fn image_placeholder_template(&self) -> Option<&'static str> {
-        Some(IMAGE_PLACEHOLDER)
-    }
-
-    fn image_pad_token(&self) -> Option<&'static str> {
-        Some(MEDIA_PAD)
     }
 }
 
@@ -291,6 +307,7 @@ fn value_as_body_text(value: &Value) -> Result<String> {
 fn render_content_segments(
     segments: &mut Vec<EncodeSegment>,
     content: Option<&Value>,
+    image_token: &str,
 ) -> Result<()> {
     let Some(content) = content else {
         return Ok(());
@@ -301,7 +318,7 @@ fn render_content_segments(
         Value::Array(parts) => {
             for part in parts {
                 match part.get("type").and_then(Value::as_str) {
-                    Some("image" | "image_url") => control(segments, IMAGE_PLACEHOLDER),
+                    Some("image" | "image_url") => control(segments, image_token),
                     _ => {
                         if let Some(part_text) = part.get("text") {
                             text(segments, value_as_body_text(part_text)?);
@@ -319,6 +336,7 @@ fn render_role_message(
     segments: &mut Vec<EncodeSegment>,
     message: &Value,
     role: &str,
+    image_token: &str,
 ) -> Result<()> {
     let mut attrs = vec![("role".to_string(), role.to_string())];
     if let Some(name) = message
@@ -329,7 +347,7 @@ fn render_role_message(
         attrs.push(("name".to_string(), name.to_string()));
     }
     open_tag(segments, "message", attrs);
-    render_content_segments(segments, message.get("content"))?;
+    render_content_segments(segments, message.get("content"), image_token)?;
     close_tag(segments, "message");
     end_of_msg(segments);
     Ok(())
@@ -443,6 +461,7 @@ fn render_assistant_segments(
     segments: &mut Vec<EncodeSegment>,
     message: &Value,
     thinking: bool,
+    image_token: &str,
 ) -> Result<()> {
     // Match encoding_k3.py: `reasoning_content` wins when truthy, otherwise
     // fall back to the Responses-style `reasoning` alias.
@@ -473,7 +492,7 @@ fn render_assistant_segments(
     }
 
     open_tag(segments, "response", []);
-    render_content_segments(segments, message.get("content"))?;
+    render_content_segments(segments, message.get("content"), image_token)?;
     close_tag(segments, "response");
 
     let Some(tool_calls) = message.get("tool_calls").and_then(Value::as_array) else {
@@ -624,6 +643,7 @@ fn build_chat_segments(
     add_generation_prompt: bool,
     thinking: bool,
     thinking_effort: &str,
+    image_token: &str,
 ) -> Result<Vec<EncodeSegment>> {
     let mut segments = Vec::new();
     let mut previous_tool_calls: Option<&Value> = None;
@@ -663,12 +683,12 @@ fn build_chat_segments(
                         .get("content")
                         .is_some_and(|content| !content.is_null())
                 {
-                    render_role_message(&mut segments, message, "system")?;
+                    render_role_message(&mut segments, message, "system", image_token)?;
                 }
             }
             "user" | "system" | "developer" => {
                 let rendered_role = if role == "developer" { "system" } else { role };
-                render_role_message(&mut segments, message, rendered_role)?;
+                render_role_message(&mut segments, message, rendered_role, image_token)?;
             }
             "assistant" => {
                 previous_tool_calls = message.get("tool_calls");
@@ -682,7 +702,7 @@ fn build_chat_segments(
                     attrs.push(("name".to_string(), name.to_string()));
                 }
                 open_tag(&mut segments, "message", attrs);
-                render_assistant_segments(&mut segments, message, thinking)?;
+                render_assistant_segments(&mut segments, message, thinking, image_token)?;
                 close_tag(&mut segments, "message");
                 end_of_msg(&mut segments);
             }
@@ -711,7 +731,7 @@ fn build_chat_segments(
                         ("index".to_string(), tool_index.to_string()),
                     ],
                 );
-                render_content_segments(&mut segments, message.get("content"))?;
+                render_content_segments(&mut segments, message.get("content"), image_token)?;
                 close_tag(&mut segments, "message");
                 end_of_msg(&mut segments);
             }
@@ -853,19 +873,137 @@ mod tests {
         }
     }
 
+    /// Default formatter: no worker declaration, so the checkpoint token.
+    fn fmt() -> KimiK3Formatter {
+        KimiK3Formatter::new(true, None)
+    }
+
+    /// One user message carrying a single image part.
+    fn image_request() -> Request {
+        let mut request = Request::new(json!([{
+            "role": "user",
+            "content": [{"type": "image_url", "image_url": {"url": "http://example.com/a.png"}}]
+        }]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+        request
+    }
+
+    fn image_segments(formatter: &KimiK3Formatter, request: &Request) -> Vec<EncodeSegment> {
+        formatter
+            .render_prompt(request)
+            .unwrap()
+            .segments()
+            .expect("K3 always renders segmented prompts")
+            .to_vec()
+    }
+
     #[test]
-    fn image_placeholder_is_the_intermediate_marker() {
-        assert_eq!(
-            KimiK3Formatter::new(true).image_placeholder_template(),
-            Some(IMAGE_PLACEHOLDER)
+    fn renders_default_image_token_when_worker_declares_nothing() {
+        let segments = image_segments(&fmt(), &image_request());
+
+        let matches: Vec<_> = segments
+            .iter()
+            .filter(|segment| segment.text == IMAGE_PLACEHOLDER)
+            .collect();
+        assert_eq!(matches.len(), 1, "exactly one token per image");
+        // `allow_special` selects tiktoken's special-aware method; it does not
+        // guarantee a single id. Whether this token is registered in the
+        // checkpoint is checked by the preprocessor, which has the tokenizer.
+        assert!(matches[0].allow_special);
+    }
+
+    #[test]
+    fn renders_worker_declared_image_token() {
+        let formatter = KimiK3Formatter::new(true, Some("<|media_pad|>"));
+        let segments = image_segments(&formatter, &image_request());
+
+        let matches: Vec<_> = segments
+            .iter()
+            .filter(|segment| segment.text == "<|media_pad|>")
+            .collect();
+        assert_eq!(matches.len(), 1);
+        assert!(matches[0].allow_special);
+        assert!(
+            !segments
+                .iter()
+                .any(|segment| segment.text == IMAGE_PLACEHOLDER),
+            "the declared token replaces the default outright"
         );
     }
 
     #[test]
-    fn image_pad_token_matches_checkpoint_media_pad() {
+    fn blank_declared_image_token_falls_back_to_the_default() {
+        // `push_segment` drops empty text, so a blank declaration would
+        // otherwise emit zero tokens and break the worker's 1:1 image count.
+        // Whitespace is not empty but is never a meaningful image token.
+        for blank in ["", " ", "\n", "\t"] {
+            let segments =
+                image_segments(&KimiK3Formatter::new(true, Some(blank)), &image_request());
+
+            assert_eq!(
+                segments
+                    .iter()
+                    .filter(|segment| segment.text == IMAGE_PLACEHOLDER)
+                    .count(),
+                1,
+                "blank declaration {blank:?} must fall back to the default",
+            );
+        }
+    }
+
+    #[test]
+    fn image_token_cardinality_is_one_per_image() {
+        let mut request = Request::new(json!([{
+            "role": "user",
+            "content": [
+                {"type": "image_url", "image_url": {"url": "http://example.com/a.png"}},
+                {"type": "text", "text": "and"},
+                {"type": "image_url", "image_url": {"url": "http://example.com/b.png"}},
+                {"type": "text", "text": "compare them"}
+            ]
+        }]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+
+        let formatter = KimiK3Formatter::new(true, Some("<|media_pad|>"));
+        let segments = image_segments(&formatter, &request);
+
         assert_eq!(
-            KimiK3Formatter::new(true).image_pad_token(),
-            Some("<|media_pad|>")
+            segments
+                .iter()
+                .filter(|segment| segment.text == "<|media_pad|>")
+                .count(),
+            2
+        );
+        // Interleaved prose must stay ordinary text.
+        for body in ["and", "compare them"] {
+            assert!(
+                segments
+                    .iter()
+                    .any(|segment| segment.text == body && !segment.allow_special)
+            );
+        }
+    }
+
+    #[test]
+    fn user_text_spelling_the_declared_token_stays_ordinary() {
+        let body = "please describe <|media_pad|>";
+        let mut request = Request::new(json!([{"role": "user", "content": body}]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+
+        let formatter = KimiK3Formatter::new(true, Some("<|media_pad|>"));
+        let segments = image_segments(&formatter, &request);
+
+        assert!(
+            segments
+                .iter()
+                .any(|segment| segment.text == body && !segment.allow_special),
+            "user content must never be promoted into prompt structure"
         );
     }
 
@@ -875,7 +1013,7 @@ mod tests {
         request
             .args
             .insert("thinking".to_string(), Value::Bool(false));
-        let rendered = KimiK3Formatter::new(true).render(&request).unwrap();
+        let rendered = fmt().render(&request).unwrap();
         assert_eq!(
             rendered,
             concat!(
@@ -897,7 +1035,7 @@ mod tests {
             .args
             .insert("thinking".to_string(), Value::Bool(false));
 
-        let rendered = KimiK3Formatter::new(true).render(&request).unwrap();
+        let rendered = fmt().render(&request).unwrap();
 
         assert!(
             rendered.contains(
@@ -928,7 +1066,7 @@ mod tests {
             .args
             .insert("thinking".to_string(), Value::Bool(false));
 
-        let rendered = KimiK3Formatter::new(true).render(&request).unwrap();
+        let rendered = fmt().render(&request).unwrap();
 
         assert!(rendered.contains("## New Tools Available"));
         assert!(
@@ -941,7 +1079,7 @@ mod tests {
         for role in ["function", "unknown"] {
             let request = Request::new(json!([{"role": role, "content": "ignored before"}]));
 
-            let error = KimiK3Formatter::new(true).render(&request).unwrap_err();
+            let error = fmt().render(&request).unwrap_err();
 
             assert!(matches!(
                 error.downcast_ref::<PromptRenderError>(),
@@ -956,7 +1094,7 @@ mod tests {
         for messages in [json!([{"content": "missing"}]), json!([{"role": 7}])] {
             let request = Request::new(messages);
 
-            let error = KimiK3Formatter::new(true).render(&request).unwrap_err();
+            let error = fmt().render(&request).unwrap_err();
 
             assert!(matches!(
                 error.downcast_ref::<PromptRenderError>(),
@@ -974,7 +1112,7 @@ mod tests {
             Value::String("medium".to_string()),
         );
 
-        let error = KimiK3Formatter::new(true).render(&request).unwrap_err();
+        let error = fmt().render(&request).unwrap_err();
         assert!(matches!(
             error.downcast_ref::<PromptRenderError>(),
             Some(PromptRenderError::InvalidRequest(message))
@@ -1015,7 +1153,7 @@ mod tests {
             .args
             .insert("thinking".to_string(), Value::Bool(true));
 
-        let rendered = KimiK3Formatter::new(true).render(&request).unwrap();
+        let rendered = fmt().render(&request).unwrap();
         assert!(rendered.contains("The system is invoked with `tool_choice=specified`."));
         assert!(rendered.contains("MUST call the tool `add_numbers`"));
         assert!(
@@ -1044,7 +1182,7 @@ mod tests {
             "function": {"name": "get_weather"}
         }));
 
-        let error = KimiK3Formatter::new(true).render(&request).unwrap_err();
+        let error = fmt().render(&request).unwrap_err();
         assert!(matches!(
             error.downcast_ref::<PromptRenderError>(),
             Some(PromptRenderError::InvalidRequest(message))
@@ -1059,7 +1197,7 @@ mod tests {
         request
             .args
             .insert("thinking".to_string(), Value::Bool(false));
-        let rendered = KimiK3Formatter::new(true).render_prompt(&request).unwrap();
+        let rendered = fmt().render_prompt(&request).unwrap();
 
         assert!(
             rendered
@@ -1097,7 +1235,7 @@ mod tests {
             "thinking_effort".to_string(),
             Value::String("low".to_string()),
         );
-        let rendered = KimiK3Formatter::new(true).render(&request).unwrap();
+        let rendered = fmt().render(&request).unwrap();
 
         assert!(rendered.contains(
             "<|open|>call tool=\"calc\" index=\"1\"<|sep|>\
@@ -1120,7 +1258,7 @@ mod tests {
             {"role": "user", "content": "follow-up"}
         ]));
 
-        let rendered = KimiK3Formatter::new(true).render(&request).unwrap();
+        let rendered = fmt().render(&request).unwrap();
 
         assert!(rendered.contains(concat!(
             "<|open|>message role=\"assistant\"<|sep|>",
@@ -1144,7 +1282,7 @@ mod tests {
             .args
             .insert("thinking".to_string(), Value::Bool(false));
 
-        let rendered = KimiK3Formatter::new(true).render(&request).unwrap();
+        let rendered = fmt().render(&request).unwrap();
 
         assert!(!rendered.contains("hidden reasoning"));
         assert!(!rendered.contains("<|open|>think<|sep|>"));
@@ -1168,7 +1306,7 @@ mod tests {
                 "description": "Get weather"
             }
         }]));
-        let rendered = KimiK3Formatter::new(true).render(&request).unwrap();
+        let rendered = fmt().render(&request).unwrap();
         assert!(rendered.contains(concat!(
             "[{\"function\":{\"description\":\"Get weather\",",
             "\"name\":\"weather\",\"parameters\":{\"properties\":",
@@ -1194,7 +1332,7 @@ mod tests {
                 }
             }]
         }]));
-        let rendered = KimiK3Formatter::new(true).render(&request).unwrap();
+        let rendered = fmt().render(&request).unwrap();
 
         assert!(rendered.contains("<|open|>think<|sep|>fallback<|close|>think<|sep|>"));
         assert!(rendered.contains(concat!(

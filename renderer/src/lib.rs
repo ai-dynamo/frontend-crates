@@ -216,29 +216,6 @@ pub trait OAIPromptFormatter: Send + Sync + 'static {
     fn render_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<RenderedPrompt> {
         self.render(req).map(RenderedPrompt::text)
     }
-
-    /// Per-family image-placeholder template used when the chat template
-    /// requires string content and the request contains images. `{n}` in
-    /// the template is the 1-based image index. `None` when the
-    /// formatter has no flatten strategy — MM-aware routing falls back
-    /// to text-prefix routing for those families.
-    fn image_placeholder_template(&self) -> Option<&'static str> {
-        None
-    }
-
-    /// Per-family single token that stands in for one image when the serving
-    /// engine repeats it up to the image's feature count instead of rebuilding
-    /// the model's native media sequence from
-    /// [`Self::image_placeholder_template`].
-    ///
-    /// Engines differ in which of the two they consume, so the worker declares
-    /// its contract and the preprocessor substitutes this token for the marker
-    /// only when the worker asked for it. `None` (the default for every
-    /// formatter except Kimi K3) means the marker is always passed through
-    /// untouched.
-    fn image_pad_token(&self) -> Option<&'static str> {
-        None
-    }
 }
 
 #[derive(Clone)]

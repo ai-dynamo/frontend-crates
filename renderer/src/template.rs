@@ -51,10 +51,17 @@ pub fn deepseek_formatter_for(
 /// If the model is Kimi K3, return its native XTML formatter. K3 ships no
 /// Jinja chat template and must preserve special-vs-ordinary segment boundaries
 /// until tokenization.
+///
+/// `image_placeholder_token` is the per-image token the serving worker's
+/// multimodal processor expects; `None` uses the formatter's checkpoint
+/// default. It is deliberately accepted only here — no Jinja-templated family
+/// has a way to receive it, so a worker declaration cannot reach a non-K3
+/// model.
 pub fn kimi_k3_formatter_for(
     model_type_lower: &Option<String>,
     display_name_lower: &str,
     exclude_tools_when_tool_choice_none: bool,
+    image_placeholder_token: Option<&str>,
 ) -> Option<PromptFormatter> {
     if !is_kimi_k3(model_type_lower, display_name_lower) {
         return None;
@@ -66,7 +73,10 @@ pub fn kimi_k3_formatter_for(
         "Detected Kimi K3 model, using native Rust XTML formatter",
     );
     Some(PromptFormatter::OAI(Arc::new(
-        super::kimi_k3::KimiK3Formatter::new(exclude_tools_when_tool_choice_none),
+        super::kimi_k3::KimiK3Formatter::new(
+            exclude_tools_when_tool_choice_none,
+            image_placeholder_token,
+        ),
     )))
 }
 
@@ -145,7 +155,11 @@ struct HfTokenizerConfigJsonFormatter {
     /// = false path). `{n}` in the template is substituted with the 1-based
     /// image index. `None` when the model's chat template handles content
     /// arrays natively (Qwen-VL family) or when we have no flatten strategy
-    /// for it (no MM-aware routing benefit either way).
+    /// for it.
+    ///
+    /// Purely internal to Jinja rendering — unrelated to the single literal
+    /// token native formatters emit per image (see
+    /// [`kimi_k3_formatter_for`]), which is chosen by the serving worker.
     image_placeholder_template: Option<&'static str>,
     /// True if the `default` template branches on `tool_call.arguments is string`
     /// (Qwen3, Hermes, etc.). When true and rendering through `default`, skip
@@ -238,7 +252,26 @@ fn is_deepseek_v4_name(name_lower: &str) -> bool {
 
 #[cfg(test)]
 mod detection_tests {
-    use super::{is_deepseek_v3_2_non_exp, is_deepseek_v4, is_deepseek_v4_name, is_kimi_k3};
+    use super::{
+        is_deepseek_v3_2_non_exp, is_deepseek_v4, is_deepseek_v4_name, is_kimi_k3,
+        kimi_k3_formatter_for,
+    };
+
+    #[test]
+    fn declared_image_token_never_reaches_a_non_k3_model() {
+        // SGLang declares a token for every multimodal model it serves, so the
+        // guard that keeps this K3-only is that no other formatter has a
+        // parameter to receive one. Qwen-VL must fall through untouched.
+        assert!(
+            kimi_k3_formatter_for(
+                &Some("qwen3_vl".to_string()),
+                "qwen3-vl-30b",
+                true,
+                Some("<|vision_start|><|image_pad|><|vision_end|>"),
+            )
+            .is_none()
+        );
+    }
 
     #[test]
     fn kimi_k3_detection_prefers_config_model_type() {
