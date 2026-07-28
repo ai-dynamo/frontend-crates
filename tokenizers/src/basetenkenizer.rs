@@ -23,12 +23,99 @@ pub struct BasetenTokenizer {
 impl BasetenTokenizer {
     /// Load a tokenizer from a Hugging Face `tokenizer.json` file.
     pub fn from_file(path: &str) -> Result<Self> {
-        let tokenizer = basetenkenizer::Tokenizer::from_file(Path::new(path))
+        let path = Path::new(path);
+        let raw = std::fs::read_to_string(path)
+            .map_err(|e| Error::msg(format!("Error reading Baseten tokenizer: {e}")))?;
+        let mut json: serde_json::Value = serde_json::from_str(&raw)
+            .map_err(|e| Error::msg(format!("Error parsing Baseten tokenizer: {e}")))?;
+        if let Some(parent) = path.parent() {
+            merge_special_tokens_from_config(&mut json, parent);
+        }
+        let tokenizer = basetenkenizer::Tokenizer::from_json(json)
             .map_err(|e| Error::msg(format!("Error loading Baseten tokenizer: {e}")))?;
         Ok(Self {
             tokenizer,
             options: TokenizerOptions::default(),
         })
+    }
+}
+
+fn merge_special_tokens_from_config(json: &mut serde_json::Value, model_dir: &Path) {
+    let config_path = model_dir.join("tokenizer_config.json");
+    let Ok(raw) = std::fs::read_to_string(&config_path) else {
+        return;
+    };
+    let config: serde_json::Value = match serde_json::from_str(&raw) {
+        Ok(value) => value,
+        Err(error) => {
+            tracing::debug!(
+                target: "tokenizer",
+                path = %config_path.display(),
+                error = %error,
+                "tokenizer_config.json parse failed; skipping special-token merge"
+            );
+            return;
+        }
+    };
+    let Some(decoder) = config
+        .get("added_tokens_decoder")
+        .and_then(serde_json::Value::as_object)
+    else {
+        return;
+    };
+
+    if json.get("added_tokens").is_none() {
+        json["added_tokens"] = serde_json::json!([]);
+    }
+    let Some(added_tokens) = json
+        .get_mut("added_tokens")
+        .and_then(serde_json::Value::as_array_mut)
+    else {
+        return;
+    };
+
+    for (id, spec) in decoder {
+        let Some(id) = id.parse::<u32>().ok() else {
+            continue;
+        };
+        let Some(spec) = spec.as_object() else {
+            continue;
+        };
+        if spec.get("special").and_then(serde_json::Value::as_bool) != Some(true) {
+            continue;
+        }
+        let Some(content) = spec
+            .get("content")
+            .and_then(serde_json::Value::as_str)
+            .filter(|content| !content.is_empty())
+        else {
+            continue;
+        };
+
+        if let Some(existing) = added_tokens
+            .iter_mut()
+            .find(|token| token.get("content").and_then(serde_json::Value::as_str) == Some(content))
+        {
+            existing["special"] = serde_json::Value::Bool(true);
+            continue;
+        }
+
+        let mut token = serde_json::Map::from_iter([
+            ("id".to_string(), serde_json::json!(id)),
+            ("content".to_string(), serde_json::json!(content)),
+            ("special".to_string(), serde_json::Value::Bool(true)),
+        ]);
+        for field in ["single_word", "lstrip", "rstrip", "normalized"] {
+            token.insert(
+                field.to_string(),
+                serde_json::Value::Bool(
+                    spec.get(field)
+                        .and_then(serde_json::Value::as_bool)
+                        .unwrap_or(false),
+                ),
+            );
+        }
+        added_tokens.push(serde_json::Value::Object(token));
     }
 }
 
@@ -262,5 +349,35 @@ mod tests {
             with_bos.encode_segments(&segments).unwrap().token_ids(),
             [&[23], plain_ids.as_slice()].concat()
         );
+    }
+
+    #[test]
+    fn merges_config_only_special_tokens() {
+        let temp = tempfile::tempdir().unwrap();
+        let tokenizer_path = temp.path().join("tokenizer.json");
+        std::fs::copy(TOKENIZER_PATH, &tokenizer_path).unwrap();
+        std::fs::write(
+            temp.path().join("tokenizer_config.json"),
+            serde_json::json!({
+                "added_tokens_decoder": {
+                    "23": {
+                        "content": "<ctl>",
+                        "special": true,
+                        "single_word": false,
+                        "lstrip": false,
+                        "rstrip": false,
+                        "normalized": false
+                    }
+                }
+            })
+            .to_string(),
+        )
+        .unwrap();
+
+        let tokenizer = BasetenTokenizer::from_file(tokenizer_path.to_str().unwrap()).unwrap();
+        let encoding = tokenizer.encode("<ctl>").unwrap();
+        assert_eq!(encoding.token_ids(), &[23]);
+        assert_eq!(tokenizer.decode(&[23], false).unwrap().as_str(), "<ctl>");
+        assert_eq!(tokenizer.decode(&[23], true).unwrap().as_str(), "");
     }
 }

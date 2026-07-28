@@ -256,7 +256,11 @@ impl Encoder for CachedTokenizer {
         // L1 indexes flattened string offsets and cannot preserve each
         // segment's allow_special boundary. Keep the operation correct by
         // delegating without populating or consulting the cache.
-        self.inner.encode_segments(segments)
+        let encoding = self.inner.encode_segments(segments)?;
+        if self.l1_enabled {
+            self.observe_token_usage(0, encoding.token_ids().len());
+        }
+        Ok(encoding)
     }
 }
 
@@ -418,8 +422,11 @@ mod tests {
         let expected = inner.encode_segments(&segments).unwrap();
 
         for special_tokens in [Vec::new(), vec!["<ctl>".to_string()]] {
-            let cached = CachedTokenizer::new(inner.clone(), special_tokens, 4096)
-                .expect("test tokenizer supports prefix caching");
+            let l1_enabled = !special_tokens.is_empty();
+            let (cached, events) = collect_token_usage(
+                CachedTokenizer::new(inner.clone(), special_tokens, 4096)
+                    .expect("test tokenizer supports prefix caching"),
+            );
             let actual = cached.encode_segments(&segments).unwrap();
 
             assert_eq!(actual.token_ids(), expected.token_ids());
@@ -427,6 +434,18 @@ mod tests {
             assert_eq!(stats.entries, 0);
             assert_eq!(stats.hits, 0);
             assert_eq!(stats.misses, 0);
+            let events = events.lock().unwrap();
+            if l1_enabled {
+                assert_eq!(
+                    events.as_slice(),
+                    &[CacheTokenUsage {
+                        cached_tokens: 0,
+                        uncached_tokens: expected.token_ids().len(),
+                    }]
+                );
+            } else {
+                assert!(events.is_empty());
+            }
         }
     }
 
