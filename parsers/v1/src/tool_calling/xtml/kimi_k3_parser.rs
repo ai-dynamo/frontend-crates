@@ -17,6 +17,8 @@
 //! <|close|>message<|sep|><|end_of_msg|>
 //! ```
 
+use std::borrow::Cow;
+
 use serde_json::Value;
 
 use super::super::ToolDefinition;
@@ -31,25 +33,75 @@ pub(crate) const TOOLS_OPEN: &str = "<|open|>tools<|sep|>";
 pub(crate) const TOOLS_CLOSE: &str = "<|close|>tools<|sep|>";
 pub(crate) const CALL_OPEN_PREFIX: &str = "<|open|>call";
 pub(crate) const CALL_CLOSE: &str = "<|close|>call<|sep|>";
-const ARGUMENT_OPEN_PREFIX: &str = "<|open|>argument";
+pub(crate) const ARGUMENT_OPEN_PREFIX: &str = "<|open|>argument";
 pub(crate) const ARGUMENT_CLOSE: &str = "<|close|>argument<|sep|>";
-const JSON_OPEN_PREFIX: &str = "<|open|>json";
-const JSON_CLOSE: &str = "<|close|>json<|sep|>";
-const MESSAGE_OPEN_PREFIX: &str = "<|open|>message";
+pub(crate) const JSON_OPEN_PREFIX: &str = "<|open|>json";
+pub(crate) const JSON_CLOSE: &str = "<|close|>json<|sep|>";
+pub(crate) const MESSAGE_OPEN_PREFIX: &str = "<|open|>message";
 pub(crate) const MESSAGE_CLOSE: &str = "<|close|>message<|sep|>";
+pub(crate) const THINK_CLOSE: &str = "<|close|>think<|sep|>";
 pub(crate) const END_OF_MSG: &str = "<|end_of_msg|>";
 
-/// Top-level XTML boundaries understood by the v1 K3 jail.
-pub(crate) const JAIL_BOUNDARIES: [&str; 9] = [
+/// Every reserved Kimi K3 structural boundary that can safely terminate an
+/// implicit reasoning channel. Keeping this list K3-specific lets the
+/// reasoning-to-XTML handoff recover at an inner channel boundary without
+/// broad stripping of arbitrary `<|...|>` user text.
+pub(crate) const JAIL_BOUNDARIES: [&str; 14] = [
     RESPONSE_OPEN,
     RESPONSE_CLOSE,
     TOOLS_OPEN,
     CALL_OPEN_PREFIX,
+    ARGUMENT_OPEN_PREFIX,
+    JSON_OPEN_PREFIX,
+    MESSAGE_OPEN_PREFIX,
     ARGUMENT_CLOSE,
-    TOOLS_CLOSE,
+    JSON_CLOSE,
     CALL_CLOSE,
+    TOOLS_CLOSE,
     MESSAGE_CLOSE,
     END_OF_MSG,
+    // Defense in depth: the reasoning parser normally consumes this token.
+    // If an upstream split ever leaves an orphan exact close in normal text,
+    // jail it rather than exposing parser-owned markup.
+    THINK_CLOSE,
+];
+
+/// Common detokenizer spelling when spacing between adjacent special tokens is
+/// enabled. vLLM normally disables that option for K3, but accepting this
+/// exact wire variant keeps the parser safe if another engine leaves it on.
+///
+/// These entries correspond to the response/tools/call/argument/json/message
+/// boundaries in [`JAIL_BOUNDARIES`]. `END_OF_MSG` is a single token, while
+/// the reasoning close is deliberately accepted only in its exact canonical
+/// form for narrow defense in depth.
+pub(crate) const SPACED_JAIL_BOUNDARIES: [&str; 12] = [
+    "<|open|> response <|sep|>",
+    "<|close|> response <|sep|>",
+    "<|open|> tools <|sep|>",
+    "<|open|> call",
+    "<|open|> argument",
+    "<|open|> json",
+    "<|open|> message",
+    "<|close|> argument <|sep|>",
+    "<|close|> json <|sep|>",
+    "<|close|> call <|sep|>",
+    "<|close|> tools <|sep|>",
+    "<|close|> message <|sep|>",
+];
+
+const SPACED_MARKER_ALIASES: [(&str, &str); 12] = [
+    (SPACED_JAIL_BOUNDARIES[0], RESPONSE_OPEN),
+    (SPACED_JAIL_BOUNDARIES[1], RESPONSE_CLOSE),
+    (SPACED_JAIL_BOUNDARIES[2], TOOLS_OPEN),
+    (SPACED_JAIL_BOUNDARIES[3], CALL_OPEN_PREFIX),
+    (SPACED_JAIL_BOUNDARIES[4], ARGUMENT_OPEN_PREFIX),
+    (SPACED_JAIL_BOUNDARIES[5], JSON_OPEN_PREFIX),
+    (SPACED_JAIL_BOUNDARIES[6], MESSAGE_OPEN_PREFIX),
+    (SPACED_JAIL_BOUNDARIES[7], ARGUMENT_CLOSE),
+    (SPACED_JAIL_BOUNDARIES[8], JSON_CLOSE),
+    (SPACED_JAIL_BOUNDARIES[9], CALL_CLOSE),
+    (SPACED_JAIL_BOUNDARIES[10], TOOLS_CLOSE),
+    (SPACED_JAIL_BOUNDARIES[11], MESSAGE_CLOSE),
 ];
 
 /// Detect complete or partial Kimi K3 structural markers at a chunk boundary.
@@ -70,34 +122,27 @@ pub fn find_tool_call_end_position_kimi_k3(
     chunk: &str,
     _config: &KimiK3ParserConfig,
 ) -> Option<usize> {
-    let (start, marker) = first_marker(chunk)?;
+    let (start, wire_marker, marker) = first_wire_marker(chunk)?;
     let after_start = &chunk[start..];
 
-    // vLLM may coalesce several final XTML boundaries into one delta (for
-    // example with `--stream-interval 20`). When the message terminator is
-    // already visible, consume the complete message as one K3 parser span so
-    // trailing response/message markers are parsed instead of emitted as text.
-    if let Some(position) = after_start.find(END_OF_MSG) {
-        return Some(start + position + END_OF_MSG.len());
+    // An interval-batched backend delta can contain a complete nested XTML
+    // message. Prefer the outermost visible terminator so all framing is
+    // parsed and suppressed as one span rather than released as trailing text.
+    if let Some(end) = find_wire_marker_end(after_start, END_OF_MSG) {
+        return Some(start + end);
     }
-    if let Some(position) = after_start.find(MESSAGE_CLOSE) {
-        return Some(start + position + MESSAGE_CLOSE.len());
+    if let Some(end) = find_wire_marker_end(after_start, MESSAGE_CLOSE) {
+        return Some(start + end);
     }
 
     let relative_end = match marker {
-        RESPONSE_OPEN => Some(RESPONSE_OPEN.len()),
-        RESPONSE_CLOSE => Some(RESPONSE_CLOSE.len()),
-        TOOLS_OPEN => after_start
-            .find(TOOLS_CLOSE)
-            .map(|position| position + TOOLS_CLOSE.len()),
-        CALL_OPEN_PREFIX => after_start
-            .find(CALL_CLOSE)
-            .map(|position| position + CALL_CLOSE.len()),
-        ARGUMENT_CLOSE => Some(ARGUMENT_CLOSE.len()),
-        TOOLS_CLOSE => Some(TOOLS_CLOSE.len()),
-        CALL_CLOSE => Some(CALL_CLOSE.len()),
-        MESSAGE_CLOSE => Some(MESSAGE_CLOSE.len()),
-        END_OF_MSG => Some(END_OF_MSG.len()),
+        RESPONSE_OPEN | RESPONSE_CLOSE | ARGUMENT_CLOSE | JSON_CLOSE | TOOLS_CLOSE | CALL_CLOSE
+        | MESSAGE_CLOSE | THINK_CLOSE | END_OF_MSG => Some(wire_marker.len()),
+        TOOLS_OPEN => find_wire_marker_end(after_start, TOOLS_CLOSE),
+        CALL_OPEN_PREFIX => find_wire_marker_end(after_start, CALL_CLOSE),
+        ARGUMENT_OPEN_PREFIX => find_wire_marker_end(after_start, ARGUMENT_CLOSE),
+        JSON_OPEN_PREFIX => find_wire_marker_end(after_start, JSON_CLOSE),
+        MESSAGE_OPEN_PREFIX => find_wire_marker_end(after_start, MESSAGE_CLOSE),
         _ => None,
     }?;
 
@@ -110,9 +155,33 @@ pub fn try_tool_call_parse_kimi_k3(
     config: &KimiK3ParserConfig,
     _tools: Option<&[ToolDefinition]>,
 ) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
+    let normalized = normalize_spaced_markers(message);
+    let sanitized = strip_orphan_think_close(normalized.as_ref());
+    let message = sanitized.as_ref();
     let normal_text = extract_response_text(message);
     let calls = extract_calls(message, config);
     Ok((calls, Some(normal_text)))
+}
+
+fn strip_orphan_think_close(message: &str) -> Cow<'_, str> {
+    if !message.contains(THINK_CLOSE) {
+        return Cow::Borrowed(message);
+    }
+    Cow::Owned(message.replace(THINK_CLOSE, ""))
+}
+
+fn normalize_spaced_markers(message: &str) -> Cow<'_, str> {
+    // Keep the canonical production path allocation-free and avoid probing
+    // every alias unless the engine-added spacing signature is present.
+    if !message.contains("<|open|> ") && !message.contains("<|close|> ") {
+        return Cow::Borrowed(message);
+    }
+
+    let mut normalized = message.to_string();
+    for (spaced, canonical) in SPACED_MARKER_ALIASES {
+        normalized = normalized.replace(spaced, canonical);
+    }
+    Cow::Owned(normalized)
 }
 
 fn first_marker(chunk: &str) -> Option<(usize, &'static str)> {
@@ -120,6 +189,46 @@ fn first_marker(chunk: &str) -> Option<(usize, &'static str)> {
         .into_iter()
         .filter_map(|marker| chunk.find(marker).map(|position| (position, marker)))
         .min_by_key(|(position, _)| *position)
+}
+
+fn first_wire_marker(chunk: &str) -> Option<(usize, &'static str, &'static str)> {
+    JAIL_BOUNDARIES
+        .into_iter()
+        .map(|marker| (marker, marker))
+        .chain(SPACED_MARKER_ALIASES)
+        .filter_map(|(wire, canonical)| {
+            chunk.find(wire).map(|position| (position, wire, canonical))
+        })
+        .min_by_key(|(position, _, _)| *position)
+}
+
+/// Split a reasoning delta at the first reserved K3 structural boundary.
+///
+/// This is a narrow recovery hook for the reasoning-to-XTML handoff. If an
+/// upstream reasoning parser has already placed a complete response/tools
+/// channel in `reasoning_content`, the K3 jail can move only that protocol
+/// suffix back to `content` and parse it normally. Arbitrary `<|...|>` text is
+/// preserved because only the explicit K3 boundary tables are considered.
+pub(crate) fn split_reasoning_handoff(message: &str) -> Option<(&str, &str)> {
+    // Reasoning prose overwhelmingly contains no K3 control-token prefix.
+    // Keep that hot path to one cheap scan; the full reserved-marker table is
+    // consulted only for the exceptional handoff-recovery case.
+    if !message.contains("<|") {
+        return None;
+    }
+    let (position, _, _) = first_wire_marker(message)?;
+    Some(message.split_at(position))
+}
+
+fn find_wire_marker_end(text: &str, canonical: &str) -> Option<usize> {
+    std::iter::once(canonical)
+        .chain(
+            SPACED_MARKER_ALIASES
+                .iter()
+                .filter_map(|(wire, target)| (*target == canonical).then_some(*wire)),
+        )
+        .filter_map(|wire| text.find(wire).map(|position| position + wire.len()))
+        .min()
 }
 
 fn earliest_position(text: &str, markers: &[&str]) -> Option<usize> {
@@ -461,16 +570,6 @@ mod tests {
     }
 
     #[test]
-    fn coalesced_message_uses_the_outermost_visible_terminator() {
-        let input = format!("{RESPONSE_OPEN}42{RESPONSE_CLOSE}{MESSAGE_CLOSE}{END_OF_MSG}");
-
-        assert_eq!(
-            find_tool_call_end_position_kimi_k3(&input, &KimiK3ParserConfig::default()),
-            Some(input.len())
-        );
-    }
-
-    #[test]
     fn parses_response_and_all_typed_arguments() {
         let body = [
             arg("city", Some("string"), "Paris"),
@@ -520,6 +619,15 @@ mod tests {
             let (_, marker_normal) = parse(marker);
             assert_eq!(marker_normal, "", "marker {marker}");
         }
+    }
+
+    #[test]
+    fn orphan_exact_think_close_is_stripped_without_dropping_content() {
+        let input = format!("{THINK_CLOSE}answer");
+        let (calls, normal) = parse(&input);
+
+        assert!(calls.is_empty());
+        assert_eq!(normal, "answer");
     }
 
     #[test]

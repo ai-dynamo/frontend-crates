@@ -137,7 +137,7 @@ impl BasicReasoningParser {
     }
 
     /// Buffer a one-byte prefix of a configured reasoning delimiter or exit
-    /// marker. Intended for model formats whose reserved markers share an
+    /// marker. Intended for formats whose reserved markers share an
     /// unambiguous multi-byte prefix, such as Kimi K3's `<|...` markers.
     pub fn with_single_char_marker_buffering(mut self) -> Self {
         self.buffer_single_char_marker_prefix = true;
@@ -346,11 +346,20 @@ impl ReasoningParser for BasicReasoningParser {
             if self._in_reasoning {
                 let end_idx = current_text.find(self.think_end_token.as_str());
                 let tool_idx = earliest_marker_offset(&current_text, &self.tool_start_tokens);
+                let tool_is_partial_end = tool_idx.is_some_and(|tool_at| {
+                    let candidate = &current_text[tool_at..];
+                    candidate.len() < self.think_end_token.len()
+                        && self.think_end_token.starts_with(candidate)
+                });
 
                 // Prefer whichever marker appears first. If only one is present, use it.
+                // A complete force-exit marker can itself be a prefix of the configured
+                // reasoning close (Kimi K3's `<|close|>` /
+                // `<|close|>think<|sep|>` overlap). In that ambiguous case, retain the
+                // candidate until the next chunk completes or disproves the close marker.
                 let force_exit_idx = match (end_idx, tool_idx) {
                     (Some(e), Some(t)) if t < e => Some(t),
-                    (None, Some(t)) => Some(t),
+                    (None, Some(t)) if !tool_is_partial_end => Some(t),
                     _ => None,
                 };
 
@@ -1449,6 +1458,33 @@ mod tests {
         let r2 = parser.parse_reasoning_streaming_incremental("xxx", &[]);
         assert_eq!(r2.reasoning_text, "<|tool_caxxx");
         assert_eq!(r2.normal_text, "");
+    }
+
+    #[test]
+    fn test_force_exit_prefix_does_not_preempt_partial_reasoning_end() {
+        let mut parser = BasicReasoningParser::new(
+            "<|open|>think<|sep|>".to_string(),
+            "<|close|>think<|sep|>".to_string(),
+            true,
+            true,
+        )
+        .with_tool_start_token("<|close|>");
+
+        let reasoning = parser.parse_reasoning_streaming_incremental("reasoning text", &[]);
+        assert_eq!(reasoning.reasoning_text, "reasoning text");
+        assert_eq!(reasoning.normal_text, "");
+
+        let close_prefix = parser.parse_reasoning_streaming_incremental("<|close|>think", &[]);
+        assert_eq!(close_prefix.reasoning_text, "");
+        assert_eq!(close_prefix.normal_text, "");
+
+        let close_suffix = parser.parse_reasoning_streaming_incremental("<|sep|>", &[]);
+        assert_eq!(close_suffix.reasoning_text, "");
+        assert_eq!(close_suffix.normal_text, "");
+
+        let answer = parser.parse_reasoning_streaming_incremental("answer", &[]);
+        assert_eq!(answer.reasoning_text, "");
+        assert_eq!(answer.normal_text, "answer");
     }
 
     #[test] // REASONING.batch.2.f
