@@ -302,21 +302,29 @@ pub struct KimiK3ParserConfig {
 
 impl KimiK3ParserConfig {
     pub(crate) fn start_tokens(&self) -> Vec<&'static str> {
-        super::xtml::JAIL_BOUNDARIES.to_vec()
+        super::xtml::JAIL_BOUNDARIES
+            .into_iter()
+            .chain(super::xtml::SPACED_JAIL_BOUNDARIES)
+            .collect()
     }
 
     pub(crate) fn end_tokens(&self) -> Vec<&'static str> {
-        use super::xtml::{END_OF_MSG, MESSAGE_CLOSE, RESPONSE_CLOSE, RESPONSE_OPEN, TOOLS_CLOSE};
-        // The v1 jail gives configured marker order priority over text
-        // position. Prefer the outermost visible K3 terminator so a coalesced
-        // final delta is parsed as one message; the inner markers remain
-        // fallbacks for ordinary incremental streaming.
+        use super::xtml::{
+            END_OF_MSG, MESSAGE_CLOSE, RESPONSE_CLOSE, RESPONSE_OPEN, SPACED_MESSAGE_CLOSE,
+            SPACED_RESPONSE_CLOSE, SPACED_RESPONSE_OPEN, SPACED_TOOLS_CLOSE, TOOLS_CLOSE,
+        };
+        // Prefer outer message terminators when an interval-batched backend
+        // delta contains several nested K3 closes at once.
         vec![
             END_OF_MSG,
             MESSAGE_CLOSE,
+            SPACED_MESSAGE_CLOSE,
             TOOLS_CLOSE,
+            SPACED_TOOLS_CLOSE,
             RESPONSE_CLOSE,
+            SPACED_RESPONSE_CLOSE,
             RESPONSE_OPEN,
+            SPACED_RESPONSE_OPEN,
         ]
     }
 }

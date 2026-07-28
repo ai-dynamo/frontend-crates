@@ -62,6 +62,38 @@ fn contains_harmony_protocol(text: &str) -> bool {
     text.contains("<|channel|>")
 }
 
+/// Fix a K3 response or tool call that was incorrectly placed in
+/// `reasoning_content`.
+///
+/// Keep the text before the K3 marker as reasoning and move the marker and
+/// everything after it to content, where the K3 jail can parse it normally.
+/// If there is no K3 marker, return `None` without allocating.
+fn recover_kimi_k3_reasoning_handoff(choice: &ChatChoiceStream) -> Option<ChatChoiceStream> {
+    let reasoning = choice.delta.reasoning_content.as_deref()?;
+    let (reasoning_prefix, protocol_suffix) =
+        crate::tool_calling::xtml::split_reasoning_handoff(reasoning)?;
+
+    let content_suffix = match choice.delta.content.as_ref() {
+        Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(content)) => {
+            content.as_str()
+        }
+        Some(dynamo_protocols::types::ChatCompletionMessageContent::Parts(_)) => return None,
+        None => "",
+    };
+
+    let mut recovered = choice.clone();
+    recovered.delta.reasoning_content =
+        (!reasoning_prefix.is_empty()).then(|| reasoning_prefix.to_string());
+
+    let mut content = String::with_capacity(protocol_suffix.len() + content_suffix.len());
+    content.push_str(protocol_suffix);
+    content.push_str(content_suffix);
+    recovered.delta.content = Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(
+        content,
+    ));
+    Some(recovered)
+}
+
 /// Represents what a choice wants to emit after processing content
 #[derive(Debug, Clone)]
 pub enum ChoiceEmission {
@@ -465,10 +497,10 @@ impl ChoiceJailState {
         self.accumulated_logprobs.take()
     }
 
-    /// Take buffered reasoning as a standalone SSE choice. Kimi K3 uses this
-    /// when one backend delta coalesces the end of reasoning with an XTML
-    /// response or tools channel. The parsed content/tool emission retains the
-    /// original role, logprobs, and finish reason.
+    /// Send buffered K3 reasoning before the response or tool call.
+    ///
+    /// A backend chunk can contain both pieces. Emit them separately so clients
+    /// always receive the reasoning first.
     fn take_pending_reasoning_emission(&mut self) -> Option<ChoiceEmission> {
         let reasoning_content = self.pending_reasoning_content.take()?;
         #[allow(deprecated)]
@@ -1011,6 +1043,11 @@ impl JailedStream {
 
                     // Process each choice independently using the new architecture
                     for choice in &chat_response.choices {
+                        let recovered_choice = separates_k3_reasoning
+                            .then(|| recover_kimi_k3_reasoning_handoff(choice))
+                            .flatten();
+                        let choice = recovered_choice.as_ref().unwrap_or(choice);
+
                         if let Some(ref content) = choice.delta.content {
                             // Jailing only applies to text content
                             let text_content = match content {
@@ -1636,9 +1673,10 @@ impl JailedStream {
                         } else if normal_text.as_deref() == Some("") {
                             String::new()
                         } else if is_kimi_k3_parser(self.tool_call_parser.as_deref()) {
-                            // K3's parser owns both response and tools channels,
-                            // so its stripped response text is authoritative even
-                            // when the message contains no structured tool call.
+                            // K3's parser owns both response and tools
+                            // channels. Its stripped response text is therefore
+                            // authoritative even when no structured call is
+                            // present in the jailed XTML span.
                             normal_text.unwrap_or_default()
                         } else if is_harmony_parser(self.tool_call_parser.as_deref())
                             && contains_harmony_protocol(accumulated_content)
@@ -2319,10 +2357,8 @@ where
         builder = builder.tool_definitions(tool_definitions);
     }
 
-    // Keep the named-tool contract as a parser-side safety check even when a
-    // structural tag is active. Guided decoding should make a wrong tool
-    // impossible, but retaining the filter prevents a backend that ignores or
-    // violates the constraint from surfacing another function to the client.
+    // A named tool choice is an API constraint, regardless of which parsing
+    // path handles the model output. Drop calls to any other tool.
     if let Some(ChatCompletionToolChoiceOption::Named(named)) = tool_choice.as_ref() {
         builder = builder.named_tool_filter(named.function.name.clone());
     }
@@ -2422,28 +2458,17 @@ mod tests {
         }
     }
 
-    fn terminal_chunk() -> Annotated<CreateChatCompletionStreamResponse> {
+    /// Helper: build the post-reasoning-parser shape observed in the live
+    /// stream-interval regression: K3 XTML was classified as reasoning and
+    /// `content` was cleared before the jail saw the choice.
+    #[allow(deprecated)]
+    fn reasoning_chunk(reasoning: &str) -> Annotated<CreateChatCompletionStreamResponse> {
         let mut chunk = text_chunk("");
-        let choice = &mut chunk.data.as_mut().expect("terminal response").choices[0];
-        choice.delta.role = None;
+        let choice = &mut chunk.data.as_mut().expect("reasoning response").choices[0];
         choice.delta.content = None;
-        choice.finish_reason = Some(FinishReason::Stop);
+        choice.delta.reasoning_content = Some(reasoning.to_string());
+        choice.delta.role.get_or_insert(Role::Assistant);
         chunk
-    }
-
-    async fn apply_kimi_k3(
-        mut chunks: Vec<Annotated<CreateChatCompletionStreamResponse>>,
-    ) -> Vec<Annotated<CreateChatCompletionStreamResponse>> {
-        chunks.push(terminal_chunk());
-        apply_tool_calling_jail(
-            Some("kimi_k3".to_string()),
-            None,
-            None,
-            false,
-            stream::iter(chunks),
-        )
-        .collect()
-        .await
     }
 
     /// Collect all emitted tool calls from the jailed stream output
@@ -2491,7 +2516,10 @@ mod tests {
         )
     }
 
-    async fn apply_named_kimi_k3(tool_name: &str) -> Vec<(String, String)> {
+    async fn apply_named_kimi_k3(
+        tool_name: &str,
+        uses_tool_call_structural_tag: bool,
+    ) -> Vec<(String, String)> {
         let payload = kimi_k3_tool_call(tool_name);
         let split = payload.len() / 2;
         let chunks = vec![text_chunk(&payload[..split]), text_chunk(&payload[split..])];
@@ -2499,7 +2527,7 @@ mod tests {
             Some("kimi_k3".to_string()),
             Some(named_choice("get_weather")),
             None,
-            true,
+            uses_tool_call_structural_tag,
             stream::iter(chunks),
         )
         .collect()
@@ -2509,7 +2537,7 @@ mod tests {
 
     #[tokio::test]
     async fn named_kimi_k3_structural_tag_path_keeps_matching_tool() {
-        let calls = apply_named_kimi_k3("get_weather").await;
+        let calls = apply_named_kimi_k3("get_weather", true).await;
 
         assert_eq!(calls.len(), 1);
         assert_eq!(calls[0].0, "get_weather");
@@ -2518,11 +2546,30 @@ mod tests {
 
     #[tokio::test]
     async fn named_kimi_k3_structural_tag_path_filters_wrong_tool() {
-        let calls = apply_named_kimi_k3("search").await;
+        let calls = apply_named_kimi_k3("search", true).await;
 
         assert!(
             calls.is_empty(),
             "a backend-emitted tool that violates named tool_choice must be dropped"
+        );
+    }
+
+    #[tokio::test]
+    async fn named_kimi_k3_native_path_keeps_matching_tool() {
+        let calls = apply_named_kimi_k3("get_weather", false).await;
+
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].0, "get_weather");
+        assert_eq!(calls[0].1, r#"{"city":"Berlin"}"#);
+    }
+
+    #[tokio::test]
+    async fn named_kimi_k3_native_path_filters_wrong_tool() {
+        let calls = apply_named_kimi_k3("search", false).await;
+
+        assert!(
+            calls.is_empty(),
+            "a native K3 call that violates named tool_choice must be dropped"
         );
     }
 
@@ -2544,25 +2591,167 @@ mod tests {
             .collect()
     }
 
+    /// Simulate the backend's final stream chunk.
+    ///
+    /// It has no text. It tells the jail to flush any buffered K3 data and
+    /// preserve the final stop reason.
+    fn terminal_chunk() -> Annotated<CreateChatCompletionStreamResponse> {
+        let mut chunk = text_chunk("");
+        let choice = &mut chunk.data.as_mut().expect("terminal response").choices[0];
+        choice.delta.role = None;
+        choice.delta.content = None;
+        choice.finish_reason = Some(FinishReason::Stop);
+        chunk
+    }
+
+    async fn apply_kimi_k3(
+        mut chunks: Vec<Annotated<CreateChatCompletionStreamResponse>>,
+    ) -> Vec<Annotated<CreateChatCompletionStreamResponse>> {
+        chunks.push(terminal_chunk());
+        apply_tool_calling_jail(
+            Some("kimi_k3".to_string()),
+            None,
+            None,
+            false,
+            stream::iter(chunks),
+        )
+        .collect()
+        .await
+    }
+
     #[tokio::test]
-    async fn kimi_k3_coalesced_response_strips_all_xtml_boundaries() {
-        let coalesced = concat!(
+    async fn kimi_k3_recovers_response_channel_misclassified_as_reasoning() {
+        let leaked = concat!(
+            "The user requested an exact integer.",
             "<|open|>response<|sep|>",
-            "42",
+            "323",
             "<|close|>response<|sep|>",
             "<|close|>message<|sep|>",
             "<|end_of_msg|>"
         );
 
-        let responses = apply_kimi_k3(vec![text_chunk(coalesced)]).await;
+        let responses = apply_kimi_k3(vec![reasoning_chunk(leaked)]).await;
+        let choices: Vec<_> = responses
+            .iter()
+            .flat_map(|response| response.data.iter())
+            .flat_map(|response| response.choices.iter())
+            .collect();
 
-        assert_eq!(collect_text_content(&responses), "42");
-        assert!(collect_tool_calls(&responses).is_empty());
-        assert_eq!(final_finish_reason(&responses), Some(FinishReason::Stop));
+        assert_eq!(collect_text_content(&responses), "323");
+        assert_eq!(
+            choices
+                .iter()
+                .filter_map(|choice| choice.delta.reasoning_content.as_deref())
+                .collect::<Vec<_>>(),
+            vec!["The user requested an exact integer."]
+        );
+        assert!(choices.iter().all(|choice| {
+            choice
+                .delta
+                .reasoning_content
+                .as_deref()
+                .is_none_or(|reasoning| !reasoning.contains("<|"))
+        }));
     }
 
     #[tokio::test]
-    async fn kimi_k3_coalesced_reasoning_and_response_emit_separate_events() {
+    async fn kimi_k3_recovers_tool_channel_misclassified_as_reasoning() {
+        let leaked = concat!(
+            "Use the calculator.",
+            "<|open|>tools<|sep|>",
+            "<|open|>call tool=\"calc\" index=\"1\"<|sep|>",
+            "<|open|>argument key=\"x\" type=\"number\"<|sep|>323",
+            "<|close|>argument<|sep|>",
+            "<|close|>call<|sep|>",
+            "<|close|>tools<|sep|>",
+            "<|close|>message<|sep|>",
+            "<|end_of_msg|>"
+        );
+
+        let responses = apply_kimi_k3(vec![reasoning_chunk(leaked)]).await;
+        let choices: Vec<_> = responses
+            .iter()
+            .flat_map(|response| response.data.iter())
+            .flat_map(|response| response.choices.iter())
+            .collect();
+
+        assert_eq!(
+            collect_tool_calls(&responses),
+            vec![("calc".to_string(), r#"{"x":323}"#.to_string())]
+        );
+        assert_eq!(collect_text_content(&responses), "");
+        assert_eq!(
+            choices
+                .iter()
+                .filter_map(|choice| choice.delta.reasoning_content.as_deref())
+                .collect::<Vec<_>>(),
+            vec!["Use the calculator."]
+        );
+    }
+
+    #[tokio::test]
+    async fn kimi_k3_recovers_marker_from_reasoning_and_body_from_content() {
+        let mut chunk = text_chunk(concat!(
+            "323",
+            "<|close|>response<|sep|>",
+            "<|close|>message<|sep|>",
+            "<|end_of_msg|>"
+        ));
+        chunk.data.as_mut().expect("response").choices[0]
+            .delta
+            .reasoning_content =
+            Some("The user requested an exact integer.<|open|>response<|sep|>".to_string());
+
+        let responses = apply_kimi_k3(vec![chunk]).await;
+
+        assert_eq!(collect_text_content(&responses), "323");
+        assert!(collect_tool_calls(&responses).is_empty());
+    }
+
+    #[tokio::test]
+    async fn kimi_k3_does_not_reclassify_non_reserved_angle_pipe_reasoning() {
+        let expected = "literal <|example|> value";
+        let responses = apply_kimi_k3(vec![reasoning_chunk(expected)]).await;
+
+        assert_eq!(collect_text_content(&responses), "");
+        assert_eq!(
+            responses
+                .iter()
+                .flat_map(|response| response.data.iter())
+                .flat_map(|response| response.choices.iter())
+                .filter_map(|choice| choice.delta.reasoning_content.as_deref())
+                .collect::<String>(),
+            expected
+        );
+    }
+
+    #[tokio::test]
+    async fn non_k3_jail_does_not_reclassify_k3_reasoning_handoff() {
+        let expected = "reasoning<|open|>response<|sep|>323<|close|>response<|sep|>";
+        let responses: Vec<_> = apply_tool_calling_jail(
+            Some("hermes".to_string()),
+            None,
+            None,
+            false,
+            stream::iter(vec![reasoning_chunk(expected), terminal_chunk()]),
+        )
+        .collect()
+        .await;
+
+        assert_eq!(collect_text_content(&responses), "");
+        assert_eq!(
+            responses
+                .iter()
+                .flat_map(|response| response.data.iter())
+                .flat_map(|response| response.choices.iter())
+                .filter_map(|choice| choice.delta.reasoning_content.as_deref())
+                .collect::<String>(),
+            expected
+        );
+    }
+
+    #[tokio::test]
+    async fn kimi_k3_live_coalesced_reasoning_and_response_are_separate_events() {
         let coalesced = concat!(
             "<|open|>response<|sep|>",
             "42",
@@ -2573,7 +2762,7 @@ mod tests {
         let mut chunk = text_chunk(coalesced);
         chunk.data.as_mut().expect("response").choices[0]
             .delta
-            .reasoning_content = Some("last reasoning".to_string());
+            .reasoning_content = Some("Final exactly 42.".to_string());
 
         let responses = apply_kimi_k3(vec![chunk]).await;
         let choices: Vec<_> = responses
@@ -2581,73 +2770,40 @@ mod tests {
             .flat_map(|response| response.data.iter())
             .flat_map(|response| response.choices.iter())
             .collect();
-        let reasoning_events: Vec<_> = choices
-            .iter()
-            .copied()
-            .filter(|choice| choice.delta.reasoning_content.is_some())
-            .collect();
-        let mixed_events = responses
-            .iter()
-            .flat_map(|response| response.data.iter())
-            .flat_map(|response| response.choices.iter())
-            .filter(|choice| {
-                choice
-                    .delta
-                    .reasoning_content
-                    .as_deref()
-                    .is_some_and(|reasoning| !reasoning.is_empty())
-                    && matches!(
-                        choice.delta.content.as_ref(),
-                        Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(content))
-                            if !content.is_empty()
-                    )
-            })
-            .count();
 
         assert_eq!(collect_text_content(&responses), "42");
-        assert_eq!(reasoning_events.len(), 1);
-        assert_eq!(
-            reasoning_events[0].delta.reasoning_content.as_deref(),
-            Some("last reasoning")
-        );
-        assert!(reasoning_events[0].delta.content.is_none());
-        assert!(reasoning_events[0].delta.role.is_none());
-        assert!(reasoning_events[0].finish_reason.is_none());
-        assert!(reasoning_events[0].logprobs.is_none());
-        assert_eq!(final_finish_reason(&responses), Some(FinishReason::Stop));
-        assert_eq!(
-            mixed_events, 0,
-            "reasoning and visible content must be separate SSE events"
-        );
-    }
-
-    #[tokio::test]
-    async fn kimi_k3_orphan_argument_call_and_tools_closers_are_consumed() {
-        let orphan_closers = concat!(
-            "<|close|>argument<|sep|>",
-            "<|close|>call<|sep|>",
-            "<|close|>tools<|sep|>"
-        );
-
-        let responses = apply_kimi_k3(vec![text_chunk(orphan_closers)]).await;
-
-        assert_eq!(collect_text_content(&responses), "");
         assert!(collect_tool_calls(&responses).is_empty());
-        assert_eq!(final_finish_reason(&responses), Some(FinishReason::Stop));
+        assert_eq!(
+            choices
+                .iter()
+                .filter_map(|choice| choice.delta.reasoning_content.as_deref())
+                .collect::<Vec<_>>(),
+            vec!["Final exactly 42."]
+        );
+        assert!(choices.iter().all(|choice| {
+            choice.delta.reasoning_content.is_none()
+                || choice.delta.content.is_none()
+                    && choice.delta.tool_calls.as_ref().is_none_or(Vec::is_empty)
+        }));
     }
 
     #[tokio::test]
-    async fn kimi_k3_coalesced_reasoning_and_tool_call_emit_separate_events() {
-        let coalesced = format!(
-            "{}{}{}",
-            kimi_k3_tool_call("get_weather"),
-            "<|close|>message<|sep|>",
-            "<|end_of_msg|>"
+    async fn kimi_k3_live_coalesced_reasoning_and_parallel_calls_are_separate_events() {
+        let coalesced = concat!(
+            "<|open|>tools<|sep|>",
+            "<|open|>call tool=\"fetch_url\" index=\"1\"<|sep|>",
+            "<|open|>argument key=\"url\" type=\"string\"<|sep|>https://a.example/x",
+            "<|close|>argument<|sep|><|close|>call<|sep|>",
+            "<|open|>call tool=\"fetch_url\" index=\"2\"<|sep|>",
+            "<|open|>argument key=\"url\" type=\"string\"<|sep|>https://b.example/y",
+            "<|close|>argument<|sep|><|close|>call<|sep|>",
+            "<|close|>tools<|sep|>",
+            "<|close|>message<|sep|><|end_of_msg|>"
         );
-        let mut chunk = text_chunk(&coalesced);
+        let mut chunk = text_chunk(coalesced);
         chunk.data.as_mut().expect("response").choices[0]
             .delta
-            .reasoning_content = Some("call the weather tool".to_string());
+            .reasoning_content = Some("Fetch both URLs.".to_string());
 
         let responses = apply_kimi_k3(vec![chunk]).await;
         let choices: Vec<_> = responses
@@ -2658,10 +2814,16 @@ mod tests {
 
         assert_eq!(
             collect_tool_calls(&responses),
-            vec![(
-                "get_weather".to_string(),
-                r#"{"city":"Berlin"}"#.to_string()
-            )]
+            vec![
+                (
+                    "fetch_url".to_string(),
+                    r#"{"url":"https://a.example/x"}"#.to_string()
+                ),
+                (
+                    "fetch_url".to_string(),
+                    r#"{"url":"https://b.example/y"}"#.to_string()
+                )
+            ]
         );
         assert_eq!(collect_text_content(&responses), "");
         assert_eq!(
@@ -2669,20 +2831,16 @@ mod tests {
                 .iter()
                 .filter_map(|choice| choice.delta.reasoning_content.as_deref())
                 .collect::<Vec<_>>(),
-            vec!["call the weather tool"]
+            vec!["Fetch both URLs."]
         );
         assert!(choices.iter().all(|choice| {
             choice.delta.reasoning_content.is_none()
                 || choice.delta.tool_calls.as_ref().is_none_or(Vec::is_empty)
         }));
-        assert_eq!(
-            final_finish_reason(&responses),
-            Some(FinishReason::ToolCalls)
-        );
     }
 
     #[tokio::test]
-    async fn kimi_k3_response_is_independent_of_backend_chunk_boundaries() {
+    async fn kimi_k3_response_jail_is_independent_of_backend_chunk_boundaries() {
         let completion = concat!(
             "<|open|>response<|sep|>",
             "42",
@@ -2690,65 +2848,63 @@ mod tests {
             "<|close|>message<|sep|>",
             "<|end_of_msg|>"
         );
-        let mut cases = vec![vec![completion.to_string()]];
-        cases.extend(completion.char_indices().skip(1).map(|(split, _)| {
-            vec![
-                completion[..split].to_string(),
-                completion[split..].to_string(),
-            ]
-        }));
 
-        for (case_index, chunks) in cases.into_iter().enumerate() {
-            let responses =
-                apply_kimi_k3(chunks.iter().map(|chunk| text_chunk(chunk)).collect()).await;
-
+        for (split, _) in completion
+            .char_indices()
+            .skip(1)
+            .chain(std::iter::once((completion.len(), '\0')))
+        {
+            let responses = apply_kimi_k3(vec![
+                text_chunk(&completion[..split]),
+                text_chunk(&completion[split..]),
+            ])
+            .await;
             assert_eq!(
                 collect_text_content(&responses),
                 "42",
-                "chunking case {case_index} leaked XTML"
+                "split at byte {split} leaked XTML"
             );
-            assert!(
-                collect_tool_calls(&responses).is_empty(),
-                "chunking case {case_index} emitted a tool call"
+            assert!(collect_tool_calls(&responses).is_empty());
+        }
+    }
+
+    #[tokio::test]
+    async fn kimi_k3_spaced_tool_jail_is_independent_of_backend_chunk_boundaries() {
+        let completion = concat!(
+            "<|open|> tools <|sep|>",
+            "<|open|> call tool=\"calc\" index=\"1\" <|sep|>",
+            "<|open|> argument key=\"x\" type=\"number\" <|sep|>5",
+            "<|close|> argument <|sep|><|close|> call <|sep|>",
+            "<|close|> tools <|sep|>",
+            "<|close|> message <|sep|><|end_of_msg|>"
+        );
+
+        for (split, _) in completion
+            .char_indices()
+            .skip(1)
+            .chain(std::iter::once((completion.len(), '\0')))
+        {
+            let responses = apply_kimi_k3(vec![
+                text_chunk(&completion[..split]),
+                text_chunk(&completion[split..]),
+            ])
+            .await;
+            assert_eq!(
+                collect_text_content(&responses),
+                "",
+                "split at byte {split}"
             );
             assert_eq!(
-                final_finish_reason(&responses),
-                Some(FinishReason::Stop),
-                "chunking case {case_index} lost its terminal reason"
+                collect_tool_calls(&responses),
+                vec![("calc".to_string(), r#"{"x":5}"#.to_string())],
+                "split at byte {split}"
             );
         }
     }
 
     #[tokio::test]
-    async fn kimi_k3_coalesced_tool_call_stays_structured() {
-        let coalesced = format!(
-            "{}{}{}",
-            kimi_k3_tool_call("get_weather"),
-            "<|close|>message<|sep|>",
-            "<|end_of_msg|>"
-        );
-
-        let responses = apply_kimi_k3(vec![text_chunk(&coalesced)]).await;
-        let calls = collect_tool_calls(&responses);
-
-        assert_eq!(
-            calls,
-            vec![(
-                "get_weather".to_string(),
-                r#"{"city":"Berlin"}"#.to_string()
-            )]
-        );
-        assert_eq!(collect_text_content(&responses), "");
-        assert_eq!(
-            final_finish_reason(&responses),
-            Some(FinishReason::ToolCalls)
-        );
-    }
-
-    #[tokio::test]
-    async fn kimi_k3_preserves_non_marker_angle_pipe_literal() {
+    async fn kimi_k3_preserves_non_reserved_angle_pipe_literal() {
         let expected = "literal <|example|> value";
-
         let responses = apply_kimi_k3(vec![text_chunk(expected)]).await;
 
         assert_eq!(collect_text_content(&responses), expected);
@@ -2773,25 +2929,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn non_k3_parser_is_unchanged_by_k3_coalescing_fix() {
-        let expected = concat!(
-            "<|open|>response<|sep|>",
-            "42",
-            "<|close|>response<|sep|>",
-            "<|close|>message<|sep|>",
-            "<|end_of_msg|>"
-        );
-        let responses: Vec<_> = apply_tool_calling_jail(
-            Some("hermes".to_string()),
-            None,
-            None,
-            false,
-            stream::iter(vec![text_chunk(expected), terminal_chunk()]),
-        )
-        .collect()
+    async fn kimi_k3_jail_strips_orphan_exact_think_close_split_across_chunks() {
+        let responses = apply_kimi_k3(vec![
+            text_chunk("<|close|>think"),
+            text_chunk("<|sep|>"),
+            text_chunk("answer"),
+        ])
         .await;
 
-        assert_eq!(collect_text_content(&responses), expected);
+        assert_eq!(collect_text_content(&responses), "answer");
         assert!(collect_tool_calls(&responses).is_empty());
     }
 
