@@ -41,6 +41,24 @@ def rendered(tmp_path_factory):
     return out
 
 
+# Headless Chrome reports `(hover: hover)` as FALSE, so conformance.js takes its touch
+# branch and never attaches the `pointerenter` listener that test_hover_shows_tooltip
+# drives — the test could not pass here regardless of the page being correct. Force the
+# hover-capable branch by patching matchMedia BEFORE any page script runs (CDP
+# addScriptToEvaluateOnNewDocument runs ahead of the document's own scripts).
+_FORCE_HOVER_JS = """
+const _mm = window.matchMedia.bind(window);
+window.matchMedia = function (q) {
+  if (/hover:\\s*hover|pointer:\\s*fine/.test(q)) {
+    return {matches: true, media: q,
+            addListener() {}, removeListener() {},
+            addEventListener() {}, removeEventListener() {}};
+  }
+  return _mm(q);
+};
+"""
+
+
 @pytest.fixture(scope="module")
 def driver(rendered):
     opts = Options()
@@ -50,6 +68,7 @@ def driver(rendered):
         d = webdriver.Chrome(options=opts)
     except Exception as exc:  # noqa: BLE001 — environment without a usable driver
         pytest.skip(f"could not start Chrome webdriver: {exc}")
+    d.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": _FORCE_HOVER_JS})
     d.get(f"file://{rendered}")
     d.implicitly_wait(2)
     yield d

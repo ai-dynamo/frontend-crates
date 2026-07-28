@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // Conformance matrix behavior (audit B7). Inlined at render by generate_conformance_table.py.
 (function () {
-  const margin = 8;
+  // Gutter kept between a popup and the viewport edge (2em at the 16px root size).
+  // The tooltip is width:max-content and the widest ones run to the full cap below, so
+  // without this they sit flush against the screen edge and read as clipped.
+  const margin = 32;
   const showDelayMs = 750;
   const hideDelayMs = 750;
   const columnButtons = Array.from(document.querySelectorAll('[data-col-toggle]'));
@@ -510,7 +513,12 @@
     ttip.style.top = '100%';
     ttip.style.right = 'auto';
     ttip.style.bottom = 'auto';
-    ttip.style.maxWidth = Math.round(window.innerWidth * 0.9) + 'px';
+    // Cap the width at the viewport MINUS both gutters. 90% alone is not enough: a
+    // tooltip that wide still has to be shifted left to clear the right gutter, and if
+    // the shift then pushes its left edge past `margin` the clamp below cancels it and
+    // the popup ends up flush against an edge. Bounding the width makes both fit.
+    ttip.style.maxWidth = Math.max(240, Math.min(
+      Math.round(window.innerWidth * 0.9), window.innerWidth - 2 * margin)) + 'px';
     const cellRect = cell.getBoundingClientRect();
     const tipRect = ttip.getBoundingClientRect();
     const vw = window.innerWidth, vh = window.innerHeight;
@@ -655,7 +663,9 @@
       });
     }
   }
-  document.querySelectorAll('td.cell, td.parser').forEach(attachTooltip);
+  // `th.case-sub` carries the per-column grammar popup (the same case in every
+  // family's grammar); it uses the identical hover/pin machinery as a data cell.
+  document.querySelectorAll('td.cell, td.parser, th.case-sub').forEach(attachTooltip);
 
   // ---- Transpose view (DIS-2280) ----
   // Build a transposed mirror of each panel's table on demand: models become
@@ -836,6 +846,19 @@
       caseTh.className = 'trow-case';
       const link = subTh.querySelector('a');
       caseTh.appendChild(link ? link.cloneNode(true) : document.createTextNode(subTh.textContent.trim()));
+      // Carry the per-case grammar popup into the transposed view. Transposing turns the
+      // case COLUMN header into a ROW header, and this branch previously cloned only the
+      // link — so the popup silently disappeared whenever the table was transposed.
+      // Copy the `data-ttip-id` (the model key) and attach an empty `.ttip`; it then
+      // builds lazily exactly like the upright header.
+      const caseTipId = subTh.getAttribute('data-ttip-id');
+      if (caseTipId) {
+        caseTh.setAttribute('data-ttip-id', caseTipId);
+        const caseTip = document.createElement('div');
+        caseTip.className = 'ttip';
+        caseTh.appendChild(caseTip);
+        attachTooltip(caseTh);
+      }
       tr.appendChild(caseTh);
       models.forEach(function (m) {
         const src = m.cells[idx];

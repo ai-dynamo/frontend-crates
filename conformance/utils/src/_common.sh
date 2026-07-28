@@ -67,6 +67,8 @@ _build_stage_base() {
   mkdir -p "$STAGE/tests/parity/assets"
   \cp -f "$TOOLS/assets/conformance.css" "$STAGE/tests/parity/assets/conformance.css"
   \cp -f "$TOOLS/assets/conformance.js" "$STAGE/tests/parity/assets/conformance.js"
+  # Markup colorizer (port of markup.py); inlined before conformance_view.js.
+  \cp -f "$TOOLS/assets/colorize.js" "$STAGE/tests/parity/assets/colorize.js"
   # DIS-2434 JSON data model + JS view: model.py builds it (imported by BOTH pages via
   # reasoning_table), conformance_view.js renders it. Staged here so v1 + v2 both find them.
   \cp -f "$TOOLS/model.py" "$STAGE/tests/parity/model.py"
@@ -143,18 +145,27 @@ _copy_toolcalling_v2_fixtures() {
   # The stream-v2 corpus is versioned like the batch corpus (no unversioned anchor):
   # inputs/ (shared per-chunk delta_text) + <impl>-<version>/ (per-impl expected;
   # lowest version = full anchor, higher = changed-only). Resolve the PINNED (latest)
-  # peer versions into the flat tree the renderer expects; single-version impls
-  # (dynamo_v2, vllm_rust) default to their lowest. The generator re-resolves each
-  # version for the compare model.
+  # peer versions into the flat tree the renderer expects; a genuinely single-version
+  # impl (vllm_rust) defaults to its lowest. The generator re-resolves each version for
+  # the compare model.
   local sv2="$FIXTURES_ROOT/toolcalling/fixtures-stream-v2"
   if [ -d "$sv2" ]; then
     local vllm_v sglang_v tmp family f
     vllm_v=$(grep -oE 'vllm\[[^]]*\]==[^"]+' "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//')
     sglang_v=$(grep -oE 'sglang\[[^]]*\]==[^"]+' "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//')
+    # dynamo_v2 is NOT single-version any more: 0.1.11 (anchor, 4 families) +
+    # 0.1.11.patch1 + 0.1.22 (9 families). Defaulting it to the lowest staged only the
+    # anchor, so gemma4/glm47/kimi_k2/minimax_m2/minimax_m3 had no per-chunk `expected`
+    # and rendered "—" for every chunk — while the column was LABELLED 0.1.22, because
+    # _dynamo_v2_version() reads the published dir list. Select the latest so the data
+    # matches its own label.
+    local dynamo_v2_v
+    dynamo_v2_v=$(ls -d "$sv2"/dynamo_v2-* 2>/dev/null | sed 's|.*/dynamo_v2-||' | sort -V | tail -1)
     tmp="$(mktemp -d)"
     python3 "$TOOLS/resolve_stream_fixtures.py" \
       --fixtures-root "$sv2" --out "$tmp" \
-      --select "vllm_python-${vllm_v}" "sglang_python-${sglang_v}"
+      --select "vllm_python-${vllm_v}" "sglang_python-${sglang_v}" \
+              ${dynamo_v2_v:+"dynamo_v2-${dynamo_v2_v}"}
     for f in "$tmp"/*/TOOLCALLING.stream*.yaml; do
       [ -f "$f" ] || continue
       family="$(basename "$(dirname "$f")")"

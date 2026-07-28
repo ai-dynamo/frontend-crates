@@ -93,8 +93,22 @@ def _vllm_rust_unavailable(source_version):
 
 
 def _q(s) -> str:
-    """YAML single-quote a scalar (safe for any newline-free string)."""
-    return "'" + str(s).replace("'", "''") + "'"
+    """YAML-quote a scalar LOSSLESSLY.
+
+    A single-quoted YAML scalar folds an embedded newline into a SPACE when read back,
+    so emitting one for a string containing `\\n` silently corrupts it. That is exactly
+    how the deepseek_v3 stream inputs lost the `\\n```json\\n` fence that
+    `V3_JSON_START` matches on: the capture ran against the correct in-memory text and
+    recorded a pass, then the fixture round-tripped to `get_weather ```json {...}` and
+    every later replay hit "incomplete DeepSeek V3 tool call".
+
+    Anything not printable (newline, tab, control chars) therefore goes out
+    double-quoted with escapes -- JSON's encoding is a valid YAML double-quoted scalar.
+    """
+    s = str(s)
+    if not s.isprintable():
+        return json.dumps(s, ensure_ascii=False)
+    return "'" + s.replace("'", "''") + "'"
 
 
 def _delta_flow(d: dict) -> str:
