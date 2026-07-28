@@ -3,11 +3,12 @@
 ## Introduction
 `dynamo-renderer` turns OpenAI-style chat requests into model-ready prompt strings. It is the *encode* side of inference serving: messages + tools + generation settings in, a fully-rendered prompt out. It is standalone, so an external OpenAI frontend can reuse Dynamo's prompt formatting without pulling in the Dynamo runtime.
 
-It renders HuggingFace `chat_template` jinja2 (via `minijinja` + `minijinja-contrib` pycompat) and also ships native Rust formatters for DeepSeek families whose repos ship no usable template. The crate is a *bridge* between OpenAI request types (`dynamo-protocols`) and the template engine; it does **not** depend on tokenizer internals, though it re-exports `dynamo-tokenizers` for one-import convenience.
+It renders HuggingFace `chat_template` jinja2 (via `minijinja` + `minijinja-contrib` pycompat) and also ships native Rust formatters for model families whose prompt protocol cannot be represented faithfully by the published template. The crate is a *bridge* between OpenAI request types (`dynamo-protocols`) and the template engine; it does **not** depend on tokenizer internals, though it re-exports `dynamo-tokenizers` for one-import convenience.
 
 ## Features
 - **HF chat templates**: faithful `apply_chat_template` rendering, including tool-use and generation-prompt handling.
 - **Native DeepSeek formatters**: Rust formatters for V4 / V3.2 families (under `deepseek`).
+- **Native Inkling formatter**: exact text, image, audio, reasoning, and tool-use framing for `inkling_mm_model` (under `inkling`). Media blocks contain only the marker token; the backend multimodal processor expands per-patch or per-frame placeholders later.
 - **Bring-your-own request type**: implement `OAIChatLikeRequest` for any request type, or use the ready-made impl for `dynamo-protocols`' OpenAI chat request.
 - **Self-contained**: no async runtime, no networking, no tokenizer dependency on the rendering path.
 
