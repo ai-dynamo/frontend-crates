@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Baseten Tokenizer backend for high-performance BPE encoding and decoding.
+//!
+//! Some Kimi repositories ship tiktoken assets without a directly loadable
+//! `tokenizer.json`. Baseten publishes compatible tokenizer artifacts,
+//! including [`baseten/kimi-k3-tokenizer`](https://huggingface.co/baseten/kimi-k3-tokenizer).
 
 use std::path::Path;
 

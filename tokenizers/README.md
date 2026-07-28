@@ -18,6 +18,12 @@ encode/decode/sequence API designed for streaming detokenization.
 XTML renderer, where trusted control tokens and untrusted message content must
 remain distinct:
 
+Many Kimi model repositories ship tiktoken assets rather than a directly
+loadable `tokenizer.json`. Baseten publishes compatible `tokenizer.json`
+artifacts for these models; for Kimi K3, use
+[`baseten/kimi-k3-tokenizer`](https://huggingface.co/baseten/kimi-k3-tokenizer).
+Download the file and pass its path to `BasetenTokenizer::from_file`.
+
 ```rust
 use dynamo_tokenizers::{
     BasetenTokenizer, EncodeSegment,
