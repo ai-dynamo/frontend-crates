@@ -2361,6 +2361,9 @@ where
     // guided decoding into a model-specific format. Always use the marker-based
     // parser to extract tool calls from that format.
     if uses_tool_call_structural_tag {
+        if let Some(ChatCompletionToolChoiceOption::Named(named)) = tool_choice.as_ref() {
+            builder = builder.named_tool_filter(named.function.name.clone());
+        }
         if let Some(parser) = tool_call_parser {
             builder = builder.tool_call_parser(parser);
         }
@@ -2488,6 +2491,63 @@ mod tests {
             }
         }
         tool_calls
+    }
+
+    fn named_choice(name: &str) -> dynamo_protocols::types::ChatCompletionToolChoiceOption {
+        dynamo_protocols::types::ChatCompletionToolChoiceOption::Named(
+            dynamo_protocols::types::ChatCompletionNamedToolChoice {
+                r#type: dynamo_protocols::types::ChatCompletionToolType::Function,
+                function: dynamo_protocols::types::FunctionName {
+                    name: name.to_string(),
+                },
+            },
+        )
+    }
+
+    fn kimi_k3_tool_call(name: &str) -> String {
+        format!(
+            "<|open|>tools<|sep|>\
+             <|open|>call tool=\"{name}\" index=\"1\"<|sep|>\
+             <|open|>argument key=\"city\" type=\"string\"<|sep|>Berlin\
+             <|close|>argument<|sep|>\
+             <|close|>call<|sep|>\
+             <|close|>tools<|sep|>"
+        )
+    }
+
+    async fn apply_named_kimi_k3(tool_name: &str) -> Vec<(String, String)> {
+        let payload = kimi_k3_tool_call(tool_name);
+        let split = payload.len() / 2;
+        let chunks = vec![text_chunk(&payload[..split]), text_chunk(&payload[split..])];
+        let responses: Vec<_> = apply_tool_calling_jail(
+            Some("kimi_k3".to_string()),
+            Some(named_choice("get_weather")),
+            None,
+            true,
+            stream::iter(chunks),
+        )
+        .collect()
+        .await;
+        collect_tool_calls(&responses)
+    }
+
+    #[tokio::test]
+    async fn named_kimi_k3_structural_tag_path_keeps_matching_tool() {
+        let calls = apply_named_kimi_k3("get_weather").await;
+
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].0, "get_weather");
+        assert_eq!(calls[0].1, r#"{"city":"Berlin"}"#);
+    }
+
+    #[tokio::test]
+    async fn named_kimi_k3_structural_tag_path_filters_wrong_tool() {
+        let calls = apply_named_kimi_k3("search").await;
+
+        assert!(
+            calls.is_empty(),
+            "a backend-emitted tool that violates named tool_choice must be dropped"
+        );
     }
 
     /// Collect all emitted text content from the jailed stream output
