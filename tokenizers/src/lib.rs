@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+pub mod basetenkenizer;
 pub mod cache;
 pub mod fastokens;
 pub mod hf;
@@ -17,6 +18,7 @@ use std::{fs::File, io::BufReader, ops::Deref, path::Path};
 use anyhow::Context as _;
 pub use anyhow::{Error, Result};
 
+pub use basetenkenizer::BasetenTokenizer;
 pub use cache::{CacheTokenUsage, CacheTokenUsageFn, CachedTokenizer, L1CacheStats};
 pub use fastokens::FastTokenizer;
 pub use hf::HuggingFaceTokenizer;
@@ -24,6 +26,41 @@ pub use tiktoken::TikTokenTokenizer;
 pub use traits::DecodeResult;
 
 pub type TokenIdType = u32;
+
+/// A rendered prompt segment with an explicit trust boundary for special tokens.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EncodeSegment<'a> {
+    pub text: &'a str,
+    /// Recognize added/control tokens in this trusted renderer output.
+    ///
+    /// Set this to `false` for user, tool, and attribute content so text that
+    /// resembles a control token is encoded as ordinary text.
+    pub allow_special: bool,
+}
+
+impl<'a> EncodeSegment<'a> {
+    pub const fn new(text: &'a str, allow_special: bool) -> Self {
+        Self {
+            text,
+            allow_special,
+        }
+    }
+}
+
+/// Options for encoding an already-rendered segmented prompt.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SegmentEncodingOptions {
+    /// Preserve legacy tiktoken chunk boundaries on very long inputs.
+    pub tiktoken_safe: bool,
+}
+
+impl Default for SegmentEncodingOptions {
+    fn default() -> Self {
+        Self {
+            tiktoken_safe: true,
+        }
+    }
+}
 
 /// Represents the type of tokenizer being used
 #[derive(Debug)]
@@ -65,6 +102,21 @@ pub mod traits {
     pub trait Encoder: Send + Sync {
         fn encode(&self, input: &str) -> Result<Encoding>;
         fn encode_batch(&self, inputs: &[&str]) -> Result<Vec<Encoding>>;
+
+        /// Encode renderer output while preserving trusted-control and
+        /// untrusted-content boundaries.
+        ///
+        /// Backends must not implement this by concatenating the segments:
+        /// doing so lets control-token-looking user content become structural.
+        fn encode_segments(
+            &self,
+            _segments: &[EncodeSegment<'_>],
+            _options: SegmentEncodingOptions,
+        ) -> Result<Encoding> {
+            Err(Error::msg(
+                "tokenizer backend does not support segmented encoding",
+            ))
+        }
     }
 
     /// Result of decoding token IDs to text.

@@ -337,6 +337,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
+name = "basetenkenizer"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "55524e9467214686afafb60b7cedf28549f0ce964457658842999f6ef7ccbae7"
+dependencies = [
+ "chrono",
+ "daachorse",
+ "fancy-regex 0.17.0",
+ "hf-hub",
+ "icu_normalizer",
+ "icu_properties",
+ "memchr",
+ "minijinja",
+ "minijinja-contrib",
+ "pcre2",
+ "rayon",
+ "serde",
+ "serde_json",
+ "strum",
+ "thiserror",
+]
+
+[[package]]
 name = "bit-set"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1000,6 +1023,7 @@ dependencies = [
  "aho-corasick",
  "anyhow",
  "base64 0.22.1",
+ "basetenkenizer",
  "blake3",
  "fastokens",
  "moka",
@@ -2093,7 +2117,9 @@ version = "2.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb3d648e68cea56d9858d535ee28f9538404e2dd8cb08ed0bd05dca379477f39"
 dependencies = [
+ "indexmap 2.14.0",
  "memo-map",
+ "percent-encoding",
  "serde",
 ]
 

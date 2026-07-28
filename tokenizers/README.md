@@ -1,13 +1,42 @@
 # dynamo-tokenizers
 
-Efficient, versatile tokenization for LLM inference. Wraps HuggingFace and TikToken tokenizers (plus a FastTokenizer hybrid mode) behind a small encode/decode/sequence API designed for streaming detokenization.
+Efficient, versatile tokenization for LLM inference. Wraps Hugging Face,
+TikToken, fastokens, and Baseten Tokenizer backends behind a small
+encode/decode/sequence API designed for streaming detokenization.
 
 ## Features
 
-- **Multiple backends.** HuggingFace `tokenizers`, OpenAI `tiktoken`, and a FastTokenizer hybrid behind one trait.
+- **Multiple backends.** Hugging Face `tokenizers`, OpenAI `tiktoken`,
+  `fastokens`, and `basetenkenizer` behind one trait.
 - **Streaming-friendly.** `Sequence` tracks incremental token-id appends and emits text deltas without re-decoding the full prefix.
 - **Prefix caching.** `CachedTokenizer` records prefix tokenizations at special-token boundaries; repeated prompts that share a system prefix re-encode only the trailing suffix, turning O(N) work into O(suffix_len).
 - **Hash verification.** Detect tokenizer drift across model versions.
+
+## Segmented prompts
+
+`BasetenTokenizer` supports segmented encoding for renderers such as Kimi K3's
+XTML renderer, where trusted control tokens and untrusted message content must
+remain distinct:
+
+```rust
+use dynamo_tokenizers::{
+    BasetenTokenizer, EncodeSegment, SegmentEncodingOptions,
+    traits::Encoder,
+};
+
+let tokenizer = BasetenTokenizer::from_file("/path/to/tokenizer.json")?;
+let segments = [
+    EncodeSegment::new("<|open|>message role=\"user\"<|sep|>", true),
+    EncodeSegment::new(user_message, false),
+    EncodeSegment::new("<|close|>message<|sep|><|end_of_msg|>", true),
+];
+let encoding =
+    tokenizer.encode_segments(&segments, SegmentEncodingOptions::default())?;
+```
+
+The default segmented mode preserves legacy tiktoken chunk boundaries for
+long-input ID parity. Set `tiktoken_safe: false` only when those artificial
+boundaries are not required.
 
 ## Quick start
 
