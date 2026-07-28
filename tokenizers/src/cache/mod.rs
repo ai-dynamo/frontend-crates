@@ -41,6 +41,9 @@
 //!   An empty list disables L1: `encode`/`encode_batch` short-circuit straight
 //!   to the inner tokenizer with no lookup, no miss-counter bump, and no
 //!   insert attempt.
+//! - `encode_segments` always passes through to the inner tokenizer without
+//!   caching. Flattening segments for L1 would discard their special-token
+//!   trust boundaries.
 //! - `max_memory_bytes` — L1 byte budget; entries evicted via approximate LRU.
 //!
 //! # Provenance
@@ -57,7 +60,7 @@ use std::sync::Arc;
 pub use l1::{CacheEventFn, L1Cache, L1CacheStats};
 
 use crate::{
-    Encoding, Result, TokenIdType,
+    EncodeSegment, Encoding, Result, TokenIdType,
     traits::{DecodeResult, Decoder, Encoder, Tokenizer},
 };
 
@@ -248,6 +251,13 @@ impl Encoder for CachedTokenizer {
         // belongs here, not inside `encode`.
         inputs.iter().map(|&i| self.encode(i)).collect()
     }
+
+    fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
+        // L1 indexes flattened string offsets and cannot preserve each
+        // segment's allow_special boundary. Keep the operation correct by
+        // delegating without populating or consulting the cache.
+        self.inner.encode_segments(segments)
+    }
 }
 
 impl Decoder for CachedTokenizer {
@@ -266,6 +276,42 @@ mod tests {
     use std::sync::{Mutex, atomic::AtomicU64, atomic::Ordering};
 
     struct FailingTokenizer;
+
+    struct SegmentTokenizer;
+
+    impl Encoder for SegmentTokenizer {
+        fn encode(&self, input: &str) -> Result<Encoding> {
+            Ok(Encoding::Sp(vec![input.len() as u32]))
+        }
+
+        fn encode_batch(&self, inputs: &[&str]) -> Result<Vec<Encoding>> {
+            inputs.iter().map(|input| self.encode(input)).collect()
+        }
+
+        fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
+            let ids = segments
+                .iter()
+                .flat_map(|segment| [segment.allow_special as u32, segment.text.len() as u32])
+                .collect();
+            Ok(Encoding::Sp(ids))
+        }
+    }
+
+    impl Decoder for SegmentTokenizer {
+        fn decode(
+            &self,
+            _token_ids: &[TokenIdType],
+            _skip_special_tokens: bool,
+        ) -> Result<DecodeResult> {
+            Ok(DecodeResult::Complete(String::new()))
+        }
+    }
+
+    impl Tokenizer for SegmentTokenizer {
+        fn validate_prefix_cache(&self) -> Result<()> {
+            Ok(())
+        }
+    }
 
     impl Encoder for FailingTokenizer {
         fn encode(&self, _input: &str) -> Result<Encoding> {
@@ -360,6 +406,28 @@ mod tests {
             events.lock().unwrap().is_empty(),
             "empty specials must not emit token usage"
         );
+    }
+
+    #[test]
+    fn segmented_encoding_passes_through_without_caching() {
+        let inner: Arc<dyn Tokenizer> = Arc::new(SegmentTokenizer);
+        let segments = [
+            EncodeSegment::new("<ctl>", true),
+            EncodeSegment::new("user content", false),
+        ];
+        let expected = inner.encode_segments(&segments).unwrap();
+
+        for special_tokens in [Vec::new(), vec!["<ctl>".to_string()]] {
+            let cached = CachedTokenizer::new(inner.clone(), special_tokens, 4096)
+                .expect("test tokenizer supports prefix caching");
+            let actual = cached.encode_segments(&segments).unwrap();
+
+            assert_eq!(actual.token_ids(), expected.token_ids());
+            let stats = cached.cache_stats();
+            assert_eq!(stats.entries, 0);
+            assert_eq!(stats.hits, 0);
+            assert_eq!(stats.misses, 0);
+        }
     }
 
     #[test]
