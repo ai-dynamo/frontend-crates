@@ -24,7 +24,7 @@ async-openai = { version = "0.41", default-features = false }
 async-stream = "0.3"
 axum = "0.8"
 base64 = "0.22"
-basetenkenizer = "0.2.8"
+basetenkenizer = { version = "0.2.8", default-features = false }
 blake3 = "1"
 chrono = { version = "0.4", default-features = false, features = [
     "alloc",

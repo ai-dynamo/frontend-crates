@@ -196,7 +196,8 @@ mod tests {
         }]);
         std::fs::write(&path, serde_json::to_vec(&json).unwrap()).unwrap();
 
-        let tokenizer = BasetenTokenizer::from_file(path.to_str().unwrap()).unwrap();
+        let tokenizer: Arc<dyn TokenizerTrait> =
+            Arc::new(BasetenTokenizer::from_file(path.to_str().unwrap()).unwrap());
         let segments = [
             EncodeSegment::new("Hello", true),
             EncodeSegment::new("<ctl>", false),
@@ -215,5 +216,60 @@ mod tests {
         );
         assert!(flattened.token_ids().contains(&26));
         assert!(!segmented.token_ids().contains(&26));
+    }
+
+    #[test]
+    fn segments_honor_add_special_tokens_option() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("tokenizer.json");
+        let mut json: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(TOKENIZER_PATH).unwrap()).unwrap();
+        json["model"]["vocab"]["<bos>"] = serde_json::json!(23);
+        json["added_tokens"] = serde_json::json!([{
+            "id": 23,
+            "content": "<bos>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+        }]);
+        json["post_processor"] = serde_json::json!({
+            "type": "TemplateProcessing",
+            "single": [
+                {"SpecialToken": {"id": "<bos>", "type_id": 0}},
+                {"Sequence": {"id": "A", "type_id": 0}}
+            ],
+            "pair": [
+                {"SpecialToken": {"id": "<bos>", "type_id": 0}},
+                {"Sequence": {"id": "A", "type_id": 0}},
+                {"Sequence": {"id": "B", "type_id": 0}}
+            ],
+            "special_tokens": {
+                "<bos>": {"id": "<bos>", "ids": [23], "tokens": ["<bos>"]}
+            }
+        });
+        std::fs::write(&path, serde_json::to_vec(&json).unwrap()).unwrap();
+        let segments = [EncodeSegment::new("Hello", false)];
+
+        let plain = BasetenTokenizer::from_file(path.to_str().unwrap()).unwrap();
+        let plain_ids = plain
+            .encode_segments(&segments, SegmentEncodingOptions::default())
+            .unwrap()
+            .token_ids()
+            .to_vec();
+
+        let with_bos = BasetenTokenizer::from_file(path.to_str().unwrap())
+            .unwrap()
+            .with_options(TokenizerOptions {
+                add_special_tokens: true,
+            });
+        assert_eq!(
+            with_bos
+                .encode_segments(&segments, SegmentEncodingOptions::default())
+                .unwrap()
+                .token_ids(),
+            [&[23], plain_ids.as_slice()].concat()
+        );
     }
 }

@@ -345,7 +345,6 @@ dependencies = [
  "chrono",
  "daachorse",
  "fancy-regex 0.17.0",
- "hf-hub",
  "icu_normalizer",
  "icu_properties",
  "memchr",
