@@ -135,6 +135,7 @@ from impls import (  # noqa: E402
 # Comparison + marker semantics live in markers.py (audit B5); re-exported here so the
 # rendering code below and the test suite keep referring to them as module attributes.
 import markers  # noqa: E402  (module handle: structured comparison model, DIS-2434)
+import unified_taxonomy  # noqa: E402  (shared UNIFIED scenario->numbered-id taxonomy)
 from markers import (  # noqa: E402,F401
     VLLM_RUST_UNAVAILABLE,
     _BATCH_MODE_MARKER,
@@ -2133,30 +2134,95 @@ def _load_sglang_capture(artifact_root: Path) -> tuple[dict, str | None]:
     return _load_capture(artifact_root, "sglang_capture.yaml", "sglang_version")
 
 
-def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
-    """Build the Unified (reasoning + tools) tab from the Rust-produced results feed
-    (`conformance/unified/unified_results.yaml`). Reference = the authored GOLDEN
-    oracle; Compare = Dynamo today (LIVE) and vLLM 0.25.x (LIVE). A cell is red only
-    when a shown parser LEAKED markup (data-red-on-leak); ordering/content divergences
-    show their NΔ count but stay green."""
-    import hashlib
-    jp = _unified_base(artifact_root) / "unified_results.yaml"
-    if not jp.exists():
+def _load_unified_fixtures(base: Path):
+    """Read the exploded per-case / per-family / per-version unified fixtures (same
+    layout as toolcalling/fixtures-stream-v2: inputs/ + golden/ + <impl>-<version>/)
+    and reconstruct the (cases feed, per-engine caps, versions) the tab model expects.
+    Returns None if the tree isn't present."""
+    if not (base / "inputs").is_dir():
         return None
-    data = yaml.safe_load(jp.read_text())
-    cases = data.get("cases", [])
+
+    def _read_dir(name):
+        out = {}  # (family, case_key) -> case_doc
+        for fp in sorted((base / name).glob("*/*.yaml")):
+            doc = yaml.safe_load(fp.read_text()) or {}
+            for k, cd in (doc.get("cases") or {}).items():
+                out[(fp.parent.name, k)] = cd
+        return out
+
+    inputs = _read_dir("inputs")
+    golden = _read_dir("golden")
+    engine_dirs = {}  # impl -> (dirname, version)
+    for d in sorted(base.iterdir()):
+        if not d.is_dir() or d.name in ("inputs", "golden"):
+            continue
+        m = re.match(r"^([a-z0-9_]+)-(\d.*)$", d.name)
+        if m:
+            engine_dirs[m.group(1)] = (d.name, m.group(2))
+    engine_cases = {impl: _read_dir(dirname) for impl, (dirname, _v) in engine_dirs.items()}
+
+    cases = []
+    caps = {"vllm_python": {}, "vllm_rust": {}, "sglang_python": {}}
+    for (fam, key), inp in sorted(inputs.items()):
+        scenario = inp.get("scenario") or key
+        cid = f"UNIFIED.{scenario}.{fam}"
+        gdoc = golden.get((fam, key), {})
+        ddoc = engine_cases.get("dynamo_v2", {}).get((fam, key), {})
+        in_chunks = inp.get("chunks") or []
+        dyn_chunks = ddoc.get("chunks") or []
+        cases.append({
+            "id": cid, "scenario": scenario, "family": fam,
+            "description": inp.get("description", ""),
+            "policy": inp.get("policy") or [], "policy_tags": inp.get("policy") or [],
+            "input": inp.get("input", ""),
+            "golden": gdoc.get("assembled") or [],
+            "dynamo": ddoc.get("assembled") or [],
+            "dynamo_verdict": None, "vllm_verdict": None, "vllm_note": None,
+            "chunks": [
+                {"delta_text": ic.get("delta_text", ""),
+                 "dynamo": (dyn_chunks[i].get("expected") if i < len(dyn_chunks) else []) or []}
+                for i, ic in enumerate(in_chunks)
+            ],
+        })
+        for impl in ("vllm_python", "vllm_rust", "sglang_python"):
+            edoc = engine_cases.get(impl, {}).get((fam, key))
+            if edoc is None:
+                continue
+            if edoc.get("error"):
+                caps[impl][cid] = {"error": edoc["error"]}
+            else:
+                caps[impl][cid] = {
+                    "assembled": edoc.get("assembled") or [],
+                    "chunks": [c.get("expected") or [] for c in (edoc.get("chunks") or [])],
+                    "parser": edoc.get("parser"),
+                }
+    versions = {impl: v for impl, (_d, v) in engine_dirs.items()}
+    return cases, caps, versions
+
+
+def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
+    """Build the Unified (reasoning + tools) tab from the versioned fixture shards
+    (conformance/fixtures/unified/: inputs + golden + one <impl>-<version> shard per
+    engine, same convention as every other tab). Reference = the authored GOLDEN
+    oracle; Compare = Dynamo (LIVE) + vLLM/SGLang. A cell is red only when a shown
+    parser LEAKED markup; ordering/content divergences show NΔ but stay green."""
+    import hashlib
+    loaded = _load_unified_fixtures(_unified_base(artifact_root))
+    if loaded is None:
+        return None
+    cases, _caps, _vers = loaded
     if not cases:
         return None
 
-    vllm_cap, vllm_version = _load_vllm_capture(artifact_root)
+    vllm_cap = _caps["vllm_python"]; vllm_version = _vers.get("vllm_python")
     vllm_live = bool(vllm_cap)
     vllm_ver_label = vllm_version or "0.25.x"
 
-    vrust_cap, vrust_version = _load_vllm_rust_capture(artifact_root)
+    vrust_cap = _caps["vllm_rust"]; vrust_version = _vers.get("vllm_rust")
     vrust_live = bool(vrust_cap)
     vrust_ver_label = vrust_version or "0.25.x"
 
-    sgl_cap, sgl_version = _load_sglang_capture(artifact_root)
+    sgl_cap = _caps["sglang_python"]; sgl_version = _vers.get("sglang_python")
     sgl_live = bool(sgl_cap)
     sgl_ver_label = sgl_version or "0.5.x"
 
@@ -2176,52 +2242,10 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             families.append(f)
         by_key[(f, s)] = c
 
-    # Short numbered taxonomy (group.sub), grouped like the other tabs. See
-    # lib/parsers/UNIFIED_CASES.md.
-    # Groups 1-9 mirror the tool-calling STREAM taxonomy (TOOLCALLING.streamv2.N) as
-    # tool-only unified cases — UNIFIED subsumes STREAM. Group 10 is the reasoning axis
-    # (REASONING.*). Group 11 is UNIQUE to unified: reasoning<->tool interleaving that
-    # neither STREAM (no reasoning) nor REASONING (no ordered tool events) can express.
-    UNIFIED_TAX = {
-        # Group 1 — Single call
-        "tool_only": (1, "a"),
-        # Group 2 — Multiple calls (streamv2.2)
-        "two_calls": (2, "a"), "two_calls_same_name": (2, "b"),
-        # Group 3 — No call (streamv2.3)
-        "text_only": (3, "a"),
-        # Group 5 — Truncation / recovery (streamv2.5)
-        "truncated_tool_eof": (5, "a"), "tool_no_close": (5, "b"),
-        "orphan_close_after_prose": (5, "c"),
-        # Group 6 — Empty body (streamv2.6)
-        "empty_args": (6, "a"),
-        # Group 7 — Argument fidelity (streamv2.7)
-        "arg_unicode": (7, "a"), "arg_marker_in_string": (7, "b"),
-        # Group 8 — Content / narration position (streamv2.8)
-        "text_before_tool": (8, "a"), "trailing_text_after_tool": (8, "b"),
-        "text_sandwich": (8, "c"), "text_between_calls": (8, "d"),
-        "narrated_calls": (8, "e"),
-        # Group 10 — Reasoning span (REASONING.*), reasoning-only
-        "reason_only": (10, "a"), "reason_then_content": (10, "b"),
-        "two_reason_spans": (10, "c"), "reason_unterminated": (10, "d"),
-        # Group 11 — Reasoning <-> tool interleaving (UNIQUE to unified)
-        "reason_then_tool": (11, "a"), "reason_after_tool": (11, "b"),
-        "reason_interleaved": (11, "c"), "reason_tool_text_reason_tool": (11, "d"),
-        "interstitial_text": (11, "e"), "content_then_reason_then_tool": (11, "f"),
-        "content_then_reason": (11, "g"), "reason_tool_reason_tool_reason": (11, "h"),
-        "reason_between_calls": (11, "i"), "text_reason_tool_text_reason_tool": (11, "j"),
-        # Group 12 — Adversarial nesting (a marker of one channel inside another)
-        "reason_markup_in_arg": (12, "a"), "tool_in_reason": (12, "b"),
-        "reason_markup_in_arg_with_text": (12, "c"), "tool_in_reason_with_text": (12, "d"),
-    }
-    # Axis prefix makes each group's channel explicit: "TC" = tool-calling only (groups
-    # 1-9 mirror the tool STREAM suite), "Reasoning" = reasoning only, groups 11-12 mix both.
-    UNIFIED_GROUP_LABEL = {
-        1: "TC Single call", 2: "TC Multiple calls", 3: "TC No call",
-        4: "TC Malformed envelope", 5: "TC Truncation / recovery", 6: "TC Empty body",
-        7: "TC Argument fidelity", 8: "TC Content position",
-        10: "Reasoning span",
-        11: "Reasoning ↔ tool interleaving", 12: "Adversarial nesting (reasoning + tool)",
-    }
+    # Numbered taxonomy + axis labels — single source in unified_taxonomy.py (shared
+    # with explode_unified_fixtures.py so the numbering can't drift). See UNIFIED_CASES.md.
+    UNIFIED_TAX = unified_taxonomy.UNIFIED_TAX
+    UNIFIED_GROUP_LABEL = unified_taxonomy.UNIFIED_GROUP_LABEL
 
     def _tax(s):
         return UNIFIED_TAX.get(s, (9, s))

@@ -39,11 +39,14 @@ ROOT = Path(__file__).resolve().parent.parent.parent.parent
 MANIFEST_REL = Path("conformance") / "fixtures-manifest.json"
 FIXTURES_DIR = ROOT / "conformance" / "fixtures"
 
-# Fixture trees that get one shard tarball per immediate subdir
+# Fixture trees that get one shard tarball per immediate subdir. Unified follows the
+# same convention: inputs/ + golden/ + <impl>-<version>/ each become a versioned shard
+# (unified/inputs.tar.gz, unified/golden.tar.gz, unified/vllm_python-0.25.1.tar.gz, ...).
 PER_SUBDIR_TREES = [
     "toolcalling/fixtures-batch-v1",
     "toolcalling/fixtures-stream-v2",
     "reasoning/fixtures-v1",
+    "unified",
 ]
 # Fixture trees bundled as a single tarball (whole tree, no per-version sharding)
 # Tuple: (source rel-path in conformance/, shard path in the store)
@@ -51,12 +54,6 @@ WHOLE_TREE_SHARDS = [
     (
         "toolcalling/fixtures-batch-on-stream-v2",
         "toolcalling/fixtures-batch-on-stream-v2.tar.gz",
-    ),
-    # Unified (reasoning + tools): the 4 generated capture YAMLs (unified_results +
-    # per-engine). The golden oracle stays loose+visible at fixtures/unified/golden/.
-    (
-        "unified",
-        "unified/captures.tar.gz",
     ),
 ]
 
@@ -151,7 +148,7 @@ def build_shards(tmpdir, blobs_dir, prune=False):
             # <impl>-<version>/. Anything else (a stray family dir, an
             # overlays/ nest from a raw capture) would produce a tarball the
             # resolvers ignore — reject it loudly instead.
-            if subdir.name != "inputs" and not re.match(r"^[a-z0-9_]+-\d", subdir.name):
+            if subdir.name not in ("inputs", "golden") and not re.match(r"^[a-z0-9_]+-\d", subdir.name):
                 print(
                     f"  warn: skipping {tree_rel}/{subdir.name} — not inputs/ or "
                     "<impl>-<version>/ (normalize the capture output first)",

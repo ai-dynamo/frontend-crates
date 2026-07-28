@@ -77,6 +77,7 @@ _build_stage_base() {
   # import markers instead of forking its own comparison copies.
   \cp -f "$TOOLS/impls.py" "$STAGE/tests/parity/impls.py"
   \cp -f "$TOOLS/markers.py" "$STAGE/tests/parity/markers.py"
+  \cp -f "$TOOLS/unified_taxonomy.py" "$STAGE/tests/parity/unified_taxonomy.py"
   [ -f "$TOOLS/assets/conformance_view.js" ] && \
     \cp -f "$TOOLS/assets/conformance_view.js" "$STAGE/tests/parity/assets/conformance_view.js" || true
   # Reasoning fixtures are resolved per page (v1 = old anchor peers, v2 = pinned new
