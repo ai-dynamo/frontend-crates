@@ -62,13 +62,12 @@ fn contains_harmony_protocol(text: &str) -> bool {
     text.contains("<|channel|>")
 }
 
-/// Recover a K3 structural channel that an upstream reasoning stage placed in
+/// Fix a K3 response or tool call that was incorrectly placed in
 /// `reasoning_content`.
 ///
-/// The normal path leaves this function allocation-free: it returns `None`
-/// unless an exact reserved K3 boundary is present. On recovery, the prose
-/// prefix remains reasoning while the protocol suffix is prepended to content
-/// so the existing K3 jail remains the single owner of XTML parsing.
+/// Keep the text before the K3 marker as reasoning and move the marker and
+/// everything after it to content, where the K3 jail can parse it normally.
+/// If there is no K3 marker, return `None` without allocating.
 fn recover_kimi_k3_reasoning_handoff(choice: &ChatChoiceStream) -> Option<ChatChoiceStream> {
     let reasoning = choice.delta.reasoning_content.as_deref()?;
     let (reasoning_prefix, protocol_suffix) =
@@ -498,12 +497,10 @@ impl ChoiceJailState {
         self.accumulated_logprobs.take()
     }
 
-    /// Emit pending K3 reasoning separately before parsed content or tools.
+    /// Send buffered K3 reasoning before the response or tool call.
     ///
-    /// A single backend delta can coalesce the final reasoning bytes with the
-    /// complete XTML channel. Combining them into one OpenAI choice makes
-    /// clients observe reasoning after/beside visible output and is especially
-    /// common with a larger backend stream interval.
+    /// A backend chunk can contain both pieces. Emit them separately so clients
+    /// always receive the reasoning first.
     fn take_pending_reasoning_emission(&mut self) -> Option<ChoiceEmission> {
         let reasoning_content = self.pending_reasoning_content.take()?;
         #[allow(deprecated)]
@@ -2511,6 +2508,10 @@ mod tests {
             .collect()
     }
 
+    /// Simulate the backend's final stream chunk.
+    ///
+    /// It has no text. It tells the jail to flush any buffered K3 data and
+    /// preserve the final stop reason.
     fn terminal_chunk() -> Annotated<CreateChatCompletionStreamResponse> {
         let mut chunk = text_chunk("");
         let choice = &mut chunk.data.as_mut().expect("terminal response").choices[0];

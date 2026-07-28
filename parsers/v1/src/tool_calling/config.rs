@@ -310,21 +310,21 @@ impl KimiK3ParserConfig {
 
     pub(crate) fn end_tokens(&self) -> Vec<&'static str> {
         use super::xtml::{
-            END_OF_MSG, MESSAGE_CLOSE, RESPONSE_CLOSE, RESPONSE_OPEN, SPACED_JAIL_BOUNDARIES,
-            TOOLS_CLOSE,
+            END_OF_MSG, MESSAGE_CLOSE, RESPONSE_CLOSE, RESPONSE_OPEN, SPACED_MESSAGE_CLOSE,
+            SPACED_RESPONSE_CLOSE, SPACED_RESPONSE_OPEN, SPACED_TOOLS_CLOSE, TOOLS_CLOSE,
         };
         // Prefer outer message terminators when an interval-batched backend
         // delta contains several nested K3 closes at once.
         vec![
             END_OF_MSG,
             MESSAGE_CLOSE,
-            SPACED_JAIL_BOUNDARIES[11],
+            SPACED_MESSAGE_CLOSE,
             TOOLS_CLOSE,
-            SPACED_JAIL_BOUNDARIES[10],
+            SPACED_TOOLS_CLOSE,
             RESPONSE_CLOSE,
-            SPACED_JAIL_BOUNDARIES[1],
+            SPACED_RESPONSE_CLOSE,
             RESPONSE_OPEN,
-            SPACED_JAIL_BOUNDARIES[0],
+            SPACED_RESPONSE_OPEN,
         ]
     }
 }

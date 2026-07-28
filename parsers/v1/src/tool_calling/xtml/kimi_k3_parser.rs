@@ -74,34 +74,47 @@ pub(crate) const JAIL_BOUNDARIES: [&str; 14] = [
 /// boundaries in [`JAIL_BOUNDARIES`]. `END_OF_MSG` is a single token, while
 /// the reasoning close is deliberately accepted only in its exact canonical
 /// form for narrow defense in depth.
+pub(crate) const SPACED_RESPONSE_OPEN: &str = "<|open|> response <|sep|>";
+pub(crate) const SPACED_RESPONSE_CLOSE: &str = "<|close|> response <|sep|>";
+const SPACED_TOOLS_OPEN: &str = "<|open|> tools <|sep|>";
+const SPACED_CALL_OPEN_PREFIX: &str = "<|open|> call";
+const SPACED_ARGUMENT_OPEN_PREFIX: &str = "<|open|> argument";
+const SPACED_JSON_OPEN_PREFIX: &str = "<|open|> json";
+const SPACED_MESSAGE_OPEN_PREFIX: &str = "<|open|> message";
+const SPACED_ARGUMENT_CLOSE: &str = "<|close|> argument <|sep|>";
+const SPACED_JSON_CLOSE: &str = "<|close|> json <|sep|>";
+const SPACED_CALL_CLOSE: &str = "<|close|> call <|sep|>";
+pub(crate) const SPACED_TOOLS_CLOSE: &str = "<|close|> tools <|sep|>";
+pub(crate) const SPACED_MESSAGE_CLOSE: &str = "<|close|> message <|sep|>";
+
 pub(crate) const SPACED_JAIL_BOUNDARIES: [&str; 12] = [
-    "<|open|> response <|sep|>",
-    "<|close|> response <|sep|>",
-    "<|open|> tools <|sep|>",
-    "<|open|> call",
-    "<|open|> argument",
-    "<|open|> json",
-    "<|open|> message",
-    "<|close|> argument <|sep|>",
-    "<|close|> json <|sep|>",
-    "<|close|> call <|sep|>",
-    "<|close|> tools <|sep|>",
-    "<|close|> message <|sep|>",
+    SPACED_RESPONSE_OPEN,
+    SPACED_RESPONSE_CLOSE,
+    SPACED_TOOLS_OPEN,
+    SPACED_CALL_OPEN_PREFIX,
+    SPACED_ARGUMENT_OPEN_PREFIX,
+    SPACED_JSON_OPEN_PREFIX,
+    SPACED_MESSAGE_OPEN_PREFIX,
+    SPACED_ARGUMENT_CLOSE,
+    SPACED_JSON_CLOSE,
+    SPACED_CALL_CLOSE,
+    SPACED_TOOLS_CLOSE,
+    SPACED_MESSAGE_CLOSE,
 ];
 
 const SPACED_MARKER_ALIASES: [(&str, &str); 12] = [
-    (SPACED_JAIL_BOUNDARIES[0], RESPONSE_OPEN),
-    (SPACED_JAIL_BOUNDARIES[1], RESPONSE_CLOSE),
-    (SPACED_JAIL_BOUNDARIES[2], TOOLS_OPEN),
-    (SPACED_JAIL_BOUNDARIES[3], CALL_OPEN_PREFIX),
-    (SPACED_JAIL_BOUNDARIES[4], ARGUMENT_OPEN_PREFIX),
-    (SPACED_JAIL_BOUNDARIES[5], JSON_OPEN_PREFIX),
-    (SPACED_JAIL_BOUNDARIES[6], MESSAGE_OPEN_PREFIX),
-    (SPACED_JAIL_BOUNDARIES[7], ARGUMENT_CLOSE),
-    (SPACED_JAIL_BOUNDARIES[8], JSON_CLOSE),
-    (SPACED_JAIL_BOUNDARIES[9], CALL_CLOSE),
-    (SPACED_JAIL_BOUNDARIES[10], TOOLS_CLOSE),
-    (SPACED_JAIL_BOUNDARIES[11], MESSAGE_CLOSE),
+    (SPACED_RESPONSE_OPEN, RESPONSE_OPEN),
+    (SPACED_RESPONSE_CLOSE, RESPONSE_CLOSE),
+    (SPACED_TOOLS_OPEN, TOOLS_OPEN),
+    (SPACED_CALL_OPEN_PREFIX, CALL_OPEN_PREFIX),
+    (SPACED_ARGUMENT_OPEN_PREFIX, ARGUMENT_OPEN_PREFIX),
+    (SPACED_JSON_OPEN_PREFIX, JSON_OPEN_PREFIX),
+    (SPACED_MESSAGE_OPEN_PREFIX, MESSAGE_OPEN_PREFIX),
+    (SPACED_ARGUMENT_CLOSE, ARGUMENT_CLOSE),
+    (SPACED_JSON_CLOSE, JSON_CLOSE),
+    (SPACED_CALL_CLOSE, CALL_CLOSE),
+    (SPACED_TOOLS_CLOSE, TOOLS_CLOSE),
+    (SPACED_MESSAGE_CLOSE, MESSAGE_CLOSE),
 ];
 
 /// Detect complete or partial Kimi K3 structural markers at a chunk boundary.
@@ -191,6 +204,8 @@ fn first_marker(chunk: &str) -> Option<(usize, &'static str)> {
         .min_by_key(|(position, _)| *position)
 }
 
+/// Find the first canonical or spaced K3 marker and return its byte position,
+/// wire spelling, and canonical form.
 fn first_wire_marker(chunk: &str) -> Option<(usize, &'static str, &'static str)> {
     JAIL_BOUNDARIES
         .into_iter()
@@ -202,13 +217,11 @@ fn first_wire_marker(chunk: &str) -> Option<(usize, &'static str, &'static str)>
         .min_by_key(|(position, _, _)| *position)
 }
 
-/// Split a reasoning delta at the first reserved K3 structural boundary.
+/// Split reasoning where a known K3 response or tool marker begins.
 ///
-/// This is a narrow recovery hook for the reasoning-to-XTML handoff. If an
-/// upstream reasoning parser has already placed a complete response/tools
-/// channel in `reasoning_content`, the K3 jail can move only that protocol
-/// suffix back to `content` and parse it normally. Arbitrary `<|...|>` text is
-/// preserved because only the explicit K3 boundary tables are considered.
+/// For example, `"thinking<|open|>response..."` becomes
+/// `("thinking", "<|open|>response...")`. Unknown markers such as
+/// `<|example|>` are left unchanged.
 pub(crate) fn split_reasoning_handoff(message: &str) -> Option<(&str, &str)> {
     // Reasoning prose overwhelmingly contains no K3 control-token prefix.
     // Keep that hot path to one cheap scan; the full reserved-marker table is
@@ -220,6 +233,8 @@ pub(crate) fn split_reasoning_handoff(message: &str) -> Option<(&str, &str)> {
     Some(message.split_at(position))
 }
 
+/// Find a canonical K3 marker or its spaced spelling and return the byte
+/// position immediately after it.
 fn find_wire_marker_end(text: &str, canonical: &str) -> Option<usize> {
     std::iter::once(canonical)
         .chain(
