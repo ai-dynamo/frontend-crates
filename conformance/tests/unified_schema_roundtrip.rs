@@ -64,7 +64,7 @@ struct ExpectEntry {
 }
 
 fn golden_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("unified/golden")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fixtures/unified/golden")
 }
 
 fn load_golden_files() -> Vec<(String, GoldenFile)> {
