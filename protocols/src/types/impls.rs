@@ -11,10 +11,10 @@ use super::{
     ChatCompletionRequestAssistantMessageContent, ChatCompletionRequestMessage,
     ChatCompletionRequestMessageContentPartAudio, ChatCompletionRequestMessageContentPartAudioUrl,
     ChatCompletionRequestMessageContentPartImage, ChatCompletionRequestMessageContentPartText,
-    ChatCompletionRequestMessageContentPartVideo, ChatCompletionRequestToolMessage,
-    ChatCompletionRequestToolMessageContent, ChatCompletionRequestToolMessageContentPart,
-    ChatCompletionRequestUserMessageContentPart, ChatCompletionToolChoiceOption,
-    ChatCompletionToolType, FunctionName, ImageUrl, VideoUrl,
+    ChatCompletionRequestMessageContentPartVideo, ChatCompletionRequestSystemMessage,
+    ChatCompletionRequestToolMessage, ChatCompletionRequestToolMessageContent,
+    ChatCompletionRequestToolMessageContentPart, ChatCompletionRequestUserMessageContentPart,
+    ChatCompletionToolChoiceOption, ChatCompletionToolType, FunctionName, ImageUrl, VideoUrl,
 };
 
 use crate::error::OpenAIError;
@@ -81,11 +81,21 @@ impl From<super::ChatCompletionRequestUserMessage> for ChatCompletionRequestMess
     }
 }
 
+impl From<ChatCompletionRequestSystemMessage> for ChatCompletionRequestMessage {
+    fn from(value: ChatCompletionRequestSystemMessage) -> Self {
+        Self::System(value)
+    }
+}
+
 impl From<async_openai::types::chat::ChatCompletionRequestSystemMessage>
     for ChatCompletionRequestMessage
 {
     fn from(value: async_openai::types::chat::ChatCompletionRequestSystemMessage) -> Self {
-        Self::System(value)
+        Self::System(ChatCompletionRequestSystemMessage {
+            content: Some(value.content),
+            name: value.name,
+            tools: None,
+        })
     }
 }
 
