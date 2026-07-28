@@ -52,6 +52,12 @@ WHOLE_TREE_SHARDS = [
         "toolcalling/fixtures-batch-on-stream-v2",
         "toolcalling/fixtures-batch-on-stream-v2.tar.gz",
     ),
+    # Unified (reasoning + tools): the 4 generated capture YAMLs (unified_results +
+    # per-engine). The golden oracle stays loose+visible at fixtures/unified/golden/.
+    (
+        "unified",
+        "unified/captures.tar.gz",
+    ),
 ]
 
 

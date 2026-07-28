@@ -24,3 +24,8 @@ target
 
 # RustRover / IntelliJ
 #.idea/
+
+# Unified: loose build tree (writers output here; committed data is the LFS shard
+# conformance/fixtures/unified/captures.tar.gz + the loose golden oracle).
+conformance/unified/
+conformance/CONFORMANCE_unified.html

@@ -414,7 +414,7 @@ fn cell(
 
 #[test]
 fn render_unified_conformance_html() {
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("unified/golden");
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fixtures/unified/golden");
     let mut files: Vec<GoldenFile> = Vec::new();
     for entry in std::fs::read_dir(&dir).unwrap() {
         let path = entry.unwrap().path();
@@ -586,17 +586,23 @@ td.c:hover .tip,td.gold:hover .tip{{display:block}}
 "#,
     );
 
-    let out = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("unified/CONFORMANCE_unified.html");
+    // Legacy standalone preview (the real tab lives in CONFORMANCE_v2.html). Kept out of
+    // conformance/unified/ so that build tree contains ONLY the shard's capture YAMLs.
+    let out = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("CONFORMANCE_unified.html");
     std::fs::write(&out, html).unwrap();
 
     // Machine-readable feed consumed by generate_conformance_table.py's Unified tab.
-    let json_out = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("unified/unified_results.json");
+    // YAML so it reads like the rest of the conformance fixture corpus. conformance/unified/
+    // is the gitignored build tree — create it (a fresh checkout won't have it; the
+    // committed data is the LFS shard conformance/fixtures/unified/captures.tar.gz).
+    let yaml_out = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("unified/unified_results.yaml");
+    std::fs::create_dir_all(yaml_out.parent().unwrap()).unwrap();
     let feed = serde_json::json!({
         "schema": "unified-results/v1",
         "note": "GOLDEN = authored oracle. dynamo = LIVE (v1 reasoning + v2 tool). vllm = documented expectation (live capture pending U1).",
         "cases": json_cases,
     });
-    std::fs::write(&json_out, serde_json::to_string_pretty(&feed).unwrap()).unwrap();
+    std::fs::write(&yaml_out, serde_yaml::to_string(&feed).unwrap()).unwrap();
     eprintln!(
         "wrote {} ({total} cases, dynamo_red={dynamo_red}, vllm_red={vllm_red})",
         out.display()

@@ -21,6 +21,7 @@ tokenizer (empty vocab -> markers matched as text) is enough.
 """
 import json
 import sys
+import yaml
 
 from vllm.entrypoints.openai.chat_completion.protocol import ChatCompletionRequest
 from vllm.parser.parser_manager import ParserManager
@@ -143,7 +144,11 @@ def main():
 
         results[case["id"]] = {"assembled": assembled, "chunks": per_chunk}
 
-    json.dump({"results": results, "vllm_version": _vllm_version()}, sys.stdout)
+    # YAML to match the conformance fixture corpus. Container stdout is log-polluted,
+    # so a recapture writes this to a file (or strips lines before the first top-level
+    # key) rather than grepping a single JSON line.
+    yaml.dump({"results": results, "vllm_version": _vllm_version()}, sys.stdout,
+              default_flow_style=False, sort_keys=False, allow_unicode=True, width=4096)
 
 
 def _vllm_version():

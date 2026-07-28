@@ -2094,45 +2094,56 @@ def _assemble_stream(chunk_deltas: list) -> list:
     return events
 
 
+def _unified_base(artifact_root: Path) -> Path:
+    """Where the unified capture YAMLs live. In a packaged render they come from the
+    extracted fixture snapshot (CONFORMANCE_FIXTURES_ROOT/unified — the
+    conformance/fixtures/unified/captures.tar.gz shard); locally after a harness run
+    they sit in the loose build tree conformance/unified/."""
+    snap = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
+    if snap and (Path(snap) / "unified").is_dir():
+        return Path(snap) / "unified"
+    return artifact_root / "conformance/unified"
+
+
 def _load_capture(artifact_root: Path, name: str, version_key: str) -> tuple[dict, str | None]:
-    """Load a persisted LIVE capture artifact under conformance/unified/. Returns
-    (results_by_id, version). Empty if absent."""
-    cp = artifact_root / "conformance/unified" / name
+    """Load a persisted LIVE capture artifact. Returns (results_by_id, version).
+    Empty if absent."""
+    cp = _unified_base(artifact_root) / name
     if not cp.exists():
         return {}, None
-    data = json.loads(cp.read_text())
+    data = yaml.safe_load(cp.read_text())
     return data.get("results", {}), data.get(version_key)
 
 
 def _load_vllm_capture(artifact_root: Path) -> tuple[dict, str | None]:
     """vLLM Python parser capture (capture_vllm_unified.py, ParserManager combined path)."""
-    return _load_capture(artifact_root, "vllm_capture.json", "vllm_version")
+    return _load_capture(artifact_root, "vllm_capture.yaml", "vllm_version")
 
 
 def _load_vllm_rust_capture(artifact_root: Path) -> tuple[dict, str | None]:
     """vLLM Rust unified capture (capture_vllm_rust_unified.py). gemma4 = native
     Gemma4UnifiedParser; other families = CombinedParser. Each result carries a
     `parser` string ("vLLM Rust (UnifiedParser)" / "(CombinedParser)")."""
-    return _load_capture(artifact_root, "vllm_rust_capture.json", "vllm_rust_version")
+    return _load_capture(artifact_root, "vllm_rust_capture.yaml", "vllm_rust_version")
 
 
 def _load_sglang_capture(artifact_root: Path) -> tuple[dict, str | None]:
     """SGLang Python capture (capture_sglang_unified.py). SGLang has no unified parser —
     always a reasoning detector then a tool detector (Combined/split)."""
-    return _load_capture(artifact_root, "sglang_capture.json", "sglang_version")
+    return _load_capture(artifact_root, "sglang_capture.yaml", "sglang_version")
 
 
 def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     """Build the Unified (reasoning + tools) tab from the Rust-produced results feed
-    (`conformance/unified/unified_results.json`). Reference = the authored GOLDEN
+    (`conformance/unified/unified_results.yaml`). Reference = the authored GOLDEN
     oracle; Compare = Dynamo today (LIVE) and vLLM 0.25.x (LIVE). A cell is red only
     when a shown parser LEAKED markup (data-red-on-leak); ordering/content divergences
     show their NΔ count but stay green."""
     import hashlib
-    jp = artifact_root / "conformance/unified/unified_results.json"
+    jp = _unified_base(artifact_root) / "unified_results.yaml"
     if not jp.exists():
         return None
-    data = json.loads(jp.read_text())
+    data = yaml.safe_load(jp.read_text())
     cases = data.get("cases", [])
     if not cases:
         return None

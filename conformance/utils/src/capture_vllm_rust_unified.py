@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+import yaml
 import sys
 import tempfile
 from pathlib import Path
@@ -283,7 +284,8 @@ def main():
     args = ap.parse_args()
     out = build_and_run(args.vllm_rust_source, args.job.read_text())
     data = json.loads(out)
-    args.out.write_text(json.dumps(data, indent=2))
+    args.out.write_text(yaml.dump(data, default_flow_style=False, sort_keys=False,
+                                  allow_unicode=True, width=4096))
     print(f"wrote {args.out} "
           f"(vllm_rust_version={data.get('vllm_rust_version')}, "
           f"results={len(data['results'])})")

@@ -449,7 +449,7 @@ def emit_yaml(fam):
 
 
 def main():
-    root = os.path.join(os.path.dirname(__file__), "..", "..", "unified", "golden")
+    root = os.path.join(os.path.dirname(__file__), "..", "..", "fixtures", "unified", "golden")
     root = os.path.abspath(root)
     for fam in FAMILIES:
         out = os.path.join(root, FAM_FILE[fam])

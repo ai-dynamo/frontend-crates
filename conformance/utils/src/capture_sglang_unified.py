@@ -14,6 +14,7 @@ split can't interleave, which is exactly the divergence the tab measures).
 """
 import json
 import sys
+import yaml
 
 from sglang.srt.entrypoints.openai.protocol import Function, Tool
 from sglang.srt.function_call.function_call_parser import FunctionCallParser
@@ -91,8 +92,12 @@ def main():
             entry["chunks"] = []
             entry["error"] = f"{type(exc).__name__}: {exc}"
         results[case["id"]] = entry
-    json.dump({"sglang_version": getattr(sglang, "__version__", "unknown"),
-               "results": results}, sys.stdout)
+    # YAML to match the conformance fixture corpus. Container stdout is log-polluted,
+    # so a recapture writes this to a file (or strips lines before the first top-level
+    # key) rather than grepping a single JSON line.
+    yaml.dump({"sglang_version": getattr(sglang, "__version__", "unknown"),
+               "results": results}, sys.stdout,
+              default_flow_style=False, sort_keys=False, allow_unicode=True, width=4096)
 
 
 if __name__ == "__main__":
