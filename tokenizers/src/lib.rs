@@ -88,11 +88,23 @@ pub mod traits {
         fn encode(&self, input: &str) -> Result<Encoding>;
         fn encode_batch(&self, inputs: &[&str]) -> Result<Vec<Encoding>>;
 
-        /// Encode renderer output while preserving trusted-control and
-        /// untrusted-content boundaries.
+        /// Encode Kimi K3-style renderer segments while preserving trusted
+        /// control-token and untrusted content boundaries.
         ///
-        /// Backends must not implement this by concatenating the segments:
-        /// doing so lets control-token-looking user content become structural.
+        /// Each segment controls whether added/control tokens are recognized
+        /// through [`EncodeSegment::allow_special`]. This prevents text in user,
+        /// tool, or attribute content from becoming structural when it happens
+        /// to resemble a control token.
+        ///
+        /// The Baseten backend preserves legacy tiktoken behavior by splitting
+        /// each segment into chunks of at most 400,000 characters and splitting
+        /// whitespace/non-whitespace runs at 25,000 characters. Independent
+        /// chunks are encoded through the Rayon thread pool, then concatenated
+        /// in input order. Tokenizer post-processing is applied once after all
+        /// segment IDs have been joined.
+        ///
+        /// Backends must not implement this by flattening the segments first,
+        /// because that discards the special-token trust boundary.
         fn encode_segments(&self, _segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
             Err(Error::msg(
                 "tokenizer backend does not support segmented encoding",
