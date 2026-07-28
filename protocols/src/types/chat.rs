@@ -22,7 +22,6 @@ use crate::error::OpenAIError;
 // Consumers should use them via `dynamo_protocols::types::*` as before.
 
 pub use async_openai::types::chat::{
-    ChatChoiceLogprobs,
     ChatCompletionAudio,
     ChatCompletionAudioFormat,
     ChatCompletionAudioVoice,
@@ -46,7 +45,6 @@ pub use async_openai::types::chat::{
     ChatCompletionRequestSystemMessageContent,
     ChatCompletionRequestSystemMessageContentPart,
     ChatCompletionResponseMessageAudio,
-    ChatCompletionTokenLogprob,
     Choice,
     CompletionFinishReason,
     CompletionTokensDetails,
@@ -378,6 +376,30 @@ impl From<String> for ChatCompletionRequestToolMessageContent {
 pub struct ChatCompletionRequestToolMessage {
     pub content: ChatCompletionRequestToolMessageContent,
     pub tool_call_id: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+pub struct ChatChoiceLogprobs {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<Vec<ChatCompletionTokenLogprob>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub refusal: Option<Vec<ChatCompletionTokenLogprob>>,
+}
+
+/// Token logprob entry with optional backend token ID.
+///
+/// Some inference backends can report both the rendered token string and its
+/// vocabulary ID. Keeping this optional preserves the upstream OpenAI shape
+/// when token IDs are unavailable.
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+pub struct ChatCompletionTokenLogprob {
+    pub token: String,
+    pub logprob: f32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub token_id: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bytes: Option<Vec<u8>>,
+    pub top_logprobs: Vec<TopLogprobs>,
 }
 
 #[derive(Clone, Serialize, Default, Debug, Deserialize, PartialEq)]
@@ -1466,5 +1488,20 @@ mod tests {
             parts[3],
             ChatCompletionRequestToolMessageContentPart::AudioUrl(_)
         ));
+    }
+
+    #[test]
+    fn chat_logprob_serializes_token_id_when_present() {
+        let logprob = ChatCompletionTokenLogprob {
+            token: " hello".into(),
+            logprob: -0.12,
+            token_id: Some(123),
+            bytes: Some(vec![32, 104, 101, 108, 108, 111]),
+            top_logprobs: vec![],
+        };
+
+        let json = serde_json::to_value(logprob).unwrap();
+
+        assert_eq!(json["token_id"], 123);
     }
 }
