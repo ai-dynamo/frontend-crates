@@ -221,6 +221,26 @@ where
     }
 }
 
+/// Deserializes an optional media object, treating `{"url": ""}` as absent.
+///
+/// vLLM's OpenAI-compatible schema requires the media object to be present, so
+/// UUID-cache clients emit an empty URL where Dynamo's canonical form is `null`.
+/// Normalizing at the type boundary leaves `(url, uuid)` validation to consumers.
+fn deserialize_optional_media<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: serde::de::DeserializeOwned,
+{
+    use serde::de::Error;
+    match Option::<serde_json::Value>::deserialize(deserializer)? {
+        None => Ok(None),
+        Some(value) if value.get("url").and_then(serde_json::Value::as_str) == Some("") => Ok(None),
+        Some(value) => serde_json::from_value(value)
+            .map(Some)
+            .map_err(D::Error::custom),
+    }
+}
+
 // ---------------------------------------------------------------------------
 // FunctionCall / FunctionCallStream — local definitions with flexible deser
 // ---------------------------------------------------------------------------
@@ -268,9 +288,11 @@ pub struct ChatCompletionMessageToolCallChunk {
 /// Image content part.
 ///
 /// vLLM's OpenAI-compatible server accepts an optional top-level `uuid` on the
-/// media content part. For cache-hit-only requests, `image_url` is null and
-/// `uuid` carries the cache key. This is a vLLM extension, not part of the
-/// OpenAI Chat Completions API.
+/// media content part. For cache-hit-only requests, `uuid` carries the cache
+/// key and the canonical `image_url` is null. Clients constrained by vLLM's
+/// request schema may instead send `{"url": ""}`, which deserializes to the
+/// same representation. This is a vLLM extension, not part of the OpenAI Chat
+/// Completions API.
 #[derive(Debug, Serialize, Deserialize, Clone, Builder, PartialEq)]
 #[builder(name = "ChatCompletionRequestMessageContentPartImageArgs")]
 #[builder(pattern = "mutable")]
@@ -279,7 +301,7 @@ pub struct ChatCompletionMessageToolCallChunk {
 #[builder(build_fn(error = "OpenAIError"))]
 pub struct ChatCompletionRequestMessageContentPartImage {
     #[builder(default)]
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_optional_media")]
     pub image_url: Option<ImageUrl>,
     #[builder(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -568,7 +590,7 @@ pub struct VideoUrl {
 #[builder(build_fn(error = "OpenAIError"))]
 pub struct ChatCompletionRequestMessageContentPartVideo {
     #[builder(default)]
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_optional_media")]
     pub video_url: Option<VideoUrl>,
     #[builder(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -597,7 +619,7 @@ pub struct AudioUrl {
 #[builder(build_fn(error = "OpenAIError"))]
 pub struct ChatCompletionRequestMessageContentPartAudioUrl {
     #[builder(default)]
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_optional_media")]
     pub audio_url: Option<AudioUrl>,
     #[builder(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1186,6 +1208,25 @@ mod tests {
     }
 
     #[test]
+    fn empty_media_urls_deserialize_as_uuid_only() {
+        for (part_type, media_field, uuid) in [
+            ("image_url", "image_url", "image-cache-key"),
+            ("video_url", "video_url", "video-cache-key"),
+            ("audio_url", "audio_url", "audio-cache-key"),
+        ] {
+            let part = parse_content_part(serde_json::json!({
+                "type": part_type,
+                (media_field): {"url": ""},
+                "uuid": uuid
+            }));
+            let json = serde_json::to_value(part).unwrap();
+
+            assert!(json[media_field].is_null());
+            assert_eq!(json["uuid"], uuid);
+        }
+    }
+
+    #[test]
     fn image_url_null_without_uuid_deserializes_for_use_site_validation() {
         let part = parse_content_part(serde_json::json!({
             "type": "image_url",
@@ -1261,6 +1302,25 @@ mod tests {
         assert_eq!(image.url.as_str(), "https://x.example/image.png");
         assert_eq!(video.url.as_str(), "https://x.example/video.mp4");
         assert_eq!(audio.url.as_str(), "https://x.example/audio.wav");
+    }
+
+    #[test]
+    fn invalid_media_urls_remain_rejected() {
+        for (part_type, media_field) in [
+            ("image_url", "image_url"),
+            ("video_url", "video_url"),
+            ("audio_url", "audio_url"),
+        ] {
+            let result = serde_json::from_value::<ChatCompletionRequestUserMessageContentPart>(
+                serde_json::json!({
+                    "type": part_type,
+                    (media_field): {"url": "not a url"},
+                    "uuid": "cache-key"
+                }),
+            );
+
+            assert!(result.is_err(), "{part_type} accepted an invalid URL");
+        }
     }
 
     #[test]
