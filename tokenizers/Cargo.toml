@@ -4,7 +4,7 @@
 [package]
 name = "dynamo-tokenizers"
 readme = "README.md"
-version = "1.5.4"
+version = "1.6.0"
 edition.workspace = true
 description = "Standalone HuggingFace, tiktoken, fastokens, and Baseten tokenizer implementations for LLM inference serving."
 authors.workspace = true
