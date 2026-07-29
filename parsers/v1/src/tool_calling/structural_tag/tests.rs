@@ -603,6 +603,7 @@ fn parser_map_structural_tag_smoke() {
         "qwen3_coder",
         "deepseek_v3_2",
         "deepseek_v4",
+        "kimi_k3",
         "inkling",
     ];
 

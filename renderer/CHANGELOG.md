@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v4.1.0...dynamo-renderer-v5.0.0) - 2026-07-29
+
+### Features
+
+- Add support for Kimi-K3 ([#145](https://github.com/ai-dynamo/frontend-crates/pull/145))
+
 ## [4.1.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v4.0.1...dynamo-renderer-v4.1.0) - 2026-07-28
 
 ### Features

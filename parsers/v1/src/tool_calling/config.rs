@@ -288,6 +288,47 @@ pub struct KimiK2ParserConfig {
     pub argument_begin: String,
 }
 
+/// Configuration for Kimi K3's XTML response and tool channels.
+///
+/// The markers are fixed by the official tokenizer/encoder. The only mutable
+/// behavior is finalize-time recovery: streaming jail probes keep it disabled,
+/// while aggregate/finalize enables it for delimiter-terminated calls whose
+/// outer tools/call close is missing.
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
+pub struct KimiK3ParserConfig {
+    #[serde(default)]
+    pub allow_eof_recovery: bool,
+}
+
+impl KimiK3ParserConfig {
+    pub(crate) fn start_tokens(&self) -> Vec<&'static str> {
+        super::xtml::JAIL_BOUNDARIES
+            .into_iter()
+            .chain(super::xtml::SPACED_JAIL_BOUNDARIES)
+            .collect()
+    }
+
+    pub(crate) fn end_tokens(&self) -> Vec<&'static str> {
+        use super::xtml::{
+            END_OF_MSG, MESSAGE_CLOSE, RESPONSE_CLOSE, RESPONSE_OPEN, SPACED_MESSAGE_CLOSE,
+            SPACED_RESPONSE_CLOSE, SPACED_RESPONSE_OPEN, SPACED_TOOLS_CLOSE, TOOLS_CLOSE,
+        };
+        // Prefer outer message terminators when an interval-batched backend
+        // delta contains several nested K3 closes at once.
+        vec![
+            END_OF_MSG,
+            MESSAGE_CLOSE,
+            SPACED_MESSAGE_CLOSE,
+            TOOLS_CLOSE,
+            SPACED_TOOLS_CLOSE,
+            RESPONSE_CLOSE,
+            SPACED_RESPONSE_CLOSE,
+            RESPONSE_OPEN,
+            SPACED_RESPONSE_OPEN,
+        ]
+    }
+}
+
 impl Default for KimiK2ParserConfig {
     fn default() -> Self {
         Self {
@@ -363,6 +404,7 @@ pub enum ParserConfig {
     Typescript,
     Dsml(DsmlParserConfig),
     KimiK2(KimiK2ParserConfig),
+    KimiK3(KimiK3ParserConfig),
     Glm47(Glm47ParserConfig),
     MiniMaxM3(MiniMaxM3ParserConfig),
     /// Gemma 4 uses a custom non-JSON grammar with bare keys, `<|"|>` string
@@ -406,6 +448,11 @@ impl ParserConfig {
                 tokens.push(config.call_start.clone());
                 tokens
             }
+            ParserConfig::KimiK3(config) => config
+                .start_tokens()
+                .into_iter()
+                .map(str::to_string)
+                .collect(),
             ParserConfig::MiniMaxM3(config) => {
                 vec![format!(
                     "{}<{}>",
@@ -445,6 +492,11 @@ impl ParserConfig {
             ParserConfig::Dsml(config) => vec![config.block_end.clone()],
             ParserConfig::Glm47(config) => vec![config.tool_call_end.clone()],
             ParserConfig::KimiK2(config) => config.section_end_variants.clone(),
+            ParserConfig::KimiK3(config) => config
+                .end_tokens()
+                .into_iter()
+                .map(str::to_string)
+                .collect(),
             ParserConfig::MiniMaxM3(config) => {
                 vec![format!(
                     "{}</{}>",
@@ -802,6 +854,15 @@ impl ToolCallConfig {
         Self {
             parser_config: ParserConfig::KimiK2(KimiK2ParserConfig::default()),
             structural_tag_builder: None,
+        }
+    }
+
+    /// Kimi K3 XTML channels. Unlike K2, arguments are nested typed XTML
+    /// blocks rather than one JSON object behind Kimi-specific section tokens.
+    pub fn kimi_k3() -> Self {
+        Self {
+            parser_config: ParserConfig::KimiK3(KimiK3ParserConfig::default()),
+            structural_tag_builder: Some(StructuralTagBuilder::KimiK3),
         }
     }
 

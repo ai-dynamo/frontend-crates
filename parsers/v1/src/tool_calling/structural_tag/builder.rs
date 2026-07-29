@@ -12,6 +12,7 @@ use super::dsml::{self, DsmlToolCallsConfig};
 use super::format::{
     AnyTextFormat, AnyTokensFormat, Format, SequenceFormat, StructuralTag, TagFormat,
 };
+use super::kimi_k3;
 use super::triggered_tags::{self, TriggeredTagsConfig};
 
 /// Controls whether tools get their real parameter schema or an
@@ -101,6 +102,9 @@ pub enum StructuralTagBuilder {
 
     /// DeepSeek DSML format with a `triggered_tags` wrapper and invoke list.
     DsmlToolCalls(DsmlToolCallsConfig),
+
+    /// Kimi K3's native XTML response/tools channel format.
+    KimiK3,
 }
 
 impl StructuralTagBuilder {
@@ -119,6 +123,7 @@ impl StructuralTagBuilder {
         let structural_tag = match self {
             Self::TriggeredTags(config) => triggered_tags::build_triggered_tags(config, ctx)?,
             Self::DsmlToolCalls(config) => dsml::build_dsml_tool_calls(config, ctx)?,
+            Self::KimiK3 => kimi_k3::build_kimi_k3(ctx)?,
         };
 
         structural_tag
@@ -185,6 +190,7 @@ impl StructuralTagBuilder {
         match self {
             Self::TriggeredTags(config) => &config.tool_call_ban_tokens,
             Self::DsmlToolCalls(config) => &config.tool_call_ban_tokens,
+            Self::KimiK3 => &[],
         }
     }
 
@@ -192,6 +198,7 @@ impl StructuralTagBuilder {
         match self {
             Self::TriggeredTags(config) => config.reasoning_end.as_deref(),
             Self::DsmlToolCalls(config) => config.reasoning_end.as_deref(),
+            Self::KimiK3 => Some("<|close|>think<|sep|>"),
         }
     }
 }

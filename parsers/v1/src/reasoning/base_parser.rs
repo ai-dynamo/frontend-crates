@@ -86,6 +86,13 @@ pub struct BasicReasoningParser {
     /// ends for every delimiter pair already; this flag only gates the
     /// streaming path so existing `<think>` stray-close stripping is preserved.
     recover_dangling_end: bool,
+    /// Whether a one-byte delimiter prefix should be buffered across chunks.
+    ///
+    /// The generic parser normally requires at least two matching bytes so a
+    /// lone `<` can flow directly into XML-like tool-call formats. Kimi K3's
+    /// reserved markers all begin with `<|`, so its configuration can safely
+    /// hold a trailing `<` for one chunk without changing other model families.
+    buffer_single_char_marker_prefix: bool,
     /// Whether a configured tool marker may still be the first visible
     /// boundary of prompt-prefilled reasoning.
     /// Consumed once caller-provided state or an explicit boundary establishes
@@ -114,6 +121,7 @@ impl BasicReasoningParser {
             _buffer: String::new(),
             stripped_think_start: false,
             recover_dangling_end: false,
+            buffer_single_char_marker_prefix: false,
             recover_tool_start_without_opener: false,
             tool_start_tokens: Vec::new(),
         }
@@ -132,6 +140,14 @@ impl BasicReasoningParser {
     /// Enables streaming dangling-close recovery.
     pub fn with_dangling_end_recovery(mut self) -> Self {
         self.recover_dangling_end = true;
+        self
+    }
+
+    /// Buffer a one-byte prefix of a configured reasoning delimiter or exit
+    /// marker. Intended for formats whose reserved markers share an
+    /// unambiguous multi-byte prefix, such as Kimi K3's `<|...` markers.
+    pub fn with_single_char_marker_buffering(mut self) -> Self {
+        self.buffer_single_char_marker_prefix = true;
         self
     }
 
@@ -362,11 +378,20 @@ impl ReasoningParser for BasicReasoningParser {
             if self._in_reasoning {
                 let end_idx = current_text.find(self.think_end_token.as_str());
                 let tool_idx = earliest_marker_offset(&current_text, &self.tool_start_tokens);
+                let tool_is_partial_end = tool_idx.is_some_and(|tool_at| {
+                    let candidate = &current_text[tool_at..];
+                    candidate.len() < self.think_end_token.len()
+                        && self.think_end_token.starts_with(candidate)
+                });
 
                 // Prefer whichever marker appears first. If only one is present, use it.
+                // A complete force-exit marker can itself be a prefix of the configured
+                // reasoning close (Kimi K3's `<|close|>` /
+                // `<|close|>think<|sep|>` overlap). In that ambiguous case, retain the
+                // candidate until the next chunk completes or disproves the close marker.
                 let force_exit_idx = match (end_idx, tool_idx) {
                     (Some(e), Some(t)) if t < e => Some(t),
-                    (None, Some(t)) => Some(t),
+                    (None, Some(t)) if !tool_is_partial_end => Some(t),
                     _ => None,
                 };
 
@@ -402,7 +427,10 @@ impl ReasoningParser for BasicReasoningParser {
                         // (notably a lone `<` before ordinary tool XML), but a
                         // configured tool marker must be preserved from its
                         // first byte or the downstream parser can never recover it.
-                        if ol_end >= 2 || ol_tool >= 1 {
+                        if ol_end >= 2
+                            || ol_tool >= 1
+                            || (self.buffer_single_char_marker_prefix && ol == 1)
+                        {
                             let safe_end = current_text.len() - ol;
                             if safe_end > 0 {
                                 accumulated_reasoning.push_str(&current_text[..safe_end]);
@@ -500,8 +528,12 @@ impl ReasoningParser for BasicReasoningParser {
                 let ol_end = overlap(&current_text, &self.think_end_token);
                 let ol = ol_start.max(ol_end);
                 // Keep the historical >= 2 gate for think markers so a lone
-                // `<` passes through.
-                if ol_start >= 2 || ol_end >= 2 {
+                // `<` passes through unless this parser explicitly opts into
+                // one-byte marker buffering.
+                if ol_start >= 2
+                    || ol_end >= 2
+                    || (self.buffer_single_char_marker_prefix && ol == 1)
+                {
                     // An implicit close boundary determines whether every
                     // preceding byte is reasoning. Keep the whole undecided
                     // prefix until the next chunk confirms or rejects it;
@@ -1591,6 +1623,33 @@ mod tests {
         let r2 = parser.parse_reasoning_streaming_incremental("xxx", &[]);
         assert_eq!(r2.reasoning_text, "<|tool_caxxx");
         assert_eq!(r2.normal_text, "");
+    }
+
+    #[test]
+    fn test_force_exit_prefix_does_not_preempt_partial_reasoning_end() {
+        let mut parser = BasicReasoningParser::new(
+            "<|open|>think<|sep|>".to_string(),
+            "<|close|>think<|sep|>".to_string(),
+            true,
+            true,
+        )
+        .with_tool_start_token("<|close|>");
+
+        let reasoning = parser.parse_reasoning_streaming_incremental("reasoning text", &[]);
+        assert_eq!(reasoning.reasoning_text, "reasoning text");
+        assert_eq!(reasoning.normal_text, "");
+
+        let close_prefix = parser.parse_reasoning_streaming_incremental("<|close|>think", &[]);
+        assert_eq!(close_prefix.reasoning_text, "");
+        assert_eq!(close_prefix.normal_text, "");
+
+        let close_suffix = parser.parse_reasoning_streaming_incremental("<|sep|>", &[]);
+        assert_eq!(close_suffix.reasoning_text, "");
+        assert_eq!(close_suffix.normal_text, "");
+
+        let answer = parser.parse_reasoning_streaming_incremental("answer", &[]);
+        assert_eq!(answer.reasoning_text, "");
+        assert_eq!(answer.normal_text, "answer");
     }
 
     #[test] // REASONING.batch.2.f

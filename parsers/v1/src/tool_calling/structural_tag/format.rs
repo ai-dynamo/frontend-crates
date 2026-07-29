@@ -47,6 +47,16 @@ pub enum Format {
     AnyTokens(AnyTokensFormat),
     /// `{"type": "any_text", "excludes": [...]}`
     AnyText(AnyTextFormat),
+    /// `{"type": "const_string", "value": ...}`
+    ConstString(ConstStringFormat),
+    /// `{"type": "regex", "pattern": ...}`
+    Regex(RegexFormat),
+    /// `{"type": "optional", "content": ...}`
+    Optional(OptionalFormat),
+    /// `{"type": "or", "elements": [...]}`
+    Or(OrFormat),
+    /// `{"type": "star", "content": ...}`
+    Star(StarFormat),
 }
 
 /// `tag` format: `begin + content + end`.
@@ -132,6 +142,36 @@ pub struct AnyTokensFormat {
 #[derive(Debug, Clone, Serialize)]
 pub struct AnyTextFormat {
     pub excludes: Vec<String>,
+}
+
+/// A fixed literal string.
+#[derive(Debug, Clone, Serialize)]
+pub struct ConstStringFormat {
+    pub value: String,
+}
+
+/// Text matching an xgrammar-compatible regular expression.
+#[derive(Debug, Clone, Serialize)]
+pub struct RegexFormat {
+    pub pattern: String,
+}
+
+/// An optional child format.
+#[derive(Debug, Clone, Serialize)]
+pub struct OptionalFormat {
+    pub content: Box<Format>,
+}
+
+/// One of several child formats.
+#[derive(Debug, Clone, Serialize)]
+pub struct OrFormat {
+    pub elements: Vec<Format>,
+}
+
+/// Zero or more repetitions of a child format.
+#[derive(Debug, Clone, Serialize)]
+pub struct StarFormat {
+    pub content: Box<Format>,
 }
 
 #[cfg(test)]
@@ -226,5 +266,35 @@ mod tests {
 
         let value = serde_json::to_value(&format).unwrap();
         assert_eq!(value["style"], "qwen_xml");
+    }
+
+    #[test]
+    fn kimi_k3_format_nodes_serialize_correctly() {
+        let format = Format::Sequence(SequenceFormat {
+            elements: vec![
+                Format::Optional(OptionalFormat {
+                    content: Box::new(Format::ConstString(ConstStringFormat {
+                        value: "<|open|>response<|sep|>".to_string(),
+                    })),
+                }),
+                Format::Star(StarFormat {
+                    content: Box::new(Format::Or(OrFormat {
+                        elements: vec![Format::Regex(RegexFormat {
+                            pattern: "[0-9]+".to_string(),
+                        })],
+                    })),
+                }),
+            ],
+        });
+
+        let value = serde_json::to_value(format).unwrap();
+        assert_eq!(value["elements"][0]["type"], "optional");
+        assert_eq!(value["elements"][0]["content"]["type"], "const_string");
+        assert_eq!(value["elements"][1]["type"], "star");
+        assert_eq!(value["elements"][1]["content"]["type"], "or");
+        assert_eq!(
+            value["elements"][1]["content"]["elements"][0]["type"],
+            "regex"
+        );
     }
 }

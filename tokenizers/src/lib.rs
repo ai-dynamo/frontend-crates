@@ -45,6 +45,14 @@ impl<'a> EncodeSegment<'a> {
             allow_special,
         }
     }
+
+    pub const fn ordinary(text: &'a str) -> Self {
+        Self::new(text, false)
+    }
+
+    pub const fn control(text: &'a str) -> Self {
+        Self::new(text, true)
+    }
 }
 
 /// Represents the type of tokenizer being used
@@ -348,7 +356,7 @@ where
 /// Supported file types are:
 /// - json: HuggingFace tokenizer
 /// - model, tiktoken: tiktoken BPE tokenizer (requires `config.json` with a supported
-///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25)
+///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3)
 pub fn create_tokenizer_from_file(file_path: &str) -> Result<Arc<dyn traits::Tokenizer>> {
     create_tokenizer_from_file_with_options(file_path, Default::default())
 }
@@ -358,7 +366,7 @@ pub fn create_tokenizer_from_file(file_path: &str) -> Result<Arc<dyn traits::Tok
 /// Supported file types are:
 /// - json: HuggingFace tokenizer
 /// - model, tiktoken: tiktoken BPE tokenizer (requires `config.json` with a supported
-///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25)
+///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3)
 pub fn create_tokenizer_from_file_with_options(
     file_path: &str,
     options: TokenizerOptions,

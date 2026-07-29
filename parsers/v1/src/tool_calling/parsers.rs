@@ -34,6 +34,10 @@ use super::xml::{
     try_tool_call_parse_glm47, try_tool_call_parse_kimi_k2, try_tool_call_parse_minimax_m3,
     try_tool_call_parse_xml,
 };
+use super::xtml::{
+    detect_tool_call_start_kimi_k3, find_tool_call_end_position_kimi_k3,
+    try_tool_call_parse_kimi_k3,
+};
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
@@ -68,6 +72,8 @@ pub fn get_tool_parser_map() -> &'static HashMap<&'static str, ToolCallConfig> {
         map.insert("minimax-m3-nom", ToolCallConfig::minimax_m3());
         map.insert("glm47", ToolCallConfig::glm47());
         map.insert("kimi_k2", ToolCallConfig::kimi_k2());
+        map.insert("kimi_k3", ToolCallConfig::kimi_k3());
+        map.insert("kimi-k3", ToolCallConfig::kimi_k3());
         map.insert("gemma4", ToolCallConfig::gemma4());
         map.insert("gemma-4", ToolCallConfig::gemma4());
         map.insert("inkling", ToolCallConfig::inkling());
@@ -121,6 +127,11 @@ pub async fn try_tool_call_parse(
         ParserConfig::KimiK2(kimi_config) => {
             let (results, normal_content) =
                 try_tool_call_parse_kimi_k2(message, kimi_config, tools)?;
+            Ok((results, normal_content))
+        }
+        ParserConfig::KimiK3(kimi_config) => {
+            let (results, normal_content) =
+                try_tool_call_parse_kimi_k3(message, kimi_config, tools)?;
             Ok((results, normal_content))
         }
         ParserConfig::MiniMaxM3(minimax_config) => {
@@ -193,6 +204,11 @@ pub async fn detect_and_parse_tool_call_with_recovery(
             let mut c = c.clone();
             c.allow_eof_recovery = true;
             ParserConfig::MiniMaxM3(c)
+        }
+        ParserConfig::KimiK3(c) => {
+            let mut c = c.clone();
+            c.allow_eof_recovery = true;
+            ParserConfig::KimiK3(c)
         }
         ParserConfig::Inkling(c) => {
             let mut c = c.clone();
@@ -295,6 +311,9 @@ pub fn detect_tool_call_start(chunk: &str, parser_str: Option<&str>) -> anyhow::
             }
             ParserConfig::KimiK2(kimi_config) => {
                 Ok(detect_tool_call_start_kimi_k2(chunk, kimi_config))
+            }
+            ParserConfig::KimiK3(kimi_config) => {
+                Ok(detect_tool_call_start_kimi_k3(chunk, kimi_config))
             }
             ParserConfig::MiniMaxM3(minimax_config) => {
                 Ok(detect_tool_call_start_minimax_m3(chunk, minimax_config))
@@ -413,6 +432,9 @@ pub fn find_tool_call_end_position(chunk: &str, parser_str: Option<&str>) -> Opt
             ParserConfig::KimiK2(kimi_config) => {
                 find_tool_call_end_position_kimi_k2(chunk, kimi_config)
             }
+            ParserConfig::KimiK3(kimi_config) => {
+                find_tool_call_end_position_kimi_k3(chunk, kimi_config)
+            }
             ParserConfig::MiniMaxM3(minimax_config) => Some(
                 find_tool_call_end_position_minimax_m3(chunk, minimax_config),
             ),
@@ -466,6 +488,8 @@ mod tests {
             "minimax-m3-nom",
             "glm47",
             "kimi_k2",
+            "kimi_k3",
+            "kimi-k3",
             "gemma4",
             "gemma-4",
             "inkling",
