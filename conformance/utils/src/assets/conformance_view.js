@@ -411,7 +411,13 @@
       : (body ? 'assembled' : inputTextCell(input, ctx));
     var fin = '<tr class="ttip-final"><td class="cin">' + inputCell + '</td>';
     cands.forEach(function (c, ci) {
-      fin += '<td data-cand="' + escapeAttr(c.key) + '" data-cand-order="' + ci + '">'
+      // Red when this candidate's assembled output DIVERGES from the golden oracle
+      // (its verdict, classified against golden, is anything but MATCH) — the same
+      // "red = doesn't match golden" rule the matrix cell uses. golden itself is the
+      // input-column reference and never appears here, so it is never flagged.
+      var diverges = c.block && c.block.verdict && c.block.verdict !== 'MATCH';
+      fin += '<td data-cand="' + escapeAttr(c.key) + '" data-cand-order="' + ci + '"'
+        + (diverges ? ' class="cand-diverge"' : '') + '>'
         + outputBlock(c.block, family, ctx).replace(/\n/g, '<br>') + '</td>';
     });
     fin += '</tr>';

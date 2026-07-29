@@ -355,6 +355,10 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 .ttip-chunks td.cin { color: #cbd5e1; max-width: 22em; word-break: break-word; }
 .ttip-chunks tr.ttip-final td { border-top: 2px solid #64748b; background: #0b1220; }
 .ttip-chunks tr.ttip-final td.cin { color: #93c5fd; }
+/* A candidate's assembled cell whose output diverges from the golden oracle: red
+   background (mirrors the matrix red-on-diff rule so the details view agrees). */
+.ttip-chunks tr.ttip-final td.cand-diverge { background: #4a1113; }
+:root[data-theme="light"] .ttip-chunks tr.ttip-final td.cand-diverge { background: #fce8e6; }
 /* Baseline column (Dynamo Rust batch): a fixed reference left of the stream columns,
    set off with a thicker right border and a tinted background. */
 .ttip-chunks th.cbase-h { background: #1e293b; color: #fbbf24; border-right: 2px solid #64748b; }
