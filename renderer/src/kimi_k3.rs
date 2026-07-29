@@ -24,45 +24,35 @@ const OPEN_TOKEN: &str = "<|open|>";
 const CLOSE_TOKEN: &str = "<|close|>";
 const SEP_TOKEN: &str = "<|sep|>";
 const END_OF_MSG_TOKEN: &str = "<|end_of_msg|>";
-/// Default per-image token, used when the serving worker declares nothing.
+/// The one token this renderer emits per image.
 ///
-/// This is the checkpoint's *pre-tokenization* marker: its processor string-
-/// splits on it and substitutes the media sequence before tokenizing, so it is
-/// deliberately not a registered special token. Workers that consume a real
-/// token declare it instead — see `KimiK3Formatter::new`.
-const IMAGE_PLACEHOLDER: &str = "<|kimi_image_placeholder|>";
+/// This is the canonical frontend contract: exactly one `<|media_pad|>` per
+/// image, for every engine. It is a registered special token in the K3
+/// tokenizer (`config.json`'s `media_placeholder_token_id`), so it encodes to
+/// a single id and stays one id no matter what surrounds it.
+///
+/// The checkpoint's other spelling, `<|kimi_image_placeholder|>`, is a plain
+/// string that is *not* in the vocabulary — it BPE-shatters into several ids
+/// whose boundaries depend on neighbouring text. Engines that want that form
+/// (vLLM) convert from the pad on the worker side, where a single known id is
+/// a reliable thing to substitute; matching a shattered string is not.
+///
+/// Equivalent to calling the checkpoint's own
+/// `encoding_k3.build_chat_segments(image_prompts=["<|media_pad|>"] * n)` —
+/// `image_prompts` is the model author's hook for exactly this choice, and
+/// `<|kimi_image_placeholder|>` is only its `None` fallback.
+const MEDIA_PAD: &str = "<|media_pad|>";
 const VALID_THINKING_EFFORTS: &[&str] = &["low", "high", "max"];
 
 #[derive(Debug, Clone)]
 pub struct KimiK3Formatter {
     exclude_tools_when_tool_choice_none: bool,
-    /// Literal token emitted as one standalone control segment per image.
-    image_placeholder_token: String,
 }
 
 impl KimiK3Formatter {
-    /// `image_placeholder_token` is the token the serving worker's multimodal
-    /// processor expects to see once per image. `None` — and a blank string,
-    /// which `push_segment` would drop, emitting no token at all — fall back to
-    /// `IMAGE_PLACEHOLDER`.
-    ///
-    /// Nothing here checks that the token encodes to a single id; this type has
-    /// no tokenizer. `allow_special` on the emitted segment selects tiktoken's
-    /// special-aware method, it does not guarantee atomicity.
-    pub fn new(
-        exclude_tools_when_tool_choice_none: bool,
-        image_placeholder_token: Option<&str>,
-    ) -> Self {
-        let declared = image_placeholder_token.filter(|token| !token.trim().is_empty());
-        let resolved = declared.unwrap_or(IMAGE_PLACEHOLDER);
-        tracing::debug!(
-            image_placeholder_token = resolved,
-            declared_by_worker = declared.is_some(),
-            "Kimi K3 formatter image-placeholder token resolved",
-        );
+    pub fn new(exclude_tools_when_tool_choice_none: bool) -> Self {
         Self {
             exclude_tools_when_tool_choice_none,
-            image_placeholder_token: resolved.to_string(),
         }
     }
 
@@ -114,7 +104,6 @@ impl KimiK3Formatter {
             req.should_add_generation_prompt(),
             thinking,
             thinking_effort.as_str(),
-            &self.image_placeholder_token,
         )
     }
 }
@@ -307,7 +296,6 @@ fn value_as_body_text(value: &Value) -> Result<String> {
 fn render_content_segments(
     segments: &mut Vec<EncodeSegment>,
     content: Option<&Value>,
-    image_token: &str,
 ) -> Result<()> {
     let Some(content) = content else {
         return Ok(());
@@ -318,7 +306,7 @@ fn render_content_segments(
         Value::Array(parts) => {
             for part in parts {
                 match part.get("type").and_then(Value::as_str) {
-                    Some("image" | "image_url") => control(segments, image_token),
+                    Some("image" | "image_url") => control(segments, MEDIA_PAD),
                     _ => {
                         if let Some(part_text) = part.get("text") {
                             text(segments, value_as_body_text(part_text)?);
@@ -336,7 +324,6 @@ fn render_role_message(
     segments: &mut Vec<EncodeSegment>,
     message: &Value,
     role: &str,
-    image_token: &str,
 ) -> Result<()> {
     let mut attrs = vec![("role".to_string(), role.to_string())];
     if let Some(name) = message
@@ -347,7 +334,7 @@ fn render_role_message(
         attrs.push(("name".to_string(), name.to_string()));
     }
     open_tag(segments, "message", attrs);
-    render_content_segments(segments, message.get("content"), image_token)?;
+    render_content_segments(segments, message.get("content"))?;
     close_tag(segments, "message");
     end_of_msg(segments);
     Ok(())
@@ -461,7 +448,6 @@ fn render_assistant_segments(
     segments: &mut Vec<EncodeSegment>,
     message: &Value,
     thinking: bool,
-    image_token: &str,
 ) -> Result<()> {
     // Match encoding_k3.py: `reasoning_content` wins when truthy, otherwise
     // fall back to the Responses-style `reasoning` alias.
@@ -492,7 +478,7 @@ fn render_assistant_segments(
     }
 
     open_tag(segments, "response", []);
-    render_content_segments(segments, message.get("content"), image_token)?;
+    render_content_segments(segments, message.get("content"))?;
     close_tag(segments, "response");
 
     let Some(tool_calls) = message.get("tool_calls").and_then(Value::as_array) else {
@@ -643,7 +629,6 @@ fn build_chat_segments(
     add_generation_prompt: bool,
     thinking: bool,
     thinking_effort: &str,
-    image_token: &str,
 ) -> Result<Vec<EncodeSegment>> {
     let mut segments = Vec::new();
     let mut previous_tool_calls: Option<&Value> = None;
@@ -683,12 +668,12 @@ fn build_chat_segments(
                         .get("content")
                         .is_some_and(|content| !content.is_null())
                 {
-                    render_role_message(&mut segments, message, "system", image_token)?;
+                    render_role_message(&mut segments, message, "system")?;
                 }
             }
             "user" | "system" | "developer" => {
                 let rendered_role = if role == "developer" { "system" } else { role };
-                render_role_message(&mut segments, message, rendered_role, image_token)?;
+                render_role_message(&mut segments, message, rendered_role)?;
             }
             "assistant" => {
                 previous_tool_calls = message.get("tool_calls");
@@ -702,7 +687,7 @@ fn build_chat_segments(
                     attrs.push(("name".to_string(), name.to_string()));
                 }
                 open_tag(&mut segments, "message", attrs);
-                render_assistant_segments(&mut segments, message, thinking, image_token)?;
+                render_assistant_segments(&mut segments, message, thinking)?;
                 close_tag(&mut segments, "message");
                 end_of_msg(&mut segments);
             }
@@ -731,7 +716,7 @@ fn build_chat_segments(
                         ("index".to_string(), tool_index.to_string()),
                     ],
                 );
-                render_content_segments(&mut segments, message.get("content"), image_token)?;
+                render_content_segments(&mut segments, message.get("content"))?;
                 close_tag(&mut segments, "message");
                 end_of_msg(&mut segments);
             }
@@ -875,7 +860,7 @@ mod tests {
 
     /// Default formatter: no worker declaration, so the checkpoint token.
     fn fmt() -> KimiK3Formatter {
-        KimiK3Formatter::new(true, None)
+        KimiK3Formatter::new(true)
     }
 
     /// One user message carrying a single image part.
@@ -900,57 +885,24 @@ mod tests {
     }
 
     #[test]
-    fn renders_default_image_token_when_worker_declares_nothing() {
+    fn renders_one_media_pad_per_image() {
         let segments = image_segments(&fmt(), &image_request());
 
         let matches: Vec<_> = segments
             .iter()
-            .filter(|segment| segment.text == IMAGE_PLACEHOLDER)
+            .filter(|segment| segment.text == MEDIA_PAD)
             .collect();
-        assert_eq!(matches.len(), 1, "exactly one token per image");
-        // `allow_special` selects tiktoken's special-aware method; it does not
-        // guarantee a single id. Whether this token is registered in the
-        // checkpoint is checked by the preprocessor, which has the tokenizer.
+        assert_eq!(matches.len(), 1, "exactly one pad per image");
+        // The pad MUST stay special: it is a registered token, and only the
+        // special-aware encode path yields its single id.
         assert!(matches[0].allow_special);
-    }
-
-    #[test]
-    fn renders_worker_declared_image_token() {
-        let formatter = KimiK3Formatter::new(true, Some("<|media_pad|>"));
-        let segments = image_segments(&formatter, &image_request());
-
-        let matches: Vec<_> = segments
-            .iter()
-            .filter(|segment| segment.text == "<|media_pad|>")
-            .collect();
-        assert_eq!(matches.len(), 1);
-        assert!(matches[0].allow_special);
+        // The checkpoint's non-vocabulary spelling must never be emitted --
+        // the vLLM worker converts from the pad instead.
         assert!(
             !segments
                 .iter()
-                .any(|segment| segment.text == IMAGE_PLACEHOLDER),
-            "the declared token replaces the default outright"
+                .any(|segment| segment.text.contains("kimi_image_placeholder")),
         );
-    }
-
-    #[test]
-    fn blank_declared_image_token_falls_back_to_the_default() {
-        // `push_segment` drops empty text, so a blank declaration would
-        // otherwise emit zero tokens and break the worker's 1:1 image count.
-        // Whitespace is not empty but is never a meaningful image token.
-        for blank in ["", " ", "\n", "\t"] {
-            let segments =
-                image_segments(&KimiK3Formatter::new(true, Some(blank)), &image_request());
-
-            assert_eq!(
-                segments
-                    .iter()
-                    .filter(|segment| segment.text == IMAGE_PLACEHOLDER)
-                    .count(),
-                1,
-                "blank declaration {blank:?} must fall back to the default",
-            );
-        }
     }
 
     #[test]
@@ -968,13 +920,12 @@ mod tests {
             .args
             .insert("thinking".to_string(), Value::Bool(false));
 
-        let formatter = KimiK3Formatter::new(true, Some("<|media_pad|>"));
-        let segments = image_segments(&formatter, &request);
+        let segments = image_segments(&fmt(), &request);
 
         assert_eq!(
             segments
                 .iter()
-                .filter(|segment| segment.text == "<|media_pad|>")
+                .filter(|segment| segment.text == MEDIA_PAD)
                 .count(),
             2
         );
@@ -989,15 +940,14 @@ mod tests {
     }
 
     #[test]
-    fn user_text_spelling_the_declared_token_stays_ordinary() {
+    fn user_text_spelling_the_pad_stays_ordinary() {
         let body = "please describe <|media_pad|>";
         let mut request = Request::new(json!([{"role": "user", "content": body}]));
         request
             .args
             .insert("thinking".to_string(), Value::Bool(false));
 
-        let formatter = KimiK3Formatter::new(true, Some("<|media_pad|>"));
-        let segments = image_segments(&formatter, &request);
+        let segments = image_segments(&fmt(), &request);
 
         assert!(
             segments
