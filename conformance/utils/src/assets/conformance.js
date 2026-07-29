@@ -585,14 +585,26 @@
       if (!row || !row.children.length) continue;
       t.style.tableLayout = 'auto';
       t.style.width = 'max-content';
-      let widest = 0;
-      for (const c of row.children) {
-        widest = Math.max(widest, c.getBoundingClientRect().width);
-      }
+      const natural = [];
+      for (const c of row.children) natural.push(c.getBoundingClientRect().width);
+
+      // The grammar popup's first column is only a model name ("qwen3", "kimi_k2"),
+      // so equalizing it just pads every row by a couple hundred pixels. Leave it at
+      // its natural width and equalize only the columns actually being compared. The
+      // chunk chart has no such column — its first column is the input/golden stream,
+      // which belongs in the comparison — so there it stays equal with the rest.
+      const keepFirst = t.classList.contains('ttip-grammar') && natural.length > 1;
+      const compared = keepFirst ? natural.slice(1) : natural;
+      const widest = Math.max.apply(null, compared);
+
       if (widest > 0) {
+        const firstW = keepFirst ? Math.ceil(natural[0]) : 0;
         t.style.tableLayout = 'fixed';
-        t.style.width = Math.ceil(widest * row.children.length) + 'px';
+        t.style.width = Math.ceil(firstW + widest * compared.length) + 'px';
         t.style.maxWidth = '100%';
+        // Under fixed layout the FIRST row's explicit widths pin the columns; the
+        // rest split what is left, which is exactly `widest` each.
+        if (keepFirst) row.children[0].style.width = firstW + 'px';
       }
       t.dataset.eqCols = '1';
     }
