@@ -181,7 +181,19 @@ pub fn assemble(deltas: &[UnifiedDelta]) -> Vec<UnifiedEvent> {
         let parsed = if raw.trim().is_empty() {
             serde_json::json!({})
         } else {
-            serde_json::from_str(raw).unwrap_or_else(|_| serde_json::json!({}))
+            // Best-effort (P3): a malformed payload must not take down the rest of
+            // the turn. But it is NOT discarded silently — a call whose arguments
+            // arrive corrupted is exactly the failure worth seeing in a log, and
+            // `{}` on its own looks indistinguishable from a genuine no-arg call.
+            serde_json::from_str(raw).unwrap_or_else(|e| {
+                tracing::warn!(
+                    why = "unified_unparseable_tool_arguments",
+                    error = %e,
+                    raw = %raw,
+                    "tool-call arguments did not parse as JSON; emitting an empty object instead"
+                );
+                serde_json::json!({})
+            })
         };
         if let UnifiedEvent::ToolCall { arguments, .. } = &mut out[*pos] {
             *arguments = parsed;
