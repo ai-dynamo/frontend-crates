@@ -65,3 +65,17 @@ def numbered_id(scenario):
     'UNIFIED.7.b' (mirrors TOOLCALLING.streamv2.N naming)."""
     g, sub = tax(scenario)
     return f"UNIFIED.{g}.{sub}"
+
+
+# The unified corpus names a family by its MODEL family (`qwen3`); the grammar-token
+# registry in parser_families.yaml names the SAME grammar by its parser family
+# (`qwen3_coder`). The popup colorizer is driven by the registry, so a corpus family
+# has to be translated before it is used to color markup — otherwise the family has no
+# declared markers, the colorizer falls back to heuristics, and its opaque
+# argument-value regions (`opaque:`) are not applied.
+MARKER_FAMILY = {"qwen3": "qwen3_coder"}
+
+
+def marker_family(family):
+    """Corpus family -> the parser_families.yaml `markers:` family that types it."""
+    return MARKER_FAMILY.get(family, family)

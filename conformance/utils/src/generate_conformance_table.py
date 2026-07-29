@@ -2425,7 +2425,10 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             tooltip = {
                 "head": f'UNIFIED.{g_num}.{g_sub} ({s}) — {f}',
                 "description": desc,
-                "input": {"kind": "chunks", "text": c["input"], "chunks": chunk_rows, "family": f},
+                # `family` here selects the GRAMMAR the colorizer types markup with,
+                # so it must be the marker-registry family, not the corpus one.
+                "input": {"kind": "chunks", "text": c["input"], "chunks": chunk_rows,
+                          "family": unified_taxonomy.marker_family(f)},
                 "candidates": [
                     {"key": "dynamo", "label": dynamo_label, "impl": "dynamo",
                      "version": None, "parse_mode": "unified", "leak": dverd == "LEAK",

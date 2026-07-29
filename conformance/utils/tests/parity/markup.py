@@ -154,6 +154,38 @@ def _declared_lookup(family: str | None) -> dict[str, tuple[str, str]]:
     return table
 
 
+def _declared_opaque(family: str | None) -> tuple[set[str], dict[str, tuple[str, bool]]]:
+    """Regions whose body is argument DATA rather than markup.
+
+    Inside such a region nothing is a control token until the region's OWN
+    terminator — what the parser does when it reads a value to its terminator, so a
+    marker-looking substring in a value survives (`I7`). See `opaque:` in
+    parser_families.yaml.
+
+    Returns `(pair_ids, spans)`:
+      * `pair_ids` — regions opened by a normal open (or toggle) and closed by that
+        pair's own closer: qwen3 `<parameter=K>` .. `</parameter>`, gemma4's
+        `<|"|>` .. `<|"|>` quote toggle.
+      * `spans` — `{from_token: (to_token, json)}`, for regions whose opener is a
+        SINGLETON with no closer of its own, so the terminator must be named: kimi's
+        `<|tool_call_argument_begin|>` .. `<|tool_call_end|>`. With `json: true` the
+        body is a JSON object and a terminator-looking token INSIDE one of its string
+        literals is data — kimi's terminator is the very token that can appear in a
+        value, so position alone cannot disambiguate it. Mirrors the parser, which
+        parses the JSON blob rather than scanning for the marker.
+    """
+    if not family or family not in _FAMILY_MARKERS:
+        return set(), {}
+    pair_ids: set[str] = set()
+    spans: dict[str, tuple[str, bool]] = {}
+    for entry in _FAMILY_MARKERS[family].get("opaque") or []:
+        if isinstance(entry, dict):
+            spans[entry["from"]] = (entry["to"], bool(entry.get("json")))
+        else:
+            pair_ids.add(entry)
+    return pair_ids, spans
+
+
 def declared_markers() -> dict[str, dict[str, list]]:
     """Every family's declared `pairs`/`singletons` (the subset `_declared_lookup`
     consumes), as plain JSON for the JS colorizer. The `leak:` markers are omitted —
@@ -165,6 +197,8 @@ def declared_markers() -> dict[str, dict[str, list]]:
             entry["pairs"] = [list(p) for p in decl["pairs"]]
         if decl.get("singletons"):
             entry["singletons"] = list(decl["singletons"])
+        if decl.get("opaque"):
+            entry["opaque"] = list(decl["opaque"])
         if entry:
             out[family] = entry
     return out
@@ -237,6 +271,21 @@ def _tag_kind_and_name(inner: str) -> tuple[str | None, str, str | None]:
     return ("open", _name_of(inner), None)
 
 
+def _in_json_string(text: str, start: int, pos: int) -> bool:
+    """Is `pos` inside a JSON string literal of the object starting at `start`?"""
+    in_str = False
+    i = start
+    while i < pos:
+        c = text[i]
+        if in_str and c == "\\":
+            i += 2
+            continue
+        if c == '"':
+            in_str = not in_str
+        i += 1
+    return in_str
+
+
 def _colorize_xml(text: str, family: str | None = None) -> str:
     """HTML-escape `text` and wrap each `<...>` token in a span.
     Paired open/close (stack match by tag name) -> class 'tt-paired'.
@@ -253,6 +302,10 @@ def _colorize_xml(text: str, family: str | None = None) -> str:
     surrounding pairs.
     """
     declared = _declared_lookup(family)
+    opaque_pairs, opaque_spans = _declared_opaque(family)
+    # Argument-value region we are inside:
+    #   ("pair", pair_id, False, 0) | ("token", end_token, json_body, region_start)
+    open_opaque: tuple[str, str, bool, int] | None = None
     pieces: list[str] = []
     stack: list[tuple[str, int]] = []
     last = 0
@@ -270,11 +323,30 @@ def _colorize_xml(text: str, family: str | None = None) -> str:
         else:
             kind, pair_id, color_override = _tag_kind_and_name(tok[1:-1])
         esc = html_lib.escape(tok)
+        if open_opaque is not None:
+            # Inside an argument value: ONLY this region's own terminator ends it.
+            # Every other token is part of the value, so it renders as plain data.
+            mode, want, json_body, region_start = open_opaque
+            if mode == "pair":
+                ends = kind in ("close", "toggle") and pair_id == want
+            else:
+                ends = tok == want and not (
+                    json_body and _in_json_string(text, region_start, m.start())
+                )
+            if ends:
+                open_opaque = None
+            else:
+                pieces.append(esc)
+                last = m.end()
+                continue
         if kind is None:
             pieces.append(f'<span class="tt-orphan">{esc}</span>')
         elif kind == "singleton":
             cls = _singleton_class_for(pair_id)
             pieces.append(f'<span class="{cls}">{esc}</span>')
+            if tok in opaque_spans:
+                end_tok, json_body = opaque_spans[tok]
+                open_opaque = ("token", end_tok, json_body, m.end())
         elif kind == "toggle":
             # Self-paired delimiter: close the nearest matching open if one is
             # on the stack, otherwise treat this as the open. A leftover open
@@ -297,6 +369,8 @@ def _colorize_xml(text: str, family: str | None = None) -> str:
             else:
                 pieces.append(esc)
                 stack.append((pair_id, len(pieces) - 1))
+                if pair_id in opaque_pairs:
+                    open_opaque = ("pair", pair_id, False, 0)
         elif kind == "close":
             match_at = -1
             for i in range(len(stack) - 1, -1, -1):
@@ -324,6 +398,8 @@ def _colorize_xml(text: str, family: str | None = None) -> str:
         else:
             pieces.append(esc)
             stack.append((pair_id, len(pieces) - 1))
+            if pair_id in opaque_pairs:
+                open_opaque = ("pair", pair_id, False, 0)
         last = m.end()
     for _, idx in stack:
         pieces[idx] = f'<span class="tt-orphan">{pieces[idx]}</span>'
@@ -334,6 +410,8 @@ def _colorize_xml(text: str, family: str | None = None) -> str:
 
 def _xml_token_intervals(text: str, family: str | None = None) -> list[dict[str, Any]]:
     declared = _declared_lookup(family)
+    opaque_pairs, opaque_spans = _declared_opaque(family)
+    open_opaque: tuple[str, str, bool, int] | None = None
     intervals: list[dict[str, Any]] = []
     stack: list[tuple[str, int]] = []
     for match in _TAG_RE.finditer(text):
@@ -343,17 +421,35 @@ def _xml_token_intervals(text: str, family: str | None = None) -> list[dict[str,
                 {"start": match.start(), "end": match.end(), "class": _NS_CLASS}
             )
             continue
-        idx = len(intervals)
         hit = declared.get(tok)
         if hit is not None:
             kind, pair_id = hit
         else:
             kind, pair_id, _color_override = _tag_kind_and_name(tok[1:-1])
+        if open_opaque is not None:
+            # Inside an argument value (see _declared_opaque): only this region's own
+            # terminator is markup. Everything else gets NO interval, so it renders as
+            # plain value text.
+            mode, want, json_body, region_start = open_opaque
+            if mode == "pair":
+                ends = kind in ("close", "toggle") and pair_id == want
+            else:
+                ends = tok == want and not (
+                    json_body and _in_json_string(text, region_start, match.start())
+                )
+            if ends:
+                open_opaque = None
+            else:
+                continue
+        idx = len(intervals)
         intervals.append({"start": match.start(), "end": match.end(), "class": None})
         if kind is None:
             intervals[idx]["class"] = "tt-orphan"
         elif kind == "singleton":
             intervals[idx]["class"] = _singleton_class_for(pair_id)
+            if tok in opaque_spans:
+                end_tok, json_body = opaque_spans[tok]
+                open_opaque = ("token", end_tok, json_body, match.end())
         elif kind == "toggle":
             match_at = -1
             for i in range(len(stack) - 1, -1, -1):
@@ -369,6 +465,8 @@ def _xml_token_intervals(text: str, family: str | None = None) -> list[dict[str,
                 del stack[match_at:]
             else:
                 stack.append((pair_id, idx))
+                if pair_id in opaque_pairs:
+                    open_opaque = ("pair", pair_id, False, 0)
         elif kind == "close":
             match_at = -1
             for i in range(len(stack) - 1, -1, -1):
@@ -386,6 +484,8 @@ def _xml_token_intervals(text: str, family: str | None = None) -> list[dict[str,
                 intervals[idx]["class"] = "tt-orphan"
         else:
             stack.append((pair_id, idx))
+            if pair_id in opaque_pairs:
+                open_opaque = ("pair", pair_id, False, 0)
     for _, idx in stack:
         intervals[idx]["class"] = "tt-orphan"
     return intervals

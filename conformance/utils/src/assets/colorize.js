@@ -178,8 +178,49 @@
 
   // XML/pipe-marker path: escape text, wrap each `<...>` token in a span; stack-match
   // open/close (fresh palette color per pair), undeclared/unmatched -> tt-orphan.
+  // Regions whose body is argument DATA rather than markup. Inside one, nothing is a
+  // control token until that region's OWN terminator — the rule the parser follows
+  // when it reads a value to its terminator, so a marker-looking substring inside a
+  // value survives instead of being painted as a real marker (`I7`).
+  // Declared per family under `opaque:` in parser_families.yaml.
+  // Mirrors markup.py::_declared_opaque.
+  //   pairs: open (or toggle) .. that pair's own closer  (qwen3 `<parameter=K>`,
+  //          gemma4's `<|"|>` quote toggle)
+  //   spans: SINGLETON opener .. an explicitly named terminator (kimi's argument
+  //          blob). `json` marks a JSON body whose string literals hide a
+  //          terminator-looking token — kimi's terminator is the very token that can
+  //          appear in a value, so position alone cannot disambiguate it.
+  function declaredOpaque(family, markersMap) {
+    var out = { pairs: {}, spans: {} };
+    if (!family || !markersMap || !markersMap[family]) { return out; }
+    (markersMap[family].opaque || []).forEach(function (e) {
+      if (e && typeof e === 'object') {
+        out.spans[e.from] = [e.to, !!e.json];
+      } else {
+        out.pairs[e] = true;
+      }
+    });
+    return out;
+  }
+
+  // Is `pos` inside a JSON string literal of the object starting at `start`?
+  // Mirrors markup.py::_in_json_string.
+  function inJsonString(text, start, pos) {
+    var inStr = false;
+    for (var i = start; i < pos; i++) {
+      var c = text.charAt(i);
+      if (inStr && c === '\\') { i++; continue; }
+      if (c === '"') { inStr = !inStr; }
+    }
+    return inStr;
+  }
+
   function colorizeXml(text, family, markersMap) {
     var declared = declaredLookup(family, markersMap);
+    var opaque = declaredOpaque(family, markersMap);
+    // Argument-value region we are inside:
+    //   ['pair', pairId, false, 0] | ['token', endTok, jsonBody, regionStart]
+    var openOpaque = null;
     var st = new State();
     var pieces = [];
     var stack = [];  // [pairId, pieceIndex]
@@ -203,10 +244,31 @@
         kind = k[0]; pairId = k[1]; colorOverride = k[2];
       }
       var esc = escapeHtml(tok);
+      if (openOpaque !== null) {
+        // Inside an argument value: ONLY this region's own terminator ends it. Every
+        // other token is part of the value, so it renders as plain data.
+        var ends;
+        if (openOpaque[0] === 'pair') {
+          ends = (kind === 'close' || kind === 'toggle') && pairId === openOpaque[1];
+        } else {
+          ends = tok === openOpaque[1]
+            && !(openOpaque[2] && inJsonString(text, openOpaque[3], m.index));
+        }
+        if (ends) {
+          openOpaque = null;
+        } else {
+          pieces.push(esc);
+          last = re.lastIndex;
+          continue;
+        }
+      }
       if (kind === null) {
         pieces.push('<span class="tt-orphan">' + esc + '</span>');
       } else if (kind === 'singleton') {
         pieces.push('<span class="' + st.singletonClassFor(pairId) + '">' + esc + '</span>');
+        if (opaque.spans[tok]) {
+          openOpaque = ['token', opaque.spans[tok][0], opaque.spans[tok][1], re.lastIndex];
+        }
       } else if (kind === 'toggle') {
         // Self-paired delimiter: close nearest matching open, else treat as open.
         var matchAtT = findFromTop(stack, pairId);
@@ -220,6 +282,7 @@
         } else {
           pieces.push(esc);
           stack.push([pairId, pieces.length - 1]);
+          if (opaque.pairs[pairId]) { openOpaque = ['pair', pairId, false, 0]; }
         }
       } else if (kind === 'close') {
         var matchAt = findFromTop(stack, pairId);
@@ -238,6 +301,7 @@
       } else {  // open
         pieces.push(esc);
         stack.push([pairId, pieces.length - 1]);
+        if (opaque.pairs[pairId]) { openOpaque = ['pair', pairId, false, 0]; }
       }
       last = re.lastIndex;
     }
@@ -275,6 +339,8 @@
   // so a tag spanning a chunk boundary keeps one color (mirrors colorize_stream_deltas).
   function xmlTokenIntervals(text, family, markersMap) {
     var declared = declaredLookup(family, markersMap);
+    var opaque = declaredOpaque(family, markersMap);
+    var openOpaque = null;
     var st = new State();
     var intervals = [];
     var stack = [];
@@ -286,7 +352,6 @@
         intervals.push({ start: m.index, end: re.lastIndex, cls: NS_CLASS });
         continue;
       }
-      var idx = intervals.length;
       var kind, pairId;
       var hit = declared[tok];
       if (hit != null) {
@@ -295,11 +360,28 @@
         var k = tagKindAndName(tok.slice(1, -1));
         kind = k[0]; pairId = k[1];
       }
+      if (openOpaque !== null) {
+        // Inside an argument value (see declaredOpaque): only this region's own
+        // terminator is markup. Everything else gets NO interval, so it renders as
+        // plain value text.
+        var endsI;
+        if (openOpaque[0] === 'pair') {
+          endsI = (kind === 'close' || kind === 'toggle') && pairId === openOpaque[1];
+        } else {
+          endsI = tok === openOpaque[1]
+            && !(openOpaque[2] && inJsonString(text, openOpaque[3], m.index));
+        }
+        if (endsI) { openOpaque = null; } else { continue; }
+      }
+      var idx = intervals.length;
       intervals.push({ start: m.index, end: re.lastIndex, cls: null });
       if (kind === null) {
         intervals[idx].cls = 'tt-orphan';
       } else if (kind === 'singleton') {
         intervals[idx].cls = st.singletonClassFor(pairId);
+        if (opaque.spans[tok]) {
+          openOpaque = ['token', opaque.spans[tok][0], opaque.spans[tok][1], re.lastIndex];
+        }
       } else if (kind === 'toggle') {
         var matchAtT = findFromTop(stack, pairId);
         if (matchAtT >= 0) {
@@ -310,6 +392,7 @@
           stack.length = matchAtT;
         } else {
           stack.push([pairId, idx]);
+          if (opaque.pairs[pairId]) { openOpaque = ['pair', pairId, false, 0]; }
         }
       } else if (kind === 'close') {
         var matchAt = findFromTop(stack, pairId);
@@ -324,6 +407,7 @@
         }
       } else {  // open
         stack.push([pairId, idx]);
+        if (opaque.pairs[pairId]) { openOpaque = ['pair', pairId, false, 0]; }
       }
     }
     for (var i = 0; i < stack.length; i++) {

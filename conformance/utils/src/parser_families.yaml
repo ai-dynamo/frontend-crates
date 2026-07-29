@@ -55,6 +55,23 @@ families:
 #   leak:       [s, ...]             extra substrings for the leak detector only —
 #                                    prefixes of parameterized tags (e.g. "<invoke"),
 #                                    tokens the colorizer already handles specially
+#   opaque:     [entry, ...]         regions whose BODY is argument DATA, not markup.
+#                                    Inside one, NOTHING is a control token until that
+#                                    region's own closer — mirroring the parser, which
+#                                    reads a value to its own terminator so a
+#                                    marker-looking substring inside it survives (I7).
+#                                    Without this the colorizer paints an embedded
+#                                    `</tool_call>` in a value as a real close and
+#                                    mis-colors the rest of the value.
+#                                    Two entry forms:
+#                                      "<pair_id>"            region runs from an open
+#                                        (or toggle) to that pair's own closer. A
+#                                        pair_id is the OPEN token of a declared pair,
+#                                        or the tag NAME of a parameterized tag
+#                                        (`<parameter=cmd>` -> `parameter`).
+#                                      {from: TOK, to: TOK}   region opened by a
+#                                        SINGLETON, which has no closer of its own, so
+#                                        the terminator is named explicitly.
 markers:
   deepseek_v3:
     pairs: [["<｜tool▁calls▁begin｜>", "<｜tool▁calls▁end｜>"], ["<｜tool▁call▁begin｜>", "<｜tool▁call▁end｜>"]]
@@ -70,6 +87,9 @@ markers:
     leak: ["<｜DSML｜", "</｜DSML｜"]
   gemma4:
     pairs: [["<|tool_call>", "<tool_call|>"]]
+    # `<|"|>` ... `<|"|>` quotes a raw string value; `__gemma_quote` is the pair id the
+    # colorizer's classifier gives that toggle.
+    opaque: ["__gemma_quote"]
     leak: ['<|"|>']
   glm47:
     pairs: [["<tool_call>", "</tool_call>"], ["<arg_key>", "</arg_key>"], ["<arg_value>", "</arg_value>"]]
@@ -83,6 +103,9 @@ markers:
   kimi_k2:
     pairs: [["<|tool_calls_section_begin|>", "<|tool_calls_section_end|>"], ["<|tool_call_begin|>", "<|tool_call_end|>"]]
     singletons: ["<|tool_call_argument_begin|>"]
+    # The JSON argument blob runs from the singleton to the call close; a marker
+    # inside one of its string values is data.
+    opaque: [{from: "<|tool_call_argument_begin|>", to: "<|tool_call_end|>", json: true}]
   llama3_json:
     singletons: ["<|python_tag|>"]
   minimax_m2:
@@ -108,6 +131,10 @@ markers:
     pairs: [["<tool_call>", "</tool_call>"]]
   qwen3_coder:
     pairs: [["<tool_call>", "</tool_call>"]]
+    # `<parameter=K>` ... `</parameter>` delimits a raw, UNQUOTED value: the grammar
+    # has no escaping, so the value runs to its own closer and anything that looks
+    # like an enclosing marker inside it is data.
+    opaque: ["parameter"]
     leak: ["<function=", "</function", "<parameter=", "</parameter"]
   # Harmony's linear turn tokens pseudo-pair (`<|start|>` closes with `<|end|>` /
   # `<|return|>` / `<|call|>`) — richer than the pairs/singletons schema, so the
