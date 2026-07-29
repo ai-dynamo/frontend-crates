@@ -2304,8 +2304,13 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                   else "vLLM Python 0.25.x (expected)")
     vrust_label = f"vLLM Rust {vrust_ver_label} (stream, Combined & Unified)"
     candidates = [
-        _cand("dynamo", dynamo_label, "B"),  # Compare-on by default
-        _cand("golden", "GOLDEN (oracle)", "A"),  # Reference (default)
+        # Dynamo is the default REF (starred): the cell color reflects Dynamo vs GOLDEN.
+        # golden stays a candidate as the fixed NΔ baseline (cmp.golden) but is no longer
+        # the base — a golden REF never diverges from itself, so it would color every cell
+        # green. See conformance_view.compareBarHtml (golden's hidden ref radio is dropped
+        # when an engine is the default REF).
+        _cand("dynamo", dynamo_label, "A"),  # Reference (default, starred)
+        _cand("golden", "GOLDEN (oracle)", "B"),  # fixed NΔ baseline, not the base
         _cand("vllm", vllm_label, "B"),  # Compare-on by default
     ]
     if vrust_live:
@@ -2503,12 +2508,13 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             + (f', and <strong>vLLM Rust {vrust_ver_label}</strong> (native '
                '<strong>UnifiedParser</strong> for gemma4, <strong>CombinedParser</strong> '
                'otherwise)' if vrust_live else '')
-            + '. GOLDEN is the oracle, so a cell is red when a shown parser\'s output '
-            'DIVERGES from golden — any class: leaked markup (↯), merged/reordered events, '
-            'or dropped content. A green cell means every shown parser matches golden '
-            'exactly; the NΔ count is how many shown parsers diverge. The native gemma4 '
-            'UnifiedParser (vLLM Rust) is the only column that reproduces the golden order '
-            'on the reasoning↔tool cases.'),
+            + '. GOLDEN is the oracle, so a cell is red when the REF — the starred engine '
+            '(default Dynamo) — DIVERGES from golden in any class: leaked markup (↯), '
+            'merged/reordered events, or dropped content (✗). A green cell means the REF '
+            'matches golden exactly; the NΔ count is how many Compare-with engines diverge '
+            '(informational — they never color the cell). Star a different engine to judge '
+            'it instead. The native gemma4 UnifiedParser (vLLM Rust) is the only column '
+            'that reproduces the golden order on the reasoning↔tool cases.'),
         "details_note_html": None,
     }
 

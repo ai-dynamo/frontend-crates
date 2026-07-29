@@ -497,10 +497,16 @@
     var groups = [['Dynamo', 'dynamo'], ['vLLM', 'vllm'], ['SGLang', 'sglang']];
     var html = '<div class="cmpctl" role="group" aria-label="Pick one Reference parser'
       + ' (radio) and any number of Compare-with parsers (checkbox)">';
-    // Golden is the fixed, hidden reference — its output is shown in the input column, not
-    // selectable. Emit a hidden checked ref radio so golden stays the comparison base
-    // until the user stars an engine (then NΔ still counts vs golden; red = that engine).
-    if ((tab.candidates || []).some(function (c) { return c.key === 'golden'; })) {
+    // Golden is the oracle shown in the input column, not a selectable engine. Make it the
+    // hidden comparison base ONLY when no engine is the default Reference — otherwise an
+    // engine (Dynamo on the Unified tab) is the starred REF and golden is just the fixed
+    // NΔ baseline (cmp.golden). A golden REF would color every cell green (it never diverges
+    // from itself), which is exactly what the Unified red-on-diff rule must avoid.
+    var hasGolden = (tab.candidates || []).some(function (c) { return c.key === 'golden'; });
+    var engineRef = (tab.candidates || []).some(function (c) {
+      return c.key !== 'golden' && c.default_bucket === 'A';
+    });
+    if (hasGolden && !engineRef) {
       html += '<input type="radio" class="cmp-ref" name="ref_' + escapeAttr(tab.id)
         + '" value="golden" checked style="display:none" aria-hidden="true">';
     }

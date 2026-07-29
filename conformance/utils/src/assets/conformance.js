@@ -210,29 +210,26 @@
       const diffs = avail.filter(function (o) { return o.sig !== refSig; }).length;
       const leak = bd.leak === 1;
       const redOnDiff = cell.getAttribute('data-red-on-diff') === '1';
-      // Unified tab (data-red-on-diff): GOLDEN is the fixed oracle and the REF (base) is
-      // ITSELF an engine measured against it. So a cell is red whenever ANY shown engine
-      // diverges from golden — the base OR any compare. `avail` excludes the base, so its
-      // own divergence is counted separately; without this a diverging REF (e.g. Dynamo
-      // starred, no compares) rendered green. ↯ still flags a leak within the divergence.
-      const baseDiverges = redOnDiff && base !== 'golden' && goldenSig != null
+      // Unified tab (data-red-on-diff): GOLDEN is the fixed oracle, and the cell color
+      // reflects ONLY the REF — the starred engine (`base`, default Dynamo) — measured
+      // against golden. A red cell means the REF's own output diverges from golden. The
+      // Compare-with engines still surface their divergence count as NΔ, but never color
+      // the cell (a compare diverging is the compare's business, not the REF's). golden as
+      // REF never diverges from itself, so star an engine to evaluate it.
+      const refDiverges = redOnDiff && base !== 'golden' && goldenSig != null
         && bd && bd.na !== 1 && bd.sig !== goldenSig;
-      const totalDiff = diffs + (baseDiverges ? 1 : 0);
       const donly = avail.length === 0;
-      const leaked = redOnDiff
-        ? (leak || avail.some(function (o) { return o.leak === 1; }))
-        : leak;
-      // Δ suffix = count of diverging shown engines (base + compares on Unified; compares
-      // elsewhere). "=" all match, "" nothing to measure, a lone leak "↯" carries no count.
+      const leaked = leak;  // the REF's own leak drives ↯, same as every other tab
+      // Marker: ✗ when the REF diverges (the red signal); otherwise NΔ = how many Compare
+      // engines diverge from golden (informational, stays green), "=" when all agree.
       let txt;
       if (redOnDiff) {
-        const noEngine = base === 'golden' && donly;  // only the oracle selected
-        txt = noEngine ? '' : (totalDiff === 0 ? '=' : String(totalDiff) + 'Δ');
+        txt = refDiverges ? '✗' : (diffs > 0 ? String(diffs) + 'Δ' : '=');
       } else {
         txt = donly ? '' : (diffs === 0 ? '=' : String(diffs) + 'Δ');
       }
       if (marker) { marker.textContent = (leaked ? '↯' : '') + txt; }
-      const problem = redOnDiff ? (totalDiff > 0 || leaked) : leaked;
+      const problem = redOnDiff ? refDiverges : leaked;
       cell.classList.add(problem ? 'cmp-leak' : 'cmp-eq');
       if (countThis) { if (problem) { counts.problem++; } else { counts.ok++; } }
       toggleCands(cell, active, base);
