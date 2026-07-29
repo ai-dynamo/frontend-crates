@@ -93,6 +93,13 @@ pub struct BasicReasoningParser {
     /// reserved markers all begin with `<|`, so its configuration can safely
     /// hold a trailing `<` for one chunk without changing other model families.
     buffer_single_char_marker_prefix: bool,
+    /// Whether a configured tool marker may still be the first visible
+    /// boundary of prompt-prefilled reasoning.
+    /// Consumed once caller-provided state or an explicit boundary establishes
+    /// state. Until then, streaming input remains ambiguous and is buffered:
+    /// bytes emitted as normal text cannot later be reclassified as reasoning
+    /// if a tool marker arrives in a subsequent chunk.
+    recover_tool_start_without_opener: bool,
     /// Optional markers that force-exit reasoning mode when encountered inside a
     /// reasoning block (e.g. Kimi-K2/K2.5 models sometimes emit
     /// `<|tool_calls_section_begin|>` without first closing `</think>`).
@@ -115,6 +122,7 @@ impl BasicReasoningParser {
             stripped_think_start: false,
             recover_dangling_end: false,
             buffer_single_char_marker_prefix: false,
+            recover_tool_start_without_opener: false,
             tool_start_tokens: Vec::new(),
         }
     }
@@ -129,8 +137,7 @@ impl BasicReasoningParser {
         self
     }
 
-    /// Enables streaming dangling-end recovery: a close marker without a visible
-    /// opener routes the preceding text to reasoning instead of normal text.
+    /// Enables streaming dangling-close recovery.
     pub fn with_dangling_end_recovery(mut self) -> Self {
         self.recover_dangling_end = true;
         self
@@ -143,11 +150,25 @@ impl BasicReasoningParser {
         self.buffer_single_char_marker_prefix = true;
         self
     }
+
+    /// Allows a configured tool marker to be the first visible boundary of
+    /// prompt-prefilled reasoning in both batch and streaming parsing.
+    ///
+    /// Streaming input before that boundary is buffered until a start, close,
+    /// tool marker, or EOF establishes whether it is reasoning or normal text.
+    /// Callers with authoritative state should use `set_in_reasoning` instead.
+    pub fn with_implicit_tool_start_recovery(mut self) -> Self {
+        self.recover_tool_start_without_opener = true;
+        self
+    }
 }
 
 impl ReasoningParser for BasicReasoningParser {
     fn set_in_reasoning(&mut self, in_reasoning: bool) {
         self._in_reasoning = in_reasoning;
+        // The caller supplied authoritative state, so a tool marker no longer
+        // needs to infer a missing opener.
+        self.recover_tool_start_without_opener = false;
         if in_reasoning {
             // Mark the start token as already stripped so the parser doesn't
             // look for it in the stream — the template already injected it.
@@ -173,7 +194,17 @@ impl ReasoningParser for BasicReasoningParser {
         let has_dangling_end = supports_dangling_end_recovery
             && !has_think_tag
             && text.contains(&self.think_end_token);
-        let in_reasoning = self._in_reasoning || has_think_tag || has_dangling_end;
+        let has_tool_start = earliest_marker_offset(text, &self.tool_start_tokens).is_some();
+        // A configured tool marker can be the first visible boundary after a
+        // prompt-prefilled reasoning opener, just like a dangling end marker.
+        // Keep this recovery opt-in so ordinary parsers do not reinterpret text
+        // before a tool call as reasoning.
+        let has_implicit_tool_start = self.recover_tool_start_without_opener
+            && !has_think_tag
+            && !has_dangling_end
+            && has_tool_start;
+        let in_reasoning =
+            self._in_reasoning || has_think_tag || has_dangling_end || has_implicit_tool_start;
         if !in_reasoning {
             return ParserResult {
                 normal_text: text.to_string(),
@@ -183,7 +214,6 @@ impl ReasoningParser for BasicReasoningParser {
 
         // If force_reasoning and no start tag, no end tag, and no tool-start marker,
         // treat entire text as reasoning.
-        let has_tool_start = earliest_marker_offset(text, &self.tool_start_tokens).is_some();
         if self._in_reasoning
             && !has_think_tag
             && !text.contains(&self.think_end_token)
@@ -209,7 +239,8 @@ impl ReasoningParser for BasicReasoningParser {
         //     normal_text. Without `&& !has_think_tag`, the implicit-reasoning
         //     span would absorb the literal <think> token into reasoning_text
         //     as a markup leak (parser-owned syntax surfacing to consumers).
-        let mut currently_reasoning = (self._in_reasoning && !has_think_tag) || has_dangling_end;
+        let mut currently_reasoning =
+            (self._in_reasoning && !has_think_tag) || has_dangling_end || has_implicit_tool_start;
 
         while cursor < text.len() {
             if currently_reasoning {
@@ -329,6 +360,7 @@ impl ReasoningParser for BasicReasoningParser {
                 self._buffer = current_text[self.think_start_token.len()..].to_string();
                 self.stripped_think_start = true;
                 self._in_reasoning = true;
+                self.recover_tool_start_without_opener = false;
                 continue;
             }
 
@@ -369,6 +401,7 @@ impl ReasoningParser for BasicReasoningParser {
                     self._buffer.clear();
                     self._in_reasoning = false;
                     self.stripped_think_start = false;
+                    self.recover_tool_start_without_opener = false;
                     break;
                 }
 
@@ -379,6 +412,7 @@ impl ReasoningParser for BasicReasoningParser {
                     self._buffer = current_text[after_end..].to_string();
                     self._in_reasoning = false;
                     self.stripped_think_start = false; // Allow detecting next <think> block
+                    self.recover_tool_start_without_opener = false;
                     continue; // Process remainder — may contain further blocks
                 } else {
                     // No complete end token — check for partial at end of buffer
@@ -389,7 +423,14 @@ impl ReasoningParser for BasicReasoningParser {
                         let ol_end = overlap(&current_text, &self.think_end_token);
                         let ol_tool = max_marker_overlap(&current_text, &self.tool_start_tokens);
                         let ol = ol_end.max(ol_tool);
-                        if ol >= 2 || (self.buffer_single_char_marker_prefix && ol == 1) {
+                        // A one-byte think-marker overlap remains too ambiguous
+                        // (notably a lone `<` before ordinary tool XML), but a
+                        // configured tool marker must be preserved from its
+                        // first byte or the downstream parser can never recover it.
+                        if ol_end >= 2
+                            || ol_tool >= 1
+                            || (self.buffer_single_char_marker_prefix && ol == 1)
+                        {
                             let safe_end = current_text.len() - ol;
                             if safe_end > 0 {
                                 accumulated_reasoning.push_str(&current_text[..safe_end]);
@@ -406,24 +447,49 @@ impl ReasoningParser for BasicReasoningParser {
                 }
             } else {
                 // Not in reasoning. Look for the next open marker, but also
-                // handle close markers that appear without a visible opener.
+                // handle close or tool markers that appear without a visible
+                // opener when implicit-reasoning recovery is enabled.
                 let think_pos = current_text.find(self.think_start_token.as_str());
                 let end_pos = current_text.find(self.think_end_token.as_str());
+                let tool_pos = if self.recover_tool_start_without_opener {
+                    earliest_marker_offset(&current_text, &self.tool_start_tokens)
+                } else {
+                    None
+                };
 
                 if let Some(start_pos) = think_pos {
-                    let start_before_end = match end_pos {
-                        Some(end_pos) => start_pos <= end_pos,
+                    let first_boundary_pos = match (end_pos, tool_pos) {
+                        (Some(end_pos), Some(tool_pos)) => Some(end_pos.min(tool_pos)),
+                        (Some(end_pos), None) => Some(end_pos),
+                        (None, Some(tool_pos)) => Some(tool_pos),
+                        (None, None) => None,
+                    };
+                    let start_before_boundary = match first_boundary_pos {
+                        Some(boundary_pos) => start_pos <= boundary_pos,
                         None => true,
                     };
-                    if start_before_end {
+                    if start_before_boundary {
                         // <think> arrives first → enter reasoning.
                         accumulated_normal.push_str(&current_text[..start_pos]);
                         let after_start = start_pos + self.think_start_token.len();
                         self._buffer = current_text[after_start..].to_string();
                         self._in_reasoning = true;
                         self.stripped_think_start = true;
+                        self.recover_tool_start_without_opener = false;
                         continue;
                     }
+                }
+
+                let tool_before_end = tool_pos
+                    .filter(|tool_pos| end_pos.map(|end_pos| *tool_pos < end_pos).unwrap_or(true));
+                if let Some(tool_pos) = tool_before_end {
+                    accumulated_reasoning.push_str(&current_text[..tool_pos]);
+                    accumulated_normal.push_str(&current_text[tool_pos..]);
+                    self._buffer.clear();
+                    self._in_reasoning = false;
+                    self.stripped_think_start = false;
+                    self.recover_tool_start_without_opener = false;
+                    break;
                 }
 
                 if let Some(end_pos) = end_pos {
@@ -441,25 +507,45 @@ impl ReasoningParser for BasicReasoningParser {
                     self._buffer = current_text[after_end..].to_string();
                     self._in_reasoning = false;
                     self.stripped_think_start = false;
+                    self.recover_tool_start_without_opener = false;
                     continue;
+                }
+
+                // With implicit tool-start recovery, all bytes before the first
+                // decisive boundary are ambiguous. A future chunk may contain
+                // the tool marker and retroactively establish that the entire
+                // prefix was prompt-prefilled reasoning. Because streaming
+                // deltas cannot retract previously emitted normal text, retain
+                // the complete prefix until a boundary or EOF decides it.
+                if self.recover_tool_start_without_opener {
+                    break;
                 }
 
                 // No complete marker — check for partial at end of buffer.
                 // The partial could be a prefix of either <think> or </think>
-                // (both start with `<`), so check both and use the wider overlap.
-                // Require overlap >= 2 so a lone `<` passes through for tool call
-                // XML tags like `<invoke>` or `<minimax:tool_call>`.
+                // (both start with `<`). Use the widest applicable overlap.
                 let ol_start = overlap(&current_text, &self.think_start_token);
                 let ol_end = overlap(&current_text, &self.think_end_token);
                 let ol = ol_start.max(ol_end);
-                if ol >= 2 || (self.buffer_single_char_marker_prefix && ol == 1) {
+                // Keep the historical >= 2 gate for think markers so a lone
+                // `<` passes through unless this parser explicitly opts into
+                // one-byte marker buffering.
+                if ol_start >= 2
+                    || ol_end >= 2
+                    || (self.buffer_single_char_marker_prefix && ol == 1)
+                {
+                    // An implicit close boundary determines whether every
+                    // preceding byte is reasoning. Keep the whole undecided
+                    // prefix until the next chunk confirms or rejects it;
+                    // emitting the prefix now would make a marker fakeout
+                    // impossible to restore as normal text.
+                    if self.recover_dangling_end && ol_end > ol_start {
+                        break;
+                    }
+
                     let safe_end = current_text.len() - ol;
                     if safe_end > 0 {
-                        if self.recover_dangling_end && ol_end > ol_start {
-                            accumulated_reasoning.push_str(&current_text[..safe_end]);
-                        } else {
-                            accumulated_normal.push_str(&current_text[..safe_end]);
-                        }
+                        accumulated_normal.push_str(&current_text[..safe_end]);
                     }
                     self._buffer = current_text[safe_end..].to_string();
                 } else {
@@ -1442,6 +1528,85 @@ mod tests {
         let r3 = parser.parse_reasoning_streaming_incremental("ls_section_begin|>rest", &[]);
         assert_eq!(r3.reasoning_text, "");
         assert_eq!(r3.normal_text, "<|tool_calls_section_begin|>rest");
+    }
+
+    #[rstest] // REASONING.stream.3.b, helper
+    #[case("<minimax:tool_call>", "reasoning<", "minimax:tool_call>x")]
+    #[case(
+        crate::reasoning::KIMI_K2_TOOL_SECTION_BEGIN,
+        "reasoning<",
+        "|tool_calls_section_begin|>x"
+    )]
+    #[case(
+        crate::reasoning::MINIMAX_M3_TOOL_NAMESPACE,
+        "reasoning]",
+        "<]minimax[>[x"
+    )]
+    fn test_force_exit_streaming_one_byte_tool_marker_overlap(
+        #[case] tool_start_token: &str,
+        #[case] first_chunk: &str,
+        #[case] second_chunk: &str,
+    ) {
+        let mut parser =
+            BasicReasoningParser::new("<think>".to_string(), "</think>".to_string(), true, true)
+                .with_tool_start_token(tool_start_token);
+
+        let r1 = parser.parse_reasoning_streaming_incremental(first_chunk, &[]);
+        assert_eq!(r1.reasoning_text, "reasoning");
+        assert_eq!(r1.normal_text, "");
+
+        let r2 = parser.parse_reasoning_streaming_incremental(second_chunk, &[]);
+        assert_eq!(r2.reasoning_text, "");
+        assert_eq!(r2.normal_text, format!("{tool_start_token}x"));
+    }
+
+    #[test]
+    fn test_dangling_end_builder_does_not_enable_implicit_tool_start_recovery() {
+        fn parser() -> BasicReasoningParser {
+            BasicReasoningParser::new("<think>".to_string(), "</think>".to_string(), false, true)
+                .with_dangling_end_recovery()
+                .with_tool_start_token("<tool>")
+        }
+
+        let mut batch_parser = parser();
+        let batch = batch_parser.detect_and_parse_reasoning("normal<tool>", &[]);
+        assert_eq!(batch.reasoning_text, "");
+        assert_eq!(batch.normal_text, "normal<tool>");
+
+        let mut stream_parser = parser();
+        let streamed = stream_parser.parse_reasoning_streaming_incremental("normal<tool>", &[]);
+        assert_eq!(streamed.reasoning_text, "");
+        assert_eq!(streamed.normal_text, "normal<tool>");
+    }
+
+    #[test] // REASONING.stream.3.c, helper
+    fn test_one_byte_tool_marker_overlap_resolves_as_non_marker() {
+        let mut parser =
+            BasicReasoningParser::new("<think>".to_string(), "</think>".to_string(), true, true)
+                .with_tool_start_token("<tool>");
+
+        let r1 = parser.parse_reasoning_streaming_incremental("reasoning<", &[]);
+        assert_eq!(r1.reasoning_text, "reasoning");
+        assert_eq!(r1.normal_text, "");
+
+        let r2 = parser.parse_reasoning_streaming_incremental("not-a-tool", &[]);
+        assert_eq!(r2.reasoning_text, "<not-a-tool");
+        assert_eq!(r2.normal_text, "");
+    }
+
+    #[test] // REASONING.stream.3.c, helper
+    fn test_one_byte_tool_marker_overlap_flushes_on_finish() {
+        let mut parser =
+            BasicReasoningParser::new("<think>".to_string(), "</think>".to_string(), true, true)
+                .with_tool_start_token("<tool>");
+
+        let parsed = parser.parse_reasoning_streaming_incremental("reasoning<", &[]);
+        let finished = parser.finish_reasoning_stream();
+
+        assert_eq!(parsed.reasoning_text, "reasoning");
+        assert_eq!(parsed.normal_text, "");
+        assert_eq!(finished.reasoning_text, "<");
+        assert_eq!(finished.normal_text, "");
     }
 
     #[test] // REASONING.stream.3.c, helper

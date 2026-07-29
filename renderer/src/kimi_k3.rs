@@ -12,11 +12,10 @@
 use std::collections::HashMap;
 
 use anyhow::{Context, Result, bail};
-use dynamo_tokenizers::EncodeSegment;
 use serde_json::{Map, Value};
 
 use crate::{
-    OAIChatLikeRequest, OAIPromptFormatter, PromptRenderError, RenderedPrompt,
+    OAIChatLikeRequest, OAIPromptFormatter, PromptRenderError, RenderedPrompt, RenderedSegment,
     thinking_bool_from_args,
 };
 
@@ -43,7 +42,7 @@ impl KimiK3Formatter {
         }
     }
 
-    fn build_segments(&self, req: &dyn OAIChatLikeRequest) -> Result<Vec<EncodeSegment>> {
+    fn build_segments(&self, req: &dyn OAIChatLikeRequest) -> Result<Vec<RenderedSegment>> {
         let messages = json_value(req.messages()).context("Failed to convert K3 messages")?;
         let messages = messages
             .as_array()
@@ -178,21 +177,21 @@ fn resolve_thinking_effort(args: Option<&HashMap<String, Value>>) -> String {
     .to_string()
 }
 
-fn push_segment(segments: &mut Vec<EncodeSegment>, text: impl Into<String>, allow_special: bool) {
+fn push_segment(segments: &mut Vec<RenderedSegment>, text: impl Into<String>, allow_special: bool) {
     let text = text.into();
     if !text.is_empty() {
-        segments.push(EncodeSegment {
+        segments.push(RenderedSegment {
             text,
             allow_special,
         });
     }
 }
 
-fn control(segments: &mut Vec<EncodeSegment>, text: impl Into<String>) {
+fn control(segments: &mut Vec<RenderedSegment>, text: impl Into<String>) {
     push_segment(segments, text, true);
 }
 
-fn text(segments: &mut Vec<EncodeSegment>, text: impl Into<String>) {
+fn text(segments: &mut Vec<RenderedSegment>, text: impl Into<String>) {
     push_segment(segments, text, false);
 }
 
@@ -204,7 +203,7 @@ fn escape_attr_value(value: impl std::fmt::Display) -> String {
 }
 
 fn open_tag(
-    segments: &mut Vec<EncodeSegment>,
+    segments: &mut Vec<RenderedSegment>,
     tag: &str,
     attrs: impl IntoIterator<Item = (String, String)>,
 ) {
@@ -219,17 +218,17 @@ fn open_tag(
     control(segments, SEP_TOKEN);
 }
 
-fn close_tag(segments: &mut Vec<EncodeSegment>, tag: &str) {
+fn close_tag(segments: &mut Vec<RenderedSegment>, tag: &str) {
     control(segments, CLOSE_TOKEN);
     text(segments, tag);
     control(segments, SEP_TOKEN);
 }
 
-fn end_of_msg(segments: &mut Vec<EncodeSegment>) {
+fn end_of_msg(segments: &mut Vec<RenderedSegment>) {
     control(segments, END_OF_MSG_TOKEN);
 }
 
-fn internal_system_message(segments: &mut Vec<EncodeSegment>, message_type: &str, body: &str) {
+fn internal_system_message(segments: &mut Vec<RenderedSegment>, message_type: &str, body: &str) {
     open_tag(
         segments,
         "message",
@@ -289,7 +288,7 @@ fn value_as_body_text(value: &Value) -> Result<String> {
 }
 
 fn render_content_segments(
-    segments: &mut Vec<EncodeSegment>,
+    segments: &mut Vec<RenderedSegment>,
     content: Option<&Value>,
 ) -> Result<()> {
     let Some(content) = content else {
@@ -316,7 +315,7 @@ fn render_content_segments(
 }
 
 fn render_role_message(
-    segments: &mut Vec<EncodeSegment>,
+    segments: &mut Vec<RenderedSegment>,
     message: &Value,
     role: &str,
 ) -> Result<()> {
@@ -336,7 +335,7 @@ fn render_role_message(
 }
 
 fn render_tool_declare(
-    segments: &mut Vec<EncodeSegment>,
+    segments: &mut Vec<RenderedSegment>,
     tools: &Value,
     dynamic: bool,
 ) -> Result<()> {
@@ -440,7 +439,7 @@ fn normalize_arguments(arguments: Option<&Value>) -> Result<NormalizedArguments>
 }
 
 fn render_assistant_segments(
-    segments: &mut Vec<EncodeSegment>,
+    segments: &mut Vec<RenderedSegment>,
     message: &Value,
     thinking: bool,
 ) -> Result<()> {
@@ -624,7 +623,7 @@ fn build_chat_segments(
     add_generation_prompt: bool,
     thinking: bool,
     thinking_effort: &str,
-) -> Result<Vec<EncodeSegment>> {
+) -> Result<Vec<RenderedSegment>> {
     let mut segments = Vec::new();
     let mut previous_tool_calls: Option<&Value> = None;
     let mut tool_index = 0usize;

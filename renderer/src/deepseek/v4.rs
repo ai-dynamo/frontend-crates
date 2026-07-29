@@ -350,12 +350,18 @@ impl DeepSeekV4Formatter {
         let args = args?;
         let v = args.get("reasoning_effort")?;
         match v.as_str() {
-            Some("max") => Some(ReasoningEffort::Max),
-            Some("high") => Some(ReasoningEffort::High),
+            Some("max") | Some("xhigh") => Some(ReasoningEffort::Max),
+            // DeepSeek V4 only natively distinguishes none/high/max, so the
+            // OpenAI-style intermediate levels map to "high" — the model still
+            // reasons, it just doesn't get the max-effort preamble.
+            Some("high") | Some("minimal") | Some("low") | Some("medium") => {
+                Some(ReasoningEffort::High)
+            }
+            Some("none") => None,
             _ => {
                 tracing::warn!(
                     value = ?v,
-                    "chat_template_args.reasoning_effort must be a string of \"max\" or \"high\"; ignoring and using default (none)"
+                    "chat_template_args.reasoning_effort must be one of \"none\", \"minimal\", \"low\", \"medium\", \"high\", \"xhigh\", \"max\"; ignoring and using default (none)"
                 );
                 None
             }
@@ -622,6 +628,9 @@ mod tests {
     struct MockRequest {
         messages: JsonValue,
         chat_template_args: Option<std::collections::HashMap<String, JsonValue>>,
+        tools: Option<JsonValue>,
+        tool_choice: Option<JsonValue>,
+        response_format: Option<JsonValue>,
     }
 
     impl MockRequest {
@@ -629,6 +638,9 @@ mod tests {
             Self {
                 messages,
                 chat_template_args: None,
+                tools: None,
+                tool_choice: None,
+                response_format: None,
             }
         }
 
@@ -637,6 +649,21 @@ mod tests {
             args: std::collections::HashMap<String, JsonValue>,
         ) -> Self {
             self.chat_template_args = Some(args);
+            self
+        }
+
+        fn with_tools(mut self, tools: JsonValue) -> Self {
+            self.tools = Some(tools);
+            self
+        }
+
+        fn with_tool_choice(mut self, tool_choice: JsonValue) -> Self {
+            self.tool_choice = Some(tool_choice);
+            self
+        }
+
+        fn with_response_format(mut self, response_format: JsonValue) -> Self {
+            self.response_format = Some(response_format);
             self
         }
     }
@@ -659,6 +686,123 @@ mod tests {
         ) -> Option<&std::collections::HashMap<String, serde_json::Value>> {
             self.chat_template_args.as_ref()
         }
+
+        fn tools(&self) -> Option<minijinja::value::Value> {
+            self.tools
+                .as_ref()
+                .map(minijinja::value::Value::from_serialize)
+        }
+
+        fn tool_choice(&self) -> Option<minijinja::value::Value> {
+            self.tool_choice
+                .as_ref()
+                .map(minijinja::value::Value::from_serialize)
+        }
+
+        fn response_format(&self) -> Option<minijinja::value::Value> {
+            self.response_format
+                .as_ref()
+                .map(minijinja::value::Value::from_serialize)
+        }
+    }
+
+    fn weather_tool() -> JsonValue {
+        json!([{
+            "type": "function",
+            "function": {
+                "name": "get_current_weather",
+                "description": "Get the current weather in a given location",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"location": {"type": "string"}},
+                    "required": ["location"]
+                }
+            }
+        }])
+    }
+
+    #[test]
+    fn test_render_tool_choice_none_strips_tools_keeps_response_format() {
+        use crate::OAIPromptFormatter;
+
+        let req = MockRequest::new(json!([
+            {"role": "system", "content": "sys"},
+            {"role": "user", "content": "weather in Boston?"}
+        ]))
+        .with_tools(weather_tool())
+        .with_tool_choice(json!("none"))
+        .with_response_format(json!({"type": "json_object"}));
+
+        let formatter = DeepSeekV4Formatter::new_chat();
+        let out = formatter.render(&req).unwrap();
+
+        assert!(
+            !out.contains("## Tools"),
+            "tool_choice=none must strip the tools block, got: {out}"
+        );
+        assert!(
+            !out.contains("get_current_weather"),
+            "tool schema leaked into prompt despite tool_choice=none: {out}"
+        );
+        assert!(
+            out.contains("## Response Format"),
+            "response_format must survive tool_choice=none: {out}"
+        );
+    }
+
+    #[test]
+    fn test_render_tool_choice_auto_keeps_tools() {
+        use crate::OAIPromptFormatter;
+
+        let req = MockRequest::new(json!([
+            {"role": "system", "content": "sys"},
+            {"role": "user", "content": "weather in Boston?"}
+        ]))
+        .with_tools(weather_tool())
+        .with_tool_choice(json!("auto"));
+
+        let formatter = DeepSeekV4Formatter::new_chat();
+        let out = formatter.render(&req).unwrap();
+
+        assert!(out.contains("## Tools"));
+        assert!(out.contains("get_current_weather"));
+    }
+
+    #[test]
+    fn test_render_absent_tool_choice_keeps_tools() {
+        use crate::OAIPromptFormatter;
+
+        let req = MockRequest::new(json!([
+            {"role": "system", "content": "sys"},
+            {"role": "user", "content": "weather in Boston?"}
+        ]))
+        .with_tools(weather_tool());
+
+        let formatter = DeepSeekV4Formatter::new_chat();
+        let out = formatter.render(&req).unwrap();
+
+        assert!(out.contains("## Tools"));
+        assert!(out.contains("get_current_weather"));
+    }
+
+    #[test]
+    fn test_resolve_reasoning_effort_accepts_full_range() {
+        use std::collections::HashMap;
+
+        let effort = |v: &str| {
+            let mut args = HashMap::new();
+            args.insert("reasoning_effort".to_string(), json!(v));
+            DeepSeekV4Formatter::resolve_reasoning_effort(Some(&args))
+        };
+
+        assert_eq!(effort("max"), Some(ReasoningEffort::Max));
+        assert_eq!(effort("xhigh"), Some(ReasoningEffort::Max));
+        assert_eq!(effort("high"), Some(ReasoningEffort::High));
+        assert_eq!(effort("minimal"), Some(ReasoningEffort::High));
+        assert_eq!(effort("low"), Some(ReasoningEffort::High));
+        assert_eq!(effort("medium"), Some(ReasoningEffort::High));
+        assert_eq!(effort("none"), None);
+        assert_eq!(effort("bogus"), None);
     }
 
     #[test]

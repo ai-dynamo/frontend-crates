@@ -27,6 +27,13 @@ th a:hover { background: #ffd; }
 td.model, td.parser { white-space: nowrap; }
 td.parser a { color: inherit; text-decoration: none; }
 td.parser a:hover { background: #ffd; }
+/* Unified tab: per-family parser-variant badge (vLLM Rust unified vs combined). */
+.arch-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px;
+  font-weight: 700; letter-spacing: .02em; border: 1px solid transparent; }
+.arch-unified { background: #e7f6ec; color: #137333; border-color: #9ad6ad; }
+.arch-combined { background: #fef3e0; color: #9a5b00; border-color: #f0c98a; }
+[data-theme="dark"] .arch-unified { background: #14361f; color: #7fe0a0; border-color: #2f6b45; }
+[data-theme="dark"] .arch-combined { background: #3a2a12; color: #f0be7c; border-color: #6b4e24; }
 td.cell { position: relative; text-align: center; width: 44px; min-width: 44px; max-width: 44px; font-weight: 400; }
 /* One color = one meaning, whether or not the cell has compare data. A cell without
    `data-cmp` (an n/a stub or a missing fixture) must read exactly like a compare cell
@@ -321,25 +328,77 @@ td.cell, td.parser { cursor: pointer; }
 td.cell .ttip a, td.parser .ttip a { color: #bfdbfe; text-decoration: none; border-bottom: 1.5px solid currentColor; padding-bottom: 1px; display: inline; }
 td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: transparent; }
 .ttip-head { font-weight: bold; margin-bottom: 4px; color: #fbbf24; }
+/* Inline description after the popup id: prose, so sans-serif (mono is for the code/id),
+   normal weight, and the normal tooltip text color — not the loud section blue. */
+.ttip-head-desc { font-family: -apple-system, system-ui, sans-serif; font-weight: normal; color: #e5e7eb; }
+:root[data-theme="light"] .ttip-head-desc { color: #1f2937; }
 .ttip-section { font-weight: bold; margin-top: 6px; color: #93c5fd; }
 .ttip-leak { color: #ff6b6b; font-weight: 700; }
 .ttip-pre { margin: 2px 0 0 0; white-space: pre-wrap; word-break: break-word; font-family: inherit; color: #e5e7eb; }
 /* Per-chunk emit chart: input | Dynamo Rust | vLLM Rust | vLLM Python | SGLang, one row per chunk. */
-.ttip-chunks { border-collapse: collapse; margin: 3px 0 0 0; font-size: 11px; width: 100%; }
+/* Equal-width output columns. With the default auto layout each candidate column sizes
+ * to its own content, so the REF column and the compare-with columns came out different
+ * widths and were hard to scan side by side. `table-layout: fixed` gives every column
+ * WITHOUT an explicit width an equal share of the leftover space — so only the input
+ * column is pinned below, and every output column matches. */
+.ttip-chunks { border-collapse: collapse; margin: 3px 0 0 0; font-size: 11px; width: 100%; table-layout: fixed; }
+.ttip-chunks th:first-child, .ttip-chunks td:first-child { width: 22em; }
 /* pre-wrap so runs of spaces in emitted text render faithfully — HTML collapsing
    made a whitespace-only divergence (e.g. a double vs single trailing space)
    invisible: two cells LOOKED identical while their compare signatures differed. */
-.ttip-chunks th, .ttip-chunks td { border: 1px solid #475569; padding: 2px 5px; text-align: left; vertical-align: top; white-space: pre-wrap; }
+/* `word-break` is required under the fixed layout above: a column no longer widens for
+ * its content, and an emitted `args='{"name":"get_weather",...}'` has no spaces to wrap
+ * at, so without this it would overflow its cell. */
+.ttip-chunks th, .ttip-chunks td { border: 1px solid #475569; padding: 2px 5px; text-align: left; vertical-align: top; white-space: pre-wrap; word-break: break-word; }
 .ttip-chunks th { background: #1e293b; color: #93c5fd; font-weight: 600; }
 .ttip-chunks td { color: #e5e7eb; }
 .ttip-chunks td.cin { color: #cbd5e1; max-width: 22em; word-break: break-word; }
 .ttip-chunks tr.ttip-final td { border-top: 2px solid #64748b; background: #0b1220; }
-.ttip-chunks tr.ttip-final td.cin { color: #93c5fd; font-weight: 600; }
+.ttip-chunks tr.ttip-final td.cin { color: #93c5fd; }
+/* A candidate's assembled cell whose output diverges from the golden oracle: red
+   background (mirrors the matrix red-on-diff rule so the details view agrees). */
+.ttip-chunks tr.ttip-final td.cand-diverge { background: #4a1113; }
+:root[data-theme="light"] .ttip-chunks tr.ttip-final td.cand-diverge { background: #fce8e6; }
 /* Baseline column (Dynamo Rust batch): a fixed reference left of the stream columns,
    set off with a thicker right border and a tinted background. */
 .ttip-chunks th.cbase-h { background: #1e293b; color: #fbbf24; border-right: 2px solid #64748b; }
 .ttip-chunks td.cbase { background: #0b1220; border-right: 2px solid #64748b; max-width: 16em; word-break: break-word; vertical-align: bottom; }
 .ttip-chunks .fr { color: #f59e0b; }
+
+/* Per-column GRAMMAR popup: hovering a sub-case header shows that one test case in
+ * every family's grammar, so the envelope differences are readable side by side. The
+ * `th` needs position:relative because `.ttip` is absolutely positioned against it,
+ * and the popup is wider than a data cell's since it lists ~20 families at once.
+ * These rules come AFTER the .ttip-chunks widths above so the narrower family column
+ * wins (same specificity, later source order). */
+th.case-sub, th.trow-case { position: relative; cursor: pointer; }
+/* Transposed view: the case moves to a ROW header but carries the same popup. */
+th.trow-case .ttip { min-width: 62em; font-weight: 400; text-align: left; }
+th.case-sub .ttip { min-width: 62em; font-weight: 400; text-align: left; }
+/* The grammar table must AUTO-size: `table-layout: fixed` above exists so the chunk
+ * chart's candidate columns come out equal, but here it pinned the model column to a
+ * guessed width and long names (`Qwen 3 Coder / Nemotron V3`, `Hermes-3 / Llama
+ * variants`) overflowed into the input column. Auto layout sizes it to the longest
+ * name and gives the rest to the input. */
+/* Fixed layout so input and EVERY output column come out the SAME width — auto layout
+ * sized each column to its own content, so a long header (`Dynamo v2 Rust 0.1.23 ...`)
+ * or value made that column wider than its neighbours. Under fixed layout, only the
+ * model column is pinned (a modest width that WRAPS long family names like
+ * "Qwen 3 Coder / Nemotron V3" instead of clipping — a fixed layout can't auto-size it);
+ * input + every output column then share the remaining width equally. */
+.ttip-grammar { table-layout: fixed; width: 100%; }
+.ttip-grammar thead th:first-child, .ttip-grammar td.grf { width: 10em; }
+.ttip-grammar td.grf { color: #93c5fd; font-weight: 600; white-space: normal; word-break: break-word; }
+/* Parser family under the model name: distinct models can share one grammar
+ * (DeepSeek V3 / V3.1 / V3.2), so both facts have to be visible. */
+.ttip-grammar td.grf .grfam { display: block; color: #64748b; font-weight: 400; font-size: 10px; }
+.ttip-grammar td.gri { color: #e5e7eb; }
+.ttip-grammar tr.gr-na td.gri { color: #94a3b8; font-style: italic; }
+.ttip-grammar td.gro { color: #e5e7eb; border-left: 2px solid #64748b; }
+/* Chunk seam in the stream popup: the input column shows the JOINED stream (so
+ * colors resolve across boundaries), which otherwise hides where each chunk ended. */
+.gr-chunk-sep { display: inline-block; margin: 0 1px; font-size: 0.85em; line-height: 1;
+                color: #7c8899; opacity: 0.55; vertical-align: baseline; user-select: none; }
 .ttip-unavail { margin-top: 3px; color: #94a3b8; font-style: normal; font-size: 11px; }
 /* Paired-tag palette: each distinct tag name gets a unique color (cycles
  * if more names than colors). Orphans get the red-background treatment. */
@@ -352,6 +411,9 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 .tt-c6 { color: #22d3ee; }
 .tt-c7 { color: #f87171; }
 .tt-orphan { background: #7f1d1d; color: #fecaca; padding: 0 2px; border-radius: 2px; }
+/* Unified popup: non-mono caption under the golden output in the input column. */
+.golden-out-cap { font-family: -apple-system, system-ui, sans-serif; font-size: 11px;
+  font-weight: 600; color: #9aa4b2; }
 .tt-ns { color: #6b7280; }  /* MiniMax `]<]minimax[>[` namespace token: muted decoration */
 .tt-h { padding: 0 1px; border-radius: 2px; }
 .tt-h-token { font-weight: 700; }
@@ -362,6 +424,65 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 .tt-h-call { color: #fb923c; }
 .tt-h-stop { color: #f87171; }
 .tt-h-other { color: #22d3ee; }
+
+/* Linked view (what the page renders): MARKERS get a BACKGROUND in their pair color
+ * (open/close match; distinct pairs differ, so markers are told apart). An unmatched /
+ * error marker gets a bright red bg. The hues mirror the paired-tag and harmony palettes
+ * above. Marker text stays the default color; box-decoration-break keeps the bg intact
+ * if a marker wraps. */
+.tt-mbg { border-radius: 3px; padding: 0 2px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.tt-mbg-c0 { background: rgba(52, 211, 153, 0.34); }
+.tt-mbg-c1 { background: rgba(96, 165, 250, 0.36); }
+.tt-mbg-c2 { background: rgba(251, 191, 36, 0.34); }
+.tt-mbg-c3 { background: rgba(244, 114, 182, 0.34); }
+.tt-mbg-c4 { background: rgba(167, 139, 250, 0.38); }
+.tt-mbg-c5 { background: rgba(251, 146, 60, 0.34); }
+.tt-mbg-c6 { background: rgba(34, 211, 238, 0.30); }
+.tt-mbg-c7 { background: rgba(163, 230, 53, 0.30); }
+.tt-mbg-orphan { background: #dc2626; color: #fff; }  /* unmatched / error marker: bright red bg */
+/* INJECTED marker: present in the parser's output but never in its input, so it was
+ * added deliberately rather than leaked through. minimax_append_think exists to prepend
+ * a synthetic `<think>`; painting that the same alarming red as a genuine unmatched
+ * marker claimed a bug where the fixture documents intended behavior. Violet, not red. */
+.tt-mbg-injected { background: rgba(139, 92, 246, 0.45); color: #f5f3ff; }
+.tt-mbg-ns { background: rgba(107, 114, 128, 0.45); }
+.tt-mbg-h-start { background: rgba(251, 191, 36, 0.34); }
+.tt-mbg-h-channel { background: rgba(96, 165, 250, 0.36); }
+.tt-mbg-h-constrain { background: rgba(167, 139, 250, 0.38); }
+.tt-mbg-h-message { background: rgba(52, 211, 153, 0.34); }
+.tt-mbg-h-call { background: rgba(251, 146, 60, 0.34); }
+.tt-mbg-h-stop { background: rgba(248, 113, 113, 0.34); }
+.tt-mbg-h-other { background: rgba(34, 211, 238, 0.30); }
+
+/* User text: a per-word FOREGROUND color keyed by the word through the shared per-tooltip
+ * context, so the SAME word renders the same color everywhere (input, outputs, chunks);
+ * adjacent distinct words alternate as the 8-hue palette cycles. */
+.tt-fg0 { color: #34d399; }
+.tt-fg1 { color: #60a5fa; }
+.tt-fg2 { color: #fbbf24; }
+.tt-fg3 { color: #f472b6; }
+.tt-fg4 { color: #a78bfa; }
+.tt-fg5 { color: #fb923c; }
+.tt-fg6 { color: #22d3ee; }
+.tt-fg7 { color: #a3e635; }
+
+/* Whitespace INSIDE a matched string is payload, not layout: vLLM Rust emits
+ * `"location":" NYC "` where Dynamo emits `"location":"NYC"`, and a bare space renders
+ * identically either way. Give that whitespace a background in ITS OWN word's hue, so
+ * the leading/trailing spaces are visible and obviously belong to the same string. */
+.tt-ws { border-radius: 2px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.tt-ws0 { background: rgba(52, 211, 153, 0.34); }
+.tt-ws1 { background: rgba(96, 165, 250, 0.36); }
+.tt-ws2 { background: rgba(251, 191, 36, 0.34); }
+.tt-ws3 { background: rgba(244, 114, 182, 0.34); }
+.tt-ws4 { background: rgba(167, 139, 250, 0.38); }
+.tt-ws5 { background: rgba(251, 146, 60, 0.34); }
+.tt-ws6 { background: rgba(34, 211, 238, 0.30); }
+.tt-ws7 { background: rgba(163, 230, 53, 0.30); }
+/* Whitespace belonging to no matched string — e.g. the separator between two markers.
+ * Neutral grey rather than a hue, because it is part of the format, not of a value. */
+.tt-wsp { background: rgba(148, 163, 184, 0.22); border-radius: 2px;
+          box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 
 /* ---- Transpose view (DIS-2280) ----
    A client-side transposed mirror of the conformance table: models become
@@ -460,5 +581,258 @@ body.cmp-loading .cmp-loading-note { display: block; position: fixed; top: 8px; 
 /* Popup output field labels + their quotes (reasoning_text, normal_text,
    input_text, calls, args, name — one convention): the blue input-text color.
    Fixture `explanation:` notes are secondary -> gray. */
-.ttip .fldl { color: #93c5fd; }
+.ttip .fldl { color: #9ca3af; }
 .ttip .expl { color: #9ca3af; }
+
+/* ---- Theme (light / dark) -------------------------------------------------
+ * The page rendered light while every popup rendered dark, so one document showed two
+ * conflicting surfaces. `data-theme` on <html> now drives both. Light is the default so
+ * the page keeps the appearance it has always had; dark restyles the PAGE to meet the
+ * popups, and light restyles the POPUPS to meet the page. The tooltip's marker/word
+ * palettes are translucent or mid-tone, so they read on either surface unchanged. */
+.theme-toggle { border: 1px solid #d0d7de; background: #fff; border-radius: 6px;
+  padding: 5px 9px; font-size: 13px; line-height: 1; cursor: pointer; color: #444; }
+.theme-toggle:hover { background: #f1f3f5; }
+
+/* Light page + light popups. */
+:root[data-theme="light"] .ttip { background: #ffffff; color: #1f2937; }
+:root[data-theme="light"] .ttip-head { color: #92400e; }
+/* `.ttip-pre` forces a light-gray text color for the dark popup; on the white
+   light-theme popup that reads as faint gray, so restore the normal dark text. */
+:root[data-theme="light"] .ttip-pre { color: #1f2937; }
+:root[data-theme="light"] .ttip-chunks th { background: #eef2f7; color: #1d4ed8; }
+:root[data-theme="light"] .ttip-chunks td { color: #1f2937; }
+:root[data-theme="light"] .ttip-chunks th, :root[data-theme="light"] .ttip-chunks td {
+  border-color: #cbd5e1; }
+:root[data-theme="light"] .ttip-chunks tr.ttip-final td { background: #eef2f7; }
+:root[data-theme="light"] .ttip-chunks td.cin { color: #334155; }
+:root[data-theme="light"] .ttip-grammar td.grf { color: #1d4ed8; }
+:root[data-theme="light"] .ttip a, :root[data-theme="light"] td.cell .ttip a { color: #1d4ed8; }
+
+/* Dark page + dark popups (the popups are already dark; restyle the page to match). */
+:root[data-theme="dark"] body { background: #0f172a; color: #e5e7eb; }
+:root[data-theme="dark"] th, :root[data-theme="dark"] td { border-color: #334155; }
+:root[data-theme="dark"] th { background: #1e293b; color: #cbd5e1; }
+:root[data-theme="dark"] th.case-group.case-band-0 { background: #1a2436; }
+:root[data-theme="dark"] th.case-group.case-band-1 { background: #0f172a; }
+:root[data-theme="dark"] th.case-sub.case-band-0,
+:root[data-theme="dark"] td.cell.case-band-0 { background: #16202f; }
+:root[data-theme="dark"] th.case-sub.case-band-1,
+:root[data-theme="dark"] td.cell.case-band-1 { background: #0f172a; }
+:root[data-theme="dark"] tr.section td { background: #1e293b; color: #e5e7eb; }
+:root[data-theme="dark"] td.cell.ok { color: #4ade80; }
+:root[data-theme="dark"] td.cell.na { color: #64748b; background: #1b2536; }
+:root[data-theme="dark"] td.cell.donly { color: #94a3b8; background: #1b2536; }
+:root[data-theme="dark"] td.cell.missing { color: #d6b370; background: #1b2536; }
+:root[data-theme="dark"] td.cell.research,
+:root[data-theme="dark"] td.cell.leak,
+:root[data-theme="dark"] td.cell.err { color: #f87171; }
+:root[data-theme="dark"] td.cell.todo { color: #fbbf24; }
+:root[data-theme="dark"] td.cell.documented { color: #cbd5e1; }
+:root[data-theme="dark"] td.cell a:hover, :root[data-theme="dark"] th a:hover { background: #334155; }
+:root[data-theme="dark"] .cmpctl, :root[data-theme="dark"] .radio-group {
+  background: #1e293b; border-color: #334155; }
+:root[data-theme="dark"] .cmprow-label { color: #cbd5e1; }
+:root[data-theme="dark"] .cmprow.is-ref { background: #1d3557; }
+:root[data-theme="dark"] .cmprow.is-ref .cmprow-label { color: #93c5fd; }
+:root[data-theme="dark"] .cmprow-label .cand-batch { color: #fca5a5; }
+:root[data-theme="dark"] .cmprow-label .cand-stream { color: #86efac; }
+:root[data-theme="dark"] .cmp-reset, :root[data-theme="dark"] .theme-toggle {
+  background: #1e293b; border-color: #334155; color: #cbd5e1; }
+:root[data-theme="dark"] .cmp-reset:hover, :root[data-theme="dark"] .theme-toggle:hover {
+  background: #334155; }
+:root[data-theme="dark"] .toolbar-desc { background: #3a2f00; border-color: #7a6100; color: #f5e6a8; }
+:root[data-theme="dark"] .legend-note { border-left-color: #334155; }
+:root[data-theme="dark"] .generated, :root[data-theme="dark"] .versions { color: #94a3b8; }
+
+/* ---- Light-mode popup legibility ------------------------------------------
+ * The popup palettes were chosen against a near-black surface. Dropped onto white they
+ * lose almost all contrast: the pale-green/amber/cyan word hues wash out, the grey field
+ * labels fade, and the panel itself has no visible edge against the page. Override the
+ * few things that are actually background-dependent; the dark theme keeps its originals. */
+:root[data-theme="light"] .ttip {
+  border: 1px solid #94a3b8;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.22);
+}
+/* Same 8 hues, darkened to hold contrast on white (WCAG AA for body text). */
+:root[data-theme="light"] .tt-fg0 { color: #047857; }
+:root[data-theme="light"] .tt-fg1 { color: #1d4ed8; }
+:root[data-theme="light"] .tt-fg2 { color: #b45309; }
+:root[data-theme="light"] .tt-fg3 { color: #be185d; }
+:root[data-theme="light"] .tt-fg4 { color: #6d28d9; }
+:root[data-theme="light"] .tt-fg5 { color: #c2410c; }
+:root[data-theme="light"] .tt-fg6 { color: #0e7490; }
+:root[data-theme="light"] .tt-fg7 { color: #4d7c0f; }
+/* Field labels (`input_text='`, `calls=`) are chrome, but at #9ca3af they vanished. */
+:root[data-theme="light"] .ttip .fldl { color: #64748b; }
+:root[data-theme="light"] .ttip .parser-base { color: #64748b; }
+:root[data-theme="light"] .ttip .expl { color: #475569; }
+/* Marker backgrounds are translucent, so on white they become pale tints — the marker
+ * TEXT must go dark or it disappears into them. */
+:root[data-theme="light"] .tt-mbg { color: #111827; }
+:root[data-theme="light"] .tt-mbg-orphan { background: #b91c1c; color: #fff; }
+:root[data-theme="light"] .tt-mbg-injected { background: rgba(139, 92, 246, 0.30); color: #4c1d95; }
+/* Whitespace chips need a touch more presence on white to stay visible at all. */
+:root[data-theme="light"] .tt-wsp { background: rgba(100, 116, 139, 0.28); }
+/* The dark popup sat borderless on a dark page — same missing-edge problem the light
+ * theme had, just less obvious. Give it a rim too. */
+:root[data-theme="dark"] .ttip { border: 1px solid #475569; }
+
+/* ---- Surface elevation -----------------------------------------------------
+ * A border alone was a weak separator. Rank the surfaces by BRIGHTNESS instead, so the
+ * popup reads as floating above the page rather than pasted onto it: in light mode the
+ * page steps down to grey and the popup is the only pure white; in dark mode that
+ * inverts — the page is the darkest thing and the popup is lifted above it.
+ * The edge is layered rather than one line: an inner hairline, a contrasting 1px ring,
+ * then a soft drop shadow — three shades, so it separates on any background under it. */
+:root[data-theme="light"] body { background: #e6eaf0; }
+:root[data-theme="light"] th.case-sub.case-band-1,
+:root[data-theme="light"] td.cell.case-band-1,
+:root[data-theme="light"] th.case-group.case-band-1 { background: #f7f9fb; }
+:root[data-theme="light"] .ttip {
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 0 0 1px #64748b, 0 10px 28px rgba(15, 23, 42, 0.30);
+}
+:root[data-theme="dark"] body { background: #070c16; }
+:root[data-theme="dark"] .ttip {
+  background: #232f42;
+  border: 1px solid #64748b;
+  box-shadow: 0 0 0 1px #0b1220, 0 10px 28px rgba(0, 0, 0, 0.65);
+}
+
+/* ---- Inner table chrome ----------------------------------------------------
+ * The popup's own separation is now carried by the surface ranking and the layered
+ * edge, so the table INSIDE it no longer needs to shout. The `assembled` / baseline
+ * rows were #0b1220 — near-black against a #232f42 popup — which read as a hard dark
+ * box floating inside the panel rather than as a section of the same table. Step them
+ * one notch from the popup instead of all the way to black, and lighten the grid and
+ * the 2px dividers to match. */
+:root[data-theme="dark"] .ttip-chunks th, :root[data-theme="dark"] .ttip-chunks td {
+  border-color: #3a4659; }
+:root[data-theme="dark"] .ttip-chunks th { background: #2b3950; }
+:root[data-theme="dark"] .ttip-chunks tr.ttip-final td {
+  background: #1d2839; border-top-color: #48566b; }
+:root[data-theme="dark"] .ttip-chunks td.cbase { background: #1d2839; border-right-color: #48566b; }
+:root[data-theme="dark"] .ttip-chunks th.cbase-h { background: #2b3950; border-right-color: #48566b; }
+:root[data-theme="dark"] .ttip-grammar td.gro { border-left-color: #48566b; }
+
+:root[data-theme="light"] .ttip-chunks th, :root[data-theme="light"] .ttip-chunks td {
+  border-color: #e2e8f0; }
+:root[data-theme="light"] .ttip-chunks th { background: #f1f5f9; }
+:root[data-theme="light"] .ttip-chunks tr.ttip-final td {
+  background: #f6f8fa; border-top-color: #cbd5e1; }
+:root[data-theme="light"] .ttip-chunks td.cbase { background: #f6f8fa; border-right-color: #cbd5e1; }
+:root[data-theme="light"] .ttip-chunks th.cbase-h { background: #f1f5f9; border-right-color: #cbd5e1; }
+:root[data-theme="light"] .ttip-grammar td.gro { border-left-color: #cbd5e1; }
+:root[data-theme="light"] .gr-chunk-sep { color: #9aa7b6; }
+
+/* Rounder tab shoulders — 4px read as almost square against the panel below. */
+.tab-button { border-radius: 10px 10px 0 0; padding: 6px 12px; }
+/* Word hues carry the input->output correspondence, so they are the thing being read;
+ * bold makes a short value like `NYC` hold its own against the marker backgrounds. */
+.tt-fg { font-weight: 600; }
+/* Tabs follow the theme too (they were light-only chrome). */
+:root[data-theme="dark"] .tabs { border-bottom-color: #334155; }
+:root[data-theme="dark"] .tab-button { background: #1b2536; border-color: #334155; color: #cbd5e1; }
+:root[data-theme="dark"] .tab-button.active { background: #232f42; color: #f1f5f9; }
+:root[data-theme="dark"] .tab-button .w-batch { color: #fca5a5; }
+:root[data-theme="dark"] .tab-button .w-stream { color: #86efac; }
+
+/* ---- Neutral popup chrome + dark-mode cells --------------------------------
+ * The popup's title row and assembled/baseline boxes were slate-tinted, which read as a
+ * second accent colour competing with the marker/word hues that carry the actual meaning.
+ * Make that chrome neutral grey in both themes so colour in the popup only ever means
+ * data. */
+:root[data-theme="light"] .ttip-chunks th { background: #f0f0f0; color: #333; }
+:root[data-theme="light"] .ttip-chunks tr.ttip-final td { background: #f6f6f6; }
+:root[data-theme="light"] .ttip-chunks td.cbase { background: #f6f6f6; }
+:root[data-theme="light"] .ttip-chunks th.cbase-h { background: #f0f0f0; }
+:root[data-theme="light"] .ttip-chunks th, :root[data-theme="light"] .ttip-chunks td { border-color: #e0e0e0; }
+:root[data-theme="light"] .ttip-grammar td.grf { color: #333; }
+:root[data-theme="light"] .ttip-chunks tr.ttip-final td.cin { color: #333; }
+:root[data-theme="dark"] .ttip-chunks th { background: #33383f; color: #d4d4d4; }
+:root[data-theme="dark"] .ttip-chunks tr.ttip-final td { background: #262a30; }
+:root[data-theme="dark"] .ttip-chunks td.cbase { background: #262a30; }
+:root[data-theme="dark"] .ttip-chunks th.cbase-h { background: #33383f; }
+:root[data-theme="dark"] .ttip-chunks th, :root[data-theme="dark"] .ttip-chunks td { border-color: #3f444b; }
+:root[data-theme="dark"] .ttip-grammar td.grf { color: #d4d4d4; }
+:root[data-theme="dark"] .ttip-chunks tr.ttip-final td.cin { color: #d4d4d4; }
+
+/* The compare classes carry `!important` and were light-only, so in dark mode every
+ * n/a / no-base / base-only cell stayed a bright grey block. */
+:root[data-theme="dark"] td.cell.cmp-na { background: #232a36 !important; }
+:root[data-theme="dark"] td.cell.cmp-nobase { background: #1a212c !important; }
+:root[data-theme="dark"] td.cell.cmp-donly { background: #2a323f !important; }
+:root[data-theme="dark"] body.view-overview td.cell.cmp-na { color: #232a36; }
+:root[data-theme="dark"] body.view-overview td.cell.cmp-nobase { color: #1a212c; }
+:root[data-theme="dark"] body.view-overview td.cell.cmp-donly { color: #2a323f; }
+
+/* The pressed tab was only ~#232f42 vs #1b2536 — nearly invisible. Give it the panel's
+ * own surface, a brighter rim, and drop the bottom border so it merges with the panel. */
+:root[data-theme="dark"] .tab-button.active {
+  background: #232f42; color: #ffffff; border-color: #7c8ba1;
+  box-shadow: inset 0 2px 0 #60a5fa;
+}
+
+/* Detailed / Transpose were light-only chrome: a #f8fafc pill with dark text sitting on
+ * a dark page, and the borderless Detailed label at #8a8f98 nearly vanished. */
+:root[data-theme="dark"] .checkbox-option {
+  background: #1e293b; border-color: #334155; color: #cbd5e1; }
+:root[data-theme="dark"] .checkbox-option.cmp-detailed { background: none; color: #94a3b8; }
+:root[data-theme="dark"] .checkbox-option input { accent-color: #60a5fa; }
+:root[data-theme="dark"] .cmphd-ref, :root[data-theme="dark"] .cmphd-cmp { color: #94a3b8; }
+:root[data-theme="dark"] .cmpcol + .cmpcol { border-left-color: #334155; }
+:root[data-theme="dark"] .cmprow.cmphd { border-bottom-color: #334155; }
+:root[data-theme="dark"] .cmprow-ref .star { color: #4b5563; }
+:root[data-theme="dark"] .radio-group-label { color: #cbd5e1; }
+:root[data-theme="dark"] .legend, :root[data-theme="dark"] .stats { color: #cbd5e1; }
+/* Case description under a cell popup's title — same role as the column popup's. */
+.ttip-casedesc { font-weight: 400; margin: 0 0 4px; opacity: 0.9; }
+
+/* Case-descriptions glossary: its category bands are a light `#eef` that was never
+ * themed, so in dark mode they rendered as bright strips with washed-out text. */
+:root[data-theme="dark"] table.glossary tr.category td { background: #26314a; color: #e5e7eb; }
+:root[data-theme="dark"] table.glossary td { color: #cbd5e1; }
+:root[data-theme="dark"] table.glossary td.sub { color: #f1f5f9; }
+:root[data-theme="dark"] h1, :root[data-theme="dark"] h2, :root[data-theme="dark"] h3 { color: #f1f5f9; }
+:root[data-theme="dark"] a { color: #93c5fd; }
+:root[data-theme="dark"] .legend-note { color: #cbd5e1; }
+
+/* Dark-mode compare colors: #76b884 / #db7777 were picked for a white page and glare on
+ * a dark one. Same hues, dropped in luminance so the grid reads without shouting. */
+:root[data-theme="dark"] td.cell.cmp-eq { background: #2f5d3d !important; }
+:root[data-theme="dark"] td.cell.cmp-leak { background: #6e2f2f !important; }
+:root[data-theme="dark"] body.view-overview td.cell.cmp-eq { color: #2f5d3d; }
+:root[data-theme="dark"] body.view-overview td.cell.cmp-leak { color: #6e2f2f; }
+:root[data-theme="dark"] td.cell.ok { color: #5aa06e; }
+:root[data-theme="dark"] td.cell.research,
+:root[data-theme="dark"] td.cell.leak,
+:root[data-theme="dark"] td.cell.err { color: #d08585; }
+
+/* ---- Popup typography: code is mono, commentary is not ----
+ * `.ttip` sets a monospace base because most of what a popup shows IS code —
+ * the parser input markup, emitted args, the per-chunk table. But the prose
+ * around it (case description, `explanation:`, n/a notes, section labels) was
+ * inheriting that same constant-width font, which reads badly for natural
+ * language. Restore the body font for the prose only; payload stays mono so
+ * markup and runs of whitespace still line up. */
+.ttip-section,
+.ttip-casedesc,
+.ttip-reason,
+.ttip-ref,
+.ttip-note,
+.ttip-pre,
+.expl {
+  font-family: -apple-system, system-ui, sans-serif;
+}
+/* ...and the payload opts back in. `.ttip-code` is the parser input markup, `.ttip-tree`
+ * the box-drawing shared-implementation tree; both only read correctly when the glyphs
+ * line up in a column. `.ttip-code` sits INSIDE a `.ttip-pre`, so it has to win. */
+.ttip-code,
+.ttip-tree {
+  font-family: ui-monospace, monospace;
+}
+
+/* Case-description glossary: the ID column is an identifier (mono, inherited from the
+ * `table` base), the description beside it is a sentence and reads as one. */
+table.glossary td.gloss-desc { font-family: -apple-system, system-ui, sans-serif; }

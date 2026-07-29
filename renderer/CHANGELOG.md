@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [4.1.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v4.0.1...dynamo-renderer-v4.1.0) - 2026-07-28
+
+### Features
+
+- *(renderer)* Add native Inkling formatter ([#130](https://github.com/ai-dynamo/frontend-crates/pull/130))
+
+## [4.0.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v4.0.0...dynamo-renderer-v4.0.1) - 2026-07-28
+
+### Bug fixes
+
+- *(renderer)* Honor tool_choice=none and full reasoning_effort range in DeepSeek native formatters ([#148](https://github.com/ai-dynamo/frontend-crates/pull/148))
+
+## [4.0.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v3.0.0...dynamo-renderer-v4.0.0) - 2026-07-27
+
+### Changed
+
+- **Breaking:** Public request types exposed by `OAIChatLikeRequest` now use `dynamo-protocols` 5.x; consumers must upgrade `dynamo-protocols` when moving to `dynamo-renderer` 4.0.0.
+
+### Miscellaneous
+
+- Updated the following local packages: dynamo-protocols
+
+## [3.0.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v2.0.0...dynamo-renderer-v3.0.0) - 2026-07-22
+
+### Changed
+
+- **Breaking:** Public request types exposed by `OAIChatLikeRequest` now use `dynamo-protocols` 4.x; consumers must upgrade `dynamo-protocols` when moving to `dynamo-renderer` 3.0.0.
+
+### Miscellaneous
+
+- Updated the following local packages: dynamo-protocols
+
 ## [2.0.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v1.3.12...dynamo-renderer-v2.0.0) - 2026-07-17
 
 ### Changed

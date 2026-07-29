@@ -349,6 +349,9 @@ impl Default for KimiK2ParserConfig {
     }
 }
 
+/// MiniMax M3 namespace token that prefixes its native XML tool-call tags.
+pub(crate) const MINIMAX_M3_TOOL_NAMESPACE: &str = "]<]minimax[>[";
+
 /// Configuration for MiniMax M3 namespace-token XML tool calls.
 ///
 /// Format:
@@ -373,11 +376,21 @@ pub struct MiniMaxM3ParserConfig {
 impl Default for MiniMaxM3ParserConfig {
     fn default() -> Self {
         Self {
-            namespace_token: "]<]minimax[>[".to_string(),
+            namespace_token: MINIMAX_M3_TOOL_NAMESPACE.to_string(),
             tool_call_tag: "tool_call".to_string(),
             allow_eof_recovery: false,
         }
     }
+}
+
+/// Inkling tool-call config; markers are fixed model tokens, so this holds only the
+/// shared EOF-recovery toggle. Grammar: [`crate::tool_calling::inkling`].
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
+pub struct InklingParserConfig {
+    /// See [`JsonParserConfig::allow_eof_recovery`]. Streaming jails MUST
+    /// leave this `false`.
+    #[serde(default)]
+    pub allow_eof_recovery: bool,
 }
 
 /// Parser-specific configuration
@@ -398,6 +411,13 @@ pub enum ParserConfig {
     /// delimiters, and fixed `<|tool_call>...<tool_call|>` markers. No
     /// configuration is required at runtime — markers are not user-tunable.
     Gemma4,
+    /// Inkling uses `<|message_model|>NAME<|content_invoke_tool_json|>{...}<|end_message|>`
+    /// framing around a `{"name":..., "args":{...}}` JSON object.
+    ///
+    /// This must be paired with the `inkling` reasoning parser: the shared
+    /// `<|message_model|>` token also opens thinking, text, image, and audio blocks,
+    /// which the reasoning stage routes before the tool jail sees them.
+    Inkling(InklingParserConfig),
 }
 
 impl ParserConfig {
@@ -442,6 +462,21 @@ impl ParserConfig {
             ParserConfig::Gemma4 => {
                 vec![crate::tool_calling::gemma4::TOOL_CALL_START.to_string()]
             }
+            ParserConfig::Inkling(_) => {
+                // Both the `<|message_model|>NAME` header and the bare
+                // `<|content_invoke_tool_json|>` (header-less) open a call. Include the
+                // header so the streaming jail's span starts at `<|message_model|>` and
+                // the parser strips the redundant NAME header instead of the jail
+                // leaking it as content. Mirrors `detect_tool_call_start_inkling`.
+                // Invariant: `<|message_model|>` also opens reasoning/content blocks;
+                // this is only safe because the inkling reasoning parser runs before the
+                // tool parser and consumes those, leaving only tool blocks header-framed
+                // for the jail.
+                vec![
+                    crate::tool_calling::inkling::MESSAGE_MODEL.to_string(),
+                    crate::tool_calling::inkling::INVOKE.to_string(),
+                ]
+            }
         }
     }
 
@@ -469,6 +504,9 @@ impl ParserConfig {
                 )]
             }
             ParserConfig::Gemma4 => vec![crate::tool_calling::gemma4::TOOL_CALL_END.to_string()],
+            ParserConfig::Inkling(_) => {
+                vec![crate::tool_calling::inkling::END_MESSAGE.to_string()]
+            }
         }
     }
 }
@@ -840,6 +878,35 @@ impl ToolCallConfig {
         Self {
             parser_config: ParserConfig::Gemma4,
             structural_tag_builder: None,
+        }
+    }
+
+    /// Inkling tool calls: `args` (not `arguments`) plus a redundant `<|message_model|>`
+    /// header rule out the generic JSON parser. Must be paired with the `inkling`
+    /// reasoning parser; see [`ParserConfig::Inkling`]. Grammar:
+    /// [`crate::tool_calling::inkling`].
+    pub fn inkling() -> Self {
+        // Inkling emits one tool call as
+        //   NAME<|content_invoke_tool_json|>{"name": "NAME", "args": {..}}<|end_message|>
+        // The leading <|message_model|> is the prompt's generation primer and the bare
+        // NAME header is redundant free text (the JSON `name` is authoritative), so guided
+        // decoding triggers on the <|content_invoke_tool_json|> marker and constrains the
+        // JSON body + fence. Note the args key is `args`, not `arguments`.
+        Self {
+            parser_config: ParserConfig::Inkling(InklingParserConfig::default()),
+            structural_tag_builder: Some(StructuralTagBuilder::TriggeredTags(
+                TriggeredTagsConfig {
+                    begin_template: format!(
+                        "<|content_invoke_tool_json|>{{\"name\": \"{}\", \"args\": ",
+                        TOOL_NAME_PLACEHOLDER
+                    ),
+                    end_template: "}<|end_message|>".to_string(),
+                    triggers: vec!["<|content_invoke_tool_json|>".to_string()],
+                    content_style: JsonSchemaStyle::Json,
+                    tool_call_ban_tokens: vec!["<|content_invoke_tool_json|>".to_string()],
+                    reasoning_end: Some("<|end_message|>".to_string()),
+                },
+            )),
         }
     }
 }

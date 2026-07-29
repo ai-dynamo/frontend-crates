@@ -35,12 +35,13 @@ use std::sync::Arc;
 pub use dynamo_tokenizers;
 
 pub mod deepseek;
+pub mod inkling;
 pub mod kimi_k3;
 mod template;
 
 pub use template::{
     ChatTemplate, ChatTemplateValue, ContextMixins, deepseek_formatter_for, kimi_k3_formatter_for,
-    may_be_fix_tool_schema,
+    may_be_fix_tool_schema, native_formatter_for,
 };
 
 /// Selects which context-mixin behaviors a template renders with.
@@ -92,15 +93,35 @@ pub enum PromptInput {
     Text(TextInput),
 }
 
+/// One owned prompt segment with an explicit special-token trust boundary.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RenderedSegment {
+    pub text: String,
+    pub allow_special: bool,
+}
+
+impl RenderedSegment {
+    pub fn new(text: impl Into<String>, allow_special: bool) -> Self {
+        Self {
+            text: text.into(),
+            allow_special,
+        }
+    }
+
+    pub fn as_encode_segment(&self) -> dynamo_tokenizers::EncodeSegment<'_> {
+        dynamo_tokenizers::EncodeSegment::new(&self.text, self.allow_special)
+    }
+}
+
 /// A rendered prompt plus its optional tokenization boundaries.
 ///
-/// Most model families return plain text and use the tokenizer's normal global
-/// encoding behavior. Segment-sensitive protocols such as Kimi K3 additionally
-/// retain which spans may be interpreted as special tokens.
+/// The prompt owns its segment text while `dynamo-tokenizers` borrows that text
+/// during encoding. Keeping the types separate preserves the tokenizer crate's
+/// published zero-copy `EncodeSegment<'_>` API.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenderedPrompt {
     text: String,
-    segments: Option<Vec<dynamo_tokenizers::EncodeSegment>>,
+    segments: Option<Vec<RenderedSegment>>,
 }
 
 impl RenderedPrompt {
@@ -111,7 +132,7 @@ impl RenderedPrompt {
         }
     }
 
-    pub fn segmented(segments: Vec<dynamo_tokenizers::EncodeSegment>) -> Self {
+    pub fn segmented(segments: Vec<RenderedSegment>) -> Self {
         let text = segments
             .iter()
             .map(|segment| segment.text.as_str())
@@ -126,8 +147,17 @@ impl RenderedPrompt {
         &self.text
     }
 
-    pub fn segments(&self) -> Option<&[dynamo_tokenizers::EncodeSegment]> {
+    pub fn segments(&self) -> Option<&[RenderedSegment]> {
         self.segments.as_deref()
+    }
+
+    pub fn encode_segments(&self) -> Option<Vec<dynamo_tokenizers::EncodeSegment<'_>>> {
+        Some(
+            self.segments()?
+                .iter()
+                .map(RenderedSegment::as_encode_segment)
+                .collect(),
+        )
     }
 
     pub fn into_text(self) -> String {
@@ -180,6 +210,12 @@ pub trait OAIChatLikeRequest {
         None
     }
     fn response_format(&self) -> Option<Value> {
+        None
+    }
+
+    /// OpenAI-compatible reasoning-effort control, when the request type
+    /// exposes it as a top-level field.
+    fn reasoning_effort(&self) -> Option<Value> {
         None
     }
 
@@ -277,5 +313,25 @@ impl OAIPromptFormatter for NoOpFormatter {
 impl PromptFormatter {
     pub fn no_op() -> Self {
         Self::OAI(Arc::new(NoOpFormatter))
+    }
+}
+
+#[cfg(test)]
+mod rendered_prompt_tests {
+    use super::{RenderedPrompt, RenderedSegment};
+
+    #[test]
+    fn owned_segments_borrow_into_tokenizer_segments() {
+        let prompt = RenderedPrompt::segmented(vec![
+            RenderedSegment::new("<|open|>", true),
+            RenderedSegment::new("user text", false),
+        ]);
+
+        let segments = prompt.encode_segments().expect("segmented prompt");
+        assert_eq!(segments[0].text, "<|open|>");
+        assert!(segments[0].allow_special);
+        assert_eq!(segments[1].text, "user text");
+        assert!(!segments[1].allow_special);
+        assert_eq!(prompt.as_str(), "<|open|>user text");
     }
 }

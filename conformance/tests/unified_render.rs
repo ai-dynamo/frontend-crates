@@ -1,0 +1,638 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+//! U2/U3 (spike) — compute the Dynamo v2 column LIVE and render the unified
+//! conformance tab to HTML.
+//!
+//! Columns: GOLDEN (authored oracle) | vLLM 0.25.x unified (expected, from the
+//! golden `expect.vllm` — live capture is U1) | Dynamo v2 (v1 reasoning + v2
+//! tool, composed and stitched to how Dynamo serves today — computed this run).
+//!
+//! Dynamo is the real "before" state: the split parses ALL reasoning first, so
+//! reasoning interleaved with tool calls loses order. Each diverging Dynamo cell
+//! carries a TODO in its hover popup. Output: conformance/unified/CONFORMANCE_unified.html
+
+use std::collections::BTreeMap;
+use std::path::PathBuf;
+
+use dynamo_parsers::{ReasoningParser, ReasoningParserType};
+use dynamo_parsers_v2::{Tool, create_tool_parser_for_family};
+use serde::Deserialize;
+use serde_json::{Value, json};
+
+mod common;
+
+#[derive(Deserialize)]
+struct GoldenFile {
+    family: String,
+    cases: BTreeMap<String, GoldenCase>,
+}
+
+#[derive(Deserialize)]
+struct GoldenCase {
+    description: String,
+    #[serde(default)]
+    policy: Vec<String>,
+    input: String,
+    golden: Vec<Ev>,
+    expect: BTreeMap<String, Expect>,
+}
+
+#[derive(Deserialize, Clone)]
+struct Expect {
+    verdict: String,
+    #[serde(default)]
+    class: Option<String>,
+    #[serde(default)]
+    note: Option<String>,
+}
+
+/// A unified event. PartialEq drives the golden comparison.
+#[derive(Deserialize, serde::Serialize, Clone, PartialEq, Debug)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+enum Ev {
+    Reasoning {
+        text: String,
+    },
+    Text {
+        text: String,
+    },
+    ToolCall {
+        name: String,
+        #[serde(default)]
+        arguments: Value,
+    },
+}
+
+impl Ev {
+    fn render(&self) -> String {
+        match self {
+            Ev::Reasoning { text } => format!("reasoning({text:?})"),
+            Ev::Text { text } => format!("text({text:?})"),
+            Ev::ToolCall { name, arguments } => format!("tool_call({name}, {arguments})"),
+        }
+    }
+}
+
+/// Map a golden family to (reasoning parser name, v2 tool family).
+fn parsers_for(family: &str) -> (&'static str, &'static str) {
+    match family {
+        "gemma4" => ("gemma4", "gemma4"),
+        "qwen3" => ("qwen3", "qwen3_coder"),
+        "kimi_k2" => ("kimi_k25", "kimi_k2"),
+        other => panic!("no parser mapping for family `{other}`"),
+    }
+}
+
+/// Tool schemas used by the seed cases (string params, matching the golden).
+fn tools() -> Vec<Tool> {
+    let mk = |name: &str, key: &str| Tool {
+        name: name.to_string(),
+        description: None,
+        parameters: json!({"type":"object","properties":{key:{"type":"string"}}}),
+        strict: None,
+    };
+    vec![
+        mk("get_weather", "city"),
+        mk("f", "x"),
+        mk("g", "y"),
+        mk("run", "cmd"),
+    ]
+}
+
+/// Fold one tool-parser result into the event list, preserving text/call order
+/// and coalescing per-`tool_index` deltas into one call.
+fn feed(
+    res: dynamo_parsers_v2::ToolParseResult,
+    out: &mut Vec<Ev>,
+    slots: &mut BTreeMap<usize, usize>,
+    raw_args: &mut BTreeMap<usize, String>,
+) {
+    if !res.normal_text.is_empty() {
+        if let Some(Ev::Text { text }) = out.last_mut() {
+            text.push_str(&res.normal_text);
+        } else {
+            out.push(Ev::Text {
+                text: res.normal_text,
+            });
+        }
+    }
+    for d in res.calls {
+        let pos = *slots.entry(d.tool_index).or_insert_with(|| {
+            out.push(Ev::ToolCall {
+                name: d.name.clone().unwrap_or_default(),
+                arguments: Value::Null,
+            });
+            out.len() - 1
+        });
+        if let Some(n) = &d.name
+            && let Ev::ToolCall { name, .. } = &mut out[pos]
+            && name.is_empty()
+        {
+            *name = n.clone();
+        }
+        raw_args
+            .entry(d.tool_index)
+            .or_default()
+            .push_str(&d.arguments);
+    }
+}
+
+/// Compute the REAL Dynamo v2 unified event list for one input, exactly how
+/// Dynamo serves today: the v1 reasoning parser strips reasoning over the whole
+/// stream into ONE assembled field (the merge), then the v2 tool parser streams
+/// the leftover content (char-by-char) preserving text/call order.
+fn dynamo_events(family: &str, input: &str) -> Vec<Ev> {
+    let (reasoning_name, tool_family) = parsers_for(family);
+
+    let mut rp = ReasoningParserType::get_reasoning_parser_from_name(reasoning_name);
+    let split = rp.detect_and_parse_reasoning(input, &[]);
+
+    let mut out = Vec::new();
+    if !split.reasoning_text.is_empty() {
+        out.push(Ev::Reasoning {
+            text: split.reasoning_text.clone(),
+        });
+    }
+
+    let mut tp = create_tool_parser_for_family(tool_family, &tools())
+        .unwrap_or_else(|e| panic!("create tool parser for `{tool_family}`: {e}"));
+    let mut slots: BTreeMap<usize, usize> = BTreeMap::new();
+    let mut raw_args: BTreeMap<usize, String> = BTreeMap::new();
+    let mut buf = [0u8; 4];
+    for ch in split.normal_text.chars() {
+        let s = ch.encode_utf8(&mut buf);
+        let r = tp
+            .push(s)
+            .unwrap_or_else(|e| panic!("push `{tool_family}`: {e}"));
+        feed(r, &mut out, &mut slots, &mut raw_args);
+    }
+    let r = tp
+        .finish()
+        .unwrap_or_else(|e| panic!("finish `{tool_family}`: {e}"));
+    feed(r, &mut out, &mut slots, &mut raw_args);
+
+    for (ti, pos) in &slots {
+        let raw = raw_args.get(ti).map(String::as_str).unwrap_or("");
+        let val = if raw.trim().is_empty() {
+            json!({})
+        } else {
+            serde_json::from_str(raw).unwrap_or_else(|_| Value::String(raw.to_string()))
+        };
+        if let Ev::ToolCall { arguments, .. } = &mut out[*pos] {
+            *arguments = val;
+        }
+    }
+    out
+}
+
+/// Tokenize an input into streaming chunks: each control marker (`<...>`, incl.
+/// `<|...|>` / `<|"|>`) is its own chunk, and each run of text between markers is
+/// a chunk. Generic across the gemma4 / qwen3 / kimi grammars.
+fn chunk_input(input: &str) -> Vec<String> {
+    let bytes = input.as_bytes();
+    let mut chunks = Vec::new();
+    let mut i = 0;
+    let mut text_start = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'<' {
+            // flush any pending text run
+            if text_start < i {
+                chunks.push(input[text_start..i].to_string());
+            }
+            // consume through the matching '>'
+            let mut j = i + 1;
+            while j < bytes.len() && bytes[j] != b'>' {
+                j += 1;
+            }
+            let end = (j + 1).min(bytes.len());
+            chunks.push(input[i..end].to_string());
+            i = end;
+            text_start = i;
+        } else {
+            i += 1;
+        }
+    }
+    if text_start < bytes.len() {
+        chunks.push(input[text_start..].to_string());
+    }
+    chunks
+}
+
+/// One streaming chunk: the delta text fed, and the RAW per-chunk deltas Dynamo
+/// emitted (reasoning/text/tool_call fragments, not coalesced) as JSON.
+struct ChunkRow {
+    delta_text: String,
+    deltas: Vec<Value>,
+}
+
+fn tool_deltas(res: &dynamo_parsers_v2::ToolParseResult, out: &mut Vec<Value>) {
+    if !res.normal_text.is_empty() {
+        out.push(json!({"kind": "text", "text": res.normal_text}));
+    }
+    for c in &res.calls {
+        out.push(json!({"kind": "tool_call", "name": c.name, "arguments": c.arguments}));
+    }
+}
+
+/// Stream `input` through Dynamo's split pipeline CHUNK BY CHUNK, recording the
+/// real per-chunk emitted deltas (v1 reasoning streaming incremental -> v2 tool
+/// streaming push on the leftover content).
+fn dynamo_chunks(family: &str, input: &str) -> Vec<ChunkRow> {
+    let (reasoning_name, tool_family) = parsers_for(family);
+    let mut rp = ReasoningParserType::get_reasoning_parser_from_name(reasoning_name);
+    let mut tp = create_tool_parser_for_family(tool_family, &tools())
+        .unwrap_or_else(|e| panic!("create tool parser for `{tool_family}`: {e}"));
+
+    let mut rows = Vec::new();
+    for chunk in chunk_input(input) {
+        let mut deltas: Vec<Value> = Vec::new();
+        let rr = rp.parse_reasoning_streaming_incremental(&chunk, &[]);
+        if !rr.reasoning_text.is_empty() {
+            deltas.push(json!({"kind": "reasoning", "text": rr.reasoning_text}));
+        }
+        if !rr.normal_text.is_empty() {
+            let tr = tp.push(&rr.normal_text).unwrap_or_default();
+            tool_deltas(&tr, &mut deltas);
+        }
+        rows.push(ChunkRow {
+            delta_text: chunk,
+            deltas,
+        });
+    }
+    // Flush: reasoning tail -> tool -> finish.
+    let mut tail: Vec<Value> = Vec::new();
+    let rf = rp.finish_reasoning_stream();
+    if !rf.reasoning_text.is_empty() {
+        tail.push(json!({"kind": "reasoning", "text": rf.reasoning_text}));
+    }
+    if !rf.normal_text.is_empty() {
+        let tr = tp.push(&rf.normal_text).unwrap_or_default();
+        tool_deltas(&tr, &mut tail);
+    }
+    tool_deltas(&tp.finish().unwrap_or_default(), &mut tail);
+    if !tail.is_empty() {
+        rows.push(ChunkRow {
+            delta_text: "‹finish›".to_string(),
+            deltas: tail,
+        });
+    }
+    rows
+}
+
+/// Classify a Dynamo divergence from the golden.
+fn classify(family: &str, golden: &[Ev], got: &[Ev]) -> &'static str {
+    if golden == got {
+        return "MATCH";
+    }
+    // Control markup that leaked into a visible payload.
+    const MARKERS: &[&str] = &[
+        "<|",
+        "|>",
+        "<think>",
+        "</think>",
+        "◁",
+        "<channel",
+        "channel|>",
+    ];
+    // Per-family markup that leaks invisibly to MARKERS above. gemma4's channel opener
+    // leaves `thought\n`. qwen3's tool envelope has NO `<|...|>` sentinels, so a
+    // `<tool_call>...</tool_call>` leaking into reasoning_content is invisible to the
+    // shared list — enumerate it (kimi's tool/section markers already contain `<|`/`|>`).
+    let family_leak: &[&str] = match family {
+        "gemma4" => &["thought\n"],
+        "qwen3" => &[
+            "<tool_call>",
+            "</tool_call>",
+            "<function=",
+            "</function>",
+            "<parameter=",
+            "</parameter>",
+        ],
+        _ => &[],
+    };
+    let leaks = got.iter().any(|e| match e {
+        Ev::Text { text } | Ev::Reasoning { text } => {
+            MARKERS.iter().chain(family_leak).any(|m| text.contains(m))
+        }
+        Ev::ToolCall { .. } => false,
+    });
+    if leaks {
+        return "LEAK";
+    }
+    let reasoning = |evs: &[Ev]| {
+        evs.iter()
+            .filter(|e| matches!(e, Ev::Reasoning { .. }))
+            .count()
+    };
+    if reasoning(got) < reasoning(golden) {
+        return "MERGE";
+    }
+    // Tool calls line up by name but an argument value differs (e.g. a string arg
+    // truncated at a marker-looking substring) -> ARG_MISMATCH.
+    let calls = |evs: &[Ev]| -> Vec<(String, Value)> {
+        evs.iter()
+            .filter_map(|e| match e {
+                Ev::ToolCall { name, arguments } => Some((name.clone(), arguments.clone())),
+                _ => None,
+            })
+            .collect()
+    };
+    let (gc, tc) = (calls(golden), calls(got));
+    if gc.len() == tc.len()
+        && gc.iter().zip(&tc).all(|(a, b)| a.0 == b.0)
+        && gc.iter().zip(&tc).any(|(a, b)| a.1 != b.1)
+    {
+        return "ARG_MISMATCH";
+    }
+    // Same content (concatenated per kind), different order/boundaries -> ORDER;
+    // content actually missing -> LOSS.
+    let cat = |evs: &[Ev], want_reasoning: bool| -> String {
+        evs.iter()
+            .filter_map(|e| match e {
+                Ev::Reasoning { text } if want_reasoning => Some(text.as_str()),
+                Ev::Text { text } if !want_reasoning => Some(text.as_str()),
+                _ => None,
+            })
+            .collect()
+    };
+    if cat(golden, true) == cat(got, true) && cat(golden, false) == cat(got, false) {
+        return "ORDER";
+    }
+    "LOSS"
+}
+
+fn todo_for(class: &str) -> &'static str {
+    match class {
+        "MERGE" | "ORDER" => {
+            "TODO: adopt the UnifiedParser. The split parses ALL reasoning first, so reasoning that occurs between or after tool calls is merged up front and loses its position. One state machine per stream (owning reasoning+content+tools) fixes this by construction."
+        }
+        "LOSS" => {
+            "TODO: content/reasoning dropped by the split. UnifiedParser must preserve every segment in order."
+        }
+        _ => "TODO: unify reasoning + tool parsing into one ordered event stream.",
+    }
+}
+
+fn esc(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+}
+
+fn events_html(evs: &[Ev]) -> String {
+    if evs.is_empty() {
+        return "<i>(no events)</i>".to_string();
+    }
+    evs.iter()
+        .map(|e| format!("<div>{}</div>", esc(&e.render())))
+        .collect()
+}
+
+struct Cell {
+    verdict: String, // "MATCH" or a divergence class
+    tip: String,
+}
+
+fn cell(
+    engine: &str,
+    input: &str,
+    golden: &[Ev],
+    got_html: &str,
+    verdict: &str,
+    class: &str,
+    extra: &str,
+) -> Cell {
+    let v = if verdict == "match" || class == "MATCH" {
+        "MATCH"
+    } else {
+        class
+    };
+    let tip = format!(
+        "<b>{engine}</b> — <b>{v}</b><hr><b>input</b><pre>{}</pre><b>golden</b>{}<b>{engine}</b>{}{}",
+        esc(input),
+        events_html(golden),
+        got_html,
+        extra,
+    );
+    Cell {
+        verdict: v.to_string(),
+        tip,
+    }
+}
+
+#[test]
+fn render_unified_conformance_html() {
+    let dir = common::ensure_unified_golden();
+    let mut files: Vec<GoldenFile> = Vec::new();
+    for entry in std::fs::read_dir(&dir).unwrap() {
+        let path = entry.unwrap().path();
+        if path.extension().and_then(|e| e.to_str()) != Some("yaml") {
+            continue;
+        }
+        let text = std::fs::read_to_string(&path).unwrap();
+        files.push(
+            serde_yaml::from_str(&text).unwrap_or_else(|e| panic!("{}: {e}", path.display())),
+        );
+    }
+    files.sort_by(|a, b| a.family.cmp(&b.family));
+
+    let mut rows = String::new();
+    let mut dynamo_red = 0usize;
+    let mut vllm_red = 0usize;
+    let mut total = 0usize;
+    // Machine-readable feed for the CONFORMANCE_v2.html generator (Python reads this).
+    let mut json_cases: Vec<Value> = Vec::new();
+
+    for file in &files {
+        rows.push_str(&format!(
+            "<tr class=fam><td colspan=4>{} &nbsp; <span class=sub>reasoning=`{}` · tool=`{}`</span></td></tr>",
+            esc(&file.family),
+            parsers_for(&file.family).0,
+            parsers_for(&file.family).1,
+        ));
+        for (id, case) in &file.cases {
+            total += 1;
+
+            // Dynamo: live.
+            let got = dynamo_events(&file.family, &case.input);
+            let dclass = classify(&file.family, &case.golden, &got);
+            eprintln!(
+                "{id:44} dynamo={dclass:6} :: {}",
+                got.iter().map(Ev::render).collect::<Vec<_>>().join("  |  ")
+            );
+            let chunk_feed: Vec<Value> = dynamo_chunks(&file.family, &case.input)
+                .into_iter()
+                .map(|r| json!({"delta_text": r.delta_text, "dynamo": r.deltas}))
+                .collect();
+
+            let scenario = id
+                .strip_prefix("UNIFIED.")
+                .and_then(|s| s.strip_suffix(&format!(".{}", file.family)))
+                .unwrap_or(id.as_str());
+            let vx = case.expect.get("vllm");
+            json_cases.push(serde_json::json!({
+                "id": id,
+                "family": file.family,
+                "scenario": scenario,
+                "description": case.description,
+                "policy": case.policy,
+                "input": case.input,
+                "golden": case.golden,
+                "dynamo": got,
+                "dynamo_verdict": dclass,
+                "vllm_verdict": vx.map(|e| if e.verdict == "match" { "MATCH".to_string() } else { e.class.clone().unwrap_or_else(|| "DIVERGE".into()) }),
+                "vllm_note": vx.and_then(|e| e.note.clone()),
+                "policy_tags": case.policy,
+                "chunks": chunk_feed,
+            }));
+            let policy = if case.policy.is_empty() {
+                String::new()
+            } else {
+                format!("<div class=pol>policy: {}</div>", case.policy.join(", "))
+            };
+            let dtodo = if dclass == "MATCH" {
+                String::new()
+            } else {
+                dynamo_red += 1;
+                format!("<hr><div class=todo>{}</div>", esc(todo_for(dclass)))
+            };
+            let dcell = cell(
+                "Dynamo today (v1 reasoning + v2 tool, LIVE)",
+                &case.input,
+                &case.golden,
+                &events_html(&got),
+                if dclass == "MATCH" {
+                    "match"
+                } else {
+                    "diverge"
+                },
+                dclass,
+                &format!("{policy}{dtodo}"),
+            );
+
+            // vLLM: expected (from golden expect.vllm).
+            let vx = case.expect.get("vllm").cloned().unwrap_or(Expect {
+                verdict: "match".into(),
+                class: None,
+                note: None,
+            });
+            let vclass = if vx.verdict == "match" {
+                "MATCH".to_string()
+            } else {
+                vx.class.clone().unwrap_or_else(|| "DIVERGE".into())
+            };
+            if vclass != "MATCH" {
+                vllm_red += 1;
+            }
+            let vnote = vx
+                .note
+                .map(|n| format!("<hr><div class=note>{}</div>", esc(&n)))
+                .unwrap_or_default();
+            let vcell = cell(
+                "vLLM 0.25.x (expected)",
+                &case.input,
+                &case.golden,
+                "<i>(live capture pending — U1)</i>",
+                &vx.verdict,
+                &vclass,
+                &vnote,
+            );
+
+            let gtip = format!(
+                "<b>GOLDEN</b> (authored oracle){}<hr><b>input</b><pre>{}</pre>{}",
+                policy,
+                esc(&case.input),
+                events_html(&case.golden),
+            );
+
+            rows.push_str(&format!(
+                "<tr><td class=case>{}<div class=desc>{}</div></td>\
+                 <td class='c gold'>golden<div class=tip>{}</div></td>\
+                 <td class='c {}'>{}<div class=tip>{}</div></td>\
+                 <td class='c {}'>{}<div class=tip>{}</div></td></tr>",
+                esc(id),
+                esc(&case.description),
+                gtip,
+                css(&vcell.verdict),
+                label(&vcell.verdict),
+                vcell.tip,
+                css(&dcell.verdict),
+                label(&dcell.verdict),
+                dcell.tip,
+            ));
+        }
+    }
+
+    let html = format!(
+        r#"<!doctype html><meta charset=utf-8><title>Unified conformance (reasoning + tools)</title>
+<style>
+body{{font:14px/1.45 -apple-system,system-ui,sans-serif;margin:24px;color:#111}}
+h1{{font-size:20px}} .lede{{color:#444;max-width:70ch}}
+table{{border-collapse:collapse;margin-top:16px}}
+td{{border:1px solid #ddd;padding:6px 10px;vertical-align:top}}
+tr.fam td{{background:#f3f4f6;font-weight:700}} .sub{{font-weight:400;color:#666;font-size:12px}}
+td.case{{font-family:ui-monospace,monospace;font-size:12px;white-space:nowrap}}
+.desc{{font-family:sans-serif;color:#666;font-size:11px;white-space:normal;max-width:46ch;margin-top:2px}}
+td.c{{position:relative;text-align:center;font-weight:700;cursor:default;min-width:120px}}
+.MATCH{{background:#e7f6ec;color:#137333}} .RED{{background:#fce8e6;color:#c5221f}}
+.gold{{background:#eef2ff;color:#3730a3;font-weight:600}}
+.tip{{display:none;position:absolute;z-index:9;left:0;top:100%;width:520px;text-align:left;
+ background:#111;color:#eee;padding:10px 12px;border-radius:8px;font-weight:400;font-size:12px;box-shadow:0 6px 24px rgba(0,0,0,.3)}}
+td.c:hover .tip,td.gold:hover .tip{{display:block}}
+.tip pre{{white-space:pre-wrap;background:#000;padding:6px;border-radius:4px;margin:4px 0;color:#9cf}}
+.tip hr{{border:0;border-top:1px solid #444;margin:6px 0}}
+.tip b{{color:#fff}} .todo{{color:#ffd479}} .note{{color:#f6a}} .pol{{color:#9cf;margin-top:4px}}
+.legend span{{display:inline-block;padding:2px 8px;border-radius:4px;margin-right:8px;font-size:12px}}
+</style>
+<h1>Unified conformance — reasoning + content + tool calls, one ordered stream</h1>
+<p class=lede>Truth column is <b>GOLDEN</b> — the authored, spec-derived oracle (best-effort error recovery), <i>not</i> captured from any implementation. Both engines are measured against it. <b>Dynamo today</b> is computed LIVE this run (v1 reasoning + v2 tool, composed as Dynamo serves today; Dynamo v2 is moving to a per-family mixture). <b>vLLM 0.25.x</b> is the documented expectation (live capture = U1; only gemma4 uses a native unified parser, the rest are combined). Hover any cell.</p>
+<p class=legend><span class=MATCH>matches golden</span><span class=RED>diverges (class shown)</span> &nbsp; Dynamo red: <b>{dynamo_red}</b>/{total} · vLLM red: <b>{vllm_red}</b>/{total}</p>
+<table><tr><td>case</td><td>GOLDEN</td><td>vLLM 0.25.x<br><span class=sub>(expected)</span></td><td>Dynamo today<br><span class=sub>(v1 reasoning + v2 tool, LIVE)</span></td></tr>
+{rows}
+</table>
+<p class=sub>Generated by conformance/tests/unified_render.rs. Cases: conformance/unified/golden_spec/ (authored by gen_unified_golden.py). Taxonomy: conformance/utils/lib/parsers/UNIFIED_CASES.md.</p>
+"#,
+    );
+
+    // Legacy standalone preview (the real tab lives in CONFORMANCE_v2.html). Kept out of
+    // conformance/unified/ so that build tree contains ONLY the shard's capture YAMLs.
+    let out = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("CONFORMANCE_unified.html");
+    std::fs::write(&out, html).unwrap();
+
+    // Machine-readable feed consumed by generate_conformance_table.py's Unified tab.
+    // YAML so it reads like the rest of the conformance fixture corpus. conformance/unified/
+    // is the gitignored build tree — create it (a fresh checkout won't have it; the
+    // committed data is the per-version LFS shards under conformance/fixtures/unified/).
+    let yaml_out = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("unified/unified_results.yaml");
+    std::fs::create_dir_all(yaml_out.parent().unwrap()).unwrap();
+    let feed = serde_json::json!({
+        "schema": "unified-results/v1",
+        "note": "GOLDEN = authored oracle. dynamo = LIVE (v1 reasoning + v2 tool). vllm = documented expectation (live capture pending U1).",
+        "cases": json_cases,
+    });
+    std::fs::write(&yaml_out, serde_yaml::to_string(&feed).unwrap()).unwrap();
+    eprintln!(
+        "wrote {} ({total} cases, dynamo_red={dynamo_red}, vllm_red={vllm_red})",
+        out.display()
+    );
+
+    // Sanity: the harness computes REAL failures, not a strawman.
+    assert!(total >= 14, "expected the seed corpus");
+    assert!(
+        dynamo_red >= 3,
+        "expected the split to fail the interleaving cases (got {dynamo_red})"
+    );
+}
+
+fn label(v: &str) -> String {
+    if v == "MATCH" {
+        "✓".to_string()
+    } else {
+        format!("✗ {v}")
+    }
+}
+fn css(v: &str) -> &'static str {
+    if v == "MATCH" { "MATCH" } else { "RED" }
+}

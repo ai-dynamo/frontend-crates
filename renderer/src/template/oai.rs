@@ -414,6 +414,10 @@ impl OAIChatLikeRequest for dynamo_protocols::types::CreateChatCompletionRequest
         self.response_format.as_ref().map(Value::from_serialize)
     }
 
+    fn reasoning_effort(&self) -> Option<Value> {
+        self.reasoning_effort.as_ref().map(Value::from_serialize)
+    }
+
     fn should_add_generation_prompt(&self) -> bool {
         // Using vLLM default behavior
         true

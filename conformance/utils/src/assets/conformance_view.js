@@ -7,6 +7,48 @@
 // unmodified. The template emits only the page skeleton + the model blob; this
 // view is the sole renderer of the tabs bar and panels.
 (function () {
+  // --- Theme (light / dark) --------------------------------------------------
+  // The page was light while every popup was dark, so the two surfaces disagreed. One
+  // switch drives both via `data-theme` on <html>; CSS carries the per-surface overrides.
+  // Persisted in a COOKIE, not a URL param — the query string is reserved for the
+  // click-driven compare/selection state, and the theme must not be shareable noise.
+  var THEME_COOKIE = 'conformance_theme';
+  var THEME_GLYPH = { light: '\u25D1', dark: '\u25D0' };  // ◑ / ◐
+
+  function readCookie(name) {
+    var parts = String(document.cookie || '').split(';');
+    for (var i = 0; i < parts.length; i++) {
+      var kv = parts[i].split('=');
+      if (kv[0].trim() === name) { return decodeURIComponent((kv[1] || '').trim()); }
+    }
+    return null;
+  }
+  // localStorage backs the cookie because a `file://` page cannot set one — the rendered
+  // HTML is opened both ways (served over http, and straight off disk), and a preference
+  // that silently forgets itself in one of them is worse than no preference.
+  function readStored() {
+    try { return window.localStorage.getItem(THEME_COOKIE); } catch (e) { return null; }
+  }
+  function currentTheme() {
+    var t = readCookie(THEME_COOKIE) || readStored();
+    return t === 'dark' || t === 'light' ? t : 'light';
+  }
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    // 1 year, path=/ so it holds for every rendered page in the tree.
+    document.cookie = THEME_COOKIE + '=' + theme + ';path=/;max-age=31536000;samesite=lax';
+    try { window.localStorage.setItem(THEME_COOKIE, theme); } catch (e) { /* private mode */ }
+    var btns = document.querySelectorAll('[data-theme-toggle]');
+    for (var i = 0; i < btns.length; i++) { btns[i].textContent = THEME_GLYPH[theme]; }
+  }
+  // Apply before the table is built so there is no flash of the wrong theme.
+  applyTheme(currentTheme());
+  document.addEventListener('click', function (e) {
+    var b = e.target && e.target.closest ? e.target.closest('[data-theme-toggle]') : null;
+    if (!b) { return; }
+    applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
+  }, false);
+
   // --- Escaping helpers ------------------------------------------------------
   // Every plain-text value from the model is escaped before insertion. Fields
   // whose name ends in `_html` (label_html, model_label_html, legend_html,
@@ -50,10 +92,49 @@
     return out;
   }
 
-  // COLORIZED: the server colorizes tool-call markup + whitespace (markup.py's
-  // colorize_markup / _mark_ws). First-draft: HTML-escape only, never crash.
-  /* TODO: port colorize_markup whitespace chips + markup coloring from markup.py */
-  function colorize(text) { return escapeHtml(text == null ? '' : String(text)); }
+  // Per-family declared markers (page.family_markers) for the colorizer's declared
+  // lookup — the JS analogue of markup.py's _declared_lookup. Set at entry.
+  var _familyMarkers = {};
+  // COLORIZED: delegate to colorize.js (__markupColorize). `ctx` is the per-tooltip link
+  // context so identical content shares a background across input + output cells. If the
+  // module is somehow absent, fall back to plain escaping so the page never crashes.
+  // Markers -> background color (pair-matched; unmatched -> red); user text -> per-word
+  // foreground color (same word == same color everywhere in this tooltip).
+  function colorize(text, family, ctx) {
+    var mc = (typeof window !== 'undefined') && window.__markupColorize;
+    if (!mc) { return escapeHtml(text == null ? '' : String(text)); }
+    return mc.colorizeLinked(text, family == null ? null : family, _familyMarkers, ctx);
+  }
+  // Word coloring only, no marker parsing — for the `calls=` JSON blob. The parsed
+  // arguments there are the SAME values the input carried (mode, fast, ...), so they
+  // must share the tooltip's word hues; but the blob is JSON, not model markup, so
+  // running the marker matcher over it would be wrong.
+  function colorizeWords(text, ctx) {
+    var mc = (typeof window !== 'undefined') && window.__markupColorize;
+    if (!mc) { return escapeHtml(text == null ? '' : String(text)); }
+    return mc.colorizeWords(text == null ? '' : String(text), ctx);
+  }
+  // In an OUTPUT content payload (text=/reasoning=) a control marker is LEAKED markup:
+  // a correct parse consumes every marker, so anything marker-shaped left inside content
+  // is a leak and must read as such (red), NOT as a legit marker pair. The generic
+  // colorizer pairs `<think>...</think>` and colors it like real structure, so flag
+  // markers here instead: any angle-bracket token (`<think>`, `</think>`, `<|channel>`,
+  // `<tool_call|>`, `<|tool_call_end|>`, ...) plus gemma4's bare `thought` label (the
+  // opener with its brackets already stripped).
+  function colorizeUnifiedLeak(text, family, ctx) {
+    var s = String(text == null ? '' : text);
+    var re = /<\|?[^<>]*\|?>|thought\n/g;
+    var out = '', last = 0, m;
+    while ((m = re.exec(s)) !== null) {
+      if (m.index > last) { out += colorize(s.slice(last, m.index), family, ctx); }
+      var tok = m[0];
+      if (tok === 'thought\n') { out += '<span class="tt-orphan">thought</span>\n'; }
+      else { out += '<span class="tt-orphan">' + escapeHtml(tok) + '</span>'; }
+      last = m.index + tok.length;
+    }
+    if (last < s.length) { out += colorize(s.slice(last), family, ctx); }
+    return out;
+  }
 
   // --- Lazy tooltip building -------------------------------------------------
   // conformance.js's attachTooltip queries `cell.querySelector('.ttip')` at wire
@@ -103,7 +184,9 @@
 
   function delegatedBuild(e) {
     var t = e.target;
-    var td = t && t.closest ? t.closest('td.cell[data-ttip-id]') : null;
+    // `th.case-sub` carries the per-column grammar popup and builds the same lazy way
+    // a data cell does — without it here, hovering a header would show an empty box.
+    var td = t && t.closest ? t.closest('td.cell[data-ttip-id], th.case-sub[data-ttip-id], th.trow-case[data-ttip-id]') : null;
     if (td) { buildTooltipInto(td); }
   }
   // pointerover/focusin/click all bubble, so one document listener covers every
@@ -133,31 +216,70 @@
   }
 
   // --- Output block rendering (mirrors _format_output_block_html) ------------
-  function outputBlock(b) {
+  function outputBlock(b, family, ctx) {
     if (!b) { return '—'; }
     if (b.unavailable != null) {
-      return 'unavailable: ' + escapeHtml(String(b.unavailable));
+      // Prose, not payload: these carry n/a rationale and TODO notes.
+      return '<span class="expl">unavailable: ' + escapeHtml(String(b.unavailable)) + '</span>';
     }
     if (b.error != null) {
       var e = (typeof b.error === 'string') ? b.error : JSON.stringify(b.error);
       return 'error: ' + escapeHtml(e);
     }
+    // Unified tab: an ordered event stream (reasoning | text | tool_call).
+    if (b.events != null) {
+      var evlines = b.events.map(function (ev) {
+        if (ev.kind === 'reasoning') {
+          return '<span class="fldl">reasoning=\'</span>' + colorizeUnifiedLeak(ev.text || '', family, ctx) + '<span class="fldl">\'</span>';
+        }
+        if (ev.kind === 'text') {
+          return '<span class="fldl">text=\'</span>' + colorizeUnifiedLeak(ev.text || '', family, ctx) + '<span class="fldl">\'</span>';
+        }
+        if (ev.kind === 'tool_call') {
+          // Colorize the name + args like the streaming deltas do (word hues shared with
+          // the input), instead of plain-escaping — so the assembled row matches.
+          return '<span class="fldl">tool_call=</span>' + colorizeWords(ev.name || '', ctx)
+            + '(' + colorizeWords(JSON.stringify(ev.arguments || {}), ctx) + ')';
+        }
+        return '';
+      });
+      var uout = evlines.join('\n') || '<i>(no events)</i>';
+      // A blank line separates the monospaced event stream from the explanation
+      // lines (verdict / TODO / note) so they don't read as another event.
+      var expl = [];
+      if (b.verdict && b.verdict !== 'MATCH') { expl.push('diverges: ' + escapeHtml(b.verdict)); }
+      if (b.todo) { expl.push(escapeHtml(String(b.todo))); }
+      if (b.note) { expl.push(escapeHtml(String(b.note))); }
+      if (expl.length) {
+        uout += '\n\n' + expl.map(function (x) { return '<span class="expl">' + x + '</span>'; }).join('\n');
+      }
+      return uout;
+    }
+    // Unified tab: vLLM column is a documented expectation (no live events yet).
+    if (b.expected != null) {
+      var xout = '<span class="fldl">expected: </span>' + escapeHtml(b.expected)
+        + ' <span class="parser-base">(live capture pending — U1)</span>';
+      if (b.note) { xout += '\n<span class="expl">' + escapeHtml(String(b.note)) + '</span>'; }
+      return xout;
+    }
     var out;
     if (b.reasoning_text != null) {
-      // Reasoning cell: reasoning_text + normal_text (no tool calls).
-      out = '<span class="fldl">reasoning_text=\'</span>' + colorize(b.reasoning_text)
+      // Reasoning cell: reasoning_text + normal_text (markers -> bg, words -> fg).
+      out = '<span class="fldl">reasoning_text=\'</span>' + colorize(b.reasoning_text, family, ctx)
         + '<span class="fldl">\'</span>'
-        + '\n<span class="fldl">normal_text=\'</span>' + colorize(b.normal_text || '')
+        + '\n<span class="fldl">normal_text=\'</span>' + colorize(b.normal_text || '', family, ctx)
         + '<span class="fldl">\'</span>';
     } else {
       var nt = b.normal_text || '';
       var calls = b.calls || [];
-      out = '<span class="fldl">normal_text=\'</span>' + colorize(nt)
+      out = '<span class="fldl">normal_text=\'</span>' + colorize(nt, family, ctx)
         + '<span class="fldl">\'</span>'
-        + '\n<span class="fldl">calls=</span>' + escapeHtml(JSON.stringify(calls));
+        + '\n<span class="fldl">calls=</span>' + colorizeWords(JSON.stringify(calls), ctx);
     }
     if (b.explanation) {
-      out += '\n<span class="expl">explanation: ' + escapeHtml(String(b.explanation)) + '</span>';
+      // Blank line before the prose: `explanation:` ran straight on from the `calls=`
+      // JSON, so a long note read as a continuation of the data rather than a note.
+      out += '\n\n<span class="expl">explanation: ' + escapeHtml(String(b.explanation)) + '</span>';
     }
     return out;
   }
@@ -180,74 +302,167 @@
 
   // One candidate's emitted deltas at one chunk, as compact text (mirrors the
   // server's _render_chunk_deltas: name deltas as name='<n>', arg fragments joined).
-  function renderDeltas(deltas) {
+  // The emitted name/arguments are values the INPUT carried (get_weather, NYC, EST),
+  // so they colorize against the tooltip vocabulary like every other output surface.
+  // The `name='`/`args='` labels around them are chrome and stay plain.
+  // Deltas are bucketed by `index` (ToolCallDelta.tool_index) FIRST. One chunk can
+  // carry deltas for two different calls, and concatenating their `arguments` into a
+  // single string renders two independent calls as one call with malformed JSON —
+  // `name='get_weather' name='get_time' args='{"location":"NYC"}{"timezone":"EST"}'`.
+  // Fragments are only meant to join WITHIN one index; `index` is exactly the field a
+  // client uses to demultiplex concurrent calls in the OpenAI stream.
+  function renderDeltas(deltas, ctx) {
     if (!deltas || !deltas.length) { return '<span class="parser-base">—</span>'; }
-    var parts = [];
-    var args = '';
+    var order = [];
+    var byIndex = {};
+    var unified = [];  // Unified tab: reasoning / text / tool_call event deltas (one ordered stream)
     deltas.forEach(function (d) {
       if (d == null) { return; }
-      if (d.name != null) { parts.push("name='" + escapeHtml(String(d.name)) + "'"); }
-      if (d.arguments != null) { args += String(d.arguments); }
+      if (d.kind === 'reasoning') { unified.push("<span class=\"fldl\">reasoning='</span>" + colorize(String(d.text || ''), null, ctx) + "<span class=\"fldl\">'</span>"); return; }
+      if (d.kind === 'text') { unified.push("<span class=\"fldl\">text='</span>" + colorize(String(d.text || ''), null, ctx) + "<span class=\"fldl\">'</span>"); return; }
+      if (d.kind === 'tool_call') {
+        var tc = "<span class=\"fldl\">tool_call=</span>" + escapeHtml(String(d.name || ''));
+        if (d.arguments != null) { tc += " args='" + colorizeWords(String(d.arguments), ctx) + "'"; }
+        unified.push(tc);
+        return;
+      }
+      var key = (d.index == null) ? '' : String(d.index);
+      if (!Object.prototype.hasOwnProperty.call(byIndex, key)) {
+        byIndex[key] = { names: [], args: '' };
+        order.push(key);
+      }
+      if (d.name != null) { byIndex[key].names.push(String(d.name)); }
+      if (d.arguments != null) { byIndex[key].args += String(d.arguments); }
     });
-    if (args) { parts.push("args='" + escapeHtml(args) + "'"); }
-    return parts.length ? parts.join(' ') : '<span class="parser-base">—</span>';
+    if (unified.length) { return unified.join('\n'); }
+    // The `#N` marker is shown only when there is more than one call to tell apart, so
+    // single-call chunks — the overwhelming majority — render exactly as before.
+    var showIndex = order.length > 1;
+    var groups = order.map(function (key) {
+      var g = byIndex[key];
+      var parts = [];
+      if (showIndex && key !== '') { parts.push('<span class="fldl">#' + escapeHtml(key) + '</span>'); }
+      g.names.forEach(function (n) { parts.push("name='" + colorizeWords(n, ctx) + "'"); });
+      if (g.args) { parts.push("args='" + colorizeWords(g.args, ctx) + "'"); }
+      return parts.join(' ');
+    }).filter(function (s) { return s !== ''; });
+    return groups.length ? groups.join('\n') : '<span class="parser-base">—</span>';
   }
 
-  function inputTextCell(input) {
+  function inputTextCell(input, ctx) {
     if (input && input.text != null) {
-      return '<span class="fldl">input_text=\'</span>' + colorize(input.text)
+      return '<span class="fldl">input_text=\'</span>' + colorize(input.text, input.family, ctx)
         + '<span class="fldl">\'</span>';
     }
     return '';
   }
 
-  function buildChartHtml(m) {
-    var cands = m.candidates || [];
-    if (!cands.length) { return ''; }
+  // Per-chunk linked delta_text, computed over the JOINED stream so a tag spanning a
+  // chunk boundary keeps one underline color (mirrors markup.colorize_stream_deltas).
+  function chunkDeltaHtml(input, ctx) {
+    var mc = (typeof window !== 'undefined') && window.__markupColorize;
+    var chunks = input.chunks || [];
+    if (!mc) {
+      return chunks.map(function (ch) { return escapeHtml(ch.delta_text || ''); });
+    }
+    return mc.colorizeLinkedStreamDeltas(chunks, input.family == null ? null : input.family, _familyMarkers, ctx);
+  }
+
+  function buildChartHtml(m, ctx) {
+    var allCands = m.candidates || [];
+    if (!allCands.length) { return ''; }
     var input = m.input || { kind: null };
+    var family = input.family;
+    // Golden is the fixed reference: render its output at the bottom of the INPUT column,
+    // not as a selectable column. Every engine is measured against it.
+    var golden = null;
+    var cands = allCands.filter(function (c) {
+      if (c.key === 'golden') { golden = c; return false; }
+      return true;
+    });
     var header = '';
-    cands.forEach(function (c) {
-      header += '<th data-cand="' + escapeAttr(c.key) + '">' + escapeHtml(c.label) + '</th>';
+    cands.forEach(function (c, ci) {
+      header += '<th data-cand="' + escapeAttr(c.key) + '" data-cand-order="' + ci + '">'
+        + escapeHtml(c.label) + '</th>';
     });
     var body = '';
     if (input.kind === 'chunks' && input.chunks && input.chunks.length) {
+      var deltaHtml = chunkDeltaHtml(input, ctx);
       input.chunks.forEach(function (ch, i) {
-        var row = '<tr><td class="cin">' + colorize(ch.delta_text || '');
+        var row = '<tr><td class="cin">' + deltaHtml[i];
         if (ch.finish_reason) {
           row += '<span class="fr"> finish=' + escapeHtml(String(ch.finish_reason)) + '</span>';
         }
         row += '</td>';
-        cands.forEach(function (c) {
+        cands.forEach(function (c, ci) {
           var impl = implKeyOf(c.key);
           var d = (ch.expected && ch.expected[impl]) || [];
-          row += '<td data-cand="' + escapeAttr(c.key) + '">' + renderDeltas(d) + '</td>';
+          row += '<td data-cand="' + escapeAttr(c.key) + '" data-cand-order="' + ci + '">'
+            + renderDeltas(d, ctx) + '</td>';
         });
         body += row + '</tr>';
       });
     }
-    // Assembled row: each candidate's final block, compared against the input.
-    var fin = '<tr class="ttip-final"><td class="cin">'
-      + (body ? 'assembled' : inputTextCell(input)) + '</td>';
-    cands.forEach(function (c) {
-      fin += '<td data-cand="' + escapeAttr(c.key) + '">'
-        + outputBlock(c.block).replace(/\n/g, '<br>') + '</td>';
+    // Assembled row: the input cell shows the GOLDEN output (the reference); each engine
+    // column shows its own assembled block.
+    var inputCell = golden
+      ? outputBlock(golden.block, family, ctx).replace(/\n/g, '<br>')
+        + '<br><br><span class="golden-out-cap">Golden output</span>'
+      : (body ? 'assembled' : inputTextCell(input, ctx));
+    var fin = '<tr class="ttip-final"><td class="cin">' + inputCell + '</td>';
+    cands.forEach(function (c, ci) {
+      // Red when this candidate's assembled output DIVERGES from the golden oracle
+      // (its verdict, classified against golden, is anything but MATCH) — the same
+      // "red = doesn't match golden" rule the matrix cell uses. golden itself is the
+      // input-column reference and never appears here, so it is never flagged.
+      var diverges = c.block && c.block.verdict && c.block.verdict !== 'MATCH';
+      fin += '<td data-cand="' + escapeAttr(c.key) + '" data-cand-order="' + ci + '"'
+        + (diverges ? ' class="cand-diverge"' : '') + '>'
+        + outputBlock(c.block, family, ctx).replace(/\n/g, '<br>') + '</td>';
     });
     fin += '</tr>';
+    var inputHdr = golden ? 'input / golden output' : 'input';
     // The table carries class `ttip-chunks` — conformance.js keys the popup grid on it.
-    return '<table class="ttip-chunks"><thead><tr><th>input</th>' + header
+    return '<table class="ttip-chunks"><thead><tr><th>' + escapeHtml(inputHdr) + '</th>' + header
       + '</tr></thead><tbody>' + body + fin + '</tbody></table>';
   }
 
   // --- Tooltip content (built lazily into the empty .ttip) -------------------
   function buildTooltipHtml(m) {
+    if (m && m.grammar) { return buildGrammarHtml(m); }
     var h = '';
-    if (m.head) { h += '<div class="ttip-head">' + escapeHtml(m.head) + '</div>'; }
-    var cands = m.candidates || [];
-    var chart = cands.length ? buildChartHtml(m) : '';
-    // Description shown only when there's no chart (the chart's input cell carries it).
-    if (m.description && !chart) {
-      h += '<pre class="ttip-pre">' + escapeHtml(m.description) + '</pre>';
+    // Id + description on ONE line, matching the column grammar popup: the id keeps its
+    // accent color, the description follows inline in the normal tooltip text color (not
+    // the loud section blue). Falls back to its own line only when there is no id/head.
+    if (m.head) {
+      h += '<div class="ttip-head">' + escapeHtml(m.head)
+        + (m.description ? ' <span class="ttip-head-desc">' + escapeHtml(m.description) + '</span>' : '')
+        + '</div>';
+    } else if (m.description) {
+      h += '<div class="ttip-casedesc"><span class="ttip-head-desc">' + escapeHtml(m.description) + '</span></div>';
     }
+    // One link context per tooltip, shared by the input and every output cell. Harvest
+    // the vocabulary from the INPUT first, then seal it: the input's tokens and their
+    // colors are the only ones that exist, and every later render (the input itself,
+    // each candidate's block, the `calls=` JSON) colors by matching against them. That
+    // is what makes an output value carry its input color, and what lets a concatenated
+    // output like `bodyanswer` come back as `body` + `answer` in the input's two colors.
+    var mc = (typeof window !== 'undefined') && window.__markupColorize;
+    var ctx = mc ? mc.newLinkCtx() : null;
+    if (ctx) {
+      var reg = m.input || {};
+      var regFamily = reg.family == null ? null : reg.family;
+      if (reg.kind === 'chunks' && reg.chunks && reg.chunks.length) {
+        mc.colorizeLinkedStreamDeltas(reg.chunks, regFamily, _familyMarkers, ctx);
+      } else if (reg.text != null) {
+        mc.colorizeLinked(reg.text, regFamily, _familyMarkers, ctx);
+      }
+      mc.sealLinkCtx(ctx);
+    }
+    var cands = m.candidates || [];
+    var chart = cands.length ? buildChartHtml(m, ctx) : '';
+    // Description shown only when there's no chart (the chart's input cell carries it).
+    // (description already emitted under the head, for chart and non-chart alike)
     if (chart) {
       // Chart is the per-candidate output surface — NEVER also emit the `.cand`
       // list (test_chart_tooltips_have_no_candidate_list: chart XOR list).
@@ -256,7 +471,7 @@
       var input = m.input || { kind: null };
       if (input.kind === 'text' && input.text) {
         h += '<div class="ttip-section">Input:</div>'
-          + '<pre class="ttip-pre">' + colorize(input.text) + '</pre>';
+          + '<pre class="ttip-pre ttip-code">' + colorize(input.text, input.family, ctx) + '</pre>';
       }
     }
     // Divergence reasons (structured).
@@ -269,7 +484,7 @@
     });
     // n/a-stub explanation.
     if (m.na_note) {
-      h += '<pre class="ttip-pre">' + escapeHtml(m.na_note) + '</pre>';
+      h += '<pre class="ttip-pre ttip-note">' + escapeHtml(m.na_note) + '</pre>';
     }
     return h;
   }
@@ -282,9 +497,25 @@
     var groups = [['Dynamo', 'dynamo'], ['vLLM', 'vllm'], ['SGLang', 'sglang']];
     var html = '<div class="cmpctl" role="group" aria-label="Pick one Reference parser'
       + ' (radio) and any number of Compare-with parsers (checkbox)">';
+    // Golden is the oracle shown in the input column, not a selectable engine. Make it the
+    // hidden comparison base ONLY when no engine is the default Reference — otherwise an
+    // engine (Dynamo on the Unified tab) is the starred REF and golden is just the fixed
+    // NΔ baseline (cmp.golden). A golden REF would color every cell green (it never diverges
+    // from itself), which is exactly what the Unified red-on-diff rule must avoid.
+    var hasGolden = (tab.candidates || []).some(function (c) { return c.key === 'golden'; });
+    var engineRef = (tab.candidates || []).some(function (c) {
+      return c.key !== 'golden' && c.default_bucket === 'A';
+    });
+    if (hasGolden && !engineRef) {
+      html += '<input type="radio" class="cmp-ref" name="ref_' + escapeAttr(tab.id)
+        + '" value="golden" checked style="display:none" aria-hidden="true">';
+    }
     groups.forEach(function (g) {
       var engine = g[0];
       var impl = g[1];
+      // Only render an engine column when this tab actually has a candidate for it,
+      // so the Golden column appears only on the Unified tab and other tabs are unchanged.
+      if (!(tab.candidates || []).some(function (c) { return c.impl === impl; })) { return; }
       html += '<div class="cmpcol" data-engine="' + escapeAttr(engine) + '">'
         + '<div class="cmprow cmphd"><span class="cmphd-ref" title="Reference (pick one)">ref</span>'
         + '<span class="cmphd-cmp" title="Compare-with">compare with</span></div>';
@@ -333,21 +564,187 @@
   function groupHeadersHtml(tab) {
     // The parser column is labeled per tab kind: "Tool calling family" vs
     // "Reasoning family" (matches _subcase_group_headers_html / _case_group_headers_html).
-    var parserLabel = tab.kind === 'reasoning' ? 'Reasoning family' : 'Tool calling family';
-    var h = fixedColumnHeader('model', 'Model') + fixedColumnHeader('parser', parserLabel);
+    // `no_parser_col` drops it entirely (the Unified tab — parser architecture is
+    // per-engine, not a per-family column).
+    var h = fixedColumnHeader('model', 'Model');
+    if (!tab.no_parser_col) {
+      var parserLabel = tab.parser_col_label
+        || (tab.kind === 'reasoning' ? 'Reasoning family' : 'Tool calling family');
+      h += fixedColumnHeader('parser', parserLabel);
+    }
     (tab.column_groups || []).forEach(function (g) { h += groupColumnHeader(g); });
     return h;
   }
+  // --- Per-column grammar popup ----------------------------------------------
+  // Hovering a sub-case header shows THE SAME test case in every family's grammar,
+  // side by side, so the envelope differences are readable at a glance. Streaming
+  // inputs are joined back into one text: the chunk split is a streaming concern,
+  // not a grammar one, and chunk boundaries only obscure the shape here.
+  function caseInputText(tip) {
+    if (!tip) { return null; }
+    var inp = tip.input || {};
+    if (inp.kind === 'chunks' && inp.chunks && inp.chunks.length) {
+      return inp.chunks.map(function (ch) { return (ch && ch.delta_text) || ''; }).join('');
+    }
+    // An empty `model_text` is dropped from the model (falsy), so a text-kind input with
+    // no `text` is EMPTY, not missing — `TOOLCALLING.batch.9.a` is the empty-model-text
+    // case and was reporting "no input recorded" for every family.
+    if (inp.kind === 'text' || inp.text != null) { return String(inp.text == null ? '' : inp.text); }
+    return null;
+  }
+
+  // A family with no input for this case still gets a row, carrying WHY — an empty
+  // row would read as "identical grammar" rather than "case does not apply here".
+  function naReason(cell, tip) {
+    if (tip && tip.na_note) { return tip.na_note; }
+    if (!cell) { return 'no cell for this case'; }
+    if (cell.kind === 'blank') { return 'case not defined for this family'; }
+    if (cell.kind === 'missing') { return 'fixture missing'; }
+    if (cell.status === 'na') { return 'not applicable to this family'; }
+    return 'no input recorded';
+  }
+
+  function columnGrammarModel(tab, col) {
+    var rows = [];
+    var caseId = null;   // numbered id (e.g. "UNIFIED.7.b") — the cells' own id, not the slug
+    var colDefs = null;  // shared output-candidate columns [{key,label,pin}], first row wins
+    (tab.rows || []).forEach(function (row) {
+      if (!row || row.section) { return; }              // section banners are not families
+      var cell = (row.cells || {})[col.sub];
+      if (cell && cell.case_id && !caseId) { caseId = cell.case_id; }
+      var tip = cell && cell.tooltip;
+      var text = caseInputText(tip);
+      // An input that EXISTS but is empty is not the same as a missing one — case 9.a
+      // ("Empty model text") is empty on purpose, and calling that "no input recorded"
+      // would read as a gap in the corpus.
+      // OUTPUT columns are one-per-candidate, keyed by candidate key. golden is PINNED
+      // (always shown, leftmost output); the others show only when active, with the
+      // Reference flagged/ordered first — exactly like the cell popups. applyCtl
+      // (conformance.js) drives visibility + ordering off the compare selection.
+      var cands = (tip && tip.candidates) || [];
+      if (!colDefs && cands.length) {
+        colDefs = [];
+        for (var k = 0; k < cands.length; k++) {
+          var cd = cands[k];
+          if (cd && cd.key) {
+            colDefs.push({ key: cd.key, label: cd.label || cd.key, pin: !!cd.pin_first || cd.key === 'golden' });
+          }
+        }
+      }
+      var blocks = {};
+      for (var i = 0; i < cands.length; i++) {
+        var cc = cands[i];
+        if (cc && cc.key && cc.block) { blocks[cc.key] = cc.block; }
+      }
+      // Keep the raw chunk list for stream cases: the popup joins them for coloring
+      // (markers and values must resolve over the WHOLE stream), but the reader still
+      // needs to see where one chunk ended and the next began.
+      var inp = (tip && tip.input) || {};
+      rows.push({
+        family: row.family || '',
+        label: row.model_label || row.family || '',
+        text: text ? text : null,
+        chunks: (inp.chunks && inp.chunks.length) ? inp.chunks : null,
+        blocks: blocks,
+        reason: text ? null : (text === '' ? 'empty input — this case tests empty model text'
+                                           : 'n/a — ' + naReason(cell, tip)),
+      });
+    });
+    return { head: caseId || fullCaseId(tab, col), desc: col.desc || '', grammar: rows, cands: colDefs || [] };
+  }
+
+  // The header shows the FULL case id, matching the cell popups and the fixture YAML, so
+  // a column is identifiable without counting across the header row. Tool-calling
+  // columns carry a bare sub ("1", "9.a") against a mode-qualified prefix
+  // ("TOOLCALLING.batch."); reasoning columns already carry the whole id.
+  function fullCaseId(tab, col) {
+    var prefix = tab.case_prefix || '';
+    var sub = String(col.sub == null ? col.label : col.sub);
+    if (!prefix) { return sub; }
+    return sub.indexOf(prefix) === 0 ? sub : prefix + sub;
+  }
+
+  function buildGrammarHtml(m) {
+    // Id + description on ONE line: the id keeps its accent color, the description follows
+    // inline in the normal tooltip text color (not the loud section blue).
+    var h = '<div class="ttip-head">' + escapeHtml(m.head || '')
+      + (m.desc ? ' <span class="ttip-head-desc">' + escapeHtml(m.desc) + '</span>' : '')
+      + '</div>';
+    var cands = m.cands || [];
+    var body = '';
+    (m.grammar || []).forEach(function (r) {
+      var cls = r.text ? '' : ' class="gr-na"';
+      var cell, outCell;
+      // ONE context per row, seeded from that row's input: every family has its own
+      // marker vocabulary, and seeding from the input is what makes a value carry the
+      // same color into the output — the same convention as the cell popups.
+      var mc = (typeof window !== 'undefined') && window.__markupColorize;
+      var ctx = null;
+      if (mc) {
+        ctx = mc.newLinkCtx();
+        if (r.text) { mc.colorizeLinked(r.text, r.family || null, _familyMarkers, ctx); }
+        mc.sealLinkCtx(ctx);
+      }
+      if (r.text && r.chunks && mc) {
+        // Slice the JOINED render back apart at the chunk boundaries and mark each seam,
+        // so cross-chunk coloring stays correct while the chunking stays visible.
+        var parts = mc.colorizeLinkedStreamDeltas(r.chunks, r.family || null, _familyMarkers, ctx);
+        // Fold a whitespace-only delta (e.g. a bare "\n" streamed on its own) into the
+        // previous part: otherwise it draws a chunk-boundary marker on BOTH sides and reads
+        // as a double return. Real token boundaries keep their single marker.
+        var folded = [];
+        for (var di = 0; di < parts.length; di++) {
+          var dt = (r.chunks[di] && r.chunks[di].delta_text) || '';
+          if (folded.length && /^\s*$/.test(dt)) { folded[folded.length - 1] += parts[di]; }
+          else { folded.push(parts[di]); }
+        }
+        cell = folded.join('<span class="gr-chunk-sep" title="chunk boundary">\u2B90</span>');
+      } else if (r.text) {
+        cell = mc ? mc.colorizeLinked(r.text, r.family || null, _familyMarkers, ctx)
+                  : escapeHtml(r.text);
+      } else {
+        cell = '<span class="parser-base">' + escapeHtml(r.reason || '') + '</span>';
+      }
+      // One OUTPUT column per candidate (golden pinned first, then Reference, then the
+      // rest). data-cand/-order/-pin let applyCtl show only golden + the active columns
+      // and order them REF-first, exactly like the cell popup's candidate columns.
+      outCell = cands.map(function (c, ci) {
+        var blk = r.blocks && r.blocks[c.key];
+        var inner = blk ? outputBlock(blk, r.family || null, ctx).replace(/\n/g, '<br>')
+                        : '<span class="parser-base">—</span>';
+        return '<td class="gro" data-cand="' + escapeAttr(c.key) + '" data-cand-order="' + ci + '"'
+          + (c.pin ? ' data-cand-pin="1"' : '') + '>' + inner + '</td>';
+      }).join('');
+      // Key the row by MODEL, not by parser family. DeepSeek V3, V3.1 and V3.2 are
+      // distinct models that happen to share one parser family, and labelling all three
+      // `deepseek_v3` made them read as duplicate rows. Every model gets its own row,
+      // exactly like V4; the family is kept alongside since it names the grammar.
+      var fam = (r.family && r.family !== r.label)
+        ? '<span class="grfam">' + escapeHtml(r.family) + '</span>' : '';
+      body += '<tr' + cls + '><td class="grf">' + escapeHtml(r.label || r.family)
+        + fam + '</td><td class="gri">' + cell + '</td>' + outCell + '</tr>';
+    });
+    // One output header per candidate; applyCtl shows golden + the active columns,
+    // flags the Reference (★) and orders golden -> REF -> rest.
+    var header = cands.map(function (c, ci) {
+      return '<th class="gro-hd" data-cand="' + escapeAttr(c.key) + '" data-cand-order="' + ci + '"'
+        + (c.pin ? ' data-cand-pin="1"' : '') + '>' + escapeHtml(c.label) + '</th>';
+    }).join('');
+    return h + '<table class="ttip-chunks ttip-grammar"><thead><tr><th>model</th>'
+      + '<th>input</th>' + header + '</tr></thead><tbody>' + body + '</tbody></table>';
+  }
+
   function subHeadersHtml(tab) {
     var cols = tab.columns || [];
     var href = escapeAttr(tab.case_docs_href || '');
     var h = '';
     for (var i = 0; i < cols.length; i++) {
       var c = cols[i];
-      // Server always emits a title attr (empty string when no description).
+      // The rich grammar popup replaces the old native `title` tooltip (which could
+      // only carry the one-line description, and rendered alongside the new popup).
       h += '<th class="case-sub ' + escapeAttr(c.band) + '" data-col-hide-group="'
-        + escapeAttr(c.group_key) + '"><a href="' + href + '" title="' + escapeAttr(c.desc || '')
-        + '">' + escapeHtml(c.label) + '</a></th>';
+        + escapeAttr(c.group_key) + '"><a href="' + href + '">'
+        + escapeHtml(c.label) + '</a><div class="ttip"></div></th>';
       // A hidden placeholder cell closes each contiguous group run.
       var next = cols[i + 1];
       if (!next || next.group_key !== c.group_key) {
@@ -398,6 +795,12 @@
     if (_usesFamily) {
       td.setAttribute('data-family', cell.family || '');
     }
+    if (cell.red_on_diff) {
+      // Unified tab: GOLDEN is the fixed oracle, so a cell is red when a SHOWN parser's
+      // output DIVERGES from golden (any class — leaked markup, merged/reordered events,
+      // dropped content), not just on a leak. Green = every shown parser matches golden.
+      td.setAttribute('data-red-on-diff', '1');
+    }
     if (cell.cmp) {
       // setAttribute stores the raw JSON; getAttribute (conformance.js) returns it
       // verbatim for JSON.parse — no manual attribute escaping needed.
@@ -444,17 +847,16 @@
     tr.appendChild(modelTd);
     tr.appendChild(placeholderTd('model'));
     // Parser cell: row.parser.html is a ready `<td class="parser">...</td>` string.
-    if (row.parser && row.parser.html) {
-      var ptd = parseTdHtml(row.parser.html);
-      if (ptd) {
-        tr.appendChild(ptd);
+    // `no_parser_col` drops the whole column (Unified tab).
+    if (!tab.no_parser_col) {
+      if (row.parser && row.parser.html) {
+        var ptd = parseTdHtml(row.parser.html);
+        tr.appendChild(ptd || emptyParserTd());
       } else {
         tr.appendChild(emptyParserTd());
       }
-    } else {
-      tr.appendChild(emptyParserTd());
+      tr.appendChild(placeholderTd('parser'));
     }
-    tr.appendChild(placeholderTd('parser'));
     var cols = tab.columns || [];
     var cells = row.cells || {};
     for (var i = 0; i < cols.length; i++) {
@@ -481,12 +883,19 @@
     table.setAttribute('data-mode', tab.mode || '');
     var thead = document.createElement('thead');
     thead.innerHTML = '<tr>' + groupHeadersHtml(tab) + '</tr><tr>' + subHeadersHtml(tab) + '</tr>';
+    // The sub-case headers were emitted as a string; key their grammar popups now that
+    // they are real nodes. Built lazily like every other tooltip (a grammar table for
+    // ~20 families is far too much to render up front for every column).
+    var subThs = thead.querySelectorAll('th.case-sub');
+    (tab.columns || []).forEach(function (col, i) {
+      if (subThs[i]) { registerTooltip(subThs[i], columnGrammarModel(tab, col)); }
+    });
     table.appendChild(thead);
     var tbody = document.createElement('tbody');
     // Section banner colspan = model + parser + one per sub-case column. The
     // hidden group placeholders don't count (they're display:none by default);
     // conformance.js recomputes this via applyColumnState on load anyway.
-    var nCols = 2 + (tab.columns ? tab.columns.length : 0);
+    var nCols = (tab.no_parser_col ? 1 : 2) + (tab.columns ? tab.columns.length : 0);
     (tab.rows || []).forEach(function (row) {
       if (row.section) {
         var tr = document.createElement('tr');
@@ -553,8 +962,8 @@
     (tab.glossary || []).forEach(function (group) {
       h += '<tr class="category"><td colspan="2">' + escapeHtml(group.label) + '</td></tr>';
       (group.rows || []).forEach(function (pair) {
-        h += '<tr><td class="sub">' + escapeHtml(prefix + pair[0]) + '</td><td>'
-          + escapeHtml(pair[1]) + '</td></tr>';
+        h += '<tr><td class="sub">' + escapeHtml(prefix + pair[0]) + '</td>'
+          + '<td class="gloss-desc">' + escapeHtml(pair[1]) + '</td></tr>';
       });
     });
     h += '</tbody></table></div>';
@@ -602,6 +1011,8 @@
     });
     html += '<span class="tabs-right">'
       + '<label class="checkbox-option cmp-detailed"><input type="checkbox" data-view-detailed> Detailed</label>'
+      + '<button type="button" class="theme-toggle" data-theme-toggle'
+      + ' title="Switch between light and dark">' + THEME_GLYPH[currentTheme()] + '</button>'
       + '<label class="checkbox-option cmp-transpose"><input type="checkbox" data-transpose-toggle> Transpose</label>'
       + '<button type="button" class="cmp-reset" data-reset title="Clear all selections and reload defaults">Reset</button>'
       + '</span></div>';
@@ -664,6 +1075,7 @@
     if (!page || !page.tabs || !page.tabs.length) { return; }
 
     _usesFamily = !!(page.parser_ni && Object.keys(page.parser_ni).length);
+    _familyMarkers = page.family_markers || {};
     _summaryLegendHtml = (page.meta && page.meta.summary_legend_html) || null;
 
     var multiTab = page.tabs.length > 1;

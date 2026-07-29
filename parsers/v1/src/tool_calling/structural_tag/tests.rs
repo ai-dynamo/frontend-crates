@@ -559,6 +559,40 @@ fn deepseek_v4_config_builds_tool_calls_block() {
     assert_eq!(invoke_tags[0]["content"]["style"], "deepseek_xml");
 }
 
+#[test]
+fn inkling_config_builds_tool_call() {
+    let tools = sample_tools();
+    let config = ToolCallConfig::inkling();
+    let builder = config
+        .structural_tag_builder
+        .as_ref()
+        .expect("inkling should provide a structural tag builder");
+    let tool_choice = ToolChoice::Named("get_weather".to_string());
+    let c = ctx(&tool_choice, &tools, None, StructuralTagSchemaMode::Auto);
+    let parsed = builder
+        .build_tool_call_format(&c)
+        .expect("build should not error")
+        .expect("build should return Some");
+
+    let fmt = &parsed["format"];
+    assert_eq!(fmt["type"], "triggered_tags");
+    assert_eq!(fmt["triggers"][0], "<|content_invoke_tool_json|>");
+    assert_eq!(fmt["at_least_one"], true);
+
+    // Named tool_choice constrains to exactly the one requested tool.
+    let tags = fmt["tags"].as_array().unwrap();
+    assert_eq!(tags.len(), 1);
+    let tag = &tags[0];
+    assert_eq!(tag["type"], "tag");
+    // Emits exactly what the Inkling parser reads: the invoke marker, the
+    // {"name": ..., "args": ...} envelope, and the <|end_message|> fence.
+    assert_eq!(
+        tag["begin"],
+        "<|content_invoke_tool_json|>{\"name\": \"get_weather\", \"args\": "
+    );
+    assert_eq!(tag["end"], "}<|end_message|>");
+}
+
 /// Round-trip every supported parser through the real parser map.
 #[test]
 fn parser_map_structural_tag_smoke() {
@@ -570,6 +604,7 @@ fn parser_map_structural_tag_smoke() {
         "deepseek_v3_2",
         "deepseek_v4",
         "kimi_k3",
+        "inkling",
     ];
 
     for name in names {

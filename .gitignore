@@ -24,3 +24,10 @@ target
 
 # RustRover / IntelliJ
 #.idea/
+
+# Unified: build tree. gen_unified_golden.py authors golden_spec/ here and the
+# harness/exploder write captures + unified_results.yaml here; the committed data
+# is the per-version LFS shards under conformance/fixtures/unified/ (golden.tar.gz
+# is derived from golden_spec/ via render -> explode -> package).
+conformance/unified/
+conformance/CONFORMANCE_unified.html

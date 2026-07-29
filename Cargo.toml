@@ -24,6 +24,7 @@ async-openai = { version = "0.41", default-features = false }
 async-stream = "0.3"
 axum = "0.8"
 base64 = "0.22"
+basetenkenizer = { version = "0.2.8", default-features = false }
 blake3 = "1"
 chrono = { version = "0.4", default-features = false, features = [
     "alloc",
@@ -34,10 +35,10 @@ chrono = { version = "0.4", default-features = false, features = [
 ] }
 clap = "4"
 derive_builder = "0.20"
-dynamo-parsers = { path = "parsers/v1", version = "5.1.2" }
-dynamo-protocols = { path = "protocols", version = "4.0.0" }
-dynamo-renderer = { path = "renderer", version = "2.0.0" }
-dynamo-tokenizers = { path = "tokenizers", version = "1.5.3" }
+dynamo-parsers = { path = "parsers/v1", version = "6.0.4" }
+dynamo-protocols = { path = "protocols", version = "5.0.1" }
+dynamo-renderer = { path = "renderer", version = "4.1.0" }
+dynamo-tokenizers = { path = "tokenizers", version = "1.6.0" }
 either = { version = "1.13", features = ["serde"] }
 fastokens = "0.2.0"
 futures = "0.3"

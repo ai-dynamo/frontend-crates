@@ -80,6 +80,30 @@ fn is_kimi_k3(model_type_lower: &Option<String>, display_name_lower: &str) -> bo
     }
 }
 
+/// Select a native formatter for model families that do not ship a usable HF
+/// `chat_template`.
+///
+/// Inkling is selected only from the authoritative `config.json` model type;
+/// unlike display-name substring matching, this remains stable under
+/// `--served-model-name` aliases. DeepSeek keeps its existing fallback for
+/// older model cards that do not publish `model_type`.
+pub fn native_formatter_for(
+    model_type_lower: &Option<String>,
+    display_name_lower: &str,
+) -> Option<PromptFormatter> {
+    if model_type_lower.as_deref() == Some("inkling_mm_model") {
+        tracing::info!(
+            model_type = ?model_type_lower,
+            "Detected Inkling model, using native Rust formatter",
+        );
+        return Some(PromptFormatter::OAI(Arc::new(
+            super::inkling::InklingFormatter,
+        )));
+    }
+
+    deepseek_formatter_for(model_type_lower, display_name_lower)
+}
+
 impl PromptFormatter {
     pub fn from_parts(
         config: ChatTemplate,
