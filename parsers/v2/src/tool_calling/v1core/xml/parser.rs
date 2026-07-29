@@ -284,7 +284,13 @@ fn bare_recovery_surrounding_text(
 
 /// Parse a single tool call block
 /// Format: `<tool_call><function=name><parameter=key>value</parameter>...</function></tool_call>`
-fn parse_tool_call_block(
+///
+/// Crate-visible so a streaming scanner that has ALREADY delimited exactly one
+/// invoke can type it directly. Routing such an invoke back through
+/// `try_tool_call_parse_xml` re-runs block discovery, which splits the block at
+/// the FIRST `</tool_call>` — truncating any argument value that legitimately
+/// contains that marker as data (`I7`).
+pub fn parse_tool_call_block(
     block: &str,
     config: &XmlParserConfig,
     tools: Option<&[ToolDefinition]>,

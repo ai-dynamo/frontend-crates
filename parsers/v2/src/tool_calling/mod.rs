@@ -12,7 +12,9 @@ pub mod kimi_k2;
 pub mod minimax_m2;
 pub mod minimax_m3;
 pub mod qwen3_coder;
-mod scan;
+/// Shared marker-scan core. Crate-visible because `crate::unified` builds on the
+/// same scanner rather than reimplementing marker handling.
+pub(crate) mod scan;
 pub mod traits;
 /// Vendored batch extraction copied from v1 so v2 is standalone (see module docs).
 mod v1core;

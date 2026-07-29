@@ -4,6 +4,7 @@
 //! Dynamo parser v2 implementations.
 
 pub mod tool_calling;
+pub mod unified;
 
 pub use tool_calling::debug::{DEBUG_ENV, debug_enabled};
 pub use tool_calling::dsml::DeepSeekV4ToolStreamParser;
@@ -22,3 +23,9 @@ pub use tool_calling::{REGISTERED_FAMILIES, create_tool_parser_for_family};
 // (e.g. `ToolStreamResult::tool_call_chunks`). v2 owns these now — see
 // `tool_calling::v1core`.
 pub use tool_calling::{CalledFunctionStream, ToolCallResponseChunk, ToolCallType};
+// One state machine per stream owning reasoning + content + tool calls, emitting
+// ONE ordered event stream (see `unified`).
+pub use unified::{
+    Qwen3UnifiedParser, REGISTERED_UNIFIED_FAMILIES, UnifiedDelta, UnifiedEvent, UnifiedParser,
+    assemble, create_unified_parser_for_family,
+};
