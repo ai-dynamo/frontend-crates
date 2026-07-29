@@ -447,6 +447,26 @@ mod tests {
     }
 
     #[test]
+    fn test_deepseek_v4_detect_and_parse_exits_reasoning_without_visible_opener_on_dsml_tool_start()
+    {
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("deepseek_v4");
+        parser.set_in_reasoning(true);
+
+        let result = parser.detect_and_parse_reasoning(
+            &format!(
+                "What is the weather now?{DEEPSEEK_TOOL_BLOCK_BEGIN}\n<｜DSML｜invoke name=\"get_weather\">"
+            ),
+            &[],
+        );
+
+        assert_eq!(result.reasoning_text, "What is the weather now?");
+        assert_eq!(
+            result.normal_text,
+            "<｜DSML｜tool_calls>\n<｜DSML｜invoke name=\"get_weather\">"
+        );
+    }
+
+    #[test]
     fn test_deepseek_v4_detect_and_parse_exits_reasoning_on_bare_dsml_invoke() {
         let mut parser = ReasoningParserType::get_reasoning_parser_from_name("deepseek_v4");
         let tool_call = format!(
