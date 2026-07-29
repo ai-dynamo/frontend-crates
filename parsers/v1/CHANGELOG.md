@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [7.0.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v6.0.4...dynamo-parsers-v7.0.0) - 2026-07-29
+
+### Features
+
+- Add support for Kimi-K3 ([#145](https://github.com/ai-dynamo/frontend-crates/pull/145))
+
 ## [6.0.4](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v6.0.3...dynamo-parsers-v6.0.4) - 2026-07-28
 
 ### Miscellaneous
