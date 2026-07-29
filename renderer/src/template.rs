@@ -145,10 +145,7 @@ struct HfTokenizerConfigJsonFormatter {
     /// = false path). `{n}` in the template is substituted with the 1-based
     /// image index. `None` when the model's chat template handles content
     /// arrays natively (Qwen-VL family) or when we have no flatten strategy
-    /// for it.
-    ///
-    /// Purely internal to Jinja rendering — unrelated to the single
-    /// `<|media_pad|>` that native formatters emit per image.
+    /// for it (no MM-aware routing benefit either way).
     image_placeholder_template: Option<&'static str>,
     /// True if the `default` template branches on `tool_call.arguments is string`
     /// (Qwen3, Hermes, etc.). When true and rendering through `default`, skip
