@@ -121,7 +121,7 @@ def shard_file(shard):
 
 def update_symlinks(cache_root, snap_dir, verbose=False):
     """Create/retarget relative symlinks cache_root/{toolcalling,reasoning} -> snap_dir/..."""
-    for name in ("toolcalling", "reasoning"):
+    for name in ("toolcalling", "reasoning", "unified"):
         src = snap_dir / name
         if not src.exists():
             continue

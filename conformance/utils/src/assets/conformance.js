@@ -78,13 +78,27 @@
           el.classList.toggle('col-hidden', !active.has(key));
           el.classList.toggle('col-ref', key === base);
         });
-        if (base) {
-          grid.querySelectorAll('tr').forEach(function (tr) {
-            const el = tr.querySelector('[data-cand="' + base + '"]');
-            const first = tr.querySelector('[data-cand]');
-            if (el && first && first !== el) { tr.insertBefore(el, first); }
-          });
+        // Stable re-sort: Reference first, then the rest in their declaration order
+        // (data-cand-order). Using a stable key avoids the cumulative scramble that a
+        // move-to-front produces when the Reference is toggled repeatedly.
+        // Order: a pinned column (the golden oracle) is always leftmost, THEN the
+        // selected Reference, THEN the rest in declaration order (alphabetical here).
+        function _colRank(el) {
+          if (el.getAttribute('data-cand-pin') === '1') { return 0; }
+          if (el.getAttribute('data-cand') === base) { return 1; }
+          return 2;
         }
+        grid.querySelectorAll('tr').forEach(function (tr) {
+          const cols = Array.prototype.slice.call(tr.querySelectorAll('[data-cand]'));
+          if (!cols.length) { return; }
+          cols.sort(function (a, b) {
+            const ra = _colRank(a), rb = _colRank(b);
+            if (ra !== rb) { return ra - rb; }
+            return (parseInt(a.getAttribute('data-cand-order'), 10) || 0)
+              - (parseInt(b.getAttribute('data-cand-order'), 10) || 0);
+          });
+          cols.forEach(function (el) { tr.appendChild(el); });
+        });
       } else {
         // Legacy impl-column grid: show columns whose engine is active.
         const activeImpls = new Set(Array.from(active).map(implOf));
@@ -188,25 +202,69 @@
       }
       // Unavailable candidates never count toward the diff; still shown in tooltip.
       const avail = shown.map(function (k) { return cmp[k]; }).filter(function (o) { return o && o.na !== 1; });
-      const diffs = avail.filter(function (o) { return o.sig !== bd.sig; }).length;
+      // NΔ counts shown COMPARE engines that diverge from GOLDEN (the fixed reference),
+      // independent of which engine is starred. When there is no golden (other tabs), fall
+      // back to the selected reference. `avail` excludes the base (the starred REF).
+      const goldenSig = cmp.golden ? cmp.golden.sig : null;
+      const refSig = (goldenSig != null ? goldenSig : bd.sig);
+      const diffs = avail.filter(function (o) { return o.sig !== refSig; }).length;
       const leak = bd.leak === 1;
-      // GREEN = the Reference output is clean (no leaked tool-call markup). That holds
-      // whether or not any Compare is selected, so a lone Reference with 0 Compares is
-      // green too. The marker count is the number of selected Compares that diverge;
-      // with no comparable peer there is simply nothing to count (blank), not gray.
+      const redOnDiff = cell.getAttribute('data-red-on-diff') === '1';
+      // Unified tab (data-red-on-diff): GOLDEN is the fixed oracle, and the cell color
+      // reflects ONLY the REF — the starred engine (`base`, default Dynamo) — measured
+      // against golden. A red cell means the REF's own output diverges from golden. The
+      // Compare-with engines still surface their divergence count as NΔ, but never color
+      // the cell (a compare diverging is the compare's business, not the REF's). golden as
+      // REF never diverges from itself, so star an engine to evaluate it.
+      const refDiverges = redOnDiff && base !== 'golden' && goldenSig != null
+        && bd && bd.na !== 1 && bd.sig !== goldenSig;
       const donly = avail.length === 0;
-      // Δ suffix marks the number as a count of diverging Compare-with parsers,
-      // e.g. "2Δ"; "=" (all agree) and a lone leak "↯" carry no count.
-      const txt = donly ? '' : (diffs === 0 ? '=' : String(diffs) + 'Δ');
-      if (marker) { marker.textContent = (leak ? '↯' : '') + txt; }
-      // Color = leak only: red = Reference leaks markup, green = clean.
-      cell.classList.add(leak ? 'cmp-leak' : 'cmp-eq');
-      if (countThis) { if (leak) { counts.problem++; } else { counts.ok++; } }
+      const leaked = leak;  // the REF's own leak drives ↯, same as every other tab
+      // Marker: ✗ when the REF diverges (the red signal); otherwise NΔ = how many Compare
+      // engines diverge from golden (informational, stays green), "=" when all agree.
+      let txt;
+      if (redOnDiff) {
+        txt = refDiverges ? '✗' : (diffs > 0 ? String(diffs) + 'Δ' : '=');
+      } else {
+        txt = donly ? '' : (diffs === 0 ? '=' : String(diffs) + 'Δ');
+      }
+      if (marker) { marker.textContent = (leaked ? '↯' : '') + txt; }
+      const problem = redOnDiff ? refDiverges : leaked;
+      cell.classList.add(problem ? 'cmp-leak' : 'cmp-eq');
+      if (countThis) { if (problem) { counts.problem++; } else { counts.ok++; } }
       toggleCands(cell, active, base);
     });
     panel.querySelectorAll('[data-overview-count]').forEach(function (el) {
       const k = el.dataset.overviewCount;
       el.textContent = String(k === 'todo' ? 0 : (counts[k] || 0));
+    });
+    // Column grammar popups (header hover): output columns are one-per-candidate. golden
+    // is PINNED (always shown, leftmost); the rest show only when active (Reference +
+    // selected compares). Flag the Reference column and order golden -> REF -> the rest,
+    // the same rule the cell-popup candidate grid uses.
+    panel.querySelectorAll('table.ttip-grammar').forEach(function (tbl) {
+      tbl.querySelectorAll('[data-cand]').forEach(function (el) {
+        const key = el.getAttribute('data-cand');
+        const pinned = el.getAttribute('data-cand-pin') === '1';
+        el.classList.toggle('col-hidden', !(pinned || active.has(key)));
+        el.classList.toggle('col-ref', key === base);
+      });
+      function _gRank(el) {
+        if (el.getAttribute('data-cand-pin') === '1') { return 0; }
+        if (el.getAttribute('data-cand') === base) { return 1; }
+        return 2;
+      }
+      tbl.querySelectorAll('tr').forEach(function (tr) {
+        const cols = Array.prototype.slice.call(tr.querySelectorAll('[data-cand]'));
+        if (!cols.length) { return; }
+        cols.sort(function (a, b) {
+          const ra = _gRank(a), rb = _gRank(b);
+          if (ra !== rb) { return ra - rb; }
+          return (parseInt(a.getAttribute('data-cand-order'), 10) || 0)
+            - (parseInt(b.getAttribute('data-cand-order'), 10) || 0);
+        });
+        cols.forEach(function (el) { tr.appendChild(el); });
+      });
     });
     updateCompareUrl(panel, ctl);
   }

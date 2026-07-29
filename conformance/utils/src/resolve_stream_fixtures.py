@@ -28,6 +28,10 @@ import sys
 from pathlib import Path
 
 import yaml
+# PERF: this resolver loads every peer fixture to merge overlays; route safe_load
+# through libyaml's CSafeLoader (identical result, ~15x faster) when available.
+if hasattr(yaml, "CSafeLoader"):
+    yaml.safe_load = lambda _s, _loader=yaml.CSafeLoader: yaml.load(_s, Loader=_loader)
 
 
 def load(p):
