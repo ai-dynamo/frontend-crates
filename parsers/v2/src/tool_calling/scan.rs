@@ -318,12 +318,13 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     /// reached, or promoted at EOF) and the caller should keep draining; `false`
     /// means more input is needed.
     fn drain_reasoning(&mut self, out: &mut Vec<UnifiedDelta>, flush: bool) -> bool {
-        let end = self
-            .reasoning
-            .as_ref()
-            .expect("in_reasoning implies a reasoning spec")
-            .end
-            .clone();
+        let (start, end) = {
+            let r = self
+                .reasoning
+                .as_ref()
+                .expect("in_reasoning implies a reasoning spec");
+            (r.start.clone(), r.end.clone())
+        };
         let end_pos = self.buffer.find(end.as_str());
 
         // Tool structure dominates reasoning: a tool call the model emits INSIDE
@@ -339,36 +340,63 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             .chain(self.buffer.find(self.spec.invoke_start.as_str()))
             .min();
 
-        if let Some(tool) = tool_pos
-            && end_pos.is_none_or(|e| tool < e)
-        {
-            // Emit the thought up to the call and suspend reasoning; the block
-            // handler resumes it once the call closes.
-            push_reasoning(out, &self.buffer[..tool]);
-            self.buffer.drain(..tool);
-            self.in_reasoning = false;
-            self.resume_reasoning = true;
-            return true;
-        }
+        // Malformed markup INSIDE a thought: a duplicate reasoning opener, or a
+        // stray close from the tool grammar. Best-effort recovery STRIPS it, the
+        // same rule the orphan handler applies outside reasoning — otherwise it
+        // leaks into the reasoning payload and violates `I3`. The reasoning
+        // closer is excluded: it legitimately ends the span (handled below).
+        let strip_pos: Option<(usize, usize)> = std::iter::once(start.as_str())
+            .chain(
+                self.spec
+                    .orphan_markers
+                    .iter()
+                    .map(String::as_str)
+                    .filter(|m| *m != end.as_str()),
+            )
+            .filter_map(|m| self.buffer.find(m).map(|p| (p, m.len())))
+            .min_by_key(|(p, _)| *p);
 
-        if let Some(pos) = end_pos {
+        // Earliest wins.
+        let first = [end_pos, tool_pos, strip_pos.map(|(p, _)| p)]
+            .into_iter()
+            .flatten()
+            .min();
+
+        if let Some(at) = first {
+            if Some(at) == end_pos {
+                push_reasoning(out, &self.buffer[..at]);
+                self.buffer.drain(..at + end.len());
+                self.in_reasoning = false;
+                self.resume_reasoning = false;
+                return true;
+            }
+            if Some(at) == tool_pos {
+                // Emit the thought up to the call and suspend reasoning; the
+                // block handler resumes it once the call closes.
+                push_reasoning(out, &self.buffer[..at]);
+                self.buffer.drain(..at);
+                self.in_reasoning = false;
+                self.resume_reasoning = true;
+                return true;
+            }
+            let (pos, len) = strip_pos.expect("first came from one of the three");
             push_reasoning(out, &self.buffer[..pos]);
-            self.buffer.drain(..pos + end.len());
-            self.in_reasoning = false;
-            self.resume_reasoning = false;
+            self.buffer.drain(..pos + len);
+            tracing::debug!(
+                why = %format!("{}_stray_marker_in_reasoning", self.spec.family),
+                "stream stripped malformed markup inside a reasoning span"
+            );
             return true;
         }
 
-        // No closer yet: stream what has arrived, holding back a closer OR a
-        // nested tool opener split across this chunk boundary.
+        // Nothing complete yet: stream what has arrived, holding back ANY marker
+        // this scanner reacts to that is split across the chunk boundary.
         let keep = if flush {
             0
         } else {
             marker_prefix_suffix_len(
                 &self.buffer,
-                std::iter::once(end.as_str())
-                    .chain(self.spec.block_starts.iter().map(String::as_str))
-                    .chain(std::iter::once(self.spec.invoke_start.as_str())),
+                self.spec.holdback_markers.iter().map(String::as_str),
             )
         };
         let emit_len = self.buffer.len().saturating_sub(keep);
@@ -401,9 +429,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         let mut out: Vec<UnifiedDelta> = Vec::new();
 
         loop {
-            // Reasoning is the innermost scope: while it is open, ONLY its
-            // closer ends it, so a `<tool_call>` inside a thought stays part of
-            // the thought instead of being executed.
+            // Reasoning yields to tool structure: while a thought is open, its
+            // closer OR a nested tool opener ends the current reasoning run (see
+            // `drain_reasoning`), so a call emitted inside a thought is extracted
+            // and the thought resumes after it.
             if self.in_reasoning {
                 if self.drain_reasoning(&mut out, flush) {
                     continue;

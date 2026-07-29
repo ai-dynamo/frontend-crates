@@ -300,6 +300,24 @@ mod tests {
     }
 
     #[test]
+    fn a_duplicate_reasoning_opener_inside_a_thought_is_stripped() {
+        // I3: best-effort recovery strips malformed markup rather than letting it
+        // land in the payload. A second `<think>` while one is already open is a
+        // duplicate opener, not content.
+        let out = events(&weather_tools(), &["<think>a<think>b</think>tail"]);
+        assert_eq!(out, vec![reasoning("ab"), text("tail")]);
+    }
+
+    #[test]
+    fn a_stray_tool_close_inside_a_thought_is_stripped() {
+        // Same rule as the orphan handler applies OUTSIDE reasoning — a stray
+        // `</tool_call>` with nothing open is markup, so it must not leak into the
+        // reasoning payload just because a thought happens to be open.
+        let out = events(&weather_tools(), &["<think>a</tool_call>b</think>tail"]);
+        assert_eq!(out, vec![reasoning("ab"), text("tail")]);
+    }
+
+    #[test]
     fn orphan_reasoning_close_is_stripped_not_leaked() {
         // I3: a `</think>` with nothing open is malformed markup.
         let out = events(&weather_tools(), &["Hello </think>world"]);
