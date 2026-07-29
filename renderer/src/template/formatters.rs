@@ -33,7 +33,12 @@ struct ProbeTokens {
 
 /// Unlike [`render_default_probe`], surfaces the error: a template's
 /// `raise_exception` is the signal that it rejects this message shape.
-fn probe_default_raises(env: &Environment, messages: serde_json::Value, tok: &ProbeTokens) -> bool {
+fn probe_template_raises(
+    env: &Environment,
+    template_name: &str,
+    messages: serde_json::Value,
+    tok: &ProbeTokens,
+) -> bool {
     let ctx = context! {
         messages => messages,
         add_generation_prompt => false,
@@ -41,7 +46,7 @@ fn probe_default_raises(env: &Environment, messages: serde_json::Value, tok: &Pr
         eos_token => tok.eos,
         unk_token => tok.unk,
     };
-    match env.get_template("default") {
+    match env.get_template(template_name) {
         Ok(t) => t.render(&ctx).is_err(),
         Err(_) => false,
     }
@@ -52,20 +57,35 @@ fn probe_default_raises(env: &Environment, messages: serde_json::Value, tok: &Pr
 ///
 /// All three shapes are probed because strict families disagree on which they
 /// reject: Qwen3.5 allows consecutive users, Gemma-3 allows a non-leading system.
-fn detect_requires_system_normalization(env: &Environment, tok: &ProbeTokens) -> bool {
+fn detect_requires_system_normalization(
+    env: &Environment,
+    template_name: &str,
+    tok: &ProbeTokens,
+) -> bool {
     let sys = |c: &str| json!({"role": "system", "content": c});
     let usr = |c: &str| json!({"role": "user", "content": c});
     let asst = |c: &str| json!({"role": "assistant", "content": c});
 
     // A template that can't render even this isn't rejecting shape, it's broken.
-    let baseline_ok = !probe_default_raises(env, json!([sys("s"), usr("u")]), tok);
+    let baseline_ok = !probe_template_raises(env, template_name, json!([sys("s"), usr("u")]), tok);
     if !baseline_ok {
         return false;
     }
-    let nonleading_system = probe_default_raises(env, json!([sys("s0"), usr("u"), sys("s1")]), tok);
-    let consecutive_users = probe_default_raises(env, json!([sys("s"), usr("u0"), usr("u1")]), tok);
-    let mid_after_assistant = probe_default_raises(
+    let nonleading_system = probe_template_raises(
         env,
+        template_name,
+        json!([sys("s0"), usr("u"), sys("s1")]),
+        tok,
+    );
+    let consecutive_users = probe_template_raises(
+        env,
+        template_name,
+        json!([sys("s"), usr("u0"), usr("u1")]),
+        tok,
+    );
+    let mid_after_assistant = probe_template_raises(
+        env,
+        template_name,
         json!([sys("s0"), usr("u"), asst("a"), sys("s1"), usr("u2")]),
         tok,
     );
@@ -545,8 +565,10 @@ impl HfTokenizerConfigJsonFormatter {
             eos: config.eos_tok(),
             unk: config.unk_tok(),
         };
-        let requires_system_normalization =
-            detect_requires_system_normalization(&env, &probe_tokens);
+        let default_requires_system_normalization =
+            detect_requires_system_normalization(&env, "default", &probe_tokens);
+        let tool_use_requires_system_normalization =
+            detect_requires_system_normalization(&env, "tool_use", &probe_tokens);
 
         Ok(HfTokenizerConfigJsonFormatter {
             env,
@@ -560,7 +582,8 @@ impl HfTokenizerConfigJsonFormatter {
             image_placeholder_template,
             default_template_handles_tool_calls_arguments_string,
             tool_use_template_handles_tool_calls_arguments_string,
-            requires_system_normalization,
+            default_requires_system_normalization,
+            tool_use_requires_system_normalization,
         })
     }
 }

@@ -186,9 +186,13 @@ struct HfTokenizerConfigJsonFormatter {
     /// True if the `tool_use` template branches on `tool_call.arguments is string`.
     /// See `default_template_handles_tool_calls_arguments_string` for rationale.
     tool_use_template_handles_tool_calls_arguments_string: bool,
-    /// True if this template rejects a non-leading `system` turn, or the
-    /// consecutive `user` turns demoting one produces. Probed once at load.
-    requires_system_normalization: bool,
+    /// True if the `default` template rejects a non-leading `system` turn, or
+    /// the consecutive `user` turns demoting one produces. Probed once at load.
+    default_requires_system_normalization: bool,
+    /// True if the `tool_use` template requires the same rewrite.
+    /// Kept separate because dict-form HF configs may register templates with
+    /// different message-shape constraints.
+    tool_use_requires_system_normalization: bool,
 }
 
 // /// OpenAI Standard Prompt Formatter

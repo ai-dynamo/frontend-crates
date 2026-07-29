@@ -447,6 +447,31 @@ fn message_content_text(content: &serde_json::Value) -> String {
     }
 }
 
+fn append_message_content_text(message: &mut serde_json::Value, text: String) {
+    let Some(message) = message.as_object_mut() else {
+        return;
+    };
+    match message.get_mut("content") {
+        Some(serde_json::Value::String(content)) => {
+            if !content.is_empty() && !text.is_empty() {
+                content.push_str("\n\n");
+            }
+            content.push_str(&text);
+        }
+        Some(serde_json::Value::Array(parts)) => {
+            if !text.is_empty() {
+                parts.push(json!({"type": "text", "text": text}));
+            }
+        }
+        Some(content) => {
+            *content = serde_json::Value::String(text);
+        }
+        None => {
+            message.insert("content".to_string(), serde_json::Value::String(text));
+        }
+    }
+}
+
 /// Rewrites an agent-client message stream into a shape strict chat templates
 /// accept. Only called for templates flagged by the load-time probe.
 fn normalize_system_messages(messages: &mut serde_json::Value) {
@@ -489,8 +514,7 @@ fn normalize_system_messages(messages: &mut serde_json::Value) {
         if role_is(&m, "user") && coalesced.last().is_some_and(|p| role_is(p, "user")) {
             let cur_text = content_of(&m);
             let prev = coalesced.last_mut().unwrap();
-            let merged = format!("{}\n\n{}", content_of(prev), cur_text);
-            *prev = json!({"role": "user", "content": merged});
+            append_message_content_text(prev, cur_text);
         } else {
             coalesced.push(m);
         }
@@ -527,6 +551,29 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
             add_generation_prompt
         );
 
+        // Pick the concrete template before applying any template-specific
+        // message rewrites or field normalization.
+        let (
+            template_name,
+            template_handles_tool_calls_args_string,
+            template_handles_reasoning,
+            requires_system_normalization,
+        ) = if has_tools {
+            (
+                "tool_use",
+                self.tool_use_template_handles_tool_calls_arguments_string,
+                self.tool_use_template_handles_reasoning,
+                self.tool_use_requires_system_normalization,
+            )
+        } else {
+            (
+                "default",
+                self.default_template_handles_tool_calls_arguments_string,
+                self.default_template_handles_reasoning,
+                self.default_requires_system_normalization,
+            )
+        };
+
         let messages_canonical = req.messages();
         let mut messages_for_template: serde_json::Value =
             serde_json::to_value(&messages_canonical).unwrap();
@@ -538,30 +585,9 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
         ))
         .unwrap();
 
-        if self.requires_system_normalization {
+        if requires_system_normalization {
             normalize_system_messages(&mut messages_for_template);
         }
-
-        // Pick the concrete template first so the normalization opt-out can be
-        // template- and field-specific: only the chosen template's
-        // `tool_call.arguments is string` flag should suppress normalization,
-        // and only for the `tool_calls[].function.arguments` field. Legacy
-        // `function_call.arguments` lives outside that branch and is always
-        // normalized.
-        let (template_name, template_handles_tool_calls_args_string, template_handles_reasoning) =
-            if has_tools {
-                (
-                    "tool_use",
-                    self.tool_use_template_handles_tool_calls_arguments_string,
-                    self.tool_use_template_handles_reasoning,
-                )
-            } else {
-                (
-                    "default",
-                    self.default_template_handles_tool_calls_arguments_string,
-                    self.default_template_handles_reasoning,
-                )
-            };
 
         // Pre-parse JSON-string `arguments` into objects — but only for templates
         // that unconditionally `| tojson` them. Templates that branch on
@@ -636,6 +662,20 @@ mod tests {
         SysFormatter::new(ct, SysMixins::new(&[])).unwrap()
     }
 
+    fn formatter_for_templates(default: &str, tool_use: &str) -> SysFormatter {
+        let ct: SysChatTemplate = serde_json::from_value(json!({
+            "chat_template": [
+                {"default": default},
+                {"tool_use": tool_use},
+            ],
+            "bos_token": "<s>",
+            "eos_token": "</s>",
+            "unk_token": "<unk>",
+        }))
+        .unwrap();
+        SysFormatter::new(ct, SysMixins::new(&[])).unwrap()
+    }
+
     fn try_formatter_for(template: &str) -> Option<SysFormatter> {
         let ct: SysChatTemplate = serde_json::from_value(json!({
             "chat_template": template,
@@ -650,6 +690,19 @@ mod tests {
     fn render_shape(f: &SysFormatter, messages: serde_json::Value) -> Result<String> {
         let req: NvCreateChatCompletionRequest =
             serde_json::from_value(json!({ "model": "test", "messages": messages })).unwrap();
+        f.render(&req)
+    }
+
+    fn render_shape_with_tools(f: &SysFormatter, messages: serde_json::Value) -> Result<String> {
+        let req: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "test",
+            "messages": messages,
+            "tools": [{
+                "type": "function",
+                "function": {"name": "noop", "parameters": {}}
+            }]
+        }))
+        .unwrap();
         f.render(&req)
     }
 
@@ -691,7 +744,8 @@ mod tests {
     #[test]
     fn permissive_template_is_not_flagged_and_renders_untouched() {
         let f = formatter_for(PERMISSIVE_TMPL);
-        assert!(!f.requires_system_normalization);
+        assert!(!f.default_requires_system_normalization);
+        assert!(!f.tool_use_requires_system_normalization);
         let out = render_shape(&f, claude_shape()).unwrap();
         assert!(out.contains("<|im_start|>system\nmid-conversation reminder<|im_end|>"));
     }
@@ -699,7 +753,8 @@ mod tests {
     #[test]
     fn strict_leading_template_is_flagged_and_demotes_mid_system() {
         let f = formatter_for(STRICT_LEADING_TMPL);
-        assert!(f.requires_system_normalization);
+        assert!(f.default_requires_system_normalization);
+        assert!(f.tool_use_requires_system_normalization);
         // This shape returned a 500 before the probe existed.
         let out = render_shape(&f, claude_shape()).unwrap();
         assert!(out.contains("<|im_start|>user\nhello\n\nmid-conversation reminder<|im_end|>"));
@@ -709,10 +764,60 @@ mod tests {
     #[test]
     fn alternation_template_is_flagged_and_coalesces_users() {
         let f = formatter_for(ALTERNATION_TMPL);
-        assert!(f.requires_system_normalization);
+        assert!(f.default_requires_system_normalization);
+        assert!(f.tool_use_requires_system_normalization);
         // Demotion would create [user, user]; coalescing keeps it valid.
         let out = render_shape(&f, claude_shape()).unwrap();
         assert_eq!(out.matches("<|im_start|>user").count(), 1);
+    }
+
+    #[test]
+    fn system_normalization_flag_is_selected_per_template() {
+        let f = formatter_for_templates(PERMISSIVE_TMPL, STRICT_LEADING_TMPL);
+        assert!(!f.default_requires_system_normalization);
+        assert!(f.tool_use_requires_system_normalization);
+
+        let no_tools = render_shape(&f, claude_shape()).unwrap();
+        assert!(no_tools.contains("<|im_start|>system\nmid-conversation reminder<|im_end|>"));
+        let with_tools = render_shape_with_tools(&f, claude_shape()).unwrap();
+        assert_eq!(with_tools.matches("<|im_start|>system").count(), 1);
+        assert!(
+            with_tools.contains("<|im_start|>user\nhello\n\nmid-conversation reminder<|im_end|>")
+        );
+
+        let f = formatter_for_templates(STRICT_LEADING_TMPL, PERMISSIVE_TMPL);
+        assert!(f.default_requires_system_normalization);
+        assert!(!f.tool_use_requires_system_normalization);
+        let with_tools = render_shape_with_tools(&f, claude_shape()).unwrap();
+        assert!(with_tools.contains("<|im_start|>system\nmid-conversation reminder<|im_end|>"));
+    }
+
+    #[test]
+    fn normalize_preserves_multimodal_user_content_and_fields() {
+        let mut m = json!([
+            {
+                "role": "user",
+                "name": "kept",
+                "content": [
+                    {"type": "text", "text": "look"},
+                    {"type": "image"},
+                ],
+            },
+            {"role": "system", "content": "remember"},
+        ]);
+        normalize_system_messages(&mut m);
+        assert_eq!(
+            m,
+            json!([{
+                "role": "user",
+                "name": "kept",
+                "content": [
+                    {"type": "text", "text": "look"},
+                    {"type": "image"},
+                    {"type": "text", "text": "remember"},
+                ],
+            }])
+        );
     }
 
     #[test]
@@ -814,7 +919,7 @@ mod tests {
                 continue;
             }
             total += 1;
-            let flag = f.requires_system_normalization;
+            let flag = f.default_requires_system_normalization;
             if flag {
                 flagged += 1;
             }
