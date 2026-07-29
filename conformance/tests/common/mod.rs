@@ -77,6 +77,37 @@ pub fn ensure_fixtures() -> PathBuf {
     cache_root
 }
 
+/// Ensures the authored unified golden spec exists and returns its directory.
+///
+/// The golden corpus is the AUTHORED oracle — a spec, not a capture — so it is
+/// NOT committed (that would leave a stray loose YAML tree next to the versioned
+/// `*.tar.gz` shards). Instead `gen_unified_golden.py` renders it from one
+/// scenario spec into the gitignored build tree (`conformance/unified/golden_spec/`)
+/// on demand, mirroring how [`ensure_fixtures`] shells out to `extract_fixtures.py`.
+/// The committed `golden.tar.gz` shard is DERIVED from this via render -> explode
+/// -> package. A `flock` serializes the two unified test binaries so they don't
+/// race writing the same files. Panics with the fix command if generation fails.
+pub fn ensure_unified_golden() -> PathBuf {
+    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let script = manifest.join("utils/src/gen_unified_golden.py");
+    let status = std::process::Command::new("flock")
+        .args([
+            "/tmp/dynamo-unified-golden.lock",
+            "python3",
+            script.to_str().expect("non-UTF-8 script path"),
+        ])
+        .status()
+        .expect("flock/python3 not found — ensure python3 is in PATH");
+    if !status.success() {
+        panic!(
+            "unified golden generation failed (exit {}). Run manually:\n  python3 {}",
+            status.code().unwrap_or(-1),
+            script.display()
+        );
+    }
+    manifest.join("unified/golden_spec")
+}
+
 /// Crate-relative display path for a fixture (for failure messages).
 pub fn fixture_name(path: &Path) -> String {
     path.strip_prefix(env!("CARGO_MANIFEST_DIR"))

@@ -144,6 +144,11 @@ def build_shards(tmpdir, blobs_dir, prune=False):
         if not tree_abs.exists():
             continue
         for subdir in sorted(d for d in tree_abs.iterdir() if d.is_dir()):
+            # golden_spec/ is the AUTHORED unified oracle source (gen_unified_golden.py
+            # output, the harness input) — it is not itself a shard; golden.tar.gz is
+            # DERIVED from it via render -> explode. Skip it silently.
+            if subdir.name == "golden_spec":
+                continue
             # Only the documented layout becomes a shard: inputs/ or
             # <impl>-<version>/. Anything else (a stray family dir, an
             # overlays/ nest from a raw capture) would produce a tarball the

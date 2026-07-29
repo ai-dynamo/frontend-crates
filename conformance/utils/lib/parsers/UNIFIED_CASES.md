@@ -2,7 +2,7 @@
 
 Reference taxonomy for the **unified** conformance surface: one parser owns the whole assistant-output grammar and emits ONE ordered event stream. Sibling stage docs: `REASONING_CASES.md` (reasoning only), `TOOLCALLING_CASES.md` / `TOOLCALLING_STREAMING_V2_CASES.md` (tool calls only). This surface is what those two cannot express — the ORDER between reasoning and tool calls, and reasoning that occurs *between* or *after* tool calls.
 
-Golden files live in `conformance/unified/golden/<family>.yaml`. The surface overview is `conformance/unified/README.md`.
+The golden corpus is authored by `conformance/utils/src/gen_unified_golden.py` (one scenario spec -> `conformance/unified/golden_spec/<family>.yaml` in the gitignored build tree); the committed, versioned `conformance/fixtures/unified/golden.tar.gz` shard is derived from it. The surface overview is `conformance/unified/README.md`.
 
 ## The oracle: GOLDEN is authored, not captured
 

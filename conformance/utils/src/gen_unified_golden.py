@@ -9,8 +9,12 @@ raw model `input` is grammar-specific, rendered from each family's markers. This
 is the single source of truth so a scenario can't drift between families
 (CLAUDE.md: reuse the shared parent, don't copy-paste divergent cases).
 
-Full matrix: every scenario is emitted for every family
-(gemma4, qwen3, kimi_k2) -> conformance/unified/golden/{gemma4,qwen3,kimi}.yaml.
+Full matrix: every scenario is emitted for every family (gemma4, qwen3, kimi_k2)
+-> conformance/unified/golden_spec/{gemma4,qwen3,kimi}.yaml, the gitignored build
+tree. This authored spec is the harness INPUT (unified_render.rs reads it to
+compute the live Dynamo column; unified_schema_roundtrip.rs validates it); it is
+NOT committed. The committed, versioned golden.tar.gz shard is DERIVED from it via
+render -> explode -> package, exactly like every other conformance fixture shard.
 
 Run:  python3 conformance/utils/src/gen_unified_golden.py
 """
@@ -449,8 +453,9 @@ def emit_yaml(fam):
 
 
 def main():
-    root = os.path.join(os.path.dirname(__file__), "..", "..", "fixtures", "unified", "golden")
+    root = os.path.join(os.path.dirname(__file__), "..", "..", "unified", "golden_spec")
     root = os.path.abspath(root)
+    os.makedirs(root, exist_ok=True)
     for fam in FAMILIES:
         out = os.path.join(root, FAM_FILE[fam])
         with open(out, "w") as fh:

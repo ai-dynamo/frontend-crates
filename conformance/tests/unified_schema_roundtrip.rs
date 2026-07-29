@@ -6,14 +6,17 @@
 //!
 //! Proves the event schema in `conformance/utils/lib/parsers/UNIFIED_CASES.md`
 //! is machine-consumable and that every authored golden file
-//! (`conformance/unified/golden/<family>.yaml`) parses and round-trips through
-//! it. This is the U0 spike gate — it does NOT run any parser; capture/parity
-//! land in later phases (see `DOIT.unifiedparsers_capture.md`).
+//! (`conformance/unified/golden_spec/<family>.yaml`, rendered on demand by
+//! gen_unified_golden.py into the gitignored build tree) parses and round-trips
+//! through it. This is the U0 spike gate — it does NOT run any parser;
+//! capture/parity land in later phases (see `DOIT.unifiedparsers_capture.md`).
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
+
+mod common;
 
 /// One golden file = the authored oracle cases for a single grammar family.
 #[derive(Deserialize, Serialize, PartialEq, Debug)]
@@ -64,7 +67,7 @@ struct ExpectEntry {
 }
 
 fn golden_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fixtures/unified/golden")
+    common::ensure_unified_golden()
 }
 
 fn load_golden_files() -> Vec<(String, GoldenFile)> {

@@ -8,17 +8,21 @@ Status: **U0 spike** (schema + golden corpus + round-trip test). Capture tooling
 
 `GOLDEN | vLLM 0.25.x (Rust) | Dynamo (Rust)` — the golden is the authored oracle; both engines are diffed against it and both can be red.
 
-- **GOLDEN** — authored (`golden/<family>.yaml`), reasoned from the invariants/policies in `../utils/lib/parsers/UNIFIED_CASES.md`. Never captured from an implementation.
+- **GOLDEN** — authored by `../utils/src/gen_unified_golden.py` from one scenario spec, reasoned from the invariants/policies in `../utils/lib/parsers/UNIFIED_CASES.md`. Never captured from an implementation. Shipped as the versioned `golden.tar.gz` shard here (derived from the build-tree `conformance/unified/golden_spec/<family>.yaml`).
 - **vLLM 0.25.x (Rust)** — gemma4 via the native `Gemma4UnifiedParser`; other families via `CombinedParser(reasoning, tool)`. (U1, not built.)
 - **Dynamo (Rust)** — `parsers/v1` reasoning + `parsers/v2` tool, composed and stitched to how Dynamo serves today. The red comes from the SPLIT, not from the v2 tool parser being wrong. (U2, not built.)
 
 ## Layout
 
-- `golden/<family>.yaml` — authored golden cases (input + spec-derived event list + provisional per-engine `expect`).
-- `../utils/lib/parsers/UNIFIED_CASES.md` — schema, invariants, policies, divergence classes, case taxonomy.
-- `../tests/unified_schema_roundtrip.rs` — proves every golden file parses and round-trips through the event schema.
+Every fixture ships as a per-version LFS shard here, same convention as the toolcalling/reasoning trees (no loose YAML):
 
-## Golden case file format
+- `inputs.tar.gz` — the shared raw streamed model text per case/family.
+- `golden.tar.gz` — the authored oracle (spec-derived event list), derived from `gen_unified_golden.py`.
+- `<impl>-<version>.tar.gz` — one shard per engine version (`dynamo_v2-*`, `vllm_python-*`, `vllm_rust-*`, `sglang_python-*`).
+- `../utils/lib/parsers/UNIFIED_CASES.md` — schema, invariants, policies, divergence classes, case taxonomy.
+- `../tests/unified_schema_roundtrip.rs` — proves every authored golden case parses and round-trips through the event schema.
+
+## Golden case file format (authored spec, `conformance/unified/golden_spec/<family>.yaml`)
 
 ```yaml
 version: 1
