@@ -360,7 +360,10 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
  * The `min-width` floor keeps a column of one-character `–` cells wide enough to
  * scan next to its neighbours. */
 .ttip-chunks { border-collapse: collapse; margin: 3px 0 0 0; font-size: 11px; width: max-content; max-width: 100%; table-layout: auto; }
-.ttip-chunks th:not(:first-child), .ttip-chunks td:not(:first-child) { min-width: 7em; }
+/* No per-column min/max width: `equalizeColumns()` in conformance.js measures each
+ * column's max-content and pins ALL columns to the widest, so they come out equal at
+ * the width where the longest line fits. These rules are only the pre-measure
+ * fallback (and what a no-JS render gets). */
 /* pre-wrap so runs of spaces in emitted text render faithfully — HTML collapsing
    made a whitespace-only divergence (e.g. a double vs single trailing space)
    invisible: two cells LOOKED identical while their compare signatures differed. */

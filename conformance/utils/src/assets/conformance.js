@@ -561,9 +561,47 @@
     });
   });
 
+  // Equal columns, sized to what the WIDEST column actually needs.
+  //
+  // Pure CSS gives one or the other, not both: `table-layout: fixed; width: 100%`
+  // makes columns equal but always consumes the whole popup (a chart of `–` cells
+  // took as much room as one full of arguments), while auto layout sizes the table
+  // to its content but leaves every column a different width, which reads as messy
+  // when the point is to compare engines side by side.
+  //
+  // So measure, then pin. Under auto + `max-content` each rendered column width IS
+  // that column's max-content (the width at which its longest line does not wrap);
+  // take the widest, then switch to fixed layout with `width = n * widest`, which
+  // fixed layout divides into n equal columns of exactly that width. If that exceeds
+  // the popup's viewport cap, `max-width: 100%` shrinks it — columns stay equal
+  // because fixed layout keeps dividing evenly.
+  //
+  // Memoized per table: the result only depends on content, which does not change.
+  function equalizeColumns(ttip) {
+    const tables = ttip.querySelectorAll('.ttip-chunks, .ttip-grammar');
+    for (const t of tables) {
+      if (t.dataset.eqCols === '1') continue;
+      const row = t.querySelector('tr');
+      if (!row || !row.children.length) continue;
+      t.style.tableLayout = 'auto';
+      t.style.width = 'max-content';
+      let widest = 0;
+      for (const c of row.children) {
+        widest = Math.max(widest, c.getBoundingClientRect().width);
+      }
+      if (widest > 0) {
+        t.style.tableLayout = 'fixed';
+        t.style.width = Math.ceil(widest * row.children.length) + 'px';
+        t.style.maxWidth = '100%';
+      }
+      t.dataset.eqCols = '1';
+    }
+  }
+
   function place(cell) {
     const ttip = cell.querySelector('.ttip');
     if (!ttip) return;
+    equalizeColumns(ttip);
     ttip.style.visibility = 'hidden';
     ttip.style.opacity = '0';
     ttip.classList.add('ttip-visible');
