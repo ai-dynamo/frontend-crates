@@ -63,5 +63,23 @@ if [ "$DRY" = 1 ]; then
 fi
 build_stage_conformance
 mkdir -p "$(dirname "$OUT")"
-( cd "$STAGE" && PYTHONPATH="$STAGE" python3 tests/parity/generate_conformance_table.py all --html --output-path "$OUT" --artifact-root "$ROOT" ) > "$OUT"
-echo "wrote $OUT"
+# Render to a working file, then atomically move it into place. The `>` redirect
+# truncates its target for the WHOLE render (~2 min), so anything reading $OUT during
+# that window (CI, a live viewer, a verify script) sees a 0-byte / partial file. Writing
+# to CONFORMANCE_v2.working.html and mv-ing on success means readers only ever see the
+# previous complete file or the new complete one. --output-path stays $OUT so link
+# resolution targets the final location (the working file is in the same dir, so hrefs
+# are identical); on failure the real file is left untouched.
+case "$OUT" in
+  *.html) WORK="${OUT%.html}.working.html" ;;
+  *)      WORK="$OUT.working" ;;
+esac
+if ( cd "$STAGE" && PYTHONPATH="$STAGE" python3 tests/parity/generate_conformance_table.py all --html --output-path "$OUT" --artifact-root "$ROOT" ) > "$WORK"; then
+  mv -f "$WORK" "$OUT"
+  echo "wrote $OUT"
+else
+  rc=$?
+  rm -f "$WORK"
+  echo "render failed (exit $rc); left $OUT untouched" >&2
+  exit "$rc"
+fi

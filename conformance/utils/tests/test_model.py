@@ -208,7 +208,7 @@ def test_v2_all_tabs_present(model_v2):
     ids = [t["id"] for t in model_v2["tabs"]]
     assert ids == [
         "tab-toolcalling-batch", "tab-toolcalling-streamv2",
-        "tab-reasoning-batch", "tab-reasoning-stream",
+        "tab-reasoning-batch", "tab-reasoning-stream", "tab-unified",
     ], ids
 
 
@@ -227,6 +227,10 @@ def test_v2_every_tab_has_candidates(model_v2):
 def test_v2_every_candidate_is_versioned(model_v2):
     for t in model_v2["tabs"]:
         for c in t["candidates"]:
+            # The golden oracle is authored, not captured from an engine build, so it
+            # carries no version (the unified tab measures every engine against it).
+            if c.get("key") == "golden":
+                continue
             assert _VER_PAREN.search(c["label"]), f"{t['id']}: unversioned candidate {c['label']!r}"
 
 

@@ -154,6 +154,22 @@ def _declared_lookup(family: str | None) -> dict[str, tuple[str, str]]:
     return table
 
 
+def declared_markers() -> dict[str, dict[str, list]]:
+    """Every family's declared `pairs`/`singletons` (the subset `_declared_lookup`
+    consumes), as plain JSON for the JS colorizer. The `leak:` markers are omitted —
+    like `_declared_lookup`, they carry no open/close/singleton coloring role."""
+    out: dict[str, dict[str, list]] = {}
+    for family, decl in _FAMILY_MARKERS.items():
+        entry: dict[str, list] = {}
+        if decl.get("pairs"):
+            entry["pairs"] = [list(p) for p in decl["pairs"]]
+        if decl.get("singletons"):
+            entry["singletons"] = list(decl["singletons"])
+        if entry:
+            out[family] = entry
+    return out
+
+
 def colorize_markup(text: str, family: str | None = None) -> str:
     if family == "harmony" and _HARMONY_TOKEN_RE.search(text):
         return _colorize_harmony(text)

@@ -18,6 +18,12 @@
 <script type="application/json" id="conformance-model">{{ model_json|safe }}</script>
 {% endif %}
 <script>window.__PARSER_NI = {{ parser_ni_json|safe }};</script>
+{% if colorize_js is defined and colorize_js %}
+{# Markup colorizer (port of markup.py); must define __markupColorize before the view. #}
+<script>
+{{ colorize_js|safe }}
+</script>
+{% endif %}
 {% if conformance_view_js is defined and conformance_view_js %}
 {# JS view (DIS-2434): builds the DOM from the model blob BEFORE conformance.js wires it. #}
 <script>

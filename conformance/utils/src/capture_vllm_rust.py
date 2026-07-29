@@ -38,8 +38,23 @@ use vllm_tool_parser::{
     DeepSeekV31ToolParser, DeepSeekV32ToolParser, DeepSeekV3ToolParser, DeepSeekV4ToolParser,
     Gemma4ToolParser, Glm47MoeToolParser, HermesToolParser, KimiK2ToolParser,
     Llama3JsonToolParser, MinimaxM2ToolParser, MistralToolParser, Qwen3CoderToolParser,
-    Qwen3XmlToolParser, Tool, ToolCallDelta, ToolParser, ToolParserOutput,
+    Qwen3XmlToolParser, Tool, ToolCallDelta, ToolParser, ToolParserError, ToolParserOutput,
 };
+
+/// Record the EXACT Rust error type, not just its Display.
+///
+/// The parser calls return `ToolParserError`, whose only variant renders as
+/// "tool parser parsing failed: {message}". anyhow's `{:#}` erases the type and, when
+/// `message` is empty, collapses to a bare "tool parser parsing failed: " that names
+/// neither the type nor the failure. Downcasting back to the concrete error and using
+/// its Debug keeps the variant AND its fields, so an empty message reads as
+/// `ToolParserError::ParsingFailed { message: "" }` instead of a dangling colon.
+fn error_detail(error: &anyhow::Error) -> String {
+    match error.downcast_ref::<ToolParserError>() {
+        Some(e) => format!("ToolParserError::{e:?}"),
+        None => format!("{error:#}"),
+    }
+}
 
 #[derive(Debug, Deserialize)]
 struct Input {
@@ -199,7 +214,7 @@ fn run_stream(input: Input) -> anyhow::Result<Value> {
                 out.insert(case_id, value);
             }
             Err(error) => {
-                out.insert(case_id, json!({"error": format!("{error:#}")}));
+                out.insert(case_id, json!({"error": error_detail(&error)}));
             }
         }
     }
@@ -231,7 +246,7 @@ fn run_batch_on_stream(input: Input) -> anyhow::Result<Value> {
             }
             Ok(None) => {}
             Err(error) => {
-                out.insert(case_id, json!({"error": format!("{error:#}")}));
+                out.insert(case_id, json!({"error": error_detail(&error)}));
             }
         }
     }

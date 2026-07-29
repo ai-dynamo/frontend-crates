@@ -4,9 +4,9 @@
 [package]
 name = "dynamo-tokenizers"
 readme = "README.md"
-version = "1.5.4"
+version = "1.6.0"
 edition.workspace = true
-description = "Standalone tokenizer implementations (HuggingFace, tiktoken, FastTokenizers) for LLM inference serving."
+description = "Standalone HuggingFace, tiktoken, fastokens, and Baseten tokenizer implementations for LLM inference serving."
 authors.workspace = true
 license = "Apache-2.0"
 homepage.workspace = true
@@ -17,6 +17,7 @@ include = ["src/**/*", "Cargo.toml", "README.md"]
 [dependencies]
 aho-corasick.workspace = true
 anyhow.workspace = true
+basetenkenizer.workspace = true
 blake3.workspace = true
 moka = { workspace = true, features = ["sync"] }
 fastokens.workspace = true

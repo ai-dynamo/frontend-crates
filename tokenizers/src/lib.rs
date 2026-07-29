@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+pub mod basetenkenizer;
 pub mod cache;
 pub mod fastokens;
 pub mod hf;
@@ -17,6 +18,7 @@ use std::{fs::File, io::BufReader, ops::Deref, path::Path};
 use anyhow::Context as _;
 pub use anyhow::{Error, Result};
 
+pub use basetenkenizer::BasetenTokenizer;
 pub use cache::{CacheTokenUsage, CacheTokenUsageFn, CachedTokenizer, L1CacheStats};
 pub use fastokens::FastTokenizer;
 pub use hf::HuggingFaceTokenizer;
@@ -24,6 +26,26 @@ pub use tiktoken::TikTokenTokenizer;
 pub use traits::DecodeResult;
 
 pub type TokenIdType = u32;
+
+/// A rendered prompt segment with an explicit trust boundary for special tokens.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EncodeSegment<'a> {
+    pub text: &'a str,
+    /// Recognize added/control tokens in this trusted renderer output.
+    ///
+    /// Set this to `false` for user, tool, and attribute content so text that
+    /// resembles a control token is encoded as ordinary text.
+    pub allow_special: bool,
+}
+
+impl<'a> EncodeSegment<'a> {
+    pub const fn new(text: &'a str, allow_special: bool) -> Self {
+        Self {
+            text,
+            allow_special,
+        }
+    }
+}
 
 /// Represents the type of tokenizer being used
 #[derive(Debug)]
@@ -65,6 +87,29 @@ pub mod traits {
     pub trait Encoder: Send + Sync {
         fn encode(&self, input: &str) -> Result<Encoding>;
         fn encode_batch(&self, inputs: &[&str]) -> Result<Vec<Encoding>>;
+
+        /// Encode Kimi K3-style renderer segments while preserving trusted
+        /// control-token and untrusted content boundaries.
+        ///
+        /// Each segment controls whether added/control tokens are recognized
+        /// through [`EncodeSegment::allow_special`]. This prevents text in user,
+        /// tool, or attribute content from becoming structural when it happens
+        /// to resemble a control token.
+        ///
+        /// The Baseten backend preserves legacy tiktoken behavior by splitting
+        /// each segment into chunks of at most 400,000 characters and splitting
+        /// whitespace/non-whitespace runs at 25,000 characters. Independent
+        /// chunks are encoded through the Rayon thread pool, then concatenated
+        /// in input order. Tokenizer post-processing is applied once after all
+        /// segment IDs have been joined.
+        ///
+        /// Backends must not implement this by flattening the segments first,
+        /// because that discards the special-token trust boundary.
+        fn encode_segments(&self, _segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
+            Err(Error::msg(
+                "tokenizer backend does not support segmented encoding",
+            ))
+        }
     }
 
     /// Result of decoding token IDs to text.
@@ -242,10 +287,11 @@ impl Encoding {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TokenizerOptions {
     /// Ask the tokenizer to add its declared special tokens (e.g. BOS/EOS via
-    /// the HuggingFace post-processor) during `encode`/`encode_batch`.
+    /// its post-processor) during `encode`, `encode_batch`, and supported
+    /// `encode_segments` calls.
     /// Defaults to `false`, the historical behavior.
     ///
-    /// Only applicable to HuggingFace tokenizers.
+    /// Applicable to Hugging Face and Baseten tokenizers.
     pub add_special_tokens: bool,
 }
 
