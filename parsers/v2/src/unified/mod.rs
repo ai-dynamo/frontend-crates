@@ -44,11 +44,12 @@
 
 pub mod qwen3;
 
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 
+use crate::tool_calling::scan::{InvokeEmitter, WrappedBlockScanner, push_run};
 use crate::tool_calling::traits::{Result, Tool, ToolCallDelta, ToolParseResult};
-
-pub use qwen3::Qwen3UnifiedParser;
 
 /// One ordered update produced while parsing assistant output.
 ///
@@ -91,16 +92,6 @@ pub enum UnifiedEvent {
 /// `finish` once at end of stream. One instance parses exactly one choice of
 /// one request, which is what gives per-stream isolation (`I4`) by construction.
 pub trait UnifiedParser: Send {
-    /// Construct a boxed parser instance for one request stream.
-    fn create(tools: &[Tool]) -> Result<Box<dyn UnifiedParser>>
-    where
-        Self: Sized + 'static;
-
-    /// Return whether decoded output must preserve tokenizer special tokens.
-    fn preserve_special_tokens(&self) -> bool {
-        false
-    }
-
     /// Feed one decoded text delta; returns the updates it completed, in order.
     fn push(&mut self, chunk: &str) -> Result<Vec<UnifiedDelta>>;
 
@@ -130,77 +121,71 @@ pub trait UnifiedParser: Send {
 /// unparseable arguments become `{}` (policy P3) rather than an error, because a
 /// malformed argument payload must not take down the rest of the turn.
 pub fn assemble(deltas: &[UnifiedDelta]) -> Vec<UnifiedEvent> {
-    // Position of each tool_index in `out`, plus its accumulated argument text.
-    let mut slots: Vec<(usize, usize, String)> = Vec::new();
-    let mut out: Vec<UnifiedEvent> = Vec::new();
-
+    // Coalesce adjacent same-kind runs with the SAME helper the scan core uses, so
+    // `I8` has exactly ONE implementation instead of one per type.
+    let mut merged: Vec<UnifiedDelta> = Vec::new();
     for delta in deltas {
         match delta {
-            UnifiedDelta::Reasoning { text } => {
-                if text.is_empty() {
-                    continue;
-                }
-                match out.last_mut() {
-                    Some(UnifiedEvent::Reasoning { text: prev }) => prev.push_str(text),
-                    _ => out.push(UnifiedEvent::Reasoning { text: text.clone() }),
-                }
-            }
-            UnifiedDelta::Text { text } => {
-                if text.is_empty() {
-                    continue;
-                }
-                match out.last_mut() {
-                    Some(UnifiedEvent::Text { text: prev }) => prev.push_str(text),
-                    _ => out.push(UnifiedEvent::Text { text: text.clone() }),
-                }
-            }
+            UnifiedDelta::Reasoning { text } => push_run(&mut merged, Kind::Reasoning, text),
+            UnifiedDelta::Text { text } => push_run(&mut merged, Kind::Text, text),
+            call => merged.push(call.clone()),
+        }
+    }
+
+    // Convert, joining each call's argument fragments. Keyed by `tool_index` so
+    // fragments of two interleaved calls cannot merge, and carrying each call's
+    // position so it stays where its FIRST delta landed.
+    let mut out: Vec<UnifiedEvent> = Vec::new();
+    let mut calls: BTreeMap<usize, (usize, String)> = BTreeMap::new();
+    for delta in merged {
+        match delta {
+            UnifiedDelta::Reasoning { text } => out.push(UnifiedEvent::Reasoning { text }),
+            UnifiedDelta::Text { text } => out.push(UnifiedEvent::Text { text }),
             UnifiedDelta::ToolCall(call) => {
-                let slot = match slots.iter_mut().find(|(idx, ..)| *idx == call.tool_index) {
-                    Some(slot) => slot,
-                    None => {
-                        out.push(UnifiedEvent::ToolCall {
-                            name: String::new(),
-                            arguments: serde_json::Value::Null,
-                        });
-                        slots.push((call.tool_index, out.len() - 1, String::new()));
-                        slots.last_mut().expect("just pushed")
-                    }
-                };
-                slot.2.push_str(&call.arguments);
-                if let Some(new_name) = &call.name
-                    && let UnifiedEvent::ToolCall { name, .. } = &mut out[slot.1]
+                let (pos, raw) = calls.entry(call.tool_index).or_insert_with(|| {
+                    out.push(UnifiedEvent::ToolCall {
+                        name: String::new(),
+                        arguments: serde_json::Value::Null,
+                    });
+                    (out.len() - 1, String::new())
+                });
+                raw.push_str(&call.arguments);
+                if let Some(incoming) = call.name
+                    && let UnifiedEvent::ToolCall { name, .. } = &mut out[*pos]
                     && name.is_empty()
                 {
-                    *name = new_name.clone();
+                    *name = incoming;
                 }
             }
         }
     }
 
-    for (_, pos, raw) in &slots {
-        let parsed = if raw.trim().is_empty() {
-            serde_json::json!({})
-        } else {
-            // Best-effort (P3): a malformed payload must not take down the rest of
-            // the turn. But it is NOT discarded silently — a call whose arguments
-            // arrive corrupted is exactly the failure worth seeing in a log, and
-            // `{}` on its own looks indistinguishable from a genuine no-arg call.
-            serde_json::from_str(raw).unwrap_or_else(|e| {
-                tracing::warn!(
-                    why = "unified_unparseable_tool_arguments",
-                    error = %e,
-                    raw = %raw,
-                    "tool-call arguments did not parse as JSON; emitting an empty object instead"
-                );
+    for (pos, raw) in calls.into_values() {
+        if let UnifiedEvent::ToolCall { arguments, .. } = &mut out[pos] {
+            // Best-effort (P3): a malformed payload must not take down the turn, but
+            // it is NOT discarded silently — `{}` alone is indistinguishable from a
+            // genuine no-arg call, so a corrupted argument would look like a clean parse.
+            *arguments = serde_json::from_str(&raw).unwrap_or_else(|e| {
+                if !raw.trim().is_empty() {
+                    tracing::warn!(
+                        why = "unified_unparseable_tool_arguments",
+                        error = %e, raw = %raw,
+                        "tool-call arguments did not parse as JSON; emitting an empty object"
+                    );
+                }
                 serde_json::json!({})
-            })
-        };
-        if let UnifiedEvent::ToolCall { arguments, .. } = &mut out[*pos] {
-            *arguments = parsed;
+            });
         }
     }
-
     out
+}
+
+/// The two payload kinds that carry a text run and coalesce when adjacent (`I8`).
+/// Shared with the scan core, whose `push_run` is the single implementation.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Kind {
+    Reasoning,
+    Text,
 }
 
 impl ToolParseResult {
@@ -225,6 +210,27 @@ impl ToolParseResult {
     }
 }
 
+/// A [`UnifiedParser`] backed by the shared marker scanner.
+///
+/// Any family whose grammar [`WrappedBlockScanner`] already covers becomes a
+/// one-line factory in `create_unified_parser_for_family` — there is no
+/// per-family struct and no per-family trait impl to write, or to forget to keep
+/// in sync when the trait grows. Construction lives in the registry, which is why
+/// the trait itself has no `create`.
+pub(crate) struct ScannerUnified<E: InvokeEmitter> {
+    pub(crate) scanner: WrappedBlockScanner<E>,
+}
+
+impl<E: InvokeEmitter + Send> UnifiedParser for ScannerUnified<E> {
+    fn push(&mut self, chunk: &str) -> Result<Vec<UnifiedDelta>> {
+        self.scanner.push_ordered(chunk)
+    }
+
+    fn finish(&mut self) -> Result<Vec<UnifiedDelta>> {
+        self.scanner.finish_ordered()
+    }
+}
+
 /// Every family `create_unified_parser_for_family` accepts, one entry per match
 /// arm. Tests iterate this so a family registered here without conformance
 /// coverage fails the suite instead of silently skipping.
@@ -239,7 +245,7 @@ pub fn create_unified_parser_for_family(
         // The conformance corpus calls this family `qwen3`; the tool-only
         // registry calls the same XML grammar `qwen3_coder`. Accept both so
         // callers do not have to know which registry they came from.
-        "qwen3" | "qwen3_coder" => Qwen3UnifiedParser::create(tools),
+        "qwen3" | "qwen3_coder" => Ok(qwen3::qwen3_unified(tools)),
         other => anyhow::bail!("no Dynamo unified parser for family '{other}'"),
     }
 }

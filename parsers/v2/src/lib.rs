@@ -26,6 +26,6 @@ pub use tool_calling::{CalledFunctionStream, ToolCallResponseChunk, ToolCallType
 // One state machine per stream owning reasoning + content + tool calls, emitting
 // ONE ordered event stream (see `unified`).
 pub use unified::{
-    Qwen3UnifiedParser, REGISTERED_UNIFIED_FAMILIES, UnifiedDelta, UnifiedEvent, UnifiedParser,
-    assemble, create_unified_parser_for_family,
+    REGISTERED_UNIFIED_FAMILIES, UnifiedDelta, UnifiedEvent, UnifiedParser, assemble,
+    create_unified_parser_for_family,
 };

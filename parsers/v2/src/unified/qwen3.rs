@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Unified streaming parser for the Qwen3 grammar.
-//!
-//! One state machine owns the whole assistant output:
+//! Unified parser for the Qwen3 grammar: the Qwen3-Coder tool grammar plus a
+//! `<think>` reasoning channel, in ONE state machine.
 //!
 //! ```text
 //! reasoning:  <think> … </think>
@@ -11,72 +10,44 @@
 //! everything else: visible content
 //! ```
 //!
-//! The scan core ([`WrappedBlockScanner`]) is the same one the tool-only
-//! `Qwen3CoderToolStreamParser` runs on, configured here with the reasoning
-//! channel as well. That is deliberate: block open/close, bare-`<function=>`
-//! recovery, orphan-close stripping, chunk-boundary marker holdback and
-//! EOF-drop behavior stay a single implementation, so the unified path cannot
-//! quietly regress the tool handling that the tool-only conformance suite
-//! already pins. Value typing likewise still delegates to the shared v1 batch
-//! XML parser through [`Qwen3Emitter`], so an argument object streamed here is
-//! byte-identical to the batch one.
+//! This file is only the grammar wiring. The scan core is the same
+//! [`crate::tool_calling::scan::WrappedBlockScanner`] the tool-only
+//! `Qwen3CoderToolStreamParser` runs on — block open/close, bare-`<function=>`
+//! recovery, orphan-close stripping, chunk-boundary holdback and EOF drop stay a
+//! single implementation, so the unified path cannot quietly regress the tool
+//! handling the tool-only suite already pins. Value typing likewise delegates to
+//! the shared batch XML parser, so a streamed argument object matches the batch
+//! one exactly. The `UnifiedParser` impl itself is generic
+//! ([`crate::unified::ScannerUnified`]).
 //!
 //! What the unified path adds is ORDER: `<think>` between two calls is a second
 //! thought in its own position instead of being hoisted into the first.
 //!
-//! Nesting is asymmetric, because tool structure dominates. A tool call the
-//! model emits INSIDE a thought is still a real call, so it is extracted and the
-//! thought splits around it (burying it would drop the call and leak its markup
-//! into the reasoning payload, `I3`). A reasoning marker inside a tool ARGUMENT
-//! is data and survives byte-exact (`I7`), because the in-block scan never looks
-//! for one.
+//! Nesting is asymmetric, because tool structure dominates. A tool call the model
+//! emits INSIDE a thought is still a real call, so it is extracted and the thought
+//! splits around it (burying it would drop the call and leak its markup into the
+//! reasoning payload, `I3`). A reasoning marker inside a tool ARGUMENT is data and
+//! survives byte-exact (`I7`), because the in-block scan never looks for one.
 
-use crate::tool_calling::qwen3_coder::{Qwen3Emitter, qwen3_scanner};
-use crate::tool_calling::scan::{ReasoningSpec, WrappedBlockScanner};
-use crate::tool_calling::traits::{Result, Tool};
-use crate::unified::{UnifiedDelta, UnifiedParser};
+use crate::tool_calling::qwen3_coder::qwen3_scanner;
+use crate::tool_calling::scan::ReasoningSpec;
+use crate::tool_calling::traits::Tool;
+use crate::unified::{ScannerUnified, UnifiedParser};
 
 const REASONING_START: &str = "<think>";
 const REASONING_END: &str = "</think>";
 
-/// Streaming unified parser for Qwen3: reasoning + content + tool calls.
-pub struct Qwen3UnifiedParser {
-    scanner: WrappedBlockScanner<Qwen3Emitter>,
-}
-
-impl Qwen3UnifiedParser {
-    pub fn new(tools: &[Tool]) -> Self {
-        Self {
-            scanner: qwen3_scanner(tools).with_reasoning(ReasoningSpec {
-                start: REASONING_START.to_string(),
-                end: REASONING_END.to_string(),
-                // Qwen3 emits its own `<think>`; the template does not pre-fill
-                // one, so the stream starts in visible content (policy P5).
-                forced_start: false,
-            }),
-        }
-    }
-}
-
-impl UnifiedParser for Qwen3UnifiedParser {
-    fn create(tools: &[Tool]) -> Result<Box<dyn UnifiedParser>>
-    where
-        Self: Sized + 'static,
-    {
-        Ok(Box::new(Self::new(tools)))
-    }
-
-    fn preserve_special_tokens(&self) -> bool {
-        true
-    }
-
-    fn push(&mut self, chunk: &str) -> Result<Vec<UnifiedDelta>> {
-        self.scanner.push_ordered(chunk)
-    }
-
-    fn finish(&mut self) -> Result<Vec<UnifiedDelta>> {
-        self.scanner.finish_ordered()
-    }
+/// Build the Qwen3 unified parser for one stream.
+pub(crate) fn qwen3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
+    Box::new(ScannerUnified {
+        scanner: qwen3_scanner(tools).with_reasoning(ReasoningSpec {
+            start: REASONING_START.to_string(),
+            end: REASONING_END.to_string(),
+            // Qwen3 emits its own `<think>`; the template does not pre-fill one,
+            // so the stream starts in visible content (policy P5).
+            forced_start: false,
+        }),
+    })
 }
 
 #[cfg(test)]
@@ -97,7 +68,7 @@ mod tests {
     }
 
     fn events(tools: &[Tool], chunks: &[&str]) -> Vec<UnifiedEvent> {
-        let mut parser = Qwen3UnifiedParser::new(tools);
+        let mut parser = qwen3_unified(tools);
         let mut deltas = Vec::new();
         for chunk in chunks {
             deltas.extend(parser.push(chunk).expect("push"));
@@ -355,7 +326,7 @@ mod tests {
         // I6, at the parser level: `parse_complete` routes through the same
         // push/finish lifecycle, so parity is structural.
         let input = "<think>a</think>Here you go: <tool_call><function=get_weather><parameter=city>Paris</parameter></function></tool_call><think>b</think>Done.";
-        let batch = Qwen3UnifiedParser::new(&weather_tools())
+        let batch = qwen3_unified(&weather_tools())
             .parse_complete(input)
             .expect("parse_complete");
         assert_eq!(batch, events(&weather_tools(), &[input]));
