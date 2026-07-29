@@ -571,12 +571,13 @@
     ttip.style.top = '100%';
     ttip.style.right = 'auto';
     ttip.style.bottom = 'auto';
-    // Cap the width at the viewport MINUS both gutters. 90% alone is not enough: a
-    // tooltip that wide still has to be shifted left to clear the right gutter, and if
-    // the shift then pushes its left edge past `margin` the clamp below cancels it and
-    // the popup ends up flush against an edge. Bounding the width makes both fit.
-    ttip.style.maxWidth = Math.max(240, Math.min(
-      Math.round(window.innerWidth * 0.9), window.innerWidth - 2 * margin)) + 'px';
+    // Cap the width at the viewport MINUS both gutters — that is the most a popup may
+    // use, so on a narrow screen it grows to fill the window while still leaving the
+    // left/right padding. This is only a CEILING: the popup is `width: max-content`, so
+    // a chart that needs less stays narrow rather than padding itself out to the cap.
+    // (The old cap also took 90% of the viewport, which on a small screen threw away a
+    // gutter's worth of usable room on top of the two real gutters.)
+    ttip.style.maxWidth = Math.max(240, window.innerWidth - 2 * margin) + 'px';
     const cellRect = cell.getBoundingClientRect();
     const tipRect = ttip.getBoundingClientRect();
     const vw = window.innerWidth, vh = window.innerHeight;

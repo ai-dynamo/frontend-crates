@@ -287,7 +287,11 @@ td.cell:hover, td.parser:hover, td.cell:focus-within, td.parser:focus-within { z
     font-family: ui-monospace, monospace;
     font-size: 12px;
     line-height: 1.4;
-    max-width: 80vw;
+    /* Ceiling only — `width: max-content` below means a popup that needs less stays
+       narrow. 32px each side matches the `margin` gutter the placement JS clamps to,
+       so on a small screen the popup may grow to the full window minus that padding.
+       (The JS re-sets this inline per-open against the live viewport.) */
+    max-width: calc(100vw - 64px);
     min-width: 280px;
     width: max-content;
     box-shadow: 0 4px 14px rgba(0,0,0,0.35);
@@ -336,13 +340,26 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
 .ttip-leak { color: #ff6b6b; font-weight: 700; }
 .ttip-pre { margin: 2px 0 0 0; white-space: pre-wrap; word-break: break-word; font-family: inherit; color: #e5e7eb; }
 /* Per-chunk emit chart: input | Dynamo Rust | vLLM Rust | vLLM Python | SGLang, one row per chunk. */
-/* Equal-width output columns. With the default auto layout each candidate column sizes
- * to its own content, so the REF column and the compare-with columns came out different
- * widths and were hard to scan side by side. `table-layout: fixed` gives every column
- * WITHOUT an explicit width an equal share of the leftover space — so only the input
- * column is pinned below, and every output column matches. */
-.ttip-chunks { border-collapse: collapse; margin: 3px 0 0 0; font-size: 11px; width: 100%; table-layout: fixed; }
-.ttip-chunks th:first-child, .ttip-chunks td:first-child { width: 22em; }
+/* Size to CONTENT, capped at the popup width.
+ *
+ * This used to be `width: 100%` + `table-layout: fixed` so that every candidate
+ * column came out the SAME width (auto layout sized each to its own content, which
+ * made the REF and compare columns differ and was hard to scan). The cost was that
+ * the chart always consumed the full popup no matter how little it held: a chart of
+ * mostly `–` cells rendered just as wide as one full of arguments, so the popup was
+ * mostly empty space.
+ *
+ * Auto layout lets a narrow chart BE narrow. Equal-width columns are recovered
+ * approximately by the shared `min-width` below (so columns stay comparable and a
+ * one-character `–` column doesn't collapse), while `max-width` stops a long
+ * argument from running the table off-screen — it wraps instead. The popup's own
+ * `width: max-content` then shrinks around whatever the table actually needs. */
+.ttip-chunks { border-collapse: collapse; margin: 3px 0 0 0; font-size: 11px; width: max-content; max-width: 100%; table-layout: auto; }
+/* max-width, not width: the input column may size DOWN when its markers are short. */
+.ttip-chunks th:first-child, .ttip-chunks td:first-child { max-width: 22em; }
+/* Output columns: a floor so they stay scannable side by side, and a ceiling so a
+ * long `args='{...}'` wraps rather than widening the whole popup. */
+.ttip-chunks th:not(:first-child), .ttip-chunks td:not(:first-child) { min-width: 7em; max-width: 20em; }
 /* pre-wrap so runs of spaces in emitted text render faithfully — HTML collapsing
    made a whitespace-only divergence (e.g. a double vs single trailing space)
    invisible: two cells LOOKED identical while their compare signatures differed. */
@@ -825,6 +842,29 @@ body.cmp-loading .cmp-loading-note { display: block; position: fixed; top: 8px; 
 .expl {
   font-family: -apple-system, system-ui, sans-serif;
 }
+/* Cap the PROSE measure so a long sentence wraps instead of stretching the popup.
+ * The popup is `width: max-content`, which takes the widest child — so one
+ * unwrapped explanatory line (the case description, or the "vLLM diverges too:
+ * ..." footnote) set the popup's width and left the chart floating in a sea of
+ * empty space, even after the chart itself was made to shrink to content. An
+ * element's max-content contribution is clamped by its own max-width, so bounding
+ * the prose hands the width decision back to the chart. ~100 characters is also
+ * about the limit of a comfortable reading measure.
+ *
+ * `.ttip-ref` is excluded below: it is a short `white-space: nowrap` label, not
+ * prose, and must not wrap. */
+.ttip-section,
+.ttip-casedesc,
+.ttip-reason,
+.ttip-note,
+.ttip-pre,
+.ttip-head,
+.expl {
+  max-width: 100ch;
+}
+/* The head carries the case id + an inline description; without this the long
+   description keeps the head on one line and re-widens the popup. */
+.ttip-head { white-space: normal; }
 /* ...and the payload opts back in. `.ttip-code` is the parser input markup, `.ttip-tree`
  * the box-drawing shared-implementation tree; both only read correctly when the glyphs
  * line up in a column. `.ttip-code` sits INSIDE a `.ttip-pre`, so it has to win. */
