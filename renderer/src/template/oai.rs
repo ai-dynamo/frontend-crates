@@ -433,9 +433,8 @@ impl OAIChatLikeRequest for dynamo_protocols::types::CreateChatCompletionRequest
     }
 }
 
-/// Text of a message `content`: a string verbatim, or the `text` parts of a
-/// content array joined with `\n`. Used when normalizing system messages, whose
-/// content agent clients send as either shape.
+/// Flattens to text either way, since agent clients send system content as both
+/// a bare string and a content array.
 fn message_content_text(content: &serde_json::Value) -> String {
     match content {
         serde_json::Value::String(s) => s.clone(),
@@ -448,14 +447,8 @@ fn message_content_text(content: &serde_json::Value) -> String {
     }
 }
 
-/// Normalize system messages so a strict chat template accepts an agent-client
-/// stream. Called from `render` only when the template was flagged at load time
-/// (`requires_system_normalization`). Three steps: merge a leading run of
-/// system messages into one; demote any remaining, non-leading system message
-/// to `user` in place (kept in place rather than folded to the front so a
-/// toggling mid-conversation reminder doesn't invalidate the whole KV prefix);
-/// coalesce the consecutive user turns this can produce so alternation-enforcing
-/// templates (Gemma, Mistral) still render.
+/// Rewrites an agent-client message stream into a shape strict chat templates
+/// accept. Only called for templates flagged by the load-time probe.
 fn normalize_system_messages(messages: &mut serde_json::Value) {
     let serde_json::Value::Array(list) = messages else {
         return;
@@ -466,7 +459,7 @@ fn normalize_system_messages(messages: &mut serde_json::Value) {
         message_content_text(m.get("content").unwrap_or(&serde_json::Value::Null))
     };
 
-    // 1. Merge a leading run of system messages into one.
+    // Strict templates permit at most one system message, at index 0.
     let leading = list.iter().take_while(|m| role_is(m, "system")).count();
     if leading > 1 {
         let combined = list[..leading]
@@ -480,7 +473,8 @@ fn normalize_system_messages(messages: &mut serde_json::Value) {
         );
     }
 
-    // 2. Demote any remaining, non-leading system message to `user` in place.
+    // Demoted in place, not folded to the front: a mid-conversation reminder
+    // that toggles would otherwise invalidate the whole KV prefix each turn.
     let leading = list.iter().take_while(|m| role_is(m, "system")).count();
     for m in list.iter_mut().skip(leading) {
         if role_is(m, "system") {
@@ -488,7 +482,8 @@ fn normalize_system_messages(messages: &mut serde_json::Value) {
         }
     }
 
-    // 3. Coalesce consecutive user turns into one.
+    // Demotion can leave two user turns adjacent, which alternation-enforcing
+    // templates (Gemma, Mistral) reject.
     let mut coalesced: Vec<serde_json::Value> = Vec::with_capacity(list.len());
     for m in list.drain(..) {
         if role_is(&m, "user") && coalesced.last().is_some_and(|p| role_is(p, "user")) {
@@ -543,9 +538,6 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
         ))
         .unwrap();
 
-        // Normalize system messages for templates that reject agent-client
-        // streams (detected once at load time). No-op for the ~76% of templates
-        // that accept a non-leading system, so their output is unchanged.
         if self.requires_system_normalization {
             normalize_system_messages(&mut messages_for_template);
         }
@@ -633,8 +625,7 @@ mod tests {
     };
 
     fn formatter_for(template: &str) -> SysFormatter {
-        // Supply dummy special tokens so real templates that reference
-        // bos/eos/unk (e.g. Zephyr's `content + eos_token`) render in tests.
+        // Dummy tokens: real templates that append eos/bos won't render without them.
         let ct: SysChatTemplate = serde_json::from_value(json!({
             "chat_template": template,
             "bos_token": "<s>",
@@ -701,7 +692,6 @@ mod tests {
     fn permissive_template_is_not_flagged_and_renders_untouched() {
         let f = formatter_for(PERMISSIVE_TMPL);
         assert!(!f.requires_system_normalization);
-        // The mid system survives verbatim as a `system` turn (no rewrite).
         let out = render_shape(&f, claude_shape()).unwrap();
         assert!(out.contains("<|im_start|>system\nmid-conversation reminder<|im_end|>"));
     }
@@ -710,10 +700,9 @@ mod tests {
     fn strict_leading_template_is_flagged_and_demotes_mid_system() {
         let f = formatter_for(STRICT_LEADING_TMPL);
         assert!(f.requires_system_normalization);
-        // Was a 500 before; now renders, mid system demoted to a user turn.
+        // This shape returned a 500 before the probe existed.
         let out = render_shape(&f, claude_shape()).unwrap();
         assert!(out.contains("<|im_start|>user\nhello\n\nmid-conversation reminder<|im_end|>"));
-        // Exactly one leading system turn survives.
         assert_eq!(out.matches("<|im_start|>system").count(), 1);
     }
 
@@ -755,21 +744,14 @@ mod tests {
         assert_eq!(m, json!([{"role": "user", "content": "hi\n\none\ntwo"}]));
     }
 
-    /// Sufficiency + correctness audit of the shipped probe + normalization
-    /// against a large corpus of REAL model chat templates. Point
-    /// TEMPLATE_CORPUS at a dir of `<name>.jinja` files + `manifest.json`
-    /// mapping each to `{model}` (see experiments/system-probe).
+    /// Renders every agent-client shape through every template in a corpus of
+    /// real models. A failure means the probe missed a strict template, or the
+    /// normalization it triggered was not enough to satisfy one.
     ///
-    /// For every template and every realistic agent-client message shape, it
-    /// calls the *shipped* `render()` (which runs the load-time probe and, only
-    /// when flagged, the normalization) and requires a successful render. A
-    /// failure means one of two real defects: flag=false but a raw agent shape
-    /// raises (probe FALSE NEGATIVE), or flag=true but a normalized shape raises
-    /// (normalization INSUFFICIENT). Either way the audit prints the offending
-    /// (model, shape, flag) and fails.
-    ///
-    /// TEMPLATE_CORPUS=.../experiments/system-probe/templates_big
-    ///   cargo test -p dynamo-renderer adaptive_system_corpus_audit -- --ignored --nocapture
+    /// TEMPLATE_CORPUS points at a dir of `<name>.jinja` files + `manifest.json`
+    /// mapping each to `{model}` (see experiments/system-probe):
+    ///   TEMPLATE_CORPUS=... cargo test -p dynamo-renderer \
+    ///     adaptive_system_corpus_audit -- --ignored --nocapture
     #[test]
     #[ignore]
     fn adaptive_system_corpus_audit() {
@@ -779,10 +761,8 @@ mod tests {
             serde_json::from_str(&std::fs::read_to_string(format!("{dir}/manifest.json")).unwrap())
                 .unwrap();
 
-        // Realistic agent-client shapes (Claude Code / Codex): non-leading
-        // system in various positions, a toggling tail reminder, consecutive
-        // users, and double-leading systems. Tool-call shapes are covered by
-        // the hermetic tests (they need a matching `tools` payload per family).
+        // Tool-call shapes are omitted: they need a per-family `tools` payload,
+        // and the hermetic tests already cover them.
         let sys = |c: &str| json!({"role": "system", "content": c});
         let usr = |c: &str| json!({"role": "user", "content": c});
         let asst = |c: &str| json!({"role": "assistant", "content": c});
@@ -818,9 +798,8 @@ mod tests {
         for (file, meta) in manifest.as_object().unwrap() {
             let tmpl = std::fs::read_to_string(format!("{dir}/{file}.jinja")).unwrap();
             let model = meta["model"].as_str().unwrap_or(file);
-            // A few templates in the wild don't compile under minijinja for
-            // reasons unrelated to this change (custom tags, etc.); skip those
-            // so the audit measures system-normalization sufficiency only.
+            // Some real templates use custom tags minijinja can't compile,
+            // which says nothing about system normalization.
             let f = match try_formatter_for(&tmpl) {
                 Some(f) => f,
                 None => {
@@ -828,11 +807,8 @@ mod tests {
                     continue;
                 }
             };
-            // Templates that can't render a plain `[system, user]` baseline in
-            // this text-only harness (e.g. vision models needing image inputs)
-            // are out of scope: the probe's baseline guard leaves them
-            // unflagged, and their render failure is unrelated to system
-            // normalization. Skip so the audit measures normalization only.
+            // Vision templates need image inputs, so they can't render text-only
+            // here. The probe's baseline guard leaves them unflagged anyway.
             if render_shape(&f, json!([sys("s"), usr("u")])).is_err() {
                 eprintln!("[skip-baseline] {model}");
                 continue;
