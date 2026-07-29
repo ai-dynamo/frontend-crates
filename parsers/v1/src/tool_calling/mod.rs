@@ -18,6 +18,7 @@ pub mod structural_tag;
 pub mod tests;
 pub mod tools;
 pub mod xml;
+pub mod xtml;
 
 /// Represents a tool definition with function schema.
 #[derive(Debug, Clone)]
@@ -38,8 +39,8 @@ pub enum ToolChoice {
 
 // Re-export main types and functions for convenience
 pub use config::{
-    JsonParserConfig, KimiK2ParserConfig, MiniMaxM3ParserConfig, ParserConfig, ToolCallConfig,
-    XmlParserConfig,
+    JsonParserConfig, KimiK2ParserConfig, KimiK3ParserConfig, MiniMaxM3ParserConfig, ParserConfig,
+    ToolCallConfig, XmlParserConfig,
 };
 pub use dsml::try_tool_call_parse_dsml;
 pub use gemma4::try_tool_call_parse_gemma4;
@@ -65,3 +66,4 @@ pub use tools::{
 };
 pub use xml::try_tool_call_parse_kimi_k2;
 pub use xml::try_tool_call_parse_xml;
+pub use xtml::try_tool_call_parse_kimi_k3;

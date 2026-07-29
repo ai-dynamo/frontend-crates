@@ -48,6 +48,38 @@ pub fn deepseek_formatter_for(
     None
 }
 
+/// If the model is Kimi K3, return its native XTML formatter. K3 ships no
+/// Jinja chat template and must preserve special-vs-ordinary segment boundaries
+/// until tokenization.
+pub fn kimi_k3_formatter_for(
+    model_type_lower: &Option<String>,
+    display_name_lower: &str,
+    exclude_tools_when_tool_choice_none: bool,
+) -> Option<PromptFormatter> {
+    if !is_kimi_k3(model_type_lower, display_name_lower) {
+        return None;
+    }
+
+    tracing::info!(
+        model_type = ?model_type_lower,
+        display_name = %display_name_lower,
+        "Detected Kimi K3 model, using native Rust XTML formatter",
+    );
+    Some(PromptFormatter::OAI(Arc::new(
+        super::kimi_k3::KimiK3Formatter::new(exclude_tools_when_tool_choice_none),
+    )))
+}
+
+fn is_kimi_k3(model_type_lower: &Option<String>, display_name_lower: &str) -> bool {
+    match model_type_lower.as_deref() {
+        Some("kimi_k3") => true,
+        Some(_) => false,
+        None => ["kimi-k3", "kimi_k3", "kimik3"]
+            .iter()
+            .any(|needle| display_name_lower.contains(needle)),
+    }
+}
+
 /// Select a native formatter for model families that do not ship a usable HF
 /// `chat_template`.
 ///
@@ -230,7 +262,19 @@ fn is_deepseek_v4_name(name_lower: &str) -> bool {
 
 #[cfg(test)]
 mod detection_tests {
-    use super::{is_deepseek_v3_2_non_exp, is_deepseek_v4, is_deepseek_v4_name};
+    use super::{is_deepseek_v3_2_non_exp, is_deepseek_v4, is_deepseek_v4_name, is_kimi_k3};
+
+    #[test]
+    fn kimi_k3_detection_prefers_config_model_type() {
+        assert!(is_kimi_k3(&Some("kimi_k3".to_string()), "served-name"));
+        assert!(!is_kimi_k3(
+            &Some("kimi_k2".to_string()),
+            "moonshot-kimi-k3"
+        ));
+        assert!(is_kimi_k3(&None, "moonshot-kimi-k3"));
+        assert!(is_kimi_k3(&None, "kimi_k3-instruct"));
+        assert!(!is_kimi_k3(&None, "kimi-k2.5"));
+    }
 
     #[test]
     fn v4_name_matches_canonical_variants() {
