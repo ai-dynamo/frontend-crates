@@ -437,10 +437,6 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
         self.supports_add_generation_prompt
     }
 
-    fn image_placeholder_template(&self) -> Option<&'static str> {
-        self.image_placeholder_template
-    }
-
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String> {
         let mixins = Value::from_dyn_object(self.mixins.clone());
 

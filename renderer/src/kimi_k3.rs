@@ -23,10 +23,23 @@ const OPEN_TOKEN: &str = "<|open|>";
 const CLOSE_TOKEN: &str = "<|close|>";
 const SEP_TOKEN: &str = "<|sep|>";
 const END_OF_MSG_TOKEN: &str = "<|end_of_msg|>";
-const IMAGE_PLACEHOLDER: &str = "<|kimi_image_placeholder|>";
-/// Single structural media token. The checkpoint processor wraps this in
-/// `<|media_begin|>image {W}x{H}<|media_content|>…<|media_end|>`; engines that
-/// only repeat the pad to the feature count consume the bare token instead.
+/// The one token this renderer emits per image.
+///
+/// This is the canonical frontend contract: exactly one `<|media_pad|>` per
+/// image, for every engine. It is a registered special token in the K3
+/// tokenizer (`config.json`'s `media_placeholder_token_id`), so it encodes to
+/// a single id and stays one id no matter what surrounds it.
+///
+/// The checkpoint's other spelling, `<|kimi_image_placeholder|>`, is a plain
+/// string that is *not* in the vocabulary — it BPE-shatters into several ids
+/// whose boundaries depend on neighbouring text. Engines that want that form
+/// (vLLM) convert from the pad on the worker side, where a single known id is
+/// a reliable thing to substitute; matching a shattered string is not.
+///
+/// Equivalent to calling the checkpoint's own
+/// `encoding_k3.build_chat_segments(image_prompts=["<|media_pad|>"] * n)` —
+/// `image_prompts` is the model author's hook for exactly this choice, and
+/// `<|kimi_image_placeholder|>` is only its `None` fallback.
 const MEDIA_PAD: &str = "<|media_pad|>";
 const VALID_THINKING_EFFORTS: &[&str] = &["low", "high", "max"];
 
@@ -105,14 +118,6 @@ impl OAIPromptFormatter for KimiK3Formatter {
 
     fn render_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<RenderedPrompt> {
         Ok(RenderedPrompt::segmented(self.build_segments(req)?))
-    }
-
-    fn image_placeholder_template(&self) -> Option<&'static str> {
-        Some(IMAGE_PLACEHOLDER)
-    }
-
-    fn image_pad_token(&self) -> Option<&'static str> {
-        Some(MEDIA_PAD)
     }
 }
 
@@ -300,7 +305,7 @@ fn render_content_segments(
         Value::Array(parts) => {
             for part in parts {
                 match part.get("type").and_then(Value::as_str) {
-                    Some("image" | "image_url") => control(segments, IMAGE_PLACEHOLDER),
+                    Some("image" | "image_url") => control(segments, MEDIA_PAD),
                     _ => {
                         if let Some(part_text) = part.get("text") {
                             text(segments, value_as_body_text(part_text)?);
@@ -852,19 +857,102 @@ mod tests {
         }
     }
 
+    /// Default formatter: no worker declaration, so the checkpoint token.
+    fn fmt() -> KimiK3Formatter {
+        KimiK3Formatter::new(true)
+    }
+
+    /// One user message carrying a single image part.
+    fn image_request() -> Request {
+        let mut request = Request::new(json!([{
+            "role": "user",
+            "content": [{"type": "image_url", "image_url": {"url": "http://example.com/a.png"}}]
+        }]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+        request
+    }
+
+    fn image_segments(formatter: &KimiK3Formatter, request: &Request) -> Vec<EncodeSegment> {
+        formatter
+            .render_prompt(request)
+            .unwrap()
+            .segments()
+            .expect("K3 always renders segmented prompts")
+            .to_vec()
+    }
+
     #[test]
-    fn image_placeholder_is_the_intermediate_marker() {
-        assert_eq!(
-            KimiK3Formatter::new(true).image_placeholder_template(),
-            Some(IMAGE_PLACEHOLDER)
+    fn renders_one_media_pad_per_image() {
+        let segments = image_segments(&fmt(), &image_request());
+
+        let matches: Vec<_> = segments
+            .iter()
+            .filter(|segment| segment.text == MEDIA_PAD)
+            .collect();
+        assert_eq!(matches.len(), 1, "exactly one pad per image");
+        // The pad MUST stay special: it is a registered token, and only the
+        // special-aware encode path yields its single id.
+        assert!(matches[0].allow_special);
+        // The checkpoint's non-vocabulary spelling must never be emitted --
+        // the vLLM worker converts from the pad instead.
+        assert!(
+            !segments
+                .iter()
+                .any(|segment| segment.text.contains("kimi_image_placeholder")),
         );
     }
 
     #[test]
-    fn image_pad_token_matches_checkpoint_media_pad() {
+    fn image_token_cardinality_is_one_per_image() {
+        let mut request = Request::new(json!([{
+            "role": "user",
+            "content": [
+                {"type": "image_url", "image_url": {"url": "http://example.com/a.png"}},
+                {"type": "text", "text": "and"},
+                {"type": "image_url", "image_url": {"url": "http://example.com/b.png"}},
+                {"type": "text", "text": "compare them"}
+            ]
+        }]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+
+        let segments = image_segments(&fmt(), &request);
+
         assert_eq!(
-            KimiK3Formatter::new(true).image_pad_token(),
-            Some("<|media_pad|>")
+            segments
+                .iter()
+                .filter(|segment| segment.text == MEDIA_PAD)
+                .count(),
+            2
+        );
+        // Interleaved prose must stay ordinary text.
+        for body in ["and", "compare them"] {
+            assert!(
+                segments
+                    .iter()
+                    .any(|segment| segment.text == body && !segment.allow_special)
+            );
+        }
+    }
+
+    #[test]
+    fn user_text_spelling_the_pad_stays_ordinary() {
+        let body = "please describe <|media_pad|>";
+        let mut request = Request::new(json!([{"role": "user", "content": body}]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+
+        let segments = image_segments(&fmt(), &request);
+
+        assert!(
+            segments
+                .iter()
+                .any(|segment| segment.text == body && !segment.allow_special),
+            "user content must never be promoted into prompt structure"
         );
     }
 
@@ -874,7 +962,7 @@ mod tests {
         request
             .args
             .insert("thinking".to_string(), Value::Bool(false));
-        let rendered = KimiK3Formatter::new(true).render(&request).unwrap();
+        let rendered = fmt().render(&request).unwrap();
         assert_eq!(
             rendered,
             concat!(
@@ -896,7 +984,7 @@ mod tests {
             .args
             .insert("thinking".to_string(), Value::Bool(false));
 
-        let rendered = KimiK3Formatter::new(true).render(&request).unwrap();
+        let rendered = fmt().render(&request).unwrap();
 
         assert!(
             rendered.contains(
@@ -927,7 +1015,7 @@ mod tests {
             .args
             .insert("thinking".to_string(), Value::Bool(false));
 
-        let rendered = KimiK3Formatter::new(true).render(&request).unwrap();
+        let rendered = fmt().render(&request).unwrap();
 
         assert!(rendered.contains("## New Tools Available"));
         assert!(
@@ -940,7 +1028,7 @@ mod tests {
         for role in ["function", "unknown"] {
             let request = Request::new(json!([{"role": role, "content": "ignored before"}]));
 
-            let error = KimiK3Formatter::new(true).render(&request).unwrap_err();
+            let error = fmt().render(&request).unwrap_err();
 
             assert!(matches!(
                 error.downcast_ref::<PromptRenderError>(),
@@ -955,7 +1043,7 @@ mod tests {
         for messages in [json!([{"content": "missing"}]), json!([{"role": 7}])] {
             let request = Request::new(messages);
 
-            let error = KimiK3Formatter::new(true).render(&request).unwrap_err();
+            let error = fmt().render(&request).unwrap_err();
 
             assert!(matches!(
                 error.downcast_ref::<PromptRenderError>(),
@@ -973,7 +1061,7 @@ mod tests {
             Value::String("medium".to_string()),
         );
 
-        let error = KimiK3Formatter::new(true).render(&request).unwrap_err();
+        let error = fmt().render(&request).unwrap_err();
         assert!(matches!(
             error.downcast_ref::<PromptRenderError>(),
             Some(PromptRenderError::InvalidRequest(message))
@@ -1014,7 +1102,7 @@ mod tests {
             .args
             .insert("thinking".to_string(), Value::Bool(true));
 
-        let rendered = KimiK3Formatter::new(true).render(&request).unwrap();
+        let rendered = fmt().render(&request).unwrap();
         assert!(rendered.contains("The system is invoked with `tool_choice=specified`."));
         assert!(rendered.contains("MUST call the tool `add_numbers`"));
         assert!(
@@ -1043,7 +1131,7 @@ mod tests {
             "function": {"name": "get_weather"}
         }));
 
-        let error = KimiK3Formatter::new(true).render(&request).unwrap_err();
+        let error = fmt().render(&request).unwrap_err();
         assert!(matches!(
             error.downcast_ref::<PromptRenderError>(),
             Some(PromptRenderError::InvalidRequest(message))
@@ -1058,7 +1146,7 @@ mod tests {
         request
             .args
             .insert("thinking".to_string(), Value::Bool(false));
-        let rendered = KimiK3Formatter::new(true).render_prompt(&request).unwrap();
+        let rendered = fmt().render_prompt(&request).unwrap();
 
         assert!(
             rendered
@@ -1096,7 +1184,7 @@ mod tests {
             "thinking_effort".to_string(),
             Value::String("low".to_string()),
         );
-        let rendered = KimiK3Formatter::new(true).render(&request).unwrap();
+        let rendered = fmt().render(&request).unwrap();
 
         assert!(rendered.contains(
             "<|open|>call tool=\"calc\" index=\"1\"<|sep|>\
@@ -1119,7 +1207,7 @@ mod tests {
             {"role": "user", "content": "follow-up"}
         ]));
 
-        let rendered = KimiK3Formatter::new(true).render(&request).unwrap();
+        let rendered = fmt().render(&request).unwrap();
 
         assert!(rendered.contains(concat!(
             "<|open|>message role=\"assistant\"<|sep|>",
@@ -1143,7 +1231,7 @@ mod tests {
             .args
             .insert("thinking".to_string(), Value::Bool(false));
 
-        let rendered = KimiK3Formatter::new(true).render(&request).unwrap();
+        let rendered = fmt().render(&request).unwrap();
 
         assert!(!rendered.contains("hidden reasoning"));
         assert!(!rendered.contains("<|open|>think<|sep|>"));
@@ -1167,7 +1255,7 @@ mod tests {
                 "description": "Get weather"
             }
         }]));
-        let rendered = KimiK3Formatter::new(true).render(&request).unwrap();
+        let rendered = fmt().render(&request).unwrap();
         assert!(rendered.contains(concat!(
             "[{\"function\":{\"description\":\"Get weather\",",
             "\"name\":\"weather\",\"parameters\":{\"properties\":",
@@ -1193,7 +1281,7 @@ mod tests {
                 }
             }]
         }]));
-        let rendered = KimiK3Formatter::new(true).render(&request).unwrap();
+        let rendered = fmt().render(&request).unwrap();
 
         assert!(rendered.contains("<|open|>think<|sep|>fallback<|close|>think<|sep|>"));
         assert!(rendered.contains(concat!(
