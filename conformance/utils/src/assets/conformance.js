@@ -202,32 +202,37 @@
       }
       // Unavailable candidates never count toward the diff; still shown in tooltip.
       const avail = shown.map(function (k) { return cmp[k]; }).filter(function (o) { return o && o.na !== 1; });
-      // NΔ always counts shown engines that diverge from GOLDEN (the fixed reference),
+      // NΔ counts shown COMPARE engines that diverge from GOLDEN (the fixed reference),
       // independent of which engine is starred. When there is no golden (other tabs), fall
-      // back to the selected reference. The star only drives the red/leak focus (bd).
-      const refSig = (cmp.golden ? cmp.golden.sig : bd.sig);
+      // back to the selected reference. `avail` excludes the base (the starred REF).
+      const goldenSig = cmp.golden ? cmp.golden.sig : null;
+      const refSig = (goldenSig != null ? goldenSig : bd.sig);
       const diffs = avail.filter(function (o) { return o.sig !== refSig; }).length;
       const leak = bd.leak === 1;
-      // GREEN = the Reference output is clean (no leaked tool-call markup). That holds
-      // whether or not any Compare is selected, so a lone Reference with 0 Compares is
-      // green too. The marker count is the number of selected Compares that diverge;
-      // with no comparable peer there is simply nothing to count (blank), not gray.
-      const donly = avail.length === 0;
-      // Δ suffix marks the number as a count of diverging Compare-with parsers,
-      // e.g. "2Δ"; "=" (all agree) and a lone leak "↯" carry no count.
-      const txt = donly ? '' : (diffs === 0 ? '=' : String(diffs) + 'Δ');
-      // Color rule. Default (every tab but Unified): red iff the REFERENCE parser leaks
-      // markup — a leaking Compare-with parser is the compare's problem, not the
-      // reference's, so star an engine to see its own leaks. On the Unified tab
-      // (data-red-on-diff) GOLDEN is the fixed oracle, so a cell is red when a SHOWN parser
-      // DIVERGES from golden in ANY class (leak, merge, order, loss); a green cell means
-      // every shown parser matches golden exactly. ↯ still flags a leak within that.
       const redOnDiff = cell.getAttribute('data-red-on-diff') === '1';
+      // Unified tab (data-red-on-diff): GOLDEN is the fixed oracle and the REF (base) is
+      // ITSELF an engine measured against it. So a cell is red whenever ANY shown engine
+      // diverges from golden — the base OR any compare. `avail` excludes the base, so its
+      // own divergence is counted separately; without this a diverging REF (e.g. Dynamo
+      // starred, no compares) rendered green. ↯ still flags a leak within the divergence.
+      const baseDiverges = redOnDiff && base !== 'golden' && goldenSig != null
+        && bd && bd.na !== 1 && bd.sig !== goldenSig;
+      const totalDiff = diffs + (baseDiverges ? 1 : 0);
+      const donly = avail.length === 0;
       const leaked = redOnDiff
         ? (leak || avail.some(function (o) { return o.leak === 1; }))
         : leak;
+      // Δ suffix = count of diverging shown engines (base + compares on Unified; compares
+      // elsewhere). "=" all match, "" nothing to measure, a lone leak "↯" carries no count.
+      let txt;
+      if (redOnDiff) {
+        const noEngine = base === 'golden' && donly;  // only the oracle selected
+        txt = noEngine ? '' : (totalDiff === 0 ? '=' : String(totalDiff) + 'Δ');
+      } else {
+        txt = donly ? '' : (diffs === 0 ? '=' : String(diffs) + 'Δ');
+      }
       if (marker) { marker.textContent = (leaked ? '↯' : '') + txt; }
-      const problem = redOnDiff ? (diffs > 0 || leaked) : leaked;
+      const problem = redOnDiff ? (totalDiff > 0 || leaked) : leaked;
       cell.classList.add(problem ? 'cmp-leak' : 'cmp-eq');
       if (countThis) { if (problem) { counts.problem++; } else { counts.ok++; } }
       toggleCands(cell, active, base);
