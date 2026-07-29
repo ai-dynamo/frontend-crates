@@ -2089,7 +2089,14 @@ def _assemble_stream(chunk_deltas: list) -> list:
                     events.append({"kind": "tool_call", "name": name, "_raw": args or ""})
                     cur_tool = len(events) - 1
                 elif cur_tool is not None and args:
-                    events[cur_tool]["_raw"] += args
+                    prev = events[cur_tool].get("_raw", "")
+                    if isinstance(prev, str) and isinstance(args, str):
+                        events[cur_tool]["_raw"] = prev + args
+                    else:
+                        # sglang can emit a COMPLETE dict/list arg as a fragment; never
+                        # string-concat across mixed types (TypeError). A dict/list arg
+                        # supersedes; the finalizer below reads it as the resolved object.
+                        events[cur_tool]["_raw"] = args
     for e in events:
         if e["kind"] == "tool_call":
             raw = e.pop("_raw", "")
@@ -2447,7 +2454,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             cells[s] = {
                 "kind": "cell", "case_id": f"UNIFIED.{g_num}.{g_sub}", "family": f, "sub": s,
                 "col_group": f"unified_g{g_num}", "band": _band(g_num),
-                "status": "ok", "red_on_leak": True,
+                "status": "ok", "red_on_diff": True,
                 "cmp": cmp, "facts": [], "tooltip": tooltip,
             }
         rows.append({"family": f, "model_label": f, "model_label_html": f, "section": None,
@@ -2496,10 +2503,12 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             + (f', and <strong>vLLM Rust {vrust_ver_label}</strong> (native '
                '<strong>UnifiedParser</strong> for gemma4, <strong>CombinedParser</strong> '
                'otherwise)' if vrust_live else '')
-            + '. A cell is red only when a shown parser LEAKED markup; ordering/content '
-            'divergences show their NΔ count but stay green. The native gemma4 UnifiedParser '
-            '(vLLM Rust) is the only column that reproduces the golden order on the '
-            'reasoning↔tool cases.'),
+            + '. GOLDEN is the oracle, so a cell is red when a shown parser\'s output '
+            'DIVERGES from golden — any class: leaked markup (↯), merged/reordered events, '
+            'or dropped content. A green cell means every shown parser matches golden '
+            'exactly; the NΔ count is how many shown parsers diverge. The native gemma4 '
+            'UnifiedParser (vLLM Rust) is the only column that reproduces the golden order '
+            'on the reasoning↔tool cases.'),
         "details_note_html": None,
     }
 

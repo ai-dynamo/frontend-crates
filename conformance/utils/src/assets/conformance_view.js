@@ -783,11 +783,11 @@
     if (_usesFamily) {
       td.setAttribute('data-family', cell.family || '');
     }
-    if (cell.red_on_leak) {
-      // Unified tab: the Reference is the golden oracle, which never leaks, so red
-      // keys on whether a SHOWN parser (Compare) leaked markup — not on mere delta.
-      // Ordering/content divergences still surface as the NΔ count, but stay green.
-      td.setAttribute('data-red-on-leak', '1');
+    if (cell.red_on_diff) {
+      // Unified tab: GOLDEN is the fixed oracle, so a cell is red when a SHOWN parser's
+      // output DIVERGES from golden (any class — leaked markup, merged/reordered events,
+      // dropped content), not just on a leak. Green = every shown parser matches golden.
+      td.setAttribute('data-red-on-diff', '1');
     }
     if (cell.cmp) {
       // setAttribute stores the raw JSON; getAttribute (conformance.js) returns it

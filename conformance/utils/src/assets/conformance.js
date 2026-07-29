@@ -216,16 +216,18 @@
       // Δ suffix marks the number as a count of diverging Compare-with parsers,
       // e.g. "2Δ"; "=" (all agree) and a lone leak "↯" carry no count.
       const txt = donly ? '' : (diffs === 0 ? '=' : String(diffs) + 'Δ');
-      // Color = leak only. Normally that is the Reference's leak. On the Unified tab
-      // (data-red-on-leak) the Reference is the golden oracle, which never leaks, so
-      // red keys on whether a SHOWN parser leaked markup — NOT on delta. Ordering/
-      // content divergences still show their NΔ count, but stay green.
-      // Red iff the REFERENCE parser leaks markup. Star an engine to see its own leaks;
-      // a leaking Compare-with parser does NOT red the cell (that's the compare's problem,
-      // not the reference's). Same rule on every tab.
-      const leaked = leak;
+      // Color rule. Default (every tab but Unified): red iff the REFERENCE parser leaks
+      // markup — a leaking Compare-with parser is the compare's problem, not the
+      // reference's, so star an engine to see its own leaks. On the Unified tab
+      // (data-red-on-diff) GOLDEN is the fixed oracle, so a cell is red when a SHOWN parser
+      // DIVERGES from golden in ANY class (leak, merge, order, loss); a green cell means
+      // every shown parser matches golden exactly. ↯ still flags a leak within that.
+      const redOnDiff = cell.getAttribute('data-red-on-diff') === '1';
+      const leaked = redOnDiff
+        ? (leak || avail.some(function (o) { return o.leak === 1; }))
+        : leak;
       if (marker) { marker.textContent = (leaked ? '↯' : '') + txt; }
-      const problem = leaked;
+      const problem = redOnDiff ? (diffs > 0 || leaked) : leaked;
       cell.classList.add(problem ? 'cmp-leak' : 'cmp-eq');
       if (countThis) { if (problem) { counts.problem++; } else { counts.ok++; } }
       toggleCands(cell, active, base);
