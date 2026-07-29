@@ -260,7 +260,7 @@ impl ReasoningParser for BasicReasoningParser {
                         exited_on_tool_start = true;
                     }
                     (None, None) => {
-                        // No end token — rest is reasoning (truncated).
+                        // No end token — rest is reasoning (truncated)
                         reasoning_parts.push(&text[cursor..]);
                         cursor = text.len();
                     }
