@@ -37,11 +37,13 @@ fn probe_template_raises(
     env: &Environment,
     template_name: &str,
     messages: serde_json::Value,
+    tools: &Option<serde_json::Value>,
     tok: &ProbeTokens,
 ) -> bool {
     let ctx = context! {
         messages => messages,
         add_generation_prompt => false,
+        tools => tools,
         bos_token => tok.bos,
         eos_token => tok.eos,
         unk_token => tok.unk,
@@ -60,6 +62,7 @@ fn probe_template_raises(
 fn detect_requires_system_normalization(
     env: &Environment,
     template_name: &str,
+    tools: &Option<serde_json::Value>,
     tok: &ProbeTokens,
 ) -> bool {
     let sys = |c: &str| json!({"role": "system", "content": c});
@@ -67,7 +70,8 @@ fn detect_requires_system_normalization(
     let asst = |c: &str| json!({"role": "assistant", "content": c});
 
     // A template that can't render even this isn't rejecting shape, it's broken.
-    let baseline_ok = !probe_template_raises(env, template_name, json!([sys("s"), usr("u")]), tok);
+    let baseline_ok =
+        !probe_template_raises(env, template_name, json!([sys("s"), usr("u")]), tools, tok);
     if !baseline_ok {
         return false;
     }
@@ -75,18 +79,21 @@ fn detect_requires_system_normalization(
         env,
         template_name,
         json!([sys("s0"), usr("u"), sys("s1")]),
+        tools,
         tok,
     );
     let consecutive_users = probe_template_raises(
         env,
         template_name,
         json!([sys("s"), usr("u0"), usr("u1")]),
+        tools,
         tok,
     );
     let mid_after_assistant = probe_template_raises(
         env,
         template_name,
         json!([sys("s0"), usr("u"), asst("a"), sys("s1"), usr("u2")]),
+        tools,
         tok,
     );
     nonleading_system || consecutive_users || mid_after_assistant
@@ -565,10 +572,27 @@ impl HfTokenizerConfigJsonFormatter {
             eos: config.eos_tok(),
             unk: config.unk_tok(),
         };
-        let default_requires_system_normalization =
-            detect_requires_system_normalization(&env, "default", &probe_tokens);
-        let tool_use_requires_system_normalization =
-            detect_requires_system_normalization(&env, "tool_use", &probe_tokens);
+        let default_probe_tools = Option::<serde_json::Value>::None;
+        let tool_use_probe_tools = Some(json!([{
+            "type": "function",
+            "function": {
+                "name": "probe",
+                "description": "",
+                "parameters": {"type": "object", "properties": {}}
+            }
+        }]));
+        let default_requires_system_normalization = detect_requires_system_normalization(
+            &env,
+            "default",
+            &default_probe_tools,
+            &probe_tokens,
+        );
+        let tool_use_requires_system_normalization = detect_requires_system_normalization(
+            &env,
+            "tool_use",
+            &tool_use_probe_tools,
+            &probe_tokens,
+        );
 
         Ok(HfTokenizerConfigJsonFormatter {
             env,

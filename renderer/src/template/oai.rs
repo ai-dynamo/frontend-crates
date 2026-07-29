@@ -578,16 +578,16 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
         let mut messages_for_template: serde_json::Value =
             serde_json::to_value(&messages_canonical).unwrap();
 
+        if requires_system_normalization {
+            normalize_system_messages(&mut messages_for_template);
+        }
+
         messages_for_template = serde_json::to_value(may_be_fix_msg_content(
             messages_for_template,
             self.requires_content_arrays,
             self.image_placeholder_template,
         ))
         .unwrap();
-
-        if requires_system_normalization {
-            normalize_system_messages(&mut messages_for_template);
-        }
 
         // Pre-parse JSON-string `arguments` into objects — but only for templates
         // that unconditionally `| tojson` them. Templates that branch on
@@ -731,6 +731,39 @@ mod tests {
         "{%- set ns.prev = m.role -%}",
         "{%- endfor -%}"
     );
+    // Mirrors templates that only enforce role constraints when a particular
+    // tools shape is present.
+    const DEFAULT_NONE_GATED_TMPL: &str = concat!(
+        "{%- set strict = tools is not none -%}",
+        "{%- for m in messages -%}",
+        "{%- if strict and m.role == 'system' and not loop.first -%}",
+        "{{ raise_exception('System message must be at the beginning.') }}",
+        "{%- endif -%}",
+        "<|im_start|>{{ m.role }}\n{{ m.content }}<|im_end|>\n",
+        "{%- endfor -%}"
+    );
+    const TOOL_NONEMPTY_GATED_TMPL: &str = concat!(
+        "{%- set strict = tools|length > 0 -%}",
+        "{%- for m in messages -%}",
+        "{%- if strict and m.role == 'system' and not loop.first -%}",
+        "{{ raise_exception('System message must be at the beginning.') }}",
+        "{%- endif -%}",
+        "<|im_start|>{{ m.role }}\n{{ m.content }}<|im_end|>\n",
+        "{%- endfor -%}"
+    );
+    // Ignores string content and only renders text parts from content arrays.
+    const STRICT_ARRAY_TMPL: &str = concat!(
+        "{%- for m in messages -%}",
+        "{%- if m.role == 'system' and not loop.first -%}",
+        "{{ raise_exception('System message must be at the beginning.') }}",
+        "{%- endif -%}",
+        "<|im_start|>{{ m.role }}\n",
+        "{%- if m.content is not string -%}",
+        "{%- for part in m.content -%}{{ part.text }}{%- endfor -%}",
+        "{%- endif -%}",
+        "<|im_end|>\n",
+        "{%- endfor -%}"
+    );
 
     // Claude Code first-turn shape: top-level system + a mid-array system.
     fn claude_shape() -> serde_json::Value {
@@ -790,6 +823,40 @@ mod tests {
         assert!(!f.tool_use_requires_system_normalization);
         let with_tools = render_shape_with_tools(&f, claude_shape()).unwrap();
         assert!(with_tools.contains("<|im_start|>system\nmid-conversation reminder<|im_end|>"));
+    }
+
+    #[test]
+    fn system_normalization_probe_uses_runtime_tools_shape() {
+        let f = formatter_for_templates(DEFAULT_NONE_GATED_TMPL, TOOL_NONEMPTY_GATED_TMPL);
+        assert!(!f.default_requires_system_normalization);
+        assert!(f.tool_use_requires_system_normalization);
+
+        let no_tools = render_shape(&f, claude_shape()).unwrap();
+        assert!(no_tools.contains("<|im_start|>system\nmid-conversation reminder<|im_end|>"));
+
+        let with_tools = render_shape_with_tools(&f, claude_shape()).unwrap();
+        assert_eq!(with_tools.matches("<|im_start|>system").count(), 1);
+        assert!(
+            with_tools.contains("<|im_start|>user\nhello\n\nmid-conversation reminder<|im_end|>")
+        );
+    }
+
+    #[test]
+    fn system_normalization_precedes_required_content_array_conversion() {
+        let f = formatter_for(STRICT_ARRAY_TMPL);
+        assert!(f.requires_content_arrays);
+        assert!(f.default_requires_system_normalization);
+
+        let out = render_shape(
+            &f,
+            json!([
+                {"role": "system", "content": "A"},
+                {"role": "system", "content": "B"},
+                {"role": "user", "content": "hello"},
+            ]),
+        )
+        .unwrap();
+        assert!(out.contains("A\n\nB"));
     }
 
     #[test]
