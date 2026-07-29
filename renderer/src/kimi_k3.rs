@@ -874,7 +874,7 @@ mod tests {
         request
     }
 
-    fn image_segments(formatter: &KimiK3Formatter, request: &Request) -> Vec<EncodeSegment> {
+    fn image_segments(formatter: &KimiK3Formatter, request: &Request) -> Vec<RenderedSegment> {
         formatter
             .render_prompt(request)
             .unwrap()
