@@ -2011,6 +2011,17 @@ def _plain_href_rewriter(stage_dir: str, fixture_href_root: str):
 
 _UNIFIED_LEAK_MARKERS = ("<|", "|>", "<think>", "</think>", "◁", "<channel", "channel|>")
 
+# Per-family markers whose presence in a visible payload (text/reasoning) is a leak
+# but which the shared markers above miss. gemma4's channel opener leaves `thought\n`;
+# qwen3's tool envelope has NO `<|...|>` sentinels, so a `<tool_call>...</tool_call>`
+# leaking into reasoning_content is invisible to the shared list — enumerate it
+# explicitly (kimi's tool/section markers already contain `<|`/`|>`).
+_UNIFIED_FAMILY_LEAK_MARKERS = {
+    "gemma4": ("thought\n",),
+    "qwen3": ("<tool_call>", "</tool_call>", "<function=", "</function>",
+              "<parameter=", "</parameter>"),
+}
+
 
 def _unified_classify(family: str, golden: list, got: list) -> str:
     """Classify a captured event list against the golden oracle. Python port of
@@ -2019,10 +2030,9 @@ def _unified_classify(family: str, golden: list, got: list) -> str:
     if golden == got:
         return "MATCH"
 
-    # Gemma4's reasoning channel opens with `<|channel>thought\n`; a correct parse
-    # consumes the whole opener. If the label `thought\n` survives into extracted
-    # reasoning/text, the channel marker leaked (golden never contains it).
-    markers = _UNIFIED_LEAK_MARKERS + (("thought\n",) if family == "gemma4" else ())
+    # Shared markers + any family-specific markup that leaks invisibly to them (e.g.
+    # gemma4 `thought\n`, qwen3 `<tool_call>`/`<function=`/`<parameter=`).
+    markers = _UNIFIED_LEAK_MARKERS + _UNIFIED_FAMILY_LEAK_MARKERS.get(family, ())
 
     def _leaks(evs):
         return any(e.get("kind") in ("text", "reasoning")

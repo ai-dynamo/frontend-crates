@@ -295,13 +295,21 @@ fn classify(family: &str, golden: &[Ev], got: &[Ev]) -> &'static str {
         "<channel",
         "channel|>",
     ];
-    // Gemma4's reasoning channel opens with `<|channel>thought\n`; a correct parse
-    // consumes the whole opener. If the channel label `thought\n` survives into the
-    // extracted reasoning/text, the channel marker leaked (golden never contains it).
-    let family_leak: &[&str] = if family == "gemma4" {
-        &["thought\n"]
-    } else {
-        &[]
+    // Per-family markup that leaks invisibly to MARKERS above. gemma4's channel opener
+    // leaves `thought\n`. qwen3's tool envelope has NO `<|...|>` sentinels, so a
+    // `<tool_call>...</tool_call>` leaking into reasoning_content is invisible to the
+    // shared list — enumerate it (kimi's tool/section markers already contain `<|`/`|>`).
+    let family_leak: &[&str] = match family {
+        "gemma4" => &["thought\n"],
+        "qwen3" => &[
+            "<tool_call>",
+            "</tool_call>",
+            "<function=",
+            "</function>",
+            "<parameter=",
+            "</parameter>",
+        ],
+        _ => &[],
     };
     let leaks = got.iter().any(|e| match e {
         Ev::Text { text } | Ev::Reasoning { text } => {
