@@ -1,22 +1,30 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! U2/U3 (spike) — compute the Dynamo v2 column LIVE and render the unified
-//! conformance tab to HTML.
+//! Compute the Dynamo v2 column LIVE, render the unified conformance tab, and
+//! write the capture the packaged shard is built from.
 //!
-//! Columns: GOLDEN (authored oracle) | vLLM 0.25.x unified (expected, from the
-//! golden `expect.vllm` — live capture is U1) | Dynamo v2 (v1 reasoning + v2
-//! tool, composed and stitched to how Dynamo serves today — computed this run).
+//! Columns: GOLDEN (authored oracle) | vLLM (captured) | Dynamo v2.
 //!
-//! Dynamo is the real "before" state: the split parses ALL reasoning first, so
-//! reasoning interleaved with tool calls loses order. Each diverging Dynamo cell
-//! carries a TODO in its hover popup. Output: conformance/unified/CONFORMANCE_unified.html
+//! The Dynamo column is a PER-FAMILY MIXTURE, the same shape as vLLM Rust's: the
+//! native UnifiedParser where one exists (qwen3 today), and the v1-reasoning +
+//! v2-tool split everywhere else. The split is the "before" state — it parses ALL
+//! reasoning first, so reasoning interleaved with tool calls loses its position.
+//!
+//! Output: `conformance/CONFORMANCE_unified.html` (standalone preview) and
+//! `conformance/unified/unified_results.yaml`. The exploder and packager turn that
+//! feed into the committed `dynamo_v2-<ver>` shard, which is what the
+//! CONFORMANCE_v2.html tab actually reads — the tab never runs these parsers. The
+//! `committed_dynamo_capture_matches_the_live_parsers` test below fails if that
+//! shard drifts from the parsers.
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use dynamo_parsers::{ReasoningParser, ReasoningParserType};
-use dynamo_parsers_v2::{Tool, create_tool_parser_for_family};
+use dynamo_parsers_v2::{
+    Tool, assemble, create_tool_parser_for_family, create_unified_parser_for_family,
+};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -138,11 +146,59 @@ fn feed(
     }
 }
 
-/// Compute the REAL Dynamo v2 unified event list for one input, exactly how
-/// Dynamo serves today: the v1 reasoning parser strips reasoning over the whole
-/// stream into ONE assembled field (the merge), then the v2 tool parser streams
-/// the leftover content (char-by-char) preserving text/call order.
+impl From<dynamo_parsers_v2::UnifiedEvent> for Ev {
+    fn from(e: dynamo_parsers_v2::UnifiedEvent) -> Self {
+        match e {
+            dynamo_parsers_v2::UnifiedEvent::Reasoning { text } => Ev::Reasoning { text },
+            dynamo_parsers_v2::UnifiedEvent::Text { text } => Ev::Text { text },
+            dynamo_parsers_v2::UnifiedEvent::ToolCall { name, arguments } => {
+                Ev::ToolCall { name, arguments }
+            }
+        }
+    }
+}
+
+fn unified_delta_json(d: &dynamo_parsers_v2::UnifiedDelta) -> Value {
+    match d {
+        dynamo_parsers_v2::UnifiedDelta::Reasoning { text } => {
+            json!({"kind": "reasoning", "text": text})
+        }
+        dynamo_parsers_v2::UnifiedDelta::Text { text } => json!({"kind": "text", "text": text}),
+        dynamo_parsers_v2::UnifiedDelta::ToolCall(c) => {
+            json!({"kind": "tool_call", "name": c.name, "arguments": c.arguments})
+        }
+    }
+}
+
+/// Compute the Dynamo v2 unified event list for one input.
+///
+/// PER-FAMILY MIXTURE, the same shape as vLLM Rust's column: a family that has a
+/// unified parser is parsed by it — one state machine per stream owning
+/// reasoning + content + tool calls. Every other family still goes through the
+/// SPLIT Dynamo serves today: the v1 reasoning parser strips reasoning over the
+/// whole stream into ONE assembled field (the merge), then the v2 tool parser
+/// streams the leftover content (char-by-char) preserving text/call order.
+///
+/// Both paths are driven from the SAME chunking as `dynamo_chunks`, so the
+/// assembled row and the per-chunk rows in the popup describe one run.
 fn dynamo_events(family: &str, input: &str) -> Vec<Ev> {
+    if let Ok(mut parser) = create_unified_parser_for_family(family, &tools()) {
+        let mut deltas = Vec::new();
+        for chunk in chunk_input(input) {
+            deltas.extend(
+                parser
+                    .push(&chunk)
+                    .unwrap_or_else(|e| panic!("unified push `{family}`: {e}")),
+            );
+        }
+        deltas.extend(
+            parser
+                .finish()
+                .unwrap_or_else(|e| panic!("unified finish `{family}`: {e}")),
+        );
+        return assemble(&deltas).into_iter().map(Ev::from).collect();
+    }
+
     let (reasoning_name, tool_family) = parsers_for(family);
 
     let mut rp = ReasoningParserType::get_reasoning_parser_from_name(reasoning_name);
@@ -239,6 +295,31 @@ fn tool_deltas(res: &dynamo_parsers_v2::ToolParseResult, out: &mut Vec<Value>) {
 /// real per-chunk emitted deltas (v1 reasoning streaming incremental -> v2 tool
 /// streaming push on the leftover content).
 fn dynamo_chunks(family: &str, input: &str) -> Vec<ChunkRow> {
+    // Unified families: ONE parser, so a chunk's deltas are simply what it emitted.
+    if let Ok(mut parser) = create_unified_parser_for_family(family, &tools()) {
+        let mut rows = Vec::new();
+        for chunk in chunk_input(input) {
+            let deltas = parser.push(&chunk).unwrap_or_default();
+            rows.push(ChunkRow {
+                delta_text: chunk,
+                deltas: deltas.iter().map(unified_delta_json).collect(),
+            });
+        }
+        let tail: Vec<Value> = parser
+            .finish()
+            .unwrap_or_default()
+            .iter()
+            .map(unified_delta_json)
+            .collect();
+        if !tail.is_empty() {
+            rows.push(ChunkRow {
+                delta_text: "‹finish›".to_string(),
+                deltas: tail,
+            });
+        }
+        return rows;
+    }
+
     let (reasoning_name, tool_family) = parsers_for(family);
     let mut rp = ReasoningParserType::get_reasoning_parser_from_name(reasoning_name);
     let mut tp = create_tool_parser_for_family(tool_family, &tools())
@@ -624,6 +705,157 @@ td.c:hover .tip,td.gold:hover .tip{{display:block}}
         dynamo_red >= 3,
         "expected the split to fail the interleaving cases (got {dynamo_red})"
     );
+}
+
+/// One committed `dynamo_v2-<ver>/<family>/<key>.yaml` capture.
+#[derive(Deserialize)]
+struct CaptureDoc {
+    family: String,
+    cases: BTreeMap<String, CaptureCase>,
+}
+
+#[derive(Deserialize)]
+struct CaptureCase {
+    #[serde(default)]
+    assembled: Vec<Ev>,
+    #[serde(default)]
+    chunks: Vec<CaptureChunk>,
+}
+
+#[derive(Deserialize)]
+struct CaptureChunk {
+    #[serde(default)]
+    expected: Vec<Value>,
+}
+
+/// The scenario slug for each committed case key, read from the `inputs/` shard
+/// (the numbered `UNIFIED.<group>.<sub>` key lives only in the Python taxonomy).
+#[derive(Deserialize)]
+struct InputDoc {
+    family: String,
+    cases: BTreeMap<String, InputCase>,
+}
+
+#[derive(Deserialize)]
+struct InputCase {
+    #[serde(default)]
+    scenario: String,
+    #[serde(default)]
+    input: String,
+}
+
+/// GUARD: the COMMITTED Dynamo capture must equal what the parsers produce NOW.
+///
+/// The Unified tab is rendered by Python from the committed shard — it never runs
+/// the Rust parsers. So changing a parser without re-capturing leaves the page
+/// showing the OLD behavior while every Rust test still passes, and the two
+/// disagree silently. (That is exactly what happened when the unified parser
+/// landed: `unified_parity` was 33/33 green while the page still drew the split.)
+///
+/// This closes that gap: touch a parser, and the capture must be regenerated.
+#[test]
+fn committed_dynamo_capture_matches_the_live_parsers() {
+    let root = common::ensure_fixtures().join("unified");
+    if !root.join("inputs").is_dir() {
+        panic!(
+            "no committed unified fixtures under {} — extract them first",
+            root.display()
+        );
+    }
+    let capture_dir = std::fs::read_dir(&root)
+        .unwrap()
+        .filter_map(|e| e.ok().map(|e| e.path()))
+        .find(|p| {
+            p.is_dir()
+                && p.file_name()
+                    .and_then(|n| n.to_str())
+                    .is_some_and(|n| n.starts_with("dynamo_v2-"))
+        })
+        .expect("no committed dynamo_v2-<ver> capture dir");
+
+    // key -> (family, scenario, input), from the inputs shard.
+    let mut meta: BTreeMap<(String, String), (String, String)> = BTreeMap::new();
+    for entry in glob_yaml(&root.join("inputs")) {
+        let doc: InputDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
+            .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
+        for (key, case) in doc.cases {
+            meta.insert((doc.family.clone(), key), (case.scenario, case.input));
+        }
+    }
+
+    let mut stale: Vec<String> = Vec::new();
+    let mut checked = 0usize;
+    for entry in glob_yaml(&capture_dir) {
+        let doc: CaptureDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
+            .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
+        for (key, committed) in doc.cases {
+            let Some((scenario, input)) = meta.get(&(doc.family.clone(), key.clone())) else {
+                continue;
+            };
+            checked += 1;
+            let id = format!("UNIFIED.{scenario}.{}", doc.family);
+
+            let live_assembled = dynamo_events(&doc.family, input);
+            if live_assembled != committed.assembled {
+                stale.push(format!(
+                    "{id} [{key}] assembled\n    committed: {}\n         live: {}",
+                    committed
+                        .assembled
+                        .iter()
+                        .map(Ev::render)
+                        .collect::<Vec<_>>()
+                        .join("  |  "),
+                    live_assembled
+                        .iter()
+                        .map(Ev::render)
+                        .collect::<Vec<_>>()
+                        .join("  |  "),
+                ));
+                continue;
+            }
+            // The page assembles the Dynamo column from these per-chunk deltas, so
+            // they have to be current too — not just the assembled list.
+            let live_chunks: Vec<Vec<Value>> = dynamo_chunks(&doc.family, input)
+                .into_iter()
+                .map(|r| r.deltas)
+                .collect();
+            let committed_chunks: Vec<Vec<Value>> =
+                committed.chunks.into_iter().map(|c| c.expected).collect();
+            if live_chunks != committed_chunks {
+                stale.push(format!("{id} [{key}] per-chunk deltas differ"));
+            }
+        }
+    }
+
+    assert!(checked > 0, "no committed capture cases were compared");
+    assert!(
+        stale.is_empty(),
+        "{} of {checked} committed Dynamo capture cases are STALE — the HTML tab will \
+         show the old parser behavior. Regenerate:\n  \
+         cargo test -p dynamo-conformance-fixtures-v2 --test unified_render\n  \
+         python3 conformance/utils/src/explode_unified_fixtures.py\n  \
+         python3 conformance/utils/src/package_fixtures.py\n\n{}",
+        stale.len(),
+        stale.join("\n\n"),
+    );
+}
+
+fn glob_yaml(dir: &std::path::Path) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    for fam in std::fs::read_dir(dir).into_iter().flatten().flatten() {
+        let p = fam.path();
+        if !p.is_dir() {
+            continue;
+        }
+        for f in std::fs::read_dir(&p).into_iter().flatten().flatten() {
+            let fp = f.path();
+            if fp.extension().and_then(|e| e.to_str()) == Some("yaml") {
+                out.push(fp);
+            }
+        }
+    }
+    out.sort();
+    out
 }
 
 fn label(v: &str) -> String {
