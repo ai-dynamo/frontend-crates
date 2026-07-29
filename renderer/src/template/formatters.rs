@@ -23,6 +23,67 @@ fn render_default_probe(env: &Environment, messages: serde_json::Value) -> Strin
         .unwrap_or_default()
 }
 
+/// Special tokens supplied to a probe render, so a template that appends
+/// `eos_token`/`bos_token` doesn't raise for a missing-token reason and get
+/// mistaken for a message-shape rejection.
+struct ProbeTokens {
+    bos: Option<String>,
+    eos: Option<String>,
+    unk: Option<String>,
+}
+
+/// Renders the `default` template and returns whether it raised. Unlike
+/// [`render_default_probe`] (which swallows errors), this surfaces the error so
+/// a `raise_exception` in the template — the signal that it rejects a given
+/// message shape — is observable at load time. bos/eos/unk are supplied so only
+/// message-shape raises (not missing-token raises) are detected.
+fn probe_default_raises(env: &Environment, messages: serde_json::Value, tok: &ProbeTokens) -> bool {
+    let ctx = context! {
+        messages => messages,
+        add_generation_prompt => false,
+        bos_token => tok.bos,
+        eos_token => tok.eos,
+        unk_token => tok.unk,
+    };
+    match env.get_template("default") {
+        Ok(t) => t.render(&ctx).is_err(),
+        // No `default` template compiled: nothing to normalize against.
+        Err(_) => false,
+    }
+}
+
+/// Detects at load time whether this template rejects the message streams agent
+/// clients produce, so `render` can conditionally normalize only when needed.
+///
+/// Different strict families fail on different shapes: Qwen3.5 rejects a
+/// non-leading `system` but accepts consecutive users; Gemma-3 accepts a
+/// non-leading `system` right after the first user yet rejects consecutive
+/// users and a `system` after an assistant turn; Mistral rejects both. So we
+/// probe several shapes and flag the template if ANY that a normalized stream
+/// would fix currently raises — while a plain `[system, user]` baseline still
+/// renders, to avoid flagging a genuinely broken template.
+fn detect_requires_system_normalization(env: &Environment, tok: &ProbeTokens) -> bool {
+    let sys = |c: &str| json!({"role": "system", "content": c});
+    let usr = |c: &str| json!({"role": "user", "content": c});
+    let asst = |c: &str| json!({"role": "assistant", "content": c});
+
+    let baseline_ok = !probe_default_raises(env, json!([sys("s"), usr("u")]), tok);
+    if !baseline_ok {
+        return false;
+    }
+    // Non-leading system, consecutive users, and a system after an assistant
+    // turn: the union catches strict-leading (Qwen3.5), alternation (Gemma,
+    // Mistral) and their combination.
+    let nonleading_system = probe_default_raises(env, json!([sys("s0"), usr("u"), sys("s1")]), tok);
+    let consecutive_users = probe_default_raises(env, json!([sys("s"), usr("u0"), usr("u1")]), tok);
+    let mid_after_assistant = probe_default_raises(
+        env,
+        json!([sys("s0"), usr("u"), asst("a"), sys("s1"), usr("u2")]),
+        tok,
+    );
+    nonleading_system || consecutive_users || mid_after_assistant
+}
+
 /// Detects if a template requires content as arrays (multimodal) vs strings (text-only).
 /// Returns true if the template only works with array format.
 fn detect_content_array_usage(env: &Environment) -> bool {
@@ -491,6 +552,19 @@ impl HfTokenizerConfigJsonFormatter {
         let tool_use_template_handles_tool_calls_arguments_string =
             template_handles_args_string("tool_use");
 
+        // Detect whether this template rejects agent-client message streams
+        // (non-leading system / consecutive users). Only when it does will
+        // `render` normalize; permissive templates render untouched. Supply the
+        // model's special tokens so a missing-token raise isn't misread as a
+        // message-shape rejection.
+        let probe_tokens = ProbeTokens {
+            bos: config.bos_tok(),
+            eos: config.eos_tok(),
+            unk: config.unk_tok(),
+        };
+        let requires_system_normalization =
+            detect_requires_system_normalization(&env, &probe_tokens);
+
         Ok(HfTokenizerConfigJsonFormatter {
             env,
             config,
@@ -503,6 +577,7 @@ impl HfTokenizerConfigJsonFormatter {
             image_placeholder_template,
             default_template_handles_tool_calls_arguments_string,
             tool_use_template_handles_tool_calls_arguments_string,
+            requires_system_normalization,
         })
     }
 }

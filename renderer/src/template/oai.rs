@@ -5,6 +5,7 @@ use super::*;
 
 use crate::{OAIChatLikeRequest, TextInput};
 use minijinja::{context, value::Value};
+use serde_json::json;
 use std::result::Result::Ok;
 
 /// Fix a tool schema that is missing `type`/`properties`. `pub` so consumers
@@ -432,6 +433,76 @@ impl OAIChatLikeRequest for dynamo_protocols::types::CreateChatCompletionRequest
     }
 }
 
+/// Text of a message `content`: a string verbatim, or the `text` parts of a
+/// content array joined with `\n`. Used when normalizing system messages, whose
+/// content agent clients send as either shape.
+fn message_content_text(content: &serde_json::Value) -> String {
+    match content {
+        serde_json::Value::String(s) => s.clone(),
+        serde_json::Value::Array(parts) => parts
+            .iter()
+            .filter_map(|p| p.get("text").and_then(|t| t.as_str()))
+            .collect::<Vec<_>>()
+            .join("\n"),
+        _ => String::new(),
+    }
+}
+
+/// Normalize system messages so a strict chat template accepts an agent-client
+/// stream. Called from `render` only when the template was flagged at load time
+/// (`requires_system_normalization`). Three steps: merge a leading run of
+/// system messages into one; demote any remaining, non-leading system message
+/// to `user` in place (kept in place rather than folded to the front so a
+/// toggling mid-conversation reminder doesn't invalidate the whole KV prefix);
+/// coalesce the consecutive user turns this can produce so alternation-enforcing
+/// templates (Gemma, Mistral) still render.
+fn normalize_system_messages(messages: &mut serde_json::Value) {
+    let serde_json::Value::Array(list) = messages else {
+        return;
+    };
+    let role_is =
+        |m: &serde_json::Value, r: &str| m.get("role").and_then(|v| v.as_str()) == Some(r);
+    let content_of = |m: &serde_json::Value| {
+        message_content_text(m.get("content").unwrap_or(&serde_json::Value::Null))
+    };
+
+    // 1. Merge a leading run of system messages into one.
+    let leading = list.iter().take_while(|m| role_is(m, "system")).count();
+    if leading > 1 {
+        let combined = list[..leading]
+            .iter()
+            .map(content_of)
+            .collect::<Vec<_>>()
+            .join("\n\n");
+        list.splice(
+            0..leading,
+            std::iter::once(json!({"role": "system", "content": combined})),
+        );
+    }
+
+    // 2. Demote any remaining, non-leading system message to `user` in place.
+    let leading = list.iter().take_while(|m| role_is(m, "system")).count();
+    for m in list.iter_mut().skip(leading) {
+        if role_is(m, "system") {
+            *m = json!({"role": "user", "content": content_of(m)});
+        }
+    }
+
+    // 3. Coalesce consecutive user turns into one.
+    let mut coalesced: Vec<serde_json::Value> = Vec::with_capacity(list.len());
+    for m in list.drain(..) {
+        if role_is(&m, "user") && coalesced.last().is_some_and(|p| role_is(p, "user")) {
+            let cur_text = content_of(&m);
+            let prev = coalesced.last_mut().unwrap();
+            let merged = format!("{}\n\n{}", content_of(prev), cur_text);
+            *prev = json!({"role": "user", "content": merged});
+        } else {
+            coalesced.push(m);
+        }
+    }
+    *list = coalesced;
+}
+
 impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
     fn supports_add_generation_prompt(&self) -> bool {
         self.supports_add_generation_prompt
@@ -471,6 +542,13 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
             self.image_placeholder_template,
         ))
         .unwrap();
+
+        // Normalize system messages for templates that reject agent-client
+        // streams (detected once at load time). No-op for the ~76% of templates
+        // that accept a non-leading system, so their output is unchanged.
+        if self.requires_system_normalization {
+            normalize_system_messages(&mut messages_for_template);
+        }
 
         // Pick the concrete template first so the normalization opt-out can be
         // template- and field-specific: only the chosen template's
@@ -546,6 +624,244 @@ mod tests {
     // default `OAIChatLikeRequest` impl above; Dynamo's `Nv*` wrapper lives in lib/llm.
     use dynamo_protocols::types::CreateChatCompletionRequest as NvCreateChatCompletionRequest;
     use minijinja::{Environment, context};
+
+    // --- adaptive system-message normalization (#11762) --------------------
+
+    use super::super::tokcfg::ChatTemplate as SysChatTemplate;
+    use super::super::{
+        ContextMixins as SysMixins, HfTokenizerConfigJsonFormatter as SysFormatter,
+    };
+
+    fn formatter_for(template: &str) -> SysFormatter {
+        // Supply dummy special tokens so real templates that reference
+        // bos/eos/unk (e.g. Zephyr's `content + eos_token`) render in tests.
+        let ct: SysChatTemplate = serde_json::from_value(json!({
+            "chat_template": template,
+            "bos_token": "<s>",
+            "eos_token": "</s>",
+            "unk_token": "<unk>",
+        }))
+        .unwrap();
+        SysFormatter::new(ct, SysMixins::new(&[])).unwrap()
+    }
+
+    fn try_formatter_for(template: &str) -> Option<SysFormatter> {
+        let ct: SysChatTemplate = serde_json::from_value(json!({
+            "chat_template": template,
+            "bos_token": "<s>",
+            "eos_token": "</s>",
+            "unk_token": "<unk>",
+        }))
+        .ok()?;
+        SysFormatter::new(ct, SysMixins::new(&[])).ok()
+    }
+
+    fn render_shape(f: &SysFormatter, messages: serde_json::Value) -> Result<String> {
+        let req: NvCreateChatCompletionRequest =
+            serde_json::from_value(json!({ "model": "test", "messages": messages })).unwrap();
+        f.render(&req)
+    }
+
+    const PERMISSIVE_TMPL: &str = concat!(
+        "{%- for m in messages -%}",
+        "<|im_start|>{{ m.role }}\n{{ m.content }}<|im_end|>\n",
+        "{%- endfor -%}"
+    );
+    // Rejects a non-leading system (Qwen3.5 shape); accepts consecutive users.
+    const STRICT_LEADING_TMPL: &str = concat!(
+        "{%- for m in messages -%}",
+        "{%- if m.role == 'system' and not loop.first -%}",
+        "{{ raise_exception('System message must be at the beginning.') }}",
+        "{%- endif -%}",
+        "<|im_start|>{{ m.role }}\n{{ m.content }}<|im_end|>\n",
+        "{%- endfor -%}"
+    );
+    // Rejects consecutive user turns (Gemma/Mistral shape).
+    const ALTERNATION_TMPL: &str = concat!(
+        "{%- set ns = namespace(prev='') -%}",
+        "{%- for m in messages -%}",
+        "{%- if m.role == 'user' and ns.prev == 'user' -%}",
+        "{{ raise_exception('Conversation roles must alternate.') }}",
+        "{%- endif -%}",
+        "<|im_start|>{{ m.role }}\n{{ m.content }}<|im_end|>\n",
+        "{%- set ns.prev = m.role -%}",
+        "{%- endfor -%}"
+    );
+
+    // Claude Code first-turn shape: top-level system + a mid-array system.
+    fn claude_shape() -> serde_json::Value {
+        json!([
+            {"role": "system", "content": "You are Claude Code."},
+            {"role": "user", "content": "hello"},
+            {"role": "system", "content": "mid-conversation reminder"},
+        ])
+    }
+
+    #[test]
+    fn permissive_template_is_not_flagged_and_renders_untouched() {
+        let f = formatter_for(PERMISSIVE_TMPL);
+        assert!(!f.requires_system_normalization);
+        // The mid system survives verbatim as a `system` turn (no rewrite).
+        let out = render_shape(&f, claude_shape()).unwrap();
+        assert!(out.contains("<|im_start|>system\nmid-conversation reminder<|im_end|>"));
+    }
+
+    #[test]
+    fn strict_leading_template_is_flagged_and_demotes_mid_system() {
+        let f = formatter_for(STRICT_LEADING_TMPL);
+        assert!(f.requires_system_normalization);
+        // Was a 500 before; now renders, mid system demoted to a user turn.
+        let out = render_shape(&f, claude_shape()).unwrap();
+        assert!(out.contains("<|im_start|>user\nhello\n\nmid-conversation reminder<|im_end|>"));
+        // Exactly one leading system turn survives.
+        assert_eq!(out.matches("<|im_start|>system").count(), 1);
+    }
+
+    #[test]
+    fn alternation_template_is_flagged_and_coalesces_users() {
+        let f = formatter_for(ALTERNATION_TMPL);
+        assert!(f.requires_system_normalization);
+        // Demotion would create [user, user]; coalescing keeps it valid.
+        let out = render_shape(&f, claude_shape()).unwrap();
+        assert_eq!(out.matches("<|im_start|>user").count(), 1);
+    }
+
+    #[test]
+    fn normalize_merges_leading_run_and_coalesces() {
+        let mut m = json!([
+            {"role": "system", "content": "A"},
+            {"role": "system", "content": "B"},
+            {"role": "user", "content": "hi"},
+            {"role": "system", "content": "reminder"},
+        ]);
+        normalize_system_messages(&mut m);
+        assert_eq!(
+            m,
+            json!([
+                {"role": "system", "content": "A\n\nB"},
+                {"role": "user", "content": "hi\n\nreminder"},
+            ])
+        );
+    }
+
+    #[test]
+    fn normalize_flattens_array_system_content() {
+        let mut m = json!([
+            {"role": "user", "content": "hi"},
+            {"role": "system", "content": [{"type": "text", "text": "one"},
+                                           {"type": "text", "text": "two"}]},
+        ]);
+        normalize_system_messages(&mut m);
+        assert_eq!(m, json!([{"role": "user", "content": "hi\n\none\ntwo"}]));
+    }
+
+    /// Sufficiency + correctness audit of the shipped probe + normalization
+    /// against a large corpus of REAL model chat templates. Point
+    /// TEMPLATE_CORPUS at a dir of `<name>.jinja` files + `manifest.json`
+    /// mapping each to `{model}` (see experiments/system-probe).
+    ///
+    /// For every template and every realistic agent-client message shape, it
+    /// calls the *shipped* `render()` (which runs the load-time probe and, only
+    /// when flagged, the normalization) and requires a successful render. A
+    /// failure means one of two real defects: flag=false but a raw agent shape
+    /// raises (probe FALSE NEGATIVE), or flag=true but a normalized shape raises
+    /// (normalization INSUFFICIENT). Either way the audit prints the offending
+    /// (model, shape, flag) and fails.
+    ///
+    /// TEMPLATE_CORPUS=.../experiments/system-probe/templates_big
+    ///   cargo test -p dynamo-renderer adaptive_system_corpus_audit -- --ignored --nocapture
+    #[test]
+    #[ignore]
+    fn adaptive_system_corpus_audit() {
+        let dir =
+            std::env::var("TEMPLATE_CORPUS").expect("set TEMPLATE_CORPUS to the templates dir");
+        let manifest: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(format!("{dir}/manifest.json")).unwrap())
+                .unwrap();
+
+        // Realistic agent-client shapes (Claude Code / Codex): non-leading
+        // system in various positions, a toggling tail reminder, consecutive
+        // users, and double-leading systems. Tool-call shapes are covered by
+        // the hermetic tests (they need a matching `tools` payload per family).
+        let sys = |c: &str| json!({"role": "system", "content": c});
+        let usr = |c: &str| json!({"role": "user", "content": c});
+        let asst = |c: &str| json!({"role": "assistant", "content": c});
+        let shapes: Vec<(&str, serde_json::Value)> = vec![
+            ("turn1", json!([sys("s"), usr("u"), sys("mid")])),
+            (
+                "multiturn",
+                json!([sys("s"), usr("u"), sys("mid"), asst("a"), usr("u2")]),
+            ),
+            (
+                "mid_after_asst",
+                json!([sys("s"), usr("u"), asst("a"), sys("mid"), usr("u2")]),
+            ),
+            ("double_leading", json!([sys("s0"), sys("s1"), usr("u")])),
+            ("consec_user", json!([sys("s"), usr("u0"), usr("u1")])),
+            (
+                "tail_reminder",
+                json!([
+                    sys("s"),
+                    usr("u"),
+                    asst("a"),
+                    usr("u2"),
+                    sys("mid"),
+                    usr("u3")
+                ]),
+            ),
+            ("leading_only_baseline", json!([sys("s"), usr("u")])),
+        ];
+
+        let mut total = 0usize;
+        let mut flagged = 0usize;
+        let mut failures: Vec<String> = Vec::new();
+        for (file, meta) in manifest.as_object().unwrap() {
+            let tmpl = std::fs::read_to_string(format!("{dir}/{file}.jinja")).unwrap();
+            let model = meta["model"].as_str().unwrap_or(file);
+            // A few templates in the wild don't compile under minijinja for
+            // reasons unrelated to this change (custom tags, etc.); skip those
+            // so the audit measures system-normalization sufficiency only.
+            let f = match try_formatter_for(&tmpl) {
+                Some(f) => f,
+                None => {
+                    eprintln!("[skip-compile] {model}");
+                    continue;
+                }
+            };
+            // Templates that can't render a plain `[system, user]` baseline in
+            // this text-only harness (e.g. vision models needing image inputs)
+            // are out of scope: the probe's baseline guard leaves them
+            // unflagged, and their render failure is unrelated to system
+            // normalization. Skip so the audit measures normalization only.
+            if render_shape(&f, json!([sys("s"), usr("u")])).is_err() {
+                eprintln!("[skip-baseline] {model}");
+                continue;
+            }
+            total += 1;
+            let flag = f.requires_system_normalization;
+            if flag {
+                flagged += 1;
+            }
+            for (name, shape) in &shapes {
+                if render_shape(&f, shape.clone()).is_err() {
+                    failures.push(format!("{model} | shape={name} | flag={flag}"));
+                }
+            }
+            eprintln!("[ok] flag={flag} {model}");
+        }
+        eprintln!(
+            "\naudited {total} templates ({flagged} flagged for normalization); {} shape failures",
+            failures.len()
+        );
+        for f in &failures {
+            eprintln!("  FAIL {f}");
+        }
+        assert!(
+            failures.is_empty(),
+            "{} template/shape combinations did not render (probe insufficient or normalization insufficient)",
+            failures.len()
+        );
+    }
 
     /// End-to-end guard for the minijinja stack-overflow fix, exercised through
     /// Dynamo's real chat-template render path. A template that accumulates

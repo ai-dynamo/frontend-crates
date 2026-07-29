@@ -186,6 +186,15 @@ struct HfTokenizerConfigJsonFormatter {
     /// True if the `tool_use` template branches on `tool_call.arguments is string`.
     /// See `default_template_handles_tool_calls_arguments_string` for rationale.
     tool_use_template_handles_tool_calls_arguments_string: bool,
+    /// True if the chat template rejects the message streams that agent clients
+    /// (e.g. Claude Code on `/v1/messages`) produce: a non-leading `system`
+    /// turn, or the consecutive `user` turns an in-place demotion creates.
+    /// Detected once at load time by probing the compiled template. When true,
+    /// `render` normalizes system messages (merge leading run, demote
+    /// non-leading system to `user`, coalesce consecutive users) so the stream
+    /// renders; when false the messages reach the template untouched, so the
+    /// ~76% of templates that accept these streams keep byte-identical output.
+    requires_system_normalization: bool,
 }
 
 // /// OpenAI Standard Prompt Formatter
