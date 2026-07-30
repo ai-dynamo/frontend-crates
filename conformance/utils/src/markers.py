@@ -364,7 +364,7 @@ def _norm_calls(calls: list) -> list[tuple]:
 # --- Stream-tab comparison (TC stream v2 + batch-on-stream), two dimensions per cell:
 #   COLOR (data-status): each engine's STREAM parse vs its OWN BATCH parse — green if
 #     the stream reconstructs the batch result, red if it diverges (mirrors the
-#     `parity_toolcalling_batch_via_stream` Rust test).
+#     `conformance_toolcalling_batch_via_stream` Rust test).
 #   MARKER (Conformance toggle): each engine's output vs the OTHER engines' outputs —
 #     `=` when the available streams agree, else the differing engines' letters with a
 #     two-letter suffix. The suffix is implementation language (`r` Rust, `p` Python)

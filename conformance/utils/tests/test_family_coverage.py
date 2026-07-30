@@ -30,7 +30,7 @@ if str(UTILS) not in sys.path:
 
 import check_family_coverage as cfc  # noqa: E402
 import markers as markers_mod  # noqa: E402
-from tests.parity import markup  # noqa: E402
+from tables import markup  # noqa: E402
 
 
 def _ensure_fixtures() -> Path:

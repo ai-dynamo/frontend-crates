@@ -9,7 +9,7 @@ import json
 from typing import Any
 
 from dynamo._core import parse_reasoning_batch, parse_reasoning_stream
-from tests.parity.common import ReasoningResult
+from ..common import ReasoningResult
 
 
 def parse(

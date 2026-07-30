@@ -15,7 +15,7 @@ crosses the language barrier two ways:
                    capture pattern from dynamo PR #10296: the worker writes results
                    to a file because engine import spews to stdout.
 
-Each case is compared with ``tests.parity.common.canonical``, the same contract
+Each case is compared with ``tables.common.canonical``, the same contract
 the dynamo M2 harness and the Rust conformance crate use. Reports the live engine
 version and warns when it differs from the version dynamo pinned (the fixtures'
 ``expected.<impl>`` columns were captured against that pin — a mismatch makes
@@ -39,10 +39,10 @@ from pathlib import Path
 
 import yaml
 
-from tests.parity.common import ParseResult, canonical
+from tables.common import ParseResult, canonical
 
 PH = Path(__file__).resolve().parent
-PKG = PH.parent / "tests" / "parity"
+PKG = PH / "tables"
 STUB = PH / "pyproject.stub.toml"
 from impls import FIXTURE_IMPL_ALIASES  # noqa: E402  (identity table; see impls.py)
 
@@ -54,7 +54,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--impl", required=True)
 ap.add_argument("--out", required=True)
 a = ap.parse_args()
-mod = importlib.import_module(f"tests.parity.toolcalling.{a.impl}")
+mod = importlib.import_module(f"tables.toolcalling.{a.impl}")
 with open(a.out, "w", encoding="utf-8") as f:
     for line in sys.stdin:
         line = line.strip()
@@ -129,7 +129,7 @@ def _request(c: dict) -> dict:
 def run_pip(impl: str, cases: list[dict]) -> dict[str, dict]:
     """Run the adapter in-process. The adapters return ParseResult(error=...) for
     bad input rather than raising, so no broad except is needed here."""
-    mod = importlib.import_module(f"tests.parity.toolcalling.{impl}")
+    mod = importlib.import_module(f"tables.toolcalling.{impl}")
     results: dict[str, dict] = {}
     for c in cases:
         if c["mode"] == "stream":
@@ -142,17 +142,16 @@ def run_pip(impl: str, cases: list[dict]) -> dict[str, dict]:
 
 def run_container(impl: str, container: str, cases: list[dict]) -> dict[str, dict]:
     """Ship the adapter + a worker into ``container`` and run all cases there."""
-    dest = "/tmp/parity_validate"
+    dest = "/tmp/conformance_validate"
     bundle = {
-        "tests/__init__.py": PKG.parent / "__init__.py",
-        "tests/parity/__init__.py": PKG / "__init__.py",
-        "tests/parity/common.py": PKG / "common.py",
-        "tests/parity/toolcalling/__init__.py": PKG / "toolcalling" / "__init__.py",
-        f"tests/parity/toolcalling/{impl}.py": PKG / "toolcalling" / f"{impl}.py",
+        "tables/__init__.py": PKG / "__init__.py",
+        "tables/common.py": PKG / "common.py",
+        "tables/toolcalling/__init__.py": PKG / "toolcalling" / "__init__.py",
+        f"tables/toolcalling/{impl}.py": PKG / "toolcalling" / f"{impl}.py",
     }
     subprocess.run(
         ["docker", "exec", container, "bash", "-lc",
-         f"rm -rf {dest} && mkdir -p {dest}/tests/parity/toolcalling"],
+         f"rm -rf {dest} && mkdir -p {dest}/tables/toolcalling"],
         check=True,
     )
     for rel, src in bundle.items():

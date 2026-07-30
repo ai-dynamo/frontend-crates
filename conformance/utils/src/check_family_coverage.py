@@ -21,7 +21,7 @@ Checks, per family:
   * every registry family declares its grammar tokens in the `markers:` section
     of parser_families.yaml, each declared token is matched by the leak detector
     (markers._TOOL_CALL_MARKUP_RE) and renders non-orphan in the popup colorizer
-    (tests.parity.markup) — the two registries nobody knew existed in PR #120.
+    (tables.markup) — the two registries nobody knew existed in PR #120.
 
 Reasoning suites are checked when the family has a reasoning fixtures dir, or
 always with --expect-reasoning (use when the PR adds a reasoning parser).
@@ -41,10 +41,10 @@ import yaml
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-sys.path.insert(0, str(HERE.parents[0]))  # conformance/utils, for tests.parity.markup
+# HERE (conformance/utils/src) is on sys.path above, which is where tables/ lives.
 
 import markers as markers_mod  # noqa: E402
-from tests.parity import markup  # noqa: E402
+from tables import markup  # noqa: E402
 
 TAXONOMY_PATH = HERE.parents[1] / "case-taxonomy.yaml"
 REGISTRY_PATH = HERE / "parser_families.yaml"
@@ -264,14 +264,14 @@ def check_markers(report: Report, registry: dict, family: str) -> None:
         if "tt-orphan" in html:
             report.fail(
                 f"{family} markers: pair {open_tok!r}/{close_tok!r} renders as tt-orphan in"
-                " the popup colorizer — register/classify it in tests/parity/markup.py"
+                " the popup colorizer — register/classify it in src/tables/markup.py"
             )
     for token in singletons:
         html = markup.colorize_markup(str(token), family=family)
         if "tt-orphan" in html:
             report.fail(
                 f"{family} markers: singleton {token!r} renders as tt-orphan in the popup"
-                " colorizer — register/classify it in tests/parity/markup.py"
+                " colorizer — register/classify it in src/tables/markup.py"
             )
 
 

@@ -232,7 +232,7 @@ struct EmittedDelta {
 
 // The v2 stream overlay is fully canonical (`dynamo_v2`); the legacy `dynamo`
 // fallback was dropped as part of the v2 key migration. The v1 batch corpus
-// (read by `parity_toolcalling_batch_via_stream.rs`) stays legacy and is untouched.
+// (read by `conformance_toolcalling_batch_via_stream.rs`) stays legacy and is untouched.
 fn dynamo_expected(expected: &BTreeMap<String, Vec<FixtureDelta>>) -> Option<&Vec<FixtureDelta>> {
     expected.get("dynamo_v2")
 }

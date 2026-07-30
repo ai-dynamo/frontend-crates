@@ -182,7 +182,7 @@ def refresh_batch(v1_ver: str) -> None:
                 n_batch += len(cases_out)
             elif mode == "stream":
                 # Legacy v1 jail expected (assembled): feed the per-chunk delta_text
-                # through JailedStream + the v1 batch parser, like the v1 page did.
+                # through JailedStream + the v1 batch parser.
                 # Tool schemas ride along so the batch parse coerces argument types.
                 cases_in = {
                     cid: {

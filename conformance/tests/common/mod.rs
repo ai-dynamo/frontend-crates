@@ -3,8 +3,8 @@
 
 //! Shared helpers for the conformance parity test binaries (audit B8): fixture
 //! discovery + the crate-relative display path used in failure messages, which
-//! were copied verbatim across `parity_toolcalling`, `parity_toolcalling_stream`,
-//! and `parity_toolcalling_batch_via_stream`. Each test binary declares
+//! were copied verbatim across `conformance_toolcalling`, `conformance_toolcalling_stream`,
+//! and `conformance_toolcalling_batch_via_stream`. Each test binary declares
 //! `mod common;` so this compiles into it; a binary that uses only a subset is
 //! fine (hence the allow).
 #![allow(dead_code)]

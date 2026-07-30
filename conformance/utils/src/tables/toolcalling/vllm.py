@@ -31,7 +31,7 @@ from vllm.entrypoints.openai.chat_completion.protocol import (
 from vllm.entrypoints.openai.parser.harmony_utils import get_encoding
 from vllm.tokenizers import TokenizerLike
 
-from tests.parity.common import ParseResult, decode_arguments, decode_stream_calls
+from ..common import ParseResult, decode_arguments, decode_stream_calls
 
 _HARMONY_ASSISTANT_START = "<|start|>assistant"
 _HARMONY_COMMENTARY_CALL_RE = re.compile(

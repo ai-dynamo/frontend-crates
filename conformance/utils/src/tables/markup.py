@@ -118,9 +118,9 @@ def _colorize_harmony(text: str) -> str:
 # looks like a parse error. Registering a family's tokens in parser_families.yaml
 # is the ONLY step; this module derives its classification from that file.
 def _parser_families_path() -> Path:
-    """In the repo this module lives at tests/parity/ with the registry at
-    ../../src/; the render stage keeps that shape (<stage>/src/). The same-dir
-    candidate covers flat copies (mirrors markers._parser_families_path)."""
+    """In the repo this module lives at src/tables/ with the registry at ../;
+    the render stage keeps that shape. The same-dir candidate covers flat copies
+    (mirrors markers._parser_families_path)."""
     here = Path(__file__).resolve()
     for cand in (
         here.parent / "parser_families.yaml",

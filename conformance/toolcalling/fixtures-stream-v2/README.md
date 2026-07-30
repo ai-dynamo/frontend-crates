@@ -100,7 +100,7 @@ Use `capture.sh stream` for all-family captures; do not add a second wrapper for
 
 ## Conformance Tests
 
-`conformance/tests/parity_toolcalling_stream.rs` drives Dynamo parser v2 over stream fixtures, checks per-chunk output, and checks the assembled result. `conformance/tests/parity_toolcalling_batch_via_stream.rs` checks complete batch text through the same streaming parsers using `fixtures-batch-on-stream-v2/`.
+`conformance/tests/conformance_toolcalling_stream.rs` drives Dynamo parser v2 over stream fixtures, checks per-chunk output, and checks the assembled result. `conformance/tests/conformance_toolcalling_batch_via_stream.rs` checks complete batch text through the same streaming parsers using `fixtures-batch-on-stream-v2/`.
 
 ```bash
 cargo test --locked -p dynamo-conformance-fixtures-v2 -- --nocapture

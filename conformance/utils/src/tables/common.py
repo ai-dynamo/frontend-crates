@@ -19,10 +19,10 @@ from typing import Any
 
 
 # ---------------------------------------------------------------------------
-# Destination-aware link resolution, shared by the v1 PARITY and v2 CONFORMANCE
-# generators. Each generator calls set_links() with its own output path before
-# building, so the table builders emit hrefs that resolve from where the page is
-# actually published -- no post-render path rewriting.
+# Destination-aware link resolution for the conformance generator. The generator
+# calls set_links() with its own output path before building, so the table builders
+# emit hrefs that resolve from where the page is actually published -- no
+# post-render path rewriting.
 # ---------------------------------------------------------------------------
 
 
@@ -120,7 +120,7 @@ def set_links(output_path: Path, artifact_root: Path) -> dict[str, str]:
 try:
     _DEFAULT_ROOT = Path(__file__).resolve().parents[4]
     if (_DEFAULT_ROOT / "parsers" / "v2").is_dir():
-        set_links(_DEFAULT_ROOT / "conformance" / "PARITY.html", _DEFAULT_ROOT)
+        set_links(_DEFAULT_ROOT / "conformance" / "CONFORMANCE_v2.html", _DEFAULT_ROOT)
 except (IndexError, OSError):
     pass
 

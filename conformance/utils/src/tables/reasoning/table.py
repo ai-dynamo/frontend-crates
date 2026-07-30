@@ -11,18 +11,16 @@ import html as html_lib
 import json
 import os
 import re
-import subprocess
 from pathlib import Path
 from typing import Any
 
 import yaml
-from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
-from tests.parity import common
-from tests.parity.common import _FAMILY_TO_SGLANG_REASONING, _FAMILY_TO_VLLM_REASONING
-from tests.parity.common import TOP_N_TOOL_CALLING_FAMILIES as TOP_N_FAMILIES
+from .. import common
+from ..common import _FAMILY_TO_SGLANG_REASONING, _FAMILY_TO_VLLM_REASONING
+from ..common import TOP_N_TOOL_CALLING_FAMILIES as TOP_N_FAMILIES
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = REPO_ROOT / "tests/parity/reasoning/fixtures"
 PARSER_FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures"
 REASONING_CASES_MD = REPO_ROOT / "lib/parsers/REASONING_CASES.md"
@@ -402,34 +400,6 @@ _REASONING_MODE_METADATA = {
         ],
     },
 }
-
-
-def _make_jinja_env() -> Environment:
-    env = Environment(
-        loader=FileSystemLoader(TEMPLATE_DIR),
-        trim_blocks=False,
-        lstrip_blocks=True,
-        undefined=StrictUndefined,
-    )
-    # Same shared CSS/JS the v2 table and toolcalling parity page inline.
-    assets = TEMPLATE_DIR / "assets"
-    env.globals["conformance_css"] = (assets / "conformance.css").read_text(encoding="utf-8")
-    env.globals["conformance_js"] = (assets / "conformance.js").read_text(encoding="utf-8")
-    return env
-
-
-def _commit_sha() -> str | None:
-    try:
-        return (
-            subprocess.check_output(
-                ["git", "-C", str(REPO_ROOT), "rev-parse", "HEAD"],
-                stderr=subprocess.DEVNULL,
-            )
-            .decode()
-            .strip()
-        )
-    except (FileNotFoundError, subprocess.CalledProcessError):
-        return None
 
 
 def _case_sort_key(case_id: str) -> tuple[int, int, int, str]:
