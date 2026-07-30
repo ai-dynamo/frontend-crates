@@ -19,10 +19,10 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import markup  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from tables import markup  # noqa: E402
 
-COLORIZE_JS = Path(__file__).resolve().parents[2] / "src" / "assets" / "colorize.js"
+COLORIZE_JS = Path(__file__).resolve().parents[1] / "src" / "assets" / "colorize.js"
 MARKERS = markup.declared_markers()
 
 # (family, text) — cover every colorizer path: plain JSON + special token, paired XML,

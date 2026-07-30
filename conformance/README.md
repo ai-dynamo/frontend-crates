@@ -43,7 +43,6 @@ reasoning/fixtures-v1/inputs/<family>/            # v1 reasoning cases
 
 | Output | Command | Parser version | Fixture version |
 |---|---|---|---|
-| v1 parity HTML | `conformance/utils/render_table_v1.sh` | v1 Dynamo-synced parser code through old Dynamo `generate_parity_table.py` | v1 Dynamo-synced tool-calling and reasoning fixtures; output stays under `conformance/utils/.stage/tests/parity/PARITY_v1.html` so old relative links resolve. |
 | v2 conformance HTML | `conformance/utils/render_table_v2.sh` | Mixed bridge table: `TC batch (v1)` and reasoning tabs use v1 Dynamo-synced parser code; `TC batch-on-stream (v2)` and `TC stream (v2)` use Dynamo parser v2 code. | `TC batch (v1)` uses v1 batch fixtures; `TC batch-on-stream (v2)` uses v1 batch fixtures plus v2 batch-on-stream overlays; `TC stream (v2)` uses v2 stream fixtures; reasoning tabs use v1 reasoning fixtures. The default example output is `conformance/CONFORMANCE_v2.html`, and the render script also accepts a custom output path. |
 
 ## Running the tests
@@ -52,10 +51,10 @@ Use the repo's pinned toolchain (Rust 1.96.1 via rustup; a system `cargo` may be
 
 ```bash
 # tool-calling batch parity, all families:
-cargo test --locked -p dynamo-conformance-fixtures-v2 --test parity_toolcalling
+cargo test --locked -p dynamo-conformance-fixtures-v2 --test conformance_toolcalling
 
 # same, but print fixture names and the per-run case count:
-cargo test --locked -p dynamo-conformance-fixtures-v2 --test parity_toolcalling -- --nocapture
+cargo test --locked -p dynamo-conformance-fixtures-v2 --test conformance_toolcalling -- --nocapture
 
 # as part of the whole workspace (what CI runs):
 cargo test --workspace
@@ -67,9 +66,9 @@ The test package is named `dynamo-conformance-fixtures-v2` for historical compat
 
 | Test | Code under test | Fixtures | Notes |
 |---|---|---|---|
-| `parity_toolcalling` | v1 Dynamo-synced batch parser in `parsers/src/tool_calling/` | v1 batch fixtures (`toolcalling/fixtures-batch-v1/`) | Each `batch` case's `model_text` is fed through `detect_and_parse_tool_call_with_recovery(text, Some(family), tools)` and compared to `expected.dynamo_v1`. |
-| `parity_toolcalling_batch_via_stream` | Dynamo parser v2 in `parsers_v2/src/tool_calling/*` | v1 batch fixtures (`toolcalling/fixtures-batch-v1/`) plus v2 overlays (`toolcalling/fixtures-batch-on-stream-v2/`) | Feeds complete batch text into the v2 stream parser and compares assembled calls to the batch-on-stream expectations. |
-| `parity_toolcalling_stream` | Dynamo parser v2 in `parsers_v2/src/tool_calling/*` | v2 stream fixtures (`toolcalling/fixtures-stream-v2/`) | Checks token-id or text streaming paths per chunk, then checks assembled calls. |
+| `conformance_toolcalling` | v1 Dynamo-synced batch parser in `parsers/src/tool_calling/` | v1 batch fixtures (`toolcalling/fixtures-batch-v1/`) | Each `batch` case's `model_text` is fed through `detect_and_parse_tool_call_with_recovery(text, Some(family), tools)` and compared to `expected.dynamo_v1`. |
+| `conformance_toolcalling_batch_via_stream` | Dynamo parser v2 in `parsers_v2/src/tool_calling/*` | v1 batch fixtures (`toolcalling/fixtures-batch-v1/`) plus v2 overlays (`toolcalling/fixtures-batch-on-stream-v2/`) | Feeds complete batch text into the v2 stream parser and compares assembled calls to the batch-on-stream expectations. |
+| `conformance_toolcalling_stream` | Dynamo parser v2 in `parsers_v2/src/tool_calling/*` | v2 stream fixtures (`toolcalling/fixtures-stream-v2/`) | Checks token-id or text streaming paths per chunk, then checks assembled calls. |
 
 The fixture `family` field is the parser name, the same value Dynamo's `parse_tool_calls_batch` binding takes for v1. Every fixture uses an explicit implementation key: `expected.dynamo_v1`, `expected.dynamo_v2`, `expected.vllm_rust`, `expected.vllm_python`, `expected.sglang_python`. Dynamo v1 and v2 are separate impls with separate version lineages (`dynamo_v1-3.0.0/`, `dynamo_v2-0.1.11/`) — exactly like the vLLM/SGLang runtime variants. Legacy spellings (`dynamo`, `dynamo_rust`, `vllm`, `sglang`) are still accepted on read via the alias table in `utils/src/impls.py`.
 
@@ -112,9 +111,9 @@ Capture stamps versions from the crates themselves — version dirs (`dynamo_v1-
 
 The `rust` CI job checks out the LFS store (`lfs: true`), extracts the manifest-pinned snapshot, and runs the parity tests — current parser code vs pinned expected YAML:
 
-- `parity_toolcalling`: v1 code vs `expected.dynamo_v1` in the `dynamo_v1-<ver>/` dir of `fixtures-batch-v1`.
-- `parity_toolcalling_stream`: v2 code vs `expected.dynamo_v2` folded from the LOWEST `dynamo_v2-<ver>/` dir — the v2 anchor. (The v1-jail reference lives in its own `dynamo_v1-3.0.0/` namespace and never enters the v2 fold. Overlay folding up to the pinned crate version is a follow-up; until then an intended v2 output change must be reflected in the anchor's expected blocks at re-capture.)
-- `parity_toolcalling_batch_via_stream`: v2 code vs the `fixtures-batch-on-stream-v2` expectations.
+- `conformance_toolcalling`: v1 code vs `expected.dynamo_v1` in the `dynamo_v1-<ver>/` dir of `fixtures-batch-v1`.
+- `conformance_toolcalling_stream`: v2 code vs `expected.dynamo_v2` folded from the LOWEST `dynamo_v2-<ver>/` dir — the v2 anchor. (The v1-jail reference lives in its own `dynamo_v1-3.0.0/` namespace and never enters the v2 fold. Overlay folding up to the pinned crate version is a follow-up; until then an intended v2 output change must be reflected in the anchor's expected blocks at re-capture.)
+- `conformance_toolcalling_batch_via_stream`: v2 code vs the `fixtures-batch-on-stream-v2` expectations.
 
 A parser change that alters output fails CI until the fixtures are re-captured and committed (workflow 2) — CI compares Dynamo against the pinned shard YAMLs, nothing else. The `conformance-table` CI job runs exactly one command, `conformance/utils/check.sh ci`, which re-renders both HTML pages from the same pinned store, runs the coverage/marker lint (section 8), and the chart-invariant guards. To add or change a conformance gate, edit `run_ci()` in `check.sh`; the workflow file stays untouched.
 
@@ -124,7 +123,7 @@ A "case" is one `<num>.<letter>` sub-case shared across families. Adding one is 
 
 1. **Input.** Add the case to `toolcalling/fixtures-stream-v2/inputs/<family>/TOOLCALLING.streamv2.<N>.yaml` for each family it applies to — the shared per-chunk `delta_text` (schema in [`toolcalling/fixtures-stream-v2/README.md`](toolcalling/fixtures-stream-v2/README.md#fixture-schema)). Batch cases go under `toolcalling/fixtures-batch-v1/inputs/<family>/` instead.
 2. **Description.** Add a bullet to `utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md` (or the batch/reasoning CASES.md) — the HTML "Case descriptions" section renders it, and the tooltip links to it.
-3. **Grouping (easy to miss).** Add the case id to its band in **`utils/src/fixtures.py`** `BATCH_SUB_CASE_GROUPS` (the streamv2 tab reuses the batch taxonomy). If you skip this, the column still renders but sorts to the FAR RIGHT as an "unknown" case instead of beside its `<num>.*` siblings. **The same list is duplicated in `utils/tests/parity/toolcalling/table.py` — edit BOTH** (the v2 render reads `fixtures.py`'s copy; the v1 parity page reads `table.py`'s). TODO: dedup these into one shared table so a case is one edit; until then a new `<num>.<letter>` should ideally key on its parent `<num>`, not enumerate every letter.
+3. **Grouping (easy to miss).** Add the case id to its band in **`utils/src/fixtures.py`** `BATCH_SUB_CASE_GROUPS` (the streamv2 tab reuses the batch taxonomy). If you skip this, the column still renders but sorts to the FAR RIGHT as an "unknown" case instead of beside its `<num>.*` siblings. **The same list is duplicated in `utils/tests/parity/toolcalling/table.py` — edit BOTH** (the render reads `fixtures.py`'s copy; `table.py` keeps its own). TODO: dedup these into one shared table so a case is one edit; until then a new `<num>.<letter>` should ideally key on its parent `<num>`, not enumerate every letter.
 4. **Capture + package.** `refresh_dynamo_captures.py stream` (records the Dynamo v2 output for the new case), then `package_fixtures.py`, then commit store + manifest. Peer engines (vLLM/SGLang) only cover the new case once re-captured against containers (workflow 1); until then the peer cells read `(no expectation)`.
 
 ### 6. Backfill an OLD parser version onto a new case (`.patchN` overlays)
@@ -139,7 +138,7 @@ How `.patchN` is treated: **HTML** folds it into its base `<ver>` display column
 
 ### 7. Classify a v1-batch vs v2-stream difference (`known-divergences.yaml`)
 
-`parity_toolcalling_batch_via_stream` compares the v2 stream parser on batch text against v1's `expected.dynamo_v1`. v1 and v2 differ **by design** (v2 preserves surrounding/inter-call prose that v1 batch trims; v2 recovers bare calls v1 drops). When a case legitimately diverges, add it to `toolcalling/known-divergences.yaml` under `<family> → TOOLCALLING.batch.<case> → stream_vs_batch: <note>` (reuse the `*svb-surrounding-text` / `*svb-recovery` anchors). An entry with a note is an allowed, documented difference; a MISSING entry fails the test — so the file is also the audit trail of "v2 improved on v1 here." Do NOT add an entry to paper over an actual regression (v2 dropping text, leaking markup, corrupting args) — fix the parser instead.
+`conformance_toolcalling_batch_via_stream` compares the v2 stream parser on batch text against v1's `expected.dynamo_v1`. v1 and v2 differ **by design** (v2 preserves surrounding/inter-call prose that v1 batch trims; v2 recovers bare calls v1 drops). When a case legitimately diverges, add it to `toolcalling/known-divergences.yaml` under `<family> → TOOLCALLING.batch.<case> → stream_vs_batch: <note>` (reuse the `*svb-surrounding-text` / `*svb-recovery` anchors). An entry with a note is an allowed, documented difference; a MISSING entry fails the test — so the file is also the audit trail of "v2 improved on v1 here." Do NOT add an entry to paper over an actual regression (v2 dropping text, leaking markup, corrupting args) — fix the parser instead.
 
 ### 8. Coverage taxonomy: what "complete fixtures for a family" means (DIS-2442)
 

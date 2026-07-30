@@ -10,7 +10,8 @@
 #     coverage [--family F ...]      fixture-coverage + marker-registration lint vs
 #                                    case-taxonomy.yaml (defaults to --all families)
 #     ci     what the conformance-table CI job runs, and the ONLY thing it runs:
-#            render both charts, structural sanity, coverage lint, invariant pytest.
+#            render the conformance chart, structural sanity, coverage lint,
+#            invariant pytest.
 #            Add/change conformance gates in run_ci below — never in .github/workflows.
 #     all    [--container-vllm N --container-sglang M] [--allow-peer-failures]
 #            dynamo(all) + vllm + sglang + coverage. Fails the run on any parser
@@ -27,9 +28,9 @@ usage() { echo "usage: conformance/utils/check.sh <dynamo|vllm|sglang|coverage|c
 run_dynamo() {  # $1 = batch|stream|all ; returns non-zero if any target fails
   local targets=() rc=0
   case "${1:-all}" in
-    batch)  targets=(parity_toolcalling) ;;
-    stream) targets=(parity_toolcalling_stream parity_toolcalling_batch_via_stream) ;;
-    all)    targets=(parity_toolcalling parity_toolcalling_stream parity_toolcalling_batch_via_stream) ;;
+    batch)  targets=(conformance_toolcalling) ;;
+    stream) targets=(conformance_toolcalling_stream conformance_toolcalling_batch_via_stream) ;;
+    all)    targets=(conformance_toolcalling conformance_toolcalling_stream conformance_toolcalling_batch_via_stream) ;;
     *) usage ;;
   esac
   for t in "${targets[@]}"; do
@@ -54,15 +55,13 @@ run_coverage() {  # $@ = passthrough (--family F ...); defaults to --all
 }
 
 run_ci() {  # the conformance-table CI gate; fail-fast, also runnable locally
-  if [ "$DRY" = 1 ]; then echo "[dry-run] render v1+v2, sanity greps, coverage lint, invariant pytest"; return; fi
+  if [ "$DRY" = 1 ]; then echo "[dry-run] render v2, sanity greps, coverage lint, invariant pytest"; return; fi
   set -e
-  "$UTILS/render_table_v1.sh"
   "$UTILS/render_table_v2.sh"
-  local out="$ROOT/conformance/PARITY_v1.html"
+  local out="$ROOT/conformance/CONFORMANCE_v2.html"
   test -s "$out"
   grep -q "TOOLCALLING.batch" "$out"
   grep -q "REASONING.batch" "$out"
-  test -s "$ROOT/conformance/CONFORMANCE_v2.html"
   echo "conformance matrix rendered: $(wc -c < "$out") bytes"
   # The uploaded CI artifact name predates the v1/v2 split; keep it stable.
   \cp -f "$out" "$UTILS/CONFORMITY.html"

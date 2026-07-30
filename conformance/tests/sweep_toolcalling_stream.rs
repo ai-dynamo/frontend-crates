@@ -3,7 +3,7 @@
 
 //! Chunk-split sweep for the v2 streaming tool-call parsers.
 //!
-//! `parity_toolcalling_stream.rs` pins per-chunk behavior to captured fixture
+//! `conformance_toolcalling_stream.rs` pins per-chunk behavior to captured fixture
 //! expectations at ONE chunking (the one recorded at capture time). This test
 //! checks the complementary property: **chunk-size invariance**. For every
 //! stream case, the assembled output (tool calls + `normal_text`) must be

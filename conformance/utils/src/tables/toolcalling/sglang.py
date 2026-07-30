@@ -58,7 +58,7 @@ from sglang.srt.function_call.qwen25_detector import (
     Qwen25Detector,  # type: ignore[import-untyped]
 )
 
-from tests.parity.common import ParseResult, decode_arguments, decode_stream_calls
+from ..common import ParseResult, decode_arguments, decode_stream_calls
 
 # Maps parser_family → SGLang detector class. SGLang doesn't have a registry-by-name
 # like vLLM; the class is imported directly.

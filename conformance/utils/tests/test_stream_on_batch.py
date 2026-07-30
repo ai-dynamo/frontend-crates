@@ -65,7 +65,7 @@ import check_family_coverage as cfc  # noqa: E402
 import generate_conformance_table as g  # noqa: E402
 import impls  # noqa: E402
 import validate_fixtures as vf  # noqa: E402
-from tests.parity.reasoning import table as reasoning_table  # noqa: E402
+from tables.reasoning import table as reasoning_table  # noqa: E402
 
 _TODO_MSG = "Dynamo parser v2 stream parser not yet implemented for this family"
 # Identity comes from impls.py via the generator's re-export (audit B1).
@@ -777,7 +777,7 @@ def test_check_sh_dry_run_all_covers_every_parser() -> None:
         capture_output=True, text=True,
     )
     txt = out.stdout + out.stderr
-    for target in ("parity_toolcalling", "parity_toolcalling_stream", "parity_toolcalling_batch_via_stream"):
+    for target in ("conformance_toolcalling", "conformance_toolcalling_stream", "conformance_toolcalling_batch_via_stream"):
         assert target in txt, f"check.sh all dry-run missing {target}"
     assert "vllm" in txt and "sglang" in txt
     assert "--allow-peer-failures" in (UTILS / "check.sh").read_text()

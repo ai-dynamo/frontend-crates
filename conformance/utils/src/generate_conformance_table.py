@@ -84,19 +84,19 @@ if hasattr(yaml, "CSafeLoader"):
     yaml.safe_load = lambda _s, _loader=yaml.CSafeLoader: yaml.load(_s, Loader=_loader)
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
-from tests.parity import common
-from tests.parity.common import TOP_N_TOOL_CALLING_FAMILIES as TOP_N_FAMILIES
-from tests.parity.common import (
+from tables import common
+from tables.common import TOP_N_TOOL_CALLING_FAMILIES as TOP_N_FAMILIES
+from tables.common import (
     linkify_text_html,
     parity_cell_class,
 )
-from tests.parity.markup import (
+from tables.markup import (
     colorize_markup,
     colorize_stream_deltas,
     declared_markers,
 )
-from tests.parity.reasoning import table as reasoning_table
-from tests.parity.toolcalling import table as toolcalling_table
+from tables.reasoning import table as reasoning_table
+from tables.toolcalling import table as toolcalling_table
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures"
@@ -259,7 +259,7 @@ def _display_path(path: Path, artifact_root: Path) -> str:
         return path.as_posix()
 
 
-# Destination-aware link resolution lives in tests.parity.common
+# Destination-aware link resolution lives in tables.common
 # (`set_links` / `LINKS`), shared by the v1 PARITY and v2 CONFORMANCE generators.
 
 

@@ -11,7 +11,7 @@ import importlib.util
 import json
 from typing import Any
 
-from tests.parity.common import ParseResult, decode_arguments
+from ..common import ParseResult, decode_arguments
 
 _DYNAMO_CORE_SPEC = (
     importlib.util.find_spec("dynamo._core")

@@ -9,7 +9,7 @@ from typing import Any
 
 from sglang.srt.parser.reasoning_parser import ReasoningParser
 
-from tests.parity.common import _FAMILY_TO_SGLANG_REASONING, ReasoningResult
+from ..common import _FAMILY_TO_SGLANG_REASONING, ReasoningResult
 
 
 def _make_parser(parser_name: str, fixture: dict[str, Any]) -> ReasoningParser:

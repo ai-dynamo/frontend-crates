@@ -33,7 +33,7 @@
 #   jail = stream-tab note on the Dynamo v1 jail+batch reference (dynamo_v1-* dirs)
 #   stream_vs_batch = KNOWN v1-batch vs v2-stream divergence on a TOOLCALLING.batch.*
 #        case. Consumed by BOTH:
-#          - conformance/tests/parity_toolcalling_batch_via_stream.rs — the entries
+#          - conformance/tests/conformance_toolcalling_batch_via_stream.rs — the entries
 #            ARE the allowlist (an undocumented divergence fails; a stale entry
 #            fails; an entry with an empty note fails), and
 #          - the batch-on-stream tab — the cell gets a muted `≠` known-divergence

@@ -12,7 +12,7 @@ from vllm.entrypoints.openai.parser.harmony_utils import get_encoding, parse_cha
 from vllm.reasoning import ReasoningParserManager
 from vllm.tokenizers.mistral import MistralTokenizer
 
-from tests.parity.common import _FAMILY_TO_VLLM_REASONING, ReasoningResult
+from ..common import _FAMILY_TO_VLLM_REASONING, ReasoningResult
 
 # Harmony text-level fallback regexes. Mirror tests/parity/toolcalling/vllm.py so the
 # behavior matches when get_encoding() can't load the tiktoken vocab (e.g. CI

@@ -53,35 +53,36 @@ CARGO="${CARGO:-cargo}"
 
 _build_stage_base() {
   rm -rf "$STAGE"
-  mkdir -p "$STAGE/tests" "$STAGE/lib/parsers/src"
-  # COPY the vendored python package so resolved __file__ -> REPO_ROOT == $STAGE.
-  \cp -Rf "$UTILS/tests/parity" "$STAGE/tests/parity"
-  \cp -f "$UTILS/tests/__init__.py" "$STAGE/tests/__init__.py"
+  mkdir -p "$STAGE/tests/parity" "$STAGE/lib/parsers/src"
+  # COPY the table package so resolved __file__ -> REPO_ROOT == $STAGE. It is staged
+  # as <stage>/tables (not under tests/parity) so `import tables.…` resolves the same
+  # way here as it does from conformance/utils/src in the repo — one import name, both
+  # contexts. The tests/parity/ subtree below stays the fixture + template layout the
+  # generator's path constants and relative-link resolution are written against.
+  \cp -Rf "$TOOLS/tables" "$STAGE/tables"
   # Family marker declarations (DIS-2442): the staged tests/parity/markup.py resolves
   # its registry at <stage-root>/src/parser_families.yaml, mirroring the repo layout.
   mkdir -p "$STAGE/src"
   \cp -f "$TOOLS/parser_families.yaml" "$STAGE/src/parser_families.yaml"
-  # Shared static CSS/JS inlined into BOTH pages at render time (v1 parity + v2
-  # conformance both read tests/parity/assets/*). Staged here in the base so the v1
-  # render finds them too — the compare-bar/coloring logic lives in one place now.
+  # Static CSS/JS inlined into the conformance page at render time (the renderer
+  # reads tests/parity/assets/*). The compare-bar/coloring logic lives in one place.
   mkdir -p "$STAGE/tests/parity/assets"
   \cp -f "$TOOLS/assets/conformance.css" "$STAGE/tests/parity/assets/conformance.css"
   \cp -f "$TOOLS/assets/conformance.js" "$STAGE/tests/parity/assets/conformance.js"
   # Markup colorizer (port of markup.py); inlined before conformance_view.js.
   \cp -f "$TOOLS/assets/colorize.js" "$STAGE/tests/parity/assets/colorize.js"
-  # DIS-2434 JSON data model + JS view: model.py builds it (imported by BOTH pages via
-  # reasoning_table), conformance_view.js renders it. Staged here so v1 + v2 both find them.
+  # JSON data model + JS view: model.py builds it (imported via reasoning_table),
+  # conformance_view.js renders it.
   \cp -f "$TOOLS/model.py" "$STAGE/tests/parity/model.py"
-  # DIS-2477: markers.py (comparison/facts semantics) + impls.py (identity) are the
-  # single source both pages use. Staged in the base so the v1 toolcalling table can
-  # import markers instead of forking its own comparison copies.
+  # markers.py (comparison/facts semantics) + impls.py (identity) are the single
+  # source the tables import instead of forking their own comparison copies.
   \cp -f "$TOOLS/impls.py" "$STAGE/tests/parity/impls.py"
   \cp -f "$TOOLS/markers.py" "$STAGE/tests/parity/markers.py"
   \cp -f "$TOOLS/unified_taxonomy.py" "$STAGE/tests/parity/unified_taxonomy.py"
   [ -f "$TOOLS/assets/conformance_view.js" ] && \
     \cp -f "$TOOLS/assets/conformance_view.js" "$STAGE/tests/parity/assets/conformance_view.js" || true
-  # Reasoning fixtures are resolved per page (v1 = old anchor peers, v2 = pinned new
-  # peers) by build_stage_v1 / build_stage_conformance — not here in the shared base.
+  # Reasoning fixtures are resolved (at the pinned peer versions) by
+  # build_stage_conformance — not here in the shared base.
   # Recorded Dynamo parser v2 stream-on-batch fixture overlay.
   if [ -d "$FIXTURES_ROOT/toolcalling/fixtures-batch-on-stream-v2" ]; then
     mkdir -p "$STAGE/tests/parity/toolcalling"
@@ -121,20 +122,9 @@ _resolve_reasoning_fixtures() {
     --out "$out" --select "vllm_python-${vllm_v}" "sglang_python-${sglang_v}"
 }
 
-# The OLD (v1-era) reasoning peer versions = the anchor's captured_with stamps in
-# inputs/ (e.g. vLLM 0.23.0 / SGLang 0.5.12.post1). Read them rather than hardcode.
-_reasoning_anchor_ver() {  # $1 = vllm_python | sglang_python
-  grep -rhoE "$1: '[^']+'" "$FIXTURES_ROOT/reasoning/fixtures-v1/inputs" 2>/dev/null \
-    | head -1 | sed -E "s/.*'([^']+)'.*/\1/"
-}
-
-# The NEW (pinned) reasoning peer versions = the engines pinned in pyproject.stub.toml.
+# The pinned reasoning peer versions = the engines pinned in pyproject.stub.toml.
 _reasoning_pinned_ver() {  # $1 = vllm | sglang
   grep -oE "$1\[[^]]*\]==[^\"]+" "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//'
-}
-
-_copy_toolcalling_v1_fixtures() {
-  _resolve_toolcalling_fixtures "$STAGE/tests/parity/toolcalling/fixtures"
 }
 
 _copy_toolcalling_v2_fixtures() {
@@ -177,14 +167,6 @@ _copy_toolcalling_v2_fixtures() {
   fi
 }
 
-build_stage_v1() {
-  _build_stage_base
-  _copy_toolcalling_v1_fixtures
-  # Legacy baseline page: reasoning shows the OLD (anchor) peer versions.
-  _resolve_reasoning_fixtures "$STAGE/tests/parity/reasoning/fixtures" \
-    "$(_reasoning_anchor_ver vllm_python)" "$(_reasoning_anchor_ver sglang_python)"
-}
-
 build_stage_conformance() {
   _build_stage_base
   # Keep the current conformance harness owned by conformance/utils while presenting
@@ -202,6 +184,6 @@ build_stage_conformance() {
 }
 
 build_stage() {
-  echo "build_stage is ambiguous; use build_stage_v1 or build_stage_conformance" >&2
+  echo "build_stage is deprecated; use build_stage_conformance" >&2
   return 2
 }

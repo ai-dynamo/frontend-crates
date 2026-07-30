@@ -18,11 +18,11 @@ from typing import Any
 import yaml
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
-from tests.parity import common
-from tests.parity.common import _FAMILY_TO_SGLANG_REASONING, _FAMILY_TO_VLLM_REASONING
-from tests.parity.common import TOP_N_TOOL_CALLING_FAMILIES as TOP_N_FAMILIES
+from .. import common
+from ..common import _FAMILY_TO_SGLANG_REASONING, _FAMILY_TO_VLLM_REASONING
+from ..common import TOP_N_TOOL_CALLING_FAMILIES as TOP_N_FAMILIES
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = REPO_ROOT / "tests/parity/reasoning/fixtures"
 PARSER_FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures"
 REASONING_CASES_MD = REPO_ROOT / "lib/parsers/REASONING_CASES.md"

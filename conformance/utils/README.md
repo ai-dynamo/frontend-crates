@@ -202,7 +202,6 @@ Run these from `conformance/utils/`:
 | Command | Purpose |
 |---|---|
 | `render_table_v2.sh` | Builds `.stage/` and writes the v2 conformance HTML matrix. The default example path is `conformance/CONFORMANCE_v2.html`. |
-| `render_table_v1.sh` | Renders the legacy v1 Dynamo parity table into `.stage/`. |
 | `check.sh` | Runs Dynamo, vLLM Python, and SGLang checks against staged fixtures. |
 | `capture.sh` | Consistent entry point for capturing parser behavior and refreshing v2 fixtures. |
 

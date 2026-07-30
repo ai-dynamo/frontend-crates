@@ -35,20 +35,8 @@ Cell markers (per peer, vllm + sglang):
 Footnote markers `†` (no vLLM peer) and `§` (no SGLang peer) are auto-derived
 from `expected.<impl>.unavailable` across each family's cases.
 
-Run:
-    # Markdown table to stdout
-    python3 tests/parity/generate_parity_table_v1.py toolcalling \
-        > tests/parity/toolcalling/PARITY.md
-    python3 tests/parity/generate_parity_table_v1.py toolcalling --mode stream \
-        > tests/parity/toolcalling/PARITY.stream.md
-
-    # HTML table with tabs, clickable YAML links, and hover tooltips. Write next
-    # to this script so `<a href="fixtures/<family>/TOOLCALLING.batch.N.yaml">`
-    # resolves when opened in a browser.
-    python3 tests/parity/generate_parity_table_v1.py toolcalling --html \
-        > tests/parity/toolcalling/PARITY.html
-
-PARITY.{md,html} are for local viewing only; don't check them in.
+This module is a library: the conformance generator imports it for the batch/stream
+tool-calling table model. Render the page with `conformance/utils/render_table_v2.sh`.
 """
 
 from __future__ import annotations
@@ -66,10 +54,10 @@ import yaml
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 import markers  # single source for comparison/leak/facts semantics (DIS-2477)
-from tests.parity import common
-from tests.parity.common import TOP_N_TOOL_CALLING_FAMILIES as TOP_N_FAMILIES
+from .. import common
+from ..common import TOP_N_TOOL_CALLING_FAMILIES as TOP_N_FAMILIES
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures"
 TOOLCALLING_CASES_MD = REPO_ROOT / "lib/parsers/TOOLCALLING_CASES.md"
 TEMPLATE_DIR = REPO_ROOT / "tests/parity"
@@ -102,7 +90,7 @@ _RESOLVE_SRC_DIR = _FRONTEND_CRATES_ROOT / "conformance/utils/src"
 RUST_TOOL_CALLING_DIR = REPO_ROOT / "lib/parsers/src/tool_calling"
 
 # Row-label / visibility overrides keyed by tool calling family; ‡ is explained
-# by the legend note in parity_table_v1.html.j2.
+# by the legend note in the rendered page.
 _TOOL_CALLING_LABEL_OVERRIDES = {
     "qwen3_coder": "Qwen 3 Coder / Nemotron V3‡",
 }
@@ -199,11 +187,11 @@ def _pinned_versions(impl_versions: dict[str, list[str]]) -> dict[str, str]:
 
 
 def _v1_peer_versions() -> dict[str, list[str]]:
-    """PARITY_v1 shows ALL captured peer versions (ascending) so both the v1-era
-    engines (vLLM 0.23.0 / SGLang 0.5.12.post1) and the current ones (0.24.0 / 0.5.14)
+    """ALL captured peer versions (ascending) so both the older engines
+    (vLLM 0.23.0 / SGLang 0.5.12.post1) and the current ones (0.24.0 / 0.5.14)
     are present and selectable in the compare bar. The oldest peer is the default
-    Compare candidate (this is the legacy baseline page) and newer ones default to the
-    Others bucket — see _candidate_items."""
+    Compare candidate and newer ones default to the Others bucket — see
+    _candidate_items."""
     return _impl_versions()
 
 

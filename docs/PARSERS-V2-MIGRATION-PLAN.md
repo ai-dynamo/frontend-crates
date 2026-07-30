@@ -36,8 +36,8 @@ The v1/v2 split is kept because **v2 is still under active development**: it liv
 | `parsers/v1/tests/` | v1 frontend-crates-owned | v1 crate tests. |
 | `conformance/toolcalling/fixtures-v1/` | frontend-crates legacy v1 | Batch tool-calling fixtures retained for v1 behavior. Do not hand-edit for v2 behavior. |
 | `conformance/reasoning/fixtures/` | frontend-crates legacy v1 | Reasoning fixtures rendered in the conformance table. |
-| `conformance/utils/tests/parity/` | frontend-crates-owned | Parity generator package for `PARITY_v1.html`. |
-| `conformance/utils/lib/parsers/TOOLCALLING_CASES.md` and `REASONING_CASES.md` | frontend-crates-owned | Case docs used by the v1 renderer. |
+| `conformance/utils/tests/parity/` | frontend-crates-owned | Shared table/markup modules the conformance generator imports. |
+| `conformance/utils/lib/parsers/TOOLCALLING_CASES.md` and `REASONING_CASES.md` | frontend-crates-owned | Case docs used by the conformance renderer. |
 | `parsers/v2/src/tool_calling/*` | v2 frontend-crate-owned | Rust home for streaming tool-calling parsers. Current Harmony implementation is `parsers/v2/src/tool_calling/harmony.rs`. |
 | `parsers/v2-py/` | v2 frontend-crate-owned | Test-only PyO3 package exposing the v2 parser to Python as `dynamo_parsers_v2`. Not published. |
 | `conformance/toolcalling/fixtures-stream-v2/` | v2 frontend-crate-owned | Stream fixtures for v2 parser behavior. |
@@ -80,10 +80,9 @@ scripts/sync-from-dynamo.sh /path/to/dynamo          # dry-run
 scripts/sync-from-dynamo.sh --apply /path/to/dynamo  # apply
 ```
 
-Parser source, parser fixtures, and conformance utilities are frontend-crates-owned after the parser crate migration; do not sync them from Dynamo. After changing parser fixtures or conformance code, verify both renderers:
+Parser source, parser fixtures, and conformance utilities are frontend-crates-owned after the parser crate migration; do not sync them from Dynamo. After changing parser fixtures or conformance code, verify the renderer:
 
 ```bash
-conformance/utils/render_table_v1.sh
 conformance/utils/render_table_v2.sh
 ```
 
@@ -112,7 +111,6 @@ These files have no upstream Dynamo counterpart. Never overwrite them during a s
 | `conformance/utils/src/_common.sh` | Shared stage builder for conformance scripts. |
 | `conformance/utils/check.sh` | Runs local-parser, vLLM, and SGLang checks against staged fixtures; v2 local-parser checks run Dynamo parser v2 code. |
 | `conformance/utils/render_table_v2.sh` | Renders `conformance/CONFORMANCE.html` with the v2 conformance generator. |
-| `conformance/utils/render_table_v1.sh` | Renders `.stage/tests/parity/PARITY_v1.html` with old Dynamo `generate_parity_table.py`. |
 | `conformance/utils/src/validate.py` | Cross-implementation validation via `docker exec` or pip. |
 | `conformance/utils/src/build_stream_fixtures.py` | Builds v2 per-chunk stream fixtures from source cases and captured engine output. |
 | `conformance/utils/src/capture.py` | In-container worker for an engine's tool-call parser: `--mode stream` (per-chunk), `--mode batch-on-stream` (batch text through the streaming parser), `--mode harmony-batch` (Harmony batch samples), `--mode harmony-chunk` (vLLM token-native Harmony). |

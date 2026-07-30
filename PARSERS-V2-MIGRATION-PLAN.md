@@ -12,7 +12,7 @@ Use `Dynamo parser v2` as the parser label. The fixture key `expected.dynamo` an
 
 ## Why The Bridge Exists
 
-The current split exists because frontend-crates still needs to show and validate the old Dynamo view while building Dynamo parser v2. v1 stays resettable to Dynamo so `PARITY_v1.html` can show what old Dynamo would have generated. v2 stays outside the sync target so new streaming parser work cannot be clobbered by a Dynamo rsync.
+The current split exists because frontend-crates still needs to validate v1 parser behavior while building Dynamo parser v2. v2 stays outside the sync target so new streaming parser work cannot be clobbered by a Dynamo rsync.
 
 Do not move v2 parser code into `parsers/src/` until Dynamo consumes the released frontend-crates parser crate directly and parser-source rsync stops. Until then, `parsers/src/` is a v1 mirror.
 
@@ -24,8 +24,8 @@ Do not move v2 parser code into `parsers/src/` until Dynamo consumes the release
 | `parsers/tests/` | v1 Dynamo-synced when present upstream | Resettable to Dynamo. |
 | `conformance/toolcalling/fixtures-batch-v1/` | frontend-crates legacy v1 | Batch tool-calling fixtures retained for v1 behavior. Do not hand-edit for v2 behavior. |
 | `conformance/reasoning/fixtures/` | frontend-crates legacy v1 | Reasoning fixtures rendered in the conformance table. |
-| `conformance/utils/tests/parity/` | v1 Dynamo-synced | Old Dynamo parity generator package. Keep it close to Dynamo so `PARITY_v1.html` stays old-output compatible. |
-| `conformance/utils/lib/parsers/TOOLCALLING_CASES.md` and `REASONING_CASES.md` | v1 Dynamo-synced | Case docs used by the old v1 renderer. |
+| `conformance/utils/tests/parity/` | frontend-crates-owned | Shared table/markup modules the conformance generator imports. |
+| `conformance/utils/lib/parsers/TOOLCALLING_CASES.md` and `REASONING_CASES.md` | v1 Dynamo-synced | Case docs used by the conformance renderer. |
 | `parsers_v2/src/tool_calling/*` | v2 frontend-crate-owned | Temporary Rust home for new streaming tool-calling parsers. Current Harmony implementation is `parsers_v2/src/tool_calling/harmony.rs`. |
 | `parsers_v2-py/` | v2 frontend-crate-owned | Temporary PyO3 package exposing the v2 parser to Python as `dynamo_parsers_v2`. |
 | `conformance/toolcalling/fixtures-stream-v2/` | v2 frontend-crate-owned | Stream fixtures for v2 parser behavior. |
@@ -70,10 +70,9 @@ scripts/sync-from-dynamo.sh /path/to/dynamo          # dry-run
 scripts/sync-from-dynamo.sh --apply /path/to/dynamo  # apply
 ```
 
-Parser source, parser fixtures, and conformance utilities are frontend-crates-owned after the parser crate migration; do not sync them from Dynamo. After changing parser fixtures or conformance code, verify both renderers:
+Parser source, parser fixtures, and conformance utilities are frontend-crates-owned after the parser crate migration; do not sync them from Dynamo. After changing parser fixtures or conformance code, verify the renderer:
 
 ```bash
-conformance/utils/render_table_v1.sh
 conformance/utils/render_table_v2.sh
 ```
 
@@ -102,7 +101,6 @@ These files have no upstream Dynamo counterpart. Never overwrite them during a s
 | `conformance/utils/src/_common.sh` | Shared stage builder for conformance scripts. |
 | `conformance/utils/check.sh` | Runs local-parser, vLLM, and SGLang checks against staged fixtures; v2 local-parser checks run Dynamo parser v2 code. |
 | `conformance/utils/render_table_v2.sh` | Renders `conformance/CONFORMANCE_v2.html` with the v2 conformance generator. |
-| `conformance/utils/render_table_v1.sh` | Renders `.stage/tests/parity/PARITY_v1.html` with old Dynamo `generate_parity_table.py`. |
 | `conformance/utils/src/validate.py` | Cross-implementation validation via `docker exec` or pip. |
 | `conformance/utils/src/build_stream_fixtures.py` | Builds v2 per-chunk stream fixtures from source cases and captured engine output. |
 | `conformance/utils/src/capture.py` | In-container worker for an engine's tool-call parser: `--mode stream` (per-chunk), `--mode batch-on-stream` (batch text through the streaming parser), `--mode harmony-batch` (Harmony batch samples), `--mode harmony-chunk` (vLLM token-native Harmony). |
