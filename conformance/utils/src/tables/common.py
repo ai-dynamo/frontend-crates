@@ -19,10 +19,10 @@ from typing import Any
 
 
 # ---------------------------------------------------------------------------
-# Destination-aware link resolution, shared by the v1 PARITY and v2 CONFORMANCE
-# generators. Each generator calls set_links() with its own output path before
-# building, so the table builders emit hrefs that resolve from where the page is
-# actually published -- no post-render path rewriting.
+# Destination-aware link resolution for the conformance generator. The generator
+# calls set_links() with its own output path before building, so the table builders
+# emit hrefs that resolve from where the page is actually published -- no
+# post-render path rewriting.
 # ---------------------------------------------------------------------------
 
 

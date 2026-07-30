@@ -123,10 +123,9 @@ def _make_jinja_env() -> Environment:
 def _read_asset(name: str) -> str:
     """Inline a shared static asset (conformance.css / conformance.js) into the page.
 
-    Both the v1 parity page and the v2 conformance table render as single
-    self-contained HTML files that inline the SAME `tests/parity/assets/` CSS+JS —
-    no per-page copy. Keeping one source avoids the compare-bar/coloring logic
-    drifting between the two pages (it used to be duplicated inline in each)."""
+    The conformance table renders as a single self-contained HTML file that
+    inlines the `tests/parity/assets/` CSS+JS. Keeping one source avoids the
+    compare-bar/coloring logic drifting (it used to be duplicated inline)."""
     return (TEMPLATE_DIR / "assets" / name).read_text(encoding="utf-8")
 
 
@@ -691,9 +690,9 @@ def _build_display_groups(
 
 
 # DIS-2477: comparison / leak / status semantics are single-sourced in markers.py.
-# The v1 toolcalling table used to fork its own copies of these here (some diverged:
-# no parser-error branch, a hardcoded leak regex, no JSON-arg canonicalization). Route
-# the local names to the shared implementations so both pages share one source of truth.
+# This table used to fork its own copies of these here (some diverged: no
+# parser-error branch, a hardcoded leak regex, no JSON-arg canonicalization). Route
+# the local names to the shared implementations so there is one source of truth.
 peer_status = markers.peer_status
 _explanation = markers._explanation
 _dynamo_tool_call_leak = markers._dynamo_tool_call_leak
@@ -1138,10 +1137,9 @@ def _compute_stats(
     return s
 
 
-# ===== Structured JSON model builder (DIS-2434, v1 PARITY page) =================
+# ===== Structured JSON model builder ===========================================
 # Same-schema model tab as the v2 toolcalling path (model.make_cell). Comparison
-# semantics (status / cmp / facts) are single-sourced in markers.py (DIS-2477) — both
-# pages now share one comparison path.
+# semantics (status / cmp / facts) are single-sourced in markers.py.
 import model  # noqa: E402  (schema + cell normalizer; leaf module staged alongside)
 
 

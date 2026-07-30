@@ -259,8 +259,7 @@ def _display_path(path: Path, artifact_root: Path) -> str:
         return path.as_posix()
 
 
-# Destination-aware link resolution lives in tables.common
-# (`set_links` / `LINKS`), shared by the v1 PARITY and v2 CONFORMANCE generators.
+# Destination-aware link resolution lives in tables.common (`set_links` / `LINKS`).
 
 
 _VISIBLE_CONFORMANCE_REPLACEMENTS = (

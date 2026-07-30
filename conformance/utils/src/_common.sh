@@ -172,10 +172,10 @@ build_stage_conformance() {
   # Keep the current conformance harness owned by conformance/utils while presenting
   # it in Dynamo's staged tests/parity layout for imports and template lookup.
   \cp -f "$TOOLS/generate_conformance_table.py" "$STAGE/tests/parity/generate_conformance_table.py"
-  # impls.py + markers.py staged in _build_stage_base (shared by both pages, DIS-2477).
+  # impls.py + markers.py are staged in _build_stage_base.
   \cp -f "$TOOLS/fixtures.py" "$STAGE/tests/parity/fixtures.py"
   \cp -f "$TOOLS/conformance_table.html.j2" "$STAGE/tests/parity/conformance_table.html.j2"
-  # Shared CSS/JS assets are staged in _build_stage_base (used by both pages).
+  # Shared CSS/JS assets are staged in _build_stage_base.
   _copy_toolcalling_v2_fixtures
   # Current page: reasoning shows the pinned NEW peer versions, in sync with the v2
   # toolcalling tab (both compare against the current engines).
