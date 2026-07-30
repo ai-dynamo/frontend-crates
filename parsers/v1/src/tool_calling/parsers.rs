@@ -4,7 +4,8 @@
 use super::ToolDefinition;
 use super::config::{ParserConfig, ToolCallConfig};
 use super::dsml::{
-    detect_tool_call_start_dsml, find_tool_call_end_position_dsml, try_tool_call_parse_dsml,
+    detect_tool_call_start_dsml, find_complete_tool_call_end_position_dsml,
+    try_tool_call_parse_dsml,
 };
 use super::gemma4::{
     detect_tool_call_start_gemma4, find_tool_call_end_position_gemma4, try_tool_call_parse_gemma4,
@@ -423,7 +424,7 @@ pub fn find_tool_call_end_position(chunk: &str, parser_str: Option<&str>) -> Opt
                 Some(find_tool_call_end_position_xml(chunk, xml_config))
             }
             ParserConfig::Dsml(dsml_config) => {
-                Some(find_tool_call_end_position_dsml(chunk, dsml_config))
+                find_complete_tool_call_end_position_dsml(chunk, dsml_config)
             }
             ParserConfig::Glm47(glm47_config) => {
                 Some(find_tool_call_end_position_glm47(chunk, glm47_config))

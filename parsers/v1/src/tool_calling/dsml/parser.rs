@@ -48,7 +48,7 @@ pub fn detect_tool_call_start_dsml(chunk: &str, config: &DsmlParserConfig) -> bo
     false
 }
 
-/// Find the end position of a DSML tool call block
+/// Find the end position of a DSML tool call block.
 pub fn find_tool_call_end_position_dsml(chunk: &str, config: &DsmlParserConfig) -> usize {
     let end_token = &config.block_end;
 
@@ -57,6 +57,23 @@ pub fn find_tool_call_end_position_dsml(chunk: &str, config: &DsmlParserConfig) 
     } else {
         chunk.len()
     }
+}
+
+/// Find the end position of a complete DSML tool call block.
+///
+/// Returns `None` when a DSML block has started but the matching block end has
+/// not arrived yet. This tells the streaming jail to keep accumulating instead
+/// of parsing a partial block on every delta.
+pub fn find_complete_tool_call_end_position_dsml(
+    chunk: &str,
+    config: &DsmlParserConfig,
+) -> Option<usize> {
+    let end_token = &config.block_end;
+
+    if let Some(pos) = chunk.find(end_token.as_str()) {
+        return Some(pos + end_token.len());
+    }
+    None
 }
 
 /// Parse DSML formatted tool calls from a message.
@@ -1222,13 +1239,18 @@ mod tests {
         assert!(detect_tool_call_start_dsml("<｜DSML｜tool_call", &config));
         // And on an empty buffer that ends with the very first char of the fence.
         assert!(detect_tool_call_start_dsml("<", &config));
-        // End-position lookup must return chunk.len() when the end fence
-        // hasn't arrived yet — caller is expected to keep buffering.
+        // End-position lookup must return None when the end fence hasn't
+        // arrived yet — caller is expected to keep buffering.
         let partial = "<｜DSML｜tool_calls>\n<｜DSML｜invoke name=\"a\">\n";
+        assert_eq!(
+            find_complete_tool_call_end_position_dsml(partial, &config),
+            None,
+            "Partial chunk without close fence must report None so caller buffers more"
+        );
         assert_eq!(
             find_tool_call_end_position_dsml(partial, &config),
             partial.len(),
-            "Partial chunk without close fence must report end=len so caller buffers more"
+            "Public compatibility wrapper must keep returning chunk.len()"
         );
     }
 

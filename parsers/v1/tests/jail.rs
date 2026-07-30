@@ -4224,6 +4224,25 @@ fahrenheit
                 &["<function=", "</tool_call>"][..],
             ),
             (
+                "deepseek_v3_2",
+                "DeepSeek V3.2",
+                vec![
+                    "I will check that. <｜DSML｜inv",
+                    "oke name=\"get_weather\">\n<｜DSML｜parameter name=\"location\" string=\"true\">NYC</｜DSML｜parameter>\n</｜DSML｜invoke>\n</｜DSML｜function_calls>",
+                ],
+                &["<｜DSML｜invoke", "</｜DSML｜function_calls>"][..],
+            ),
+            (
+                "deepseek_v3_2",
+                "DeepSeek V3.2 delayed outer close",
+                vec![
+                    "I will check that. <｜DSML｜invoke name=\"get_weather\">\n<｜DSML｜parameter name=\"location\" string=\"true\">NYC</｜DSML｜parameter>\n",
+                    "</｜DSML｜invoke>",
+                    "\n</｜DSML｜function_calls>",
+                ],
+                &["<｜DSML｜invoke", "</｜DSML｜function_calls>"][..],
+            ),
+            (
                 "deepseek_v4",
                 "DeepSeek V4",
                 vec![
