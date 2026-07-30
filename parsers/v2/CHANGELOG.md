@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.1.24](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.1.23...dynamo-parsers-v2-v0.1.24) - 2026-07-30
+
+### Features
+
+- *(parsers)* UnifiedParser for Qwen3 — one ordered reasoning/text/tool stream ([#151](https://github.com/ai-dynamo/frontend-crates/pull/151))
+
 ## [0.1.23](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.1.22...dynamo-parsers-v2-v0.1.23) - 2026-07-21
 
 ### Features
