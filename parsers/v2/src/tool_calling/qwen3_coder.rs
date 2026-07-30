@@ -10,9 +10,9 @@
 //!
 //! The streaming concern (buffering, chunk-split marker safety, normal_text
 //! suppression) is owned by the shared [`scan::WrappedBlockScanner`]. The
-//! per-block value typing is delegated to the v1 batch XML parser
-//! `try_tool_call_parse_xml`, so a streamed call matches exactly what the batch
-//! parser produces (the DIS-2209 bar). Arguments are re-serialized in the
+//! per-block value typing is delegated to the vendored batch XML parser via
+//! `parse_tool_call_block`, so a streamed call matches exactly what the batch
+//! parser produces. Arguments are re-serialized in the
 //! source parameter order because the v1 parser builds them from a `HashMap`
 //! whose key order is non-deterministic; streaming fixtures store the arguments
 //! as an exact JSON string, so order has to be pinned to the model-emitted
@@ -22,7 +22,7 @@ use crate::tool_calling::scan::{
     BareRecoveryLatch, InvokeEmitter, InvokeLatch, WrappedBlockScanner, WrappedBlockSpec,
     reorder_arguments,
 };
-use crate::tool_calling::v1core::{ToolDefinition, XmlParserConfig, try_tool_call_parse_xml};
+use crate::tool_calling::v1core::{ToolDefinition, XmlParserConfig, parse_tool_call_block};
 
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
 
@@ -54,10 +54,9 @@ fn spec() -> WrappedBlockSpec {
     }
 }
 
-/// Value-typing hook: wraps one complete `<function=...></function>` block in
-/// `<tool_call>` so the v1 parser takes its normal wrapped path, then re-orders
-/// the arguments to source order.
-struct Qwen3Emitter {
+/// Value-typing hook: types one complete `<function=...></function>` block and
+/// re-orders the arguments to source order.
+pub(crate) struct Qwen3Emitter {
     config: XmlParserConfig,
     tools: Vec<ToolDefinition>,
 }
@@ -68,8 +67,14 @@ impl InvokeEmitter for Qwen3Emitter {
         invoke: &str,
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>> {
-        let wrapped = format!("{BLOCK_START}{invoke}{BLOCK_END}");
-        let (calls, _content) = try_tool_call_parse_xml(&wrapped, &self.config, Some(&self.tools))?;
+        // Type this ONE invoke directly. Wrapping it back in `<tool_call>` and
+        // re-entering `try_tool_call_parse_xml` made the batch parser re-run
+        // block discovery, which cuts the block at the FIRST `</tool_call>` —
+        // so a parameter value that legitimately contains that marker was
+        // truncated (`<parameter=cmd>git log </tool_call> --oneline</parameter>`
+        // typed as `git log </tool_call>`). The scanner has already delimited
+        // the invoke, so re-discovering its bounds could only corrupt them.
+        let calls = parse_tool_call_block(invoke, &self.config, Some(&self.tools))?;
         let Some(call) = calls.into_iter().next() else {
             return Ok(None);
         };
@@ -83,6 +88,22 @@ impl InvokeEmitter for Qwen3Emitter {
     }
 }
 
+/// Build the scan core for the Qwen3 tool grammar.
+///
+/// The single construction site for this grammar. The unified Qwen3 parser
+/// calls it too and layers reasoning on top, so both parsers get the same
+/// block/invoke markers, holdback set, recovery latches and value typing —
+/// there is no second copy to drift.
+pub(crate) fn qwen3_scanner(tools: &[Tool]) -> WrappedBlockScanner<Qwen3Emitter> {
+    WrappedBlockScanner::new(
+        spec(),
+        Qwen3Emitter {
+            config: XmlParserConfig::default(),
+            tools: tools.iter().map(ToolDefinition::from).collect(),
+        },
+    )
+}
+
 /// Stream parser for Qwen3-Coder XML tool calls.
 pub struct Qwen3CoderToolStreamParser {
     scanner: WrappedBlockScanner<Qwen3Emitter>,
@@ -91,13 +112,7 @@ pub struct Qwen3CoderToolStreamParser {
 impl Qwen3CoderToolStreamParser {
     pub fn new(tools: &[Tool]) -> Self {
         Self {
-            scanner: WrappedBlockScanner::new(
-                spec(),
-                Qwen3Emitter {
-                    config: XmlParserConfig::default(),
-                    tools: tools.iter().map(ToolDefinition::from).collect(),
-                },
-            ),
+            scanner: qwen3_scanner(tools),
         }
     }
 }

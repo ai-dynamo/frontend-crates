@@ -2299,7 +2299,9 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     # column's per-family variant (UnifiedParser for gemma4, CombinedParser otherwise)
     # can't fit one fixed column label, so it's shown per family in the tooltip.
     dynamo_ver_label = _dynamo_v2_version() or "0.1.x"
-    dynamo_label = f"Dynamo v2 Rust {dynamo_ver_label} (stream, orig)"
+    # Per-family mixture now, exactly like vLLM Rust: the native UnifiedParser where
+    # one exists (qwen3), the v1-reasoning + v2-tool split everywhere else.
+    dynamo_label = f"Dynamo v2 Rust {dynamo_ver_label} (stream, Combined & Unified)"
     vllm_label = (f"vLLM Python {vllm_ver_label} (batch, Combined)" if vllm_live
                   else "vLLM Python 0.25.x (expected)")
     vrust_label = f"vLLM Rust {vrust_ver_label} (stream, Combined & Unified)"
@@ -2423,9 +2425,12 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             tooltip = {
                 "head": f'UNIFIED.{g_num}.{g_sub} ({s}) — {f}',
                 "description": desc,
-                "input": {"kind": "chunks", "text": c["input"], "chunks": chunk_rows, "family": f},
+                # `family` here selects the GRAMMAR the colorizer types markup with,
+                # so it must be the marker-registry family, not the corpus one.
+                "input": {"kind": "chunks", "text": c["input"], "chunks": chunk_rows,
+                          "family": unified_taxonomy.marker_family(f)},
                 "candidates": [
-                    {"key": "dynamo", "label": f"{dynamo_label}; v1 reasoning + v2 tool", "impl": "dynamo",
+                    {"key": "dynamo", "label": dynamo_label, "impl": "dynamo",
                      "version": None, "parse_mode": "unified", "leak": dverd == "LEAK",
                      "block": {"events": dyn, "verdict": dverd,
                                "todo": _TODO if dverd != "MATCH" else None}},
@@ -2502,8 +2507,8 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                "detector, Combined)." if sgl_live else "")),
         "toolbar_desc_html": (
             'Reference = <strong>GOLDEN</strong> (authored oracle, best-effort recovery) · '
-            'Compare = <strong>Dynamo v2 Rust (orig)</strong> (v1 reasoning over the whole '
-            'stream, then the v2 tool parser; no unified parser yet), '
+            'Compare = <strong>Dynamo v2 Rust</strong> (native <strong>UnifiedParser</strong> '
+            'for qwen3, v1 reasoning + v2 tool split otherwise), '
             f'<strong>vLLM Python {vllm_ver_label} (Combined)</strong>'
             + (f', and <strong>vLLM Rust {vrust_ver_label}</strong> (native '
                '<strong>UnifiedParser</strong> for gemma4, <strong>CombinedParser</strong> '

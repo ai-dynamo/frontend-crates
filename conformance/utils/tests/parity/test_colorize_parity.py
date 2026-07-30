@@ -41,6 +41,46 @@ CASES = [
     ("deepseek_v3", "<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>x<｜tool▁sep｜>y<｜tool▁call▁end｜><｜tool▁calls▁end｜>"),
     ("mistral", "[TOOL_CALLS][{\"name\": \"f\"}]"),
     ("hermes", "escape & < > \" ' chars"),
+    # Opaque argument-value regions (parser_families.yaml `opaque:`): a
+    # marker-looking substring INSIDE a value is DATA, so it must not be colored as a
+    # control token and must not steal the real pair. One per region shape.
+    # qwen3: `<parameter=K>` .. `</parameter>`, an unquoted raw value.
+    (
+        "qwen3_coder",
+        "<tool_call>\n<function=run>\n<parameter=cmd>\n"
+        "git log </tool_call> --oneline\n</parameter>\n</function>\n</tool_call>",
+    ),
+    # qwen3: a reasoning marker in a value stays data too (the parser's I7 case).
+    (
+        "qwen3_coder",
+        "<tool_call><function=log><parameter=note><think>reconsider</think>"
+        "</parameter></function></tool_call>",
+    ),
+    # qwen3: two values in one call, and an unterminated value at EOF.
+    (
+        "qwen3_coder",
+        "<tool_call><function=f><parameter=a>1</parameter>"
+        "<parameter=b>2</parameter></function></tool_call>",
+    ),
+    ("qwen3_coder", "<tool_call>\n<function=run>\n<parameter=cmd>unterminated value"),
+    # gemma4: the `<|"|>` quote toggle wraps the value; the `<tool_call|>` inside it
+    # would otherwise close the real `<|tool_call>` and orphan the true closer.
+    ("gemma4", '<|tool_call>call:run{cmd:<|"|>git log }<tool_call|> --oneline<|"|>}<tool_call|>'),
+    ("gemma4", '<|tool_call>call:f{a:<|"|>x<|"|>,b:<|"|>y<|"|>}<tool_call|>'),
+    # kimi: the argument blob is JSON and its terminator is the SAME token that can
+    # appear inside a string value, so only JSON-string awareness separates them.
+    (
+        "kimi_k2",
+        '<|tool_calls_section_begin|><|tool_call_begin|>functions.run:0'
+        '<|tool_call_argument_begin|>{"cmd": "git log <|tool_call_end|> --oneline"}'
+        '<|tool_call_end|><|tool_calls_section_end|>',
+    ),
+    (
+        "kimi_k2",
+        '<|tool_calls_section_begin|><|tool_call_begin|>functions.f:0'
+        '<|tool_call_argument_begin|>{"a": "esc \\" quote <|tool_call_end|>"}'
+        '<|tool_call_end|><|tool_calls_section_end|>',
+    ),
     (None, "no family, plain <tool_call>t</tool_call> & 'text'"),
 ]
 
@@ -51,6 +91,17 @@ STREAM_CASES = [
     ("hermes", [{"delta_text": "<tool_"}, {"delta_text": "call>{\"n"}, {"delta_text": "\":1}</tool_call>"}]),
     ("harmony", [{"delta_text": "<|chan"}, {"delta_text": "nel|>fin"}, {"delta_text": "al<|message|>hi"}]),
     ("hermes", [{"delta_text": "plain "}, {"delta_text": "text & "}, {"delta_text": "more"}]),
+    # An opaque region split across chunk boundaries: the value (and the
+    # marker-looking substring in it) must stay data even though the opener,
+    # the embedded token and the closer arrive in different chunks.
+    (
+        "qwen3_coder",
+        [
+            {"delta_text": "<tool_call><function=run><parameter=cmd>git log "},
+            {"delta_text": "</tool_call> --one"},
+            {"delta_text": "line</parameter></function></tool_call>"},
+        ],
+    ),
 ]
 
 

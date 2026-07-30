@@ -561,9 +561,59 @@
     });
   });
 
+  // Equal columns, sized to what the WIDEST column actually needs.
+  //
+  // Pure CSS gives one or the other, not both: `table-layout: fixed; width: 100%`
+  // makes columns equal but always consumes the whole popup (a chart of `–` cells
+  // took as much room as one full of arguments), while auto layout sizes the table
+  // to its content but leaves every column a different width, which reads as messy
+  // when the point is to compare engines side by side.
+  //
+  // So measure, then pin. Under auto + `max-content` each rendered column width IS
+  // that column's max-content (the width at which its longest line does not wrap);
+  // take the widest, then switch to fixed layout with `width = n * widest`, which
+  // fixed layout divides into n equal columns of exactly that width. If that exceeds
+  // the popup's viewport cap, `max-width: 100%` shrinks it — columns stay equal
+  // because fixed layout keeps dividing evenly.
+  //
+  // Memoized per table: the result only depends on content, which does not change.
+  function equalizeColumns(ttip) {
+    const tables = ttip.querySelectorAll('.ttip-chunks, .ttip-grammar');
+    for (const t of tables) {
+      if (t.dataset.eqCols === '1') continue;
+      const row = t.querySelector('tr');
+      if (!row || !row.children.length) continue;
+      t.style.tableLayout = 'auto';
+      t.style.width = 'max-content';
+      const natural = [];
+      for (const c of row.children) natural.push(c.getBoundingClientRect().width);
+
+      // The grammar popup's first column is only a model name ("qwen3", "kimi_k2"),
+      // so equalizing it just pads every row by a couple hundred pixels. Leave it at
+      // its natural width and equalize only the columns actually being compared. The
+      // chunk chart has no such column — its first column is the input/golden stream,
+      // which belongs in the comparison — so there it stays equal with the rest.
+      const keepFirst = t.classList.contains('ttip-grammar') && natural.length > 1;
+      const compared = keepFirst ? natural.slice(1) : natural;
+      const widest = Math.max.apply(null, compared);
+
+      if (widest > 0) {
+        const firstW = keepFirst ? Math.ceil(natural[0]) : 0;
+        t.style.tableLayout = 'fixed';
+        t.style.width = Math.ceil(firstW + widest * compared.length) + 'px';
+        t.style.maxWidth = '100%';
+        // Under fixed layout the FIRST row's explicit widths pin the columns; the
+        // rest split what is left, which is exactly `widest` each.
+        if (keepFirst) row.children[0].style.width = firstW + 'px';
+      }
+      t.dataset.eqCols = '1';
+    }
+  }
+
   function place(cell) {
     const ttip = cell.querySelector('.ttip');
     if (!ttip) return;
+    equalizeColumns(ttip);
     ttip.style.visibility = 'hidden';
     ttip.style.opacity = '0';
     ttip.classList.add('ttip-visible');
@@ -571,12 +621,13 @@
     ttip.style.top = '100%';
     ttip.style.right = 'auto';
     ttip.style.bottom = 'auto';
-    // Cap the width at the viewport MINUS both gutters. 90% alone is not enough: a
-    // tooltip that wide still has to be shifted left to clear the right gutter, and if
-    // the shift then pushes its left edge past `margin` the clamp below cancels it and
-    // the popup ends up flush against an edge. Bounding the width makes both fit.
-    ttip.style.maxWidth = Math.max(240, Math.min(
-      Math.round(window.innerWidth * 0.9), window.innerWidth - 2 * margin)) + 'px';
+    // Cap the width at the viewport MINUS both gutters — that is the most a popup may
+    // use, so on a narrow screen it grows to fill the window while still leaving the
+    // left/right padding. This is only a CEILING: the popup is `width: max-content`, so
+    // a chart that needs less stays narrow rather than padding itself out to the cap.
+    // (The old cap also took 90% of the viewport, which on a small screen threw away a
+    // gutter's worth of usable room on top of the two real gutters.)
+    ttip.style.maxWidth = Math.max(240, window.innerWidth - 2 * margin) + 'px';
     const cellRect = cell.getBoundingClientRect();
     const tipRect = ttip.getBoundingClientRect();
     const vw = window.innerWidth, vh = window.innerHeight;
