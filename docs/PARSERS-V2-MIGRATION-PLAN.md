@@ -16,7 +16,7 @@ All three parser crates live under `parsers/`, grouped but still separately pack
 
 ## Terminology
 
-`v1` means the stable batch parser crate (`dynamo-parsers`, under `parsers/v1/`), its legacy fixtures (`conformance/toolcalling/fixtures-v1/`, `conformance/reasoning/fixtures/`), the old parity renderer (`conformance/utils/tests/parity/`), and `conformance/utils/lib/parsers/*_CASES.md`.
+`v1` means the stable batch parser crate (`dynamo-parsers`, under `parsers/v1/`), its legacy fixtures (`conformance/toolcalling/fixtures-v1/`, `conformance/reasoning/fixtures/`), and `conformance/utils/lib/parsers/*_CASES.md`.
 
 `v2` means the WIP streaming parser crate (`dynamo-parsers-v2`, under `parsers/v2/`), its Python binding (`parsers/v2-py/`), stream fixtures, batch-on-stream fixtures, and the conformance renderer (`conformance/utils/src/generate_conformance_table.py`, `conformance/utils/src/conformance_table.html.j2`).
 
@@ -36,7 +36,7 @@ The v1/v2 split is kept because **v2 is still under active development**: it liv
 | `parsers/v1/tests/` | v1 frontend-crates-owned | v1 crate tests. |
 | `conformance/toolcalling/fixtures-v1/` | frontend-crates legacy v1 | Batch tool-calling fixtures retained for v1 behavior. Do not hand-edit for v2 behavior. |
 | `conformance/reasoning/fixtures/` | frontend-crates legacy v1 | Reasoning fixtures rendered in the conformance table. |
-| `conformance/utils/tests/parity/` | frontend-crates-owned | Shared table/markup modules the conformance generator imports. |
+| `conformance/utils/src/tables/` | frontend-crates-owned | Shared table/markup modules the conformance generator imports. |
 | `conformance/utils/lib/parsers/TOOLCALLING_CASES.md` and `REASONING_CASES.md` | frontend-crates-owned | Case docs used by the conformance renderer. |
 | `parsers/v2/src/tool_calling/*` | v2 frontend-crate-owned | Rust home for streaming tool-calling parsers. Current Harmony implementation is `parsers/v2/src/tool_calling/harmony.rs`. |
 | `parsers/v2-py/` | v2 frontend-crate-owned | Test-only PyO3 package exposing the v2 parser to Python as `dynamo_parsers_v2`. Not published. |

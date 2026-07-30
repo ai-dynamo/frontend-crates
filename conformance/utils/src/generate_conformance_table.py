@@ -96,7 +96,6 @@ from tables.markup import (
     declared_markers,
 )
 from tables.reasoning import table as reasoning_table
-from tables.toolcalling import table as toolcalling_table
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures"
@@ -856,7 +855,7 @@ def _peer_version_items(versions: dict[str, str]) -> list[tuple[str, str]]:
 # --- per-impl version snapshots for the TC v1 (batch) tab -----------------------
 # Version dirs use legacy impl prefixes (dynamo/vllm/sglang); map to the canonical
 # batch impl keys the cells + radios use. Discovery/slug/sort helpers are shared
-# with the parity page via toolcalling_table.
+# with the parity page via fixtures.
 _VERSION_LEGACY_TO_CANON = {
     "dynamo_v1": "dynamo_v1",
     "dynamo_v2": "dynamo_v2",
@@ -878,7 +877,7 @@ _IMPL_VERSION_RADIO_LABEL = {
 
 def _batch_impl_versions() -> dict[str, list[str]]:
     """Legacy-impl -> versions (ascending) for impls present on the batch tab."""
-    discovered = toolcalling_table._impl_versions()
+    discovered = fixtures._impl_versions()
     return {
         legacy: vers
         for legacy, vers in discovered.items()
@@ -895,11 +894,11 @@ def _batch_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, str
     impl_versions = _batch_impl_versions()
     if not impl_versions:
         return {}
-    resolver = toolcalling_table._RESOLVE_SRC_DIR / "resolve_fixtures.py"
-    src = toolcalling_table._SRC_FIXTURES
+    resolver = fixtures._RESOLVE_SRC_DIR / "resolve_fixtures.py"
+    src = fixtures._SRC_FIXTURES
     if not resolver.exists() or not src.is_dir():
         return {}
-    pinned = toolcalling_table._pinned_versions(impl_versions)
+    pinned = fixtures._pinned_versions(impl_versions)
     saved_fixtures = fixtures.FIXTURES
     saved_captured = _CAPTURED_WITH_BY_MODE.get("batch")
     result: dict[tuple[str, str], dict[str, dict[str, str]]] = {}
@@ -907,7 +906,7 @@ def _batch_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, str
         for legacy, versions in impl_versions.items():
             canon = _VERSION_LEGACY_TO_CANON[legacy]
             for version in versions:
-                slug = toolcalling_table._version_slug(version)
+                slug = fixtures._version_slug(version)
                 select = [
                     f"{other}-{version if other == legacy else pinned[other]}"
                     for other in impl_versions
@@ -1044,7 +1043,7 @@ def _candidate_items() -> list[dict[str, str]]:
     first = True
     for canon in ("dynamo_v1", "vllm_python", "sglang_python"):
         for v in reversed(impl_versions.get(canon, [])):
-            slug = toolcalling_table._version_slug(v)
+            slug = fixtures._version_slug(v)
             if first:
                 bucket = "A"
                 first = False
@@ -1074,7 +1073,7 @@ def _candidate_items() -> list[dict[str, str]]:
 # _common.sh exports CONFORMANCE_FIXTURES_ROOT. Without this the stream tab's versioned
 # candidates come up empty and the Base/Compare parser selector doesn't render.
 _STREAM_SRC = (
-    toolcalling_table._fixtures_cache_root() / "toolcalling/fixtures-stream-v2"
+    fixtures._fixtures_cache_root() / "toolcalling/fixtures-stream-v2"
 )
 
 
@@ -1106,7 +1105,7 @@ def _stream_impl_versions() -> dict[str, list[str]]:
             # to the base so only real versions become compare columns.
             found.setdefault(impl, []).append(_base_stream_version(ver))
     for impl in list(found):
-        found[impl] = sorted(set(found[impl]), key=toolcalling_table._version_sort_key)
+        found[impl] = sorted(set(found[impl]), key=fixtures._version_sort_key)
     order = ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python")
     return {i: found[i] for i in order if i in found}
 
@@ -1122,7 +1121,7 @@ def _stream_candidate_items() -> list[dict[str, str]]:
     for impl in ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python"):
         # Within an engine, versions run LATEST-FIRST (0.24.0 before 0.23.0).
         for v in reversed(impl_versions.get(impl, [])):
-            slug = toolcalling_table._version_slug(v)
+            slug = fixtures._version_slug(v)
             if impl == BASELINE_STREAM_IMPL and v == latest.get(impl):
                 bucket = "A"
             else:
@@ -1189,7 +1188,7 @@ def _parser_ni_map() -> dict:
     fams = sorted(_stream_version_families(BASELINE_STREAM_IMPL, v2ver) or [])
     if not fams:
         return {}
-    slug = toolcalling_table._version_slug(v2ver)
+    slug = fixtures._version_slug(v2ver)
     entry = {"label": _full_label(BASELINE_STREAM_IMPL, v2ver, "stream"), "families": fams}
     # The v2 candidate key differs by tab: "<impl>-s-<slug>" on the batch
     # (stream-on-batch) tab, bare "<impl>-<slug>" on the stream tab.
@@ -1210,7 +1209,7 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
     impl_versions = _stream_impl_versions()
     if not impl_versions:
         return {}
-    resolver = toolcalling_table._RESOLVE_SRC_DIR / "resolve_stream_fixtures.py"
+    resolver = fixtures._RESOLVE_SRC_DIR / "resolve_stream_fixtures.py"
     if not resolver.exists() or not _STREAM_SRC.is_dir():
         return {}
     overlaid = {i: vs for i, vs in impl_versions.items() if len(vs) > 1}
@@ -1238,7 +1237,7 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
         return counts
 
     def _record(cases, impl, version):
-        slug = toolcalling_table._version_slug(version)
+        slug = fixtures._version_slug(version)
         raw_counts = _raw_chunk_counts(impl, version)
         # Dynamo v1 and v2 are DIFFERENT parsers: v2 (dynamo_v2-0.1.11)
         # implements only a handful of families, while the v1 jail
@@ -1376,7 +1375,7 @@ def _merged_candidate_items() -> list[dict[str, str]]:
     stream_versions = _stream_on_batch_versions()
     for impl in STREAM_IMPL_KEYS:
         ver = stream_versions.get(impl)
-        slug = toolcalling_table._version_slug(ver) if ver else ""
+        slug = fixtures._version_slug(ver) if ver else ""
         out.append({
             "key": f"{impl}-s-{slug}" if slug else f"{impl}-s",
             "label": _full_label(impl, ver, "stream"),
@@ -1401,7 +1400,7 @@ def _attach_merged_cmp(cases: dict) -> None:
             # Within an engine, LATEST version first (matches the compare bar).
             entries = sorted(
                 (ver_status.get(impl) or {}).items(),
-                key=lambda kv: toolcalling_table._version_sort_key(str(kv[1].get("version") or "0")),
+                key=lambda kv: fixtures._version_sort_key(str(kv[1].get("version") or "0")),
                 reverse=True,
             )
             for slug, info in entries:
@@ -1417,7 +1416,7 @@ def _attach_merged_cmp(cases: dict) -> None:
             expected = _expected(sob)
             for impl in STREAM_IMPL_KEYS:
                 ver = stream_versions.get(impl)
-                slug = toolcalling_table._version_slug(ver) if ver else ""
+                slug = fixtures._version_slug(ver) if ver else ""
                 items.append({
                     "key": f"{impl}-s-{slug}" if slug else f"{impl}-s",
                     "label": _full_label(impl, ver, "stream"),

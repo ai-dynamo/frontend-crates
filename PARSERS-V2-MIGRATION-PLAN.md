@@ -4,7 +4,7 @@ This is the single source of truth for the parser v1/v2 bridge, the temporary Dy
 
 ## Terminology
 
-`v1` means Dynamo-synced parser code, fixtures, and old parity renderer behavior. During the bridge period, v1 lives in `parsers/src/`, `conformance/toolcalling/fixtures-batch-v1/`, `conformance/reasoning/fixtures/`, `conformance/utils/tests/parity/`, and `conformance/utils/lib/parsers/*_CASES.md`.
+`v1` means Dynamo-synced parser code, fixtures, and old parity renderer behavior. During the bridge period, v1 lives in `parsers/src/`, `conformance/toolcalling/fixtures-batch-v1/`, `conformance/reasoning/fixtures/`, and `conformance/utils/lib/parsers/*_CASES.md`.
 
 `v2` means frontend-crate-owned parser code, Python binding code, stream fixtures, batch-on-stream fixtures, and conformance renderer behavior. During the bridge period, v2 lives in `parsers_v2/`, `parsers_v2-py/`, `conformance/toolcalling/fixtures-stream-v2/`, `conformance/toolcalling/fixtures-batch-on-stream-v2/`, `conformance/utils/src/generate_conformance_table.py`, and `conformance/utils/src/conformance_table.html.j2`.
 
@@ -24,7 +24,7 @@ Do not move v2 parser code into `parsers/src/` until Dynamo consumes the release
 | `parsers/tests/` | v1 Dynamo-synced when present upstream | Resettable to Dynamo. |
 | `conformance/toolcalling/fixtures-batch-v1/` | frontend-crates legacy v1 | Batch tool-calling fixtures retained for v1 behavior. Do not hand-edit for v2 behavior. |
 | `conformance/reasoning/fixtures/` | frontend-crates legacy v1 | Reasoning fixtures rendered in the conformance table. |
-| `conformance/utils/tests/parity/` | frontend-crates-owned | Shared table/markup modules the conformance generator imports. |
+| `conformance/utils/src/tables/` | frontend-crates-owned | Shared table/markup modules the conformance generator imports. |
 | `conformance/utils/lib/parsers/TOOLCALLING_CASES.md` and `REASONING_CASES.md` | v1 Dynamo-synced | Case docs used by the conformance renderer. |
 | `parsers_v2/src/tool_calling/*` | v2 frontend-crate-owned | Temporary Rust home for new streaming tool-calling parsers. Current Harmony implementation is `parsers_v2/src/tool_calling/harmony.rs`. |
 | `parsers_v2-py/` | v2 frontend-crate-owned | Temporary PyO3 package exposing the v2 parser to Python as `dynamo_parsers_v2`. |
