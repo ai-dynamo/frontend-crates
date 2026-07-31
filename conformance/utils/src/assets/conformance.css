@@ -68,6 +68,11 @@ tr.section td { background: #eef; font-weight: bold; text-align: left; }
 /* Per-tab source scope. JS swaps it per active tab. */
 .toolbar-desc { display: block; margin: 0.85em 0; padding: 7px 9px; border: 1px solid #f2c94c; background: #fff4b8; color: #3f3100; font-size: 12px; line-height: 1.35; max-width: 1200px; }
 .toolbar-desc a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+/* The legend explains the Reference/Compare model, the NΔ count and the red-cell rule —
+   all of which only exist once the compare bar and per-cell markers are on screen.
+   Overview is the at-a-glance view, so it reads as a wall of text about controls the
+   reader cannot see. Show it with Detailed, alongside the things it describes. */
+body.view-overview .toolbar-desc { display: none; }
 .radio-group { display: flex; align-items: center; gap: 8px; border: 1px solid #d0d7de; background: #f8fafc; border-radius: 6px; padding: 6px 8px; }
 .radio-group-label { font-size: 13px; font-weight: 600; }
 /* Compare model (all tabs): per-panel drag buckets — A=Base reference (0 or 1),
@@ -199,7 +204,44 @@ body.view-details td.cell.cmp-donly .cmp-marker { color: #9aa1a9; }
 .view-overview td.cell { font-size: 0; line-height: 0; }
 .view-overview td.cell > a { color: inherit; height: 16px; overflow: hidden; white-space: nowrap; }
 .view-overview td.cell > a:hover { background: transparent; }
-.view-overview td.cell:hover { filter: brightness(0.98); }
+.view-overview td.cell:hover, .view-overview td.cell.ttip-open { filter: brightness(0.90); }
+/* A cell whose popup is showing reads as PRESSED, so the popup is visibly anchored to
+   the cell it describes — with several popups' worth of chart on screen it is
+   otherwise easy to lose which cell you are looking at.
+
+   The press must mark the cell whose popup is ACTUALLY up, never a second cell. So it
+   is driven by two states that mirror how a popup opens: :hover / :focus-within while
+   hovering opens popups, and `.ttip-open` on the pinned cell. Once a pin is held,
+   `body.ttip-pin-mode` switches the hover half OFF — hover no longer opens a popup
+   then, so a hovered cell looking pressed would point at a popup that is not there.
+
+   Depth comes from the inset shadow and the dim ONLY — deliberately no `transform`.
+   A transformed element becomes the containing block for its absolutely-positioned
+   descendants AND scales them, and the popup is a child of the cell: `scale(.97)` shrank
+   the popup to 97% and re-anchored it, so a correctly-computed placement (right edge at
+   exactly viewport - margin) rendered 55px further right and overflowed the window. */
+td.cell:hover, td.parser:hover,
+td.cell:focus-within, td.parser:focus-within,
+th.case-sub:hover, th.case-sub:focus-within,
+td.cell.ttip-open, td.parser.ttip-open, th.case-sub.ttip-open {
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+/* Pin held: only the pinned cell is pressed. */
+body.ttip-pin-mode td.cell:hover:not(.ttip-open),
+body.ttip-pin-mode td.parser:hover:not(.ttip-open),
+body.ttip-pin-mode td.cell:focus-within:not(.ttip-open),
+body.ttip-pin-mode td.parser:focus-within:not(.ttip-open),
+body.ttip-pin-mode th.case-sub:hover:not(.ttip-open),
+body.ttip-pin-mode th.case-sub:focus-within:not(.ttip-open) {
+  box-shadow: none;
+}
+body.view-overview.ttip-pin-mode td.cell:hover:not(.ttip-open) { filter: none; }
+[data-theme="dark"] td.cell:hover, [data-theme="dark"] td.parser:hover,
+[data-theme="dark"] td.cell:focus-within, [data-theme="dark"] td.parser:focus-within,
+[data-theme="dark"] th.case-sub:hover, [data-theme="dark"] th.case-sub:focus-within,
+[data-theme="dark"] td.cell.ttip-open, [data-theme="dark"] th.case-sub.ttip-open {
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
 .view-overview td.cell .cell-marker { display: none; }
 .view-overview td.cell .ttip { font-size: 12px; line-height: 1.4; }
 .view-details td.cell { color: transparent; }
@@ -291,6 +333,11 @@ td.cell:hover, td.parser:hover, td.cell:focus-within, td.parser:focus-within { z
        narrow. 32px each side matches the `margin` gutter the placement JS clamps to,
        so on a small screen the popup may grow to the full window minus that padding.
        (The JS re-sets this inline per-open against the live viewport.) */
+    /* Border-box so the cap counts the 10px side padding. With content-box the popup
+       rendered 20px WIDER than its own max-width, spilling into the viewport gutter —
+       and, once pinned (`overflow: auto`), that overflow added a horizontal scrollbar
+       that made a pinned popup 15px taller than the same popup on hover. */
+    box-sizing: border-box;
     max-width: calc(100vw - 64px);
     min-width: 280px;
     width: max-content;
@@ -298,7 +345,11 @@ td.cell:hover, td.parser:hover, td.cell:focus-within, td.parser:focus-within { z
     text-align: left;
     pointer-events: auto;
     white-space: normal;
-    transition: opacity 120ms ease;
+    /* No opacity fade. `place()` shows the popup by clearing the inline opacity it
+       used while measuring, so a transition made it ramp 0 -> 1 — and a TRANSLUCENT
+       dark popup over a light page reads washed-out white before it settles to its
+       real color. That flash is what the delay was meant to avoid, not add. The popup
+       is already held back 750ms, so it does not also need to fade in. */
 }
 .ttip-visible {
     visibility: visible;
@@ -309,7 +360,22 @@ td.cell:hover, td.parser:hover, td.cell:focus-within, td.parser:focus-within { z
 td.cell, td.parser { cursor: pointer; }
 /* Tap-to-pin (touch / mobile): a pinned tooltip stays open until ✕ or an outside
    tap. Give it room for the close button and let it scroll if it's tall. */
-.ttip-pinned { padding-top: 26px; max-height: 80vh; overflow: auto; }
+/* Pinning must not RESIZE the popup — only add the close button. The 26px top
+   padding this used to add made a pinned popup 18px taller than the same popup on
+   hover, so clicking a cell visibly shifted every row down. The room for the button
+   is reserved horizontally instead, on the head, where a wide popup has space to
+   spare and the geometry does not move. */
+.ttip-pinned { max-height: 80vh; overflow: auto; }
+/* Always reserved, pinned or not, so the two states are the same box. Border-box
+   because the head also carries `min-width: 100%`: under content-box that resolves to
+   100% PLUS this padding, which overflows the popup and (once pinned) adds the very
+   horizontal scrollbar this section exists to avoid.
+   `.ttip-casedesc` gets the same reservation because a popup only has a `.ttip-head`
+   when the model carries `head`; without one the description renders as `.ttip-casedesc`
+   instead, and a popup with NEITHER (an n/a stub — only `na_note` / `reasons`) has no
+   first-line element at all, so the pinned ✕ is given a top gutter to sit in. */
+.ttip-head, .ttip-casedesc { padding-right: 28px; box-sizing: border-box; }
+.ttip-pinned:not(:has(.ttip-head)):not(:has(.ttip-casedesc)) { padding-top: 26px; }
 .ttip-close {
     position: absolute;
     top: 3px;
@@ -336,6 +402,22 @@ td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: tra
    normal weight, and the normal tooltip text color — not the loud section blue. */
 .ttip-head-desc { font-family: -apple-system, system-ui, sans-serif; font-weight: normal; color: #e5e7eb; }
 :root[data-theme="light"] .ttip-head-desc { color: #1f2937; }
+/* Parser configuration knobs, one per line under the description. Each value is a
+   literal the harness passed to the parser, so the whole line is mono; the bullets sit
+   tight against the description they qualify. */
+.ttip-config { margin: 4px 0 0 0; padding: 0 0 0 16px; list-style: disc; }
+.ttip-config li { margin: 1px 0; }
+.ttip-config code { font-family: ui-monospace, monospace; color: #a5d6ff; }
+/* The gloss is prose about the value, so sans-serif and dimmer than the value itself. */
+.ttip-config-why { font-family: -apple-system, system-ui, sans-serif; color: #9aa4b2; }
+:root[data-theme="light"] .ttip-config-why { color: #57606a; }
+/* The value set is reference material, so dimmer than the gloss; the values inside
+   it are literals and stay mono. */
+.ttip-config-vals { font-family: -apple-system, system-ui, sans-serif; color: #7d8590; }
+.ttip-config-vals code { font-family: ui-monospace, monospace; color: #8fa8c0; }
+:root[data-theme="light"] .ttip-config-vals { color: #6e7781; }
+:root[data-theme="light"] .ttip-config-vals code { color: #4c5560; }
+:root[data-theme="light"] .ttip-config code { color: #0550ae; }
 .ttip-section { font-weight: bold; margin-top: 6px; color: #93c5fd; }
 .ttip-leak { color: #ff6b6b; font-weight: 700; }
 .ttip-pre { margin: 2px 0 0 0; white-space: pre-wrap; word-break: break-word; font-family: inherit; color: #e5e7eb; }
@@ -866,13 +948,35 @@ body.cmp-loading .cmp-loading-note { display: block; position: fixed; top: 8px; 
 .ttip-reason,
 .ttip-note,
 .ttip-pre,
-.ttip-head,
 .expl {
   max-width: 100ch;
+  /* ...and fill whatever width the popup settles at. The cap alone bounds the
+     INTRINSIC contribution, which is what hands the width decision to the chart —
+     but it also wrapped this prose at 100ch inside a much wider popup, leaving a
+     visible gutter to its right (the "vLLM diverges too" footnote under a 5-column
+     chart was the worst case). A percentage min-width is indeterminate during
+     intrinsic sizing, so the cap still decides the popup's width; once that width is
+     resolved, min-width makes the prose use all of it. See `.ttip-head` below for the
+     measured before/after. */
+  min-width: 100%;
 }
-/* The head carries the case id + an inline description; without this the long
-   description keeps the head on one line and re-widens the popup. */
-.ttip-head { white-space: normal; }
+/* The head carries the case id + an inline description, and needs BOTH halves of the
+ * rule above: capped so it can't stretch the popup, but filling whatever width the
+ * popup ends up at so the description isn't wrapped early against dead space.
+ *
+ * `max-width` alone (the prose rule) gives the first half only: the chart sets the
+ * popup width, the head stops at 100ch, and a wide chart leaves a visible gap to the
+ * right of the description (measured: 1112px popup, 722px head, 370px of nothing).
+ * Dropping the cap gives the second half only: the head becomes the widest child and
+ * drags the popup out to the description's own length (1556px), which is the bug the
+ * cap was written to prevent.
+ *
+ * `min-width: 100%` separates the two. A percentage min-width is indeterminate during
+ * intrinsic sizing, so the head still contributes only `min(max-content, 100ch)` and
+ * the chart keeps deciding the width; once that width is resolved, min-width makes the
+ * head fill it. Chart popups wrap at the popup edge (gap 0), prose-only popups keep the
+ * ~100ch reading measure. */
+.ttip-head { white-space: normal; max-width: 100ch; min-width: 100%; }
 /* ...and the payload opts back in. `.ttip-code` is the parser input markup, `.ttip-tree`
  * the box-drawing shared-implementation tree; both only read correctly when the glyphs
  * line up in a column. `.ttip-code` sits INSIDE a `.ttip-pre`, so it has to win. */

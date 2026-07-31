@@ -336,3 +336,74 @@ def test_transpose_honors_collapsed_case_group(driver):
         key,
     )
     assert hidden is True, f"transposed rows for collapsed group {key} should be hidden"
+
+
+def test_pinned_column_header_stays_pinned(driver):
+    """Clicking a column header PINS its popup and the same click must not close it.
+
+    `attachTooltip` is wired to `td.cell, td.parser, th.case-sub`, but the document-level
+    outside-click handler used to treat only `td.cell, td.parser` as "inside". A header
+    click pinned the popup and then bubbled to that handler, which saw no matching
+    ancestor and unpinned it — so a header popup could never stay up, and clicking inside
+    one closed it. The two selectors are one `PINNABLE` constant now; this pins a header
+    by a real click and asserts it survives.
+    """
+    driver.execute_script(
+        "const v=document.querySelector('[data-view-detailed]'); if(v && !v.checked){v.checked=true; v.dispatchEvent(new Event('change'));}"
+    )
+    # A real .click() so the event bubbles to the document handler, which is the whole
+    # point — a synthetic dispatch on the header alone would never reproduce the bug.
+    clicked = driver.execute_script(
+        """
+        const tab = document.querySelector('.tab-panel.active') || document;
+        for (const th of tab.querySelectorAll('th.case-sub')) {
+          if (th.querySelector('.ttip')) { th.click(); return true; }
+        }
+        return false;
+        """
+    )
+    if not clicked:
+        pytest.skip("no column header with a tooltip on the active tab")
+    deadline = time.time() + 3
+    pinned = False
+    while time.time() < deadline:
+        pinned = driver.execute_script(
+            "return !!document.querySelector('th.case-sub .ttip.ttip-pinned');"
+        )
+        if pinned:
+            break
+        time.sleep(0.1)
+    assert pinned, "column-header popup did not stay pinned after its own click"
+
+
+def test_legend_is_detailed_only(driver):
+    """The Reference/Compare legend belongs to Detailed, not Overview.
+
+    It explains the compare bar, the NΔ count and the red-cell rule — none of which are
+    on screen in Overview, so there it is a wall of text about controls the reader cannot
+    see. Asserts both directions so a future CSS change cannot silently bring it back.
+    """
+    def legend_shown():
+        return driver.execute_script(
+            """
+            const tab = document.querySelector('.tab-panel.active') || document;
+            const el = tab.querySelector('.toolbar-desc') || document.querySelector('.toolbar-desc');
+            if (!el) { return null; }
+            return getComputedStyle(el).display !== 'none';
+            """
+        )
+    def set_detailed(on):
+        driver.execute_script(
+            "const v=document.querySelector('[data-view-detailed]');"
+            "if(v && v.checked!==arguments[0]){v.checked=arguments[0]; v.dispatchEvent(new Event('change'));}",
+            on,
+        )
+        time.sleep(0.3)
+    set_detailed(False)
+    overview = legend_shown()
+    if overview is None:
+        pytest.skip("no .toolbar-desc legend on this page")
+    set_detailed(True)
+    detailed = legend_shown()
+    assert not overview, "legend visible in Overview; it should be Detailed-only"
+    assert detailed, "legend hidden in Detailed; it should be visible there"

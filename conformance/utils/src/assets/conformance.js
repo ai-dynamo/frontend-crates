@@ -664,9 +664,15 @@
   const hoverCapable = window.matchMedia('(hover: hover)').matches;
   let pinnedCell = null;
   function unpinCell(c) { if (c && c._ttipUnpin) { c._ttipUnpin(); } }
+  // EVERY element that can be pinned, so "inside" below means the same set that
+  // `attachTooltip` is wired to. These two lists drifted: column headers were pinnable
+  // but not counted as inside, so a header click pinned it and the SAME click bubbled to
+  // the document handler and unpinned it again — the header popup could never stay up,
+  // and clicking within one closed it. One constant now, used by both.
+  const PINNABLE = 'td.cell, td.parser, th.case-sub';
   document.addEventListener('click', function (e) {
-    // A click anywhere outside a cell (and not on a pinned tooltip) closes the pin.
-    if (pinnedCell && !e.target.closest('td.cell, td.parser')) { unpinCell(pinnedCell); }
+    // A click anywhere outside a pinnable element (and not on a pinned tooltip) closes the pin.
+    if (pinnedCell && !e.target.closest(PINNABLE)) { unpinCell(pinnedCell); }
   });
 
   function attachTooltip(cell) {
@@ -701,12 +707,21 @@
       isVisible = true;
       isActive = true;
       pinnedCell = cell;
+      // The pressed look must mark the cell whose popup is actually up. While a pin
+      // is held, hover no longer opens anything, so hover must not press either —
+      // `ttip-pin-mode` switches the press off for :hover and onto this cell alone.
+      cell.classList.add('ttip-open');
+      document.body.classList.add('ttip-pin-mode');
     }
     function unpin() {
       ttip.classList.remove('ttip-visible', 'ttip-pinned');
       isVisible = false;
       isActive = false;
-      if (pinnedCell === cell) { pinnedCell = null; }
+      cell.classList.remove('ttip-open');
+      if (pinnedCell === cell) {
+        pinnedCell = null;
+        document.body.classList.remove('ttip-pin-mode');
+      }
     }
     cell._ttipUnpin = unpin;
 
@@ -770,14 +785,24 @@
     });
     // Hover show/hide only where hover exists; on touch it just flickers. A pinned
     // tooltip ignores hover leave so it stays until ✕ / outside tap.
+    //
+    // Pinning is also MODAL: while any tooltip is pinned, hover on OTHER cells does
+    // nothing. Clicking a cell is a deliberate "keep this one open so I can read it",
+    // and hover popups firing over the top of it defeat that — you cannot move the
+    // mouse toward the pinned popup without crossing cells that each try to open
+    // their own. Hover resumes when the pin is released (✕, clicking the pinned cell
+    // again, or clicking outside).
+    const hoverAllowed = function () { return pinnedCell === null || pinnedCell === cell; };
     if (hoverCapable) {
       cell.addEventListener('pointerenter', function () {
-        if (!ttip.classList.contains('ttip-pinned')) { scheduleShow(); }
+        if (hoverAllowed() && !ttip.classList.contains('ttip-pinned')) { scheduleShow(); }
       });
       cell.addEventListener('pointerleave', function () {
         if (!ttip.classList.contains('ttip-pinned')) { scheduleHide(); }
       });
-      cell.addEventListener('focusin', scheduleShow);
+      cell.addEventListener('focusin', function () {
+        if (hoverAllowed()) { scheduleShow(); }
+      });
       cell.addEventListener('focusout', function () {
         if (!ttip.classList.contains('ttip-pinned')) { scheduleHide(); }
       });
@@ -785,7 +810,7 @@
   }
   // `th.case-sub` carries the per-column grammar popup (the same case in every
   // family's grammar); it uses the identical hover/pin machinery as a data cell.
-  document.querySelectorAll('td.cell, td.parser, th.case-sub').forEach(attachTooltip);
+  document.querySelectorAll(PINNABLE).forEach(attachTooltip);
 
   // ---- Transpose view (DIS-2280) ----
   // Build a transposed mirror of each panel's table on demand: models become
