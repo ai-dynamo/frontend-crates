@@ -231,23 +231,40 @@ impl<E: InvokeEmitter + Send> UnifiedParser for ScannerUnified<E> {
     }
 }
 
-/// Every family `create_unified_parser_for_family` accepts, one entry per match
-/// arm. Tests iterate this so a family registered here without conformance
-/// coverage fails the suite instead of silently skipping.
-pub const REGISTERED_UNIFIED_FAMILIES: &[&str] = &["qwen3", "qwen3_coder"];
+/// THE registry. One line per family — adding a family is adding a line here and
+/// nothing else in this crate.
+///
+/// It used to be two things that had to agree: a `match` in the constructor and a
+/// `REGISTERED_UNIFIED_FAMILIES` const the tests iterate. Adding a family meant
+/// editing both, and a family added to one but not the other either failed to
+/// construct or silently skipped its coverage. The macro generates both from this
+/// single list, so they cannot disagree.
+///
+/// A family may carry aliases: the conformance corpus calls the Qwen XML grammar
+/// `qwen3` while the tool-only registry calls it `qwen3_coder`, and callers should
+/// not have to know which name they arrived with.
+macro_rules! unified_registry {
+    ($($family:literal $(| $alias:literal)* => $ctor:path),+ $(,)?) => {
+        /// Every family `create_unified_parser_for_family` accepts, aliases included.
+        /// Tests iterate this, so a family here without conformance coverage fails the
+        /// suite instead of silently skipping.
+        pub const REGISTERED_UNIFIED_FAMILIES: &[&str] = &[$($family, $($alias,)*)+];
 
-/// Create the Dynamo unified parser for a conformance family.
-pub fn create_unified_parser_for_family(
-    family: &str,
-    tools: &[Tool],
-) -> Result<Box<dyn UnifiedParser>> {
-    match family {
-        // The conformance corpus calls this family `qwen3`; the tool-only
-        // registry calls the same XML grammar `qwen3_coder`. Accept both so
-        // callers do not have to know which registry they came from.
-        "qwen3" | "qwen3_coder" => Ok(qwen3::qwen3_unified(tools)),
-        other => anyhow::bail!("no Dynamo unified parser for family '{other}'"),
-    }
+        /// Create the Dynamo unified parser for a conformance family.
+        pub fn create_unified_parser_for_family(
+            family: &str,
+            tools: &[Tool],
+        ) -> Result<Box<dyn UnifiedParser>> {
+            match family {
+                $($family $(| $alias)* => Ok($ctor(tools)),)+
+                other => anyhow::bail!("no Dynamo unified parser for family '{other}'"),
+            }
+        }
+    };
+}
+
+unified_registry! {
+    "qwen3" | "qwen3_coder" => qwen3::qwen3_unified,
 }
 
 #[cfg(test)]

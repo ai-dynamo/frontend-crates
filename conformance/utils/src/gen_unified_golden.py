@@ -21,8 +21,17 @@ Run:  python3 conformance/utils/src/gen_unified_golden.py
 import json
 import os
 
-FAMILIES = ["gemma4", "qwen3", "kimi_k2"]
-FAM_FILE = {"gemma4": "gemma4.yaml", "qwen3": "qwen3.yaml", "kimi_k2": "kimi.yaml"}
+import yaml
+
+import markers
+
+# Families and their golden-spec filenames come from the ONE declaration in
+# parser_families.yaml (`unified:`), so adding a family to this generator is adding a
+# row there rather than editing three lists that had to agree.
+_MANIFEST = yaml.safe_load(markers.parser_families_path().read_text())["unified"]
+FAMILIES = sorted(_MANIFEST)
+FAM_FILE = {f: r["golden_spec"] for f, r in _MANIFEST.items()}
+UNIFIED_FAMILIES = {f for f, r in _MANIFEST.items() if r.get("native")}
 
 GRAMMAR_NOTE = {
     "gemma4": "reasoning `<|channel>thought\\n...<channel|>`, tool `<|tool_call>call:NAME{key:<|\"|>value<|\"|>}<tool_call|>` (string values wrapped in `<|\"|>`; an embedded `<tool_call|>` inside a `<|\"|>` string is data, not the end marker).",

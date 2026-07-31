@@ -144,3 +144,50 @@ markers:
     leak: ["<|start|>", "<|channel|>", "<|constrain|>", "<|message|>", "<|end|>", "<|return|>", "<|call|>"]
   harmony_text:
     leak: ["<|start|>", "<|channel|>", "<|constrain|>", "<|message|>", "<|end|>", "<|return|>", "<|call|>"]
+
+# ---------------------------------------------------------------------------
+# UNIFIED conformance path (the "Unified (reasoning + tools)" tab).
+#
+# One row per CORPUS family — the name the corpus and golden spec use, which is
+# not always the registry name above (the Qwen XML grammar is `qwen3` in the
+# corpus and `qwen3_coder` in `families:`/`markers:`).
+#
+# ADDING A FAMILY TO THE UNIFIED TAB = ADDING A ROW HERE. It replaces what used
+# to be five hand-kept lists that had to agree: `FAMILIES` / `FAM_FILE` /
+# `UNIFIED_FAMILIES` in gen_unified_golden.py, `parsers_for()` in BOTH
+# unified_render.rs and capture_cross_version.rs, the `family_leak` match, and
+# `MARKER_FAMILY` in unified_taxonomy.py.
+#
+# Columns:
+#   registry          key into `families:` / `markers:` above (defaults to the row name)
+#   native            true = has a native UnifiedParser; false = driven through the SPLIT path
+#   reasoning_parser  v1 reasoning parser used by the SPLIT path
+#   tool_parser       v2 tool parser used by the SPLIT path
+#   golden_spec       filename under conformance/unified/golden_spec/
+#   leak_markers      markup that is invisible to the SHARED leak list, so it must be
+#                     enumerated per family. gemma4's channel opener leaves `thought\n`;
+#                     qwen3's tool envelope has no `<|...|>` sentinels, so a leaked
+#                     `<tool_call>` cannot be spotted generically. Families whose markers
+#                     already contain `<|`/`|>` (kimi) need nothing here.
+unified:
+  gemma4:
+    registry: gemma4
+    native: false
+    reasoning_parser: gemma4
+    tool_parser: gemma4
+    golden_spec: gemma4.yaml
+    leak_markers: ["thought\n"]
+  kimi_k2:
+    registry: kimi_k2
+    native: false
+    reasoning_parser: kimi_k25
+    tool_parser: kimi_k2
+    golden_spec: kimi.yaml
+    leak_markers: []
+  qwen3:
+    registry: qwen3_coder
+    native: true
+    reasoning_parser: qwen3
+    tool_parser: qwen3_coder
+    golden_spec: qwen3.yaml
+    leak_markers: ["<tool_call>", "</tool_call>", "<function=", "</function>", "<parameter=", "</parameter>"]

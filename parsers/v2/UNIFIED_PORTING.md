@@ -1,0 +1,110 @@
+# Porting a model family to the UnifiedParser
+
+The unified parser is ONE state machine per stream that owns reasoning, visible content, and tool calls, and emits ONE ordered event list. The split path Dynamo still serves for most families runs the v1 reasoning parser over the whole stream first, then a v2 tool parser on the leftover — which cannot represent WHERE reasoning happened, so every thought is hoisted to the front and merged. See [`../../conformance/utils/lib/parsers/UNIFIED_CASES.md`](../../conformance/utils/lib/parsers/UNIFIED_CASES.md) for what that costs, case by case.
+
+This doc is for adding a family to the unified path. `qwen3` is the only family on it today.
+
+## What you get for free
+
+`ScannerUnified` (`src/unified/mod.rs`) is the shared body. It is generic over the emitter and holds a `WrappedBlockScanner`, and the whole `UnifiedParser` impl is family-blind: `initialize`, `initialize_with_output_mode`, `push`, `finish`, `reset`.
+
+Everything below is already generic in `src/tool_calling/scan.rs` — do NOT reimplement any of it per family:
+
+- block open/close, bare-invoke recovery, orphan-close stripping
+- chunk-boundary marker holdback (`marker_prefix_suffix_len`)
+- reasoning open/close, and EOF promotion of an unterminated thought
+- tool-open break-out from INSIDE a thought, and resume after the call closes (invariant `I3`; case `12.b`)
+- guided-JSON decoding, including the reasoning envelope around the payload
+
+Guided decoding is a BACKEND feature, not a model feature — any family can be served with it — which is why `GuidedState` lives on the shared type and is parameterized on the family's `ReasoningSpec` markers rather than on any one grammar. A family that joins the unified path inherits it.
+
+## Adding a family: two edits
+
+**1. Write `parsers/v2/src/unified/<family>.rs`** — a factory over the shared `ScannerUnified`. `unified/qwen3.rs` is the reference; its entire non-test body is two consts and an 11-line factory.
+
+```rust
+pub(crate) fn <family>_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
+    Box::new(ScannerUnified::new(<family>_scanner(tools).with_reasoning(
+        ReasoningSpec { start: "<think>", end: "</think>", forced_start: false },
+    )))
+}
+```
+
+It needs two things from the tool-only side, both `pub(crate)`: the emitter type, and a `<family>_scanner(tools)` builder. **Extract that builder first if it does not exist.** Most families construct their scanner inline inside `new()`, so the unified factory cannot reuse it without copying the spec — and a copied spec is a spec that drifts. Have BOTH callers use the one builder.
+
+**2. Add one line to `unified_registry!`** in `unified/mod.rs`:
+
+```rust
+unified_registry! {
+    "qwen3" | "qwen3_coder" => qwen3::qwen3_unified,
+    "<family>"              => <family>::<family>_unified,
+}
+```
+
+Aliases after the `|` — use them when the corpus name differs from the tool registry name. The macro generates both the constructor match and `REGISTERED_UNIFIED_FAMILIES`, so they cannot disagree.
+
+That is the whole parser change. There is no separate const to update, and no registry list anywhere else in this crate.
+
+## Adding a family to the conformance tab: one row
+
+`conformance/utils/src/parser_families.yaml`, under `unified:`:
+
+```yaml
+  <family>:
+    registry: <family>          # key into families:/markers: — omit if identical
+    native: true                # false while it still runs on the SPLIT path
+    reasoning_parser: <v1 name> # used by the split path
+    tool_parser: <v2 name>      # used by the split path
+    golden_spec: <family>.yaml
+    leak_markers: []            # markup the shared leak list cannot see
+```
+
+That row feeds the golden generator, both capture harnesses, the leak check and the colorizer. `manifest_and_parser_registry_agree_on_native_families` fails if this row and `unified_registry!` disagree in either direction, so the two declarations stay honest.
+
+Then add the family's inputs to `gen_unified_golden.py` and run the pipeline (see Checklist).
+
+## Ranking: how much work is a given family
+
+**Tier A — factory plus boilerplate.** Already on `WrappedBlockScanner`: `kimi_k2`, `minimax_m2`, `minimax_m3`. Widen the emitter, extract the scanner builder, add the factory and registry lines. Most of the effort is conformance, not code — the golden corpus for `kimi_k2` already exists.
+
+**Tier B — generalize the scanner, no new state machine.** `deepseek_v4` (dsml) and `glm47` have bespoke drain loops. dsml's grammar maps onto `WrappedBlockSpec` almost directly; its only special part is an early-name state. glm47 needs `WrappedBlockSpec.invoke_start` to become optional, because its block IS the invoke (`<tool_call>NAME<arg_key>…</tool_call>`) with no inner marker. Tier B touches shared code, so every Tier A family regression-tests with it.
+
+**Tier C — real new machinery.** `gemma4` needs a pluggable block-end resolver: its end marker can legitimately appear inside a `<|"|>`-delimited string value, and the scanner currently finds block ends with a plain `find`, so it would cut the value. `harmony` is not a marker scan at all — it routes by channel and depends on token IDs, and `UnifiedParser` has no `push_tokens`, so porting it means extending the trait, not adding a factory.
+
+**Not portable yet.** `granite`, `inkling`, `mistral`, `step3`, `kimi_k3`, `minimax_append_think` have v1 reasoning parsers but no v2 tool parser. `ScannerUnified` has no reasoning-only shape, so there is nothing to hang them on until a tool parser exists.
+
+## The reasoning half is the easy half
+
+This is the opposite of what it looks like. `ReasoningSpec` is just `{start, end, forced_start}` — a marker pair plus a flag — and most families fit it directly: `<think>`/`</think>` for qwen3, kimi, minimax_m2, deepseek, glm45; `<mm:think>` for minimax_m3; `[THINK]` for mistral.
+
+You do NOT need a new field for v1's `with_tool_start_token`: `drain_reasoning` already derives tool break-out from `spec.block_starts` and `spec.invoke_start`. The unified semantics are strictly better — v1 exits reasoning permanently at a tool marker, unified suspends and RESUMES after the call closes, which is what case `12.b` requires.
+
+Families that genuinely do not fit a marker pair:
+
+- **harmony / gpt_oss** — no pair exists; channel routing plus token-ID matching.
+- **gemma4** — `<|channel>` / `<channel|>` plus a third `thought\n` prefix token with partial-prefix tolerance. Folding the prefix into `start` works for the corpus but loses the "prefix may be absent" case.
+- **granite** — two alternative starts and two alternative ends; needs a list on both sides.
+- **inkling** — a six-state machine over eight markers.
+
+## Traps
+
+**Audit the emitter for `I7` before claiming the goldens.** qwen3's emitter was changed to call `parse_tool_call_block` directly because re-wrapping the body in `<tool_call>` made the batch parser truncate a value at an embedded `</tool_call>` — an argument value is DATA and must survive byte-exact. The `minimax_m2`, `minimax_m3` and `kimi_k2` emitters still re-wrap. That is not confirmed broken, it is unaudited; case `7.b` (`arg_marker_in_string`) is the one that catches it.
+
+**Dangling-end recovery differs.** A `</think>` with nothing open is stripped by the shared scanner and the preceding bytes become TEXT; v1's `with_dangling_end_recovery` classifies them as REASONING. Affects `minimax_m3` and `kimi_k3`. Passing `UnifiedParserPrefill::Reasoning` resolves it, which means the caller has to actually pass it — see below.
+
+**Guided JSON needs a reasoning-aware scanner.** A family registered without a `ReasoningSpec` silently cannot support `GuidedJson`; `initialize_with_output_mode` bails.
+
+**Nothing outside `parsers/v2` and `conformance/` consumes `UnifiedParser` yet.** `UnifiedParserPrefill` is set only by the conformance harness. Whoever wires this into the serving path must plumb prefill and tool-output-mode from the request — and that plumbing is exactly where a push-model desyncs, so test it AT THE BOUNDARY, not only at the parser. vLLM took the other approach: its `initialize` takes `prompt_token_ids` and infers the channel, and its parser RETURNS a structural tag for the engine to constrain against, so a caller cannot hand it a contradictory mode. Dynamo's explicit enum is easier to test without a tokenizer and easier to get wrong.
+
+## Checklist
+
+1. Extract `<family>_scanner(tools)`; point the existing tool-only parser at it too.
+2. Add `unified/<family>.rs` with the factory and its `ReasoningSpec`.
+3. Add one line to `unified_registry!` in `unified/mod.rs`.
+4. Add the `unified:` row in `conformance/utils/src/parser_families.yaml`.
+5. Add the family's inputs to `conformance/utils/src/gen_unified_golden.py` so every scenario gets one in that grammar.
+6. Run the harness, then `explode` → `package` → render. The capture drift guard fails if the committed shard disagrees with the live parser.
+7. Check `7.b` and `12.a`/`12.b` specifically — argument fidelity and adversarial nesting are where a re-wrapping emitter and a reasoning-first assumption break.
+8. Verify what the page SHOWS, not just what the model contains. A cell can hold the right data and render nothing.
+
+Steps 1-4 are the port. Step 5 is the bulk of the work today — one input per scenario per family, ~23 strings. That does not scale to many families and is tracked separately: the fix is a per-family grammar spec that RENDERS the canonical scenarios instead of authoring them by hand.

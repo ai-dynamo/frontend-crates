@@ -41,16 +41,21 @@ use dynamo_parsers_v2::{
 };
 use serde_json::{Value, json};
 
-/// Corpus family -> (v1 reasoning parser, v2 tool parser) for the SPLIT path.
-/// Mirrors `unified_render::parsers_for`.
-fn parsers_for(family: &str) -> Option<(&'static str, &'static str)> {
-    match family {
-        "gemma4" => Some(("gemma4", "gemma4")),
-        "qwen3" => Some(("qwen3", "qwen3_coder")),
-        "kimi_k2" => Some(("kimi_k25", "kimi_k2")),
-        // Unknown to this build: reported, not guessed.
-        _ => None,
-    }
+/// Corpus family -> (v1 reasoning parser, v2 tool parser) for the SPLIT path, read from
+/// the `unified:` block of `parser_families.yaml`.
+///
+/// This used to be a hand-kept copy of `unified_render::parsers_for`, which is exactly
+/// the duplication this file cannot afford: it gets copied into an OLDER worktree to run
+/// against that build, so a stale copy would silently map a family to the wrong parser
+/// there. `XVER_FAMILIES` points at the CURRENT manifest, so the old tree is driven by
+/// today's declarations rather than whatever it happened to ship.
+fn parsers_for(family: &str) -> Option<(String, String)> {
+    let path = std::env::var("XVER_FAMILIES").ok()?;
+    let text = std::fs::read_to_string(&path).ok()?;
+    let doc: serde_yaml::Value = serde_yaml::from_str(&text).ok()?;
+    let row = doc.get("unified")?.get(family)?;
+    let get = |k: &str| row.get(k)?.as_str().map(str::to_string);
+    Some((get("reasoning_parser")?, get("tool_parser")?))
 }
 
 fn tool_deltas(res: &dynamo_parsers_v2::ToolParseResult, out: &mut Vec<Value>) {
@@ -69,8 +74,8 @@ fn tool_deltas(res: &dynamo_parsers_v2::ToolParseResult, out: &mut Vec<Value>) {
 /// table reads "this build produced nothing" for gemma4/kimi_k2.
 fn split_path_chunks(family: &str, input: &str) -> Option<Vec<Vec<Value>>> {
     let (reasoning_name, tool_family) = parsers_for(family)?;
-    let mut rp = ReasoningParserType::get_reasoning_parser_from_name(reasoning_name);
-    let mut tp = create_tool_parser_for_family(tool_family, &tools()).ok()?;
+    let mut rp = ReasoningParserType::get_reasoning_parser_from_name(&reasoning_name);
+    let mut tp = create_tool_parser_for_family(&tool_family, &tools()).ok()?;
 
     let mut rows = Vec::new();
     for chunk in chunk_input(input) {

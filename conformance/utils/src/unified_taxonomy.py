@@ -4,13 +4,16 @@
 (UNIFIED.<group>.<sub>) and the per-group axis labels. Shared by the fixture
 exploder (names case files by number) and the conformance generator (renders the
 group labels), so the numbering can't drift between them.
-
 Groups 1-9 mirror the tool-calling STREAM taxonomy (TOOLCALLING.streamv2.N) as
 tool-only unified cases (UNIFIED subsumes STREAM). Group 10 is the reasoning axis
 (REASONING.*). Group 11 is unique to unified: reasoning<->tool interleaving that
 neither STREAM (no reasoning) nor REASONING (no ordered tool events) can express.
 Group 12 is adversarial nesting (a marker of one channel inside another).
 """
+
+import yaml
+
+import markers
 
 UNIFIED_TAX = {
     # Group 1 — Single call
@@ -73,7 +76,15 @@ def numbered_id(scenario):
 # has to be translated before it is used to color markup — otherwise the family has no
 # declared markers, the colorizer falls back to heuristics, and its opaque
 # argument-value regions (`opaque:`) are not applied.
-MARKER_FAMILY = {"qwen3": "qwen3_coder"}
+# Derived from the ONE declaration in parser_families.yaml (`unified:` -> `registry`),
+# so a family whose corpus name differs from its registry name says so in one place.
+MARKER_FAMILY = {
+    f: r["registry"]
+    for f, r in yaml.safe_load(
+        markers.parser_families_path().read_text()
+    )["unified"].items()
+    if r.get("registry") and r["registry"] != f
+}
 
 
 def marker_family(family):

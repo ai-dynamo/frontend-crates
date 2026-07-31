@@ -82,14 +82,11 @@ impl Ev {
     }
 }
 
-/// Map a golden family to (reasoning parser name, v2 tool family).
-fn parsers_for(family: &str) -> (&'static str, &'static str) {
-    match family {
-        "gemma4" => ("gemma4", "gemma4"),
-        "qwen3" => ("qwen3", "qwen3_coder"),
-        "kimi_k2" => ("kimi_k25", "kimi_k2"),
-        other => panic!("no parser mapping for family `{other}`"),
-    }
+/// Map a corpus family to (v1 reasoning parser, v2 tool parser) for the SPLIT path.
+/// Declared once in `parser_families.yaml` under `unified:`; see `common::unified_family`.
+fn parsers_for(family: &str) -> (String, String) {
+    let f = common::unified_family(family);
+    (f.reasoning_parser, f.tool_parser)
 }
 
 /// Tool schemas used by the seed cases (string params, matching the golden).
@@ -201,7 +198,7 @@ fn dynamo_events(family: &str, input: &str) -> Vec<Ev> {
 
     let (reasoning_name, tool_family) = parsers_for(family);
 
-    let mut rp = ReasoningParserType::get_reasoning_parser_from_name(reasoning_name);
+    let mut rp = ReasoningParserType::get_reasoning_parser_from_name(&reasoning_name);
     let split = rp.detect_and_parse_reasoning(input, &[]);
 
     let mut out = Vec::new();
@@ -211,7 +208,7 @@ fn dynamo_events(family: &str, input: &str) -> Vec<Ev> {
         });
     }
 
-    let mut tp = create_tool_parser_for_family(tool_family, &tools())
+    let mut tp = create_tool_parser_for_family(&tool_family, &tools())
         .unwrap_or_else(|e| panic!("create tool parser for `{tool_family}`: {e}"));
     let mut slots: BTreeMap<usize, usize> = BTreeMap::new();
     let mut raw_args: BTreeMap<usize, String> = BTreeMap::new();
@@ -321,8 +318,8 @@ fn dynamo_chunks(family: &str, input: &str) -> Vec<ChunkRow> {
     }
 
     let (reasoning_name, tool_family) = parsers_for(family);
-    let mut rp = ReasoningParserType::get_reasoning_parser_from_name(reasoning_name);
-    let mut tp = create_tool_parser_for_family(tool_family, &tools())
+    let mut rp = ReasoningParserType::get_reasoning_parser_from_name(&reasoning_name);
+    let mut tp = create_tool_parser_for_family(&tool_family, &tools())
         .unwrap_or_else(|e| panic!("create tool parser for `{tool_family}`: {e}"));
 
     let mut rows = Vec::new();
@@ -380,22 +377,15 @@ fn classify(family: &str, golden: &[Ev], got: &[Ev]) -> &'static str {
     // leaves `thought\n`. qwen3's tool envelope has NO `<|...|>` sentinels, so a
     // `<tool_call>...</tool_call>` leaking into reasoning_content is invisible to the
     // shared list — enumerate it (kimi's tool/section markers already contain `<|`/`|>`).
-    let family_leak: &[&str] = match family {
-        "gemma4" => &["thought\n"],
-        "qwen3" => &[
-            "<tool_call>",
-            "</tool_call>",
-            "<function=",
-            "</function>",
-            "<parameter=",
-            "</parameter>",
-        ],
-        _ => &[],
-    };
+    // Declared per family in `parser_families.yaml` (`unified:` -> `leak_markers`),
+    // because this markup is invisible to the shared MARKERS list above.
+    let family_leak: Vec<String> = common::unified_family(family).leak_markers;
     let leaks = got.iter().any(|e| match e {
-        Ev::Text { text } | Ev::Reasoning { text } => {
-            MARKERS.iter().chain(family_leak).any(|m| text.contains(m))
-        }
+        Ev::Text { text } | Ev::Reasoning { text } => MARKERS
+            .iter()
+            .copied()
+            .chain(family_leak.iter().map(String::as_str))
+            .any(|m| text.contains(m)),
         Ev::ToolCall { .. } => false,
     });
     if leaks {

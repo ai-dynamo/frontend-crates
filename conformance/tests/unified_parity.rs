@@ -300,3 +300,35 @@ fn registered_unified_families_all_create() {
         "no golden family maps to a registered unified parser"
     );
 }
+
+/// The manifest and the parser registry must agree about which families are native.
+///
+/// These are two different systems — a YAML row read by the conformance harness, and a
+/// `match` compiled into `dynamo-parsers-v2` — and nothing links them at compile time.
+/// Before, five lists carried this and a family added to one but missed in another
+/// failed loudly at best and silently lost coverage at worst. This is the one assertion
+/// that keeps the single declaration honest, in both directions.
+#[test]
+fn manifest_and_parser_registry_agree_on_native_families() {
+    let mut wrong = Vec::new();
+    for (family, row) in common::unified_families() {
+        let constructs = create_unified_parser_for_family(&family, &[]).is_ok();
+        if row.native && !constructs {
+            wrong.push(format!(
+                "{family}: manifest says native, but create_unified_parser_for_family rejects it \
+                 — add it to `unified_registry!` in parsers/v2/src/unified/mod.rs"
+            ));
+        }
+        if !row.native && constructs {
+            wrong.push(format!(
+                "{family}: a native UnifiedParser exists, but the manifest still says \
+                 native: false — flip it in conformance/utils/src/parser_families.yaml"
+            ));
+        }
+    }
+    assert!(
+        wrong.is_empty(),
+        "manifest/registry disagree:\n  {}",
+        wrong.join("\n  ")
+    );
+}
