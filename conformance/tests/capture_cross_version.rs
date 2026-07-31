@@ -50,12 +50,28 @@ use serde_json::{Value, json};
 /// there. `XVER_FAMILIES` points at the CURRENT manifest, so the old tree is driven by
 /// today's declarations rather than whatever it happened to ship.
 fn parsers_for(family: &str) -> Option<(String, String)> {
-    let path = std::env::var("XVER_FAMILIES").ok()?;
-    let text = std::fs::read_to_string(&path).ok()?;
-    let doc: serde_yaml::Value = serde_yaml::from_str(&text).ok()?;
-    let row = doc.get("unified")?.get(family)?;
-    let get = |k: &str| row.get(k)?.as_str().map(str::to_string);
-    Some((get("reasoning_parser")?, get("tool_parser")?))
+    // A MISSING ROW is a legitimate "this family is not declared" and returns None. A
+    // missing, unreadable or malformed MANIFEST is not — it would make every split-path
+    // family look undeclared and the run would report "no unified parser in this build"
+    // while quietly capturing nothing. Those cases panic with the path in the message.
+    let path = std::env::var("XVER_FAMILIES").unwrap_or_else(|_| {
+        panic!("XVER_FAMILIES is required: point it at the CURRENT conformance/utils/src/parser_families.yaml")
+    });
+    let text =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("XVER_FAMILIES read {path}: {e}"));
+    let doc: serde_yaml::Value =
+        serde_yaml::from_str(&text).unwrap_or_else(|e| panic!("XVER_FAMILIES parse {path}: {e}"));
+    let unified = doc
+        .get("unified")
+        .unwrap_or_else(|| panic!("{path} has no `unified:` block"));
+    let row = unified.get(family)?; // not declared for the unified tab — genuinely skippable
+    let get = |k: &str| {
+        row.get(k)
+            .and_then(|v| v.as_str())
+            .unwrap_or_else(|| panic!("{path}: `unified.{family}` has no `{k}`"))
+            .to_string()
+    };
+    Some((get("reasoning_parser"), get("tool_parser")))
 }
 
 fn tool_deltas(res: &dynamo_parsers_v2::ToolParseResult, out: &mut Vec<Value>) {
