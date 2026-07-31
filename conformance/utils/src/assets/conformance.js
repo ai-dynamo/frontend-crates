@@ -664,15 +664,16 @@
   const hoverCapable = window.matchMedia('(hover: hover)').matches;
   let pinnedCell = null;
   function unpinCell(c) { if (c && c._ttipUnpin) { c._ttipUnpin(); } }
-  // EVERY element that can be pinned, so "inside" below means the same set that
-  // `attachTooltip` is wired to. These two lists drifted: column headers were pinnable
-  // but not counted as inside, so a header click pinned it and the SAME click bubbled to
-  // the document handler and unpinned it again — the header popup could never stay up,
-  // and clicking within one closed it. One constant now, used by both.
-  const PINNABLE = 'td.cell, td.parser, th.case-sub';
+  // "Inside a pinnable element" must mean EXACTLY the set `attachTooltip` wired, so ask
+  // for the mark `attachTooltip` itself leaves rather than re-listing the classes. A class
+  // list cannot express that set: the transpose headers are wired directly (see below) and
+  // never pass through WIRE_ON_LOAD, so every hand-written list drifted from it. Headers
+  // ended up pinnable but not counted as inside — a header click pinned it and the SAME
+  // click bubbled here and unpinned it, so the popup could never stay up.
+  const WIRED = '[data-ttip-wired]';
   document.addEventListener('click', function (e) {
     // A click anywhere outside a pinnable element (and not on a pinned tooltip) closes the pin.
-    if (pinnedCell && !e.target.closest(PINNABLE)) { unpinCell(pinnedCell); }
+    if (pinnedCell && !e.target.closest(WIRED)) { unpinCell(pinnedCell); }
   });
 
   function attachTooltip(cell) {
@@ -808,9 +809,12 @@
       });
     }
   }
-  // `th.case-sub` carries the per-column grammar popup (the same case in every
-  // family's grammar); it uses the identical hover/pin machinery as a data cell.
-  document.querySelectorAll(PINNABLE).forEach(attachTooltip);
+  // The elements present at load. `th.case-sub` carries the per-column grammar popup (the
+  // same case in every family's grammar); it uses the identical hover/pin machinery as a
+  // data cell. Transpose builds its headers later and wires them itself — this list is only
+  // the starting set, never the definition of "pinnable" (that is `WIRED` above).
+  const WIRE_ON_LOAD = 'td.cell, td.parser, th.case-sub';
+  document.querySelectorAll(WIRE_ON_LOAD).forEach(attachTooltip);
 
   // ---- Transpose view (DIS-2280) ----
   // Build a transposed mirror of each panel's table on demand: models become

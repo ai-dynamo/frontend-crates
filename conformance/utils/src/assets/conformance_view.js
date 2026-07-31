@@ -184,9 +184,11 @@
 
   function delegatedBuild(e) {
     var t = e.target;
-    // `th.case-sub` carries the per-column grammar popup and builds the same lazy way
-    // a data cell does — without it here, hovering a header would show an empty box.
-    var td = t && t.closest ? t.closest('td.cell[data-ttip-id], th.case-sub[data-ttip-id], th.trow-case[data-ttip-id]') : null;
+    // Anything carrying a `data-ttip-id` builds the same lazy way a data cell does —
+    // headers included, which is why this asks for the attribute rather than listing the
+    // element types that happen to have one today. A list here had already missed
+    // `th.tcol-model`, so hovering a transposed model header showed an empty box.
+    var td = t && t.closest ? t.closest('[data-ttip-id]') : null;
     if (td) { buildTooltipInto(td); }
   }
   // pointerover/focusin/click all bubble, so one document listener covers every

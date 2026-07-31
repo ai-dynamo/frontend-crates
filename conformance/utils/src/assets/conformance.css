@@ -219,27 +219,25 @@ body.view-details td.cell.cmp-donly .cmp-marker { color: #9aa1a9; }
    A transformed element becomes the containing block for its absolutely-positioned
    descendants AND scales them, and the popup is a child of the cell: `scale(.97)` shrank
    the popup to 97% and re-anchored it, so a correctly-computed placement (right edge at
-   exactly viewport - margin) rendered 55px further right and overflowed the window. */
-td.cell:hover, td.parser:hover,
-td.cell:focus-within, td.parser:focus-within,
-th.case-sub:hover, th.case-sub:focus-within,
-td.cell.ttip-open, td.parser.ttip-open, th.case-sub.ttip-open {
+   exactly viewport - margin) rendered 55px further right and overflowed the window.
+
+   Keyed to `[data-ttip-wired]` — the mark `attachTooltip` leaves on each element it wires —
+   so the press marks exactly what can open a popup. Listing the classes instead meant the
+   transpose headers (wired dynamically, never in any static list) got popups with no press. */
+[data-ttip-wired]:hover,
+[data-ttip-wired]:focus-within,
+[data-ttip-wired].ttip-open {
   box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(0, 0, 0, 0.18);
 }
 /* Pin held: only the pinned cell is pressed. */
-body.ttip-pin-mode td.cell:hover:not(.ttip-open),
-body.ttip-pin-mode td.parser:hover:not(.ttip-open),
-body.ttip-pin-mode td.cell:focus-within:not(.ttip-open),
-body.ttip-pin-mode td.parser:focus-within:not(.ttip-open),
-body.ttip-pin-mode th.case-sub:hover:not(.ttip-open),
-body.ttip-pin-mode th.case-sub:focus-within:not(.ttip-open) {
+body.ttip-pin-mode [data-ttip-wired]:hover:not(.ttip-open),
+body.ttip-pin-mode [data-ttip-wired]:focus-within:not(.ttip-open) {
   box-shadow: none;
 }
 body.view-overview.ttip-pin-mode td.cell:hover:not(.ttip-open) { filter: none; }
-[data-theme="dark"] td.cell:hover, [data-theme="dark"] td.parser:hover,
-[data-theme="dark"] td.cell:focus-within, [data-theme="dark"] td.parser:focus-within,
-[data-theme="dark"] th.case-sub:hover, [data-theme="dark"] th.case-sub:focus-within,
-[data-theme="dark"] td.cell.ttip-open, [data-theme="dark"] th.case-sub.ttip-open {
+[data-theme="dark"] [data-ttip-wired]:hover,
+[data-theme="dark"] [data-ttip-wired]:focus-within,
+[data-theme="dark"] [data-ttip-wired].ttip-open {
   box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(0, 0, 0, 0.4);
 }
 .view-overview td.cell .cell-marker { display: none; }
