@@ -706,7 +706,11 @@ pub struct ChatCompletionRequestAssistantMessage {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<ChatCompletionRequestAssistantMessageContent>,
     /// Reasoning content from a previous assistant turn.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Accept both `reasoning_content` (DeepSeek /
+    /// SGLang / TRT-LLM / Vercel AI SDK openai-compatible / LangChain / LiteLLM
+    /// canonical) and `reasoning` (vLLM native / OpenRouter / OpenAI GPT-OSS
+    /// guidance) on inbound assistant messages, normalizing both to this field.
+    #[serde(default, alias = "reasoning", skip_serializing_if = "Option::is_none")]
     pub reasoning_content: Option<ReasoningContent>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub refusal: Option<String>,
@@ -763,6 +767,11 @@ pub struct ChatCompletionResponseMessage {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub audio: Option<ChatCompletionResponseMessageAudio>,
     /// Reasoning content produced by the model (DeepSeek-R1, QwQ).
+    /// Accepts either `reasoning_content` (DeepSeek / SGLang / TRT-LLM
+    /// canonical) or `reasoning` (vLLM native / OpenRouter / OpenAI GPT-OSS)
+    /// on input via the alias; output-side key selection is handled at the
+    /// HTTP boundary by ai-dynamo/dynamo#11464's `RoutedReasoning` wrapper.
+    #[serde(default, alias = "reasoning")]
     pub reasoning_content: Option<String>,
 }
 
@@ -905,7 +914,11 @@ pub struct ChatCompletionStreamResponseDelta {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub refusal: Option<String>,
     /// Streaming reasoning content (DeepSeek-R1, QwQ models).
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Accepts either `reasoning_content` (DeepSeek / SGLang / TRT-LLM
+    /// canonical) or `reasoning` (vLLM native / OpenRouter / OpenAI GPT-OSS)
+    /// on input via the alias; output-side key selection is handled at the
+    /// HTTP boundary by ai-dynamo/dynamo#11464's `RoutedReasoning` wrapper.
+    #[serde(default, alias = "reasoning", skip_serializing_if = "Option::is_none")]
     pub reasoning_content: Option<String>,
 }
 
