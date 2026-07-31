@@ -767,19 +767,12 @@ pub struct ChatCompletionResponseMessage {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub audio: Option<ChatCompletionResponseMessageAudio>,
     /// Reasoning content produced by the model (DeepSeek-R1, QwQ).
-    /// Deserializes from either `reasoning_content` (DeepSeek / SGLang / TRT-LLM
-    /// canonical) or `reasoning` (vLLM native / OpenRouter / OpenAI GPT-OSS) so
-    /// downstream consumers only need to inspect this single field.
+    /// Accepts either `reasoning_content` (DeepSeek / SGLang / TRT-LLM
+    /// canonical) or `reasoning` (vLLM native / OpenRouter / OpenAI GPT-OSS)
+    /// on input via the alias; output-side key selection is handled at the
+    /// HTTP boundary by ai-dynamo/dynamo#11464's `RoutedReasoning` wrapper.
     #[serde(default, alias = "reasoning")]
     pub reasoning_content: Option<String>,
-    /// `skip_deserializing` prevents this field from consuming the JSON
-    /// `reasoning` key — that must reach `reasoning_content` via the alias
-    /// above so existing stream/jail consumers stay correct.
-    /// Always serialized (as `null` when reasoning is disabled) to mirror the
-    /// shape of `reasoning_content` — clients doing `msg["reasoning"]` (strict
-    /// key access, not `.get()`) need the key present.
-    #[serde(default, skip_deserializing)]
-    pub reasoning: Option<String>,
 }
 
 /// Stream options with per-chunk usage reporting.
@@ -921,16 +914,12 @@ pub struct ChatCompletionStreamResponseDelta {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub refusal: Option<String>,
     /// Streaming reasoning content (DeepSeek-R1, QwQ models).
-    /// Deserializes from either `reasoning_content` (DeepSeek / SGLang / TRT-LLM
-    /// canonical) or `reasoning` (vLLM native / OpenRouter / OpenAI GPT-OSS) so
-    /// existing jail/aggregator consumers reading this single field remain
-    /// correct regardless of upstream wire naming.
+    /// Accepts either `reasoning_content` (DeepSeek / SGLang / TRT-LLM
+    /// canonical) or `reasoning` (vLLM native / OpenRouter / OpenAI GPT-OSS)
+    /// on input via the alias; output-side key selection is handled at the
+    /// HTTP boundary by ai-dynamo/dynamo#11464's `RoutedReasoning` wrapper.
     #[serde(default, alias = "reasoning", skip_serializing_if = "Option::is_none")]
     pub reasoning_content: Option<String>,
-    /// `skip_deserializing` prevents this field from consuming the JSON
-    /// `reasoning` key — that must reach `reasoning_content` via the alias.
-    #[serde(default, skip_deserializing, skip_serializing_if = "Option::is_none")]
-    pub reasoning: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]

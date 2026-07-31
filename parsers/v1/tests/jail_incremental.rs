@@ -19,7 +19,6 @@ fn chunk(content: impl Into<String>) -> Annotated<CreateChatCompletionStreamResp
             tool_calls: None,
             function_call: None,
             refusal: None,
-            reasoning: None,
             reasoning_content: None,
         },
         finish_reason: None,
