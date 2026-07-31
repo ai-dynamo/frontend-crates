@@ -202,6 +202,13 @@
       }
       // Unavailable candidates never count toward the diff; still shown in tooltip.
       const avail = shown.map(function (k) { return cmp[k]; }).filter(function (o) { return o && o.na !== 1; });
+      // ...but they must not be SILENT either. A compare candidate that has no data for
+      // this case (an older capture taken before the case existed) is not agreement, and
+      // folding it into "=" claims the two builds produced the same output when one of
+      // them never ran it. Counted separately so the glyph can say "no data" instead.
+      const naShown = shown.filter(function (k) {
+        return k !== base && cmp[k] && cmp[k].na === 1;
+      }).length;
       // NΔ counts shown COMPARE engines that diverge from GOLDEN (the fixed reference),
       // independent of which engine is starred. When there is no golden (other tabs), fall
       // back to the selected reference. `avail` excludes the base (the starred REF).
@@ -222,11 +229,15 @@
       const leaked = leak;  // the REF's own leak drives ↯, same as every other tab
       // Marker: ✗ when the REF diverges (the red signal); otherwise NΔ = how many Compare
       // engines diverge from golden (informational, stays green), "=" when all agree.
+      // "=" is only honest when every shown candidate actually produced output. When a
+      // selected compare candidate has no capture for this case, say so ("?") rather
+      // than reporting agreement it cannot support. A real divergence still wins.
+      const eqTxt = naShown > 0 ? '?' : '=';
       let txt;
       if (redOnDiff) {
-        txt = refDiverges ? '✗' : (diffs > 0 ? String(diffs) + 'Δ' : '=');
+        txt = refDiverges ? '✗' : (diffs > 0 ? String(diffs) + 'Δ' : eqTxt);
       } else {
-        txt = donly ? '' : (diffs === 0 ? '=' : String(diffs) + 'Δ');
+        txt = donly ? '' : (diffs === 0 ? eqTxt : String(diffs) + 'Δ');
       }
       if (marker) { marker.textContent = (leaked ? '↯' : '') + txt; }
       const problem = redOnDiff ? refDiverges : leaked;

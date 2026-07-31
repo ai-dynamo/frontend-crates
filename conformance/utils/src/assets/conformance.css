@@ -821,10 +821,14 @@ body.cmp-loading .cmp-loading-note { display: block; position: fixed; top: 8px; 
 
 /* Dark-mode compare colors: #76b884 / #db7777 were picked for a white page and glare on
  * a dark one. Same hues, dropped in luminance so the grid reads without shouting. */
-:root[data-theme="dark"] td.cell.cmp-eq { background: #2f5d3d !important; }
-:root[data-theme="dark"] td.cell.cmp-leak { background: #6e2f2f !important; }
-:root[data-theme="dark"] body.view-overview td.cell.cmp-eq { color: #2f5d3d; }
-:root[data-theme="dark"] body.view-overview td.cell.cmp-leak { color: #6e2f2f; }
+/* Dark theme verdict colors. These were dark enough that a green cell read as
+   near-black against the page and the green/red distinction only showed up on close
+   inspection. Lifted well above the surface luminance; the marker text flips dark so it
+   still carries on the brighter fill. */
+:root[data-theme="dark"] td.cell.cmp-eq { background: #4fc27d !important; color: #08240f; }
+:root[data-theme="dark"] td.cell.cmp-leak { background: #f5736f !important; color: #2b0606; }
+:root[data-theme="dark"] body.view-overview td.cell.cmp-eq { color: #4fc27d; }
+:root[data-theme="dark"] body.view-overview td.cell.cmp-leak { color: #f5736f; }
 :root[data-theme="dark"] td.cell.ok { color: #5aa06e; }
 :root[data-theme="dark"] td.cell.research,
 :root[data-theme="dark"] td.cell.leak,

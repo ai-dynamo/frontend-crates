@@ -135,7 +135,14 @@ pub fn version_dirs_ascending(root: &Path, prefix: &str) -> Vec<PathBuf> {
                     // rendered under the 0.1.11 column in HTML). They are NOT the current
                     // parser, so they must never join this "latest capture wins" fold —
                     // otherwise a stale old-binary result can shadow the real latest.
-                    n.starts_with(prefix) && !n.contains(".patch")
+                    //
+                    // `<ver>+<tag>` dirs are the same kind of thing for the same reason:
+                    // a change-scoped capture, an older build run over the current corpus
+                    // (see `capture_cross_version.rs`). Excluded HERE rather than at each
+                    // call site because the version key below splits on non-digits, so
+                    // `0.1.24+pre163` folds to [0,1,24,163] and would sort ABOVE the real
+                    // 0.1.24 — letting a historical snapshot win "latest capture".
+                    n.starts_with(prefix) && !n.contains(".patch") && !n.contains('+')
                 })
         })
         .map(|p| {

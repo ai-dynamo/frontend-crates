@@ -40,6 +40,8 @@ from pathlib import Path
 
 import yaml
 
+from dynamo_version import crate_version, dynamo_v2_label
+
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent.parent  # conformance/utils/src -> repo root
 TREE = ROOT / "conformance" / "toolcalling"
@@ -54,13 +56,6 @@ _FAMILIES = yaml.safe_load((HERE / "parser_families.yaml").read_text())["familie
 # Families the Dynamo v2 stream parser implements (the registry's single source
 # of truth) — these get stream + batch-on-stream captures.
 V2_FAMILIES = sorted(f for f, s in _FAMILIES.items() if s.get("dynamo_v2"))
-
-
-def crate_version(cargo_toml: Path) -> str:
-    m = re.search(r'^version\s*=\s*"([^"]+)"', cargo_toml.read_text(), re.MULTILINE)
-    if not m:
-        raise SystemExit(f"no version in {cargo_toml}")
-    return m.group(1)
 
 
 def cache_root() -> Path:
@@ -339,11 +334,17 @@ def main() -> int:
         "modes", nargs="*", choices=[[], "batch", "stream", "batch-on-stream"],
         help="subset of captures to refresh (default: all)",
     )
+    ap.add_argument(
+        "--label", default=None,
+        help="file the Dynamo v2 capture under this label instead of the crate "
+             "version (e.g. 0.1.24+pr163). Writes an ADDITIONAL version dir; it "
+             "never replaces an existing one.",
+    )
     args = ap.parse_args()
     modes = args.modes or ["batch", "stream", "batch-on-stream"]
 
     v1_ver = crate_version(ROOT / "parsers" / "v1" / "Cargo.toml")
-    v2_ver = crate_version(ROOT / "parsers" / "v2" / "Cargo.toml")
+    v2_ver = dynamo_v2_label(ROOT, args.label)
     print(f"[refresh] dynamo-parsers {v1_ver}, dynamo-parsers-v2 {v2_ver}")
 
     if "batch" in modes:

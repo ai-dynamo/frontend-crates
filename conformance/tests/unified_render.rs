@@ -762,15 +762,14 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
             root.display()
         );
     }
-    let capture_dir = std::fs::read_dir(&root)
-        .unwrap()
-        .filter_map(|e| e.ok().map(|e| e.path()))
-        .find(|p| {
-            p.is_dir()
-                && p.file_name()
-                    .and_then(|n| n.to_str())
-                    .is_some_and(|n| n.starts_with("dynamo_v2-"))
-        })
+    // THIS build's capture: the newest version dir, via the shared helper so the
+    // "which capture is current" rule lives in ONE place. The helper already drops
+    // `.patchN` overlays and `+tag` change-scoped captures, both of which are older
+    // parsers and must never be mistaken for the live one. Resolving by readdir order
+    // instead made this guard nondeterministic — the same commit could pass against one
+    // shard and report parser drift against another purely on directory listing order.
+    let capture_dir = common::version_dirs_ascending(&root, "dynamo_v2-")
+        .pop()
         .expect("no committed dynamo_v2-<ver> capture dir");
 
     // key -> (family, scenario, input), from the inputs shard.

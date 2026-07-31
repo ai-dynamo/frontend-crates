@@ -1125,6 +1125,9 @@ def _stream_candidate_items() -> list[dict[str, str]]:
             if impl == BASELINE_STREAM_IMPL and v == latest.get(impl):
                 bucket = "A"
             else:
+                # Older captures stay SELECTABLE but unchecked. Auto-comparing every
+                # version turns on a wall of columns the moment Detailed is pressed;
+                # the reader picks the one build they want to diff against.
                 bucket = "C"
             out.append({
                 "key": f"{impl}-{slug}",
@@ -2167,14 +2170,33 @@ def _load_unified_fixtures(base: Path):
 
     inputs = _read_dir("inputs")
     golden = _read_dir("golden")
-    engine_dirs = {}  # impl -> (dirname, version)
+    # impl -> [(version, dirname)] ascending. Dynamo keeps EVERY capture so the tab can
+    # compare one parser build against another; a dict keyed by impl silently dropped
+    # all but the last dir, which is why only one Dynamo column could ever render.
+    # `sorted()` alone is lexicographic (0.1.9 > 0.1.10), so sort on the version key.
+    engine_versions: dict[str, list[tuple[str, str]]] = {}
     for d in sorted(base.iterdir()):
         if not d.is_dir() or d.name in ("inputs", "golden"):
             continue
         m = re.match(r"^([a-z0-9_]+)-(\d.*)$", d.name)
         if m:
-            engine_dirs[m.group(1)] = (d.name, m.group(2))
+            engine_versions.setdefault(m.group(1), []).append((m.group(2), d.name))
+    for impl in engine_versions:
+        # `_version_sort_key` reads only the leading digits, so `0.1.24+pre163` ties with
+        # `0.1.24`. Break the tie so a `+tag` capture sorts BEFORE the plain release it
+        # qualifies: the tag marks a code state within that version (a pre-merge branch
+        # point), while the unadorned version is the released build. Without this the
+        # tagged capture wins the tie and becomes the reference, which would star the OLD
+        # parser and quietly measure everything against it.
+        engine_versions[impl].sort(
+            key=lambda vd: (fixtures._version_sort_key(vd[0]), "+" not in vd[0])
+        )
+    # Peers still resolve to their single latest dir; only Dynamo fans out per version.
+    engine_dirs = {impl: (vs[-1][1], vs[-1][0]) for impl, vs in engine_versions.items()}
     engine_cases = {impl: _read_dir(dirname) for impl, (dirname, _v) in engine_dirs.items()}
+    dynamo_by_ver = {
+        ver: _read_dir(dirname) for ver, dirname in engine_versions.get("dynamo_v2", [])
+    }
 
     cases = []
     caps = {"vllm_python": {}, "vllm_rust": {}, "sglang_python": {}}
@@ -2192,6 +2214,18 @@ def _load_unified_fixtures(base: Path):
             "input": inp.get("input", ""),
             "golden": gdoc.get("assembled") or [],
             "dynamo": ddoc.get("assembled") or [],
+            # Per-capture payloads, latest included. A version that never recorded this
+            # case is ABSENT here rather than empty: an older capture predating the case
+            # has no opinion about it, and scoring [] against golden would invent a
+            # divergence the parser never produced.
+            "dynamo_by_ver": {
+                ver: {
+                    "assembled": (vdoc.get("assembled") or []),
+                    "chunks": [c.get("expected") or [] for c in (vdoc.get("chunks") or [])],
+                }
+                for ver, vcases in dynamo_by_ver.items()
+                if (vdoc := vcases.get((fam, key))) is not None
+            },
             "dynamo_verdict": None, "vllm_verdict": None, "vllm_note": None,
             "chunks": [
                 {"delta_text": ic.get("delta_text", ""),
@@ -2212,6 +2246,8 @@ def _load_unified_fixtures(base: Path):
                     "parser": edoc.get("parser"),
                 }
     versions = {impl: v for impl, (_d, v) in engine_dirs.items()}
+    # Ascending; the tab makes the last one the reference and the rest compare-on.
+    versions["dynamo_v2_all"] = [v for v, _d in engine_versions.get("dynamo_v2", [])]
     return cases, caps, versions
 
 
@@ -2296,7 +2332,12 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     # Names follow the convention <Engine> [version] (<parser/mode>). The vLLM Rust
     # column's per-family variant (UnifiedParser for gemma4, CombinedParser otherwise)
     # can't fit one fixed column label, so it's shown per family in the tooltip.
-    dynamo_ver_label = _dynamo_v2_version() or "0.1.x"
+    # THIS tab's own capture version. It used to borrow _dynamo_v2_version(), which reads
+    # the STREAM tree (toolcalling/fixtures-stream-v2) — a different tree on a different
+    # release cadence — so the column was labelled with a version that did not produce
+    # these rows (0.1.23 on 0.1.24 data).
+    dynamo_all_vers = _vers.get("dynamo_v2_all") or []
+    dynamo_ver_label = (dynamo_all_vers[-1] if dynamo_all_vers else None) or "0.1.x"
     # Per-family mixture now, exactly like vLLM Rust: the native UnifiedParser where
     # one exists (qwen3), the v1-reasoning + v2-tool split everywhere else.
     dynamo_label = f"Dynamo v2 Rust {dynamo_ver_label} (stream, Combined & Unified)"
@@ -2310,17 +2351,29 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
         # green. See conformance_view.compareBarHtml (golden's hidden ref radio is dropped
         # when an engine is the default REF).
         _cand("dynamo", dynamo_label, "A"),  # Reference (default, starred)
-        _cand("golden", "GOLDEN (oracle)", "B"),  # fixed NΔ baseline, not the base
-        _cand("vllm", vllm_label, "B"),  # Compare-on by default
+        # Only the Reference is on by default — same rule as the stream and batch tabs.
+        # Reset reloads at these defaults, so anything B here comes back checked every
+        # time the reader clears the board, which reads as the page re-selecting itself.
+        _cand("golden", "GOLDEN (oracle)", "C"),  # fixed NΔ baseline, not the base
+        _cand("vllm", vllm_label, "C"),
     ]
+    # Older Dynamo captures, newest-first, each its own clickable column — UNCHECKED,
+    # so pressing Detailed does not switch on every historical build at once. The point
+    # is that the version is THERE to click, not that it is compared by default.
+    # impl="dynamo" groups them under the one Dynamo engine block of the compare bar.
+    for v in reversed(dynamo_all_vers[:-1]):
+        pc = _cand(f"dynamo@{v}", f"Dynamo v2 Rust {v} (stream, Combined & Unified)", "C")
+        pc["impl"] = "dynamo"
+        pc["version"] = v
+        candidates.append(pc)
     if vrust_live:
         # impl="vllm" groups it under the vLLM engine column of the compare bar (a second
         # row next to vLLM Python); key stays "vllm_rust" for the cmp/chunk/chart lookups.
-        rc = _cand("vllm_rust", vrust_label, "B")
+        rc = _cand("vllm_rust", vrust_label, "C")
         rc["impl"] = "vllm"
         candidates.append(rc)
     if sgl_live:
-        candidates.append(_cand("sglang", f"SGLang Python {sgl_ver_label} (stream, Combined)", "B"))
+        candidates.append(_cand("sglang", f"SGLang Python {sgl_ver_label} (stream, Combined)", "C"))
     _TODO = ("TODO: adopt a unified parser for this family (Dynamo v2 is moving to a "
              "per-family mixture — native unified where available, split elsewhere). "
              "Today's split parses ALL reasoning first, so reasoning between/after tool "
@@ -2390,17 +2443,37 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                 cmp["vllm_rust"] = {"sig": rsig, "leak": 1 if rverd == "LEAK" else 0, "na": 0}
             if sgl_events is not None:
                 cmp["sglang"] = {"sig": ssig, "leak": 1 if sverd == "LEAK" else 0, "na": 0}
+            # Older Dynamo builds, scored against GOLDEN exactly like the latest one, so a
+            # cell that changed between builds shows a real NΔ instead of a styling hint.
+            prev_by_ver = c.get("dynamo_by_ver") or {}
+            prev_chunks_by_ver = {}
+            for pv in dynamo_all_vers[:-1]:
+                pdoc = prev_by_ver.get(pv)
+                if pdoc is None:
+                    # Capture predates this case: n/a, not a divergence.
+                    cmp[f"dynamo@{pv}"] = {"sig": 0, "leak": 0, "na": 1}
+                    prev_chunks_by_ver[pv] = []
+                    continue
+                pchunks = pdoc.get("chunks") or []
+                pevents = _assemble_stream(pchunks)
+                pverd = _unified_classify(f, gold, pevents)
+                cmp[f"dynamo@{pv}"] = {
+                    "sig": _sig(pevents), "leak": 1 if pverd == "LEAK" else 0, "na": 0,
+                }
+                prev_chunks_by_ver[pv] = pchunks
             desc = c["description"]
             if c.get("policy_tags"):
                 desc = f"{desc}  [policy: {', '.join(c['policy_tags'])}]"
-            chunk_rows = [
-                {"delta_text": ch["delta_text"], "finish_reason": None,
-                 "expected": {"dynamo": ch.get("dynamo") or [],
-                              "vllm": (vllm_chunks[i] if i < len(vllm_chunks) else []),
-                              "vllm_rust": (vrust_chunks[i] if i < len(vrust_chunks) else []),
-                              "sglang": (sgl_chunks[i] if i < len(sgl_chunks) else [])}}
-                for i, ch in enumerate(c.get("chunks") or [])
-            ]
+            chunk_rows = []
+            for i, ch in enumerate(c.get("chunks") or []):
+                expected = {"dynamo": ch.get("dynamo") or [],
+                            "vllm": (vllm_chunks[i] if i < len(vllm_chunks) else []),
+                            "vllm_rust": (vrust_chunks[i] if i < len(vrust_chunks) else []),
+                            "sglang": (sgl_chunks[i] if i < len(sgl_chunks) else [])}
+                for pv, pchunks in prev_chunks_by_ver.items():
+                    expected[f"dynamo@{pv}"] = pchunks[i] if i < len(pchunks) else []
+                chunk_rows.append({"delta_text": ch["delta_text"],
+                                   "finish_reason": None, "expected": expected})
             reasons = []
             if dverd in ("MERGE", "ORDER"):
                 reasons.append({
@@ -2455,7 +2528,22 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                      "leak": sverd == "LEAK",
                      "block": ({"error": sgl_err} if sgl_err else
                                {"events": sgl_events, "verdict": sverd})},
-                ] if sgl_events is not None else []),
+                ] if sgl_events is not None else []) + [
+                    # One popup column per older Dynamo capture, newest-first. A version
+                    # that never recorded this case says so instead of showing an empty
+                    # event list that reads like the parser produced nothing.
+                    {"key": f"dynamo@{pv}",
+                     "label": f"Dynamo v2 Rust {pv} (stream, Combined & Unified)",
+                     "impl": "dynamo", "version": pv, "parse_mode": "unified",
+                     "leak": bool(cmp.get(f"dynamo@{pv}", {}).get("leak")),
+                     "block": ({"unavailable": f"not captured at {pv} — this case postdates that build"}
+                               if (prev_by_ver.get(pv) is None)
+                               else {"events": _assemble_stream(prev_chunks_by_ver.get(pv) or []),
+                                     "verdict": _unified_classify(
+                                         f, gold,
+                                         _assemble_stream(prev_chunks_by_ver.get(pv) or []))})}
+                    for pv in reversed(dynamo_all_vers[:-1])
+                ],
                 "baseline": None, "reasons": reasons, "dynamo_notes": [], "refs": [],
                 "leak_note": None, "na_note": None,
             }

@@ -144,16 +144,11 @@ def main():
 
 
 def _dynamo_v2_version():
-    # Mirror generate_conformance_table._dynamo_v2_version without importing the whole module.
-    try:
-        import tomllib
-    except ModuleNotFoundError:
-        import tomli as tomllib
-    cargo = REPO / "parsers" / "v2" / "Cargo.toml"
-    try:
-        return tomllib.loads(cargo.read_text())["package"]["version"]
-    except Exception:
-        return "0.1.x"
+    # Shared with refresh_dynamo_captures so the dir this writes is the dir that
+    # one created. No fallback: a guessed label files cases under a version that
+    # was never captured.
+    from dynamo_version import dynamo_v2_label
+    return dynamo_v2_label(REPO)
 
 
 if __name__ == "__main__":

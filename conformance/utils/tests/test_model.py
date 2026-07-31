@@ -118,7 +118,11 @@ def _peer_versions(tree: str) -> dict[str, set[str]]:
     return out
 
 
-_VER_PAREN = re.compile(r"\b\d[\w.]*\s+\([^)]+\)\s*$")
+# A version token then a parenthesized mode, e.g. "0.1.24 (stream)". `+` is allowed in
+# the token because a capture can be filed under a change-scoped label ("0.1.24+pr163")
+# to compare one code state against another within a single release — see
+# conformance/utils/src/dynamo_version.py.
+_VER_PAREN = re.compile(r"\b\d[\w.+-]*\s+\([^)]+\)\s*$")
 
 # ---- schema + shape -----------------------------------------------------------
 
