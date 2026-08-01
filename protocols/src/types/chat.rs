@@ -1503,6 +1503,31 @@ mod tests {
     }
 
     #[test]
+    fn chat_logprob_deserializes_optional_fields() {
+        let choice_logprobs: ChatChoiceLogprobs = serde_json::from_value(serde_json::json!({
+            "content": [{
+                "token": " hello",
+                "logprob": -0.12,
+                "top_logprobs": []
+            }]
+        }))
+        .unwrap();
+        let token_logprob: ChatCompletionTokenLogprob = serde_json::from_value(serde_json::json!({
+            "token": " hello",
+            "logprob": -0.12,
+            "token_id": 123,
+            "bytes": [32, 104, 101, 108, 108, 111],
+            "top_logprobs": []
+        }))
+        .unwrap();
+
+        assert_eq!(choice_logprobs.content.as_ref().unwrap()[0].token_id, None);
+        assert!(choice_logprobs.refusal.is_none());
+        assert_eq!(token_logprob.token_id, Some(123));
+        assert_eq!(token_logprob.bytes, Some(vec![32, 104, 101, 108, 108, 111]));
+    }
+
+    #[test]
     fn chat_logprob_preserves_nullable_fields() {
         let choice_logprobs = ChatChoiceLogprobs {
             content: None,
