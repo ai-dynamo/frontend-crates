@@ -380,9 +380,7 @@ pub struct ChatCompletionRequestToolMessage {
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct ChatChoiceLogprobs {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<Vec<ChatCompletionTokenLogprob>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub refusal: Option<Vec<ChatCompletionTokenLogprob>>,
 }
 
@@ -397,7 +395,6 @@ pub struct ChatCompletionTokenLogprob {
     pub logprob: f32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub token_id: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub bytes: Option<Vec<u8>>,
     pub top_logprobs: Vec<TopLogprobs>,
 }
@@ -1503,5 +1500,28 @@ mod tests {
         let json = serde_json::to_value(logprob).unwrap();
 
         assert_eq!(json["token_id"], 123);
+    }
+
+    #[test]
+    fn chat_logprob_preserves_nullable_fields() {
+        let choice_logprobs = ChatChoiceLogprobs {
+            content: None,
+            refusal: None,
+        };
+        let token_logprob = ChatCompletionTokenLogprob {
+            token: " hello".into(),
+            logprob: -0.12,
+            token_id: None,
+            bytes: None,
+            top_logprobs: vec![],
+        };
+
+        let choice_json = serde_json::to_value(choice_logprobs).unwrap();
+        let token_json = serde_json::to_value(token_logprob).unwrap();
+
+        assert_eq!(choice_json["content"], serde_json::Value::Null);
+        assert_eq!(choice_json["refusal"], serde_json::Value::Null);
+        assert!(token_json.get("token_id").is_none());
+        assert_eq!(token_json["bytes"], serde_json::Value::Null);
     }
 }
