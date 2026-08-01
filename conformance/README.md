@@ -39,6 +39,16 @@ reasoning/fixtures-v1/inputs/<family>/            # v1 reasoning cases
 
 **Capture version dirs are append-only — NEVER delete or overwrite an existing `<impl>-<version>/` dir when re-recording.** Every version dir (`dynamo_v1-3.0.0` AND `dynamo_v2-0.1.11` AND `dynamo_v2-0.1.22`, `vllm_python-0.23.0` AND `vllm_python-0.24.0`, …) is capture history: the chart renders each one as a comparison candidate, and readers fold them ascending WITHIN an impl so the latest capture wins per case (`dynamo_v1` and `dynamo_v2` are separate impls and never fold together). Re-recording after a parser change writes the CURRENT crate version's dir alongside the old ones (`refresh_dynamo_captures.py` / `capture_dynamo_jail_stream.py` do this); re-recording at the same version replaces that one dir only. Deleting an old version dir silently destroys the chart's version-comparison columns — it happened once (version dirs were wiped by a refresh and had to be restored) and the tooling has since been made additive. If a dir looks obsolete, it still is not yours to delete: the git-lfs store keeps it, and the manifest-pinned snapshot is what the chart shows.
 
+## End-to-end test cases (a separate surface, kept elsewhere)
+
+Everything under `conformance/` is HERMETIC: a fixed byte string goes into a parser and an exact event list comes out, with no model and no worker. There is a second, complementary surface — the **end-to-end test cases** — which sends real requests to a real Dynamo worker and checks the returned response. It has its own suite/category taxonomy (`reasoning` and `tool_calling` suites; `core` / `complex` / `history` / `tool_boundary` / `arguments_schema` / `parallel_lifecycle` categories), each case run in `stream` and `non-stream` mode, under two thinking-budget variants, at worker `--stream-interval` 20 and 1.
+
+**That suite and its artifacts do not live in this repo.** Its cases arrive as a self-contained HTML report (e.g. `qwen36_pr163_test_cases.html`) whose `const REPORT` embeds every request, expectation and response; the per-case artifacts it names are files of the form `end-to-end case-<num>-<case>-<variant>.json` on whichever machine ran the harness.
+
+The two surfaces answer different questions and neither replaces the other, so where a hermetic case has an e2e counterpart it carries an `End-to-end:` tag naming it. **Those tags and the full artifact index are maintained in ONE place — `utils/lib/parsers/UNIFIED_CASES.md` ("End-to-end test cases" and "Artifact index").** Do not copy the mapping into another doc; a second copy drifts, and `utils/tests/test_unified_taxonomy_covers_corpus.py` only pins the two that already exist.
+
+Per-case tagging currently covers the UNIFIED surface only. The reasoning and tool-calling case docs below have no e2e tags yet — that mapping has not been worked out, and an untagged case means "not yet mapped", not "no e2e coverage".
+
 ## Render Outputs
 
 | Output | Command | Parser version | Fixture version |

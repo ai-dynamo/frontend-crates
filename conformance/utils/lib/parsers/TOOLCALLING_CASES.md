@@ -1,5 +1,8 @@
 # Tool-Call Parser Corner Cases
 
+> **End-to-end test cases.** A separate, non-hermetic suite (real worker, real model) exists outside this repo; see `conformance/README.md` -> "End-to-end test cases". Its per-case cross-reference is maintained only in `UNIFIED_CASES.md`; the cases in THIS doc are not yet mapped to it.
+
+
 Reference taxonomy for unit testing **tool-call** parsers under
 `src/tool_calling/`. Sibling files cover adjacent stages:
 
