@@ -833,6 +833,20 @@ def test_every_stream_family_has_registry_row_and_fixtures() -> None:
             assert list((inputs_root / fam).glob("*.yaml")), f"dynamo_v2 family {fam} has no stream fixtures"
 
 
+def test_stream_version_families_include_inherited_anchor_coverage(
+    tmp_path, monkeypatch
+) -> None:
+    """A changed-only version directory inherits families from earlier versions."""
+    (tmp_path / "dynamo_v1-3.0.0" / "deepseek_v3").mkdir(parents=True)
+    (tmp_path / "dynamo_v1-5.1.2" / "inkling").mkdir(parents=True)
+    monkeypatch.setattr(g, "_STREAM_SRC", tmp_path)
+
+    assert g._stream_version_families("dynamo_v1", "5.1.2") == {
+        "deepseek_v3",
+        "inkling",
+    }
+
+
 def test_impl_spec_is_single_identity_source() -> None:
     """D5: ImplSpec is the one identity table; the generator's derived dicts match
     it, every spec is complete, markers/displays are unique, and vLLM Rust has no
