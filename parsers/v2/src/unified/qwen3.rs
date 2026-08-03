@@ -380,6 +380,60 @@ mod tests {
         );
     }
 
+    /// Push `input` one N-byte slice at a time (char-boundary safe).
+    fn guided_chunked(input: &str, n: usize) -> Vec<UnifiedEvent> {
+        let mut parser = qwen3_unified(&weather_tools());
+        parser
+            .initialize_with_output_mode(
+                UnifiedParserPrefill::None,
+                UnifiedToolOutputMode::GuidedJson { named_tool: None },
+            )
+            .unwrap();
+        let mut deltas = Vec::new();
+        let mut i = 0;
+        while i < input.len() {
+            let mut j = (i + n).min(input.len());
+            while !input.is_char_boundary(j) {
+                j += 1;
+            }
+            deltas.extend(parser.push(&input[i..j]).unwrap());
+            i = j;
+        }
+        deltas.extend(parser.finish().unwrap());
+        assemble(&deltas)
+    }
+
+    #[test]
+    fn a_thinking_tag_inside_a_guided_argument_is_data_at_every_chunk_size() {
+        // I7: inside the payload a reasoning marker is argument data. I6: the answer
+        // cannot depend on chunking. This regressed once — a whole-input push found the
+        // `<think>` in the argument string, split the payload into text/reasoning/text
+        // and DROPPED the call, while small chunks parsed it correctly.
+        let payload = r#"[{"name": "log", "arguments": {"note": "<think>x</think>"}}]"#;
+        let want = vec![call("log", serde_json::json!({"note": "<think>x</think>"}))];
+        assert_eq!(guided_reasoning(payload), want, "whole-input push");
+        for n in [1, 3, 7, 16, 64] {
+            assert_eq!(guided_chunked(payload, n), want, "chunk size {n}");
+        }
+    }
+
+    #[test]
+    fn guided_strips_an_orphan_reasoning_close_after_prose() {
+        // Native strips a stray `</think>` wherever it appears before any opener and
+        // emits the preceding prose as text; the guided path only did so when the
+        // prefix was whitespace, so the markup rode into the payload and out verbatim.
+        let out = guided_reasoning(&format!("Hello </think>{GUIDED_CALL}"));
+        assert_eq!(
+            out[0],
+            text("Hello "),
+            "prose+orphan close mishandled: {out:?}"
+        );
+        assert!(
+            !format!("{out:?}").contains("</think>"),
+            "orphan closer leaked: {out:?}"
+        );
+    }
+
     #[test]
     fn guided_strips_a_duplicate_reasoning_opener_inside_a_thought() {
         let out = guided_reasoning(&format!("<think>a<think>b</think>{GUIDED_CALL}"));

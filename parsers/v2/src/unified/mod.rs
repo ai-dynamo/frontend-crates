@@ -650,6 +650,21 @@ impl GuidedState {
                     break;
                 }
                 GuidedMode::OutsideReasoning => {
+                    // PAYLOAD FIRST. Once the run has opened a JSON value we are inside
+                    // the payload, and a `<think>` from there on is ARGUMENT DATA, not a
+                    // channel marker (`I7`). Searching for the opener before this check
+                    // meant a whole-input push found the `<think>` embedded in an
+                    // argument string, split the payload into text/reasoning/text and
+                    // dropped the call — while the same bytes arriving in small chunks
+                    // latched here first and parsed correctly. Same input, two answers,
+                    // decided by chunking (`I6`).
+                    if json_payload_started(&self.json)
+                        || (self.json.trim().is_empty() && json_payload_started(&self.input))
+                    {
+                        self.mode = GuidedMode::VisibleOnly;
+                        continue;
+                    }
+
                     // A reasoning opener ANYWHERE ahead means the thought has not
                     // started yet and whatever precedes it is ordinary visible text —
                     // not the beginning of the JSON payload. Requiring a
@@ -674,10 +689,20 @@ impl GuidedState {
                         self.accept_redundant_reasoning_start = false;
                         continue;
                     }
-                    if let Some(at) = self.input.find(end)
-                        && self.input[..at].trim().is_empty()
-                    {
-                        self.json.push_str(&self.input[..at]);
+                    // An orphan closer with no opener before it is malformed markup,
+                    // stripped wherever it appears — the same rule the native scanner's
+                    // orphan handler applies. Requiring a whitespace-only prefix here
+                    // let `Hello </think>{…}` carry the markup into the payload buffer
+                    // and out to the user verbatim (`I3`), which native does not do.
+                    if let Some(at) = self.input.find(end) {
+                        let prefix = &self.input[..at];
+                        if prefix.trim().is_empty() {
+                            self.json.push_str(prefix);
+                        } else {
+                            let mut pending = std::mem::take(&mut self.json);
+                            pending.push_str(prefix);
+                            push_run(&mut output, Kind::Text, &pending);
+                        }
                         self.input.drain(..at + end.len());
                         continue;
                     }
