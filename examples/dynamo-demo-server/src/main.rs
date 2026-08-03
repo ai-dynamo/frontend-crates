@@ -116,20 +116,21 @@ async fn main() -> anyhow::Result<()> {
 
 /// Download `tokenizer.json` from HF Hub and return the cached path.
 async fn fetch_hf_tokenizer(repo_id: &str, revision: &str) -> anyhow::Result<PathBuf> {
-    use hf_hub::{Repo, RepoType, api::tokio::ApiBuilder};
+    use hf_hub::{HFClient, split_id};
 
     tracing::info!(
         repo = repo_id,
         revision,
         "fetching tokenizer.json from HF Hub"
     );
-    let api = ApiBuilder::new().with_progress(true).build()?;
-    let repo = api.repo(Repo::with_revision(
-        repo_id.to_string(),
-        RepoType::Model,
-        revision.to_string(),
-    ));
-    let path = repo.get("tokenizer.json").await?;
+    let (owner, name) = split_id(repo_id);
+    let path = HFClient::new()?
+        .model(owner, name)
+        .download_file()
+        .filename("tokenizer.json")
+        .revision(revision)
+        .send()
+        .await?;
     tracing::info!(path = %path.display(), "tokenizer cached");
     Ok(path)
 }
@@ -138,20 +139,23 @@ async fn fetch_hf_tokenizer(repo_id: &str, revision: &str) -> anyhow::Result<Pat
 /// Returns `None` (with a warning) if the repo doesn't ship one -- rendering is
 /// optional, so this never aborts startup.
 async fn fetch_hf_tokenizer_config(repo_id: &str, revision: &str) -> Option<PathBuf> {
-    use hf_hub::{Repo, RepoType, api::tokio::ApiBuilder};
+    use hf_hub::{HFClient, split_id};
 
     tracing::info!(
         repo = repo_id,
         revision,
         "fetching tokenizer_config.json from HF Hub"
     );
-    let api = ApiBuilder::new().with_progress(true).build().ok()?;
-    let repo = api.repo(Repo::with_revision(
-        repo_id.to_string(),
-        RepoType::Model,
-        revision.to_string(),
-    ));
-    match repo.get("tokenizer_config.json").await {
+    let (owner, name) = split_id(repo_id);
+    let result = HFClient::new()
+        .ok()?
+        .model(owner, name)
+        .download_file()
+        .filename("tokenizer_config.json")
+        .revision(revision)
+        .send()
+        .await;
+    match result {
         Ok(path) => {
             tracing::info!(path = %path.display(), "tokenizer_config cached");
             Some(path)
