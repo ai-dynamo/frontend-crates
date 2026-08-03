@@ -525,13 +525,6 @@ enum GuidedMode {
     /// Visible output has started; every later byte is JSON payload. Marker-like
     /// text inside an argument value must stay literal from here on (`I7`).
     VisibleOnly,
-    /// Native tool markup appeared inside a thought, which guided decoding never
-    /// legitimately produces. The native scanner lets the unclosed block swallow
-    /// the rest and drops it at EOF; this mirrors that, because the alternative is
-    /// pushing the markup into the JSON buffer, where it fails to parse and is
-    /// surfaced VERBATIM as visible text — the `I3` leak, just through the other
-    /// channel.
-    DroppedMarkup,
 }
 
 /// One guided tool call as the backend emits it. `parameters` and `arguments`
@@ -645,10 +638,6 @@ impl GuidedState {
                     self.input.clear();
                     break;
                 }
-                GuidedMode::DroppedMarkup => {
-                    self.input.clear();
-                    break;
-                }
                 GuidedMode::OutsideReasoning => {
                     // PAYLOAD FIRST. Once the run has opened a JSON value we are inside
                     // the payload, and a `<think>` from there on is ARGUMENT DATA, not a
@@ -695,12 +684,17 @@ impl GuidedState {
                     // let `Hello </think>{…}` carry the markup into the payload buffer
                     // and out to the user verbatim (`I3`), which native does not do.
                     if let Some(at) = self.input.find(end) {
-                        let prefix = &self.input[..at];
-                        if prefix.trim().is_empty() {
-                            self.json.push_str(prefix);
+                        // Decide on the COMBINATION of what is already buffered and this
+                        // prefix, exactly as the `find(start)` branch above does. Judging
+                        // the current prefix alone meant prose buffered by an EARLIER
+                        // chunk stayed in the payload buffer and got glued to the JSON
+                        // that followed, so the call was lost — while the same bytes in
+                        // one push emitted the prose as text and parsed the call (`I6`).
+                        let mut pending = std::mem::take(&mut self.json);
+                        pending.push_str(&self.input[..at]);
+                        if pending.trim().is_empty() {
+                            self.json = pending;
                         } else {
-                            let mut pending = std::mem::take(&mut self.json);
-                            pending.push_str(prefix);
                             push_run(&mut output, Kind::Text, &pending);
                         }
                         self.input.drain(..at + end.len());
@@ -765,15 +759,22 @@ impl GuidedState {
                     // structure dominates reasoning; or a stray, which is stripped
                     // and leaves the span open.
                     let close = self.input.find(end).map(|at| (at, end.len(), true));
+                    // Under guided decoding the reasoning channel is UNCONSTRAINED, so
+                    // the model can legitimately narrate `<tool_call>` while thinking —
+                    // and the real call arrives later as JSON, not as markup. So a tool
+                    // opener here is STRAY markup to strip (span stays open), not
+                    // structure that ends the turn. Terminating on it discarded the
+                    // guided payload that followed and returned an empty response.
+                    // The native scanner does treat it as structural, but it can: it
+                    // opens a block and recovers the call from the markup itself.
                     let tool_open = self
                         .tool_openers
                         .iter()
-                        .filter_map(|m| self.input.find(m.as_str()))
-                        .min()
-                        .map(|at| (at, 0usize, true));
+                        .filter_map(|m| self.input.find(m.as_str()).map(|at| (at, m.len())))
+                        .min_by_key(|(at, _)| *at)
+                        .map(|(at, len)| (at, len, false));
                     let stray = stray_in_reasoning(&self.input, start, end, &self.orphan_markers)
                         .map(|(at, len)| (at, len, false));
-                    let tool_open_at = tool_open.map(|(at, _, _)| at);
                     if let Some((at, consume, closes)) = [close, tool_open, stray]
                         .into_iter()
                         .flatten()
@@ -782,11 +783,7 @@ impl GuidedState {
                         push_run(&mut output, Kind::Reasoning, &self.input[..at]);
                         self.input.drain(..at + consume);
                         if closes {
-                            self.mode = if tool_open_at == Some(at) {
-                                GuidedMode::DroppedMarkup
-                            } else {
-                                GuidedMode::VisibleOnly
-                            };
+                            self.mode = GuidedMode::VisibleOnly;
                         } else {
                             tracing::debug!(
                                 why = "guided_stray_marker_in_reasoning",

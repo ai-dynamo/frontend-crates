@@ -435,6 +435,64 @@ mod tests {
     }
 
     #[test]
+    fn prose_then_orphan_close_then_payload_is_chunk_independent() {
+        // The prose is buffered by an EARLIER chunk than the one carrying the closer,
+        // so judging only the current prefix left it glued to the JSON and lost the
+        // call — while one push emitted it as text and parsed fine (`I6`).
+        fn named(chunks: &[&str]) -> Vec<UnifiedEvent> {
+            let mut parser = qwen3_unified(&weather_tools());
+            parser
+                .initialize_with_output_mode(
+                    UnifiedParserPrefill::None,
+                    UnifiedToolOutputMode::GuidedJson {
+                        named_tool: Some("get_weather"),
+                    },
+                )
+                .unwrap();
+            let mut deltas = Vec::new();
+            for c in chunks {
+                deltas.extend(parser.push(c).unwrap());
+            }
+            deltas.extend(parser.finish().unwrap());
+            assemble(&deltas)
+        }
+        let want = vec![
+            text("thinking text"),
+            call("get_weather", serde_json::json!({"city": "Paris"})),
+        ];
+        assert_eq!(
+            named(&[r#"thinking text</think>{"city": "Paris"}"#]),
+            want,
+            "one push"
+        );
+        assert_eq!(
+            named(&["thinking text", "</think>", r#"{"city": "Paris"}"#]),
+            want,
+            "split at the closer"
+        );
+    }
+
+    #[test]
+    fn tool_markup_narrated_inside_a_thought_does_not_eat_the_guided_payload() {
+        // Guided decoding leaves the reasoning channel UNCONSTRAINED, so the model can
+        // write `<tool_call>` while narrating; the real call arrives after, as JSON.
+        // Treating that markup as stream-ending discarded the payload and returned an
+        // empty response.
+        let out = guided_reasoning(&format!(
+            "<think>I'll use <tool_call> next</think>{GUIDED_CALL}"
+        ));
+        assert!(
+            out.iter()
+                .any(|e| matches!(e, UnifiedEvent::ToolCall { .. })),
+            "guided payload was discarded: {out:?}"
+        );
+        assert!(
+            !format!("{out:?}").contains("<tool_call>"),
+            "narrated markup leaked: {out:?}"
+        );
+    }
+
+    #[test]
     fn guided_strips_a_duplicate_reasoning_opener_inside_a_thought() {
         let out = guided_reasoning(&format!("<think>a<think>b</think>{GUIDED_CALL}"));
         assert_eq!(
@@ -456,17 +514,23 @@ mod tests {
 
     #[test]
     fn guided_and_native_agree_on_the_same_reasoning_bytes() {
-        // The invariant, stated directly: the request mode must not change the
-        // reasoning payload. Native ends with a tool call in markup, guided with the
-        // same call as JSON, so only the FIRST event is comparable.
-        for thought in [
+        // Two properties, deliberately scoped differently.
+        //
+        // NO MARKER MAY LEAK, on either path, for ANY of these inputs. That one is
+        // absolute — it is the `I3` contract, and comparing only the FIRST event is
+        // how a leak survived this test twice, coming out in the tail instead.
+        //
+        // BYTE-EQUAL reasoning payloads hold only for inputs with no native TOOL
+        // structure. Native can interpret `<tool_call>`/`<function=`: it opens a
+        // block and recovers the call from the markup. Guided cannot — under guided
+        // decoding the reasoning channel is unconstrained, so that markup is the
+        // model NARRATING, and the real call arrives afterwards as JSON. Treating it
+        // as structural there discarded the payload and returned an empty response.
+        // So the two modes genuinely differ on those inputs, and the honest thing is
+        // to say so rather than force an equality that costs the call.
+        let equal_payload = [
             "<think>a<think>b</think>",
             "<think>a</tool_call>b</think>",
-            // A tool OPENER inside a thought: native ends the span there, so guided
-            // must too. Reviewed catch — the first two cases passed while this one
-            // leaked `<tool_call>` into the displayed thinking on the guided path.
-            "<think>a<tool_call>x</think>",
-            "<think>a<function=run>x</function>x</think>",
             // Visible prose BEFORE the thought opens (`content_then_reason`). Every
             // other case here starts the thought at byte 0, which is how the guided
             // path shipped a bug where the prose latched the payload buffer and the
@@ -474,13 +538,21 @@ mod tests {
             "Hello there. <think>let me recall</think>",
             "Sure. <think>check</think>",
             "<think>plain thought</think>",
-        ] {
+        ];
+        // Native tool structure inside a thought: no-leak only, per the note above.
+        let no_leak_only = [
+            "<think>a<tool_call>x</think>",
+            "<think>a<function=run>x</function>x</think>",
+        ];
+        for thought in equal_payload.iter().chain(no_leak_only.iter()) {
             let native = events(&weather_tools(), &[&format!("{thought}tail")]);
             let guided = guided_reasoning(&format!("{thought}{GUIDED_CALL}"));
-            assert_eq!(
-                native[0], guided[0],
-                "request mode changed the reasoning payload for {thought:?}"
-            );
+            if equal_payload.contains(thought) {
+                assert_eq!(
+                    native[0], guided[0],
+                    "request mode changed the reasoning payload for {thought:?}"
+                );
+            }
             // Comparing only the FIRST event is how the tool-opener leak survived
             // this test twice: the reasoning span matched while the markup came
             // out in the tail instead. No event on either side may carry a marker.
