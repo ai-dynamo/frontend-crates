@@ -663,7 +663,18 @@ impl GuidedState {
                     // buffer, latched VisibleOnly, and then surfaced the markers AND
                     // the model's private thinking to the user as the answer, with the
                     // call never dispatched.
-                    if let Some(at) = self.input.find(start) {
+                    // Whichever marker comes FIRST wins. Checking the opener over the
+                    // whole buffer before ever looking for the closer meant an ORPHAN
+                    // closer sitting ahead of a real thought — `</think>a<think>b…` —
+                    // fell into the opener's prefix and was emitted verbatim as text.
+                    // The native orphan handler compares the two positions and strips
+                    // the earlier one, so the modes disagreed on identical bytes (`I3`).
+                    let open_at = self.input.find(start);
+                    let close_at = self.input.find(end);
+                    let closer_first = matches!((open_at, close_at), (Some(o), Some(c)) if c < o)
+                        || (open_at.is_none() && close_at.is_some());
+
+                    if !closer_first && let Some(at) = open_at {
                         // Whatever was buffered as "payload so far", plus this prefix,
                         // was visible text after all — a thought is opening behind it.
                         let mut pending = std::mem::take(&mut self.json);
@@ -678,18 +689,14 @@ impl GuidedState {
                         self.accept_redundant_reasoning_start = false;
                         continue;
                     }
+
                     // An orphan closer with no opener before it is malformed markup,
                     // stripped wherever it appears — the same rule the native scanner's
-                    // orphan handler applies. Requiring a whitespace-only prefix here
-                    // let `Hello </think>{…}` carry the markup into the payload buffer
-                    // and out to the user verbatim (`I3`), which native does not do.
-                    if let Some(at) = self.input.find(end) {
-                        // Decide on the COMBINATION of what is already buffered and this
-                        // prefix, exactly as the `find(start)` branch above does. Judging
-                        // the current prefix alone meant prose buffered by an EARLIER
-                        // chunk stayed in the payload buffer and got glued to the JSON
-                        // that followed, so the call was lost — while the same bytes in
-                        // one push emitted the prose as text and parsed the call (`I6`).
+                    // orphan handler applies. Decide on the COMBINATION of what is
+                    // already buffered and this prefix, as the opener branch does:
+                    // judging the current prefix alone left prose buffered by an
+                    // EARLIER chunk glued to the JSON that followed, losing the call.
+                    if let Some(at) = close_at {
                         let mut pending = std::mem::take(&mut self.json);
                         pending.push_str(&self.input[..at]);
                         if pending.trim().is_empty() {
@@ -833,7 +840,26 @@ impl GuidedState {
             Some(name) => {
                 serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(payload)
                     .ok()
-                    .map(|_| vec![(name.clone(), payload.to_string())])
+                    .and_then(|obj| {
+                        // Some backends emit the WHOLE call envelope even though `tool_choice`
+                        // already named the tool. Forwarding that verbatim dispatches the tool
+                        // with `{name, arguments}` as its argument set instead of the real one,
+                        // which the required path already avoids. Unwrap it here so the two
+                        // agree; a mismatched name is malformed, not something to guess at, so
+                        // it falls through to the text recovery below.
+                        let envelope = obj
+                            .get("name")
+                            .and_then(|v| v.as_str())
+                            .zip(obj.get("arguments").or_else(|| obj.get("parameters")));
+                        match envelope {
+                            Some((emitted, args)) if emitted == name.as_str() => {
+                                args.as_object()?;
+                                Some(vec![(name.clone(), args.to_string())])
+                            }
+                            Some(_) => None,
+                            None => Some(vec![(name.clone(), payload.to_string())]),
+                        }
+                    })
             }
             None => parse_required_guided_calls(payload),
         };

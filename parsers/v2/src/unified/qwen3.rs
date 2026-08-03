@@ -493,6 +493,62 @@ mod tests {
     }
 
     #[test]
+    fn an_orphan_closer_before_a_real_thought_is_stripped_not_shown() {
+        // The opener search ran over the whole buffer before the closer was ever
+        // considered, so an orphan `</think>` sitting AHEAD of a real thought landed in
+        // the opener's prefix and went out as visible text. Native compares positions
+        // and strips the earlier marker.
+        let native = events(&weather_tools(), &["</think>a<think>b</think>tail"]);
+        let guided = guided_reasoning(&format!("</think>a<think>b</think>{GUIDED_CALL}"));
+        assert_eq!(native[0], text("a"), "native changed: {native:?}");
+        assert_eq!(
+            guided[0],
+            text("a"),
+            "orphan closer leaked into the reply: {guided:?}"
+        );
+        assert!(
+            !format!("{guided:?}").contains("</think>"),
+            "markup reached the user: {guided:?}"
+        );
+    }
+
+    #[test]
+    fn a_named_choice_unwraps_a_full_call_envelope() {
+        // Some backends emit the whole envelope even though tool_choice named the tool.
+        // Forwarding it verbatim dispatched with `{name, arguments}` as the argument set.
+        fn named(payload: &str) -> Vec<UnifiedEvent> {
+            let mut parser = qwen3_unified(&weather_tools());
+            parser
+                .initialize_with_output_mode(
+                    UnifiedParserPrefill::None,
+                    UnifiedToolOutputMode::GuidedJson {
+                        named_tool: Some("get_weather"),
+                    },
+                )
+                .unwrap();
+            let mut deltas = parser.push(payload).unwrap();
+            deltas.extend(parser.finish().unwrap());
+            assemble(&deltas)
+        }
+        let want = vec![call("get_weather", serde_json::json!({"city": "Paris"}))];
+        assert_eq!(named(r#"{"city": "Paris"}"#), want, "bare arguments");
+        assert_eq!(
+            named(r#"{"name": "get_weather", "arguments": {"city": "Paris"}}"#),
+            want,
+            "envelope naming the SAME tool should unwrap"
+        );
+        // An envelope naming a DIFFERENT tool is malformed — guessing which the caller
+        // meant is worse than surfacing it, so it takes the P2 text recovery.
+        let mismatch = named(r#"{"name": "other_tool", "arguments": {"city": "Paris"}}"#);
+        assert!(
+            mismatch
+                .iter()
+                .all(|e| !matches!(e, UnifiedEvent::ToolCall { .. })),
+            "dispatched despite a name mismatch: {mismatch:?}"
+        );
+    }
+
+    #[test]
     fn guided_strips_a_duplicate_reasoning_opener_inside_a_thought() {
         let out = guided_reasoning(&format!("<think>a<think>b</think>{GUIDED_CALL}"));
         assert_eq!(
