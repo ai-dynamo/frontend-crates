@@ -149,7 +149,14 @@ pub trait UnifiedParser: Send {
     /// (policy P2 — best-effort recovery).
     fn finish(&mut self) -> Result<Vec<UnifiedDelta>>;
 
-    /// Reset parser state after an error and return any unconsumed text.
+    /// Return the parser to a FRESH-STREAM state and hand back any unconsumed text.
+    ///
+    /// This is not a mid-turn continuation hook. Everything restarts, including the
+    /// tool index, so the returned text must be re-parsed as a NEW stream and any
+    /// calls already dispatched belong to the abandoned one — feeding the remainder
+    /// back into the same turn would re-number from index 0 and collide with them.
+    /// That follows from `I4`: one parser instance owns exactly one stream, so a
+    /// retry is a new stream and gets a reset (or a new) parser, not a splice.
     fn reset(&mut self) -> String {
         String::new()
     }
@@ -445,6 +452,7 @@ impl<E: InvokeEmitter> ScannerUnified<E> {
                 Some(Box::new(GuidedState::new(
                     reasoning,
                     self.scanner.control_markers().to_vec(),
+                    self.scanner.invoke_end().to_string(),
                     named_tool.map(str::to_string),
                     prefill,
                 )))
@@ -564,6 +572,8 @@ struct GuidedState {
     /// both the inside-a-thought and outside-a-thought scopes. Assembling it
     /// per-site from openers and orphans is how those four uses drifted apart.
     control_markers: Vec<String>,
+    /// Paired with a stripped prefix-form invoke opener; see `invoke_end()`.
+    invoke_end: String,
     named_tool: Option<String>,
     /// Response prefill disables reasoning markers, but tool control markers
     /// still need scanning until the JSON value actually starts.
@@ -582,14 +592,28 @@ struct GuidedState {
 /// through its terminating `>`; stripping only the declared prefix left `NAME>`
 /// behind to poison the payload. `None` for a prefix form whose `>` has not
 /// streamed yet, so the caller holds the bytes back instead of splitting it.
-fn control_marker_at(haystack: &str, markers: &[String], flush: bool) -> Option<(usize, usize)> {
+fn control_marker_at(
+    haystack: &str,
+    markers: &[String],
+    invoke_end: &str,
+    flush: bool,
+) -> Option<(usize, usize)> {
     markers
         .iter()
         .filter_map(|m| {
             let at = haystack.find(m.as_str())?;
             if m.ends_with('=') {
                 match haystack[at..].find('>') {
-                    Some(rel) => Some((at, rel + 1)),
+                    // An invoke opener owns its terminator: stripping `<function=NAME>`
+                    // and leaving `</function>` behind put that fragment in the shown
+                    // thinking. Consume the pair when the tail is present; a BARE
+                    // terminator elsewhere stays text, as it is natively.
+                    Some(rel) => Some((
+                        at,
+                        haystack[at..]
+                            .find(invoke_end)
+                            .map_or(rel + 1, |e| e + invoke_end.len()),
+                    )),
                     None if flush => Some((at, haystack.len() - at)),
                     None => None,
                 }
@@ -656,12 +680,14 @@ impl GuidedState {
     fn new(
         reasoning: ReasoningSpec,
         control_markers: Vec<String>,
+        invoke_end: String,
         named_tool: Option<String>,
         prefill: UnifiedParserPrefill,
     ) -> Self {
         Self {
             reasoning,
             control_markers,
+            invoke_end,
             named_tool,
             reasoning_enabled: prefill != UnifiedParserPrefill::Response,
             mode: Self::mode_for(prefill),
@@ -755,14 +781,19 @@ impl GuidedState {
                         .reasoning_enabled
                         .then(|| self.input.find(start))
                         .flatten();
-                    let stray_close = control_marker_at(&self.input, &self.control_markers, flush)
-                        .into_iter()
-                        .chain(
-                            self.reasoning_enabled
-                                .then(|| self.input.find(end).map(|at| (at, end.len())))
-                                .flatten(),
-                        )
-                        .min_by_key(|(at, _)| *at);
+                    let stray_close = control_marker_at(
+                        &self.input,
+                        &self.control_markers,
+                        &self.invoke_end,
+                        flush,
+                    )
+                    .into_iter()
+                    .chain(
+                        self.reasoning_enabled
+                            .then(|| self.input.find(end).map(|at| (at, end.len())))
+                            .flatten(),
+                    )
+                    .min_by_key(|(at, _)| *at);
                     let close_at = stray_close.map(|(at, _)| at);
                     let close_len = stray_close.map(|(_, l)| l).unwrap_or(end.len());
                     let closer_first = matches!((open_at, close_at), (Some(o), Some(c)) if c < o)
@@ -882,11 +913,16 @@ impl GuidedState {
                     // guided payload that followed and returned an empty response.
                     // The native scanner does treat it as structural, but it can: it
                     // opens a block and recovers the call from the markup itself.
-                    let stray = control_marker_at(&self.input, &self.control_markers, flush)
-                        .into_iter()
-                        .chain(self.input.find(start).map(|at| (at, start.len())))
-                        .min_by_key(|(at, _)| *at)
-                        .map(|(at, len)| (at, len, false));
+                    let stray = control_marker_at(
+                        &self.input,
+                        &self.control_markers,
+                        &self.invoke_end,
+                        flush,
+                    )
+                    .into_iter()
+                    .chain(self.input.find(start).map(|at| (at, start.len())))
+                    .min_by_key(|(at, _)| *at)
+                    .map(|(at, len)| (at, len, false));
                     if let Some((at, consume, closes)) = [close, stray]
                         .into_iter()
                         .flatten()

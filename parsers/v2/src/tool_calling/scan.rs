@@ -357,6 +357,16 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         &self.spec.holdback_markers
     }
 
+    /// The invoke terminator, for pairing with a stripped invoke opener.
+    ///
+    /// NOT part of [`Self::control_markers`]: a BARE `</function>` with no invoke
+    /// open is ordinary text to the native scanner, and measured identical on both
+    /// paths, so stripping it unconditionally would create a divergence rather than
+    /// remove one. It is consumed only as the tail of an invoke already stripped.
+    pub(crate) fn invoke_end(&self) -> &str {
+        &self.spec.invoke_end
+    }
+
     /// Select whether this stream interprets reasoning markers, without
     /// rebuilding the scanner or cloning its tool schemas.
     pub(crate) fn set_reasoning_mode(&mut self, enabled: bool, forced_start: bool) {

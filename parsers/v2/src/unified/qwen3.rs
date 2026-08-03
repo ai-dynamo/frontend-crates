@@ -706,6 +706,43 @@ mod tests {
     }
 
     #[test]
+    fn a_narrated_invoke_inside_a_thought_leaves_no_marker_behind() {
+        // Reviewed: stripping `<function=NAME>` left its `</function>` in the shown
+        // thinking. The invoke terminator is now part of the guided vocabulary.
+        //
+        // The two markers NOT added, and why: `<parameter=` and a BARE `</function>`
+        // with no invoke open are kept verbatim by the NATIVE scanner as well —
+        // measured identical on both paths — so stripping them here would create a
+        // divergence rather than remove one. Those two cases are pinned below.
+        let leaked = guided_reasoning(&format!(
+            "<think>a<function=run>x</function>x</think>{GUIDED_CALL}"
+        ));
+        assert!(
+            !format!("{leaked:?}").contains("</function>"),
+            "invoke terminator left behind: {leaked:?}"
+        );
+        assert!(
+            leaked
+                .iter()
+                .any(|e| matches!(e, UnifiedEvent::ToolCall { .. })),
+            "call lost: {leaked:?}"
+        );
+
+        // Parity with native on the shapes that are ordinary text for both.
+        for thought in [
+            "<think>a<parameter=city>y</parameter>b</think>",
+            "<think>a</function>b</think>",
+        ] {
+            let native = events(&weather_tools(), &[&format!("{thought}tail")]);
+            let guided = guided_reasoning(&format!("{thought}{GUIDED_CALL}"));
+            assert_eq!(
+                native[0], guided[0],
+                "guided diverged from native on text-like markup for {thought:?}"
+            );
+        }
+    }
+
+    #[test]
     fn guided_strips_a_duplicate_reasoning_opener_inside_a_thought() {
         let out = guided_reasoning(&format!("<think>a<think>b</think>{GUIDED_CALL}"));
         assert_eq!(
