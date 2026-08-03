@@ -592,10 +592,16 @@ struct GuidedState {
 /// through its terminating `>`; stripping only the declared prefix left `NAME>`
 /// behind to poison the payload. `None` for a prefix form whose `>` has not
 /// streamed yet, so the caller holds the bytes back instead of splitting it.
+/// `limit` bounds the terminator search: an invoke's terminator has to belong to
+/// THAT invoke. Searching the whole buffer let a `</function>` occurring far later
+/// — inside a guided argument string, past the end of the thought — be claimed as
+/// the terminator, swallowing the reasoning closer and the entire payload with it,
+/// so the call was silently dropped and payload fragments were shown as thinking.
 fn control_marker_at(
     haystack: &str,
     markers: &[String],
     invoke_end: &str,
+    limit: Option<usize>,
     flush: bool,
 ) -> Option<(usize, usize)> {
     markers
@@ -610,7 +616,7 @@ fn control_marker_at(
                     // terminator elsewhere stays text, as it is natively.
                     Some(rel) => Some((
                         at,
-                        haystack[at..]
+                        haystack[at..limit.unwrap_or(haystack.len()).max(at)]
                             .find(invoke_end)
                             .map_or(rel + 1, |e| e + invoke_end.len()),
                     )),
@@ -787,6 +793,8 @@ impl GuidedState {
                         &self.input,
                         &self.control_markers,
                         &self.invoke_end,
+                        // Nor past the start of the payload itself.
+                        self.input.find(['{', '[']),
                         flush,
                     )
                     .into_iter()
@@ -920,6 +928,9 @@ impl GuidedState {
                         &self.input,
                         &self.control_markers,
                         &self.invoke_end,
+                        // A narrated invoke lives INSIDE this thought, so its
+                        // terminator cannot be past the span's closer.
+                        self.input.find(end),
                         flush,
                     )
                     .into_iter()
@@ -977,13 +988,45 @@ impl GuidedState {
     /// expected call shape is surfaced as visible text rather than dropped
     /// (policy P2 — best-effort recovery, never silent loss).
     fn finish_json(&mut self) -> Result<Vec<UnifiedDelta>> {
-        let payload = self.json.trim();
+        // A control marker can bracket the payload, not just precede it. Once the
+        // opening `{`/`[` latches VisibleOnly every later byte is appended verbatim,
+        // so a template-emitted `</tool_call>` AFTER the JSON rode into the buffer,
+        // broke the parse, and P2 surfaced the whole thing — markup included — with
+        // the call lost. The leading side was already handled; this is the missing
+        // symmetry at the tail.
+        //
+        // Only the TAIL is touched, and only when a marker is actually there: with
+        // no trailing marker the buffer is passed through byte-for-byte, because the
+        // emitted argument string has to stay model-exact (`I7`).
+        let mut end = self.json.trim_end().len();
+        loop {
+            let before = end;
+            for marker in self
+                .control_markers
+                .iter()
+                .map(String::as_str)
+                .chain([self.invoke_end.as_str()])
+            {
+                if self.json[..end].ends_with(marker) {
+                    end = self.json[..end - marker.len()].trim_end().len();
+                }
+            }
+            if end == before {
+                break;
+            }
+        }
+        let stripped_tail = end < self.json.trim_end().len();
+        let payload = self.json[..end].trim();
         if payload.is_empty() {
             self.json.clear();
             return Ok(Vec::new());
         }
 
-        let raw_payload = self.json.clone();
+        let raw_payload = if stripped_tail {
+            self.json[..end].to_string()
+        } else {
+            self.json.clone()
+        };
         let calls = match &self.named_tool {
             // A named choice constrains output to that tool's ARGUMENTS alone,
             // so the payload is the argument object and the name is known.

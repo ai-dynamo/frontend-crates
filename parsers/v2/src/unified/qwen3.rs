@@ -615,55 +615,60 @@ mod tests {
         for &(starting_state, prefixes) in cases {
             for &(named_tool, payload) in &choices {
                 for prefix in prefixes {
-                    let input = format!("{prefix}{payload}");
-                    // Delivery: whole, then split at EVERY byte boundary.
-                    let mut deliveries: Vec<Vec<String>> = vec![vec![input.clone()]];
-                    for cut in 1..input.len() {
-                        if input.is_char_boundary(cut) {
-                            deliveries.push(vec![input[..cut].into(), input[cut..].into()]);
+                    // Markers can BRACKET the payload, not only precede it: a
+                    // template-emitted closer after the JSON rode into the buffer
+                    // and cost the call. The table covers both ends now.
+                    for suffix in ["", "</tool_call>", "</function>"] {
+                        let input = format!("{prefix}{payload}{suffix}");
+                        // Delivery: whole, then split at EVERY byte boundary.
+                        let mut deliveries: Vec<Vec<String>> = vec![vec![input.clone()]];
+                        for cut in 1..input.len() {
+                            if input.is_char_boundary(cut) {
+                                deliveries.push(vec![input[..cut].into(), input[cut..].into()]);
+                            }
                         }
-                    }
-                    for chunks in deliveries {
-                        let mut parser = qwen3_unified(&weather_tools());
-                        parser
-                            .initialize_with_output_mode(
-                                starting_state,
-                                UnifiedToolOutputMode::GuidedJson { named_tool },
-                            )
-                            .unwrap();
-                        let mut deltas = Vec::new();
-                        for c in &chunks {
-                            deltas.extend(parser.push(c).unwrap());
-                        }
-                        deltas.extend(parser.finish().unwrap());
-                        let out = assemble(&deltas);
-                        let at = format!(
-                            "starting_state {starting_state:?}, named {named_tool:?}, prefix {prefix:?}, chunks {chunks:?} -> {out:?}"
-                        );
+                        for chunks in deliveries {
+                            let mut parser = qwen3_unified(&weather_tools());
+                            parser
+                                .initialize_with_output_mode(
+                                    starting_state,
+                                    UnifiedToolOutputMode::GuidedJson { named_tool },
+                                )
+                                .unwrap();
+                            let mut deltas = Vec::new();
+                            for c in &chunks {
+                                deltas.extend(parser.push(c).unwrap());
+                            }
+                            deltas.extend(parser.finish().unwrap());
+                            let out = assemble(&deltas);
+                            let at = format!(
+                                "starting_state {starting_state:?}, named {named_tool:?}, prefix {prefix:?}, chunks {chunks:?} -> {out:?}"
+                            );
 
-                        assert!(
-                            out.iter().any(|e| matches!(
-                                e, UnifiedEvent::ToolCall { name, arguments }
-                                if name == "get_weather"
-                                    && arguments == &serde_json::json!({"city": "Paris"})
-                            )),
-                            "call lost or arguments wrong: {at}"
-                        );
-                        for ev in &out {
-                            if let UnifiedEvent::Text { text } | UnifiedEvent::Reasoning { text } =
-                                ev
-                            {
-                                for marker in [
-                                    "<tool_call>",
-                                    "</tool_call>",
-                                    "<function=",
-                                    "<think>",
-                                    "</think>",
-                                ] {
-                                    assert!(
-                                        !text.contains(marker),
-                                        "{marker} leaked to the user: {at}"
-                                    );
+                            assert!(
+                                out.iter().any(|e| matches!(
+                                    e, UnifiedEvent::ToolCall { name, arguments }
+                                    if name == "get_weather"
+                                        && arguments == &serde_json::json!({"city": "Paris"})
+                                )),
+                                "call lost or arguments wrong: {at}"
+                            );
+                            for ev in &out {
+                                if let UnifiedEvent::Text { text }
+                                | UnifiedEvent::Reasoning { text } = ev
+                                {
+                                    for marker in [
+                                        "<tool_call>",
+                                        "</tool_call>",
+                                        "<function=",
+                                        "<think>",
+                                        "</think>",
+                                    ] {
+                                        assert!(
+                                            !text.contains(marker),
+                                            "{marker} leaked to the user: {at}"
+                                        );
+                                    }
                                 }
                             }
                         }
@@ -740,6 +745,38 @@ mod tests {
                 "guided diverged from native on text-like markup for {thought:?}"
             );
         }
+    }
+
+    #[test]
+    fn a_narrated_invoke_does_not_swallow_the_thought_closer_or_the_payload() {
+        // The terminator search was unbounded, so a `</function>` occurring inside a
+        // guided ARGUMENT STRING — past the end of the thought — was claimed as the
+        // narrated invoke's terminator. Everything between went with it: the closer,
+        // the payload, the call. Fragments of the discarded JSON then surfaced as the
+        // model's thinking.
+        let input = concat!(
+            r#"<think>I'll use <function=get_weather> to check</think>"#,
+            r#"[{"name":"log","arguments":{"note":"close with </function>"}}]"#
+        );
+        let mut parser = qwen3_unified(&weather_tools());
+        parser
+            .initialize_with_output_mode(
+                UnifiedParserStartingState::None,
+                UnifiedToolOutputMode::GuidedJson { named_tool: None },
+            )
+            .unwrap();
+        let mut deltas = parser.push(input).unwrap();
+        deltas.extend(parser.finish().unwrap());
+        let out = assemble(&deltas);
+        assert!(
+            out.iter()
+                .any(|e| matches!(e, UnifiedEvent::ToolCall { name, .. } if name == "log")),
+            "the terminator search swallowed the payload: {out:?}"
+        );
+        assert!(
+            !format!("{out:?}").contains("}}]"),
+            "payload fragments surfaced as thinking: {out:?}"
+        );
     }
 
     #[test]

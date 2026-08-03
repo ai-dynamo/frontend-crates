@@ -59,6 +59,7 @@ fn tools() -> Vec<Tool> {
         mk("f", "x"),
         mk("g", "y"),
         mk("run", "cmd"),
+        mk("sum_values", "values"),
         mk("log", "note"),
     ]
 }
