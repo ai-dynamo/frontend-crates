@@ -893,7 +893,8 @@ impl GuidedState {
 
                     // The closer ends the span; anything else in the stray set is
                     // malformed markup to strip, exactly as the native scanner does
-                    // (`stray_in_reasoning`). Guided decoding constrains the TOOL
+                    // (the native path's `stray_in_reasoning`, which this deliberately
+                    // does NOT share — see its doc). Guided decoding constrains the TOOL
                     // payload, not the reasoning channel, so the model can still
                     // emit a duplicate opener or a stray tool close inside a thought
                     // — and being inside a thought must not turn markup into content

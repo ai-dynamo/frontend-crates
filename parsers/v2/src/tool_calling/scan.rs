@@ -62,10 +62,21 @@ use crate::unified::{Kind, UnifiedDelta};
 /// content) plus every orphan marker except the closer, which legitimately ends
 /// the span. Being inside a thought must not turn markup into content (`I3`).
 ///
-/// Shared by the native scanner and the guided-JSON drain deliberately: these
-/// were two implementations, and the guided one only looked for the closer, so
-/// identical bytes produced `reasoning("a<think>b")` under guided decoding and
-/// `reasoning("ab")` natively — the request mode silently changed the payload.
+/// NATIVE PATH ONLY. An earlier revision of this comment claimed the guided drain
+/// shared it; that stopped being true when the guided path moved to its own
+/// vocabulary, and the two sets are not the same:
+///
+/// * native here — the span's opener plus `orphan_markers` (`</tool_call>`),
+///   because tool OPENERS are structural on this path and are handled separately
+///   as `InReasoning::ToolOpen`;
+/// * guided — `holdback_markers` plus the opener, because guided decoding delivers
+///   the call as JSON, so tool markup inside a thought is narration to strip, not
+///   structure to enter.
+///
+/// The divergence is deliberate, but it is a divergence, so the parity it used to
+/// guarantee by construction is now only guaranteed by
+/// `guided_and_native_agree_on_the_same_reasoning_bytes` in `unified/qwen3.rs`.
+/// That test is what stops the two drifting; this helper no longer can.
 pub(crate) fn stray_in_reasoning(
     haystack: &str,
     start: &str,
