@@ -90,7 +90,7 @@ pub enum UnifiedEvent {
 
 /// Assistant-channel state established by the rendered generation prompt.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub enum UnifiedParserPrefill {
+pub enum UnifiedParserStartingState {
     /// Generated output includes any channel-opening marker itself.
     #[default]
     None,
@@ -120,8 +120,8 @@ pub enum UnifiedToolOutputMode<'a> {
 /// one request, which is what gives per-stream isolation (`I4`) by construction.
 pub trait UnifiedParser: Send {
     /// Initialize request-scoped prompt state.
-    fn initialize(&mut self, prefill: UnifiedParserPrefill) -> Result<()> {
-        if prefill != UnifiedParserPrefill::None {
+    fn initialize(&mut self, starting_state: UnifiedParserStartingState) -> Result<()> {
+        if starting_state != UnifiedParserStartingState::None {
             anyhow::bail!("this unified parser does not support prompt-prefilled channels");
         }
         Ok(())
@@ -130,13 +130,13 @@ pub trait UnifiedParser: Send {
     /// Initialize prompt state and the backend's selected tool wire format.
     fn initialize_with_output_mode(
         &mut self,
-        prefill: UnifiedParserPrefill,
+        starting_state: UnifiedParserStartingState,
         tool_output_mode: UnifiedToolOutputMode<'_>,
     ) -> Result<()> {
         if tool_output_mode != UnifiedToolOutputMode::Native {
             anyhow::bail!("this unified parser does not support guided tool output");
         }
-        self.initialize(prefill)
+        self.initialize(starting_state)
     }
 
     /// Feed one decoded text delta; returns the updates it completed, in order.
@@ -219,13 +219,13 @@ pub trait UnifiedParser: Send {
     /// vLLM's reasoning module argues the rendered prompt is a more faithful
     /// signal than a per-family convention, because the same family can be
     /// rendered with or without an open channel depending on the template. This
-    /// crate keeps [`UnifiedParserPrefill`] as the declared form of that fact,
+    /// crate keeps [`UnifiedParserStartingState`] as the declared form of that fact,
     /// so a caller that has already resolved it can still pass it directly.
     ///
     /// The default detects nothing and starts in `None`; a family whose prompt
     /// can end mid-channel overrides this.
     fn initialize_from_prompt(&mut self, _prompt_text: &str) -> Result<()> {
-        self.initialize(UnifiedParserPrefill::None)
+        self.initialize(UnifiedParserStartingState::None)
     }
 }
 
@@ -395,7 +395,7 @@ pub(crate) struct ScannerUnified<E: InvokeEmitter> {
     /// Which channel the PROMPT already opened. Held here as well as on the
     /// scanner because `reset` has to restore it, and because the guided path
     /// below never reaches the scanner at all.
-    prefill: UnifiedParserPrefill,
+    starting_state: UnifiedParserStartingState,
     /// Set once the backend selects guided decoding for this request; `None`
     /// on the native path, which is every request that did not ask for it.
     /// Boxed so a native stream carries one null pointer, not six idle fields.
@@ -418,7 +418,7 @@ impl<E: InvokeEmitter> ScannerUnified<E> {
     pub(crate) fn new(scanner: WrappedBlockScanner<E>, preserve_special_tokens: bool) -> Self {
         Self {
             scanner,
-            prefill: UnifiedParserPrefill::None,
+            starting_state: UnifiedParserStartingState::None,
             guided: None,
             preserve_special_tokens,
             started: false,
@@ -428,20 +428,20 @@ impl<E: InvokeEmitter> ScannerUnified<E> {
 
     fn initialize_request(
         &mut self,
-        prefill: UnifiedParserPrefill,
+        starting_state: UnifiedParserStartingState,
         tool_output_mode: UnifiedToolOutputMode<'_>,
     ) -> Result<()> {
         if self.started || self.finished {
             anyhow::bail!("cannot initialize a unified parser after parsing has started");
         }
-        self.prefill = prefill;
+        self.starting_state = starting_state;
         self.scanner.reset();
         // `Response` means the prompt already opened visible content, so this
         // stream has no reasoning channel at all; `Reasoning` means it opened a
         // thought the model will close without ever emitting the opener.
         self.scanner.set_reasoning_mode(
-            prefill != UnifiedParserPrefill::Response,
-            prefill == UnifiedParserPrefill::Reasoning,
+            starting_state != UnifiedParserStartingState::Response,
+            starting_state == UnifiedParserStartingState::Reasoning,
         );
         self.guided = match tool_output_mode {
             UnifiedToolOutputMode::Native => None,
@@ -454,7 +454,7 @@ impl<E: InvokeEmitter> ScannerUnified<E> {
                     self.scanner.control_markers().to_vec(),
                     self.scanner.invoke_end().to_string(),
                     named_tool.map(str::to_string),
-                    prefill,
+                    starting_state,
                 )))
             }
         };
@@ -468,16 +468,16 @@ impl<E: InvokeEmitter + Send> UnifiedParser for ScannerUnified<E> {
         self.preserve_special_tokens
     }
 
-    fn initialize(&mut self, prefill: UnifiedParserPrefill) -> Result<()> {
-        self.initialize_request(prefill, UnifiedToolOutputMode::Native)
+    fn initialize(&mut self, starting_state: UnifiedParserStartingState) -> Result<()> {
+        self.initialize_request(starting_state, UnifiedToolOutputMode::Native)
     }
 
     fn initialize_with_output_mode(
         &mut self,
-        prefill: UnifiedParserPrefill,
+        starting_state: UnifiedParserStartingState,
         tool_output_mode: UnifiedToolOutputMode<'_>,
     ) -> Result<()> {
-        self.initialize_request(prefill, tool_output_mode)
+        self.initialize_request(starting_state, tool_output_mode)
     }
 
     fn push(&mut self, chunk: &str) -> Result<Vec<UnifiedDelta>> {
@@ -506,12 +506,12 @@ impl<E: InvokeEmitter + Send> UnifiedParser for ScannerUnified<E> {
     fn reset(&mut self) -> String {
         let mut recovered = String::new();
         if let Some(guided) = self.guided.as_mut() {
-            recovered.push_str(&guided.reset(self.prefill));
+            recovered.push_str(&guided.reset(self.starting_state));
         }
         recovered.push_str(&self.scanner.reset());
         self.scanner.set_reasoning_mode(
-            self.prefill != UnifiedParserPrefill::Response,
-            self.prefill == UnifiedParserPrefill::Reasoning,
+            self.starting_state != UnifiedParserStartingState::Response,
+            self.starting_state == UnifiedParserStartingState::Reasoning,
         );
         self.started = false;
         self.finished = false;
@@ -575,7 +575,7 @@ struct GuidedState {
     /// Paired with a stripped prefix-form invoke opener; see `invoke_end()`.
     invoke_end: String,
     named_tool: Option<String>,
-    /// Response prefill disables reasoning markers, but tool control markers
+    /// Response starting_state disables reasoning markers, but tool control markers
     /// still need scanning until the JSON value actually starts.
     reasoning_enabled: bool,
     mode: GuidedMode,
@@ -682,26 +682,27 @@ impl GuidedState {
         control_markers: Vec<String>,
         invoke_end: String,
         named_tool: Option<String>,
-        prefill: UnifiedParserPrefill,
+        starting_state: UnifiedParserStartingState,
     ) -> Self {
         Self {
             reasoning,
             control_markers,
             invoke_end,
             named_tool,
-            reasoning_enabled: prefill != UnifiedParserPrefill::Response,
-            mode: Self::mode_for(prefill),
-            accept_redundant_reasoning_start: prefill == UnifiedParserPrefill::Reasoning,
+            reasoning_enabled: starting_state != UnifiedParserStartingState::Response,
+            mode: Self::mode_for(starting_state),
+            accept_redundant_reasoning_start: starting_state
+                == UnifiedParserStartingState::Reasoning,
             input: String::new(),
             json: String::new(),
         }
     }
 
-    fn mode_for(prefill: UnifiedParserPrefill) -> GuidedMode {
-        match prefill {
-            UnifiedParserPrefill::None => GuidedMode::OutsideReasoning,
-            UnifiedParserPrefill::Reasoning => GuidedMode::Reasoning,
-            UnifiedParserPrefill::Response => GuidedMode::OutsideReasoning,
+    fn mode_for(starting_state: UnifiedParserStartingState) -> GuidedMode {
+        match starting_state {
+            UnifiedParserStartingState::None => GuidedMode::OutsideReasoning,
+            UnifiedParserStartingState::Reasoning => GuidedMode::Reasoning,
+            UnifiedParserStartingState::Response => GuidedMode::OutsideReasoning,
         }
     }
 
@@ -720,15 +721,16 @@ impl GuidedState {
         Ok(output)
     }
 
-    fn reset(&mut self, prefill: UnifiedParserPrefill) -> String {
+    fn reset(&mut self, starting_state: UnifiedParserStartingState) -> String {
         let mut recovered = std::mem::take(&mut self.json);
         recovered.push_str(&std::mem::take(&mut self.input));
         // Buffers alone are not the state. Leaving `mode` at VisibleOnly would make
         // the NEXT stream treat its reasoning as JSON payload and surface it as text,
         // so put the channel back where `new` would have started it.
-        self.mode = Self::mode_for(prefill);
-        self.reasoning_enabled = prefill != UnifiedParserPrefill::Response;
-        self.accept_redundant_reasoning_start = prefill == UnifiedParserPrefill::Reasoning;
+        self.mode = Self::mode_for(starting_state);
+        self.reasoning_enabled = starting_state != UnifiedParserStartingState::Response;
+        self.accept_redundant_reasoning_start =
+            starting_state == UnifiedParserStartingState::Reasoning;
         recovered
     }
 
@@ -1203,7 +1205,7 @@ impl DebugUnifiedParser {
 impl UnifiedParser for DebugUnifiedParser {
     fn initialize_with_output_mode(
         &mut self,
-        prefill: UnifiedParserPrefill,
+        starting_state: UnifiedParserStartingState,
         tool_output_mode: UnifiedToolOutputMode<'_>,
     ) -> Result<()> {
         let mode = match tool_output_mode {
@@ -1218,15 +1220,15 @@ impl UnifiedParser for DebugUnifiedParser {
             }
         };
         crate::tool_calling::debug::emit(format_args!(
-            "UNIFIED family={} initialize prefill={prefill:?} tool_output_mode={mode}",
+            "UNIFIED family={} initialize starting_state={starting_state:?} tool_output_mode={mode}",
             self.family
         ));
         self.inner
-            .initialize_with_output_mode(prefill, tool_output_mode)
+            .initialize_with_output_mode(starting_state, tool_output_mode)
     }
 
-    fn initialize(&mut self, prefill: UnifiedParserPrefill) -> Result<()> {
-        self.initialize_with_output_mode(prefill, UnifiedToolOutputMode::Native)
+    fn initialize(&mut self, starting_state: UnifiedParserStartingState) -> Result<()> {
+        self.initialize_with_output_mode(starting_state, UnifiedToolOutputMode::Native)
     }
 
     fn push(&mut self, chunk: &str) -> Result<Vec<UnifiedDelta>> {

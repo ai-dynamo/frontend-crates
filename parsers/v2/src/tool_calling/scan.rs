@@ -338,7 +338,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     /// rather than by the caller, so a family cannot add reasoning and forget
     /// either behavior. They remain separate from the tool marker lists so
     /// [`Self::set_reasoning_mode`] can make the markers literal for response
-    /// prefill without rebuilding the scanner.
+    /// starting_state without rebuilding the scanner.
     pub(crate) fn with_reasoning(mut self, reasoning: ReasoningSpec) -> Self {
         self.reasoning_enabled = true;
         self.in_reasoning = reasoning.forced_start;

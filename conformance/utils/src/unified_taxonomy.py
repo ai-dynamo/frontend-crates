@@ -13,7 +13,7 @@ Request-scoped modes use PAIRED TENS: X0 is that mode's happy base case, X1 its
 weird/malformed counterpart — 30/31 guided decoding, 40/41 prefilled reasoning,
 50/51 prefilled response. A new mode takes the next ten.
 There is no separate "input stream mode" axis: which channel the prompt pre-opened IS
-`init.prefill`, so a case that varied only that duplicated groups 31-33, and one that
+`init.starting_state`, so a case that varied only that duplicated groups 31-33, and one that
 varied nothing but a finish_reason label duplicated groups 1-12 (the parser cannot see
 that value — `finish()` takes no argument).
 """

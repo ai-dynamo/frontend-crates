@@ -59,7 +59,7 @@ pub(crate) fn qwen3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
 mod tests {
     use super::*;
     use crate::unified::{
-        UnifiedDelta, UnifiedEvent, UnifiedParserPrefill, UnifiedToolOutputMode, assemble,
+        UnifiedDelta, UnifiedEvent, UnifiedParserStartingState, UnifiedToolOutputMode, assemble,
     };
 
     fn weather_tools() -> Vec<Tool> {
@@ -86,13 +86,13 @@ mod tests {
 
     fn configured_events(
         tools: &[Tool],
-        prefill: UnifiedParserPrefill,
+        starting_state: UnifiedParserStartingState,
         tool_output_mode: UnifiedToolOutputMode<'_>,
         chunks: &[&str],
     ) -> Vec<UnifiedEvent> {
         let mut parser = qwen3_unified(tools);
         parser
-            .initialize_with_output_mode(prefill, tool_output_mode)
+            .initialize_with_output_mode(starting_state, tool_output_mode)
             .expect("initialize");
         let mut deltas = Vec::new();
         for chunk in chunks {
@@ -323,7 +323,7 @@ mod tests {
         let mut parser = qwen3_unified(&weather_tools());
         parser
             .initialize_with_output_mode(
-                UnifiedParserPrefill::None,
+                UnifiedParserStartingState::None,
                 UnifiedToolOutputMode::GuidedJson { named_tool: None },
             )
             .unwrap();
@@ -358,7 +358,7 @@ mod tests {
         let mut parser = qwen3_unified(&weather_tools());
         parser
             .initialize_with_output_mode(
-                UnifiedParserPrefill::None,
+                UnifiedParserStartingState::None,
                 UnifiedToolOutputMode::GuidedJson { named_tool: None },
             )
             .unwrap();
@@ -385,7 +385,7 @@ mod tests {
         let mut parser = qwen3_unified(&weather_tools());
         parser
             .initialize_with_output_mode(
-                UnifiedParserPrefill::None,
+                UnifiedParserStartingState::None,
                 UnifiedToolOutputMode::GuidedJson { named_tool: None },
             )
             .unwrap();
@@ -443,7 +443,7 @@ mod tests {
             let mut parser = qwen3_unified(&weather_tools());
             parser
                 .initialize_with_output_mode(
-                    UnifiedParserPrefill::None,
+                    UnifiedParserStartingState::None,
                     UnifiedToolOutputMode::GuidedJson {
                         named_tool: Some("get_weather"),
                     },
@@ -529,7 +529,7 @@ mod tests {
             let mut parser = qwen3_unified(&tools);
             parser
                 .initialize_with_output_mode(
-                    UnifiedParserPrefill::None,
+                    UnifiedParserStartingState::None,
                     UnifiedToolOutputMode::GuidedJson {
                         named_tool: Some(tool),
                     },
@@ -561,7 +561,7 @@ mod tests {
     }
 
     /// Guided control markers must never reach the user and must never cost the
-    /// call, at EVERY chunk boundary, for every prefill and choice shape.
+    /// call, at EVERY chunk boundary, for every starting_state and choice shape.
     ///
     /// This is a table rather than a list of examples on purpose. Every previous
     /// bug in this area was a cell someone else found: an opener recognised whole
@@ -569,7 +569,7 @@ mod tests {
     /// length leaving `NAME>` behind, markup after a thought never examined because
     /// the closer had already latched. Each was fixed with the one input that had
     /// broken, so the next cell broke next. The property is combinatorial — marker
-    /// x position x delivery x prefill x choice — so the test is too.
+    /// x position x delivery x starting_state x choice — so the test is too.
     #[test]
     fn guided_control_markers_never_leak_and_never_cost_the_call() {
         let choices = [
@@ -579,12 +579,12 @@ mod tests {
                 r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#,
             ),
         ];
-        // Marker positions differ by prompt state. Reasoning prefill starts inside a
-        // thought and response prefill makes reasoning tags literal, while tool
+        // Marker positions differ by prompt state. Reasoning starting_state starts inside a
+        // thought and response starting_state makes reasoning tags literal, while tool
         // control markers remain structural until the JSON value opens in all modes.
-        let cases: &[(UnifiedParserPrefill, &[&str])] = &[
+        let cases: &[(UnifiedParserStartingState, &[&str])] = &[
             (
-                UnifiedParserPrefill::None,
+                UnifiedParserStartingState::None,
                 &[
                     "<tool_call>",
                     "</tool_call>",
@@ -597,7 +597,7 @@ mod tests {
                 ],
             ),
             (
-                UnifiedParserPrefill::Reasoning,
+                UnifiedParserStartingState::Reasoning,
                 &[
                     "x</think><tool_call>",
                     "x</think></tool_call>",
@@ -608,11 +608,11 @@ mod tests {
                 ],
             ),
             (
-                UnifiedParserPrefill::Response,
+                UnifiedParserStartingState::Response,
                 &["<tool_call>", "</tool_call>", "<function=get_weather>", ""],
             ),
         ];
-        for &(prefill, prefixes) in cases {
+        for &(starting_state, prefixes) in cases {
             for &(named_tool, payload) in &choices {
                 for prefix in prefixes {
                     let input = format!("{prefix}{payload}");
@@ -627,7 +627,7 @@ mod tests {
                         let mut parser = qwen3_unified(&weather_tools());
                         parser
                             .initialize_with_output_mode(
-                                prefill,
+                                starting_state,
                                 UnifiedToolOutputMode::GuidedJson { named_tool },
                             )
                             .unwrap();
@@ -638,7 +638,7 @@ mod tests {
                         deltas.extend(parser.finish().unwrap());
                         let out = assemble(&deltas);
                         let at = format!(
-                            "prefill {prefill:?}, named {named_tool:?}, prefix {prefix:?}, chunks {chunks:?} -> {out:?}"
+                            "starting_state {starting_state:?}, named {named_tool:?}, prefix {prefix:?}, chunks {chunks:?} -> {out:?}"
                         );
 
                         assert!(
@@ -685,7 +685,7 @@ mod tests {
             let mut parser = qwen3_unified(&weather_tools());
             parser
                 .initialize_with_output_mode(
-                    UnifiedParserPrefill::None,
+                    UnifiedParserStartingState::None,
                     UnifiedToolOutputMode::GuidedJson {
                         named_tool: Some("get_weather"),
                     },
@@ -826,7 +826,7 @@ mod tests {
         let mut parser = qwen3_unified(&weather_tools());
         parser
             .initialize_with_output_mode(
-                UnifiedParserPrefill::None,
+                UnifiedParserStartingState::None,
                 UnifiedToolOutputMode::GuidedJson { named_tool: None },
             )
             .unwrap();
@@ -887,7 +887,7 @@ mod tests {
     fn reasoning_prefill_classifies_leading_text_as_reasoning() {
         let out = configured_events(
             &weather_tools(),
-            UnifiedParserPrefill::Reasoning,
+            UnifiedParserStartingState::Reasoning,
             UnifiedToolOutputMode::Native,
             &["hidden</thi", "nk>visible"],
         );
@@ -904,7 +904,7 @@ mod tests {
         ] {
             let out = configured_events(
                 &weather_tools(),
-                UnifiedParserPrefill::Reasoning,
+                UnifiedParserStartingState::Reasoning,
                 tool_output_mode,
                 &["\n<thi", "nk>hidden</think>{\"city\":\"Tokyo\"}"],
             );
@@ -922,7 +922,7 @@ mod tests {
     fn response_prefill_does_not_interpret_reasoning_markers() {
         let out = configured_events(
             &weather_tools(),
-            UnifiedParserPrefill::Response,
+            UnifiedParserStartingState::Response,
             UnifiedToolOutputMode::Native,
             &["<think>literal</think>"],
         );
@@ -933,7 +933,7 @@ mod tests {
     fn named_choice_parses_bare_arguments_object() {
         let out = configured_events(
             &weather_tools(),
-            UnifiedParserPrefill::Reasoning,
+            UnifiedParserStartingState::Reasoning,
             UnifiedToolOutputMode::GuidedJson {
                 named_tool: Some("get_weather"),
             },
@@ -952,7 +952,7 @@ mod tests {
     fn guided_json_strips_a_split_orphan_reasoning_close_before_json() {
         let out = configured_events(
             &weather_tools(),
-            UnifiedParserPrefill::None,
+            UnifiedParserStartingState::None,
             UnifiedToolOutputMode::GuidedJson {
                 named_tool: Some("get_weather"),
             },
@@ -974,7 +974,7 @@ mod tests {
         );
         let out = configured_events(
             &weather_tools(),
-            UnifiedParserPrefill::Reasoning,
+            UnifiedParserStartingState::Reasoning,
             UnifiedToolOutputMode::GuidedJson {
                 named_tool: Some("get_weather"),
             },
@@ -993,7 +993,7 @@ mod tests {
     fn required_choice_parses_single_and_parallel_calls() {
         let single = configured_events(
             &weather_tools(),
-            UnifiedParserPrefill::Response,
+            UnifiedParserStartingState::Response,
             UnifiedToolOutputMode::GuidedJson { named_tool: None },
             &[r#"{"name":"get_weather","parameters":{"city":"Tokyo"}}"#],
         );
@@ -1004,7 +1004,7 @@ mod tests {
 
         let parallel = configured_events(
             &weather_tools(),
-            UnifiedParserPrefill::Response,
+            UnifiedParserStartingState::Response,
             UnifiedToolOutputMode::GuidedJson { named_tool: None },
             &[
                 r#"[{"name":"get_weather","arguments":{"city":"Paris"}},"#,
@@ -1027,7 +1027,7 @@ mod tests {
         let input = r#"[{"name":"get_weather","parameters":{"city":"Paris"}},{"parameters":{"city":"Tokyo"}}]"#;
         let out = configured_events(
             &weather_tools(),
-            UnifiedParserPrefill::Response,
+            UnifiedParserStartingState::Response,
             UnifiedToolOutputMode::GuidedJson { named_tool: None },
             &[input],
         );
@@ -1045,7 +1045,7 @@ mod tests {
         ] {
             let out = configured_events(
                 &weather_tools(),
-                UnifiedParserPrefill::Response,
+                UnifiedParserStartingState::Response,
                 UnifiedToolOutputMode::GuidedJson { named_tool: None },
                 &[input],
             );
@@ -1059,7 +1059,7 @@ mod tests {
             r#"{"name":"get_weather","parameters":{"city":"Paris"},"arguments":{"city":"Tokyo"}}"#;
         let out = configured_events(
             &weather_tools(),
-            UnifiedParserPrefill::Response,
+            UnifiedParserStartingState::Response,
             UnifiedToolOutputMode::GuidedJson { named_tool: None },
             &[input],
         );
@@ -1070,7 +1070,7 @@ mod tests {
     fn native_mode_keeps_xml_under_reasoning_prefill() {
         let out = configured_events(
             &weather_tools(),
-            UnifiedParserPrefill::Reasoning,
+            UnifiedParserStartingState::Reasoning,
             UnifiedToolOutputMode::Native,
             &[
                 "reason</think><tool_call><function=get_weather>",
@@ -1096,7 +1096,7 @@ mod tests {
             .collect::<Vec<_>>();
         let out = configured_events(
             &weather_tools(),
-            UnifiedParserPrefill::Reasoning,
+            UnifiedParserStartingState::Reasoning,
             UnifiedToolOutputMode::GuidedJson { named_tool: None },
             &chunks,
         );
@@ -1117,7 +1117,7 @@ mod tests {
         let mut parser = qwen3_unified(&weather_tools());
         parser
             .initialize_with_output_mode(
-                UnifiedParserPrefill::Response,
+                UnifiedParserStartingState::Response,
                 UnifiedToolOutputMode::GuidedJson {
                     named_tool: Some("get_weather"),
                 },
@@ -1146,7 +1146,7 @@ mod tests {
             let input = r#"{"city":"Tok"#;
             let out = configured_events(
                 &weather_tools(),
-                UnifiedParserPrefill::Response,
+                UnifiedParserStartingState::Response,
                 tool_output_mode,
                 &[input],
             );
@@ -1159,7 +1159,7 @@ mod tests {
         let mut parser = qwen3_unified(&weather_tools());
         parser
             .initialize_with_output_mode(
-                UnifiedParserPrefill::Reasoning,
+                UnifiedParserStartingState::Reasoning,
                 UnifiedToolOutputMode::GuidedJson {
                     named_tool: Some("get_weather"),
                 },
@@ -1171,12 +1171,16 @@ mod tests {
                 text: "reason".to_string()
             }]
         );
-        assert!(parser.initialize(UnifiedParserPrefill::Response).is_err());
+        assert!(
+            parser
+                .initialize(UnifiedParserStartingState::Response)
+                .is_err()
+        );
         assert_eq!(parser.reset(), r#"{"city":"Tok"#);
 
         parser
             .initialize_with_output_mode(
-                UnifiedParserPrefill::Response,
+                UnifiedParserStartingState::Response,
                 UnifiedToolOutputMode::GuidedJson {
                     named_tool: Some("get_weather"),
                 },
@@ -1197,7 +1201,7 @@ mod tests {
 mod guided_warning_tests {
     use super::*;
     use crate::tool_calling::traits::Tool;
-    use crate::unified::{UnifiedDelta, UnifiedParserPrefill, UnifiedToolOutputMode};
+    use crate::unified::{UnifiedDelta, UnifiedParserStartingState, UnifiedToolOutputMode};
 
     fn weather_tools() -> Vec<Tool> {
         vec![Tool {
@@ -1230,7 +1234,7 @@ mod guided_warning_tests {
         ] {
             let mut p = qwen3_unified(&weather_tools());
             p.initialize_with_output_mode(
-                UnifiedParserPrefill::None,
+                UnifiedParserStartingState::None,
                 UnifiedToolOutputMode::GuidedJson { named_tool: None },
             )
             .unwrap();
@@ -1298,7 +1302,7 @@ mod guided_warning_tests {
         tracing::subscriber::with_default(sub, || {
             let mut p = qwen3_unified(&weather_tools());
             p.initialize_with_output_mode(
-                UnifiedParserPrefill::None,
+                UnifiedParserStartingState::None,
                 UnifiedToolOutputMode::GuidedJson { named_tool: None },
             )
             .unwrap();
@@ -1336,7 +1340,7 @@ mod reset_and_payload_tests {
     use super::*;
     use crate::tool_calling::traits::Tool;
     use crate::unified::{
-        UnifiedDelta, UnifiedEvent, UnifiedParserPrefill, UnifiedToolOutputMode, assemble,
+        UnifiedDelta, UnifiedEvent, UnifiedParserStartingState, UnifiedToolOutputMode, assemble,
     };
 
     fn tools() -> Vec<Tool> {
@@ -1354,13 +1358,13 @@ mod reset_and_payload_tests {
     #[test]
     fn reset_does_not_leak_resume_reasoning_into_the_next_stream() {
         let mut p = qwen3_unified(&tools());
-        p.initialize(UnifiedParserPrefill::None).unwrap();
+        p.initialize(UnifiedParserStartingState::None).unwrap();
         // interrupt a thought with a call, then reset mid-stream
         p.push("<think>weighing<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>")
             .unwrap();
         p.reset();
 
-        p.initialize(UnifiedParserPrefill::None).unwrap();
+        p.initialize(UnifiedParserStartingState::None).unwrap();
         let out = assemble(
             &[p.push("<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>visible answer").unwrap(),
               p.finish().unwrap()].concat());
@@ -1384,7 +1388,7 @@ mod reset_and_payload_tests {
     fn reset_restores_guided_channel_state() {
         let mut p = qwen3_unified(&tools());
         p.initialize_with_output_mode(
-            UnifiedParserPrefill::None,
+            UnifiedParserStartingState::None,
             UnifiedToolOutputMode::GuidedJson { named_tool: None },
         )
         .unwrap();
@@ -1392,7 +1396,7 @@ mod reset_and_payload_tests {
         p.reset();
 
         p.initialize_with_output_mode(
-            UnifiedParserPrefill::None,
+            UnifiedParserStartingState::None,
             UnifiedToolOutputMode::GuidedJson { named_tool: None },
         )
         .unwrap();
@@ -1419,7 +1423,7 @@ mod reset_and_payload_tests {
         for payload in [r#""just a string""#, "42", "null", "[1,2]"] {
             let mut p = qwen3_unified(&tools());
             p.initialize_with_output_mode(
-                UnifiedParserPrefill::None,
+                UnifiedParserStartingState::None,
                 UnifiedToolOutputMode::GuidedJson {
                     named_tool: Some("get_weather"),
                 },
@@ -1445,7 +1449,7 @@ mod reset_and_payload_tests {
     fn a_parameterless_guided_call_is_dispatched_and_does_not_void_its_siblings() {
         let mut p = qwen3_unified(&tools());
         p.initialize_with_output_mode(
-            UnifiedParserPrefill::None,
+            UnifiedParserStartingState::None,
             UnifiedToolOutputMode::GuidedJson { named_tool: None },
         )
         .unwrap();
@@ -1471,7 +1475,7 @@ mod reset_and_payload_tests {
     fn named_choice_still_accepts_an_object_payload() {
         let mut p = qwen3_unified(&tools());
         p.initialize_with_output_mode(
-            UnifiedParserPrefill::None,
+            UnifiedParserStartingState::None,
             UnifiedToolOutputMode::GuidedJson {
                 named_tool: Some("get_weather"),
             },

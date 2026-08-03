@@ -2211,7 +2211,7 @@ def _load_unified_fixtures(base: Path):
             "id": cid, "scenario": scenario, "family": fam,
             "description": inp.get("description", ""),
             "policy": inp.get("policy") or [], "policy_tags": inp.get("policy") or [],
-            "init": inp.get("init") or {"prefill": "None", "tool_output_mode": "Native", "named_tool": None},
+            "init": inp.get("init") or {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
             "finish_reason": inp.get("finish_reason") or "stop",
             "input": inp.get("input", ""),
             "golden": gdoc.get("assembled") or [],

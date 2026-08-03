@@ -93,7 +93,7 @@ def main():
             "scenario": scenario,
             "description": c.get("description", ""),
             "policy": c.get("policy") or [],
-            "init": c.get("init") or {"prefill": "None", "tool_output_mode": "Native", "named_tool": None},
+            "init": c.get("init") or {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
             "finish_reason": c.get("finish_reason") or "stop",
             "input": c.get("input", ""),
             "chunks": [

@@ -27,6 +27,6 @@ pub use tool_calling::{CalledFunctionStream, ToolCallResponseChunk, ToolCallType
 // ONE ordered event stream (see `unified`).
 pub use unified::{
     REGISTERED_UNIFIED_FAMILIES, UnifiedDelta, UnifiedEvent, UnifiedParser, UnifiedParserOutput,
-    UnifiedParserPrefill, UnifiedToolOutputMode, assemble, create_unified_parser_for_family,
+    UnifiedParserStartingState, UnifiedToolOutputMode, assemble, create_unified_parser_for_family,
     tool_arguments_raw,
 };

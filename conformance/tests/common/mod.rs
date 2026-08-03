@@ -239,7 +239,7 @@ pub fn unified_family(corpus_name: &str) -> UnifiedFamily {
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct Init {
     #[serde(default)]
-    pub prefill: String,
+    pub starting_state: String,
     #[serde(default)]
     pub tool_output_mode: String,
     #[serde(default)]
@@ -249,13 +249,13 @@ pub struct Init {
 impl Init {
     /// An unknown value is a spec bug, not something to paper over with a default:
     /// silently falling back to `None`/`Native` is exactly the failure this replaced.
-    pub fn prefill(&self) -> dynamo_parsers_v2::UnifiedParserPrefill {
-        use dynamo_parsers_v2::UnifiedParserPrefill as P;
-        match self.prefill.as_str() {
+    pub fn starting_state(&self) -> dynamo_parsers_v2::UnifiedParserStartingState {
+        use dynamo_parsers_v2::UnifiedParserStartingState as P;
+        match self.starting_state.as_str() {
             "" | "None" => P::None,
             "Reasoning" => P::Reasoning,
             "Response" => P::Response,
-            other => panic!("unknown init.prefill `{other}` (None|Reasoning|Response)"),
+            other => panic!("unknown init.starting_state `{other}` (None|Reasoning|Response)"),
         }
     }
 
@@ -273,7 +273,7 @@ impl Init {
     /// Apply this configuration to a freshly created parser.
     pub fn apply(&self, parser: &mut Box<dyn dynamo_parsers_v2::UnifiedParser>, what: &str) {
         parser
-            .initialize_with_output_mode(self.prefill(), self.output_mode())
+            .initialize_with_output_mode(self.starting_state(), self.output_mode())
             .unwrap_or_else(|e| panic!("{what}: initialize_with_output_mode {self:?}: {e}"));
     }
 
@@ -283,7 +283,7 @@ impl Init {
     pub fn applied(&self) -> serde_json::Value {
         use dynamo_parsers_v2::UnifiedToolOutputMode as O;
         serde_json::json!({
-            "prefill": format!("{:?}", self.prefill()),
+            "starting_state": format!("{:?}", self.starting_state()),
             "tool_output_mode": match self.output_mode() {
                 O::Native => "Native",
                 O::GuidedJson { .. } => "GuidedJson",
