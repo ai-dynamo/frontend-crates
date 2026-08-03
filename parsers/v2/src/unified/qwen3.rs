@@ -11,14 +11,14 @@
 //! ```
 //!
 //! This file is only the grammar wiring. The scan core is the same
-//! [`crate::tool_calling::scan::WrappedBlockScanner`] the tool-only
+//! `WrappedBlockScanner` the tool-only
 //! `Qwen3CoderToolStreamParser` runs on — block open/close, bare-`<function=>`
 //! recovery, orphan-close stripping, chunk-boundary holdback and EOF drop stay a
 //! single implementation, so the unified path cannot quietly regress the tool
 //! handling the tool-only suite already pins. Value typing likewise delegates to
 //! the shared batch XML parser, so a streamed argument object matches the batch
 //! one exactly. The `UnifiedParser` impl itself is generic
-//! ([`crate::unified::ScannerUnified`]).
+//! (`ScannerUnified`).
 //!
 //! What the unified path adds is ORDER: `<think>` between two calls is a second
 //! thought in its own position instead of being hoisted into the first.
@@ -560,28 +560,149 @@ mod tests {
         );
     }
 
+    /// Guided control markers must never reach the user and must never cost the
+    /// call, at EVERY chunk boundary, for every prefill and choice shape.
+    ///
+    /// This is a table rather than a list of examples on purpose. Every previous
+    /// bug in this area was a cell someone else found: an opener recognised whole
+    /// but lost when split, a prefix-form `<function=` consumed by its declared
+    /// length leaving `NAME>` behind, markup after a thought never examined because
+    /// the closer had already latched. Each was fixed with the one input that had
+    /// broken, so the next cell broke next. The property is combinatorial — marker
+    /// x position x delivery x prefill x choice — so the test is too.
     #[test]
-    fn an_orphan_tool_close_before_a_guided_payload_is_stripped() {
-        // Only the reasoning closer was stripped outside a thought, so the family's
-        // other orphan markers stayed glued to the JSON: it failed to parse and went
-        // out verbatim with the call lost.
-        let mut parser = qwen3_unified(&weather_tools());
-        parser
-            .initialize_with_output_mode(
+    fn guided_control_markers_never_leak_and_never_cost_the_call() {
+        let choices = [
+            (Some("get_weather"), r#"{"city": "Paris"}"#),
+            (
+                None,
+                r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#,
+            ),
+        ];
+        // Marker positions differ by prompt state. Reasoning prefill starts inside a
+        // thought and response prefill makes reasoning tags literal, while tool
+        // control markers remain structural until the JSON value opens in all modes.
+        let cases: &[(UnifiedParserPrefill, &[&str])] = &[
+            (
                 UnifiedParserPrefill::None,
-                UnifiedToolOutputMode::GuidedJson {
-                    named_tool: Some("get_weather"),
-                },
-            )
-            .unwrap();
-        let mut deltas = parser.push(r#"</tool_call>{"city": "Paris"}"#).unwrap();
-        deltas.extend(parser.finish().unwrap());
-        let out = assemble(&deltas);
-        assert_eq!(
-            out,
-            vec![call("get_weather", serde_json::json!({"city": "Paris"}))],
-            "orphan tool close was not stripped: {out:?}"
-        );
+                &[
+                    "<tool_call>",
+                    "</tool_call>",
+                    "<function=get_weather>",
+                    "<think>x</think><tool_call>",
+                    "<think>x</think></tool_call>",
+                    "</think><tool_call>",
+                    "prose <tool_call>",
+                    "",
+                ],
+            ),
+            (
+                UnifiedParserPrefill::Reasoning,
+                &[
+                    "x</think><tool_call>",
+                    "x</think></tool_call>",
+                    "<tool_call>x</think>",
+                    "<function=get_weather>x</think>",
+                    "</tool_call>x</think>",
+                    "</think>",
+                ],
+            ),
+            (
+                UnifiedParserPrefill::Response,
+                &["<tool_call>", "</tool_call>", "<function=get_weather>", ""],
+            ),
+        ];
+        for &(prefill, prefixes) in cases {
+            for &(named_tool, payload) in &choices {
+                for prefix in prefixes {
+                    let input = format!("{prefix}{payload}");
+                    // Delivery: whole, then split at EVERY byte boundary.
+                    let mut deliveries: Vec<Vec<String>> = vec![vec![input.clone()]];
+                    for cut in 1..input.len() {
+                        if input.is_char_boundary(cut) {
+                            deliveries.push(vec![input[..cut].into(), input[cut..].into()]);
+                        }
+                    }
+                    for chunks in deliveries {
+                        let mut parser = qwen3_unified(&weather_tools());
+                        parser
+                            .initialize_with_output_mode(
+                                prefill,
+                                UnifiedToolOutputMode::GuidedJson { named_tool },
+                            )
+                            .unwrap();
+                        let mut deltas = Vec::new();
+                        for c in &chunks {
+                            deltas.extend(parser.push(c).unwrap());
+                        }
+                        deltas.extend(parser.finish().unwrap());
+                        let out = assemble(&deltas);
+                        let at = format!(
+                            "prefill {prefill:?}, named {named_tool:?}, prefix {prefix:?}, chunks {chunks:?} -> {out:?}"
+                        );
+
+                        assert!(
+                            out.iter().any(|e| matches!(
+                                e, UnifiedEvent::ToolCall { name, arguments }
+                                if name == "get_weather"
+                                    && arguments == &serde_json::json!({"city": "Paris"})
+                            )),
+                            "call lost or arguments wrong: {at}"
+                        );
+                        for ev in &out {
+                            if let UnifiedEvent::Text { text } | UnifiedEvent::Reasoning { text } =
+                                ev
+                            {
+                                for marker in [
+                                    "<tool_call>",
+                                    "</tool_call>",
+                                    "<function=",
+                                    "<think>",
+                                    "</think>",
+                                ] {
+                                    assert!(
+                                        !text.contains(marker),
+                                        "{marker} leaked to the user: {at}"
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn markers_inside_a_started_guided_payload_stay_byte_exact() {
+        // The other half of the same property: once the payload has opened, a marker
+        // is argument DATA and must survive untouched (`I7`), at every boundary.
+        const INPUT: &str = r#"{"city": "<tool_call><think>x</think></function>"}"#;
+        for cut in 0..INPUT.len() {
+            if !INPUT.is_char_boundary(cut) {
+                continue;
+            }
+            let mut parser = qwen3_unified(&weather_tools());
+            parser
+                .initialize_with_output_mode(
+                    UnifiedParserPrefill::None,
+                    UnifiedToolOutputMode::GuidedJson {
+                        named_tool: Some("get_weather"),
+                    },
+                )
+                .unwrap();
+            let mut deltas = parser.push(&INPUT[..cut]).unwrap();
+            deltas.extend(parser.push(&INPUT[cut..]).unwrap());
+            deltas.extend(parser.finish().unwrap());
+            assert_eq!(
+                assemble(&deltas),
+                vec![call(
+                    "get_weather",
+                    serde_json::json!({"city": "<tool_call><think>x</think></function>"})
+                )],
+                "argument data changed, split at {cut}"
+            );
+        }
     }
 
     #[test]
@@ -877,6 +998,38 @@ mod tests {
     }
 
     #[test]
+    fn required_choice_rejects_explicit_null_arguments() {
+        // Missing arguments means a parameterless call. Explicit null is different:
+        // it is a present value with the wrong shape and must not be dispatched as
+        // `{}`, because that turns a malformed side-effect request into a valid one.
+        for input in [
+            r#"{"name":"get_weather","arguments":null}"#,
+            r#"{"name":"get_weather","parameters":null}"#,
+        ] {
+            let out = configured_events(
+                &weather_tools(),
+                UnifiedParserPrefill::Response,
+                UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                &[input],
+            );
+            assert_eq!(out, vec![text(input)], "explicit null dispatched: {out:?}");
+        }
+    }
+
+    #[test]
+    fn required_choice_rejects_ambiguous_argument_fields() {
+        let input =
+            r#"{"name":"get_weather","parameters":{"city":"Paris"},"arguments":{"city":"Tokyo"}}"#;
+        let out = configured_events(
+            &weather_tools(),
+            UnifiedParserPrefill::Response,
+            UnifiedToolOutputMode::GuidedJson { named_tool: None },
+            &[input],
+        );
+        assert_eq!(out, vec![text(input)], "ambiguous call dispatched: {out:?}");
+    }
+
+    #[test]
     fn native_mode_keeps_xml_under_reasoning_prefill() {
         let out = configured_events(
             &weather_tools(),
@@ -917,6 +1070,32 @@ mod tests {
                 call("get_weather", serde_json::json!({"city": "Tokyo"})),
             ]
         );
+    }
+
+    #[test]
+    fn named_choice_preserves_surrounding_argument_bytes() {
+        // The named payload is the argument object itself. Validation may use a
+        // trimmed view, but the emitted wire string must remain model-byte-exact.
+        let input = " \n{\"city\": \"Tokyo\"}\t ";
+        let mut parser = qwen3_unified(&weather_tools());
+        parser
+            .initialize_with_output_mode(
+                UnifiedParserPrefill::Response,
+                UnifiedToolOutputMode::GuidedJson {
+                    named_tool: Some("get_weather"),
+                },
+            )
+            .unwrap();
+        let mut deltas = parser.push(input).unwrap();
+        deltas.extend(parser.finish().unwrap());
+        let call = deltas
+            .iter()
+            .find_map(|delta| match delta {
+                UnifiedDelta::ToolCall(call) => Some(call),
+                _ => None,
+            })
+            .expect("guided call");
+        assert_eq!(call.arguments, input);
     }
 
     #[test]
@@ -1077,6 +1256,8 @@ mod guided_warning_tests {
             tracing::callsite::rebuild_interest_cache();
         });
 
+        const GUIDED_SECRET: &str = "DO_NOT_LOG_GUIDED_PAYLOAD_7f31";
+        const ARGUMENT_SECRET: &str = "DO_NOT_LOG_TOOL_ARGUMENTS_98c2";
         tracing::subscriber::with_default(sub, || {
             let mut p = qwen3_unified(&weather_tools());
             p.initialize_with_output_mode(
@@ -1084,8 +1265,17 @@ mod guided_warning_tests {
                 UnifiedToolOutputMode::GuidedJson { named_tool: None },
             )
             .unwrap();
-            p.push(r#"{"unexpected": "shape"}"#).unwrap();
+            p.push(&format!(r#"{{"unexpected": "{GUIDED_SECRET}"}}"#))
+                .unwrap();
             p.finish().unwrap();
+
+            crate::unified::assemble(&[UnifiedDelta::ToolCall(
+                crate::tool_calling::traits::ToolCallDelta {
+                    tool_index: 0,
+                    name: Some("get_weather".into()),
+                    arguments: format!(r#"{{"api_key":"{ARGUMENT_SECRET}""#),
+                },
+            )]);
         });
 
         let log = String::from_utf8(captured.lock().unwrap().clone()).unwrap();
@@ -1096,6 +1286,10 @@ mod guided_warning_tests {
         assert!(
             log.contains("required"),
             "warning omitted which tool choice was in play: {log:?}"
+        );
+        assert!(
+            !log.contains(GUIDED_SECRET) && !log.contains(ARGUMENT_SECRET),
+            "warning exposed model or user payload bytes: {log:?}"
         );
     }
 }

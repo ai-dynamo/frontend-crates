@@ -50,7 +50,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::tool_calling::scan::{
     InvokeEmitter, ReasoningSpec, WrappedBlockScanner, marker_prefix_suffix_len, push_run,
-    reasoning_holdback_markers, stray_in_reasoning,
 };
 use crate::tool_calling::traits::{Result, Tool, ToolCallDelta, ToolParseResult};
 
@@ -252,13 +251,6 @@ impl UnifiedParserOutput {
     }
 }
 
-/// Collapse an ordered delta stream into assembled events.
-///
-/// Adjacent same-kind reasoning/text deltas merge (`I8`); tool-call fragments
-/// are joined by `tool_index` and parsed into a typed object, holding each
-/// call's position at its FIRST delta so order survives fragmentation. Empty or
-/// unparseable arguments become `{}` (policy P3) rather than an error, because a
-/// malformed argument payload must not take down the rest of the turn.
 /// Each call's argument bytes exactly as the model produced them, keyed by
 /// `tool_index`.
 ///
@@ -286,6 +278,13 @@ pub fn tool_arguments_raw(deltas: &[UnifiedDelta]) -> BTreeMap<usize, String> {
     raw
 }
 
+/// Collapse an ordered delta stream into assembled events.
+///
+/// Adjacent same-kind reasoning/text deltas merge (`I8`); tool-call fragments
+/// are joined by `tool_index` and parsed into a typed object, holding each
+/// call's position at its FIRST delta so order survives fragmentation. Empty or
+/// unparseable arguments become `{}` (policy P3) rather than an error, because a
+/// malformed argument payload must not take down the rest of the turn.
 pub fn assemble(deltas: &[UnifiedDelta]) -> Vec<UnifiedEvent> {
     // Coalesce adjacent same-kind runs with the SAME helper the scan core uses, so
     // `I8` has exactly ONE implementation instead of one per type.
@@ -335,7 +334,8 @@ pub fn assemble(deltas: &[UnifiedDelta]) -> Vec<UnifiedEvent> {
                 if !raw.trim().is_empty() {
                     tracing::warn!(
                         why = "unified_unparseable_tool_arguments",
-                        error = %e, raw = %raw,
+                        error = %e,
+                        argument_bytes = raw.len(),
                         "tool-call arguments did not parse as JSON; emitting an empty object"
                     );
                 }
@@ -444,8 +444,7 @@ impl<E: InvokeEmitter> ScannerUnified<E> {
                 };
                 Some(Box::new(GuidedState::new(
                     reasoning,
-                    self.scanner.orphan_markers().to_vec(),
-                    self.scanner.tool_openers(),
+                    self.scanner.control_markers().to_vec(),
                     named_tool.map(str::to_string),
                     prefill,
                 )))
@@ -532,10 +531,24 @@ enum GuidedMode {
 #[derive(Debug, serde::Deserialize)]
 struct GuidedToolCall {
     name: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_present_raw")]
     parameters: Option<Box<serde_json::value::RawValue>>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_present_raw")]
     arguments: Option<Box<serde_json::value::RawValue>>,
+}
+
+/// Preserve a present JSON value as raw bytes, including `null`.
+///
+/// Serde's normal `Option<T>` field handling maps both a missing field and an
+/// explicit `null` to `None`. Guided calls need the distinction: missing means
+/// a parameterless call, while present `null` is a malformed argument value.
+fn deserialize_present_raw<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Option<Box<serde_json::value::RawValue>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Box::<serde_json::value::RawValue>::deserialize(deserializer).map(Some)
 }
 
 /// Request-scoped state for a guided-decoding stream.
@@ -546,16 +559,15 @@ struct GuidedToolCall {
 /// lives on the shared unified parser rather than in one family's module.
 struct GuidedState {
     reasoning: ReasoningSpec,
-    /// The family's stray-markup set, so an open thought strips exactly what the
-    /// native path strips. Carried here because `ReasoningSpec` holds only the
-    /// span's own markers, and the two modes must not disagree (`I3`).
-    orphan_markers: Vec<String>,
-    /// Tool openers, which TERMINATE an open thought rather than being stripped —
-    /// tool structure dominates reasoning, the same precedence the native scanner
-    /// applies. Without them `<tool_call>` written inside a thought reached the
-    /// user as raw markup on the guided path only.
-    tool_openers: Vec<String>,
+    /// EVERY control marker of the family's tool grammar, from the scanner's own
+    /// declaration. One set, used for both lookup and chunk-boundary holdback, in
+    /// both the inside-a-thought and outside-a-thought scopes. Assembling it
+    /// per-site from openers and orphans is how those four uses drifted apart.
+    control_markers: Vec<String>,
     named_tool: Option<String>,
+    /// Response prefill disables reasoning markers, but tool control markers
+    /// still need scanning until the JSON value actually starts.
+    reasoning_enabled: bool,
     mode: GuidedMode,
     /// Some backends re-emit the reasoning opener even though the prompt already
     /// opened the channel. Consume exactly one such echo instead of leaking it.
@@ -564,25 +576,94 @@ struct GuidedState {
     json: String,
 }
 
+/// Earliest control marker in `haystack`, as `(pos, consume_len)`.
+///
+/// A PREFIX-form marker (`<function=`, which anchors `<function=NAME>`) consumes
+/// through its terminating `>`; stripping only the declared prefix left `NAME>`
+/// behind to poison the payload. `None` for a prefix form whose `>` has not
+/// streamed yet, so the caller holds the bytes back instead of splitting it.
+fn control_marker_at(haystack: &str, markers: &[String], flush: bool) -> Option<(usize, usize)> {
+    markers
+        .iter()
+        .filter_map(|m| {
+            let at = haystack.find(m.as_str())?;
+            if m.ends_with('=') {
+                match haystack[at..].find('>') {
+                    Some(rel) => Some((at, rel + 1)),
+                    None if flush => Some((at, haystack.len() - at)),
+                    None => None,
+                }
+            } else {
+                Some((at, m.len()))
+            }
+        })
+        .min_by_key(|(at, _)| *at)
+}
+
+/// Trailing bytes the guided drain must retain across a chunk boundary.
+///
+/// Two reasons to hold back, and missing either one loses the payload:
+/// a marker SPLIT across the boundary (`<tool_ca` | `ll>`), and a COMPLETE
+/// prefix-form marker still waiting for its terminator (`<function=` | `NAME>`).
+/// The second is not a partial marker, so the prefix scan does not see it, and it
+/// was flushed into the payload buffer where it broke the parse.
+fn guided_holdback_len(
+    input: &str,
+    reasoning_markers: &[&str],
+    control: &[String],
+    flush: bool,
+) -> usize {
+    if flush {
+        return 0;
+    }
+    let split = marker_prefix_suffix_len(
+        input,
+        reasoning_markers
+            .iter()
+            .copied()
+            .chain(control.iter().map(String::as_str)),
+    );
+    let pending_prefix_form = control
+        .iter()
+        .filter(|m| m.ends_with('='))
+        .filter_map(|m| input.rfind(m.as_str()))
+        .filter(|at| !input[*at..].contains('>'))
+        .map(|at| input.len() - at)
+        .max()
+        .unwrap_or(0);
+    split.max(pending_prefix_form)
+}
+
 /// Whether a buffered guided run has opened a JSON value. Anything before the
 /// first `{`/`[` is prose, not payload.
 fn json_payload_started(buf: &str) -> bool {
     matches!(buf.trim_start().as_bytes().first(), Some(b'{') | Some(b'['))
 }
 
+fn json_payload_kind(payload: &str) -> &'static str {
+    match serde_json::from_str::<serde_json::Value>(payload) {
+        Ok(serde_json::Value::Object(_)) => "object",
+        Ok(serde_json::Value::Array(_)) => "array",
+        Ok(serde_json::Value::String(_)) => "string",
+        Ok(serde_json::Value::Number(_)) => "number",
+        Ok(serde_json::Value::Bool(_)) => "boolean",
+        Ok(serde_json::Value::Null) => "null",
+        Err(_) => "invalid_json",
+    }
+}
+
 impl GuidedState {
     fn new(
         reasoning: ReasoningSpec,
-        orphan_markers: Vec<String>,
-        tool_openers: Vec<String>,
+        control_markers: Vec<String>,
         named_tool: Option<String>,
         prefill: UnifiedParserPrefill,
     ) -> Self {
         Self {
             reasoning,
-            orphan_markers,
-            tool_openers,
+            control_markers,
             named_tool,
+            reasoning_enabled: prefill != UnifiedParserPrefill::Response,
             mode: Self::mode_for(prefill),
             accept_redundant_reasoning_start: prefill == UnifiedParserPrefill::Reasoning,
             input: String::new(),
@@ -594,7 +675,7 @@ impl GuidedState {
         match prefill {
             UnifiedParserPrefill::None => GuidedMode::OutsideReasoning,
             UnifiedParserPrefill::Reasoning => GuidedMode::Reasoning,
-            UnifiedParserPrefill::Response => GuidedMode::VisibleOnly,
+            UnifiedParserPrefill::Response => GuidedMode::OutsideReasoning,
         }
     }
 
@@ -620,6 +701,7 @@ impl GuidedState {
         // the NEXT stream treat its reasoning as JSON payload and surface it as text,
         // so put the channel back where `new` would have started it.
         self.mode = Self::mode_for(prefill);
+        self.reasoning_enabled = prefill != UnifiedParserPrefill::Response;
         self.accept_redundant_reasoning_start = prefill == UnifiedParserPrefill::Reasoning;
         recovered
     }
@@ -663,23 +745,23 @@ impl GuidedState {
                     // buffer, latched VisibleOnly, and then surfaced the markers AND
                     // the model's private thinking to the user as the answer, with the
                     // call never dispatched.
-                    // Whichever marker comes FIRST wins. Checking the opener over the
-                    // whole buffer before ever looking for the closer meant an ORPHAN
-                    // closer sitting ahead of a real thought — `</think>a<think>b…` —
-                    // fell into the opener's prefix and was emitted verbatim as text.
-                    // The native orphan handler compares the two positions and strips
-                    // the earlier one, so the modes disagreed on identical bytes (`I3`).
-                    let open_at = self.input.find(start);
-                    // The closer is not the only stray marker that can precede a guided
-                    // payload. The family's other orphan markers (for qwen3,
-                    // `</tool_call>`) were left glued to the JSON, which then failed to
-                    // parse and went out verbatim with the call lost. `GuidedState`
-                    // already carries that list and strips the same set inside an open
-                    // thought; outside one it was ignored.
-                    let stray_close = [end]
+                    // Whichever marker comes FIRST wins — position is the ONLY
+                    // precedence rule. Deciding by which branch was written first is
+                    // what let an orphan closer ahead of a real thought ride out as
+                    // text, and an opener beside a stripped closer survive into the
+                    // payload. One set from the scanner covers both lookup and the
+                    // holdback below, so the two cannot drift apart again.
+                    let open_at = self
+                        .reasoning_enabled
+                        .then(|| self.input.find(start))
+                        .flatten();
+                    let stray_close = control_marker_at(&self.input, &self.control_markers, flush)
                         .into_iter()
-                        .chain(self.orphan_markers.iter().map(String::as_str))
-                        .filter_map(|m| self.input.find(m).map(|at| (at, m.len())))
+                        .chain(
+                            self.reasoning_enabled
+                                .then(|| self.input.find(end).map(|at| (at, end.len())))
+                                .flatten(),
+                        )
                         .min_by_key(|(at, _)| *at);
                     let close_at = stray_close.map(|(at, _)| at);
                     let close_len = stray_close.map(|(_, l)| l).unwrap_or(end.len());
@@ -723,7 +805,21 @@ impl GuidedState {
                     let keep = if flush {
                         0
                     } else {
-                        marker_prefix_suffix_len(&self.input, [start, end])
+                        // Same set as the lookup above, plus a complete prefix-form
+                        // marker awaiting its `>`. This was `[start, end]` only, so a
+                        // control marker split across a boundary went into the payload
+                        // and was lost exactly like a whole one.
+                        let reasoning_markers = if self.reasoning_enabled {
+                            &[start, end][..]
+                        } else {
+                            &[]
+                        };
+                        guided_holdback_len(
+                            &self.input,
+                            reasoning_markers,
+                            &self.control_markers,
+                            flush,
+                        )
                     };
                     let visible_len = self.input.len().saturating_sub(keep);
                     if visible_len > 0 {
@@ -786,15 +882,12 @@ impl GuidedState {
                     // guided payload that followed and returned an empty response.
                     // The native scanner does treat it as structural, but it can: it
                     // opens a block and recovers the call from the markup itself.
-                    let tool_open = self
-                        .tool_openers
-                        .iter()
-                        .filter_map(|m| self.input.find(m.as_str()).map(|at| (at, m.len())))
+                    let stray = control_marker_at(&self.input, &self.control_markers, flush)
+                        .into_iter()
+                        .chain(self.input.find(start).map(|at| (at, start.len())))
                         .min_by_key(|(at, _)| *at)
                         .map(|(at, len)| (at, len, false));
-                    let stray = stray_in_reasoning(&self.input, start, end, &self.orphan_markers)
-                        .map(|(at, len)| (at, len, false));
-                    if let Some((at, consume, closes)) = [close, tool_open, stray]
+                    if let Some((at, consume, closes)) = [close, stray]
                         .into_iter()
                         .flatten()
                         .min_by_key(|(at, _, _)| *at)
@@ -802,7 +895,14 @@ impl GuidedState {
                         push_run(&mut output, Kind::Reasoning, &self.input[..at]);
                         self.input.drain(..at + consume);
                         if closes {
-                            self.mode = GuidedMode::VisibleOnly;
+                            // Back to OutsideReasoning, NOT straight to VisibleOnly. The
+                            // old latch was justified by keeping marker-like bytes inside
+                            // a started payload literal, but the payload-first check at
+                            // the top of that scope now owns that. Latching here instead
+                            // meant markup AFTER a thought — `<think>x</think><tool_call>{…}`
+                            // — was never examined, so the opener rode into the payload
+                            // and the call was lost. This also handles several thoughts.
+                            self.mode = GuidedMode::OutsideReasoning;
                         } else {
                             tracing::debug!(
                                 why = "guided_stray_marker_in_reasoning",
@@ -815,10 +915,11 @@ impl GuidedState {
                     let keep = if flush {
                         0
                     } else {
-                        marker_prefix_suffix_len(
+                        guided_holdback_len(
                             &self.input,
-                            reasoning_holdback_markers(start, end, &self.orphan_markers)
-                                .chain(self.tool_openers.iter().map(String::as_str)),
+                            &[start, end],
+                            &self.control_markers,
+                            flush,
                         )
                     };
                     let reasoning_len = self.input.len().saturating_sub(keep);
@@ -843,6 +944,7 @@ impl GuidedState {
             return Ok(Vec::new());
         }
 
+        let raw_payload = self.json.clone();
         let calls = match &self.named_tool {
             // A named choice constrains output to that tool's ARGUMENTS alone,
             // so the payload is the argument object and the name is known.
@@ -875,7 +977,7 @@ impl GuidedState {
                         "named-choice payload carries `name` plus `arguments`/`parameters`; forwarding it verbatim as the argument set"
                     );
                 }
-                vec![(name.clone(), payload.to_string())]
+                vec![(name.clone(), raw_payload)]
             }),
             None => parse_required_guided_calls(payload),
         };
@@ -888,9 +990,14 @@ impl GuidedState {
             // so without this the backend's guided-decoding failure never surfaces.
             tracing::warn!(
                 why = "unified_guided_json_not_a_tool_call",
-                choice = if self.named_tool.is_some() { "named" } else { "required" },
+                choice = if self.named_tool.is_some() {
+                    "named"
+                } else {
+                    "required"
+                },
                 named_tool = self.named_tool.as_deref().unwrap_or("-"),
-                payload = %payload,
+                payload_bytes = payload.len(),
+                payload_kind = json_payload_kind(payload),
                 "guided output did not parse as a tool call; emitting it as text"
             );
             return Ok(vec![UnifiedDelta::Text {
@@ -922,18 +1029,22 @@ fn parse_required_guided_calls(payload: &str) -> Option<Vec<(String, String)>> {
         // native on an identical shape and made a parameterless tool uncallable. What
         // makes an element invalid is a missing `name` (required on GuidedToolCall);
         // that still voids the whole array, per `31.c` / `51.b`.
-        let arguments = match call.parameters.or(call.arguments) {
+        let arguments = match (call.parameters, call.arguments) {
             // PRESENT but not an object is a malformed call, the same judgement the
             // NAMED path makes on its whole payload: arguments that are a string or
             // a number cannot bind to the tool's parameters, so dispatching would
             // hand the tool a shape it cannot use. Absent is different — that means
             // no arguments, and stays valid (see the note above).
-            Some(raw) => {
+            (Some(raw), None) | (None, Some(raw)) => {
                 serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(raw.get())
                     .ok()?;
                 raw.get().to_string()
             }
-            None => "{}".to_string(),
+            (None, None) => "{}".to_string(),
+            // The aliases are alternatives, not two independently meaningful
+            // argument sets. Choosing one silently can dispatch different bytes from
+            // what the backend intended, so reject the ambiguous call fail-closed.
+            (Some(_), Some(_)) => return None,
         };
         Some((call.name, arguments))
     }
@@ -988,15 +1099,10 @@ macro_rules! unified_registry {
                 _ => unreachable!("matched above"),
             };
 
-            // ONE line per stream saying the unified path is live. Unconditional and
-            // via `tracing`, not stderr, because that is the question an operator
-            // actually asks ("is v2 unified running, or did this silently fall back
-            // to the split path?") and it must be answerable from the host's normal
-            // logs. The stderr channel below stays for hosts with no subscriber
-            // installed, but it cannot be the only signal: an absent stderr line is
-            // indistinguishable from the parser never being reached, which is the
-            // wrong conclusion to make easy.
-            tracing::info!(
+            // Parser construction happens per request, so keep the selection signal
+            // at debug level. Operators can enable the target when diagnosing routing
+            // without adding one production info line for every generation.
+            tracing::debug!(
                 target: "dynamo_parsers_v2",
                 family = canonical,
                 requested = family,

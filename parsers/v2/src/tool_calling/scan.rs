@@ -83,19 +83,6 @@ pub(crate) fn stray_in_reasoning(
         .min_by_key(|(pos, _)| *pos)
 }
 
-/// Every marker that can interrupt an open reasoning span: the closer, the
-/// opener, and the orphan markers. Used for chunk-boundary holdback so a marker
-/// split across a boundary is not leaked before it can be recognized.
-pub(crate) fn reasoning_holdback_markers<'a>(
-    start: &'a str,
-    end: &'a str,
-    orphan_markers: &'a [String],
-) -> impl Iterator<Item = &'a str> {
-    [start, end]
-        .into_iter()
-        .chain(orphan_markers.iter().map(String::as_str))
-}
-
 pub(crate) fn marker_prefix_suffix_len<'a, I>(text: &str, markers: I) -> usize
 where
     I: IntoIterator<Item = &'a str>,
@@ -357,25 +344,17 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.reasoning
     }
 
-    /// Markers this family treats as stray markup outside a block.
+    /// Every control marker of this family's tool grammar, as ONE set.
     ///
-    /// Exposed so the guided-JSON path can strip the SAME set inside a thought
-    /// that the native path does; see [`stray_in_reasoning`].
-    pub(crate) fn orphan_markers(&self) -> &[String] {
-        &self.spec.orphan_markers
-    }
-
-    /// Markers that OPEN tool structure: block openers plus the invoke opener.
-    ///
-    /// Inside a thought these terminate the reasoning span rather than being
-    /// content — tool structure dominates reasoning. Exposed for the same reason
-    /// as [`Self::orphan_markers`]: the guided path must interrupt an open thought
-    /// on the same set, or `<tool_call>` written inside a thought reaches the user
-    /// as raw markup there while the native path strips it.
-    pub(crate) fn tool_openers(&self) -> Vec<String> {
-        let mut v = self.spec.block_starts.clone();
-        v.push(self.spec.invoke_start.clone());
-        v
+    /// This is `holdback_markers`, which the family already declares for exactly
+    /// this purpose — the markers the scanner reacts to, so a split one is never
+    /// leaked. The guided path needs the same set for BOTH lookup and boundary
+    /// holdback, and assembling it there from `orphan_markers` plus openers, at
+    /// several sites, is how the two drifted apart repeatedly: a closer stripped
+    /// while the opener beside it leaked, an opener recognised whole but lost when
+    /// split. One owner, one set, both uses.
+    pub(crate) fn control_markers(&self) -> &[String] {
+        &self.spec.holdback_markers
     }
 
     /// Select whether this stream interprets reasoning markers, without
