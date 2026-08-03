@@ -109,7 +109,21 @@ def every_family(input_text, vllm, dynamo, *rest):
     a case that renders green while testing nothing, because the parser was handed
     the one input shape the mode it declares never produces.
     """
-    return {fam: (input_text, vllm, dynamo, *rest) for fam in FAMILIES}
+    # The `dynamo` verdict is applied ONLY to families that actually have a native
+    # unified parser. A family still on the v1-reasoning + v2-tool split ignores
+    # `init` entirely, so it cannot honour a guided request mode — it emits the
+    # payload as text. Recording `match` for it would be a false claim in the spec:
+    # nothing asserts this field (the Dynamo column is computed live), so it would
+    # never fail, it would just quietly mislead anyone reading the corpus.
+    split = D(
+        "UNSUPPORTED",
+        "no native unified parser in this build, so the split path ignores `init` "
+        "and cannot honour a guided request mode",
+    )
+    return {
+        fam: (input_text, vllm, dynamo if fam in UNIFIED_FAMILIES else split, *rest)
+        for fam in FAMILIES
+    }
 
 
 # Guided payloads, written once. `named` is what a NAMED choice emits (that

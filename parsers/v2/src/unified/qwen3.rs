@@ -351,6 +351,36 @@ mod tests {
     }
 
     #[test]
+    fn guided_handles_prose_before_a_thought_split_across_chunks() {
+        // The single-chunk case is covered by the invariant test above. This pins the
+        // boundary: the prose arrives BEFORE the opener is visible, so nothing may
+        // latch the payload buffer until the parser knows no thought is coming.
+        let mut parser = qwen3_unified(&weather_tools());
+        parser
+            .initialize_with_output_mode(
+                UnifiedParserPrefill::None,
+                UnifiedToolOutputMode::GuidedJson { named_tool: None },
+            )
+            .unwrap();
+        let mut deltas = Vec::new();
+        for chunk in ["Hello there. ", "<think>let me recall</think>", GUIDED_CALL] {
+            deltas.extend(parser.push(chunk).unwrap());
+        }
+        deltas.extend(parser.finish().unwrap());
+        let out = assemble(&deltas);
+        assert_eq!(
+            out[0],
+            text("Hello there. "),
+            "prose was not emitted as text: {out:?}"
+        );
+        assert_eq!(
+            out[1],
+            reasoning("let me recall"),
+            "thought not recovered: {out:?}"
+        );
+    }
+
+    #[test]
     fn guided_strips_a_duplicate_reasoning_opener_inside_a_thought() {
         let out = guided_reasoning(&format!("<think>a<think>b</think>{GUIDED_CALL}"));
         assert_eq!(
@@ -382,7 +412,13 @@ mod tests {
             // must too. Reviewed catch — the first two cases passed while this one
             // leaked `<tool_call>` into the displayed thinking on the guided path.
             "<think>a<tool_call>x</think>",
-            "<think>a<function=run>x</think>",
+            "<think>a<function=run>x</function>x</think>",
+            // Visible prose BEFORE the thought opens (`content_then_reason`). Every
+            // other case here starts the thought at byte 0, which is how the guided
+            // path shipped a bug where the prose latched the payload buffer and the
+            // model's private thinking was surfaced to the user as the answer.
+            "Hello there. <think>let me recall</think>",
+            "Sure. <think>check</think>",
             "<think>plain thought</think>",
         ] {
             let native = events(&weather_tools(), &[&format!("{thought}tail")]);

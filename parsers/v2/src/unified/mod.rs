@@ -571,6 +571,12 @@ struct GuidedState {
     json: String,
 }
 
+/// Whether a buffered guided run has opened a JSON value. Anything before the
+/// first `{`/`[` is prose, not payload.
+fn json_payload_started(buf: &str) -> bool {
+    matches!(buf.trim_start().as_bytes().first(), Some(b'{') | Some(b'['))
+}
+
 impl GuidedState {
     fn new(
         reasoning: ReasoningSpec,
@@ -644,10 +650,25 @@ impl GuidedState {
                     break;
                 }
                 GuidedMode::OutsideReasoning => {
-                    if let Some(at) = self.input.find(start)
-                        && self.input[..at].trim().is_empty()
-                    {
-                        self.json.push_str(&self.input[..at]);
+                    // A reasoning opener ANYWHERE ahead means the thought has not
+                    // started yet and whatever precedes it is ordinary visible text —
+                    // not the beginning of the JSON payload. Requiring a
+                    // whitespace-only prefix here meant a turn that said anything
+                    // before it began thinking (`content_then_reason`, the shape
+                    // `UNIFIED.11.f`/`11.g` pin natively) fell through to the payload
+                    // buffer, latched VisibleOnly, and then surfaced the markers AND
+                    // the model's private thinking to the user as the answer, with the
+                    // call never dispatched.
+                    if let Some(at) = self.input.find(start) {
+                        // Whatever was buffered as "payload so far", plus this prefix,
+                        // was visible text after all — a thought is opening behind it.
+                        let mut pending = std::mem::take(&mut self.json);
+                        pending.push_str(&self.input[..at]);
+                        if pending.trim().is_empty() {
+                            self.json = pending;
+                        } else {
+                            push_run(&mut output, Kind::Text, &pending);
+                        }
                         self.input.drain(..at + start.len());
                         self.mode = GuidedMode::Reasoning;
                         self.accept_redundant_reasoning_start = false;
@@ -670,7 +691,13 @@ impl GuidedState {
                     if visible_len > 0 {
                         self.json.push_str(&self.input[..visible_len]);
                         self.input.drain(..visible_len);
-                        if !self.json.trim().is_empty() {
+                        // Latch onto the payload only once it actually LOOKS like
+                        // one. Guided decoding constrains the call to bare JSON, so a
+                        // run that has not opened a value is prose, and a thought may
+                        // still follow it in a later chunk. Latching on any
+                        // non-whitespace byte is what let prose arriving in its own
+                        // chunk swallow the thought that came after it.
+                        if json_payload_started(&self.json) {
                             self.mode = GuidedMode::VisibleOnly;
                             continue;
                         }
