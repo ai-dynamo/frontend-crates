@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.1.27](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.1.26...dynamo-parsers-v2-v0.1.27) - 2026-08-03
+
+### Miscellaneous
+
+- Update Cargo.lock dependencies
+
 ## [0.1.26](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.1.25...dynamo-parsers-v2-v0.1.26) - 2026-08-03
 
 ### Refactoring
