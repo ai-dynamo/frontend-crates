@@ -97,6 +97,31 @@ def D(cls, note):
     return {"verdict": "diverge", "class": cls, "note": note}
 
 
+# --- per-family input helpers for EDGE scenarios ------------------------------
+
+def every_family(input_text, vllm, dynamo, *rest):
+    """One input for EVERY family.
+
+    Guided decoding is a BACKEND feature: it constrains the model to bare JSON,
+    so the family's own grammar never appears in the payload and there is nothing
+    to render per family. Writing these per family is how gemma4 and kimi_k2 ended
+    up carrying NATIVE markup under an `init.tool_output_mode=GuidedJson` label —
+    a case that renders green while testing nothing, because the parser was handed
+    the one input shape the mode it declares never produces.
+    """
+    return {fam: (input_text, vllm, dynamo, *rest) for fam in FAMILIES}
+
+
+# Guided payloads, written once. `named` is what a NAMED choice emits (that
+# tool's arguments alone); the arrays are what a REQUIRED choice emits.
+GUIDED_NAMED_ARGS = '{"city": "Paris"}'
+GUIDED_ONE_CALL = '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+GUIDED_TWO_CALLS = ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, '
+                    '{"name": "run", "arguments": {"cmd": "git log"}}]')
+GUIDED_UNSUPPORTED = D("UNSUPPORTED",
+                       "vLLM base case doesn't emit guided JSON; conformance captures native XML only")
+
+
 # --- CLEAN scenarios: same segments for every family, input is templated ------
 # Each: (name, description, policy, segments, vllm, dynamo)
 # vllm/dynamo are either a single entry (all families) or {family: entry}.
@@ -111,7 +136,7 @@ CLEAN = [
      [], [("reason", "Check weather."), ("tool", "get_weather", "city", "Paris")], M, M),
 
     ("reason_then_content",
-     "Reasoning then visible content, no tool call (baseline).",
+     "Reasoning then visible content, no tool call (baseline). This is also covered in: e2e case-0001-chinese_arithmetic__non-stream-budget_capped.json (+ 42 more: every `reasoning/core`, `reasoning/complex` and `reasoning/history` case, `tool_none_arithmetic__*`, and the SECOND step of both `lifecycle_*` — each with its `-budget_unlimited` pair).",
      [], [("reason", "let me think"), ("text", "The answer is 42.")], M, M),
 
     ("interstitial_text",
@@ -155,45 +180,45 @@ CLEAN = [
      {"gemma4": M, "qwen3": M,
       "kimi_k2": {"verdict": "match", "note": "P1 resolved by the v2 recovery contract: preserve trailing prose. Verify v2 kimi_k2 at capture time"}}),
 
-    # --- Group 2: multiple tool calls (streamv2.2) — tool-only, green everywhere ---
+    # --- Group 2: multiple tool calls (TOOLCALLING.streamv2.2) — tool-only, green everywhere ---
     ("two_calls",
-     "Two tool calls back-to-back, no reasoning (streamv2.2.a). Both must surface as ordered events.",
+     "Two tool calls back-to-back, no reasoning. Both must surface as ordered events. This is also covered in: TOOLCALLING.streamv2.2.a.",
      [], [("tool", "f", "x", "1"), ("tool", "g", "y", "2")], M, M),
     ("two_calls_same_name",
-     "The same tool called twice with different args (streamv2.2.d). Both calls are distinct events.",
+     "The same tool called twice with different args. Both calls are distinct events. This is also covered in: TOOLCALLING.streamv2.2.d.",
      [], [("tool", "get_weather", "city", "Paris"), ("tool", "get_weather", "city", "Tokyo")], M, M),
 
     # --- Group 3: no tool call ---
     ("text_only",
-     "Plain answer, no reasoning and no tool call (streamv2.3). Pure content passthrough.",
+     "Plain answer, no reasoning and no tool call. Pure content passthrough. This is also covered in: TOOLCALLING.streamv2.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.",
      [], [("text", "The answer is 42, no tools needed.")], M, M),
 
-    # --- Group 7: argument fidelity (streamv2.7) ---
+    # --- Group 7: argument fidelity (TOOLCALLING.streamv2.7) ---
     ("arg_unicode",
-     "Unicode + spaces in a string argument value (streamv2.7.b). Preserved exactly (I7).",
+     "Unicode + spaces in a string argument value. Preserved exactly (I7). This is also covered in: TOOLCALLING.streamv2.7.b.",
      [], [("tool", "get_weather", "city", "São Paulo 東京")], M, M),
 
-    # --- Group 8: content / narration position (streamv2.8) ---
+    # --- Group 8: content / narration position (TOOLCALLING.streamv2.8) ---
     ("text_before_tool",
-     "Visible text before a single tool call, no reasoning (streamv2.8.a).",
+     "Visible text before a single tool call, no reasoning. This is also covered in: TOOLCALLING.streamv2.8.a.",
      [], [("text", "On it: "), ("tool", "get_weather", "city", "Paris")], M, M),
     ("text_sandwich",
-     "Visible text both before and after a tool call (streamv2.8.c).",
+     "Visible text both before and after a tool call. This is also covered in: TOOLCALLING.streamv2.8.c.",
      [], [("text", "Before. "), ("tool", "get_weather", "city", "Paris"), ("text", " After.")], M, M),
     ("text_between_calls",
-     "Visible text between two tool calls (streamv2.8.d).",
+     "Visible text between two tool calls. This is also covered in: TOOLCALLING.streamv2.8.d.",
      [], [("tool", "f", "x", "1"), ("text", " then "), ("tool", "g", "y", "2")], M, M),
     ("narrated_calls",
      "Multiple tool calls with visible narration between each — tool_call -> text -> tool_call -> text -> tool_call. The agentic pattern: call, narrate, call again. Every call and every inter-call text span must surface as its own ordered event.",
      [], [("tool", "get_weather", "city", "Paris"), ("text", " then I'll run "),
           ("tool", "f", "x", "1"), ("text", " and "), ("tool", "g", "y", "2")], M, M),
 
-    # --- Group 10: reasoning span (reasoning-only; REASONING.2/6) ---
+    # --- Group 10: reasoning span (reasoning-only; REASONING.batch.2 / REASONING.batch.6) ---
     ("reason_only",
-     "A reasoning span with no visible answer and no tool call (REASONING.2.a).",
+     "A reasoning span with no visible answer and no tool call. This is also covered in: REASONING.batch.2.a.",
      [], [("reason", "just thinking, no answer")], M, M),
     ("two_reason_spans",
-     "Two reasoning spans separated by visible text, no tool call (REASONING.6.a). Streaming keeps both spans in order; batch merges them.",
+     "Two reasoning spans separated by visible text, no tool call. Streaming keeps both spans in order; batch merges them. This is also covered in: REASONING.batch.6.a.",
      [], [("reason", "first thought"), ("text", "interlude "),
           ("reason", "second thought"), ("text", "done")],
      M, D("MERGE", "batch v1 reasoning merges both spans into one leading event")),
@@ -224,10 +249,11 @@ EDGE = [
      "Stream ends mid tool call (no close marker). Policy P2 — drop the incomplete call, keep valid preceding output, no error, no leaked markup.",
      ["P2"],
      [{"kind": "reasoning", "text": "ok"}],
+     {"prefill": "None", "tool_output_mode": "Native", "named_tool": None},
      {
         "gemma4": ("<|channel>thought\nok<channel|><|tool_call>call:get_weather{city:<|\"|>Par",
                    D("ERROR", "native Gemma4UnifiedParser finish() returns a hard Err -> erroring is the opposite of best-effort recovery"),
-                   {"verdict": "match", "note": "P2: drop the partial trailing call, keep the preceding reasoning, never error/leak (TOOLCALLING batch.5.e)"}),
+                   {"verdict": "match", "note": "P2: drop the partial trailing call, keep the preceding reasoning, never error/leak (TOOLCALLING.batch.5.e)"}),
         "qwen3": ("<think>ok</think><tool_call>\n<function=get_weather>\n<parameter=city>\nPar",
                   {"verdict": "match", "note": "hypothesis: qwen3 tool parser drops the unterminated call; verify at capture time"},
                   {"verdict": "match", "note": "P2: v2 drops the partial trailing call, keeps reasoning"}),
@@ -240,6 +266,7 @@ EDGE = [
      "Stream ends while still inside reasoning (no close marker). Open reasoning is promoted at finish, not dropped and not leaked as text.",
      [],
      [{"kind": "reasoning", "text": "thinking but stream ends"}],
+     {"prefill": "None", "tool_output_mode": "Native", "named_tool": None},
      {
         "gemma4": ("<|channel>thought\nthinking but stream ends",
                    M, {"verdict": "match", "note": "verify against v1 gemma4 reasoning finish() at capture time"}),
@@ -253,6 +280,7 @@ EDGE = [
      "A close-marker-looking sequence INSIDE a string arg value. Invariant I7 — the value is data, preserved exactly, not truncated at the marker-looking substring.",
      [],
      [{"kind": "tool_call", "name": "run", "arguments": {"cmd": None}}],  # cmd filled per family below
+     {"prefill": "None", "tool_output_mode": "Native", "named_tool": None},
      {
         "gemma4": ("<|tool_call>call:run{cmd:<|\"|>git log }<tool_call|> --oneline<|\"|>}<tool_call|>",
                    D("ARG_MISMATCH", "char-by-char streamed-arg coercion truncates args at the marker-looking boundary (regression class #48702/#47977)"),
@@ -272,6 +300,7 @@ EDGE = [
      "Prose followed by an orphan close marker with no matching open. Best-effort recovery — the prose stays as content, the orphan marker is stripped, nothing leaks.",
      [],
      [{"kind": "text", "text": "I will check that. "}],
+     {"prefill": "None", "tool_output_mode": "Native", "named_tool": None},
      {
         "gemma4": ("I will check that. <tool_call|>",
                    D("LEAK", "vLLM/SGLang leak the orphan close marker into content as the whole tail (TOOLCALLING_CASES.md 5.g)"),
@@ -285,9 +314,10 @@ EDGE = [
      }),
 
     ("empty_args",
-     "A tool call with an empty argument object {} (streamv2.6.a). Policy P3 — empty args serialize to {}.",
+     "A tool call with an empty argument object {}. Policy P3 — empty args serialize to {}. This is also covered in: TOOLCALLING.streamv2.6.a.",
      ["P3"],
      [{"kind": "tool_call", "name": "get_weather", "arguments": {}}],
+     {"prefill": "None", "tool_output_mode": "Native", "named_tool": None},
      {
         "gemma4": ("<|tool_call>call:get_weather{}<tool_call|>", M, M),
         "qwen3": ("<tool_call>\n<function=get_weather>\n</function>\n</tool_call>", M, M),
@@ -295,9 +325,10 @@ EDGE = [
      }),
 
     ("tool_no_close",
-     "A single tool call whose body is complete but the close marker never arrives before EOF (streamv2.5.a). Best-effort recovery emits the complete call at finish.",
+     "A single tool call whose body is complete but the close marker never arrives before EOF. Best-effort recovery emits the complete call at finish. This is also covered in: TOOLCALLING.streamv2.5.a.",
      [],
      [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"prefill": "None", "tool_output_mode": "Native", "named_tool": None},
      {
         "gemma4": ("<|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}",
                    {"verdict": "match", "note": "body complete; recover the call at finish"},
@@ -315,6 +346,7 @@ EDGE = [
      "'Tool call contains reasoning' — a reasoning-channel marker sits inside a QUOTED tool-arg value. This is NOT a leak: a leak is control markup surfacing in visible content or reasoning, but here the markup is a tool ARGUMENT VALUE (data bound for the function, inside the grammar's string delimiters), so by I7 the parser preserves it byte-exact. The gemma4 native UnifiedParser confirms this golden exactly. Failure mode: a reasoning-first pipeline extracts the `<think>`/`<|channel>` from inside the arg BEFORE tool parsing, hoisting it into a spurious reasoning event and corrupting the arg to empty.",
      [],
      [{"kind": "tool_call", "name": "log", "arguments": {"note": None}}],  # note filled per family
+     {"prefill": "None", "tool_output_mode": "Native", "named_tool": None},
      {
         "gemma4": ("<|tool_call>call:log{note:<|\"|><|channel>thought\nreconsider<channel|><|\"|>}<tool_call|>",
                    D("ARG_MISMATCH", "the reasoning extractor lifts the `<|channel>...<channel|>` out of the arg value before tool parsing, so the logged note no longer matches golden"),
@@ -336,6 +368,7 @@ EDGE = [
      [{"kind": "reasoning", "text": "I should check. "},
       {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
       {"kind": "reasoning", "text": " now answer"}],
+     {"prefill": "None", "tool_output_mode": "Native", "named_tool": None},
      {
         "gemma4": ("<|channel>thought\nI should check. <|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|> now answer<channel|>",
                    D("LEAK", "the reasoning extractor consumes to `<channel|>`, so the nested `<|tool_call>...<tool_call|>` leaks into reasoning_content and the call is dropped; break-out recovery not implemented"),
@@ -354,6 +387,7 @@ EDGE = [
      [{"kind": "text", "text": "Logging now: "},
       {"kind": "tool_call", "name": "log", "arguments": {"note": None}},  # filled per family
       {"kind": "text", "text": " done."}],
+     {"prefill": "None", "tool_output_mode": "Native", "named_tool": None},
      {
         "gemma4": ("Logging now: <|tool_call>call:log{note:<|\"|><|channel>thought\nreconsider<channel|><|\"|>}<tool_call|> done.",
                    D("ARG_MISMATCH", "the reasoning extractor lifts the `<|channel>...<channel|>` out of the arg before tool parsing; the note no longer matches and the surrounding text can shift"),
@@ -377,6 +411,7 @@ EDGE = [
       {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
       {"kind": "reasoning", "text": " now answer"},
       {"kind": "text", "text": " Here you go."}],
+     {"prefill": "None", "tool_output_mode": "Native", "named_tool": None},
      {
         "gemma4": ("Sure. <|channel>thought\nI should check. <|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|> now answer<channel|> Here you go.",
                    D("LEAK", "the reasoning extractor consumes to `<channel|>`, leaking the nested tool markup into reasoning_content and dropping the call; the visible text survives on both sides"),
@@ -387,6 +422,295 @@ EDGE = [
         "kimi_k2": ("Sure. <think>I should check. <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|> now answer</think> Here you go.",
                     D("LEAK", "hypothesis: the nested tool section leaks into reasoning and the call is dropped. Verify at capture time"),
                     D("LEAK", "hypothesis: v1 reasoning consumes to `</think>`, leaking the nested section. Verify at capture time")),
+     }),
+
+    # --- Group 13: request-scoped modes (guided decoding, prefilled channels) ---
+    ("guided_json_named_tool",
+     "Guided decoding with a named tool (tool_choice=specific_tool). The model emits bare JSON object, not XML markup, which the parser receives with tool_output_mode=GuidedJson{named_tool=get_weather}. This is also covered in: e2e case-0047-tool_add_named__non-stream-budget_capped.json, e2e case-0048-tool_add_named__stream-budget_capped.json, e2e case-0054-tool_translate_named__stream-budget_capped.json (each with its `-budget_unlimited` pair).",
+     [],
+     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"prefill": "None", "tool_output_mode": "GuidedJson", "named_tool": "get_weather"},
+     every_family(GUIDED_NAMED_ARGS, GUIDED_UNSUPPORTED,
+                  {"verdict": "match", "note": "Dynamo v2 unified parser with tool_output_mode=GuidedJson{named_tool=get_weather}"})),
+
+    ("guided_json_required_tool",
+     "Guided decoding with required tool (tool_choice=required or auto after tool narrowing). The model emits a JSON array of call objects, parsed with tool_output_mode=GuidedJson{named_tool=None}. This is also covered in: e2e case-0129-lifecycle_single_result__stream-budget_capped.json, e2e case-0145-lifecycle_chained_calculation__stream-budget_capped.json (FIRST step of each; both with their `-budget_unlimited` pair).",
+     [],
+     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"prefill": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     every_family(GUIDED_ONE_CALL, GUIDED_UNSUPPORTED,
+                  {"verdict": "match", "note": "Dynamo v2 unified parser with tool_output_mode=GuidedJson{named_tool=None}"})),
+
+    # Argument VALUE shapes on the guided path. `arg_unicode` already covers a non-ASCII
+    # value, but only in native mode, where the value sits as raw text between markers and
+    # no escaping is involved. Guided decoding carries the same value as a JSON string, so
+    # the escaping is the parser's problem only here — covering it natively proves nothing
+    # about this path.
+    ("guided_json_escaped_string_args",
+     "A named choice whose argument value carries non-ASCII, escaped quotes and Windows backslashes. A named choice constrains output to the argument object alone and the parser passes that object through verbatim, so every escape has to survive untouched: re-escaping or unescaping here hands the tool a different string than the model wrote, and the tool still runs. This is also covered in: e2e case-0105-schema_escaped_unicode_string__non-stream-budget_capped.json (and its `-budget_unlimited` pair).",
+     [],
+     [{"kind": "tool_call", "name": "run", "arguments": {"cmd": 'echo "雪" > C:\\tmp\\a.txt'}}],
+     {"prefill": "None", "tool_output_mode": "GuidedJson", "named_tool": "run"},
+     every_family(r'{"cmd": "echo \"雪\" > C:\\tmp\\a.txt"}', GUIDED_UNSUPPORTED,
+                  {"verdict": "match", "note": "escapes and non-ASCII survive GuidedJson{named_tool=run} verbatim"})),
+
+    ("guided_json_array_argument",
+     "A required choice whose argument VALUE is an array. Every other guided case passes scalar arguments, and the array-shaped payloads in this group are arrays OF CALLS — one level up. A list-valued argument has to reach the tool as a list; arriving as its string rendering is a silently wrong call, not a failed one. This is also covered in: e2e case-0108-schema_array__stream-budget_capped.json (and its `-budget_unlimited` pair).",
+     [],
+     [{"kind": "tool_call", "name": "sum_values", "arguments": {"values": [2, 3, 5]}}],
+     {"prefill": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     every_family('[{"name": "sum_values", "arguments": {"values": [2, 3, 5]}}]', GUIDED_UNSUPPORTED,
+                  {"verdict": "match", "note": "list-valued argument stays a list through GuidedJson{named_tool=None}"})),
+
+    ("guided_json_two_calls",
+     "A required choice returns an ARRAY, so multiple calls are that mode's ordinary shape. Both must surface as separate ordered events with distinct indices. Same array as 50.c but with NOTHING pre-filled, so guided mode starts outside reasoning rather than in visible-only — a different entry into the same payload.",
+     [],
+     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+      {"kind": "tool_call", "name": "run", "arguments": {"cmd": "git log"}}],
+     {"prefill": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     every_family(GUIDED_TWO_CALLS, GUIDED_UNSUPPORTED,
+                  {"verdict": "match", "note": "two DIFFERENT tools in one array, ordered"})),
+
+    ("guided_json_partial_calls",
+     "A guided array where one element is not a call (no `name`), with nothing pre-filled. All-or-nothing, as in 51.b: the whole payload surfaces as text and no call is dispatched, because extracting a call from a document that failed validation would fail OPEN on a side-effecting action.",
+     ["P2"],
+     [{"kind": "text", "text": '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'}],
+     {"prefill": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     {
+        "qwen3": ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]',
+                  D("UNSUPPORTED", "vLLM base case doesn't emit guided JSON; conformance captures native XML only"),
+                  {"verdict": "match", "note": "one invalid element voids the whole array; payload surfaces as text"}),
+        "gemma4": ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]', M, M),
+        "kimi_k2": ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]', M, M),
+     }),
+
+    ("guided_json_list_with_broken_element",
+     "A guided array whose SECOND element is not valid JSON — the payload is `[<valid call>, <broken>]`, which is what a constrained decode produces when it is cut off partway through a later call. Output is the whole payload as text and no call, same as 31.c but reached differently: there the array parsed and one element failed to convert, here the array does not parse at all, so per-element recovery never gets a chance. Both land on all-or-nothing, which is the point — a half-validated array must not dispatch the half that looked fine.",
+     ["P2"],
+     [{"kind": "text", "text": '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'}],
+     {"prefill": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     {
+        "qwen3": ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]',
+                  D("UNSUPPORTED", "vLLM base case doesn't emit guided JSON; conformance captures native XML only"),
+                  {"verdict": "match", "note": "the array itself fails to parse; nothing is dispatched"}),
+        "gemma4": ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]', M, M),
+        "kimi_k2": ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]', M, M),
+     }),
+
+    ("guided_json_invalid_call",
+     "Guided decoding emits JSON that is well-formed but is NOT a tool call — no `name`, so there is nothing to dispatch. Policy P2: surface the payload as visible content rather than dropping it or erroring. Dropping it would lose the model's entire output; erroring would fail a request the user can still read.",
+     ["P2"],
+     [{"kind": "text", "text": '{"unexpected": "shape"}'}],
+     {"prefill": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     {
+        "qwen3": ('{"unexpected": "shape"}',
+                  D("UNSUPPORTED", "vLLM base case doesn't emit guided JSON; conformance captures native XML only"),
+                  {"verdict": "match", "note": "P2: unparseable-as-a-call guided payload is surfaced as text"}),
+        "gemma4": ('{"unexpected": "shape"}', M, M),
+        "kimi_k2": ('{"unexpected": "shape"}', M, M),
+     }),
+
+    ("guided_json_malformed_json",
+     "Guided decoding emits JSON that does not PARSE — a truncated object, which is what a constrained decode looks like when the token budget runs out mid-payload. Distinct from the wrong-shape case: there the JSON was valid and merely not a call. Policy P2: surface the bytes as visible content. Dropping them loses the output silently, and erroring fails a request whose text is still readable.",
+     ["P2"],
+     [{"kind": "text", "text": '{"name": "get_weather", "arguments": {"city": "Par'}],
+     {"prefill": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     {
+        "qwen3": ('{"name": "get_weather", "arguments": {"city": "Par',
+                  D("UNSUPPORTED", "vLLM base case doesn't emit guided JSON; conformance captures native XML only"),
+                  {"verdict": "match", "note": "P2: unparseable guided payload is surfaced as text, not dropped"}),
+        "gemma4": ('{"name": "get_weather", "arguments": {"city": "Par', M, M),
+        "kimi_k2": ('{"name": "get_weather", "arguments": {"city": "Par', M, M),
+     }),
+
+    ("prefilled_reasoning_with_tool",
+     "Reasoning channel is pre-filled by the generation prompt (policy P5), so the stream begins inside <think> with no opener. The model emits: reasoning tail -> closer -> tool call.",
+     ["P5"],
+     [{"kind": "reasoning", "text": "checking weather"},
+      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"prefill": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
+     {"finish_reason": "stop"},
+     {
+        "qwen3": ("checking weather</think><tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
+                  D("UNSUPPORTED", "vLLM base case doesn't prefill channels; conformance captures default generation only"),
+                  {"verdict": "match", "note": "Dynamo v2 unified parser with prefill=Reasoning"}),
+        "gemma4": ("checking weather<channel|><|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|>", M, M),
+        "kimi_k2": ("checking weather</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>", M, M),
+     }),
+
+    ("prefilled_reasoning_then_text_then_tool",
+     "Reasoning is pre-filled, the model closes it, writes VISIBLE prose, and only then calls a tool. All three channels in one prefilled stream. The prose must surface as text, not be swept into the reasoning span it follows nor into the call it precedes — the boundary on each side is a different marker, and a prefilled stream has no opener to anchor the first one.",
+     ["P5"],
+     [{"kind": "reasoning", "text": "weighing options"},
+      {"kind": "text", "text": "Here's what I found: "},
+      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"prefill": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
+     {
+        "qwen3": ("weighing options</think>Here's what I found: <tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
+                  D("UNSUPPORTED", "vLLM base case doesn't prefill channels; conformance captures default generation only"),
+                  {"verdict": "match", "note": "reasoning -> text -> call, all three ordered in one prefilled stream"}),
+        "gemma4": ("weighing options<channel|>Here's what I found: <|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|>", M, M),
+        "kimi_k2": ("weighing options</think>Here's what I found: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>", M, M),
+     }),
+
+    ("prefilled_reasoning_then_text",
+     "Reasoning is pre-filled, the model closes it and answers in prose with NO tool call — the ordinary shape of a prefilled request that needs no tool. Pins that closing a prefilled thought returns the stream to visible content rather than leaving it in reasoning, which would swallow the whole answer.",
+     ["P5"],
+     [{"kind": "reasoning", "text": "no tool needed"},
+      {"kind": "text", "text": "The answer is 42."}],
+     {"prefill": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
+     {
+        "qwen3": ("no tool needed</think>The answer is 42.",
+                  D("UNSUPPORTED", "vLLM base case doesn't prefill channels; conformance captures default generation only"),
+                  {"verdict": "match", "note": "closing a prefilled thought returns to visible content"}),
+        "gemma4": ("no tool needed<channel|>The answer is 42.", M, M),
+        "kimi_k2": ("no tool needed</think>The answer is 42.", M, M),
+     }),
+
+    ("prefilled_response_with_guided_json",
+     "Response channel is pre-filled (the prompt opened visible content), so the stream skips reasoning entirely and emits only tool calls as guided JSON. Same payload as 30.b under a different prefill; identical output, since Response only changes how reasoning markers are read and there are none.",
+     ["P5"],
+     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"prefill": "Response", "tool_output_mode": "GuidedJson", "named_tool": None},
+     {"finish_reason": "stop"},
+     every_family(GUIDED_ONE_CALL,
+                  D("UNSUPPORTED", "vLLM base case doesn't prefill channels or use guided JSON"),
+                  {"verdict": "match", "note": "Dynamo v2 unified parser with prefill=Response and tool_output_mode=GuidedJson{named_tool=None}"})),
+
+    ("prefilled_reasoning_with_guided_json",
+     "Reasoning channel is pre-filled (policy P5), stream begins inside <think> with no opener, and the model emits tool calls as guided JSON.",
+     ["P5"],
+     [{"kind": "reasoning", "text": "checking weather"},
+      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"prefill": "Reasoning", "tool_output_mode": "GuidedJson", "named_tool": None},
+     {"finish_reason": "stop"},
+     {
+        "qwen3": ("checking weather</think>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]",
+                  D("UNSUPPORTED", "vLLM base case doesn't prefill channels or use guided JSON"),
+                  {"verdict": "match", "note": "Dynamo v2 unified parser with prefill=Reasoning and tool_output_mode=GuidedJson{named_tool=None}"}),
+        "gemma4": ("checking weather<channel|><|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|>", M, M),
+        "kimi_k2": ("checking weather</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>", M, M),
+     }),
+
+    ("prefilled_response_with_tool",
+     "Response channel is pre-filled (the prompt opened visible content), so the stream skips reasoning entirely: the leading `output` is visible CONTENT with no opening marker, then a native-XML tool call. The leading text is generated output and must surface as a text event — routing it to reasoning is the regression, and it is what a reasoning-first split does when nothing told it the response channel was already open. Parses identically under prefill=None (compare 8.a `text_before_tool`) — no reasoning markers here, so Response has nothing to suppress; 50.d is the case that isolates it.",
+     ["P5"],
+     [{"kind": "text", "text": "output"},
+      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"prefill": "Response", "tool_output_mode": "Native", "named_tool": None},
+     {"finish_reason": "stop"},
+     {
+        "qwen3": ("output<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
+                  D("UNSUPPORTED", "vLLM base case doesn't prefill channels; conformance captures default generation only"),
+                  {"verdict": "match", "note": "Dynamo v2 unified parser with prefill=Response and tool_output_mode=Native"}),
+        "gemma4": ("output<|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|>", M, M),
+        "kimi_k2": ("output<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>",
+                    M,
+                    D("MERGE", "the split path has no prefill signal, so the leading visible `output` is swept into reasoning_content instead of surfacing as text")),
+     }),
+
+
+
+
+    ("prefilled_reasoning_redundant_opener",
+     "Reasoning is pre-filled, and the backend ALSO re-emits the `<think>` opener the prompt already wrote. Exactly one such echo is consumed rather than leaked into reasoning_content; a second would be stray markup and stripped (I3). This is the only case where a prefilled stream legitimately carries an opener.",
+     [],
+     [{"kind": "reasoning", "text": "checking weather"}, {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "London"}}],
+     {"prefill": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
+     {"finish_reason": "stop"},
+     {
+        "gemma4": ("<|channel>thought\nchecking weather<channel|><|tool_call>call:get_weather{city:<|\"|>London<|\"|>}<tool_call|>", M, M),
+        "qwen3": ("<think>checking weather</think><tool_call>\n<function=get_weather>\n<parameter=city>\nLondon\n</parameter>\n</function>\n</tool_call>", M, M),
+        "kimi_k2": ("<think>checking weather</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"London\"}<|tool_call_end|><|tool_calls_section_end|>", M, M),
+     }),
+
+
+
+    ("prefilled_reasoning_truncated",
+     "Reasoning is pre-filled and the token budget runs out mid tool call — the input is truncated, which is what finish_reason=length MEANS on the wire. Policy P2: keep the completed reasoning, drop the incomplete call, no error and no leaked markup.",
+     ["P2"],
+     [{"kind": "reasoning", "text": "analyzing data"}],
+     {"prefill": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
+     {"finish_reason": "length"},
+     {
+        "gemma4": ("analyzing data<channel|><|tool_call>call:get_weather{city:<|\"|>Par",
+                   D("ERROR", "native Gemma4UnifiedParser finish() returns a hard Err on a partial call rather than recovering"),
+                   {"verdict": "match", "note": "P2: drop the partial trailing call, keep the prefilled reasoning"}),
+        "qwen3": ("analyzing data</think><tool_call>\n<function=get_weather>\n<parameter=city>\nPar",
+                  {"verdict": "match", "note": "hypothesis: the qwen3 tool parser drops the unterminated call; verify at capture time"},
+                  {"verdict": "match", "note": "P2: v2 drops the partial trailing call, keeps the prefilled reasoning"}),
+        "kimi_k2": ("analyzing data</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Par",
+                    {"verdict": "match", "note": "hypothesis: the kimi tool parser drops the unterminated call; verify at capture time"},
+                    {"verdict": "match", "note": "P2: v2 drops the partial trailing call, keeps the prefilled reasoning"}),
+     }),
+
+
+
+    ("prefilled_response_guided_json_two_calls",
+     "Guided decoding with a required choice returns an ARRAY, so the multi-call shape is the array's normal case, not an edge one. Both calls must surface as separate ordered events with distinct indices — collapsing them, or emitting only the first, silently drops work the model asked for. Same array as 30.c under a different prefill; see 50.d for the case where Response actually changes the parse.",
+     ["P5"],
+     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+      {"kind": "tool_call", "name": "run", "arguments": {"cmd": "git log"}}],
+     {"prefill": "Response", "tool_output_mode": "GuidedJson", "named_tool": None},
+     {"finish_reason": "stop"},
+     every_family(GUIDED_TWO_CALLS,
+                  D("UNSUPPORTED", "vLLM base case doesn't prefill channels or use guided JSON"),
+                  {"verdict": "match", "note": "two DIFFERENT tools in one array, ordered"})),
+
+    ("prefilled_response_guided_json_partial_calls",
+     "A guided array where ONE element is not a call (no `name`). The whole payload surfaces as text and NO call is dispatched — deliberately all-or-nothing, not best-effort per element. A tool call is a side effect, so extracting one from a document that failed validation is failing OPEN: the client would execute a call the parser could not fully verify. Text loses nothing, since the raw payload stays visible.",
+     ["P2"],
+     [{"kind": "text", "text": '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'}],
+     {"prefill": "Response", "tool_output_mode": "GuidedJson", "named_tool": None},
+     {"finish_reason": "stop"},
+     {
+        "qwen3": ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]',
+                  D("UNSUPPORTED", "vLLM base case doesn't prefill channels or use guided JSON"),
+                  {"verdict": "match", "note": "one invalid element voids the whole array; payload surfaces as text"}),
+        "gemma4": ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]', M, M),
+        "kimi_k2": ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]', M, M),
+     }),
+
+    ("prefilled_response_reasoning_markers_literal",
+     "The ONLY case where prefill=Response is observable. Response says the prompt already opened VISIBLE content, so this stream has no reasoning channel at all and `<think>`/`</think>` are ordinary characters the model happened to write — they must reach the user as text, markers and all. Every other 50.*/51.* case has no reasoning markers in its input, which is why they parse identically under prefill=None (50.a matches 8.a, 50.b matches 30.b, 50.c matches 30.c, 51.b matches 31.c); this one does not.",
+     ["P5"],
+     # The literal text is the family's OWN reasoning markers, so the golden is
+     # filled per family (below) rather than hardcoding one grammar's.
+     [{"kind": "text", "text": None},
+      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"prefill": "Response", "tool_output_mode": "Native", "named_tool": None},
+     {"finish_reason": "stop"},
+     {
+        "qwen3": ("<think>literal</think> then a call<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
+                  D("UNSUPPORTED", "vLLM base case doesn't prefill channels; it reads the markers as a reasoning span"),
+                  {"verdict": "match", "note": "reasoning disabled, so the markers stay literal text"},
+                  "<think>literal</think> then a call"),
+        "gemma4": ("<|channel>thought\nliteral<channel|> then a call<|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|>",
+                   D("UNSUPPORTED", "vLLM base case doesn't prefill channels; it reads the markers as a reasoning span"),
+                   {"verdict": "match", "note": "reasoning disabled, so `<|channel>thought\\n…<channel|>` stays literal text — role label included"},
+                   "<|channel>thought\nliteral<channel|> then a call"),
+        "kimi_k2": ("<think>literal</think> then a call<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>",
+                    D("UNSUPPORTED", "vLLM base case doesn't prefill channels; it reads the markers as a reasoning span"),
+                    M,
+                    "<think>literal</think> then a call"),
+     }),
+
+    ("prefilled_response_truncated",
+     "The response channel is pre-filled and the token budget runs out mid tool call. Policy P2: the visible prose already emitted survives, the incomplete call is dropped, nothing leaks as text.",
+     ["P2"],
+     [{"kind": "text", "text": "Working on it... "}],
+     {"prefill": "Response", "tool_output_mode": "Native", "named_tool": None},
+     {"finish_reason": "length"},
+     {
+        "gemma4": ("Working on it... <|tool_call>call:get_weather{city:<|\"|>Par",
+                   D("ERROR", "native Gemma4UnifiedParser finish() returns a hard Err on a partial call rather than recovering"),
+                   {"verdict": "match", "note": "P2: keep the leading visible prose, drop the partial call"}),
+        "qwen3": ("Working on it... <tool_call>\n<function=get_weather>\n<parameter=city>\nPar",
+                  {"verdict": "match", "note": "hypothesis: the qwen3 tool parser drops the unterminated call; verify at capture time"},
+                  {"verdict": "match", "note": "P2: v2 keeps the leading prose and drops the partial call"}),
+        "kimi_k2": ("Working on it... <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Par",
+                    {"verdict": "match", "note": "hypothesis: the kimi tool parser drops the unterminated call; verify at capture time"},
+                    {"verdict": "match", "note": "P2: v2 keeps the leading prose and drops the partial call"}),
      }),
 ]
 
@@ -409,17 +733,34 @@ def build_cases(fam):
             "input": render_input(fam, segs),
             "golden": golden_of(segs),
             "expect": {"vllm": _entry(vllm, fam), "dynamo": _entry(dynamo, fam)},
+            "init": {"prefill": "None", "tool_output_mode": "Native", "named_tool": None},
+            "finish_reason": "stop",
         }
-    for name, desc, policy, golden, per_fam in EDGE:
+    for edge_case in EDGE:
+        # Support both 6-tuple (legacy) and 7-tuple (stream_config) formats
+        if len(edge_case) == 6:
+            name, desc, policy, golden, init, per_fam = edge_case
+            stream_config = {"finish_reason": "stop"}
+        else:
+            name, desc, policy, golden, init, stream_config, per_fam = edge_case
+
         cid = f"UNIFIED.{name}.{fam}"
         inp, vllm, dynamo, *rest = per_fam[fam]
         g = json.loads(json.dumps(golden))  # deep copy
-        if rest:  # fill the per-family arg value into the tool_call event's None-valued key
+        if rest:
+            # Fill the ONE `None` placeholder in the golden with this family's
+            # value. It may be an argument value (a marker-looking string that has
+            # to survive byte-exact, 12.a) or a whole text payload (the family's
+            # own markers reaching the user as literal text, 50.d) — either way
+            # the scenario is shared and only the grammar-specific bytes differ.
             for ev in g:
                 args = ev.get("arguments")
                 if args and any(v is None for v in args.values()):
                     fk = next(k for k, v in args.items() if v is None)
                     args[fk] = rest[0]
+                    break
+                if ev.get("kind") in ("text", "reasoning") and ev.get("text") is None:
+                    ev["text"] = rest[0]
                     break
         cases[cid] = {
             "description": desc,
@@ -427,6 +768,8 @@ def build_cases(fam):
             "input": inp,
             "golden": g,
             "expect": {"vllm": vllm, "dynamo": dynamo},
+            "init": init,
+            "finish_reason": stream_config.get("finish_reason", "stop"),
         }
     return cases
 
@@ -453,6 +796,8 @@ def emit_yaml(fam):
         lines.append(f"  {cid}:")
         lines.append(f"    description: {json.dumps(c['description'], ensure_ascii=False)}")
         lines.append(f"    policy: {json.dumps(c['policy'])}")
+        lines.append(f"    init: {json.dumps(c['init'], ensure_ascii=False)}")
+        lines.append(f"    finish_reason: {json.dumps(c['finish_reason'])}")
         lines.append("    input: |-")
         for ln in c["input"].split("\n"):
             lines.append(f"      {ln}")

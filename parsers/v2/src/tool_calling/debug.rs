@@ -22,7 +22,7 @@ pub const DEBUG_ENV: &str = "DYNAMO_PARSERS_DEBUG";
 /// Write one debug line to stderr, discarding any I/O error. Uses fallible
 /// `writeln!` rather than `eprintln!` so debug output can never panic the host
 /// (e.g. when stderr is closed and a write returns `EPIPE`).
-fn emit(args: std::fmt::Arguments<'_>) {
+pub(crate) fn emit(args: std::fmt::Arguments<'_>) {
     let mut stderr = std::io::stderr().lock();
     let _ = writeln!(stderr, "[dynamo-parsers-v2] {args}");
 }

@@ -22,6 +22,14 @@ Every fixture ships as a per-version LFS shard here, same convention as the tool
 - `../utils/lib/parsers/UNIFIED_CASES.md` — schema, invariants, policies, divergence classes, case taxonomy.
 - `../tests/unified_schema_roundtrip.rs` — proves every authored golden case parses and round-trips through the event schema.
 
+### Pre-unified columns (`dynamo_v2-0.1.22`)
+
+`0.1.22` is the last release with NO `unified` module at all — the unified qwen3 parser first shipped in `0.1.23`. Its column is therefore the SPLIT path by definition (v1 reasoning + v2 tool), and it is what shows the argument-integrity divergences the unified parser fixes (`UNIFIED.12.a`, `UNIFIED.7.b`).
+
+**Reading the diff counts.** The cross-version harness drives `push`/`finish` only — it has to compile against builds with no `initialize` / output-mode API — so it cannot apply a case's `init:`. Every case therefore runs in that build's ONLY mode. For a pre-request-mode build that is not a mis-measurement (it has one mode, so "what it does" is "what it would have done"), but it does mean part of any diff count against a modern column is missing capability rather than changed behaviour in a comparable mode. The group 30/31/40/41/50/51 cases are the affected ones.
+
+`capture_cross_version.rs` cannot be used unmodified against it: that harness falls back to the split path when a family has no native unified parser, but it still needs `UnifiedDelta`/`assemble` to EXIST at compile time. To re-capture, copy it into a `0.1.22` worktree, drop the unified imports, delete the `native` branch and its `ev_to_yaml`/`delta_to_yaml` helpers, and pin `let native = false`.
+
 ## Golden case file format (authored spec, `conformance/unified/golden_spec/<family>.yaml`)
 
 ```yaml

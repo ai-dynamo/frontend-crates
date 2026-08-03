@@ -1,0 +1,655 @@
+{
+  "_comment": [
+    "Derived SNAPSHOT of the end-to-end test cases, generated from the Qwen3.6 report",
+    "(qwen36_pr163_test_cases.html). That report and its per-case JSON artifacts live OUTSIDE",
+    "this repo, so this file is the only thing CI can check against \u2014 regenerate it when the",
+    "report changes. `unified` lists the UNIFIED case(s) whose output SHAPE covers this e2e",
+    "case; UNIFIED may be a superset (more channels, more text) as long as the shape matches.",
+    "An empty `unified` is a FAILURE, not a default: see test_unified_taxonomy_covers_corpus.py."
+  ],
+  "source_report": "qwen36_pr163_test_cases.html",
+  "source_commit": "4ba15bbcd84bdd8fe3958435506870a569d0f93f",
+  "model": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+  "distinct_cases": 49,
+  "logical_cases": 98,
+  "cases": {
+    "chinese_arithmetic__non-stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0001-chinese_arithmetic__non-stream-budget_capped.json",
+        "case-0001-chinese_arithmetic__non-stream-budget_unlimited.json"
+      ]
+    },
+    "chinese_arithmetic__stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0002-chinese_arithmetic__stream-budget_capped.json",
+        "case-0002-chinese_arithmetic__stream-budget_unlimited.json"
+      ]
+    },
+    "compare_fractions__non-stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0003-compare_fractions__non-stream-budget_capped.json",
+        "case-0003-compare_fractions__non-stream-budget_unlimited.json"
+      ]
+    },
+    "compare_fractions__stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0004-compare_fractions__stream-budget_capped.json",
+        "case-0004-compare_fractions__stream-budget_unlimited.json"
+      ]
+    },
+    "history_not_preserved__non-stream": {
+      "suite": "reasoning",
+      "category": "history",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0013-history_not_preserved__non-stream-budget_capped.json",
+        "case-0013-history_not_preserved__non-stream-budget_unlimited.json"
+      ]
+    },
+    "history_not_preserved__stream": {
+      "suite": "reasoning",
+      "category": "history",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0014-history_not_preserved__stream-budget_capped.json",
+        "case-0014-history_not_preserved__stream-budget_unlimited.json"
+      ]
+    },
+    "history_preserved_addition__non-stream": {
+      "suite": "reasoning",
+      "category": "history",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0015-history_preserved_addition__non-stream-budget_capped.json",
+        "case-0015-history_preserved_addition__non-stream-budget_unlimited.json"
+      ]
+    },
+    "history_preserved_addition__stream": {
+      "suite": "reasoning",
+      "category": "history",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0016-history_preserved_addition__stream-budget_capped.json",
+        "case-0016-history_preserved_addition__stream-budget_unlimited.json"
+      ]
+    },
+    "history_preserved_codeword__non-stream": {
+      "suite": "reasoning",
+      "category": "history",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0017-history_preserved_codeword__non-stream-budget_capped.json",
+        "case-0017-history_preserved_codeword__non-stream-budget_unlimited.json"
+      ]
+    },
+    "history_preserved_codeword__stream": {
+      "suite": "reasoning",
+      "category": "history",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0018-history_preserved_codeword__stream-budget_capped.json",
+        "case-0018-history_preserved_codeword__stream-budget_unlimited.json"
+      ]
+    },
+    "history_unicode__non-stream": {
+      "suite": "reasoning",
+      "category": "history",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0019-history_unicode__non-stream-budget_capped.json",
+        "case-0019-history_unicode__non-stream-budget_unlimited.json"
+      ]
+    },
+    "history_unicode__stream": {
+      "suite": "reasoning",
+      "category": "history",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0020-history_unicode__stream-budget_capped.json",
+        "case-0020-history_unicode__stream-budget_unlimited.json"
+      ]
+    },
+    "lifecycle_chained_calculation__stream": {
+      "suite": "tool_calling",
+      "category": "parallel_lifecycle",
+      "mode": "stream",
+      "steps": 2,
+      "unified": [
+        "30.b"
+      ],
+      "artifacts": [
+        "case-0145-lifecycle_chained_calculation__stream-budget_capped.json",
+        "case-0145-lifecycle_chained_calculation__stream-budget_unlimited.json"
+      ]
+    },
+    "lifecycle_single_result__stream": {
+      "suite": "tool_calling",
+      "category": "parallel_lifecycle",
+      "mode": "stream",
+      "steps": 2,
+      "unified": [
+        "10.b",
+        "30.b"
+      ],
+      "artifacts": [
+        "case-0129-lifecycle_single_result__stream-budget_capped.json",
+        "case-0129-lifecycle_single_result__stream-budget_unlimited.json"
+      ]
+    },
+    "logic_syllogism__non-stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0021-logic_syllogism__non-stream-budget_capped.json",
+        "case-0021-logic_syllogism__non-stream-budget_unlimited.json"
+      ]
+    },
+    "logic_syllogism__stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0022-logic_syllogism__stream-budget_capped.json",
+        "case-0022-logic_syllogism__stream-budget_unlimited.json"
+      ]
+    },
+    "long_context_retrieval__non-stream": {
+      "suite": "reasoning",
+      "category": "complex",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0023-long_context_retrieval__non-stream-budget_capped.json",
+        "case-0023-long_context_retrieval__non-stream-budget_unlimited.json"
+      ]
+    },
+    "long_context_retrieval__stream": {
+      "suite": "reasoning",
+      "category": "complex",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0024-long_context_retrieval__stream-budget_capped.json",
+        "case-0024-long_context_retrieval__stream-budget_unlimited.json"
+      ]
+    },
+    "minutes_to_seconds__non-stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0025-minutes_to_seconds__non-stream-budget_capped.json",
+        "case-0025-minutes_to_seconds__non-stream-budget_unlimited.json"
+      ]
+    },
+    "minutes_to_seconds__stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0026-minutes_to_seconds__stream-budget_capped.json",
+        "case-0026-minutes_to_seconds__stream-budget_unlimited.json"
+      ]
+    },
+    "multiline_checksum__non-stream": {
+      "suite": "reasoning",
+      "category": "complex",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0027-multiline_checksum__non-stream-budget_capped.json",
+        "case-0027-multiline_checksum__non-stream-budget_unlimited.json"
+      ]
+    },
+    "multiline_checksum__stream": {
+      "suite": "reasoning",
+      "category": "complex",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0028-multiline_checksum__stream-budget_capped.json",
+        "case-0028-multiline_checksum__stream-budget_unlimited.json"
+      ]
+    },
+    "multiply_17_19__non-stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0029-multiply_17_19__non-stream-budget_capped.json",
+        "case-0029-multiply_17_19__non-stream-budget_unlimited.json"
+      ]
+    },
+    "multiply_17_19__stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0030-multiply_17_19__stream-budget_capped.json",
+        "case-0030-multiply_17_19__stream-budget_unlimited.json"
+      ]
+    },
+    "parity_expression__non-stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0031-parity_expression__non-stream-budget_capped.json",
+        "case-0031-parity_expression__non-stream-budget_unlimited.json"
+      ]
+    },
+    "parity_expression__stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0032-parity_expression__stream-budget_capped.json",
+        "case-0032-parity_expression__stream-budget_unlimited.json"
+      ]
+    },
+    "python_loop_trace__non-stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0033-python_loop_trace__non-stream-budget_capped.json",
+        "case-0033-python_loop_trace__non-stream-budget_unlimited.json"
+      ]
+    },
+    "python_loop_trace__stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0034-python_loop_trace__stream-budget_capped.json",
+        "case-0034-python_loop_trace__stream-budget_unlimited.json"
+      ]
+    },
+    "schema_array__stream": {
+      "suite": "tool_calling",
+      "category": "arguments_schema",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "30.e"
+      ],
+      "artifacts": [
+        "case-0108-schema_array__stream-budget_capped.json",
+        "case-0108-schema_array__stream-budget_unlimited.json"
+      ]
+    },
+    "schema_escaped_unicode_string__non-stream": {
+      "suite": "tool_calling",
+      "category": "arguments_schema",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "30.d"
+      ],
+      "artifacts": [
+        "case-0105-schema_escaped_unicode_string__non-stream-budget_capped.json",
+        "case-0105-schema_escaped_unicode_string__non-stream-budget_unlimited.json"
+      ]
+    },
+    "sequence_next__non-stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0035-sequence_next__non-stream-budget_capped.json",
+        "case-0035-sequence_next__non-stream-budget_unlimited.json"
+      ]
+    },
+    "sequence_next__stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0036-sequence_next__stream-budget_capped.json",
+        "case-0036-sequence_next__stream-budget_unlimited.json"
+      ]
+    },
+    "set_intersection__non-stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0037-set_intersection__non-stream-budget_capped.json",
+        "case-0037-set_intersection__non-stream-budget_unlimited.json"
+      ]
+    },
+    "set_intersection__stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0038-set_intersection__stream-budget_capped.json",
+        "case-0038-set_intersection__stream-budget_unlimited.json"
+      ]
+    },
+    "sort_integers__non-stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0039-sort_integers__non-stream-budget_capped.json",
+        "case-0039-sort_integers__non-stream-budget_unlimited.json"
+      ]
+    },
+    "sort_integers__stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0040-sort_integers__stream-budget_capped.json",
+        "case-0040-sort_integers__stream-budget_unlimited.json"
+      ]
+    },
+    "spanish_logic__non-stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0041-spanish_logic__non-stream-budget_capped.json",
+        "case-0041-spanish_logic__non-stream-budget_unlimited.json"
+      ]
+    },
+    "spanish_logic__stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0042-spanish_logic__stream-budget_capped.json",
+        "case-0042-spanish_logic__stream-budget_unlimited.json"
+      ]
+    },
+    "structured_json__non-stream": {
+      "suite": "reasoning",
+      "category": "complex",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0043-structured_json__non-stream-budget_capped.json",
+        "case-0043-structured_json__non-stream-budget_unlimited.json"
+      ]
+    },
+    "structured_json__stream": {
+      "suite": "reasoning",
+      "category": "complex",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0044-structured_json__stream-budget_capped.json",
+        "case-0044-structured_json__stream-budget_unlimited.json"
+      ]
+    },
+    "system_instruction__non-stream": {
+      "suite": "reasoning",
+      "category": "complex",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0045-system_instruction__non-stream-budget_capped.json",
+        "case-0045-system_instruction__non-stream-budget_unlimited.json"
+      ]
+    },
+    "system_instruction__stream": {
+      "suite": "reasoning",
+      "category": "complex",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0046-system_instruction__stream-budget_capped.json",
+        "case-0046-system_instruction__stream-budget_unlimited.json"
+      ]
+    },
+    "tool_add_named__non-stream": {
+      "suite": "reasoning",
+      "category": "tool_boundary",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "30.a"
+      ],
+      "artifacts": [
+        "case-0047-tool_add_named__non-stream-budget_capped.json",
+        "case-0047-tool_add_named__non-stream-budget_unlimited.json"
+      ]
+    },
+    "tool_add_named__stream": {
+      "suite": "reasoning",
+      "category": "tool_boundary",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "30.a"
+      ],
+      "artifacts": [
+        "case-0048-tool_add_named__stream-budget_capped.json",
+        "case-0048-tool_add_named__stream-budget_unlimited.json"
+      ]
+    },
+    "tool_none_arithmetic__non-stream": {
+      "suite": "reasoning",
+      "category": "tool_boundary",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0051-tool_none_arithmetic__non-stream-budget_capped.json",
+        "case-0051-tool_none_arithmetic__non-stream-budget_unlimited.json"
+      ]
+    },
+    "tool_none_arithmetic__stream": {
+      "suite": "reasoning",
+      "category": "tool_boundary",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0052-tool_none_arithmetic__stream-budget_capped.json",
+        "case-0052-tool_none_arithmetic__stream-budget_unlimited.json"
+      ]
+    },
+    "tool_translate_named__stream": {
+      "suite": "reasoning",
+      "category": "tool_boundary",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "30.a"
+      ],
+      "artifacts": [
+        "case-0054-tool_translate_named__stream-budget_capped.json",
+        "case-0054-tool_translate_named__stream-budget_unlimited.json"
+      ]
+    },
+    "unicode_symbol_math__non-stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "non-stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0067-unicode_symbol_math__non-stream-budget_capped.json",
+        "case-0067-unicode_symbol_math__non-stream-budget_unlimited.json"
+      ]
+    },
+    "unicode_symbol_math__stream": {
+      "suite": "reasoning",
+      "category": "core",
+      "mode": "stream",
+      "steps": 1,
+      "unified": [
+        "10.b"
+      ],
+      "artifacts": [
+        "case-0068-unicode_symbol_math__stream-budget_capped.json",
+        "case-0068-unicode_symbol_math__stream-budget_unlimited.json"
+      ]
+    }
+  }
+}

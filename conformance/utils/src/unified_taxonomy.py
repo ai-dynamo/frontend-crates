@@ -59,6 +59,7 @@ UNIFIED_TAX = {
     # Group 30 — Guided decoding, happy
     "guided_json_named_tool": (30, "a"), "guided_json_required_tool": (30, "b"),
     "guided_json_two_calls": (30, "c"),
+    "guided_json_escaped_string_args": (30, "d"), "guided_json_array_argument": (30, "e"),
 
     # Group 31 — Guided decoding, weird / malformed
     "guided_json_invalid_call": (31, "a"), "guided_json_malformed_json": (31, "b"),

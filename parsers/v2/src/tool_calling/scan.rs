@@ -41,12 +41,8 @@
 //! holdback, or recovery.
 //!
 //! Reasoning is opt-in per scanner via [`WrappedBlockScanner::with_reasoning`].
-//! The two nestings are deliberately ASYMMETRIC, because tool structure
-//! dominates: a tool call emitted INSIDE a thought is a real call, so it is
-//! extracted and the thought splits around it; but a reasoning marker inside a
-//! tool argument is argument data (`I7`), because the in-block scan never looks
-//! for one. Burying a nested call would drop it AND leak its markup into the
-//! reasoning payload (`I3`).
+//! It is scoped OUTSIDE tool blocks only: once a block or bare invoke is open,
+//! a reasoning marker inside it is argument data, not a control token (`I7`).
 
 use std::collections::HashSet;
 
@@ -60,6 +56,46 @@ use crate::unified::{Kind, UnifiedDelta};
 /// never lets it leak) can match it — otherwise the partial suffix is emitted
 /// (or, under a suppression latch, silently discarded) and the remainder is
 /// unrecognizable.
+/// The earliest malformed marker inside an OPEN reasoning span, as `(pos, len)`.
+///
+/// The candidates are the span's own OPENER (a second one is a duplicate, not
+/// content) plus every orphan marker except the closer, which legitimately ends
+/// the span. Being inside a thought must not turn markup into content (`I3`).
+///
+/// Shared by the native scanner and the guided-JSON drain deliberately: these
+/// were two implementations, and the guided one only looked for the closer, so
+/// identical bytes produced `reasoning("a<think>b")` under guided decoding and
+/// `reasoning("ab")` natively — the request mode silently changed the payload.
+pub(crate) fn stray_in_reasoning(
+    haystack: &str,
+    start: &str,
+    end: &str,
+    orphan_markers: &[String],
+) -> Option<(usize, usize)> {
+    std::iter::once(start)
+        .chain(
+            orphan_markers
+                .iter()
+                .map(String::as_str)
+                .filter(|m| *m != end),
+        )
+        .filter_map(|m| haystack.find(m).map(|pos| (pos, m.len())))
+        .min_by_key(|(pos, _)| *pos)
+}
+
+/// Every marker that can interrupt an open reasoning span: the closer, the
+/// opener, and the orphan markers. Used for chunk-boundary holdback so a marker
+/// split across a boundary is not leaked before it can be recognized.
+pub(crate) fn reasoning_holdback_markers<'a>(
+    start: &'a str,
+    end: &'a str,
+    orphan_markers: &'a [String],
+) -> impl Iterator<Item = &'a str> {
+    [start, end]
+        .into_iter()
+        .chain(orphan_markers.iter().map(String::as_str))
+}
+
 pub(crate) fn marker_prefix_suffix_len<'a, I>(text: &str, markers: I) -> usize
 where
     I: IntoIterator<Item = &'a str>,
@@ -265,9 +301,13 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     spec: WrappedBlockSpec,
     emitter: E,
     reasoning: Option<ReasoningSpec>,
+    reasoning_enabled: bool,
     buffer: String,
+    /// Raw block bytes consumed before any call delta commits them.
+    uncommitted_block: String,
     in_block: bool,
     in_reasoning: bool,
+    accept_redundant_reasoning_start: bool,
     /// A tool call opened INSIDE a reasoning span; reasoning resumes when the
     /// call closes. Without this the tail of the thought would surface as
     /// visible text instead of reasoning.
@@ -282,9 +322,12 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             spec,
             emitter,
             reasoning: None,
+            reasoning_enabled: false,
             buffer: String::new(),
+            uncommitted_block: String::new(),
             in_block: false,
             in_reasoning: false,
+            accept_redundant_reasoning_start: false,
             resume_reasoning: false,
             suppress_normal_text: false,
             next_index: 0,
@@ -293,18 +336,58 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
     /// Also own the reasoning channel, making this scanner unified.
     ///
-    /// The reasoning markers are registered for chunk-boundary holdback here
+    /// Reasoning marker holdback and orphan-close handling are enabled here
     /// rather than by the caller, so a family cannot add reasoning and forget
-    /// the holdback (which would leak a split `<thi` + `nk>` as visible text).
-    /// The closer additionally joins `orphan_markers`: a stray `</think>` with
-    /// nothing open is malformed markup and is stripped, never leaked (`I3`).
+    /// either behavior. They remain separate from the tool marker lists so
+    /// [`Self::set_reasoning_mode`] can make the markers literal for response
+    /// prefill without rebuilding the scanner.
     pub(crate) fn with_reasoning(mut self, reasoning: ReasoningSpec) -> Self {
-        self.spec.holdback_markers.push(reasoning.start.to_string());
-        self.spec.holdback_markers.push(reasoning.end.to_string());
-        self.spec.orphan_markers.push(reasoning.end.to_string());
+        self.reasoning_enabled = true;
         self.in_reasoning = reasoning.forced_start;
+        self.accept_redundant_reasoning_start = reasoning.forced_start;
         self.reasoning = Some(reasoning);
         self
+    }
+
+    /// The reasoning markers this scanner was configured with.
+    ///
+    /// `Copy`, so the guided-decoding path can hold them without borrowing the
+    /// scanner — it needs the markers but never the scan state.
+    pub(crate) fn reasoning_spec(&self) -> Option<ReasoningSpec> {
+        self.reasoning
+    }
+
+    /// Markers this family treats as stray markup outside a block.
+    ///
+    /// Exposed so the guided-JSON path can strip the SAME set inside a thought
+    /// that the native path does; see [`stray_in_reasoning`].
+    pub(crate) fn orphan_markers(&self) -> &[String] {
+        &self.spec.orphan_markers
+    }
+
+    /// Markers that OPEN tool structure: block openers plus the invoke opener.
+    ///
+    /// Inside a thought these terminate the reasoning span rather than being
+    /// content — tool structure dominates reasoning. Exposed for the same reason
+    /// as [`Self::orphan_markers`]: the guided path must interrupt an open thought
+    /// on the same set, or `<tool_call>` written inside a thought reaches the user
+    /// as raw markup there while the native path strips it.
+    pub(crate) fn tool_openers(&self) -> Vec<String> {
+        let mut v = self.spec.block_starts.clone();
+        v.push(self.spec.invoke_start.clone());
+        v
+    }
+
+    /// Select whether this stream interprets reasoning markers, without
+    /// rebuilding the scanner or cloning its tool schemas.
+    pub(crate) fn set_reasoning_mode(&mut self, enabled: bool, forced_start: bool) {
+        debug_assert!(!enabled || self.reasoning.is_some());
+        self.reasoning_enabled = enabled;
+        if let Some(reasoning) = self.reasoning.as_mut() {
+            reasoning.forced_start = forced_start;
+        }
+        self.in_reasoning = enabled && forced_start;
+        self.accept_redundant_reasoning_start = self.in_reasoning;
     }
 
     pub(crate) fn push(&mut self, chunk: &str) -> anyhow::Result<ToolParseResult> {
@@ -317,22 +400,124 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
     pub(crate) fn push_ordered(&mut self, chunk: &str) -> anyhow::Result<Vec<UnifiedDelta>> {
         self.buffer.push_str(chunk);
-        self.drain(false)
+        // Emitter errors are possible only once a complete invoke closer is
+        // buffered. Snapshot those comparatively rare pushes so reset() can
+        // recover every byte that produced no returned deltas, without cloning
+        // the buffer on the ordinary token hot path.
+        let checkpoint = self
+            .buffer
+            .contains(self.spec.invoke_end.as_str())
+            .then(|| {
+                (
+                    self.buffer.clone(),
+                    self.uncommitted_block.clone(),
+                    self.in_block,
+                    self.in_reasoning,
+                    self.accept_redundant_reasoning_start,
+                    // Same flag `reset` was missing: without it a rollback leaves
+                    // "resume reasoning after the call" armed, and the next visible
+                    // answer is emitted as reasoning.
+                    self.resume_reasoning,
+                    self.suppress_normal_text,
+                    self.next_index,
+                )
+            });
+        match self.drain(false) {
+            Ok(deltas) => Ok(deltas),
+            Err(error) => {
+                if let Some((
+                    buffer,
+                    uncommitted_block,
+                    in_block,
+                    in_reasoning,
+                    accept_redundant_reasoning_start,
+                    resume_reasoning,
+                    suppress_normal_text,
+                    next_index,
+                )) = checkpoint
+                {
+                    self.buffer = buffer;
+                    self.uncommitted_block = uncommitted_block;
+                    self.in_block = in_block;
+                    self.in_reasoning = in_reasoning;
+                    self.accept_redundant_reasoning_start = accept_redundant_reasoning_start;
+                    self.resume_reasoning = resume_reasoning;
+                    self.suppress_normal_text = suppress_normal_text;
+                    self.next_index = next_index;
+                }
+                Err(error)
+            }
+        }
     }
 
     pub(crate) fn finish_ordered(&mut self) -> anyhow::Result<Vec<UnifiedDelta>> {
         self.drain(true)
     }
 
+    /// Clear one stream's scan state and return bytes not yet emitted.
+    pub(crate) fn reset(&mut self) -> String {
+        let mut pending = std::mem::take(&mut self.uncommitted_block);
+        pending.push_str(&std::mem::take(&mut self.buffer));
+        self.in_block = false;
+        self.in_reasoning = self
+            .reasoning
+            .as_ref()
+            .is_some_and(|reasoning| self.reasoning_enabled && reasoning.forced_start);
+        self.accept_redundant_reasoning_start = self.in_reasoning;
+        // Without this a reset mid-thought leaves "resume reasoning after the call"
+        // armed, and the NEXT stream's first post-call answer is emitted as reasoning.
+        self.resume_reasoning = false;
+        self.suppress_normal_text = false;
+        self.next_index = 0;
+        pending
+    }
+
     /// Position and length of the reasoning opener in the buffer, if configured.
     fn find_reasoning_start(&self) -> Option<(usize, usize)> {
+        if !self.reasoning_enabled {
+            return None;
+        }
         let reasoning = self.reasoning.as_ref()?;
         let pos = self.buffer.find(reasoning.start)?;
         Some((pos, reasoning.start.len()))
     }
 
-    /// Consume buffered reasoning up to its closer, a nested tool opener, or as
-    /// far as is safe.
+    /// Position and length of the earliest malformed close outside a block.
+    fn find_orphan_marker(&self) -> Option<(usize, usize)> {
+        let regular = find_first(&self.buffer, &self.spec.orphan_markers);
+        let reasoning_close = self
+            .reasoning
+            .as_ref()
+            .filter(|_| self.reasoning_enabled)
+            .and_then(|reasoning| {
+                self.buffer
+                    .find(reasoning.end)
+                    .map(|pos| (pos, reasoning.end.len()))
+            });
+        regular
+            .into_iter()
+            .chain(reasoning_close)
+            .min_by_key(|(pos, _)| *pos)
+    }
+
+    /// Longest marker prefix held at the end of the current chunk.
+    fn holdback_len(&self) -> usize {
+        let regular = marker_prefix_suffix_len(
+            &self.buffer,
+            self.spec.holdback_markers.iter().map(String::as_str),
+        );
+        let reasoning = self
+            .reasoning
+            .as_ref()
+            .filter(|_| self.reasoning_enabled)
+            .map(|reasoning| {
+                marker_prefix_suffix_len(&self.buffer, [reasoning.start, reasoning.end])
+            })
+            .unwrap_or_default();
+        regular.max(reasoning)
+    }
+
+    /// Consume buffered reasoning up to its closer, or as far as is safe.
     ///
     /// Returns `true` once the reasoning span yielded (closer seen, tool opener
     /// reached, or promoted at EOF) and the caller should keep draining; `false`
@@ -367,16 +552,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             .into_iter()
             .chain(self.buffer.find(self.spec.invoke_start.as_str()))
             .min();
-        let stray = std::iter::once(start)
-            .chain(
-                self.spec
-                    .orphan_markers
-                    .iter()
-                    .map(String::as_str)
-                    .filter(|m| *m != end),
-            )
-            .filter_map(|m| self.buffer.find(m).map(|pos| (pos, m.len())))
-            .min_by_key(|(pos, _)| *pos);
+        let stray = stray_in_reasoning(&self.buffer, start, end, &self.spec.orphan_markers);
 
         if let Some((at, what)) = earliest([
             self.buffer.find(end).map(|pos| (pos, InReasoning::Close)),
@@ -406,14 +582,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
         // Nothing complete yet: stream what has arrived, holding back ANY marker
         // this scanner reacts to that is split across the chunk boundary.
-        let keep = if flush {
-            0
-        } else {
-            marker_prefix_suffix_len(
-                &self.buffer,
-                self.spec.holdback_markers.iter().map(String::as_str),
-            )
-        };
+        let keep = if flush { 0 } else { self.holdback_len() };
         let emit_len = self.buffer.len().saturating_sub(keep);
         if emit_len > 0 {
             push_run(out, Kind::Reasoning, &self.buffer[..emit_len]);
@@ -436,10 +605,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         let mut out: Vec<UnifiedDelta> = Vec::new();
 
         loop {
-            // Reasoning yields to tool structure: while a thought is open, its
-            // closer OR a nested tool opener ends the current reasoning run (see
-            // `drain_reasoning`), so a call emitted inside a thought is extracted
-            // and the thought resumes after it.
+            // Reasoning is the innermost scope: while it is open, ONLY its
+            // closer ends it, so a `<tool_call>` inside a thought stays part of
+            // the thought instead of being executed.
             if self.in_reasoning {
                 if self.drain_reasoning(&mut out, flush)? {
                     continue;
@@ -459,6 +627,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         // block re-enters `in_block` and re-suppresses its markup.
                         // Matches the v1 batch parsers (cases 8.b/8.c/8.d).
                         self.buffer.drain(..end_pos + end_len);
+                        self.uncommitted_block.clear();
                         self.in_block = false;
                         self.suppress_normal_text = false;
                         self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
@@ -473,11 +642,13 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             "stream dropped incomplete block at EOF"
                         );
                         self.buffer.clear();
+                        self.uncommitted_block.clear();
                         self.in_block = false;
                     }
                     break;
                 };
                 if start > 0 {
+                    self.uncommitted_block.push_str(&self.buffer[..start]);
                     self.buffer.drain(..start);
                 }
                 let Some(end) = self.buffer.find(self.spec.invoke_end.as_str()) else {
@@ -487,6 +658,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             "stream dropped incomplete invoke at EOF"
                         );
                         self.buffer.clear();
+                        self.uncommitted_block.clear();
                         self.in_block = false;
                     }
                     break;
@@ -503,18 +675,23 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         "stream dropped invoke missing its close before the block end"
                     );
                     self.buffer.drain(..be_pos + be_len);
+                    self.uncommitted_block.clear();
                     self.in_block = false;
                     self.suppress_normal_text = false;
                     continue;
                 }
                 let invoke = self.buffer[..end + self.spec.invoke_end.len()].to_string();
+                let emitted = self.emitter.parse_invoke(&invoke, self.next_index)?;
                 self.buffer.drain(..end + self.spec.invoke_end.len());
-                if let Some(delta) = self.emitter.parse_invoke(&invoke, self.next_index)? {
+                if let Some(delta) = emitted {
                     out.push(UnifiedDelta::ToolCall(delta));
                     self.next_index += 1;
+                    self.uncommitted_block.clear();
                     if self.spec.invoke_latch == InvokeLatch::IfEmitted {
                         self.suppress_normal_text = true;
                     }
+                } else {
+                    self.uncommitted_block.push_str(&invoke);
                 }
                 if self.spec.invoke_latch == InvokeLatch::Always {
                     self.suppress_normal_text = true;
@@ -527,7 +704,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             // NEVER leak into normal_text; when suppression is off, first emit
             // the natural text preceding it. Clear the latch either way (the
             // markup context has ended).
-            if let Some((pos, len)) = find_first(&self.buffer, &self.spec.orphan_markers) {
+            if let Some((pos, len)) = self.find_orphan_marker() {
                 let next_open = find_first(&self.buffer, &self.spec.block_starts)
                     .map(|(p, _)| p)
                     .into_iter()
@@ -562,14 +739,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             let Some((start, marker)) = next_marker else {
                 // No marker present: emit buffered text, but hold back a trailing
                 // partial marker (split across this chunk boundary) unless flushing.
-                let keep = if flush {
-                    0
-                } else {
-                    marker_prefix_suffix_len(
-                        &self.buffer,
-                        self.spec.holdback_markers.iter().map(String::as_str),
-                    )
-                };
+                let keep = if flush { 0 } else { self.holdback_len() };
                 let emit_len = self.buffer.len().saturating_sub(keep);
                 if emit_len > 0 {
                     if !self.suppress_normal_text {
@@ -589,6 +759,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
             match marker {
                 Marker::Block(blen) => {
+                    self.uncommitted_block.push_str(&self.buffer[..blen]);
                     self.buffer.drain(..blen);
                     self.in_block = true;
                     self.suppress_normal_text = true;
@@ -616,8 +787,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         break;
                     };
                     let invoke = self.buffer[..end + self.spec.invoke_end.len()].to_string();
+                    let emitted = self.emitter.parse_invoke(&invoke, self.next_index)?;
                     self.buffer.drain(..end + self.spec.invoke_end.len());
-                    if let Some(delta) = self.emitter.parse_invoke(&invoke, self.next_index)? {
+                    if let Some(delta) = emitted {
                         tracing::warn!(
                             why = %format!("{}_bare_invoke_recovery", self.spec.family),
                             tool_index = delta.tool_index,
@@ -639,5 +811,63 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         }
 
         Ok(out)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct FailingEmitter;
+
+    impl InvokeEmitter for FailingEmitter {
+        fn parse_invoke(
+            &self,
+            _invoke: &str,
+            _tool_index: usize,
+        ) -> anyhow::Result<Option<ToolCallDelta>> {
+            anyhow::bail!("synthetic emitter failure")
+        }
+    }
+
+    fn failing_scanner() -> WrappedBlockScanner<FailingEmitter> {
+        WrappedBlockScanner::new(
+            WrappedBlockSpec {
+                family: "test",
+                block_starts: vec!["<tool>".to_string()],
+                block_ends: vec!["</tool>".to_string()],
+                invoke_start: "<call>".to_string(),
+                invoke_end: "</call>".to_string(),
+                orphan_markers: vec!["</tool>".to_string()],
+                holdback_markers: vec!["<tool>".to_string(), "<call>".to_string()],
+                bare_recovery_latch: BareRecoveryLatch::Clear,
+                invoke_latch: InvokeLatch::IfEmitted,
+                drop_invoke_crossing_block_end: false,
+            },
+            FailingEmitter,
+        )
+    }
+
+    #[test]
+    fn reset_recovers_the_complete_push_after_an_emitter_error() {
+        let mut scanner = failing_scanner();
+        let input = "prefix <tool><call>bad</call></tool>suffix";
+
+        assert!(scanner.push_ordered(input).is_err());
+        assert_eq!(scanner.reset(), input);
+    }
+
+    #[test]
+    fn reset_recovers_a_block_opener_consumed_by_an_earlier_push() {
+        let mut scanner = failing_scanner();
+        assert_eq!(
+            scanner.push_ordered("prefix <tool>  <call>bad").unwrap(),
+            vec![UnifiedDelta::Text {
+                text: "prefix ".to_string()
+            }]
+        );
+
+        assert!(scanner.push_ordered("</call></tool>suffix").is_err());
+        assert_eq!(scanner.reset(), "<tool>  <call>bad</call></tool>suffix");
     }
 }

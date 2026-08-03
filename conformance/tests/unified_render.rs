@@ -30,6 +30,8 @@ use serde_json::{Value, json};
 
 mod common;
 
+use common::Init;
+
 #[derive(Deserialize)]
 struct GoldenFile {
     family: String,
@@ -41,6 +43,10 @@ struct GoldenCase {
     description: String,
     #[serde(default)]
     policy: Vec<String>,
+    #[serde(default)]
+    init: Init,
+    #[serde(default)]
+    finish_reason: Option<String>,
     input: String,
     golden: Vec<Ev>,
     expect: BTreeMap<String, Expect>,
@@ -178,8 +184,10 @@ fn unified_delta_json(d: &dynamo_parsers_v2::UnifiedDelta) -> Value {
 ///
 /// Both paths are driven from the SAME chunking as `dynamo_chunks`, so the
 /// assembled row and the per-chunk rows in the popup describe one run.
-fn dynamo_events(family: &str, input: &str) -> Vec<Ev> {
+fn dynamo_events(family: &str, input: &str, init: &Init) -> Vec<Ev> {
     if let Ok(mut parser) = create_unified_parser_for_family(family, &tools()) {
+        init.apply(&mut parser, family);
+
         let mut deltas = Vec::new();
         for chunk in chunk_input(input) {
             deltas.extend(
@@ -291,9 +299,11 @@ fn tool_deltas(res: &dynamo_parsers_v2::ToolParseResult, out: &mut Vec<Value>) {
 /// Stream `input` through Dynamo's split pipeline CHUNK BY CHUNK, recording the
 /// real per-chunk emitted deltas (v1 reasoning streaming incremental -> v2 tool
 /// streaming push on the leftover content).
-fn dynamo_chunks(family: &str, input: &str) -> Vec<ChunkRow> {
+fn dynamo_chunks(family: &str, input: &str, init: &Init) -> Vec<ChunkRow> {
     // Unified families: ONE parser, so a chunk's deltas are simply what it emitted.
     if let Ok(mut parser) = create_unified_parser_for_family(family, &tools()) {
+        init.apply(&mut parser, family);
+
         let mut rows = Vec::new();
         for chunk in chunk_input(input) {
             let deltas = parser.push(&chunk).unwrap_or_default();
@@ -527,13 +537,13 @@ fn render_unified_conformance_html() {
             total += 1;
 
             // Dynamo: live.
-            let got = dynamo_events(&file.family, &case.input);
+            let got = dynamo_events(&file.family, &case.input, &case.init);
             let dclass = classify(&file.family, &case.golden, &got);
             eprintln!(
                 "{id:44} dynamo={dclass:6} :: {}",
                 got.iter().map(Ev::render).collect::<Vec<_>>().join("  |  ")
             );
-            let chunk_feed: Vec<Value> = dynamo_chunks(&file.family, &case.input)
+            let chunk_feed: Vec<Value> = dynamo_chunks(&file.family, &case.input, &case.init)
                 .into_iter()
                 .map(|r| json!({"delta_text": r.delta_text, "dynamo": r.deltas}))
                 .collect();
@@ -549,6 +559,8 @@ fn render_unified_conformance_html() {
                 "scenario": scenario,
                 "description": case.description,
                 "policy": case.policy,
+                "init": case.init.applied(),
+                "finish_reason": case.finish_reason.clone().unwrap_or_else(|| "stop".to_string()),
                 "input": case.input,
                 "golden": case.golden,
                 "dynamo": got,
@@ -732,6 +744,11 @@ struct InputCase {
     scenario: String,
     #[serde(default)]
     input: String,
+    /// The guard must re-run each case under the SAME configuration the shard was
+    /// captured with; re-running everything under the default would report false
+    /// drift for every prefilled / guided-JSON case.
+    #[serde(default)]
+    init: Init,
 }
 
 /// GUARD: the COMMITTED Dynamo capture must equal what the parsers produce NOW.
@@ -762,13 +779,16 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
         .pop()
         .expect("no committed dynamo_v2-<ver> capture dir");
 
-    // key -> (family, scenario, input), from the inputs shard.
-    let mut meta: BTreeMap<(String, String), (String, String)> = BTreeMap::new();
+    // key -> (family, scenario, input, init), from the inputs shard.
+    let mut meta: BTreeMap<(String, String), (String, String, Init)> = BTreeMap::new();
     for entry in glob_yaml(&root.join("inputs")) {
         let doc: InputDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
             .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
         for (key, case) in doc.cases {
-            meta.insert((doc.family.clone(), key), (case.scenario, case.input));
+            meta.insert(
+                (doc.family.clone(), key),
+                (case.scenario, case.input, case.init),
+            );
         }
     }
 
@@ -778,13 +798,13 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
         let doc: CaptureDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
             .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
         for (key, committed) in doc.cases {
-            let Some((scenario, input)) = meta.get(&(doc.family.clone(), key.clone())) else {
+            let Some((scenario, input, init)) = meta.get(&(doc.family.clone(), key.clone())) else {
                 continue;
             };
             checked += 1;
             let id = format!("UNIFIED.{scenario}.{}", doc.family);
 
-            let live_assembled = dynamo_events(&doc.family, input);
+            let live_assembled = dynamo_events(&doc.family, input, init);
             if live_assembled != committed.assembled {
                 stale.push(format!(
                     "{id} [{key}] assembled\n    committed: {}\n         live: {}",
@@ -804,7 +824,7 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
             }
             // The page assembles the Dynamo column from these per-chunk deltas, so
             // they have to be current too — not just the assembled list.
-            let live_chunks: Vec<Vec<Value>> = dynamo_chunks(&doc.family, input)
+            let live_chunks: Vec<Vec<Value>> = dynamo_chunks(&doc.family, input, init)
                 .into_iter()
                 .map(|r| r.deltas)
                 .collect();

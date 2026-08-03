@@ -226,3 +226,69 @@ pub fn unified_family(corpus_name: &str) -> UnifiedFamily {
         )
     })
 }
+
+/// The request-scoped parser configuration a unified case declares.
+///
+/// Read from the case's `init:` block and passed to the parser verbatim, by BOTH
+/// unified harnesses (`unified_render` draws the tab, `unified_parity` gates CI). It
+/// lives here so there is exactly one answer to "how is a case's parser configured":
+/// each harness previously carried its own copy that INFERRED the config by sniffing
+/// the input text, and the copies could disagree with each other and with the `init:`
+/// the popup displayed — a case could declare `tool_output_mode=GuidedJson` and be
+/// parsed as `Native` because its input did not happen to start with `[`.
+#[derive(Debug, Clone, Default, serde::Deserialize)]
+pub struct Init {
+    #[serde(default)]
+    pub prefill: String,
+    #[serde(default)]
+    pub tool_output_mode: String,
+    #[serde(default)]
+    pub named_tool: Option<String>,
+}
+
+impl Init {
+    /// An unknown value is a spec bug, not something to paper over with a default:
+    /// silently falling back to `None`/`Native` is exactly the failure this replaced.
+    pub fn prefill(&self) -> dynamo_parsers_v2::UnifiedParserPrefill {
+        use dynamo_parsers_v2::UnifiedParserPrefill as P;
+        match self.prefill.as_str() {
+            "" | "None" => P::None,
+            "Reasoning" => P::Reasoning,
+            "Response" => P::Response,
+            other => panic!("unknown init.prefill `{other}` (None|Reasoning|Response)"),
+        }
+    }
+
+    pub fn output_mode(&self) -> dynamo_parsers_v2::UnifiedToolOutputMode<'_> {
+        use dynamo_parsers_v2::UnifiedToolOutputMode as O;
+        match self.tool_output_mode.as_str() {
+            "" | "Native" => O::Native,
+            "GuidedJson" => O::GuidedJson {
+                named_tool: self.named_tool.as_deref(),
+            },
+            other => panic!("unknown init.tool_output_mode `{other}` (Native|GuidedJson)"),
+        }
+    }
+
+    /// Apply this configuration to a freshly created parser.
+    pub fn apply(&self, parser: &mut Box<dyn dynamo_parsers_v2::UnifiedParser>, what: &str) {
+        parser
+            .initialize_with_output_mode(self.prefill(), self.output_mode())
+            .unwrap_or_else(|e| panic!("{what}: initialize_with_output_mode {self:?}: {e}"));
+    }
+
+    /// The config as APPLIED, not as written — an omitted field is reported as the
+    /// value the parser actually received, so what the popup shows and what the
+    /// parser ran under are the same object by construction.
+    pub fn applied(&self) -> serde_json::Value {
+        use dynamo_parsers_v2::UnifiedToolOutputMode as O;
+        serde_json::json!({
+            "prefill": format!("{:?}", self.prefill()),
+            "tool_output_mode": match self.output_mode() {
+                O::Native => "Native",
+                O::GuidedJson { .. } => "GuidedJson",
+            },
+            "named_tool": self.named_tool,
+        })
+    }
+}

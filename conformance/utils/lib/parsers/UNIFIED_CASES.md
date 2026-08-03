@@ -2,7 +2,7 @@
 
 Reference taxonomy for the **unified** conformance surface: one parser owns the whole assistant-output grammar and emits ONE ordered event stream. Sibling stage docs: `REASONING_CASES.md` (reasoning only), `TOOLCALLING_CASES.md` / `TOOLCALLING_STREAMING_V2_CASES.md` (tool calls only). This surface is what those two cannot express — the ORDER between reasoning and tool calls, and reasoning that occurs *between* or *after* tool calls.
 
-The golden corpus is authored by `conformance/utils/src/gen_unified_golden.py` (one scenario spec -> `conformance/unified/golden_spec/<family>.yaml` in the gitignored build tree); the committed, versioned `conformance/fixtures/unified/golden.tar.gz` shard is derived from it. The surface overview is `conformance/unified/README.md`.
+The golden corpus is authored by `conformance/utils/src/gen_unified_golden.py` (one scenario spec -> `conformance/unified/golden_spec/<family>.yaml` in the gitignored build tree); the committed, versioned `conformance/fixtures/unified/golden.tar.gz` shard is derived from it.
 
 ## The oracle: GOLDEN is authored, not captured
 
@@ -34,12 +34,12 @@ Comparison is ORDER-SENSITIVE on the ASSEMBLED list. Streaming delta granularity
 
 ## Governing principle: best-effort error recovery
 
-The parser recovers everything it can and NEVER drops valid text, leaks markup, or hard-errors on malformed/truncated input. Documented contract: `conformance/README.md` (v2 "preserves surrounding/inter-call prose... recovers bare calls v1 drops"; "dropping text, leaking markup, corrupting args" is a regression to FIX, not paper over) and `TOOLCALLING_CASES.md` batch.5.e / 5.g (drop only the unrecoverable partial call while earlier output stays recoverable; strip orphan close markers; do not leak). This principle resolves the policy calls below.
+The parser recovers everything it can and NEVER drops valid text, leaks markup, or hard-errors on malformed/truncated input. Documented contract: `conformance/README.md` (v2 "preserves surrounding/inter-call prose... recovers bare calls v1 drops"; "dropping text, leaking markup, corrupting args" is a regression to FIX, not paper over) and `TOOLCALLING_CASES.md` TOOLCALLING.batch.5.e / TOOLCALLING.batch.5.g (drop only the unrecoverable partial call while earlier output stays recoverable; strip orphan close markers; do not leak). This principle resolves the policy calls below.
 
 ## Policy decisions
 
 - **P1 Trailing text after the last tool call** -> emit as `text`. RESOLVED by best-effort recovery: trailing prose is arbitrary visible content and must be preserved (dropping it is a regression). vLLM's kimi config suppresses it -> vLLM red (LOSS).
-- **P2 Truncated tool call at EOF** -> DROP the unrecoverable partial call, emit preceding reasoning/text cleanly, no error, no leaked markup. RESOLVED by best-effort recovery (TOOLCALLING batch.5.e). Dynamo drops -> correct. The two vLLM implementations fail differently, both confirmed by live 0.25.1 capture: the native Rust `Gemma4UnifiedParser` returns `ParsingFailed { "incomplete Gemma4 tool call" }` -> red (ERROR), while the Python parser DISPATCHES the partial call with its truncated arguments (`{city: "Par"}`) — worse for a side-effecting action, since the client executes a call the parser never finished reading.
+- **P2 Truncated tool call at EOF** -> DROP the unrecoverable partial call, emit preceding reasoning/text cleanly, no error, no leaked markup. RESOLVED by best-effort recovery (TOOLCALLING.batch.5.e). Dynamo drops -> correct. The two vLLM implementations fail differently, both confirmed by live 0.25.1 capture: the native Rust `Gemma4UnifiedParser` returns `ParsingFailed { "incomplete Gemma4 tool call" }` -> red (ERROR), while the Python parser DISPATCHES the partial call with its truncated arguments (`{city: "Par"}`) — worse for a side-effecting action, since the client executes a call the parser never finished reading.
 - **P3 Empty arguments** -> `{}`.
 - **P4 Structural whitespace** -> strip only tokenizer-structural whitespace bound to the marker grammar (e.g. gemma4 `thought\n`), preserve model-authored whitespace. RESOLVED for gemma4 by `ReasoningSpec::start_label`: the role label is consumed when present and TOLERATED when absent, so `<|channel>thoughtful musing<channel|>` keeps its first word and a bare `<|channel>` still opens a thought instead of leaking as text. Folding the label into the opener would have passed this corpus and broken both.
 - **P5 Implicit reasoning start** -> prompt-conditioned per family (forced-reasoning models start in reasoning with no `<think>`).
@@ -54,45 +54,45 @@ The parser recovers everything it can and NEVER drops valid text, leaks markup, 
 
 `MATCH` (green) · `ORDER` / `MERGE` / `LOSS` (the unification gap) · `LEAK` (markup in text, `↯`) · `ARG_MISMATCH` / `WHITESPACE` (version drift) · `ERROR` (engine hard-errored where the spec expects graceful output).
 
-The Dynamo column is a per-family MIXTURE: `gemma4` and `qwen3` run the native `UnifiedParser` (green across all 52 scenarios each), `kimi_k2` still runs the v1-reasoning + v2-tool split and carries the gap. Every remaining red Dynamo cell in this tab is a split-path cell.
+The Dynamo column is a per-family MIXTURE: `gemma4` and `qwen3` run the native `UnifiedParser` (green across all 54 scenarios each), `kimi_k2` still runs the v1-reasoning + v2-tool split and carries the gap. Every remaining red Dynamo cell in this tab is a split-path cell.
 
 ## Quick reference — numbered taxonomy (`UNIFIED.<group>.<sub>`)
 
-Case IDs use short `group.sub` labels (`1.a`, `2.b`, …) like the other suites; the scenario slug (the golden filename key) is shown in parentheses. **Groups 1–9 mirror the tool-calling STREAM taxonomy** (`TOOLCALLING.streamv2.N`) as reasoning-free unified cases — this surface subsumes STREAM. **Group 10** is the reasoning axis (`REASONING.*`). **Group 11 is UNIQUE to unified**: reasoning↔tool ORDER that neither STREAM (no reasoning) nor REASONING (no ordered tool events) can express. **Group 12** is adversarial nesting — a marker of one channel inside another (P7). **Groups 30+ are REQUEST-SCOPED modes** — what the serving layer told the parser about this request, rather than what the model emitted; they use PAIRED TENS, `X0` for a mode's happy path and `X1` for its malformed counterpart, so a recovery case never sorts next to the baseline it contrasts with. 52 scenarios × 3 families (gemma4 / qwen3 / kimi_k2) = 156 cases.
+Case IDs use short `group.sub` labels (`1.a`, `2.b`, …) like the other suites; the scenario slug (the golden filename key) is shown in parentheses. **Groups 1–9 mirror the tool-calling STREAM taxonomy** (`TOOLCALLING.streamv2.N`) as reasoning-free unified cases — this surface subsumes STREAM. **Group 10** is the reasoning axis (`REASONING.*`). **Group 11 is UNIQUE to unified**: reasoning↔tool ORDER that neither STREAM (no reasoning) nor REASONING (no ordered tool events) can express. **Group 12** is adversarial nesting — a marker of one channel inside another (P7). **Groups 30+ are REQUEST-SCOPED modes** — what the serving layer told the parser about this request, rather than what the model emitted; they use PAIRED TENS, `X0` for a mode's happy path and `X1` for its malformed counterpart, so a recovery case never sorts next to the baseline it contrasts with. 54 scenarios × 3 families (gemma4 / qwen3 / kimi_k2) = 162 cases.
 
 ### Group 1 — TC Single call
 - **`1.a`** (`tool_only`) One tool call, no reasoning, no surrounding text. The tool suite's baseline.
 
-### Group 2 — TC Multiple calls (streamv2.2)
-- **`2.a`** (`two_calls`) Two distinct calls back-to-back, order preserved.
-- **`2.b`** (`two_calls_same_name`) Two calls to the SAME function, different args — must not dedup or merge.
+### Group 2 — TC Multiple calls (TOOLCALLING.streamv2.2)
+- **`2.a`** (`two_calls`) Two distinct calls back-to-back, order preserved. This is also covered in: TOOLCALLING.streamv2.2.a.
+- **`2.b`** (`two_calls_same_name`) Two calls to the SAME function, different args — must not dedup or merge. This is also covered in: TOOLCALLING.streamv2.2.d.
 
-### Group 3 — TC No call (streamv2.3)
-- **`3.a`** (`text_only`) Plain content, zero tool structure. No spurious call.
+### Group 3 — TC No call (TOOLCALLING.streamv2.3)
+- **`3.a`** (`text_only`) Plain content, zero tool structure. No spurious call. This is also covered in: TOOLCALLING.streamv2.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.
 
-### Group 5 — TC Truncation / recovery (streamv2.5)
+### Group 5 — TC Truncation / recovery (TOOLCALLING.streamv2.5)
 - **`5.a`** (`truncated_tool_eof`) EOF mid-call. Golden drops the partial, keeps preceding output (P2); vLLM Rust hard-errors (`ParsingFailed`). Class ERROR.
-- **`5.b`** (`tool_no_close`) Complete call body but the close marker never arrives. Golden recovers the call at finish; vLLM Rust hard-errors. Class ERROR.
+- **`5.b`** (`tool_no_close`) Complete call body but the close marker never arrives. Golden recovers the call at finish; vLLM Rust hard-errors. Class ERROR. This is also covered in: TOOLCALLING.streamv2.5.a.
 - **`5.c`** (`orphan_close_after_prose`) Orphan close marker after prose. Golden strips it; engines may leak. Class LEAK.
 
-### Group 6 — TC Empty body (streamv2.6)
-- **`6.a`** (`empty_args`) Call with `{}` arguments. Must emit the call with an empty object, not drop it.
+### Group 6 — TC Empty body (TOOLCALLING.streamv2.6)
+- **`6.a`** (`empty_args`) Call with `{}` arguments. Must emit the call with an empty object, not drop it. This is also covered in: TOOLCALLING.streamv2.6.a.
 
-### Group 7 — TC Argument fidelity (streamv2.7)
-- **`7.a`** (`arg_unicode`) Non-ASCII argument value round-trips byte-exact (I7).
+### Group 7 — TC Argument fidelity (TOOLCALLING.streamv2.7)
+- **`7.a`** (`arg_unicode`) Non-ASCII argument value round-trips byte-exact (I7). This is also covered in: TOOLCALLING.streamv2.7.b.
 - **`7.b`** (`arg_marker_in_string`) A close-marker substring INSIDE a string arg is data, preserved exactly (I7). vLLM Rust truncates. Class ARG_MISMATCH.
 
-### Group 8 — TC Content / narration position (streamv2.8)
-- **`8.a`** (`text_before_tool`) Visible narration precedes the call.
+### Group 8 — TC Content / narration position (TOOLCALLING.streamv2.8)
+- **`8.a`** (`text_before_tool`) Visible narration precedes the call. This is also covered in: TOOLCALLING.streamv2.8.a.
 - **`8.b`** (`trailing_text_after_tool`) Arbitrary prose AFTER the tool section (P1). vLLM suppresses it. Class LOSS.
-- **`8.c`** (`text_sandwich`) text → call → text; both text spans survive in order.
-- **`8.d`** (`text_between_calls`) call → text → call; the inter-call prose survives (v2 recovers what v1 drops).
+- **`8.c`** (`text_sandwich`) text → call → text; both text spans survive in order. This is also covered in: TOOLCALLING.streamv2.8.c.
+- **`8.d`** (`text_between_calls`) call → text → call; the inter-call prose survives (v2 recovers what v1 drops). This is also covered in: TOOLCALLING.streamv2.8.d.
 - **`8.e`** (`narrated_calls`) Multiple calls with narration between each — `tool_call → text → tool_call → text → tool_call`. The agentic call/narrate/call pattern; every call and inter-call text span is its own ordered event.
 
 ### Group 10 — Reasoning span (`REASONING.*`)
-- **`10.a`** (`reason_only`) Reasoning span, nothing else.
-- **`10.b`** (`reason_then_content`) Reasoning then visible content, no call.
-- **`10.c`** (`two_reason_spans`) Two reasoning spans separated by content. Batch reasoning merges them → Class MERGE.
+- **`10.a`** (`reason_only`) Reasoning span, nothing else. This is also covered in: REASONING.batch.2.a.
+- **`10.b`** (`reason_then_content`) Reasoning then visible content, no call. This is also covered in: e2e case-0001-chinese_arithmetic__non-stream-budget_capped.json (+ 42 more: every `reasoning/core`, `reasoning/complex` and `reasoning/history` case, `tool_none_arithmetic__*`, and the SECOND step of both `lifecycle_*` — each with its `-budget_unlimited` pair).
+- **`10.c`** (`two_reason_spans`) Two reasoning spans separated by content. Batch reasoning merges them → Class MERGE. This is also covered in: REASONING.batch.6.a.
 - **`10.d`** (`reason_unterminated`) Stream ends inside reasoning; open reasoning promoted at finish.
 
 ### Group 11 — Reasoning ↔ tool interleaving (UNIQUE to unified; the unification gap)
@@ -113,6 +113,128 @@ Case IDs use short `group.sub` labels (`1.a`, `2.b`, …) like the other suites;
 - **`12.c`** (`reason_markup_in_arg_with_text`) 12.a WITH visible narration before and after — all three channels at once (text / tool-call-with-markup-arg / text). Golden keeps text as text, the call clean, the markup byte-exact in the arg. Class ARG_MISMATCH / MERGE.
 - **`12.d`** (`tool_in_reason_with_text`) 12.b WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
+## End-to-end test cases (`End-to-end:` tags)
+
+Cases tagged `End-to-end:` name the corresponding end-to-end test case(s) in the Qwen3.6 run captured for PR #163 (`qwen36_pr163_test_cases.html` — 49 distinct cases, each run under two thinking-budget variants, at worker stream intervals 20 and 1). The two surfaces answer different questions and neither replaces the other:
+
+- **This corpus** is authored and hermetic. It feeds an exact byte string to the parser and asserts the exact event list, so a regression names the grammar construct that broke. It cannot tell you whether a real model ever emits that string.
+- **The e2e cases** are captured. They send real requests to a real worker and only check the final response, so they prove the path works end to end — but a failure there implicates the whole stack, and it only covers shapes the model happened to produce.
+
+So an `End-to-end:` tag means "a real model exercised this construct", and its ABSENCE is the interesting signal: it marks a construct this corpus pins that no e2e case reaches. Groups 31, 41 and 51 are entirely untagged by design — malformed guided output, redundant openers and truncated prefills are what a backend produces when something goes wrong, and a healthy worker will not produce them on demand.
+
+Known gaps in the other direction — end-to-end test cases with no corpus analogue:
+
+- `lifecycle_*` are 2-step: the tool result is fed back and the model called again. Multi-turn is a frontend/templating concern; a single-stream parser corpus cannot express it.
+- `history_*` cover conversation-history handling, likewise above this layer.
+- The `reasoning/core` and `reasoning/complex` cases (32 of the 49) vary the PROMPT, not the output grammar. They exercise the reasoning parser end to end but map onto the same handful of reasoning-span constructs, so tagging each one would add noise, not coverage.
+
+### Artifact index
+
+An `End-to-end:` tag names the end-to-end test case and its artifact index. Each index is TWO JSON artifacts — the same case run under both thinking-budget variants — so `e2e case-0047` means both `end-to-end case-0047-*` files below. The report embeds every case inline in `const REPORT`, so the JSON files are provenance labels, not inputs; they live with whoever ran the harness, not in this repo.
+
+| Case | e2e case | Artifact JSON file |
+|---|---|---|
+| `10.b` | `chinese_arithmetic__non-stream` | `end-to-end case-0001-chinese_arithmetic__non-stream-budget_capped.json` |
+| `10.b` | `chinese_arithmetic__non-stream` | `end-to-end case-0001-chinese_arithmetic__non-stream-budget_unlimited.json` |
+| `10.b` | `chinese_arithmetic__stream` | `end-to-end case-0002-chinese_arithmetic__stream-budget_capped.json` |
+| `10.b` | `chinese_arithmetic__stream` | `end-to-end case-0002-chinese_arithmetic__stream-budget_unlimited.json` |
+| `10.b` | `compare_fractions__non-stream` | `end-to-end case-0003-compare_fractions__non-stream-budget_capped.json` |
+| `10.b` | `compare_fractions__non-stream` | `end-to-end case-0003-compare_fractions__non-stream-budget_unlimited.json` |
+| `10.b` | `compare_fractions__stream` | `end-to-end case-0004-compare_fractions__stream-budget_capped.json` |
+| `10.b` | `compare_fractions__stream` | `end-to-end case-0004-compare_fractions__stream-budget_unlimited.json` |
+| `10.b` | `history_not_preserved__non-stream` | `end-to-end case-0013-history_not_preserved__non-stream-budget_capped.json` |
+| `10.b` | `history_not_preserved__non-stream` | `end-to-end case-0013-history_not_preserved__non-stream-budget_unlimited.json` |
+| `10.b` | `history_not_preserved__stream` | `end-to-end case-0014-history_not_preserved__stream-budget_capped.json` |
+| `10.b` | `history_not_preserved__stream` | `end-to-end case-0014-history_not_preserved__stream-budget_unlimited.json` |
+| `10.b` | `history_preserved_addition__non-stream` | `end-to-end case-0015-history_preserved_addition__non-stream-budget_capped.json` |
+| `10.b` | `history_preserved_addition__non-stream` | `end-to-end case-0015-history_preserved_addition__non-stream-budget_unlimited.json` |
+| `10.b` | `history_preserved_addition__stream` | `end-to-end case-0016-history_preserved_addition__stream-budget_capped.json` |
+| `10.b` | `history_preserved_addition__stream` | `end-to-end case-0016-history_preserved_addition__stream-budget_unlimited.json` |
+| `10.b` | `history_preserved_codeword__non-stream` | `end-to-end case-0017-history_preserved_codeword__non-stream-budget_capped.json` |
+| `10.b` | `history_preserved_codeword__non-stream` | `end-to-end case-0017-history_preserved_codeword__non-stream-budget_unlimited.json` |
+| `10.b` | `history_preserved_codeword__stream` | `end-to-end case-0018-history_preserved_codeword__stream-budget_capped.json` |
+| `10.b` | `history_preserved_codeword__stream` | `end-to-end case-0018-history_preserved_codeword__stream-budget_unlimited.json` |
+| `10.b` | `history_unicode__non-stream` | `end-to-end case-0019-history_unicode__non-stream-budget_capped.json` |
+| `10.b` | `history_unicode__non-stream` | `end-to-end case-0019-history_unicode__non-stream-budget_unlimited.json` |
+| `10.b` | `history_unicode__stream` | `end-to-end case-0020-history_unicode__stream-budget_capped.json` |
+| `10.b` | `history_unicode__stream` | `end-to-end case-0020-history_unicode__stream-budget_unlimited.json` |
+| `10.b` | `logic_syllogism__non-stream` | `end-to-end case-0021-logic_syllogism__non-stream-budget_capped.json` |
+| `10.b` | `logic_syllogism__non-stream` | `end-to-end case-0021-logic_syllogism__non-stream-budget_unlimited.json` |
+| `10.b` | `logic_syllogism__stream` | `end-to-end case-0022-logic_syllogism__stream-budget_capped.json` |
+| `10.b` | `logic_syllogism__stream` | `end-to-end case-0022-logic_syllogism__stream-budget_unlimited.json` |
+| `10.b` | `long_context_retrieval__non-stream` | `end-to-end case-0023-long_context_retrieval__non-stream-budget_capped.json` |
+| `10.b` | `long_context_retrieval__non-stream` | `end-to-end case-0023-long_context_retrieval__non-stream-budget_unlimited.json` |
+| `10.b` | `long_context_retrieval__stream` | `end-to-end case-0024-long_context_retrieval__stream-budget_capped.json` |
+| `10.b` | `long_context_retrieval__stream` | `end-to-end case-0024-long_context_retrieval__stream-budget_unlimited.json` |
+| `10.b` | `minutes_to_seconds__non-stream` | `end-to-end case-0025-minutes_to_seconds__non-stream-budget_capped.json` |
+| `10.b` | `minutes_to_seconds__non-stream` | `end-to-end case-0025-minutes_to_seconds__non-stream-budget_unlimited.json` |
+| `10.b` | `minutes_to_seconds__stream` | `end-to-end case-0026-minutes_to_seconds__stream-budget_capped.json` |
+| `10.b` | `minutes_to_seconds__stream` | `end-to-end case-0026-minutes_to_seconds__stream-budget_unlimited.json` |
+| `10.b` | `multiline_checksum__non-stream` | `end-to-end case-0027-multiline_checksum__non-stream-budget_capped.json` |
+| `10.b` | `multiline_checksum__non-stream` | `end-to-end case-0027-multiline_checksum__non-stream-budget_unlimited.json` |
+| `10.b` | `multiline_checksum__stream` | `end-to-end case-0028-multiline_checksum__stream-budget_capped.json` |
+| `10.b` | `multiline_checksum__stream` | `end-to-end case-0028-multiline_checksum__stream-budget_unlimited.json` |
+| `10.b` | `multiply_17_19__non-stream` | `end-to-end case-0029-multiply_17_19__non-stream-budget_capped.json` |
+| `10.b` | `multiply_17_19__non-stream` | `end-to-end case-0029-multiply_17_19__non-stream-budget_unlimited.json` |
+| `10.b` | `multiply_17_19__stream` | `end-to-end case-0030-multiply_17_19__stream-budget_capped.json` |
+| `10.b` | `multiply_17_19__stream` | `end-to-end case-0030-multiply_17_19__stream-budget_unlimited.json` |
+| `10.b` | `parity_expression__non-stream` | `end-to-end case-0031-parity_expression__non-stream-budget_capped.json` |
+| `10.b` | `parity_expression__non-stream` | `end-to-end case-0031-parity_expression__non-stream-budget_unlimited.json` |
+| `10.b` | `parity_expression__stream` | `end-to-end case-0032-parity_expression__stream-budget_capped.json` |
+| `10.b` | `parity_expression__stream` | `end-to-end case-0032-parity_expression__stream-budget_unlimited.json` |
+| `10.b` | `python_loop_trace__non-stream` | `end-to-end case-0033-python_loop_trace__non-stream-budget_capped.json` |
+| `10.b` | `python_loop_trace__non-stream` | `end-to-end case-0033-python_loop_trace__non-stream-budget_unlimited.json` |
+| `10.b` | `python_loop_trace__stream` | `end-to-end case-0034-python_loop_trace__stream-budget_capped.json` |
+| `10.b` | `python_loop_trace__stream` | `end-to-end case-0034-python_loop_trace__stream-budget_unlimited.json` |
+| `10.b` | `sequence_next__non-stream` | `end-to-end case-0035-sequence_next__non-stream-budget_capped.json` |
+| `10.b` | `sequence_next__non-stream` | `end-to-end case-0035-sequence_next__non-stream-budget_unlimited.json` |
+| `10.b` | `sequence_next__stream` | `end-to-end case-0036-sequence_next__stream-budget_capped.json` |
+| `10.b` | `sequence_next__stream` | `end-to-end case-0036-sequence_next__stream-budget_unlimited.json` |
+| `10.b` | `set_intersection__non-stream` | `end-to-end case-0037-set_intersection__non-stream-budget_capped.json` |
+| `10.b` | `set_intersection__non-stream` | `end-to-end case-0037-set_intersection__non-stream-budget_unlimited.json` |
+| `10.b` | `set_intersection__stream` | `end-to-end case-0038-set_intersection__stream-budget_capped.json` |
+| `10.b` | `set_intersection__stream` | `end-to-end case-0038-set_intersection__stream-budget_unlimited.json` |
+| `10.b` | `sort_integers__non-stream` | `end-to-end case-0039-sort_integers__non-stream-budget_capped.json` |
+| `10.b` | `sort_integers__non-stream` | `end-to-end case-0039-sort_integers__non-stream-budget_unlimited.json` |
+| `10.b` | `sort_integers__stream` | `end-to-end case-0040-sort_integers__stream-budget_capped.json` |
+| `10.b` | `sort_integers__stream` | `end-to-end case-0040-sort_integers__stream-budget_unlimited.json` |
+| `10.b` | `spanish_logic__non-stream` | `end-to-end case-0041-spanish_logic__non-stream-budget_capped.json` |
+| `10.b` | `spanish_logic__non-stream` | `end-to-end case-0041-spanish_logic__non-stream-budget_unlimited.json` |
+| `10.b` | `spanish_logic__stream` | `end-to-end case-0042-spanish_logic__stream-budget_capped.json` |
+| `10.b` | `spanish_logic__stream` | `end-to-end case-0042-spanish_logic__stream-budget_unlimited.json` |
+| `10.b` | `structured_json__non-stream` | `end-to-end case-0043-structured_json__non-stream-budget_capped.json` |
+| `10.b` | `structured_json__non-stream` | `end-to-end case-0043-structured_json__non-stream-budget_unlimited.json` |
+| `10.b` | `structured_json__stream` | `end-to-end case-0044-structured_json__stream-budget_capped.json` |
+| `10.b` | `structured_json__stream` | `end-to-end case-0044-structured_json__stream-budget_unlimited.json` |
+| `10.b` | `system_instruction__non-stream` | `end-to-end case-0045-system_instruction__non-stream-budget_capped.json` |
+| `10.b` | `system_instruction__non-stream` | `end-to-end case-0045-system_instruction__non-stream-budget_unlimited.json` |
+| `10.b` | `system_instruction__stream` | `end-to-end case-0046-system_instruction__stream-budget_capped.json` |
+| `10.b` | `system_instruction__stream` | `end-to-end case-0046-system_instruction__stream-budget_unlimited.json` |
+| `10.b` | `tool_none_arithmetic__non-stream` | `end-to-end case-0051-tool_none_arithmetic__non-stream-budget_capped.json` |
+| `10.b` | `tool_none_arithmetic__non-stream` | `end-to-end case-0051-tool_none_arithmetic__non-stream-budget_unlimited.json` |
+| `10.b` | `tool_none_arithmetic__stream` | `end-to-end case-0052-tool_none_arithmetic__stream-budget_capped.json` |
+| `10.b` | `tool_none_arithmetic__stream` | `end-to-end case-0052-tool_none_arithmetic__stream-budget_unlimited.json` |
+| `10.b` | `unicode_symbol_math__non-stream` | `end-to-end case-0067-unicode_symbol_math__non-stream-budget_capped.json` |
+| `10.b` | `unicode_symbol_math__non-stream` | `end-to-end case-0067-unicode_symbol_math__non-stream-budget_unlimited.json` |
+| `10.b` | `unicode_symbol_math__stream` | `end-to-end case-0068-unicode_symbol_math__stream-budget_capped.json` |
+| `10.b` | `unicode_symbol_math__stream` | `end-to-end case-0068-unicode_symbol_math__stream-budget_unlimited.json` |
+| `10.b` | `lifecycle_single_result__stream` | `end-to-end case-0129-lifecycle_single_result__stream-budget_capped.json` |
+| `10.b` | `lifecycle_single_result__stream` | `end-to-end case-0129-lifecycle_single_result__stream-budget_unlimited.json` |
+| `30.a` | `tool_add_named__non-stream` | `end-to-end case-0047-tool_add_named__non-stream-budget_capped.json` |
+| `30.a` | `tool_add_named__non-stream` | `end-to-end case-0047-tool_add_named__non-stream-budget_unlimited.json` |
+| `30.a` | `tool_add_named__stream` | `end-to-end case-0048-tool_add_named__stream-budget_capped.json` |
+| `30.a` | `tool_add_named__stream` | `end-to-end case-0048-tool_add_named__stream-budget_unlimited.json` |
+| `30.a` | `tool_translate_named__stream` | `end-to-end case-0054-tool_translate_named__stream-budget_capped.json` |
+| `30.a` | `tool_translate_named__stream` | `end-to-end case-0054-tool_translate_named__stream-budget_unlimited.json` |
+| `30.b` | `lifecycle_single_result__stream` | `end-to-end case-0129-lifecycle_single_result__stream-budget_capped.json` |
+| `30.b` | `lifecycle_single_result__stream` | `end-to-end case-0129-lifecycle_single_result__stream-budget_unlimited.json` |
+| `30.b` | `lifecycle_chained_calculation__stream` | `end-to-end case-0145-lifecycle_chained_calculation__stream-budget_capped.json` |
+| `30.b` | `lifecycle_chained_calculation__stream` | `end-to-end case-0145-lifecycle_chained_calculation__stream-budget_unlimited.json` |
+| `30.d` | `schema_escaped_unicode_string__non-stream` | `end-to-end case-0105-schema_escaped_unicode_string__non-stream-budget_capped.json` |
+| `30.d` | `schema_escaped_unicode_string__non-stream` | `end-to-end case-0105-schema_escaped_unicode_string__non-stream-budget_unlimited.json` |
+| `30.e` | `schema_array__stream` | `end-to-end case-0108-schema_array__stream-budget_capped.json` |
+| `30.e` | `schema_array__stream` | `end-to-end case-0108-schema_array__stream-budget_unlimited.json` |
+
 ## Request-scoped modes (groups 30+)
 
 Groups 1–12 vary the model OUTPUT. Groups 30+ vary the request: what the serving layer passed to `UnifiedParser::initialize_with_output_mode(prefill, tool_output_mode)` before any output arrived. The pairing is `X0` happy / `X1` malformed, and a new mode takes the next ten.
@@ -120,9 +242,11 @@ Groups 1–12 vary the model OUTPUT. Groups 30+ vary the request: what the servi
 `prefill` says which channel the rendered prompt already opened, so the model never emits that opener: `None` (it opens its own), `Reasoning` (the stream begins INSIDE a thought), `Response` (visible content is already open, so there is no reasoning channel at all and reasoning markers are ordinary text). `tool_output_mode` says whether the backend constrained decoding: `Native` (model markup) or `GuidedJson` (bare JSON — a NAMED choice sends that tool's arguments alone, a REQUIRED choice sends one call object or an array of them).
 
 ### Group 30 — Guided decoding, happy
-- **`30.a`** (`guided_json_named_tool`) `tool_choice` names a tool; the payload is that tool's arguments and the name comes from the request.
-- **`30.b`** (`guided_json_required_tool`) Required choice; the payload is an array of call objects.
+- **`30.a`** (`guided_json_named_tool`) `tool_choice` names a tool; the payload is that tool's arguments and the name comes from the request. This is also covered in: e2e case-0047-tool_add_named__non-stream-budget_capped.json, e2e case-0048-tool_add_named__stream-budget_capped.json, e2e case-0054-tool_translate_named__stream-budget_capped.json (each with its `-budget_unlimited` pair).
+- **`30.b`** (`guided_json_required_tool`) Required choice; the payload is an array of call objects. This is also covered in: e2e case-0129-lifecycle_single_result__stream-budget_capped.json, e2e case-0145-lifecycle_chained_calculation__stream-budget_capped.json (FIRST step of each; both with their `-budget_unlimited` pair).
 - **`30.c`** (`guided_json_two_calls`) Two DIFFERENT tools in one array. Multi-call is the array's ordinary shape, not an edge case.
+- **`30.d`** (`guided_json_escaped_string_args`) An argument value carrying non-ASCII, escaped quotes and Windows backslashes. Native mode covers the same value in `7.*`, but there the value is raw text between markers and no escaping is involved — the escaping is only the parser's problem on this path. This is also covered in: e2e case-0105-schema_escaped_unicode_string__non-stream-budget_capped.json (and its `-budget_unlimited` pair).
+- **`30.e`** (`guided_json_array_argument`) An argument VALUE that is an array, not a scalar. Distinct from `30.b`/`30.c`, where the array is the list OF CALLS one level up. A list arriving as its string rendering is a silently wrong call, not a failed one. This is also covered in: e2e case-0108-schema_array__stream-budget_capped.json (and its `-budget_unlimited` pair).
 
 ### Group 31 — Guided decoding, malformed
 - **`31.a`** (`guided_json_invalid_call`) Valid JSON that is not a call (no `name`). Surfaces as text (P2); no call dispatched.
