@@ -41,16 +41,37 @@ use dynamo_parsers_v2::{
 };
 use serde_json::{Value, json};
 
-/// Corpus family -> (v1 reasoning parser, v2 tool parser) for the SPLIT path.
-/// Mirrors `unified_render::parsers_for`.
-fn parsers_for(family: &str) -> Option<(&'static str, &'static str)> {
-    match family {
-        "gemma4" => Some(("gemma4", "gemma4")),
-        "qwen3" => Some(("qwen3", "qwen3_coder")),
-        "kimi_k2" => Some(("kimi_k25", "kimi_k2")),
-        // Unknown to this build: reported, not guessed.
-        _ => None,
-    }
+/// Corpus family -> (v1 reasoning parser, v2 tool parser) for the SPLIT path, read from
+/// the `unified:` block of `parser_families.yaml`.
+///
+/// This used to be a hand-kept copy of `unified_render::parsers_for`, which is exactly
+/// the duplication this file cannot afford: it gets copied into an OLDER worktree to run
+/// against that build, so a stale copy would silently map a family to the wrong parser
+/// there. `XVER_FAMILIES` points at the CURRENT manifest, so the old tree is driven by
+/// today's declarations rather than whatever it happened to ship.
+fn parsers_for(family: &str) -> Option<(String, String)> {
+    // A MISSING ROW is a legitimate "this family is not declared" and returns None. A
+    // missing, unreadable or malformed MANIFEST is not — it would make every split-path
+    // family look undeclared and the run would report "no unified parser in this build"
+    // while quietly capturing nothing. Those cases panic with the path in the message.
+    let path = std::env::var("XVER_FAMILIES").unwrap_or_else(|_| {
+        panic!("XVER_FAMILIES is required: point it at the CURRENT conformance/utils/src/parser_families.yaml")
+    });
+    let text =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("XVER_FAMILIES read {path}: {e}"));
+    let doc: serde_yaml::Value =
+        serde_yaml::from_str(&text).unwrap_or_else(|e| panic!("XVER_FAMILIES parse {path}: {e}"));
+    let unified = doc
+        .get("unified")
+        .unwrap_or_else(|| panic!("{path} has no `unified:` block"));
+    let row = unified.get(family)?; // not declared for the unified tab — genuinely skippable
+    let get = |k: &str| {
+        row.get(k)
+            .and_then(|v| v.as_str())
+            .unwrap_or_else(|| panic!("{path}: `unified.{family}` has no `{k}`"))
+            .to_string()
+    };
+    Some((get("reasoning_parser"), get("tool_parser")))
 }
 
 fn tool_deltas(res: &dynamo_parsers_v2::ToolParseResult, out: &mut Vec<Value>) {
@@ -69,8 +90,8 @@ fn tool_deltas(res: &dynamo_parsers_v2::ToolParseResult, out: &mut Vec<Value>) {
 /// table reads "this build produced nothing" for gemma4/kimi_k2.
 fn split_path_chunks(family: &str, input: &str) -> Option<Vec<Vec<Value>>> {
     let (reasoning_name, tool_family) = parsers_for(family)?;
-    let mut rp = ReasoningParserType::get_reasoning_parser_from_name(reasoning_name);
-    let mut tp = create_tool_parser_for_family(tool_family, &tools()).ok()?;
+    let mut rp = ReasoningParserType::get_reasoning_parser_from_name(&reasoning_name);
+    let mut tp = create_tool_parser_for_family(&tool_family, &tools()).ok()?;
 
     let mut rows = Vec::new();
     for chunk in chunk_input(input) {

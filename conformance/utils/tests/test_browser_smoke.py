@@ -336,3 +336,114 @@ def test_transpose_honors_collapsed_case_group(driver):
         key,
     )
     assert hidden is True, f"transposed rows for collapsed group {key} should be hidden"
+
+
+@pytest.mark.parametrize("transposed", [False, True], ids=["normal", "transposed"])
+def test_every_wired_element_stays_pinned(driver, transposed):
+    """Clicking anything with a popup PINS it, and the same click must not close it.
+
+    The document-level outside-click handler decides what counts as "inside". While it
+    enumerated classes, it kept drifting from the set `attachTooltip` actually wires: first
+    `th.case-sub` was pinnable but not inside, then the transpose headers (`th.tcol-model`,
+    `th.trow-case`) — which are built and wired at runtime and so can never appear in a
+    static list. In each case a click pinned the popup and then bubbled to that handler,
+    which saw no matching ancestor and unpinned it, so the popup could never stay up.
+
+    The handler now asks for `[data-ttip-wired]`, the mark `attachTooltip` leaves on every
+    element it wires. This test walks that same set, one element per distinct tag+class, so
+    a newly wired kind of element is covered without anyone remembering to add it here.
+    """
+    driver.execute_script(
+        "const v=document.querySelector('[data-view-detailed]'); if(v && !v.checked){v.checked=true; v.dispatchEvent(new Event('change'));}"
+    )
+    toggled = driver.execute_script(
+        """
+        const t = document.querySelector('[data-transpose-toggle]');
+        if (!t) return false;
+        if (t.checked !== arguments[0]) { t.checked = arguments[0]; t.dispatchEvent(new Event('change')); }
+        return true;
+        """,
+        transposed,
+    )
+    if transposed and not toggled:
+        pytest.skip("no transpose toggle on this page")
+
+    # One representative per tag+class, so the test scales with the wired set instead of a
+    # hand-kept list, but does not click hundreds of identical data cells.
+    kinds = driver.execute_script(
+        """
+        const tab = document.querySelector('.tab-panel.active') || document;
+        const seen = new Set();
+        for (const el of tab.querySelectorAll('[data-ttip-wired]')) {
+          if (!el.querySelector('.ttip')) continue;
+          const key = el.tagName.toLowerCase() + '.' + (el.className || '');
+          if (!seen.has(key)) seen.add(key);
+        }
+        return Array.from(seen);
+        """
+    )
+    if not kinds:
+        pytest.skip("no wired elements with a tooltip on the active tab")
+
+    for key in kinds:
+        # A real .click() so the event bubbles to the document handler, which is the whole
+        # point — a synthetic dispatch on the element alone would never reproduce the bug.
+        driver.execute_script(
+            """
+            const tab = document.querySelector('.tab-panel.active') || document;
+            for (const el of tab.querySelectorAll('[data-ttip-wired]')) {
+              if (!el.querySelector('.ttip')) continue;
+              if (el.tagName.toLowerCase() + '.' + (el.className || '') !== arguments[0]) continue;
+              el.click();
+              return;
+            }
+            """,
+            key,
+        )
+        deadline = time.time() + 3
+        pinned = False
+        while time.time() < deadline:
+            pinned = driver.execute_script(
+                "return !!document.querySelector('[data-ttip-wired] .ttip.ttip-pinned');"
+            )
+            if pinned:
+                break
+            time.sleep(0.1)
+        assert pinned, f"popup on {key} did not stay pinned after its own click"
+        # Unpin before the next kind, so a stale pin can't make the next assertion pass.
+        driver.execute_script(
+            "document.querySelectorAll('.ttip.ttip-pinned').forEach(t => { const c = t.querySelector('.ttip-close'); if (c) c.click(); });"
+        )
+
+
+def test_legend_is_detailed_only(driver):
+    """The Reference/Compare legend belongs to Detailed, not Overview.
+
+    It explains the compare bar, the NΔ count and the red-cell rule — none of which are
+    on screen in Overview, so there it is a wall of text about controls the reader cannot
+    see. Asserts both directions so a future CSS change cannot silently bring it back.
+    """
+    def legend_shown():
+        return driver.execute_script(
+            """
+            const tab = document.querySelector('.tab-panel.active') || document;
+            const el = tab.querySelector('.toolbar-desc') || document.querySelector('.toolbar-desc');
+            if (!el) { return null; }
+            return getComputedStyle(el).display !== 'none';
+            """
+        )
+    def set_detailed(on):
+        driver.execute_script(
+            "const v=document.querySelector('[data-view-detailed]');"
+            "if(v && v.checked!==arguments[0]){v.checked=arguments[0]; v.dispatchEvent(new Event('change'));}",
+            on,
+        )
+        time.sleep(0.3)
+    set_detailed(False)
+    overview = legend_shown()
+    if overview is None:
+        pytest.skip("no .toolbar-desc legend on this page")
+    set_detailed(True)
+    detailed = legend_shown()
+    assert not overview, "legend visible in Overview; it should be Detailed-only"
+    assert detailed, "legend hidden in Detailed; it should be visible there"

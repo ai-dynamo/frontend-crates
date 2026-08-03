@@ -1,5 +1,8 @@
 # Tool-Call Streaming Parser Cases
 
+> **End-to-end test cases.** A separate, non-hermetic suite (real worker, real model) exists outside this repo; see `conformance/README.md` -> "End-to-end test cases". Its per-case cross-reference is maintained only in `UNIFIED_CASES.md`; the cases in THIS doc are not yet mapped to it.
+
+
 Streaming corner cases (`TOOLCALLING.streamv2.*`), mirroring the batch taxonomy
 in `TOOLCALLING_CASES.md`. Each case feeds the batch sample's `model_text` to the
 engine streaming parser **1-3 tokens at a time** and records the per-chunk deltas

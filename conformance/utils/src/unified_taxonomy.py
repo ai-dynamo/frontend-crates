@@ -4,13 +4,23 @@
 (UNIFIED.<group>.<sub>) and the per-group axis labels. Shared by the fixture
 exploder (names case files by number) and the conformance generator (renders the
 group labels), so the numbering can't drift between them.
-
 Groups 1-9 mirror the tool-calling STREAM taxonomy (TOOLCALLING.streamv2.N) as
 tool-only unified cases (UNIFIED subsumes STREAM). Group 10 is the reasoning axis
 (REASONING.*). Group 11 is unique to unified: reasoning<->tool interleaving that
 neither STREAM (no reasoning) nor REASONING (no ordered tool events) can express.
 Group 12 is adversarial nesting (a marker of one channel inside another).
+Request-scoped modes use PAIRED TENS: X0 is that mode's happy base case, X1 its
+weird/malformed counterpart — 30/31 guided decoding, 40/41 prefilled reasoning,
+50/51 prefilled response. A new mode takes the next ten.
+There is no separate "input stream mode" axis: which channel the prompt pre-opened IS
+`init.prefill`, so a case that varied only that duplicated groups 31-33, and one that
+varied nothing but a finish_reason label duplicated groups 1-12 (the parser cannot see
+that value — `finish()` takes no argument).
 """
+
+import yaml
+
+import markers
 
 UNIFIED_TAX = {
     # Group 1 — Single call
@@ -42,6 +52,30 @@ UNIFIED_TAX = {
     # Group 12 — Adversarial nesting (a marker of one channel inside another)
     "reason_markup_in_arg": (12, "a"), "tool_in_reason": (12, "b"),
     "reason_markup_in_arg_with_text": (12, "c"), "tool_in_reason_with_text": (12, "d"),
+    # --- Request-scoped modes. Each axis is a PAIR of tens: X0 is the happy base
+    # case for that mode, X1 is the weird / malformed one. A new axis takes the
+    # next ten, so "which mode" and "well-formed or not" stay independent and a
+    # malformed case can never be mistaken for the mode's baseline.
+    # Group 30 — Guided decoding, happy
+    "guided_json_named_tool": (30, "a"), "guided_json_required_tool": (30, "b"),
+    "guided_json_two_calls": (30, "c"),
+
+    # Group 31 — Guided decoding, weird / malformed
+    "guided_json_invalid_call": (31, "a"), "guided_json_malformed_json": (31, "b"),
+    "guided_json_partial_calls": (31, "c"),
+    "guided_json_list_with_broken_element": (31, "d"),
+    # Group 40 — Prefilled reasoning, happy
+    "prefilled_reasoning_with_tool": (40, "a"), "prefilled_reasoning_with_guided_json": (40, "b"),
+    "prefilled_reasoning_then_text_then_tool": (40, "c"), "prefilled_reasoning_then_text": (40, "d"),
+    # Group 41 — Prefilled reasoning, weird / malformed
+    "prefilled_reasoning_redundant_opener": (41, "a"), "prefilled_reasoning_truncated": (41, "b"),
+    # Group 50 — Prefilled response, happy
+    "prefilled_response_with_tool": (50, "a"), "prefilled_response_with_guided_json": (50, "b"),
+    "prefilled_response_guided_json_two_calls": (50, "c"),
+    "prefilled_response_reasoning_markers_literal": (50, "d"),
+    # Group 51 — Prefilled response, weird / malformed
+    "prefilled_response_truncated": (51, "a"),
+    "prefilled_response_guided_json_partial_calls": (51, "b"),
 }
 
 # Axis prefix makes each group's channel explicit: "TC" = tool-calling only (groups
@@ -52,11 +86,20 @@ UNIFIED_GROUP_LABEL = {
     7: "TC Argument fidelity", 8: "TC Content position",
     10: "Reasoning span",
     11: "Reasoning ↔ tool interleaving", 12: "Adversarial nesting (reasoning + tool)",
+    30: "Guided Decoding", 31: "Guided Decoding — malformed",
+    40: "Prefilled Reasoning", 41: "Prefilled Reasoning — malformed",
+    50: "Prefilled Response", 51: "Prefilled Response — malformed",
 }
 
 
 def tax(scenario):
-    """(group_num, sub_letter) for a scenario slug; group 9 for anything unmapped."""
+    """(group_num, sub_letter) for a scenario slug; group 9 for anything unmapped.
+
+    NUMBERING ONLY. A case's parser configuration (`init`) and its stream
+    properties (`finish_reason`) are declared per case in `gen_unified_golden.py` and flow
+    through the fixtures to the page. Keeping a second copy here would be a
+    divergent copy of the same fact, free to drift from what the harness applies.
+    """
     return UNIFIED_TAX.get(scenario, (9, scenario))
 
 
@@ -73,7 +116,15 @@ def numbered_id(scenario):
 # has to be translated before it is used to color markup — otherwise the family has no
 # declared markers, the colorizer falls back to heuristics, and its opaque
 # argument-value regions (`opaque:`) are not applied.
-MARKER_FAMILY = {"qwen3": "qwen3_coder"}
+# Derived from the ONE declaration in parser_families.yaml (`unified:` -> `registry`),
+# so a family whose corpus name differs from its registry name says so in one place.
+MARKER_FAMILY = {
+    f: r["registry"]
+    for f, r in yaml.safe_load(
+        markers.parser_families_path().read_text()
+    )["unified"].items()
+    if r.get("registry") and r["registry"] != f
+}
 
 
 def marker_family(family):

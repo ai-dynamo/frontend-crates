@@ -2211,6 +2211,8 @@ def _load_unified_fixtures(base: Path):
             "id": cid, "scenario": scenario, "family": fam,
             "description": inp.get("description", ""),
             "policy": inp.get("policy") or [], "policy_tags": inp.get("policy") or [],
+            "init": inp.get("init") or {"prefill": "None", "tool_output_mode": "Native", "named_tool": None},
+            "finish_reason": inp.get("finish_reason") or "stop",
             "input": inp.get("input", ""),
             "golden": gdoc.get("assembled") or [],
             "dynamo": ddoc.get("assembled") or [],
@@ -2283,12 +2285,14 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     scenarios: list[str] = []
     families: list[str] = []
     scn_desc: dict[str, str] = {}
+    scn_init: dict[str, dict] = {}
     by_key: dict[tuple[str, str], dict] = {}
     for c in cases:
         s, f = c["scenario"], c["family"]
         if s not in scenarios:
             scenarios.append(s)
             scn_desc[s] = c["description"]
+            scn_init[s] = c.get("init")
         if f not in families:
             families.append(f)
         by_key[(f, s)] = c
@@ -2309,7 +2313,10 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     for s in ordered:
         g, sub = _tax(s)
         columns.append({"sub": s, "group_key": f"unified_g{g}", "band": _band(g),
-                        "label": f"{g}.{sub}", "desc": scn_desc.get(s, "")})
+                        "label": f"{g}.{sub}", "desc": scn_desc.get(s, ""),
+                        # The parser knobs are declared per SCENARIO, so a column
+                        # header can show exactly what its cells ran under.
+                        "init": scn_init.get(s)})
     column_groups = []
     seen_groups = []
     for s in ordered:
@@ -2496,6 +2503,8 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             tooltip = {
                 "head": f'UNIFIED.{g_num}.{g_sub} ({s}) — {f}',
                 "description": desc,
+                "init": c.get("init"),
+                "finish_reason": c.get("finish_reason"),
                 # `family` here selects the GRAMMAR the colorizer types markup with,
                 # so it must be the marker-registry family, not the corpus one.
                 "input": {"kind": "chunks", "text": c["input"], "chunks": chunk_rows,

@@ -1,5 +1,8 @@
 # Reasoning Parser Corner Cases
 
+> **End-to-end test cases.** A separate, non-hermetic suite (real worker, real model) exists outside this repo; see `conformance/README.md` -> "End-to-end test cases". Its per-case cross-reference is maintained only in `UNIFIED_CASES.md`; the cases in THIS doc are not yet mapped to it.
+
+
 Reference taxonomy for unit testing **reasoning** parsers under
 `src/reasoning/` (Granite, GPT-OSS, Gemma, Qwen3 think-tag, Minimax,
 DeepSeek V3 think-tag, etc.). Sibling files cover adjacent stages:

@@ -161,3 +161,68 @@ pub fn version_dirs_ascending(root: &Path, prefix: &str) -> Vec<PathBuf> {
     dirs.sort();
     dirs.into_iter().map(|(_, p)| p).collect()
 }
+
+/// One row of the `unified:` block in `conformance/utils/src/parser_families.yaml`.
+///
+/// That block is the ONE place a family is declared for the unified tab. It replaced
+/// five lists that had to agree — `FAMILIES` / `FAM_FILE` / `UNIFIED_FAMILIES` in
+/// `gen_unified_golden.py`, `parsers_for()` in two separate Rust test binaries, the
+/// `family_leak` match, and `MARKER_FAMILY` — where a family added to one and missed in
+/// another either panicked at "no parser mapping" or silently lost its leak detection.
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct UnifiedFamily {
+    /// Key into `families:` / `markers:`; differs from the corpus name for qwen3.
+    #[serde(default)]
+    pub registry: Option<String>,
+    /// Has a native UnifiedParser, versus being driven through the v1/v2 split path.
+    #[serde(default)]
+    pub native: bool,
+    pub reasoning_parser: String,
+    pub tool_parser: String,
+    pub golden_spec: String,
+    /// Markup invisible to the shared leak list, so it has to be named per family.
+    #[serde(default)]
+    pub leak_markers: Vec<String>,
+}
+
+impl UnifiedFamily {
+    /// The `families:` / `markers:` key for this corpus family.
+    pub fn registry_key<'a>(&'a self, corpus_name: &'a str) -> &'a str {
+        self.registry.as_deref().unwrap_or(corpus_name)
+    }
+}
+
+/// Path to the family manifest. `CONFORMANCE_FAMILIES` overrides it so a harness copied
+/// into an OLDER worktree (see `capture_cross_version.rs`) still reads the CURRENT
+/// declarations rather than whatever that commit happened to ship.
+pub fn family_manifest_path() -> PathBuf {
+    if let Ok(p) = std::env::var("CONFORMANCE_FAMILIES") {
+        return PathBuf::from(p);
+    }
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("utils/src/parser_families.yaml")
+}
+
+/// Every family declared for the unified tab, keyed by CORPUS name.
+pub fn unified_families() -> std::collections::BTreeMap<String, UnifiedFamily> {
+    #[derive(serde::Deserialize)]
+    struct Doc {
+        unified: std::collections::BTreeMap<String, UnifiedFamily>,
+    }
+    let path = family_manifest_path();
+    let text =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+    let doc: Doc =
+        serde_yaml::from_str(&text).unwrap_or_else(|e| panic!("parse {}: {e}", path.display()));
+    doc.unified
+}
+
+/// One family, or a panic naming the manifest — a family reaching the harness without a
+/// declaration is a missing row, and saying so beats a generic "no parser mapping".
+pub fn unified_family(corpus_name: &str) -> UnifiedFamily {
+    unified_families().remove(corpus_name).unwrap_or_else(|| {
+        panic!(
+            "family `{corpus_name}` is not declared under `unified:` in {} — add a row there",
+            family_manifest_path().display()
+        )
+    })
+}

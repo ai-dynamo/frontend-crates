@@ -39,24 +39,26 @@ The parser recovers everything it can and NEVER drops valid text, leaks markup, 
 ## Policy decisions
 
 - **P1 Trailing text after the last tool call** -> emit as `text`. RESOLVED by best-effort recovery: trailing prose is arbitrary visible content and must be preserved (dropping it is a regression). vLLM's kimi config suppresses it -> vLLM red (LOSS).
-- **P2 Truncated tool call at EOF** -> DROP the unrecoverable partial call, emit preceding reasoning/text cleanly, no error, no leaked markup. RESOLVED by best-effort recovery (TOOLCALLING batch.5.e). Dynamo drops -> correct; vLLM native gemma4 hard-errors -> red (ERROR).
+- **P2 Truncated tool call at EOF** -> DROP the unrecoverable partial call, emit preceding reasoning/text cleanly, no error, no leaked markup. RESOLVED by best-effort recovery (TOOLCALLING batch.5.e). Dynamo drops -> correct. The two vLLM implementations fail differently, both confirmed by live 0.25.1 capture: the native Rust `Gemma4UnifiedParser` returns `ParsingFailed { "incomplete Gemma4 tool call" }` -> red (ERROR), while the Python parser DISPATCHES the partial call with its truncated arguments (`{city: "Par"}`) — worse for a side-effecting action, since the client executes a call the parser never finished reading.
 - **P3 Empty arguments** -> `{}`.
-- **P4 Structural whitespace** -> strip only tokenizer-structural whitespace bound to the marker grammar (e.g. gemma4 `thought\n`), preserve model-authored whitespace. Still a JUDGMENT call (needs an owner); best-effort recovery does not fully decide it.
+- **P4 Structural whitespace** -> strip only tokenizer-structural whitespace bound to the marker grammar (e.g. gemma4 `thought\n`), preserve model-authored whitespace. RESOLVED for gemma4 by `ReasoningSpec::start_label`: the role label is consumed when present and TOLERATED when absent, so `<|channel>thoughtful musing<channel|>` keeps its first word and a bare `<|channel>` still opens a thought instead of leaking as text. Folding the label into the opener would have passed this corpus and broken both.
 - **P5 Implicit reasoning start** -> prompt-conditioned per family (forced-reasoning models start in reasoning with no `<think>`).
 - **P6 Marker quoted in prose** -> counts only as a real control token; text-only input is best-effort (known limitation, not pass/fail).
 - **P7 Nested channel markers (a marker of one channel inside another)** -> marker recognition is CHANNEL-SCOPED, and both directions follow the same best-effort-recovery rule (recover real structure, never leak markup, never drop a valid call):
   - Inside a **quoted tool-argument string value**, marker-looking bytes are DATA (I7). A reasoning marker there does NOT open a reasoning channel — it is the literal arg string (`reason_markup_in_arg`). A reasoning-first pipeline that extracts `<think>`/`<|channel>` before tool parsing corrupts the arg -> red (ARG_MISMATCH / MERGE).
   - A **well-formed tool-call envelope inside a reasoning span** is STRUCTURAL: break out of reasoning, emit the call, resume reasoning after its close (`tool_in_reason`). Leaking the raw `<|tool_call>...<tool_call|>` into `reasoning_content`, or dropping the call, is the regression -> red (LEAK). The asymmetry is deliberate: quote delimiters explicitly mark a data region, whereas a reasoning span is opaque text that can still contain recoverable structure.
 
-> P1/P2 are RESOLVED by the documented best-effort-recovery contract above (not open product questions). P4 remains a product judgment; cases depending on it carry a `policy:` tag. P7 is RESOLVED by the same contract (no markup leak, no dropped call); current reasoning-first engines diverge, which is the gap it documents.
+> P1/P2 are RESOLVED by the documented best-effort-recovery contract above (not open product questions). P4 is now resolved in code for gemma4 (optional role label) and stays a judgment call for any family that adds structural whitespace of a different shape; cases depending on it carry a `policy:` tag. P7 is RESOLVED by the same contract (no markup leak, no dropped call); the families still on the split path diverge, which is the gap it documents.
 
 ## Divergence classes (how a non-matching cell is colored)
 
 `MATCH` (green) · `ORDER` / `MERGE` / `LOSS` (the unification gap) · `LEAK` (markup in text, `↯`) · `ARG_MISMATCH` / `WHITESPACE` (version drift) · `ERROR` (engine hard-errored where the spec expects graceful output).
 
+The Dynamo column is a per-family MIXTURE: `gemma4` and `qwen3` run the native `UnifiedParser` (green across all 52 scenarios each), `kimi_k2` still runs the v1-reasoning + v2-tool split and carries the gap. Every remaining red Dynamo cell in this tab is a split-path cell.
+
 ## Quick reference — numbered taxonomy (`UNIFIED.<group>.<sub>`)
 
-Case IDs use short `group.sub` labels (`1.a`, `2.b`, …) like the other suites; the scenario slug (the golden filename key) is shown in parentheses. **Groups 1–9 mirror the tool-calling STREAM taxonomy** (`TOOLCALLING.streamv2.N`) as reasoning-free unified cases — this surface subsumes STREAM. **Group 10** is the reasoning axis (`REASONING.*`). **Group 11 is UNIQUE to unified**: reasoning↔tool ORDER that neither STREAM (no reasoning) nor REASONING (no ordered tool events) can express. **Group 12** is adversarial nesting — a marker of one channel inside another (P7). 33 scenarios × 3 families (gemma4 / qwen3 / kimi_k2) = 99 cases.
+Case IDs use short `group.sub` labels (`1.a`, `2.b`, …) like the other suites; the scenario slug (the golden filename key) is shown in parentheses. **Groups 1–9 mirror the tool-calling STREAM taxonomy** (`TOOLCALLING.streamv2.N`) as reasoning-free unified cases — this surface subsumes STREAM. **Group 10** is the reasoning axis (`REASONING.*`). **Group 11 is UNIQUE to unified**: reasoning↔tool ORDER that neither STREAM (no reasoning) nor REASONING (no ordered tool events) can express. **Group 12** is adversarial nesting — a marker of one channel inside another (P7). **Groups 30+ are REQUEST-SCOPED modes** — what the serving layer told the parser about this request, rather than what the model emitted; they use PAIRED TENS, `X0` for a mode's happy path and `X1` for its malformed counterpart, so a recovery case never sorts next to the baseline it contrasts with. 52 scenarios × 3 families (gemma4 / qwen3 / kimi_k2) = 156 cases.
 
 ### Group 1 — TC Single call
 - **`1.a`** (`tool_only`) One tool call, no reasoning, no surrounding text. The tool suite's baseline.
@@ -110,6 +112,67 @@ Case IDs use short `group.sub` labels (`1.a`, `2.b`, …) like the other suites;
 - **`12.b`** (`tool_in_reason`) "Reasoning contains tool call" — a well-formed tool-call envelope nested inside a reasoning span. OPPOSITE of 12.a: a reasoning span is opaque text (not a quoted data region), so a real tool-call marker inside it IS structural. Golden breaks out (reason → call → reason). Engines leak the tool markup into `reasoning_content` and drop the call. Class LEAK.
 - **`12.c`** (`reason_markup_in_arg_with_text`) 12.a WITH visible narration before and after — all three channels at once (text / tool-call-with-markup-arg / text). Golden keeps text as text, the call clean, the markup byte-exact in the arg. Class ARG_MISMATCH / MERGE.
 - **`12.d`** (`tool_in_reason_with_text`) 12.b WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
+
+## Request-scoped modes (groups 30+)
+
+Groups 1–12 vary the model OUTPUT. Groups 30+ vary the request: what the serving layer passed to `UnifiedParser::initialize_with_output_mode(prefill, tool_output_mode)` before any output arrived. The pairing is `X0` happy / `X1` malformed, and a new mode takes the next ten.
+
+`prefill` says which channel the rendered prompt already opened, so the model never emits that opener: `None` (it opens its own), `Reasoning` (the stream begins INSIDE a thought), `Response` (visible content is already open, so there is no reasoning channel at all and reasoning markers are ordinary text). `tool_output_mode` says whether the backend constrained decoding: `Native` (model markup) or `GuidedJson` (bare JSON — a NAMED choice sends that tool's arguments alone, a REQUIRED choice sends one call object or an array of them).
+
+### Group 30 — Guided decoding, happy
+- **`30.a`** (`guided_json_named_tool`) `tool_choice` names a tool; the payload is that tool's arguments and the name comes from the request.
+- **`30.b`** (`guided_json_required_tool`) Required choice; the payload is an array of call objects.
+- **`30.c`** (`guided_json_two_calls`) Two DIFFERENT tools in one array. Multi-call is the array's ordinary shape, not an edge case.
+
+### Group 31 — Guided decoding, malformed
+- **`31.a`** (`guided_json_invalid_call`) Valid JSON that is not a call (no `name`). Surfaces as text (P2); no call dispatched.
+- **`31.b`** (`guided_json_malformed_json`) JSON that does not parse — a truncated object, what a constrained decode looks like when the budget runs out.
+- **`31.c`** (`guided_json_partial_calls`) The array parses but one element is not a call.
+- **`31.d`** (`guided_json_list_with_broken_element`) `[<valid call>, <broken JSON>]` — the array itself does not parse, so per-element recovery never runs.
+
+`31.c` and `31.d` pin **all-or-nothing**: one bad element voids the whole array and the payload goes out as text, taking the valid call with it. That is deliberate. A tool call is a side effect, so dispatching one extracted from a document that failed validation fails OPEN. Text loses nothing — the raw payload stays visible. Every case in this group also emits `tracing::warn!(why = "unified_guided_json_not_a_tool_call")`: the events alone are indistinguishable from a model that chose to answer in prose, so the log is the only signal the backend's guided decoding failed.
+
+### Group 40 — Prefilled reasoning, happy
+- **`40.a`** (`prefilled_reasoning_with_tool`) Stream begins inside a thought, closes it, calls a tool.
+- **`40.b`** (`prefilled_reasoning_with_guided_json`) Same, with the call as guided JSON.
+- **`40.c`** (`prefilled_reasoning_then_text_then_tool`) reasoning → visible prose → call. All three channels in one prefilled stream.
+- **`40.d`** (`prefilled_reasoning_then_text`) reasoning → prose, no call. Pins that closing a prefilled thought returns the stream to VISIBLE content rather than leaving it in reasoning, which would swallow the whole answer.
+
+### Group 41 — Prefilled reasoning, malformed
+- **`41.a`** (`prefilled_reasoning_redundant_opener`) The backend re-emits the `<think>` the prompt already wrote. Exactly one echo is consumed, not leaked; a second would be stray markup and stripped (I3). The only case where a prefilled stream legitimately carries an opener.
+- **`41.b`** (`prefilled_reasoning_truncated`) Budget runs out mid-call. Keep the completed reasoning, drop the partial call (P2).
+
+### Group 50 — Prefilled response, happy
+- **`50.a`** (`prefilled_response_with_tool`) Leading visible content, then a native call.
+- **`50.b`** (`prefilled_response_with_guided_json`) Guided payload with the response channel already open.
+- **`50.c`** (`prefilled_response_guided_json_two_calls`) Two different tools; enters guided mode visible-only rather than outside-reasoning.
+- **`50.d`** (`prefilled_response_reasoning_markers_literal`) **The only case where `prefill=Response` is observable.** `<think>literal</think>` must reach the user as TEXT, markers and all, because this stream has no reasoning channel. Every other 50/51 case has no reasoning markers in its input and therefore parses identically under `prefill=None` — 50.a matches 8.a, 50.b matches 30.b, 50.c matches 30.c, 51.b matches 31.c.
+
+### Group 51 — Prefilled response, malformed
+- **`51.a`** (`prefilled_response_truncated`) Budget runs out mid-call; the prose already emitted survives.
+- **`51.b`** (`prefilled_response_guided_json_partial_calls`) All-or-nothing, as `31.c`, with the response channel prefilled.
+
+## Authoring a case: what to check BEFORE adding one
+
+Every rule here exists because a case was added that could not fail for the reason it claimed. Fake coverage is worse than no coverage — it renders green.
+
+1. **Is it distinguishable from an existing case?** Compare `init` AND input against the corpus. If some existing case has the same configuration and the same input shape, the new case tests nothing. Three groups were deleted for exactly this: a whole axis whose 51/52/53 cases had the same config and inputs as `1.a`, differing only in a label the parser cannot read.
+2. **Can it fail for the stated reason?** Write down what would have to break for the case to go red, then confirm the parser can even SEE that input. `finish_reason` cannot: `finish()` takes no argument, in Dynamo and in vLLM alike, so a case that varies only the finish reason varies nothing. If the axis is invisible to the parser, express it as an input shape instead — `length` becomes a TRUNCATED input, which is observable.
+3. **Does the field already exist under another name?** A per-case `input_mode` was added that was a 1:1 alias of `init.prefill` across every row, and could not diverge, because "where the stream starts" IS what prefill encodes. Grep the case dict before adding a key.
+4. **Measure the behavior, do not predict it.** Author the case, run the harness, read what the parser actually emitted, and THEN write the golden and the description around it. The all-or-nothing array semantics were found this way; predicting them would have produced a wrong golden that looked authoritative.
+5. **A near-duplicate that survives must say what it duplicates.** If a case is kept because it exercises a different code path despite the same shape, name the sibling in its description (`50.b` says it matches `30.b`), so the next reader does not re-derive the question.
+6. **The input must be a shape the declared `init` can actually produce.** Six guided-decoding scenarios rendered NATIVE model markup for gemma4 and kimi_k2 while declaring `tool_output_mode=GuidedJson` — a mode that constrains the model to bare JSON, so that markup is the one input it can never emit. They rendered green for a year because neither family had a unified parser to run them; the moment gemma4 got one, all six failed. Guided payloads are grammar-independent and are now written ONCE for every family (`every_family` in `gen_unified_golden.py`); only the reasoning envelope around them is per family.
+7. **A per-family golden needs a per-family fill, not one family's bytes.** `50.d` asserts that the model's own reasoning markers reach the user as literal TEXT, and its golden hardcoded qwen3's `<think>literal</think>` for all three families. Use the `None`-placeholder fill (as `12.a` does for an argument value) so the scenario stays shared and only the grammar-specific bytes differ.
+
+## Verifying a change to the table
+
+The model blob and the rendered page are different things. A cell can carry correct JSON and render nothing — the column-header popup shipped with `init` in every column and an empty config list, because the model that feeds `buildGrammarHtml` is assembled separately and dropped the field.
+
+- Check the DOM, not just `conformance-model` JSON.
+- Headless Chrome reports `(hover: hover) = false`, so hover listeners never attach and a naive hover test "fails" on the baseline too. Emulate with `--blink-settings=primaryHoverType=2,availableHoverTypes=2`.
+- A synthetic `pointerenter` does NOT set CSS `:hover`. Use it to test JS behavior, a real pointer move to test CSS.
+- Never run `render_table_v2.sh` and the pytest suite at the same time: both stage into `conformance/utils/.stage/`, and the collision shows up as ~13 unrelated browser-test errors.
+- A `transform` on a cell makes it the containing block for its own popup AND scales it. Use shadow and filter for cell affordances; a transform silently breaks popup placement.
 
 ## Deferred (not in the U0 seed set)
 
