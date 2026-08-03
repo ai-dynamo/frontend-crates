@@ -1145,17 +1145,19 @@ dependencies = [
 
 [[package]]
 name = "fastokens"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "796a262ed47d1458a4b40d0ed831c927e6f54d5b9c1de2683bb4ac9b04f4c7cc"
+checksum = "5f1f336629cfa807210f0b68de9b27ec7699cedf32d57b125bd4d73f87f6e92b"
 dependencies = [
  "daachorse",
  "fancy-regex 0.17.0",
  "hf-hub",
  "icu_normalizer",
+ "libc",
  "memchr",
  "pcre2",
  "rayon",
+ "regex-syntax",
  "serde",
  "serde_json",
  "strum",
