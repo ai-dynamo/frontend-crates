@@ -513,16 +513,25 @@ mod tests {
     }
 
     #[test]
-    fn a_named_choice_unwraps_a_full_call_envelope() {
-        // Some backends emit the whole envelope even though tool_choice named the tool.
-        // Forwarding it verbatim dispatched with `{name, arguments}` as the argument set.
-        fn named(payload: &str) -> Vec<UnifiedEvent> {
-            let mut parser = qwen3_unified(&weather_tools());
+    fn a_named_choice_forwards_its_payload_verbatim() {
+        // The payload IS the tool's argument object. An earlier revision tried to
+        // unwrap a `{"name","arguments"}` shape to tolerate envelope-emitting backends;
+        // that heuristic is unsound because ordinary arguments can use those key names,
+        // and it broke both ways — voiding a legitimate forced call when the inner name
+        // differed, and dropping the real argument set when it matched.
+        fn named(tool: &str, payload: &str) -> Vec<UnifiedEvent> {
+            let tools = vec![Tool {
+                name: tool.into(),
+                description: None,
+                parameters: serde_json::json!({"type": "object"}),
+                strict: None,
+            }];
+            let mut parser = qwen3_unified(&tools);
             parser
                 .initialize_with_output_mode(
                     UnifiedParserPrefill::None,
                     UnifiedToolOutputMode::GuidedJson {
-                        named_tool: Some("get_weather"),
+                        named_tool: Some(tool),
                     },
                 )
                 .unwrap();
@@ -530,21 +539,48 @@ mod tests {
             deltas.extend(parser.finish().unwrap());
             assemble(&deltas)
         }
-        let want = vec![call("get_weather", serde_json::json!({"city": "Paris"}))];
-        assert_eq!(named(r#"{"city": "Paris"}"#), want, "bare arguments");
         assert_eq!(
-            named(r#"{"name": "get_weather", "arguments": {"city": "Paris"}}"#),
-            want,
-            "envelope naming the SAME tool should unwrap"
+            named("get_weather", r#"{"city": "Paris"}"#),
+            vec![call("get_weather", serde_json::json!({"city": "Paris"}))],
+            "bare arguments"
         );
-        // An envelope naming a DIFFERENT tool is malformed — guessing which the caller
-        // meant is worse than surfacing it, so it takes the P2 text recovery.
-        let mismatch = named(r#"{"name": "other_tool", "arguments": {"city": "Paris"}}"#);
-        assert!(
-            mismatch
-                .iter()
-                .all(|e| !matches!(e, UnifiedEvent::ToolCall { .. })),
-            "dispatched despite a name mismatch: {mismatch:?}"
+        // The case the heuristic broke: a forced tool whose OWN arguments happen to use
+        // `name` + `parameters`. It must still be dispatched, with those arguments.
+        let args = serde_json::json!({"name": "foo", "parameters": {"x": 1}});
+        assert_eq!(
+            named("register_handler", &args.to_string()),
+            vec![call("register_handler", args.clone())],
+            "legitimate arguments using name/parameters keys must still dispatch"
+        );
+        let same = serde_json::json!({"name": "register_handler", "parameters": {"x": 1}});
+        assert_eq!(
+            named("register_handler", &same.to_string()),
+            vec![call("register_handler", same.clone())],
+            "an inner name matching the tool must not truncate the argument set"
+        );
+    }
+
+    #[test]
+    fn an_orphan_tool_close_before_a_guided_payload_is_stripped() {
+        // Only the reasoning closer was stripped outside a thought, so the family's
+        // other orphan markers stayed glued to the JSON: it failed to parse and went
+        // out verbatim with the call lost.
+        let mut parser = qwen3_unified(&weather_tools());
+        parser
+            .initialize_with_output_mode(
+                UnifiedParserPrefill::None,
+                UnifiedToolOutputMode::GuidedJson {
+                    named_tool: Some("get_weather"),
+                },
+            )
+            .unwrap();
+        let mut deltas = parser.push(r#"</tool_call>{"city": "Paris"}"#).unwrap();
+        deltas.extend(parser.finish().unwrap());
+        let out = assemble(&deltas);
+        assert_eq!(
+            out,
+            vec![call("get_weather", serde_json::json!({"city": "Paris"}))],
+            "orphan tool close was not stripped: {out:?}"
         );
     }
 

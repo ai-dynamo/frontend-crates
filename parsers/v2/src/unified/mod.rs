@@ -670,7 +670,19 @@ impl GuidedState {
                     // The native orphan handler compares the two positions and strips
                     // the earlier one, so the modes disagreed on identical bytes (`I3`).
                     let open_at = self.input.find(start);
-                    let close_at = self.input.find(end);
+                    // The closer is not the only stray marker that can precede a guided
+                    // payload. The family's other orphan markers (for qwen3,
+                    // `</tool_call>`) were left glued to the JSON, which then failed to
+                    // parse and went out verbatim with the call lost. `GuidedState`
+                    // already carries that list and strips the same set inside an open
+                    // thought; outside one it was ignored.
+                    let stray_close = [end]
+                        .into_iter()
+                        .chain(self.orphan_markers.iter().map(String::as_str))
+                        .filter_map(|m| self.input.find(m).map(|at| (at, m.len())))
+                        .min_by_key(|(at, _)| *at);
+                    let close_at = stray_close.map(|(at, _)| at);
+                    let close_len = stray_close.map(|(_, l)| l).unwrap_or(end.len());
                     let closer_first = matches!((open_at, close_at), (Some(o), Some(c)) if c < o)
                         || (open_at.is_none() && close_at.is_some());
 
@@ -704,7 +716,7 @@ impl GuidedState {
                         } else {
                             push_run(&mut output, Kind::Text, &pending);
                         }
-                        self.input.drain(..at + end.len());
+                        self.input.drain(..at + close_len);
                         continue;
                     }
 
@@ -837,30 +849,34 @@ impl GuidedState {
             // Arguments are an OBJECT. A bare string / number / null / array is
             // syntactically valid JSON but is not an argument set, and dispatching it
             // would hand the tool a shape it cannot bind — surface it as text instead.
-            Some(name) => {
-                serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(payload)
-                    .ok()
-                    .and_then(|obj| {
-                        // Some backends emit the WHOLE call envelope even though `tool_choice`
-                        // already named the tool. Forwarding that verbatim dispatches the tool
-                        // with `{name, arguments}` as its argument set instead of the real one,
-                        // which the required path already avoids. Unwrap it here so the two
-                        // agree; a mismatched name is malformed, not something to guess at, so
-                        // it falls through to the text recovery below.
-                        let envelope = obj
-                            .get("name")
-                            .and_then(|v| v.as_str())
-                            .zip(obj.get("arguments").or_else(|| obj.get("parameters")));
-                        match envelope {
-                            Some((emitted, args)) if emitted == name.as_str() => {
-                                args.as_object()?;
-                                Some(vec![(name.clone(), args.to_string())])
-                            }
-                            Some(_) => None,
-                            None => Some(vec![(name.clone(), payload.to_string())]),
-                        }
-                    })
-            }
+            Some(name) => serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(
+                payload,
+            )
+            .ok()
+            .map(|obj| {
+                // The payload IS this tool's argument object — forward it verbatim.
+                //
+                // An earlier revision unwrapped a `{"name", "arguments"}` shape here to
+                // tolerate a backend that emits the whole call envelope despite
+                // `tool_choice` already naming the tool. That heuristic is unsound: the
+                // shape is not exclusive to envelopes, and a tool like
+                // `register_handler({"name": …, "parameters": …})` produces it. It broke
+                // BOTH ways — a non-matching inner name voided a legitimate forced call
+                // entirely, and a matching one forwarded only the inner value as the
+                // argument set. Guided decoding is schema-constrained by the backend, so
+                // the payload is trusted; a wrapping backend is out of spec and gets a
+                // warning rather than a guess.
+                if obj.contains_key("name")
+                    && (obj.contains_key("arguments") || obj.contains_key("parameters"))
+                {
+                    tracing::warn!(
+                        why = "guided_named_payload_looks_like_an_envelope",
+                        named_tool = %name,
+                        "named-choice payload carries `name` plus `arguments`/`parameters`; forwarding it verbatim as the argument set"
+                    );
+                }
+                vec![(name.clone(), payload.to_string())]
+            }),
             None => parse_required_guided_calls(payload),
         };
 
