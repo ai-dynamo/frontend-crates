@@ -128,6 +128,12 @@ def every_family(input_text, vllm, dynamo, *rest):
 
 
 
+def by_family(render, vllm, dynamo, *rest):
+    """`render(fam) -> input` for the scenarios where only the reasoning envelope
+    around an otherwise identical payload is grammar-specific."""
+    return {fam: (render(fam), vllm, dynamo, *rest) for fam in FAMILIES}
+
+
 def control_tokens(fam):
     """Bare control tokens for `fam`, DERIVED from the renderers the corpus already
     uses (`r_reason` / `r_tool`) rather than a second grammar table — a parallel
@@ -868,6 +874,130 @@ EDGE = [
                     {"verdict": "match", "note": "hypothesis: the kimi tool parser drops the unterminated call; verify at capture time"},
                     {"verdict": "match", "note": "P2: v2 keeps the leading prose and drops the partial call"}),
      }),
+]
+
+
+# ---------------------------------------------------------------------------
+# GENERATED semantic cross-product.
+#
+# Four hand-authored rows would have closed exactly the hole Devin found and left
+# the NEXT crossing open — the defects live in axis crossings, not in the example
+# that happened to expose them. So the guided edge region is a PRODUCT of two
+# authored bases: what the payload is, and what surrounds it.
+#
+# Measured before this existed (qwen3, guided cases, surrounding-markup x
+# golden-dispatches-a-call): 12 / 5 / 5 / ZERO. The empty quadrant — markup
+# present AND no call recoverable — is where the P2 recovery leak and the
+# unbounded invoke-header scan both lived, and no authored case could reach it.
+#
+# Products that say nothing are dropped by a predicate rather than never written,
+# so the reason a crossing is absent stays visible here instead of being implicit
+# in someone's case list.
+# ---------------------------------------------------------------------------
+
+# name -> (payload text, does a well-formed parse dispatch a call?)
+GUIDED_PAYLOADS = {
+    "valid": (GUIDED_ONE_CALL, True),
+    "malformed_json": ('[{"name": "get_weather", "arguments": {"city": ', False),
+    "not_a_call": ('{"unexpected": "shape"}', False),
+    "broken_element": ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]', False),
+}
+
+# name -> (wrap(payload, fam) -> input, one-line description of the surrounding)
+# The third element is whether the surrounding puts a marker AFTER the payload.
+# It decides the recovery bytes and is the `I7`/`I3` boundary: a stripped TAIL
+# marker also trims the whitespace it was attached to, while a payload with no
+# trailing marker is handed back byte-identical — trailing space and all. The
+# corpus records that difference instead of each case guessing at it.
+GUIDED_SURROUNDS = {
+    "clean": (lambda pay, fam: pay, "no surrounding grammar", False),
+    "trailing_close": (lambda pay, fam: f"{pay}{control_tokens(fam)[3]}",
+                       "a stray tool CLOSE after the payload", True),
+    "wrapped": (lambda pay, fam: f"{control_tokens(fam)[2]}{pay}{control_tokens(fam)[3]}",
+                "the payload wrapped in native tool markup", True),
+    "bare_opener": (lambda pay, fam: f"{control_tokens(fam)[2]}{pay}",
+                    "a bare tool OPENER before the payload, never terminated", False),
+}
+
+
+def _guided_product():
+    """Every (payload x surrounding) crossing that says something distinct.
+
+    `clean` x `valid` is `30.a`/`30.b` and `clean` x the malformed payloads is
+    `31.a`-`31.d`; those already exist, so the predicate drops them rather than
+    emitting a duplicate under a second name.
+    """
+    out = []
+    for pay_name, (payload, dispatches) in GUIDED_PAYLOADS.items():
+        for sur_name, (wrap, sur_desc, strips_tail) in GUIDED_SURROUNDS.items():
+            if sur_name == "clean":
+                continue  # already authored as 30.a/30.b and 31.a-31.d
+            scenario = f"guided_json_{pay_name}_{sur_name}"
+            golden = ([{"kind": "tool_call", "name": "get_weather",
+                        "arguments": {"city": "Paris"}}] if dispatches else
+                      [{"kind": "text", "text": None}])
+            note = (f"guided payload ({pay_name}) with {sur_desc}: "
+                    + ("the call still dispatches and no marker reaches the user"
+                       if dispatches else
+                       "no call is recoverable, and the recovery TEXT carries none "
+                       "of the markup the parse stripped"))
+            out.append((
+                scenario,
+                f"Guided JSON, payload is {pay_name}, surrounded by {sur_desc}. "
+                + ("Markers around a recoverable payload must not cost the call (`I3`)."
+                   if dispatches else
+                   "Nothing parses as a call, so the payload surfaces as text — and the "
+                   "text must not contain the control markup that was stripped to "
+                   "attempt the parse (`I3`). This crossing had NO case before: every "
+                   "authored markup case carried a well-formed payload, and every "
+                   "malformed payload was authored bare."),
+                ["P2"] if not dispatches else ["I3"],
+                golden,
+                {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+                {"finish_reason": "stop"},
+                guided_surroundings(
+                    lambda fam, w=wrap, pl=payload: w(pl, fam),
+                    note,
+                    fill=(None if dispatches else
+                          (lambda fam, pl=payload, st=strips_tail: pl.rstrip() if st else pl)),
+                ),
+            ))
+    return out
+
+
+EDGE += _guided_product()
+
+
+# Group 4 (TC Malformed envelope) was a LABELLED group with zero cases, and the
+# degenerate shape below had none either: no row anywhere pinned that control
+# markup ALONE emits nothing. Both are native, so the input is per family.
+EDGE += [
+    ("tool_markup_only_emits_nothing",
+     "The whole generated output is control markup and nothing else — a stray close with no "
+     "block ever opened. Everything is stripped, so the parser emits NO events at all. Until "
+     "this case there was no row with an empty golden: every case asserted something was "
+     "produced, so 'markup alone leaks nothing' (`I3`) was never actually pinned.",
+     ["P2"],
+     [],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     {"finish_reason": "stop"},
+     by_family(lambda fam: control_tokens(fam)[3],
+               D("UNSUPPORTED", "vLLM base case does not capture a markup-only turn"),
+               {"verdict": "match", "note": "orphan close stripped; nothing to emit"})),
+
+    ("tool_block_never_closed_then_text",
+     "A tool block opens and the model never closes it, then keeps writing prose. Nothing is "
+     "emitted: the prose is BLOCK CONTENT, not the user's answer, so it drops with the "
+     "unrecoverable call — the same contract `truncated_tool_eof` (5.a) pins, here with the "
+     "block opening at position 0 so no reasoning survives to mask it. Worth pinning "
+     "precisely because the bytes look like an answer; the envelope is what decides.",
+     ["P2"],
+     [],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     {"finish_reason": "stop"},
+     by_family(lambda fam: f"{control_tokens(fam)[2]}still thinking about it",
+               D("UNSUPPORTED", "vLLM base case does not capture an unterminated envelope"),
+               {"verdict": "match", "note": "P2: unterminated envelope drops its content"})),
 ]
 
 

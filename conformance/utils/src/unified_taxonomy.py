@@ -29,6 +29,10 @@ UNIFIED_TAX = {
     "two_calls": (2, "a"), "two_calls_same_name": (2, "b"),
     # Group 3 — No call (streamv2.3)
     "text_only": (3, "a"),
+    # Group 4 — Malformed envelope. Labelled but EMPTY until now.
+    "tool_block_never_closed_then_text": (4, "a"),
+    "tool_markup_only_emits_nothing": (4, "b"),
+
     # Group 5 — Truncation / recovery (streamv2.5)
     "truncated_tool_eof": (5, "a"), "tool_no_close": (5, "b"),
     "orphan_close_after_prose": (5, "c"),
@@ -74,6 +78,23 @@ UNIFIED_TAX = {
     "guided_json_prose_before_reasoning": (31, "i"),
     "guided_json_orphan_reason_close_before_payload": (31, "j"),
     "guided_json_orphan_tool_close_before_payload": (31, "k"),
+    # Generated crossings (`_guided_product` in gen_unified_golden.py): payload
+    # shape x surrounding grammar. The 31.* rows are the quadrant that had ZERO
+    # cases — markup present AND no call recoverable — where both the P2 recovery
+    # leak and the unbounded invoke-header scan lived.
+    "guided_json_valid_trailing_close": (30, "h"),
+    "guided_json_valid_wrapped": (30, "i"),
+    "guided_json_valid_bare_opener": (30, "j"),
+    "guided_json_malformed_json_trailing_close": (31, "l"),
+    "guided_json_malformed_json_wrapped": (31, "m"),
+    "guided_json_malformed_json_bare_opener": (31, "n"),
+    "guided_json_not_a_call_trailing_close": (31, "o"),
+    "guided_json_not_a_call_wrapped": (31, "p"),
+    "guided_json_not_a_call_bare_opener": (31, "q"),
+    "guided_json_broken_element_trailing_close": (31, "r"),
+    "guided_json_broken_element_wrapped": (31, "s"),
+    "guided_json_broken_element_bare_opener": (31, "t"),
+
     # Group 40 — Prefilled reasoning, happy
     "prefilled_reasoning_with_tool": (40, "a"), "prefilled_reasoning_with_guided_json": (40, "b"),
     "prefilled_reasoning_then_text_then_tool": (40, "c"), "prefilled_reasoning_then_text": (40, "d"),
