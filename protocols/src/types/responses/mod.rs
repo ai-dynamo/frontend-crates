@@ -30,7 +30,7 @@
 
 use std::collections::HashMap;
 
-use serde::{Deserialize, Serialize, de};
+use serde::{Deserialize, Serialize};
 
 // Re-export all upstream response types (shared structures like ResponseUsage,
 // tool-call item types, streaming events, etc.). The types we own below
@@ -336,28 +336,25 @@ pub struct InputReasoningItem {
     pub status: Option<OutputStatus>,
 }
 
-/// Private Codex wire shape, normalized to an existing user message.
-#[derive(Deserialize)]
-struct AgentMessage {
-    #[serde(rename = "author")]
-    _author: String,
-    #[serde(rename = "recipient")]
-    _recipient: String,
-    content: Vec<AgentMessageInputContent>,
+/// Codex's agent-to-agent input item.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct AgentMessage {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    pub author: String,
+    pub recipient: String,
+    pub content: Vec<AgentMessageInputContent>,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(tag = "type", rename_all = "snake_case")]
-enum AgentMessageInputContent {
+pub enum AgentMessageInputContent {
     InputText(InputTextContent),
-    EncryptedContent {
-        #[serde(rename = "encrypted_content")]
-        _encrypted_content: String,
-    },
+    EncryptedContent { encrypted_content: String },
 }
 
 /// Structured input/output item, discriminated by `type`. Mirrors upstream
-/// `Item` variant-for-variant; only `Message` and `Reasoning` use owned types.
+/// except for the Codex-only `AgentMessage` input extension.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Item {
@@ -386,10 +383,11 @@ pub enum Item {
     McpCall(MCPToolCall),
     CustomToolCallOutput(CustomToolCallOutput),
     CustomToolCall(CustomToolCall),
+    AgentMessage(AgentMessage),
 }
 
 /// Single input item. Untagged; order matters (most specific first).
-#[derive(Debug, Serialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum InputItem {
     ItemReference(ItemReference),
@@ -397,104 +395,12 @@ pub enum InputItem {
     EasyMessage(EasyInputMessage),
 }
 
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum InputItemWire {
-    ItemReference(ItemReference),
-    Item(Item),
-    EasyMessage(EasyInputMessage),
-}
-
-impl<'de> Deserialize<'de> for InputItem {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let value = serde_json::Value::deserialize(deserializer)?;
-        if matches!(
-            value.get("type").and_then(serde_json::Value::as_str),
-            Some("agent_message")
-        ) {
-            let message = AgentMessage::deserialize(value).map_err(de::Error::custom)?;
-            return normalize_agent_message(message).map_err(de::Error::custom);
-        }
-
-        match InputItemWire::deserialize(value).map_err(de::Error::custom)? {
-            InputItemWire::ItemReference(item) => Ok(Self::ItemReference(item)),
-            InputItemWire::Item(item) => Ok(Self::Item(item)),
-            InputItemWire::EasyMessage(message) => Ok(Self::EasyMessage(message)),
-        }
-    }
-}
-
-fn normalize_agent_message(message: AgentMessage) -> Result<InputItem, &'static str> {
-    let mut text = Vec::with_capacity(message.content.len());
-    for part in message.content {
-        match part {
-            AgentMessageInputContent::InputText(part) => text.push(part.text),
-            AgentMessageInputContent::EncryptedContent { .. } => {
-                return Err("Codex agent_message with encrypted content is unsupported");
-            }
-        }
-    }
-    Ok(InputItem::EasyMessage(EasyInputMessage {
-        r#type: MessageType::Message,
-        role: Role::User,
-        content: EasyInputContent::Text(text.join("\n")),
-        phase: None,
-    }))
-}
-
 /// Input to a `POST /v1/responses` request.
-#[derive(Debug, Serialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum InputParam {
     Text(String),
     Items(Vec<InputItem>),
-}
-
-struct InputParamVisitor;
-
-impl<'de> de::Visitor<'de> for InputParamVisitor {
-    type Value = InputParam;
-
-    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter.write_str("a string or an array of input items")
-    }
-
-    fn visit_str<E>(self, text: &str) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(InputParam::Text(text.to_owned()))
-    }
-
-    fn visit_string<E>(self, text: String) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(InputParam::Text(text))
-    }
-
-    fn visit_seq<A>(self, mut items: A) -> Result<Self::Value, A::Error>
-    where
-        A: de::SeqAccess<'de>,
-    {
-        let mut input = Vec::with_capacity(items.size_hint().unwrap_or(0));
-        while let Some(item) = items.next_element()? {
-            input.push(item);
-        }
-        Ok(InputParam::Items(input))
-    }
-}
-
-impl<'de> Deserialize<'de> for InputParam {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        deserializer.deserialize_any(InputParamVisitor)
-    }
 }
 
 impl Default for InputParam {
@@ -696,96 +602,34 @@ mod tests {
     }
 
     #[test]
-    fn codex_agent_message_normalizes_to_user_message() {
-        let req: CreateResponse = serde_json::from_value(serde_json::json!({
-            "input": [{
-                "type": "agent_message",
-                "author": "/root",
-                "recipient": "/root/worker",
-                "content": [{"type": "input_text", "text": "Return exactly OK."}],
-            }],
-        }))
-        .expect("Codex agent message should deserialize");
+    fn codex_agent_message_round_trips_losslessly() {
+        let json = serde_json::json!({
+            "type": "agent_message",
+            "id": "agm_1",
+            "author": "/root",
+            "recipient": "/root/worker",
+            "content": [
+                {"type": "input_text", "text": "First."},
+                {"type": "encrypted_content", "encrypted_content": "AB=="},
+            ],
+        });
+        let item: InputItem =
+            serde_json::from_value(json.clone()).expect("Codex agent message should deserialize");
 
-        let InputParam::Items(items) = req.input else {
-            panic!("expected items");
+        let InputItem::Item(Item::AgentMessage(message)) = &item else {
+            panic!("expected Item::AgentMessage");
         };
-        let InputItem::EasyMessage(message) = &items[0] else {
-            panic!("expected normalized user message");
-        };
-        assert_eq!(message.role, Role::User);
-        assert!(
-            matches!(message.content, EasyInputContent::Text(ref text) if text == "Return exactly OK.")
-        );
-    }
-
-    #[test]
-    fn codex_agent_message_joins_plaintext_parts_with_newlines() {
-        let req: CreateResponse = serde_json::from_value(serde_json::json!({
-            "input": [{
-                "type": "agent_message",
-                "author": "/root",
-                "recipient": "/root/worker",
-                "content": [
-                    {"type": "input_text", "text": "First."},
-                    {"type": "input_text", "text": "Second."},
-                ],
-            }],
-        }))
-        .expect("Codex agent message should deserialize");
-
-        let InputParam::Items(items) = req.input else {
-            panic!("expected items");
-        };
+        assert_eq!(message.id.as_deref(), Some("agm_1"));
+        assert_eq!(message.author, "/root");
+        assert_eq!(message.recipient, "/root/worker");
         assert!(matches!(
-            &items[0],
-            InputItem::EasyMessage(EasyInputMessage {
-                content: EasyInputContent::Text(text),
-                ..
-            }) if text == "First.\nSecond."
+            message.content.as_slice(),
+            [
+                AgentMessageInputContent::InputText(first),
+                AgentMessageInputContent::EncryptedContent { encrypted_content },
+            ] if first.text == "First." && encrypted_content == "AB=="
         ));
-    }
-
-    #[test]
-    fn codex_agent_message_rejects_encrypted_content() {
-        let error = serde_json::from_value::<CreateResponse>(serde_json::json!({
-            "input": [{
-                "type": "agent_message",
-                "author": "/root",
-                "recipient": "/root/worker",
-                "content": [{"type": "encrypted_content", "encrypted_content": "AB=="}],
-            }],
-        }));
-        assert!(
-            error
-                .expect_err("encrypted agent messages must not be accepted")
-                .to_string()
-                .contains("encrypted content is unsupported")
-        );
-    }
-
-    #[test]
-    fn codex_agent_message_preserves_empty_text() {
-        let req: CreateResponse = serde_json::from_value(serde_json::json!({
-            "input": [{
-                "type": "agent_message",
-                "author": "/root",
-                "recipient": "/root/worker",
-                "content": [],
-            }],
-        }))
-        .expect("empty Codex agent message should deserialize");
-
-        let InputParam::Items(items) = req.input else {
-            panic!("expected items");
-        };
-        assert!(matches!(
-            &items[0],
-            InputItem::EasyMessage(EasyInputMessage {
-                content: EasyInputContent::Text(text),
-                ..
-            }) if text.is_empty()
-        ));
+        assert_eq!(serde_json::to_value(item).unwrap(), json);
     }
 
     #[test]
