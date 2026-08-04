@@ -2253,6 +2253,32 @@ def _load_unified_fixtures(base: Path):
     return cases, caps, versions
 
 
+@functools.lru_cache(maxsize=None)
+def _unified_parser_path(artifact_root_s: str, ver: str) -> str:
+    """WHICH parser produced a version's capture: the unified one, or the chained
+    reasoning+tool pair (the SPLIT path).
+
+    A build that predates the unified module can only answer through the split path.
+    Labelling its column "Unified" makes an empty cell read as "the unified parser
+    returned nothing", when in fact there was never a unified parser to run — which
+    is the actual, interesting difference for a request-mode case.
+    """
+    d = _unified_base(Path(artifact_root_s)) / f"dynamo_v2-{ver}"
+    if not d.is_dir():
+        return "unified"
+    for fp in sorted(d.rglob("*.yaml")):
+        if "parser_path: split" in fp.read_text():
+            return "split"
+    return "unified"
+
+
+def _dynamo_col_label(artifact_root: Path, ver: str) -> str:
+    """Column label for a Dynamo v2 capture, naming the path that actually ran."""
+    if _unified_parser_path(str(artifact_root), ver) == "split":
+        return f"Dynamo v2 Rust {ver} (stream, SPLIT ONLY — no unified parser in this build)"
+    return f"Dynamo v2 Rust {ver} (stream, Combined & Unified)"
+
+
 def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     """Build the Unified (reasoning + tools) tab from the versioned fixture shards
     (conformance/fixtures/unified/: inputs + golden + one <impl>-<version> shard per
@@ -2369,7 +2395,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     # is that the version is THERE to click, not that it is compared by default.
     # impl="dynamo" groups them under the one Dynamo engine block of the compare bar.
     for v in reversed(dynamo_all_vers[:-1]):
-        pc = _cand(f"dynamo@{v}", f"Dynamo v2 Rust {v} (stream, Combined & Unified)", "C")
+        pc = _cand(f"dynamo@{v}", _dynamo_col_label(artifact_root, v), "C")
         pc["impl"] = "dynamo"
         pc["version"] = v
         candidates.append(pc)
@@ -2542,7 +2568,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                     # that never recorded this case says so instead of showing an empty
                     # event list that reads like the parser produced nothing.
                     {"key": f"dynamo@{pv}",
-                     "label": f"Dynamo v2 Rust {pv} (stream, Combined & Unified)",
+                     "label": _dynamo_col_label(artifact_root, pv),
                      "impl": "dynamo", "version": pv, "parse_mode": "unified",
                      "leak": bool(cmp.get(f"dynamo@{pv}", {}).get("leak")),
                      "block": ({"unavailable": f"not captured at {pv} — this case postdates that build"}
