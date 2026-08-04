@@ -23,34 +23,15 @@ single-version impl (vllm_rust, dynamo_v2) needs no explicit select.
 Readers (load_all_cases("streamv2")) consume the flat output unchanged.
 """
 import argparse
-import re
+import copy
 import sys
 from pathlib import Path
 
 import yaml
-# PERF: this resolver loads every peer fixture to merge overlays; route safe_load
-# through libyaml's CSafeLoader (identical result, ~15x faster) when available.
-if hasattr(yaml, "CSafeLoader"):
-    yaml.safe_load = lambda _s, _loader=yaml.CSafeLoader: yaml.load(_s, Loader=_loader)
-
-
-def load(p):
-    return yaml.safe_load(Path(p).read_text())
-
-
-def version_key(ver: str):
-    """Order versions like 0.5.12.post1 < 0.5.14 < 0.24.0 < 3.0.0."""
-    m = re.match(r"(\d+(?:\.\d+)*)(?:[.-]?post(\d+))?", ver)
-    release = tuple(int(x) for x in m.group(1).split(".")) if m else ()
-    post = int(m.group(2)) if m and m.group(2) else 0
-    return (release, post)
-
-
-def split_sel(sel: str):
-    """'vllm_python-0.24.0' -> ('vllm_python', '0.24.0'). Impl keys may contain '_'
-    but the version token starts after the first '-'."""
-    impl, _, ver = sel.partition("-")
-    return impl, ver
+import yaml_fast  # noqa: F401 — routes safe_load/safe_dump through libyaml
+# Re-exported: test_render_invariants.py and the generator import version_key/load
+# from this module by name.
+from fixture_corpus import load, load_corpus, split_sel, version_key  # noqa: F401
 
 
 def _impl_version_dirs(root: Path) -> dict[str, list[tuple]]:
@@ -114,16 +95,22 @@ def _merge_impl(base_doc, vdoc, impl):
                 bchunks[i]["normal_text"].pop(impl, None)
 
 
-def resolve(sv2_root, out, select, verbose=False):
-    root = Path(sv2_root)
-    out = Path(out)
+def resolve_docs(sv2_root, select, corpus=None):
+    """Resolve one version selection entirely in memory.
 
-    # 1) copy the shared inputs tree verbatim (the base every impl folds into).
-    inputs = root / "inputs"
-    for fp in inputs.glob("*/*.yaml"):
-        dst = out / fp.parent.name / fp.name
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        dst.write_text(fp.read_text())
+    Returns `(docs, folded)`: `docs` is {(family, filename): doc} for the whole staged
+    tree, `folded` is the subset of those keys an impl overlay actually merged into.
+    The fold used to run through the filesystem — load the staged file, merge, dump it
+    back, once per impl per version layer — which meant every output file was parsed
+    and re-emitted several times per run. Keeping the accumulator in memory does the
+    identical merge with one parse of each source file and at most one dump.
+    """
+    root = Path(sv2_root)
+    if corpus is None:
+        corpus = load_corpus(root)
+
+    # 1) the shared inputs tree is the base every impl folds into.
+    docs = {key[1:]: copy.deepcopy(doc) for key, doc in corpus.items() if key[0] == "inputs"}
 
     # 2) per-impl target: default = that impl's lowest version; --select bumps it.
     dirs = _impl_version_dirs(root)
@@ -134,20 +121,43 @@ def resolve(sv2_root, out, select, verbose=False):
             targets[impl] = ver
 
     # 3) fold each impl's version dirs ascending up to its target into the base tree.
+    folded: set[tuple[str, str]] = set()
     for impl, target in targets.items():
         tk = version_key(target)
-        applied = [(k, d) for k, _v, d in dirs[impl] if k <= tk]
-        for _k, vdir in applied:
-            for vfp in vdir.glob("*/*.yaml"):
-                tgt = out / vfp.parent.name / vfp.name
-                if not tgt.exists():
+        for k, _v, vdir in dirs[impl]:
+            if k > tk:
+                continue
+            for key, vdoc in corpus.items():
+                if key[0] != vdir.name:
                     continue
-                base_doc = load(tgt)
-                _merge_impl(base_doc, load(vfp), impl)
-                base_doc.setdefault("captured_with", {})[impl] = target
-                tgt.write_text(
-                    yaml.safe_dump(base_doc, sort_keys=False, allow_unicode=True, width=4096)
-                )
+                doc = docs.get(key[1:])
+                if doc is None:
+                    continue
+                # deepcopy: _merge_impl grafts the overlay's own lists/dicts into the
+                # base doc by reference, and with a shared corpus that would alias the
+                # same objects into every resolved selection.
+                _merge_impl(doc, copy.deepcopy(vdoc), impl)
+                doc.setdefault("captured_with", {})[impl] = target
+                folded.add(key[1:])
+    return docs, folded
+
+
+def resolve(sv2_root, out, select, verbose=False):
+    root = Path(sv2_root)
+    out = Path(out)
+    docs, folded = resolve_docs(root, select)
+
+    for (family, name), doc in docs.items():
+        dst = out / family / name
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if (family, name) in folded:
+            dst.write_text(
+                yaml.safe_dump(doc, sort_keys=False, allow_unicode=True, width=4096)
+            )
+        else:
+            # No overlay touched this one, so it stays the verbatim inputs/ text —
+            # same as when the fold ran on disk and simply never rewrote it.
+            dst.write_text((root / "inputs" / family / name).read_text())
 
     if verbose:
         n = len(list(out.glob("*/TOOLCALLING.streamv2.*.yaml")))

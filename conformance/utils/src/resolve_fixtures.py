@@ -17,43 +17,35 @@ impl's version dirs in ascending version order up to and including the requested
 merging each case's expected.<impl> block. Default select = latest per impl.
 Readers/renderers consume the flat output unchanged.
 """
-import argparse, re, sys
+import argparse, copy, sys
 from pathlib import Path
 import yaml
-# PERF: route safe_load through libyaml's CSafeLoader (identical result, ~15x faster).
-if hasattr(yaml, "CSafeLoader"):
-    yaml.safe_load = lambda _s, _loader=yaml.CSafeLoader: yaml.load(_s, Loader=_loader)
+import yaml_fast  # noqa: F401 — routes safe_load/safe_dump through libyaml
+# Re-exported: callers import load/version_key/split_sel from this module by name.
+from fixture_corpus import load, load_corpus, split_sel, version_key  # noqa: F401
 
-def load(p): return yaml.safe_load(Path(p).read_text())
+def resolve_docs(fixtures_root, select, corpus=None):
+    """Resolve one version selection entirely in memory.
 
-def version_key(ver: str):
-    """Order versions like 0.5.12.post1 < 0.5.14 < 0.24.0 < 3.0.0."""
-    m = re.match(r"(\d+(?:\.\d+)*)(?:[.-]?post(\d+))?", ver)
-    release = tuple(int(x) for x in m.group(1).split(".")) if m else ()
-    post = int(m.group(2)) if m and m.group(2) else 0
-    return (release, post)
+    Returns `(docs, folded)`: `docs` is {(family, filename): doc} for the whole staged
+    tree, `folded` is the subset of those keys an overlay actually merged into. The
+    fold used to run through the filesystem — load the staged file, merge, dump it
+    back, once per impl per version layer — so each output file was parsed and
+    re-emitted several times per run. Keeping the accumulator in memory does the
+    identical merge with one parse of each source file and at most one dump.
 
-def split_sel(sel: str):
-    """'vllm-0.24.0' -> ('vllm', '0.24.0'); impl names never contain '-'."""
-    impl, _, ver = sel.partition("-")
-    return impl, ver
+    Pass `corpus` (from fixture_corpus.load_corpus) to resolve several selections out
+    of one parse of the source tree."""
+    root = Path(fixtures_root)
+    if corpus is None:
+        corpus = load_corpus(root)
 
-def resolve(fixtures_root, out, select, verbose=False):
-    """Stage inputs/ + the selected per-impl versions into a flat tree at `out`.
-
-    `select` is a list of "<impl>-<version>" targets. Importable for callers that
-    need multiple version snapshots (e.g. the parity table's version radios)."""
-    root = Path(fixtures_root); out = Path(out)
-
-    # 1) copy shared inputs verbatim (preserve text so comments/anchors survive)
-    inputs = root / "inputs"
-    for fp in inputs.glob("*/*.yaml"):
-        dst = out / fp.parent.name / fp.name
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        dst.write_text(fp.read_text())
+    # 1) shared inputs are the base every impl folds into.
+    docs = {key[1:]: copy.deepcopy(doc) for key, doc in corpus.items() if key[0] == "inputs"}
 
     # 2) for each selected impl, apply its version dirs ascending up to the target,
     #    merging expected.<impl>. Lowest applied dir is the full anchor.
+    folded: set[tuple[str, str]] = set()
     for sel in select:
         impl, target = split_sel(sel)
         target_k = version_key(target)
@@ -66,11 +58,18 @@ def resolve(fixtures_root, out, select, verbose=False):
             print(f"resolve_fixtures: no version dirs for {impl} <= {target}, skipping", file=sys.stderr)
             continue
         for _, vdir in applied:
-            for ofp in vdir.glob("*/*.yaml"):
-                tgt = out / ofp.parent.name / ofp.name
-                if not tgt.exists():
+            for key, src_ov in corpus.items():
+                if key[0] != vdir.name:
                     continue
-                base_doc = load(tgt); ov = load(ofp)
+                base_doc = docs.get(key[1:])
+                if base_doc is None:
+                    continue
+                # deepcopy the WHOLE overlay doc in one call: expected blocks are
+                # grafted into the base by reference, so a shared corpus would
+                # otherwise alias one object into every resolved selection. Copying
+                # the doc (not each value) keeps the object sharing the source file
+                # encodes as YAML anchors, so the re-emitted file is unchanged.
+                ov = copy.deepcopy(src_ov)
                 for cid, oc in (ov.get("cases") or {}).items():
                     bc = (base_doc.get("cases") or {}).get(cid)
                     if bc is None or "expected" not in oc:
@@ -78,7 +77,28 @@ def resolve(fixtures_root, out, select, verbose=False):
                     bc.setdefault("expected", {})
                     for k, val in oc["expected"].items():
                         bc["expected"][k] = val
-                tgt.write_text(yaml.safe_dump(base_doc, sort_keys=False, allow_unicode=True, width=4096))
+                folded.add(key[1:])
+
+    return docs, folded
+
+def resolve(fixtures_root, out, select, verbose=False):
+    """Stage inputs/ + the selected per-impl versions into a flat tree at `out`.
+
+    `select` is a list of "<impl>-<version>" targets. Importable for callers that
+    need multiple version snapshots (e.g. the parity table's version radios)."""
+    root = Path(fixtures_root); out = Path(out)
+    docs, folded = resolve_docs(root, select)
+
+    for (family, name), doc in docs.items():
+        dst = out / family / name
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if (family, name) in folded:
+            dst.write_text(yaml.safe_dump(doc, sort_keys=False, allow_unicode=True, width=4096))
+        else:
+            # No overlay touched this one, so it keeps the verbatim inputs/ text
+            # (comments/anchors survive) — same as when the fold ran on disk and
+            # simply never rewrote it.
+            dst.write_text((root / "inputs" / family / name).read_text())
 
     if verbose:
         print(f"resolve_fixtures: staged {len(list(out.glob('*/*.yaml')))} files (select: {select or 'none'})", file=sys.stderr)

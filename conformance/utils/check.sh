@@ -66,10 +66,12 @@ run_ci() {  # the conformance-table CI gate; fail-fast, also runnable locally
   # The uploaded CI artifact name predates the v1/v2 split; keep it stable.
   \cp -f "$out" "$UTILS/CONFORMITY.html"
   run_coverage
-  python3 -m pytest \
-    "$UTILS/tests/test_model.py" \
-    "$UTILS/tests/test_stream_on_batch.py" \
-    "$UTILS/tests/test_family_coverage.py" -q
+  # The WHOLE tests/ dir, not a hand-maintained file list: the old list named three
+  # files, so the resolver-fold, render-invariant and colorize tests never ran in CI
+  # and a new test file was gated only by remembering to add it here. The browser
+  # tests skip themselves when Selenium isn't installed (CI installs pyyaml/jinja2/
+  # pytest only), so this stays a no-engine, no-browser gate.
+  python3 -m pytest "$UTILS/tests" -q
 }
 
 engine="${1:-}"; shift || true

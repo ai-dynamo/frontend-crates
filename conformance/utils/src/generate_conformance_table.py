@@ -64,24 +64,18 @@ import copy
 import datetime
 import functools
 import html as html_lib
+import importlib
 import json
 import os
 import re
 import subprocess
 import sys
-import tempfile
 import zoneinfo
 from pathlib import Path
 from typing import Any
 
 import yaml
-# PERF: this render loads thousands of fixture YAMLs (the stream version-status map
-# re-loads every peer version); PyYAML's pure-Python SafeLoader dominates the wall
-# clock. Route safe_load through libyaml's CSafeLoader (identical result, ~15x faster)
-# when the C extension is present. fixtures.py / markers.py call `yaml.safe_load` at
-# call time, so patching the module here covers them too.
-if hasattr(yaml, "CSafeLoader"):
-    yaml.safe_load = lambda _s, _loader=yaml.CSafeLoader: yaml.load(_s, Loader=_loader)
+import yaml_fast  # noqa: F401 — routes safe_load/safe_dump through libyaml
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from tables import common
@@ -885,6 +879,26 @@ def _batch_impl_versions() -> dict[str, list[str]]:
     }
 
 
+def _resolver_module(name: str):
+    """Import a fixture resolver from the repo's conformance/utils/src.
+
+    The resolvers are not part of the staged tree, so their directory is APPENDED to
+    sys.path — never prepended — so the staged copies of fixtures/markers/tables keep
+    priority over the repo-side originals sitting beside the resolvers."""
+    src_dir = str(fixtures._RESOLVE_SRC_DIR)
+    if src_dir not in sys.path:
+        sys.path.append(src_dir)
+    return importlib.import_module(name)
+
+
+@functools.lru_cache(maxsize=None)
+def _source_corpus(root_str: str) -> dict:
+    """Parse a versioned fixture corpus ONCE, for every version selection resolved
+    out of it. Each render resolves ~9 batch + ~11 stream selections; re-reading all
+    ~1700 source files per selection was the single largest cost in the render."""
+    return _resolver_module("fixture_corpus").load_corpus(Path(root_str))
+
+
 def _batch_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, str]]]:
     """{(family, sub): {canonical_impl: {version_slug: overview_status}}} for batch.
 
@@ -898,8 +912,9 @@ def _batch_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, str
     src = fixtures._SRC_FIXTURES
     if not resolver.exists() or not src.is_dir():
         return {}
+    resolve_batch = _resolver_module("resolve_fixtures").resolve_docs
+    corpus = _source_corpus(str(src))
     pinned = fixtures._pinned_versions(impl_versions)
-    saved_fixtures = fixtures.FIXTURES
     saved_captured = _CAPTURED_WITH_BY_MODE.get("batch")
     result: dict[tuple[str, str], dict[str, dict[str, str]]] = {}
     try:
@@ -911,18 +926,11 @@ def _batch_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, str
                     f"{other}-{version if other == legacy else pinned[other]}"
                     for other in impl_versions
                 ]
-                # Resolve under the staged fixtures parent so load_all_cases's
-                # `fp.relative_to(script_dir)` stays valid (script_dir = the module
-                # dir, above the fixtures tree).
-                with tempfile.TemporaryDirectory(dir=str(saved_fixtures.parent)) as tmp:
-                    subprocess.run(
-                        [sys.executable, str(resolver),
-                         "--fixtures-root", str(src),
-                         "--out", tmp, "--select", *select],
-                        check=True, capture_output=True,
-                    )
-                    fixtures.FIXTURES = Path(tmp)
-                    cases, _labels = load_all_cases("batch")
+                # Resolve in memory and read the docs directly: this map only needs
+                # each case's status/block/marker, so staging the tree to a tempdir
+                # just to parse it straight back was pure overhead.
+                docs, _folded = resolve_batch(src, select, corpus=corpus)
+                cases, _labels = load_all_cases("batch", docs=docs)
                 for key, case in cases.items():
                     block = _impl_get(case.get("expected") or {}, canon)
                     result.setdefault(key, {}).setdefault(canon, {})[slug] = {
@@ -935,7 +943,7 @@ def _batch_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, str
                         ),
                     }
     finally:
-        fixtures.FIXTURES = saved_fixtures
+        # load_all_cases stamps this per call; put the pinned render's value back.
         if saved_captured is not None:
             _CAPTURED_WITH_BY_MODE["batch"] = saved_captured
     return result
@@ -1228,28 +1236,29 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
     resolver = fixtures._RESOLVE_SRC_DIR / "resolve_stream_fixtures.py"
     if not resolver.exists() or not _STREAM_SRC.is_dir():
         return {}
+    resolve_stream = _resolver_module("resolve_stream_fixtures").resolve_docs
+    corpus = _source_corpus(str(_STREAM_SRC))
     overlaid = {i: vs for i, vs in impl_versions.items() if len(vs) > 1}
     pinned = {i: vs[-1] for i, vs in impl_versions.items()}
-    saved_fixtures = fixtures.FIXTURES
     saved_captured = _CAPTURED_WITH_BY_MODE.get("streamv2")
     result: dict[tuple[str, str], dict[str, dict[str, dict]]] = {}
 
     def _raw_chunk_counts(impl, version):
         """{(family, case_id): n_chunks} straight from the <impl>-<version> dir docs.
         The resolver pads a folded case to the input chunk count, so alignment
-        (did this capture record per-input-chunk timing?) is only visible here."""
+        (did this capture record per-input-chunk timing?) is only visible here.
+        Read out of the shared corpus — these are the same source docs the fold
+        already parsed."""
         counts: dict[tuple[str, str], int] = {}
-        vdir = _STREAM_SRC / f"{impl}-{version}"
-        if vdir.is_dir():
-            for fp in vdir.glob("*/*.yaml"):
-                try:
-                    doc = yaml.safe_load(fp.read_text()) or {}
-                except Exception:
-                    continue
-                fam = doc.get("family") or fp.parent.name
-                for cid, vc in (doc.get("cases") or {}).items():
-                    if isinstance(vc, dict) and isinstance(vc.get("chunks"), list):
-                        counts[(fam, cid)] = len(vc["chunks"])
+        vdir_name = f"{impl}-{version}"
+        for (top, family, _name), doc in corpus.items():
+            if top != vdir_name:
+                continue
+            doc = doc or {}
+            fam = doc.get("family") or family
+            for cid, vc in (doc.get("cases") or {}).items():
+                if isinstance(vc, dict) and isinstance(vc.get("chunks"), list):
+                    counts[(fam, cid)] = len(vc["chunks"])
         return counts
 
     def _record(cases, impl, version):
@@ -1308,17 +1317,12 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
             }
 
     def _resolve_and_load(select):
-        # Resolve under the staged fixtures parent so load_all_cases's
-        # `fp.relative_to(script_dir)` stays valid (script_dir is above the tree).
-        with tempfile.TemporaryDirectory(dir=str(saved_fixtures.parent)) as tmp:
-            subprocess.run(
-                [sys.executable, str(resolver),
-                 "--fixtures-root", str(_STREAM_SRC),
-                 "--out", tmp, "--select", *select],
-                check=True, capture_output=True,
-            )
-            fixtures.FIXTURES = Path(tmp)
-            cases, _labels = load_all_cases("streamv2")
+        # Resolve in memory and read the docs directly. Staging each selection to a
+        # tempdir only to parse it straight back was the bulk of the render's time.
+        # The docs are stream-only, so load_all_cases finds no batch docs to attach
+        # batch_expected from — same as when the staged tree held stream files alone.
+        docs, _folded = resolve_stream(_STREAM_SRC, select, corpus=corpus)
+        cases, _labels = load_all_cases("streamv2", docs=docs)
         return cases
 
     try:
@@ -1336,7 +1340,7 @@ def _stream_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, di
                 cases = _resolve_and_load(select)
                 _record(cases, impl, v)
     finally:
-        fixtures.FIXTURES = saved_fixtures
+        # load_all_cases stamps this per call; put the pinned render's value back.
         if saved_captured is not None:
             _CAPTURED_WITH_BY_MODE["streamv2"] = saved_captured
     return result
