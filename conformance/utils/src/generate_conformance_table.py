@@ -1167,15 +1167,28 @@ def _stream_divergence_note(family: str, case_id: str, impl: str) -> str | None:
 
 
 def _stream_version_families(impl: str, version: str) -> set[str] | None:
-    """Families the `<impl>-<version>` stream fixture dir actually holds — the
-    authoritative coverage for that parser build. `None` if the dir is absent (don't
-    gate). Used to mark the Dynamo v2 stream candidate `na` on families its parser
-    doesn't implement, since the dir only contains the families it produced output
-    for (dynamo_v2-0.1.11 = the v2-supported handful; dynamo_v1-3.0.0 = all)."""
-    d = _STREAM_SRC / f"{impl}-{version}"
-    if not d.is_dir():
+    """Families covered after resolving `<impl>` through `version`.
+
+    The lowest version is the full anchor; higher directories may contain only
+    changed cases. Coverage therefore accumulates through the selected version just
+    as `resolve_stream_fixtures.py` accumulates their outputs. `None` means no version
+    directory was found, so callers should not gate the candidate.
+    """
+    prefix = f"{impl}-"
+    target = fixtures._version_sort_key(version)
+    found = False
+    families: set[str] = set()
+    if not _STREAM_SRC.is_dir():
         return None
-    return {p.name for p in d.iterdir() if p.is_dir()}
+    for directory in _STREAM_SRC.iterdir():
+        if not directory.is_dir() or not directory.name.startswith(prefix):
+            continue
+        candidate_version = directory.name[len(prefix) :]
+        if fixtures._version_sort_key(candidate_version) > target:
+            continue
+        found = True
+        families.update(path.name for path in directory.iterdir() if path.is_dir())
+    return families if found else None
 
 
 def _parser_ni_map() -> dict:
