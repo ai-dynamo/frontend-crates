@@ -1453,6 +1453,71 @@ mod guided_warning_tests {
             "warning exposed model or user payload bytes: {log:?}"
         );
     }
+
+    /// Guided mode fed the family's NATIVE markup must not produce a silent empty turn.
+    ///
+    /// Everything is stripped, so emitting no events is right — markup is not an
+    /// answer. Doing it SILENTLY is not: the caller cannot tell this from a model
+    /// that legitimately said nothing, and the usual cause is guided decoding
+    /// configured against a backend still emitting native call grammar. P2 is
+    /// best-effort recovery, NOT silent loss.
+    #[test]
+    fn guided_output_that_is_only_markup_warns_instead_of_vanishing() {
+        use std::sync::{Arc, Mutex};
+        #[derive(Clone, Default)]
+        struct Sink(Arc<Mutex<Vec<u8>>>);
+        impl std::io::Write for Sink {
+            fn write(&mut self, b: &[u8]) -> std::io::Result<usize> {
+                self.0.lock().unwrap().extend_from_slice(b);
+                Ok(b.len())
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+        let sink = Sink::default();
+        let captured = sink.0.clone();
+        let sub = tracing_subscriber::fmt()
+            .with_writer(move || sink.clone())
+            .with_max_level(tracing::Level::WARN)
+            .finish();
+        // Same process-global callsite-interest caveat as the sibling test above.
+        static GLOBAL_SUB: std::sync::Once = std::sync::Once::new();
+        GLOBAL_SUB.call_once(|| {
+            let _ = tracing::subscriber::set_global_default(
+                tracing_subscriber::fmt()
+                    .with_writer(std::io::sink)
+                    .with_max_level(tracing::Level::WARN)
+                    .finish(),
+            );
+            tracing::callsite::rebuild_interest_cache();
+        });
+
+        let mut events = Vec::new();
+        tracing::subscriber::with_default(sub, || {
+            let mut p = qwen3_unified(&weather_tools());
+            p.initialize_with_output_mode(
+                UnifiedParserStartingState::None,
+                UnifiedToolOutputMode::GuidedJson { named_tool: None },
+            )
+            .unwrap();
+            events.extend(
+                p.push("<tool_call><function=get_weather><parameter=city>Paris</parameter></function></tool_call>")
+                    .unwrap(),
+            );
+            events.extend(p.finish().unwrap());
+        });
+
+        assert!(
+            events.is_empty(),
+            "markup-only guided turn emitted {events:?}"
+        );
+        let log = String::from_utf8(captured.lock().unwrap().clone()).unwrap();
+        assert!(
+            log.contains("unified_guided_output_was_only_markup"),
+            "empty guided turn produced NO diagnostic; log was: {log}"
+        );
+    }
 }
 
 #[cfg(test)]

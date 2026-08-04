@@ -566,6 +566,10 @@ where
 /// decoding is a BACKEND feature — any family can be served with it — so this
 /// lives on the shared unified parser rather than in one family's module.
 struct GuidedState {
+    /// Any control markup was stripped this turn. Used only to tell a turn that
+    /// produced nothing because it was ALL markup from a model that genuinely said
+    /// nothing — the first is worth a log line, the second is not.
+    stripped_markup: bool,
     reasoning: ReasoningSpec,
     /// EVERY control marker of the family's tool grammar, from the scanner's own
     /// declaration. One set, used for both lookup and chunk-boundary holdback, in
@@ -713,6 +717,7 @@ impl GuidedState {
         starting_state: UnifiedParserStartingState,
     ) -> Self {
         Self {
+            stripped_markup: false,
             reasoning,
             control_markers,
             invoke_end,
@@ -861,6 +866,7 @@ impl GuidedState {
                         } else {
                             push_run(&mut output, Kind::Text, &pending);
                         }
+                        self.stripped_markup = true;
                         self.input.drain(..at + close_len);
                         continue;
                     }
@@ -965,6 +971,7 @@ impl GuidedState {
                         .min_by_key(|(at, _, _)| *at)
                     {
                         push_run(&mut output, Kind::Reasoning, &self.input[..at]);
+                        self.stripped_markup = true;
                         self.input.drain(..at + consume);
                         if closes {
                             // Back to OutsideReasoning, NOT straight to VisibleOnly. The
@@ -1040,6 +1047,28 @@ impl GuidedState {
         let stripped_tail = end < self.json.trim_end().len();
         let payload = self.json[..end].trim();
         if payload.is_empty() {
+            // The turn produced ONLY control markup — everything was stripped and
+            // there is nothing left to parse. Emitting no events is right (markup is
+            // not an answer), but doing it silently is not: the caller cannot tell
+            // this from a model that legitimately said nothing, and the usual cause
+            // is a backend configured for guided decoding against a model still
+            // emitting its native call grammar. P2 is best-effort recovery, NOT
+            // silent loss, and the sibling not-a-tool-call path is instrumented for
+            // exactly this reason — so this one is too.
+            if self.stripped_markup {
+                tracing::warn!(
+                    why = "unified_guided_output_was_only_markup",
+                    choice = if self.named_tool.is_some() {
+                        "named"
+                    } else {
+                        "required"
+                    },
+                    named_tool = self.named_tool.as_deref().unwrap_or("-"),
+                    stripped_markup = true,
+                    "guided output contained no JSON payload, only control markup; \
+                     emitting nothing (is the backend's guided decoding actually on?)"
+                );
+            }
             self.json.clear();
             return Ok(Vec::new());
         }
