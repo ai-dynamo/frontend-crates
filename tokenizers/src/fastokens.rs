@@ -3,16 +3,16 @@
 
 //! Fastokens backend using the `fastokens` crate for high-performance BPE encoding.
 //!
-//! `fastokens` only supports encoding, so this module provides a hybrid tokenizer that
-//! uses `fastokens` for encoding and falls back to `HuggingFaceTokenizer` for decoding.
-//! Both are loaded from the same `tokenizer.json` file.
+//! This module preserves the existing hybrid behavior: `fastokens` handles encoding and
+//! `HuggingFaceTokenizer` handles decoding. Both are loaded from the same `tokenizer.json`
+//! file.
 
 use std::path::Path;
 
 use rayon::prelude::*;
 
 use super::{
-    Encoding, Error, Result, TokenIdType,
+    EncodeSegment, Encoding, Error, Result, TokenIdType,
     hf::HuggingFaceTokenizer,
     traits::{DecodeResult, Decoder, Encoder, Tokenizer},
 };
@@ -49,6 +49,21 @@ impl Encoder for FastTokenizer {
     fn encode_batch(&self, inputs: &[&str]) -> Result<Vec<Encoding>> {
         inputs.par_iter().map(|input| self.encode(input)).collect()
     }
+
+    fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
+        let segments: Vec<fastokens::EncodeSegment<'_>> = segments
+            .iter()
+            .map(|segment| fastokens::EncodeSegment {
+                text: segment.text,
+                allow_special: segment.allow_special,
+            })
+            .collect();
+        let ids = self
+            .fast_encoder
+            .encode_segments(&segments)
+            .map_err(|e| Error::msg(format!("Fastokens segmented encode error: {e}")))?;
+        Ok(Encoding::Sp(ids))
+    }
 }
 
 impl Decoder for FastTokenizer {
@@ -73,6 +88,10 @@ mod tests {
     const TOKENIZER_PATH: &str = concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/tests/data/minimal-bpe/tokenizer.json"
+    );
+    const SEGMENTED_TOKENIZER_PATH: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/data/sample-models/TinyLlama_v1.1/tokenizer.json"
     );
 
     #[test]
@@ -124,6 +143,55 @@ mod tests {
                 "encoding for '{input}' must be non-empty"
             );
         }
+    }
+
+    #[test]
+    fn test_fast_segmented_encoding_preserves_trust_boundaries() {
+        let tokenizer = FastTokenizer::from_file(SEGMENTED_TOKENIZER_PATH).unwrap();
+        let upstream =
+            fastokens::Tokenizer::from_file(std::path::Path::new(SEGMENTED_TOKENIZER_PATH))
+                .unwrap();
+        let marker = "<s>";
+
+        let trusted = tokenizer
+            .encode_segments(&[EncodeSegment::control(marker)])
+            .unwrap();
+        assert_eq!(
+            trusted.token_ids(),
+            &[upstream.token_to_id(marker).unwrap()],
+            "trusted renderer output must recognize the control token"
+        );
+
+        let ordinary = tokenizer
+            .encode_segments(&[EncodeSegment::ordinary(marker)])
+            .unwrap();
+        assert_ne!(
+            ordinary.token_ids(),
+            trusted.token_ids(),
+            "untrusted content must encode the control-token spelling as ordinary text"
+        );
+
+        let segments = [
+            EncodeSegment::ordinary("hello "),
+            EncodeSegment::control(marker),
+            EncodeSegment::ordinary(marker),
+        ];
+        let upstream_segments = [
+            fastokens::EncodeSegment::ordinary("hello "),
+            fastokens::EncodeSegment::special(marker),
+            fastokens::EncodeSegment::ordinary(marker),
+        ];
+        let actual = tokenizer.encode_segments(&segments).unwrap();
+        let expected = upstream.encode_segments(&upstream_segments).unwrap();
+        assert_eq!(actual.token_ids(), expected);
+
+        assert!(
+            tokenizer
+                .encode_segments(&[])
+                .unwrap()
+                .token_ids()
+                .is_empty()
+        );
     }
 
     #[test]
