@@ -1232,6 +1232,57 @@ mod tests {
         assert!(parser.finish().is_err());
         assert!(parser.push("after finish").is_err());
     }
+
+    /// P2 recovery must not show the user markup the parse already stripped.
+    ///
+    /// `finish_json` trims trailing control markers before parsing; the fallback
+    /// used to hand back the RAW buffer, so a malformed guided payload put
+    /// `</tool_call>` in the visible answer (`I3`). Byte fidelity still holds when
+    /// nothing was stripped (`I7`), which the third row pins.
+    #[test]
+    fn guided_recovery_text_never_carries_the_markup_it_stripped() {
+        let tools = weather_tools();
+        for (input, want) in [
+            (
+                "[{\"name\": \"get_weather\", \"arguments\": {\"city\": </tool_call>",
+                "[{\"name\": \"get_weather\", \"arguments\": {\"city\":",
+            ),
+            (
+                "{\"unexpected\": \"shape\"}</tool_call>",
+                "{\"unexpected\": \"shape\"}",
+            ),
+            ("{\"unexpected\": \"shape\"}", "{\"unexpected\": \"shape\"}"),
+        ] {
+            let got = configured_events(
+                &tools,
+                UnifiedParserStartingState::None,
+                UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                &[input],
+            );
+            assert_eq!(got, vec![text(want)], "input {input:?}");
+        }
+    }
+
+    /// A prefix-form marker's `>` search is bounded by the payload start.
+    ///
+    /// Unbounded, it ran INTO the payload: with no `>` before the JSON the flush
+    /// arm consumed the whole buffer and the turn emitted nothing at all, losing
+    /// a well-formed call.
+    #[test]
+    fn a_bare_invoke_opener_does_not_swallow_the_guided_payload() {
+        let tools = weather_tools();
+        let got = configured_events(
+            &tools,
+            UnifiedParserStartingState::None,
+            UnifiedToolOutputMode::GuidedJson { named_tool: None },
+            &["<function=[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"],
+        );
+        assert_eq!(
+            got,
+            vec![call("get_weather", serde_json::json!({"city": "Paris"}))],
+            "bare opener swallowed the payload: {got:?}"
+        );
+    }
 }
 
 #[cfg(test)]

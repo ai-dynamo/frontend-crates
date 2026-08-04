@@ -609,18 +609,28 @@ fn control_marker_at(
         .filter_map(|m| {
             let at = haystack.find(m.as_str())?;
             if m.ends_with('=') {
-                match haystack[at..].find('>') {
+                // BOTH searches stop at `limit`. Bounding only the `</function>`
+                // search let the `>` scan run into the payload: for
+                // `<function=[{"city": "a>b"}]` it consumed through the `>` INSIDE
+                // an argument string and emitted the tail `b"}}]` as text, losing
+                // the call; with no `>` anywhere the flush arm consumed the whole
+                // buffer and the turn produced nothing at all.
+                let bound = limit.unwrap_or(haystack.len()).max(at);
+                match haystack[at..bound].find('>') {
                     // An invoke opener owns its terminator: stripping `<function=NAME>`
                     // and leaving `</function>` behind put that fragment in the shown
                     // thinking. Consume the pair when the tail is present; a BARE
                     // terminator elsewhere stays text, as it is natively.
                     Some(rel) => Some((
                         at,
-                        haystack[at..limit.unwrap_or(haystack.len()).max(at)]
+                        haystack[at..bound]
                             .find(invoke_end)
                             .map_or(rel + 1, |e| e + invoke_end.len()),
                     )),
-                    None if flush => Some((at, haystack.len() - at)),
+                    // No terminator before the payload begins: a bare opener. Consume
+                    // the marker ALONE so the payload behind it still parses — taking
+                    // everything to EOF here is what swallowed the call.
+                    None if flush => Some((at, m.len())),
                     None => None,
                 }
             } else {
@@ -1059,7 +1069,7 @@ impl GuidedState {
                         "named-choice payload carries `name` plus `arguments`/`parameters`; forwarding it verbatim as the argument set"
                     );
                 }
-                vec![(name.clone(), raw_payload)]
+                vec![(name.clone(), raw_payload.clone())]
             }),
             None => parse_required_guided_calls(payload),
         };
@@ -1082,9 +1092,14 @@ impl GuidedState {
                 payload_kind = json_payload_kind(payload),
                 "guided output did not parse as a tool call; emitting it as text"
             );
-            return Ok(vec![UnifiedDelta::Text {
-                text: std::mem::take(&mut self.json),
-            }]);
+            // The SAME bytes the parse was given, not the raw buffer. Trailing
+            // control markup was stripped above precisely because it is markup, and
+            // handing it back here would put `</tool_call>` in the user's visible
+            // answer — a marker leak (`I3`) on the one path that exists to recover
+            // gracefully. `raw_payload` is already the tail-trimmed value, and it
+            // stays byte-identical to the buffer when nothing was stripped (`I7`).
+            self.json.clear();
+            return Ok(vec![UnifiedDelta::Text { text: raw_payload }]);
         };
 
         self.json.clear();
