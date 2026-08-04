@@ -25,7 +25,7 @@ SRC = UTILS / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from gen_unified_golden import CLEAN, EDGE  # noqa: E402
+from gen_unified_golden import CLEAN, EDGE, FAMILIES, control_tokens  # noqa: E402
 from unified_taxonomy import UNIFIED_GROUP_LABEL, UNIFIED_TAX, numbered_id, tax  # noqa: E402
 
 TAXONOMY_FILE = "conformance/utils/src/unified_taxonomy.py"
@@ -214,4 +214,47 @@ def test_every_e2e_artifact_appears_in_the_index_table() -> None:
     assert not missing, (
         f"{len(missing)} e2e artifact(s) are in {E2E_MANIFEST.name} but absent from the "
         f"Artifact index in {CASES_MD.name}: {missing[:5]}{' …' if len(missing) > 5 else ''}"
+    )
+
+def test_marker_inside_argument_golden_matches_the_input_marker() -> None:
+    """The I7 fidelity case must assert the FAMILY'S OWN marker, not a placeholder.
+
+    Authoring a stand-in like "MARKER" in the golden while feeding the real closer
+    in the input validates nothing: the case would pass whatever the parser did to
+    the argument. The golden argument and the input must carry the same bytes.
+    """
+    case = next(
+        c for c in list(CLEAN) + list(EDGE) if c[0] == "guided_json_marker_inside_argument"
+    )
+    per_family = case[-1]
+    for fam in FAMILIES:
+        entry = per_family[fam]
+        raw_input, fill = entry[0], entry[-1]
+        expected = control_tokens(fam)[1]
+        assert fill == expected, f"{fam}: golden fill {fill!r} is not the family marker"
+        assert expected in raw_input, f"{fam}: input {raw_input!r} lacks {expected!r}"
+
+
+def test_every_rendered_config_key_exists_in_the_emitted_init() -> None:
+    """A producer/renderer rename must not silently render every case as "unset".
+
+    `conformance_view.js` reads `init[spec.key]` for each `CONFIG_KEYS` entry. When
+    `prefill` was renamed to `starting_state` the producers moved and the renderer
+    did not, so every case's popup claimed the request setting was never chosen —
+    and nothing failed, because a missing key just reads as the default. This pins
+    the two sides together.
+    """
+    js = (UTILS / "src/assets/conformance_view.js").read_text()
+    keys = set(re.findall(r"\{\s*key:\s*'([a-z_]+)'", js))
+    assert keys, "CONFIG_KEYS not found in conformance_view.js"
+
+    emitted = set()
+    for case in list(CLEAN) + list(EDGE):
+        init = next((f for f in case if isinstance(f, dict) and "tool_output_mode" in f), None)
+        if init:
+            emitted |= set(init)
+    missing = sorted(keys - emitted)
+    assert not missing, (
+        f"conformance_view.js renders {missing}, which no case emits in `init` — "
+        "every case would show that setting as unset"
     )

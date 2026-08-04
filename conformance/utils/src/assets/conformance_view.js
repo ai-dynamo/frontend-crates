@@ -444,7 +444,7 @@
   // `None` and `Native` are real `#[default]` variants, NOT absent values — the gloss
   // says so, because "None" otherwise reads as null/unset.
   var CONFIG_GLOSS = {
-    prefill: {
+    starting_state: {
       'None': 'prompt opened no channel; the model emits its own markers (enum default)',
       'Reasoning': 'prompt opened reasoning, so the stream begins INSIDE a thought',
       'Response': 'prompt opened the visible response channel'
@@ -456,7 +456,7 @@
   };
 
   var CONFIG_KEYS = [
-    { key: 'prefill', dflt: 'None', values: ['None', 'Reasoning', 'Response'] },
+    { key: 'starting_state', dflt: 'None', values: ['None', 'Reasoning', 'Response'] },
     { key: 'tool_output_mode', dflt: 'Native', values: ['Native', 'GuidedJson'] },
     {
       key: 'named_tool',

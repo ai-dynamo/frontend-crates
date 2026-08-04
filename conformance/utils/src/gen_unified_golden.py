@@ -20,6 +20,7 @@ Run:  python3 conformance/utils/src/gen_unified_golden.py
 """
 import json
 import os
+import re
 
 import yaml
 
@@ -122,6 +123,52 @@ def every_family(input_text, vllm, dynamo, *rest):
     )
     return {
         fam: (input_text, vllm, dynamo if fam in UNIFIED_FAMILIES else split, *rest)
+        for fam in FAMILIES
+    }
+
+
+
+def control_tokens(fam):
+    """Bare control tokens for `fam`, DERIVED from the renderers the corpus already
+    uses (`r_reason` / `r_tool`) rather than a second grammar table — a parallel
+    marker map is the kind of divergent copy that goes stale the first time a
+    family's grammar moves.
+
+    The tool pair is the OUTER wrapper: the first and last control tokens of a
+    rendered call. Splitting on the tool NAME instead returns the inner fragment
+    (`call:` for gemma4, `<function=` for qwen3, `functions.` plus the call-begin
+    marker for kimi_k2), which is not the envelope these cases mean to place around
+    a payload.
+
+    Returns `(reason_open, reason_close, tool_open, tool_close)`.
+    """
+    reason_open, reason_close = r_reason(fam, "\x00").split("\x00")
+    tokens = re.findall(r"<[^<>]*>", r_tool(fam, "NAMEX", "KEYX", "VALX", 0))
+    return reason_open, reason_close, tokens[0], tokens[-1]
+
+
+def guided_surroundings(render, dynamo_note, fill=None):
+    """A guided case whose SURROUNDINGS carry native grammar, so the input has to be
+    per family — `every_family` is only right when the bytes are grammar-independent.
+
+    `render(fam) -> input`. vLLM stays `GUIDED_UNSUPPORTED`: the request contract is
+    `tool_output_mode=GuidedJson`, and a peer that never emits guided JSON is not an
+    equivalent comparison just because the malformed surroundings happen to contain
+    markup it could parse natively. Families with no native unified parser record the
+    split-path divergence, same rule as `SPLIT`.
+    """
+    split = D(
+        "UNSUPPORTED",
+        "no native unified parser in this build, so the split path ignores `init` "
+        "and cannot honour a guided request mode",
+    )
+    return {
+        fam: (
+            render(fam),
+            GUIDED_UNSUPPORTED,
+            {"verdict": "match", "note": dynamo_note} if fam in UNIFIED_FAMILIES else split,
+            *( (fill(fam),) if fill else () ),
+        )
         for fam in FAMILIES
     }
 
@@ -510,6 +557,101 @@ EDGE = [
         "gemma4": ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]', M, M),
         "kimi_k2": ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]', M, M),
      }),
+
+    # --- Guided decoding: the SURROUNDINGS, not just the payload -----------------
+    # Every guided case above varies the PAYLOAD and delivers it bare. Nothing
+    # varied what sits AROUND it, and that is precisely where every guided defect
+    # in this surface has been found: prose before a thought surfaced the model's
+    # private reasoning as the answer, a narrated invoke swallowed the payload, an
+    # orphan closer leaked, and markup bracketing the payload lost the call. Those
+    # are pinned by unit tests; without these cases the corpus reads green through
+    # all of them.
+    ("guided_json_after_reasoning",
+     "The guided BASELINE that was missing: a normal thought, then the constrained payload. Every other guided case starts at the payload, so nothing pinned the ordinary shape where the model reasons first and the backend constrains only the call. This is the case the surroundings group contrasts with.",
+     [],
+     [{"kind": "reasoning", "text": "checking"},
+      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     guided_surroundings(
+         lambda fam: f"{control_tokens(fam)[0]}checking{control_tokens(fam)[1]}{GUIDED_ONE_CALL}",
+         "reasoning closes, then the guided payload dispatches")),
+
+    ("guided_json_marker_inside_argument",
+     "A control marker of the family's OWN grammar inside a guided argument VALUE. Once the payload has opened, a marker is argument DATA and must survive byte-exact (`I7`) — re-reading it as a channel token corrupts the call the tool receives while looking like a successful dispatch.",
+     ["P3"],
+     [{"kind": "tool_call", "name": "log", "arguments": {"note": None}}],  # filled per family
+     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     guided_surroundings(
+         lambda fam: json.dumps(
+             [{"name": "log", "arguments": {"note": control_tokens(fam)[1]}}], ensure_ascii=False),
+         "a marker inside a started payload stays argument data",
+         lambda fam: control_tokens(fam)[1])),
+
+    ("guided_json_tool_open_before_payload",
+     "A native tool OPENER precedes the constrained payload. Guided decoding delivers the call as JSON, so leading markup is stray: it must be stripped, not carried into the payload buffer where it breaks the parse and costs the call.",
+     ["P2"],
+     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     guided_surroundings(
+         lambda fam: f"{control_tokens(fam)[2]}{GUIDED_ONE_CALL}",
+         "leading tool markup stripped; the call still dispatches")),
+
+    ("guided_json_tool_close_after_payload",
+     "A native tool CLOSER follows the payload. The leading side was handled long before this one: once the payload's opening brace latches visible-only, every later byte is appended verbatim, so a trailing marker rides into the buffer and the call is lost. Markers can BRACKET a payload, not only precede it.",
+     ["P2"],
+     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     guided_surroundings(
+         lambda fam: f"{GUIDED_ONE_CALL}{control_tokens(fam)[3]}",
+         "trailing tool markup stripped; the call still dispatches")),
+
+    ("guided_json_wrapped_in_tool_markup",
+     "The payload wrapped in a full native envelope, opener AND closer. This is the shape a template emits when guided decoding is applied INSIDE a tool block; handling only one end still loses the call.",
+     ["P2"],
+     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     guided_surroundings(
+         lambda fam: f"{control_tokens(fam)[2]}{GUIDED_ONE_CALL}{control_tokens(fam)[3]}",
+         "envelope stripped at both ends; the call still dispatches")),
+
+    ("guided_json_narrated_invoke_in_reasoning",
+     "The model NARRATES a tool opener while thinking, then the real call arrives as JSON. Guided decoding leaves the reasoning channel unconstrained, so that markup is prose the model wrote — treating it as structure ends the turn and discards the payload.",
+     ["P2"],
+     [{"kind": "reasoning", "text": "I'll use  next"},
+      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     guided_surroundings(
+         lambda fam: f"{control_tokens(fam)[0]}I'll use {control_tokens(fam)[2]} next{control_tokens(fam)[1]}{GUIDED_ONE_CALL}",
+         "narrated markup stripped, thought preserved, payload survives")),
+
+    ("guided_json_prose_before_reasoning",
+     "Visible prose, THEN a thought, then the payload. Every other guided case opens its thought at byte 0; when prose came first the run latched the payload buffer and the model's private thinking was surfaced to the user as the answer.",
+     ["P2"],
+     [{"kind": "text", "text": "Sure. "},
+      {"kind": "reasoning", "text": "checking"},
+      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     guided_surroundings(
+         lambda fam: f"Sure. {control_tokens(fam)[0]}checking{control_tokens(fam)[1]}{GUIDED_ONE_CALL}",
+         "prose stays visible text, the thought stays reasoning, the call dispatches")),
+
+    ("guided_json_orphan_reason_close_before_payload",
+     "An orphan reasoning CLOSER with nothing open, ahead of the payload. The native scanner strips a stray closer wherever it appears before an opener; the guided path must agree or the same bytes read differently by request mode (`I3`).",
+     ["P2"],
+     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     guided_surroundings(
+         lambda fam: f"{control_tokens(fam)[1]}{GUIDED_ONE_CALL}",
+         "orphan reasoning closer stripped; the call still dispatches")),
+
+    ("guided_json_orphan_tool_close_before_payload",
+     "An orphan tool CLOSER before the payload. Paired with the opener case above: for a while the closer was stripped and the opener beside it was not, so which marker leaked depended on which one the model happened to emit.",
+     ["P2"],
+     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     guided_surroundings(
+         lambda fam: f"{control_tokens(fam)[3]}{GUIDED_ONE_CALL}",
+         "orphan tool closer stripped; the call still dispatches")),
 
     ("guided_json_invalid_call",
      "Guided decoding emits JSON that is well-formed but is NOT a tool call — no `name`, so there is nothing to dispatch. Policy P2: surface the payload as visible content rather than dropping it or erroring. Dropping it would lose the model's entire output; erroring would fail a request the user can still read.",

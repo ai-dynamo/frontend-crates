@@ -60,11 +60,20 @@ UNIFIED_TAX = {
     "guided_json_named_tool": (30, "a"), "guided_json_required_tool": (30, "b"),
     "guided_json_two_calls": (30, "c"),
     "guided_json_escaped_string_args": (30, "d"), "guided_json_array_argument": (30, "e"),
+    "guided_json_after_reasoning": (30, "f"), "guided_json_marker_inside_argument": (30, "g"),
 
     # Group 31 — Guided decoding, weird / malformed
     "guided_json_invalid_call": (31, "a"), "guided_json_malformed_json": (31, "b"),
     "guided_json_partial_calls": (31, "c"),
     "guided_json_list_with_broken_element": (31, "d"),
+    # 31.e-31.k — the SURROUNDINGS of a guided payload, not the payload itself.
+    "guided_json_tool_open_before_payload": (31, "e"),
+    "guided_json_tool_close_after_payload": (31, "f"),
+    "guided_json_wrapped_in_tool_markup": (31, "g"),
+    "guided_json_narrated_invoke_in_reasoning": (31, "h"),
+    "guided_json_prose_before_reasoning": (31, "i"),
+    "guided_json_orphan_reason_close_before_payload": (31, "j"),
+    "guided_json_orphan_tool_close_before_payload": (31, "k"),
     # Group 40 — Prefilled reasoning, happy
     "prefilled_reasoning_with_tool": (40, "a"), "prefilled_reasoning_with_guided_json": (40, "b"),
     "prefilled_reasoning_then_text_then_tool": (40, "c"), "prefilled_reasoning_then_text": (40, "d"),
@@ -87,7 +96,7 @@ UNIFIED_GROUP_LABEL = {
     7: "TC Argument fidelity", 8: "TC Content position",
     10: "Reasoning span",
     11: "Reasoning ↔ tool interleaving", 12: "Adversarial nesting (reasoning + tool)",
-    30: "Guided Decoding", 31: "Guided Decoding — malformed",
+    30: "Guided Decoding", 31: "Guided Decoding — malformed / recovery",
     40: "Prefilled Reasoning", 41: "Prefilled Reasoning — malformed",
     50: "Prefilled Response", 51: "Prefilled Response — malformed",
 }
