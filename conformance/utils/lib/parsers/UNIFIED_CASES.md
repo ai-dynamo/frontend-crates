@@ -247,14 +247,27 @@ Groups 1–12 vary the model OUTPUT. Groups 30+ vary the request: what the servi
 - **`30.c`** (`guided_json_two_calls`) Two DIFFERENT tools in one array. Multi-call is the array's ordinary shape, not an edge case.
 - **`30.d`** (`guided_json_escaped_string_args`) An argument value carrying non-ASCII, escaped quotes and Windows backslashes. Native mode covers the same value in `7.*`, but there the value is raw text between markers and no escaping is involved — the escaping is only the parser's problem on this path. This is also covered in: e2e case-0105-schema_escaped_unicode_string__non-stream-budget_capped.json (and its `-budget_unlimited` pair).
 - **`30.e`** (`guided_json_array_argument`) An argument VALUE that is an array, not a scalar. Distinct from `30.b`/`30.c`, where the array is the list OF CALLS one level up. A list arriving as its string rendering is a silently wrong call, not a failed one. This is also covered in: e2e case-0108-schema_array__stream-budget_capped.json (and its `-budget_unlimited` pair).
+- **`30.f`** (`guided_json_after_reasoning`) A normal thought, THEN the constrained payload. Every other guided case starts at the payload, so nothing pinned the ordinary shape where the model reasons first and the backend constrains only the call. This is the baseline group 31's surroundings cases contrast with.
+- **`30.g`** (`guided_json_marker_inside_argument`) A control marker of the family's OWN grammar inside a guided argument VALUE. Once the payload has opened, a marker is argument DATA and must survive byte-exact (`I7`); re-reading it as a channel token corrupts the call the tool receives while still looking like a successful dispatch. The golden argument is the family's own marker, not a placeholder — a stand-in would pass whatever the parser did.
 
-### Group 31 — Guided decoding, malformed
+### Group 31 — Guided decoding, malformed / recovery
 - **`31.a`** (`guided_json_invalid_call`) Valid JSON that is not a call (no `name`). Surfaces as text (P2); no call dispatched.
 - **`31.b`** (`guided_json_malformed_json`) JSON that does not parse — a truncated object, what a constrained decode looks like when the budget runs out.
 - **`31.c`** (`guided_json_partial_calls`) The array parses but one element is not a call.
 - **`31.d`** (`guided_json_list_with_broken_element`) `[<valid call>, <broken JSON>]` — the array itself does not parse, so per-element recovery never runs.
+- **`31.e`** (`guided_json_tool_open_before_payload`) A native tool OPENER precedes the payload. Guided decoding delivers the call as JSON, so leading markup is stray: strip it, or it enters the payload buffer, breaks the parse and costs the call.
+- **`31.f`** (`guided_json_tool_close_after_payload`) A native tool CLOSER follows the payload. Markers can BRACKET a payload, not only precede it — once the opening brace latches visible-only, every later byte is appended verbatim.
+- **`31.g`** (`guided_json_wrapped_in_tool_markup`) Opener AND closer, the shape a template emits when guided decoding is applied INSIDE a tool block. Handling one end only still loses the call.
+- **`31.h`** (`guided_json_narrated_invoke_in_reasoning`) The model NARRATES a tool opener while thinking, then the real call arrives as JSON. The reasoning channel is unconstrained under guided decoding, so that markup is prose; treating it as structure ends the turn and discards the payload.
+- **`31.i`** (`guided_json_prose_before_reasoning`) Visible prose, then a thought, then the payload. Every other guided case opens its thought at byte 0; with prose first the run can latch the payload buffer and surface the model's private thinking to the user as the answer.
+- **`31.j`** (`guided_json_orphan_reason_close_before_payload`) An orphan reasoning CLOSER with nothing open. The native scanner strips a stray closer wherever it appears before an opener; guided must agree or the same bytes read differently by request mode (`I3`).
+- **`31.k`** (`guided_json_orphan_tool_close_before_payload`) An orphan tool CLOSER. Paired with `31.e`: while the closer was stripped and the opener beside it was not, which marker leaked depended on which one the model happened to emit.
 
 `31.c` and `31.d` pin **all-or-nothing**: one bad element voids the whole array and the payload goes out as text, taking the valid call with it. That is deliberate. A tool call is a side effect, so dispatching one extracted from a document that failed validation fails OPEN. Text loses nothing — the raw payload stays visible. Every case in this group also emits `tracing::warn!(why = "unified_guided_json_not_a_tool_call")`: the events alone are indistinguishable from a model that chose to answer in prose, so the log is the only signal the backend's guided decoding failed.
+
+`31.a`–`31.d` are malformed PAYLOADS; `31.e`–`31.k` are well-formed payloads in malformed SURROUNDINGS. The all-or-nothing rule and the `unified_guided_json_not_a_tool_call` warning above apply to `31.a`–`31.d` only: the surroundings cases recover the markers and their payloads then parse, so they dispatch the call and emit no such warning.
+
+**Peer-engine value here is intentionally limited.** vLLM does not emit guided JSON in the base capture, and the families with no native unified parser cannot honour `init` at all, so those columns are structurally `UNSUPPORTED` rather than a comparison. These rows still pin the authored golden contract, the current native parsers' recovery, and the `dynamo_v2-0.1.22` split column — which is what they exist for.
 
 ### Group 40 — Prefilled reasoning, happy
 - **`40.a`** (`prefilled_reasoning_with_tool`) Stream begins inside a thought, closes it, calls a tool.
