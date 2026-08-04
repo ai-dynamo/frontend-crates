@@ -878,6 +878,13 @@ def _entry(spec, fam):
     return spec
 
 
+def _init_is_request_scoped(init):
+    """True when a case declares a request mode a pre-unified build cannot see."""
+    init = init or {}
+    return (init.get("tool_output_mode", "Native") != "Native"
+            or init.get("starting_state", "None") != "None")
+
+
 def build_cases(fam):
     """Every CLEAN + EDGE scenario for one family, keyed by case id."""
     cases = {}
@@ -918,6 +925,22 @@ def build_cases(fam):
                 if ev.get("kind") in ("text", "reasoning") and ev.get("text") is None:
                     ev["text"] = rest[0]
                     break
+        # ENFORCED HERE, not at each authoring site. `every_family()` and
+        # `guided_surroundings()` already substitute UNSUPPORTED for a family with
+        # no native unified parser, but a scenario hand-written as an explicit
+        # per-family dict bypasses them and can hand gemma4/kimi_k2 a bare `match`
+        # under a guided or prefilled `init` — a family on the v1-reasoning +
+        # v2-tool split ignores `init` entirely, so it cannot honour that mode.
+        # Nothing asserts this field (the Dynamo column is computed live), so a
+        # false `match` never fails; it just tells a reader two engines handle
+        # request modes they cannot see. One gate every case passes through is the
+        # only way an authoring shortcut cannot route around it.
+        if fam not in UNIFIED_FAMILIES and _init_is_request_scoped(init):
+            dynamo = D(
+                "UNSUPPORTED",
+                "no native unified parser in this build, so the split path ignores "
+                "`init` and cannot honour this request mode",
+            )
         cases[cid] = {
             "description": desc,
             "policy": policy,
