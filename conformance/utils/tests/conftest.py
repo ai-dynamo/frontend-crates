@@ -1,7 +1,10 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Shared fixtures: one real render per test session, reused by the output-invariant
-and browser tests (rendering takes ~1-2 min; per-module renders would multiply that)."""
+"""Shared fixtures: ONE real render per test session, reused by every browser test.
+
+Both browser modules must take the page from here. test_browser_smoke.py used to
+declare its own module-scoped copy of this fixture, so a full run rendered the table
+twice — and the two renders were the bulk of the suite's wall clock."""
 import subprocess
 from pathlib import Path
 

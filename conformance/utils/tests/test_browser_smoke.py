@@ -12,9 +12,7 @@ Skips when Selenium or headless Chrome aren't available, so it adds no hard test
 dependency — it runs where a browser exists and is a no-op otherwise.
 """
 import shutil
-import subprocess
 import time
-from pathlib import Path
 
 import pytest
 
@@ -22,23 +20,10 @@ selenium = pytest.importorskip("selenium")
 from selenium import webdriver  # noqa: E402
 from selenium.webdriver.chrome.options import Options  # noqa: E402
 
-UTILS = Path(__file__).resolve().parents[1]
-REPO = UTILS.parents[1]
-
 pytestmark = pytest.mark.skipif(
     not any(shutil.which(b) for b in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser")),
     reason="no headless Chrome available",
 )
-
-
-@pytest.fixture(scope="module")
-def rendered(tmp_path_factory):
-    out = tmp_path_factory.mktemp("d4") / "table.html"
-    subprocess.run(
-        [str(UTILS / "render_table_v2.sh"), "--output", str(out)],
-        check=True, cwd=REPO, capture_output=True, text=True,
-    )
-    return out
 
 
 # Headless Chrome reports `(hover: hover)` as FALSE, so conformance.js takes its touch
@@ -60,7 +45,7 @@ window.matchMedia = function (q) {
 
 
 @pytest.fixture(scope="module")
-def driver(rendered):
+def driver(rendered_page):
     opts = Options()
     for a in ("--headless=new", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--window-size=1600,1200"):
         opts.add_argument(a)
@@ -69,7 +54,7 @@ def driver(rendered):
     except Exception as exc:  # noqa: BLE001 — environment without a usable driver
         pytest.skip(f"could not start Chrome webdriver: {exc}")
     d.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": _FORCE_HOVER_JS})
-    d.get(f"file://{rendered}")
+    d.get(f"file://{rendered_page}")
     d.implicitly_wait(2)
     yield d
     d.quit()

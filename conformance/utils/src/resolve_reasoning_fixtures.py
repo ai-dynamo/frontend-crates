@@ -15,30 +15,12 @@ in ascending order up to and including the selected version, patching expected.<
 Default select = latest available per impl. Readers (reasoning/table.py) consume the flat
 output unchanged.
 """
-import argparse, re, sys
+import argparse, sys
 from pathlib import Path
 import yaml
-# PERF: route safe_load through libyaml's CSafeLoader (identical result, ~15x faster).
-if hasattr(yaml, "CSafeLoader"):
-    yaml.safe_load = lambda _s, _loader=yaml.CSafeLoader: yaml.load(_s, Loader=_loader)
-
-
-def load(p):
-    return yaml.safe_load(Path(p).read_text())
-
-
-def version_key(ver: str):
-    """Order versions like 0.5.12.post1 < 0.5.14 < 0.24.0 < 3.0.0."""
-    m = re.match(r"(\d+(?:\.\d+)*)(?:[.-]?post(\d+))?", ver)
-    release = tuple(int(x) for x in m.group(1).split(".")) if m else ()
-    post = int(m.group(2)) if m and m.group(2) else 0
-    return (release, post)
-
-
-def split_impl_ver(dirname: str):
-    """'vllm-0.23.0' -> ('vllm', '0.23.0'); impl names never contain '-'."""
-    impl, _, ver = dirname.partition("-")
-    return impl, ver
+import yaml_fast  # noqa: F401 — routes safe_load/safe_dump through libyaml
+from fixture_corpus import load, version_key  # noqa: F401 — re-exported
+from fixture_corpus import split_sel as split_impl_ver
 
 
 # The captured_with key each impl records its engine version under.

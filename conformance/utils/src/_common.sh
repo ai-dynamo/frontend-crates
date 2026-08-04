@@ -76,6 +76,9 @@ _build_stage_base() {
   \cp -f "$TOOLS/model.py" "$STAGE/tests/parity/model.py"
   # markers.py (comparison/facts semantics) + impls.py (identity) are the single
   # source the tables import instead of forking their own comparison copies.
+  # yaml_fast.py is the one place PyYAML gets routed through libyaml; the staged
+  # generator imports it by name, so it has to sit beside it in tests/parity/.
+  \cp -f "$TOOLS/yaml_fast.py" "$STAGE/tests/parity/yaml_fast.py"
   \cp -f "$TOOLS/impls.py" "$STAGE/tests/parity/impls.py"
   \cp -f "$TOOLS/markers.py" "$STAGE/tests/parity/markers.py"
   \cp -f "$TOOLS/unified_taxonomy.py" "$STAGE/tests/parity/unified_taxonomy.py"
