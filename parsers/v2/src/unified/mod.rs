@@ -663,11 +663,23 @@ fn guided_holdback_len(
             .copied()
             .chain(control.iter().map(String::as_str)),
     );
+    // A prefix-form marker counts as COMPLETE only when its `>` arrives before the
+    // payload does — the same rule `control_marker_at` uses, and it has to be the
+    // same or the two disagree about the identical bytes. It used to accept any `>`
+    // ANYWHERE after the marker, which a `>` inside an argument string satisfies:
+    // `<function=[{"city": "a > b"}]` was then neither consumed (no `>` before the
+    // payload) nor held back (a `>` exists somewhere), so the marker flushed into
+    // the payload buffer, the JSON failed to parse, and the user got the call as
+    // raw text with `<function=` still attached.
+    let payload_at = input.find(['{', '[']);
     let pending_prefix_form = control
         .iter()
         .filter(|m| m.ends_with('='))
         .filter_map(|m| input.rfind(m.as_str()))
-        .filter(|at| !input[*at..].contains('>'))
+        .filter(|at| {
+            let bound = payload_at.unwrap_or(input.len()).max(*at);
+            !input[*at..bound].contains('>')
+        })
         .map(|at| input.len() - at)
         .max()
         .unwrap_or(0);

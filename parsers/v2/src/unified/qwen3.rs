@@ -1283,6 +1283,38 @@ mod tests {
             "bare opener swallowed the payload: {got:?}"
         );
     }
+
+    /// `control_marker_at` and `guided_holdback_len` must agree on when a
+    /// prefix-form marker is COMPLETE, at every chunk boundary.
+    ///
+    /// They disagreed once: consume required the `>` before the payload start,
+    /// holdback accepted any `>` anywhere after the marker. A `>` inside an
+    /// argument string satisfies only the second, so `<function=` was neither
+    /// consumed nor retained — it flushed into the payload buffer, the JSON failed
+    /// to parse, and the call surfaced as text with the marker still attached.
+    #[test]
+    fn a_marker_before_a_payload_containing_gt_still_dispatches_at_every_split() {
+        let tools = weather_tools();
+        let input = "<function=[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"a > b\"}}]";
+        let want = vec![call("get_weather", serde_json::json!({"city": "a > b"}))];
+        for split in 0..=input.len() {
+            if split > 0 && !input.is_char_boundary(split) {
+                continue;
+            }
+            let chunks: Vec<&str> = if split == 0 {
+                vec![input]
+            } else {
+                vec![&input[..split], &input[split..]]
+            };
+            let got = configured_events(
+                &tools,
+                UnifiedParserStartingState::None,
+                UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                &chunks,
+            );
+            assert_eq!(got, want, "split at {split}");
+        }
+    }
 }
 
 #[cfg(test)]

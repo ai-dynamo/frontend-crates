@@ -1,6 +1,6 @@
 {
-  "snapshot": "20260804_094258",
-  "created_pt": "2026-08-04 09:42:58 America/Los_Angeles",
+  "snapshot": "20260804_104610",
+  "created_pt": "2026-08-04 10:46:10 America/Los_Angeles",
   "crates": {
     "dynamo-parsers": "7.0.1",
     "dynamo-parsers-v2": "0.1.25"
@@ -182,8 +182,8 @@
     },
     {
       "path": "unified/vllm_rust-0.25.1.tar.gz",
-      "sha256": "6c0a80957217c5246e6a7269dfe22e4c7f018ac42b625d30cb1f3502eaca8fdd",
-      "size": 5367
+      "sha256": "dc83fb06ea001b3a6b52e748ed636c8585ae2f16dc1b80d5128dd53310313daf",
+      "size": 9592
     }
   ]
 }
