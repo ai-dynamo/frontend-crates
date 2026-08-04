@@ -381,7 +381,16 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     /// Select whether this stream interprets reasoning markers, without
     /// rebuilding the scanner or cloning its tool schemas.
     pub(crate) fn set_reasoning_mode(&mut self, enabled: bool, forced_start: bool) {
-        debug_assert!(!enabled || self.reasoning.is_some());
+        // A family with NO `ReasoningSpec` has no reasoning channel to turn on, so
+        // "enabled" for it is simply false — not a caller error. This used to be a
+        // `debug_assert!`, but `initialize_request` enables the channel for every
+        // starting state except `Response`, so the first family registered without
+        // reasoning would have aborted on EVERY request in debug and test builds.
+        // `UNIFIED_PORTING.md` documents that registration as supported (it only
+        // rules out `GuidedJson`), so the assert forbade a shape the porting guide
+        // invites. The check could not tell "this family has no reasoning" from
+        // "this scanner was built wrong" anyway; it only ever caught the former.
+        let enabled = enabled && self.reasoning.is_some();
         self.reasoning_enabled = enabled;
         if let Some(reasoning) = self.reasoning.as_mut() {
             reasoning.forced_start = forced_start;
@@ -869,5 +878,34 @@ mod tests {
 
         assert!(scanner.push_ordered("</call></tool>suffix").is_err());
         assert_eq!(scanner.reset(), "<tool>  <call>bad</call></tool>suffix");
+    }
+
+    /// A family with no `ReasoningSpec` must survive request setup.
+    ///
+    /// `ScannerUnified::initialize_request` enables the reasoning channel for every
+    /// starting state except `Response`, so while this was a `debug_assert!` the
+    /// first family registered without reasoning would have aborted on EVERY request
+    /// in debug and test builds — a shape `UNIFIED_PORTING.md` explicitly documents
+    /// as supported. Unreachable with today's registry (qwen3 and gemma4 both have
+    /// reasoning), which is exactly why it needs a test rather than a reader.
+    #[test]
+    fn enabling_reasoning_on_a_family_without_it_is_a_no_op_not_a_panic() {
+        let mut scanner = failing_scanner();
+        assert!(
+            scanner.reasoning.is_none(),
+            "fixture must have no ReasoningSpec"
+        );
+
+        scanner.set_reasoning_mode(true, false);
+        assert!(!scanner.reasoning_enabled, "no channel to enable");
+        assert!(!scanner.in_reasoning);
+
+        // The prefilled-reasoning starting state must not latch either.
+        scanner.set_reasoning_mode(true, true);
+        assert!(!scanner.reasoning_enabled);
+        assert!(
+            !scanner.in_reasoning,
+            "cannot start inside a channel that does not exist"
+        );
     }
 }
