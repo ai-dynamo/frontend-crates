@@ -1145,9 +1145,9 @@ dependencies = [
 
 [[package]]
 name = "fastokens"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f1f336629cfa807210f0b68de9b27ec7699cedf32d57b125bd4d73f87f6e92b"
+checksum = "35ff8cf975d8f772e7d4c3be439659b0b23b1ae1086ebee7204573807053ff7f"
 dependencies = [
  "daachorse",
  "fancy-regex 0.17.0",
@@ -1162,6 +1162,7 @@ dependencies = [
  "serde_json",
  "strum",
  "thiserror",
+ "ureq",
 ]
 
 [[package]]
