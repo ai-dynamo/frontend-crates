@@ -897,10 +897,21 @@ EDGE = [
 
 # name -> (payload text, does a well-formed parse dispatch a call?)
 GUIDED_PAYLOADS = {
-    "valid": (GUIDED_ONE_CALL, True),
-    "malformed_json": ('[{"name": "get_weather", "arguments": {"city": ', False),
-    "not_a_call": ('{"unexpected": "shape"}', False),
-    "broken_element": ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]', False),
+    "valid": (GUIDED_ONE_CALL, {"city": "Paris"}),
+    # WHICH LAYER rejects the payload, not a vague "malformed". Only the first of
+    # these fails to parse; the other two are well-formed JSON that is not a call
+    # list. Collapsing them under one word made the corpus read as covering a
+    # syntax failure when it was really testing schema rejection.
+    "syntax_error": ('[{"name": "get_weather", "arguments": {"city": ', None),
+    "schema_error_not_a_call": ('{"unexpected": "shape"}', None),
+    "schema_error_nameless_element":
+        ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]', None),
+    # An argument containing the character a prefix-form invoke header terminates
+    # on. `control_marker_at` and `guided_holdback_len` once disagreed about whether
+    # such a `>` completed the marker, so `<function=` was neither consumed nor held
+    # back and the call was lost as text. Payload shape, so it crosses every
+    # surrounding automatically.
+    "gt_in_argument": ('[{"name": "get_weather", "arguments": {"city": "a > b"}}]', {"city": "a > b"}),
 }
 
 # name -> (wrap(payload, fam) -> input, one-line description of the surrounding)
@@ -928,13 +939,14 @@ def _guided_product():
     emitting a duplicate under a second name.
     """
     out = []
-    for pay_name, (payload, dispatches) in GUIDED_PAYLOADS.items():
+    for pay_name, (payload, want_args) in GUIDED_PAYLOADS.items():
+        dispatches = want_args is not None
         for sur_name, (wrap, sur_desc, strips_tail) in GUIDED_SURROUNDS.items():
             if sur_name == "clean":
                 continue  # already authored as 30.a/30.b and 31.a-31.d
             scenario = f"guided_json_{pay_name}_{sur_name}"
             golden = ([{"kind": "tool_call", "name": "get_weather",
-                        "arguments": {"city": "Paris"}}] if dispatches else
+                        "arguments": want_args}] if dispatches else
                       [{"kind": "text", "text": None}])
             note = (f"guided payload ({pay_name}) with {sur_desc}: "
                     + ("the call still dispatches and no marker reaches the user"
@@ -999,6 +1011,15 @@ EDGE += [
                D("UNSUPPORTED", "vLLM base case does not capture an unterminated envelope"),
                {"verdict": "match", "note": "P2: unterminated envelope drops its content"})),
 ]
+
+
+# WITHHELD: `guided_json_native_markup_only`. The case is valid and it found a real
+# `I6` violation — guided decoding fed the family's native markup emits nothing in
+# BATCH but leaks `<parameter=city>…</function>` as user-visible text in STREAM, so
+# the same bytes give two answers. It is not in the corpus because the fix is not in
+# yet: holding the invoke body until its terminator arrives (the obvious repair)
+# costs the call outright when `</function>` never comes, which the split
+# cross-product catches. Tracked so this is a known gap, not a forgotten one.
 
 
 def _entry(spec, fam):

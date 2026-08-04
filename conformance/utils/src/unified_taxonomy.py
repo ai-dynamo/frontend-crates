@@ -85,15 +85,21 @@ UNIFIED_TAX = {
     "guided_json_valid_trailing_close": (30, "h"),
     "guided_json_valid_wrapped": (30, "i"),
     "guided_json_valid_bare_opener": (30, "j"),
-    "guided_json_malformed_json_trailing_close": (31, "l"),
-    "guided_json_malformed_json_wrapped": (31, "m"),
-    "guided_json_malformed_json_bare_opener": (31, "n"),
-    "guided_json_not_a_call_trailing_close": (31, "o"),
-    "guided_json_not_a_call_wrapped": (31, "p"),
-    "guided_json_not_a_call_bare_opener": (31, "q"),
-    "guided_json_broken_element_trailing_close": (31, "r"),
-    "guided_json_broken_element_wrapped": (31, "s"),
-    "guided_json_broken_element_bare_opener": (31, "t"),
+    "guided_json_syntax_error_trailing_close": (31, "l"),
+    "guided_json_syntax_error_wrapped": (31, "m"),
+    "guided_json_syntax_error_bare_opener": (31, "n"),
+    "guided_json_schema_error_not_a_call_trailing_close": (31, "o"),
+    "guided_json_schema_error_not_a_call_wrapped": (31, "p"),
+    "guided_json_schema_error_not_a_call_bare_opener": (31, "q"),
+    "guided_json_schema_error_nameless_element_trailing_close": (31, "r"),
+    "guided_json_schema_error_nameless_element_wrapped": (31, "s"),
+    "guided_json_schema_error_nameless_element_bare_opener": (31, "t"),
+
+    # Devin-found crossings, added as AXIS entries so the next payload/surrounding
+    # combination is generated rather than noticed later.
+    "guided_json_gt_in_argument_trailing_close": (30, "k"),
+    "guided_json_gt_in_argument_wrapped": (30, "l"),
+    "guided_json_gt_in_argument_bare_opener": (30, "m"),
 
     # Group 40 — Prefilled reasoning, happy
     "prefilled_reasoning_with_tool": (40, "a"), "prefilled_reasoning_with_guided_json": (40, "b"),
@@ -117,7 +123,7 @@ UNIFIED_GROUP_LABEL = {
     7: "TC Argument fidelity", 8: "TC Content position",
     10: "Reasoning span",
     11: "Reasoning ↔ tool interleaving", 12: "Adversarial nesting (reasoning + tool)",
-    30: "Guided Decoding", 31: "Guided Decoding — malformed / recovery",
+    30: "Guided Decoding", 31: "Guided Decoding — payload REJECTED (syntax or schema) / recovery",
     40: "Prefilled Reasoning", 41: "Prefilled Reasoning — malformed",
     50: "Prefilled Response", 51: "Prefilled Response — malformed",
 }

@@ -507,6 +507,44 @@ fn cell(
 
 #[test]
 fn render_unified_conformance_html() {
+    // The vLLM column is LIVE, not an expectation. `capture_vllm_rust_unified.py`
+    // records the `vllm-parser` crate against this same corpus; reading it here is
+    // what makes the column evidence instead of a claim.
+    let vllm_live: BTreeMap<(String, String), Vec<Ev>> = {
+        let froot = common::ensure_fixtures().join("unified");
+        let mut m = BTreeMap::new();
+        // Shards key by TAXONOMY id (`UNIFIED.30.a`); the golden keys by SCENARIO
+        // (`UNIFIED.guided_json_named_tool.qwen3`). The inputs shard carries both, so
+        // it is the bridge — without it every cell reads NO-DATA while the capture
+        // sits right there, which is how this first went wrong.
+        let mut by_tax: BTreeMap<(String, String), String> = BTreeMap::new();
+        for entry in glob_yaml(&froot.join("inputs")) {
+            if let Ok(doc) = serde_yaml::from_str::<InputDoc>(
+                &std::fs::read_to_string(&entry).unwrap_or_default(),
+            ) {
+                for (cid, c) in doc.cases {
+                    by_tax.insert((doc.family.clone(), cid), c.scenario);
+                }
+            }
+        }
+        if let Some(d) = common::version_dirs_ascending(&froot, "vllm_rust-").pop() {
+            for entry in glob_yaml(&d) {
+                if let Ok(doc) = serde_yaml::from_str::<CaptureDoc>(
+                    &std::fs::read_to_string(&entry).unwrap_or_default(),
+                ) {
+                    for (cid, c) in doc.cases {
+                        if let Some(sc) = by_tax.get(&(doc.family.clone(), cid)) {
+                            m.insert(
+                                (doc.family.clone(), format!("UNIFIED.{sc}.{}", doc.family)),
+                                c.assembled,
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        m
+    };
     let dir = common::ensure_unified_golden();
     let mut files: Vec<GoldenFile> = Vec::new();
     for entry in std::fs::read_dir(&dir).unwrap() {
@@ -615,13 +653,36 @@ fn render_unified_conformance_html() {
                 .note
                 .map(|n| format!("<hr><div class=note>{}</div>", esc(&n)))
                 .unwrap_or_default();
+            let vlive = vllm_live.get(&(file.family.clone(), id.clone()));
+            let (vgot_html, vverdict, vclass_final) = match vlive {
+                Some(ev) => {
+                    let matches = ev == &case.golden;
+                    (
+                        events_html(ev),
+                        if matches { "match" } else { "diverge" },
+                        if matches {
+                            "MATCH".to_string()
+                        } else {
+                            "DIVERGE".to_string()
+                        },
+                    )
+                }
+                // No capture for this case: say so. Do NOT fall back to the authored
+                // expectation dressed up as a result — that is how this column spent
+                // its life claiming MATCH with nothing behind it.
+                None => (
+                    "<i>(no vLLM capture for this case)</i>".to_string(),
+                    "diverge",
+                    "NO-DATA".to_string(),
+                ),
+            };
             let vcell = cell(
-                "vLLM 0.25.x (expected)",
+                "vLLM Rust 0.25.1 (LIVE)",
                 &case.input,
                 &case.golden,
-                "<i>(live capture pending — U1)</i>",
-                &vx.verdict,
-                &vclass,
+                &vgot_html,
+                vverdict,
+                &vclass_final,
                 &vnote,
             );
 
