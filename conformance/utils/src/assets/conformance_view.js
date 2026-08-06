@@ -294,7 +294,7 @@
   //   text input  -> one `ttip-final` row: input_text + each candidate's assembled block
   //   chunk input -> one row per input chunk (per-candidate deltas) + a `ttip-final`
   //                  assembled row.
-  var _IMPL_KEYS = ['dynamo_v1', 'dynamo_v2', 'vllm_rust', 'vllm_python', 'sglang_python'];
+  var _IMPL_KEYS = ['dynamo_v1', 'dynamo_v2', 'vllm_rust', 'vllm_python', 'sglang_python', 'smg_tool'];
   function implKeyOf(candKey) {
     for (var i = 0; i < _IMPL_KEYS.length; i++) {
       if (candKey.indexOf(_IMPL_KEYS[i]) === 0) { return _IMPL_KEYS[i]; }
@@ -569,11 +569,16 @@
   }
 
   // --- Compare bar (mirrors _compare_bar.html.j2) ----------------------------
-  // Three engine columns (Dynamo / vLLM / SGLang); one .cmprow per candidate whose
+  // Engine columns (Dynamo / vLLM / SGLang / SMG); one .cmprow per candidate whose
   // impl matches. Bucket A = reference (radio checked, own compare box locked-on);
   // bucket A or B = compare-with checked; C = off.
   function compareBarHtml(tab) {
-    var groups = [['Dynamo', 'dynamo'], ['vLLM', 'vllm'], ['SGLang', 'sglang']];
+    var groups = [
+      ['Dynamo', 'dynamo'],
+      ['vLLM', 'vllm'],
+      ['SGLang', 'sglang'],
+      ['SMG', 'smg']
+    ];
     var html = '<div class="cmpctl" role="group" aria-label="Pick one Reference parser'
       + ' (radio) and any number of Compare-with parsers (checkbox)">';
     // Golden is the oracle shown in the input column, not a selectable engine. Make it the

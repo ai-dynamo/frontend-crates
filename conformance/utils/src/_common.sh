@@ -78,6 +78,7 @@ _build_stage_base() {
   # source the tables import instead of forking their own comparison copies.
   \cp -f "$TOOLS/impls.py" "$STAGE/tests/parity/impls.py"
   \cp -f "$TOOLS/markers.py" "$STAGE/tests/parity/markers.py"
+  \cp -f "$TOOLS/smg.py" "$STAGE/tests/parity/smg.py"
   \cp -f "$TOOLS/unified_taxonomy.py" "$STAGE/tests/parity/unified_taxonomy.py"
   [ -f "$TOOLS/assets/conformance_view.js" ] && \
     \cp -f "$TOOLS/assets/conformance_view.js" "$STAGE/tests/parity/assets/conformance_view.js" || true

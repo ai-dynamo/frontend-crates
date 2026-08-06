@@ -127,11 +127,97 @@ def test_compare_candidates_are_per_tab(driver):
     click_tab("tab-toolcalling-batch")
     keys = cand_keys()
     assert any("vllm_rust" in k for k in keys), "merged tab should offer a vLLM Rust candidate"
+    assert any("smg_tool" in k for k in keys), "tool tab should offer SMG candidates"
     click_tab("tab-reasoning-batch")
     keys = cand_keys()
     assert keys and not any("vllm_rust" in k for k in keys), (
         "Reasoning should have candidates but no vLLM Rust"
     )
+    assert any("smg_reasoning" in k for k in keys), "reasoning tab should offer an SMG candidate"
+
+
+def test_every_dynamo_smg_pair_is_clickable_populated_and_comparable(driver):
+    """Exercise the complete Dynamo/SMG comparison surface with real clicks.
+
+    Every tab must activate, retain populated cells, expose its SMG and Dynamo
+    candidates, and build a tooltip containing exactly the selected SMG reference
+    plus one Dynamo comparator. This catches a compare-bar renderer failure that
+    left the tab shell present while its controls and matrix were inert.
+    """
+    result = driver.execute_script(
+        """
+        const detailed = document.querySelector('[data-view-detailed]');
+        if (detailed && !detailed.checked) { detailed.click(); }
+        const failures = [];
+        let combinations = 0;
+        for (const button of document.querySelectorAll('.tab-button')) {
+          button.click();
+          const panel = document.getElementById(button.dataset.tabTarget);
+          if (!panel || !panel.classList.contains('active')) {
+            failures.push(`${button.dataset.tabTarget}: tab did not activate`);
+            continue;
+          }
+          const ctl = panel.querySelector('.cmpctl');
+          const cells = [...panel.querySelectorAll('td.cell[data-cmp]')];
+          const populated = cells.filter(td => td.textContent.trim()).length;
+          if (!cells.length || populated !== cells.length) {
+            failures.push(
+              `${panel.id}: populated ${populated}/${cells.length} compare cells`
+            );
+          }
+          const smgs = [...ctl.querySelectorAll('input.cmp-ref')]
+            .filter(input => input.value.startsWith('smg'));
+          const dynamos = [...ctl.querySelectorAll('input.cmp-ref')]
+            .filter(input => input.value.startsWith('dynamo'));
+          if (!smgs.length || !dynamos.length) {
+            failures.push(
+              `${panel.id}: SMG refs=${smgs.length}, Dynamo refs=${dynamos.length}`
+            );
+            continue;
+          }
+          for (const smg of smgs) {
+            for (const dynamo of dynamos) {
+              combinations++;
+              smg.click();
+              for (const checkbox of ctl.querySelectorAll('input.cmp-on')) {
+                const keep = checkbox.value === smg.value
+                  || checkbox.value === dynamo.value;
+                if (!checkbox.disabled && checkbox.checked !== keep) {
+                  checkbox.click();
+                }
+              }
+              const cell = cells.find(td => {
+                try {
+                  const cmp = JSON.parse(td.dataset.cmp || '{}');
+                  return cmp[smg.value] && cmp[smg.value].na !== 1
+                    && cmp[dynamo.value] && cmp[dynamo.value].na !== 1;
+                } catch (_) {
+                  return false;
+                }
+              });
+              if (!cell) {
+                failures.push(`${panel.id}: no overlap for ${smg.value}/${dynamo.value}`);
+                continue;
+              }
+              window.__buildTooltip(cell);
+              const visible = [...new Set(
+                [...cell.querySelectorAll('.ttip [data-cand]:not(.col-hidden)')]
+                  .map(el => el.dataset.cand)
+              )].sort();
+              const expected = [smg.value, dynamo.value].sort();
+              if (JSON.stringify(visible) !== JSON.stringify(expected)) {
+                failures.push(
+                  `${panel.id}: ${smg.value}/${dynamo.value} showed ${visible}`
+                );
+              }
+            }
+          }
+        }
+        return {failures, combinations};
+        """
+    )
+    assert result["combinations"] > 0, "no Dynamo/SMG combinations were exercised"
+    assert result["failures"] == [], "\n".join(result["failures"])
 
 
 def test_compare_shows_one_marker_per_cell(driver):

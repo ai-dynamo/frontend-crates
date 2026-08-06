@@ -134,6 +134,7 @@ from impls import (  # noqa: E402
 # Comparison + marker semantics live in markers.py (audit B5); re-exported here so the
 # rendering code below and the test suite keep referring to them as module attributes.
 import markers  # noqa: E402  (module handle: structured comparison model, DIS-2434)
+import smg  # noqa: E402  (live SMG parser capture produced by render_table_v2.sh)
 import unified_taxonomy  # noqa: E402  (shared UNIFIED scenario->numbered-id taxonomy)
 from markers import (  # noqa: E402,F401
     VLLM_RUST_UNAVAILABLE,
@@ -952,6 +953,7 @@ _CANDIDATE_SHORT = {
     "vllm_rust": "vLLM Rust",
     "vllm_python": "vLLM",
     "sglang_python": "SGLang",
+    "smg_tool": "SMG",
 }
 
 # Standardized candidate label: "<Engine> <Runtime> <version> (<mode>)", e.g.
@@ -966,7 +968,19 @@ _ENGINE_RUNTIME = {
     "vllm_rust": "vLLM Rust",
     "vllm_python": "vLLM Python",
     "sglang_python": "SGLang Python",
+    "smg_tool": "SMG tool-parser Rust",
 }
+
+
+SMG_TOOL_IMPL = "smg_tool"
+
+
+def _smg_status(block: object) -> str:
+    if not isinstance(block, dict) or "unavailable" in block:
+        return "na"
+    if "error" in block:
+        return "problem"
+    return "ok"
 
 
 
@@ -1058,6 +1072,17 @@ def _candidate_items() -> list[dict[str, str]]:
                 "label": _full_label(canon, v, "batch"),
                 "default_bucket": bucket,
             })
+    if (version := smg.tool_version()) is not None:
+        slug = fixtures._version_slug(version)
+        out.append({
+            "key": f"{SMG_TOOL_IMPL}-{slug}",
+            "impl": SMG_TOOL_IMPL,
+            "version": version,
+            "slug": slug,
+            "short": _ENGINE_RUNTIME[SMG_TOOL_IMPL],
+            "label": _full_label(SMG_TOOL_IMPL, version, "batch"),
+            "default_bucket": "C",
+        })
     return out
 
 
@@ -1134,6 +1159,14 @@ def _stream_candidate_items() -> list[dict[str, str]]:
                 "label": _full_label(impl, v, "stream"),
                 "default_bucket": bucket,
             })
+    if (version := smg.tool_version()) is not None:
+        slug = fixtures._version_slug(version)
+        out.append({
+            "key": f"{SMG_TOOL_IMPL}-{slug}",
+            "label": _full_label(SMG_TOOL_IMPL, version, "stream"),
+            "default_bucket": "C",
+            "version": version,
+        })
     return out
 
 
@@ -1364,6 +1397,8 @@ def _stream_on_batch_versions() -> dict[str, str]:
     dynv = _dynamo_v2_version()
     if dynv:
         out[BASELINE_STREAM_IMPL] = dynv
+    if (smg_version := smg.tool_version()) is not None:
+        out[SMG_TOOL_IMPL] = smg_version
     for fp in sorted(STREAM_ON_BATCH_FIXTURES.glob("*/TOOLCALLING.batch*.yaml")):
         doc = yaml.safe_load(fp.read_text()) or {}
         for impl, ver in (doc.get("captured_with") or {}).items():
@@ -1397,6 +1432,13 @@ def _merged_candidate_items() -> list[dict[str, str]]:
             "label": _full_label(impl, ver, "stream"),
             "default_bucket": "C",
         })
+    if (version := stream_versions.get(SMG_TOOL_IMPL)) is not None:
+        slug = fixtures._version_slug(version)
+        out.append({
+            "key": f"{SMG_TOOL_IMPL}-s-{slug}",
+            "label": _full_label(SMG_TOOL_IMPL, version, "stream"),
+            "default_bucket": "C",
+        })
     return out
 
 
@@ -1425,6 +1467,15 @@ def _attach_merged_cmp(cases: dict) -> None:
                     "label": _full_label(impl, info['version'], "batch"),
                     "block": info.get("block"),
                 })
+        family = case.get("__family") or key[0]
+        case_id = case.get("__synthetic_from_case_id") or case.get("__case_id") or ""
+        if (version := smg.tool_version()) is not None:
+            slug = fixtures._version_slug(version)
+            items.append({
+                "key": f"{SMG_TOOL_IMPL}-b-{slug}",
+                "label": _full_label(SMG_TOOL_IMPL, version, "batch"),
+                "block": smg.tool("batch", family, case_id),
+            })
         sob = sob_cases.get(key)
         if sob is not None:
             if sob.get("__known_divergence"):
@@ -1438,6 +1489,13 @@ def _attach_merged_cmp(cases: dict) -> None:
                     "label": _full_label(impl, ver, "stream"),
                     "block": _impl_get(expected, impl),
                 })
+        if (version := stream_versions.get(SMG_TOOL_IMPL)) is not None:
+            slug = fixtures._version_slug(version)
+            items.append({
+                "key": f"{SMG_TOOL_IMPL}-s-{slug}",
+                "label": _full_label(SMG_TOOL_IMPL, version, "stream"),
+                "block": smg.tool("stream_on_batch", family, case_id),
+            })
         if items:
             case["__cmp"] = items
 
@@ -1641,8 +1699,39 @@ def _load_panel_cases(
         # plus single-version Dynamo v2 + vLLM Rust.
         ver_status = _stream_version_status_map()
         for key, case in cases.items():
-            if isinstance(case, dict) and key in ver_status:
+            if not isinstance(case, dict):
+                continue
+            if key in ver_status:
                 case["__ver_status"] = ver_status[key]
+            version = smg.tool_version()
+            family = case.get("__family") or key[0]
+            case_id = case.get("__synthetic_from_case_id") or case.get("__case_id") or ""
+            block = smg.tool("stream", family, case_id)
+            if version is None:
+                continue
+            if block is None:
+                block = {
+                    "unavailable": (
+                        "SMG tool-parser was not run because this conformance cell "
+                        "declares no input chunks."
+                    )
+                }
+            slug = fixtures._version_slug(version)
+            chunks = block.get("chunks") if isinstance(block, dict) else None
+            case.setdefault("__ver_status", {}).setdefault(SMG_TOOL_IMPL, {})[slug] = {
+                "status": _smg_status(block),
+                "block": block,
+                "version": version,
+                "chunks": chunks,
+                "aligned": isinstance(chunks, list)
+                and len(chunks) == len(case.get("chunks") or []),
+            }
+            for index, chunk in enumerate(case.get("chunks") or []):
+                if not isinstance(chunk, dict) or not isinstance(chunks, list) or index >= len(chunks):
+                    continue
+                captured = chunks[index]
+                chunk.setdefault("expected", {})[SMG_TOOL_IMPL] = captured.get("expected") or []
+                chunk.setdefault("normal_text", {})[SMG_TOOL_IMPL] = captured.get("normal_text") or ""
     sub_cases = _discover_sub_cases(mode, cases)
     no_vllm, no_sglang = _derive_no_peer_sets(cases)
     top_n, others = _build_display_groups(cases, labels)
@@ -1711,7 +1800,7 @@ _LABEL_VERSION_RE = re.compile(r"(\d[\w.]*)\s*\([^)]*\)\s*$")
 
 
 def _cand_engine_group(key: str) -> str:
-    for prefix in ("dynamo", "vllm", "sglang"):
+    for prefix in ("dynamo", "vllm", "sglang", "smg"):
         if key.startswith(prefix):
             return prefix
     return key.split("-")[0]
@@ -1814,7 +1903,7 @@ def _cell_candidate_meta(case: dict, output_kind: str) -> tuple[dict, list[dict]
         # and can never be "(batch)". Hardcoding it made the tooltip header contradict
         # the compare bar, which builds the same candidates via _stream_candidate_items.
         # _full_label still maps dynamo_v1 on stream data to "(jail+batch)".
-        for impl in ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python"):
+        for impl in ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python", SMG_TOOL_IMPL):
             for slug, info in (ver_status.get(impl) or {}).items():
                 meta.append({"key": f"{impl}-{slug}",
                              "label": _full_label(impl, info["version"], output_kind),
@@ -2292,6 +2381,16 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     sgl_live = bool(sgl_cap)
     sgl_ver_label = sgl_version or "0.5.x"
 
+    smg_live = smg.capture() is not None
+    smg_tool_version = smg.tool_version() or "?"
+    smg_reasoning_version = smg.reasoning_version() or "?"
+    smg_ver_label = (
+        smg_tool_version
+        if smg_tool_version == smg_reasoning_version
+        else f"reasoning {smg_reasoning_version} + tool {smg_tool_version}"
+    )
+    smg_label = f"SMG Rust {smg_ver_label} (stream, Combined)"
+
     def _sig(events) -> int:
         return int(hashlib.md5(json.dumps(events, sort_keys=True).encode()).hexdigest()[:8], 16)
 
@@ -2394,6 +2493,10 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
         candidates.append(rc)
     if sgl_live:
         candidates.append(_cand("sglang", f"SGLang Python {sgl_ver_label} (stream, Combined)", "C"))
+    if smg_live:
+        smg_candidate = _cand("smg", smg_label, "C")
+        smg_candidate["version"] = smg_ver_label
+        candidates.append(smg_candidate)
     _TODO = ("TODO: adopt a unified parser for this family (Dynamo v2 is moving to a "
              "per-family mixture — native unified where available, split elsewhere). "
              "Today's split parses ALL reasoning first, so reasoning between/after tool "
@@ -2454,6 +2557,24 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             if sgl_events is not None:
                 sverd = "ERROR" if sgl_err else _unified_classify(f, gold, sgl_events)
                 ssig = (_sig(sgl_events) ^ 0xE44) if sgl_err else _sig(sgl_events)
+            # SMG: reasoning-parser followed by tool-parser, both driven incrementally
+            # over the same input chunks by conformance/tests/smg_capture.rs.
+            smg_cap = smg.unified(f, s) if smg_live else None
+            smg_unavailable = smg_cap.get("unavailable") if smg_cap else None
+            smg_err = smg_cap.get("error") if smg_cap else None
+            smg_chunks = [
+                chunk.get("expected") or [] for chunk in (smg_cap.get("chunks") or [])
+            ] if smg_cap and not smg_unavailable and not smg_err else []
+            smg_events = smg_cap.get("assembled") if smg_cap else None
+            if smg_events is not None:
+                smg_verdict = _unified_classify(f, gold, smg_events)
+                smg_sig = _sig(smg_events)
+            elif smg_err:
+                smg_verdict = "ERROR"
+                smg_sig = _sig([]) ^ 0x5A6
+            else:
+                smg_verdict = None
+                smg_sig = 0
             cmp = {
                 "golden": {"sig": gsig, "leak": 0, "na": 0},
                 "dynamo": {"sig": dsig, "leak": 1 if dverd == "LEAK" else 0, "na": 0},
@@ -2463,6 +2584,12 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                 cmp["vllm_rust"] = {"sig": rsig, "leak": 1 if rverd == "LEAK" else 0, "na": 0}
             if sgl_events is not None:
                 cmp["sglang"] = {"sig": ssig, "leak": 1 if sverd == "LEAK" else 0, "na": 0}
+            if smg_live:
+                cmp["smg"] = {
+                    "sig": smg_sig,
+                    "leak": 1 if smg_verdict == "LEAK" else 0,
+                    "na": 1 if smg_unavailable or smg_cap is None else 0,
+                }
             # Older Dynamo builds, scored against GOLDEN exactly like the latest one, so a
             # cell that changed between builds shows a real NΔ instead of a styling hint.
             prev_by_ver = c.get("dynamo_by_ver") or {}
@@ -2489,7 +2616,8 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                 expected = {"dynamo": ch.get("dynamo") or [],
                             "vllm": (vllm_chunks[i] if i < len(vllm_chunks) else []),
                             "vllm_rust": (vrust_chunks[i] if i < len(vrust_chunks) else []),
-                            "sglang": (sgl_chunks[i] if i < len(sgl_chunks) else [])}
+                            "sglang": (sgl_chunks[i] if i < len(sgl_chunks) else []),
+                            "smg": (smg_chunks[i] if i < len(smg_chunks) else [])}
                 for pv, pchunks in prev_chunks_by_ver.items():
                     expected[f"dynamo@{pv}"] = pchunks[i] if i < len(pchunks) else []
                 chunk_rows.append({"delta_text": ch["delta_text"],
@@ -2550,7 +2678,20 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                      "leak": sverd == "LEAK",
                      "block": ({"error": sgl_err} if sgl_err else
                                {"events": sgl_events, "verdict": sverd})},
-                ] if sgl_events is not None else []) + [
+                ] if sgl_events is not None else []) + ([
+                    {
+                        "key": "smg", "label": smg_label, "impl": "smg",
+                        "version": smg_ver_label, "parse_mode": "unified",
+                        "leak": smg_verdict == "LEAK",
+                        "block": (
+                            {"unavailable": smg_unavailable}
+                            if smg_unavailable else
+                            ({"error": smg_err} if smg_err else
+                             {"events": smg_events or [], "verdict": smg_verdict,
+                              "parser": smg_cap.get("parser") if smg_cap else None})
+                        ),
+                    }
+                ] if smg_live else []) + [
                     # One popup column per older Dynamo capture, newest-first. A version
                     # that never recorded this case says so instead of showing an empty
                     # event list that reads like the parser produced nothing.
@@ -2612,7 +2753,9 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                "gemma4 via the native Gemma4UnifiedParser, other families via CombinedParser. "
                if vrust_live else "")
             + (f"SGLang Python {sgl_ver_label} captured LIVE (reasoning detector -> tool "
-               "detector, Combined)." if sgl_live else "")),
+               "detector, Combined). " if sgl_live else "")
+            + (f"SMG Rust {smg_ver_label} captured LIVE (reasoning-parser -> "
+               "tool-parser, Combined)." if smg_live else "")),
         "toolbar_desc_html": (
             'Reference = <strong>GOLDEN</strong> (authored oracle, best-effort recovery) · '
             'Compare = <strong>Dynamo v2 Rust</strong> (native <strong>UnifiedParser</strong> '
@@ -2621,6 +2764,8 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             + (f', and <strong>vLLM Rust {vrust_ver_label}</strong> (native '
                '<strong>UnifiedParser</strong> for gemma4, <strong>CombinedParser</strong> '
                'otherwise)' if vrust_live else '')
+            + (f', plus <strong>SMG Rust {smg_ver_label} (Combined)</strong>'
+               if smg_live else '')
             + '. GOLDEN is the oracle, so a cell is red when the REF — the starred engine '
             '(default Dynamo) — DIVERGES from golden in any class: leaked markup (↯), '
             'merged/reordered events, or dropped content (✗). A green cell means the REF '

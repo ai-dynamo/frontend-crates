@@ -45,6 +45,7 @@ Keep the implementation and mode separate when reading or updating fixtures.
 - vLLM Python is batch and stream. Legacy batch fixtures use `expected.vllm`; v2 fixtures use `expected.vllm_python`. Batch output is vLLM's complete-text parser. Stream output is vLLM's streaming parser.
 - vLLM Rust is stream only. It writes `expected.vllm_rust`. vLLM Rust does not expose a separate batch parser here. Complete text is tested by feeding the full text through the Rust streaming parser.
 - SGLang Python is batch and stream where SGLang has a detector for that family. Legacy batch fixtures use `expected.sglang`; v2 fixtures use `expected.sglang_python`. Missing detectors are recorded under `unavailable.sglang_python`.
+- SMG Rust is captured live during every HTML render from `tool-parser` and `reasoning-parser`. The batch-data tab runs `tool-parser` both as a complete parse and incrementally over the complete text; the stream-data tab preserves per-chunk deltas. The reasoning tabs use complete and incremental parsing respectively, and Unified composes SMG reasoning then tool parsing. Families without an SMG parser remain visible as explicit unavailable cells.
 
 ## 1. Verify
 
@@ -169,7 +170,7 @@ conformance/utils/render_table_v2.sh --output index.html
 conformance/utils/render_table_v2.sh --dry-run
 ```
 
-Open the generated HTML file in a browser. The table is generated from extracted fixture directories staged by `render_table_v2.sh`.
+Open the generated HTML file in a browser. The table is generated from extracted fixture directories staged by `render_table_v2.sh`. The render also runs `conformance/tests/smg_capture.rs` against the staged inputs and injects the resulting SMG 1.6.0 outputs into all five tabs; no SMG fixture snapshot or external inference engine is required.
 
 Use the generated matrix to inspect vLLM Python vs vLLM Rust behavior. `check.sh vllm` runs the live vLLM Python parser against extracted YAML; it does not run vLLM Rust. vLLM Python vs Rust is a fixture comparison in the `TC stream (v2)` and `TC batch-on-stream (v2)` tabs.
 

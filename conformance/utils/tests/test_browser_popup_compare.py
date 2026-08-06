@@ -530,6 +530,9 @@ def test_popup_columns_match_compare_bar_candidates(driver):
     assert result["gridKeys"] == result["barKeys"], (
         f"popup columns {result['gridKeys']} != compare-bar candidates {result['barKeys']}"
     )
+    assert any(key.startswith("smg_tool") for key in result["barKeys"]), (
+        "SMG tool candidates must be reachable from the compare bar"
+    )
 
 
 def test_no_doubled_assembled_call_names_in_dom(driver):

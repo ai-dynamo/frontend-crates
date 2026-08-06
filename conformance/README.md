@@ -53,7 +53,7 @@ Per-case tagging currently covers the UNIFIED surface only. The reasoning and to
 
 | Output | Command | Parser version | Fixture version |
 |---|---|---|---|
-| v2 conformance HTML | `conformance/utils/render_table_v2.sh` | Mixed bridge table: `TC batch (v1)` and reasoning tabs use v1 Dynamo-synced parser code; `TC batch-on-stream (v2)` and `TC stream (v2)` use Dynamo parser v2 code. | `TC batch (v1)` uses v1 batch fixtures; `TC batch-on-stream (v2)` uses v1 batch fixtures plus v2 batch-on-stream overlays; `TC stream (v2)` uses v2 stream fixtures; reasoning tabs use v1 reasoning fixtures. The default example output is `conformance/CONFORMANCE_v2.html`, and the render script also accepts a custom output path. |
+| v2 conformance HTML | `conformance/utils/render_table_v2.sh` | Mixed bridge table: tool batch and reasoning tabs include Dynamo v1; tool stream and Unified include Dynamo v2. Every render also runs SMG `tool-parser` and `reasoning-parser` 1.6.0 live in batch, stream, and Combined modes. | Tool batch uses v1 batch fixtures; tool stream uses v2 stream fixtures; reasoning uses v1 reasoning fixtures; Unified uses unified fixtures. SMG is run over those same inputs and unsupported families are shown as unavailable. The default output is `conformance/CONFORMANCE_v2.html`; a custom output path is supported. |
 
 ## Running the tests
 
@@ -65,6 +65,9 @@ cargo test --locked -p dynamo-conformance-fixtures-v2 --test conformance_toolcal
 
 # same, but print fixture names and the per-run case count:
 cargo test --locked -p dynamo-conformance-fixtures-v2 --test conformance_toolcalling -- --nocapture
+
+# Run every real conformance input through the SMG tool/reasoning parsers.
+cargo test --locked -p dynamo-conformance-fixtures-v2 --test smg_capture -- --nocapture
 
 # as part of the whole workspace (what CI runs):
 cargo test --workspace

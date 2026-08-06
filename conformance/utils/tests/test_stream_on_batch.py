@@ -616,7 +616,7 @@ def test_template_has_compare_picker_and_reasoning_candidates() -> None:
     assert "_compare_bar" not in template  # server-rendered bar partial is gone
     view = (SRC / "assets" / "conformance_view.js").read_text()
     assert "function compareBarHtml" in view
-    assert "'Dynamo'" in view and "'vLLM'" in view and "'SGLang'" in view
+    assert all(f"'{engine}'" in view for engine in ("Dynamo", "vLLM", "SGLang", "SMG"))
     assert 'class="cmp-ref"' in view  # Reference radio
     assert 'class="cmp-on"' in view  # Compare-with checkbox
     assert ">compare with<" in view.lower()

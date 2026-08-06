@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+import smg
 
 from .. import common
 from ..common import _FAMILY_TO_SGLANG_REASONING, _FAMILY_TO_VLLM_REASONING
@@ -28,7 +29,21 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 TEMPLATE_DIR = REPO_ROOT / "tests/parity"
 
 DisplayRow = dict[str, str | None]
-_IMPL_DISPLAY = {"dynamo_v1": "Dynamo", "vllm_python": "vLLM", "sglang_python": "SGLang"}
+SMG_REASONING_IMPL = "smg_reasoning"
+_IMPL_DISPLAY = {
+    "dynamo_v1": "Dynamo",
+    "vllm_python": "vLLM",
+    "sglang_python": "SGLang",
+    SMG_REASONING_IMPL: "SMG",
+}
+
+
+def _expected_with_smg(case: dict[str, Any]) -> dict[str, Any]:
+    expected = case.get("expected")
+    combined = dict(expected) if isinstance(expected, dict) else {}
+    if "__smg_reasoning" in case:
+        combined[SMG_REASONING_IMPL] = case["__smg_reasoning"]
+    return combined
 
 CASE_GROUPS = [
     (
@@ -441,6 +456,8 @@ def _canonical(d: dict[str, Any]) -> str:
     }
     d.pop("reason", None)
     d.pop("explanation", None)
+    d.pop("parser", None)
+    d.pop("chunks", None)
     return json.dumps(d, sort_keys=True, separators=(",", ":"))
 
 
@@ -461,13 +478,11 @@ def _reasoning_cmp_json(case: dict[str, Any] | None, family: str | None) -> str:
     reasoning impl keys (dynamo/vllm/sglang): {impl: {"sig": int, "leak": 0|1,
     "na": 0|1}}. `sig` is a per-cell group id (impls sharing an id have identical
     output). Only impls that appear in this cell's `expected` are included."""
-    if not isinstance(case, dict) or "expected" not in case:
+    if not isinstance(case, dict):
         return ""
-    expected = case.get("expected", {})
-    if not isinstance(expected, dict):
-        return ""
+    expected = _expected_with_smg(case)
     raw: dict[str, dict[str, Any]] = {}
-    for impl in ("dynamo_v1", "vllm_python", "sglang_python"):
+    for impl in _REASONING_IMPLS:
         if impl not in expected:
             continue
         block = expected.get(impl)
@@ -564,6 +579,13 @@ def _has_dynamo_leak(case: dict[str, Any], family: str | None) -> bool:
 def _overview_status(case: dict[str, Any] | None, family: str | None, impl: str) -> str:
     if case is None:
         return "na"
+    if impl == SMG_REASONING_IMPL and "__smg_reasoning" in case:
+        block = case["__smg_reasoning"]
+        if not isinstance(block, dict) or "unavailable" in block:
+            return "na"
+        if "error" in block or _block_leak_reason(block, family):
+            return "problem"
+        return "ok"
     if "expected" not in case:
         return "problem" if impl in _python_exception_impls(case, family) else "na"
     block = case.get("expected", {}).get(impl)
@@ -620,6 +642,14 @@ def _load() -> tuple[dict[str, dict[str, Any]], list[str], dict[tuple[str, str],
         if isinstance(captured, dict):
             row["captured_with"].update(captured)
         for case_id, case in doc["cases"].items():
+            block = smg.reasoning(doc["mode"], family, case_id)
+            if smg.reasoning_version() is not None:
+                case["__smg_reasoning"] = block or {
+                    "unavailable": (
+                        "SMG reasoning-parser was not run because this conformance "
+                        "cell declares no parser input."
+                    )
+                }
             columns.add(case_id)
             row["cases"][case_id] = case
             refs[(family, case_id)] = fp
@@ -1269,6 +1299,7 @@ _REASONING_ENGINE_RUNTIME = {
     "dynamo_v1": "Dynamo Rust",
     "vllm_python": "vLLM Python",
     "sglang_python": "SGLang Python",
+    "smg_reasoning": "SMG reasoning-parser Rust",
 }
 
 
@@ -1279,7 +1310,11 @@ def _reasoning_version_by_impl() -> dict[str, str | None]:
     section labels can carry the same version as the compare chips without reloading
     fixtures per cell."""
     rows, _, _ = _load()
-    return {"dynamo_v1": _dynamo_v1_version(), **_peer_captured_versions(rows)}
+    return {
+        "dynamo_v1": _dynamo_v1_version(),
+        **_peer_captured_versions(rows),
+        SMG_REASONING_IMPL: smg.reasoning_version(),
+    }
 
 
 def _reasoning_cand_label(impl: str, mode: str) -> str:
@@ -1287,7 +1322,7 @@ def _reasoning_cand_label(impl: str, mode: str) -> str:
     by the chips and the tooltip sections so the pop-up keys match the buckets.
     Dynamo's reasoning parser is the v1 crate (dynamo-parsers 3.x), so it reads
     "Dynamo Rust v1 3.0.0 (batch)" / "(stream)"; peers have no crate split."""
-    base = _REASONING_ENGINE_RUNTIME.get(impl, _IMPL_DISPLAY[impl])
+    base = _REASONING_ENGINE_RUNTIME.get(impl, _IMPL_DISPLAY.get(impl, impl))
     if impl == "dynamo_v1":
         eng, _, rt = base.partition(" ")  # "Dynamo" / "Rust" -> "Dynamo v1 Rust"
         base = f"{eng} v1 {rt}".strip()
@@ -1314,17 +1349,17 @@ def _panel_candidates(
         cases = rows[reasoning_family]["cases"]
         for case_id in columns:
             case = cases.get(case_id)
-            expected = case.get("expected") if isinstance(case, dict) else None
-            if not isinstance(expected, dict):
+            if not isinstance(case, dict):
                 continue
-            for impl in ("dynamo_v1", "vllm_python", "sglang_python"):
+            expected = _expected_with_smg(case)
+            for impl in _REASONING_IMPLS:
                 if impl in expected:
                     present.add(impl)
     # Version sourcing (Dynamo from the v1 crate Cargo.toml, peers from the fixtures'
     # captured_with) and the full label are shared with the tooltip sections via
     # _reasoning_cand_label so chips and pop-up keys read identically.
     candidates: list[dict[str, str]] = []
-    for impl in ("dynamo_v1", "vllm_python", "sglang_python"):
+    for impl in _REASONING_IMPLS:
         if impl not in present:
             continue
         candidates.append(
@@ -1390,11 +1425,11 @@ def _dynamo_v1_version() -> str | None:
 # _reasoning_cmp_json), so nothing is reimplemented in JS.
 import model  # noqa: E402  (schema + cell normalizer; leaf module staged alongside)
 
-_REASONING_IMPLS = ("dynamo_v1", "vllm_python", "sglang_python")
+_REASONING_IMPLS = ("dynamo_v1", "vllm_python", "sglang_python", SMG_REASONING_IMPL)
 
 
 def _cand_engine_group(key: str) -> str:
-    for prefix in ("dynamo", "vllm", "sglang"):
+    for prefix in ("dynamo", "vllm", "sglang", "smg"):
         if key.startswith(prefix):
             return prefix
     return key
@@ -1418,8 +1453,7 @@ def _reasoning_output_model(blk: object) -> dict | None:
 
 
 def _reasoning_facts(case: dict[str, Any], family: str | None) -> list[dict]:
-    expected = case.get("expected") if isinstance(case, dict) else None
-    expected = expected if isinstance(expected, dict) else {}
+    expected = _expected_with_smg(case) if isinstance(case, dict) else {}
     dyn = expected.get("dynamo_v1")
     dyn_canon = _canonical(dyn) if isinstance(dyn, dict) and "unavailable" not in dyn and "error" not in dyn else None
     facts = []
@@ -1468,7 +1502,7 @@ def _reasoning_cell_model(
     )
     cmp_raw = _reasoning_cmp_json(case, family)
     cmp = json.loads(html_lib.unescape(cmp_raw)) if cmp_raw else None
-    expected = case.get("expected") if isinstance(case, dict) else None
+    expected = _expected_with_smg(case) if isinstance(case, dict) else None
     candidates = []
     if isinstance(expected, dict):
         for impl in _REASONING_IMPLS:

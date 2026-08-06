@@ -4,8 +4,8 @@
 #
 # render_table_v2.sh [--dry-run] [--output PATH]
 #   Render the conformance matrix to an HTML file
-#   (all four tabs: TC batch / TC stream / TC batch-on-stream / Reasoning).
-#   No engines needed.
+#   (all five tabs: TC batch / TC stream / Reasoning batch / Reasoning stream /
+#   Unified). SMG's Rust parsers are run live; no inference engines are needed.
 
 usage() {
   cat <<'EOF'
@@ -58,10 +58,19 @@ if [ -n "$OUT_ARG" ]; then
   esac
 fi
 if [ "$DRY" = 1 ]; then
-  echo "[dry-run] build .stage, then render the conformance table > $OUT"
+  echo "[dry-run] build .stage, capture SMG parser outputs, then render the conformance table > $OUT"
   exit 0
 fi
 build_stage_conformance
+SMG_CAPTURE="$STAGE/smg_capture.json"
+SMG_TOOLCALLING_FIXTURES="$STAGE/tests/parity/toolcalling/fixtures" \
+SMG_TOOLCALLING_STREAM_FIXTURES="$STAGE/tests/parity/toolcalling/fixtures" \
+SMG_REASONING_FIXTURES="$STAGE/tests/parity/reasoning/fixtures" \
+SMG_UNIFIED_FIXTURES="$FIXTURES_ROOT/unified/inputs" \
+SMG_CAPTURE_OUTPUT="$SMG_CAPTURE" \
+  "$CARGO" test --locked -p dynamo-conformance-fixtures-v2 \
+    --test smg_capture smg_capture_covers_all_conformance_inputs -- --nocapture
+export SMG_CAPTURE_PATH="$SMG_CAPTURE"
 mkdir -p "$(dirname "$OUT")"
 # Render to a working file, then atomically move it into place. The `>` redirect
 # truncates its target for the WHOLE render (~2 min), so anything reading $OUT during
