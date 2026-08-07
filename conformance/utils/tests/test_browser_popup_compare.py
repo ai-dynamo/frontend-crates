@@ -463,14 +463,18 @@ def test_batch_tab_uses_candidate_chart(driver):
 
 def test_reasoning_tabs_use_candidate_chart(driver):
     """Both Reasoning tabs render the candidate chart with the dynamo/vllm/sglang
-    columns (stream additionally lists its input chunks as rows)."""
+    columns (stream additionally lists its input chunks as rows). Candidate keys are
+    versioned "<impl>-<slug>" (a peer engine fans out over its captured reasoning
+    versions, e.g. vllm_python-0-24-0 AND vllm_python-0-25-1), so each column key must
+    belong to one of the three reasoning engines."""
+    engines = ("dynamo_v1", "vllm_python", "sglang_python")
     for target in ("reasoning-batch", "reasoning-stream"):
         _open_tab(driver, target)
         order = _grid_column_order(driver)
         assert order, f"{target}: no candidate chart found"
-        assert set(order) <= {"dynamo_v1", "vllm_python", "sglang_python"}, (
-            f"{target}: unexpected candidate keys {order}"
-        )
+        assert all(
+            any(key == e or key.startswith(e + "-") for e in engines) for key in order
+        ), f"{target}: unexpected candidate keys {order}"
         assert not _chart_tooltip_has_cand_list(driver), (
             f"{target}: tooltip shows BOTH chart and legacy list"
         )

@@ -56,15 +56,45 @@ def _vllm_rust_source_arg(args):
     return args.vllm_rust_source or os.environ.get("VLLM_RUST_SOURCE")
 
 
+# vLLM renamed the Rust parser crate in 0.25.0: `vllm-tool-parser` at
+# rust/src/tool-parser/ became `vllm-parser` at rust/src/parser/, and the tool parsers
+# moved under a `tool` module. Capturing an older tag (0.23.x / 0.24.x) needs the old
+# layout, so both are resolved HERE and nowhere else — every caller that needs the crate
+# path or the probe dialect goes through vllm_rust_crate_dir().
+# Ordered newest-layout-first; `dialect` keys capture_vllm_rust._DIALECTS.
+# `reasoning_*` mirror the tool fields for the reasoning parsers, which moved on the
+# SAME 0.25.0 reorg but from a SEPARATE crate (`vllm-reasoning-parser` at
+# rust/src/reasoning-parser) into a module of the merged crate. `tokenizer_test_utils`
+# records whether vllm-tokenizer ships the `test-utils` feature (TestTokenizer): 0.25+
+# does, 0.23/0.24 do not, so a probe there must implement Tokenizer itself.
+VLLM_RUST_CRATE_LAYOUTS = (
+    {"rel": "rust/src/parser", "crate": "vllm-parser", "dialect": "unified"},
+    {"rel": "rust/src/tool-parser", "crate": "vllm-tool-parser", "dialect": "tool"},
+)
+
+
+
+def vllm_rust_crate_dir(source):
+    """(crate_dir, layout) for a vLLM source checkout, for either crate layout.
+
+    Raises SystemExit naming both candidates when neither is present, so a wrong
+    --vllm-rust-source says what it looked for instead of only the 0.25+ path.
+    """
+    root = Path(source).expanduser().resolve()
+    for layout in VLLM_RUST_CRATE_LAYOUTS:
+        if (root / layout["rel"] / "Cargo.toml").exists():
+            return root / layout["rel"], layout
+    raise SystemExit(
+        f"vLLM Rust source path {root} does not contain "
+        + " or ".join(f"{lay['rel']}/Cargo.toml" for lay in VLLM_RUST_CRATE_LAYOUTS)
+    )
+
+
 def _vllm_rust_source_version(source):
     if not source:
         return None
     root = Path(source).expanduser().resolve()
-    crate = root / "rust/src/tool-parser/Cargo.toml"
-    if not crate.exists():
-        raise SystemExit(
-            f"vLLM Rust source path {root} does not contain rust/src/tool-parser/Cargo.toml"
-        )
+    vllm_rust_crate_dir(root)
     try:
         sha = subprocess.run(
             ["git", "-C", str(root), "rev-parse", "HEAD"],
