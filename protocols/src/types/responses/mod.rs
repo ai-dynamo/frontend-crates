@@ -650,6 +650,21 @@ mod tests {
     }
 
     #[test]
+    fn codex_agent_message_missing_content_defaults_empty() {
+        let item: InputItem = serde_json::from_value(serde_json::json!({
+            "type": "agent_message",
+            "author": "/root",
+            "recipient": "/root/worker",
+        }))
+        .expect("Codex agent message without content should deserialize");
+
+        let InputItem::Item(Item::AgentMessage(message)) = item else {
+            panic!("expected Item::AgentMessage");
+        };
+        assert!(message.content.is_empty());
+    }
+
+    #[test]
     fn relaxed_assistant_message_without_id_or_status() {
         let json = serde_json::json!({
             "type": "message",
