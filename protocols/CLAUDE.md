@@ -69,10 +69,10 @@ CreateResponse
             │   └── Output(InputOutputMessage)  (NEW NAME — relaxed)
             │       └── content: Vec<InputOutputMessageContent>  (NEW NAME)
             │           └── OutputText(InputOutputTextContent)   (NEW NAME — relaxed)
-            └── ... 19 other upstream variants (FunctionCall, Reasoning, etc.)
+            └── ... upstream variants (FunctionCall, Reasoning, etc.)
 ```
 
-`Item` mirrors upstream variant-for-variant because it's a `#[serde(tag = "type")]` enum — we can't inherit variants. If upstream adds a new variant to their `Item`, we must add it here too, or payloads carrying that type will fail to deserialize. This is the one place where upstream drift bites us; accept it as the cost of owning the chain.
+`Item` mirrors upstream variant-for-variant because it's a `#[serde(tag = "type")]` enum — we can't inherit variants. `InputItem` separately accepts Codex's `agent_message` extension and normalizes its plaintext content to the existing simplified user-message shape, rejecting encrypted content without adding a public enum variant or prompt metadata. If upstream adds a new variant to their `Item`, we must add it here too, or payloads carrying that type will fail to deserialize. This is the one place where upstream drift bites us; accept it as the cost of owning the chain.
 
 The output chain (`Response`, `OutputItem`, `OutputMessage`, streaming events, etc.) is fully upstream. We mint valid id/status on output, so there's no lenience needed and no reason to own it.
 
