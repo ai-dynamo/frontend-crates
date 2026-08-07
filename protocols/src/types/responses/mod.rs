@@ -343,6 +343,7 @@ pub struct AgentMessage {
     pub id: Option<String>,
     pub author: String,
     pub recipient: String,
+    #[serde(default, deserialize_with = "deserialize_null_as_empty_vec")]
     pub content: Vec<AgentMessageInputContent>,
 }
 
@@ -630,6 +631,22 @@ mod tests {
             ] if first.text == "First." && encrypted_content == "AB=="
         ));
         assert_eq!(serde_json::to_value(item).unwrap(), json);
+    }
+
+    #[test]
+    fn codex_agent_message_null_content_defaults_empty() {
+        let item: InputItem = serde_json::from_value(serde_json::json!({
+            "type": "agent_message",
+            "author": "/root",
+            "recipient": "/root/worker",
+            "content": null,
+        }))
+        .expect("Codex agent message with null content should deserialize");
+
+        let InputItem::Item(Item::AgentMessage(message)) = item else {
+            panic!("expected Item::AgentMessage");
+        };
+        assert!(message.content.is_empty());
     }
 
     #[test]
