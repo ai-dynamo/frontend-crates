@@ -29,6 +29,7 @@ from pathlib import Path
 
 import yaml
 
+import capture_driver  # noqa: E402  (shared vLLM Rust crate-layout resolution)
 from impls import IMPL_KEYS, LEGACY_IMPL_ALIASES  # noqa: E402  (identity table; see impls.py)
 
 VLLM_RUST_UNAVAILABLE = (
@@ -62,11 +63,9 @@ def _vllm_rust_source_version(source):
     if not source:
         return None
     root = Path(source).expanduser().resolve()
-    crate = root / "rust/src/parser/Cargo.toml"
-    if not crate.exists():
-        raise SystemExit(
-            f"vLLM Rust source path {root} does not contain rust/src/parser/Cargo.toml"
-        )
+    # Crate layout (0.23/0.24 `rust/src/tool-parser` vs 0.25+ `rust/src/parser`) is
+    # resolved in capture_driver so this file and the probe cannot drift apart.
+    capture_driver.vllm_rust_crate_dir(root)
     try:
         sha = subprocess.check_output(
             ["git", "-C", str(root), "rev-parse", "HEAD"],

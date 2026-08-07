@@ -1,12 +1,12 @@
 {
-  "snapshot": "20260724_093417",
-  "created_pt": "2026-07-24 09:34:17 America/Los_Angeles",
+  "snapshot": "20260807_130102",
+  "created_pt": "2026-08-07 13:01:02 America/Los_Angeles",
   "crates": {
     "dynamo-parsers": "5.1.2",
     "dynamo-parsers-v2": "0.1.23"
   },
   "peers": {
-    "vllm": "0.25.1",
+    "vllm": "0.26.0",
     "sglang": "0.5.14"
   },
   "shards": [
@@ -31,9 +31,19 @@
       "size": 1482
     },
     {
+      "path": "reasoning/fixtures-v1/vllm_python-0.26.0.tar.gz",
+      "sha256": "c2a6a1d6d0f7f658acd2a61500982607ed87cbcba5c83880bd6c5fb0d4a46a04",
+      "size": 1480
+    },
+    {
+      "path": "reasoning/fixtures-v1/vllm_rust-0.24.0.tar.gz",
+      "sha256": "decb528323e7d4b6372c68fe55aa080b479e795d00b6903620252b29b5f313ca",
+      "size": 2174
+    },
+    {
       "path": "toolcalling/fixtures-batch-on-stream-v2.tar.gz",
-      "sha256": "873ccf49f794c36648ecd607ae1e91d262f60f7afb2cdae9d9294639539bcc45",
-      "size": 16176
+      "sha256": "022b2d6de862510a394af4d8e989738e320070c584d0c03d222435d343c18633",
+      "size": 16179
     },
     {
       "path": "toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz",
@@ -73,6 +83,11 @@
     {
       "path": "toolcalling/fixtures-batch-v1/vllm_python-0.25.1.tar.gz",
       "sha256": "519bf164e6ccbc0fa25ff47309e844c7c6153772fb41803690861f514fa49ca1",
+      "size": 2656
+    },
+    {
+      "path": "toolcalling/fixtures-batch-v1/vllm_python-0.26.0.tar.gz",
+      "sha256": "2d8ec4277dc3b22bcd0f86c9ae2c0d48b9c00fdb87c339138ca0e3d1bd0ff704",
       "size": 2656
     },
     {
@@ -126,14 +141,29 @@
       "size": 5382
     },
     {
+      "path": "toolcalling/fixtures-stream-v2/vllm_python-0.26.0.tar.gz",
+      "sha256": "f8e9149f4cadad1fa28d588ae9adab1d0828dab3b08006702e008f4f9c013b7a",
+      "size": 5417
+    },
+    {
       "path": "toolcalling/fixtures-stream-v2/vllm_rust-0.23.0.tar.gz",
       "sha256": "d2e9a567453112fcd46cab1f46f5a696cb39016f69feb23137f9a84f33a9c5a5",
       "size": 12841
     },
     {
+      "path": "toolcalling/fixtures-stream-v2/vllm_rust-0.24.0.tar.gz",
+      "sha256": "6fcf13e3d5f3e0bf7f18e1df64c8c7d09244c98edec1cb94640e9e369a0f721b",
+      "size": 2392
+    },
+    {
       "path": "toolcalling/fixtures-stream-v2/vllm_rust-0.25.1.tar.gz",
       "sha256": "e5f4caeb5ff94cc14fae40b4d727ed342be242b3805abe597c4248ace86ba5fb",
       "size": 2191
+    },
+    {
+      "path": "toolcalling/fixtures-stream-v2/vllm_rust-0.26.0.tar.gz",
+      "sha256": "83c2b379e390df6bfd03420dd74c20d62b2019b4db02b6568558afcc841afcc3",
+      "size": 3983
     }
   ]
 }

@@ -69,6 +69,7 @@ for _p in (HERE, os.path.join(ROOT, "conformance", "utils")):
 
 import capture_driver as cd  # noqa: E402  (parser maps + container/probe capture plumbing)
 import capture_reasoning as cr  # noqa: E402  (reasoning worker + _container_run + _blocks_match)
+import capture_vllm_rust_reasoning as crr  # noqa: E402  (source-only reasoning cargo probe)
 import resolve_fixtures  # noqa: E402  (batch anchor resolution)
 import resolve_stream_fixtures  # noqa: E402  (stream anchor staging)
 import validate  # noqa: E402  (run_container ships the tool-calling parity adapter)
@@ -94,10 +95,31 @@ class EngineSpec:
     source_based: bool = False  # vllm_rust: cargo probe over a source checkout, no container
 
     def container(self, args) -> Optional[str]:
+        """Where this engine's parsers live: a container name, or — for a source_based
+        engine, which has no container — the vLLM source checkout the cargo probe builds
+        against. One 'location' argument then threads through both corpus drivers."""
         if self.source_based:
-            return None
+            return cd._vllm_rust_source_arg(args)
         return getattr(args, f"{self.short}_container", None) or self.default_container
 
+
+# family -> vLLM Rust reasoning parser name (the `create_parser` arms in
+# capture_vllm_rust_reasoning.RUST_MAIN_TEMPLATE). Families absent here have no Rust
+# reasoning parser upstream (gemma4 / gpt_oss / granite / mistral) and are reported as
+# "no parser", never fabricated. Several map onto Qwen3ReasoningParser via the crate's
+# own type aliases (DeepSeekV3/V4, KimiK2, MiniMaxM2, NemotronV3 = standard
+# `<think>`/`</think>`), so the alias name is used rather than duplicating the mapping.
+_FAMILY_TO_VLLM_RUST_REASONING = {
+    "deepseek_r1": "deepseek_r1",
+    "deepseek_v3": "deepseek_v3",
+    "deepseek_v4": "deepseek_v4",
+    "kimi": "kimi",
+    "kimi_k25": "kimi_k2",
+    "minimax_append_think": "minimax_m2",
+    "minimax_m3": "minimax_m3",
+    "nemotron_deci": "nemotron_v3",
+    "qwen3": "qwen3",
+}
 
 ENGINES = {
     "vllm_python": EngineSpec(
@@ -111,9 +133,9 @@ ENGINES = {
         corpora=frozenset({"batch", "stream", "reasoning"}),
     ),
     "vllm_rust": EngineSpec(
-        name="vllm_rust", short="", default_container=None,
-        tc_map=cd.VLLM_RUST, reasoning_map=None,
-        corpora=frozenset({"stream"}), source_based=True,
+        name="vllm_rust", short="vllm_rust", default_container=None,
+        tc_map=cd.VLLM_RUST, reasoning_map=_FAMILY_TO_VLLM_RUST_REASONING,
+        corpora=frozenset({"stream", "reasoning"}), source_based=True,
     ),
 }
 
@@ -183,7 +205,15 @@ def _run_block(corpus: BlockCorpus, engine: EngineSpec, args):
     container = engine.container(args)
 
     anchor, desc = corpus.build_anchor(engine, fixtures_root, work)
-    print(f"[{engine.name}] anchor = {desc} ({len(anchor)} baseline cases)", file=sys.stderr)
+    # An impl JOINING a corpus has no anchor blocks at all (e.g. vllm_rust entering
+    # reasoning: inputs/ seeds expected.dynamo_v1 / .vllm_python / .sglang_python only).
+    # Its first capture BECOMES that impl's anchor, per the "lowest version = full
+    # anchor" rule, so write every case instead of diffing. Without this, require_anchor
+    # would skip every case and the run would silently write nothing.
+    first_capture = corpus.require_anchor and not anchor
+    print(f"[{engine.name}] anchor = {desc} ({len(anchor)} baseline cases)"
+          f"{'; FIRST CAPTURE -> writing a full anchor dir' if first_capture else ''}",
+          file=sys.stderr)
 
     result, version = corpus.run_all(engine, container, fixtures_root, args.family, work)
     if not result:
@@ -197,7 +227,7 @@ def _run_block(corpus: BlockCorpus, engine: EngineSpec, args):
         changed = {}
         for cid, cap in caps.items():
             anchor_block = anchor.get((family, base, cid))
-            if corpus.require_anchor and anchor_block is None:
+            if corpus.require_anchor and anchor_block is None and not first_capture:
                 continue
             if corpus.is_error(cap):
                 n_errored += 1
@@ -353,7 +383,38 @@ def _reasoning_build_anchor(engine, fixtures_root, work):
             if "model_text" not in case and "chunks" not in case:
                 continue
             baseline[(family, base, cid)] = b
-    return baseline, "inputs/"
+    if baseline:
+        return baseline, "inputs/"
+    # inputs/ seeds expected blocks only for the impls that predate this corpus
+    # (dynamo_v1 / vllm_python / sglang_python). An impl that JOINED later — vllm_rust —
+    # anchors on its own LOWEST version dir instead, so a newer version still writes a
+    # changed-only overlay rather than a second full copy.
+    dirs = sorted(
+        (d for d in glob.glob(os.path.join(fixtures_root, f"{engine.name}-*")) if os.path.isdir(d)),
+        key=lambda d: resolve_fixtures.version_key(os.path.basename(d).split("-", 1)[1]),
+    )
+    if not dirs:
+        return baseline, "inputs/ (no blocks for this impl; first capture)"
+    lowest = dirs[0]
+    for fp in sorted(glob.glob(os.path.join(lowest, "*", "REASONING.*.yaml"))):
+        family = os.path.basename(os.path.dirname(fp))
+        base = os.path.basename(fp)
+        doc = yaml.safe_load(open(fp)) or {}
+        for cid, case in (doc.get("cases") or {}).items():
+            b = (case.get("expected") or {}).get(engine.name) if isinstance(case, dict) else None
+            if isinstance(b, dict) and "unavailable" not in b:
+                baseline[(family, base, cid)] = b
+    return baseline, f"{os.path.basename(lowest)}/"
+
+
+def _reasoning_rust_run(source, fixture, parser, mode):
+    """Run one reasoning fixture through the vLLM Rust probe, shaped like
+    cr._container_run's {version, cases} so _reasoning_run_all treats both alike."""
+    if not source:
+        raise SystemExit("--vllm-rust-source or VLLM_RUST_SOURCE is required for vllm_rust")
+    doc = yaml.safe_load(open(fixture)) or {}
+    cases = crr.run_probe(source, {"mode": mode, "parser": parser, "cases": doc.get("cases", {})})
+    return {"version": _clean_version(cd._vllm_rust_source_version(source)), "cases": cases}
 
 
 def _reasoning_run_all(engine, container, fixtures_root, families, work):
@@ -376,7 +437,13 @@ def _reasoning_run_all(engine, container, fixtures_root, families, work):
             if not os.path.exists(fixture):
                 continue
             try:
-                captured = cr._container_run(container, engine.short, fixture, parser)
+                # Container engines import the engine's Python reasoning parsers;
+                # vllm_rust has no container and runs the cargo probe over a source
+                # checkout instead (same split as the stream corpus).
+                captured = (
+                    _reasoning_rust_run(container, fixture, parser, mode) if engine.source_based
+                    else cr._container_run(container, engine.short, fixture, parser)
+                )
             except Exception as e:  # noqa: BLE001 - whole-fixture failure, carry forward
                 print(f"  [{engine.name}] {family}/REASONING.{mode}: capture error, carried "
                       f"forward ({str(e)[:120]})", file=sys.stderr)
