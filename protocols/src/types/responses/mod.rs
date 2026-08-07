@@ -354,10 +354,7 @@ enum CodexAgentMessageContent {
 #[serde(tag = "type", rename_all = "snake_case")]
 enum CodexAgentMessageInputContent {
     InputText(InputTextContent),
-    EncryptedContent {
-        #[serde(rename = "encrypted_content")]
-        _encrypted_content: String,
-    },
+    EncryptedContent { encrypted_content: String },
 }
 
 /// Structured input/output item, discriminated by `type`. Mirrors upstream
@@ -417,7 +414,7 @@ impl<'de> Deserialize<'de> for InputItem {
         let value = serde_json::Value::deserialize(deserializer)?;
         if value.get("type").and_then(serde_json::Value::as_str) == Some("agent_message") {
             let message = CodexAgentMessage::deserialize(value).map_err(de::Error::custom)?;
-            return normalize_codex_agent_message(message).map_err(de::Error::custom);
+            return Ok(normalize_codex_agent_message(message));
         }
 
         match InputItemWire::deserialize(value).map_err(de::Error::custom)? {
@@ -428,27 +425,27 @@ impl<'de> Deserialize<'de> for InputItem {
     }
 }
 
-fn normalize_codex_agent_message(message: CodexAgentMessage) -> Result<InputItem, &'static str> {
+fn normalize_codex_agent_message(message: CodexAgentMessage) -> InputItem {
     let content = match message.content {
         None => String::new(),
         Some(CodexAgentMessageContent::Text(text)) => text,
         Some(CodexAgentMessageContent::Parts(parts)) => parts
             .into_iter()
             .map(|part| match part {
-                CodexAgentMessageInputContent::InputText(part) => Ok(part.text),
-                CodexAgentMessageInputContent::EncryptedContent { .. } => {
-                    Err("Codex agent_message with encrypted content is unsupported")
+                CodexAgentMessageInputContent::InputText(part) => part.text,
+                CodexAgentMessageInputContent::EncryptedContent { encrypted_content } => {
+                    encrypted_content
                 }
             })
-            .collect::<Result<Vec<_>, _>>()?
+            .collect::<Vec<_>>()
             .join("\n"),
     };
-    Ok(InputItem::EasyMessage(EasyInputMessage {
+    InputItem::EasyMessage(EasyInputMessage {
         r#type: MessageType::Message,
         role: Role::User,
         content: EasyInputContent::Text(content),
         phase: None,
-    }))
+    })
 }
 
 /// Input to a `POST /v1/responses` request.
@@ -724,19 +721,28 @@ mod tests {
     }
 
     #[test]
-    fn codex_agent_message_rejects_encrypted_content() {
-        let error = serde_json::from_value::<CreateResponse>(serde_json::json!({
+    fn codex_agent_message_normalizes_encrypted_content() {
+        let req: CreateResponse = serde_json::from_value(serde_json::json!({
             "input": [{
                 "type": "agent_message",
-                "content": [{"type": "encrypted_content", "encrypted_content": "AB=="}],
+                "content": [
+                    {"type": "input_text", "text": "Payload:"},
+                    {"type": "encrypted_content", "encrypted_content": "Return exactly OK."},
+                ],
             }],
         }))
-        .expect_err("encrypted agent messages must not be accepted");
-        assert!(
-            error
-                .to_string()
-                .contains("encrypted content is unsupported")
-        );
+        .expect("Codex agent message with encrypted content should deserialize");
+
+        let InputParam::Items(items) = req.input else {
+            panic!("expected items");
+        };
+        assert!(matches!(
+            &items[0],
+            InputItem::EasyMessage(EasyInputMessage {
+                content: EasyInputContent::Text(text),
+                ..
+            }) if text == "Payload:\nReturn exactly OK."
+        ));
     }
 
     #[test]
