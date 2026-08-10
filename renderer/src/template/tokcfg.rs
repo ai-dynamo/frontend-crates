@@ -176,9 +176,89 @@ pub fn tojson(value: Value, kwargs: Kwargs) -> Result<Value, Error> {
         .map(Value::from_safe_string)
 }
 
+/// Parse a JSON string into a structured value.
+///
+/// HuggingFace/transformers chat-template environments expose this filter, and several
+/// published templates depend on it — e.g. Step-3.7-Flash's `tool_use` block applies it to
+/// a tool call's `arguments`, which arrive as a JSON *string*, to iterate the decoded
+/// object. Without it minijinja aborts the render with `unknown filter: fromjson`, which
+/// fails every multi-turn tool-call request.
+///
+/// Values that are not strings pass through untouched, so templates that apply the filter
+/// defensively to an already-decoded value keep rendering.
+pub fn fromjson(value: Value) -> Result<Value, Error> {
+    let Some(text) = value.as_str() else {
+        return Ok(value);
+    };
+    let parsed: serde_json::Value = serde_json::from_str(text).map_err(|err| {
+        Error::new(ErrorKind::InvalidOperation, "cannot parse JSON").with_source(err)
+    })?;
+    Ok(Value::from_serialize(&parsed))
+}
+
 pub fn strftime_now(format_str: &str) -> Result<Value, Error> {
     let local: DateTime<Local> = Local::now();
     Ok(Value::from_safe_string(
         local.format(format_str).to_string(),
     ))
+}
+
+#[cfg(test)]
+mod fromjson_tests {
+    use super::*;
+
+    #[test]
+    fn parses_json_object_string() {
+        let out = fromjson(Value::from(r#"{"location":"San Francisco","n":3}"#)).unwrap();
+        assert_eq!(
+            out.get_attr("location").unwrap().as_str(),
+            Some("San Francisco")
+        );
+        assert_eq!(out.get_attr("n").unwrap().to_string(), "3");
+    }
+
+    #[test]
+    fn parses_json_array_string() {
+        let out = fromjson(Value::from(r#"[1,2,3]"#)).unwrap();
+        assert_eq!(out.len(), Some(3));
+    }
+
+    #[test]
+    fn passes_through_non_string() {
+        // Already-decoded values must survive a defensive `| fromjson`.
+        let already = Value::from_serialize(serde_json::json!({"a": 1}));
+        let out = fromjson(already).unwrap();
+        assert_eq!(out.get_attr("a").unwrap().to_string(), "1");
+    }
+
+    #[test]
+    fn errors_on_malformed_json() {
+        assert!(fromjson(Value::from("{not json")).is_err());
+    }
+
+    /// Regression: renders the shape of Step-3.7-Flash's `tool_use` block, where a tool
+    /// call's `arguments` arrive as a JSON string. Before the filter existed this failed
+    /// with `unknown filter: fromjson`, 500-ing every multi-turn tool-call request.
+    #[test]
+    fn renders_tool_use_block_with_json_string_arguments() {
+        let mut env = minijinja::Environment::new();
+        env.add_filter("fromjson", fromjson);
+        env.add_template(
+            "tool_use",
+            "{% for tc in tool_calls %}{% set a = tc.function.arguments | fromjson %}\
+CALL {{ tc.function.name }} loc={{ a.location }} unit={{ a.unit }}{% endfor %}",
+        )
+        .unwrap();
+        let rendered = env
+            .get_template("tool_use")
+            .unwrap()
+            .render(minijinja::context! { tool_calls => serde_json::json!([{
+                "function": {
+                    "name": "get_weather",
+                    "arguments": "{\"location\":\"San Francisco\",\"unit\":\"F\"}"
+                }
+            }])})
+            .expect("tool_use template must render once `fromjson` is registered");
+        assert_eq!(rendered, "CALL get_weather loc=San Francisco unit=F");
+    }
 }
