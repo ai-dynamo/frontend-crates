@@ -224,6 +224,11 @@
       // Prose, not payload: these carry n/a rationale and TODO notes.
       return '<span class="expl">unavailable: ' + escapeHtml(String(b.unavailable)) + '</span>';
     }
+    if (b.exception != null) {
+      // The parser ran and threw; surface the exception verbatim (e.g. the named
+      // vLLM Rust crate variant `ToolParserError::ParsingFailed (...)`).
+      return 'exception: ' + escapeHtml(String(b.exception));
+    }
     if (b.error != null) {
       var e = (typeof b.error === 'string') ? b.error : JSON.stringify(b.error);
       return 'error: ' + escapeHtml(e);
@@ -1136,7 +1141,7 @@
           (tip.dynamo_notes || []).forEach(function (pair) { S(pair, 0); S(pair, 1); });
           var blocks = (tip.candidates || []).map(function (c) { return c.block; });
           if (tip.baseline) { blocks.push(tip.baseline.block); }
-          blocks.forEach(function (b) { if (b) { S(b, 'explanation'); S(b, 'unavailable'); } });
+          blocks.forEach(function (b) { if (b) { S(b, 'explanation'); S(b, 'unavailable'); S(b, 'exception'); } });
           (tip.candidates || []).forEach(function (c) {
             var fields = meta[c.key] || {};
             for (var f in fields) {

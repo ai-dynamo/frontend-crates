@@ -2,38 +2,26 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-"""Generate the conformance table (matrix of cell markers) from the YAML fixtures.
+"""Generate the conformance table from the YAML fixtures.
 
-================================================================================
-EXAMPLE OUTPUT (truncated; illustrative, NOT a snapshot of current fixtures
-— run the script for the real table):
+Reads every `tests/parity/toolcalling/fixtures/<family>/TOOLCALLING.batch*.yaml` and
+emits the conformance table. The HTML page (`--html`) is rendered ENTIRELY by the JS
+view from a single JSON data model (DIS-2434): Python computes structured per-cell
+`comparison_facts()` (see `markers.py`) and the view renders the glyphs with full
+descriptive labels ("vLLM Python batch parser", "Dynamo Rust stream parser", …).
 
-    | model          | parser     | 1 | 2.a | 2.b | 2.c | ... | 9 | 10 |
-    |---|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-    | **Top-N models** |   |   |   |   |   |   |   |   |
-    | Kimi K2.6      | kimi_k2    | = | =   | =   | V_pbS_rb | ... | = | =  |
-    | gpt-oss        | harmony †  | S_rb | S_rb | n/a | S_rb? | ... | = | S_rb |
-    | **Others** |   |   |   |   |   |   |   |   |
-    | Mistral series | mistral    | S_rb | S_rb | n/a | V_pbS_rb | ... | = | S_rb |
+There is no user-facing parser-marker shorthand mini-language. `cell_for` /
+`_stream_xeng_marker` still emit compact per-engine agreement strings, but purely as
+an INTERNAL representation that `_compute_stats` buckets on — those strings never
+reach the page.
 
-================================================================================
-
-Reads every `tests/parity/toolcalling/fixtures/<family>/TOOLCALLING.batch*.yaml` and emits
-the conformance table.
-
-Cell markers (Dynamo Rust + vLLM Rust + vLLM Python + SGLang):
-  =     peer block matches the Dynamo baseline block (`expected.dynamo_v1` batch / `expected.dynamo_v2` stream)
-  D_rb      Dynamo Rust batch parser output diverges from the selected parser
-  D_rs      Dynamo Rust stream parser output diverges from the selected parser
-  V_pb      vLLM Python batch parser output diverges from the selected parser
-  V_ps      vLLM Python stream parser output diverges from the selected parser
-  V_rs      vLLM Rust stream parser output diverges from the selected parser; no V_rb exists
-  S_rb      SGLang batch parser output diverges from the selected parser
-  S_rs      SGLang stream parser output diverges from the selected parser
-  ?         suffix means the divergent block has no `explanation:` yet
-        (research-needed; we observed it but haven't classified it)
-  !         suffix means the parser has `error: <substring>` (expected to crash)
-  Combined markers, for example V_pbS_rb, mean multiple implementations diverge
+Per-cell status semantics:
+  =     every compared parser matches the Dynamo baseline (`expected.dynamo_v1` batch
+        / `expected.dynamo_v2` stream)
+  ↯     the selected parser leaks tool-call markup into the visible `normal_text`
+  ?     the divergence has no `explanation:` yet (research-needed)
+  !     the parser has `error: <substring>` (expected to crash)
+  ✗     the parser ran but failed to parse
   ·     Dynamo Rust-only fixture; peer blocks are unavailable or not captured
   n/a   family/case doesn't apply
   —     no fixture entry exists for this family/case yet
@@ -151,10 +139,7 @@ from markers import (  # noqa: E402,F401
     _norm_calls,
     _normalize_impl_mapping,
     _overview_status,
-    _parity_marker,
     _parser_marker,
-    _selected_parity_marker,
-    _selected_parity_suffix,
     _sob_calls_consistent,
     _sob_cell_text,
     _sob_status,
@@ -366,6 +351,8 @@ def cell_for(
         )
         if kind == "div":
             parts.append(f"{letter}?" if unknown else letter)
+        elif kind == "exception":
+            parts.append(f"{letter}✗")
         elif kind == "err":
             parts.append(f"{letter}!")
 
@@ -938,9 +925,6 @@ def _batch_version_status_map() -> dict[tuple[str, str], dict[str, dict[str, str
                         "block": block,
                         "version": version,
                         "marker": _parser_marker(case, canon),
-                        "parity_marker": _parity_marker(
-                            case, canon, BATCH_IMPL_KEYS, _BATCH_MODE_MARKER
-                        ),
                     }
     finally:
         # load_all_cases stamps this per call; put the pinned render's value back.
@@ -1039,6 +1023,36 @@ def _clean_version(v: object) -> str | None:
     return token if re.match(r"\d", token) else None
 
 
+def _candidate_name_key(label: str) -> str:
+    """Parser name for ordering: the display label minus its trailing version token and
+    "(mode)" suffix. "vLLM Rust 0.25.1 (stream)" -> "vllm rust". Sorting candidates on
+    this puts PARSERS alphabetically (Dynamo < SGLang < vLLM Python < vLLM Rust)."""
+    base = re.sub(r"\s*\([^)]*\)\s*$", "", label)   # drop "(batch)"/"(stream)"/"(jail+batch)"
+    base = re.sub(r"\s+\d[\w.+]*$", "", base)          # drop the trailing version token
+    return base.lower()
+
+
+# `+` is part of a version token: change-scoped captures like `0.1.24+pr163` are
+# supported (test_model.py), and excluding `+` made the whole regex fail to match, so
+# such a candidate sorted as version-less — LAST instead of first.
+_CANDIDATE_VERSION_RE = re.compile(r"\s(\d[\w.+]*)\s*(?:\([^)]*\))?\s*$")
+
+
+def _sort_candidates(items: list[dict]) -> list[dict]:
+    """Order compare candidates PARSER-alphabetically with versions LATEST-FIRST within
+    each parser. Two stable passes: version DESC first, then a stable name sort that
+    groups by parser and preserves the version-desc order inside each group. The version
+    pass runs EXPLICITLY — one call site (_cell_candidate_meta over __ver_status) feeds
+    versions ascending, so relying on a stable name-sort alone would keep them ascending.
+    Reference (bucket A) stays first because Dynamo sorts ahead of the peers. Keys and
+    default_bucket flags are untouched; only display order moves."""
+    def _ver_key(it: dict):
+        m = _CANDIDATE_VERSION_RE.search(it["label"])
+        return fixtures._version_sort_key(m.group(1)) if m else ()
+    ordered = sorted(items, key=_ver_key, reverse=True)
+    return sorted(ordered, key=lambda it: _candidate_name_key(it["label"]))
+
+
 def _candidate_items() -> list[dict[str, str]]:
     """Ordered comparison candidates for the batch tab: Dynamo, then vLLM/SGLang —
     within each engine versions run LATEST-FIRST (0.24.0 before 0.23.0). Each:
@@ -1066,7 +1080,7 @@ def _candidate_items() -> list[dict[str, str]]:
                 "label": _full_label(canon, v, "batch"),
                 "default_bucket": bucket,
             })
-    return out
+    return _sort_candidates(out)
 
 
 # --- per-impl version snapshots for the TC v2 (stream) tab ----------------------
@@ -1142,7 +1156,7 @@ def _stream_candidate_items() -> list[dict[str, str]]:
                 "label": _full_label(impl, v, "stream"),
                 "default_bucket": bucket,
             })
-    return out
+    return _sort_candidates(out)
 
 
 @functools.lru_cache(maxsize=1)
@@ -1388,7 +1402,7 @@ def _merged_candidate_items() -> list[dict[str, str]]:
     for c in _candidate_items():
         impl = c["impl"]
         out.append({
-            "key": f"{impl}-b-{c['slug']}",
+            "key": f"{impl}-b-{c['slug']}", "impl": impl, "version": c["version"],
             "label": _full_label(impl, c['version'], "batch"),
             "default_bucket": c["default_bucket"],
         })
@@ -1397,11 +1411,11 @@ def _merged_candidate_items() -> list[dict[str, str]]:
         ver = stream_versions.get(impl)
         slug = fixtures._version_slug(ver) if ver else ""
         out.append({
-            "key": f"{impl}-s-{slug}" if slug else f"{impl}-s",
+            "key": f"{impl}-s-{slug}" if slug else f"{impl}-s", "impl": impl, "version": ver,
             "label": _full_label(impl, ver, "stream"),
             "default_bucket": "C",
         })
-    return out
+    return _sort_candidates(out)
 
 
 def _attach_merged_cmp(cases: dict) -> None:
@@ -1485,6 +1499,9 @@ def _compute_stats(
             s["real"] += 1
             if text == "=":
                 s["parity"] += 1
+            # `text` here is the internal compact agreement string from `cell_for` /
+            # `_stream_xeng_marker` (never shown to users). A bare Dynamo-only token —
+            # `·`, or the Dynamo batch/stream sentinel — buckets as dynamo_only.
             elif text == "·" or text in {"D", "D_rb", "D_rs"}:
                 s["dynamo_only"] += 1
             elif "!" in text:
@@ -1505,9 +1522,9 @@ def _stream_on_batch_expected(overlay_case: dict, has_batch_text: bool = True) -
     The overlay records each engine's STREAMING parse of the v1 batch text. Some
     overlay rows are taxonomy placeholders with no batch `model_text`; render
     those as structural unavailability instead of claiming the parser is missing.
-    Peer outputs are tagged with a `reason` so the
-    conformance marker reads as an intentional divergence (`V_ps`/`S_rs`), not
-    research-needed (`V_ps?`/`S_rs?`) — text-vs-token streaming differs by design.
+    Peer outputs are tagged with a `reason` so the divergence reads as intentional
+    (a documented difference), not research-needed — text-vs-token streaming differs
+    by design.
     """
     expected: dict = {}
     overlay_case = _normalize_impl_mapping(overlay_case)
@@ -1651,7 +1668,8 @@ def _load_panel_cases(
     no_vllm, no_sglang = _derive_no_peer_sets(cases)
     top_n, others = _build_display_groups(cases, labels)
     # The streamv2 tab uses the stream comparison: color = stream-vs-own-batch,
-    # conformance marker = cross-engine stream agreement (`Y_s`).
+    # agreement = cross-engine stream agreement (each engine's stream parser vs the
+    # others').
     comparison = "stream_vs_batch" if mode == "streamv2" else "cross_engine"
     return {
         "mode": mode,
@@ -1788,6 +1806,8 @@ def _output_block_model(blk: object) -> dict | None:
     out: dict[str, Any] = {}
     if "unavailable" in blk:
         out["unavailable"] = blk["unavailable"]
+    if "exception" in blk:
+        out["exception"] = blk["exception"]
     if "error" in blk:
         out["error"] = blk["error"]
     if "calls" in blk or "normal_text" in blk:
@@ -1820,14 +1840,16 @@ def _cell_candidate_meta(case: dict, output_kind: str) -> tuple[dict, list[dict]
         # _full_label still maps dynamo_v1 on stream data to "(jail+batch)".
         for impl in ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python"):
             for slug, info in (ver_status.get(impl) or {}).items():
-                meta.append({"key": f"{impl}-{slug}",
+                meta.append({"key": f"{impl}-{slug}", "impl": impl,
                              "label": _full_label(impl, info["version"], output_kind),
                              "version": info["version"], "block_raw": info["block"]})
     else:
         expected = _expected(case)
         for impl in STREAM_IMPL_KEYS:
-            meta.append({"key": impl, "label": f"{_IMPL_DISPLAY[impl]} {output_kind}",
+            meta.append({"key": impl, "impl": impl,
+                         "label": f"{_IMPL_DISPLAY[impl]} {output_kind}",
                          "version": _v2_display_version(impl), "block_raw": _impl_get(expected, impl)})
+    meta = _sort_candidates(meta)
     cmp_blocks = {m["key"]: m["block_raw"] for m in meta}
     for m in meta:
         blk = m.pop("block_raw")
@@ -2459,14 +2481,14 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                 sverd = "ERROR" if sgl_err else _unified_classify(f, gold, sgl_events)
                 ssig = (_sig(sgl_events) ^ 0xE44) if sgl_err else _sig(sgl_events)
             cmp = {
-                "golden": {"sig": gsig, "leak": 0, "na": 0},
-                "dynamo": {"sig": dsig, "leak": 1 if dverd == "LEAK" else 0, "na": 0},
-                "vllm": {"sig": vsig, "leak": 1 if vverd == "LEAK" else 0, "na": 0},
+                "golden": markers.cmp_entry(gsig),
+                "dynamo": markers.cmp_entry(dsig, leak=1 if dverd == "LEAK" else 0),
+                "vllm": markers.cmp_entry(vsig, leak=1 if vverd == "LEAK" else 0),
             }
             if vrust_events is not None:
-                cmp["vllm_rust"] = {"sig": rsig, "leak": 1 if rverd == "LEAK" else 0, "na": 0}
+                cmp["vllm_rust"] = markers.cmp_entry(rsig, leak=1 if rverd == "LEAK" else 0)
             if sgl_events is not None:
-                cmp["sglang"] = {"sig": ssig, "leak": 1 if sverd == "LEAK" else 0, "na": 0}
+                cmp["sglang"] = markers.cmp_entry(ssig, leak=1 if sverd == "LEAK" else 0)
             # Older Dynamo builds, scored against GOLDEN exactly like the latest one, so a
             # cell that changed between builds shows a real NΔ instead of a styling hint.
             prev_by_ver = c.get("dynamo_by_ver") or {}

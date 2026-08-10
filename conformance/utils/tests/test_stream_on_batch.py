@@ -9,13 +9,19 @@ Contract pinned here:
     empty when clean, `↯` when the engine leaks tool-call markup, plus
     `…`/`n/a`/`·`/`!`/`—`. NEVER `=` or a divergence letter.
   * CONFORMANCE view (toggle ON):
-      - batch tab: cross-engine `=`/`D_rb`/`V_pb`/`S_rb`; no `V_rb`.
+      - batch tab: cross-engine agreement, expressed as structured
+        `comparison_facts()` (`agrees` vs the Dynamo v1 batch baseline); vLLM Rust
+        has no batch parser.
       - stream tabs (batch-on-stream + TC stream v2): two dimensions per cell —
         COLOR (`data-status`) is each engine's STREAM parse vs its OWN BATCH parse
-        (green consistent, red "problem" on divergence); MARKER
-        (`data-marker-parity`) concatenates an own stream-vs-batch token (`X_rs`/`X_ps` when the
-        engine's stream differs from its own batch) and cross-engine output
-        tokens (`D_rs`/`V_ps`/`V_rs`/`S_rs`), `=` when all agree.
+        (green consistent, red "problem" on divergence); AGREEMENT concatenates an
+        own stream-vs-batch token (when the engine's stream differs from its own
+        batch) and one token per diverging peer, `=` when all agree.
+
+The stream-tab tests below still assert on `_stream_xeng_marker`'s exact compact
+strings (e.g. `D_rsV_psS_rs`). Those strings are the INTERNAL representation the
+stats aggregator buckets on — never shown to users — so they are pinned here as
+implementation detail, not as user-facing terminology.
 
 These are marker/status SEMANTICS tests: they assert on the comparison functions in
 `markers.py` (via the generator's re-exports) and on the structured model the JS view
@@ -125,10 +131,10 @@ def test_reasoning_na_stub_cell_is_na_not_peer_exception_marker() -> None:
 def test_readme_documents_vllm_rust_capture_flow() -> None:
     text = (UTILS / "README.md").read_text(encoding="utf-8")
     for required in (
-        "V_ps",
-        "V_pb",
-        "V_rs",
-        "does not exist as a separate captured implementation",
+        "vLLM Python stream parser",
+        "vLLM Python batch parser",
+        "vLLM Rust stream parser",
+        "vLLM Rust has no separate batch parser",
         "VLLM_RUST_SOURCE",
         "capture_vllm_rust.py",
         "captured_with.vllm_rust",
@@ -225,9 +231,9 @@ def test_vllm_rust_batch_capture_groups_by_parser(monkeypatch, tmp_path) -> None
 
 def test_build_stream_fixture_records_vllm_rust_source(monkeypatch, tmp_path) -> None:
     source_root = tmp_path / "vllm-src"
-    (source_root / "rust/src/tool-parser").mkdir(parents=True)
-    (source_root / "rust/src/tool-parser/Cargo.toml").write_text(
-        "[package]\nname = 'vllm-tool-parser'\n",
+    (source_root / "rust/src/parser").mkdir(parents=True)
+    (source_root / "rust/src/parser/Cargo.toml").write_text(
+        "[package]\nname = 'vllm-parser'\n",
         encoding="utf-8",
     )
     source = tmp_path / "source.yaml"
@@ -276,9 +282,9 @@ def test_build_stream_fixture_records_vllm_rust_source(monkeypatch, tmp_path) ->
 
 def test_build_stream_fixture_uses_vllm_rust_capture(monkeypatch, tmp_path) -> None:
     source_root = tmp_path / "vllm-src"
-    (source_root / "rust/src/tool-parser").mkdir(parents=True)
-    (source_root / "rust/src/tool-parser/Cargo.toml").write_text(
-        "[package]\nname = 'vllm-tool-parser'\n",
+    (source_root / "rust/src/parser").mkdir(parents=True)
+    (source_root / "rust/src/parser/Cargo.toml").write_text(
+        "[package]\nname = 'vllm-parser'\n",
         encoding="utf-8",
     )
     source = tmp_path / "source.yaml"
@@ -427,8 +433,8 @@ def test_sob_cell_two_dimensions_color_and_cross_engine_marker() -> None:
     # Batch refs:     dynamo recovered [f], vllm [f], sglang got nothing.
     # COLOR (stream-vs-own-batch): dynamo stream([]) != batch([f]) -> problem;
     #   vllm stream([f]) == batch([f]) -> ok; sglang stream([f]) != batch([]) -> problem.
-    # MARKER (cross-engine batch-on-stream): dynamo([]) differs from vllm & sglang -> V_psS_rs;
-    #   vllm([f]) differs only from dynamo -> D_rs; sglang([f]) differs only from dynamo -> D_rs.
+    # AGREEMENT (internal `_stream_xeng_marker` string, batch-on-stream): dynamo([])
+    #   differs from vllm & sglang; vllm([f]) and sglang([f]) each differ only from dynamo.
     case = _sobcase(
         stream={
             D: _calls(),  # stream got nothing
@@ -451,7 +457,7 @@ def test_sob_cell_two_dimensions_color_and_cross_engine_marker() -> None:
     assert g._sob_status(case, D) == "problem"
     assert g._sob_status(case, V) == "ok"
     assert g._sob_status(case, S) == "problem"
-    # Cross-engine stream marker (own stream-vs-batch token X_rs/X_ps + peers that differ).
+    # Internal cross-engine agreement string (own stream-vs-batch token + peers that differ).
     assert g._stream_xeng_marker(case, D, "batch_on_stream") == "D_rsV_psS_rs"
     assert g._stream_xeng_marker(case, V, "batch_on_stream") == "D_rs"
     assert g._stream_xeng_marker(case, S, "batch_on_stream") == "S_rsD_rs"
@@ -509,14 +515,20 @@ def test_vllm_python_leak_marks_red_and_lightning() -> None:
     )
     assert g._overview_status(case, V) == "problem"
     assert g._parser_marker(case, V) == "↯"
-    assert g._parity_marker(case, V, g.BATCH_IMPL_KEYS, "b") == "↯D_rbS_rb"
+    # Structured facts (the mini-language replacement): vLLM Python leaks and diverges
+    # from the Dynamo v1 batch baseline; SGLang matches the clean baseline.
+    facts = {f["impl"]: f for f in g.markers.comparison_facts(case, g.BATCH_IMPL_KEYS, D1)}
+    assert facts[V]["leak"] is True
+    assert facts[V]["agrees"] is False
+    assert facts[S]["agrees"] is True
 
 
-def test_stream_v2_x_marker_shows_vllm_rust_error_message() -> None:
-    # A peer `unavailable` block whose reason shows the parser was invoked and THREW
-    # gets the `✗` error marker (distinct from a benign n/a). The message is surfaced in
-    # the model tooltip (JS-rendered); assert on the verdict + the model's output block.
-    error = "vLLM Rust parser not captured: tool parser parsing failed: invalid Hermes"
+def test_stream_v2_x_marker_shows_vllm_rust_exception_message() -> None:
+    # A peer `exception` block (the parser EXISTS, RAN, and RAISED — distinct from a
+    # benign `unavailable`) gets the `✗` error marker. The verbatim message (the named
+    # vLLM Rust crate variant) is surfaced in the model tooltip (JS-rendered); assert on
+    # the verdict + the model's output block carrying it verbatim.
+    exc = 'ToolParserError::ParsingFailed (near " not")'
     case = {
         "__family": "hermes",
         "__case_id": "TOOLCALLING.streamv2.4.a",
@@ -524,7 +536,7 @@ def test_stream_v2_x_marker_shows_vllm_rust_error_message() -> None:
         "description": "demo",
         "expected": {
             D: {"calls": [], "normal_text": ""},
-            R: {"unavailable": error},
+            R: {"exception": exc},
             V: {"calls": [], "normal_text": ""},
             S: {"calls": [], "normal_text": ""},
         },
@@ -533,35 +545,65 @@ def test_stream_v2_x_marker_shows_vllm_rust_error_message() -> None:
         ],
         "batch_expected": {D: {"calls": [], "normal_text": ""}},
     }
-    assert g._parser_marker(case, R) == "✗"  # invoked-and-threw error marker
+    assert g._parser_marker(case, R) == "✗"  # ran-and-threw error marker
     assert g._sob_status(case, R) == "problem"  # red
-    # The error message rides in the model's candidate output block (view shows it).
+    assert g._overview_status(case, R) == "problem"
+    # The exception rides verbatim in the model's candidate output block (view shows it).
     block = g._output_block_model(case["expected"][R])
-    assert block and block.get("unavailable") == error
+    assert block and block.get("exception") == exc
+
+
+def test_exception_reference_with_parsed_peer_reddens_cmp() -> None:
+    # When the selected Reference parser THREW but a compared parser produced real
+    # output, that is a genuine disagreement: the cmp payload marks the thrown Reference
+    # `err=1` (NOT `na`), and its signature differs from a parsed peer's, so the JS view
+    # reddens the cell. A genuinely-missing (`unavailable`) parser stays `na` (grey).
+    blocks = {
+        R: {"exception": 'ToolParserError::ParsingFailed (near " not")'},
+        D: {"calls": [{"name": "get_weather", "arguments": {}}], "normal_text": ""},
+        V: {"unavailable": "no vLLM Python parser for family X"},
+    }
+    cmp = g.markers.cmp_model(blocks)
+    # thrown Reference: not na, flagged err; a real peer is neither na nor err.
+    assert cmp[R]["err"] == 1 and cmp[R]["na"] == 0
+    assert cmp[D]["err"] == 0 and cmp[D]["na"] == 0
+    # a genuinely-missing parser is still na (grey), never a delta.
+    assert cmp[V]["na"] == 1 and cmp[V]["err"] == 0
+    # the thrown Reference and the parsed peer have different signatures (a delta).
+    assert cmp[R]["sig"] != cmp[D]["sig"]
+    # an exception's signature carries the verbatim message (diagnostic, not collapsed).
+    assert g.markers.candidate_sig(blocks[R]).startswith("exc:ToolParserError::ParsingFailed")
 
 
 # --------------------------------------------------------------------------- #
-# cross-engine conformance (batch / stream tabs)
+# cross-engine conformance (batch tab): the structured comparison_facts / cmp_model
+# replacement for the retired parity-marker shorthand.
 # --------------------------------------------------------------------------- #
 def test_cross_engine_all_three_agree() -> None:
     case = _xcase({i: {"calls": [], "normal_text": ""} for i in (D1, V, S)})
-    assert g._selected_parity_marker(case, D1) == "="
+    facts = {f["impl"]: f for f in g.markers.comparison_facts(case, g.BATCH_IMPL_KEYS, D1)}
+    assert all(facts[i]["agrees"] for i in g.BATCH_IMPL_KEYS)
 
 
-def test_cross_engine_requires_all_three_present() -> None:
-    case = _xcase(
-        {
-            D1: {"unavailable": "x"},
-            V: {"calls": [{"name": "f", "arguments": {}}], "normal_text": ""},
-            S: {"calls": [], "normal_text": ""},
-        }
-    )
-    # The selected parser can still compare against available peers when vLLM Rust
-    # is unavailable; this keeps the Conformance toggle useful before Rust capture lands.
-    assert g._selected_parity_marker(case, V) == "S_rb"
+def test_cross_engine_unavailable_baseline_leaves_agreement_undecidable() -> None:
+    # When the Dynamo v1 batch baseline has no output, agreement against it is
+    # undecidable (None), but the compare model still distinguishes the peers'
+    # outputs so the client-side compare bar can group them.
+    blocks = {
+        D1: {"unavailable": "x"},
+        V: {"calls": [{"name": "f", "arguments": {}}], "normal_text": ""},
+        S: {"calls": [], "normal_text": ""},
+    }
+    case = _xcase(blocks)
+    facts = {f["impl"]: f for f in g.markers.comparison_facts(case, g.BATCH_IMPL_KEYS, D1)}
+    assert facts[V]["agrees"] is None and facts[S]["agrees"] is None
+    assert facts[D1]["present"] is False
+    cmp = g.markers.cmp_model(blocks)
+    assert cmp[D1]["na"] == 1
+    assert cmp[V]["sig"] != cmp[S]["sig"]  # vLLM Python and SGLang diverge
 
 
-def test_cross_engine_divergence_letters() -> None:
+def test_cross_engine_divergence_facts() -> None:
     case = _xcase(
         {
             D1: {"calls": [{"name": "f", "arguments": {}}], "normal_text": ""},
@@ -569,8 +611,10 @@ def test_cross_engine_divergence_letters() -> None:
             S: {"calls": [], "normal_text": ""},
         }
     )
-    assert g._selected_parity_marker(case, D1) == "V_pbS_rb"
-    assert g._selected_parity_marker(case, V) == "D_rb"
+    facts = {f["impl"]: f for f in g.markers.comparison_facts(case, g.BATCH_IMPL_KEYS, D1)}
+    # vLLM Python and SGLang batch parsers both diverge from the Dynamo v1 baseline.
+    assert facts[V]["agrees"] is False
+    assert facts[S]["agrees"] is False
 
 
 # --------------------------------------------------------------------------- #
@@ -601,8 +645,8 @@ def test_build_cases_carries_stream_and_batch(monkeypatch) -> None:
     assert built["batch_expected"][V] == _calls("f")  # batch reference carried
     # COLOR: vllm stream calls=[] vs batch calls=[f] -> diverge -> problem (red)
     assert g._sob_status(built, V) == "problem"
-    # MARKER: vllm diverges from its own batch (V_ps); dynamo todo, sglang stream also
-    # empty so no cross-engine token.
+    # AGREEMENT (internal string): vllm diverges from its own batch; dynamo todo,
+    # sglang stream also empty so no cross-engine token.
     assert g._stream_xeng_marker(built, V, "batch_on_stream") == "V_ps"
 
 
@@ -697,8 +741,8 @@ def test_common_legend_defines_v1_v2() -> None:
 
 def test_common_legend_defines_green_by_reference_cleanliness() -> None:
     # Green is defined by the Reference parser being leak-free (compare-model), not by
-    # the old "all peers match Dynamo Rust". The stale per-impl marker keys (D_rb,
-    # V_ps, …) and the "match Dynamo Rust" / donly lines were removed.
+    # the old "all peers match Dynamo Rust". The stale per-impl parser-marker shorthand
+    # and the "match Dynamo Rust" / donly lines were removed.
     legend = g._common_legend_html()
     assert "Reference</strong> parser output is clean" in legend
     assert "whether or not any Compare parser is selected" in legend
@@ -850,7 +894,7 @@ def test_stream_version_families_include_inherited_anchor_coverage(
 def test_impl_spec_is_single_identity_source() -> None:
     """D5: ImplSpec is the one identity table; the generator's derived dicts match
     it, every spec is complete, markers/displays are unique, and vLLM Rust has no
-    batch (`V_rb`) parser option. Catches the marker/legend/alias drift class."""
+    batch parser option. Catches the marker/legend/alias drift class."""
     assert tuple(s.key for s in impls.IMPL_SPECS) == g.IMPL_KEYS
     for s in impls.IMPL_SPECS:
         assert s.display and s.marker_letter and s.marker_lang and s.engine and s.language
@@ -864,7 +908,7 @@ def test_impl_spec_is_single_identity_source() -> None:
         letters = [s.marker_letter for s in impls.IMPL_SPECS if mode in s.modes]
         assert len(set(letters)) == len(letters), mode
     assert len({s.display for s in impls.IMPL_SPECS}) == len(impls.IMPL_SPECS)
-    # vLLM Rust is stream-only: no `V_rb` batch parser option exists anywhere.
+    # vLLM Rust is stream-only: no batch parser option exists anywhere.
     assert "vllm_rust" not in g.BATCH_IMPL_KEYS
     assert "vllm_rust" in g.STREAM_IMPL_KEYS
 

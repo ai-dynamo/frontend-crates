@@ -88,13 +88,15 @@ def resolve(fixtures_root, out, select, verbose=False):
             key=lambda t: t[0],
         )
         applied = [(k, d) for k, d in vdirs if k <= target_k]
-        # Stamp the SELECTED version onto every fixture with this impl's output, whether
-        # or not an overlay changed it (the selected engine is what this page renders).
-        _stamp_captured_with(out, impl, target)
+        # Stamp the version whose data this page actually shows: the highest overlay at
+        # or below the target. Stamping the SELECTED version unconditionally made the tab
+        # claim a peer version that has no capture in this corpus — e.g. a pinned 0.26.0
+        # labelling 0.24.0's captured output, which is a provenance lie, not a display
+        # nicety. With no overlay at or below the target, the anchor's own captured_with
+        # already names the version that produced the data, so leave it alone.
         if not applied:
-            # No overlay for this version = the anchor already holds the selected
-            # engine's output (nothing changed at/below it); the stamp above is enough.
             continue
+        _stamp_captured_with(out, impl, split_impl_ver(applied[-1][1].name)[1])
         for _, vdir in applied:
             for ofp in vdir.glob("*/*.yaml"):
                 tgt = out / ofp.parent.name / ofp.name

@@ -28,11 +28,14 @@ families:
   kimi_k2:        {vllm_python: kimi_k2,        vllm_rust: kimi_k2,      sglang_python: kimi_k2,     dynamo_v2: kimi_k2,     preferred_input: text}
   llama3_json:    {vllm_python: llama3_json,    vllm_rust: llama3_json,  sglang_python: llama3,      dynamo_v2: null,        preferred_input: text}
   minimax_m2:     {vllm_python: minimax_m2,     vllm_rust: minimax_m2,   sglang_python: minimax-m2,  dynamo_v2: minimax_m2,  preferred_input: text}
-  minimax_m3:     {vllm_python: minimax_m3,     vllm_rust: null,         sglang_python: minimax-m3,  dynamo_v2: minimax_m3,  preferred_input: text}
+  # vllm_rust gained MinimaxM3ToolParser / Phi4MiniJsonToolParser in 0.24.0; the older
+  # vllm_rust-0.23.0 anchor keeps its recorded `unavailable` blocks (append-only), so
+  # mapping them here only affects 0.24.0+ captures.
+  minimax_m3:     {vllm_python: minimax_m3,     vllm_rust: minimax_m3,   sglang_python: minimax-m3,  dynamo_v2: minimax_m3,  preferred_input: text}
   mistral:        {vllm_python: mistral,        vllm_rust: mistral,      sglang_python: mistral,     dynamo_v2: null,        preferred_input: text}
   nemotron_deci:  {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: null,        dynamo_v2: null,        preferred_input: text}
   nemotron_nano:  {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: null,        dynamo_v2: null,        preferred_input: text}
-  phi4:           {vllm_python: phi4_mini_json, vllm_rust: null,         sglang_python: null,        dynamo_v2: null,        preferred_input: text}
+  phi4:           {vllm_python: phi4_mini_json, vllm_rust: phi4_mini_json, sglang_python: null,      dynamo_v2: null,        preferred_input: text}
   pythonic:       {vllm_python: pythonic,       vllm_rust: null,         sglang_python: pythonic,    dynamo_v2: null,        preferred_input: text}
   qwen25:         {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: qwen25,      dynamo_v2: null,        preferred_input: text}
   qwen3_coder:    {vllm_python: qwen3_coder,    vllm_rust: qwen3_coder,  sglang_python: qwen3_coder, dynamo_v2: qwen3_coder, preferred_input: text}
