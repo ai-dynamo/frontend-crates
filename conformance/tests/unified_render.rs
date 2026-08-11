@@ -155,13 +155,13 @@ impl From<dynamo_parsers_v2::UnifiedEvent> for Ev {
     }
 }
 
-fn unified_delta_json(d: &dynamo_parsers_v2::UnifiedDelta) -> Value {
+fn unified_delta_json(d: &dynamo_parsers_v2::UnifiedParserEvent) -> Value {
     match d {
-        dynamo_parsers_v2::UnifiedDelta::Reasoning { text } => {
+        dynamo_parsers_v2::UnifiedParserEvent::Reasoning(text) => {
             json!({"kind": "reasoning", "text": text})
         }
-        dynamo_parsers_v2::UnifiedDelta::Text { text } => json!({"kind": "text", "text": text}),
-        dynamo_parsers_v2::UnifiedDelta::ToolCall(c) => {
+        dynamo_parsers_v2::UnifiedParserEvent::Text(text) => json!({"kind": "text", "text": text}),
+        dynamo_parsers_v2::UnifiedParserEvent::ToolCall(c) => {
             json!({"kind": "tool_call", "name": c.name, "arguments": c.arguments})
         }
     }

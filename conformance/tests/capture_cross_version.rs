@@ -243,15 +243,15 @@ fn fold_chunks(rows: &[Vec<Value>]) -> Vec<serde_yaml::Value> {
 /// Per-chunk rows record RAW deltas, not assembled events — `arguments` stays the
 /// literal fragment the parser emitted. Mirrors `unified_render::unified_delta_json`.
 /// (Assembling per chunk instead produces a mapping and makes every case look changed.)
-fn delta_to_yaml(d: &dynamo_parsers_v2::UnifiedDelta) -> serde_yaml::Value {
+fn delta_to_yaml(d: &dynamo_parsers_v2::UnifiedParserEvent) -> serde_yaml::Value {
     let v = match d {
-        dynamo_parsers_v2::UnifiedDelta::Reasoning { text } => {
+        dynamo_parsers_v2::UnifiedParserEvent::Reasoning(text) => {
             serde_json::json!({"kind": "reasoning", "text": text})
         }
-        dynamo_parsers_v2::UnifiedDelta::Text { text } => {
+        dynamo_parsers_v2::UnifiedParserEvent::Text(text) => {
             serde_json::json!({"kind": "text", "text": text})
         }
-        dynamo_parsers_v2::UnifiedDelta::ToolCall(c) => {
+        dynamo_parsers_v2::UnifiedParserEvent::ToolCall(c) => {
             serde_json::json!({"kind": "tool_call", "name": c.name, "arguments": c.arguments})
         }
     };

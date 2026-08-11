@@ -702,7 +702,9 @@ def test_template_has_compare_picker_and_reasoning_candidates() -> None:
 def test_template_overview_cells_do_not_expand_from_hidden_marker_text() -> None:
     # Static styles now live in the CSS asset, inlined at render (audit B7).
     css = (SRC / "assets" / "conformance.css").read_text()
-    assert "td.cell { position: relative; text-align: center; width: 44px; min-width: 44px; max-width: 44px;" in css
+    # 26px, not 44px: cell content is a 1-3 char marker that is absolutely positioned,
+    # so the column width is pure padding. 44px made the table needlessly wide.
+    assert "td.cell { position: relative; text-align: center; width: 26px; min-width: 26px; max-width: 26px;" in css
     assert ".view-overview td.cell { font-size: 0; line-height: 0; }" in css
     assert ".view-overview td.cell .cell-marker { display: none; }" in css
     assert ".view-overview td.cell .ttip { font-size: 12px; line-height: 1.4; }" in css
@@ -759,11 +761,16 @@ def test_template_cells_do_not_clip_hover_tooltips() -> None:
     assert cell_rule is not None
     assert "overflow: hidden" not in cell_rule.group(1)
     assert ".ttip-visible" in css
-    # Hover-show is now gated on hover-capable devices (touch uses tap-to-pin), so
-    # the listener is wired inside a `matchMedia('(hover: hover)')` branch rather
-    # than as a bare top-level call. Assert both the gate and the pointerenter wiring.
-    assert "matchMedia('(hover: hover)')" in js
+    # Hover listeners are registered UNCONDITIONALLY. They used to sit behind a
+    # `matchMedia('(hover: hover)')` gate, and this assertion pinned that gate in place as
+    # if it were the contract — while Chrome on a normal desktop reported the query false
+    # and delivered real hover anyway, so the popup never opened and this test stayed green.
+    # A media query describes a device; it does not decide which events arrive. Assert the
+    # gate is GONE and the listeners are top-level.
     assert "cell.addEventListener('pointerenter'" in js
+    assert "matchMedia" not in js, (
+        "hover/pointer listener registration must not depend on a media query"
+    )
 
 
 def test_toolcalling_parser_options_are_mode_specific() -> None:

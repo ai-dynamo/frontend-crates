@@ -31,7 +31,7 @@
 //!
 //! # Ordered output
 //!
-//! The drain loop emits [`UnifiedDelta`]s — text, reasoning and calls in the
+//! The drain loop emits [`UnifiedParserEvent`]s — text, reasoning and calls in the
 //! order the model produced them. Tool-only parsers project that down to
 //! [`ToolParseResult`] via `push`/`finish` and see no behavior change (that
 //! projection is lossy about order, which is all the tool-only contract ever
@@ -51,7 +51,7 @@
 use std::collections::HashSet;
 
 use crate::tool_calling::traits::{ToolCallDelta, ToolParseResult};
-use crate::unified::{Kind, UnifiedDelta};
+use crate::unified::{Kind, UnifiedParserEvent};
 
 /// Longest non-empty proper prefix of any `marker` that `text` ends with, so a
 /// marker split across chunk boundaries is held back instead of leaked as
@@ -234,20 +234,16 @@ enum InReasoning {
 /// never emits a string of adjacent same-kind fragments (`I8`). The or-pattern is
 /// the whole point: text and reasoning coalesce by identical rules, so there is
 /// one implementation to get right instead of two that can drift.
-pub(crate) fn push_run(out: &mut Vec<UnifiedDelta>, kind: Kind, text: &str) {
+pub(crate) fn push_run(out: &mut Vec<UnifiedParserEvent>, kind: Kind, text: &str) {
     if text.is_empty() {
         return;
     }
     match (out.last_mut(), kind) {
-        (Some(UnifiedDelta::Text { text: prev }), Kind::Text)
-        | (Some(UnifiedDelta::Reasoning { text: prev }), Kind::Reasoning) => prev.push_str(text),
+        (Some(UnifiedParserEvent::Text(prev)), Kind::Text)
+        | (Some(UnifiedParserEvent::Reasoning(prev)), Kind::Reasoning) => prev.push_str(text),
         _ => out.push(match kind {
-            Kind::Text => UnifiedDelta::Text {
-                text: text.to_string(),
-            },
-            Kind::Reasoning => UnifiedDelta::Reasoning {
-                text: text.to_string(),
-            },
+            Kind::Text => UnifiedParserEvent::Text(text.to_string()),
+            Kind::Reasoning => UnifiedParserEvent::Reasoning(text.to_string()),
         }),
     }
 }
@@ -315,12 +311,12 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         Ok(ToolParseResult::from_deltas(self.finish_ordered()?))
     }
 
-    pub(crate) fn push_ordered(&mut self, chunk: &str) -> anyhow::Result<Vec<UnifiedDelta>> {
+    pub(crate) fn push_ordered(&mut self, chunk: &str) -> anyhow::Result<Vec<UnifiedParserEvent>> {
         self.buffer.push_str(chunk);
         self.drain(false)
     }
 
-    pub(crate) fn finish_ordered(&mut self) -> anyhow::Result<Vec<UnifiedDelta>> {
+    pub(crate) fn finish_ordered(&mut self) -> anyhow::Result<Vec<UnifiedParserEvent>> {
         self.drain(true)
     }
 
@@ -339,7 +335,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     /// means more input is needed.
     fn drain_reasoning(
         &mut self,
-        out: &mut Vec<UnifiedDelta>,
+        out: &mut Vec<UnifiedParserEvent>,
         flush: bool,
     ) -> anyhow::Result<bool> {
         let Some(reasoning) = self.reasoning else {
@@ -432,8 +428,23 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         Ok(false)
     }
 
-    fn drain(&mut self, flush: bool) -> anyhow::Result<Vec<UnifiedDelta>> {
-        let mut out: Vec<UnifiedDelta> = Vec::new();
+    /// Return to a FRESH-STREAM state and hand back whatever was still buffered.
+    ///
+    /// Every field that carries stream position resets, `next_index` included: the
+    /// returned text is a NEW stream, so a call parsed out of it must not reuse an
+    /// index already dispatched from the abandoned one.
+    pub(crate) fn reset_stream(&mut self) -> String {
+        let carried = std::mem::take(&mut self.buffer);
+        self.in_block = false;
+        self.in_reasoning = self.reasoning.as_ref().is_some_and(|r| r.forced_start);
+        self.resume_reasoning = false;
+        self.suppress_normal_text = false;
+        self.next_index = 0;
+        carried
+    }
+
+    fn drain(&mut self, flush: bool) -> anyhow::Result<Vec<UnifiedParserEvent>> {
+        let mut out: Vec<UnifiedParserEvent> = Vec::new();
 
         loop {
             // Reasoning yields to tool structure: while a thought is open, its
@@ -510,7 +521,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 let invoke = self.buffer[..end + self.spec.invoke_end.len()].to_string();
                 self.buffer.drain(..end + self.spec.invoke_end.len());
                 if let Some(delta) = self.emitter.parse_invoke(&invoke, self.next_index)? {
-                    out.push(UnifiedDelta::ToolCall(delta));
+                    out.push(UnifiedParserEvent::ToolCall(delta));
                     self.next_index += 1;
                     if self.spec.invoke_latch == InvokeLatch::IfEmitted {
                         self.suppress_normal_text = true;
@@ -623,7 +634,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             tool_index = delta.tool_index,
                             "stream recovered a complete bare invoke"
                         );
-                        out.push(UnifiedDelta::ToolCall(delta));
+                        out.push(UnifiedParserEvent::ToolCall(delta));
                         self.next_index += 1;
                         self.suppress_normal_text =
                             self.spec.bare_recovery_latch == BareRecoveryLatch::Set;
