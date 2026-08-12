@@ -221,6 +221,16 @@ pub trait UnifiedParser: Send {
 ///   exception: it routes every event through these same helpers, so joining two
 ///   independently-built buffers gives the same result as accumulating straight through.
 ///
+/// # This is a CONVENTION, not an enforced invariant
+///
+/// `events` is public — matching the peer type, which is the point of this surface — so
+/// nothing stops a caller writing `UnifiedParserOutput { events: vec![Text("hel"), Text("lo")] }`
+/// or `out.events.extend(..)` and holding a value that breaks the merge rule. Every
+/// route this crate owns (the push helpers, [`Self::append`], `FromIterator`, and the
+/// scanner's sink) does apply it; direct field access does not, and cannot be made to
+/// without diverging from the peer shape. So: build through the helpers. A value that
+/// did not come through them may carry adjacent same-kind events.
+///
 /// [`assemble`] performs the same fold, so a caller that coalesces here and one that
 /// folds afterwards agree on the assembled result either way.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]

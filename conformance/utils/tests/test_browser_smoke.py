@@ -767,8 +767,8 @@ def test_touch_then_keyboard_does_not_pin(driver):
         )
 
 
-def test_touch_outside_a_host_does_not_arm_the_next_mouse_click(driver):
-    """A tap that lands anywhere else must not make the NEXT mouse click pin.
+def test_touch_outside_a_host_does_not_arm_a_pointerdownless_activation(driver):
+    """A tap that lands anywhere else must not arm the next pointerdown-less activation.
 
     Pointer provenance recorded only the KIND of pointer, in one document-wide
     variable. Only a tooltip host's own click consumed it, so a tap on a header —

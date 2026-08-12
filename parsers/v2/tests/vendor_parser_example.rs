@@ -149,7 +149,7 @@ fn vendor_can_shadow_a_builtin_family() {
     assert_eq!(restored, builtin, "unregistering must restore the built-in");
 }
 
-/// The Markdown example and this file must be the SAME implementation.
+/// The Markdown example and this file must implement the same TRAIT METHODS, identically.
 ///
 /// `CUSTOM_PARSERS.md` claimed that if its instructions stopped being true "the build
 /// fails here first". That claim was false: the documented example double-emitted its
@@ -157,8 +157,15 @@ fn vendor_can_shadow_a_builtin_family() {
 /// differently, so nothing compared the two and nothing failed. Matching them by hand
 /// restores the invariant but leaves it resting on the manual comparison that already
 /// failed once. This is the comparison, as a test.
+///
+/// SCOPE, stated because the name used to promise more than the oracle delivers: this
+/// compares the method SET and each method BODY inside `impl UnifiedParser for
+/// AcmeParser`. It does NOT compile the Markdown block, and it does not compare imports,
+/// the struct definition, derives, the factory, or the registration snippet — renaming a
+/// struct field in the doc alone would break the documented example while this stays
+/// green. Compiling the extracted block is the real fix and is not done here.
 #[test]
-fn doc_example_matches_compiled_example() {
+fn doc_trait_method_bodies_match_compiled_example() {
     const DOC: &str = include_str!("../CUSTOM_PARSERS.md");
     const SRC: &str = include_str!("vendor_parser_example.rs");
 

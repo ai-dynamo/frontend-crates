@@ -86,17 +86,17 @@ This is deliberately supported. Disagreeing with one of our families should cost
 
 ## 4. What the contract requires
 
-These are the properties the conformance corpus checks, and the reasons it checks them. A parser that violates one will look correct in a demo and fail in production.
+These are the responsibilities a unified parser carries, and the reasons they exist. A parser that violates one will look correct in a demo and fail in production. The built-in conformance corpus exercises several of them for the families it ships; it cannot check factory/global-state isolation or your parser's own `reset` and error behaviour, and it does not run your parser at all until you enrol it (see below).
 
 | | Requirement |
 |---|---|
 | **One parser per stream** | A factory builds one parser for one choice of one request. Keep per-stream state in the parser, never in the factory or a global. |
 | **Order is the output** | Emit events in the order the model produced them. Do not hoist all reasoning to the front; that is precisely the defect the ordered event stream exists to remove. |
-| **Split-invariance** | The same bytes must produce the same events regardless of where the transport split them. Test every split point around your markers, not just a few. |
+| **Split-invariance** | The same bytes must produce the same ASSEMBLED output regardless of where the transport split them. Test every split point around your markers, not just a few. Raw event boundaries may legitimately differ between splits — one chunking can commit `Text("alpha ")` + `Text("rest")` where another commits `Text("alpha rest")` — which is why the check is `assembled()`, not the event vector. |
 | **Never leak your own markup** | Bytes you consumed as structure must not reappear in visible text. |
-| **Argument bytes are verbatim** | Forward argument fragments exactly as the model emitted them. Do not reformat, reorder keys, or re-serialize. |
-| **Recover, do not panic** | Malformed or truncated output is normal. Emit what you can and drop what you cannot; returning an error should be reserved for genuinely unusable input. On `Err`, whatever you already appended stays committed. |
-| **Flush on `finish`** | Open reasoning is promoted, not dropped and not leaked as text. |
+| **Arguments keep their meaning and order** | Do not drop, duplicate, or corrupt argument values, and preserve the model's key order where the family contract depends on it. If you emit incremental fragments, the fragments you chose must concatenate into the intended arguments JSON. Verbatim BYTES are only required where the model already emits API-shaped JSON — the shipped XML families deliberately schema-type and re-serialize, then restore source key order. |
+| **Recover, do not panic** | Malformed or truncated output is normal. Emit what you can and drop what you cannot; returning an error should be reserved for genuinely unusable input. When driven through `parse_into`, whatever you already appended to the caller's output stays committed on `Err`; `push` owns its buffer and returns `Result<Vec<_>>`, which has nowhere to carry partial output, so it cannot honour that guarantee. |
+| **Flush on `finish`** | Do not silently drop the tail of a stream. What to DO with an unterminated channel is your family's policy — the shipped Qwen parser promotes open reasoning rather than leaking it as text, but a grammar with no reasoning channel, or one that treats an unterminated opener as visible recovery text, is making a different and equally valid call. State yours. |
 | **Override `reset` if you buffer** | The default returns an empty string and clears nothing. A parser that holds bytes back MUST override it, or a caller following the documented recovery path after a `parse_into` error resumes on your stale buffer and mis-numbers tool indices. Reset every field that carries stream position, tool index included — the text you hand back is a NEW stream. |
 
 ## 5. Optional capabilities
@@ -111,13 +111,15 @@ All have defaults, so implement only what your grammar needs.
 
 ## 6. Check it against the corpus
 
-The conformance corpus is the useful part of this repo. Point it at your parser to find the cases you have not thought of: malformed envelopes, markers split mid-token, marker-looking text inside a JSON string, reasoning interleaved with calls, guided payloads that fail schema rather than syntax.
+The conformance corpus is the useful part of this repo — the cases you have not thought of: malformed envelopes, markers split mid-token, marker-looking text inside a JSON string, reasoning interleaved with calls.
+
+Running the workspace command below does NOT exercise a vendor parser. There is no flag that points the suite at a registered family: the suite iterates `builtin_unified_families()`, and a vendor registration deliberately does not enrol itself there. Adding your family means adding cases to the corpus and wiring it into the harness. Until you do, a green run says nothing about your parser.
 
 ```bash
 cargo test --workspace --all-targets --locked
 ```
 
-`builtin_unified_families()` is what the suite iterates, and a vendor registration deliberately does NOT enrol itself there — a family with no cases would otherwise report as covered while nothing measured it. Add cases for your family before trusting a green run.
+A family with no cases would otherwise report as covered while nothing measured it, which is why enrolment is deliberate rather than automatic.
 
 ## 7. Alignment with peer traits
 
