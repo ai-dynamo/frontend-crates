@@ -697,22 +697,36 @@
   // still read `touch`, call `preventDefault()` and pin — suppressing the link the
   // keyboard user asked for. `pointercancel` clears it too, so an aborted gesture
   // cannot arm a later click.
+  // Both the KIND of pointer and WHERE it went down. The kind alone is a document-wide
+  // global: a tap that lands anywhere else — a header, a scroll, any element that is not a
+  // tooltip host — leaves `touch` armed, because only a tooltip host's click consumes it.
+  // The next MOUSE click on a host would then read that stale `touch`, pin, and
+  // `preventDefault()` the parser-source link the mouse user actually asked for. Requiring
+  // the pointerdown to have landed inside the same host makes the provenance belong to
+  // this interaction rather than to whatever touched the page last.
   let pendingPointerType = '';
+  let pendingPointerTarget = null;
   document.addEventListener('pointerdown', function (e) {
     pendingPointerType = e.pointerType || '';
+    pendingPointerTarget = e.target;
   }, true);
   document.addEventListener('pointercancel', function () {
     pendingPointerType = '';
+    pendingPointerTarget = null;
   }, true);
   // A click that came from a finger or stylus has no hover behind it, so it must open the
   // popup and pin it. A mouse click must not: hover already showed the popup, and pinning
   // is modal (see `hoverAllowed`), so a mouse pin would switch hover off page-wide.
   // Unknown/empty pointerType (synthetic `.click()`, keyboard activation) is treated as
   // NOT touch, matching the mouse/keyboard contract.
-  const consumeClickShouldPin = function () {
+  const consumeClickShouldPin = function (cell) {
     const t = pendingPointerType;
+    const target = pendingPointerTarget;
     pendingPointerType = '';
-    return t === 'touch' || t === 'pen';
+    pendingPointerTarget = null;
+    if (t !== 'touch' && t !== 'pen') { return false; }
+    // The gesture must have STARTED in this host, or it belongs to something else.
+    return !!(cell && target && cell.contains(target));
   };
   let pinnedCell = null;
   function unpinCell(c) { if (c && c._ttipUnpin) { c._ttipUnpin(); } }
@@ -839,7 +853,7 @@
       // so leaving the provenance unconsumed on any of them hands a stale `touch` to the
       // NEXT click — the defect consume-on-use exists to prevent, one branch over. A tap
       // on the popup's own links or its ✕ takes this return, and used to leave it armed.
-      const shouldPin = consumeClickShouldPin();
+      const shouldPin = consumeClickShouldPin(cell);
       if (e.target.closest('.ttip')) { return; }
       // Decided per-interaction, not per-page: only a finger or stylus pins. A mouse click
       // falls through to the cell's own parser-source link, and never enters modal pin mode.

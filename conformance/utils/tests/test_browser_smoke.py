@@ -765,3 +765,48 @@ def test_touch_then_keyboard_does_not_pin(driver):
             "a touch tap inside a tooltip left pointer provenance armed, so the next "
             "keyboard activation inherited it"
         )
+
+
+def test_touch_outside_a_host_does_not_arm_the_next_mouse_click(driver):
+    """A tap that lands anywhere else must not make the NEXT mouse click pin.
+
+    Pointer provenance recorded only the KIND of pointer, in one document-wide
+    variable. Only a tooltip host's own click consumed it, so a tap on a header —
+    or any element that is not a host — left `touch` armed indefinitely. The next
+    genuine MOUSE click on a host then read that stale `touch`, pinned, and
+    `preventDefault()`ed the parser-source link the mouse user actually asked for.
+    Provenance now also records WHERE the pointer went down and is only honoured
+    when the gesture started inside the same host.
+    """
+    drv = driver
+    drv.execute_script(
+        "const v=document.querySelector('[data-view-detailed]'); if(v && !v.checked){v.checked=true; v.dispatchEvent(new Event('change'));}"
+    )
+    time.sleep(0.4)
+
+    pinned = drv.execute_script(
+        """
+        const p = document.querySelector('.tab-panel.active') || document;
+        const cell = p.querySelector('[data-ttip-wired]');
+        if (!cell) { return 'no-cell'; }
+
+        // A touch that goes down on something that is NOT a tooltip host, and whose
+        // click therefore never reaches a host's handler to consume the provenance.
+        const outside = document.querySelector('h1, h2, header, .legend') || document.body;
+        outside.dispatchEvent(new PointerEvent('pointerdown',
+            {bubbles: true, cancelable: true, pointerType: 'touch', isPrimary: true}));
+        outside.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
+
+        // Now an activation on a host that carries NO pointerdown of its own — a keyboard
+        // Enter or a synthetic click. It cannot overwrite the stale provenance, so this is
+        // the interaction that actually reads it.
+        cell.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
+
+        return !!document.querySelector('.ttip.ttip-pinned');
+        """
+    )
+    assert pinned != 'no-cell', "no wired tooltip host found to exercise"
+    assert pinned is False, (
+        "a pointerdown-less activation pinned because an unrelated touch elsewhere left "
+        "the provenance armed — pinning must require the gesture to start in this host"
+    )
