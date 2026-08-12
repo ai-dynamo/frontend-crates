@@ -43,6 +43,13 @@ impl UnifiedParser for AcmeParser {
         out.push_text(std::mem::take(&mut self.buffered));
         Ok(out)
     }
+
+    fn reset(&mut self) -> String {
+        // MANDATORY for a parser that buffers: the default returns an empty string and
+        // clears nothing, so a caller recovering after an error would resume on this
+        // parser's stale held-back bytes. Hand them back and return to a fresh stream.
+        std::mem::take(&mut self.buffered)
+    }
 }
 
 /// Removes a registration on drop, including while unwinding from a panic, so a
@@ -193,8 +200,36 @@ fn doc_example_matches_compiled_example() {
             .join("")
     }
 
+    // Derive the method set from the sources instead of hardcoding it. A hardcoded
+    // ["parse_into", "finish"] let `reset` diverge between the two copies with the test
+    // still green — the guide's own MANDATORY rule was violated in the doc for exactly
+    // as long as this loop decided what counted.
     let doc = first_rust_block(DOC);
-    for f in ["parse_into", "finish"] {
+    // Scope to the trait impl: the compiled file also holds the tests themselves.
+    let impl_block = |src: &str| -> String {
+        let start = src
+            .find("impl UnifiedParser for AcmeParser {")
+            .expect("the example must implement UnifiedParser for AcmeParser");
+        let rest = &src[start..];
+        let end = rest.find("\n}").expect("unterminated impl block");
+        rest[..end].to_string()
+    };
+    let methods = |src: &str| -> Vec<String> {
+        impl_block(src)
+            .lines()
+            .filter_map(|l| l.trim().strip_prefix("fn "))
+            .filter_map(|l| l.split('(').next())
+            .map(str::to_string)
+            .collect()
+    };
+    assert_eq!(
+        methods(doc),
+        methods(SRC),
+        "CUSTOM_PARSERS.md and vendor_parser_example.rs implement different methods. \
+         A vendor copies the doc, so a method present in only one is a trap."
+    );
+    for f in methods(doc) {
+        let f = f.as_str();
         assert_eq!(
             body(doc, f),
             body(SRC, f),
@@ -202,4 +237,30 @@ fn doc_example_matches_compiled_example() {
              The documented example is what a vendor copies; keep them identical."
         );
     }
+}
+
+/// The example must obey the rule the guide states as MANDATORY: a parser that buffers
+/// overrides `reset`. It held a trailing `<` back with no override, so a vendor copying
+/// it would inherit the default that clears nothing and silently resume on stale bytes.
+#[test]
+fn the_worked_example_honours_the_reset_rule_it_documents() {
+    let mut p = AcmeParser::default();
+    let mut out = UnifiedParserOutput::default();
+    p.parse_into("visible<par", &mut out).expect("parse");
+
+    assert_eq!(
+        out.events,
+        vec![UnifiedParserEvent::Text("visible".to_string())],
+        "the partial marker must be held back, not emitted"
+    );
+    assert_eq!(
+        p.reset(),
+        "<par",
+        "reset must hand back the held-back bytes, not the default empty string"
+    );
+    assert_eq!(
+        p.reset(),
+        "",
+        "after reset the parser is a fresh stream and holds nothing"
+    );
 }

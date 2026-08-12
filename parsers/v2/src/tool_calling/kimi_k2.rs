@@ -70,6 +70,8 @@ fn spec(config: &KimiK2ParserConfig) -> WrappedBlockSpec {
         bare_recovery_latch: BareRecoveryLatch::Set,
         invoke_latch: InvokeLatch::Always,
         drop_invoke_crossing_block_end: true,
+        // Every wrapped family's markers are special tokens today.
+        preserve_special_tokens: true,
     }
 }
 

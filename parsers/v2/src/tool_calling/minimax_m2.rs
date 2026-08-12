@@ -74,6 +74,8 @@ fn spec() -> WrappedBlockSpec {
         bare_recovery_latch: BareRecoveryLatch::Clear,
         invoke_latch: InvokeLatch::IfEmitted,
         drop_invoke_crossing_block_end: false,
+        // Every wrapped family's markers are special tokens today.
+        preserve_special_tokens: true,
     }
 }
 

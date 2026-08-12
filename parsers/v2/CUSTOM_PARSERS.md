@@ -43,6 +43,10 @@ impl UnifiedParser for AcmeParser {
         out.push_text(std::mem::take(&mut self.buffered));
         Ok(out)
     }
+
+    fn reset(&mut self) -> String {
+        std::mem::take(&mut self.buffered)
+    }
 }
 ```
 

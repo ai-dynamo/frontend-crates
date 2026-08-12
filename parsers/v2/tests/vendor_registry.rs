@@ -190,3 +190,39 @@ fn unknown_family_error_explains_how_to_register() {
     assert!(err.contains("register_unified_parser"), "{err}");
     assert!(err.contains("no_such_family"), "{err}");
 }
+
+/// The two surfaces over one Qwen scanner must report the SAME decoding requirement.
+/// They disagreed before: tool-only said `true`, unified inherited the trait default
+/// `false`, so a decoder honouring the flag could hand the two adapters different bytes
+/// for identical markup.
+mod preserve_special_tokens_parity {
+    use dynamo_parsers_v2::tool_calling::create_tool_parser_for_family;
+    use dynamo_parsers_v2::unified::create_unified_parser_for_family;
+
+    fn tool_only_value() -> bool {
+        create_tool_parser_for_family("qwen3_coder", &[])
+            .expect("qwen3_coder tool parser")
+            .preserve_special_tokens()
+    }
+
+    #[test]
+    fn canonical_family_matches_the_tool_only_adapter() {
+        let unified = create_unified_parser_for_family("qwen3", &[]).expect("qwen3 unified");
+        assert_eq!(
+            unified.preserve_special_tokens(),
+            tool_only_value(),
+            "unified and tool-only must not report different decoding requirements"
+        );
+    }
+
+    #[test]
+    fn alias_matches_the_tool_only_adapter() {
+        let unified =
+            create_unified_parser_for_family("qwen3_coder", &[]).expect("qwen3_coder unified");
+        assert_eq!(
+            unified.preserve_special_tokens(),
+            tool_only_value(),
+            "the alias must agree with the canonical family and the tool-only adapter"
+        );
+    }
+}

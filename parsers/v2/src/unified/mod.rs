@@ -184,9 +184,16 @@ pub trait UnifiedParser: Send {
     /// `parse_into`/`finish` is what makes stream/batch parity (`I6`) structural
     /// instead of a property two code paths have to agree on.
     fn parse_complete(&mut self, output: &str) -> Result<Vec<UnifiedEvent>> {
-        let mut deltas = self.push(output)?;
-        deltas.append(&mut self.finish()?.events);
-        Ok(assemble(&deltas))
+        // Joined through `UnifiedParserOutput::append`, not a raw `Vec::append` on the
+        // event vectors: this is exactly the push/finish seam that rule exists for, and
+        // the crate should not violate its own documented merge semantics here. The
+        // assembled result is unchanged either way, since `assemble` performs the same
+        // fold — but the pre-fold event stream now agrees with every other spelling.
+        let mut acc = UnifiedParserOutput {
+            events: self.push(output)?,
+        };
+        acc.append(&mut self.finish()?);
+        Ok(assemble(&acc.events))
     }
 }
 
@@ -210,8 +217,9 @@ pub trait UnifiedParser: Send {
 ///   the new bytes may have merged into `events[n - 1]`. Use [`UnifiedParser::push`],
 ///   which returns exactly one advance's events, when that is the question.
 /// - **Append through the helpers, not `events.extend`.** `extend` bypasses the merge
-///   and yields a different event vector for identical bytes. Only [`Self::append`],
-///   which joins two independently-built buffers, is exempt.
+///   and yields a different event vector for identical bytes. [`Self::append`] is NOT an
+///   exception: it routes every event through these same helpers, so joining two
+///   independently-built buffers gives the same result as accumulating straight through.
 ///
 /// [`assemble`] performs the same fold, so a caller that coalesces here and one that
 /// folds afterwards agree on the assembled result either way.
@@ -221,14 +229,37 @@ pub struct UnifiedParserOutput {
     pub events: Vec<UnifiedParserEvent>,
 }
 
+impl crate::tool_calling::scan::EventSink for UnifiedParserOutput {
+    fn push_text(&mut self, text: &str) {
+        UnifiedParserOutput::push_text(self, text);
+    }
+
+    fn push_reasoning(&mut self, text: &str) {
+        UnifiedParserOutput::push_reasoning(self, text);
+    }
+
+    fn push_call(&mut self, call: ToolCallDelta) {
+        UnifiedParserOutput::push_call(self, call);
+    }
+}
+
 impl UnifiedParserOutput {
     /// Append another advance's updates, preserving order.
     ///
-    /// Concatenates WITHOUT coalescing across the seam: two independently-built buffers
-    /// keep their own boundaries. The merge rule applies to `push_text`/`push_reasoning`,
-    /// which add to one buffer.
+    /// Coalesces ACROSS the seam, matching the peer helper: routing every event through
+    /// `push_text`/`push_reasoning`/`push_call` means two buffers joined here produce the
+    /// same events as one buffer accumulated straight through. A plain `Vec::append` left
+    /// `Text("hello") + Text(" world")` as two events where the peer yields one, so the
+    /// same bytes described a different event stream depending on how the caller batched
+    /// them.
     pub fn append(&mut self, other: &mut Self) {
-        self.events.append(&mut other.events);
+        for event in std::mem::take(&mut other.events) {
+            match event {
+                UnifiedParserEvent::Text(t) => self.push_text(t),
+                UnifiedParserEvent::Reasoning(t) => self.push_reasoning(t),
+                UnifiedParserEvent::ToolCall(c) => self.push_call(c),
+            }
+        }
     }
 
     // --- Accumulation helpers, aligned with the peer traits in name and semantics.
@@ -422,10 +453,16 @@ pub(crate) struct ScannerUnified<E: InvokeEmitter> {
 }
 
 impl<E: InvokeEmitter + Send> UnifiedParser for ScannerUnified<E> {
-    // No `preserve_special_tokens` override here: the trait METHOD is the peer surface
-    // and belongs to this change, but whether a given family's markers ARE special
-    // tokens is family behaviour, exercised by the request-mode work. Overriding it
-    // without a test that can observe the difference would be an unmeasured claim.
+    /// Whether decoding must preserve special tokens, delegated to the shared grammar.
+    ///
+    /// NOT the trait default. Inheriting `false` here while the tool-only adapter over
+    /// this same scanner returned `true` meant two surfaces reported contradictory
+    /// decoding requirements for identical markup. The value now lives on the grammar and
+    /// both surfaces read it, so they cannot disagree.
+    fn preserve_special_tokens(&self) -> bool {
+        self.scanner.preserve_special_tokens()
+    }
+
     /// The trait default returns an empty string and leaves state untouched, which
     /// would tell a caller nothing was buffered while the scanner still held a partial
     /// marker, `in_block`, and a used `next_index`. A caller following the documented
@@ -436,17 +473,13 @@ impl<E: InvokeEmitter + Send> UnifiedParser for ScannerUnified<E> {
     }
 
     fn parse_into(&mut self, delta: &str, output: &mut UnifiedParserOutput) -> Result<()> {
-        // Through the helpers, NOT `events.extend`: the helpers coalesce into a trailing
-        // same-kind event and `extend` does not, so extending made the only shipped
-        // family disagree with the documented vendor contract for identical bytes.
-        for event in self.scanner.push_ordered(delta)? {
-            match event {
-                UnifiedParserEvent::Text(t) => output.push_text(t),
-                UnifiedParserEvent::Reasoning(t) => output.push_reasoning(t),
-                UnifiedParserEvent::ToolCall(c) => output.push_call(c),
-            }
-        }
-        Ok(())
+        // Straight into the caller's output, with no vector in between. Two reasons, and
+        // the first is a correctness one: an event written here is COMMITTED, so a later
+        // error in the same advance cannot retract it. Collecting into a local vector and
+        // copying at the end meant `?` dropped everything already emitted. It also drops
+        // the second allocation per advance. Coalescing is unchanged: the sink routes
+        // through these same `push_*` helpers.
+        self.scanner.push_ordered_into(delta, output)
     }
 
     fn finish(&mut self) -> Result<UnifiedParserOutput> {
@@ -484,15 +517,15 @@ static VENDOR_PARSERS: std::sync::LazyLock<
 ///
 /// # Startup-only
 ///
-/// Register during startup, BEFORE serving. Concurrent registration and parser
-/// construction is not supported and is not linearizable: the lookup copies the
-/// factory and releases the registry lock before calling it, so a construction
-/// already in flight can still build a parser that a concurrent `unregister` has
-/// just removed, and a lookup that observed no vendor can build the built-in after
-/// a concurrent `register` returned. Neither races memory — the registry itself is
-/// lock-guarded — but which implementation a request gets is undefined while the
-/// table is being mutated. A parser already constructed always keeps what it was
-/// built with, so a request in progress never changes implementation mid-stream.
+/// Register during startup, BEFORE serving. Every access is guarded by one `RwLock`,
+/// and a create linearizes at the moment it reads the table — so the outcome is always
+/// SOME well-defined selection, never undefined behaviour or a torn read. What is not
+/// guaranteed is ORDERING against an overlapping mutation: the lookup copies the factory
+/// and releases the lock before calling it, so a create that read the table first can
+/// finish building after a concurrent `unregister` returns. Registering at startup
+/// avoids having to reason about that window at all. A parser already constructed keeps
+/// what it was built with, so a request in progress never changes implementation
+/// mid-stream.
 pub fn register_unified_parser(
     family: &str,
     factory: UnifiedParserFactory,
@@ -524,9 +557,9 @@ pub fn register_unified_parser(
 /// reachable again.
 ///
 /// Accepts any alias of the family, matching [`register_unified_parser`], and
-/// inherits its STARTUP-ONLY restriction: unregistering while requests are being
-/// served is not linearizable, so a construction already in flight can still build
-/// the parser this call removes.
+/// inherits its STARTUP-ONLY guidance: a create that read the table before this call
+/// can still finish building the parser it removes, so the returned factory may be used
+/// once more after this returns.
 pub fn unregister_unified_parser(family: &str) -> Option<UnifiedParserFactory> {
     let key = canonical_unified_family(family).unwrap_or(family);
     VENDOR_PARSERS
@@ -605,9 +638,11 @@ macro_rules! unified_registry {
         /// Create the unified parser for a family.
         ///
         /// A vendor registration wins over the built-in of the same name — see
-        /// [`register_unified_parser`]. Vendor parsers are wrapped by the debug
-        /// wrapper on the same terms as built-ins, so switching to one does not
-        /// silently change what instrumentation reports.
+        /// [`register_unified_parser`]. Both branches return the parser directly:
+        /// there is no unified debug wrapper (the only `DebugToolParser` wraps the
+        /// separate tool-only trait). Selection is observable through the
+        /// `tracing::debug!` event emitted here, and it reports vendor and built-in
+        /// on the same terms.
         pub fn create_unified_parser_for_family(
             family: &str,
             tools: &[Tool],
@@ -776,5 +811,162 @@ mod tests {
                 UnifiedEvent::Text { text: "b".into() },
             ]
         );
+    }
+}
+
+#[cfg(test)]
+mod append_seam_tests {
+    use super::*;
+
+    /// The peer's regression: joining two buffers must yield the same events as
+    /// accumulating straight through, so the same bytes cannot describe a different
+    /// event stream depending on how the caller batched them.
+    /// The peer's exact seam regression: a multi-buffer join must produce the same
+    /// events as one buffer accumulated straight through, across two appends and both
+    /// text and reasoning runs.
+    #[test]
+    fn append_coalesces_adjacent_same_kind_events_across_the_seam() {
+        let mut acc = UnifiedParserOutput::default();
+        acc.push_text("hello");
+
+        let mut second = UnifiedParserOutput::default();
+        second.push_text(" world");
+        second.push_reasoning("think");
+        acc.append(&mut second);
+
+        let mut third = UnifiedParserOutput::default();
+        third.push_reasoning("ing");
+        third.push_text("!");
+        acc.append(&mut third);
+
+        assert_eq!(
+            acc.events,
+            vec![
+                UnifiedParserEvent::Text("hello world".to_string()),
+                UnifiedParserEvent::Reasoning("thinking".to_string()),
+                UnifiedParserEvent::Text("!".to_string()),
+            ],
+            "same-kind runs must merge across every seam, different kinds must not"
+        );
+        assert!(
+            second.events.is_empty(),
+            "append must consume the source events"
+        );
+        assert!(
+            third.events.is_empty(),
+            "append must consume the source events"
+        );
+    }
+
+    /// Different kinds must NOT merge, and calls never merge with anything.
+    #[test]
+    fn append_keeps_distinct_kinds_separate() {
+        let mut a = UnifiedParserOutput::default();
+        a.push_text("visible");
+        let mut b = UnifiedParserOutput::default();
+        b.push_reasoning("thought");
+        a.append(&mut b);
+
+        assert_eq!(
+            a.events.len(),
+            2,
+            "text and reasoning must stay distinct: {:?}",
+            a.events
+        );
+    }
+}
+
+/// The recovery contract through the PUBLIC surface a caller actually uses:
+/// `UnifiedParser::parse_into` with a caller-owned `UnifiedParserOutput`.
+///
+/// The scanner-level tests in `scan::recovery_tests` prove drain-after-success. They do
+/// NOT prove this: they drive a `Vec` sink directly, so reverting `parse_into` to collect
+/// into a local vector and copy at the end would leave them green while the caller's
+/// committed events were silently dropped by `?`. These tests are that missing control.
+#[cfg(test)]
+mod parse_into_recovery_tests {
+    use super::*;
+    use crate::tool_calling::scan::test_support::{FailOnBoom, failing_scanner};
+
+    fn parser() -> ScannerUnified<FailOnBoom> {
+        ScannerUnified {
+            scanner: failing_scanner(),
+        }
+    }
+
+    fn call(index: usize) -> UnifiedParserEvent {
+        UnifiedParserEvent::ToolCall(ToolCallDelta {
+            tool_index: index,
+            name: Some("ok".to_string()),
+            arguments: "{}".to_string(),
+        })
+    }
+
+    /// A failure on the FIRST wrapped invoke: text committed before it survives.
+    #[test]
+    fn first_wrapped_failure_keeps_committed_text_and_recovers_the_invoke() {
+        let mut p = parser();
+        let mut out = UnifiedParserOutput::default();
+        let r = p.parse_into(
+            "prefix<tool_call><function=boom></function></tool_call>suffix",
+            &mut out,
+        );
+        assert!(r.is_err(), "the injected emitter must surface its error");
+        assert_eq!(
+            out.events,
+            vec![UnifiedParserEvent::Text("prefix".to_string())],
+            "text committed before the failure belongs to the caller"
+        );
+        assert_eq!(p.reset(), "<function=boom></function></tool_call>suffix");
+    }
+
+    /// A failure on a LATER wrapped invoke: the call that already succeeded survives too.
+    /// This is the case that a local-vector implementation loses entirely.
+    #[test]
+    fn later_wrapped_failure_keeps_the_call_that_already_succeeded() {
+        let mut p = parser();
+        let mut out = UnifiedParserOutput::default();
+        let r = p.parse_into(
+            "prefix<tool_call><function=ok></function><function=boom></function></tool_call>suffix",
+            &mut out,
+        );
+        assert!(r.is_err(), "the injected emitter must surface its error");
+        assert_eq!(
+            out.events,
+            vec![UnifiedParserEvent::Text("prefix".to_string()), call(0)],
+            "an event already committed cannot be retracted by a later error"
+        );
+        assert_eq!(p.reset(), "<function=boom></function></tool_call>suffix");
+    }
+
+    #[test]
+    fn first_bare_failure_keeps_committed_text_and_recovers_the_invoke() {
+        let mut p = parser();
+        let mut out = UnifiedParserOutput::default();
+        let r = p.parse_into("prefix<function=boom></function>suffix", &mut out);
+        assert!(r.is_err(), "the injected emitter must surface its error");
+        assert_eq!(
+            out.events,
+            vec![UnifiedParserEvent::Text("prefix".to_string())],
+            "text committed before the failure belongs to the caller"
+        );
+        assert_eq!(p.reset(), "<function=boom></function>suffix");
+    }
+
+    #[test]
+    fn later_bare_failure_keeps_the_call_that_already_succeeded() {
+        let mut p = parser();
+        let mut out = UnifiedParserOutput::default();
+        let r = p.parse_into(
+            "prefix<function=ok></function><function=boom></function>suffix",
+            &mut out,
+        );
+        assert!(r.is_err(), "the injected emitter must surface its error");
+        assert_eq!(
+            out.events,
+            vec![UnifiedParserEvent::Text("prefix".to_string()), call(0)],
+            "an event already committed cannot be retracted by a later error"
+        );
+        assert_eq!(p.reset(), "<function=boom></function>suffix");
     }
 }
