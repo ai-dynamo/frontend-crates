@@ -773,10 +773,12 @@ def test_touch_outside_a_host_does_not_arm_a_pointerdownless_activation(driver):
     Pointer provenance recorded only the KIND of pointer, in one document-wide
     variable. Only a tooltip host's own click consumed it, so a tap on a header —
     or any element that is not a host — left `touch` armed indefinitely. The next
-    genuine MOUSE click on a host then read that stale `touch`, pinned, and
-    `preventDefault()`ed the parser-source link the mouse user actually asked for.
-    Provenance now also records WHERE the pointer went down and is only honoured
-    when the gesture started inside the same host.
+    activation on a host that carries NO pointerdown of its own — keyboard Enter, a
+    synthetic click — then read that stale `touch`, pinned, and `preventDefault()`ed
+    the parser-source link the user actually asked for. A genuine mouse click is NOT
+    the vulnerable case: it brings its own mouse `pointerdown`, which overwrites the
+    stale value before the click arrives. Provenance now also records WHERE the
+    pointer went down and is only honoured when the gesture started in the same host.
     """
     drv = driver
     drv.execute_script(
