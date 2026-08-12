@@ -338,9 +338,19 @@ impl<'a> IntoIterator for &'a UnifiedParserOutput {
 
 impl FromIterator<UnifiedParserEvent> for UnifiedParserOutput {
     fn from_iter<T: IntoIterator<Item = UnifiedParserEvent>>(iter: T) -> Self {
-        Self {
-            events: iter.into_iter().collect(),
+        // Through the helpers, like every other way of building this type. A plain
+        // `collect()` bypassed the merge, so `collect()`ing two adjacent `Text` events
+        // produced a different event stream than pushing the same bytes — the same
+        // defect `append` had, one constructor over.
+        let mut out = Self::default();
+        for event in iter {
+            match event {
+                UnifiedParserEvent::Text(t) => out.push_text(t),
+                UnifiedParserEvent::Reasoning(t) => out.push_reasoning(t),
+                UnifiedParserEvent::ToolCall(c) => out.push_call(c),
+            }
         }
+        out
     }
 }
 
@@ -483,9 +493,11 @@ impl<E: InvokeEmitter + Send> UnifiedParser for ScannerUnified<E> {
     }
 
     fn finish(&mut self) -> Result<UnifiedParserOutput> {
-        Ok(UnifiedParserOutput {
-            events: self.scanner.finish_ordered()?,
-        })
+        // Direct into the output, matching `parse_into`: no intermediate vector, and the
+        // events reach the caller through the same coalescing helpers.
+        let mut out = UnifiedParserOutput::default();
+        self.scanner.finish_ordered_into(&mut out)?;
+        Ok(out)
     }
 }
 
@@ -968,5 +980,66 @@ mod parse_into_recovery_tests {
             "an event already committed cannot be retracted by a later error"
         );
         assert_eq!(p.reset(), "<function=boom></function>suffix");
+    }
+}
+
+/// Every way of BUILDING this type must agree, not just the push helpers.
+///
+/// `append` was fixed to coalesce and `FromIterator` was not, so `collect()` still
+/// produced a different event stream than pushing the same bytes. These pin every
+/// constructor to the one merge rule so the next one cannot drift alone.
+#[cfg(test)]
+mod construction_parity_tests {
+    use super::*;
+
+    fn adjacent() -> Vec<UnifiedParserEvent> {
+        vec![
+            UnifiedParserEvent::Text("hel".to_string()),
+            UnifiedParserEvent::Text("lo".to_string()),
+            UnifiedParserEvent::Reasoning("thin".to_string()),
+            UnifiedParserEvent::Reasoning("king".to_string()),
+        ]
+    }
+
+    fn pushed() -> UnifiedParserOutput {
+        let mut out = UnifiedParserOutput::default();
+        for e in adjacent() {
+            match e {
+                UnifiedParserEvent::Text(t) => out.push_text(t),
+                UnifiedParserEvent::Reasoning(t) => out.push_reasoning(t),
+                UnifiedParserEvent::ToolCall(c) => out.push_call(c),
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn collect_agrees_with_pushing_the_same_events() {
+        let collected: UnifiedParserOutput = adjacent().into_iter().collect();
+        assert_eq!(
+            collected,
+            pushed(),
+            "`collect()` must apply the same merge rule as the push helpers"
+        );
+        assert_eq!(
+            collected.events,
+            vec![
+                UnifiedParserEvent::Text("hello".to_string()),
+                UnifiedParserEvent::Reasoning("thinking".to_string()),
+            ],
+            "adjacent same-kind events must merge when collected"
+        );
+    }
+
+    #[test]
+    fn append_agrees_with_pushing_the_same_events() {
+        let mut joined = UnifiedParserOutput::default();
+        let mut src: UnifiedParserOutput = adjacent().into_iter().collect();
+        joined.append(&mut src);
+        assert_eq!(
+            joined,
+            pushed(),
+            "`append` must apply the same merge rule as the push helpers"
+        );
     }
 }
