@@ -36,13 +36,13 @@ pub fn deepseek_formatter_for(
             "Detected DeepSeek V4 model, using native Rust formatter",
         );
         return Some(PromptFormatter::OAI(Arc::new(
-            super::deepseek::v4::DeepSeekV4Formatter::new_thinking(),
+            super::deepseek::v4::DeepSeekV4Formatter::new_chat(),
         )));
     }
     if is_deepseek_v3_2_non_exp(model_type_lower, display_name_lower) {
         tracing::info!("Detected DeepSeek V3.2 model (non-Exp), using native Rust formatter");
         return Some(PromptFormatter::OAI(Arc::new(
-            super::deepseek::v32::DeepSeekV32Formatter::new_thinking(),
+            super::deepseek::v32::DeepSeekV32Formatter::new_chat(),
         )));
     }
     None
@@ -262,7 +262,55 @@ fn is_deepseek_v4_name(name_lower: &str) -> bool {
 
 #[cfg(test)]
 mod detection_tests {
-    use super::{is_deepseek_v3_2_non_exp, is_deepseek_v4, is_deepseek_v4_name, is_kimi_k3};
+    use super::{
+        deepseek_formatter_for, is_deepseek_v3_2_non_exp, is_deepseek_v4, is_deepseek_v4_name,
+        is_kimi_k3,
+    };
+    use serde_json::{Value as JsonValue, json};
+
+    struct MockRequest {
+        model: String,
+        messages: JsonValue,
+        chat_template_args: Option<std::collections::HashMap<String, JsonValue>>,
+    }
+
+    impl MockRequest {
+        fn new(model: impl Into<String>, messages: JsonValue) -> Self {
+            Self {
+                model: model.into(),
+                messages,
+                chat_template_args: None,
+            }
+        }
+
+        fn with_chat_template_args(
+            mut self,
+            args: std::collections::HashMap<String, JsonValue>,
+        ) -> Self {
+            self.chat_template_args = Some(args);
+            self
+        }
+    }
+
+    impl crate::OAIChatLikeRequest for MockRequest {
+        fn model(&self) -> String {
+            self.model.clone()
+        }
+
+        fn messages(&self) -> minijinja::value::Value {
+            minijinja::value::Value::from_serialize(&self.messages)
+        }
+
+        fn should_add_generation_prompt(&self) -> bool {
+            true
+        }
+
+        fn chat_template_args(
+            &self,
+        ) -> Option<&std::collections::HashMap<String, serde_json::Value>> {
+            self.chat_template_args.as_ref()
+        }
+    }
 
     #[test]
     fn kimi_k3_detection_prefers_config_model_type() {
@@ -350,6 +398,71 @@ mod detection_tests {
         let empty: Option<String> = None;
         assert!(is_deepseek_v4(&empty, "deepseek-v4-flash"));
         assert!(!is_deepseek_v4(&empty, "dsflash"));
+    }
+
+    #[test]
+    fn detected_deepseek_formatters_default_to_chat_mode() {
+        for (model_type, display_name) in [
+            (Some("deepseek_v4".to_string()), "served-v4"),
+            (Some("deepseek_v32".to_string()), "served-v32"),
+            (None, "deepseek-v4-flash"),
+            (None, "deepseek-v3.2-pro"),
+        ] {
+            let formatter = deepseek_formatter_for(&model_type, display_name)
+                .unwrap_or_else(|| panic!("expected formatter for {model_type:?} {display_name}"));
+            let crate::PromptFormatter::OAI(formatter) = formatter;
+            let req = MockRequest::new(
+                display_name,
+                json!([
+                    {"role": "system", "content": "You are helpful."},
+                    {"role": "user", "content": "Hello!"}
+                ]),
+            );
+
+            let rendered = formatter.render(&req).unwrap();
+            assert!(
+                rendered.ends_with(&format!(
+                    "{}{}",
+                    crate::deepseek::common::tokens::ASSISTANT_START,
+                    crate::deepseek::common::tokens::THINKING_END
+                )),
+                "detected formatter should default to chat mode for {model_type:?} {display_name}, got:\n{rendered}"
+            );
+            assert!(
+                !rendered.ends_with(&format!(
+                    "{}{}",
+                    crate::deepseek::common::tokens::ASSISTANT_START,
+                    crate::deepseek::common::tokens::THINKING_START
+                )),
+                "detected formatter should not default to thinking mode"
+            );
+        }
+    }
+
+    #[test]
+    fn detected_deepseek_formatters_still_honor_explicit_thinking_true() {
+        let args = std::collections::HashMap::from([("thinking".to_string(), json!(true))]);
+        for (model_type, display_name) in [
+            (Some("deepseek_v4".to_string()), "served-v4"),
+            (Some("deepseek_v32".to_string()), "served-v32"),
+        ] {
+            let formatter = deepseek_formatter_for(&model_type, display_name)
+                .unwrap_or_else(|| panic!("expected formatter for {model_type:?} {display_name}"));
+            let crate::PromptFormatter::OAI(formatter) = formatter;
+            let req =
+                MockRequest::new(display_name, json!([{"role": "user", "content": "Hello!"}]))
+                    .with_chat_template_args(args.clone());
+
+            let rendered = formatter.render(&req).unwrap();
+            assert!(
+                rendered.ends_with(&format!(
+                    "{}{}",
+                    crate::deepseek::common::tokens::ASSISTANT_START,
+                    crate::deepseek::common::tokens::THINKING_START
+                )),
+                "thinking=true should still opt into thinking mode for {model_type:?} {display_name}, got:\n{rendered}"
+            );
+        }
     }
 
     #[test]
