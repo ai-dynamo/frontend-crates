@@ -23,7 +23,8 @@ use std::path::PathBuf;
 
 use dynamo_parsers::{ReasoningParser, ReasoningParserType};
 use dynamo_parsers_v2::{
-    Tool, assemble, create_tool_parser_for_family, create_unified_parser_for_family,
+    Tool, UnifiedParserExt, assemble, create_tool_parser_for_family,
+    create_unified_parser_for_family,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};

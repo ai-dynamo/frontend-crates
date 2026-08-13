@@ -26,7 +26,7 @@ pub use tool_calling::{CalledFunctionStream, ToolCallResponseChunk, ToolCallType
 // One state machine per stream owning reasoning + content + tool calls, emitting
 // ONE ordered event stream (see `unified`).
 pub use unified::{
-    REGISTERED_UNIFIED_FAMILIES, UnifiedEvent, UnifiedParser, UnifiedParserEvent,
+    REGISTERED_UNIFIED_FAMILIES, UnifiedEvent, UnifiedParser, UnifiedParserEvent, UnifiedParserExt,
     UnifiedParserFactory, UnifiedParserOutput, assemble, builtin_unified_families,
     canonical_unified_family, create_unified_parser_for_family, register_unified_parser,
     unregister_unified_parser, vendor_unified_families,

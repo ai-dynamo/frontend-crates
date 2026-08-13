@@ -31,8 +31,8 @@
 //!
 //! # Shape
 //!
-//! [`UnifiedParserEvent`] is the streaming vocabulary — what one `push` produced, in
-//! order. [`UnifiedEvent`] is the assembled view: adjacent same-kind deltas
+//! [`UnifiedParserEvent`] is the streaming vocabulary — what one parser advance
+//! produced, in order. [`UnifiedEvent`] is the assembled view: adjacent same-kind deltas
 //! coalesced and per-call argument fragments joined into one typed object
 //! (`I8`). [`assemble`] is the single implementation of that fold, so callers
 //! and conformance harnesses never reimplement it and drift.
@@ -92,9 +92,10 @@ pub enum UnifiedEvent {
 
 /// A parser that owns reasoning + content + tool calls for one stream.
 ///
-/// Streaming-first, like [`crate::ToolParser`]: `push` per decoded delta,
-/// `finish` once at end of stream. One instance parses exactly one choice of
-/// one request, which is what gives per-stream isolation (`I4`) by construction.
+/// Streaming-first, like [`crate::ToolParser`]: [`Self::parse_into`] per decoded
+/// delta, [`Self::finish`] once at end of stream. One instance parses exactly one
+/// choice of one request, which is what gives per-stream isolation (`I4`) by
+/// construction.
 pub trait UnifiedParser: Send {
     /// Initialize parser state from prompt token IDs before output deltas arrive.
     ///
@@ -108,17 +109,17 @@ pub trait UnifiedParser: Send {
 
     /// Feed one decoded text delta, appending committed events into `output`.
     ///
-    /// THE required method, matching the peer traits. Everything else that advances
-    /// the parser — [`UnifiedParser::push`], [`UnifiedParser::parse_complete`] — is
-    /// defined in terms of this one, so there is a single advance implementation per
-    /// family and no second path to drift.
+    /// THE required method, matching the peer traits. It is the only method that
+    /// advances the parser; [`UnifiedParserExt::push`] and
+    /// [`UnifiedParserExt::parse_complete`] are non-overridable conveniences defined
+    /// in terms of it, so every family has one advance implementation.
     ///
     /// Error contract, aligned with the peer traits: on `Err`, whatever was already
     /// appended to `output` stays committed and the parser's uncommitted buffer is
     /// intact, so the caller can recover it with [`UnifiedParser::reset`].
     ///
     /// This guarantee is specific to `parse_into`, because the caller owns `output` and
-    /// can still read it after an error. [`UnifiedParser::push`] owns its buffer and
+    /// can still read it after an error. [`UnifiedParserExt::push`] owns its buffer and
     /// returns `Result<Vec<_>>`, which has nowhere to carry partial output — a parser
     /// that may commit events and THEN fail must be driven through `parse_into`.
     fn parse_into(&mut self, delta: &str, output: &mut UnifiedParserOutput) -> Result<()>;
@@ -134,26 +135,6 @@ pub trait UnifiedParser: Send {
     /// would silently drop the tail of every stream, and that is not a failure worth
     /// inheriting for symmetry's sake.
     fn finish(&mut self) -> Result<UnifiedParserOutput>;
-
-    /// Feed one decoded text delta; returns the events it committed, in order.
-    ///
-    /// Additive convenience over [`UnifiedParser::parse_into`] — allocates a fresh
-    /// vector per advance, which is why a serving loop prefers `parse_into`. The
-    /// conformance corpus asserts against this spelling.
-    fn push(&mut self, chunk: &str) -> Result<Vec<UnifiedParserEvent>> {
-        let mut out = UnifiedParserOutput::default();
-        match self.parse_into(chunk, &mut out) {
-            Ok(()) => Ok(out.events),
-            // On `Err` the committed events are UNRECOVERABLE through this spelling: the
-            // buffer is owned here, and `Result<Vec<_>>` has nowhere to carry it. The
-            // stay-committed guarantee therefore belongs to `parse_into`, whose buffer the
-            // CALLER owns and can still read after an error. Said plainly rather than left
-            // implied, because the trait doc and `CUSTOM_PARSERS.md` previously stated the
-            // guarantee without qualifying which spelling honours it — and a vendor doing
-            // exactly what those docs describe would have silently lost output here.
-            Err(e) => Err(e),
-        }
-    }
 
     /// Return the parser to a FRESH-STREAM state and hand back any unconsumed text.
     ///
@@ -177,25 +158,38 @@ pub trait UnifiedParser: Send {
     fn tool_call_id(&self, _tool_index: usize) -> Option<&str> {
         None
     }
+}
 
-    /// Parse complete output through the incremental lifecycle, then assemble.
+/// Allocation conveniences over the required [`UnifiedParser`] lifecycle.
+///
+/// These methods live in a blanket extension trait so parser implementations cannot
+/// override them and create a second advance path. Import this trait to call them.
+pub trait UnifiedParserExt: UnifiedParser {
+    /// Feed one decoded text delta; returns the events it committed, in order.
     ///
-    /// Additive: the peer traits have no batch entry point. Routing batch through
-    /// `parse_into`/`finish` is what makes stream/batch parity (`I6`) structural
-    /// instead of a property two code paths have to agree on.
-    fn parse_complete(&mut self, output: &str) -> Result<Vec<UnifiedEvent>> {
-        // Joined through `UnifiedParserOutput::append`, not a raw `Vec::append` on the
-        // event vectors: this is exactly the push/finish seam that rule exists for, and
-        // the crate should not violate its own documented merge semantics here. The
-        // assembled result is unchanged either way, since `assemble` performs the same
-        // fold — but the pre-fold event stream now agrees with every other spelling.
-        let mut acc = UnifiedParserOutput {
-            events: self.push(output)?,
-        };
-        acc.append(&mut self.finish()?);
-        Ok(assemble(&acc.events))
+    /// This allocates a fresh output per advance, which is why a serving loop prefers
+    /// [`UnifiedParser::parse_into`]. On `Err`, committed events in that local output
+    /// cannot be recovered through `Result<Vec<_>>`; use `parse_into` when partial
+    /// committed output must survive an error.
+    fn push(&mut self, chunk: &str) -> Result<Vec<UnifiedParserEvent>> {
+        let mut out = UnifiedParserOutput::default();
+        self.parse_into(chunk, &mut out)?;
+        Ok(out.events)
+    }
+
+    /// Parse complete output through `parse_into` + `finish`, then assemble.
+    ///
+    /// The fixed lifecycle makes stream/batch parity (`I6`) structural instead of a
+    /// property two independently overridable paths have to agree on.
+    fn parse_complete(&mut self, text: &str) -> Result<Vec<UnifiedEvent>> {
+        let mut out = UnifiedParserOutput::default();
+        self.parse_into(text, &mut out)?;
+        out.append(&mut self.finish()?);
+        Ok(assemble(&out.events))
     }
 }
+
+impl<T: UnifiedParser + ?Sized> UnifiedParserExt for T {}
 
 /// Ordered updates committed by one parser advance.
 ///
@@ -214,7 +208,7 @@ pub trait UnifiedParser: Send {
 ///
 /// - **Do not index a "what did this advance produce" window.** A watermark loop —
 ///   record `len()`, advance, read `events[n..]` — can legally observe NOTHING, because
-///   the new bytes may have merged into `events[n - 1]`. Use [`UnifiedParser::push`],
+///   the new bytes may have merged into `events[n - 1]`. Use [`UnifiedParserExt::push`],
 ///   which returns exactly one advance's events, when that is the question.
 /// - **Append through the helpers, not `events.extend`.** `extend` bypasses the merge
 ///   and yields a different event vector for identical bytes. [`Self::append`] is NOT an

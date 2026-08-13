@@ -37,7 +37,8 @@ use std::path::{Path, PathBuf};
 
 use dynamo_parsers::{ReasoningParser, ReasoningParserType};
 use dynamo_parsers_v2::{
-    Tool, UnifiedEvent, assemble, create_tool_parser_for_family, create_unified_parser_for_family,
+    Tool, UnifiedEvent, UnifiedParserExt, assemble, create_tool_parser_for_family,
+    create_unified_parser_for_family,
 };
 use serde_json::{Value, json};
 

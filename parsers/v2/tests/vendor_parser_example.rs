@@ -11,7 +11,9 @@
 //! Keep this file and the code blocks in `CUSTOM_PARSERS.md` in step.
 
 use anyhow::Result;
-use dynamo_parsers_v2::{Tool, UnifiedParser, UnifiedParserEvent, UnifiedParserOutput};
+use dynamo_parsers_v2::{
+    Tool, UnifiedEvent, UnifiedParser, UnifiedParserEvent, UnifiedParserExt, UnifiedParserOutput,
+};
 
 /// The smallest complete vendor parser: one required method plus the flush.
 #[derive(Default)]
@@ -63,6 +65,43 @@ impl Drop for Restore {
 
 fn acme_factory(_tools: &[Tool]) -> Result<Box<dyn UnifiedParser>> {
     Ok(Box::new(AcmeParser::default()))
+}
+
+struct ConflictingPushParser;
+
+impl UnifiedParser for ConflictingPushParser {
+    fn parse_into(&mut self, _delta: &str, output: &mut UnifiedParserOutput) -> Result<()> {
+        output.push_text("A");
+        Ok(())
+    }
+
+    fn finish(&mut self) -> Result<UnifiedParserOutput> {
+        Ok(UnifiedParserOutput::default())
+    }
+}
+
+impl ConflictingPushParser {
+    fn push(&mut self, _chunk: &str) -> Result<Vec<UnifiedParserEvent>> {
+        Ok(vec![UnifiedParserEvent::Text("B".to_string())])
+    }
+}
+
+#[test]
+fn parse_complete_cannot_bypass_the_required_advance_method() {
+    let mut concrete = ConflictingPushParser;
+    assert_eq!(
+        concrete.push("ignored").unwrap(),
+        vec![UnifiedParserEvent::Text("B".to_string())]
+    );
+
+    let mut parser: Box<dyn UnifiedParser> = Box::new(ConflictingPushParser);
+
+    assert_eq!(
+        parser.parse_complete("ignored").unwrap(),
+        vec![UnifiedEvent::Text {
+            text: "A".to_string()
+        }]
+    );
 }
 
 /// A vendor registers a NEW family and it is selected by name.

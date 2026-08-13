@@ -55,7 +55,7 @@ pub(crate) fn qwen3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::unified::{UnifiedEvent, assemble};
+    use crate::unified::{UnifiedEvent, UnifiedParserExt, assemble};
 
     fn weather_tools() -> Vec<Tool> {
         vec![Tool {

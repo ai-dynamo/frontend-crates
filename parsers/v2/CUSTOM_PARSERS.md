@@ -10,7 +10,7 @@ One method is required. `finish` is required too, because a parser that forgets 
 
 ```rust
 use dynamo_parsers_v2::{
-    Tool, UnifiedParser, UnifiedParserEvent, UnifiedParserOutput,
+    Tool, UnifiedParser, UnifiedParserEvent, UnifiedParserExt, UnifiedParserOutput,
 };
 use anyhow::Result;
 
@@ -58,6 +58,8 @@ Know its limit: the test does not COMPILE this Markdown block, and it compares o
 
 `UnifiedParserOutput` gives you `push_text`, `push_reasoning` and `push_call`. The first two coalesce: appending text onto a trailing text event extends it rather than adding a second one.
 
+The required lifecycle is `initialize` → `parse_into` → `finish`, with `reset` for recovery. `push` and `parse_complete` come from the blanket `UnifiedParserExt` trait: import it when you want those allocation conveniences. They cannot be overridden through `impl UnifiedParser`, so `parse_complete` always runs the same `parse_into` + `finish` path as streaming.
+
 ## 2. Register it
 
 ```rust
@@ -97,7 +99,7 @@ These are the responsibilities a unified parser carries, and the reasons they ex
 | **Split-invariance** | The same bytes must produce the same ASSEMBLED output regardless of where the transport split them. Test every split point around your markers, not just a few. Raw event boundaries may legitimately differ between splits — one chunking can commit `Text("alpha ")` + `Text("rest")` where another commits `Text("alpha rest")` — which is why the check is `assembled()`, not the event vector. |
 | **Never leak your own markup** | Bytes you consumed as structure must not reappear in visible text. |
 | **Arguments keep their meaning and order** | Do not drop, duplicate, or corrupt argument values, and preserve the model's key order where the family contract depends on it. If you emit incremental fragments, the fragments you chose must concatenate into the intended arguments JSON. Verbatim BYTES are only required where the model already emits API-shaped JSON — the shipped XML families deliberately schema-type and re-serialize, then restore source key order. |
-| **Recover, do not panic** | Malformed or truncated output is normal. Emit what you can and drop what you cannot; returning an error should be reserved for genuinely unusable input. When driven through `parse_into`, whatever you already appended to the caller's output stays committed on `Err`; `push` owns its buffer and returns `Result<Vec<_>>`, which has nowhere to carry partial output, so it cannot honour that guarantee. |
+| **Recover, do not panic** | Malformed or truncated output is normal. Emit what you can and drop what you cannot; returning an error should be reserved for genuinely unusable input. When driven through `parse_into`, whatever you already appended to the caller's output stays committed on `Err`; the `UnifiedParserExt::push` helper owns its buffer and returns `Result<Vec<_>>`, which has nowhere to carry partial output, so it cannot honour that guarantee. |
 | **Flush on `finish`** | Do not silently drop the tail of a stream. What to DO with an unterminated channel is your family's policy — the shipped Qwen parser promotes open reasoning rather than leaking it as text, but a grammar with no reasoning channel, or one that treats an unterminated opener as visible recovery text, is making a different and equally valid call. State yours. |
 | **Override `reset` if you buffer** | The default returns an empty string and clears nothing. A parser that holds bytes back MUST override it, or a caller following the documented recovery path after a `parse_into` error resumes on your stale buffer and mis-numbers tool indices. Reset every field that carries stream position, tool index included — the text you hand back is a NEW stream. |
 
@@ -125,9 +127,9 @@ A family with no cases would otherwise report as covered while nothing measured 
 
 ## 7. Alignment with peer traits
 
-This trait is aligned with the peer streaming-parser traits other serving engines expose: `parse_into` is the required method, `finish` returns an output buffer, the event type carries the same variants in the same order, and `initialize` takes prompt token IDs. A parser written against a peer trait ports here mostly by renaming.
+The required `UnifiedParser` lifecycle is aligned with the peer streaming-parser traits other serving engines expose: `parse_into` is the required advance method, `finish` returns an output buffer, the event type carries the same variants in the same order, and `initialize` takes prompt token IDs. A parser written against a peer trait ports here mostly by renaming.
 
 Two caveats worth knowing before you plan on a literal drop-in:
 
 - Rust is nominally typed, so an identically-shaped type in another crate is still a different type. Porting is a mechanical translation, not a recompile.
-- This crate adds surface the peer traits do not have — `parse_complete` and the assembled `UnifiedEvent` view. Both are additive, so a peer-shaped caller never sees them, and a peer-shaped parser that does not provide them falls back to their defaults.
+- This crate adds surface the peer traits do not have — the blanket `UnifiedParserExt` helpers (`push` and `parse_complete`) and the assembled `UnifiedEvent` view. They are additive conveniences, not vendor-overridable lifecycle methods.

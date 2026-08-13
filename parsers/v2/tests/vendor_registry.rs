@@ -18,7 +18,9 @@
 //! assertion must not leave a global override installed for the tests that follow.
 
 use anyhow::Result;
-use dynamo_parsers_v2::{Tool, UnifiedParser, UnifiedParserEvent, UnifiedParserOutput};
+use dynamo_parsers_v2::{
+    Tool, UnifiedParser, UnifiedParserEvent, UnifiedParserExt, UnifiedParserOutput,
+};
 
 static SERIALIZE: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
