@@ -418,6 +418,14 @@ pub enum ParserConfig {
     /// `<|message_model|>` token also opens thinking, text, image, and audio blocks,
     /// which the reasoning stage routes before the tool jail sees them.
     Inkling(InklingParserConfig),
+    /// Muse Glimmer routes tool calls through `to=<fn>` channel messages whose
+    /// bodies are ATEM XML with fixed markers; nothing is user-tunable.
+    ///
+    /// Must be paired with the `muse_glimmer` reasoning parser: the shared
+    /// `<|start|>...<|message|>` framing also opens reasoning and answer
+    /// channels, which the reasoning stage routes before the tool jail sees
+    /// them (only tool channels stay `<|start|>`-framed).
+    MuseGlimmer,
 }
 
 impl ParserConfig {
@@ -477,6 +485,19 @@ impl ParserConfig {
                     crate::tool_calling::inkling::INVOKE.to_string(),
                 ]
             }
+            ParserConfig::MuseGlimmer => {
+                // `<|start|>` frames every channel, but the muse_glimmer
+                // reasoning parser consumes reasoning/answer channels first,
+                // so only tool channels reach the jail `<|start|>`-framed
+                // (same invariant as Inkling's `<|message_model|>`). The ATEM
+                // markers are defense in depth for spans that arrive without
+                // channel framing.
+                vec![
+                    crate::tool_calling::atem::START.to_string(),
+                    crate::tool_calling::atem::FUNCTION_CALLS_OPEN.to_string(),
+                    crate::tool_calling::atem::INVOKE_OPEN_PREFIX.to_string(),
+                ]
+            }
         }
     }
 
@@ -506,6 +527,14 @@ impl ParserConfig {
             ParserConfig::Gemma4 => vec![crate::tool_calling::gemma4::TOOL_CALL_END.to_string()],
             ParserConfig::Inkling(_) => {
                 vec![crate::tool_calling::inkling::END_MESSAGE.to_string()]
+            }
+            ParserConfig::MuseGlimmer => {
+                // A routed message ends at either terminator; `<|eom|>` chains
+                // parallel calls, `<|eot|>` ends the turn.
+                vec![
+                    crate::tool_calling::atem::EOM.to_string(),
+                    crate::tool_calling::atem::EOT.to_string(),
+                ]
             }
         }
     }
@@ -907,6 +936,42 @@ impl ToolCallConfig {
                     reasoning_end: Some("<|end_message|>".to_string()),
                 },
             )),
+        }
+    }
+
+    /// Muse Glimmer ATEM tool calls, routed as `to=<fn>` channel messages:
+    ///
+    /// ```text
+    /// <|start|>assistant to=get_weather<|message|><atem:function_calls>
+    /// <atem:invoke name="get_weather">
+    /// <atem:parameter name="city">Paris</atem:parameter>
+    /// </atem:invoke>
+    /// </atem:function_calls><|eom|>
+    /// ```
+    ///
+    /// Grammar: the `response_template` spec in the model's
+    /// `tokenizer_config.json`; see [`crate::tool_calling::atem`]. Must be
+    /// paired with the `muse_glimmer` reasoning parser; see
+    /// [`ParserConfig::MuseGlimmer`].
+    pub fn muse_glimmer() -> Self {
+        // No structural-tag builder: both engines decode Muse Glimmer
+        // natively even for named/required tool choices (vLLM sets
+        // `supports_required_and_named = False`, SGLang's detector reports
+        // `supports_structural_tag() -> False`), because a JSON constraint
+        // makes the model write JSON inside the tool channel where no
+        // `<atem:invoke>` exists to parse.
+        //
+        // Known follow-up: dynamo's forced-choice path (`tool_choice`
+        // required/named) falls back to its generic JSON-schema constraint
+        // when this is `None`, which corrupts Muse generation the same way
+        // (measured live: every forced-choice probe record fails while every
+        // unconstrained record passes). Closing that needs either a
+        // KimiK3-style native ATEM structural-tag builder here, or a
+        // native-forced-format capability on the dynamo side. Tracked in the
+        // PR description; out of scope for the parser add.
+        Self {
+            parser_config: ParserConfig::MuseGlimmer,
+            structural_tag_builder: None,
         }
     }
 }
