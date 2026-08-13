@@ -44,8 +44,7 @@ window.matchMedia = function (q) {
 """
 
 
-@pytest.fixture(scope="module")
-def driver(rendered_page):
+def _chrome(rendered_page, force_hover):
     opts = Options()
     for a in ("--headless=new", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--window-size=1600,1200"):
         opts.add_argument(a)
@@ -53,11 +52,165 @@ def driver(rendered_page):
         d = webdriver.Chrome(options=opts)
     except Exception as exc:  # noqa: BLE001 — environment without a usable driver
         pytest.skip(f"could not start Chrome webdriver: {exc}")
-    d.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": _FORCE_HOVER_JS})
+    if force_hover:
+        d.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": _FORCE_HOVER_JS})
     d.get(f"file://{rendered_page}")
     d.implicitly_wait(2)
+    return d
+
+
+@pytest.fixture(scope="module")
+def driver(rendered_page):
+    d = _chrome(rendered_page, force_hover=True)
     yield d
     d.quit()
+
+
+@pytest.fixture(scope="module")
+def unforced_driver(rendered_page):
+    """Chrome with its REAL media-query values — no matchMedia patch.
+
+    Headless Chrome reports `(hover: hover)` and `(any-hover: hover)` false, which is
+    precisely what Chrome reported on the desktop where hovering opened nothing. Every
+    other lane forces those true and therefore cannot observe that failure. This is the
+    negative control: it must pass while the browser claims no hover capability.
+    """
+    d = _chrome(rendered_page, force_hover=False)
+    yield d
+    d.quit()
+
+
+@pytest.fixture(scope="module")
+def touch_driver(rendered_page):
+    """A driver on the TOUCH branch — no matchMedia patch, so `(hover: hover)` is false.
+
+    Tap-to-pin only exists here: pinning is modal, so a mouse click must never pin or it
+    would disable hover page-wide. The page decides from `PointerEvent.pointerType`, and
+    the tap is delivered by `_tap`, which fires a genuine `pointerdown` carrying
+    `pointerType: 'touch'` before the click. A bare `.click()` carries no pointerdown and
+    would be classified (correctly) as not-touch, testing nothing; CDP mouse-to-touch
+    emulation was tried first and deadlocks ActionChains. This fixture is what keeps the
+    pin machinery under test.
+    """
+    d = _chrome(rendered_page, force_hover=False)
+    yield d
+    d.quit()
+
+
+def _tap(drv, el):
+    """Tap `el` as a finger would: pointerdown(pointerType=touch), then the click."""
+    drv.execute_script(
+        """
+        const el = arguments[0];
+        el.dispatchEvent(new PointerEvent('pointerdown',
+            {bubbles: true, cancelable: true, pointerType: 'touch', isPrimary: true}));
+        el.dispatchEvent(new PointerEvent('pointerup',
+            {bubbles: true, cancelable: true, pointerType: 'touch', isPrimary: true}));
+        el.click();
+        """,
+        el,
+    )
+
+
+def _assert_tooltip_actually_visible(drv, where):
+    """A human must SEE text — not merely a `.ttip-visible` class somewhere in the DOM.
+
+    The class-only assertion is what let this suite stay green through a page on which
+    hovering did nothing: the popup can carry the class and still be zero-size, fully
+    transparent, off-viewport, or underneath another element.
+    """
+    r = drv.execute_script(
+        """
+        const t = document.querySelector('.tab-panel.active .ttip.ttip-visible')
+              || document.querySelector('.ttip.ttip-visible');
+        if (!t) return {found: false};
+        const b = t.getBoundingClientRect(), cs = getComputedStyle(t);
+        const cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+        const top = document.elementFromPoint(cx, cy);
+        return {found: true, w: b.width, h: b.height,
+                text: (t.innerText || '').trim().length,
+                display: cs.display, visibility: cs.visibility, opacity: parseFloat(cs.opacity),
+                onScreen: b.right > 0 && b.bottom > 0 && b.x < innerWidth && b.y < innerHeight,
+                topmostInside: !!(top && t.contains(top))};
+        """
+    )
+    assert r["found"], f"{where}: no visible tooltip at all"
+    assert r["text"] > 0, f"{where}: tooltip is visible but has no text: {r}"
+    assert r["w"] > 0 and r["h"] > 0, f"{where}: tooltip has zero size: {r}"
+    assert r["display"] != "none" and r["visibility"] == "visible", f"{where}: {r}"
+    assert r["opacity"] > 0.5, f"{where}: tooltip is transparent: {r}"
+    assert r["onScreen"], f"{where}: tooltip is off-viewport: {r}"
+    assert r["topmostInside"], f"{where}: something is covering the tooltip: {r}"
+
+
+def test_real_mouse_hover_opens_a_visible_tooltip(unforced_driver):
+    """THE production contract: a real mouse move over a cell shows readable text.
+
+    Runs on `unforced_driver`, which does NOT patch matchMedia — headless Chrome reports
+    `(hover: hover)` and `(any-hover: hover)` false there, exactly as Chrome did on the
+    desktop where hovering was dead. The page must not consult those queries to decide
+    whether to listen for hover, so this lane fails if that gate ever comes back.
+    """
+    drv = unforced_driver
+    assert drv.execute_script(
+        "return !window.matchMedia('(hover: hover)').matches"
+        " && !window.matchMedia('(any-hover: hover)').matches;"
+    ), "this lane is only meaningful while the browser reports NO hover capability"
+    drv.execute_script(
+        "const v=document.querySelector('[data-view-detailed]'); if(v && !v.checked){v.checked=true; v.dispatchEvent(new Event('change'));}"
+    )
+    time.sleep(0.5)
+    el = drv.execute_script(
+        """
+        const p = document.querySelector('.tab-panel.active') || document;
+        const c = [...p.querySelectorAll('td.cell')].filter(e => e.offsetParent !== null
+                                                             && e.querySelector('.ttip'))[20];
+        if (!c) return null;
+        c.scrollIntoView({block: 'center'});
+        return c;
+        """
+    )
+    if el is None:
+        pytest.skip("no visible cell with a tooltip on the active tab")
+    # A REAL pointer move, not a synthetic dispatch — a synthetic event would fire the
+    # listener even if the browser would never deliver one to a human.
+    webdriver.ActionChains(drv).move_to_element(el).perform()
+    deadline = time.time() + 4
+    while time.time() < deadline:
+        if drv.execute_script("return !!document.querySelector('.ttip.ttip-visible');"):
+            break
+        time.sleep(0.1)
+    assert drv.execute_script(
+        "return arguments[0].matches(':hover');", el
+    ), "the browser did not deliver a real hover to the cell; test setup is wrong"
+    _assert_tooltip_actually_visible(drv, "real mouse hover, no forced media queries")
+
+
+def test_keyboard_focus_opens_a_visible_tooltip(unforced_driver):
+    """Focus must open the popup too — `focusin` sat behind the same gate as hover."""
+    drv = unforced_driver
+    opened = drv.execute_script(
+        """
+        const p = document.querySelector('.tab-panel.active') || document;
+        for (const el of p.querySelectorAll('[data-ttip-wired]')) {
+          if (!el.querySelector('.ttip') || el.offsetParent === null) continue;
+          const f = el.querySelector('a, button, [tabindex]');
+          if (!f) continue;
+          el.scrollIntoView({block: 'center'});
+          f.focus();
+          return true;
+        }
+        return false;
+        """
+    )
+    if not opened:
+        pytest.skip("no focusable element inside a wired tooltip host on this tab")
+    deadline = time.time() + 4
+    while time.time() < deadline:
+        if drv.execute_script("return !!document.querySelector('.ttip.ttip-visible');"):
+            break
+        time.sleep(0.1)
+    _assert_tooltip_actually_visible(drv, "keyboard focus")
 
 
 def test_hover_shows_tooltip(driver):
@@ -89,6 +242,24 @@ def test_hover_shows_tooltip(driver):
             break
         time.sleep(0.1)
     assert visible, "tooltip did not become visible on hover"
+
+
+def test_order_divergence_shows_golden_and_candidate_sequences(driver):
+    """ORDER/MERGE explanations come from the golden candidate in the model."""
+    text = driver.execute_script(
+        """
+        const el = document.querySelector('[data-sequence-divergence]');
+        if (!el) return null;
+        window.__buildTooltip(el);
+        const tip = el.querySelector('.ttip');
+        return tip ? tip.textContent : null;
+        """
+    )
+    assert text, "rendered producer data had no ORDER/MERGE divergence"
+    assert "want:" in text and "got:" in text, text
+    want = text.split("want:", 1)[1].split("got:", 1)[0].strip()
+    got = text.split("got:", 1)[1].splitlines()[0].strip()
+    assert want and got and want != got, text
 
 
 def test_compare_candidates_are_per_tab(driver):
@@ -323,9 +494,68 @@ def test_transpose_honors_collapsed_case_group(driver):
     assert hidden is True, f"transposed rows for collapsed group {key} should be hidden"
 
 
+def test_click_never_pins_where_hover_exists(driver):
+    """Where hover exists, a click must NOT pin — hover stays live afterwards.
+
+    Pinning is modal: `hoverAllowed()` returns false for every other cell while one is
+    pinned. When a desktop click also pinned, a single stray click disabled hover for the
+    whole page until the pin was released, and in details view "click elsewhere to
+    dismiss" almost always lands on another wired cell, which only moves the pin. This
+    pins the fix: on a hover-capable device no click pins anything, so hover cannot be
+    switched off by clicking.
+    """
+    driver.execute_script(
+        "const v=document.querySelector('[data-view-detailed]'); if(v && !v.checked){v.checked=true; v.dispatchEvent(new Event('change'));}"
+    )
+    clicked = driver.execute_script(
+        """
+        const tab = document.querySelector('.tab-panel.active') || document;
+        for (const el of tab.querySelectorAll('[data-ttip-wired]')) {
+          if (!el.querySelector('.ttip')) continue;
+          if (el.offsetParent === null) continue;
+          el.click();
+          window.__clicked = el;
+          return true;
+        }
+        return false;
+        """
+    )
+    if not clicked:
+        pytest.skip("no wired elements with a tooltip on the active tab")
+    time.sleep(0.6)
+    assert not driver.execute_script(
+        "return !!document.querySelector('.ttip.ttip-pinned');"
+    ), "a click pinned a popup on a hover-capable device"
+    assert not driver.execute_script(
+        "return document.body.classList.contains('ttip-pin-mode');"
+    ), "a click put the page into modal pin mode on a hover-capable device"
+
+    # And hover still opens a popup on a DIFFERENT cell afterwards — the actual symptom.
+    driver.execute_script(
+        """
+        const tab = document.querySelector('.tab-panel.active') || document;
+        for (const el of tab.querySelectorAll('[data-ttip-wired]')) {
+          if (!el.querySelector('.ttip')) continue;
+          if (el.offsetParent === null || el === window.__clicked) continue;
+          el.dispatchEvent(new PointerEvent('pointerenter', {bubbles: false}));
+          return;
+        }
+        """
+    )
+    deadline = time.time() + 3
+    shown = False
+    while time.time() < deadline and not shown:
+        shown = driver.execute_script("return !!document.querySelector('.ttip.ttip-visible');")
+        time.sleep(0.1)
+    assert shown, "hover stopped opening popups after a click"
+
+
 @pytest.mark.parametrize("transposed", [False, True], ids=["normal", "transposed"])
-def test_every_wired_element_stays_pinned(driver, transposed):
-    """Clicking anything with a popup PINS it, and the same click must not close it.
+def test_every_wired_element_stays_pinned(touch_driver, transposed):
+    """TOUCH: tapping anything with a popup PINS it, and the same tap must not close it.
+
+    Runs on `touch_driver` because tap-to-pin is now touch-only; where hover exists there
+    is no click-to-pin at all (see test_click_never_pins_where_hover_exists).
 
     The document-level outside-click handler decides what counts as "inside". While it
     enumerated classes, it kept drifting from the set `attachTooltip` actually wires: first
@@ -338,10 +568,10 @@ def test_every_wired_element_stays_pinned(driver, transposed):
     element it wires. This test walks that same set, one element per distinct tag+class, so
     a newly wired kind of element is covered without anyone remembering to add it here.
     """
-    driver.execute_script(
+    touch_driver.execute_script(
         "const v=document.querySelector('[data-view-detailed]'); if(v && !v.checked){v.checked=true; v.dispatchEvent(new Event('change'));}"
     )
-    toggled = driver.execute_script(
+    toggled = touch_driver.execute_script(
         """
         const t = document.querySelector('[data-transpose-toggle]');
         if (!t) return false;
@@ -355,12 +585,18 @@ def test_every_wired_element_stays_pinned(driver, transposed):
 
     # One representative per tag+class, so the test scales with the wired set instead of a
     # hand-kept list, but does not click hundreds of identical data cells.
-    kinds = driver.execute_script(
+    kinds = touch_driver.execute_script(
         """
         const tab = document.querySelector('.tab-panel.active') || document;
         const seen = new Set();
         for (const el of tab.querySelectorAll('[data-ttip-wired]')) {
           if (!el.querySelector('.ttip')) continue;
+            // Skip anything not actually RENDERED. A collapsed column is
+            // `display: none` (`.col-hidden`), so its cells cannot be clicked and
+            // have no popup to pin. This remains a product-facing assertion even
+            // though the module-scoped driver is reloaded around every test: hidden
+            // elements are not user-interactable and cannot own a visible popup.
+          if (el.offsetParent === null) continue;
           const key = el.tagName.toLowerCase() + '.' + (el.className || '');
           if (!seen.has(key)) seen.add(key);
         }
@@ -373,22 +609,31 @@ def test_every_wired_element_stays_pinned(driver, transposed):
     for key in kinds:
         # A real .click() so the event bubbles to the document handler, which is the whole
         # point — a synthetic dispatch on the element alone would never reproduce the bug.
-        driver.execute_script(
+        # A REAL tap through the input pipeline. Under the fixture's CDP touch emulation
+        # this produces `pointerdown` with `pointerType == 'touch'`, which is what the page
+        # keys tap-to-pin off. A JS `.click()` carries no pointerdown at all, so it would be
+        # classified as not-touch and would silently test nothing.
+        el = touch_driver.execute_script(
             """
             const tab = document.querySelector('.tab-panel.active') || document;
             for (const el of tab.querySelectorAll('[data-ttip-wired]')) {
               if (!el.querySelector('.ttip')) continue;
+              if (el.offsetParent === null) continue;
               if (el.tagName.toLowerCase() + '.' + (el.className || '') !== arguments[0]) continue;
-              el.click();
-              return;
+              el.scrollIntoView({block: 'center'});
+              return el;
             }
+            return null;
             """,
             key,
         )
+        if el is None:
+            continue
+        _tap(touch_driver, el)
         deadline = time.time() + 3
         pinned = False
         while time.time() < deadline:
-            pinned = driver.execute_script(
+            pinned = touch_driver.execute_script(
                 "return !!document.querySelector('[data-ttip-wired] .ttip.ttip-pinned');"
             )
             if pinned:
@@ -396,7 +641,7 @@ def test_every_wired_element_stays_pinned(driver, transposed):
             time.sleep(0.1)
         assert pinned, f"popup on {key} did not stay pinned after its own click"
         # Unpin before the next kind, so a stale pin can't make the next assertion pass.
-        driver.execute_script(
+        touch_driver.execute_script(
             "document.querySelectorAll('.ttip.ttip-pinned').forEach(t => { const c = t.querySelector('.ttip-close'); if (c) c.click(); });"
         )
 
@@ -432,3 +677,138 @@ def test_legend_is_detailed_only(driver):
     detailed = legend_shown()
     assert not overview, "legend visible in Overview; it should be Detailed-only"
     assert detailed, "legend hidden in Detailed; it should be visible there"
+
+
+def test_touch_then_keyboard_does_not_pin(driver):
+    """A keyboard activation after a touch must NOT inherit the touch's pinning.
+
+    Pointer provenance used to persist until the next `pointerdown`. A keyboard
+    activation issues none, so after any touch the next Enter on a focused link
+    still read `touch`, called `preventDefault()` and pinned — suppressing the
+    navigation the keyboard user asked for. Provenance is now consumed by the click
+    it belongs to and cleared.
+    """
+    drv = driver
+    drv.execute_script(
+        "const v=document.querySelector('[data-view-detailed]'); if(v && !v.checked){v.checked=true; v.dispatchEvent(new Event('change'));}"
+    )
+    time.sleep(0.4)
+
+    # 1. A touch tap: pointerdown(touch) then click. This one MAY pin.
+    ok = drv.execute_script(
+        """
+        const p = document.querySelector('.tab-panel.active') || document;
+        const els = [...p.querySelectorAll('[data-ttip-wired]')]
+            .filter(e => e.offsetParent !== null && e.querySelector('.ttip'));
+        if (els.length < 2) return false;
+        window.__a = els[0]; window.__b = els[1];
+        window.__a.dispatchEvent(new PointerEvent('pointerdown',
+            {bubbles: true, cancelable: true, pointerType: 'touch', isPrimary: true}));
+        window.__a.click();
+        return true;
+        """
+    )
+    if not ok:
+        pytest.skip("need two wired elements on the active tab")
+    time.sleep(0.4)
+
+    # 2. A KEYBOARD activation on a different cell: a click with NO pointerdown.
+    #    It must not pin, and must not have been preventDefault()-ed.
+    prevented = drv.execute_script(
+        """
+        const ev = new MouseEvent('click', {bubbles: true, cancelable: true});
+        window.__b.dispatchEvent(ev);
+        return ev.defaultPrevented;
+        """
+    )
+    time.sleep(0.4)
+    assert not prevented, (
+        "a keyboard activation was preventDefault()-ed, so it inherited the earlier "
+        "touch's pointer provenance instead of being treated as keyboard"
+    )
+    pinned_on_b = drv.execute_script(
+        "return !!(window.__b && window.__b.querySelector('.ttip.ttip-pinned'));"
+    )
+    assert not pinned_on_b, "keyboard activation must not pin"
+
+    drv.execute_script(
+        "document.querySelectorAll('.ttip.ttip-pinned').forEach(t => { const c = t.querySelector('.ttip-close'); if (c) c.click(); });"
+    )
+
+    # 3. A touch tap INSIDE a tooltip takes the `.ttip` early return. That path must also
+    #    consume the provenance, or it stays armed for the next keyboard activation —
+    #    the same defect one branch over.
+    tapped_inside = drv.execute_script(
+        """
+        const p = document.querySelector('.tab-panel.active') || document;
+        for (const el of p.querySelectorAll('[data-ttip-wired]')) {
+          const tip = el.querySelector('.ttip');
+          if (!tip || el.offsetParent === null) continue;
+          tip.dispatchEvent(new PointerEvent('pointerdown',
+              {bubbles: true, cancelable: true, pointerType: 'touch', isPrimary: true}));
+          tip.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
+          return true;
+        }
+        return false;
+        """
+    )
+    if tapped_inside:
+        time.sleep(0.3)
+        prevented2 = drv.execute_script(
+            """
+            const ev = new MouseEvent('click', {bubbles: true, cancelable: true});
+            window.__b.dispatchEvent(ev);
+            return ev.defaultPrevented;
+            """
+        )
+        assert not prevented2, (
+            "a touch tap inside a tooltip left pointer provenance armed, so the next "
+            "keyboard activation inherited it"
+        )
+
+
+def test_touch_outside_a_host_does_not_arm_a_pointerdownless_activation(driver):
+    """A tap that lands anywhere else must not arm the next pointerdown-less activation.
+
+    Pointer provenance recorded only the KIND of pointer, in one document-wide
+    variable. Only a tooltip host's own click consumed it, so a tap on a header —
+    or any element that is not a host — left `touch` armed indefinitely. The next
+    activation on a host that carries NO pointerdown of its own — keyboard Enter, a
+    synthetic click — then read that stale `touch`, pinned, and `preventDefault()`ed
+    the parser-source link the user actually asked for. A genuine mouse click is NOT
+    the vulnerable case: it brings its own mouse `pointerdown`, which overwrites the
+    stale value before the click arrives. Provenance now also records WHERE the
+    pointer went down and is only honoured when the gesture started in the same host.
+    """
+    drv = driver
+    drv.execute_script(
+        "const v=document.querySelector('[data-view-detailed]'); if(v && !v.checked){v.checked=true; v.dispatchEvent(new Event('change'));}"
+    )
+    time.sleep(0.4)
+
+    pinned = drv.execute_script(
+        """
+        const p = document.querySelector('.tab-panel.active') || document;
+        const cell = p.querySelector('[data-ttip-wired]');
+        if (!cell) { return 'no-cell'; }
+
+        // A touch that goes down on something that is NOT a tooltip host, and whose
+        // click therefore never reaches a host's handler to consume the provenance.
+        const outside = document.querySelector('h1, h2, header, .legend') || document.body;
+        outside.dispatchEvent(new PointerEvent('pointerdown',
+            {bubbles: true, cancelable: true, pointerType: 'touch', isPrimary: true}));
+        outside.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
+
+        // Now an activation on a host that carries NO pointerdown of its own — a keyboard
+        // Enter or a synthetic click. It cannot overwrite the stale provenance, so this is
+        // the interaction that actually reads it.
+        cell.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
+
+        return !!document.querySelector('.ttip.ttip-pinned');
+        """
+    )
+    assert pinned != 'no-cell', "no wired tooltip host found to exercise"
+    assert pinned is False, (
+        "a pointerdown-less activation pinned because an unrelated touch elsewhere left "
+        "the provenance armed — pinning must require the gesture to start in this host"
+    )

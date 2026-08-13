@@ -20,7 +20,8 @@ mod common;
 use std::collections::BTreeMap;
 
 use dynamo_parsers_v2::{
-    REGISTERED_UNIFIED_FAMILIES, Tool, UnifiedEvent, assemble, create_unified_parser_for_family,
+    REGISTERED_UNIFIED_FAMILIES, Tool, UnifiedEvent, UnifiedParserExt, assemble,
+    create_unified_parser_for_family,
 };
 use serde::Deserialize;
 use serde_json::json;
