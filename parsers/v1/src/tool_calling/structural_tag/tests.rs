@@ -4,7 +4,10 @@
 use serde_json::{Value, json};
 
 use super::TOOL_NAME_PLACEHOLDER;
-use super::builder::{StructuralTagBuilder, StructuralTagSchemaMode, ToolCallFormatBuildContext};
+use super::builder::{
+    StructuralTagBuilder, StructuralTagSchemaMode, ToolCallFormatBuildContext,
+    kimi_uses_declared_tool_schema,
+};
 use super::dsml::DsmlToolCallsConfig;
 use super::format::JsonSchemaStyle;
 use super::triggered_tags::TriggeredTagsConfig;
@@ -286,6 +289,21 @@ fn strict_schema_mode_uses_real_schema_for_all() {
     let tags = parsed["format"]["tags"].as_array().unwrap();
     assert!(tags[0]["content"]["json_schema"]["properties"]["a"].is_object());
     assert!(tags[1]["content"]["json_schema"]["properties"]["location"].is_object());
+}
+
+#[test]
+fn kimi_schema_policy_matches_vllm_xgrammar() {
+    let mut tool = sample_tools().remove(0);
+
+    tool.strict = None;
+    assert!(kimi_uses_declared_tool_schema(&tool, false));
+
+    tool.strict = Some(true);
+    assert!(kimi_uses_declared_tool_schema(&tool, false));
+
+    tool.strict = Some(false);
+    assert!(!kimi_uses_declared_tool_schema(&tool, false));
+    assert!(kimi_uses_declared_tool_schema(&tool, true));
 }
 
 #[test]
@@ -603,6 +621,7 @@ fn parser_map_structural_tag_smoke() {
         "qwen3_coder",
         "deepseek_v3_2",
         "deepseek_v4",
+        "kimi_k2",
         "kimi_k3",
         "inkling",
     ];

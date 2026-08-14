@@ -853,7 +853,7 @@ impl ToolCallConfig {
         // Reference: https://huggingface.co/moonshotai/Kimi-K2-Instruct/blob/main/docs/tool_call_guidance.md
         Self {
             parser_config: ParserConfig::KimiK2(KimiK2ParserConfig::default()),
-            structural_tag_builder: None,
+            structural_tag_builder: Some(StructuralTagBuilder::KimiK2),
         }
     }
 
