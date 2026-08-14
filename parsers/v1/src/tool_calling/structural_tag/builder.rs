@@ -122,7 +122,8 @@ pub enum StructuralTagBuilder {
     ///
     /// When generation starts in a prompt-injected reasoning block, this
     /// builder assumes the K2.5/K2.6 `kimi_k25` `</think>` terminator. Original
-    /// K2-Thinking, which emits its own `◁think▷` markers, is not supported.
+    /// K2-Thinking is not supported because its chat template leaves the
+    /// opening `<think>` for the model to generate.
     KimiK2,
 
     /// Kimi K3's native XTML response/tools channel format.
@@ -223,7 +224,7 @@ impl StructuralTagBuilder {
             Self::TriggeredTags(config) => config.reasoning_end.as_deref(),
             Self::DsmlToolCalls(config) => config.reasoning_end.as_deref(),
             // K2.5/K2.6 `kimi_k25` reasoning terminator. Original K2-Thinking
-            // uses different markers and must not be routed to this builder.
+            // generates the opening `<think>` itself and needs a separate path.
             Self::KimiK2 => Some("</think>"),
             Self::KimiK3 => Some("<|close|>think<|sep|>"),
         }

@@ -7,9 +7,10 @@
 //! JSON array used by the legacy forced-tool path. The numeric suffix belongs
 //! to the model-generated call ID and must remain dynamic for parallel calls.
 //!
-//! This builder supports K2-Instruct and K2.5/K2.6 reasoning prompts that use
-//! the `kimi_k25` `</think>` terminator. It does not support original
-//! K2-Thinking prompts, where the model emits its own `◁think▷` markers.
+//! This builder supports K2-Instruct and K2.5/K2.6 reasoning prompts. The
+//! K2.5/K2.6 chat template injects `<think>` into the generation prompt, and
+//! the model later emits `</think>`. It does not support original K2-Thinking,
+//! whose chat template leaves the opening `<think>` for the model to generate.
 
 use serde_json::{Value, json};
 
