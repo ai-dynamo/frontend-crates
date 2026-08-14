@@ -82,7 +82,11 @@ pub(crate) fn resolve_tools_to_include<'a>(
     }
 }
 
-/// Resolve one tool's argument schema for structural tag generation.
+/// Resolve one tool's argument schema using Dynamo's generic schema policy.
+///
+/// In [`StructuralTagSchemaMode::Auto`], only `strict: true` selects the
+/// declared schema. Model-native builders may intentionally follow different
+/// upstream semantics and should use a model-specific policy helper.
 pub(crate) fn resolve_tool_schema(tool: &ToolDefinition, strict_schema: bool) -> Value {
     // xgrammar uses `true` for syntactically valid but schema-unconstrained JSON.
     let default_schema = json!(true);
@@ -95,6 +99,16 @@ pub(crate) fn resolve_tool_schema(tool: &ToolDefinition, strict_schema: bool) ->
     }
 }
 
+/// Whether Kimi's vLLM/xgrammar-compatible format should use the declared
+/// parameter schema.
+///
+/// Kimi treats only an explicit `strict: false` as an opt-out. An omitted
+/// `strict` value therefore uses the declared schema, unlike Dynamo's generic
+/// [`StructuralTagSchemaMode::Auto`] policy.
+pub(crate) fn kimi_uses_declared_tool_schema(tool: &ToolDefinition, strict_schema: bool) -> bool {
+    strict_schema || tool.strict != Some(false)
+}
+
 /// Builder for model-family-specific tool-call structural tags.
 #[derive(Debug, Clone)]
 pub enum StructuralTagBuilder {
@@ -105,6 +119,10 @@ pub enum StructuralTagBuilder {
     DsmlToolCalls(DsmlToolCallsConfig),
 
     /// Kimi K2's native special-token tool-call section format.
+    ///
+    /// When generation starts in a prompt-injected reasoning block, this
+    /// builder assumes the K2.5/K2.6 `kimi_k25` `</think>` terminator. Original
+    /// K2-Thinking, which emits its own `◁think▷` markers, is not supported.
     KimiK2,
 
     /// Kimi K3's native XTML response/tools channel format.
@@ -204,6 +222,8 @@ impl StructuralTagBuilder {
         match self {
             Self::TriggeredTags(config) => config.reasoning_end.as_deref(),
             Self::DsmlToolCalls(config) => config.reasoning_end.as_deref(),
+            // K2.5/K2.6 `kimi_k25` reasoning terminator. Original K2-Thinking
+            // uses different markers and must not be routed to this builder.
             Self::KimiK2 => Some("</think>"),
             Self::KimiK3 => Some("<|close|>think<|sep|>"),
         }

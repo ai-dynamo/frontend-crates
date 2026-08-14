@@ -197,7 +197,7 @@ fn arguments_block(parameters: Option<&Value>) -> Format {
 fn call_tag(tool: &ToolDefinition, strict_schema: bool) -> TagFormat {
     // Match vLLM's K3 behavior: use the declared schema unless the caller
     // explicitly sets strict=false. Global strict mode overrides that opt-out.
-    let parameters = if strict_schema || tool.strict != Some(false) {
+    let parameters = if super::builder::kimi_uses_declared_tool_schema(tool, strict_schema) {
         tool.parameters.as_ref()
     } else {
         None

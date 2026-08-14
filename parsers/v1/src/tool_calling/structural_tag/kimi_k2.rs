@@ -6,10 +6,16 @@
 //! K2 emits tool calls inside a special-token section rather than as the raw
 //! JSON array used by the legacy forced-tool path. The numeric suffix belongs
 //! to the model-generated call ID and must remain dynamic for parallel calls.
+//!
+//! This builder supports K2-Instruct and K2.5/K2.6 reasoning prompts that use
+//! the `kimi_k25` `</think>` terminator. It does not support original
+//! K2-Thinking prompts, where the model emits its own `◁think▷` markers.
 
 use serde_json::{Value, json};
 
-use super::builder::{ToolCallFormatBuildContext, resolve_tools_to_include};
+use super::builder::{
+    ToolCallFormatBuildContext, kimi_uses_declared_tool_schema, resolve_tools_to_include,
+};
 use super::format::{
     ConstStringFormat, Format, JsonSchemaFormat, JsonSchemaStyle, RegexFormat, SequenceFormat,
     StructuralTag, TagFormat, TagsWithSeparatorFormat, TriggeredTagsFormat,
@@ -26,7 +32,7 @@ fn tool_schema(tool: &ToolDefinition, strict_schema: bool) -> Value {
     // Match vLLM/xgrammar: use the declared parameters unless the request
     // explicitly opts out with strict=false. Global strict mode overrides the
     // opt-out. Xgrammar uses `true` for unconstrained but valid JSON.
-    if strict_schema || tool.strict != Some(false) {
+    if kimi_uses_declared_tool_schema(tool, strict_schema) {
         tool.parameters.clone().unwrap_or_else(|| json!(true))
     } else {
         json!(true)
@@ -63,13 +69,18 @@ pub(crate) fn build_kimi_k2(
         return Ok(None);
     }
 
-    let mut calls: Vec<TagFormat> = tools
+    let calls: Vec<TagFormat> = tools
         .into_iter()
         .map(|tool| call_tag(tool, ctx.strict_schema()))
         .collect();
 
     let calls_format = if matches!(ctx.tool_choice, ToolChoice::Named(_)) {
-        Format::Tag(calls.pop().expect("named tool choice resolves one tool"))
+        Format::Tag(
+            calls
+                .into_iter()
+                .next()
+                .ok_or_else(|| anyhow::anyhow!("named tool choice resolved no tool"))?,
+        )
     } else {
         Format::TagsWithSeparator(TagsWithSeparatorFormat {
             tags: calls,
