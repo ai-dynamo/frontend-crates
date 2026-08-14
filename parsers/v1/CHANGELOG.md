@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Features
 
-- *(parsers)* Add native Kimi K2 structural-tag generation for required and named tool choices ([#188](https://github.com/ai-dynamo/frontend-crates/pull/188))
+- *(parsers)* [**breaking**] Add native Kimi K2 structural-tag generation and make `StructuralTagBuilder` non-exhaustive ([#188](https://github.com/ai-dynamo/frontend-crates/pull/188))
 
 ## [7.1.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v7.1.0...dynamo-parsers-v7.1.1) - 2026-08-08
 

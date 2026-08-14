@@ -111,6 +111,7 @@ pub(crate) fn kimi_uses_declared_tool_schema(tool: &ToolDefinition, strict_schem
 
 /// Builder for model-family-specific tool-call structural tags.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum StructuralTagBuilder {
     /// Simple `triggered_tags` format with one tag template per tool.
     TriggeredTags(TriggeredTagsConfig),
