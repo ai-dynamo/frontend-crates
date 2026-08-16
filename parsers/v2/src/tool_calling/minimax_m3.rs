@@ -61,6 +61,8 @@ fn spec() -> WrappedBlockSpec {
         bare_recovery_latch: BareRecoveryLatch::Set,
         invoke_latch: InvokeLatch::IfEmitted,
         drop_invoke_crossing_block_end: false,
+        // Every wrapped family's markers are special tokens today.
+        preserve_special_tokens: true,
     }
 }
 
@@ -124,7 +126,7 @@ impl ToolParser for MiniMaxM3ToolStreamParser {
     }
 
     fn preserve_special_tokens(&self) -> bool {
-        true
+        self.scanner.preserve_special_tokens()
     }
 
     fn push(&mut self, chunk: &str) -> anyhow::Result<ToolParseResult> {

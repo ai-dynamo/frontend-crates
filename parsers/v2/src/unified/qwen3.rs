@@ -46,6 +46,8 @@ pub(crate) fn qwen3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
             // Qwen3 emits its own `<think>`; the template does not pre-fill one,
             // so the stream starts in visible content (policy P5).
             forced_start: false,
+            // `<think>` is not a special token for this family; the OR comes from the grammar.
+            preserve_special_tokens: false,
         }),
     })
 }
@@ -53,7 +55,7 @@ pub(crate) fn qwen3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::unified::{UnifiedEvent, assemble};
+    use crate::unified::{UnifiedEvent, UnifiedParserExt, assemble};
 
     fn weather_tools() -> Vec<Tool> {
         vec![Tool {

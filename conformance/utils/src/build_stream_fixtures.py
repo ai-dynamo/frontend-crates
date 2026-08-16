@@ -23,18 +23,12 @@ A delta: {index, id?, name?, arguments?}.  id:true = an id was emitted.
 import argparse
 import json
 import os
-import subprocess
 import sys
-from pathlib import Path
 
 import yaml
 
+import capture_driver  # noqa: E402  (shared vLLM Rust crate-layout resolution)
 from impls import IMPL_KEYS, LEGACY_IMPL_ALIASES  # noqa: E402  (identity table; see impls.py)
-
-VLLM_RUST_UNAVAILABLE = (
-    "vLLM Rust capture not implemented yet; source checkout is available for the Rust probe."
-)
-
 
 def _canonical_impl_key(impl: str) -> str:
     return LEGACY_IMPL_ALIASES.get(impl, impl)
@@ -56,40 +50,6 @@ def _load(path):
     if not path:
         return {}
     return json.load(open(path))
-
-
-def _vllm_rust_source_version(source):
-    if not source:
-        return None
-    root = Path(source).expanduser().resolve()
-    crate = root / "rust/src/tool-parser/Cargo.toml"
-    if not crate.exists():
-        raise SystemExit(
-            f"vLLM Rust source path {root} does not contain rust/src/tool-parser/Cargo.toml"
-        )
-    try:
-        sha = subprocess.check_output(
-            ["git", "-C", str(root), "rev-parse", "HEAD"],
-            stderr=subprocess.DEVNULL,
-            text=True,
-        ).strip()
-    except subprocess.CalledProcessError:
-        sha = "unknown"
-    try:
-        tag = subprocess.check_output(
-            ["git", "-C", str(root), "describe", "--tags", "--exact-match"],
-            stderr=subprocess.DEVNULL,
-            text=True,
-        ).strip()
-    except subprocess.CalledProcessError:
-        tag = "untagged"
-    return f"{tag} {sha}"
-
-
-def _vllm_rust_unavailable(source_version):
-    if source_version:
-        return f"{VLLM_RUST_UNAVAILABLE} Source: {source_version}."
-    return "vLLM Rust source not available; set VLLM_RUST_SOURCE or pass --vllm-rust-source."
 
 
 def _q(s) -> str:
@@ -155,13 +115,13 @@ def main():
         _canonical_impl_key(k): v
         for k, v in (u.split("=", 1) for u in args.unavailable)
     }
-    vllm_rust_source_version = _vllm_rust_source_version(
+    vllm_rust_source_version = capture_driver._vllm_rust_source_version(
         args.vllm_rust_source or os.environ.get("VLLM_RUST_SOURCE")
     )
     if not caps["vllm_rust"]:
         unavail.setdefault(
             "vllm_rust",
-            _vllm_rust_unavailable(vllm_rust_source_version),
+            capture_driver._vllm_rust_unavailable(vllm_rust_source_version),
         )
     na_impls = {_canonical_impl_key(impl) for impl in args.na}
     captured_versions = {
@@ -204,21 +164,27 @@ def main():
             L.append("    tools:")
             L.append(_indent(yaml.safe_dump(case["tools"], default_flow_style=False,
                                             allow_unicode=True, sort_keys=False).rstrip(), 4))
-        # unavailable block
+        # unavailable block (parser does NOT exist for this family)
         case_unavail = dict(unavail)
-        # Per-case capture errors: the probe emits {"error": ...} for a case the
-        # parser rejected (e.g. garbage/incomplete tool call). That's expected
-        # behavior for some edge cases, not a chunk list — record it as a
-        # case-level unavailable so the per-chunk loop below skips the impl.
+        # Per-case capture errors: the probe emits {"error": ...} for a case the parser
+        # RAN on and REJECTED (e.g. garbage/incomplete tool call). That is a thrown
+        # parser exception, not a missing parser — record it as a case-level `exception`
+        # (the verbatim error; vLLM Rust's is the named `ToolParserError` variant) so the
+        # per-chunk loop below skips the impl and the renderer surfaces it distinctly.
+        case_exception = {}
         for impl in IMPL_KEYS:
             if impl in case_unavail or impl in na_impls:
                 continue
             cap = caps.get(impl, {}).get(cid)
             if isinstance(cap, dict):
-                case_unavail[impl] = f"{impl} parser not captured: {cap.get('error', 'capture failed')}"
+                case_exception[impl] = cap.get("error", "capture failed")
         if case_unavail:
             L.append("    unavailable:")
             for impl, reason in case_unavail.items():
+                L.append(f"      {impl}: {_q(reason)}")
+        if case_exception:
+            L.append("    exception:")
+            for impl, reason in case_exception.items():
                 L.append(f"      {impl}: {_q(reason)}")
         # chunks
         L.append("    chunks:")
@@ -234,7 +200,7 @@ def main():
             exp_lines = []
             nt_lines = []
             for impl in IMPL_KEYS:
-                if impl in case_unavail or impl in na_impls:
+                if impl in case_unavail or impl in case_exception or impl in na_impls:
                     continue
                 cap = caps.get(impl, {}).get(cid)
                 if cap is None:

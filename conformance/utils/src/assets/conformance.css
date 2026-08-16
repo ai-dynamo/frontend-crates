@@ -5,6 +5,8 @@
 body { font-family: -apple-system, system-ui, sans-serif; margin: 1.5em; }
 table { border-collapse: collapse; font-family: ui-monospace, monospace; font-size: 13px; }
 th, td { border: 1px solid #ccc; padding: 3px 4px; }
+/* Case columns carry no text of their own — trim their padding too. */
+th.case-sub, td.cell { padding-left: 1px; padding-right: 1px; }
 th { background: #f5f5f5; }
 th.case-group { font-family: -apple-system, system-ui, sans-serif; font-size: 12px; }
 th.case-group.case-band-0 { background: #f1f3f5; }
@@ -34,7 +36,12 @@ td.parser a:hover { background: #ffd; }
 .arch-combined { background: #fef3e0; color: #9a5b00; border-color: #f0c98a; }
 [data-theme="dark"] .arch-unified { background: #14361f; color: #7fe0a0; border-color: #2f6b45; }
 [data-theme="dark"] .arch-combined { background: #3a2a12; color: #f0be7c; border-color: #6b4e24; }
-td.cell { position: relative; text-align: center; width: 44px; min-width: 44px; max-width: 44px; font-weight: 400; }
+/* Cell content is a 1-3 char marker and is absolutely positioned, so the column
+   width is pure padding — and across the widest tabs 44px each made the table
+   thousands of pixels wide for markers that need a fraction of it.
+   26px still clears the widest marker; the header labels are short ids (`31.n`),
+   not scenario names, so they fit too. */
+td.cell { position: relative; text-align: center; width: 26px; min-width: 26px; max-width: 26px; font-weight: 400; }
 /* One color = one meaning, whether or not the cell has compare data. A cell without
    `data-cmp` (an n/a stub or a missing fixture) must read exactly like a compare cell
    of the same meaning: gray = n/a, light-gray = Base-only, near-white = missing. The
@@ -636,9 +643,20 @@ body.transpose-mode .tab-panel.active .transpose-table { display: table; }
    shrink-wrap to its content (make the marker in-flow, click-anchor out of flow). */
 body.view-overview .transpose-table td.cell,
 body.view-overview .transpose-table th.tcol-model { width: 30px; min-width: 30px; max-width: 30px; }
+/* Transposed DETAILS keeps the marker in normal flow (`position: static` below),
+   so unlike the upright table the marker text really does drive column width.
+   `max-width: none` then let one long marker (e.g. `VPB?SRB?`) stretch its whole
+   column and, with a column per engine, the table far past the viewport. Cap it:
+   `width: auto` still shrink-wraps short columns, the cap just stops the long
+   ones, and the marker ellipsizes rather than forcing the table wider. */
 body.view-details .transpose-table td.cell,
-body.view-details .transpose-table th.tcol-model { width: auto; min-width: 22px; max-width: none; }
-body.view-details .transpose-table td.cell { padding: 3px 2px; }
+body.view-details .transpose-table th.tcol-model { width: auto; min-width: 22px; max-width: 40px; }
+/* NO `overflow: hidden` on the cell: `.ttip` is a CHILD of td.cell, so clipping
+   the cell clips the hover popup itself — the width cap below belongs on the
+   marker span, which is the only thing that needs truncating. */
+body.view-details .transpose-table td.cell { padding: 3px 1px; }
+body.view-details .transpose-table td.cell .marker-text {
+  display: inline-block; max-width: 38px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
 body.view-details .transpose-table td.cell .cell-marker,
 body.view-details .transpose-table td.cell .cmp-marker { position: static; }
 body.view-details .transpose-table td.cell > a { position: absolute; inset: 0; }

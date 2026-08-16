@@ -200,8 +200,10 @@
         cell.classList.add('cmp-na'); if (marker) { marker.textContent = 'n/a'; }
         if (countThis) { counts.na++; } toggleCands(cell, active, base); return;
       }
-      // Unavailable candidates never count toward the diff; still shown in tooltip.
-      const avail = shown.map(function (k) { return cmp[k]; }).filter(function (o) { return o && o.na !== 1; });
+      // Unavailable candidates (na) and candidates that ran-and-threw (err) never count
+      // toward the diff against a clean Reference; both are still shown in the tooltip.
+      const avail = shown.map(function (k) { return cmp[k]; })
+        .filter(function (o) { return o && o.na !== 1 && o.err !== 1; });
       // ...but they must not be SILENT either. A compare candidate that has no data for
       // this case (an older capture taken before the case existed) is not agreement, and
       // folding it into "=" claims the two builds produced the same output when one of
@@ -214,6 +216,20 @@
       // back to the selected reference. `avail` excludes the base (the starred REF).
       const goldenSig = cmp.golden ? cmp.golden.sig : null;
       const refSig = (goldenSig != null ? goldenSig : bd.sig);
+      // The Reference parser itself RAN and THREW (err=1). A selected Compare that PARSED
+      // (a real, non-error output) is a genuine disagreement with the failed Reference ->
+      // red (a delta), not grey n/a. If nothing parsed to disagree with (no Compares, or
+      // every Compare also threw / is unavailable), there is no delta -> neutral grey.
+      if (bd.err === 1) {
+        if (avail.length > 0) {
+          cell.classList.add('cmp-leak'); if (marker) { marker.textContent = String(avail.length) + 'Δ'; }
+          if (countThis) { counts.problem++; }
+        } else {
+          cell.classList.add('cmp-na'); if (marker) { marker.textContent = 'n/a'; }
+          if (countThis) { counts.na++; }
+        }
+        toggleCands(cell, active, base); return;
+      }
       const diffs = avail.filter(function (o) { return o.sig !== refSig; }).length;
       const leak = bd.leak === 1;
       const redOnDiff = cell.getAttribute('data-red-on-diff') === '1';
@@ -658,10 +674,60 @@
   }
 
   // Touch devices have no hover, so the tooltip is opened by TAP and pinned open
-  // (with an ✕ to close) rather than shown on pointerenter. Desktop keeps hover;
-  // a click there also pins (handy for reading a big tooltip without holding the
-  // mouse still). Only one tooltip is pinned at a time.
-  const hoverCapable = window.matchMedia('(hover: hover)').matches;
+  // (with an ✕ to close) rather than shown on pointerenter. Where hover EXISTS, hover is
+  // the only affordance — clicking never pins, because pinning is modal and one stray
+  // click otherwise disabled hover page-wide. So pinning is a touch-only mechanism now.
+  // Only one tooltip is pinned at a time.
+  // NEVER gate event REGISTRATION on a media query. `(hover: hover)` and
+  // `(any-hover: hover)` are advisory descriptions of a device; they are not a statement
+  // about which events the browser will deliver. Chrome on Keiven's desktop reports BOTH
+  // false while delivering real hover — the cell matched CSS `:hover` and the lazy content
+  // builder ran on `pointerover`, but no `pointerenter` listener existed to open the popup,
+  // so hovering did nothing at all. The same gate silently removed keyboard access, because
+  // `focusin`/`focusout` sat behind it too.
+  //
+  // So: listeners are always attached (below), and the ONE thing that genuinely needs to
+  // know the input device — whether a tap should pin — is decided from the actual
+  // `PointerEvent.pointerType` of the interaction in hand, which is a fact rather than a
+  // guess. `pendingPointerType` is written on `pointerdown`, which always precedes the click
+  // it belongs to.
+  // CONSUMED by the click it belongs to, then cleared. Holding it until the next
+  // `pointerdown` made it stale rather than click-scoped: a keyboard activation issues
+  // no `pointerdown` at all, so after any touch the next Enter on a focused link would
+  // still read `touch`, call `preventDefault()` and pin — suppressing the link the
+  // keyboard user asked for. `pointercancel` clears it too, so an aborted gesture
+  // cannot arm a later click.
+  // Both the KIND of pointer and WHERE it went down. The kind alone is a document-wide
+  // global: a tap that lands anywhere else — a header, a scroll, any element that is not a
+  // tooltip host — leaves `touch` armed, because only a tooltip host's click consumes it.
+  // The next MOUSE click on a host would then read that stale `touch`, pin, and
+  // `preventDefault()` the parser-source link the mouse user actually asked for. Requiring
+  // the pointerdown to have landed inside the same host makes the provenance belong to
+  // this interaction rather than to whatever touched the page last.
+  let pendingPointerType = '';
+  let pendingPointerTarget = null;
+  document.addEventListener('pointerdown', function (e) {
+    pendingPointerType = e.pointerType || '';
+    pendingPointerTarget = e.target;
+  }, true);
+  document.addEventListener('pointercancel', function () {
+    pendingPointerType = '';
+    pendingPointerTarget = null;
+  }, true);
+  // A click that came from a finger or stylus has no hover behind it, so it must open the
+  // popup and pin it. A mouse click must not: hover already showed the popup, and pinning
+  // is modal (see `hoverAllowed`), so a mouse pin would switch hover off page-wide.
+  // Unknown/empty pointerType (synthetic `.click()`, keyboard activation) is treated as
+  // NOT touch, matching the mouse/keyboard contract.
+  const consumeClickShouldPin = function (cell) {
+    const t = pendingPointerType;
+    const target = pendingPointerTarget;
+    pendingPointerType = '';
+    pendingPointerTarget = null;
+    if (t !== 'touch' && t !== 'pen') { return false; }
+    // The gesture must have STARTED in this host, or it belongs to something else.
+    return !!(cell && target && cell.contains(target));
+  };
   let pinnedCell = null;
   function unpinCell(c) { if (c && c._ttipUnpin) { c._ttipUnpin(); } }
   // "Inside a pinnable element" must mean EXACTLY the set `attachTooltip` wired, so ask
@@ -770,18 +836,29 @@
       }, hideDelayMs);
     }
 
-    // Tap (or click) toggles a pinned tooltip. Taps INSIDE the tooltip (its links,
-    // the ✕) behave normally. On touch there's no hover, so a tap on the cell must
-    // open the tooltip instead of following the cell's own parser-source link —
-    // preventDefault blocks that navigation. On desktop, a click on the cell link
-    // still navigates; a click on the cell body pins.
+    // TOUCH ONLY. Tap toggles a pinned tooltip; taps INSIDE the tooltip (its links, the ✕)
+    // behave normally. Touch has no hover, so a tap on the cell must open the tooltip
+    // instead of following the cell's own parser-source link — preventDefault blocks that
+    // navigation. Without this, a touch user could not read a popup at all.
+    //
+    // There is deliberately NO click-to-pin where hover exists. Pinning is MODAL
+    // (`hoverAllowed()` below): while one cell is pinned, hover opens nothing anywhere
+    // else. That made a single stray click kill hover for the whole page until the pin
+    // was released, and in details view "click somewhere else to dismiss" almost always
+    // lands on another wired cell, which just moves the pin — so hover never came back.
+    // On a hover-capable device hover is the only affordance, and a click on a cell now
+    // does what the cell says it does: follow its parser-source link.
     cell.addEventListener('click', function (e) {
+      // Consume FIRST, unconditionally. Every early return below still ends this click,
+      // so leaving the provenance unconsumed on any of them hands a stale `touch` to the
+      // NEXT click — the defect consume-on-use exists to prevent, one branch over. A tap
+      // on the popup's own links or its ✕ takes this return, and used to leave it armed.
+      const shouldPin = consumeClickShouldPin(cell);
       if (e.target.closest('.ttip')) { return; }
-      if (!hoverCapable) {
-        e.preventDefault();
-      } else if (e.target.closest('a, button, input, label')) {
-        return;
-      }
+      // Decided per-interaction, not per-page: only a finger or stylus pins. A mouse click
+      // falls through to the cell's own parser-source link, and never enters modal pin mode.
+      if (!shouldPin) { return; }
+      e.preventDefault();
       if (ttip.classList.contains('ttip-pinned')) { unpin(); } else { pin(); }
     });
     // Hover show/hide only where hover exists; on touch it just flickers. A pinned
@@ -794,20 +871,32 @@
     // their own. Hover resumes when the pin is released (✕, clicking the pinned cell
     // again, or clicking outside).
     const hoverAllowed = function () { return pinnedCell === null || pinnedCell === cell; };
-    if (hoverCapable) {
-      cell.addEventListener('pointerenter', function () {
-        if (hoverAllowed() && !ttip.classList.contains('ttip-pinned')) { scheduleShow(); }
-      });
-      cell.addEventListener('pointerleave', function () {
-        if (!ttip.classList.contains('ttip-pinned')) { scheduleHide(); }
-      });
-      cell.addEventListener('focusin', function () {
-        if (hoverAllowed()) { scheduleShow(); }
-      });
-      cell.addEventListener('focusout', function () {
-        if (!ttip.classList.contains('ttip-pinned')) { scheduleHide(); }
-      });
-    }
+    // Registered UNCONDITIONALLY — see the `pendingPointerType` note above. If a device has no
+    // hover these simply never fire; if it does, they work regardless of what the media
+    // queries claim. `focusin`/`focusout` additionally give keyboard users the popup.
+    const onEnter = function () {
+      if (hoverAllowed() && !ttip.classList.contains('ttip-pinned')) { scheduleShow(); }
+    };
+    const onLeave = function () {
+      if (!ttip.classList.contains('ttip-pinned')) { scheduleHide(); }
+    };
+    cell.addEventListener('pointerenter', onEnter);
+    cell.addEventListener('pointerleave', onLeave);
+    // ALSO the classic mouse events, deliberately not instead. `pointerenter` is the
+    // modern spelling, but it does not fire on movement when the browser classifies the
+    // input as a touch pointer — and a device can report no hover capability, deliver a
+    // real mouse, and still surprise us about which family of events it sends. These two
+    // are what every browser has emitted for a moving mouse for twenty years. Both paths
+    // funnel into the same scheduleShow/scheduleHide, which are idempotent (they clear
+    // their own timers), so a browser sending BOTH opens exactly one popup.
+    cell.addEventListener('mouseenter', onEnter);
+    cell.addEventListener('mouseleave', onLeave);
+    cell.addEventListener('focusin', function () {
+      if (hoverAllowed()) { scheduleShow(); }
+    });
+    cell.addEventListener('focusout', function () {
+      if (!ttip.classList.contains('ttip-pinned')) { scheduleHide(); }
+    });
   }
   // The elements present at load. `th.case-sub` carries the per-column grammar popup (the
   // same case in every family's grammar); it uses the identical hover/pin machinery as a

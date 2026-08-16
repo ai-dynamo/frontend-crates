@@ -31,7 +31,7 @@
 //!
 //! # Ordered output
 //!
-//! The drain loop emits [`UnifiedDelta`]s — text, reasoning and calls in the
+//! The drain loop emits [`UnifiedParserEvent`]s — text, reasoning and calls in the
 //! order the model produced them. Tool-only parsers project that down to
 //! [`ToolParseResult`] via `push`/`finish` and see no behavior change (that
 //! projection is lossy about order, which is all the tool-only contract ever
@@ -51,7 +51,7 @@
 use std::collections::HashSet;
 
 use crate::tool_calling::traits::{ToolCallDelta, ToolParseResult};
-use crate::unified::{Kind, UnifiedDelta};
+use crate::unified::{Kind, UnifiedParserEvent};
 
 /// Longest non-empty proper prefix of any `marker` that `text` ends with, so a
 /// marker split across chunk boundaries is held back instead of leaked as
@@ -161,6 +161,14 @@ pub(crate) struct WrappedBlockSpec {
     /// the `invoke_end` means the call is malformed — drop it and close the
     /// block (Kimi K2's mismatched-fences rule).
     pub drop_invoke_crossing_block_end: bool,
+    /// Whether a decoder must keep tokenizer special tokens so this grammar's
+    /// markers survive to the parser.
+    ///
+    /// Lives on the GRAMMAR, not on an adapter, because it is a property of the
+    /// markers being scanned. Two adapters over one scanner previously answered
+    /// differently for identical markup — the tool-only parser said `true` while the
+    /// unified one inherited the trait default `false`.
+    pub preserve_special_tokens: bool,
 }
 
 /// The reasoning channel a unified scanner also owns.
@@ -179,6 +187,8 @@ pub(crate) struct ReasoningSpec {
     /// pre-filled it (policy P5). Qwen3 is not one of these; DeepSeek-R1-style
     /// forced-reasoning templates are.
     pub forced_start: bool,
+    /// Whether the reasoning markers require special-token preservation.
+    pub preserve_special_tokens: bool,
 }
 
 /// Per-family hook: parse one complete invoke (opener..closer inclusive) into
@@ -234,21 +244,58 @@ enum InReasoning {
 /// never emits a string of adjacent same-kind fragments (`I8`). The or-pattern is
 /// the whole point: text and reasoning coalesce by identical rules, so there is
 /// one implementation to get right instead of two that can drift.
-pub(crate) fn push_run(out: &mut Vec<UnifiedDelta>, kind: Kind, text: &str) {
-    if text.is_empty() {
-        return;
+/// Where the drain loop puts events as it commits them.
+///
+/// The loop writes through this rather than into a local `Vec` it returns at the end.
+/// That is what makes the error contract honest: an event handed to the sink belongs to
+/// the CALLER, so a later `Err` in the same advance cannot take it back. A local vector
+/// is dropped by `?` on the way out, which silently un-commits everything already
+/// emitted in that advance.
+///
+/// Method names match the peer accumulation helpers, so an implementation reads the
+/// same on both sides.
+pub(crate) trait EventSink {
+    /// Append visible text, merging into a trailing text event.
+    fn push_text(&mut self, text: &str);
+    /// Append reasoning text, merging into a trailing reasoning event.
+    fn push_reasoning(&mut self, text: &str);
+    /// Append one tool call. Calls never merge.
+    fn push_call(&mut self, call: ToolCallDelta);
+}
+
+/// The batch/tool-only path still collects into a vector.
+impl EventSink for Vec<UnifiedParserEvent> {
+    fn push_text(&mut self, text: &str) {
+        if text.is_empty() {
+            return;
+        }
+        if let Some(UnifiedParserEvent::Text(prev)) = self.last_mut() {
+            prev.push_str(text);
+            return;
+        }
+        self.push(UnifiedParserEvent::Text(text.to_string()));
     }
-    match (out.last_mut(), kind) {
-        (Some(UnifiedDelta::Text { text: prev }), Kind::Text)
-        | (Some(UnifiedDelta::Reasoning { text: prev }), Kind::Reasoning) => prev.push_str(text),
-        _ => out.push(match kind {
-            Kind::Text => UnifiedDelta::Text {
-                text: text.to_string(),
-            },
-            Kind::Reasoning => UnifiedDelta::Reasoning {
-                text: text.to_string(),
-            },
-        }),
+
+    fn push_reasoning(&mut self, text: &str) {
+        if text.is_empty() {
+            return;
+        }
+        if let Some(UnifiedParserEvent::Reasoning(prev)) = self.last_mut() {
+            prev.push_str(text);
+            return;
+        }
+        self.push(UnifiedParserEvent::Reasoning(text.to_string()));
+    }
+
+    fn push_call(&mut self, call: ToolCallDelta) {
+        self.push(UnifiedParserEvent::ToolCall(call));
+    }
+}
+
+pub(crate) fn push_run<S: EventSink + ?Sized>(out: &mut S, kind: Kind, text: &str) {
+    match kind {
+        Kind::Text => out.push_text(text),
+        Kind::Reasoning => out.push_reasoning(text),
     }
 }
 
@@ -315,13 +362,51 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         Ok(ToolParseResult::from_deltas(self.finish_ordered()?))
     }
 
-    pub(crate) fn push_ordered(&mut self, chunk: &str) -> anyhow::Result<Vec<UnifiedDelta>> {
-        self.buffer.push_str(chunk);
-        self.drain(false)
+    /// Whether decoding must preserve special tokens for THIS scanner's grammar.
+    ///
+    /// The OR over every component whose markers the scan consumes — the peer's
+    /// `CombinedParser` rule, expressed over one scanner rather than two wrapped
+    /// parser objects. A component that needs preservation cannot have its
+    /// requirement dropped by the composition.
+    pub(crate) fn preserve_special_tokens(&self) -> bool {
+        self.spec.preserve_special_tokens
+            || self
+                .reasoning
+                .as_ref()
+                .is_some_and(|r| r.preserve_special_tokens)
     }
 
-    pub(crate) fn finish_ordered(&mut self) -> anyhow::Result<Vec<UnifiedDelta>> {
-        self.drain(true)
+    pub(crate) fn push_ordered(&mut self, chunk: &str) -> anyhow::Result<Vec<UnifiedParserEvent>> {
+        let mut out = Vec::new();
+        self.push_ordered_into(chunk, &mut out)?;
+        Ok(out)
+    }
+
+    pub(crate) fn finish_ordered(&mut self) -> anyhow::Result<Vec<UnifiedParserEvent>> {
+        let mut out = Vec::new();
+        self.finish_ordered_into(&mut out)?;
+        Ok(out)
+    }
+
+    /// Drain one advance directly into the caller's sink.
+    ///
+    /// Preferred over [`Self::push_ordered`] on any fallible path: events reach the
+    /// caller as they are committed, so an `Err` later in the same advance leaves the
+    /// earlier ones in place instead of dropping them with the returned vector.
+    pub(crate) fn push_ordered_into<S: EventSink + ?Sized>(
+        &mut self,
+        chunk: &str,
+        out: &mut S,
+    ) -> anyhow::Result<()> {
+        self.buffer.push_str(chunk);
+        self.drain(false, out)
+    }
+
+    pub(crate) fn finish_ordered_into<S: EventSink + ?Sized>(
+        &mut self,
+        out: &mut S,
+    ) -> anyhow::Result<()> {
+        self.drain(true, out)
     }
 
     /// Position and length of the reasoning opener in the buffer, if configured.
@@ -337,9 +422,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     /// Returns `true` once the reasoning span yielded (closer seen, tool opener
     /// reached, or promoted at EOF) and the caller should keep draining; `false`
     /// means more input is needed.
-    fn drain_reasoning(
+    fn drain_reasoning<S: EventSink + ?Sized>(
         &mut self,
-        out: &mut Vec<UnifiedDelta>,
+        out: &mut S,
         flush: bool,
     ) -> anyhow::Result<bool> {
         let Some(reasoning) = self.reasoning else {
@@ -432,16 +517,29 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         Ok(false)
     }
 
-    fn drain(&mut self, flush: bool) -> anyhow::Result<Vec<UnifiedDelta>> {
-        let mut out: Vec<UnifiedDelta> = Vec::new();
+    /// Return to a FRESH-STREAM state and hand back whatever was still buffered.
+    ///
+    /// Every field that carries stream position resets, `next_index` included: the
+    /// returned text is a NEW stream, so a call parsed out of it must not reuse an
+    /// index already dispatched from the abandoned one.
+    pub(crate) fn reset_stream(&mut self) -> String {
+        let carried = std::mem::take(&mut self.buffer);
+        self.in_block = false;
+        self.in_reasoning = self.reasoning.as_ref().is_some_and(|r| r.forced_start);
+        self.resume_reasoning = false;
+        self.suppress_normal_text = false;
+        self.next_index = 0;
+        carried
+    }
 
+    fn drain<S: EventSink + ?Sized>(&mut self, flush: bool, out: &mut S) -> anyhow::Result<()> {
         loop {
             // Reasoning yields to tool structure: while a thought is open, its
             // closer OR a nested tool opener ends the current reasoning run (see
             // `drain_reasoning`), so a call emitted inside a thought is extracted
             // and the thought resumes after it.
             if self.in_reasoning {
-                if self.drain_reasoning(&mut out, flush)? {
+                if self.drain_reasoning(out, flush)? {
                     continue;
                 }
                 break;
@@ -507,10 +605,16 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     self.suppress_normal_text = false;
                     continue;
                 }
-                let invoke = self.buffer[..end + self.spec.invoke_end.len()].to_string();
-                self.buffer.drain(..end + self.spec.invoke_end.len());
-                if let Some(delta) = self.emitter.parse_invoke(&invoke, self.next_index)? {
-                    out.push(UnifiedDelta::ToolCall(delta));
+                let invoke_len = end + self.spec.invoke_end.len();
+                let invoke = self.buffer[..invoke_len].to_string();
+                // Emit BEFORE consuming. `parse_invoke` is fallible, and draining first
+                // meant a failing emitter destroyed the invoke bytes: they were gone from
+                // the buffer, so `reset_stream` could no longer hand them back and the
+                // documented recovery contract was false for the only shipped family.
+                let emitted = self.emitter.parse_invoke(&invoke, self.next_index)?;
+                self.buffer.drain(..invoke_len);
+                if let Some(delta) = emitted {
+                    out.push_call(delta);
                     self.next_index += 1;
                     if self.spec.invoke_latch == InvokeLatch::IfEmitted {
                         self.suppress_normal_text = true;
@@ -539,7 +643,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     .min();
                 if next_open.is_none_or(|open| pos < open) {
                     if !self.suppress_normal_text && pos > 0 {
-                        push_run(&mut out, Kind::Text, &self.buffer[..pos]);
+                        push_run(out, Kind::Text, &self.buffer[..pos]);
                     }
                     self.buffer.drain(..pos + len);
                     self.suppress_normal_text = false;
@@ -573,7 +677,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 let emit_len = self.buffer.len().saturating_sub(keep);
                 if emit_len > 0 {
                     if !self.suppress_normal_text {
-                        push_run(&mut out, Kind::Text, &self.buffer[..emit_len]);
+                        push_run(out, Kind::Text, &self.buffer[..emit_len]);
                     }
                     self.buffer.drain(..emit_len);
                 }
@@ -582,7 +686,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
             if start > 0 {
                 if !self.suppress_normal_text {
-                    push_run(&mut out, Kind::Text, &self.buffer[..start]);
+                    push_run(out, Kind::Text, &self.buffer[..start]);
                 }
                 self.buffer.drain(..start);
             }
@@ -615,15 +719,18 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         }
                         break;
                     };
-                    let invoke = self.buffer[..end + self.spec.invoke_end.len()].to_string();
-                    self.buffer.drain(..end + self.spec.invoke_end.len());
-                    if let Some(delta) = self.emitter.parse_invoke(&invoke, self.next_index)? {
+                    let invoke_len = end + self.spec.invoke_end.len();
+                    let invoke = self.buffer[..invoke_len].to_string();
+                    // Emit before consuming — same recovery contract as the wrapped site.
+                    let emitted = self.emitter.parse_invoke(&invoke, self.next_index)?;
+                    self.buffer.drain(..invoke_len);
+                    if let Some(delta) = emitted {
                         tracing::warn!(
                             why = %format!("{}_bare_invoke_recovery", self.spec.family),
                             tool_index = delta.tool_index,
                             "stream recovered a complete bare invoke"
                         );
-                        out.push(UnifiedDelta::ToolCall(delta));
+                        out.push_call(delta);
                         self.next_index += 1;
                         self.suppress_normal_text =
                             self.spec.bare_recovery_latch == BareRecoveryLatch::Set;
@@ -638,6 +745,90 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             }
         }
 
-        Ok(out)
+        Ok(())
+    }
+}
+
+/// Test-only: an emitter that fails partway through a stream, so the recovery contract
+/// can be exercised from every surface that drives a scanner.
+#[cfg(test)]
+pub(crate) mod test_support {
+    use super::*;
+
+    /// Succeeds until it sees `boom`, then fails — the shape of any real emitter whose
+    /// arguments fail to type-check partway through a stream.
+    pub(crate) struct FailOnBoom;
+
+    impl InvokeEmitter for FailOnBoom {
+        fn parse_invoke(
+            &self,
+            invoke: &str,
+            tool_index: usize,
+        ) -> anyhow::Result<Option<ToolCallDelta>> {
+            if invoke.contains("boom") {
+                anyhow::bail!("injected emitter failure");
+            }
+            Ok(Some(ToolCallDelta {
+                tool_index,
+                name: Some("ok".to_string()),
+                arguments: "{}".to_string(),
+            }))
+        }
+    }
+
+    pub(crate) fn failing_scanner() -> WrappedBlockScanner<FailOnBoom> {
+        WrappedBlockScanner::new(
+            WrappedBlockSpec {
+                family: "test",
+                block_starts: vec!["<tool_call>".into()],
+                block_ends: vec!["</tool_call>".into()],
+                invoke_start: "<function=".into(),
+                invoke_end: "</function>".into(),
+                orphan_markers: vec!["</tool_call>".into()],
+                holdback_markers: vec!["<tool_call>".into(), "</tool_call>".into()],
+                bare_recovery_latch: BareRecoveryLatch::Set,
+                invoke_latch: InvokeLatch::IfEmitted,
+                drop_invoke_crossing_block_end: false,
+                preserve_special_tokens: true,
+            },
+            FailOnBoom,
+        )
+    }
+}
+
+#[cfg(test)]
+mod recovery_tests {
+    use super::test_support::*;
+    use super::*;
+
+    /// Scanner-level contract: on an emitter error the failed invoke stays in the buffer,
+    /// so `reset_stream` can hand it back. Pre-fix this drained before the fallible call.
+    #[test]
+    fn wrapped_emitter_error_leaves_invoke_recoverable() {
+        let mut s = failing_scanner();
+        let mut out: Vec<UnifiedParserEvent> = Vec::new();
+        let r = s.push_ordered_into(
+            "prefix<tool_call><function=ok></function><function=boom></function></tool_call>suffix",
+            &mut out,
+        );
+        assert!(r.is_err(), "the injected emitter must surface its error");
+        assert_eq!(
+            s.reset_stream(),
+            "<function=boom></function></tool_call>suffix",
+            "the failed invoke and everything after it must remain recoverable"
+        );
+    }
+
+    #[test]
+    fn bare_emitter_error_leaves_invoke_recoverable() {
+        let mut s = failing_scanner();
+        let mut out: Vec<UnifiedParserEvent> = Vec::new();
+        let r = s.push_ordered_into("prefix<function=boom></function>suffix", &mut out);
+        assert!(r.is_err(), "the injected emitter must surface its error");
+        assert_eq!(
+            s.reset_stream(),
+            "<function=boom></function>suffix",
+            "the failed bare invoke and everything after it must remain recoverable"
+        );
     }
 }

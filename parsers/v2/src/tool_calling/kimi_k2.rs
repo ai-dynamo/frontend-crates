@@ -70,6 +70,8 @@ fn spec(config: &KimiK2ParserConfig) -> WrappedBlockSpec {
         bare_recovery_latch: BareRecoveryLatch::Set,
         invoke_latch: InvokeLatch::Always,
         drop_invoke_crossing_block_end: true,
+        // Every wrapped family's markers are special tokens today.
+        preserve_special_tokens: true,
     }
 }
 
@@ -134,7 +136,7 @@ impl ToolParser for KimiK2ToolStreamParser {
     }
 
     fn preserve_special_tokens(&self) -> bool {
-        true
+        self.scanner.preserve_special_tokens()
     }
 
     fn push(&mut self, chunk: &str) -> anyhow::Result<ToolParseResult> {

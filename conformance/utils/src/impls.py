@@ -4,8 +4,9 @@
 
 One `ImplSpec` per parser implementation. Every other module derives its keys,
 legacy aliases, display names, and matrix markers from `IMPL_SPECS` instead of
-re-declaring parallel tables that drift — the `V_rs` vs `V_rb`, `vllm` vs
-`vllm_python`, missing-parser-option class of bug.
+re-declaring parallel tables that drift — the vLLM Rust stream parser vs a
+(nonexistent) vLLM Rust batch parser, `vllm` vs `vllm_python`, missing-parser-option
+class of bug.
 
 Consumers (`generate_conformance_table.py`, `build_stream_fixtures.py`,
 `validate.py`, `tests/test_stream_on_batch.py`) all `import impls`. The generator

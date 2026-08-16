@@ -12,6 +12,7 @@ use super::dsml::{self, DsmlToolCallsConfig};
 use super::format::{
     AnyTextFormat, AnyTokensFormat, Format, SequenceFormat, StructuralTag, TagFormat,
 };
+use super::kimi_k2;
 use super::kimi_k3;
 use super::triggered_tags::{self, TriggeredTagsConfig};
 
@@ -81,7 +82,11 @@ pub(crate) fn resolve_tools_to_include<'a>(
     }
 }
 
-/// Resolve one tool's argument schema for structural tag generation.
+/// Resolve one tool's argument schema using Dynamo's generic schema policy.
+///
+/// In [`StructuralTagSchemaMode::Auto`], only `strict: true` selects the
+/// declared schema. Model-native builders may intentionally follow different
+/// upstream semantics and should use a model-specific policy helper.
 pub(crate) fn resolve_tool_schema(tool: &ToolDefinition, strict_schema: bool) -> Value {
     // xgrammar uses `true` for syntactically valid but schema-unconstrained JSON.
     let default_schema = json!(true);
@@ -94,14 +99,33 @@ pub(crate) fn resolve_tool_schema(tool: &ToolDefinition, strict_schema: bool) ->
     }
 }
 
+/// Whether Kimi's vLLM/xgrammar-compatible format should use the declared
+/// parameter schema.
+///
+/// Kimi treats only an explicit `strict: false` as an opt-out. An omitted
+/// `strict` value therefore uses the declared schema, unlike Dynamo's generic
+/// [`StructuralTagSchemaMode::Auto`] policy.
+pub(crate) fn kimi_uses_declared_tool_schema(tool: &ToolDefinition, strict_schema: bool) -> bool {
+    strict_schema || tool.strict != Some(false)
+}
+
 /// Builder for model-family-specific tool-call structural tags.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum StructuralTagBuilder {
     /// Simple `triggered_tags` format with one tag template per tool.
     TriggeredTags(TriggeredTagsConfig),
 
     /// DeepSeek DSML format with a `triggered_tags` wrapper and invoke list.
     DsmlToolCalls(DsmlToolCallsConfig),
+
+    /// Kimi K2's native special-token tool-call section format.
+    ///
+    /// When generation starts in a prompt-injected reasoning block, this
+    /// builder assumes the K2.5/K2.6 `kimi_k25` `</think>` terminator. Original
+    /// K2-Thinking is not supported because its chat template leaves the
+    /// opening `<think>` for the model to generate.
+    KimiK2,
 
     /// Kimi K3's native XTML response/tools channel format.
     KimiK3,
@@ -123,6 +147,7 @@ impl StructuralTagBuilder {
         let structural_tag = match self {
             Self::TriggeredTags(config) => triggered_tags::build_triggered_tags(config, ctx)?,
             Self::DsmlToolCalls(config) => dsml::build_dsml_tool_calls(config, ctx)?,
+            Self::KimiK2 => kimi_k2::build_kimi_k2(ctx)?,
             Self::KimiK3 => kimi_k3::build_kimi_k3(ctx)?,
         };
 
@@ -190,6 +215,7 @@ impl StructuralTagBuilder {
         match self {
             Self::TriggeredTags(config) => &config.tool_call_ban_tokens,
             Self::DsmlToolCalls(config) => &config.tool_call_ban_tokens,
+            Self::KimiK2 => &[],
             Self::KimiK3 => &[],
         }
     }
@@ -198,6 +224,9 @@ impl StructuralTagBuilder {
         match self {
             Self::TriggeredTags(config) => config.reasoning_end.as_deref(),
             Self::DsmlToolCalls(config) => config.reasoning_end.as_deref(),
+            // K2.5/K2.6 `kimi_k25` reasoning terminator. Original K2-Thinking
+            // generates the opening `<think>` itself and needs a separate path.
+            Self::KimiK2 => Some("</think>"),
             Self::KimiK3 => Some("<|close|>think<|sep|>"),
         }
     }

@@ -62,6 +62,16 @@
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
   }
+  // Monospace the things that ARE literals: backtick spans the corpus already
+  // writes (`reasoning/core`), and e2e artifact filenames like
+  // `case-0105-schema_escaped_unicode_string__non-stream-budget_capped.json`,
+  // which otherwise wrap mid-token in prose and read as a sentence.
+  // Runs AFTER escapeHtml, so the input is already inert and this only adds tags.
+  function codeSpans(escaped) {
+    return String(escaped)
+      .replace(/`([^`]+)`/g, '<tt>$1</tt>')
+      .replace(/(^|[\s(])(case-\d{3,}-[A-Za-z0-9_.-]+\.json)/g, '$1<tt>$2</tt>');
+  }
   function escapeAttr(s) { return escapeHtml(s); }
   function num(x) { return String(x == null ? 0 : x); }
 
@@ -218,11 +228,16 @@
   }
 
   // --- Output block rendering (mirrors _format_output_block_html) ------------
-  function outputBlock(b, family, ctx) {
+  function outputBlock(b, family, ctx, goldenKinds) {
     if (!b) { return '—'; }
     if (b.unavailable != null) {
       // Prose, not payload: these carry n/a rationale and TODO notes.
       return '<span class="expl">unavailable: ' + escapeHtml(String(b.unavailable)) + '</span>';
+    }
+    if (b.exception != null) {
+      // The parser ran and threw; surface the exception verbatim (e.g. the named
+      // vLLM Rust crate variant `ToolParserError::ParsingFailed (...)`).
+      return 'exception: ' + escapeHtml(String(b.exception));
     }
     if (b.error != null) {
       var e = (typeof b.error === 'string') ? b.error : JSON.stringify(b.error);
@@ -249,7 +264,18 @@
       // A blank line separates the monospaced event stream from the explanation
       // lines (verdict / TODO / note) so they don't read as another event.
       var expl = [];
-      if (b.verdict && b.verdict !== 'MATCH') { expl.push('diverges: ' + escapeHtml(b.verdict)); }
+      if (b.verdict && b.verdict !== 'MATCH') {
+        expl.push('diverges: ' + escapeHtml(b.verdict));
+        // ORDER/MERGE mean every BYTE survived and only the SEQUENCE is wrong.
+        // Naming the class without showing the sequence makes the reader diff
+        // two event lists by eye — so print both orders explicitly.
+        if ((b.verdict === 'ORDER' || b.verdict === 'MERGE') && goldenKinds) {
+          var arrow = ' \u2192 ';
+          var gotKinds = (b.events || []).map(function (ev) { return ev.kind; });
+          expl.push('want: ' + escapeHtml(goldenKinds.join(arrow)));
+          expl.push('got:  ' + escapeHtml(gotKinds.join(arrow)));
+        }
+      }
       if (b.todo) { expl.push(escapeHtml(String(b.todo))); }
       if (b.note) { expl.push(escapeHtml(String(b.note))); }
       if (expl.length) {
@@ -382,6 +408,9 @@
       if (c.key === 'golden') { golden = c; return false; }
       return true;
     });
+    var goldenKinds = golden && golden.block && golden.block.events
+      ? golden.block.events.map(function (ev) { return ev.kind; })
+      : null;
     var header = '';
     cands.forEach(function (c, ci) {
       header += '<th data-cand="' + escapeAttr(c.key) + '" data-cand-order="' + ci + '">'
@@ -420,7 +449,7 @@
       var diverges = c.block && c.block.verdict && c.block.verdict !== 'MATCH';
       fin += '<td data-cand="' + escapeAttr(c.key) + '" data-cand-order="' + ci + '"'
         + (diverges ? ' class="cand-diverge"' : '') + '>'
-        + outputBlock(c.block, family, ctx).replace(/\n/g, '<br>') + '</td>';
+        + outputBlock(c.block, family, ctx, goldenKinds).replace(/\n/g, '<br>') + '</td>';
     });
     fin += '</tr>';
     var inputHdr = golden ? 'input / golden output' : 'input';
@@ -512,10 +541,10 @@
     // the loud section blue). Falls back to its own line only when there is no id/head.
     if (m.head) {
       h += '<div class="ttip-head">' + escapeHtml(m.head)
-        + (m.description ? ' <span class="ttip-head-desc">' + escapeHtml(m.description) + '</span>' : '')
+        + (m.description ? ' <span class="ttip-head-desc">' + codeSpans(escapeHtml(m.description)) + '</span>' : '')
         + '</div>';
     } else if (m.description) {
-      h += '<div class="ttip-casedesc"><span class="ttip-head-desc">' + escapeHtml(m.description) + '</span></div>';
+      h += '<div class="ttip-casedesc"><span class="ttip-head-desc">' + codeSpans(escapeHtml(m.description)) + '</span></div>';
     }
     // Parser configuration for THIS case, one knob per line, directly under the
     // description it qualifies.
@@ -750,7 +779,7 @@
     // Id + description on ONE line: the id keeps its accent color, the description follows
     // inline in the normal tooltip text color (not the loud section blue).
     var h = '<div class="ttip-head">' + escapeHtml(m.head || '')
-      + (m.desc ? ' <span class="ttip-head-desc">' + escapeHtml(m.desc) + '</span>' : '')
+      + (m.desc ? ' <span class="ttip-head-desc">' + codeSpans(escapeHtml(m.desc)) + '</span>' : '')
       + '</div>';
     // Same builder as the cell popup: a column header and the cells under it describe
     // one configuration, so they cannot drift into showing different knobs.
@@ -793,9 +822,13 @@
       // One OUTPUT column per candidate (golden pinned first, then Reference, then the
       // rest). data-cand/-order/-pin let applyCtl show only golden + the active columns
       // and order them REF-first, exactly like the cell popup's candidate columns.
+      var goldenBlock = r.blocks && r.blocks.golden;
+      var goldenKinds = goldenBlock && goldenBlock.events
+        ? goldenBlock.events.map(function (ev) { return ev.kind; })
+        : null;
       outCell = cands.map(function (c, ci) {
         var blk = r.blocks && r.blocks[c.key];
-        var inner = blk ? outputBlock(blk, r.family || null, ctx).replace(/\n/g, '<br>')
+        var inner = blk ? outputBlock(blk, r.family || null, ctx, goldenKinds).replace(/\n/g, '<br>')
                         : '<span class="parser-base">—</span>';
         return '<td class="gro" data-cand="' + escapeAttr(c.key) + '" data-cand-order="' + ci + '"'
           + (c.pin ? ' data-cand-pin="1"' : '') + '>' + inner + '</td>';
@@ -913,6 +946,13 @@
       td.appendChild(a);
     }
     if (cell.tooltip) {
+      var hasSequenceDivergence = (cell.tooltip.candidates || []).some(function (candidate) {
+        var verdict = candidate.block && candidate.block.verdict;
+        return verdict === 'ORDER' || verdict === 'MERGE';
+      });
+      if (hasSequenceDivergence) {
+        td.setAttribute('data-sequence-divergence', '1');
+      }
       var ttip = document.createElement('div');
       ttip.className = 'ttip';
       td.appendChild(ttip);
@@ -1136,7 +1176,7 @@
           (tip.dynamo_notes || []).forEach(function (pair) { S(pair, 0); S(pair, 1); });
           var blocks = (tip.candidates || []).map(function (c) { return c.block; });
           if (tip.baseline) { blocks.push(tip.baseline.block); }
-          blocks.forEach(function (b) { if (b) { S(b, 'explanation'); S(b, 'unavailable'); } });
+          blocks.forEach(function (b) { if (b) { S(b, 'explanation'); S(b, 'unavailable'); S(b, 'exception'); } });
           (tip.candidates || []).forEach(function (c) {
             var fields = meta[c.key] || {};
             for (var f in fields) {
