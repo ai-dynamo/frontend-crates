@@ -135,6 +135,25 @@ struct JinjaEnvironment {
     env: Environment<'static>,
 }
 
+/// Which message-shape restrictions one chat template enforces, probed once at
+/// load. Each rewrite in `normalize_system_messages` is gated on its own flag:
+/// the restrictions are independent, so a template that rejects a non-leading
+/// `system` (Qwen3.5) but accepts consecutive `user` turns keeps those turns
+/// separate instead of being reshaped for a rule it does not have.
+#[derive(Debug, Default, Clone, Copy)]
+struct SystemNormalization {
+    /// Template raises on a `system` turn that is not first.
+    demote_nonleading_system: bool,
+    /// Template raises on two adjacent `user` turns.
+    coalesce_consecutive_users: bool,
+}
+
+impl SystemNormalization {
+    fn is_required(&self) -> bool {
+        self.demote_nonleading_system || self.coalesce_consecutive_users
+    }
+}
+
 /// Formatter for HuggingFace tokenizer config JSON templates
 ///
 /// Implements chat template rendering based on HuggingFace's tokenizer_config.json format.
@@ -186,13 +205,12 @@ struct HfTokenizerConfigJsonFormatter {
     /// True if the `tool_use` template branches on `tool_call.arguments is string`.
     /// See `default_template_handles_tool_calls_arguments_string` for rationale.
     tool_use_template_handles_tool_calls_arguments_string: bool,
-    /// True if the `default` template rejects a non-leading `system` turn, or
-    /// the consecutive `user` turns demoting one produces. Probed once at load.
-    default_requires_system_normalization: bool,
-    /// True if the `tool_use` template requires the same rewrite.
+    /// Message-shape restrictions the `default` template enforces.
+    default_system_normalization: SystemNormalization,
+    /// Message-shape restrictions the `tool_use` template enforces.
     /// Kept separate because dict-form HF configs may register templates with
-    /// different message-shape constraints.
-    tool_use_requires_system_normalization: bool,
+    /// different constraints.
+    tool_use_system_normalization: SystemNormalization,
 }
 
 // /// OpenAI Standard Prompt Formatter

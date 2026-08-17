@@ -433,93 +433,111 @@ impl OAIChatLikeRequest for dynamo_protocols::types::CreateChatCompletionRequest
     }
 }
 
-/// Flattens to text either way, since agent clients send system content as both
-/// a bare string and a content array.
-fn message_content_text(content: &serde_json::Value) -> String {
-    match content {
-        serde_json::Value::String(s) => s.clone(),
-        serde_json::Value::Array(parts) => parts
-            .iter()
-            .filter_map(|p| p.get("text").and_then(|t| t.as_str()))
-            .collect::<Vec<_>>()
-            .join("\n"),
-        _ => String::new(),
+/// Joins two message contents without flattening to text: a part array is
+/// spliced part for part, so image parts survive a merge. A string target is
+/// promoted to an array when the source carries parts.
+fn merge_message_content(
+    target: serde_json::Value,
+    source: serde_json::Value,
+) -> serde_json::Value {
+    use serde_json::Value;
+    let text_part = |text: String| json!({"type": "text", "text": text});
+    match (target, source) {
+        (Value::String(mut target), Value::String(source)) => {
+            if !target.is_empty() && !source.is_empty() {
+                target.push_str("\n\n");
+            }
+            target.push_str(&source);
+            Value::String(target)
+        }
+        (Value::Array(mut target), Value::Array(source)) => {
+            target.extend(source);
+            Value::Array(target)
+        }
+        (Value::Array(mut target), Value::String(source)) => {
+            if !source.is_empty() {
+                target.push(text_part(source));
+            }
+            Value::Array(target)
+        }
+        (Value::String(target), Value::Array(source)) => {
+            let mut parts = Vec::with_capacity(source.len() + 1);
+            if !target.is_empty() {
+                parts.push(text_part(target));
+            }
+            parts.extend(source);
+            Value::Array(parts)
+        }
+        (Value::Null, source) => source,
+        // Content is a string or a part array in every shape the schema allows.
+        (target, _) => target,
     }
 }
 
-fn append_message_content_text(message: &mut serde_json::Value, text: String) {
-    let Some(message) = message.as_object_mut() else {
+/// Merges `source` into `target`, leaving every other field on `target` intact.
+fn append_message_content(target: &mut serde_json::Value, source: serde_json::Value) {
+    let Some(target) = target.as_object_mut() else {
         return;
     };
-    match message.get_mut("content") {
-        Some(serde_json::Value::String(content)) => {
-            if !content.is_empty() && !text.is_empty() {
-                content.push_str("\n\n");
-            }
-            content.push_str(&text);
-        }
-        Some(serde_json::Value::Array(parts)) => {
-            if !text.is_empty() {
-                parts.push(json!({"type": "text", "text": text}));
-            }
-        }
-        Some(content) => {
-            *content = serde_json::Value::String(text);
-        }
-        None => {
-            message.insert("content".to_string(), serde_json::Value::String(text));
-        }
-    }
+    let merged = merge_message_content(
+        target.remove("content").unwrap_or(serde_json::Value::Null),
+        source,
+    );
+    target.insert("content".to_string(), merged);
+}
+
+fn take_message_content(message: &mut serde_json::Value) -> serde_json::Value {
+    message
+        .get_mut("content")
+        .map(serde_json::Value::take)
+        .unwrap_or(serde_json::Value::Null)
 }
 
 /// Rewrites an agent-client message stream into a shape strict chat templates
-/// accept. Only called for templates flagged by the load-time probe.
-fn normalize_system_messages(messages: &mut serde_json::Value) {
+/// accept. Each rewrite is gated on the restriction the load-time probe actually
+/// found, so a template is never reshaped for a rule it does not enforce.
+fn normalize_system_messages(messages: &mut serde_json::Value, rules: SystemNormalization) {
     let serde_json::Value::Array(list) = messages else {
         return;
     };
     let role_is =
         |m: &serde_json::Value, r: &str| m.get("role").and_then(|v| v.as_str()) == Some(r);
-    let content_of = |m: &serde_json::Value| {
-        message_content_text(m.get("content").unwrap_or(&serde_json::Value::Null))
-    };
 
-    // Strict templates permit at most one system message, at index 0.
-    let leading = list.iter().take_while(|m| role_is(m, "system")).count();
-    if leading > 1 {
-        let combined = list[..leading]
-            .iter()
-            .map(content_of)
-            .collect::<Vec<_>>()
-            .join("\n\n");
-        list.splice(
-            0..leading,
-            std::iter::once(json!({"role": "system", "content": combined})),
-        );
-    }
+    if rules.demote_nonleading_system {
+        // A template that rejects a system turn away from index 0 rejects a
+        // leading run of them too, so the run collapses into the first.
+        let leading = list.iter().take_while(|m| role_is(m, "system")).count();
+        if leading > 1 {
+            for mut trailing in list.drain(1..leading).collect::<Vec<_>>() {
+                let content = take_message_content(&mut trailing);
+                append_message_content(&mut list[0], content);
+            }
+        }
 
-    // Demoted in place, not folded to the front: a mid-conversation reminder
-    // that toggles would otherwise invalidate the whole KV prefix each turn.
-    let leading = list.iter().take_while(|m| role_is(m, "system")).count();
-    for m in list.iter_mut().skip(leading) {
-        if role_is(m, "system") {
-            *m = json!({"role": "user", "content": content_of(m)});
+        // Demoted in place, not folded to the front: a mid-conversation reminder
+        // that toggles would otherwise invalidate the whole KV prefix each turn.
+        let leading = list.iter().take_while(|m| role_is(m, "system")).count();
+        for m in list.iter_mut().skip(leading) {
+            if role_is(m, "system")
+                && let Some(m) = m.as_object_mut()
+            {
+                m.insert("role".to_string(), json!("user"));
+            }
         }
     }
 
-    // Demotion can leave two user turns adjacent, which alternation-enforcing
-    // templates (Gemma, Mistral) reject.
-    let mut coalesced: Vec<serde_json::Value> = Vec::with_capacity(list.len());
-    for m in list.drain(..) {
-        if role_is(&m, "user") && coalesced.last().is_some_and(|p| role_is(p, "user")) {
-            let cur_text = content_of(&m);
-            let prev = coalesced.last_mut().unwrap();
-            append_message_content_text(prev, cur_text);
-        } else {
-            coalesced.push(m);
+    if rules.coalesce_consecutive_users {
+        let mut coalesced: Vec<serde_json::Value> = Vec::with_capacity(list.len());
+        for mut m in list.drain(..) {
+            if role_is(&m, "user") && coalesced.last().is_some_and(|p| role_is(p, "user")) {
+                let content = take_message_content(&mut m);
+                append_message_content(coalesced.last_mut().unwrap(), content);
+            } else {
+                coalesced.push(m);
+            }
         }
+        *list = coalesced;
     }
-    *list = coalesced;
 }
 
 impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
@@ -557,20 +575,20 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
             template_name,
             template_handles_tool_calls_args_string,
             template_handles_reasoning,
-            requires_system_normalization,
+            system_normalization,
         ) = if has_tools {
             (
                 "tool_use",
                 self.tool_use_template_handles_tool_calls_arguments_string,
                 self.tool_use_template_handles_reasoning,
-                self.tool_use_requires_system_normalization,
+                self.tool_use_system_normalization,
             )
         } else {
             (
                 "default",
                 self.default_template_handles_tool_calls_arguments_string,
                 self.default_template_handles_reasoning,
-                self.default_requires_system_normalization,
+                self.default_system_normalization,
             )
         };
 
@@ -578,8 +596,8 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
         let mut messages_for_template: serde_json::Value =
             serde_json::to_value(&messages_canonical).unwrap();
 
-        if requires_system_normalization {
-            normalize_system_messages(&mut messages_for_template);
+        if system_normalization.is_required() {
+            normalize_system_messages(&mut messages_for_template, system_normalization);
         }
 
         messages_for_template = serde_json::to_value(may_be_fix_msg_content(
@@ -720,10 +738,24 @@ mod tests {
         "<|im_start|>{{ m.role }}\n{{ m.content }}<|im_end|>\n",
         "{%- endfor -%}"
     );
-    // Rejects consecutive user turns (Gemma/Mistral shape).
+    // Rejects consecutive user turns only; accepts a non-leading system.
     const ALTERNATION_TMPL: &str = concat!(
         "{%- set ns = namespace(prev='') -%}",
         "{%- for m in messages -%}",
+        "{%- if m.role == 'user' and ns.prev == 'user' -%}",
+        "{{ raise_exception('Conversation roles must alternate.') }}",
+        "{%- endif -%}",
+        "<|im_start|>{{ m.role }}\n{{ m.content }}<|im_end|>\n",
+        "{%- set ns.prev = m.role -%}",
+        "{%- endfor -%}"
+    );
+    // Rejects both restrictions (Gemma-3 / Mistral shape).
+    const STRICT_BOTH_TMPL: &str = concat!(
+        "{%- set ns = namespace(prev='') -%}",
+        "{%- for m in messages -%}",
+        "{%- if m.role == 'system' and not loop.first -%}",
+        "{{ raise_exception('System message must be at the beginning.') }}",
+        "{%- endif -%}",
         "{%- if m.role == 'user' and ns.prev == 'user' -%}",
         "{{ raise_exception('Conversation roles must alternate.') }}",
         "{%- endif -%}",
@@ -774,53 +806,85 @@ mod tests {
         ])
     }
 
+    fn all_restrictions() -> SystemNormalization {
+        SystemNormalization {
+            demote_nonleading_system: true,
+            coalesce_consecutive_users: true,
+        }
+    }
+
     #[test]
     fn permissive_template_is_not_flagged_and_renders_untouched() {
         let f = formatter_for(PERMISSIVE_TMPL);
-        assert!(!f.default_requires_system_normalization);
-        assert!(!f.tool_use_requires_system_normalization);
+        assert!(!f.default_system_normalization.is_required());
+        assert!(!f.tool_use_system_normalization.is_required());
         let out = render_shape(&f, claude_shape()).unwrap();
         assert!(out.contains("<|im_start|>system\nmid-conversation reminder<|im_end|>"));
     }
 
     #[test]
-    fn strict_leading_template_is_flagged_and_demotes_mid_system() {
+    fn strict_leading_template_demotes_mid_system_but_keeps_user_turns_apart() {
         let f = formatter_for(STRICT_LEADING_TMPL);
-        assert!(f.default_requires_system_normalization);
-        assert!(f.tool_use_requires_system_normalization);
+        assert!(f.default_system_normalization.demote_nonleading_system);
+        // The template accepts consecutive users, so demotion must not merge them.
+        assert!(!f.default_system_normalization.coalesce_consecutive_users);
+
         // This shape returned a 500 before the probe existed.
         let out = render_shape(&f, claude_shape()).unwrap();
-        assert!(out.contains("<|im_start|>user\nhello\n\nmid-conversation reminder<|im_end|>"));
         assert_eq!(out.matches("<|im_start|>system").count(), 1);
+        assert!(out.contains("<|im_start|>user\nhello<|im_end|>"));
+        assert!(out.contains("<|im_start|>user\nmid-conversation reminder<|im_end|>"));
     }
 
     #[test]
-    fn alternation_template_is_flagged_and_coalesces_users() {
+    fn alternation_template_coalesces_users_but_keeps_mid_system() {
         let f = formatter_for(ALTERNATION_TMPL);
-        assert!(f.default_requires_system_normalization);
-        assert!(f.tool_use_requires_system_normalization);
-        // Demotion would create [user, user]; coalescing keeps it valid.
+        assert!(f.default_system_normalization.coalesce_consecutive_users);
+        // The template accepts a non-leading system, so it stays a system turn.
+        assert!(!f.default_system_normalization.demote_nonleading_system);
+
         let out = render_shape(&f, claude_shape()).unwrap();
+        assert!(out.contains("<|im_start|>system\nmid-conversation reminder<|im_end|>"));
+
+        let out = render_shape(
+            &f,
+            json!([
+                {"role": "system", "content": "s"},
+                {"role": "user", "content": "hello"},
+                {"role": "user", "content": "again"},
+            ]),
+        )
+        .unwrap();
         assert_eq!(out.matches("<|im_start|>user").count(), 1);
+        assert!(out.contains("<|im_start|>user\nhello\n\nagain<|im_end|>"));
+    }
+
+    #[test]
+    fn strict_both_template_demotes_then_coalesces() {
+        let f = formatter_for(STRICT_BOTH_TMPL);
+        assert!(f.default_system_normalization.demote_nonleading_system);
+        assert!(f.default_system_normalization.coalesce_consecutive_users);
+
+        let out = render_shape(&f, claude_shape()).unwrap();
+        assert_eq!(out.matches("<|im_start|>system").count(), 1);
+        assert!(out.contains("<|im_start|>user\nhello\n\nmid-conversation reminder<|im_end|>"));
     }
 
     #[test]
     fn system_normalization_flag_is_selected_per_template() {
         let f = formatter_for_templates(PERMISSIVE_TMPL, STRICT_LEADING_TMPL);
-        assert!(!f.default_requires_system_normalization);
-        assert!(f.tool_use_requires_system_normalization);
+        assert!(!f.default_system_normalization.is_required());
+        assert!(f.tool_use_system_normalization.is_required());
 
         let no_tools = render_shape(&f, claude_shape()).unwrap();
         assert!(no_tools.contains("<|im_start|>system\nmid-conversation reminder<|im_end|>"));
         let with_tools = render_shape_with_tools(&f, claude_shape()).unwrap();
         assert_eq!(with_tools.matches("<|im_start|>system").count(), 1);
-        assert!(
-            with_tools.contains("<|im_start|>user\nhello\n\nmid-conversation reminder<|im_end|>")
-        );
+        assert!(with_tools.contains("<|im_start|>user\nmid-conversation reminder<|im_end|>"));
 
         let f = formatter_for_templates(STRICT_LEADING_TMPL, PERMISSIVE_TMPL);
-        assert!(f.default_requires_system_normalization);
-        assert!(!f.tool_use_requires_system_normalization);
+        assert!(f.default_system_normalization.is_required());
+        assert!(!f.tool_use_system_normalization.is_required());
         let with_tools = render_shape_with_tools(&f, claude_shape()).unwrap();
         assert!(with_tools.contains("<|im_start|>system\nmid-conversation reminder<|im_end|>"));
     }
@@ -828,24 +892,22 @@ mod tests {
     #[test]
     fn system_normalization_probe_uses_runtime_tools_shape() {
         let f = formatter_for_templates(DEFAULT_NONE_GATED_TMPL, TOOL_NONEMPTY_GATED_TMPL);
-        assert!(!f.default_requires_system_normalization);
-        assert!(f.tool_use_requires_system_normalization);
+        assert!(!f.default_system_normalization.is_required());
+        assert!(f.tool_use_system_normalization.is_required());
 
         let no_tools = render_shape(&f, claude_shape()).unwrap();
         assert!(no_tools.contains("<|im_start|>system\nmid-conversation reminder<|im_end|>"));
 
         let with_tools = render_shape_with_tools(&f, claude_shape()).unwrap();
         assert_eq!(with_tools.matches("<|im_start|>system").count(), 1);
-        assert!(
-            with_tools.contains("<|im_start|>user\nhello\n\nmid-conversation reminder<|im_end|>")
-        );
+        assert!(with_tools.contains("<|im_start|>user\nmid-conversation reminder<|im_end|>"));
     }
 
     #[test]
     fn system_normalization_precedes_required_content_array_conversion() {
         let f = formatter_for(STRICT_ARRAY_TMPL);
         assert!(f.requires_content_arrays);
-        assert!(f.default_requires_system_normalization);
+        assert!(f.default_system_normalization.demote_nonleading_system);
 
         let out = render_shape(
             &f,
@@ -872,7 +934,7 @@ mod tests {
             },
             {"role": "system", "content": "remember"},
         ]);
-        normalize_system_messages(&mut m);
+        normalize_system_messages(&mut m, all_restrictions());
         assert_eq!(
             m,
             json!([{
@@ -887,6 +949,31 @@ mod tests {
         );
     }
 
+    /// The mirror of the case above: the parts belong to the turn being merged
+    /// away, not the one being merged into.
+    #[test]
+    fn coalesce_preserves_multimodal_content_of_the_merged_turn() {
+        let mut m = json!([
+            {"role": "user", "content": "look"},
+            {"role": "user", "content": [
+                {"type": "text", "text": "at this"},
+                {"type": "image_url", "image_url": {"url": "http://img"}},
+            ]},
+        ]);
+        normalize_system_messages(&mut m, all_restrictions());
+        assert_eq!(
+            m,
+            json!([{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "look"},
+                    {"type": "text", "text": "at this"},
+                    {"type": "image_url", "image_url": {"url": "http://img"}},
+                ],
+            }])
+        );
+    }
+
     #[test]
     fn normalize_merges_leading_run_and_coalesces() {
         let mut m = json!([
@@ -895,7 +982,7 @@ mod tests {
             {"role": "user", "content": "hi"},
             {"role": "system", "content": "reminder"},
         ]);
-        normalize_system_messages(&mut m);
+        normalize_system_messages(&mut m, all_restrictions());
         assert_eq!(
             m,
             json!([
@@ -905,15 +992,61 @@ mod tests {
         );
     }
 
+    /// Each restriction drives only its own rewrite, so a template is never
+    /// reshaped for a rule it does not enforce.
     #[test]
-    fn normalize_flattens_array_system_content() {
+    fn each_restriction_applies_only_its_own_rewrite() {
+        let shape = json!([
+            {"role": "system", "content": "A"},
+            {"role": "system", "content": "B"},
+            {"role": "user", "content": "hi"},
+            {"role": "system", "content": "reminder"},
+        ]);
+
+        let mut demote_only = shape.clone();
+        normalize_system_messages(
+            &mut demote_only,
+            SystemNormalization {
+                demote_nonleading_system: true,
+                coalesce_consecutive_users: false,
+            },
+        );
+        assert_eq!(
+            demote_only,
+            json!([
+                {"role": "system", "content": "A\n\nB"},
+                {"role": "user", "content": "hi"},
+                {"role": "user", "content": "reminder"},
+            ])
+        );
+
+        let mut coalesce_only = shape.clone();
+        normalize_system_messages(
+            &mut coalesce_only,
+            SystemNormalization {
+                demote_nonleading_system: false,
+                coalesce_consecutive_users: true,
+            },
+        );
+        assert_eq!(coalesce_only, shape);
+    }
+
+    #[test]
+    fn normalize_preserves_array_system_content() {
         let mut m = json!([
             {"role": "user", "content": "hi"},
             {"role": "system", "content": [{"type": "text", "text": "one"},
                                            {"type": "text", "text": "two"}]},
         ]);
-        normalize_system_messages(&mut m);
-        assert_eq!(m, json!([{"role": "user", "content": "hi\n\none\ntwo"}]));
+        normalize_system_messages(&mut m, all_restrictions());
+        assert_eq!(
+            m,
+            json!([{"role": "user", "content": [
+                {"type": "text", "text": "hi"},
+                {"type": "text", "text": "one"},
+                {"type": "text", "text": "two"},
+            ]}])
+        );
     }
 
     /// Renders every agent-client shape through every template in a corpus of
@@ -966,6 +1099,8 @@ mod tests {
 
         let mut total = 0usize;
         let mut flagged = 0usize;
+        let mut demote_only = 0usize;
+        let mut coalesce = 0usize;
         let mut failures: Vec<String> = Vec::new();
         for (file, meta) in manifest.as_object().unwrap() {
             let tmpl = std::fs::read_to_string(format!("{dir}/{file}.jinja")).unwrap();
@@ -986,19 +1121,32 @@ mod tests {
                 continue;
             }
             total += 1;
-            let flag = f.default_requires_system_normalization;
+            let rules = f.default_system_normalization;
+            let flag = rules.is_required();
             if flag {
                 flagged += 1;
+            }
+            if rules.demote_nonleading_system {
+                demote_only += usize::from(!rules.coalesce_consecutive_users);
+            }
+            if rules.coalesce_consecutive_users {
+                coalesce += 1;
             }
             for (name, shape) in &shapes {
                 if render_shape(&f, shape.clone()).is_err() {
                     failures.push(format!("{model} | shape={name} | flag={flag}"));
                 }
             }
-            eprintln!("[ok] flag={flag} {model}");
+            if flag {
+                eprintln!(
+                    "[ok] demote={} coalesce={} {model}",
+                    rules.demote_nonleading_system, rules.coalesce_consecutive_users
+                );
+            }
         }
         eprintln!(
-            "\naudited {total} templates ({flagged} flagged for normalization); {} shape failures",
+            "\naudited {total} templates ({flagged} flagged: {demote_only} demote-only, \
+             {coalesce} coalescing); {} shape failures",
             failures.len()
         );
         for f in &failures {

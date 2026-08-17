@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use super::tokcfg::{ChatTemplate, fromjson, raise_exception, strftime_now, tojson};
-use super::{ContextMixins, HfTokenizerConfigJsonFormatter, JinjaEnvironment};
+use super::{ContextMixins, HfTokenizerConfigJsonFormatter, JinjaEnvironment, SystemNormalization};
 use either::Either;
 use minijinja::{Environment, Value, context};
 use serde_json::json;
@@ -54,17 +54,18 @@ fn probe_template_raises(
     }
 }
 
-/// Detects whether this template rejects the message streams agent clients send,
-/// so `render` only rewrites messages for templates that need it.
+/// Detects which message shapes agent clients send that this template rejects,
+/// so `render` applies only the rewrites this template needs.
 ///
-/// All three shapes are probed because strict families disagree on which they
-/// reject: Qwen3.5 allows consecutive users, Gemma-3 allows a non-leading system.
-fn detect_requires_system_normalization(
+/// The non-leading `system` restriction takes two probes because strict families
+/// disagree on where they enforce it: Gemma-3 accepts `[system, user, system]`
+/// but rejects the same turn after an assistant reply.
+fn detect_system_normalization(
     env: &Environment,
     template_name: &str,
     tools: &Option<serde_json::Value>,
     tok: &ProbeTokens,
-) -> bool {
+) -> SystemNormalization {
     let sys = |c: &str| json!({"role": "system", "content": c});
     let usr = |c: &str| json!({"role": "user", "content": c});
     let asst = |c: &str| json!({"role": "assistant", "content": c});
@@ -73,19 +74,12 @@ fn detect_requires_system_normalization(
     let baseline_ok =
         !probe_template_raises(env, template_name, json!([sys("s"), usr("u")]), tools, tok);
     if !baseline_ok {
-        return false;
+        return SystemNormalization::default();
     }
     let nonleading_system = probe_template_raises(
         env,
         template_name,
         json!([sys("s0"), usr("u"), sys("s1")]),
-        tools,
-        tok,
-    );
-    let consecutive_users = probe_template_raises(
-        env,
-        template_name,
-        json!([sys("s"), usr("u0"), usr("u1")]),
         tools,
         tok,
     );
@@ -96,7 +90,17 @@ fn detect_requires_system_normalization(
         tools,
         tok,
     );
-    nonleading_system || consecutive_users || mid_after_assistant
+    let consecutive_users = probe_template_raises(
+        env,
+        template_name,
+        json!([sys("s"), usr("u0"), usr("u1")]),
+        tools,
+        tok,
+    );
+    SystemNormalization {
+        demote_nonleading_system: nonleading_system || mid_after_assistant,
+        coalesce_consecutive_users: consecutive_users,
+    }
 }
 
 /// Detects if a template requires content as arrays (multimodal) vs strings (text-only).
@@ -581,18 +585,10 @@ impl HfTokenizerConfigJsonFormatter {
                 "parameters": {"type": "object", "properties": {}}
             }
         }]));
-        let default_requires_system_normalization = detect_requires_system_normalization(
-            &env,
-            "default",
-            &default_probe_tools,
-            &probe_tokens,
-        );
-        let tool_use_requires_system_normalization = detect_requires_system_normalization(
-            &env,
-            "tool_use",
-            &tool_use_probe_tools,
-            &probe_tokens,
-        );
+        let default_system_normalization =
+            detect_system_normalization(&env, "default", &default_probe_tools, &probe_tokens);
+        let tool_use_system_normalization =
+            detect_system_normalization(&env, "tool_use", &tool_use_probe_tools, &probe_tokens);
 
         Ok(HfTokenizerConfigJsonFormatter {
             env,
@@ -606,8 +602,8 @@ impl HfTokenizerConfigJsonFormatter {
             image_placeholder_template,
             default_template_handles_tool_calls_arguments_string,
             tool_use_template_handles_tool_calls_arguments_string,
-            default_requires_system_normalization,
-            tool_use_requires_system_normalization,
+            default_system_normalization,
+            tool_use_system_normalization,
         })
     }
 }
