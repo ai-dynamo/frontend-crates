@@ -401,14 +401,6 @@ pub fn create_tokenizer_from_file_with_options(
 // and https://github.com/vllm-project/vllm/blob/da2705198fa19030a25d0bea437f7be6547d47d4/vllm/transformers_utils/detokenizer_utils.py#L51
 const INITIAL_INCREMENTAL_DETOKENIZATION_OFFSET: usize = 5;
 
-fn floor_char_boundary(text: &str, requested: usize) -> usize {
-    let mut boundary = requested.min(text.len());
-    while boundary > 0 && !text.is_char_boundary(boundary) {
-        boundary -= 1;
-    }
-    boundary
-}
-
 /// DecodeStream will keep the state necessary to produce individual chunks of
 /// strings given an input stream of token_ids.
 ///
@@ -435,6 +427,9 @@ pub struct DecodeStream {
     prefix_offset: usize,
 
     read_offset: usize,
+
+    /// Whether any generated text has already been returned to the caller.
+    has_emitted: bool,
 }
 
 impl DecodeStream {
@@ -452,6 +447,7 @@ impl DecodeStream {
             prefix_offset: num_input_tokens
                 .saturating_sub(INITIAL_INCREMENTAL_DETOKENIZATION_OFFSET),
             read_offset: num_input_tokens,
+            has_emitted: false,
         }
     }
 
@@ -464,6 +460,9 @@ impl DecodeStream {
     /// This typically happens with `byte_fallback` options where some tokens do not
     /// represent valid UTF-8, and only follow-up token_ids will help produce
     /// a valid chunk.
+    ///
+    /// An error is terminal for this stream because the token may already have
+    /// been appended to its internal state.
     pub fn step(&mut self, id: u32) -> Result<Option<String>> {
         self.all_token_ids.push(id);
 
@@ -482,16 +481,24 @@ impl DecodeStream {
 
         let new_text = new_result.as_str();
         if new_text.len() > prefix_text.len() && !new_result.is_partial() {
-            // Decoding the same token window with one more token can rewrite the
-            // last Unicode scalar value. In that case the previous byte length
-            // may point into the middle of a multi-byte UTF-8 character in the
-            // new string. Round the split point down to a valid boundary instead
-            // of indexing the string at an invalid byte offset and panicking.
-            let prefix_text_len = floor_char_boundary(new_text, prefix_text.len());
-            let emitted = new_text[prefix_text_len..].to_string();
+            let requested_split = prefix_text.len();
+            let split = new_text.floor_char_boundary(requested_split);
+
+            // Rewinding into prompt context is safe because prompt text was not
+            // returned by this stream. Once generated text has been returned,
+            // rewinding would duplicate or corrupt text already seen by the caller.
+            if self.has_emitted && split != requested_split {
+                return Err(Error::msg(format!(
+                    "incremental decoding rewrote already emitted text: byte offset \
+                     {requested_split} is not a character boundary in the new decode"
+                )));
+            }
+
+            let emitted = new_text[split..].to_string();
 
             self.prefix_offset = self.read_offset;
             self.read_offset = self.all_token_ids.len();
+            self.has_emitted = true;
 
             Ok(Some(emitted))
         } else {
@@ -502,10 +509,14 @@ impl DecodeStream {
 
 #[cfg(test)]
 mod decode_stream_unicode_tests {
-    use super::{DecodeResult, DecodeStream, Encoding, Result, TokenIdType, floor_char_boundary};
+    use super::{DecodeResult, DecodeStream, Encoding, Result, TokenIdType};
     use std::sync::Arc;
 
-    struct RewritingTokenizer;
+    struct RewritingTokenizer {
+        prefix_text: &'static str,
+        rewritten_text: &'static str,
+        prefix_is_partial: bool,
+    }
 
     impl super::traits::Encoder for RewritingTokenizer {
         fn encode(&self, _input: &str) -> Result<Encoding> {
@@ -523,35 +534,60 @@ mod decode_stream_unicode_tests {
             token_ids: &[TokenIdType],
             _skip_special_tokens: bool,
         ) -> Result<DecodeResult> {
-            let text = match token_ids.len() {
-                1 => "㺄馉凓鄗abc",
-                2 => "㺄馉凓鄗𫷲",
-                _ => "",
+            let result = match token_ids.len() {
+                1 if self.prefix_is_partial => DecodeResult::Partial(self.prefix_text.to_string()),
+                1 => DecodeResult::Complete(self.prefix_text.to_string()),
+                2 => DecodeResult::Complete(self.rewritten_text.to_string()),
+                _ => DecodeResult::Complete(String::new()),
             };
-            Ok(DecodeResult::Complete(text.to_string()))
+            Ok(result)
         }
     }
 
     impl super::traits::Tokenizer for RewritingTokenizer {}
 
     #[test]
-    fn rounds_incremental_split_down_to_unicode_boundary() {
-        for (text, requested, expected) in [
-            ("㺄馉凓鄗𫷲", 15, 12),
-            ("JUnitworkflow Completion intuition𝟙", 37, 34),
+    fn allows_boundary_recovery_before_generated_text_is_emitted() {
+        for (prefix_text, rewritten_text, expected) in [
+            ("㺄馉凓鄗\u{FFFD}", "㺄馉凓鄗𫷲", "𫷲"),
+            (
+                "JUnitworkflow Completion intuition\u{FFFD}",
+                "JUnitworkflow Completion intuition𝟙",
+                "𝟙",
+            ),
         ] {
-            let split = floor_char_boundary(text, requested);
-            assert_eq!(split, expected);
-            assert!(text.get(split..).is_some());
+            let tokenizer: Arc<dyn super::traits::Tokenizer> = Arc::new(RewritingTokenizer {
+                prefix_text,
+                rewritten_text,
+                prefix_is_partial: true,
+            });
+            let mut stream = DecodeStream::new(tokenizer, &[1], false);
+
+            assert_eq!(stream.step(2).unwrap(), Some(expected.to_string()));
         }
     }
 
     #[test]
-    fn decode_stream_does_not_panic_when_decode_rewrites_multibyte_suffix() {
-        let tokenizer: Arc<dyn super::traits::Tokenizer> = Arc::new(RewritingTokenizer);
-        let mut stream = DecodeStream::new(tokenizer, &[1], false);
+    fn errors_when_boundary_recovery_would_reemit_generated_text() {
+        for (prefix_text, rewritten_text) in [
+            ("㺄馉凓鄗abc", "㺄馉凓鄗𫷲"),
+            (
+                "JUnitworkflow Completion intuitionabc",
+                "JUnitworkflow Completion intuition𝟙",
+            ),
+        ] {
+            let tokenizer: Arc<dyn super::traits::Tokenizer> = Arc::new(RewritingTokenizer {
+                prefix_text,
+                rewritten_text,
+                prefix_is_partial: false,
+            });
+            let mut stream = DecodeStream::new(tokenizer, &[], false);
 
-        assert_eq!(stream.step(2).unwrap(), Some("𫷲".to_string()));
+            assert_eq!(stream.step(1).unwrap(), Some(prefix_text.to_string()));
+
+            let error = stream.step(2).unwrap_err();
+            assert!(error.to_string().contains("already emitted text"));
+        }
     }
 }
 
