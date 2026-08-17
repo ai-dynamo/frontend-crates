@@ -31,6 +31,8 @@ use serde_json::{Value, json};
 
 mod common;
 
+use common::Init;
+
 #[derive(Deserialize)]
 struct GoldenFile {
     family: String,
@@ -42,6 +44,10 @@ struct GoldenCase {
     description: String,
     #[serde(default)]
     policy: Vec<String>,
+    #[serde(default)]
+    init: Init,
+    #[serde(default)]
+    finish_reason: Option<String>,
     input: String,
     golden: Vec<Ev>,
     expect: BTreeMap<String, Expect>,
@@ -103,6 +109,8 @@ fn tools() -> Vec<Tool> {
         mk("f", "x"),
         mk("g", "y"),
         mk("run", "cmd"),
+        mk("log", "note"),
+        mk("sum_values", "values"),
     ]
 }
 
@@ -179,8 +187,10 @@ fn unified_delta_json(d: &dynamo_parsers_v2::UnifiedParserEvent) -> Value {
 ///
 /// Both paths are driven from the SAME chunking as `dynamo_chunks`, so the
 /// assembled row and the per-chunk rows in the popup describe one run.
-fn dynamo_events(family: &str, input: &str) -> Vec<Ev> {
+fn dynamo_events(family: &str, input: &str, init: &Init) -> Vec<Ev> {
     if let Ok(mut parser) = create_unified_parser_for_family(family, &tools()) {
+        init.apply(&mut parser, family);
+
         let mut deltas = Vec::new();
         for chunk in chunk_input(input) {
             deltas.extend(
@@ -292,9 +302,11 @@ fn tool_deltas(res: &dynamo_parsers_v2::ToolParseResult, out: &mut Vec<Value>) {
 /// Stream `input` through Dynamo's split pipeline CHUNK BY CHUNK, recording the
 /// real per-chunk emitted deltas (v1 reasoning streaming incremental -> v2 tool
 /// streaming push on the leftover content).
-fn dynamo_chunks(family: &str, input: &str) -> Vec<ChunkRow> {
+fn dynamo_chunks(family: &str, input: &str, init: &Init) -> Vec<ChunkRow> {
     // Unified families: ONE parser, so a chunk's deltas are simply what it emitted.
     if let Ok(mut parser) = create_unified_parser_for_family(family, &tools()) {
+        init.apply(&mut parser, family);
+
         let mut rows = Vec::new();
         for chunk in chunk_input(input) {
             let deltas = parser.push(&chunk).unwrap_or_default();
@@ -309,12 +321,10 @@ fn dynamo_chunks(family: &str, input: &str) -> Vec<ChunkRow> {
             .iter()
             .map(unified_delta_json)
             .collect();
-        if !tail.is_empty() {
-            rows.push(ChunkRow {
-                delta_text: "‹finish›".to_string(),
-                deltas: tail,
-            });
-        }
+        rows.push(ChunkRow {
+            delta_text: "‹finish›".to_string(),
+            deltas: tail,
+        });
         return rows;
     }
 
@@ -350,13 +360,22 @@ fn dynamo_chunks(family: &str, input: &str) -> Vec<ChunkRow> {
         tool_deltas(&tr, &mut tail);
     }
     tool_deltas(&tp.finish().unwrap_or_default(), &mut tail);
-    if !tail.is_empty() {
-        rows.push(ChunkRow {
-            delta_text: "‹finish›".to_string(),
-            deltas: tail,
-        });
-    }
+    rows.push(ChunkRow {
+        delta_text: "‹finish›".to_string(),
+        deltas: tail,
+    });
     rows
+}
+
+#[test]
+fn finish_is_part_of_the_stream_schedule_even_when_it_emits_nothing() {
+    let rows = dynamo_chunks("qwen3", "plain response", &Init::default());
+    let finish = rows.last().expect("finish row");
+    assert_eq!(finish.delta_text, "‹finish›");
+    assert!(
+        finish.deltas.is_empty(),
+        "fixture must exercise an empty finish"
+    );
 }
 
 /// Classify a Dynamo divergence from the golden.
@@ -496,6 +515,44 @@ fn cell(
 
 #[test]
 fn render_unified_conformance_html() {
+    // The vLLM column is LIVE, not an expectation. `capture_vllm_rust_unified.py`
+    // records the `vllm-parser` crate against this same corpus; reading it here is
+    // what makes the column evidence instead of a claim.
+    let vllm_live: BTreeMap<(String, String), Vec<Ev>> = {
+        let froot = common::ensure_fixtures().join("unified");
+        let mut m = BTreeMap::new();
+        // Shards key by TAXONOMY id (`UNIFIED.30.a`); the golden keys by SCENARIO
+        // (`UNIFIED.guided_json_named_tool.qwen3`). The inputs shard carries both, so
+        // it is the bridge — without it every cell reads NO-DATA while the capture
+        // sits right there, which is how this first went wrong.
+        let mut by_tax: BTreeMap<(String, String), String> = BTreeMap::new();
+        for entry in glob_yaml(&froot.join("inputs")) {
+            if let Ok(doc) = serde_yaml::from_str::<InputDoc>(
+                &std::fs::read_to_string(&entry).unwrap_or_default(),
+            ) {
+                for (cid, c) in doc.cases {
+                    by_tax.insert((doc.family.clone(), cid), c.scenario);
+                }
+            }
+        }
+        if let Some(d) = common::version_dirs_ascending(&froot, "vllm_rust-").pop() {
+            for entry in glob_yaml(&d) {
+                if let Ok(doc) = serde_yaml::from_str::<CaptureDoc>(
+                    &std::fs::read_to_string(&entry).unwrap_or_default(),
+                ) {
+                    for (cid, c) in doc.cases {
+                        if let Some(sc) = by_tax.get(&(doc.family.clone(), cid)) {
+                            m.insert(
+                                (doc.family.clone(), format!("UNIFIED.{sc}.{}", doc.family)),
+                                c.assembled,
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        m
+    };
     let dir = common::ensure_unified_golden();
     let mut files: Vec<GoldenFile> = Vec::new();
     for entry in std::fs::read_dir(&dir).unwrap() {
@@ -528,13 +585,13 @@ fn render_unified_conformance_html() {
             total += 1;
 
             // Dynamo: live.
-            let got = dynamo_events(&file.family, &case.input);
+            let got = dynamo_events(&file.family, &case.input, &case.init);
             let dclass = classify(&file.family, &case.golden, &got);
             eprintln!(
                 "{id:44} dynamo={dclass:6} :: {}",
                 got.iter().map(Ev::render).collect::<Vec<_>>().join("  |  ")
             );
-            let chunk_feed: Vec<Value> = dynamo_chunks(&file.family, &case.input)
+            let chunk_feed: Vec<Value> = dynamo_chunks(&file.family, &case.input, &case.init)
                 .into_iter()
                 .map(|r| json!({"delta_text": r.delta_text, "dynamo": r.deltas}))
                 .collect();
@@ -550,6 +607,8 @@ fn render_unified_conformance_html() {
                 "scenario": scenario,
                 "description": case.description,
                 "policy": case.policy,
+                "init": case.init.applied(),
+                "finish_reason": case.finish_reason.clone().unwrap_or_else(|| "stop".to_string()),
                 "input": case.input,
                 "golden": case.golden,
                 "dynamo": got,
@@ -602,13 +661,36 @@ fn render_unified_conformance_html() {
                 .note
                 .map(|n| format!("<hr><div class=note>{}</div>", esc(&n)))
                 .unwrap_or_default();
+            let vlive = vllm_live.get(&(file.family.clone(), id.clone()));
+            let (vgot_html, vverdict, vclass_final) = match vlive {
+                Some(ev) => {
+                    let matches = ev == &case.golden;
+                    (
+                        events_html(ev),
+                        if matches { "match" } else { "diverge" },
+                        if matches {
+                            "MATCH".to_string()
+                        } else {
+                            "DIVERGE".to_string()
+                        },
+                    )
+                }
+                // No capture for this case: say so. Do NOT fall back to the authored
+                // expectation dressed up as a result — that is how this column spent
+                // its life claiming MATCH with nothing behind it.
+                None => (
+                    "<i>(no vLLM capture for this case)</i>".to_string(),
+                    "diverge",
+                    "NO-DATA".to_string(),
+                ),
+            };
             let vcell = cell(
-                "vLLM 0.25.x (expected)",
+                "vLLM Rust 0.25.1 (LIVE)",
                 &case.input,
                 &case.golden,
-                "<i>(live capture pending — U1)</i>",
-                &vx.verdict,
-                &vclass,
+                &vgot_html,
+                vverdict,
+                &vclass_final,
                 &vnote,
             );
 
@@ -733,6 +815,11 @@ struct InputCase {
     scenario: String,
     #[serde(default)]
     input: String,
+    /// The guard must re-run each case under the SAME configuration the shard was
+    /// captured with; re-running everything under the default would report false
+    /// drift for every prefilled / guided-JSON case.
+    #[serde(default)]
+    init: Init,
 }
 
 /// GUARD: the COMMITTED Dynamo capture must equal what the parsers produce NOW.
@@ -763,13 +850,16 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
         .pop()
         .expect("no committed dynamo_v2-<ver> capture dir");
 
-    // key -> (family, scenario, input), from the inputs shard.
-    let mut meta: BTreeMap<(String, String), (String, String)> = BTreeMap::new();
+    // key -> (family, scenario, input, init), from the inputs shard.
+    let mut meta: BTreeMap<(String, String), (String, String, Init)> = BTreeMap::new();
     for entry in glob_yaml(&root.join("inputs")) {
         let doc: InputDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
             .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
         for (key, case) in doc.cases {
-            meta.insert((doc.family.clone(), key), (case.scenario, case.input));
+            meta.insert(
+                (doc.family.clone(), key),
+                (case.scenario, case.input, case.init),
+            );
         }
     }
 
@@ -779,13 +869,13 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
         let doc: CaptureDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
             .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
         for (key, committed) in doc.cases {
-            let Some((scenario, input)) = meta.get(&(doc.family.clone(), key.clone())) else {
+            let Some((scenario, input, init)) = meta.get(&(doc.family.clone(), key.clone())) else {
                 continue;
             };
             checked += 1;
             let id = format!("UNIFIED.{scenario}.{}", doc.family);
 
-            let live_assembled = dynamo_events(&doc.family, input);
+            let live_assembled = dynamo_events(&doc.family, input, init);
             if live_assembled != committed.assembled {
                 stale.push(format!(
                     "{id} [{key}] assembled\n    committed: {}\n         live: {}",
@@ -805,7 +895,7 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
             }
             // The page assembles the Dynamo column from these per-chunk deltas, so
             // they have to be current too — not just the assembled list.
-            let live_chunks: Vec<Vec<Value>> = dynamo_chunks(&doc.family, input)
+            let live_chunks: Vec<Vec<Value>> = dynamo_chunks(&doc.family, input, init)
                 .into_iter()
                 .map(|r| r.deltas)
                 .collect();

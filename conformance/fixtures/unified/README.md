@@ -22,6 +22,35 @@ Every fixture ships as a per-version LFS shard here, same convention as the tool
 - `../utils/lib/parsers/UNIFIED_CASES.md` — schema, invariants, policies, divergence classes, case taxonomy.
 - `../tests/unified_schema_roundtrip.rs` — proves every authored golden case parses and round-trips through the event schema.
 
+### Pre-unified columns (`dynamo_v2-0.1.22`, `dynamo_v2-0.1.23`)
+
+`0.1.23` is the last release with NO `unified` module at all — the unified parser first shipped in `0.1.24`, verified with `git ls-tree -d <tag> parsers/v2/src/unified` across `0.1.22`..`0.1.26`. **BOTH `0.1.22` and `0.1.23`** are therefore the SPLIT path by definition (v1 reasoning + v2 tool), and they are what show the argument-integrity divergences the unified parser fixes (`UNIFIED.12.a`, `UNIFIED.7.b`). (An earlier revision of this file said unified shipped in `0.1.23` and scoped this section to `0.1.22` alone; both were wrong.)
+
+Some released capture rows retain legacy `parser_path` metadata, but the capture producer does not own that field consistently and the renderer does not treat it as authoritative. `unified_parser_path()` derives the label from the tested release boundary: `0.1.22` and `0.1.23` map to `split`, while `0.1.24` and later map to `unified`; `test_unified_parser_path_uses_the_release_boundary_not_fixture_metadata` pins that mapping. The table labels the older columns `SPLIT ONLY — no unified parser in this build`. That label is not cosmetic: an empty result under a `Combined & Unified` heading reads as "the unified parser returned nothing", when in fact there was never a unified parser to run. On a native case `0.1.22` returns a real `tool_call`; on the guided cases it returns nothing at all, and THAT is the finding.
+
+**Reading the diff counts.** The cross-version harness drives `push`/`finish` only — it has to compile against builds with no `initialize` / output-mode API — so it cannot apply a case's `init:`. Every case therefore runs in that build's ONLY mode. For a pre-request-mode build that is not a mis-measurement (it has one mode, so "what it does" is "what it would have done"), but it does mean part of any diff count against a modern column is missing capability rather than changed behaviour in a comparable mode. The group 30/31/40/41/50/51 cases are the affected ones.
+
+`capture_cross_version.rs` cannot be used unmodified against them: that harness falls back to the split path when a family has no native unified parser, but it still needs `UnifiedDelta`/`assemble` to EXIST at compile time. To re-capture, copy it into the old worktree, drop the unified imports, delete the `native` branch and its `ev_to_yaml`/`delta_to_yaml` helpers, and pin `let native = false`.
+
+### Back-capturing a NEW case into the older columns (MUST, every time)
+
+Adding a corpus case only writes the CURRENT build's column. Every older shard holds just the cases that existed when it was taken, so a new case renders `not captured at <ver> — this case postdates that build` on every historical column. **A row with data in exactly one column shows NO difference, and the difference is the entire point of this table** — a reviewer cannot tell a fixed regression from a case nobody ever ran. Back-capture in the SAME change:
+
+```bash
+git worktree add --detach /tmp/old-<ver> dynamo-parsers-v2-v<ver>
+# pre-unified (<= 0.1.23): apply the split-only edits above before running
+cp conformance/tests/capture_cross_version.rs /tmp/old-<ver>/conformance/tests/
+cd /tmp/old-<ver> && \
+  XVER_INPUTS=<repo>/conformance/unified/inputs \
+  XVER_FAMILIES=<repo>/conformance/utils/src/parser_families.yaml \
+  XVER_OUT=/tmp/xver-<ver> XVER_LABEL=<ver> \
+  cargo test -p dynamo-conformance-fixtures-v2 --test capture_cross_version -- --nocapture
+```
+
+Then merge **only files absent from the released tarball** into `conformance/unified/dynamo_v2-<ver>/` — never overwrite a shipped entry, that is the rewrite this file forbids — and run `package_fixtures.py`, `extract_fixtures.py`, `render_table_v2.sh`.
+
+**Done means the whole chain, in every worktree that has the corpus.** A stacked PR and its base are two separate renders, and their `inputs/` can legitimately differ, so each needs its OWN capture — never copy one branch's shards into the other. Verify per worktree: every `dynamo_v2-*` dir has the same case count as `inputs/`, and the rendered HTML greps **0** for `postdates that build`.
+
 ## Golden case file format (authored spec, `conformance/unified/golden_spec/<family>.yaml`)
 
 ```yaml

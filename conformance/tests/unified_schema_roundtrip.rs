@@ -27,11 +27,16 @@ struct GoldenFile {
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug)]
+#[serde(deny_unknown_fields)]
 struct GoldenCase {
     description: String,
     /// Policy decisions (P1/P2/...) this case's correctness depends on.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     policy: Vec<String>,
+    #[serde(default)]
+    init: common::Init,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    finish_reason: Option<String>,
     /// Raw streamed model text.
     input: String,
     /// Spec-derived correct event list — the oracle.
@@ -120,10 +125,29 @@ fn every_case_is_well_formed() {
                 file.family
             );
             assert!(!case.input.is_empty(), "{path}: `{id}` has empty input");
-            assert!(
-                !case.golden.is_empty(),
-                "{path}: `{id}` has empty golden event list"
-            );
+            // An EMPTY golden is legitimate: a turn made only of control markup must
+            // emit nothing at all, and forbidding it is why no row ever pinned that.
+            // A golden forgotten by mistake is still caught — `unified_parity` compares
+            // every case against the live parser, so an empty golden passes only when
+            // the parser genuinely produces no events. Require the description to SAY
+            // so, else a reader cannot tell a deliberate no-op from a missing one.
+            if case.golden.is_empty() {
+                assert!(
+                    case.description
+                        .to_ascii_lowercase()
+                        .contains("emits nothing")
+                        || case
+                            .description
+                            .to_ascii_lowercase()
+                            .contains("nothing is emitted")
+                        || case
+                            .description
+                            .to_ascii_lowercase()
+                            .contains("emits no events"),
+                    "{path}: `{id}` has an empty golden but its description does not say \
+                     the turn emits nothing"
+                );
+            }
             assert!(
                 !case.description.is_empty(),
                 "{path}: `{id}` has empty description"

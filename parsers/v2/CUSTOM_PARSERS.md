@@ -58,7 +58,7 @@ Know its limit: the test does not COMPILE this Markdown block, and it compares o
 
 `UnifiedParserOutput` gives you `push_text`, `push_reasoning` and `push_call`. The first two coalesce: appending text onto a trailing text event extends it rather than adding a second one.
 
-The required lifecycle is `initialize` → `parse_into` → `finish`, with `reset` for recovery. `push` and `parse_complete` come from the blanket `UnifiedParserExt` trait: import it when you want those allocation conveniences. They cannot be overridden through `impl UnifiedParser`, so `parse_complete` always runs the same `parse_into` + `finish` path as streaming.
+The required lifecycle is `initialize_request` → `parse_into` → `finish`, with `reset` for recovery. The peer-shaped `initialize(&[u32])` is a native-mode adapter that builds `UnifiedParserInit`; request-aware callers resolve prompt state, tool-output mode, and invalid-guided-payload policy into that one owned value. `push` and `parse_complete` come from the blanket `UnifiedParserExt` trait: import it when you want those allocation conveniences. They cannot be overridden through `impl UnifiedParser`, so `parse_complete` always runs the same `parse_into` + `finish` path as streaming.
 
 ## 2. Register it
 
@@ -109,7 +109,8 @@ All have defaults, so implement only what your grammar needs.
 
 | Method | Implement it when |
 |---|---|
-| `initialize(&[u32])` | your prompt can end mid-channel and you want to detect that from prompt tokens |
+| `initialize(&[u32])` | a peer-shaped caller needs neutral native-mode initialization |
+| `initialize_request(UnifiedParserInit)` | the caller has resolved prompt tokens, starting channel, tool-output mode, and invalid-guided-payload policy for this request |
 | `preserve_special_tokens()` | your markers ARE tokenizer special tokens, so text that dropped them is unparseable |
 | `tool_call_id(idx)` | your grammar names the call itself and the id should come from the model |
 
@@ -132,4 +133,4 @@ The required `UnifiedParser` lifecycle is aligned with the peer streaming-parser
 Two caveats worth knowing before you plan on a literal drop-in:
 
 - Rust is nominally typed, so an identically-shaped type in another crate is still a different type. Porting is a mechanical translation, not a recompile.
-- This crate adds surface the peer traits do not have — the blanket `UnifiedParserExt` helpers (`push` and `parse_complete`) and the assembled `UnifiedEvent` view. They are additive conveniences, not vendor-overridable lifecycle methods.
+- This crate adds surface the peer traits do not have — `initialize_request(UnifiedParserInit)`, the blanket `UnifiedParserExt` helpers (`push` and `parse_complete`), and the assembled `UnifiedEvent` view. The resolved request initializer is an additive default on `UnifiedParser`; the helpers are additive conveniences that vendors cannot override.
