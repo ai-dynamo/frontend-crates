@@ -144,7 +144,7 @@ Rules:
 For a new streaming parser family, add or update these files:
 
 - `parsers/v2/src/tool_calling/<family>.rs` for the parser implementation.
-- `parsers/v2/src/tool_calling/mod.rs` for the family registry entry.
+- `parsers/v2/src/tool_calling/registry.rs` for the family registry entry.
 - `conformance/toolcalling/fixtures-stream-v2/<family>/TOOLCALLING.streamv2.*.yaml` for per-chunk stream captures.
 - `conformance/toolcalling/fixtures-batch-on-stream-v2/<family>/TOOLCALLING.batch*.yaml` for complete batch text fed through streaming parsers.
 - `conformance/toolcalling/fixtures-batch-v1/<family>/TOOLCALLING.batch*.yaml` only when the family or taxonomy cases do not already exist in the v1 batch corpus.
@@ -196,7 +196,7 @@ In order:
 3. Inspect vLLM **Python** and **SGLang** for behavior and coverage — they are the peer references the matrix compares against.
 4. Decide the parser family id and peer parser names; add a row to `conformance/utils/src/parser_families.yaml` (`vllm_python` / `vllm_rust` / `sglang_python` / `dynamo_v2` / `preferred_input`), AND declare the family's grammar tokens in the `markers:` section of the same file (`pairs` / `singletons` / `leak`; explicit `{}` for markup-less grammars). The `↯` leak detector and the popup token coloring are derived from that declaration — skipping it makes leaks render as clean cells and every token render as a red orphan, and `check.sh coverage` fails on it.
 5. Implement `parsers/v2/src/tool_calling/<family>.rs`, returning `ToolParseResult` from every chunk; start from `harmony.rs` (token/channel grammar) or `dsml.rs` (text incremental state machine).
-6. Register the family in `create_tool_parser_for_family` in `parsers/v2/src/tool_calling/mod.rs`; override `prefers_tokens()` if the parser is token-native.
+6. Register the family in `create_tool_parser_for_family` in `parsers/v2/src/tool_calling/registry.rs`; override `prefers_tokens()` if the parser is token-native.
 7. Add Rust unit tests for: one call, multiple calls, partial chunks, malformed recovery, `normal_text`, and EOF.
 8. Add or update fixture files (see "Which Fixture Do I Edit?"). What "complete" means is machine-readable: `conformance/case-taxonomy.yaml` lists every case group and sub-case with requiredness. Run `conformance/utils/check.sh coverage --family <family>` — its FAIL list IS your fixture TODO list; a case your grammar cannot express gets a placeholder entry with an `explanation:` instead of silence.
 9. Capture one case (`conformance/utils/capture.sh dynamo-stream --fixture … --output …`), inspect, fix the parser, then capture all peer behavior (`capture.sh stream` / `capture.sh batch-on-stream`, optionally `--family <family>`).
