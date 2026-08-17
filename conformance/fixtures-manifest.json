@@ -1,13 +1,13 @@
 {
-  "snapshot": "20260807_193005",
-  "created_pt": "2026-08-07 19:30:05 America/Los_Angeles",
+  "snapshot": "20260812_175553",
+  "created_pt": "2026-08-12 17:55:53 America/Los_Angeles",
   "crates": {
-    "dynamo-parsers": "7.1.0",
+    "dynamo-parsers": "7.1.1",
     "dynamo-parsers-v2": "0.1.27"
   },
   "peers": {
-    "vllm": "0.26.0",
-    "sglang": "0.5.14"
+    "vllm": "0.27.1",
+    "sglang": "0.5.16"
   },
   "shards": [
     {
@@ -27,8 +27,8 @@
     },
     {
       "path": "toolcalling/fixtures-batch-on-stream-v2.tar.gz",
-      "sha256": "29b98d4a6617e9c127589fe31cf2f54d034d612e9cd1381339c9b74b8c947fb2",
-      "size": 15397
+      "sha256": "f6d4a52d1604ba63defce50f54c1272c74e391ad581155d62fc5c1f8e61f213b",
+      "size": 15550
     },
     {
       "path": "toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz",
@@ -66,6 +66,11 @@
       "size": 999
     },
     {
+      "path": "toolcalling/fixtures-batch-v1/sglang_python-0.5.16.tar.gz",
+      "sha256": "20c71a151af54eafe353fe5f87591bb74c2cb403e51561f4ef5d9d94b05ebf3c",
+      "size": 1518
+    },
+    {
       "path": "toolcalling/fixtures-batch-v1/vllm_python-0.23.0.tar.gz",
       "sha256": "f152c76d684a0f1fef588e54da347a73986ef1b8f8a0e4492560371a0d536469",
       "size": 20675
@@ -84,6 +89,11 @@
       "path": "toolcalling/fixtures-batch-v1/vllm_python-0.26.0.tar.gz",
       "sha256": "fc224a8355042d9c5d1cf350ce5e87e1046a31f83f183c462f6c29370438fab6",
       "size": 2626
+    },
+    {
+      "path": "toolcalling/fixtures-batch-v1/vllm_python-0.27.1.tar.gz",
+      "sha256": "978470bed90067447dcd09cf419828fbcb3083d020f237b1c68786c2b3c61160",
+      "size": 2625
     },
     {
       "path": "toolcalling/fixtures-stream-v2/dynamo_v1-3.0.0.tar.gz",
@@ -131,6 +141,11 @@
       "size": 643
     },
     {
+      "path": "toolcalling/fixtures-stream-v2/sglang_python-0.5.16.tar.gz",
+      "sha256": "b04332819f8535402f21cb3e2da0ef5490fc579a3213d86461f81dceed827d29",
+      "size": 1686
+    },
+    {
       "path": "toolcalling/fixtures-stream-v2/vllm_python-0.23.0.tar.gz",
       "sha256": "18d2eca2f7645d8e716544723a168bca3b553107beccc398919f4dfea90fd1ac",
       "size": 15803
@@ -151,6 +166,11 @@
       "size": 5244
     },
     {
+      "path": "toolcalling/fixtures-stream-v2/vllm_python-0.27.1.tar.gz",
+      "sha256": "d8f19c19ff2c999344452c50d393bc1a4046fa52a859a4ec1de119f05adcec9c",
+      "size": 5772
+    },
+    {
       "path": "toolcalling/fixtures-stream-v2/vllm_rust-0.23.0.tar.gz",
       "sha256": "7fd0e803c0b84e5ee74b0b13a0022a6ed81090c9195befd4b9cda36a49637716",
       "size": 12913
@@ -169,6 +189,11 @@
       "path": "toolcalling/fixtures-stream-v2/vllm_rust-0.26.0.tar.gz",
       "sha256": "e7ece511a0ee686e02c8821e116d3034549eff49e40b9bdcfaa1ffcd8145b55a",
       "size": 4308
+    },
+    {
+      "path": "toolcalling/fixtures-stream-v2/vllm_rust-0.27.1.tar.gz",
+      "sha256": "8264c52fcfe57d528ecf9437f3afe2dda13201fffbf7eb1a86985f5682092cf7",
+      "size": 4307
     },
     {
       "path": "unified/dynamo_v2-0.1.23.tar.gz",
