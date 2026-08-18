@@ -176,6 +176,10 @@ impl ReasoningParser for BasicReasoningParser {
         }
     }
 
+    fn in_reasoning(&self) -> Option<bool> {
+        Some(self._in_reasoning)
+    }
+
     fn detect_and_parse_reasoning(&mut self, text: &str, _token_ids: &[u32]) -> ParserResult {
         let has_think_tag = text.contains(&self.think_start_token);
         // REASONING.batch.4: dangling end marker without an opener. Treat the
@@ -620,6 +624,64 @@ mod tests {
         let result = parser.parse_reasoning_streaming_incremental("<thi", &[]);
         assert_eq!(result.normal_text, "");
         assert_eq!(result.reasoning_text, "");
+    }
+
+    #[test]
+    fn test_in_reasoning_tracks_the_span() {
+        let mut parser =
+            BasicReasoningParser::new("<think>".to_string(), "</think>".to_string(), false, true);
+        assert_eq!(parser.in_reasoning(), Some(false));
+        parser.parse_reasoning_streaming_incremental("<think>", &[]);
+        assert_eq!(parser.in_reasoning(), Some(true));
+        parser.parse_reasoning_streaming_incremental("why", &[]);
+        assert_eq!(parser.in_reasoning(), Some(true));
+        parser.parse_reasoning_streaming_incremental("</think>", &[]);
+        assert_eq!(parser.in_reasoning(), Some(false));
+    }
+
+    #[test]
+    fn test_in_reasoning_holds_across_a_split_end_marker() {
+        // A chunk that carries only part of `</think>` emits nothing, because the
+        // parser buffers a possible marker prefix. Callers that attribute tokens by
+        // the returned text would charge these to content. The state must not move
+        // until the marker completes.
+        let mut parser =
+            BasicReasoningParser::new("<think>".to_string(), "</think>".to_string(), false, true);
+        parser.parse_reasoning_streaming_incremental("<think>why", &[]);
+        let held = parser.parse_reasoning_streaming_incremental("</thi", &[]);
+        assert_eq!(held.normal_text, "");
+        assert_eq!(held.reasoning_text, "");
+        assert_eq!(parser.in_reasoning(), Some(true));
+        parser.parse_reasoning_streaming_incremental("nk>", &[]);
+        assert_eq!(parser.in_reasoning(), Some(false));
+    }
+
+    #[test]
+    fn test_in_reasoning_clears_in_the_same_call_that_flushes_reasoning() {
+        // The closing call reports reasoning text AND leaves the parser outside the
+        // span. Reading the state after this call would charge that text's tokens to
+        // content, so callers must read the state before they feed a chunk.
+        let mut parser =
+            BasicReasoningParser::new("<think>".to_string(), "</think>".to_string(), false, false);
+        parser.parse_reasoning_streaming_incremental("<think>why", &[]);
+        let before = parser.in_reasoning();
+        let closing = parser.parse_reasoning_streaming_incremental("</think>answer", &[]);
+        assert_eq!(before, Some(true));
+        assert_eq!(closing.reasoning_text, "why");
+        assert_eq!(closing.normal_text, "answer");
+        assert_eq!(parser.in_reasoning(), Some(false));
+    }
+
+    #[test]
+    fn test_in_reasoning_follows_an_injected_start() {
+        // The chat template already emitted `<think>`, so the opener never appears
+        // in the output and the parser must start inside the span.
+        let mut parser =
+            BasicReasoningParser::new("<think>".to_string(), "</think>".to_string(), false, true);
+        parser.set_in_reasoning(true);
+        assert_eq!(parser.in_reasoning(), Some(true));
+        parser.parse_reasoning_streaming_incremental("why</think>", &[]);
+        assert_eq!(parser.in_reasoning(), Some(false));
     }
 
     #[test] // REASONING.stream.2.a, REASONING.batch.2.c

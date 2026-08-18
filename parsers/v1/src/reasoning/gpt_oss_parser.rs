@@ -316,6 +316,12 @@ fn reconstruct_directed_envelope(
 }
 
 impl ReasoningParser for GptOssReasoningParser {
+    fn in_reasoning(&self) -> Option<bool> {
+        // Harmony carries the state as a channel rather than a flag. `analysis`
+        // is the chain-of-thought channel; `final` and `commentary` are not.
+        Some(self.parser.current_channel().as_deref() == Some("analysis"))
+    }
+
     fn finish_reasoning_stream(&mut self) -> ParserResult {
         self.pending_tool_call_text.clear();
         self.last_directed_channel = None;
