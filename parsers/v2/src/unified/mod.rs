@@ -48,9 +48,12 @@
 //! adopted without a translation layer. Where it diverges from the peer shape, the
 //! divergence is stated at the item.
 
+mod guided_cursor;
 pub mod qwen3;
 
 use std::collections::BTreeMap;
+
+use guided_cursor::GuidedJsonCursor;
 
 use serde::{Deserialize, Serialize};
 
@@ -125,6 +128,29 @@ pub enum UnifiedToolOutputMode {
 }
 
 /// Caller policy when guided decoding violates the promised tool-call shape.
+///
+/// The three values are three different contracts, not three settings of one. Each
+/// states what the caller gets when the payload turns out malformed, and that
+/// answer is what decides whether the parser may stream:
+///
+/// | policy | malformed payload becomes | emits before the payload closes |
+/// |---|---|---|
+/// | [`Reject`](Self::Reject) | a typed error | no |
+/// | [`RecoverAsText`](Self::RecoverAsText) | text; an array voids ATOMICALLY | no |
+/// | [`StreamBestEffort`](Self::StreamBestEffort) | text, PER CALL | yes |
+///
+/// # Why streaming needed its own policy rather than a flag
+///
+/// A fragment cannot be unsaid. `Reject` promises an error, and that promise is
+/// only keepable while nothing has been emitted. `RecoverAsText` promises that if
+/// ANY element of a call array is invalid the WHOLE array surfaces as text — and
+/// nothing can know element one is safe until element N has arrived. Both promises
+/// are therefore incompatible with emitting early, and an earlier revision that
+/// streamed under `RecoverAsText` did not weaken it visibly; it simply started
+/// dispatching calls the contract says must become text.
+///
+/// So streaming is a THIRD contract that callers opt into, and the two existing
+/// ones behave exactly as they did before.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum InvalidGuidedPayloadPolicy {
     /// Return a typed error so the serving layer can reject or retry the output.
@@ -132,6 +158,20 @@ pub enum InvalidGuidedPayloadPolicy {
     Reject,
     /// Preserve the corpus' best-effort behavior by surfacing the bytes as text.
     RecoverAsText,
+    /// Stream each call as soon as its name and argument OBJECT are unambiguous.
+    ///
+    /// What the caller trades away, stated plainly:
+    ///
+    /// - A call already on the wire cannot later become recovery text. If a second
+    ///   argument alias appears after the call went out, it is logged, not undone.
+    /// - Recovery is PER CALL. One invalid element of an array surfaces as text on
+    ///   its own; the valid elements around it still dispatch. Under
+    ///   [`RecoverAsText`](Self::RecoverAsText) the whole array would have voided.
+    ///
+    /// What it keeps: the commit point requires the argument value to open with
+    /// `{`, so `null`, a string, a number, an array, and a parameterless call never
+    /// reach the wire early and are still judged by the buffered path.
+    StreamBestEffort,
 }
 
 /// Fully resolved request-scoped parser configuration.
@@ -895,6 +935,12 @@ struct GuidedState {
     /// Visible post-payload text has started. Structural whitespace immediately
     /// after JSON may be discarded, but whitespace after visible text is content.
     post_payload_text_started: bool,
+    /// The single owner of JSON lexical state for the streaming path.
+    ///
+    /// Idle unless [`InvalidGuidedPayloadPolicy::StreamBestEffort`] is in force —
+    /// the other two contracts buffer to completion, so under them this never
+    /// advances and the completion path below is unchanged.
+    cursor: GuidedJsonCursor,
     input: String,
     json: String,
 }
@@ -1199,6 +1245,7 @@ impl GuidedState {
                 == UnifiedParserStartingState::Reasoning,
             payload_emitted: false,
             post_payload_text_started: false,
+            cursor: GuidedJsonCursor::new(),
             input: String::new(),
             json: String::new(),
         }
@@ -1219,6 +1266,14 @@ impl GuidedState {
             self.input.push_str(chunk);
         }
         for event in self.drain(false) {
+            output.push_event(event);
+        }
+        // Release whatever the payload now lets us commit to, BEFORE the
+        // completion check: the name is usually knowable long before the closing
+        // brace, and holding it until then is the reported latency defect.
+        let mut incremental = Vec::new();
+        self.emit_incremental(&mut incremental);
+        for event in incremental {
             output.push_event(event);
         }
         for event in self.emit_completed_json()? {
@@ -1270,6 +1325,7 @@ impl GuidedState {
         self.stripped_markup = false;
         self.payload_emitted = false;
         self.post_payload_text_started = false;
+        self.cursor.reset();
         recovered
     }
 
@@ -1310,6 +1366,27 @@ impl GuidedState {
         let uncommitted_suffix = self.json[payload_end..].to_string();
         let tail = self.json[tail_start..].to_string();
         self.json.truncate(payload_end);
+        // Streaming already put one or more calls on the wire. Re-emitting them from
+        // the assembled path would duplicate the name and let `assemble` overwrite
+        // the streamed arguments with a second value, so this branch flushes the
+        // argument bytes still owed and then settles only what was NOT streamed.
+        if self.cursor.has_committed() {
+            let mut out = Vec::new();
+            self.emit_incremental(&mut out);
+            out.extend(self.finish_streamed_remainder());
+            // The buffered paths below all clear `json` before returning; this branch
+            // did not, so the payload stayed in the buffer and was emitted a SECOND
+            // time as visible text on the next advance.
+            self.json.clear();
+            // Same bookkeeping the assembled path does below: mark the payload done,
+            // leave guided-payload mode, and hand the tail back as ordinary input so
+            // trailing visible text is still emitted. Skipping this dropped the text
+            // after the call entirely.
+            self.payload_emitted = true;
+            self.mode = GuidedMode::OutsideReasoning;
+            self.input.push_str(&tail);
+            return Ok(out);
+        }
         let mut output = match self.finish_json() {
             Ok(output) => output,
             Err(error) => {
@@ -1683,6 +1760,119 @@ impl GuidedState {
         output
     }
 
+    /// Emit whatever the accumulated payload lets us commit to, incrementally.
+    ///
+    /// Policy A, the "commit point": the first thing released is the function name,
+    /// and only once its JSON string value has CLOSED — at that instant the name can
+    /// no longer change and the payload is known to be shaped like a call. Before
+    /// that nothing is emitted, so `InvalidGuidedPayloadPolicy::Reject` can still
+    /// fire on a payload that never gets there.
+    ///
+    /// After the name is committed, argument bytes are released as they arrive. Only
+    /// the bytes already accumulated are released, and only on a character boundary,
+    /// so a fragment is never half a UTF-8 codepoint and never has to be taken back.
+    /// Settle the elements streaming did NOT put on the wire.
+    ///
+    /// Recovery here is PER CALL, which is the difference
+    /// [`InvalidGuidedPayloadPolicy::StreamBestEffort`] declares: an element that is
+    /// not a legal call becomes its own recovery text, while the valid elements
+    /// around it still dispatch. The atomic contract would have voided all of them
+    /// together, and cannot be offered once a fragment is already out.
+    fn finish_streamed_remainder(&mut self) -> Vec<UnifiedParserEvent> {
+        let payload = self.json.trim().to_string();
+        let mut out = Vec::new();
+        let Some(elements) = parse_required_guided_elements(&payload) else {
+            // Not even splittable into elements. Whatever was streamed stays
+            // streamed; the rest is recovery text.
+            tracing::warn!(
+                why = "unified_guided_json_not_a_tool_call",
+                choice = "required",
+                payload_bytes = payload.len(),
+                payload_kind = json_payload_kind(&payload),
+                streamed_calls = self.cursor.committed().len(),
+                "guided output did not parse as a tool call after fragments were \
+                 already emitted; emitting the remainder as text"
+            );
+            out.push(UnifiedParserEvent::Text(payload));
+            return out;
+        };
+
+        for (index, element) in elements.into_iter().enumerate() {
+            let streamed = self
+                .cursor
+                .committed()
+                .iter()
+                .find(|committed| committed.index == index);
+            match (element.call, streamed) {
+                // Already on the wire; its fragments carried name and arguments.
+                (Some(_), Some(committed)) => {
+                    if committed.ambiguous {
+                        tracing::warn!(
+                            why = "unified_guided_call_became_ambiguous_after_commit",
+                            tool_index = index,
+                            name = %committed.name,
+                            "a second argument alias appeared after this call was \
+                             streamed; it cannot be withdrawn"
+                        );
+                    }
+                }
+                // Valid but never committed — a parameterless call, or one whose
+                // name closed too late to beat its own payload.
+                (Some(call), None) => {
+                    out.push(UnifiedParserEvent::ToolCall(ToolCallDelta {
+                        tool_index: index,
+                        name: Some(call.name),
+                        arguments: call.arguments,
+                    }));
+                }
+                // Invalid, and nothing went out for it: recover just this element.
+                (None, None) => {
+                    tracing::warn!(
+                        why = "unified_guided_element_is_not_a_tool_call",
+                        tool_index = index,
+                        element_bytes = element.raw.len(),
+                        "guided element is not a legal call; emitting it as text"
+                    );
+                    out.push(UnifiedParserEvent::Text(element.raw));
+                }
+                // Invalid, but already streamed. A fragment cannot be unsaid.
+                (None, Some(committed)) => {
+                    tracing::warn!(
+                        why = "unified_guided_streamed_call_failed_validation",
+                        tool_index = index,
+                        name = %committed.name,
+                        "this call was streamed before it could be judged invalid; \
+                         it stays on the wire"
+                    );
+                }
+            }
+        }
+        out
+    }
+
+    /// Drive the cursor over the payload accumulated so far.
+    ///
+    /// Under the two buffering contracts this is a no-op, so their behaviour is
+    /// byte-identical to before the streaming path existed.
+    fn emit_incremental(&mut self, output: &mut Vec<UnifiedParserEvent>) {
+        if self.invalid_payload != InvalidGuidedPayloadPolicy::StreamBestEffort {
+            return;
+        }
+        // A named choice's payload is BARE arguments: there is no
+        // `{"name": .., "arguments": ..}` envelope for the cursor to find a name or
+        // an object opener in. Its name is known from the request before any byte
+        // arrives, so it needs its own commit rule rather than this one, and until
+        // that exists it stays on the buffered path.
+        if self.named_tool.is_some() {
+            return;
+        }
+        let mut deltas = Vec::new();
+        self.cursor.advance(&self.json, &mut deltas);
+        for delta in deltas {
+            output.push(UnifiedParserEvent::ToolCall(delta));
+        }
+    }
+
     /// Parse the accumulated payload. Anything that does not parse as the
     /// expected call shape is surfaced as visible text rather than dropped
     /// (policy P2 — best-effort recovery, never silent loss).
@@ -1759,7 +1949,10 @@ impl GuidedState {
                         "named-choice payload carries `name` plus `arguments`/`parameters`; forwarding it verbatim as the argument set"
                     );
                 }
-                vec![(name.clone(), raw_payload.clone())]
+                vec![GuidedCall {
+                    name: name.clone(),
+                    arguments: raw_payload.clone(),
+                }]
             }),
             None => parse_required_guided_calls(payload),
         };
@@ -1811,61 +2004,104 @@ impl GuidedState {
         Ok(calls
             .into_iter()
             .enumerate()
-            .map(|(tool_index, (name, arguments))| {
+            .map(|(tool_index, call)| {
                 UnifiedParserEvent::ToolCall(ToolCallDelta {
                     tool_index,
-                    name: Some(name),
-                    arguments,
+                    name: Some(call.name),
+                    arguments: call.arguments,
                 })
             })
             .collect())
     }
 }
 
+/// One judged call: its decoded function name, and its argument object as raw JSON
+/// text (never re-serialized, so argument bytes reach the caller verbatim).
+struct GuidedCall {
+    name: String,
+    arguments: String,
+}
+
+/// One element of a required payload: the call it judges to (`None` when the
+/// element is not a legal call), paired with that element's raw bytes for recovery.
+struct GuidedElement {
+    call: Option<GuidedCall>,
+    raw: String,
+}
+
+/// Judge ONE required-choice call element.
+///
+/// The single implementation of what makes a call legal, shared by the atomic
+/// whole-array path ([`parse_required_guided_calls`]) and the per-call path the
+/// streaming contract uses ([`parse_required_guided_elements`]). Two copies of this
+/// judgement would let the two recovery modes disagree about the same bytes.
+fn convert_guided_call(call: GuidedToolCall) -> Option<GuidedCall> {
+    // No argument key means NO ARGUMENTS, not a malformed call. `UNIFIED.6.a`
+    // already fixes that semantic on the native path — same tool, no parameter
+    // block, golden `arguments: {}` — so voiding it here made guided disagree with
+    // native on an identical shape and made a parameterless tool uncallable. What
+    // makes an element invalid is a missing `name` (required on GuidedToolCall);
+    // that still voids the whole array, per `31.c` / `51.b`.
+    let arguments = match (call.parameters, call.arguments) {
+        // PRESENT but not an object is a malformed call, the same judgement the
+        // NAMED path makes on its whole payload: arguments that are a string or
+        // a number cannot bind to the tool's parameters, so emitting it would
+        // hand the tool a shape it cannot use. Absent is different — that means
+        // no arguments, and stays valid (see the note above).
+        (Some(raw), None) | (None, Some(raw)) => {
+            serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(raw.get()).ok()?;
+            raw.get().to_string()
+        }
+        (None, None) => "{}".to_string(),
+        // The aliases are alternatives, not two independently meaningful
+        // argument sets. Choosing one silently can emit different bytes from
+        // what the backend intended, so reject the ambiguous call fail-closed.
+        (Some(_), Some(_)) => return None,
+    };
+    Some(GuidedCall {
+        name: call.name,
+        arguments,
+    })
+}
+
 /// A required (un-named) choice emits one call object or an array of them.
-fn parse_required_guided_calls(payload: &str) -> Option<Vec<(String, String)>> {
-    fn convert(call: GuidedToolCall) -> Option<(String, String)> {
-        // No argument key means NO ARGUMENTS, not a malformed call. `UNIFIED.6.a`
-        // already fixes that semantic on the native path — same tool, no parameter
-        // block, golden `arguments: {}` — so voiding it here made guided disagree with
-        // native on an identical shape and made a parameterless tool uncallable. What
-        // makes an element invalid is a missing `name` (required on GuidedToolCall);
-        // that still voids the whole array, per `31.c` / `51.b`.
-        let arguments = match (call.parameters, call.arguments) {
-            // PRESENT but not an object is a malformed call, the same judgement the
-            // NAMED path makes on its whole payload: arguments that are a string or
-            // a number cannot bind to the tool's parameters, so emitting it would
-            // hand the tool a shape it cannot use. Absent is different — that means
-            // no arguments, and stays valid (see the note above).
-            (Some(raw), None) | (None, Some(raw)) => {
-                serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(raw.get())
-                    .ok()?;
-                raw.get().to_string()
-            }
-            (None, None) => "{}".to_string(),
-            // The aliases are alternatives, not two independently meaningful
-            // argument sets. Choosing one silently can emit different bytes from
-            // what the backend intended, so reject the ambiguous call fail-closed.
-            (Some(_), Some(_)) => return None,
-        };
-        Some((call.name, arguments))
-    }
+///
+/// ATOMIC: one invalid element voids the whole payload, which is what
+/// [`InvalidGuidedPayloadPolicy::RecoverAsText`] promises.
+fn parse_required_guided_calls(payload: &str) -> Option<Vec<GuidedCall>> {
+    parse_required_guided_elements(payload)?
+        .into_iter()
+        .map(|element| element.call)
+        .collect()
+}
 
+/// Per-element view of a required payload, paired with each element's raw bytes.
+///
+/// `None` in the first slot marks an element that is not a legal call. Only the
+/// streaming contract uses this shape, because only it recovers PER CALL; the
+/// atomic path folds the same elements into one all-or-nothing answer above, so
+/// both agree element for element by construction.
+fn parse_required_guided_elements(payload: &str) -> Option<Vec<GuidedElement>> {
     if let Ok(raw_calls) = serde_json::from_str::<Vec<Box<serde_json::value::RawValue>>>(payload) {
-        return raw_calls
-            .into_iter()
-            .map(|raw| {
-                serde_json::from_str::<GuidedToolCall>(raw.get())
-                    .ok()
-                    .and_then(convert)
-            })
-            .collect();
+        return Some(
+            raw_calls
+                .into_iter()
+                .map(|raw| {
+                    let element = raw.get().to_string();
+                    let call = serde_json::from_str::<GuidedToolCall>(raw.get())
+                        .ok()
+                        .and_then(convert_guided_call);
+                    GuidedElement { call, raw: element }
+                })
+                .collect(),
+        );
     }
 
-    serde_json::from_str::<GuidedToolCall>(payload)
-        .ok()
-        .and_then(convert)
-        .map(|call| vec![call])
+    let call = serde_json::from_str::<GuidedToolCall>(payload).ok()?;
+    Some(vec![GuidedElement {
+        call: convert_guided_call(call),
+        raw: payload.to_string(),
+    }])
 }
 
 /// How a vendor supplies a parser: given the request's tools, build one parser for

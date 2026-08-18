@@ -1565,6 +1565,444 @@ mod tests {
             }
         }
     }
+
+    use crate::tool_calling::traits::ToolCallDelta;
+
+    /// Init selecting the streaming contract.
+    fn stream_init(mode: UnifiedToolOutputMode) -> UnifiedParserInit {
+        UnifiedParserInit {
+            prompt_token_ids: Vec::new(),
+            starting_state: UnifiedParserStartingState::None,
+            tool_output_mode: mode,
+            invalid_guided_payload: InvalidGuidedPayloadPolicy::StreamBestEffort,
+        }
+    }
+
+    /// Every delta produced by feeding `payload` in `chunks`, push order preserved.
+    fn streamed(payload: &str, chunks: &[&str]) -> (Vec<ToolCallDelta>, Vec<UnifiedParserEvent>) {
+        let _ = payload;
+        let mut parser = qwen3_unified(&weather_tools());
+        parser
+            .initialize_request(stream_init(UnifiedToolOutputMode::GuidedJson {
+                named_tool: None,
+            }))
+            .expect("required guided init");
+        let mut calls = Vec::new();
+        let mut all = Vec::new();
+        for chunk in chunks {
+            for event in parser.push(chunk).expect("push") {
+                if let UnifiedParserEvent::ToolCall(delta) = &event {
+                    calls.push(delta.clone());
+                }
+                all.push(event);
+            }
+        }
+        for event in parser.finish().expect("finish").events {
+            if let UnifiedParserEvent::ToolCall(delta) = &event {
+                calls.push(delta.clone());
+            }
+            all.push(event);
+        }
+        (calls, all)
+    }
+
+    /// One chunk per character.
+    fn per_char(payload: &str) -> Vec<&str> {
+        payload
+            .char_indices()
+            .map(|(i, ch)| &payload[i..i + ch.len_utf8()])
+            .collect()
+    }
+
+    /// Byte span of the first argument OBJECT in `payload`, tolerating any
+    /// whitespace the fixture uses between the key, the colon and the brace.
+    fn argument_object(payload: &str) -> (usize, usize) {
+        let key = payload.find("\"arguments\"").expect("fixture shape");
+        let open = payload[key..].find('{').expect("fixture shape") + key;
+        let mut depth = 0i32;
+        let mut in_string = false;
+        let mut escaped = false;
+        for (offset, ch) in payload[open..].char_indices() {
+            if in_string {
+                match ch {
+                    _ if escaped => escaped = false,
+                    '\\' => escaped = true,
+                    '"' => in_string = false,
+                    _ => {}
+                }
+                continue;
+            }
+            match ch {
+                '"' => in_string = true,
+                '{' => depth += 1,
+                '}' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        return (open, open + offset + 1);
+                    }
+                }
+                _ => {}
+            }
+        }
+        panic!("unterminated argument object in {payload:?}");
+    }
+
+    /// Arguments reassembled per tool index, in first-seen index order.
+    fn joined_arguments(calls: &[ToolCallDelta]) -> Vec<(usize, String)> {
+        let mut out: Vec<(usize, String)> = Vec::new();
+        for delta in calls {
+            match out.iter_mut().find(|(index, _)| *index == delta.tool_index) {
+                Some((_, text)) => text.push_str(&delta.arguments),
+                None => out.push((delta.tool_index, delta.arguments.clone())),
+            }
+        }
+        out
+    }
+
+    /// The defect a downstream user reported: with `tool_choice="required"`,
+    /// streaming on and thinking disabled, nothing reaches the wire until the whole
+    /// call has been generated. Their vanilla-vLLM deployment starts streaming in
+    /// ~0.2s; this path took ~10s and then arrived in one burst.
+    ///
+    /// The assertion is ORDERING, not wall-clock: a name-carrying event must exist
+    /// before the parser has been handed the bytes that complete the call. A timing
+    /// assertion would pass on a fast machine, fail on a slow one, and say nothing
+    /// about emission granularity.
+    #[test]
+    fn required_guided_emits_the_name_before_the_call_completes() {
+        // Cut just after the arguments object opens - the commit point - which is
+        // still well before the arguments close.
+        let cut = argument_object(GUIDED_CALL).0 + 1;
+        let mut parser = qwen3_unified(&weather_tools());
+        parser
+            .initialize_request(stream_init(UnifiedToolOutputMode::GuidedJson {
+                named_tool: None,
+            }))
+            .expect("required guided init");
+
+        let early = parser.push(&GUIDED_CALL[..cut]).expect("push prefix");
+        let named = early.iter().any(|e| {
+            matches!(e, UnifiedParserEvent::ToolCall(c) if c.name.as_deref() == Some("get_weather"))
+        });
+
+        assert!(
+            named,
+            "no name-carrying frame before the call completed; got {early:?}. \
+             The function name is unambiguous at byte {cut} - everything after it is \
+             arguments - so a consumer could already have started rendering the call."
+        );
+    }
+
+    /// Streaming must be INCREMENTAL, not merely "earlier", and the fragments must
+    /// reassemble BYTE FOR BYTE.
+    ///
+    /// An earlier version of this test asserted only that the join `contains("Paris")`,
+    /// which a parser that mangled every other byte would still pass. The assertion
+    /// is now equality against the exact argument object.
+    #[test]
+    fn required_guided_streams_arguments_in_multiple_fragments() {
+        let (calls, events) = streamed(GUIDED_CALL, &per_char(GUIDED_CALL));
+
+        let names: Vec<&str> = calls.iter().filter_map(|c| c.name.as_deref()).collect();
+        assert_eq!(names, vec!["get_weather"], "exactly one decoded name");
+        assert!(
+            calls.iter().all(|c| c.tool_index == 0),
+            "one call must not spread across indices: {calls:?}"
+        );
+
+        let frames = calls.iter().filter(|c| !c.arguments.is_empty()).count();
+        assert!(
+            frames >= 2,
+            "arguments arrived in {frames} frame(s) - that is a burst, not a stream"
+        );
+
+        let (start, end) = argument_object(GUIDED_CALL);
+        let expected = GUIDED_CALL[start..end].to_string();
+        assert_eq!(
+            joined_arguments(&calls),
+            vec![(0, expected)],
+            "fragments must reassemble the argument object byte for byte"
+        );
+
+        assert!(
+            !events
+                .iter()
+                .any(|e| matches!(e, UnifiedParserEvent::Text(_))),
+            "a valid streamed call must not also produce recovery text: {events:?}"
+        );
+    }
+
+    /// The `parameters` spelling is as legal as `arguments`, and recognising only
+    /// one of them streamed NOTHING for the other - the call then assembled with
+    /// empty arguments, which is worse than the latency it was fixing.
+    #[test]
+    fn required_guided_streams_the_parameters_alias_too() {
+        let payload = r#"[{"name":"get_weather","parameters":{"city":"Tokyo"}}]"#;
+        let (calls, _) = streamed(payload, &per_char(payload));
+        assert_eq!(
+            calls
+                .iter()
+                .filter_map(|c| c.name.as_deref())
+                .collect::<Vec<_>>(),
+            vec!["get_weather"]
+        );
+        assert_eq!(
+            joined_arguments(&calls),
+            vec![(0, r#"{"city":"Tokyo"}"#.to_string())]
+        );
+        // Assert it STREAMED, not merely that it assembled. The buffered path
+        // produces the identical assembled result, so an outcome-only assertion
+        // passes with the alias unrecognised - which is exactly the bug.
+        let frames = calls.iter().filter(|c| !c.arguments.is_empty()).count();
+        assert!(
+            frames >= 2,
+            "the parameters alias assembled correctly but never streamed: \
+             {frames} argument frame(s)"
+        );
+    }
+
+    /// A `\uXXXX` escape in the function name must decode. The old scanner pushed
+    /// the escape's payload characters verbatim and produced `getu005fweather`.
+    #[test]
+    fn required_guided_decodes_escaped_names() {
+        let payload = "[{\"name\":\"get\\u005fweather\",\"arguments\":{\"city\":\"Paris\"}}]";
+        assert!(
+            payload.contains("\\u005f"),
+            "the escape must survive to the test"
+        );
+        let (calls, _) = streamed(payload, &per_char(payload));
+        assert_eq!(
+            calls
+                .iter()
+                .filter_map(|c| c.name.as_deref())
+                .collect::<Vec<_>>(),
+            vec!["get_weather"]
+        );
+    }
+
+    /// Parallel calls keep distinct indices and stay in payload order. Hardcoding
+    /// index 0 collapsed both calls into one.
+    #[test]
+    fn required_guided_streams_parallel_calls_on_distinct_indices() {
+        let payload = concat!(
+            r#"[{"name":"get_weather","arguments":{"city":"Paris"}},"#,
+            r#"{"name":"get_weather","arguments":{"city":"Tokyo"}}]"#
+        );
+        let (calls, _) = streamed(payload, &per_char(payload));
+        let named: Vec<(usize, &str)> = calls
+            .iter()
+            .filter_map(|c| c.name.as_deref().map(|n| (c.tool_index, n)))
+            .collect();
+        assert_eq!(named, vec![(0, "get_weather"), (1, "get_weather")]);
+        assert_eq!(
+            joined_arguments(&calls),
+            vec![
+                (0, r#"{"city":"Paris"}"#.to_string()),
+                (1, r#"{"city":"Tokyo"}"#.to_string()),
+            ]
+        );
+    }
+
+    /// PER-CALL recovery, the guarantee `StreamBestEffort` trades the atomic one
+    /// for: a malformed second element becomes its own text and the valid first
+    /// element still dispatches.
+    #[test]
+    fn required_guided_recovers_only_the_invalid_element() {
+        let payload = concat!(
+            r#"[{"name":"get_weather","arguments":{"city":"Paris"}},"#,
+            r#"{"arguments":{"city":"Tokyo"}}]"#
+        );
+        let (calls, events) = streamed(payload, &per_char(payload));
+        assert_eq!(
+            calls
+                .iter()
+                .filter_map(|c| c.name.as_deref())
+                .collect::<Vec<_>>(),
+            vec!["get_weather"],
+            "the valid element must still dispatch"
+        );
+        let texts: Vec<&str> = events
+            .iter()
+            .filter_map(|e| match e {
+                UnifiedParserEvent::Text(text) => Some(text.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            texts,
+            vec![r#"{"arguments":{"city":"Tokyo"}}"#],
+            "only the nameless element recovers as text"
+        );
+    }
+
+    /// Shapes the contract voids must never reach the wire early, because a
+    /// fragment cannot be withdrawn. The commit point requires an argument OBJECT
+    /// opener, so each of these stays on the buffered path.
+    #[test]
+    fn required_guided_never_streams_a_shape_the_contract_voids() {
+        for payload in [
+            r#"[{"name":"get_weather","arguments":"just a string"}]"#,
+            r#"[{"name":"get_weather","arguments":null}]"#,
+            r#"[{"name":"get_weather","arguments":[1,2]}]"#,
+        ] {
+            let (calls, events) = streamed(payload, &per_char(payload));
+            assert!(
+                calls.is_empty(),
+                "{payload} streamed a call the contract voids: {calls:?}"
+            );
+            assert!(
+                events
+                    .iter()
+                    .any(|e| matches!(e, UnifiedParserEvent::Text(_))),
+                "{payload} should have recovered as text; got {events:?}"
+            );
+        }
+    }
+
+    /// The ONE guarantee `StreamBestEffort` genuinely cannot keep, pinned so it
+    /// stays a documented loss rather than a surprise.
+    ///
+    /// A call carrying BOTH argument aliases is ambiguous and the buffered
+    /// contracts void it. Streaming cannot: the second alias only appears after the
+    /// first has already supplied an object opener, which is the commit point, so
+    /// the call is on the wire before the ambiguity exists to be seen. It stays,
+    /// carrying the alias that arrived first, and the parser says so in a warning.
+    #[test]
+    fn ambiguity_discovered_after_the_commit_cannot_be_withdrawn() {
+        let payload = r#"[{"name":"get_weather","arguments":{"a":1},"parameters":{"b":2}}]"#;
+        let (calls, events) = streamed(payload, &per_char(payload));
+        assert_eq!(
+            calls
+                .iter()
+                .filter_map(|c| c.name.as_deref())
+                .collect::<Vec<_>>(),
+            vec!["get_weather"],
+            "the call was committed before the second alias arrived"
+        );
+        assert_eq!(
+            joined_arguments(&calls),
+            vec![(0, r#"{"a":1}"#.to_string())],
+            "it carries the alias that opened first"
+        );
+        assert!(
+            !events
+                .iter()
+                .any(|e| matches!(e, UnifiedParserEvent::Text(_))),
+            "recovery text here would DUPLICATE the streamed call: {events:?}"
+        );
+    }
+
+    /// A parameterless call has no argument object to commit on, so it settles on
+    /// the buffered path - and must still arrive with `{}`, not an empty string,
+    /// and must not disturb a streamed sibling.
+    #[test]
+    fn required_guided_parameterless_call_keeps_its_empty_argument_set() {
+        let payload = concat!(
+            r#"[{"name":"get_weather"},"#,
+            r#"{"name":"get_weather","arguments":{"city":"Paris"}}]"#
+        );
+        let (calls, _) = streamed(payload, &per_char(payload));
+        let mut assembled = joined_arguments(&calls);
+        // Deltas for call 0 arrive AFTER call 1's, and that is inherent: a
+        // parameterless call has no argument object to commit on, so it can only be
+        // settled once the payload closes, by which time its streamed sibling has
+        // long been on the wire. Consumers key by `tool_index` (`assemble` does), so
+        // the wire order is not the call order.
+        assembled.sort_by_key(|(index, _)| *index);
+        assert_eq!(
+            assembled,
+            vec![
+                (0, "{}".to_string()),
+                (1, r#"{"city":"Paris"}"#.to_string())
+            ]
+        );
+    }
+
+    /// Truncation mid-payload: whatever was streamed stays streamed, and nothing
+    /// is invented for the part that never arrived.
+    #[test]
+    fn required_guided_truncation_after_commit_does_not_invent_arguments() {
+        let cut = GUIDED_CALL.find("\"city\"").expect("fixture shape");
+        let (calls, _) = streamed(&GUIDED_CALL[..cut], &per_char(&GUIDED_CALL[..cut]));
+        assert_eq!(
+            calls
+                .iter()
+                .filter_map(|c| c.name.as_deref())
+                .collect::<Vec<_>>(),
+            vec!["get_weather"]
+        );
+        let joined = joined_arguments(&calls);
+        let released = joined.first().map(|(_, text)| text.as_str()).unwrap_or("");
+        assert!(
+            GUIDED_CALL[cut - released.len()..].starts_with(released) || released.len() <= 1,
+            "released bytes must be a prefix of the real arguments; got {released:?}"
+        );
+    }
+
+    /// Reuse: a second request on the same parser must not inherit the first
+    /// request's cursor offsets, or the new payload is lexed from the wrong place.
+    #[test]
+    fn required_guided_streaming_state_does_not_leak_across_requests() {
+        let mut parser = qwen3_unified(&weather_tools());
+        let mut seen = Vec::new();
+        for request in 0..2 {
+            if request > 0 {
+                parser.reset();
+            }
+            parser
+                .initialize_request(stream_init(UnifiedToolOutputMode::GuidedJson {
+                    named_tool: None,
+                }))
+                .expect("required guided init");
+            let mut calls = Vec::new();
+            for chunk in per_char(GUIDED_CALL) {
+                for event in parser.push(chunk).expect("push") {
+                    if let UnifiedParserEvent::ToolCall(delta) = event {
+                        calls.push(delta);
+                    }
+                }
+            }
+            for event in parser.finish().expect("finish").events {
+                if let UnifiedParserEvent::ToolCall(delta) = event {
+                    calls.push(delta);
+                }
+            }
+            seen.push(joined_arguments(&calls));
+        }
+        assert_eq!(
+            seen[0], seen[1],
+            "the second request diverged from the first"
+        );
+    }
+
+    /// Whole-input and every valid split must assemble identically, and the split
+    /// runs must show intermediate progress rather than one terminal burst.
+    #[test]
+    fn required_guided_streaming_is_split_invariant() {
+        let whole = streamed(GUIDED_CALL, &[GUIDED_CALL]).0;
+        let baseline = joined_arguments(&whole);
+        let names: Vec<&str> = whole.iter().filter_map(|c| c.name.as_deref()).collect();
+
+        for split in 1..GUIDED_CALL.len() {
+            if !GUIDED_CALL.is_char_boundary(split) {
+                continue;
+            }
+            let (calls, _) = streamed(GUIDED_CALL, &[&GUIDED_CALL[..split], &GUIDED_CALL[split..]]);
+            assert_eq!(
+                joined_arguments(&calls),
+                baseline,
+                "arguments differ at split {split}"
+            );
+            assert_eq!(
+                calls
+                    .iter()
+                    .filter_map(|c| c.name.as_deref())
+                    .collect::<Vec<_>>(),
+                names,
+                "names differ at split {split}"
+            );
+        }
+    }
 }
 
 #[cfg(test)]
