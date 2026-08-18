@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.2.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.2.0...dynamo-parsers-v2-v0.2.1) - 2026-08-18
+
+### Features
+
+- *(parsers)* Add Qwen3 unified request modes ([#174](https://github.com/ai-dynamo/frontend-crates/pull/174))
+
 ## [0.1.27](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.1.26...dynamo-parsers-v2-v0.1.27) - 2026-08-03
 
 ### Miscellaneous
