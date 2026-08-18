@@ -6,7 +6,7 @@ This doc is for adding a family to the unified path. `qwen3` is on it today; `ge
 
 ## What you get for free
 
-`ScannerUnified` (`src/unified/mod.rs`) is the shared body. It is generic over the emitter and holds a `WrappedBlockScanner`, and the whole `UnifiedParser` impl is family-blind: `initialize`, `initialize_with_output_mode`, `push`, `finish`, `reset`.
+`ScannerUnified` (`src/unified/mod.rs`) is the shared body. It is generic over the emitter and holds a `WrappedBlockScanner`, and the whole `UnifiedParser` impl is family-blind: `initialize`, `initialize_request`, `parse_into`, `finish`, `reset`.
 
 Everything below is already generic in `src/tool_calling/scan.rs` — do NOT reimplement any of it per family:
 
@@ -103,9 +103,9 @@ same route for `granite`: extend the spec, do not narrow the grammar to the corp
 
 **Audit the emitter for `I7` before claiming the goldens.** qwen3's emitter was changed to call `parse_tool_call_block` directly because re-wrapping the body in `<tool_call>` made the batch parser truncate a value at an embedded `</tool_call>` — an argument value is DATA and must survive byte-exact. gemma4 hit the same wall from the other side: handing its block back to the whole-message extractor re-derived bounds the scanner had already resolved, and that extractor also refuses a call missing BOTH its opener (consumed as block markup) and its closer (never streamed), which is exactly case `5.b`. Its emitter now calls `parse_one_tool_call_gemma4` on the delimited invoke. **Rule: once the scanner has delimited an invoke, the emitter TYPES it — it never re-finds it.** The `minimax_m2`, `minimax_m3` and `kimi_k2` emitters still re-wrap. That is not confirmed broken, it is unaudited; case `7.b` (`arg_marker_in_string`) is the one that catches it — and it is not theoretical: vLLM 0.25.1's Python gemma4 parser truncates that value to `git log ` in the live capture.
 
-**Dangling-end recovery differs.** A `</think>` with nothing open is stripped by the shared scanner and the preceding bytes become TEXT; v1's `with_dangling_end_recovery` classifies them as REASONING. Affects `minimax_m3` and `kimi_k3`. Passing `UnifiedParserPrefill::Reasoning` resolves it, which means the caller has to actually pass it — see below.
+**Dangling-end recovery differs.** A `</think>` with nothing open is stripped by the shared scanner and the preceding bytes become TEXT; v1's `with_dangling_end_recovery` classifies them as REASONING. Affects `minimax_m3` and `kimi_k3`. Passing `UnifiedParserStartingState::Reasoning` resolves it, which means the caller has to actually pass it — see below.
 
-**Guided JSON needs a reasoning-aware scanner.** A family registered without a `ReasoningSpec` silently cannot support `GuidedJson`; `initialize_with_output_mode` bails.
+**Guided JSON needs a reasoning-aware scanner.** A family registered without a `ReasoningSpec` cannot support `GuidedJson`; `initialize_request` rejects that `UnifiedParserInit` before mutating parser state.
 
 **A guided-decoding case whose input is native markup tests nothing.** Guided
 decoding constrains the model to bare JSON, so the payload is grammar-independent and
@@ -115,7 +115,7 @@ families had no unified parser to run them, and unfixable-looking the moment one
 Render guided inputs once for every family (`every_family` in `gen_unified_golden.py`),
 not per family.
 
-**Nothing outside `parsers/v2` and `conformance/` consumes `UnifiedParser` yet.** `UnifiedParserPrefill` is set only by the conformance harness. Whoever wires this into the serving path must plumb prefill and tool-output-mode from the request — and that plumbing is exactly where a push-model desyncs, so test it AT THE BOUNDARY, not only at the parser. vLLM took the other approach: its `initialize` takes `prompt_token_ids` and infers the channel, and its parser RETURNS a structural tag for the engine to constrain against, so a caller cannot hand it a contradictory mode. Dynamo's explicit enum is easier to test without a tokenizer and easier to get wrong.
+**Nothing outside `parsers/v2` and `conformance/` consumes `UnifiedParser` yet.** The conformance harness builds `UnifiedParserInit` with `RecoverAsText`; a serving integration should build the same one owned object after prompt rendering and backend request resolution, leaving the default invalid-guided-payload policy at `Reject`. This keeps prompt tokens, starting state, output mode, and failure policy under one initialization owner. Test that object at the serving boundary, not only inside the parser.
 
 ## Checklist
 

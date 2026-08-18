@@ -50,6 +50,16 @@ def _case_key(case_id):
     return numbered_id(scenario), fam, scenario
 
 
+def _peer_cell(result):
+    """Store a peer failure instead of its partial output."""
+    if result.get("error"):
+        return {"error": result["error"]}
+    return {
+        "assembled": result.get("assembled") or [],
+        "chunks": [{"expected": events or []} for events in (result.get("chunks") or [])],
+    }
+
+
 def main():
     feed = yaml.safe_load((BUILD / "unified_results.yaml").read_text())
     caps = {}
@@ -93,7 +103,7 @@ def main():
             "scenario": scenario,
             "description": c.get("description", ""),
             "policy": c.get("policy") or [],
-            "init": c.get("init") or {"prefill": "None", "tool_output_mode": "Native", "named_tool": None},
+            "init": c.get("init") or {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
             "finish_reason": c.get("finish_reason") or "stop",
             "input": c.get("input", ""),
             "chunks": [
@@ -120,13 +130,7 @@ def main():
                 continue
             vdir = f"{impl}-{ver[impl]}"
             entry = slot(vdir, fam, captured_with={impl: ver[impl]})
-            cell = {}
-            if res.get("error"):
-                cell["error"] = res["error"]
-            else:
-                cell["assembled"] = res.get("assembled") or []
-                cell["chunks"] = [{"expected": e or []} for e in (res.get("chunks") or [])]
-            entry[key] = cell
+            entry[key] = _peer_cell(res)
 
     # Clear old exploded dirs, then write one file per case.
     for sub in ("inputs", "golden"):
