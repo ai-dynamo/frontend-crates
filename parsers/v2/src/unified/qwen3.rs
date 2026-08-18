@@ -48,6 +48,7 @@ pub(crate) fn qwen3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
             forced_start: false,
             // `<think>` is not a special token for this family; the OR comes from the grammar.
             preserve_special_tokens: false,
+            ..Default::default()
         },
     )))
 }

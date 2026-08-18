@@ -55,7 +55,8 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use crate::tool_calling::scan::{
-    InvokeEmitter, ReasoningSpec, WrappedBlockScanner, marker_prefix_suffix_len, push_run,
+    InvokeEmitter, InvokeScan, ReasoningSpec, WrappedBlockScanner, marker_prefix_suffix_len,
+    push_run, reasoning_opener_len,
 };
 use crate::tool_calling::traits::{Result, Tool, ToolCallDelta, ToolParseResult};
 
@@ -722,8 +723,12 @@ impl<E: InvokeEmitter> ScannerUnified<E> {
             (UnifiedToolOutputMode::GuidedJson { named_tool }, Some(reasoning)) => {
                 Some(Box::new(GuidedState::new(
                     reasoning,
-                    self.scanner.control_markers().to_vec(),
-                    self.scanner.invoke_end().to_string(),
+                    GuidedGrammar {
+                        control_markers: self.scanner.control_markers().to_vec(),
+                        invoke_start: self.scanner.invoke_start().to_string(),
+                        invoke_end: self.scanner.invoke_end().to_string(),
+                        invoke_scan: self.scanner.invoke_scan(),
+                    },
                     named_tool,
                     starting_state,
                     invalid_guided_payload,
@@ -857,6 +862,13 @@ where
 /// reasoning markers, taken from the scanner's own [`ReasoningSpec`]. Guided
 /// decoding is a BACKEND feature — any family can be served with it — so this
 /// lives on the shared unified parser rather than in one family's module.
+struct GuidedGrammar {
+    control_markers: Vec<String>,
+    invoke_start: String,
+    invoke_end: String,
+    invoke_scan: Option<InvokeScan>,
+}
+
 struct GuidedState {
     /// Any control markup was stripped this turn. Used only to tell a turn that
     /// produced nothing because it was ALL markup from a model that genuinely said
@@ -867,9 +879,7 @@ struct GuidedState {
     /// declaration. One set, used for both lookup and chunk-boundary holdback, in
     /// both the inside-a-thought and outside-a-thought scopes. Assembling it
     /// per-site from openers and orphans is how those four uses drifted apart.
-    control_markers: Vec<String>,
-    /// Paired with a stripped prefix-form invoke opener; see `invoke_end()`.
-    invoke_end: String,
+    grammar: GuidedGrammar,
     named_tool: Option<String>,
     invalid_payload: InvalidGuidedPayloadPolicy,
     /// Response starting_state disables reasoning markers, but tool control markers
@@ -1020,6 +1030,8 @@ fn guided_holdback_len(
     reasoning_markers: &[&str],
     control: &[String],
     invoke_end: &str,
+    start_label: Option<(&str, &str)>,
+    invoke_control: Option<(&str, InvokeScan)>,
     flush: bool,
 ) -> usize {
     if flush {
@@ -1067,7 +1079,32 @@ fn guided_holdback_len(
         .map(|(at, _)| input.len() - at)
         .max()
         .unwrap_or(0);
-    split.max(pending_prefix_form)
+    let pending_label = start_label
+        .and_then(|(start, label)| {
+            let at = input.rfind(start)?;
+            let rest = &input[at + start.len()..];
+            (rest.len() < label.len() && label.starts_with(rest)).then_some(input.len() - at)
+        })
+        .unwrap_or(0);
+    let pending_invoke = invoke_control
+        .map(|(start, scan)| {
+            let partial = (scan.holdback)(input);
+            let body = input
+                .match_indices(start)
+                .filter_map(|(at, _)| {
+                    let suffix = &input[at..];
+                    ((scan.opens)(input, at) && (scan.end)(suffix, false).is_none())
+                        .then_some(input.len() - at)
+                })
+                .max()
+                .unwrap_or(0);
+            partial.max(body)
+        })
+        .unwrap_or(0);
+    split
+        .max(pending_prefix_form)
+        .max(pending_label)
+        .max(pending_invoke)
 }
 
 /// Whether a buffered guided run has opened a JSON value. Anything before the
@@ -1145,8 +1182,7 @@ fn guided_payload_syntax_boundary(
 impl GuidedState {
     fn new(
         reasoning: ReasoningSpec,
-        control_markers: Vec<String>,
-        invoke_end: String,
+        grammar: GuidedGrammar,
         named_tool: Option<String>,
         starting_state: UnifiedParserStartingState,
         invalid_payload: InvalidGuidedPayloadPolicy,
@@ -1154,8 +1190,7 @@ impl GuidedState {
         Self {
             stripped_markup: false,
             reasoning,
-            control_markers,
-            invoke_end,
+            grammar,
             named_tool,
             invalid_payload,
             reasoning_enabled: starting_state != UnifiedParserStartingState::Response,
@@ -1206,8 +1241,8 @@ impl GuidedState {
             if let Some(boundary) = guided_payload_syntax_boundary(
                 &self.json,
                 self.reasoning,
-                &self.control_markers,
-                &self.invoke_end,
+                &self.grammar.control_markers,
+                &self.grammar.invoke_end,
             ) {
                 let tail = self.json.split_off(boundary);
                 let payload_end = self.json.trim_end().len();
@@ -1262,8 +1297,8 @@ impl GuidedState {
         let syntax_at = guided_payload_syntax_boundary(
             &self.json,
             self.reasoning,
-            &self.control_markers,
-            &self.invoke_end,
+            &self.grammar.control_markers,
+            &self.grammar.invoke_end,
         );
         let (payload_end, tail_start) = if syntax_at == Some(whitespace_end) {
             // Whitespace separating the value from control syntax belongs to
@@ -1286,6 +1321,66 @@ impl GuidedState {
         self.mode = GuidedMode::OutsideReasoning;
         self.input.push_str(&tail);
         Ok(std::mem::take(&mut output))
+    }
+
+    fn opener_len_at(&self, at: usize, flush: bool) -> Option<usize> {
+        reasoning_opener_len(
+            self.reasoning.start,
+            self.reasoning.start_label,
+            &self.input[at + self.reasoning.start.len()..],
+            flush,
+        )
+    }
+
+    fn start_label(&self) -> Option<(&str, &str)> {
+        self.reasoning
+            .start_label
+            .map(|label| (self.reasoning.start, label))
+    }
+
+    fn invoke_control(&self) -> Option<(&str, InvokeScan)> {
+        self.grammar
+            .invoke_scan
+            .map(|scan| (self.grammar.invoke_start.as_str(), scan))
+    }
+
+    fn control_marker_at(
+        &self,
+        haystack: &str,
+        limit: Option<usize>,
+        competing: &[&str],
+        flush: bool,
+    ) -> Option<(usize, usize)> {
+        let regular = control_marker_at(
+            haystack,
+            &self.grammar.control_markers,
+            &self.grammar.invoke_end,
+            limit,
+            competing,
+            flush,
+        );
+        let Some(scan) = self.grammar.invoke_scan else {
+            return regular;
+        };
+
+        let mut cursor = 0;
+        while let Some(relative) = haystack[cursor..].find(&self.grammar.invoke_start) {
+            let at = cursor + relative;
+            let suffix = &haystack[at..];
+            if (scan.opens)(haystack, at) {
+                if let Some(len) = (scan.end)(suffix, flush) {
+                    return regular
+                        .filter(|(regular_at, _)| *regular_at < at)
+                        .or(Some((at, len)));
+                }
+                return regular.filter(|(regular_at, _)| *regular_at < at);
+            }
+            if !flush && (scan.holdback)(suffix) == suffix.len() {
+                return regular.filter(|(regular_at, _)| *regular_at < at);
+            }
+            cursor = at + self.grammar.invoke_start.len();
+        }
+        regular
     }
 
     /// Strip the reasoning markers wrapping the JSON payload. Once visible
@@ -1338,32 +1433,34 @@ impl GuidedState {
                         .reasoning_enabled
                         .then(|| self.input.find(start))
                         .flatten();
-                    let stray_close = control_marker_at(
-                        &self.input,
-                        &self.control_markers,
-                        &self.invoke_end,
-                        // Nor past the start of the payload itself.
-                        self.input.find(['{', '[']),
-                        // A thought marker ahead also ends the header: a stray
-                        // `<function=` must not borrow the `>` from `<think>` and
-                        // swallow the thought — that put private reasoning in the
-                        // user's answer.
-                        &[start, end],
-                        flush,
-                    )
-                    .into_iter()
-                    .chain(
-                        self.reasoning_enabled
-                            .then(|| self.input.find(end).map(|at| (at, end.len())))
-                            .flatten(),
-                    )
-                    .min_by_key(|(at, _)| *at);
+                    let stray_close = self
+                        .control_marker_at(
+                            &self.input,
+                            // Nor past the start of the payload itself.
+                            self.input.find(['{', '[']),
+                            // A thought marker ahead also ends the header: a stray
+                            // `<function=` must not borrow the `>` from `<think>` and
+                            // swallow the thought — that put private reasoning in the
+                            // user's answer.
+                            &[start, end],
+                            flush,
+                        )
+                        .into_iter()
+                        .chain(
+                            self.reasoning_enabled
+                                .then(|| self.input.find(end).map(|at| (at, end.len())))
+                                .flatten(),
+                        )
+                        .min_by_key(|(at, _)| *at);
                     let close_at = stray_close.map(|(at, _)| at);
                     let close_len = stray_close.map(|(_, l)| l).unwrap_or(end.len());
                     let closer_first = matches!((open_at, close_at), (Some(o), Some(c)) if c < o)
                         || (open_at.is_none() && close_at.is_some());
 
-                    if !closer_first && let Some(at) = open_at {
+                    if !closer_first
+                        && let Some(at) = open_at
+                        && let Some(open_len) = self.opener_len_at(at, flush)
+                    {
                         // Whatever was buffered as "payload so far", plus this prefix,
                         // was visible text after all — a thought is opening behind it.
                         let mut pending = std::mem::take(&mut self.json);
@@ -1378,7 +1475,7 @@ impl GuidedState {
                                 self.post_payload_text_started = true;
                             }
                         }
-                        self.input.drain(..at + start.len());
+                        self.input.drain(..at + open_len);
                         self.mode = GuidedMode::Reasoning;
                         self.accept_redundant_reasoning_start = false;
                         continue;
@@ -1423,8 +1520,10 @@ impl GuidedState {
                         guided_holdback_len(
                             &self.input,
                             reasoning_markers,
-                            &self.control_markers,
-                            &self.invoke_end,
+                            &self.grammar.control_markers,
+                            &self.grammar.invoke_end,
+                            self.start_label(),
+                            self.invoke_control(),
                             flush,
                         )
                     };
@@ -1477,9 +1576,11 @@ impl GuidedState {
                     if self.accept_redundant_reasoning_start {
                         let non_whitespace = self.input.trim_start();
                         let leading = self.input.len() - non_whitespace.len();
-                        if non_whitespace.starts_with(start) {
+                        if non_whitespace.starts_with(start)
+                            && let Some(open_len) = self.opener_len_at(leading, flush)
+                        {
                             push_run(&mut output, Kind::Reasoning, &self.input[..leading]);
-                            self.input.drain(..leading + start.len());
+                            self.input.drain(..leading + open_len);
                             self.accept_redundant_reasoning_start = false;
                             continue;
                         }
@@ -1514,20 +1615,23 @@ impl GuidedState {
                     // guided payload that followed and returned an empty response.
                     // The native scanner does treat it as structural, but it can: it
                     // opens a block and recovers the call from the markup itself.
-                    let stray = control_marker_at(
-                        &self.input,
-                        &self.control_markers,
-                        &self.invoke_end,
-                        // A narrated invoke lives INSIDE this thought, so its
-                        // terminator cannot be past the span's closer.
-                        self.input.find(end),
-                        &[end],
-                        flush,
-                    )
-                    .into_iter()
-                    .chain(self.input.find(start).map(|at| (at, start.len())))
-                    .min_by_key(|(at, _)| *at)
-                    .map(|(at, len)| (at, len, false));
+                    let stray = self
+                        .control_marker_at(
+                            &self.input,
+                            // A narrated invoke lives INSIDE this thought, so its
+                            // terminator cannot be past the span's closer.
+                            self.input.find(end),
+                            &[end],
+                            flush,
+                        )
+                        .into_iter()
+                        .chain(
+                            self.input
+                                .find(start)
+                                .and_then(|at| Some((at, self.opener_len_at(at, flush)?))),
+                        )
+                        .min_by_key(|(at, _)| *at)
+                        .map(|(at, len)| (at, len, false));
                     if let Some((at, consume, closes)) = [close, stray]
                         .into_iter()
                         .flatten()
@@ -1560,8 +1664,10 @@ impl GuidedState {
                         guided_holdback_len(
                             &self.input,
                             &[start, end],
-                            &self.control_markers,
-                            &self.invoke_end,
+                            &self.grammar.control_markers,
+                            &self.grammar.invoke_end,
+                            self.start_label(),
+                            self.invoke_control(),
                             flush,
                         )
                     };
@@ -2100,6 +2206,7 @@ mod tests {
             start: "<think>",
             end: "</think>",
             forced_start: false,
+            start_label: None,
             preserve_special_tokens: false,
         };
 
@@ -2130,10 +2237,15 @@ mod tests {
                 start: "<think>",
                 end: "</think>",
                 forced_start: false,
+                start_label: None,
                 preserve_special_tokens: false,
             },
-            vec!["<tool_call>".into(), "</tool_call>".into()],
-            "</function>".into(),
+            GuidedGrammar {
+                control_markers: vec!["<tool_call>".into(), "</tool_call>".into()],
+                invoke_start: "<function=".into(),
+                invoke_end: "</function>".into(),
+                invoke_scan: None,
+            },
             None,
             UnifiedParserStartingState::None,
             InvalidGuidedPayloadPolicy::RecoverAsText,

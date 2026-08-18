@@ -77,20 +77,42 @@ use crate::unified::{Kind, UnifiedParserEvent};
 /// guarantee by construction is now only guaranteed by
 /// `guided_and_native_agree_on_the_same_reasoning_bytes` in `unified/qwen3.rs`.
 /// That test is what stops the two drifting; this helper no longer can.
+///
+/// A second copy of this rule is how the two modes drift apart (`I6`).
+pub(crate) fn reasoning_opener_len(
+    start: &str,
+    label: Option<&str>,
+    after_start: &str,
+    flush: bool,
+) -> Option<usize> {
+    let len = start.len();
+    let Some(label) = label else {
+        return Some(len);
+    };
+    if after_start.starts_with(label) {
+        return Some(len + label.len());
+    }
+    if !flush && after_start.len() < label.len() && label.starts_with(after_start) {
+        return None;
+    }
+    Some(len)
+}
+
 pub(crate) fn stray_in_reasoning(
     haystack: &str,
-    start: &str,
+    opener: Option<(usize, usize)>,
     end: &str,
     orphan_markers: &[String],
 ) -> Option<(usize, usize)> {
-    std::iter::once(start)
+    opener
+        .into_iter()
         .chain(
             orphan_markers
                 .iter()
                 .map(String::as_str)
-                .filter(|m| *m != end),
+                .filter(|m| *m != end)
+                .filter_map(|m| haystack.find(m).map(|pos| (pos, m.len()))),
         )
-        .filter_map(|m| haystack.find(m).map(|pos| (pos, m.len())))
         .min_by_key(|(pos, _)| *pos)
 }
 
@@ -151,12 +173,13 @@ pub(crate) fn reorder_arguments(arguments: &str, source_names: &[String]) -> Str
 
 /// What happens to the normal-text suppression latch after a bare-invoke
 /// recovery emits a call.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
 pub(crate) enum BareRecoveryLatch {
     /// Clear the latch: when the optional outer close is absent, later
     /// narration must still reach normal_text (MiniMax M2 semantics; a stray
     /// close that DOES follow is stripped by the orphan-close handling).
     Clear,
+    #[default]
     /// Keep the latch set: trailing markup around the recovered invoke is
     /// dropped until an orphan close ends the markup context
     /// (MiniMax M3 / Qwen3-Coder / Kimi K2 semantics).
@@ -164,15 +187,34 @@ pub(crate) enum BareRecoveryLatch {
 }
 
 /// When the in-block invoke latch engages after parsing a complete invoke.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
 pub(crate) enum InvokeLatch {
+    #[default]
     /// Only when the invoke produced a call delta (XML families).
     IfEmitted,
     /// Always — even when the invoke parsed to nothing (Kimi K2).
     Always,
 }
 
+/// Grammar-aware overrides for locating invokes when marker-only scanning is
+/// insufficient.
+///
+/// Gemma 4 needs all three answers because its string-delimited values may
+/// contain both `call:` and `<tool_call|>` as data. Keeping them on one hook
+/// prevents opener, end, and holdback ownership from drifting apart.
+#[derive(Clone, Copy)]
+pub(crate) struct InvokeScan {
+    /// End of the invoke that begins at byte zero, just past its closer. `flush`
+    /// allows a family to recover a balanced body whose closer never arrived.
+    pub end: fn(text: &str, flush: bool) -> Option<usize>,
+    /// Whether the `invoke_start` occurrence at `at` opens a real invoke.
+    pub opens: fn(text: &str, at: usize) -> bool,
+    /// Additional trailing bytes to retain while an opener is still arriving.
+    pub holdback: fn(text: &str) -> usize,
+}
+
 /// Declarative description of one wrapped-invoke grammar.
+#[derive(Default)]
 pub(crate) struct WrappedBlockSpec {
     /// Family name used in tracing `why` diagnostics.
     pub family: &'static str,
@@ -195,6 +237,8 @@ pub(crate) struct WrappedBlockSpec {
     /// the `invoke_end` means the call is malformed — drop it and close the
     /// block (Kimi K2's mismatched-fences rule).
     pub drop_invoke_crossing_block_end: bool,
+    /// Grammar-aware invoke location; `None` uses the marker-only rules.
+    pub invoke_scan: Option<InvokeScan>,
     /// Whether a decoder must keep tokenizer special tokens so this grammar's
     /// markers survive to the parser.
     ///
@@ -211,7 +255,7 @@ pub(crate) struct WrappedBlockSpec {
 /// `&'static str`: every family's markers are compile-time constants, so
 /// `drain_reasoning` copies two pointers per push instead of allocating two
 /// `String`s on the hot path.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub(crate) struct ReasoningSpec {
     /// Opener, e.g. `<think>`.
     pub start: &'static str,
@@ -223,6 +267,11 @@ pub(crate) struct ReasoningSpec {
     pub forced_start: bool,
     /// Whether the reasoning markers require special-token preservation.
     pub preserve_special_tokens: bool,
+    /// Role label the tokenizer writes immediately after `start`, e.g. gemma4's
+    /// `thought\n` in `<|channel>thought\n`. Structural, and stripped from the
+    /// thought rather than emitted as reasoning text. `None` for families whose
+    /// opener carries no label.
+    pub start_label: Option<&'static str>,
 }
 
 /// Per-family hook: parse one complete invoke (opener..closer inclusive) into
@@ -429,6 +478,14 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         &self.spec.invoke_end
     }
 
+    pub(crate) fn invoke_start(&self) -> &str {
+        &self.spec.invoke_start
+    }
+
+    pub(crate) fn invoke_scan(&self) -> Option<InvokeScan> {
+        self.spec.invoke_scan
+    }
+
     /// Select whether this stream interprets reasoning markers, without
     /// rebuilding the scanner or cloning its tool schemas.
     pub(crate) fn set_reasoning_mode(&mut self, enabled: bool, forced_start: Option<bool>) {
@@ -520,14 +577,56 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         pending
     }
 
+    /// Whether one invoke closer also closes the surrounding block.
+    fn invoke_closes_block(&self) -> bool {
+        self.spec.block_ends.contains(&self.spec.invoke_end)
+    }
+
+    /// Find the next real invoke opener, applying the family hook when present.
+    fn find_invoke_start(&self, text: &str) -> Option<usize> {
+        let Some(scan) = self.spec.invoke_scan else {
+            return text.find(self.spec.invoke_start.as_str());
+        };
+        let mut cursor = 0;
+        while let Some(relative) = text[cursor..].find(self.spec.invoke_start.as_str()) {
+            let at = cursor + relative;
+            if (scan.opens)(text, at) {
+                return Some(at);
+            }
+            cursor = at + self.spec.invoke_start.len();
+        }
+        None
+    }
+
+    /// Offset just past the closer of the invoke beginning at byte zero.
+    fn invoke_end_at(&self, text: &str, flush: bool) -> Option<usize> {
+        match self.spec.invoke_scan {
+            Some(scan) => (scan.end)(text, flush),
+            None => text
+                .find(self.spec.invoke_end.as_str())
+                .map(|position| position + self.spec.invoke_end.len()),
+        }
+    }
+
+    /// Bytes a reasoning opener occupies at `at`, structural label included.
+    fn opener_len_at(&self, at: usize, flush: bool) -> Option<usize> {
+        let reasoning = self.reasoning.as_ref()?;
+        reasoning_opener_len(
+            reasoning.start,
+            reasoning.start_label,
+            &self.buffer[at + reasoning.start.len()..],
+            flush,
+        )
+    }
+
     /// Position and length of the reasoning opener in the buffer, if configured.
-    fn find_reasoning_start(&self) -> Option<(usize, usize)> {
+    fn find_reasoning_start(&self, flush: bool) -> Option<(usize, usize)> {
         if !self.reasoning_enabled {
             return None;
         }
         let reasoning = self.reasoning.as_ref()?;
         let pos = self.buffer.find(reasoning.start)?;
-        Some((pos, reasoning.start.len()))
+        Some((pos, self.opener_len_at(pos, flush)?))
     }
 
     /// Position and length of the earliest malformed close outside a block.
@@ -562,7 +661,35 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 marker_prefix_suffix_len(&self.buffer, [reasoning.start, reasoning.end])
             })
             .unwrap_or_default();
-        regular.max(reasoning)
+        let invoke = self
+            .spec
+            .invoke_scan
+            .map(|scan| (scan.holdback)(&self.buffer))
+            .unwrap_or_default();
+        regular
+            .max(reasoning)
+            .max(self.pending_label_len())
+            .max(invoke)
+    }
+
+    /// Retain a complete reasoning opener while its optional role label is only
+    /// partially buffered.
+    fn pending_label_len(&self) -> usize {
+        let Some(reasoning) = self.reasoning.as_ref().filter(|_| self.reasoning_enabled) else {
+            return 0;
+        };
+        let Some(label) = reasoning.start_label else {
+            return 0;
+        };
+        let Some(at) = self.buffer.rfind(reasoning.start) else {
+            return 0;
+        };
+        let rest = &self.buffer[at + reasoning.start.len()..];
+        if rest.len() < label.len() && label.starts_with(rest) {
+            self.buffer.len() - at
+        } else {
+            0
+        }
     }
 
     /// Consume buffered reasoning up to its closer, or as far as is safe.
@@ -598,9 +725,18 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         let tool_open = find_first(&self.buffer, &self.spec.block_starts)
             .map(|(pos, _)| pos)
             .into_iter()
-            .chain(self.buffer.find(self.spec.invoke_start.as_str()))
+            .chain(self.find_invoke_start(&self.buffer))
             .min();
-        let stray = stray_in_reasoning(&self.buffer, start, end, &self.spec.orphan_markers);
+        let duplicate_start = self
+            .buffer
+            .find(start)
+            .and_then(|pos| Some((pos, self.opener_len_at(pos, flush)?)));
+        let stray = stray_in_reasoning(
+            &self.buffer,
+            duplicate_start,
+            end,
+            &self.spec.orphan_markers,
+        );
 
         if let Some((at, what)) = earliest([
             self.buffer.find(end).map(|pos| (pos, InReasoning::Close)),
@@ -663,7 +799,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             }
 
             if self.in_block {
-                let invoke_start = self.buffer.find(self.spec.invoke_start.as_str());
+                let invoke_start = self.find_invoke_start(&self.buffer);
 
                 // Close the block once no more complete invokes precede its end.
                 if let Some((end_pos, end_len)) = find_first(&self.buffer, &self.spec.block_ends) {
@@ -698,7 +834,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     self.uncommitted_block.push_str(&self.buffer[..start]);
                     self.buffer.drain(..start);
                 }
-                let Some(end) = self.buffer.find(self.spec.invoke_end.as_str()) else {
+                let Some(end) = self.invoke_end_at(&self.buffer, flush) else {
                     if flush {
                         tracing::warn!(
                             why = %format!("{}_incomplete_invoke", self.spec.family),
@@ -727,14 +863,13 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     self.suppress_normal_text = false;
                     continue;
                 }
-                let invoke_len = end + self.spec.invoke_end.len();
-                let invoke = self.buffer[..invoke_len].to_string();
+                let invoke = self.buffer[..end].to_string();
                 // Emit BEFORE consuming. `parse_invoke` is fallible, and draining first
                 // meant a failing emitter destroyed the invoke bytes: they were gone from
                 // the buffer, so `reset` could no longer hand them back and the
                 // documented recovery contract was false for the only shipped family.
                 let emitted = self.emitter.parse_invoke(&invoke, self.next_index)?;
-                self.buffer.drain(..invoke_len);
+                self.buffer.drain(..end);
                 if let Some(delta) = emitted {
                     out.push_call(delta);
                     self.next_index += 1;
@@ -748,6 +883,12 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 if self.spec.invoke_latch == InvokeLatch::Always {
                     self.suppress_normal_text = true;
                 }
+                if self.invoke_closes_block() {
+                    self.uncommitted_block.clear();
+                    self.in_block = false;
+                    self.suppress_normal_text = false;
+                    self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
+                }
                 continue;
             }
 
@@ -760,11 +901,11 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 let next_open = find_first(&self.buffer, &self.spec.block_starts)
                     .map(|(p, _)| p)
                     .into_iter()
-                    .chain(self.buffer.find(self.spec.invoke_start.as_str()))
+                    .chain(self.find_invoke_start(&self.buffer))
                     // A reasoning opener counts as an opener here, so the
                     // matching closer in `<think>a</think>` is not mistaken for
                     // an orphan and stripped.
-                    .chain(self.find_reasoning_start().map(|(p, _)| p))
+                    .chain(self.find_reasoning_start(flush).map(|(p, _)| p))
                     .min();
                 if next_open.is_none_or(|open| pos < open) {
                     if !self.suppress_normal_text && pos > 0 {
@@ -781,10 +922,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             let next_marker = earliest([
                 find_first(&self.buffer, &self.spec.block_starts)
                     .map(|(pos, len)| (pos, Marker::Block(len))),
-                self.buffer
-                    .find(self.spec.invoke_start.as_str())
+                self.find_invoke_start(&self.buffer)
                     .map(|pos| (pos, Marker::BareInvoke)),
-                self.find_reasoning_start()
+                self.find_reasoning_start(flush)
                     .map(|(pos, len)| (pos, Marker::ReasoningStart(len))),
             ]);
 
@@ -828,7 +968,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 Marker::BareInvoke => {
                     // A bare invoke (no wrapper) is recovered only once its close
                     // has streamed; otherwise wait for more input.
-                    let Some(end) = self.buffer.find(self.spec.invoke_end.as_str()) else {
+                    let Some(end) = self.invoke_end_at(&self.buffer, flush) else {
                         if flush {
                             tracing::warn!(
                                 why = %format!("{}_incomplete_bare_invoke", self.spec.family),
@@ -838,11 +978,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         }
                         break;
                     };
-                    let invoke_len = end + self.spec.invoke_end.len();
-                    let invoke = self.buffer[..invoke_len].to_string();
+                    let invoke = self.buffer[..end].to_string();
                     // Emit before consuming — same recovery contract as the wrapped site.
                     let emitted = self.emitter.parse_invoke(&invoke, self.next_index)?;
-                    self.buffer.drain(..invoke_len);
+                    self.buffer.drain(..end);
                     if let Some(delta) = emitted {
                         tracing::warn!(
                             why = %format!("{}_bare_invoke_recovery", self.spec.family),
@@ -908,6 +1047,7 @@ pub(crate) mod test_support {
                 bare_recovery_latch: BareRecoveryLatch::Set,
                 invoke_latch: InvokeLatch::IfEmitted,
                 drop_invoke_crossing_block_end: false,
+                invoke_scan: None,
                 preserve_special_tokens: true,
             },
             FailOnBoom,
@@ -1025,6 +1165,7 @@ mod tests {
             start: "<think>",
             end: "</think>",
             forced_start: true,
+            start_label: None,
             preserve_special_tokens: false,
         });
 
