@@ -317,9 +317,15 @@ fn reconstruct_directed_envelope(
 
 impl ReasoningParser for GptOssReasoningParser {
     fn in_reasoning(&self) -> Option<bool> {
-        // Harmony carries the state as a channel rather than a flag. `analysis`
-        // is the chain-of-thought channel; `final` and `commentary` are not.
-        Some(self.parser.current_channel().as_deref() == Some("analysis"))
+        // Harmony carries the state as a channel rather than a flag. Only
+        // RECIPIENTLESS `analysis` is chain-of-thought: `analysis to=functions.X`
+        // is a malformed tool call whose payload is handed to the tool parser,
+        // never surfaced as reasoning. Same condition as
+        // `append_message_by_channel`.
+        Some(
+            self.parser.current_channel().as_deref() == Some("analysis")
+                && self.parser.current_recipient().is_none(),
+        )
     }
 
     fn finish_reasoning_stream(&mut self) -> ParserResult {
@@ -730,6 +736,33 @@ mod tests {
         let result = parser.detect_and_parse_reasoning(text, &[]);
         assert_eq!(result.reasoning_text, "first\nsecond");
         assert_eq!(result.normal_text, "done");
+    }
+
+    #[test]
+    fn test_gpt_oss_in_reasoning_excludes_directed_analysis() {
+        // `analysis to=functions.X` is a malformed tool call, not thinking. Its
+        // payload is handed to the tool parser and never surfaces as reasoning,
+        // so a caller counting reasoning tokens must not be told it is inside a
+        // reasoning span while it streams.
+        let mut parser = GptOssReasoningParser::new().expect("Failed to create parser");
+        for chunk in [
+            "<|channel|>analysis to=functions.search ",
+            "<|constrain|>json<|message|>",
+            "{\"q\":\"x\"}",
+            "<|call|>",
+        ] {
+            let result = parser.parse_reasoning_streaming_incremental(chunk, &[]);
+            assert_eq!(parser.in_reasoning(), Some(false), "chunk {chunk:?}");
+            assert_eq!(result.reasoning_text, "", "chunk {chunk:?}");
+        }
+
+        // Control: a recipientless analysis block IS thinking.
+        let mut plain = GptOssReasoningParser::new().expect("Failed to create parser");
+        plain.parse_reasoning_streaming_incremental("<|channel|>analysis<|message|>", &[]);
+        assert_eq!(plain.in_reasoning(), Some(true));
+        let result = plain.parse_reasoning_streaming_incremental("think", &[]);
+        assert_eq!(result.reasoning_text, "think");
+        assert_eq!(plain.in_reasoning(), Some(true));
     }
 
     #[test]
