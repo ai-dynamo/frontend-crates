@@ -388,10 +388,23 @@ pub(crate) fn muse_scanner(tools: &[Tool]) -> MuseChannelScanner {
 
 impl MuseChannelScanner {
     pub(crate) fn push_ordered(&mut self, chunk: &str) -> anyhow::Result<Vec<UnifiedParserEvent>> {
-        self.buffer.push_str(chunk);
         let mut out = Vec::new();
-        self.drain(&mut out)?;
+        self.push_ordered_into(chunk, &mut out)?;
         Ok(out)
+    }
+
+    /// Scan `chunk`, appending committed events to a carry the caller keeps on `Err`.
+    ///
+    /// `push_ordered` cannot offer that: its `Result<Vec<_>>` drops whatever the drain
+    /// had already committed before a failing invoke. `UnifiedParser::parse_into`
+    /// promises those events survive, so it runs on this instead.
+    pub(crate) fn push_ordered_into(
+        &mut self,
+        chunk: &str,
+        out: &mut Vec<UnifiedParserEvent>,
+    ) -> anyhow::Result<()> {
+        self.buffer.push_str(chunk);
+        self.drain(out)
     }
 
     pub(crate) fn finish_ordered(&mut self) -> anyhow::Result<Vec<UnifiedParserEvent>> {
@@ -618,19 +631,38 @@ impl MuseChannelScanner {
         }
     }
 
-    /// End of stream: promote what is provably complete, drop parser-owned
-    /// markup, and never leak an unfinished tool call.
-    fn flush(&mut self, out: &mut Vec<UnifiedParserEvent>) {
-        let buffered = std::mem::take(&mut self.buffer);
-        let state = std::mem::replace(&mut self.state, State::Idle);
-        // Per-turn latches reset with the buffer so a reused parser never reads the next
-        // turn through the last turn's state: a stale `allow_bare_header` would drop the
-        // next turn's header-less first message and leak its opening call as content.
-        // Placed before the empty-buffer return so a drainless finish still resets.
+    /// Return every field carrying stream position to its fresh-stream value, handing
+    /// back the buffer and the channel it was open in.
+    ///
+    /// The single place those fields are cleared, so ending a stream (`flush`) and
+    /// abandoning one (`reset_stream`) cannot drift on what "fresh" means. A stale
+    /// `allow_bare_header` would drop the next stream's header-less first message and
+    /// leak its opening call as content; a stale `next_index` would file that stream's
+    /// first call under an index the abandoned one already dispatched.
+    fn take_stream_state(&mut self) -> (String, State) {
         self.allow_bare_header = true;
         self.last_body_char = None;
         self.pending_reasoning_join = false;
         self.next_index = 0;
+        (
+            std::mem::take(&mut self.buffer),
+            std::mem::replace(&mut self.state, State::Idle),
+        )
+    }
+
+    /// Return to a FRESH-STREAM state and hand back whatever was still buffered.
+    ///
+    /// The carry is NOT emitted, unlike `flush`: it belongs to a stream the caller
+    /// abandoned and must re-parse as a NEW one.
+    pub(crate) fn reset_stream(&mut self) -> String {
+        self.take_stream_state().0
+    }
+
+    /// End of stream: promote what is provably complete, drop parser-owned
+    /// markup, and never leak an unfinished tool call.
+    fn flush(&mut self, out: &mut Vec<UnifiedParserEvent>) {
+        // Taken before the empty-buffer return so a drainless finish still resets.
+        let (buffered, state) = self.take_stream_state();
         if buffered.is_empty() {
             return;
         }

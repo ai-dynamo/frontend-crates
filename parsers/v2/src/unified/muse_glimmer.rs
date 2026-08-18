@@ -34,13 +34,26 @@ impl UnifiedParser for MuseChannelScanner {
         true
     }
 
-    // The ordered drain is infallible, so pumping its Vec into `output` (rather than a
-    // direct sink) cannot drop a committed event on `?`, and the default `reset` is safe.
+    /// The trait default returns an empty string and clears nothing. Muse buffers on
+    /// every path — a partial marker, an open channel, the bare-header latch and a used
+    /// `next_index` — so inheriting it would report an empty carry while the scanner
+    /// still held all of that. A caller on the documented recovery path would drop the
+    /// held bytes and resume on a counter that re-numbers its first call onto an index
+    /// the abandoned stream already dispatched.
+    fn reset(&mut self) -> String {
+        self.reset_stream()
+    }
+
     fn parse_into(&mut self, delta: &str, output: &mut UnifiedParserOutput) -> Result<()> {
-        for event in self.push_ordered(delta)? {
+        // Through a carry the caller keeps on `Err`, not `push_ordered`'s owned
+        // `Result<Vec<_>>`: the drain types arguments mid-advance (`parse_invoke`), so it
+        // can commit events and THEN fail, and the trait promises those stay in `output`.
+        let mut events = Vec::new();
+        let result = self.push_ordered_into(delta, &mut events);
+        for event in events {
             push_event(output, event);
         }
-        Ok(())
+        result
     }
 
     fn finish(&mut self) -> Result<UnifiedParserOutput> {
@@ -861,6 +874,34 @@ mod tests {
             // counter moves, and `assemble` keys calls by it.
             assert_eq!(got, want, "reused parser diverged on {second:?}");
         }
+    }
+
+    #[test]
+    fn reset_hands_back_the_held_bytes_and_restarts_the_stream() {
+        // `CUSTOM_PARSERS.md` states the override as MANDATORY for a parser that holds
+        // bytes back, and muse holds on every path. The inherited default returned "" and
+        // cleared nothing, so a caller on the documented recovery path lost the held
+        // header AND resumed on a used `next_index` — the next stream's first call filed
+        // under an index the abandoned one had already dispatched. Held as
+        // fresh-equals-recovered, matching the reuse pins above.
+        let mut parser = muse_glimmer_unified(&tools());
+        parser.push(&tool_channel("f", "x", "1")).expect("push");
+        // Idle holds from `<|start|>` on, so the whole partial header stays buffered.
+        parser.push("<|start|>assist").expect("push");
+        assert_eq!(
+            parser.reset(),
+            "<|start|>assist",
+            "reset must hand back the held bytes, not the default empty string"
+        );
+        assert_eq!(parser.reset(), "", "a reset parser holds nothing");
+
+        let second = tool_channel("g", "y", "2");
+        let mut got = parser.push(&second).expect("push");
+        got.extend(parser.finish().expect("finish"));
+        let mut fresh = muse_glimmer_unified(&tools());
+        let mut want = fresh.push(&second).expect("push");
+        want.extend(fresh.finish().expect("finish"));
+        assert_eq!(got, want, "a reset parser diverged from a fresh one");
     }
 
     #[test]
