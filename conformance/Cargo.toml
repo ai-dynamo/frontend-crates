@@ -11,7 +11,7 @@ publish = false
 [dev-dependencies]
 anyhow = { workspace = true }
 dynamo-parsers = { workspace = true }
-dynamo-parsers-v2 = { path = "../parsers/v2", version = "0.2.1" }
+dynamo-parsers-v2 = { path = "../parsers/v2", version = "0.3.0" }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 serde_yaml = "0.9"
