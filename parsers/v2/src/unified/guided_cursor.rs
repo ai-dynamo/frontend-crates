@@ -116,6 +116,10 @@ pub(crate) struct GuidedJsonCursor {
     element: Element,
     index: usize,
     committed: Vec<CommittedCall>,
+    /// Absolute end, in the fed payload's coordinates, of the last byte released
+    /// as a call fragment. Recovery may only emit bytes at or after this offset:
+    /// anything before it is already on the wire and cannot be unsaid.
+    released_end: usize,
 }
 
 impl Default for GuidedJsonCursor {
@@ -140,6 +144,7 @@ impl GuidedJsonCursor {
             element: Element::default(),
             index: 0,
             committed: Vec::new(),
+            released_end: 0,
         }
     }
 
@@ -154,6 +159,12 @@ impl GuidedJsonCursor {
 
     pub(crate) fn has_committed(&self) -> bool {
         !self.committed.is_empty()
+    }
+
+    /// Absolute end of the bytes already released as call fragments, in the
+    /// coordinates of the payload passed to [`Self::advance`].
+    pub(crate) fn released_end(&self) -> usize {
+        self.released_end
     }
 
     /// Lex the bytes appended since the last advance, emitting whatever became
@@ -388,6 +399,7 @@ impl GuidedJsonCursor {
         }
         let fragment = payload[from..bound].to_string();
         self.element.released = bound - start;
+        self.released_end = self.released_end.max(bound);
         if let Some(record) = self.committed.last_mut() {
             record.released = self.element.released;
             record.ambiguous = self.element.ambiguous;

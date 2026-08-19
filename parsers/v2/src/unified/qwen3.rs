@@ -1918,6 +1918,118 @@ mod tests {
         );
     }
 
+    /// Output conservation: bytes already dispatched as a tool call must NOT come
+    /// back as visible text. When a later array element leaves the payload
+    /// unsplittable, the recovery path may only emit the UN-streamed remainder --
+    /// re-emitting the whole buffer makes a client execute the tool and then render
+    /// its JSON as prose.
+    #[test]
+    fn required_guided_truncation_does_not_duplicate_a_streamed_call_as_text() {
+        // One complete call, then a second element truncated right after its
+        // `"arguments":` key, so the payload can no longer be split into elements.
+        let payload = concat!(
+            r#"[{"name": "get_weather", "arguments": {"city": "Paris"}},"#,
+            r#"{"name": "get_weather", "arguments":"#
+        );
+        let (calls, all) = streamed(payload, &per_char(payload));
+
+        // The first call must have streamed.
+        assert!(
+            calls
+                .iter()
+                .any(|c| c.name.as_deref() == Some("get_weather")),
+            "expected the complete first call to stream: {calls:?}"
+        );
+        let streamed_args: String = calls
+            .iter()
+            .filter(|c| c.tool_index == 0)
+            .map(|c| c.arguments.as_str())
+            .collect();
+        assert!(
+            !streamed_args.is_empty(),
+            "expected argument fragments for call 0"
+        );
+
+        let text: String = all
+            .iter()
+            .filter_map(|e| match e {
+                UnifiedParserEvent::Text(t) => Some(t.as_str()),
+                _ => None,
+            })
+            .collect();
+
+        assert!(
+            !text.contains(&streamed_args),
+            "recovery text re-emitted bytes already dispatched as call 0.\n               streamed args: {streamed_args:?}\n  recovery text: {text:?}"
+        );
+    }
+
+    /// The conservation invariant must hold at EVERY chunk boundary, not just the
+    /// per-char one: the split decides how much streamed before truncation, so a
+    /// single split size can pass while others duplicate.
+    #[test]
+    fn required_guided_truncation_conserves_output_at_every_split() {
+        let payload = concat!(
+            r#"[{"name": "get_weather", "arguments": {"city": "Paris"}},"#,
+            r#"{"name": "get_weather", "arguments":"#
+        );
+        for split in 0..=payload.len() {
+            if !payload.is_char_boundary(split) {
+                continue;
+            }
+            let chunks = vec![&payload[..split], &payload[split..]];
+            let (calls, all) = streamed(payload, &chunks);
+            let streamed_args: String = calls
+                .iter()
+                .filter(|c| c.tool_index == 0)
+                .map(|c| c.arguments.as_str())
+                .collect();
+            if streamed_args.is_empty() {
+                continue; // nothing committed at this split, nothing to conserve
+            }
+            let text: String = all
+                .iter()
+                .filter_map(|e| match e {
+                    UnifiedParserEvent::Text(t) => Some(t.as_str()),
+                    _ => None,
+                })
+                .collect();
+            assert!(
+                !text.contains(&streamed_args),
+                "split {split}: recovery text re-emitted dispatched bytes\n                   streamed: {streamed_args:?}\n  text: {text:?}"
+            );
+        }
+    }
+
+    /// The single-call case: one call commits, then the stream ends mid-arguments.
+    /// There is no second element to make the payload unsplittable, so this
+    /// exercises the other recovery branch.
+    #[test]
+    fn required_guided_single_committed_call_truncated_conserves_output() {
+        let cut = GUIDED_CALL.find("Paris").expect("fixture shape") + 2;
+        let payload = &GUIDED_CALL[..cut];
+        let (calls, all) = streamed(payload, &per_char(payload));
+        let streamed_args: String = calls
+            .iter()
+            .filter(|c| c.tool_index == 0)
+            .map(|c| c.arguments.as_str())
+            .collect();
+        if streamed_args.is_empty() {
+            return; // nothing committed, nothing to conserve
+        }
+        let text: String = all
+            .iter()
+            .filter_map(|e| match e {
+                UnifiedParserEvent::Text(t) => Some(t.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert!(
+            !text.contains(&streamed_args),
+            "single-call truncation re-emitted dispatched bytes\n               streamed: {streamed_args:?}\n  text: {text:?}"
+        );
+    }
+
     /// Truncation mid-payload: whatever was streamed stays streamed, and nothing
     /// is invented for the part that never arrived.
     #[test]

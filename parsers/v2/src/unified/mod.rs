@@ -1780,6 +1780,11 @@ impl GuidedState {
     /// together, and cannot be offered once a fragment is already out.
     fn finish_streamed_remainder(&mut self) -> Vec<UnifiedParserEvent> {
         let payload = self.json.trim().to_string();
+        // Bytes already dispatched as call fragments may NOT come back as text.
+        // The cursor is fed `self.json`, so slice in THAT coordinate system before
+        // trimming, or a leading-whitespace offset silently re-emits committed bytes.
+        let released_end = self.cursor.released_end().min(self.json.len());
+        let remainder = self.json[released_end..].trim().to_string();
         let mut out = Vec::new();
         let Some(elements) = parse_required_guided_elements(&payload) else {
             // Not even splittable into elements. Whatever was streamed stays
@@ -1793,7 +1798,7 @@ impl GuidedState {
                 "guided output did not parse as a tool call after fragments were \
                  already emitted; emitting the remainder as text"
             );
-            out.push(UnifiedParserEvent::Text(payload));
+            out.push(UnifiedParserEvent::Text(remainder));
             return out;
         };
 
@@ -1996,8 +2001,19 @@ impl GuidedState {
             // answer — a marker leak (`I3`) on the one path that exists to recover
             // gracefully. `raw_payload` is already the tail-trimmed value, and it
             // stays byte-identical to the buffer when nothing was stripped (`I7`).
+            // Output conservation: bytes already dispatched as call fragments must
+            // NOT come back as visible text, or a client executes the tool and then
+            // renders its JSON as prose. `raw_payload` is `self.json`, the same
+            // coordinates the cursor lexes in, so the released prefix slices off
+            // directly. Emitting nothing is correct when the whole payload was
+            // already streamed.
+            let released_end = self.cursor.released_end().min(raw_payload.len());
+            let remainder = raw_payload[released_end..].to_string();
             self.json.clear();
-            return Ok(vec![UnifiedParserEvent::Text(raw_payload)]);
+            if remainder.is_empty() {
+                return Ok(Vec::new());
+            }
+            return Ok(vec![UnifiedParserEvent::Text(remainder)]);
         };
 
         self.json.clear();
