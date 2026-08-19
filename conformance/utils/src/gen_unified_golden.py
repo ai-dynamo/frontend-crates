@@ -33,6 +33,10 @@ _MANIFEST = yaml.safe_load(markers.parser_families_path().read_text())["unified"
 FAMILIES = sorted(_MANIFEST)
 FAM_FILE = {f: r["golden_spec"] for f, r in _MANIFEST.items()}
 UNIFIED_FAMILIES = {f for f, r in _MANIFEST.items() if r.get("native")}
+# Families whose unified parser accepts a request-scoped `init`. Every family
+# that runs on the shared scanner does; one that inherits the trait default
+# rejects it, so the manifest opts that family out by name.
+REQUEST_MODE_FAMILIES = {f for f, r in _MANIFEST.items() if r.get("request_modes", True)}
 
 GRAMMAR_NOTE = {
     "gemma4": "reasoning `<|channel>thought\\n...<channel|>`, tool `<|tool_call>call:NAME{key:<|\"|>value<|\"|>}<tool_call|>` (string values wrapped in `<|\"|>`; an embedded `<tool_call|>` inside a `<|\"|>` string is data, not the end marker).",
@@ -176,6 +180,11 @@ def by_family(render, vllm, dynamo, *rest):
     return {fam: (render(fam), vllm, dynamo, *rest) for fam in FAMILIES}
 
 
+# A family whose tool block opener spans more than its first control token, mapped to
+# the marker the opener runs THROUGH. Absent means the first token is the whole opener.
+_TOOL_OPEN_THROUGH = {"muse_glimmer": "<atem:function_calls>"}
+
+
 def control_tokens(fam):
     """Bare control tokens for `fam`, DERIVED from the renderers the corpus already
     uses (`r_reason` / `r_tool`) rather than a second grammar table — a parallel
@@ -191,15 +200,29 @@ def control_tokens(fam):
     Returns `(reason_open, reason_close, tool_open, tool_close)`.
     """
     reason_open, reason_close = r_reason(fam, "\x00").split("\x00")
-    tokens = re.findall(r"<[^<>]*>", r_tool(fam, "NAMEX", "KEYX", "VALX", 0))
-    return reason_open, reason_close, tokens[0], tokens[-1]
+    rendered = r_tool(fam, "NAMEX", "KEYX", "VALX", 0)
+    tokens = re.findall(r"<[^<>]*>", rendered)
+    # The opener is the FIRST token only for a family whose block starts with one
+    # marker. Muse opens a tool block with a routed header AND the block marker
+    # (`<|start|>assistant to=NAME<|message|><atem:function_calls>`), so its first
+    # token alone is `<|start|>`, which opens nothing. A case built from that token
+    # tests prose after stray framing rather than an unterminated envelope, which is
+    # a different scenario wearing this one's name.
+    through = _TOOL_OPEN_THROUGH.get(fam)
+    tool_open = rendered[: rendered.index(through) + len(through)] if through else tokens[0]
+    return reason_open, reason_close, tool_open, tokens[-1]
 
 
 def invoke_header_prefix(fam):
     """Inner invoke header through the tool name, without its terminator."""
     rendered = r_tool(fam, "NAMEX", "KEYX", "VALX", 0)
     outer = control_tokens(fam)[2]
-    return rendered[len(outer):rendered.index("NAMEX")].lstrip()
+    # Search for the name AFTER the opener. A family whose opener already carries the
+    # recipient name (muse routes on it) has an earlier `NAMEX` inside the opener
+    # itself, and anchoring at zero returns an empty prefix instead of the invoke
+    # header. Every other family's first `NAMEX` already follows the opener, so the
+    # anchor changes nothing for them.
+    return rendered[len(outer):rendered.index("NAMEX", len(outer))].lstrip()
 
 
 def guided_surroundings(render, dynamo_note, fill=None):
@@ -598,6 +621,7 @@ EDGE = [
      "Two reasoning spans with nothing between them, then the answer. The single `reasoning_text` field every batch parser exposes can only concatenate them, so the separator is part of the contract: adjacent spans join with a newline. The counterpart is already covered by `reason_after_tool` / `reason_interleaved`, where two spans separated by a call must NOT join — a parser that always joins invents a newline the model never emitted, and one that never joins loses the batch parity every engine has.",
      [],
      [{"kind": "reasoning", "text": "first\nsecond"}, {"kind": "text", "text": "done"}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
         "gemma4": ("<|channel>thought\nfirst<channel|><|channel>thought\n\nsecond<channel|>done", M,
                    {"verdict": "match", "note": "the split path merges both spans into one reasoning event, which is what this scenario expects"}),
@@ -1229,6 +1253,12 @@ def build_cases(fam):
             stream_config = {"finish_reason": "stop"}
         else:
             name, desc, policy, golden, init, stream_config, per_fam = edge_case
+
+        # A family that rejects the mode cannot produce a cell for it. The harness
+        # applies `init` before parsing and panics on the rejection, so the case is
+        # skipped rather than recorded as a divergence.
+        if _init_is_request_scoped(init) and fam not in REQUEST_MODE_FAMILIES:
+            continue
 
         cid = f"UNIFIED.{name}.{fam}"
         inp, vllm, dynamo, *rest = per_fam[fam]
