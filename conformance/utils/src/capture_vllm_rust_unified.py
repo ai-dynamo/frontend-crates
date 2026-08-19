@@ -87,6 +87,8 @@ fn tools() -> Vec<Tool> {
         mk("f", "x"),
         mk("g", "y"),
         mk("run", "cmd"),
+        // Keep in step with `tools()` in conformance/tests/unified_parity.rs.
+        mk("log", "note"),
     ]
 }
 

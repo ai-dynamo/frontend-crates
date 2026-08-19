@@ -204,7 +204,7 @@ fn seed_corpus_covers_every_verdict_category() {
         total_cases >= 10,
         "seed corpus too small: {total_cases} cases"
     );
-    for fam in ["gemma4", "qwen3", "kimi_k2"] {
+    for fam in ["gemma4", "qwen3", "kimi_k2", "muse_glimmer"] {
         assert!(
             families.contains(fam),
             "missing family `{fam}` in seed corpus"

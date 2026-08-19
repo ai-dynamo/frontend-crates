@@ -38,6 +38,7 @@ GRAMMAR_NOTE = {
     "gemma4": "reasoning `<|channel>thought\\n...<channel|>`, tool `<|tool_call>call:NAME{key:<|\"|>value<|\"|>}<tool_call|>` (string values wrapped in `<|\"|>`; an embedded `<tool_call|>` inside a `<|\"|>` string is data, not the end marker).",
     "qwen3": "reasoning `<think>...</think>`, tool `<tool_call><function=NAME><parameter=KEY>VALUE</parameter></function></tool_call>`.",
     "kimi_k2": "reasoning `<think>...</think>`, tool section `<|tool_calls_section_begin|><|tool_call_begin|>functions.NAME:IDX<|tool_call_argument_begin|>{...}<|tool_call_end|><|tool_calls_section_end|>`.",
+    "muse_glimmer": "recipient-routed messages `<|start|>assistant to=RCPT<|message|>...<|eom|>`: `self` is reasoning, `user` is visible content, any other recipient opens a tool channel whose body is ATEM XML `<atem:function_calls><atem:invoke name=\"NAME\"><atem:parameter name=\"KEY\">VALUE</atem:parameter></atem:invoke></atem:function_calls>`. `<|eom|>` closes a message with more to follow, `<|eot|>` ends the turn. Spec: https://huggingface.co/meta-models/Muse-Glimmer-30B.",
 }
 
 
@@ -46,7 +47,43 @@ GRAMMAR_NOTE = {
 def r_reason(fam, text):
     if fam == "gemma4":
         return f"<|channel>thought\n{text}<channel|>"
+    if fam == "muse_glimmer":
+        return f"<|start|>assistant to=self<|message|>{text}<|eom|>"
     return f"<think>{text}</think>"
+
+
+def r_text(fam, text):
+    """Visible content.
+
+    Muse has no unframed content channel — every message is recipient-routed —
+    so visible text renders as a closed `to=user` message. `<|eom|>` and not
+    `<|eot|>`: `<|eot|>` ends the TURN, which would make any following segment
+    unreachable. The marker-pair grammars leave visible text bare.
+    """
+    if fam == "muse_glimmer":
+        return f"<|start|>assistant to=user<|message|>{text}<|eom|>"
+    return text
+
+
+def _atem_value(val):
+    """One ATEM parameter value.
+
+    The Muse decode spec types parameter values with `value_parser: json` and
+    `allow_non_json: true`, so a bare `1` types as the NUMBER 1 while every other
+    family's grammar types it as the string "1". The shared golden says string, so
+    emit the JSON spelling exactly when the bare form would not produce one — the
+    common case (`Paris`) does not parse as JSON and stays bare and byte-preserving.
+
+    A value that is ITSELF a JSON string (`"hi"`) parses, and it parses to `hi`, not
+    to `"hi"`: bare, the parser reads the quotes as syntax and drops them. So it needs
+    the quoted spelling like every other value that parses. Keeping it bare authored a
+    golden no correct parser can emit.
+    """
+    try:
+        json.loads(val)
+    except ValueError:
+        return val
+    return json.dumps(val)
 
 
 def r_tool(fam, name, key, val, idx):
@@ -55,6 +92,11 @@ def r_tool(fam, name, key, val, idx):
     if fam == "qwen3":
         return (f"<tool_call>\n<function={name}>\n<parameter={key}>\n"
                 f"{val}\n</parameter>\n</function>\n</tool_call>")
+    if fam == "muse_glimmer":
+        return (f"<|start|>assistant to={name}<|message|><atem:function_calls>\n"
+                f"<atem:invoke name=\"{name}\">\n"
+                f"<atem:parameter name=\"{key}\">{_atem_value(val)}</atem:parameter>\n"
+                f"</atem:invoke>\n</atem:function_calls><|eom|>")
     args = json.dumps({key: val}, ensure_ascii=False)
     return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
             f"<|tool_call_argument_begin|>{args}<|tool_call_end|><|tool_calls_section_end|>")
@@ -68,7 +110,7 @@ def render_input(fam, segs):
         if s[0] == "reason":
             out.append(r_reason(fam, s[1]))
         elif s[0] == "text":
-            out.append(s[1])
+            out.append(r_text(fam, s[1]))
         elif s[0] == "tool":
             _, name, key, val = s
             out.append(r_tool(fam, name, key, val, tool_idx))
@@ -194,6 +236,21 @@ GUIDED_TWO_CALLS = ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, '
                     '{"name": "run", "arguments": {"cmd": "git log"}}]')
 GUIDED_UNSUPPORTED = D("UNSUPPORTED",
                        "vLLM base case doesn't emit guided JSON; conformance captures native XML only")
+# vLLM's Muse Glimmer parsers exist only in unmerged PR #51655, so no released
+# engine can be captured for this family and the cell has no measured value. The
+# annotation records the published decode spec's intent and is UNVERIFIED until a
+# release carries the parser.
+V_MUSE = {
+    "verdict": "match",
+    "note": "vLLM muse_glimmer is unmerged (PR #51655); no released engine can be captured — unverified annotation",
+}
+
+# Families `capture_vllm_unified.py` has no entry for. The Unified tab falls back to
+# the AUTHORED `expect.vllm` whenever a capture is missing, so for these families it
+# falls back on EVERY case and draws the same plain `expected: MATCH` a captured
+# family earns. Carrying the caveat only on the cases that happened to need a
+# per-family verdict published the other 22 as if an engine had produced them.
+VLLM_UNCAPTURABLE = {"muse_glimmer": V_MUSE}
 
 
 # --- CLEAN scenarios: same segments for every family, input is templated ------
@@ -249,9 +306,10 @@ CLEAN = [
      "Arbitrary visible prose AFTER the tool call (the point is it could be ANY content, so it must survive). Policy P1 (best-effort recovery) — trailing model text is preserved, not suppressed.",
      ["P1"], [("tool", "get_weather", "city", "Paris"),
               ("text", "The forecast shows clear skies for the rest of the week.")],
-     {"gemma4": M, "qwen3": M,
+     {"gemma4": M, "qwen3": M, "muse_glimmer": V_MUSE,
       "kimi_k2": D("LOSS", "kimi config stays in a tool state and SUPPRESSES trailing text -> arbitrary content dropped; violates best-effort recovery (preserve visible prose, conformance/README.md:142)")},
      {"gemma4": M, "qwen3": M,
+      "muse_glimmer": {"verdict": "match", "note": "the tool channel closes at its own `<|eom|>`, so the following `to=user` message is ordinary content"},
       "kimi_k2": {"verdict": "match", "note": "P1 resolved by the v2 recovery contract: preserve trailing prose. Verify v2 kimi_k2 at capture time"}}),
 
     # --- Group 2: multiple tool calls (TOOLCALLING.streamv2.2) — tool-only, green everywhere ---
@@ -334,6 +392,9 @@ EDGE = [
         "kimi_k2": ("<think>ok</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Par",
                     {"verdict": "match", "note": "P2: drop the unterminated call and keep the preceding reasoning"},
                     {"verdict": "match", "note": "P2: v2 drops the partial trailing call, keeps reasoning"}),
+        "muse_glimmer": ("<|start|>assistant to=self<|message|>ok<|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"city\">Par",
+                         V_MUSE,
+                         {"verdict": "match", "note": "P2: the invoke never reached its `</atem:invoke>` fence, so the call is dropped and its markup never leaks; the reasoning channel is kept"}),
      }),
 
     ("reason_unterminated",
@@ -348,6 +409,9 @@ EDGE = [
                   M, {"verdict": "match", "note": "verify against v1 qwen3 reasoning finish() at capture time"}),
         "kimi_k2": ("<think>thinking but stream ends",
                     M, {"verdict": "match", "note": "verify against v1 kimi reasoning finish() at capture time"}),
+        "muse_glimmer": ("<|start|>assistant to=self<|message|>thinking but stream ends",
+                         V_MUSE,
+                         {"verdict": "match", "note": "the open `to=self` body is promoted as reasoning at finish, not dropped and not leaked as text"}),
      }),
 
     ("arg_marker_in_string",
@@ -368,6 +432,10 @@ EDGE = [
                     {"verdict": "match", "note": "the JSON string owns embedded `<|tool_call_end|>` bytes as data"},
                     {"verdict": "match", "note": "v2 parses the JSON arg blob; the marker inside the string is data"},
                     "git log <|tool_call_end|> --oneline"),
+        "muse_glimmer": ("<|start|>assistant to=run<|message|><atem:function_calls>\n<atem:invoke name=\"run\">\n<atem:parameter name=\"cmd\">git log </atem:function_calls> --oneline</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|>",
+                         V_MUSE,
+                         {"verdict": "match", "note": "the parameter value runs to its own `</atem:parameter>`, so the enclosing `</atem:function_calls>` inside it is data"},
+                         "git log </atem:function_calls> --oneline"),
      }),
 
     ("orphan_close_after_prose",
@@ -385,6 +453,10 @@ EDGE = [
         "kimi_k2": ("I will check that. <|tool_call_end|>",
                     D("LEAK", "the orphan `<|tool_call_end|>` remains in the assembled reasoning output"),
                     D("LEAK", "the split path retains the orphan `<|tool_call_end|>` in assembled reasoning")),
+        # `<|eot|>` already ended the turn, so the trailing `<|eom|>` closes nothing.
+        "muse_glimmer": ("<|start|>assistant to=user<|message|>I will check that. <|eot|><|eom|>",
+                         V_MUSE,
+                         {"verdict": "match", "note": "an orphan terminator outside any routed message is stripped, never emitted as content"}),
      }),
 
     ("empty_args",
@@ -396,6 +468,8 @@ EDGE = [
         "gemma4": ("<|tool_call>call:get_weather{}<tool_call|>", M, M),
         "qwen3": ("<tool_call>\n<function=get_weather>\n</function>\n</tool_call>", M, M),
         "kimi_k2": ("<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>", M, M),
+        "muse_glimmer": ("<|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n</atem:invoke>\n</atem:function_calls><|eom|>",
+                         V_MUSE, M),
      }),
 
     ("tool_no_close",
@@ -413,6 +487,9 @@ EDGE = [
         "kimi_k2": ("<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}",
                     {"verdict": "match", "note": "body complete; recover at finish"},
                     D("DROP", "the complete call body produces no events when the outer close is absent")),
+        "muse_glimmer": ("<|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"city\">Paris</atem:parameter>\n</atem:invoke>\n</atem:function_calls>",
+                         V_MUSE,
+                         {"verdict": "match", "note": "the invoke closed its own `</atem:invoke>` fence, so the call is complete even though the message never emitted `<|eom|>`"}),
      }),
 
     # --- Group 12: adversarial nesting (a marker of one channel inside another) ---
@@ -434,6 +511,12 @@ EDGE = [
                     D("ARG_MISMATCH", "captured: reasoning(reconsider) | text(Logging now: ) | tool_call(log) | text( done.) — the `<think>` inside the JSON string arg is extracted as reasoning first, corrupting the arg"),
                     D("MERGE", "captured: reasoning(reconsider) | tool_call(log) — v1 reasoning lifts the embedded `<think>` out of the JSON arg"),
                     "<think>reconsider</think>"),
+        # Muse's reasoning opener is a header, not a marker pair, so the quoted
+        # reasoning markup inside the value is a bare `to=self<|message|>` run.
+        "muse_glimmer": ("<|start|>assistant to=log<|message|><atem:function_calls>\n<atem:invoke name=\"log\">\n<atem:parameter name=\"note\">to=self<|message|>reconsider</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|>",
+                         V_MUSE,
+                         {"verdict": "match", "note": "the header is resolved once, at the message boundary; inside an open tool body a quoted `to=self<|message|>` is argument data"},
+                         "to=self<|message|>reconsider"),
      }),
 
     ("tool_in_reason",
@@ -453,6 +536,12 @@ EDGE = [
         "kimi_k2": ("<think>I should check. <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|> now answer</think>",
                     D("LEAK", "captured: reasoning(I should check. ) | tool_call(get_weather) | text( now answer</think>) — the tool section nested in `<think>...</think>` leaks into reasoning and the call is dropped"),
                     D("LEAK", "captured: reasoning(I should check. ) | text(Sure. ) | tool_call(get_weather) | text( now answer</think> Here you g) — v1 reasoning consumes to `</think>`, leaking the nested section")),
+        # Muse's channels never nest: the model abandons the analysis channel by
+        # writing the tool header directly, without `<|eom|>`. Recovering that
+        # boundary is what puts the call between the two thoughts.
+        "muse_glimmer": ("<|start|>assistant to=self<|message|>I should check. to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"city\">Paris</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|><|start|>assistant to=self<|message|> now answer<|eom|>",
+                         V_MUSE,
+                         {"verdict": "match", "note": "the reasoning body ends at the bare tool header (missing-`<|eom|>` recovery), so the call surfaces between the two thoughts instead of being swallowed"}),
      }),
 
     ("reason_markup_in_arg_with_text",
@@ -475,6 +564,10 @@ EDGE = [
                     D("ARG_MISMATCH", "captured: reasoning(reconsider) | text(Logging now: ) | tool_call(log) | text( done.) — the `<think>` inside the JSON string arg is extracted as reasoning first, corrupting the arg"),
                     D("MERGE", "captured: reasoning(reconsider) | text(Logging now: ) | tool_call(log) | text( done.) — v1 reasoning lifts the embedded `<think>` out of the JSON arg and ahead of the text"),
                     "<think>reconsider</think>"),
+        "muse_glimmer": ("<|start|>assistant to=user<|message|>Logging now: <|eom|><|start|>assistant to=log<|message|><atem:function_calls>\n<atem:invoke name=\"log\">\n<atem:parameter name=\"note\">to=self<|message|>reconsider</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|><|start|>assistant to=user<|message|> done.<|eom|>",
+                         V_MUSE,
+                         {"verdict": "match", "note": "both `to=user` messages keep their position and the quoted header stays argument data"},
+                         "to=self<|message|>reconsider"),
      }),
 
     ("tool_in_reason_with_text",
@@ -496,6 +589,25 @@ EDGE = [
         "kimi_k2": ("Sure. <think>I should check. <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|> now answer</think> Here you go.",
                     D("LEAK", "captured: reasoning(I should check. ) | text(Sure. ) | tool_call(get_weather) | text( now answer</think> Here you g) — the nested tool section leaks into reasoning and the call is dropped"),
                     D("LEAK", "captured: reasoning(I should check. ) | text(Sure. ) | tool_call(get_weather) | text( now answer</think> Here you g) — v1 reasoning consumes to `</think>`, leaking the nested section")),
+        "muse_glimmer": ("<|start|>assistant to=user<|message|>Sure. <|eom|><|start|>assistant to=self<|message|>I should check. to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"city\">Paris</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|><|start|>assistant to=self<|message|> now answer<|eom|><|start|>assistant to=user<|message|> Here you go.<|eom|>",
+                         V_MUSE,
+                         {"verdict": "match", "note": "the bare-header recovery is latched to a reasoning body, so it fires here and stays off inside the surrounding `to=user` messages"}),
+     }),
+
+    ("two_adjacent_reason_spans",
+     "Two reasoning spans with nothing between them, then the answer. The single `reasoning_text` field every batch parser exposes can only concatenate them, so the separator is part of the contract: adjacent spans join with a newline. The counterpart is already covered by `reason_after_tool` / `reason_interleaved`, where two spans separated by a call must NOT join — a parser that always joins invents a newline the model never emitted, and one that never joins loses the batch parity every engine has.",
+     [],
+     [{"kind": "reasoning", "text": "first\nsecond"}, {"kind": "text", "text": "done"}],
+     {
+        "gemma4": ("<|channel>thought\nfirst<channel|><|channel>thought\n\nsecond<channel|>done", M,
+                   {"verdict": "match", "note": "the split path merges both spans into one reasoning event, which is what this scenario expects"}),
+        "qwen3": ("<think>first</think><think>\nsecond</think>done", M,
+                  {"verdict": "match", "note": "adjacent reasoning runs coalesce into one event (I8)"}),
+        "kimi_k2": ("<think>first</think><think>\nsecond</think>done", M,
+                    {"verdict": "match", "note": "adjacent reasoning runs coalesce into one event (I8)"}),
+        "muse_glimmer": ("<|start|>assistant to=self<|message|>first<|eom|><|start|>assistant to=self<|message|>second<|eom|><|start|>assistant to=user<|message|>done<|eom|>",
+                         V_MUSE,
+                         {"verdict": "match", "note": "the newline is emitted between two ADJACENT `to=self` messages only, matching v1 and both engines' batch parsers"}),
      }),
 
     # --- Group 13: request-scoped modes (guided decoding, prefilled channels) ---
@@ -1085,6 +1197,15 @@ def _init_is_request_scoped(init):
     init = init or {}
     return (init.get("tool_output_mode", "Native") != "Native"
             or init.get("starting_state", "None") != "None")
+def _vllm_entry(spec, fam):
+    """`_entry` for the vLLM column, annotating a family no released vLLM can parse.
+
+    An authored verdict that already carries a note said something specific about
+    this case; only the shared, noteless `M` is replaced.
+    """
+    entry = _entry(spec, fam)
+    caveat = VLLM_UNCAPTURABLE.get(fam)
+    return caveat if caveat is not None and not entry.get("note") else entry
 
 
 def build_cases(fam):
@@ -1097,7 +1218,7 @@ def build_cases(fam):
             "policy": policy,
             "input": render_input(fam, segs),
             "golden": golden_of(segs),
-            "expect": {"vllm": _entry(vllm, fam), "dynamo": _entry(dynamo, fam)},
+            "expect": {"vllm": _vllm_entry(vllm, fam), "dynamo": _entry(dynamo, fam)},
             "init": {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
             "finish_reason": "stop",
         }
@@ -1154,7 +1275,7 @@ def build_cases(fam):
             "policy": policy,
             "input": inp,
             "golden": g,
-            "expect": {"vllm": vllm, "dynamo": dynamo},
+            "expect": {"vllm": _vllm_entry(vllm, fam), "dynamo": dynamo},
             "init": init,
             "finish_reason": stream_config.get("finish_reason", "stop"),
         }

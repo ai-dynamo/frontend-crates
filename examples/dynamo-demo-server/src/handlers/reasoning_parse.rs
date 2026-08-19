@@ -74,7 +74,6 @@ fn lookup(name: &str) -> Option<ReasoningParserType> {
         "granite" => ReasoningParserType::Granite,
         "minimax_append_think" => ReasoningParserType::MiniMaxAppendThink,
         "gemma4" | "gemma-4" => ReasoningParserType::Gemma4,
-        "muse_glimmer" | "muse-glimmer" | "muse" => ReasoningParserType::MuseGlimmer,
         "glm45" => ReasoningParserType::NemotronDeci,
         _ => return None,
     })

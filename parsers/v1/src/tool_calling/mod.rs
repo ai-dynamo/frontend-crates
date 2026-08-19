@@ -3,7 +3,6 @@
 
 use serde_json::Value;
 
-pub mod atem;
 pub mod config;
 pub mod dsml;
 pub mod gemma4;
@@ -39,7 +38,6 @@ pub enum ToolChoice {
 }
 
 // Re-export main types and functions for convenience
-pub use atem::try_tool_call_parse_muse_glimmer;
 pub use config::{
     JsonParserConfig, KimiK2ParserConfig, KimiK3ParserConfig, MiniMaxM3ParserConfig, ParserConfig,
     ToolCallConfig, XmlParserConfig,

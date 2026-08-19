@@ -154,7 +154,6 @@ _FAMILY_TO_SGLANG_REASONING = {
     "kimi_k25": "kimi_k2",
     "minimax_append_think": "minimax-append-think",
     "mistral": "mistral",
-    "muse_glimmer": "muse",
     "nemotron_deci": "glm45",
     "qwen3": "qwen3",
 }
@@ -170,8 +169,6 @@ _FAMILY_TO_VLLM_REASONING = {
     "mistral": "mistral",
     "minimax_append_think": "minimax_m2_append_think",
     "minimax_m3": "minimax_m3",
-    # Lands with vLLM PR #51655; no released vLLM carries it yet.
-    "muse_glimmer": "muse_glimmer",
     "nemotron_deci": "glm45",
     "qwen3": "qwen3",
 }

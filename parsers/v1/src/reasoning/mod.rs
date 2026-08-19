@@ -9,7 +9,6 @@ mod gpt_oss_parser;
 mod granite_parser;
 mod inkling_parser;
 mod minimax_append_think_parser;
-mod muse_glimmer_parser;
 
 // Re-export main types and functions for convenience
 pub(crate) use crate::tool_calling::config::MINIMAX_M3_TOOL_NAMESPACE;
@@ -19,7 +18,6 @@ pub use gpt_oss_parser::{GptOssReasoningParser, harmony_terminator_token_ids};
 pub use granite_parser::GraniteReasoningParser;
 pub use inkling_parser::InklingReasoningParser;
 pub use minimax_append_think_parser::MiniMaxAppendThinkParser;
-pub use muse_glimmer_parser::MuseGlimmerReasoningParser;
 
 /// Kimi-K2/K2.5 tool-call section marker. Shared between the `kimi_k25` reasoning-parser
 /// registration and its test fixtures so both stay in sync. Mirrors
@@ -94,12 +92,6 @@ fn get_reasoning_parser_map() -> &'static HashMap<&'static str, ReasoningParserT
         map.insert("gemma-4", ReasoningParserType::Gemma4);
         // Block-structured, not a `<think>` prefix, so not a BasicReasoningParser.
         map.insert("inkling", ReasoningParserType::Inkling);
-        // Muse Glimmer routes reasoning by recipient (`to=self` channels), not
-        // think tags. Engines picked different names (vLLM `muse_glimmer`,
-        // SGLang `muse`); accept both plus the kebab spelling.
-        map.insert("muse_glimmer", ReasoningParserType::MuseGlimmer);
-        map.insert("muse-glimmer", ReasoningParserType::MuseGlimmer);
-        map.insert("muse", ReasoningParserType::MuseGlimmer);
         map
     })
 }
@@ -208,10 +200,6 @@ pub enum ReasoningParserType {
     /// Inkling (thinkingmachines/Inkling-NVFP4): block-structured reasoning, tool-call
     /// blocks passed through verbatim. See [`crate::reasoning::inkling_parser`].
     Inkling,
-    /// Muse Glimmer (meta-models/Muse-Glimmer-30B): recipient-routed channels
-    /// (`to=self` reasoning, `to=user` answer, `to=<fn>` tool calls forwarded
-    /// verbatim). See [`crate::reasoning::muse_glimmer_parser`].
-    MuseGlimmer,
 }
 
 #[derive(std::fmt::Debug)]
@@ -373,9 +361,6 @@ impl ReasoningParserType {
             },
             ReasoningParserType::Inkling => ReasoningParserWrapper {
                 parser: Box::new(InklingReasoningParser::new()),
-            },
-            ReasoningParserType::MuseGlimmer => ReasoningParserWrapper {
-                parser: Box::new(MuseGlimmerReasoningParser::new()),
             },
         }
     }

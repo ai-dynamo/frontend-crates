@@ -2,7 +2,7 @@
 
 The unified parser is ONE state machine per stream that owns reasoning, visible content, and tool calls, and emits ONE ordered event list. The split path Dynamo still serves for most families runs the v1 reasoning parser over the whole stream first, then a v2 tool parser on the leftover — which cannot represent WHERE reasoning happened, so every thought is hoisted to the front and merged. See [`../../conformance/utils/lib/parsers/UNIFIED_CASES.md`](../../conformance/utils/lib/parsers/UNIFIED_CASES.md) for what that costs, case by case.
 
-This doc is for adding a family to the unified path. `qwen3` is on it today; `gemma4` follows in the stacked PR, and the machinery it needed is already shared here.
+This doc is for adding a family to the unified path. `qwen3` and `muse_glimmer` are on it today; `gemma4` follows in the stacked PR, and the machinery it needed is already shared here.
 
 ## What you get for free
 
@@ -90,6 +90,7 @@ Families that genuinely do not fit a marker pair:
 - **harmony / gpt_oss** — no pair exists; channel routing plus token-ID matching.
 - **granite** — two alternative starts and two alternative ends; needs a list on both sides.
 - **inkling** — a six-state machine over eight markers.
+- **muse_glimmer** — no pair exists; the recipient in a dynamic header picks the channel.
 
 **gemma4 used to be on that list** and no longer is. Its opener is `<|channel>` plus a
 `thought\n` role label, and the label is OPTIONAL. Folding it into `start` parses the

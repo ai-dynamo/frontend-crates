@@ -35,7 +35,7 @@ families:
   mistral:        {vllm_python: mistral,        vllm_rust: mistral,      sglang_python: mistral,     dynamo_v2: null,        preferred_input: text}
   # vLLM's muse_glimmer parsers exist only in PR #51655 (unmerged); until a release
   # carries them, `check.sh vllm` cannot capture this family.
-  muse_glimmer:   {vllm_python: muse_glimmer,   vllm_rust: null,         sglang_python: muse,        dynamo_v2: null,        preferred_input: text}
+  muse_glimmer:   {vllm_python: muse_glimmer,   vllm_rust: null,         sglang_python: muse,        dynamo_v2: muse_glimmer, preferred_input: text}
   nemotron_deci:  {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: null,        dynamo_v2: null,        preferred_input: text}
   nemotron_nano:  {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: null,        dynamo_v2: null,        preferred_input: text}
   phi4:           {vllm_python: phi4_mini_json, vllm_rust: phi4_mini_json, sglang_python: null,      dynamo_v2: null,        preferred_input: text}
@@ -128,6 +128,10 @@ markers:
     # Channel framing around every routed message; the reasoning stage forwards
     # tool channels with this framing intact (like inkling's <|message_model|>).
     singletons: ["<|start|>", "<|message|>", "<|eom|>", "<|eot|>"]
+    # `<atem:parameter name="K">` ... `</atem:parameter>` delimits a raw value the
+    # parser reads to its own closer, so an enclosing marker inside it is data
+    # (`I7`) — same shape as qwen3_coder's `<parameter=K>`.
+    opaque: ["atem:parameter"]
     leak: ["<atem:invoke", "</atem:invoke", "<atem:parameter", "</atem:parameter"]
   nemotron_deci:
     pairs: [["<TOOLCALL>", "</TOOLCALL>"]]
@@ -196,6 +200,12 @@ unified:
     tool_parser: kimi_k2
     golden_spec: kimi.yaml
     leak_markers: []
+  muse_glimmer:
+    native: true
+    reasoning_parser: muse_glimmer
+    tool_parser: muse_glimmer
+    golden_spec: muse_glimmer.yaml
+    leak_markers: ["<atem:function_calls>", "</atem:function_calls>", "<atem:invoke", "</atem:invoke>", "<atem:parameter", "</atem:parameter>"]
   qwen3:
     registry: qwen3_coder
     native: true

@@ -48,14 +48,6 @@ except ImportError:  # SGLang 0.5.12.post1 lacks this detector.
 from sglang.srt.function_call.mistral_detector import (
     MistralDetector,  # type: ignore[import-untyped]
 )
-
-try:
-    from sglang.srt.function_call.muse_glimmer_detector import (
-        MuseGlimmerDetector,  # type: ignore[import-untyped]
-    )
-except ImportError:  # SGLang releases before #34262 lack this detector.
-    MuseGlimmerDetector = None  # type: ignore[assignment]
-
 from sglang.srt.function_call.pythonic_detector import (
     PythonicDetector,  # type: ignore[import-untyped]
 )
@@ -83,7 +75,6 @@ _FAMILY_TO_SGLANG_DETECTOR = {
     "llama3_json": Llama32Detector,
     "minimax_m2": MinimaxM2Detector,
     "minimax_m3": MinimaxM3Detector,
-    "muse_glimmer": MuseGlimmerDetector,
     "pythonic": PythonicDetector,
     "hermes": HermesDetector,
     "mistral": MistralDetector,

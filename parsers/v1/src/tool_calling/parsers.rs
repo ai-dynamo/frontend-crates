@@ -2,10 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::ToolDefinition;
-use super::atem::{
-    detect_tool_call_start_muse_glimmer, find_tool_call_end_position_muse_glimmer,
-    try_tool_call_parse_muse_glimmer,
-};
 use super::config::{ParserConfig, ToolCallConfig};
 use super::dsml::{
     detect_tool_call_start_dsml, find_complete_tool_call_end_position_dsml,
@@ -78,19 +74,6 @@ pub fn get_tool_parser_map() -> &'static HashMap<&'static str, ToolCallConfig> {
         map.insert("kimi_k2", ToolCallConfig::kimi_k2());
         map.insert("kimi_k3", ToolCallConfig::kimi_k3());
         map.insert("kimi-k3", ToolCallConfig::kimi_k3());
-        // Engines picked different names for Muse Glimmer: vLLM registers
-        // `muse_glimmer`, SGLang registers `muse`. Accept both (plus the
-        // kebab spelling) so any upstream recipe string works unchanged.
-        //
-        // Dynamo companion change: these aliases must also be added to
-        // `parser_requires_special_tokens` in dynamo `lib/llm/src/preprocessor.rs`
-        // (the inkling precedent is dynamo #11823), or serving strips the
-        // `<|start|>`/`<|message|>`/`<|eom|>`/`<|eot|>` framing before the
-        // parsers run and every call silently disappears. Verified live on a
-        // B200 dynamo+sglang deployment: stock = raw leak, patched = parsed.
-        map.insert("muse_glimmer", ToolCallConfig::muse_glimmer());
-        map.insert("muse-glimmer", ToolCallConfig::muse_glimmer());
-        map.insert("muse", ToolCallConfig::muse_glimmer());
         map.insert("gemma4", ToolCallConfig::gemma4());
         map.insert("gemma-4", ToolCallConfig::gemma4());
         map.insert("inkling", ToolCallConfig::inkling());
@@ -163,10 +146,6 @@ pub async fn try_tool_call_parse(
         ParserConfig::Inkling(inkling_config) => {
             let (results, normal_content) =
                 try_tool_call_parse_inkling(message, inkling_config, tools)?;
-            Ok((results, normal_content))
-        }
-        ParserConfig::MuseGlimmer => {
-            let (results, normal_content) = try_tool_call_parse_muse_glimmer(message, tools)?;
             Ok((results, normal_content))
         }
     }
@@ -343,7 +322,6 @@ pub fn detect_tool_call_start(chunk: &str, parser_str: Option<&str>) -> anyhow::
             ParserConfig::Inkling(inkling_config) => {
                 Ok(detect_tool_call_start_inkling(chunk, inkling_config))
             }
-            ParserConfig::MuseGlimmer => Ok(detect_tool_call_start_muse_glimmer(chunk)),
         },
         None => anyhow::bail!(
             "Parser '{}' is not implemented. Available parsers: {:?}",
@@ -464,7 +442,6 @@ pub fn find_tool_call_end_position(chunk: &str, parser_str: Option<&str>) -> Opt
             ParserConfig::Inkling(inkling_config) => {
                 find_tool_call_end_position_inkling(chunk, inkling_config)
             }
-            ParserConfig::MuseGlimmer => find_tool_call_end_position_muse_glimmer(chunk),
         },
         None => Some(chunk.len()),
     }
@@ -516,9 +493,6 @@ mod tests {
             "gemma4",
             "gemma-4",
             "inkling",
-            "muse_glimmer",
-            "muse-glimmer",
-            "muse",
             "qwen25",
         ];
         for parser in available_parsers {

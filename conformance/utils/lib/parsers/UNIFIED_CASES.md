@@ -54,7 +54,7 @@ The parser recovers everything it can and NEVER drops valid text, leaks markup, 
 
 `MATCH` (green) · `ORDER` / `MERGE` / `LOSS` (the unification gap) · `LEAK` (markup in text, `↯`) · `ARG_MISMATCH` / `WHITESPACE` (version drift) · `ERROR` (engine hard-errored where the spec expects graceful output).
 
-The Dynamo column is a per-family MIXTURE: only `qwen3` runs the native `UnifiedParser` (the sole entry in `unified_registry!`); `gemma4` and `kimi_k2` still run the v1-reasoning + v2-tool split and carry the gap. Every remaining red Dynamo cell in this tab is a split-path cell.
+The Dynamo column is a per-family MIXTURE: `qwen3` and `muse_glimmer` run the native `UnifiedParser`; `gemma4` and `kimi_k2` still run the v1-reasoning + v2-tool split and carry the gap. Every remaining red Dynamo cell in this tab is a split-path cell.
 
 ## Quick reference — numbered taxonomy (`UNIFIED.<group>.<sub>`)
 
@@ -94,6 +94,7 @@ Case IDs use short `group.sub` labels (`1.a`, `2.b`, …) like the other suites;
 - **`10.b`** (`reason_then_content`) Reasoning then visible content, no call. This is also covered in: e2e case-0001-chinese_arithmetic__non-stream-budget_capped.json (+ 42 more: every `reasoning/core`, `reasoning/complex` and `reasoning/history` case, `tool_none_arithmetic__*`, and the SECOND step of both `lifecycle_*` — each with its `-budget_unlimited` pair).
 - **`10.c`** (`two_reason_spans`) Two reasoning spans separated by content. Batch reasoning merges them → Class MERGE. This is also covered in: REASONING.batch.6.a.
 - **`10.d`** (`reason_unterminated`) Stream ends inside reasoning; open reasoning promoted at finish.
+- **`10.e`** (`two_adjacent_reason_spans`) Two reasoning spans with nothing between them, then the answer. The single `reasoning_text` field every batch parser exposes can only concatenate them, so adjacent spans JOIN with a newline. The counterpart — two spans separated by a call must NOT join — is pinned by `11.b` / `11.c`: a parser that always joins invents a newline the model never emitted.
 
 ### Group 11 — Reasoning ↔ tool interleaving (UNIQUE to unified; the unification gap)
 - **`11.a`** (`reason_then_tool`) Reasoning fully precedes one call. Baseline ordering.
