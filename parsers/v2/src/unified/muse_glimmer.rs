@@ -788,16 +788,24 @@ mod tests {
             vec![text("note the  token")]
         );
 
-        // Left as is, not adopted as a contract. Read against I3 ("control markers
-        // never appear inside a text or reasoning payload") the reasoning half is a
-        // gap, and v1's `muse_glimmer` reasoning parser has the same one, so closing
-        // it changes a SHIPPED split-path output. Which way to close it needs an
-        // engine reference this repo cannot capture yet: the vLLM parser is unmerged
-        // (PR #51655) and `parser_families.yaml` carries `vllm_rust: null` for the
-        // family. Stripping the reasoning route also would not make the mid-word case
-        // above clean, because the ATEM markup beside the marker stays either way:
-        // that one is the priced cost of `bare_header_pos` refusing an unanchored cut,
-        // not something the strip can reach.
+        // ADOPTED as the contract, on the engine reference this comment used to say was
+        // missing. vLLM PR #51655 merged 2026-08-14, so both references now exist and
+        // both KEEP the marker:
+        //
+        //   vLLM  `_CHANNEL_HEADER_RE` is `to=<recipient><|message|>`, so a BARE
+        //         `<|message|>` never ends a body; `_classify_bodies` and the batch
+        //         `_REASONING_RE` (`to=self<|message|>(.*?)<|eom|>`) both return
+        //         `a<|message|>b`.
+        //   SGL   `MuseGlimmerDetector::_consume` appends the body verbatim to
+        //         `reasoning_parts` with no strip.
+        //
+        // So stripping here would make Dynamo the ONLY implementation that strips, and
+        // trade an I3 reading for a parity divergence on a family the conformance suite
+        // scores against those two engines. I3 stays unmet on this route by agreement
+        // with the engines, not by oversight; closing it belongs upstream first.
+        // Stripping also would not make the mid-word case above clean, because the ATEM
+        // markup beside the marker stays either way: that one is the priced cost of
+        // `bare_header_pos` refusing an unanchored cut, not something the strip reaches.
         assert_eq!(
             batch(" to=self<|message|>a<|message|>b<|eom|>")
                 .into_iter()
@@ -874,6 +882,35 @@ mod tests {
             // counter moves, and `assemble` keys calls by it.
             assert_eq!(got, want, "reused parser diverged on {second:?}");
         }
+    }
+
+    #[test]
+    fn an_empty_thought_still_carries_the_adjacency_newline() {
+        // The separator is emitted when the `to=self` header resolves, so a thought
+        // that turns out EMPTY still contributes it. That reads like a bug against the
+        // empty-block contract, and it is what BOTH references do:
+        //
+        //   SGL   `_consume` appends "\n" on the header when `_saw_reasoning_block`,
+        //         before the body is known.
+        //   vLLM  batch `_COLLAPSE_RE.sub("\n", ..)` rewrites the inter-block gap, so
+        //         `extract_reasoning` returns "a\n" for exactly this input.
+        //
+        // vLLM's STREAM path returns "a" instead, disagreeing with its own batch path,
+        // which is why this is pinned against the batch parsers — the comparison this
+        // family's join was written to match.
+        let empty_second = concat!(
+            " to=self<|message|>a<|eom|>",
+            "<|start|>assistant to=self<|message|><|eom|>"
+        );
+        assert_eq!(events(&[empty_second]), vec![reasoning("a\n")]);
+        assert_eq!(batch(empty_second), vec![reasoning("a\n")]);
+
+        // The join this rides on: two NON-empty adjacent thoughts read as one run.
+        let two_adjacent = concat!(
+            " to=self<|message|>a<|eom|>",
+            "<|start|>assistant to=self<|message|>b<|eom|>"
+        );
+        assert_eq!(events(&[two_adjacent]), vec![reasoning("a\nb")]);
     }
 
     #[test]
