@@ -184,7 +184,9 @@ async fn v1_and_v2_share_the_guided_streaming_contract() {
 /// message: the array shape delivered `},{"name":` as text and the single-call shape
 /// delivered a bare `}`. The cursor releases argument bytes only up to the argument
 /// object's own closing brace, so everything after it is envelope. Once streaming has
-/// committed, that tail is never assistant text.
+/// committed, that tail is never assistant text. v2 had the identical bug at a
+/// different, pre-existing site (frontend-crates#195) - both generations are driven
+/// here, the way the sibling contract test above does.
 #[tokio::test]
 async fn a_truncated_guided_payload_never_leaks_its_envelope_as_text() {
     let cases = [
@@ -203,18 +205,26 @@ async fn a_truncated_guided_payload_never_leaks_its_envelope_as_text() {
     ];
 
     for case in cases {
-        let (carrying, names, arguments, content) = v1(&case).await;
-        assert_eq!(names, vec!["search".to_string()], "{:?}", case.payload);
-        assert_eq!(arguments, case.arguments, "{:?}", case.payload);
-        assert!(
-            content.is_empty(),
-            "truncated payload {:?} leaked envelope bytes as text: {content:?}",
-            case.payload
-        );
-        assert!(
-            carrying > 2,
-            "truncated payload {:?} buffered instead of streaming",
-            case.payload
-        );
+        let v1 = v1(&case).await;
+        let v2 = v2(&case);
+        for (name, output) in [("v1", &v1), ("v2", &v2)] {
+            assert_eq!(
+                output.1,
+                vec!["search".to_string()],
+                "{name} {:?}",
+                case.payload
+            );
+            assert_eq!(output.2, case.arguments, "{name} {:?}", case.payload);
+            assert!(
+                output.3.is_empty(),
+                "{name} truncated payload {:?} leaked envelope bytes as text: {output:?}",
+                case.payload
+            );
+            assert!(
+                output.0 > 2,
+                "{name} truncated payload {:?} buffered instead of streaming",
+                case.payload
+            );
+        }
     }
 }

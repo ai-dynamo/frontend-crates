@@ -1799,11 +1799,6 @@ impl GuidedState {
     /// together, and cannot be offered once a fragment is already out.
     fn finish_streamed_remainder(&mut self) -> Vec<UnifiedParserEvent> {
         let payload = self.json.trim().to_string();
-        // Bytes already dispatched as call fragments may NOT come back as text.
-        // The cursor is fed `self.json`, so slice in THAT coordinate system before
-        // trimming, or a leading-whitespace offset silently re-emits committed bytes.
-        let released_end = self.cursor.released_end().min(self.json.len());
-        let remainder = self.json[released_end..].trim().to_string();
         let mut out = Vec::new();
 
         // A named choice is ONE call and it is already fully on the wire.
@@ -1812,8 +1807,14 @@ impl GuidedState {
         }
 
         let Some(elements) = parse_required_guided_elements(&payload) else {
-            // Not even splittable into elements. Whatever was streamed stays
-            // streamed; the rest is recovery text.
+            // This function is called only after the cursor has already streamed a
+            // fragment (see the sole caller, `emit_completed_json`'s
+            // `self.cursor.has_committed()` guard), so the payload is guided JSON by
+            // construction from that point forward. A whole-payload parse failure
+            // here means the shape changed after commit, not that the model wrote
+            // prose - the leftover bytes are call envelope, not text. Emitting them
+            // (as `finish_json`'s twin fallback used to) leaked JSON punctuation into
+            // the assistant message on a truncated array; same fix here.
             tracing::warn!(
                 why = "unified_guided_json_not_a_tool_call",
                 choice = "required",
@@ -1821,9 +1822,8 @@ impl GuidedState {
                 payload_kind = json_payload_kind(&payload),
                 streamed_calls = self.cursor.committed().len(),
                 "guided output did not parse as a tool call after fragments were \
-                 already emitted; emitting the remainder as text"
+                 already emitted; suppressing the remainder instead of leaking it as text"
             );
-            out.push(UnifiedParserEvent::Text(remainder));
             return out;
         };
 
@@ -2031,38 +2031,61 @@ impl GuidedState {
                 }
                 .into());
             }
-            // Best-effort (P2): guided decoding promised a tool call and did not
-            // deliver one, so the payload goes out as visible text rather than being
-            // dropped. That recovery is NOT silent — to a caller the result is
-            // indistinguishable from a model that simply chose to answer in prose,
-            // so without this the backend's guided-decoding failure never surfaces.
-            tracing::warn!(
-                why = "unified_guided_json_not_a_tool_call",
-                choice = if self.named_tool.is_some() {
-                    "named"
-                } else {
-                    "required"
-                },
-                named_tool = self.named_tool.as_deref().unwrap_or("-"),
-                payload_bytes = payload.len(),
-                payload_kind = json_payload_kind(payload),
-                "guided output did not parse as a tool call; emitting it as text"
-            );
             // The SAME bytes the parse was given, not the raw buffer. Trailing
             // control markup was stripped above precisely because it is markup, and
             // handing it back here would put `</tool_call>` in the user's visible
             // answer — a marker leak (`I3`) on the one path that exists to recover
             // gracefully. `raw_payload` is already the tail-trimmed value, and it
             // stays byte-identical to the buffer when nothing was stripped (`I7`).
+            //
             // Output conservation: bytes already dispatched as call fragments must
             // NOT come back as visible text, or a client executes the tool and then
-            // renders its JSON as prose. `raw_payload` is `self.json`, the same
-            // coordinates the cursor lexes in, so the released prefix slices off
-            // directly. Emitting nothing is correct when the whole payload was
-            // already streamed.
+            // renders its JSON as prose. Once the cursor has committed anything, the
+            // buffer is guided JSON by construction, so a rebuild failure here means
+            // the tail is call envelope (e.g. `},{"name":` on a truncated array, a
+            // bare `}` on a truncated single call, or a duplicate key that makes an
+            // otherwise-complete payload fail to deserialize) - not model text.
+            let had_committed = self.cursor.has_committed();
+            if had_committed {
+                tracing::warn!(
+                    why = "unified_guided_json_not_a_tool_call",
+                    choice = if self.named_tool.is_some() {
+                        "named"
+                    } else {
+                        "required"
+                    },
+                    named_tool = self.named_tool.as_deref().unwrap_or("-"),
+                    payload_bytes = payload.len(),
+                    payload_kind = json_payload_kind(payload),
+                    "guided output did not parse as a tool call after fragments were \
+                     already emitted; suppressing the remainder instead of leaking it as text"
+                );
+            } else {
+                // Best-effort (P2): guided decoding promised a tool call and did not
+                // deliver one, so the payload goes out as visible text rather than
+                // being dropped. That recovery is NOT silent — to a caller the
+                // result is indistinguishable from a model that simply chose to
+                // answer in prose, so without this the backend's guided-decoding
+                // failure never surfaces.
+                tracing::warn!(
+                    why = "unified_guided_json_not_a_tool_call",
+                    choice = if self.named_tool.is_some() {
+                        "named"
+                    } else {
+                        "required"
+                    },
+                    named_tool = self.named_tool.as_deref().unwrap_or("-"),
+                    payload_bytes = payload.len(),
+                    payload_kind = json_payload_kind(payload),
+                    "guided output did not parse as a tool call; emitting it as text"
+                );
+            }
+            self.json.clear();
+            if had_committed {
+                return Ok(Vec::new());
+            }
             let released_end = self.cursor.released_end().min(raw_payload.len());
             let remainder = raw_payload[released_end..].to_string();
-            self.json.clear();
             if remainder.is_empty() {
                 return Ok(Vec::new());
             }

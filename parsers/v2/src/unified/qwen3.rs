@@ -1984,8 +1984,39 @@ mod tests {
             .collect();
 
         assert!(
-            !text.contains(&streamed_args),
-            "recovery text re-emitted bytes already dispatched as call 0.\n               streamed args: {streamed_args:?}\n  recovery text: {text:?}"
+            text.is_empty(),
+            "recovery text leaked call envelope instead of staying empty once call 0 streamed.\n               streamed args: {streamed_args:?}\n  recovery text: {text:?}"
+        );
+    }
+
+    /// A DIFFERENT unsplittable case from the truncation above: the payload is
+    /// COMPLETE JSON (it closes), but a repeated `"name"` key makes the whole
+    /// object fail to deserialize as one call, so `parse_required_guided_elements`
+    /// returns `None` even though nothing was cut short. `finish_streamed_remainder`
+    /// must still treat the tail as call envelope once the cursor already streamed
+    /// the first `"name"` occurrence - found by an independent audit of frontend-
+    /// crates#194, which reproduced `,"name":2}` leaking as text before the fix.
+    #[test]
+    fn required_guided_complete_duplicate_name_does_not_leak_as_text() {
+        let payload = r#"{"name":"get_weather","arguments":{"city":"Paris"},"name":2}"#;
+        let (calls, all) = streamed(payload, &per_char(payload));
+
+        assert!(
+            calls
+                .iter()
+                .any(|c| c.name.as_deref() == Some("get_weather")),
+            "expected the first name/arguments pair to stream: {calls:?}"
+        );
+        let text: String = all
+            .iter()
+            .filter_map(|e| match e {
+                UnifiedParserEvent::Text(t) => Some(t.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert!(
+            text.is_empty(),
+            "duplicate-name tail leaked as text instead of staying empty: {text:?}"
         );
     }
 
@@ -2020,8 +2051,8 @@ mod tests {
                 })
                 .collect();
             assert!(
-                !text.contains(&streamed_args),
-                "split {split}: recovery text re-emitted dispatched bytes\n                   streamed: {streamed_args:?}\n  text: {text:?}"
+                text.is_empty(),
+                "split {split}: recovery text leaked call envelope instead of staying empty\n                   streamed: {streamed_args:?}\n  text: {text:?}"
             );
         }
     }
@@ -2050,8 +2081,8 @@ mod tests {
             })
             .collect();
         assert!(
-            !text.contains(&streamed_args),
-            "single-call truncation re-emitted dispatched bytes\n               streamed: {streamed_args:?}\n  text: {text:?}"
+            text.is_empty(),
+            "single-call truncation leaked call envelope instead of staying empty\n               streamed: {streamed_args:?}\n  text: {text:?}"
         );
     }
 
@@ -2368,8 +2399,8 @@ mod tests {
             })
             .collect();
         assert!(
-            !text.contains(&streamed_args),
-            "recovery text re-emitted dispatched bytes: {text:?}"
+            text.is_empty(),
+            "recovery text leaked call envelope instead of staying empty: {text:?}"
         );
     }
 
