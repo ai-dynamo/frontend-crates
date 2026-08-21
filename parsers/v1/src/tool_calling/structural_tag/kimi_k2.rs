@@ -101,6 +101,7 @@ pub(crate) fn build_kimi_k2(
             }],
             at_least_one: outer_at_least_one,
             stop_after_first: ctx.stop_after_first(),
+            excludes: vec![],
         })
     } else {
         Format::Sequence(SequenceFormat {
