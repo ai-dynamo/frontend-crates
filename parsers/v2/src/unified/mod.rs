@@ -54,7 +54,7 @@ pub mod qwen3;
 
 use std::collections::BTreeMap;
 
-use guided_cursor::GuidedJsonCursor;
+pub use guided_cursor::{CommittedCall, GuidedJsonCursor};
 
 use serde::{Deserialize, Serialize};
 
@@ -938,7 +938,9 @@ struct GuidedState {
     post_payload_text_started: bool,
     /// The single owner of JSON lexical state for the streaming path.
     ///
-    /// Idle unless [`InvalidGuidedPayloadPolicy::StreamBestEffort`] is in force —
+    /// Built in the shape `tool_choice` selected: envelopes for a required choice,
+    /// bare arguments for a named one. Idle unless
+    /// [`InvalidGuidedPayloadPolicy::StreamBestEffort`] is in force —
     /// the other two contracts buffer to completion, so under them this never
     /// advances and the completion path below is unchanged.
     cursor: GuidedJsonCursor,
@@ -1234,6 +1236,13 @@ impl GuidedState {
         starting_state: UnifiedParserStartingState,
         invalid_payload: InvalidGuidedPayloadPolicy,
     ) -> Self {
+        // `tool_choice` fixes the payload shape for the whole request, so the
+        // cursor is built in that shape once here rather than being told again on
+        // every advance.
+        let cursor = match &named_tool {
+            Some(name) => GuidedJsonCursor::named(name.clone()),
+            None => GuidedJsonCursor::new(),
+        };
         Self {
             stripped_markup: false,
             reasoning,
@@ -1246,7 +1255,7 @@ impl GuidedState {
                 == UnifiedParserStartingState::Reasoning,
             payload_emitted: false,
             post_payload_text_started: false,
-            cursor: GuidedJsonCursor::new(),
+            cursor,
             input: String::new(),
             json: String::new(),
         }
@@ -1769,10 +1778,19 @@ impl GuidedState {
     /// that nothing is emitted, so `InvalidGuidedPayloadPolicy::Reject` can still
     /// fire on a payload that never gets there.
     ///
+    /// A NAMED choice has no name to wait for: `tool_choice` fixed it before the
+    /// first byte. Its commit point is the payload's own opening `{`, which is the
+    /// same guarantee stated in the same terms — the argument set must be provably
+    /// an OBJECT before any of it goes out.
+    ///
     /// After the name is committed, argument bytes are released as they arrive. Only
     /// the bytes already accumulated are released, and only on a character boundary,
     /// so a fragment is never half a UTF-8 codepoint and never has to be taken back.
     /// Settle the elements streaming did NOT put on the wire.
+    ///
+    /// For a NAMED choice there are none — that payload is one call and the cursor
+    /// released all of it — so this delegates to [`Self::settle_streamed_named`].
+    /// Everything below is the required-choice, per-element reconciliation.
     ///
     /// Recovery here is PER CALL, which is the difference
     /// [`InvalidGuidedPayloadPolicy::StreamBestEffort`] declares: an element that is
@@ -1787,6 +1805,12 @@ impl GuidedState {
         let released_end = self.cursor.released_end().min(self.json.len());
         let remainder = self.json[released_end..].trim().to_string();
         let mut out = Vec::new();
+
+        // A named choice is ONE call and it is already fully on the wire.
+        if self.named_tool.is_some() {
+            return self.settle_streamed_named();
+        }
+
         let Some(elements) = parse_required_guided_elements(&payload) else {
             // Not even splittable into elements. Whatever was streamed stays
             // streamed; the rest is recovery text.
@@ -1856,6 +1880,45 @@ impl GuidedState {
         out
     }
 
+    /// Settle a NAMED choice whose call the cursor already streamed.
+    ///
+    /// The cursor put the name on the first delta and released every byte of the
+    /// argument object, up to and including its closing brace. So there is nothing
+    /// left to settle: running the assembled path as well would deliver the whole
+    /// argument object a SECOND time, and `assemble` would concatenate the two into
+    /// `{…}{…}`. That is the one failure this path exists to prevent, which is why
+    /// BOTH completion routes — [`Self::finish_streamed_remainder`] and
+    /// [`Self::finish_json`] — go through this single rule rather than each
+    /// deciding for itself.
+    ///
+    /// What it still owes the caller: the envelope warning the buffered path emits
+    /// (the bytes are already out, so it can only report the suspicion), and any
+    /// bytes that fell OUTSIDE the argument object, which were never released and
+    /// are not arguments.
+    fn settle_streamed_named(&self) -> Vec<UnifiedParserEvent> {
+        let Some(named_tool) = self.named_tool.as_deref() else {
+            return Vec::new();
+        };
+        if let Ok(obj) =
+            serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(self.json.trim())
+        {
+            warn_if_named_payload_looks_like_an_envelope(named_tool, &obj);
+        }
+        // The cursor lexes `self.json`, so its offset slices that buffer directly.
+        let released_end = self.cursor.released_end().min(self.json.len());
+        let remainder = self.json[released_end..].trim().to_string();
+        if remainder.is_empty() {
+            return Vec::new();
+        }
+        tracing::warn!(
+            why = "unified_guided_named_payload_has_trailing_bytes",
+            named_tool = %named_tool,
+            remainder_bytes = remainder.len(),
+            "bytes followed the named-choice argument object; emitting them as text"
+        );
+        vec![UnifiedParserEvent::Text(remainder)]
+    }
+
     /// Drive the cursor over the payload accumulated so far.
     ///
     /// Under the two buffering contracts this is a no-op, so their behaviour is
@@ -1864,14 +1927,10 @@ impl GuidedState {
         if self.invalid_payload != InvalidGuidedPayloadPolicy::StreamBestEffort {
             return;
         }
-        // A named choice's payload is BARE arguments: there is no
-        // `{"name": .., "arguments": ..}` envelope for the cursor to find a name or
-        // an object opener in. Its name is known from the request before any byte
-        // arrives, so it needs its own commit rule rather than this one, and until
-        // that exists it stays on the buffered path.
-        if self.named_tool.is_some() {
-            return;
-        }
+        // Both choices stream. A named choice's payload is BARE arguments with no
+        // `{"name": .., "arguments": ..}` envelope, so the cursor was built in its
+        // own mode (`GuidedJsonCursor::named`) with the name the request already
+        // fixed; the driving is identical from here.
         let mut deltas = Vec::new();
         self.cursor.advance(&self.json, &mut deltas);
         for delta in deltas {
@@ -1922,6 +1981,19 @@ impl GuidedState {
             return Ok(Vec::new());
         }
 
+        // Output conservation for a NAMED choice that already streamed. Today
+        // `emit_completed_json` intercepts every complete payload before this
+        // function sees it, so a committed named cursor reaches here only on a
+        // TRUNCATED payload — but "unreachable" is not a guarantee, and the cost of
+        // being wrong is the client executing the tool with its arguments doubled.
+        // The rule is structural instead: once a fragment is out, completion may
+        // only settle what was never released.
+        if self.named_tool.is_some() && self.cursor.has_committed() {
+            let out = self.settle_streamed_named();
+            self.json.clear();
+            return Ok(out);
+        }
+
         let raw_payload = self.json.clone();
         let calls = match &self.named_tool {
             // A named choice constrains output to that tool's ARGUMENTS alone,
@@ -1929,37 +2001,17 @@ impl GuidedState {
             // Arguments are an OBJECT. A bare string / number / null / array is
             // syntactically valid JSON but is not an argument set, and EMITTING it
             // would hand the tool a shape it cannot bind — surface it as text instead.
-            Some(name) => serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(
-                payload,
-            )
-            .ok()
-            .map(|obj| {
-                // The payload IS this tool's argument object — forward it verbatim.
-                //
-                // An earlier revision unwrapped a `{"name", "arguments"}` shape here to
-                // tolerate a backend that emits the whole call envelope despite
-                // `tool_choice` already naming the tool. That heuristic is unsound: the
-                // shape is not exclusive to envelopes, and a tool like
-                // `register_handler({"name": …, "parameters": …})` produces it. It broke
-                // BOTH ways — a non-matching inner name voided a legitimate forced call
-                // entirely, and a matching one forwarded only the inner value as the
-                // argument set. Guided decoding is schema-constrained by the backend, so
-                // the payload is trusted; a wrapping backend is out of spec and gets a
-                // warning rather than a guess.
-                if obj.contains_key("name")
-                    && (obj.contains_key("arguments") || obj.contains_key("parameters"))
-                {
-                    tracing::warn!(
-                        why = "guided_named_payload_looks_like_an_envelope",
-                        named_tool = %name,
-                        "named-choice payload carries `name` plus `arguments`/`parameters`; forwarding it verbatim as the argument set"
-                    );
-                }
-                vec![GuidedCall {
-                    name: name.clone(),
-                    arguments: raw_payload.clone(),
-                }]
-            }),
+            Some(name) => {
+                serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(payload)
+                    .ok()
+                    .map(|obj| {
+                        warn_if_named_payload_looks_like_an_envelope(name, &obj);
+                        vec![GuidedCall {
+                            name: name.clone(),
+                            arguments: raw_payload.clone(),
+                        }]
+                    })
+            }
             None => parse_required_guided_calls(payload),
         };
 
@@ -2044,6 +2096,36 @@ struct GuidedCall {
 struct GuidedElement {
     call: Option<GuidedCall>,
     raw: String,
+}
+
+/// Warn when a NAMED choice's payload carries a whole call envelope.
+///
+/// The payload IS this tool's argument object and is forwarded verbatim.
+///
+/// An earlier revision unwrapped a `{"name", "arguments"}` shape to tolerate a
+/// backend that emits the whole call envelope despite `tool_choice` already naming
+/// the tool. That heuristic is unsound: the shape is not exclusive to envelopes,
+/// and a tool like `register_handler({"name": …, "parameters": …})` produces it. It
+/// broke BOTH ways — a non-matching inner name voided a legitimate forced call
+/// entirely, and a matching one forwarded only the inner value as the argument set.
+/// Guided decoding is schema-constrained by the backend, so the payload is trusted;
+/// a wrapping backend is out of spec and gets a warning rather than a guess.
+///
+/// One implementation, because BOTH named paths reach it now: the buffered
+/// completion path and the streamed one, which has already put these very bytes on
+/// the wire and can only report the suspicion, not act on it.
+fn warn_if_named_payload_looks_like_an_envelope(
+    named_tool: &str,
+    obj: &serde_json::Map<String, serde_json::Value>,
+) {
+    if obj.contains_key("name") && (obj.contains_key("arguments") || obj.contains_key("parameters"))
+    {
+        tracing::warn!(
+            why = "guided_named_payload_looks_like_an_envelope",
+            named_tool = %named_tool,
+            "named-choice payload carries `name` plus `arguments`/`parameters`; forwarding it verbatim as the argument set"
+        );
+    }
 }
 
 /// Judge ONE required-choice call element.
