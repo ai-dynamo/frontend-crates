@@ -18,6 +18,8 @@
 // at that point the jail-and-batch mechanism and this whole v1 crate are removed.
 
 pub mod annotated;
+mod guided_stream;
+use guided_stream::{GuidedDelta, GuidedStreamCursor};
 mod prefix_matcher;
 
 use async_stream::stream;
@@ -35,11 +37,13 @@ use dynamo_protocols::types::{
     FunctionCallStream, FunctionType, Role,
 };
 use futures::{Stream, StreamExt};
+use serde_json::value::RawValue;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
 use crate::tool_calling::config::{JsonParserConfig, ParserConfig};
 use crate::tool_calling::gemma4::split_partial_call_prefix_gemma4;
+use crate::tool_calling::json::base_json_parser::parse_indexed_calls;
 use crate::tool_calling::json::{JsonParserType, try_tool_call_parse_basic_json};
 use crate::tool_calling::parsers::get_tool_parser_map;
 use crate::tool_calling::{
@@ -212,6 +216,10 @@ struct ChoiceJailState {
     /// Incremental lexical progress used to decide when parser validation is
     /// worthwhile. Parser acceptance is never cached here.
     completion_progress: JailCompletionProgress,
+    /// Guided-payload cursor, present only in `Immediate` mode. Under a guided
+    /// grammar the payload's shape is already known, so calls can be released as
+    /// they arrive instead of at the closing brace.
+    guided_cursor: Option<GuidedStreamCursor>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -445,7 +453,7 @@ fn stream_choice_chunk_from_template(
 
 impl ChoiceJailState {
     /// Create a new jail state for a choice
-    fn new(index: u32, starts_jailed: bool) -> Self {
+    fn new(index: u32, starts_jailed: bool, guided: Option<&ToolChoiceFormat>) -> Self {
         Self {
             index,
             is_jailed: starts_jailed,
@@ -456,6 +464,7 @@ impl ChoiceJailState {
             emitted_tool_calls_count: 0,
             pending_reasoning_content: None,
             completion_progress: JailCompletionProgress::default(),
+            guided_cursor: guided.map(GuidedStreamCursor::new),
         }
     }
 
@@ -525,6 +534,11 @@ impl ChoiceJailState {
         self.is_jailed = false;
         self.accumulated_logprobs = None;
         self.completion_progress.reset();
+        // The cursor's byte offsets describe THIS payload. Carrying them into a
+        // second jailed value would suppress its arguments as already streamed.
+        if let Some(cursor) = self.guided_cursor.as_mut() {
+            cursor.reset();
+        }
         std::mem::take(&mut self.accumulated_content)
     }
 
@@ -658,6 +672,147 @@ impl ChoiceJailState {
         }
     }
 
+    /// Release any guided calls the cursor can now commit to.
+    ///
+    /// No-op outside `Immediate` mode: a marker-based stream has no grammar
+    /// guaranteeing the payload's shape, so nothing can be committed early.
+    ///
+    /// The cursor records every byte it releases, so the completion path can emit
+    /// only the remainder. A fragment cannot be unsaid, so the cursor is the single
+    /// owner of what the client has already seen.
+    fn emit_guided_progress(
+        &mut self,
+        choice: &ChatChoiceStream,
+        emissions: &mut Vec<ChoiceEmission>,
+    ) {
+        let Some(cursor) = self.guided_cursor.as_mut() else {
+            return;
+        };
+        let mut deltas: Vec<GuidedDelta> = Vec::new();
+        cursor.advance(&self.accumulated_content, &mut deltas);
+        if deltas.is_empty() {
+            return;
+        }
+
+        let mut chunks: Vec<ChatCompletionMessageToolCallChunk> = Vec::new();
+        for delta in deltas {
+            let first = delta.name.is_some();
+            chunks.push(ChatCompletionMessageToolCallChunk {
+                index: (self.emitted_tool_calls_count + delta.tool_index) as u32,
+                id: first.then(|| format!("call-{}", uuid::Uuid::new_v4())),
+                r#type: first.then_some(FunctionType::Function),
+                function: Some(FunctionCallStream {
+                    name: delta.name,
+                    arguments: Some(delta.arguments),
+                }),
+            });
+        }
+
+        emissions.push(ChoiceEmission::ToolCall(create_choice_stream(
+            choice.index,
+            None,
+            "",
+            Some(chunks),
+            None,
+            None,
+        )));
+    }
+
+    /// Reconcile a rebuilt choice against what the cursor already streamed.
+    ///
+    /// Both completion paths - normal completion and EOF finalization - rebuild every
+    /// call in full, so both must subtract the streamed bytes and both must advance the
+    /// tool-index offset by the same rule. Keeping that in one place is why this is a
+    /// method: when the two paths each carried their own copy, they disagreed.
+    ///
+    /// The offset advances by the highest LOCAL index reached, not by how many calls
+    /// exist. The cursor advances its element index even for elements it refuses to
+    /// commit - one with no name, or with a non-object argument value - so the indices
+    /// on the wire can be sparse, and counting would leave the offset short enough for
+    /// the next payload to reuse an index this one already used.
+    fn reconcile_streamed_calls(&mut self, choice: &mut ChatChoiceStream) {
+        let rebuilt = choice.delta.tool_calls.as_ref().map_or(0, |calls| {
+            calls
+                .iter()
+                .map(|chunk| {
+                    (chunk.index as usize).saturating_sub(self.emitted_tool_calls_count) + 1
+                })
+                .max()
+                .unwrap_or(0)
+        });
+        let streamed = self
+            .guided_cursor
+            .as_ref()
+            .and_then(|cursor| cursor.streamed().keys().next_back())
+            .map_or(0, |index| index + 1);
+        self.subtract_streamed_calls(choice);
+        self.emitted_tool_calls_count += rebuilt.max(streamed);
+    }
+
+    /// Strip from a completed choice everything the cursor already put on the wire.
+    ///
+    /// The completion path rebuilds every call in full. For a call that was streamed,
+    /// the client already has its id, name and the streamed argument prefix, so
+    /// re-sending them would duplicate the arguments. Emit only the tail.
+    fn subtract_streamed_calls(&self, unjailed: &mut ChatChoiceStream) {
+        let Some(cursor) = self.guided_cursor.as_ref() else {
+            return;
+        };
+        if cursor.streamed().is_empty() {
+            return;
+        }
+
+        let had_rebuilt_calls = unjailed.delta.tool_calls.is_some();
+        if let Some(tool_calls) = unjailed.delta.tool_calls.as_mut() {
+            tool_calls.retain_mut(|chunk| {
+                let Some(local) = (chunk.index as usize).checked_sub(self.emitted_tool_calls_count)
+                else {
+                    return true;
+                };
+                let Some(streamed) = cursor.streamed().get(&local) else {
+                    return true;
+                };
+                let full = chunk
+                    .function
+                    .as_ref()
+                    .and_then(|f| f.arguments.as_deref())
+                    .unwrap_or("");
+                let Some(remainder) = full.strip_prefix(&streamed.arguments) else {
+                    tracing::warn!(
+                        streamed_len = streamed.arguments.len(),
+                        rebuilt_len = full.len(),
+                        tool_index = local,
+                        "guided streaming cursor disagrees with the rebuilt call; \
+                         suppressing the rebuild because emitted bytes cannot be retracted"
+                    );
+                    return false;
+                };
+                if remainder.is_empty() {
+                    return false;
+                }
+                chunk.id = None;
+                chunk.r#type = None;
+                chunk.function = Some(FunctionCallStream {
+                    name: None,
+                    arguments: Some(remainder.to_string()),
+                });
+                true
+            });
+            if tool_calls.is_empty() {
+                unjailed.delta.tool_calls = None;
+            }
+        }
+
+        if !had_rebuilt_calls {
+            // The cursor streamed, so the buffer is guided JSON by construction. What
+            // is left after the last released byte is call envelope - `},{"name":` on a
+            // truncated array, a bare `}` on a truncated single call - and the rebuild
+            // already failed to make calls of it. Emitting it as content leaks JSON
+            // punctuation into the assistant message, so emit nothing.
+            unjailed.delta.content = None;
+        }
+    }
+
     async fn emit_completed_jail(
         &mut self,
         completed: CompletedJail,
@@ -682,9 +837,12 @@ impl ChoiceJailState {
             )
             .await;
         unjailed_choice.logprobs = jail_logprobs;
+        // Count what this payload REBUILT, not what survives subtraction. A fully
+        // streamed call leaves no chunk behind, so counting survivors would leave the
+        // offset at zero and the next payload would reuse this payload's tool indices.
+        self.reconcile_streamed_calls(&mut unjailed_choice);
 
-        if let Some(ref tool_calls) = unjailed_choice.delta.tool_calls {
-            self.emitted_tool_calls_count += tool_calls.len();
+        if unjailed_choice.delta.tool_calls.is_some() {
             emissions.push(ChoiceEmission::ToolCall(unjailed_choice));
         } else {
             emissions.push(ChoiceEmission::Content(unjailed_choice));
@@ -835,6 +993,11 @@ impl ChoiceJailState {
             // Already jailed - accumulate content AND logprobs, then check for unjail
             self.accumulate(content, choice.logprobs.as_ref());
 
+            // Under a guided grammar the payload's shape is already fixed, so release
+            // whatever the cursor can commit to BEFORE the completion check. Holding a
+            // call until the closing brace is the latency defect this exists to fix.
+            self.emit_guided_progress(choice, &mut emissions);
+
             let completion = jail_stream
                 .check_jail_completion(&self.accumulated_content, &mut self.completion_progress)
                 .await;
@@ -843,7 +1006,7 @@ impl ChoiceJailState {
                 self.emit_completed_jail(completed, choice, jail_stream, &mut emissions)
                     .await;
             }
-            // If not unjailing, don't emit anything (still accumulating)
+            // If not unjailing, only the guided deltas above (if any) are emitted.
         }
         emissions
     }
@@ -874,6 +1037,10 @@ impl ChoiceJailState {
                 .await;
             // Attach the full accumulated logprobs to the final choice
             final_choice.logprobs = self.take_accumulated_logprobs();
+            // Same rule as normal completion: a truncated payload still rebuilds every
+            // call in full here, so anything the cursor already streamed must be
+            // subtracted or its arguments are delivered twice.
+            self.reconcile_streamed_calls(&mut final_choice);
 
             // Preserve any pending reasoning content collected while jailed.
             if let Some(pending_reasoning) = self.pending_reasoning_content.take() {
@@ -882,10 +1049,6 @@ impl ChoiceJailState {
                 } else {
                     final_choice.delta.reasoning_content = Some(pending_reasoning);
                 }
-            }
-
-            if let Some(ref tool_calls) = final_choice.delta.tool_calls {
-                self.emitted_tool_calls_count += tool_calls.len();
             }
 
             // End jailing
@@ -928,7 +1091,12 @@ impl ChoiceJailStateCollection {
     }
 
     /// Get or create state for a choice index
-    fn get_or_create_state(&mut self, index: u32, starts_jailed: bool) -> &mut ChoiceJailState {
+    fn get_or_create_state(
+        &mut self,
+        index: u32,
+        starts_jailed: bool,
+        guided: Option<&ToolChoiceFormat>,
+    ) -> &mut ChoiceJailState {
         // Find the position where this index should be
         match self.states.binary_search_by_key(&index, |s| s.index) {
             Ok(pos) => {
@@ -937,7 +1105,7 @@ impl ChoiceJailStateCollection {
             }
             Err(insert_pos) => {
                 // Need to create new state
-                let new_state = ChoiceJailState::new(index, starts_jailed);
+                let new_state = ChoiceJailState::new(index, starts_jailed, guided);
                 self.states.insert(insert_pos, new_state);
                 &mut self.states[insert_pos]
             }
@@ -970,6 +1138,12 @@ pub struct JailedStream {
     emission_mode: EmissionMode,
     marker_matcher: MarkerMatcher,
     jail_mode: JailMode,
+    /// Release guided calls as they arrive instead of at the closing brace.
+    ///
+    /// Off by default: turning it on changes the emission SHAPE for every consumer
+    /// of this jail (one terminal delta becomes many), so the serving layer opts in
+    /// per request rather than inheriting it. Mirrors `StreamBestEffort` in v2.
+    guided_streaming: bool,
 }
 
 impl JailedStream {
@@ -981,6 +1155,20 @@ impl JailedStream {
     /// Whether the jail starts already-jailed (tool_choice=required/named path).
     fn is_immediate(&self) -> bool {
         matches!(self.jail_mode, JailMode::Immediate { .. })
+    }
+
+    /// The guided payload shape, when generation was constrained to JSON.
+    ///
+    /// `Some` means the grammar already fixed the payload's shape, so a cursor can
+    /// release calls as they arrive instead of waiting for the closing brace.
+    fn guided_format(&self) -> Option<&ToolChoiceFormat> {
+        if !self.guided_streaming {
+            return None;
+        }
+        match &self.jail_mode {
+            JailMode::Immediate { format } => Some(format),
+            JailMode::MarkerBased => None,
+        }
     }
 
     /// Apply jail stream transformation with finish_reason fix
@@ -1057,7 +1245,11 @@ impl JailedStream {
 
                             if let Some(text) = text_content {
                                 let choice_state = choice_states
-                                    .get_or_create_state(choice.index, self.is_immediate());
+                                    .get_or_create_state(
+                                        choice.index,
+                                        self.is_immediate(),
+                                        self.guided_format(),
+                                    );
 
                                 if let Some(reasoning_content) = &choice.delta.reasoning_content {
                                     let pending = choice_state
@@ -1114,7 +1306,11 @@ impl JailedStream {
                             // of the stream — `get_or_create_state` ignores the argument on
                             // subsequent calls.
                             let choice_state = choice_states
-                                .get_or_create_state(choice.index, self.is_immediate());
+                                .get_or_create_state(
+                                    choice.index,
+                                    self.is_immediate(),
+                                    self.guided_format(),
+                                );
                             // Also track stream finish reason from content-less final chunks
                             // (e.g. finish_reason=Stop arriving in a chunk with content=None) so
                             // the Immediate-mode finalize path can emit the correct finish_reason.
@@ -1782,26 +1978,40 @@ impl JailedStream {
                 //     XML). In that case try_tool_call_parse_aggregate with
                 //     the configured tool_call_parser recovers the call.
                 let mut tool_call_chunks: Vec<ChatCompletionMessageToolCallChunk> = Vec::new();
+                let mut preserve_source_indices = false;
 
-                // 1. Primary: bare-JSON extraction — handles
+                // 1. Required-choice extraction preserves each array element's
+                //    SOURCE index so it stays in the cursor's sparse index space.
+                if self.guided_streaming
+                    && matches!(format, ToolChoiceFormat::ArrayOfTools)
+                    && let Ok(chunks) = self.parse_tool_choice_json(accumulated_content, format)
+                    && !chunks.is_empty()
+                {
+                    tool_call_chunks = chunks;
+                    preserve_source_indices = true;
+                }
+
+                // 2. Primary: bare-JSON extraction — handles
                 //    `[{name,parameters}, ...]`, `{name,parameters}`,
                 //    `{name,arguments}`, and arrays of either.
                 let basic_json_cfg = JsonParserConfig {
                     bare_json_mode: true,
                     ..Default::default()
                 };
-                // Per-path indices are placeholders — final indices are assigned
-                // below after the named filter so dropped entries don't leave
-                // gaps and multi-emission streams don't collide.
-                if let Ok((parsed, _)) = try_tool_call_parse_basic_json(
-                    accumulated_content,
-                    &basic_json_cfg,
-                    self.tool_definitions.as_deref(),
-                ) && !parsed.is_empty()
+                // This fallback has no malformed-entry gaps, so enumeration is its
+                // local index space. The required streaming path above retains source
+                // positions; both receive the cumulative payload offset below.
+                if tool_call_chunks.is_empty()
+                    && let Ok((parsed, _)) = try_tool_call_parse_basic_json(
+                        accumulated_content,
+                        &basic_json_cfg,
+                        self.tool_definitions.as_deref(),
+                    )
+                    && !parsed.is_empty()
                 {
-                    tool_call_chunks.extend(parsed.into_iter().map(|tc| {
+                    tool_call_chunks.extend(parsed.into_iter().enumerate().map(|(idx, tc)| {
                         ChatCompletionMessageToolCallChunk {
-                            index: 0,
+                            index: idx as u32,
                             id: Some(tc.id),
                             r#type: Some(FunctionType::Function),
                             function: Some(FunctionCallStream {
@@ -1812,7 +2022,7 @@ impl JailedStream {
                     }));
                 }
 
-                // 2. Named-only fallback: output is just the parameters object
+                // 3. Named-only fallback: output is just the parameters object
                 //    (tool_name is supplied by SingleObject format).
                 if tool_call_chunks.is_empty()
                     && let Ok(chunks) = self.parse_tool_choice_json(accumulated_content, format)
@@ -1820,7 +2030,7 @@ impl JailedStream {
                     tool_call_chunks = chunks;
                 }
 
-                // 3. Marker-based fallback for backends that did not enforce
+                // 4. Marker-based fallback for backends that did not enforce
                 //    guided decoding and emitted the model's native format.
                 if tool_call_chunks.is_empty()
                     && self.tool_call_parser.is_some()
@@ -1831,9 +2041,9 @@ impl JailedStream {
                     )
                     .await
                 {
-                    tool_call_chunks.extend(tool_calls.into_iter().map(|tc| {
+                    tool_call_chunks.extend(tool_calls.into_iter().enumerate().map(|(idx, tc)| {
                         ChatCompletionMessageToolCallChunk {
-                            index: 0,
+                            index: idx as u32,
                             id: Some(tc.id),
                             r#type: Some(FunctionType::Function),
                             function: Some(FunctionCallStream {
@@ -1864,11 +2074,18 @@ impl JailedStream {
                     }
                 }
 
-                // Assign final indices: renumber survivors 0..n (no gaps from
-                // the filter) then add the cumulative offset for consistency
-                // with the MarkerBased branch across multi-emission streams.
-                for (new_idx, chunk) in tool_call_chunks.iter_mut().enumerate() {
-                    chunk.index = (tool_call_offset + new_idx) as u32;
+                if preserve_source_indices {
+                    // The guided required cursor uses source array positions, including
+                    // gaps for malformed elements, so completion must keep that space.
+                    for chunk in &mut tool_call_chunks {
+                        chunk.index += tool_call_offset as u32;
+                    }
+                } else {
+                    // Fallback parsers have no streamed source indices to reconcile.
+                    // Compact after named filtering to keep the public index contract.
+                    for (index, chunk) in tool_call_chunks.iter_mut().enumerate() {
+                        chunk.index = (tool_call_offset + index) as u32;
+                    }
                 }
 
                 if !tool_call_chunks.is_empty() {
@@ -1934,27 +2151,32 @@ impl JailedStream {
         match format {
             ToolChoiceFormat::SingleObject { tool_name } => {
                 // For named tool choice: JSON is the parameters object
-                if parsed.is_object() {
+                if parsed.is_object()
+                    && let Ok(raw) = serde_json::from_str::<Box<RawValue>>(json_content)
+                {
                     Ok(vec![Self::create_tool_call_chunk(
                         0,
                         tool_name.clone(),
-                        json_content.to_string(),
+                        raw.get().to_string(),
                     )])
                 } else {
                     Ok(vec![])
                 }
             }
             ToolChoiceFormat::ArrayOfTools => {
-                // For required tool choice: JSON is array of {name, parameters}
-                if let Some(array) = parsed.as_array() {
-                    let chunks: Vec<ChatCompletionMessageToolCallChunk> = array
-                        .iter()
-                        .enumerate()
-                        .filter_map(|(idx, entry)| {
-                            let name = entry.get("name")?.as_str()?.to_string();
-                            let parameters = entry.get("parameters")?;
-                            let args = serde_json::to_string(parameters).ok()?;
-                            Some(Self::create_tool_call_chunk(idx as u32, name, args))
+                // Keep source array positions and raw argument bytes. The cursor
+                // uses those same positions, including gaps for malformed entries.
+                if parsed.is_array()
+                    && let Some(calls) = parse_indexed_calls(json_content, false)?
+                {
+                    let chunks = calls
+                        .into_iter()
+                        .map(|(idx, call)| {
+                            Self::create_tool_call_chunk(
+                                idx as u32,
+                                call.function.name,
+                                call.function.arguments,
+                            )
                         })
                         .collect();
                     Ok(chunks)
@@ -2115,6 +2337,7 @@ pub struct JailedStreamBuilder {
     tool_definitions: Option<Vec<crate::tool_calling::ToolDefinition>>,
     emission_mode: EmissionMode,
     jail_mode: JailMode,
+    guided_streaming: bool,
 }
 
 impl JailedStreamBuilder {
@@ -2124,6 +2347,7 @@ impl JailedStreamBuilder {
             jail_start_sequences: Vec::new(),
             jail_end_sequences: Vec::new(),
             has_custom_end_sequences: false,
+            guided_streaming: false,
             tool_call_parser: None,
             named_tool_name: None,
             tool_definitions: None,
@@ -2212,7 +2436,18 @@ impl JailedStreamBuilder {
         self
     }
 
-    /// Enable immediate jail mode for tool_choice=required
+    /// Release guided tool calls incrementally instead of buffering to the closing brace.
+    ///
+    /// Only meaningful with `tool_choice_required` / `tool_choice_named`, where guided
+    /// decoding already fixed the payload's shape. Off by default because it changes
+    /// the emission shape: a single terminal tool-call delta becomes a name delta
+    /// followed by argument fragments.
+    pub fn guided_streaming(mut self, enabled: bool) -> Self {
+        self.guided_streaming = enabled;
+        self
+    }
+
+    /// Enable immediate jail mode for tool_choice=required.
     pub fn tool_choice_required(mut self) -> Self {
         self.jail_mode = JailMode::Immediate {
             format: ToolChoiceFormat::ArrayOfTools,
@@ -2347,6 +2582,7 @@ impl JailedStreamBuilder {
             emission_mode: self.emission_mode,
             marker_matcher,
             jail_mode: self.jail_mode,
+            guided_streaming: self.guided_streaming,
         }
     }
 }
@@ -2374,9 +2610,56 @@ pub fn apply_tool_calling_jail<S>(
 where
     S: Stream<Item = Annotated<CreateChatCompletionStreamResponse>> + Send + 'static,
 {
+    apply_tool_calling_jail_configured(
+        tool_call_parser,
+        tool_choice,
+        tool_definitions,
+        uses_tool_call_structural_tag,
+        false,
+        stream,
+    )
+}
+
+/// Like [`apply_tool_calling_jail`], but able to release guided tool calls as they
+/// arrive instead of buffering to the payload's closing brace.
+///
+/// Separate entry point so the existing signature keeps working for published
+/// consumers: incremental release changes the emission SHAPE (one terminal tool-call
+/// delta becomes a name delta followed by argument fragments), so a caller opts in.
+pub fn apply_tool_calling_jail_with_guided_streaming<S>(
+    tool_call_parser: Option<String>,
+    tool_choice: Option<dynamo_protocols::types::ChatCompletionToolChoiceOption>,
+    tool_definitions: Option<Vec<crate::tool_calling::ToolDefinition>>,
+    uses_tool_call_structural_tag: bool,
+    stream: S,
+) -> impl Stream<Item = Annotated<CreateChatCompletionStreamResponse>> + Send
+where
+    S: Stream<Item = Annotated<CreateChatCompletionStreamResponse>> + Send + 'static,
+{
+    apply_tool_calling_jail_configured(
+        tool_call_parser,
+        tool_choice,
+        tool_definitions,
+        uses_tool_call_structural_tag,
+        true,
+        stream,
+    )
+}
+
+fn apply_tool_calling_jail_configured<S>(
+    tool_call_parser: Option<String>,
+    tool_choice: Option<dynamo_protocols::types::ChatCompletionToolChoiceOption>,
+    tool_definitions: Option<Vec<crate::tool_calling::ToolDefinition>>,
+    uses_tool_call_structural_tag: bool,
+    guided_streaming: bool,
+    stream: S,
+) -> impl Stream<Item = Annotated<CreateChatCompletionStreamResponse>> + Send
+where
+    S: Stream<Item = Annotated<CreateChatCompletionStreamResponse>> + Send + 'static,
+{
     use dynamo_protocols::types::ChatCompletionToolChoiceOption;
 
-    let mut builder = JailedStream::builder();
+    let mut builder = JailedStream::builder().guided_streaming(guided_streaming);
 
     let uses_native_forced_format = tool_call_parser
         .as_deref()

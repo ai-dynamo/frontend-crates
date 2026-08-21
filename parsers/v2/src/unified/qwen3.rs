@@ -1578,15 +1578,40 @@ mod tests {
         }
     }
 
-    /// Every delta produced by feeding `payload` in `chunks`, push order preserved.
+    /// Every delta produced by feeding `payload` in `chunks` under `tool_choice`
+    /// `required`, push order preserved.
     fn streamed(payload: &str, chunks: &[&str]) -> (Vec<ToolCallDelta>, Vec<UnifiedParserEvent>) {
         let _ = payload;
+        streamed_in(
+            UnifiedToolOutputMode::GuidedJson { named_tool: None },
+            InvalidGuidedPayloadPolicy::StreamBestEffort,
+            chunks,
+        )
+    }
+
+    /// The same, for a NAMED choice: the payload is `get_weather`'s bare arguments.
+    fn streamed_named(chunks: &[&str]) -> (Vec<ToolCallDelta>, Vec<UnifiedParserEvent>) {
+        streamed_in(
+            UnifiedToolOutputMode::GuidedJson {
+                named_tool: Some("get_weather".to_string()),
+            },
+            InvalidGuidedPayloadPolicy::StreamBestEffort,
+            chunks,
+        )
+    }
+
+    /// One driver for every guided contract: the required and named modes must be
+    /// exercised through the SAME push/finish sequence, or a divergence in the
+    /// harness hides a divergence in the parser.
+    fn streamed_in(
+        mode: UnifiedToolOutputMode,
+        policy: InvalidGuidedPayloadPolicy,
+        chunks: &[&str],
+    ) -> (Vec<ToolCallDelta>, Vec<UnifiedParserEvent>) {
         let mut parser = qwen3_unified(&weather_tools());
-        parser
-            .initialize_request(stream_init(UnifiedToolOutputMode::GuidedJson {
-                named_tool: None,
-            }))
-            .expect("required guided init");
+        let mut init = stream_init(mode);
+        init.invalid_guided_payload = policy;
+        parser.initialize_request(init).expect("guided init");
         let mut calls = Vec::new();
         let mut all = Vec::new();
         for chunk in chunks {
@@ -1959,8 +1984,39 @@ mod tests {
             .collect();
 
         assert!(
-            !text.contains(&streamed_args),
-            "recovery text re-emitted bytes already dispatched as call 0.\n               streamed args: {streamed_args:?}\n  recovery text: {text:?}"
+            text.is_empty(),
+            "recovery text leaked call envelope instead of staying empty once call 0 streamed.\n               streamed args: {streamed_args:?}\n  recovery text: {text:?}"
+        );
+    }
+
+    /// A DIFFERENT unsplittable case from the truncation above: the payload is
+    /// COMPLETE JSON (it closes), but a repeated `"name"` key makes the whole
+    /// object fail to deserialize as one call, so `parse_required_guided_elements`
+    /// returns `None` even though nothing was cut short. `finish_streamed_remainder`
+    /// must still treat the tail as call envelope once the cursor already streamed
+    /// the first `"name"` occurrence - found by an independent audit of frontend-
+    /// crates#194, which reproduced `,"name":2}` leaking as text before the fix.
+    #[test]
+    fn required_guided_complete_duplicate_name_does_not_leak_as_text() {
+        let payload = r#"{"name":"get_weather","arguments":{"city":"Paris"},"name":2}"#;
+        let (calls, all) = streamed(payload, &per_char(payload));
+
+        assert!(
+            calls
+                .iter()
+                .any(|c| c.name.as_deref() == Some("get_weather")),
+            "expected the first name/arguments pair to stream: {calls:?}"
+        );
+        let text: String = all
+            .iter()
+            .filter_map(|e| match e {
+                UnifiedParserEvent::Text(t) => Some(t.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert!(
+            text.is_empty(),
+            "duplicate-name tail leaked as text instead of staying empty: {text:?}"
         );
     }
 
@@ -1995,8 +2051,8 @@ mod tests {
                 })
                 .collect();
             assert!(
-                !text.contains(&streamed_args),
-                "split {split}: recovery text re-emitted dispatched bytes\n                   streamed: {streamed_args:?}\n  text: {text:?}"
+                text.is_empty(),
+                "split {split}: recovery text leaked call envelope instead of staying empty\n                   streamed: {streamed_args:?}\n  text: {text:?}"
             );
         }
     }
@@ -2025,8 +2081,8 @@ mod tests {
             })
             .collect();
         assert!(
-            !text.contains(&streamed_args),
-            "single-call truncation re-emitted dispatched bytes\n               streamed: {streamed_args:?}\n  text: {text:?}"
+            text.is_empty(),
+            "single-call truncation leaked call envelope instead of staying empty\n               streamed: {streamed_args:?}\n  text: {text:?}"
         );
     }
 
@@ -2114,6 +2170,294 @@ mod tests {
                 "names differ at split {split}"
             );
         }
+    }
+
+    // ---- named choice: bare arguments for the tool the request already fixed ----
+
+    /// The v2 gap this closes: a named choice refused to stream at all, so a client
+    /// waited for the whole argument object even though the tool name was known
+    /// before the first byte. The name must land on the FIRST delta, and argument
+    /// bytes must follow as fragments.
+    #[test]
+    fn named_guided_streams_its_bare_arguments() {
+        let payload = r#"{"city": "Paris", "unit": "celsius"}"#;
+        let (calls, events) = streamed_named(&per_char(payload));
+
+        let names: Vec<&str> = calls.iter().filter_map(|c| c.name.as_deref()).collect();
+        assert_eq!(names, vec!["get_weather"], "exactly one name, once");
+        assert!(
+            calls[0].name.as_deref() == Some("get_weather"),
+            "the name must ride the FIRST delta, not a later one: {calls:?}"
+        );
+        assert!(
+            calls[1..].iter().all(|c| c.name.is_none()),
+            "every later delta must carry name: None: {calls:?}"
+        );
+        assert!(
+            calls.iter().all(|c| c.tool_index == 0),
+            "a named choice is one call: {calls:?}"
+        );
+
+        let frames = calls.iter().filter(|c| !c.arguments.is_empty()).count();
+        assert!(
+            frames >= 2,
+            "arguments arrived in {frames} frame(s) - that is a burst, not a stream"
+        );
+        assert_eq!(
+            joined_arguments(&calls),
+            vec![(0, payload.to_string())],
+            "fragments must reassemble the payload byte for byte"
+        );
+        assert!(
+            !events
+                .iter()
+                .any(|e| matches!(e, UnifiedParserEvent::Text(_))),
+            "a valid streamed call must not also produce recovery text: {events:?}"
+        );
+    }
+
+    /// The highest-risk failure mode: streaming puts the arguments on the wire and
+    /// then the completion path settles the SAME call again, so the client receives
+    /// the argument bytes twice and `assemble` concatenates them into `{…}{…}`.
+    ///
+    /// The assertion is on the TOTAL: every argument byte the client receives across
+    /// streaming plus completion must equal the payload exactly once.
+    #[test]
+    fn named_guided_never_emits_the_arguments_twice() {
+        let payload = r#"{"city": "Paris"}"#;
+        for chunks in [
+            per_char(payload),
+            vec![payload],
+            vec![&payload[..1], &payload[1..]],
+        ] {
+            let (calls, _) = streamed_named(&chunks);
+            assert_eq!(
+                joined_arguments(&calls),
+                vec![(0, payload.to_string())],
+                "argument bytes were not delivered exactly once: {calls:?}"
+            );
+            assert_eq!(
+                calls.iter().filter(|c| c.name.is_some()).count(),
+                1,
+                "the name was delivered more than once: {calls:?}"
+            );
+        }
+    }
+
+    /// Same invariant at EVERY chunk boundary: the split decides how much streamed
+    /// before the payload closed, so one split can pass while another duplicates.
+    #[test]
+    fn named_guided_conserves_output_at_every_split() {
+        let payload = r#"{"city": "Paris", "unit": "celsius"}"#;
+        for split in 0..=payload.len() {
+            if !payload.is_char_boundary(split) {
+                continue;
+            }
+            let (calls, events) = streamed_named(&[&payload[..split], &payload[split..]]);
+            assert_eq!(
+                joined_arguments(&calls),
+                vec![(0, payload.to_string())],
+                "split {split}: arguments were not delivered exactly once"
+            );
+            let text: String = events
+                .iter()
+                .filter_map(|e| match e {
+                    UnifiedParserEvent::Text(t) => Some(t.as_str()),
+                    _ => None,
+                })
+                .collect();
+            assert!(
+                text.is_empty(),
+                "split {split}: streamed bytes came back as text: {text:?}"
+            );
+        }
+    }
+
+    /// A split can only land on a char boundary because `push` takes `&str`, but the
+    /// released fragments must still never cut a codepoint, and they must reassemble
+    /// the multi-byte content byte for byte.
+    #[test]
+    fn named_guided_is_split_invariant_with_multi_byte_arguments() {
+        let payload = r#"{"city": "東京", "emoji": "😀"}"#;
+        let baseline = vec![(0, payload.to_string())];
+        for split in 0..=payload.len() {
+            if !payload.is_char_boundary(split) {
+                continue;
+            }
+            let (calls, _) = streamed_named(&[&payload[..split], &payload[split..]]);
+            assert_eq!(
+                joined_arguments(&calls),
+                baseline,
+                "arguments differ at split {split}"
+            );
+            assert_eq!(
+                calls
+                    .iter()
+                    .filter_map(|c| c.name.as_deref())
+                    .collect::<Vec<_>>(),
+                vec!["get_weather"],
+                "names differ at split {split}"
+            );
+        }
+        let (per_char_calls, _) = streamed_named(&per_char(payload));
+        assert_eq!(joined_arguments(&per_char_calls), baseline);
+    }
+
+    /// A named payload that does not open with `{` is not an argument set: it cannot
+    /// be bound to the tool, and the buffered path already surfaces it as text.
+    /// Streaming it would put a shape the contract voids on the wire, unwithdrawably.
+    #[test]
+    fn named_guided_never_streams_a_payload_that_is_not_an_argument_set() {
+        for payload in [r#""just a string""#, "42", "null", "[1,2]"] {
+            let (calls, events) = streamed_named(&per_char(payload));
+            assert!(
+                calls.is_empty(),
+                "{payload}: streamed a payload that is not an argument set: {calls:?}"
+            );
+            let text: String = events
+                .iter()
+                .filter_map(|e| match e {
+                    UnifiedParserEvent::Text(t) => Some(t.as_str()),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(
+                text, payload,
+                "{payload}: buffered recovery text changed shape"
+            );
+        }
+    }
+
+    /// Streaming stays OPT-IN. Under the default `Reject` policy a named choice must
+    /// still buffer to completion and arrive as one terminal delta.
+    #[test]
+    fn named_guided_still_buffers_under_the_default_reject_policy() {
+        let payload = r#"{"city": "Paris"}"#;
+        assert_eq!(
+            InvalidGuidedPayloadPolicy::default(),
+            InvalidGuidedPayloadPolicy::Reject,
+            "this test is about the DEFAULT policy"
+        );
+        let (calls, _) = streamed_in(
+            UnifiedToolOutputMode::GuidedJson {
+                named_tool: Some("get_weather".to_string()),
+            },
+            InvalidGuidedPayloadPolicy::default(),
+            &per_char(payload),
+        );
+        assert_eq!(
+            calls.len(),
+            1,
+            "the payload streamed under Reject: {calls:?}"
+        );
+        assert_eq!(calls[0].name.as_deref(), Some("get_weather"));
+        assert_eq!(calls[0].arguments, payload);
+    }
+
+    /// Text after the payload is still text, and none of the streamed argument bytes
+    /// may be repeated into it.
+    #[test]
+    fn named_guided_keeps_post_payload_text_out_of_the_arguments() {
+        let payload = r#"{"city": "Paris"}"#;
+        let input = format!("{payload}done");
+        let (calls, events) = streamed_named(&per_char(&input));
+        assert_eq!(joined_arguments(&calls), vec![(0, payload.to_string())]);
+        let text: String = events
+            .iter()
+            .filter_map(|e| match e {
+                UnifiedParserEvent::Text(t) => Some(t.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(text, "done", "post-payload text was lost or duplicated");
+    }
+
+    /// Truncation after the commit: whatever streamed stays streamed, nothing is
+    /// invented for the bytes that never arrived, and the released prefix must not
+    /// come back as visible text.
+    #[test]
+    fn named_guided_truncation_conserves_output() {
+        let payload = r#"{"city": "Par"#;
+        let (calls, events) = streamed_named(&per_char(payload));
+        assert_eq!(
+            calls
+                .iter()
+                .filter_map(|c| c.name.as_deref())
+                .collect::<Vec<_>>(),
+            vec!["get_weather"]
+        );
+        let streamed_args: String = calls.iter().map(|c| c.arguments.as_str()).collect();
+        assert_eq!(
+            streamed_args, payload,
+            "released bytes must be the arrivals"
+        );
+        let text: String = events
+            .iter()
+            .filter_map(|e| match e {
+                UnifiedParserEvent::Text(t) => Some(t.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert!(
+            text.is_empty(),
+            "recovery text leaked call envelope instead of staying empty: {text:?}"
+        );
+    }
+
+    /// Reuse: a second request must not inherit the first request's cursor offsets,
+    /// and a named cursor must still be named after the reset.
+    #[test]
+    fn named_guided_streaming_state_does_not_leak_across_requests() {
+        let payload = r#"{"city": "Paris"}"#;
+        let mut parser = qwen3_unified(&weather_tools());
+        let mut seen = Vec::new();
+        for request in 0..2 {
+            if request > 0 {
+                parser.reset();
+            }
+            parser
+                .initialize_request(stream_init(UnifiedToolOutputMode::GuidedJson {
+                    named_tool: Some("get_weather".to_string()),
+                }))
+                .expect("named guided init");
+            let mut calls = Vec::new();
+            for chunk in per_char(payload) {
+                for event in parser.push(chunk).expect("push") {
+                    if let UnifiedParserEvent::ToolCall(delta) = event {
+                        calls.push(delta);
+                    }
+                }
+            }
+            for event in parser.finish().expect("finish").events {
+                if let UnifiedParserEvent::ToolCall(delta) = event {
+                    calls.push(delta);
+                }
+            }
+            seen.push(joined_arguments(&calls));
+        }
+        assert_eq!(seen[0], vec![(0, payload.to_string())]);
+        assert_eq!(
+            seen[0], seen[1],
+            "the second request diverged from the first"
+        );
+    }
+
+    /// The named payload arriving after a thought, in one piece, must still stream
+    /// and must not swallow or duplicate the reasoning.
+    #[test]
+    fn named_guided_streams_after_reasoning() {
+        let payload = r#"{"city": "Paris"}"#;
+        let input = format!("<think>hmm</think>{payload}");
+        let (calls, events) = streamed_named(&per_char(&input));
+        assert_eq!(joined_arguments(&calls), vec![(0, payload.to_string())]);
+        let reasoning: String = events
+            .iter()
+            .filter_map(|e| match e {
+                UnifiedParserEvent::Reasoning(t) => Some(t.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(reasoning, "hmm");
     }
 }
 

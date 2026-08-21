@@ -31,6 +31,27 @@
 //! argument value to open with `{` is what makes that safe — a `null`, a string,
 //! a number or an array never reaches the commit point, so the shapes the
 //! contract voids are never put on the wire in the first place.
+//!
+//! # The two payload shapes
+//!
+//! `tool_choice` decides what the backend is constrained to emit, so it decides
+//! what the cursor is lexing:
+//!
+//! - **required** ([`GuidedJsonCursor::new`]) — an array (or a bare object) of
+//!   `{"name": …, "arguments": …}` envelopes. The name has to be *found*, and the
+//!   commit point is the `{` that opens that envelope's argument object.
+//! - **named** ([`GuidedJsonCursor::named`]) — the chosen tool's BARE argument
+//!   object, with no envelope at all. The name is not in the payload: the request
+//!   fixed it before the first byte arrived. So the commit point is the payload's
+//!   own opening `{`, and the whole payload from that brace to its matching `}`
+//!   is the argument set.
+//!
+//! Both modes keep the same rule about what may go on the wire — the first
+//! non-whitespace byte of the argument set must be `{`. A named payload that opens
+//! as a string, a number, `null` or an array is not an argument set, cannot be
+//! bound to the tool, and stays on the buffered path that already surfaces it as
+//! text. Committing it early would be the same unwithdrawable mistake the required
+//! mode refuses to make.
 
 use crate::tool_calling::traits::ToolCallDelta;
 
@@ -41,6 +62,22 @@ use crate::tool_calling::traits::ToolCallDelta;
 /// the same reason — recognising only `arguments` silently streamed nothing for a
 /// `parameters` call, and the assembled result arrived with empty arguments.
 const ARGUMENT_ALIASES: [&str; 2] = ["arguments", "parameters"];
+
+/// Which payload shape the cursor is lexing.
+///
+/// A mode rather than an `Option<String>` threaded through every method: the two
+/// shapes disagree about where the name comes from and where the argument object
+/// starts, and those two facts are the whole difference. Keeping them in one field
+/// means `reset` restores the mode too — a cursor that forgot it was named would
+/// silently lex the next request's arguments as a required envelope.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Mode {
+    /// `tool_choice=required`: envelopes carrying their own `name`.
+    Required,
+    /// `tool_choice={"type":"function","function":{"name":…}}`: bare arguments for
+    /// the tool the request already named.
+    Named { name: String },
+}
 
 /// Where the scanner sits inside a call object.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -59,7 +96,7 @@ enum Slot {
 /// `parse_required_guided_calls` will later hand back as that call's arguments — so
 /// the completion path can emit exactly the remainder without re-deriving spans.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct CommittedCall {
+pub struct CommittedCall {
     pub index: usize,
     pub name: String,
     pub released: usize,
@@ -95,7 +132,9 @@ struct Element {
 
 /// Forward-only lexer over one guided payload.
 #[derive(Debug)]
-pub(crate) struct GuidedJsonCursor {
+pub struct GuidedJsonCursor {
+    /// Which payload shape is being lexed; fixed at construction by `tool_choice`.
+    mode: Mode,
     /// Bytes already lexed. The scan never revisits them.
     scanned: usize,
     depth: i32,
@@ -129,8 +168,34 @@ impl Default for GuidedJsonCursor {
 }
 
 impl GuidedJsonCursor {
-    pub(crate) fn new() -> Self {
+    /// A cursor for a `required` payload: envelopes that carry their own names.
+    pub fn new() -> Self {
+        Self::in_mode(Mode::Required)
+    }
+
+    /// A cursor for a NAMED choice: the payload is `tool_name`'s bare argument
+    /// object, and the name rides the first delta because the request already
+    /// fixed it.
+    pub fn named(tool_name: impl Into<String>) -> Self {
+        Self::in_mode(Mode::Named {
+            name: tool_name.into(),
+        })
+    }
+
+    fn in_mode(mode: Mode) -> Self {
+        // The named mode's name is known NOW, before any byte arrives, so it is
+        // seeded here rather than discovered by the lexer. Everything downstream —
+        // `maybe_commit`, `CommittedCall`, `flush` — then works on both shapes
+        // unchanged, which is why there is one commit rule and not two.
+        let element = Element {
+            name: match &mode {
+                Mode::Required => None,
+                Mode::Named { name } => Some(name.clone()),
+            },
+            ..Element::default()
+        };
         Self {
+            mode,
             scanned: 0,
             depth: 0,
             in_string: false,
@@ -141,29 +206,33 @@ impl GuidedJsonCursor {
             disabled: false,
             slot: Slot::Key,
             pending_key: None,
-            element: Element::default(),
+            element,
             index: 0,
             committed: Vec::new(),
             released_end: 0,
         }
     }
 
-    pub(crate) fn reset(&mut self) {
-        *self = Self::new();
+    /// Back to the start of a payload — in the SAME mode. `tool_choice` belongs to
+    /// the request, not to the payload, so a reset between chunks (or between
+    /// requests, where the caller re-initialises) must not turn a named cursor into
+    /// a required one.
+    pub fn reset(&mut self) {
+        *self = Self::in_mode(self.mode.clone());
     }
 
     /// Calls already on the wire, in emission order.
-    pub(crate) fn committed(&self) -> &[CommittedCall] {
+    pub fn committed(&self) -> &[CommittedCall] {
         &self.committed
     }
 
-    pub(crate) fn has_committed(&self) -> bool {
+    pub fn has_committed(&self) -> bool {
         !self.committed.is_empty()
     }
 
     /// Absolute end of the bytes already released as call fragments, in the
     /// coordinates of the payload passed to [`Self::advance`].
-    pub(crate) fn released_end(&self) -> usize {
+    pub fn released_end(&self) -> usize {
         self.released_end
     }
 
@@ -173,7 +242,7 @@ impl GuidedJsonCursor {
     /// `payload` is the WHOLE accumulated payload, not just the new chunk — the
     /// cursor slices it from `scanned`, so the caller does not have to track which
     /// bytes it has already handed over.
-    pub(crate) fn advance(&mut self, payload: &str, out: &mut Vec<ToolCallDelta>) {
+    pub fn advance(&mut self, payload: &str, out: &mut Vec<ToolCallDelta>) {
         if self.disabled || payload.len() <= self.scanned {
             // Truncation (a reset mid-stream) would make the retained offsets lie.
             // The caller resets the cursor with the payload; nothing to do here.
@@ -204,6 +273,10 @@ impl GuidedJsonCursor {
         ch: char,
         out: &mut Vec<ToolCallDelta>,
     ) {
+        if let Mode::Named { .. } = self.mode {
+            self.step_named(payload, at, cut, ch, out);
+            return;
+        }
         if self.in_string {
             self.step_in_string(payload, at, ch);
             return;
@@ -302,6 +375,75 @@ impl GuidedJsonCursor {
                     }
                 }
             }
+        }
+    }
+
+    /// One character of the lex for a NAMED choice.
+    ///
+    /// There is no envelope to walk: the payload IS the argument object, so this
+    /// only has to find its opening `{`, track brace depth through strings, and
+    /// stop at the matching `}`. It shares `Element`, `maybe_commit` and `flush`
+    /// with the required mode so the commit rule and the released-byte accounting
+    /// have exactly one implementation.
+    fn step_named(
+        &mut self,
+        payload: &str,
+        at: usize,
+        cut: usize,
+        ch: char,
+        out: &mut Vec<ToolCallDelta>,
+    ) {
+        if self.in_string {
+            // `literal_start` is never set in this mode, so `close_literal` is a
+            // no-op: the only reason to track strings here is that a brace or a
+            // quote inside one must not move the depth.
+            self.step_in_string(payload, at, ch);
+            return;
+        }
+
+        if self.element.args_start.is_none() {
+            // Before the object opener. Whitespace is structural; anything that is
+            // not `{` means the payload is not an argument set at all, and the
+            // buffered path owns it.
+            if ch.is_whitespace() {
+                return;
+            }
+            if ch != '{' {
+                self.disabled = true;
+                return;
+            }
+            self.element.args_start = Some(at);
+            self.element.in_args = true;
+            self.depth = 1;
+            self.root_seen = true;
+            // The name is already known, so the commit lands on this brace — the
+            // earliest instant the payload is provably an argument set.
+            self.maybe_commit(out);
+            return;
+        }
+
+        if self.element.args_end.is_some() {
+            // Past the object's `}`. Trailing bytes belong to the buffer's tail
+            // handling, never to the arguments.
+            return;
+        }
+
+        match ch {
+            '"' => self.in_string = true,
+            '{' | '[' => self.depth += 1,
+            '}' | ']' => {
+                // Depth back to zero ends the argument set. A MISMATCHED closer
+                // ends it here too: the payload is malformed, the buffered path
+                // will say so, and the alternative is releasing every byte after
+                // it as arguments because the real close never arrives.
+                self.depth -= 1;
+                if self.depth == 0 {
+                    self.element.args_end = Some(at + ch.len_utf8());
+                    self.element.in_args = false;
+                    self.flush(payload, cut, out);
+                }
+            }
+            _ => {}
         }
     }
 
@@ -437,6 +579,18 @@ mod tests {
     /// Drive a payload one character at a time and collect every delta.
     fn stream(payload: &str) -> Vec<ToolCallDelta> {
         let mut cursor = GuidedJsonCursor::new();
+        let mut out = Vec::new();
+        let mut seen = String::new();
+        for ch in payload.chars() {
+            seen.push(ch);
+            cursor.advance(&seen, &mut out);
+        }
+        out
+    }
+
+    /// Drive a NAMED payload one character at a time and collect every delta.
+    fn stream_named(tool: &str, payload: &str) -> Vec<ToolCallDelta> {
+        let mut cursor = GuidedJsonCursor::named(tool);
         let mut out = Vec::new();
         let mut seen = String::new();
         for ch in payload.chars() {
@@ -720,5 +874,168 @@ mod tests {
         assert_eq!(committed[0].index, 0);
         assert_eq!(committed[0].name, "f");
         assert_eq!(committed[0].released, r#"{"x":1}"#.len());
+    }
+
+    // ---- named choice: the payload is the tool's BARE argument object ----
+
+    #[test]
+    fn a_named_payload_streams_its_bare_arguments() {
+        let payload = r#"{"city":"Paris","unit":"c"}"#;
+        let deltas = stream_named("get_weather", payload);
+        assert_eq!(names(&deltas), vec![(0, "get_weather".to_string())]);
+        assert_eq!(arguments(&deltas), vec![(0, payload.to_string())]);
+        let frames = deltas.iter().filter(|d| !d.arguments.is_empty()).count();
+        assert!(frames > 1, "arguments arrived in {frames} frame(s)");
+    }
+
+    #[test]
+    fn a_named_name_rides_only_the_first_delta() {
+        let deltas = stream_named("get_weather", r#"{"city":"Paris"}"#);
+        let carrying: Vec<usize> = deltas
+            .iter()
+            .enumerate()
+            .filter(|(_, d)| d.name.is_some())
+            .map(|(at, _)| at)
+            .collect();
+        assert_eq!(carrying, vec![0], "the name must ride exactly one delta");
+        assert!(
+            deltas[0].arguments.is_empty(),
+            "the commit frame carries the name, not bytes: {:?}",
+            deltas[0]
+        );
+    }
+
+    #[test]
+    fn a_named_payload_that_is_not_an_object_never_commits() {
+        for payload in [
+            r#""just a string""#,
+            "42",
+            "null",
+            "[1,2]",
+            "true",
+            r#"  "leading whitespace then a string""#,
+        ] {
+            let deltas = stream_named("get_weather", payload);
+            assert!(
+                deltas.is_empty(),
+                "{payload} committed a shape that is not an argument set: {deltas:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_named_payload_skips_whitespace_before_its_opener() {
+        let deltas = stream_named("get_weather", "  \n\t{\"city\":\"Paris\"}");
+        assert_eq!(names(&deltas), vec![(0, "get_weather".to_string())]);
+        assert_eq!(
+            arguments(&deltas),
+            vec![(0, r#"{"city":"Paris"}"#.to_string())],
+            "leading whitespace is structural, not an argument byte"
+        );
+    }
+
+    #[test]
+    fn a_named_brace_inside_a_string_does_not_close_the_object() {
+        let deltas = stream_named("f", r#"{"s":"}{[]"}"#);
+        assert_eq!(arguments(&deltas), vec![(0, r#"{"s":"}{[]"}"#.to_string())]);
+    }
+
+    #[test]
+    fn a_named_payload_never_releases_past_its_closing_brace() {
+        // Bytes after the object belong to the buffer's tail handling. Releasing
+        // them would put non-argument bytes into the tool's argument set.
+        let payload = r#"{"city":"Paris"} trailing"#;
+        let deltas = stream_named("get_weather", payload);
+        assert_eq!(
+            arguments(&deltas),
+            vec![(0, r#"{"city":"Paris"}"#.to_string())]
+        );
+        let mut cursor = GuidedJsonCursor::named("get_weather");
+        let mut out = Vec::new();
+        cursor.advance(payload, &mut out);
+        assert_eq!(cursor.released_end(), r#"{"city":"Paris"}"#.len());
+    }
+
+    #[test]
+    fn named_committed_records_track_released_bytes() {
+        let payload = r#"{"x":1}"#;
+        let mut cursor = GuidedJsonCursor::named("f");
+        let mut out = Vec::new();
+        cursor.advance(payload, &mut out);
+        let committed = cursor.committed();
+        assert_eq!(committed.len(), 1, "a named choice is exactly one call");
+        assert_eq!(committed[0].index, 0);
+        assert_eq!(committed[0].name, "f");
+        assert_eq!(committed[0].released, payload.len());
+        assert!(!committed[0].ambiguous);
+    }
+
+    #[test]
+    fn a_named_reset_stays_named() {
+        // `tool_choice` belongs to the request. A reset that forgot the mode would
+        // lex the next payload as a required envelope and stream nothing.
+        let mut cursor = GuidedJsonCursor::named("f");
+        let mut out = Vec::new();
+        cursor.advance(r#"{"x":1}"#, &mut out);
+        cursor.reset();
+        out.clear();
+        cursor.advance(r#"{"y":2}"#, &mut out);
+        assert_eq!(names(&out), vec![(0, "f".to_string())]);
+        assert_eq!(arguments(&out), vec![(0, r#"{"y":2}"#.to_string())]);
+    }
+
+    #[test]
+    fn named_whole_input_and_every_split_agree() {
+        // Multi-byte content on purpose: `advance` takes `&str`, so a split can only
+        // land on a char boundary, and the released fragments must never cut one.
+        let payload = r#"{"city":"東京","emoji":"😀","note":"a\"b"}"#;
+        let whole = {
+            let mut cursor = GuidedJsonCursor::named("get_weather");
+            let mut out = Vec::new();
+            cursor.advance(payload, &mut out);
+            out
+        };
+        assert_eq!(arguments(&whole), vec![(0, payload.to_string())]);
+
+        let per_char = stream_named("get_weather", payload);
+        assert_eq!(names(&per_char), names(&whole));
+        assert_eq!(arguments(&per_char), arguments(&whole));
+
+        for split in 1..payload.len() {
+            if !payload.is_char_boundary(split) {
+                continue;
+            }
+            let mut cursor = GuidedJsonCursor::named("get_weather");
+            let mut out = Vec::new();
+            cursor.advance(&payload[..split], &mut out);
+            cursor.advance(payload, &mut out);
+            assert_eq!(names(&out), names(&whole), "names differ at split {split}");
+            assert_eq!(
+                arguments(&out),
+                arguments(&whole),
+                "arguments differ at split {split}"
+            );
+            for delta in &out {
+                assert!(
+                    std::str::from_utf8(delta.arguments.as_bytes()).is_ok(),
+                    "split {split} released a fragment that is not valid UTF-8"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn a_truncated_named_payload_releases_only_what_arrived() {
+        let payload = r#"{"city":"Par"#;
+        let deltas = stream_named("get_weather", payload);
+        assert_eq!(names(&deltas), vec![(0, "get_weather".to_string())]);
+        assert_eq!(arguments(&deltas), vec![(0, payload.to_string())]);
+    }
+
+    #[test]
+    fn the_required_mode_still_needs_a_name_from_the_payload() {
+        // The named seed must not leak into the required mode: a nameless required
+        // element still may not commit.
+        assert!(stream(r#"[{"arguments":{"a":1}}]"#).is_empty());
     }
 }

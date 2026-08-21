@@ -1109,6 +1109,8 @@ dependencies = [
  "anyhow",
  "dynamo-parsers",
  "dynamo-parsers-v2",
+ "dynamo-protocols",
+ "futures",
  "serde",
  "serde_json",
  "serde_yaml",
