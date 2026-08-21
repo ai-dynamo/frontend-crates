@@ -202,12 +202,20 @@ unified:
     leak_markers: []
   muse_glimmer:
     native: true
-    # No `initialize_request` override, so the trait default rejects prefilled
-    # channels and guided tool output. Request-scoped scenarios are not emitted
-    # for this family: the harness applies `init` before parsing and would panic
-    # on the rejection, so emitting them would fail the run rather than record a
-    # divergence.
-    request_modes: false
+    # Prefilled channels ARE supported: `initialize_request` opens the stream in the
+    # channel the prompt already opened, which is a two-line change for this grammar.
+    #
+    # Guided tool output is not, and the reason is structural rather than unfinished
+    # work: `GuidedState` is built around a `ReasoningSpec` (an open/close marker PAIR)
+    # and muse has none — reasoning opens with a dynamic `to=self<|message|>` header it
+    # shares with the content and tool channels. The harness applies `init` before
+    # parsing and would panic on the rejection, so those scenarios are not emitted.
+    #
+    # TODO(muse-guided-output): 37 of the 81 unified scenarios stay skipped for this
+    # family. Closing it means teaching the guided machinery to work WITHOUT a marker
+    # pair, which is a change to the shared unified layer, not to muse. Flip this key to
+    # `true` in the same change and those scenarios come back automatically.
+    guided_tool_output: false
     reasoning_parser: muse_glimmer
     tool_parser: muse_glimmer
     golden_spec: muse_glimmer.yaml

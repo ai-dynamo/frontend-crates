@@ -27,11 +27,15 @@
 
 use crate::tool_calling::muse_glimmer::{MuseChannelScanner, muse_scanner};
 use crate::tool_calling::traits::{Result, Tool};
-use crate::unified::{UnifiedParser, UnifiedParserEvent, UnifiedParserOutput};
+use crate::unified::{UnifiedParser, UnifiedParserEvent, UnifiedParserInit, UnifiedParserOutput};
 
 impl UnifiedParser for MuseChannelScanner {
     fn preserve_special_tokens(&self) -> bool {
         true
+    }
+
+    fn initialize_request(&mut self, init: UnifiedParserInit) -> Result<()> {
+        self.apply_init(init)
     }
 
     /// The trait default returns an empty string and clears nothing. Muse buffers on
@@ -764,54 +768,47 @@ mod tests {
             " to=self<|message|>weird pota",
             "to=f<|message|><atem:invoke name=\"f\"></atem:invoke><|eom|>",
         ]);
+        // The `<|message|>` is stripped now that reasoning runs through `emit_reasoning`.
+        // The ATEM markup beside it still is not: that is the priced cost of
+        // `bare_header_pos` refusing an unanchored cut, which the strip cannot reach.
         assert_eq!(
             out,
             vec![reasoning(
-                "weird potato=f<|message|><atem:invoke name=\"f\"></atem:invoke>"
+                "weird potato=f<atem:invoke name=\"f\"></atem:invoke>"
             )]
         );
     }
 
+    /// `I3` says a control marker never appears inside a text OR a reasoning payload.
+    /// Both routes now honour it: the same bytes come back stripped either way.
+    ///
+    /// `<|start|>`, `<|eom|>` and `<|eot|>` all CUT a body, so `<|message|>` is the one
+    /// marker that can reach a reader at all, which is why it is the case pinned here.
+    ///
+    /// This puts Dynamo AHEAD of both engines rather than level with them, deliberately:
+    /// vLLM's `_CHANNEL_HEADER_RE` requires a recipient, so a bare `<|message|>` never
+    /// ends a body and both its batch `_REASONING_RE` and its streaming `_classify_bodies`
+    /// return `a<|message|>b`; SGLang's `MuseGlimmerDetector` appends the body to
+    /// `reasoning_parts` with no strip. Expect the conformance suite to score these as
+    /// divergences until the engines follow.
     #[test]
-    fn an_orphan_marker_survives_on_the_reasoning_route_but_not_the_content_one() {
-        // The marker in the expected string above is not incidental, so pin it on its
-        // own. Every route into visible text runs the strip, and the reasoning route
-        // does not. `<|start|>`, `<|eom|>` and `<|eot|>` all CUT a body, so
-        // `<|message|>` is the one marker that can reach a reader, and the same bytes
-        // therefore come back stripped as an answer and intact as a thought.
+    fn an_orphan_marker_is_stripped_on_the_reasoning_route_as_well_as_the_content_one() {
         assert_eq!(
             batch(" to=self<|message|>note the <|message|> token<|eom|>"),
-            vec![reasoning("note the <|message|> token")]
+            vec![reasoning("note the  token")]
         );
         assert_eq!(
             batch(" to=user<|message|>note the <|message|> token<|eot|>"),
             vec![text("note the  token")]
         );
 
-        // ADOPTED as the contract, on the engine reference this comment used to say was
-        // missing. vLLM PR #51655 merged 2026-08-14, so both references now exist and
-        // both KEEP the marker:
-        //
-        //   vLLM  `_CHANNEL_HEADER_RE` is `to=<recipient><|message|>`, so a BARE
-        //         `<|message|>` never ends a body; `_classify_bodies` and the batch
-        //         `_REASONING_RE` (`to=self<|message|>(.*?)<|eom|>`) both return
-        //         `a<|message|>b`.
-        //   SGL   `MuseGlimmerDetector::_consume` appends the body verbatim to
-        //         `reasoning_parts` with no strip.
-        //
-        // So stripping here would make Dynamo the ONLY implementation that strips, and
-        // trade an I3 reading for a parity divergence on a family the conformance suite
-        // scores against those two engines. I3 stays unmet on this route by agreement
-        // with the engines, not by oversight; closing it belongs upstream first.
-        // Stripping also would not make the mid-word case above clean, because the ATEM
-        // markup beside the marker stays either way: that one is the priced cost of
-        // `bare_header_pos` refusing an unanchored cut, not something the strip reaches.
+        // The two routes must agree byte for byte on identical input.
         assert_eq!(
             batch(" to=self<|message|>a<|message|>b<|eom|>")
                 .into_iter()
                 .chain(batch(" to=user<|message|>a<|message|>b<|eot|>"))
                 .collect::<Vec<_>>(),
-            vec![reasoning("a<|message|>b"), text("ab")]
+            vec![reasoning("ab"), text("ab")]
         );
     }
 
@@ -885,32 +882,37 @@ mod tests {
     }
 
     #[test]
-    fn an_empty_thought_still_carries_the_adjacency_newline() {
-        // The separator is emitted when the `to=self` header resolves, so a thought
-        // that turns out EMPTY still contributes it. That reads like a bug against the
-        // empty-block contract, and it is what BOTH references do:
+    fn an_empty_thought_adds_no_separator() {
+        // The adjacency newline used to be pushed when the `to=self` header resolved,
+        // before the body produced anything, so a thought that turned out EMPTY still
+        // added visible whitespace to the previous one. The separator is now OWED at the
+        // header and paid by the first bytes that actually arrive.
         //
-        //   SGL   `_consume` appends "\n" on the header when `_saw_reasoning_block`,
-        //         before the body is known.
-        //   vLLM  batch `_COLLAPSE_RE.sub("\n", ..)` rewrites the inter-block gap, so
-        //         `extract_reasoning` returns "a\n" for exactly this input.
-        //
-        // vLLM's STREAM path returns "a" instead, disagreeing with its own batch path,
-        // which is why this is pinned against the batch parsers — the comparison this
-        // family's join was written to match.
+        // Deliberately ahead of both engines: SGLang appends "\n" on the header when
+        // `_saw_reasoning_block` is set, before the body is known, and vLLM's batch
+        // `_COLLAPSE_RE` rewrites the inter-block gap so `extract_reasoning` returns
+        // "a\n" for this input. (vLLM's STREAM path returns "a", disagreeing with its own
+        // batch path.) Expect a conformance divergence until the engines follow.
         let empty_second = concat!(
             " to=self<|message|>a<|eom|>",
             "<|start|>assistant to=self<|message|><|eom|>"
         );
-        assert_eq!(events(&[empty_second]), vec![reasoning("a\n")]);
-        assert_eq!(batch(empty_second), vec![reasoning("a\n")]);
+        assert_eq!(events(&[empty_second]), vec![reasoning("a")]);
+        assert_eq!(batch(empty_second), vec![reasoning("a")]);
 
-        // The join this rides on: two NON-empty adjacent thoughts read as one run.
+        // The join itself must survive: two NON-empty adjacent thoughts still join, and
+        // an empty block between two of them is transparent rather than separator-eating.
         let two_adjacent = concat!(
             " to=self<|message|>a<|eom|>",
             "<|start|>assistant to=self<|message|>b<|eom|>"
         );
+        let empty_between = concat!(
+            " to=self<|message|>a<|eom|>",
+            "<|start|>assistant to=self<|message|><|eom|>",
+            "<|start|>assistant to=self<|message|>b<|eom|>"
+        );
         assert_eq!(events(&[two_adjacent]), vec![reasoning("a\nb")]);
+        assert_eq!(events(&[empty_between]), vec![reasoning("a\nb")]);
     }
 
     #[test]

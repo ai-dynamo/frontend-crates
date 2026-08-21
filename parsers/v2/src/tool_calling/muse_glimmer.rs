@@ -33,7 +33,9 @@ use crate::tool_calling::scan::{
 };
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
 use crate::tool_calling::v1core::ToolDefinition;
-use crate::unified::{Kind, UnifiedParserEvent};
+use crate::unified::{
+    Kind, UnifiedParserEvent, UnifiedParserInit, UnifiedParserStartingState, UnifiedToolOutputMode,
+};
 
 const START: &str = "<|start|>";
 const MESSAGE: &str = "<|message|>";
@@ -364,6 +366,18 @@ pub(crate) struct MuseChannelScanner {
     /// A reasoning body closed and nothing else has been emitted since, so the
     /// NEXT reasoning body is adjacent to it and joins with a newline.
     pending_reasoning_join: bool,
+    /// An adjacent reasoning body opened and OWES that newline. Held until the body
+    /// produces bytes, so an EMPTY thought contributes nothing: emitting at the header
+    /// made it add visible whitespace, against the empty-block contract.
+    reasoning_join_armed: bool,
+    /// The reasoning body currently open has emitted at least once. Tracked across the
+    /// WHOLE body, not just its closing chunk: a body that streamed incrementally has
+    /// nothing left at the terminator, and reading only that last emit made adjacency
+    /// depend on where the chunk boundaries fell.
+    reasoning_body_emitted: bool,
+    /// Any byte has been fed. `initialize_request` is a BEFORE-parsing hook, so it
+    /// must reject a late call rather than silently reinterpret a live stream.
+    started: bool,
     next_index: usize,
 }
 
@@ -382,6 +396,9 @@ pub(crate) fn muse_scanner(tools: &[Tool]) -> MuseChannelScanner {
         allow_bare_header: true,
         last_body_char: None,
         pending_reasoning_join: false,
+        reasoning_join_armed: false,
+        reasoning_body_emitted: false,
+        started: false,
         next_index: 0,
     }
 }
@@ -403,8 +420,44 @@ impl MuseChannelScanner {
         chunk: &str,
         out: &mut Vec<UnifiedParserEvent>,
     ) -> anyhow::Result<()> {
+        self.started = true;
         self.buffer.push_str(chunk);
         self.drain(out)
+    }
+
+    /// Apply the resolved request configuration before any byte is parsed.
+    ///
+    /// `starting_state` is cheap for this grammar: the prompt consumed a channel header,
+    /// so the stream simply opens in that channel instead of `Idle`. It is the whole
+    /// reason `State` is an enum rather than a bool.
+    ///
+    /// Guided tool output is REJECTED, and the rejection is the honest answer rather than
+    /// a gap. `GuidedState` is built around a `ReasoningSpec` — an open/close marker PAIR
+    /// — and muse has none: reasoning opens with a dynamic `to=self<|message|>` header it
+    /// shares with the content and tool channels. Supporting guided muse means teaching
+    /// the guided machinery to work without a marker pair, which is a change to the
+    /// shared unified layer, not to this family.
+    pub(crate) fn apply_init(&mut self, init: UnifiedParserInit) -> anyhow::Result<()> {
+        if self.started {
+            anyhow::bail!("cannot initialize the muse parser after parsing has started");
+        }
+        // Validate BEFORE mutating, so a rejected initialize is a no-op and a caller that
+        // retries in a supported mode is not building on half-applied state.
+        if init.tool_output_mode != UnifiedToolOutputMode::Native {
+            anyhow::bail!(
+                "muse_glimmer has no reasoning marker pair, so the guided-JSON path has no                  reasoning spec to build on; use native tool output"
+            );
+        }
+        self.state = match init.starting_state {
+            UnifiedParserStartingState::None => State::Idle,
+            UnifiedParserStartingState::Reasoning => State::InReasoning,
+            UnifiedParserStartingState::Response => State::InContent,
+        };
+        // A header the prompt already consumed cannot arrive again, so the turn-start
+        // latch only stays armed when this stream really does begin at `Idle`.
+        self.allow_bare_header = init.starting_state != UnifiedParserStartingState::Response;
+        self.last_body_char = None;
+        Ok(())
     }
 
     pub(crate) fn finish_ordered(&mut self) -> anyhow::Result<Vec<UnifiedParserEvent>> {
@@ -423,6 +476,35 @@ impl MuseChannelScanner {
         Ok(ToolParseResult::from_deltas(self.finish_ordered()?))
     }
 
+    /// Emit a reasoning run: the ONE route into the reasoning channel.
+    ///
+    /// Strips orphan framing exactly as `emit_text` does. `I3` covers reasoning no less
+    /// than text, but only the text route ran `stripped()`, so a complete orphan marker
+    /// inside a thought reached the client verbatim on all three reasoning routes
+    /// (closed body, open body, finish).
+    ///
+    /// The owed adjacency newline is paid HERE rather than at the header, so a thought
+    /// that turns out empty contributes nothing at all.
+    ///
+    /// NOTE: this puts Dynamo AHEAD of both engines rather than level with them. vLLM's
+    /// `_CHANNEL_HEADER_RE` needs a recipient, so a bare `<|message|>` never ends a body
+    /// and its parser returns the marker intact; SGLang's `MuseGlimmerDetector` appends
+    /// the body unstripped and pushes the separator on the header. Adopting the stricter
+    /// reading is deliberate — the conformance suite will score these two cases as
+    /// divergences until the engines follow.
+    fn emit_reasoning(&mut self, out: &mut Vec<UnifiedParserEvent>, text: &str) -> bool {
+        let text = stripped(text);
+        if text.is_empty() {
+            return false;
+        }
+        if std::mem::take(&mut self.reasoning_join_armed) {
+            push_run(out, Kind::Reasoning, "\n");
+        }
+        push_run(out, Kind::Reasoning, &text);
+        self.reasoning_body_emitted = true;
+        true
+    }
+
     /// Emit visible content, clearing the reasoning-join latch: a thought separated
     /// from the next by content is no longer adjacent to it. The strip runs on every
     /// route into text, content bodies included, so a quoted `to=x<|message|>` never
@@ -434,6 +516,7 @@ impl MuseChannelScanner {
         }
         push_run(out, Kind::Text, &text);
         self.pending_reasoning_join = false;
+        self.reasoning_join_armed = false;
     }
 
     /// Byte offset where the OPEN body ends, ignoring the bare-header recovery
@@ -485,7 +568,10 @@ impl MuseChannelScanner {
                 if let Some(delta) = self.emitter.parse_invoke(&invoke, self.next_index)? {
                     emit_call(out, delta);
                     self.next_index += 1;
+                    // A call ends adjacency exactly as content does, so an owed
+                    // separator from a preceding empty thought is void.
                     self.pending_reasoning_join = false;
+                    self.reasoning_join_armed = false;
                 }
                 continue;
             }
@@ -525,8 +611,12 @@ impl MuseChannelScanner {
                 self.buffer.drain(..term_len);
                 match self.state {
                     State::InReasoning => {
-                        push_run(out, Kind::Reasoning, &body);
-                        self.pending_reasoning_join = true;
+                        // Only a thought that PRODUCED something can be adjacent to the
+                        // next one. A redundant opener cuts a zero-length body, and
+                        // arming on that prefixed the real thought with a newline.
+                        self.emit_reasoning(out, &body);
+                        self.pending_reasoning_join =
+                            std::mem::take(&mut self.reasoning_body_emitted);
                     }
                     State::InContent => self.emit_text(out, &body),
                     // Residual markup around the invokes already emitted above is
@@ -557,7 +647,9 @@ impl MuseChannelScanner {
                 self.last_body_char = Some(c);
             }
             match self.state {
-                State::InReasoning => push_run(out, Kind::Reasoning, &body),
+                State::InReasoning => {
+                    self.emit_reasoning(out, &body);
+                }
                 State::InContent => self.emit_text(out, &body),
                 State::Idle | State::InToolChannel => unreachable!("handled above"),
             }
@@ -593,9 +685,10 @@ impl MuseChannelScanner {
                 // Adjacent thoughts join with a newline, matching v1 and both
                 // engines' single `reasoning_text` field; a thought after a call or
                 // answer starts clean instead (the latch is cleared on emit).
-                if std::mem::take(&mut self.pending_reasoning_join) {
-                    push_run(out, Kind::Reasoning, "\n");
-                }
+                // `|=`, not `=`: an owed separator SURVIVES an intervening empty
+                // thought. Overwriting it made the empty block eat the newline
+                // between the two real thoughts around it.
+                self.reasoning_join_armed |= std::mem::take(&mut self.pending_reasoning_join);
                 self.state = State::InReasoning;
             }
             Some(rcpt) if rcpt != USER_RECIPIENT => self.state = State::InToolChannel,
@@ -643,6 +736,8 @@ impl MuseChannelScanner {
         self.allow_bare_header = true;
         self.last_body_char = None;
         self.pending_reasoning_join = false;
+        self.reasoning_join_armed = false;
+        self.reasoning_body_emitted = false;
         self.next_index = 0;
         (
             std::mem::take(&mut self.buffer),
@@ -675,7 +770,9 @@ impl MuseChannelScanner {
                 let text = flush_open_text(&buffered);
                 self.emit_text(out, &text);
             }
-            State::InReasoning => push_run(out, Kind::Reasoning, &flush_open_text(&buffered)),
+            State::InReasoning => {
+                self.emit_reasoning(out, &flush_open_text(&buffered));
+            }
             // Complete invokes already emitted during `push`; a truncated one is
             // dropped, markup and all, because the spec requires the literal close.
             State::InToolChannel => {

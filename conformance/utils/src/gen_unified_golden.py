@@ -33,10 +33,11 @@ _MANIFEST = yaml.safe_load(markers.parser_families_path().read_text())["unified"
 FAMILIES = sorted(_MANIFEST)
 FAM_FILE = {f: r["golden_spec"] for f, r in _MANIFEST.items()}
 UNIFIED_FAMILIES = {f for f, r in _MANIFEST.items() if r.get("native")}
-# Families whose unified parser accepts a request-scoped `init`. Every family
-# that runs on the shared scanner does; one that inherits the trait default
-# rejects it, so the manifest opts that family out by name.
-REQUEST_MODE_FAMILIES = {f for f, r in _MANIFEST.items() if r.get("request_modes", True)}
+# Families whose unified parser accepts GUIDED tool output. Every family on the shared
+# scanner does; a family with no reasoning marker pair has nothing for the guided
+# machinery to build on, so the manifest opts it out by name. Prefilled channels are a
+# separate axis and are supported everywhere, so they are not gated.
+GUIDED_FAMILIES = {f for f, r in _MANIFEST.items() if r.get("guided_tool_output", True)}
 
 GRAMMAR_NOTE = {
     "gemma4": "reasoning `<|channel>thought\\n...<channel|>`, tool `<|tool_call>call:NAME{key:<|\"|>value<|\"|>}<tool_call|>` (string values wrapped in `<|\"|>`; an embedded `<tool_call|>` inside a `<|\"|>` string is data, not the end marker).",
@@ -839,6 +840,11 @@ EDGE = [
         "qwen3": ("checking weather</think><tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
                   D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state; conformance captures default generation only"),
                   {"verdict": "match", "note": "Dynamo v2 unified parser with starting_state=Reasoning"}),
+        # The prompt consumed `<|start|>assistant to=self<|message|>`, so the stream opens
+        # INSIDE the thought and its first `<|eom|>` closes it.
+        "muse_glimmer": ("checking weather<|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"city\">Paris</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|>",
+                         V_MUSE,
+                         {"verdict": "match", "note": "starting_state=Reasoning opens the scanner in the to=self channel"}),
         "gemma4": ("checking weather<channel|><|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|>", M, M),
         "kimi_k2": ("checking weather</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>", M, M),
      }),
@@ -854,6 +860,9 @@ EDGE = [
         "qwen3": ("weighing options</think>Here's what I found: <tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
                   D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state; conformance captures default generation only"),
                   {"verdict": "match", "note": "reasoning -> text -> call, all three ordered in one prefilled stream"}),
+        "muse_glimmer": ("weighing options<|eom|><|start|>assistant to=user<|message|>Here's what I found: <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"city\">Paris</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|>",
+                         V_MUSE,
+                         {"verdict": "match", "note": "all three channels ordered out of one prefilled stream"}),
         "gemma4": ("weighing options<channel|>Here's what I found: <|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|>", M, M),
         "kimi_k2": ("weighing options</think>Here's what I found: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>", M, M),
      }),
@@ -868,6 +877,9 @@ EDGE = [
         "qwen3": ("no tool needed</think>The answer is 42.",
                   D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state; conformance captures default generation only"),
                   {"verdict": "match", "note": "closing a prefilled thought returns to visible content"}),
+        "muse_glimmer": ("no tool needed<|eom|><|start|>assistant to=user<|message|>The answer is 42.<|eot|>",
+                         V_MUSE,
+                         {"verdict": "match", "note": "closing a prefilled thought returns the stream to visible content"}),
         "gemma4": ("no tool needed<channel|>The answer is 42.", M, M),
         "kimi_k2": ("no tool needed</think>The answer is 42.", M, M),
      }),
@@ -904,6 +916,9 @@ EDGE = [
         "qwen3": ("output<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
                   D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state; conformance captures default generation only"),
                   {"verdict": "match", "note": "Dynamo v2 unified parser with starting_state=Response and tool_output_mode=Native"}),
+        "muse_glimmer": ("output<|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"city\">Paris</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|>",
+                         V_MUSE,
+                         {"verdict": "match", "note": "starting_state=Response opens the scanner in the to=user channel"}),
         "gemma4": ("output<|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|>", M, M),
         "kimi_k2": ("output<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>",
                     M,
@@ -921,6 +936,11 @@ EDGE = [
      {"finish_reason": "stop"},
      {
         "gemma4": ("<|channel>thought\nchecking weather<channel|><|tool_call>call:get_weather{city:<|\"|>London<|\"|>}<tool_call|>", M, M),
+        # Muse's opener is the routed header itself. Re-emitting it cuts a ZERO-length
+        # body, which must neither emit an event nor arm the adjacency newline.
+        "muse_glimmer": ("<|start|>assistant to=self<|message|>checking weather<|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"city\">London</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|>",
+                         V_MUSE,
+                         {"verdict": "match", "note": "the echoed header is consumed, not leaked, and adds no separator"}),
         "qwen3": ("<think>checking weather</think><tool_call>\n<function=get_weather>\n<parameter=city>\nLondon\n</parameter>\n</function>\n</tool_call>", M, M),
         "kimi_k2": ("<think>checking weather</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"London\"}<|tool_call_end|><|tool_calls_section_end|>", M, M),
      }),
@@ -937,6 +957,9 @@ EDGE = [
         "gemma4": ("analyzing data<channel|><|tool_call>call:get_weather{city:<|\"|>Par",
                    D("ERROR", "native Gemma4UnifiedParser finish() returns a hard Err on a partial call rather than recovering"),
                    {"verdict": "match", "note": "P2: drop the partial trailing call, keep the prefilled reasoning"}),
+        "muse_glimmer": ("analyzing data<|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"city\">Par",
+                         V_MUSE,
+                         {"verdict": "match", "note": "P2: the unterminated invoke is dropped, the prefilled thought survives"}),
         "qwen3": ("analyzing data</think><tool_call>\n<function=get_weather>\n<parameter=city>\nPar",
                   {"verdict": "match", "note": "P2: drop the unterminated call and keep prefilled output"},
                   {"verdict": "match", "note": "P2: v2 drops the partial trailing call, keeps the prefilled reasoning"}),
@@ -982,6 +1005,16 @@ EDGE = [
      {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None},
      {"finish_reason": "stop"},
      {
+        # Muse answers this scenario DIFFERENTLY from the marker-pair families, and the
+        # difference is the point. Response turns the turn-start latch off, so the bare
+        # `to=self<|message|>` is prose rather than a live header — the routing is
+        # correctly not honoured. But muse's markers ARE special tokens, so `I3` strips
+        # them from the text on the way out: they never reach the client, markers and all.
+        # The recipient word survives because it is ordinary characters, not a marker.
+        "muse_glimmer": ("to=self<|message|>literal<|eom|> then a call<|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"city\">Paris</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|>",
+                         V_MUSE,
+                         {"verdict": "match", "note": "the header is not honoured as routing (Response clears the latch), and I3 strips the markers themselves from the text"},
+                         "to=selfliteral then a call"),
         "qwen3": ("<think>literal</think> then a call<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
                   D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state; it reads the markers as a reasoning span"),
                   {"verdict": "match", "note": "reasoning disabled, so the markers stay literal text"},
@@ -1006,6 +1039,9 @@ EDGE = [
         "gemma4": ("Working on it... <|tool_call>call:get_weather{city:<|\"|>Par",
                    D("ERROR", "native Gemma4UnifiedParser finish() returns a hard Err on a partial call rather than recovering"),
                    {"verdict": "match", "note": "P2: keep the leading visible prose, drop the partial call"}),
+        "muse_glimmer": ("Working on it... <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"city\">Par",
+                         V_MUSE,
+                         {"verdict": "match", "note": "P2: the leading visible prose survives, the partial call is dropped"}),
         "qwen3": ("Working on it... <tool_call>\n<function=get_weather>\n<parameter=city>\nPar",
                   {"verdict": "match", "note": "P2: keep leading prose and drop the unterminated call"},
                   {"verdict": "match", "note": "P2: v2 keeps the leading prose and drops the partial call"}),
@@ -1256,8 +1292,9 @@ def build_cases(fam):
 
         # A family that rejects the mode cannot produce a cell for it. The harness
         # applies `init` before parsing and panics on the rejection, so the case is
-        # skipped rather than recorded as a divergence.
-        if _init_is_request_scoped(init) and fam not in REQUEST_MODE_FAMILIES:
+        # skipped rather than recorded as a divergence. Only GUIDED output is gated;
+        # a prefilled starting state is honoured by every family.
+        if (init or {}).get("tool_output_mode", "Native") != "Native" and fam not in GUIDED_FAMILIES:
             continue
 
         cid = f"UNIFIED.{name}.{fam}"
