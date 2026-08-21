@@ -49,6 +49,7 @@
 //! divergence is stated at the item.
 
 mod guided_cursor;
+pub mod muse_glimmer;
 pub mod qwen3;
 
 use std::collections::BTreeMap;
@@ -2336,6 +2337,7 @@ macro_rules! unified_registry {
 
 unified_registry! {
     "qwen3" | "qwen3_coder" => qwen3::qwen3_unified,
+    "muse_glimmer" => muse_glimmer::muse_glimmer_unified,
 }
 
 /// Stderr instrumentation for the unified path under `DYNAMO_PARSERS_DEBUG`.

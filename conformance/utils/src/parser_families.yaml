@@ -33,6 +33,9 @@ families:
   # mapping them here only affects 0.24.0+ captures.
   minimax_m3:     {vllm_python: minimax_m3,     vllm_rust: minimax_m3,   sglang_python: minimax-m3,  dynamo_v2: minimax_m3,  preferred_input: text}
   mistral:        {vllm_python: mistral,        vllm_rust: mistral,      sglang_python: mistral,     dynamo_v2: null,        preferred_input: text}
+  # vLLM's muse_glimmer parsers exist only in PR #51655 (unmerged); until a release
+  # carries them, `check.sh vllm` cannot capture this family.
+  muse_glimmer:   {vllm_python: muse_glimmer,   vllm_rust: null,         sglang_python: muse,        dynamo_v2: muse_glimmer, preferred_input: text}
   nemotron_deci:  {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: null,        dynamo_v2: null,        preferred_input: text}
   nemotron_nano:  {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: null,        dynamo_v2: null,        preferred_input: text}
   phi4:           {vllm_python: phi4_mini_json, vllm_rust: phi4_mini_json, sglang_python: null,      dynamo_v2: null,        preferred_input: text}
@@ -120,6 +123,16 @@ markers:
     leak: ["<invoke", "</invoke"]
   mistral:
     pairs: [["[TOOL_CALLS]", "[/TOOL_CALLS]"]]
+  muse_glimmer:
+    pairs: [["<atem:function_calls>", "</atem:function_calls>"]]
+    # Channel framing around every routed message; the reasoning stage forwards
+    # tool channels with this framing intact (like inkling's <|message_model|>).
+    singletons: ["<|start|>", "<|message|>", "<|eom|>", "<|eot|>"]
+    # `<atem:parameter name="K">` ... `</atem:parameter>` delimits a raw value the
+    # parser reads to its own closer, so an enclosing marker inside it is data
+    # (`I7`) — same shape as qwen3_coder's `<parameter=K>`.
+    opaque: ["atem:parameter"]
+    leak: ["<atem:invoke", "</atem:invoke", "<atem:parameter", "</atem:parameter"]
   nemotron_deci:
     pairs: [["<TOOLCALL>", "</TOOLCALL>"]]
   nemotron_nano:
@@ -187,6 +200,26 @@ unified:
     tool_parser: kimi_k2
     golden_spec: kimi.yaml
     leak_markers: []
+  muse_glimmer:
+    native: true
+    # Prefilled channels ARE supported: `initialize_request` opens the stream in the
+    # channel the prompt already opened, which is a two-line change for this grammar.
+    #
+    # Guided tool output is not, and the reason is structural rather than unfinished
+    # work: `GuidedState` is built around a `ReasoningSpec` (an open/close marker PAIR)
+    # and muse has none — reasoning opens with a dynamic `to=self<|message|>` header it
+    # shares with the content and tool channels. The harness applies `init` before
+    # parsing and would panic on the rejection, so those scenarios are not emitted.
+    #
+    # TODO(muse-guided-output): 37 of the 81 unified scenarios stay skipped for this
+    # family. Closing it means teaching the guided machinery to work WITHOUT a marker
+    # pair, which is a change to the shared unified layer, not to muse. Flip this key to
+    # `true` in the same change and those scenarios come back automatically.
+    guided_tool_output: false
+    reasoning_parser: muse_glimmer
+    tool_parser: muse_glimmer
+    golden_spec: muse_glimmer.yaml
+    leak_markers: ["<atem:function_calls>", "</atem:function_calls>", "<atem:invoke", "</atem:invoke>", "<atem:parameter", "</atem:parameter>"]
   qwen3:
     registry: qwen3_coder
     native: true

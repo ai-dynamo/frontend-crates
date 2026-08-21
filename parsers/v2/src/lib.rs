@@ -16,6 +16,7 @@ pub use tool_calling::harmony::{
 pub use tool_calling::kimi_k2::KimiK2ToolStreamParser;
 pub use tool_calling::minimax_m2::MiniMaxM2ToolStreamParser;
 pub use tool_calling::minimax_m3::MiniMaxM3ToolStreamParser;
+pub use tool_calling::muse_glimmer::MuseGlimmerToolStreamParser;
 pub use tool_calling::qwen3_coder::Qwen3CoderToolStreamParser;
 pub use tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser, ToolParserInput};
 pub use tool_calling::{REGISTERED_FAMILIES, create_tool_parser_for_family};

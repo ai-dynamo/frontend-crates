@@ -47,6 +47,7 @@ UNIFIED_TAX = {
     # Group 10 — Reasoning span (REASONING.*), reasoning-only
     "reason_only": (10, "a"), "reason_then_content": (10, "b"),
     "two_reason_spans": (10, "c"), "reason_unterminated": (10, "d"),
+    "two_adjacent_reason_spans": (10, "e"),
     # Group 11 — Reasoning <-> tool interleaving (UNIQUE to unified)
     "reason_then_tool": (11, "a"), "reason_after_tool": (11, "b"),
     "reason_interleaved": (11, "c"), "reason_tool_text_reason_tool": (11, "d"),

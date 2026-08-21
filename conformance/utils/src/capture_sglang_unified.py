@@ -12,6 +12,7 @@ tool parser's parse_non_stream(rest) -> (content, tool_calls), projected to the 
 golden event list [reasoning?, content?, tool_calls...] (reasoning always first — the
 split can't interleave, which is exactly the divergence the tab measures).
 """
+import inspect
 import json
 import sys
 import yaml
@@ -26,13 +27,38 @@ FAMILY_PARSERS = {
     "gemma4": ("gemma4", "gemma4"),
     "qwen3": ("qwen3", "qwen3_coder"),
     "kimi_k2": ("kimi_k2", "kimi_k2"),
+    # SGLang names both Muse Glimmer detectors `muse` (PR #34262). vLLM has no
+    # released muse parser, so `capture_vllm_unified.py` gets no entry — an entry
+    # that cannot capture renders a misleading empty cell instead of an honest gap.
+    "muse_glimmer": ("muse", "muse"),
 }
 
 TOOLS = [
     Tool(type="function", function=Function(
         name=n, parameters={"type": "object", "properties": {k: {"type": "string"}}}))
-    for n, k in (("get_weather", "city"), ("f", "x"), ("g", "y"), ("run", "cmd"))
+    # Must match `tools()` in conformance/tests/unified_parity.rs: an engine that
+    # drops calls to unregistered functions would otherwise record a
+    # harness-induced divergence for the `log` cases (UNIFIED.12.a / 12.c).
+    for n, k in (("get_weather", "city"), ("f", "x"), ("g", "y"), ("run", "cmd"),
+                 ("log", "note"))
 ]
+
+
+# Here the reasoning parser's normal text always feeds a tool parser, which is exactly
+# what `tool_call_parser_active` declares; SGLang's own serving_chat passes it the same
+# way. Channel-framed formats (muse) need it: without it the reasoning detector unwraps
+# the `to=user` channel, and the tool detector then reads that leading prose as "no
+# header is coming", never resyncs on the later tool channel, and drops the call.
+#
+# The kwarg arrived WITH muse (PR #34262), so released SGLang — including the 0.5.14 that
+# captured the committed shard — has no such parameter and raises `TypeError` on it.
+# Probe the signature the same way SGLang forwards the flag to its own detectors, or a
+# recapture on a muse-less SGLang would error out every case of every family.
+_ACTIVE_KWARG = (
+    {"tool_call_parser_active": True}
+    if "tool_call_parser_active" in inspect.signature(ReasoningParser.__init__).parameters
+    else {}
+)
 
 
 def _tool_event(item):
@@ -60,7 +86,7 @@ def _stream_chunks(family, chunks):
     """SGLang STREAMING: reasoning detector then tool detector, per chunk. Composing the
     two incrementally interleaves reasoning<->tool in order (like Dynamo's streaming)."""
     rname, tname = FAMILY_PARSERS[family]
-    rp = ReasoningParser(model_type=rname)
+    rp = ReasoningParser(model_type=rname, **_ACTIVE_KWARG)
     fp = FunctionCallParser(tools=TOOLS, tool_call_parser=tname)
     rows = []
     for ch in chunks:
