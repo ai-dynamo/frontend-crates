@@ -35,13 +35,309 @@
 //! malformed payloads, which is exactly what the fixtures expect.
 
 use crate::tool_calling::scan::{
-    BareRecoveryLatch, InvokeEmitter, InvokeLatch, WrappedBlockScanner, WrappedBlockSpec,
+    BareRecoveryLatch, InvokeEmitter, InvokeLatch, InvokeScan, WrappedBlockScanner,
+    WrappedBlockSpec, json_value_end,
 };
 use crate::tool_calling::v1core::{
     KimiK2ParserConfig, ToolDefinition, try_tool_call_parse_kimi_k2,
 };
 
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
+
+// Mirror `KimiK2ParserConfig::default()` (the only config `kimi_k2_scanner`
+// ever builds). `InvokeScan`'s hooks are plain `fn` pointers, not closures, so
+// they cannot borrow a per-instance config; hardcoding the same defaults here
+// is the existing pattern other `invoke_scan` families (e.g. gemma4) follow.
+const CALL_START: &str = "<|tool_call_begin|>";
+const CALL_END: &str = "<|tool_call_end|>";
+const ARGUMENT_BEGIN: &str = "<|tool_call_argument_begin|>";
+
+const FUNCTIONS_PREFIX: &str = "functions.";
+
+/// Bytes valid in a `NAME:IDX` identifier, per `get_id_regex`'s `[\w.\-]+`.
+fn ident_char(c: char) -> bool {
+    c.is_alphanumeric() || matches!(c, '.' | '_' | '-')
+}
+
+/// Result of scanning for a `NAME:IDX` id at the start of a buffer.
+enum NativeId {
+    /// A complete id, with its length. At least one digit follows `:` --
+    /// more digits streaming in later would only extend it, and every
+    /// length already satisfies `\d+`, so there is no ambiguity to wait out.
+    Complete(usize),
+    /// What's buffered so far could still grow into a complete id (more
+    /// name bytes, the `:` itself, or its digits) with more input.
+    Pending,
+    /// Terminates in a way that rules out `NAME:IDX` ever matching here.
+    None,
+}
+
+/// Scan `text` for a complete `NAME:IDX` id (mirrors `get_id_regex`'s
+/// `[\w.\-]+:\d+`), distinguishing "never going to match" from "not
+/// determinable yet from what's buffered" -- the latter must wait for more
+/// input rather than being treated as a bare, unindexed name. The
+/// batch-path regex this mirrors is permissive by design (an unindexed name
+/// is still valid prose, not a malformed id), which is exactly why this
+/// cannot default to `None` just because a terminator hasn't streamed yet.
+fn native_id_len(text: &str, flush: bool) -> NativeId {
+    let ident_len = match text.find(|c: char| !ident_char(c)) {
+        Some(i) => i,
+        None if flush => text.len(),
+        None => return NativeId::Pending,
+    };
+    if ident_len == 0 {
+        return NativeId::None;
+    }
+    let rest = &text[ident_len..];
+    let Some(after_colon) = rest.strip_prefix(':') else {
+        return if !flush && rest.is_empty() {
+            NativeId::Pending
+        } else {
+            NativeId::None
+        };
+    };
+    match after_colon.find(|c: char| !c.is_ascii_digit()) {
+        Some(0) => NativeId::None, // `:` immediately followed by a non-digit
+        Some(d) => NativeId::Complete(ident_len + 1 + d),
+        None if after_colon.is_empty() => {
+            if flush {
+                NativeId::None
+            } else {
+                NativeId::Pending
+            }
+        }
+        None => NativeId::Complete(ident_len + 1 + after_colon.len()),
+    }
+}
+
+/// Locate the end of one Kimi invoke (`call_start .. call_end`) by finding
+/// where its JSON argument body actually closes first, rather than searching
+/// the raw buffer for `call_end` from byte zero.
+///
+/// Two things follow from that ordering:
+/// - A `call_end`-looking byte sequence embedded INSIDE the JSON string
+///   argument is data, not the real closer (`UNIFIED.7.b`,
+///   `arg_marker_in_string`) — the naive whole-buffer search matched the
+///   embedded copy first and truncated the argument there.
+/// - At true EOF (`flush`), a body whose JSON is syntactically complete but
+///   whose `call_end` never streamed (max_tokens / EOS) is recoverable
+///   (`UNIFIED.5.b`, `tool_no_close`, the same best-effort-recovery contract
+///   as policy P2) instead of being dropped as if it were genuinely
+///   truncated. `K2Emitter` synthesizes the missing closer before typing it.
+fn kimi_invoke_end(text: &str, flush: bool) -> Option<usize> {
+    // The first `argument_begin` in `text` only belongs to THIS invoke
+    // (the one starting at byte 0) if nothing closes the invoke before it.
+    // Model output is probabilistic and can violate its own grammar --
+    // a bare `NAME:IDX<|tool_call_end|>` with no argument section at all,
+    // immediately followed by a real second invoke that DOES have one. An
+    // unbounded search matched the second invoke's `argument_begin` to the
+    // first invoke's span, merging both into one string and silently
+    // dropping the first call. Already-buffered bytes before a found
+    // `argument_begin` can't be invalidated by more input streaming in
+    // later, so this bound is safe to apply immediately, not just at
+    // `flush`.
+    let args_at = text.find(ARGUMENT_BEGIN).and_then(|pos| {
+        // Either sibling marker before the found `argument_begin` proves it
+        // belongs to a LATER invoke, not this one: a `call_end` means this
+        // invoke already closed with no argument section; a second
+        // `call_start` means a new invoke opened before this one ever
+        // reached its own `argument_begin` (this one has neither a
+        // `call_end` NOR an `argument_begin` of its own). Checking only the
+        // `call_end` half left the `call_end`-less variant of the same
+        // malformed shape unguarded -- currently masked by the downstream
+        // regex's own forgiving `captures_iter` and the JSON-argument
+        // branch's `CALL_START` bound below, not by this check actually
+        // being correct, so a future change to either of those could silently
+        // revive the merge.
+        let belongs_to_later_invoke =
+            text[..pos].contains(CALL_END) || text[CALL_START.len()..pos].contains(CALL_START);
+        if belongs_to_later_invoke && flush {
+            // Logged only at `flush` (this check re-runs on every call while
+            // streaming, but the bare-close case can only finish resolving
+            // once no more input is coming -- see the `remainder` check
+            // below) so this fires exactly once per malformed invoke, not
+            // once per push.
+            tracing::warn!(
+                why = "kimi_k2_invoke_closed_before_argument_begin",
+                "stream dropped a bare invoke with no argument section of its own; \
+                 a later argument_begin belongs to a different invoke"
+            );
+        }
+        (!belongs_to_later_invoke).then_some(pos + ARGUMENT_BEGIN.len())
+    });
+    // No `argument_begin` at all: this isn't (yet, or ever) a well-formed
+    // `call_start .. argument_begin .. json .. call_end` invoke -- e.g. the
+    // guided-decoding native-markup-leak scenarios, where the buffer holds
+    // `call_start` grammar tokens but never a real argument section.
+    let Some(args_at) = args_at else {
+        // A `call_end` found here is NOT reliable evidence until `flush`:
+        // streaming only ever APPENDS bytes, so a legitimate `argument_begin`
+        // that hasn't arrived YET can still turn up later and take priority
+        // over this reading. Committing early made the result depend on
+        // where the chunk boundary happened to land -- the exact same bytes
+        // parsed to a dropped call in one push and a leaked raw-JSON `Text`
+        // in two, for identical final input. Only trust this reading once
+        // no more input is coming.
+        //
+        // Same bound as the `argument_begin` check above: a `call_end`
+        // preceded by a SECOND `call_start` belongs to a later invoke, not
+        // this one (this invoke never closed at all before the next one
+        // opened) -- trusting it merged both spans the same way an
+        // unbounded `argument_begin` search did.
+        if flush
+            && let Some(end) = text.find(CALL_END).map(|pos| pos + CALL_END.len())
+            && !text[CALL_START.len()..end].contains(CALL_START)
+        {
+            return Some(end);
+        }
+        // No `argument_begin` AND no `call_end` (or not `flush` yet): not a
+        // well-formed native invoke, and never going to become one from more
+        // `call_end` bytes arriving -- e.g. a narrated `<|tool_call_begin|>`
+        // header the model wrote while guided decoding actually constrained
+        // the payload, with
+        // nothing after it but bare JSON, a reasoning marker, or truncated
+        // header text (`guided_json_*_bare_opener`,
+        // `guided_json_narrated_prefix_inside_reasoning`,
+        // `guided_json_stray_prefix_before_reasoning`). Waiting forever for
+        // delimiters that will never come left the whole header + payload
+        // leaking as visible text.
+        //
+        // Bound the invoke to the STRUCTURAL part only: the literal
+        // `functions.` prefix, plus a complete `NAME:IDX` id when one
+        // actually follows it. A bare name with no index
+        // (`functions.get_weather` narrated inside a thought,
+        // `guided_json_narrated_prefix_inside_reasoning`) is prose the model
+        // wrote, not a real id -- swallowing it as control markup drops it
+        // from the reasoning text the golden oracle expects it to survive
+        // in. Whatever isn't consumed here -- JSON, `<think>`, a bare name,
+        // or nothing -- is scanned fresh on its own terms.
+        let after_start = &text[CALL_START.len()..];
+        let Some(after_prefix) = after_start.strip_prefix(FUNCTIONS_PREFIX) else {
+            // Not (yet) the literal `functions.` prefix. If what's buffered
+            // is a proper prefix of it, more input could still complete the
+            // match -- wait rather than deciding early.
+            if !flush
+                && after_start.len() < FUNCTIONS_PREFIX.len()
+                && FUNCTIONS_PREFIX.starts_with(after_start)
+            {
+                return None;
+            }
+            // Genuinely not the expected shape: nothing here is header
+            // markup, so bound the invoke to the bare opener marker itself.
+            return Some(CALL_START.len());
+        };
+        let end = match native_id_len(after_prefix, flush) {
+            NativeId::Complete(id_len) => CALL_START.len() + FUNCTIONS_PREFIX.len() + id_len,
+            NativeId::Pending => return None,
+            NativeId::None => CALL_START.len() + FUNCTIONS_PREFIX.len(),
+        };
+        // The byte right after `end` may be the start of a real
+        // `argument_begin` or `call_end` that just hasn't finished
+        // streaming (both begin with `<`, which never matches
+        // `functions.`/`ident_char`). Both searches above already proved
+        // neither marker exists in full yet, so a match here can only be a
+        // genuine partial -- wait for it rather than prematurely bounding
+        // the header.
+        let remainder = &text[end..];
+        // A COMPLETE `call_end` right here is the one case that is still
+        // NOT settled: it could be this invoke's own (no-args) close, or it
+        // could be a premature echo that a real `argument_begin` further
+        // downstream will supersede once more input streams in -- streaming
+        // only ever appends, so that later marker cannot be ruled out yet.
+        // Read this the same way the pure `call_end`-only branch above does:
+        // trust it only once nothing more is coming (`flush`). Same class of
+        // bug either commit destroyed -- reading it early made the outcome
+        // depend on the chunk boundary instead of the bytes.
+        if !flush && remainder.starts_with(CALL_END) {
+            return None;
+        }
+        if !flush
+            && [ARGUMENT_BEGIN, CALL_END]
+                .iter()
+                .any(|marker| remainder.len() < marker.len() && marker.starts_with(remainder))
+        {
+            return None;
+        }
+        return Some(end);
+    };
+    // From here the shape has a real `argument_begin`, so ownership of the
+    // closer search transfers to the JSON boundary (`I7`) when the argument
+    // body IS balanced JSON -- never fall back to a raw literal search of
+    // the (possibly still-streaming) buffer in that case, which would
+    // re-match a `call_end`-looking byte sequence still sitting inside the
+    // not-yet-closed argument string.
+    let after_args = &text[args_at..];
+    let Some(json_len) = json_value_end(after_args) else {
+        // `json_value_end` returning `None` does NOT mean "malformed" --
+        // most of the time it means "not balanced YET", e.g. a chunk split
+        // lands mid-string with a `call_end`-looking byte sequence sitting
+        // inside the still-open quote (`UNIFIED.7.b`, `arg_marker_in_string`).
+        // Falling back to a raw `call_end` search there re-matches that
+        // EMBEDDED fake closer and truncates the argument -- exactly the I7
+        // corruption this whole JSON-boundary approach exists to prevent.
+        // Only at true EOF, once no more input can possibly arrive to
+        // balance it, is "never resolves to JSON" a safe conclusion.
+        //
+        // At that point `parse_section_block` (the batch-mode typing layer
+        // this module's own doc promises byte-parity with) has a
+        // raw-string fallback for exactly this: when `serde_json::from_str`
+        // fails, it ships the raw text verbatim instead of rejecting the
+        // call. Propagating `None` unconditionally skipped that fallback
+        // entirely -- the whole invoke never reached the typing layer, so
+        // the SAME bytes that recover as a call with a raw-string argument
+        // in batch mode silently vanished in streaming mode. If the
+        // family's own literal `call_end` is already present, bound the
+        // invoke there (same `call_start` bound as every other closer
+        // search in this function) and let the raw text through to that
+        // fallback, rather than deciding here that it can never be
+        // recovered.
+        if flush
+            && let Some(rel) = after_args.find(CALL_END)
+            && after_args.find(CALL_START).is_none_or(|next| rel < next)
+        {
+            return Some(args_at + rel + CALL_END.len());
+        }
+        return None;
+    };
+    let json_end = args_at + json_len;
+    let after_json = &text[json_end..];
+    if let Some(rel) = after_json.find(CALL_END) {
+        // Bound the search: a new invoke opening before this one's own
+        // closer means this invoke never closed. Reaching past the new
+        // opener to grab some LATER invoke's `call_end` merged both calls'
+        // bytes into one corrupted invoke and silently dropped the second
+        // call entirely. Fall through to the same best-effort recovery the
+        // missing-closer case already uses, so the first call still ships
+        // (JSON is complete) and the second is scanned as its own invoke.
+        if after_json.find(CALL_START).is_none_or(|next| rel < next) {
+            return Some(json_end + rel + CALL_END.len());
+        }
+    }
+    // Best-effort recovery (`UNIFIED.5.b`, policy P2 sibling): the argument
+    // body is syntactically complete but the model stopped before emitting
+    // the closer. Only at true EOF -- otherwise wait for more input.
+    flush.then_some(json_end)
+}
+
+/// Kimi's `call_start` marker is unambiguous wherever it appears; every
+/// occurrence opens a real invoke (same effective behavior as the
+/// marker-only path this hook replaces).
+fn kimi_invoke_opens(_text: &str, _at: usize) -> bool {
+    true
+}
+
+/// No additional holdback beyond the generic marker holdback: `call_end` and
+/// `argument_begin` are already in `holdback_markers`, which already retains
+/// a partial marker split across a chunk boundary.
+fn kimi_invoke_holdback(_text: &str) -> usize {
+    0
+}
+
+const KIMI_INVOKE_SCAN: InvokeScan = InvokeScan {
+    end: kimi_invoke_end,
+    opens: kimi_invoke_opens,
+    holdback: kimi_invoke_holdback,
+};
 
 fn spec(config: &KimiK2ParserConfig) -> WrappedBlockSpec {
     // Orphan markers: inner markers (`call_end`, `argument_begin`) and every
@@ -72,7 +368,7 @@ fn spec(config: &KimiK2ParserConfig) -> WrappedBlockSpec {
         drop_invoke_crossing_block_end: true,
         // Every wrapped family's markers are special tokens today.
         preserve_special_tokens: true,
-        ..Default::default()
+        invoke_scan: Some(KIMI_INVOKE_SCAN),
     }
 }
 
@@ -80,17 +376,35 @@ fn spec(config: &KimiK2ParserConfig) -> WrappedBlockSpec {
 /// `<|tool_call_begin|>...<|tool_call_end|>` call in the section markers so
 /// the v1 parser takes its normal section path, then emits `name` + JSON
 /// `arguments` as one delta.
-struct K2Emitter {
+pub(crate) struct K2Emitter {
     config: KimiK2ParserConfig,
     tools: Vec<ToolDefinition>,
+    /// Native `functions.NAME:IDX` id per `tool_index`, for
+    /// [`InvokeEmitter::tool_call_id`]. The v1core parser already extracts
+    /// this id (`ToolCallResponse::id`) to resolve the function name; Kimi's
+    /// envelope is the only wrapped grammar that NAMES the call this way, so
+    /// this is the one family that needs to remember it past `parse_invoke`.
+    native_ids: Vec<Option<String>>,
 }
 
 impl InvokeEmitter for K2Emitter {
     fn parse_invoke(
-        &self,
+        &mut self,
         invoke: &str,
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>> {
+        // `kimi_invoke_end` may hand back a call recovered at EOF whose JSON
+        // body is complete but whose `call_end` never streamed (`UNIFIED.5.b`).
+        // Normalize it here: the regex-based v1 parser requires the literal
+        // closer to delimit the arguments capture, so synthesize it rather
+        // than re-feeding the raw, still-unclosed bytes.
+        let synthesized;
+        let invoke = if invoke.ends_with(self.config.call_end.as_str()) {
+            invoke
+        } else {
+            synthesized = format!("{invoke}{}", self.config.call_end);
+            synthesized.as_str()
+        };
         let wrapped = format!(
             "{}{}{}",
             self.config.section_start, invoke, self.config.section_end
@@ -100,11 +414,27 @@ impl InvokeEmitter for K2Emitter {
         let Some(parsed) = calls.into_iter().next() else {
             return Ok(None);
         };
+        // `tool_index` is assigned by the caller in emission order (0, 1, 2,
+        // ...), so a plain positional slot is enough — pad rather than
+        // index-assign, since a dropped/malformed invoke ahead of this one
+        // (`Ok(None)` above) never reserves a slot for itself.
+        if self.native_ids.len() <= tool_index {
+            self.native_ids.resize(tool_index + 1, None);
+        }
+        self.native_ids[tool_index] = Some(parsed.id);
         Ok(Some(ToolCallDelta {
             tool_index,
             name: Some(parsed.function.name),
             arguments: parsed.function.arguments,
         }))
+    }
+
+    fn tool_call_id(&self, tool_index: usize) -> Option<&str> {
+        self.native_ids.get(tool_index)?.as_deref()
+    }
+
+    fn reset(&mut self) {
+        self.native_ids.clear();
     }
 }
 
@@ -113,17 +443,26 @@ pub struct KimiK2ToolStreamParser {
     scanner: WrappedBlockScanner<K2Emitter>,
 }
 
+/// Build the Kimi K2 marker scanner for one stream.
+///
+/// Extracted so the tool-only parser and the unified adapter share ONE scanner
+/// construction. Two constructions would be two grammars that drift.
+pub(crate) fn kimi_k2_scanner(tools: &[Tool]) -> WrappedBlockScanner<K2Emitter> {
+    let config = KimiK2ParserConfig::default();
+    WrappedBlockScanner::new(
+        spec(&config),
+        K2Emitter {
+            config,
+            tools: tools.iter().map(ToolDefinition::from).collect(),
+            native_ids: Vec::new(),
+        },
+    )
+}
+
 impl KimiK2ToolStreamParser {
     pub fn new(tools: &[Tool]) -> Self {
-        let config = KimiK2ParserConfig::default();
         Self {
-            scanner: WrappedBlockScanner::new(
-                spec(&config),
-                K2Emitter {
-                    config,
-                    tools: tools.iter().map(ToolDefinition::from).collect(),
-                },
-            ),
+            scanner: kimi_k2_scanner(tools),
         }
     }
 }
@@ -191,6 +530,53 @@ mod tests {
         assert_eq!(merged.calls[0].tool_index, 0);
         assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
         assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
+    }
+
+    /// Direct unit test on the boundary finder itself, bypassing the
+    /// scanner/typing pipeline entirely -- the pipeline-level symptom of this
+    /// bug is easy to mask by accident (the downstream regex's own
+    /// `captures_iter` happens to skip a malformed prefix and still find the
+    /// valid second call on its own, and content between two invokes in one
+    /// section is suppressed by unrelated, correct `InvokeLatch::Always`
+    /// behavior regardless of this fix). The boundary VALUE is the actual
+    /// contract: a bare `NAME:IDX<|tool_call_end|>` invoke with no
+    /// `argument_begin` at all must bound to itself, not reach across a
+    /// second invoke's `call_start` to grab that invoke's `argument_begin`.
+    #[test]
+    fn invoke_end_does_not_reach_across_a_bare_close_to_a_later_argument_begin() {
+        let text = "<|tool_call_begin|>functions.run:0<|tool_call_end|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|>";
+        // The correct boundary is the bare invoke's OWN call_end, not just
+        // its id -- that call_end genuinely belongs to it, and stopping
+        // there (rather than reaching into the second invoke) is what makes
+        // `find(CALL_END)` in the fallback above correctly resolve this case
+        // on its own, without ever needing the native-id path below it.
+        let bare_invoke_with_own_close = "<|tool_call_begin|>functions.run:0<|tool_call_end|>";
+        assert_eq!(
+            kimi_invoke_end(text, true),
+            Some(bare_invoke_with_own_close.len()),
+            "must bound to the bare invoke's own close, not span through the second invoke's call_end"
+        );
+    }
+
+    /// Sibling of the test above: a bare invoke that has NEITHER its own
+    /// `argument_begin` NOR its own `call_end` -- its id text runs straight
+    /// into a second invoke's `call_start`. The `argument_begin` bound only
+    /// checked for an intervening `call_end`; this shape has none, so it was
+    /// unguarded and the second invoke's `argument_begin`/JSON/`call_end`
+    /// still got attributed to the first, merging both spans -- masked from
+    /// producing a visibly wrong result only by the downstream regex's
+    /// forgiving `captures_iter` and the JSON-argument branch's own
+    /// `CALL_START` bound, not by this check being correct.
+    #[test]
+    fn invoke_end_does_not_reach_across_a_bare_open_with_no_close_at_all() {
+        let text = "<|tool_call_begin|>functions.run:0<|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|>";
+        let bare_invoke_id_only = "<|tool_call_begin|>functions.run:0";
+        assert_eq!(
+            kimi_invoke_end(text, true),
+            Some(bare_invoke_id_only.len()),
+            "must bound to the bare invoke's id alone (it has no close of its own), \
+             not span through the second invoke's call_end"
+        );
     }
 
     #[test]

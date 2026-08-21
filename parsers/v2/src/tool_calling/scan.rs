@@ -134,6 +134,52 @@ where
         .unwrap_or(0)
 }
 
+/// Byte offset just past the first complete top-level JSON value (object or
+/// array) in `text`, skipping leading whitespace before it — or `None` if the
+/// value is absent, not object/array-shaped, or still open (unterminated
+/// string, unbalanced braces).
+///
+/// String contents are tracked with escape awareness, so a marker-looking
+/// byte sequence inside a quoted value is never mistaken for structure (`I7`).
+/// A family whose invoke body is `ARGUMENT_MARKER {json} CLOSE_MARKER` uses
+/// this to find where the json ends BEFORE searching for `CLOSE_MARKER`, so a
+/// copy of that marker embedded in a string argument cannot be mistaken for
+/// the real one (`WrappedBlockSpec::invoke_scan`).
+pub(crate) fn json_value_end(text: &str) -> Option<usize> {
+    let mut chars = text.char_indices();
+    let (_, first) = chars.find(|(_, c)| !c.is_whitespace())?;
+    if first != '{' && first != '[' {
+        return None;
+    }
+    let mut depth = 1usize;
+    let mut in_string = false;
+    let mut escape = false;
+    for (idx, c) in chars {
+        if in_string {
+            if escape {
+                escape = false;
+            } else if c == '\\' {
+                escape = true;
+            } else if c == '"' {
+                in_string = false;
+            }
+            continue;
+        }
+        match c {
+            '"' => in_string = true,
+            '{' | '[' => depth += 1,
+            '}' | ']' => {
+                depth -= 1;
+                if depth == 0 {
+                    return Some(idx + c.len_utf8());
+                }
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
 /// Re-serialize a v1core arguments JSON object in the model-emitted source
 /// order (`source_names`, extracted from the raw invoke body by the family).
 /// A repeated source name is emitted once (the v1 object holds one value per
@@ -276,12 +322,34 @@ pub(crate) struct ReasoningSpec {
 
 /// Per-family hook: parse one complete invoke (opener..closer inclusive) into
 /// a call delta. `None` means the invoke was malformed and is dropped.
+///
+/// `&mut self` (not `&self`): a family whose envelope names the call natively
+/// (Kimi's `functions.NAME:IDX`) needs somewhere to remember that id per
+/// `tool_index` for [`Self::tool_call_id`] to hand back later, and a plain
+/// owned field is the ordinary way to do that — no `RefCell` needed, since
+/// parsing and the later lookup never run at the same time.
 pub(crate) trait InvokeEmitter {
     fn parse_invoke(
-        &self,
+        &mut self,
         invoke: &str,
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>>;
+
+    /// The model-emitted id for a call already parsed at `tool_index`, when
+    /// this family's grammar carries one. Mirrors
+    /// [`crate::unified::UnifiedParser::tool_call_id`] one layer down, so a
+    /// family overrides it in exactly one place regardless of whether it is
+    /// reached through the tool-only or unified adapter.
+    fn tool_call_id(&self, _tool_index: usize) -> Option<&str> {
+        None
+    }
+
+    /// Clear any per-stream state before [`WrappedBlockScanner::reset`] hands
+    /// the scanner back for a NEW stream at `tool_index` 0. A no-op default
+    /// is correct for every stateless emitter; an emitter that tracks ids per
+    /// `tool_index` (Kimi) must override this or a new stream's index 0
+    /// would read back the abandoned stream's id.
+    fn reset(&mut self) {}
 }
 
 /// First occurrence of any of `markers` in `text`: `(position, marker_len)`.
@@ -486,6 +554,12 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.spec.invoke_scan
     }
 
+    /// The model-emitted id for a call at `tool_index`, delegated to the
+    /// family's emitter. See [`InvokeEmitter::tool_call_id`].
+    pub(crate) fn tool_call_id(&self, tool_index: usize) -> Option<&str> {
+        self.emitter.tool_call_id(tool_index)
+    }
+
     /// Select whether this stream interprets reasoning markers, without
     /// rebuilding the scanner or cloning its tool schemas.
     pub(crate) fn set_reasoning_mode(&mut self, enabled: bool, forced_start: Option<bool>) {
@@ -574,6 +648,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.resume_reasoning = false;
         self.suppress_normal_text = false;
         self.next_index = 0;
+        self.emitter.reset();
         pending
     }
 
@@ -1019,7 +1094,7 @@ pub(crate) mod test_support {
 
     impl InvokeEmitter for FailOnBoom {
         fn parse_invoke(
-            &self,
+            &mut self,
             invoke: &str,
             tool_index: usize,
         ) -> anyhow::Result<Option<ToolCallDelta>> {

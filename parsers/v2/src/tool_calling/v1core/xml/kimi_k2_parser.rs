@@ -12,6 +12,7 @@ use regex::Regex;
 use super::super::ToolDefinition;
 use super::super::config::KimiK2ParserConfig;
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
+use crate::tool_calling::scan::json_value_end;
 
 static ID_REGEX: OnceLock<Regex> = OnceLock::new();
 
@@ -307,10 +308,37 @@ fn parse_section_block(
             .name("function_id")
             .map(|m| m.as_str().trim())
             .unwrap_or("");
-        let arguments_raw = cap
+        let lazy_arguments = cap
             .name("arguments")
             .map(|m| m.as_str().trim())
             .unwrap_or("{}");
+
+        // The capture above is lazy (`.*?`) and stops at the FIRST literal
+        // `call_end` in the block -- including a copy embedded inside a
+        // quoted string argument (`I7`). Prefer the structurally balanced
+        // JSON boundary, anchored at the SAME start position the lazy
+        // capture used, whenever the body is clean JSON immediately followed
+        // by the real closer; fall back to the lazy capture for genuinely
+        // malformed/non-JSON argument bodies, which still need the
+        // permissive raw-string path (`serde_json::from_str` below falls
+        // back to the raw text on a parse error either way).
+        let arguments_raw = cap
+            .name("arguments")
+            .and_then(|m| {
+                let args_start = m.start();
+                let json_end = args_start + json_value_end(&block[args_start..])?;
+                // Match the SAME `\s*` tolerance the regex above (and the
+                // streaming boundary finder, `kimi_invoke_end`) already give
+                // the closer -- an exact `starts_with` here silently falls
+                // back to the lazy capture (the original I7 bug) whenever
+                // the model puts ordinary whitespace between the JSON and
+                // `call_end`, corrupting an argument that WAS byte-exact.
+                block[json_end..]
+                    .trim_start()
+                    .starts_with(config.call_end.as_str())
+                    .then(|| block[args_start..json_end].trim())
+            })
+            .unwrap_or(lazy_arguments);
 
         // Parse function ID
         let function_name = if let Some(id_cap) = id_regex.captures(function_id) {

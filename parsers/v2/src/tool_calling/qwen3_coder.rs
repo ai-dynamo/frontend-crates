@@ -66,7 +66,7 @@ pub(crate) struct Qwen3Emitter {
 
 impl InvokeEmitter for Qwen3Emitter {
     fn parse_invoke(
-        &self,
+        &mut self,
         invoke: &str,
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>> {

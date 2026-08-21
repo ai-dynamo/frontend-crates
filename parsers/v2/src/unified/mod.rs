@@ -49,6 +49,7 @@
 //! divergence is stated at the item.
 
 mod guided_cursor;
+pub mod kimi_k2;
 pub mod muse_glimmer;
 pub mod qwen3;
 
@@ -854,6 +855,14 @@ impl<E: InvokeEmitter + Send> UnifiedParser for ScannerUnified<E> {
         self.started = false;
         self.finished = false;
         recovered
+    }
+
+    /// The model-emitted id for a call, delegated to the scanner's emitter.
+    /// See [`InvokeEmitter::tool_call_id`] — the trait default (`None`) is
+    /// correct for every family whose grammar does not name the call; Kimi
+    /// is the one family that overrides it.
+    fn tool_call_id(&self, tool_index: usize) -> Option<&str> {
+        self.scanner.tool_call_id(tool_index)
     }
 }
 
@@ -2443,6 +2452,7 @@ macro_rules! unified_registry {
 unified_registry! {
     "qwen3" | "qwen3_coder" => qwen3::qwen3_unified,
     "muse_glimmer" => muse_glimmer::muse_glimmer_unified,
+    "kimi_k2"               => kimi_k2::kimi_k2_unified,
 }
 
 /// Stderr instrumentation for the unified path under `DYNAMO_PARSERS_DEBUG`.

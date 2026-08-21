@@ -195,7 +195,7 @@ unified:
     leak_markers: ["thought\n"]
   kimi_k2:
     registry: kimi_k2
-    native: false
+    native: true
     reasoning_parser: kimi_k25
     tool_parser: kimi_k2
     golden_spec: kimi.yaml
