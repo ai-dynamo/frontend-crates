@@ -75,6 +75,11 @@ pub fn try_tool_call_parse_kimi_k2(
 }
 
 /// Find the first occurrence of any section start variant in `text[cursor..]`.
+/// Deliberately a plain (non-string-aware) search, unlike `find_section_end`
+/// below: `cursor` only ever lands on gap/narration text between sections
+/// (never inside an open JSON tool-call argument), and narration is where a
+/// stray, ordinary quotation mark is expected -- string-tracking there would
+/// risk mis-toggling on the user's own prose instead of protecting anything.
 /// Returns `(relative_position, matched_token_length)` or `None`.
 fn find_section_start(
     text: &str,
@@ -92,22 +97,129 @@ fn find_section_start(
     best
 }
 
-/// Find the first occurrence of any section end variant in `text[from..]`.
+/// Find the first occurrence of any section end variant in `text[from..]`,
+/// skipping over each embedded call's own JSON argument body rather than
+/// tracking quotes as one continuous scan across the whole region.
+///
+/// `text[from..]` spans potentially multiple calls plus narration, not one
+/// call's own body, and a naive single quote-tracking pass over that whole
+/// span cannot safely tell "a `call_end`-shaped byte sequence embedded as
+/// DATA inside one call's own well-formed string argument" apart from "an
+/// earlier call's malformed, unbalanced-quote argument having desynced
+/// `in_string` for everything after it" -- both look identical as local
+/// per-character state (an earlier version of this function tried resolving
+/// that ambiguity with a "reset at every `call_end` occurrence" heuristic
+/// and a later "prefer honest tracking, fall back to reset" refinement;
+/// both were reproduced as unsound: `in_string` carries desync GLOBALLY
+/// across the whole multi-call span with either approach, so a stray quote
+/// in one call could silently resync at exactly the wrong position inside a
+/// LATER, unrelated call's own legitimate string).
+///
+/// So this walks call-by-call instead, using [`json_value_end`] -- real
+/// bracket/quote-aware JSON structure, not a heuristic -- to skip each
+/// call's argument body:
+/// - A WELL-FORMED argument's structural end is trusted completely; a
+///   `call_end`-shaped byte sequence embedded in one of ITS OWN strings can
+///   never be mistaken for a boundary, because `json_value_end` parses the
+///   whole value rather than pattern-matching mid-string.
+/// - A MALFORMED (non-JSON) argument -- not itself illegal Kimi output,
+///   just a raw-string-fallback case -- falls back to a literal search for
+///   THIS call's own `call_end` token, bounded to just this call's span; no
+///   quote state escapes to influence any other call.
+///
+/// Neither path lets one call's content affect how a DIFFERENT call is
+/// scanned, so a malformed call's damage is bounded to itself and a
+/// well-formed call's embedded marker-looking data is never mistaken for a
+/// real boundary, regardless of what came before it in the same section.
 /// Returns `(relative_position, matched_token_length)` or `None`.
 fn find_section_end(
     text: &str,
     from: usize,
     config: &KimiK2ParserConfig,
 ) -> Option<(usize, usize)> {
-    let mut best: Option<(usize, usize)> = None;
-    for variant in &config.section_end_variants {
-        if let Some(pos) = text[from..].find(variant.as_str())
-            && best.is_none_or(|(bp, _)| pos < bp)
-        {
-            best = Some((pos, variant.len()));
+    let region = &text[from..];
+    let mut cursor = 0usize;
+    loop {
+        let next_section_end = config
+            .section_end_variants
+            .iter()
+            .filter_map(|m| {
+                region[cursor..]
+                    .find(m.as_str())
+                    .map(|p| (cursor + p, m.len()))
+            })
+            .min_by_key(|&(p, _)| p);
+        // Plain, non-string-aware search for the next call's argument
+        // start: outside an already-open call, `argument_begin` is a real
+        // structural marker, the same trust level `find_section_start`
+        // above already places in the surrounding section markers.
+        let next_arg_begin_start = region[cursor..]
+            .find(config.argument_begin.as_str())
+            .map(|p| cursor + p);
+
+        let section_end_is_first = match (next_section_end, next_arg_begin_start) {
+            (Some((end_pos, _)), Some(arg_pos)) => end_pos < arg_pos,
+            (Some(_), None) => true,
+            (None, _) => false,
+        };
+        if section_end_is_first {
+            return next_section_end;
         }
+        let arg_pos = next_arg_begin_start? + config.argument_begin.len();
+        // `json_value_end` only proves bracket/quote nesting is balanced,
+        // not that the bytes are valid JSON (`{<|tool_calls_section_end|>}`
+        // balances even though its "content" is a section-end marker, not
+        // JSON). Trusting a bracket-balanced-but-invalid body as this
+        // call's real argument boundary means its embedded section-end
+        // marker is never scanned for at all -- the call-by-call walk just
+        // skips straight past it as if it were legitimate JSON content.
+        // Validating here routes an invalid body through the SAME
+        // malformed/raw-string fallback below (with its own intervening-
+        // section-end guard) instead of trusting `json_value_end` alone;
+        // mirrors the identical hoist in streaming's `kimi_invoke_end`.
+        let valid_json_end = json_value_end(&region[arg_pos..]).filter(|&json_end| {
+            serde_json::from_str::<serde_json::Value>(&region[arg_pos..arg_pos + json_end]).is_ok()
+        });
+        cursor = match valid_json_end {
+            Some(json_end) => arg_pos + json_end,
+            None => {
+                // Malformed argument (json_value_end failed): the literal
+                // `call_end` fallback below must not blindly trust a match
+                // that has a REAL section-end marker sitting before it --
+                // that means this call never got its own closer and the
+                // section actually ends at that marker. Without this
+                // check, the malformed call's raw text (which still
+                // contains the section-end bytes, since nothing skipped
+                // past them) swallows the real boundary and the call
+                // recovers with a corrupted argument -- streaming's
+                // `kimi_invoke_end` has the identical guard on its own
+                // sibling malformed-argument fallback for exactly this
+                // reason (blind-audit-caught: without this, batch mode
+                // recovered a call streaming correctly dropped, a real
+                // streaming/batch divergence in the opposite direction).
+                let after_arg = &region[arg_pos..];
+                let intervening_section_end = config
+                    .section_end_variants
+                    .iter()
+                    .filter_map(|m| after_arg.find(m.as_str()).map(|p| (p, m.len())))
+                    .min_by_key(|&(p, _)| p);
+                match after_arg.find(config.call_end.as_str()) {
+                    Some(p) => match intervening_section_end {
+                        Some((sp, slen)) if sp < p => return Some((arg_pos + sp, slen)),
+                        _ => arg_pos + p + config.call_end.len(),
+                    },
+                    // No literal call_end at all -- if a section-end
+                    // exists ahead, the section ends there (this malformed
+                    // call is truncated inside a still-open section);
+                    // otherwise genuinely nothing further to skip.
+                    None => match intervening_section_end {
+                        Some((sp, slen)) => return Some((arg_pos + sp, slen)),
+                        None => return None,
+                    },
+                }
+            }
+        };
     }
-    best
 }
 
 /// Extract tool calls and normal text from message.
@@ -322,21 +434,39 @@ fn parse_section_block(
         // malformed/non-JSON argument bodies, which still need the
         // permissive raw-string path (`serde_json::from_str` below falls
         // back to the raw text on a parse error either way).
+        //
+        // `json_value_end` only proves bracket/quote NESTING is balanced,
+        // not that the bytes are valid JSON. Without validating here, a
+        // bracket-balanced-but-invalid body containing an embedded
+        // `call_end`-looking substring as literal (non-string) data --
+        // e.g. `{not<|tool_call_end|>json}` -- can still pass this override
+        // whenever a literal `call_end` genuinely follows it, silently
+        // REPLACING the lazy capture's own (differently wrong, but at least
+        // independently-derived) boundary with a longer span that swallows
+        // the embedded fake closer as content instead of stopping there.
+        // Neither span is valid JSON either way, but which raw string ships
+        // to the caller should not depend on an unvalidated coincidence of
+        // where `json_value_end` happens to balance. Validating here means
+        // the override only ever fires for genuinely valid JSON, matching
+        // the identical hoist already applied to `kimi_invoke_end` and
+        // `find_section_end`'s own `json_value_end` consumers.
         let arguments_raw = cap
             .name("arguments")
             .and_then(|m| {
                 let args_start = m.start();
                 let json_end = args_start + json_value_end(&block[args_start..])?;
+                let candidate = block[args_start..json_end].trim();
                 // Match the SAME `\s*` tolerance the regex above (and the
                 // streaming boundary finder, `kimi_invoke_end`) already give
                 // the closer -- an exact `starts_with` here silently falls
                 // back to the lazy capture (the original I7 bug) whenever
                 // the model puts ordinary whitespace between the JSON and
                 // `call_end`, corrupting an argument that WAS byte-exact.
-                block[json_end..]
+                (block[json_end..]
                     .trim_start()
                     .starts_with(config.call_end.as_str())
-                    .then(|| block[args_start..json_end].trim())
+                    && serde_json::from_str::<serde_json::Value>(candidate).is_ok())
+                .then_some(candidate)
             })
             .unwrap_or(lazy_arguments);
 
@@ -400,6 +530,159 @@ fn parse_section_block(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Reviewer-caught regression: a MALFORMED (non-JSON) argument containing
+    /// one unescaped `"` used to desync `in_string` for the rest of the scan,
+    /// so the real `section_end` after it was missed entirely and
+    /// `extract_tool_calls`'s "no section_end found" fallback swallowed
+    /// genuinely trailing normal text into the tool section. Confirmed with a
+    /// scratch repro before fixing: `find_section_end` returned `None` even
+    /// though a real closer existed further in the text. Fixed by walking
+    /// call-by-call and falling back to a literal `call_end` search bounded
+    /// to just this one call's own span (see the function's doc comment).
+    #[test]
+    fn find_section_end_survives_an_unbalanced_quote_in_a_malformed_argument() {
+        let config = KimiK2ParserConfig::default();
+        let text = "<|tool_call_begin|>functions.run:0<|tool_call_argument_begin|>bad\"arg<|tool_call_end|><|tool_calls_section_end|>After.";
+        let real_pos = text.find("<|tool_calls_section_end|>").unwrap();
+        let (pos, len) = find_section_end(text, 0, &config)
+            .expect("must find the real closer despite the unbalanced quote");
+        assert_eq!(pos, real_pos);
+        assert_eq!(&text[pos..pos + len], "<|tool_calls_section_end|>");
+    }
+
+    /// Sibling case: TWO malformed calls each with their own unbalanced quote
+    /// -- proves the literal `call_end` fallback is applied independently to
+    /// EVERY call's own span, not just the first.
+    #[test]
+    fn find_section_end_survives_two_malformed_arguments_each_with_an_unbalanced_quote() {
+        let config = KimiK2ParserConfig::default();
+        let text = "<|tool_call_begin|>functions.a:0<|tool_call_argument_begin|>x\"1<|tool_call_end|><|tool_call_begin|>functions.b:1<|tool_call_argument_begin|>y\"2<|tool_call_end|><|tool_calls_section_end|>After.";
+        let real_pos = text.find("<|tool_calls_section_end|>").unwrap();
+        let (pos, len) = find_section_end(text, 0, &config)
+            .expect("must find the real closer past both malformed calls");
+        assert_eq!(pos, real_pos);
+        assert_eq!(&text[pos..pos + len], "<|tool_calls_section_end|>");
+    }
+
+    /// Direct unit test on the shared boundary owner itself: `find_section_end`
+    /// must skip a section-end-looking byte sequence embedded inside a JSON
+    /// string argument and find the REAL trailing marker instead. Before this
+    /// fix, `extract_tool_calls` truncated the section at the embedded copy,
+    /// so the block handed to `parse_section_block` never contained the real
+    /// `call_end` and the whole call silently vanished (`tool_index` for any
+    /// later call in the same section then desynced, since nothing advanced
+    /// past the dropped one).
+    #[test]
+    fn find_section_end_skips_a_marker_embedded_in_a_json_string() {
+        let config = KimiK2ParserConfig::default();
+        let text = "<|tool_call_begin|>functions.run:0<|tool_call_argument_begin|>{\"cmd\":\"echo <|tool_calls_section_end|>\"}<|tool_call_end|><|tool_calls_section_end|>";
+        let (pos, len) = find_section_end(text, 0, &config).expect("must find the real closer");
+        assert_eq!(
+            &text[pos..pos + len],
+            "<|tool_calls_section_end|>",
+            "must resolve to the REAL trailing marker, not the embedded copy"
+        );
+        assert!(
+            text[..pos].ends_with("<|tool_call_end|>"),
+            "the resolved position must be the marker AFTER the invoke's own call_end, \
+             not the earlier embedded lookalike inside the JSON string"
+        );
+    }
+
+    /// Blind-audit-caught regression IN the prior fix: an EARLIER malformed
+    /// call's unbalanced quote must not affect whether a LATER, well-formed
+    /// call's embedded section-end lookalike is (correctly) treated as
+    /// string data. A single continuous quote-tracking pass across the whole
+    /// multi-call region -- whether or not it force-resets at every
+    /// `call_end` -- carries desync state across call boundaries; this test
+    /// combines both single-call regressions above into one input to prove
+    /// the call-by-call structural walk keeps them fully independent.
+    #[test]
+    fn find_section_end_is_unaffected_by_an_earlier_malformed_calls_desync() {
+        let config = KimiK2ParserConfig::default();
+        let text = "<|tool_call_begin|>functions.a:0<|tool_call_argument_begin|>bad\"arg<|tool_call_end|>\
+                     <|tool_call_begin|>functions.b:1<|tool_call_argument_begin|>{\"cmd\":\"echo <|tool_calls_section_end|>\"}<|tool_call_end|>\
+                     After.<|tool_calls_section_end|>";
+        let real_pos = text.rfind("<|tool_calls_section_end|>").unwrap();
+        let (pos, len) = find_section_end(text, 0, &config)
+            .expect("must find the real trailing closer past both calls");
+        assert_eq!(
+            pos, real_pos,
+            "must resolve to the REAL trailing marker after \"After.\", not the earlier \
+             embedded copy inside call b's own string, and not None"
+        );
+        assert_eq!(&text[pos..pos + len], "<|tool_calls_section_end|>");
+    }
+
+    /// Blind-audit-caught regression: batch mode used to disagree with
+    /// streaming's `kimi_invoke_end` on the identical malformed-argument
+    /// shape (a real section-end marker occurring before a malformed call's
+    /// only available `call_end`) -- `find_section_end` couldn't find ANY
+    /// section end at all (its own scan is bounded to look for a section
+    /// end only in the gap AFTER a call's own span resolves, and this
+    /// malformed call's span never resolves), so `parse_section_block`
+    /// treated the rest of the buffer as one long section and recovered
+    /// the call with the section-end marker swallowed into its raw-string
+    /// argument -- a real streaming/batch divergence in the opposite
+    /// direction from the one this session's fixes were meant to close.
+    /// End-to-end via the real public entry point, not just the boundary
+    /// function directly, to prove the whole pipeline agrees.
+    #[test]
+    fn batch_mode_drops_a_malformed_call_when_a_section_end_intervenes_before_its_call_end() {
+        let config = KimiK2ParserConfig::default();
+        let msg = "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"location\": \"unterminated<|tool_calls_section_end|><|tool_call_end|>";
+        let (calls, _content) = try_tool_call_parse_kimi_k2(msg, &config, None).unwrap();
+        assert!(
+            calls.is_empty(),
+            "batch mode must drop this call, matching streaming's kimi_invoke_end -- \
+             got {calls:?}"
+        );
+    }
+
+    /// Reviewer-caught regression: `parse_section_block`'s I7 override used
+    /// to trust `json_value_end`'s bracket-balance alone before REPLACING
+    /// the lazy regex capture's own boundary -- a bracket-balanced but
+    /// JSON-GRAMMAR-INVALID body containing an embedded `call_end`-looking
+    /// substring as literal (non-string) content, immediately followed by
+    /// the real literal `call_end`, still passed the override and shipped
+    /// `arguments` containing the embedded fake closer as swallowed text
+    /// instead of falling back to the lazy capture's own (shorter, but
+    /// independently-derived) boundary. Reproduced directly before fixing:
+    /// unpatched code shipped `arguments: "{not<|tool_call_end|>json}"`.
+    #[test]
+    fn i7_override_requires_actually_valid_json_not_just_balanced_brackets() {
+        let config = KimiK2ParserConfig::default();
+        let msg = "<|tool_calls_section_begin|><|tool_call_begin|>functions.run:0<|tool_call_argument_begin|>{not<|tool_call_end|>json}<|tool_call_end|><|tool_calls_section_end|>";
+        let (calls, _content) = try_tool_call_parse_kimi_k2(msg, &config, None).unwrap();
+        assert_eq!(
+            calls.len(),
+            1,
+            "the call must still ship, just with the lazy boundary"
+        );
+        assert_eq!(
+            calls[0].function.arguments, "{not",
+            "must fall back to the lazy capture's own boundary, not the invalid \
+             bracket-balanced span that swallows the embedded fake closer"
+        );
+    }
+
+    /// Sibling positive control: the SAME override still correctly extends
+    /// past an embedded fake closer that's legitimate DATA inside a
+    /// well-formed JSON string (the original I7 case this override exists
+    /// for) -- this fix must not regress that contract.
+    #[test]
+    fn i7_override_still_extends_past_a_fake_closer_inside_a_well_formed_string() {
+        let config = KimiK2ParserConfig::default();
+        let msg = "<|tool_calls_section_begin|><|tool_call_begin|>functions.run:0<|tool_call_argument_begin|>{\"note\":\"<|tool_call_end|>\"}<|tool_call_end|><|tool_calls_section_end|>";
+        let (calls, _content) = try_tool_call_parse_kimi_k2(msg, &config, None).unwrap();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(
+            calls[0].function.arguments, "{\"note\":\"<|tool_call_end|>\"}",
+            "the override must still extend past the embedded fake closer when it's \
+             genuinely inside a well-formed JSON string"
+        );
+    }
 
     /// Finding 1 regression: the tool-call regex must be built from the config
     /// passed on each call, never frozen by a global cache. Two configs with

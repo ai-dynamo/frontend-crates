@@ -1151,7 +1151,12 @@ fn guided_holdback_len(
                 .match_indices(start)
                 .filter_map(|(at, _)| {
                     let suffix = &input[at..];
-                    ((scan.opens)(input, at) && (scan.end)(suffix, false).is_none())
+                    // `flush: false` here always makes `tool_index` inert (Kimi's
+                    // EOF-only recovery gate can only fire when `flush` is true) --
+                    // 0 is not a claim about which call this is, just the value
+                    // that keeps this holdback-length probe's result identical to
+                    // before `tool_index` existed.
+                    ((scan.opens)(input, at) && (scan.end)(suffix, false, 0).is_none())
                         .then_some(input.len() - at)
                 })
                 .max()
@@ -1464,7 +1469,22 @@ impl GuidedState {
             let at = cursor + relative;
             let suffix = &haystack[at..];
             if (scan.opens)(haystack, at) {
-                if let Some(len) = (scan.end)(suffix, flush) {
+                // `tool_index: 0` is provably safe here, not merely convenient:
+                // this loop can NEVER walk past a first `invoke_start` match to
+                // examine a second one for a family whose `opens` hook always
+                // returns `true` (Kimi's `kimi_invoke_opens` does) -- this `if`
+                // branch returns unconditionally on the first match, so the
+                // `cursor = at + ...` advance below is unreachable for Kimi. And
+                // the result only classifies a native-looking marker leaking into
+                // otherwise-guided output as stray markup to strip; it never
+                // types or emits a call -- that goes entirely through the
+                // independent, array-indexed `GuidedJsonCursor`/
+                // `emit_completed_json` path, untouched by this value. Proven
+                // end-to-end, including the disputed "properly-closed first
+                // marker, incomplete second marker" shape, by
+                // `two_native_markers_in_guided_reasoning_second_incomplete_one_is_not_recovered`
+                // in `unified/kimi_k2.rs`.
+                if let Some(len) = (scan.end)(suffix, flush, 0) {
                     return regular
                         .filter(|(regular_at, _)| *regular_at < at)
                         .or(Some((at, len)));

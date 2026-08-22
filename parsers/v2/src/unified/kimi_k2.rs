@@ -313,6 +313,44 @@ mod tests {
             .collect()
     }
 
+    /// Proves `tool_index: 0` is safe at `GuidedState::control_marker_at`'s
+    /// two `scan.end` call sites (`unified/mod.rs`) even for the disputed
+    /// "second invoke" shape, not just a lone one. Two structural facts make
+    /// this safe together:
+    /// (1) `kimi_invoke_opens` (`tool_calling/kimi_k2.rs`) always returns
+    /// `true`, so `control_marker_at`'s scan loop returns on the FIRST
+    /// `invoke_start` occurrence in whatever `haystack` it searches -- the
+    /// `cursor = at + ...` advance to look for a second occurrence is
+    /// structurally unreachable for Kimi, so this hook can never itself walk
+    /// past a first marker to inspect a second one.
+    /// (2) The result only classifies a native-looking marker inside a
+    /// thought as stray markup to strip; it never types or emits a call --
+    /// that happens entirely through the independent, array-indexed
+    /// `GuidedJsonCursor`/`emit_completed_json` path.
+    /// Concretely: a properly CLOSED first native marker is fully stripped
+    /// from reasoning, an INCOMPLETE second one survives verbatim as
+    /// reasoning text (no phantom call), and the real guided payload after
+    /// both still types exactly once, correctly.
+    #[test]
+    fn two_native_markers_in_guided_reasoning_second_incomplete_one_is_not_recovered() {
+        let input = "<think>First: <|tool_call_begin|>functions.run:0<|tool_call_argument_begin|>{\"cmd\":\"ok\"}<|tool_call_end|> Second: <|tool_call_begin|>functions.other:1<|tool_call_argument_begin|>{\"cmd\":\"partial</think>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]";
+        let want = vec![
+            UnifiedEvent::Reasoning {
+                text: "First:  Second: <|tool_call_begin|>functions.other:1<|tool_call_argument_begin|>{\"cmd\":\"partial".into(),
+            },
+            UnifiedEvent::ToolCall {
+                name: "get_weather".into(),
+                arguments: serde_json::json!({"city": "Paris"}),
+            },
+        ];
+        for (i, got) in assemble_guided_at_every_split(&tools(), input)
+            .into_iter()
+            .enumerate()
+        {
+            assert_eq!(got, want, "split at byte {i}, got {got:?}");
+        }
+    }
+
     /// `UNIFIED.guided_json_gt_in_argument_bare_opener.kimi_k2`: guided
     /// decoding constrains the payload to JSON, but the model still narrates
     /// a bare `<|tool_call_begin|>functions.` header with no `NAME:IDX`, no

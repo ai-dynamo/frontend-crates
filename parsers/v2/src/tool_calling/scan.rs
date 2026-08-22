@@ -151,7 +151,17 @@ pub(crate) fn json_value_end(text: &str) -> Option<usize> {
     if first != '{' && first != '[' {
         return None;
     }
-    let mut depth = 1usize;
+    // A stack of the closer each opener actually requires -- not a numeric
+    // depth counter. A numeric counter treats `}` and `]` as interchangeable,
+    // so a mismatched-type input like `{]` or `[}` reads as balanced at
+    // depth 0 instead of being rejected. That's not just cosmetic: this
+    // function's whole purpose (see the doc comment above) is to find the
+    // structural end of the value so a literal closer search past it can't
+    // be fooled by a copy of that closer embedded in an still-open string
+    // (`I7`) -- a false "balanced" reading here can hand back a boundary
+    // BEFORE a string that legitimately belongs to the same value, reopening
+    // exactly that corruption.
+    let mut stack = vec![if first == '{' { '}' } else { ']' }];
     let mut in_string = false;
     let mut escape = false;
     for (idx, c) in chars {
@@ -167,10 +177,18 @@ pub(crate) fn json_value_end(text: &str) -> Option<usize> {
         }
         match c {
             '"' => in_string = true,
-            '{' | '[' => depth += 1,
+            '{' => stack.push('}'),
+            '[' => stack.push(']'),
             '}' | ']' => {
-                depth -= 1;
-                if depth == 0 {
+                // A closer that doesn't match the innermost opener's type
+                // can never be part of a well-formed JSON value from here --
+                // there is no future input that fixes a type mismatch, so
+                // this reading can never become balanced (unlike a plain
+                // depth shortfall, which just needs more input).
+                if stack.pop() != Some(c) {
+                    return None;
+                }
+                if stack.is_empty() {
                     return Some(idx + c.len_utf8());
                 }
             }
@@ -252,7 +270,10 @@ pub(crate) enum InvokeLatch {
 pub(crate) struct InvokeScan {
     /// End of the invoke that begins at byte zero, just past its closer. `flush`
     /// allows a family to recover a balanced body whose closer never arrived.
-    pub end: fn(text: &str, flush: bool) -> Option<usize>,
+    /// `tool_index` is the invoke's position in this stream (0 for the first
+    /// call) -- some best-effort recoveries are only justified for the first
+    /// call in a response (see `kimi_invoke_end`'s doc comment).
+    pub end: fn(text: &str, flush: bool, tool_index: usize) -> Option<usize>,
     /// Whether the `invoke_start` occurrence at `at` opens a real invoke.
     pub opens: fn(text: &str, at: usize) -> bool,
     /// Additional trailing bytes to retain while an opener is still arriving.
@@ -358,6 +379,46 @@ fn find_first(text: &str, markers: &[String]) -> Option<(usize, usize)> {
         .iter()
         .filter_map(|m| text.find(m.as_str()).map(|p| (p, m.len())))
         .min_by_key(|(p, _)| *p)
+}
+
+/// Same as [`find_first`], but a marker-looking byte sequence inside a
+/// double-quoted JSON string is data, not structure, and is skipped (`I7`,
+/// same escape-aware tracking as [`json_value_end`]). A raw `find_first`
+/// over a buffer that still contains an invoke's own JSON argument body can
+/// match a copy of a block-end marker the model happened to echo inside a
+/// string argument (e.g. a shell command echoing the exact closing tag) and
+/// mistake it for the real block boundary -- silently dropping a
+/// well-formed invoke and corrupting the `tool_index` of every call after
+/// it. Callers checking "did the block end before this invoke's own
+/// resolved close" need this variant; callers scanning plain narration
+/// (never inside an open JSON string) can keep using `find_first`.
+pub(crate) fn find_first_outside_strings(text: &str, markers: &[String]) -> Option<(usize, usize)> {
+    let mut in_string = false;
+    let mut escape = false;
+    for (idx, c) in text.char_indices() {
+        if in_string {
+            if escape {
+                escape = false;
+            } else if c == '\\' {
+                escape = true;
+            } else if c == '"' {
+                in_string = false;
+            }
+            continue;
+        }
+        if c == '"' {
+            in_string = true;
+            continue;
+        }
+        if let Some((_, len)) = markers
+            .iter()
+            .find(|m| text[idx..].starts_with(m.as_str()))
+            .map(|m| (idx, m.len()))
+        {
+            return Some((idx, len));
+        }
+    }
+    None
 }
 
 /// Earliest `(position, payload)` among the candidates.
@@ -676,7 +737,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     /// Offset just past the closer of the invoke beginning at byte zero.
     fn invoke_end_at(&self, text: &str, flush: bool) -> Option<usize> {
         match self.spec.invoke_scan {
-            Some(scan) => (scan.end)(text, flush),
+            Some(scan) => (scan.end)(text, flush, self.next_index),
             None => text
                 .find(self.spec.invoke_end.as_str())
                 .map(|position| position + self.spec.invoke_end.len()),
@@ -924,8 +985,25 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 // Mismatched fences: a block close inside the invoke body means
                 // the invoke never closed. Drop it and close the block; narration
                 // after the close is the user's text again.
+                //
+                // `find_first_outside_strings`, not `find_first`: the search
+                // runs over `self.buffer` from the invoke's start, which can
+                // legitimately contain a block-end-looking byte sequence
+                // inside the invoke's own JSON string argument (a shell
+                // command echoing the closing tag). Safety only needs to
+                // hold for any match this call actually returns, which the
+                // `be_pos < end` filter below always bounds to inside the
+                // invoke (the scan is strictly left-to-right, so `in_string`
+                // at any returned `be_pos < end` depends only on bytes
+                // already known to belong to this invoke) -- not for the
+                // full buffer being scanned. A raw search there mistakes an
+                // embedded copy for the real boundary and drops a
+                // well-formed invoke -- also corrupting every later
+                // `tool_index`, since `next_index` never advances for a
+                // dropped call.
                 if self.spec.drop_invoke_crossing_block_end
-                    && let Some((be_pos, be_len)) = find_first(&self.buffer, &self.spec.block_ends)
+                    && let Some((be_pos, be_len)) =
+                        find_first_outside_strings(&self.buffer, &self.spec.block_ends)
                     && be_pos < end
                 {
                     tracing::warn!(
@@ -1171,6 +1249,69 @@ mod recovery_tests {
 mod tests {
     use super::test_support::failing_scanner;
     use super::*;
+
+    #[test]
+    fn json_value_end_rejects_mismatched_bracket_types() {
+        // A numeric depth counter treats `}`/`]` as interchangeable and
+        // would read these as balanced at the position of the mismatched
+        // closer -- e.g. `{]` closing at index 1. Neither can ever become
+        // valid JSON no matter what follows, so both must be `None`, not a
+        // false-positive boundary.
+        assert_eq!(json_value_end("{]"), None);
+        assert_eq!(json_value_end("[}"), None);
+        assert_eq!(json_value_end(r#"{"a":[1,2}}"#), None);
+        assert_eq!(json_value_end("[1,2}"), None);
+        // Negative control: the same shapes with correctly matched closers
+        // still resolve normally, proving the fix only rejects the type
+        // mismatch, not depth-nesting itself.
+        assert_eq!(json_value_end("{}"), Some(2));
+        assert_eq!(json_value_end(r#"{"a":[1,2]}"#), Some(11));
+    }
+
+    #[test]
+    fn find_first_outside_strings_skips_a_marker_inside_a_quoted_string() {
+        let markers = vec!["CLOSE".to_string()];
+        // A marker-looking sequence entirely inside a string is data, not
+        // structure -- must be skipped in favor of the real one afterward.
+        assert_eq!(
+            find_first_outside_strings(r#"{"a":"has CLOSE inside"}CLOSE"#, &markers),
+            Some((24, 5)),
+        );
+    }
+
+    #[test]
+    fn find_first_outside_strings_handles_an_escaped_quote_next_to_the_marker() {
+        let markers = vec!["CLOSE".to_string()];
+        // `\"` immediately before the embedded marker must not be misread as
+        // the string's real closing quote (which would wrongly un-toggle
+        // `in_string` one byte early and expose the embedded marker).
+        assert_eq!(
+            find_first_outside_strings(r#"{"a":"ends with \" then CLOSE inside"}CLOSE"#, &markers),
+            Some((38, 5)),
+        );
+    }
+
+    #[test]
+    fn find_first_outside_strings_returns_the_earliest_of_multiple_markers() {
+        let markers = vec!["BB".to_string(), "A".to_string()];
+        // Earliest BYTE POSITION wins regardless of which marker string it
+        // belongs to or the order markers are listed in.
+        assert_eq!(
+            find_first_outside_strings("xxAxxBBxx", &markers),
+            Some((2, 1))
+        );
+    }
+
+    #[test]
+    fn find_first_outside_strings_on_empty_or_no_match_is_none() {
+        let markers = vec!["CLOSE".to_string()];
+        assert_eq!(find_first_outside_strings("", &markers), None);
+        assert_eq!(find_first_outside_strings("no marker here", &markers), None);
+        assert_eq!(
+            find_first_outside_strings(r#""CLOSE only inside a string""#, &markers),
+            None
+        );
+    }
 
     #[test]
     fn reset_recovers_the_complete_push_after_an_emitter_error() {

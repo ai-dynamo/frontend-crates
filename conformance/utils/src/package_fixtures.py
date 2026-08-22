@@ -34,6 +34,8 @@ import tarfile
 import tempfile
 from pathlib import Path
 
+import extract_fixtures  # sibling script, same dir on sys.path (matches capture_driver's import pattern)
+
 # conformance/utils/src/ -> repo root: 4 .parent calls (strip filename, then 3 dirs)
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
 MANIFEST_REL = Path("conformance") / "fixtures-manifest.json"
@@ -124,15 +126,36 @@ def stage_fixtures(conformance_root, tmpdir):
 
 def _extracted_snapshot_dir():
     """The current extracted snapshot in the fixture cache, or None. Used to
-    protect whole-tree shards from partial local capture trees."""
-    xdg = os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache"))
-    cache_root = Path(xdg) / "dynamo" / "conformance-fixtures"
+    protect whole-tree shards from partial local capture trees.
+
+    Same directory-naming contract as `extract_fixtures.py`: cached
+    extractions are keyed by `{pin}-{fixtures_identity(shards)}`, not bare
+    `pin` (a shard set can be re-pinned in place under an unchanged pin) --
+    reusing `fixtures_identity` here instead of a second, independent
+    identity computation keeps the two scripts from silently drifting apart
+    on what "the same content" means.
+
+    Resolution itself routes through `extract_fixtures.resolve_current_generation`
+    -- the same single owner `extract_fixtures.py`'s own cache-hit check
+    uses -- instead of reconstructing the bare `{pin}-{fid}` path directly.
+    A `--full-refresh` publishes later generations at `{pin}-{fid}.refreshN`
+    without ever touching the original; a direct reconstruction here would
+    keep resolving to the abandoned (possibly corrupted) original generation
+    forever, even after a refresh fixed it.
+    """
     manifest_path = ROOT / MANIFEST_REL
     if not manifest_path.exists():
         return None
-    snap = json.loads(manifest_path.read_text()).get("snapshot")
-    d = cache_root / snap if snap else None
-    return d if d and d.is_dir() else None
+    manifest = json.loads(manifest_path.read_text())
+    snap = manifest.get("snapshot")
+    shards = manifest.get("shards", [])
+    if not snap or not shards:
+        return None
+    cache_root = extract_fixtures.get_cache_root()
+    fid = extract_fixtures.fixtures_identity(shards)
+    pinned_shards = extract_fixtures.shard_hash_map(shards)
+    d, _generation = extract_fixtures.resolve_current_generation(cache_root, snap, fid, pinned_shards)
+    return d
 
 
 def build_shards(tmpdir, blobs_dir, prune=False):

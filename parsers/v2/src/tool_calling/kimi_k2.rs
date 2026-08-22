@@ -52,6 +52,13 @@ const CALL_START: &str = "<|tool_call_begin|>";
 const CALL_END: &str = "<|tool_call_end|>";
 const ARGUMENT_BEGIN: &str = "<|tool_call_argument_begin|>";
 
+// Mirrors `KimiK2ParserConfig::default().section_end_variants` for the same
+// reason as the consts above -- `kimi_invoke_end` needs to recognize a real
+// section close to distinguish it from genuine EOS truncation (see its use
+// below).
+const SECTION_END_PLURAL: &str = "<|tool_calls_section_end|>";
+const SECTION_END_SINGULAR: &str = "<|tool_call_section_end|>";
+
 const FUNCTIONS_PREFIX: &str = "functions.";
 
 /// Bytes valid in a `NAME:IDX` identifier, per `get_id_regex`'s `[\w.\-]+`.
@@ -124,7 +131,17 @@ fn native_id_len(text: &str, flush: bool) -> NativeId {
 ///   (`UNIFIED.5.b`, `tool_no_close`, the same best-effort-recovery contract
 ///   as policy P2) instead of being dropped as if it were genuinely
 ///   truncated. `K2Emitter` synthesizes the missing closer before typing it.
-fn kimi_invoke_end(text: &str, flush: bool) -> Option<usize> {
+///   BUT only for `tool_index == 0`: the captured batch contract
+///   (`TOOLCALLING.batch.5.d`/`TOOLCALLING.streamv2.5.d`, independently
+///   pinned against the real `parse_section_block` regex and its own
+///   streaming golden capture) drops a later call that never gets its own
+///   `call_end`, while still recovering an incomplete FIRST call at EOF
+///   (`TOOLCALLING.batch.5.a`/`UNIFIED.tool_no_close`). This mirrors that
+///   observed asymmetry; it is not a claim about model reliability beyond
+///   what these two fixtures establish. `tool_index` is the same monotonic
+///   per-stream counter `WrappedBlockScanner` already tracks for
+///   `tool_call_id`.
+fn kimi_invoke_end(text: &str, flush: bool, tool_index: usize) -> Option<usize> {
     // The first `argument_begin` in `text` only belongs to THIS invoke
     // (the one starting at byte 0) if nothing closes the invoke before it.
     // Model output is probabilistic and can violate its own grammar --
@@ -267,7 +284,26 @@ fn kimi_invoke_end(text: &str, flush: bool) -> Option<usize> {
     // re-match a `call_end`-looking byte sequence still sitting inside the
     // not-yet-closed argument string.
     let after_args = &text[args_at..];
-    let Some(json_len) = json_value_end(after_args) else {
+    // `json_value_end` only proves bracket/quote NESTING is balanced, not
+    // that the bytes are valid JSON (`{not-json}` reads as "balanced" --
+    // braces match, zero quotes to mistrack -- but isn't a legal JSON
+    // value; likewise `{<|tool_calls_section_end|>}` balances even though
+    // its "content" is a section-end marker, not JSON). Every downstream
+    // branch below this point (the well-formed `call_end` search, the
+    // best-effort EOF recovery) assumed a `json_value_end` success meant
+    // "this is real JSON" and never re-checked -- a bracket-balanced-but-
+    // invalid body could still slip through, its embedded section-end
+    // marker never even scanned for, since the code trusted `json_len` as
+    // the argument's real boundary. Validating HERE, before any of those
+    // branches run, means an invalid body falls through to the SAME
+    // malformed/raw-string fallback below (with its own intervening-
+    // section-end guard) instead of taking the well-formed path at all --
+    // one owner for "is this argument actually usable as JSON", not a
+    // patchwork of per-branch checks.
+    let valid_json_len = json_value_end(after_args).filter(|&json_len| {
+        serde_json::from_str::<serde_json::Value>(&after_args[..json_len]).is_ok()
+    });
+    let Some(json_len) = valid_json_len else {
         // `json_value_end` returning `None` does NOT mean "malformed" --
         // most of the time it means "not balanced YET", e.g. a chunk split
         // lands mid-string with a `call_end`-looking byte sequence sitting
@@ -295,7 +331,26 @@ fn kimi_invoke_end(text: &str, flush: bool) -> Option<usize> {
             && let Some(rel) = after_args.find(CALL_END)
             && after_args.find(CALL_START).is_none_or(|next| rel < next)
         {
-            return Some(args_at + rel + CALL_END.len());
+            // Mirror the well-formed-JSON sibling's section-end guard
+            // below: a real section-end marker occurring before this
+            // literal `call_end` means the model explicitly closed the
+            // whole tool_calls section without ever giving THIS call its
+            // own `call_end` ("mismatched fences"), same as the sibling
+            // case, just discovered via the malformed/raw-string path
+            // instead of the well-formed-JSON path. Recovering here would
+            // swallow the section-end marker into this invoke's own
+            // malformed argument and hide the section boundary from every
+            // downstream check that trusts this returned position --
+            // reproduced directly: `{"location": "unterminated<section_end>`
+            // followed by a literal `call_end` recovered a call whose raw
+            // argument absorbed the section-end marker as text.
+            let before_call_end = &after_args[..rel];
+            let section_end_intervenes = [SECTION_END_PLURAL, SECTION_END_SINGULAR]
+                .iter()
+                .any(|marker| before_call_end.contains(marker));
+            if !section_end_intervenes {
+                return Some(args_at + rel + CALL_END.len());
+            }
         }
         return None;
     };
@@ -316,7 +371,33 @@ fn kimi_invoke_end(text: &str, flush: bool) -> Option<usize> {
     // Best-effort recovery (`UNIFIED.5.b`, policy P2 sibling): the argument
     // body is syntactically complete but the model stopped before emitting
     // the closer. Only at true EOF -- otherwise wait for more input.
-    flush.then_some(json_end)
+    //
+    // But NOT when a real section-end marker follows instead of more input
+    // running out: that's not truncation, it's the model explicitly closing
+    // the whole tool_calls section without ever giving THIS call its own
+    // `call_end` -- "mismatched fences" (`TOOLCALLING.batch.4.d`, sourced
+    // from vLLM's own kimi_k2 parser tests). `parse_section_block`'s regex
+    // (the batch-mode typing layer this module promises byte-parity with)
+    // has no fallback for a missing `call_end` regardless of what follows
+    // it, so recovering here would ship a call batch mode drops -- exactly
+    // the divergence `conformance_toolcalling_batch_via_stream` caught.
+    if flush {
+        let trimmed_after_json = after_json.trim_start();
+        if [SECTION_END_PLURAL, SECTION_END_SINGULAR]
+            .iter()
+            .any(|marker| trimmed_after_json.starts_with(marker))
+        {
+            return None;
+        }
+    }
+    // `tool_index == 0` only (see the doc comment above): a later call with
+    // no evidence it ever closes is a malformed shape, not truncation, once
+    // an earlier call in the same response DID close correctly. `json_len`
+    // is already proven valid JSON at this point (the hoisted
+    // `serde_json::from_str` check above `valid_json_len` covers this
+    // whole function, not just this one branch), so no separate
+    // JSON-validity check is needed here.
+    (flush && tool_index == 0).then_some(json_end)
 }
 
 /// Kimi's `call_start` marker is unambiguous wherever it appears; every
@@ -515,6 +596,61 @@ mod tests {
     }
 
     #[test]
+    fn hardcoded_markers_mirror_the_config_default() {
+        // `CALL_START`/`CALL_END`/`ARGUMENT_BEGIN`/`SECTION_END_PLURAL`/
+        // `SECTION_END_SINGULAR` all exist only because `InvokeScan`'s hooks
+        // are plain `fn` pointers and cannot borrow a per-instance config
+        // (see the comment on `CALL_START` above). `KimiK2ParserConfig::
+        // default()` is the one real owner of these strings; this test is
+        // the parity check that fails loudly if a future config change
+        // silently stops matching these mirrors, instead of `kimi_invoke_end`
+        // quietly scanning for the wrong bytes.
+        let config = KimiK2ParserConfig::default();
+        assert_eq!(config.call_start, CALL_START);
+        assert_eq!(config.call_end, CALL_END);
+        assert_eq!(config.argument_begin, ARGUMENT_BEGIN);
+        assert_eq!(
+            config.section_end_variants,
+            vec![
+                SECTION_END_PLURAL.to_string(),
+                SECTION_END_SINGULAR.to_string()
+            ],
+        );
+    }
+
+    #[test]
+    fn section_end_marker_embedded_in_a_string_argument_is_data_not_a_boundary() {
+        // A well-formed call whose own JSON string argument happens to
+        // contain the literal bytes of the section-end marker (e.g. echoing
+        // a shell command) must NOT be mistaken for the real block boundary.
+        // The shared `drop_invoke_crossing_block_end` safety net used a raw,
+        // non-string-aware search that matched this embedded copy and
+        // dropped the whole call, leaking its JSON tail as garbage text and
+        // corrupting the `tool_index` of the following call (`next_index`
+        // never advanced for the dropped one).
+        let out = parse_chunks(
+            &weather_tools(),
+            &[
+                "<|tool_calls_section_begin|><|tool_call_begin|>functions.run:0<|tool_call_argument_begin|>",
+                "{\"cmd\":\"echo <|tool_calls_section_end|>\"}<|tool_call_end|>",
+                "<|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{\"location\":\"NYC\"}<|tool_call_end|><|tool_calls_section_end|>",
+            ],
+        );
+        assert_eq!(out.normal_text, "");
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 2);
+        assert_eq!(merged.calls[0].tool_index, 0);
+        assert_eq!(merged.calls[0].name.as_deref(), Some("run"));
+        assert_eq!(
+            merged.calls[0].arguments,
+            r#"{"cmd":"echo <|tool_calls_section_end|>"}"#
+        );
+        assert_eq!(merged.calls[1].tool_index, 1);
+        assert_eq!(merged.calls[1].name.as_deref(), Some("get_weather"));
+        assert_eq!(merged.calls[1].arguments, r#"{"location":"NYC"}"#);
+    }
+
+    #[test]
     fn emits_complete_call_on_close() {
         let out = parse_chunks(
             &weather_tools(),
@@ -552,7 +688,7 @@ mod tests {
         // on its own, without ever needing the native-id path below it.
         let bare_invoke_with_own_close = "<|tool_call_begin|>functions.run:0<|tool_call_end|>";
         assert_eq!(
-            kimi_invoke_end(text, true),
+            kimi_invoke_end(text, true, 0),
             Some(bare_invoke_with_own_close.len()),
             "must bound to the bare invoke's own close, not span through the second invoke's call_end"
         );
@@ -572,7 +708,7 @@ mod tests {
         let text = "<|tool_call_begin|>functions.run:0<|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|>";
         let bare_invoke_id_only = "<|tool_call_begin|>functions.run:0";
         assert_eq!(
-            kimi_invoke_end(text, true),
+            kimi_invoke_end(text, true, 0),
             Some(bare_invoke_id_only.len()),
             "must bound to the bare invoke's id alone (it has no close of its own), \
              not span through the second invoke's call_end"
@@ -702,6 +838,136 @@ mod tests {
         );
         assert_eq!(out.normal_text, "");
         assert!(out.calls.is_empty());
+    }
+
+    #[test]
+    fn mismatched_fences_drop_the_call_instead_of_recovering_it() {
+        // `TOOLCALLING.batch.4.d` (sourced from vLLM's own kimi_k2 parser
+        // tests): the JSON body is syntactically complete, but the model
+        // closes the whole tool_calls section (`section_end`) without ever
+        // giving this call its own `call_end`. This is NOT the same as
+        // running out of tokens mid-call (`suppresses_truncated_call_at_eof`)
+        // or completing right at EOF with nothing else following
+        // (`UNIFIED.tool_no_close`, `TOOLCALLING.streamv2.5.a`) -- a real
+        // section-end marker DOES follow, so the model had more to say and
+        // chose not to close this call. Batch mode's regex requires a
+        // literal `call_end` unconditionally and drops it; streaming must
+        // match, or `conformance_toolcalling_batch_via_stream` diverges.
+        let out = parse_chunks(
+            &weather_tools(),
+            &[
+                "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>",
+                "{\"location\":\"NYC\"}<|tool_calls_section_end|>",
+            ],
+        );
+        assert_eq!(out.normal_text, "");
+        assert!(out.calls.is_empty());
+    }
+
+    /// Reviewer-caught regression: a bracket-balanced but JSON-GRAMMAR-INVALID
+    /// body (`{not-json}` -- braces match, but it's not legal JSON: no
+    /// quoted key, no colon, no value) with NO `call_end` anywhere in the
+    /// buffer used to still recover a call at EOF, because `json_value_end`
+    /// only proves bracket/quote nesting is balanced, not that the bytes
+    /// parse as JSON. `parse_section_block`'s regex (batch mode) requires a
+    /// literal `call_end` to match anything at all and so drops this input
+    /// outright -- reproduced directly: streaming shipped a call with
+    /// `arguments: "{not-json}"` while batch mode produced zero calls.
+    #[test]
+    fn eof_recovery_requires_actually_valid_json_not_just_balanced_brackets() {
+        let text = "<|tool_call_begin|>functions.run:0<|tool_call_argument_begin|>{not-json}";
+        assert_eq!(
+            kimi_invoke_end(text, true, 0),
+            None,
+            "a bracket-balanced but grammatically invalid body with no call_end evidence \
+             at all must not be recovered -- batch mode's regex can never match it either"
+        );
+    }
+
+    /// Sibling positive control: the SAME shape but with genuinely valid
+    /// JSON still recovers normally -- this fix must not regress the
+    /// existing `UNIFIED.5.b`/`tool_no_close` best-effort recovery contract.
+    #[test]
+    fn eof_recovery_still_recovers_genuinely_valid_json_with_no_call_end() {
+        let text =
+            "<|tool_call_begin|>functions.run:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}";
+        assert_eq!(
+            kimi_invoke_end(text, true, 0),
+            Some(text.len()),
+            "valid JSON with no call_end at true EOF must still be recovered"
+        );
+    }
+
+    /// Reviewer-caught regression: a malformed (odd quote count) argument
+    /// followed by a real section-end marker, with a literal `call_end`
+    /// only appearing AFTER that section-end, used to still recover a call
+    /// whose raw-string argument swallowed the section-end marker as text
+    /// -- the same "mismatched fences" shape the well-formed-JSON path
+    /// already guards against (see the `flush` block above this function's
+    /// EOF-recovery gate), just reached through the malformed/raw-string
+    /// fallback instead, which was missing the equivalent guard.
+    #[test]
+    fn malformed_argument_recovery_also_respects_an_intervening_section_end() {
+        let text = "<|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"location\": \"unterminated<|tool_calls_section_end|><|tool_call_end|>";
+        assert_eq!(
+            kimi_invoke_end(text, true, 0),
+            None,
+            "a real section-end marker occurring before the only available call_end \
+             means this call never got its own closer -- must drop, not swallow the \
+             section-end into a malformed raw-string argument"
+        );
+    }
+
+    /// Sibling positive control: the SAME malformed-argument raw-string
+    /// fallback still recovers normally when no section-end marker
+    /// intervenes -- this fix must not regress the raw-string recovery
+    /// contract `malformed_non_json_arguments_still_ship_the_call_instead_of_vanishing`
+    /// already covers end-to-end.
+    #[test]
+    fn malformed_argument_recovery_still_works_without_an_intervening_section_end() {
+        let text = "<|tool_call_begin|>functions.run:0<|tool_call_argument_begin|>bad\"arg<|tool_call_end|>";
+        assert_eq!(
+            kimi_invoke_end(text, true, 0),
+            Some(text.len()),
+            "a malformed raw-string argument with its own real call_end and no \
+             intervening section-end must still be recovered"
+        );
+    }
+
+    #[test]
+    fn mismatched_fences_singular_section_variant_also_drops_the_call() {
+        // Same shape as above, through the singular `<|tool_call_section_end|>`
+        // variant -- the guard checks both `section_end_variants`, not just
+        // the plural default.
+        let out = parse_chunks(
+            &weather_tools(),
+            &[
+                "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"location\":\"NYC\"}<|tool_call_section_end|>",
+            ],
+        );
+        assert_eq!(out.normal_text, "");
+        assert!(out.calls.is_empty());
+    }
+
+    #[test]
+    fn multi_call_mismatched_fences_keeps_the_closed_call_drops_the_open_one() {
+        // `TOOLCALLING.batch.5.d`-adjacent shape: a properly closed first
+        // call followed by a second call whose JSON is complete but whose
+        // `call_end` is missing, with a real section_end right after (unlike
+        // `.5.d`, which has no section_end at all and is a genuine-truncation
+        // case handled by `known-divergences.yaml`, not this guard). The
+        // first call must still ship; only the malformed second is dropped.
+        let out = parse_chunks(
+            &weather_tools(),
+            &[
+                "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"location\":\"Boston\"}<|tool_call_end|>",
+                "<|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{\"location\":\"New York\"}<|tool_calls_section_end|>",
+            ],
+        );
+        assert_eq!(out.normal_text, "");
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 1);
+        assert_eq!(merged.calls[0].arguments, r#"{"location":"Boston"}"#);
     }
 
     #[test]
