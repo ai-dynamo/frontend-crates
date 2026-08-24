@@ -33,9 +33,7 @@ use crate::tool_calling::scan::{
 };
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
 use crate::tool_calling::v1core::ToolDefinition;
-use crate::unified::{
-    Kind, UnifiedParserEvent, UnifiedParserInit, UnifiedParserStartingState, UnifiedToolOutputMode,
-};
+use crate::unified::{Kind, UnifiedParserEvent, UnifiedParserStartingState};
 
 const START: &str = "<|start|>";
 const MESSAGE: &str = "<|message|>";
@@ -48,6 +46,17 @@ const USER_RECIPIENT: &str = "user";
 
 /// Structural markers held back when split across a chunk boundary.
 const MARKERS: [&str; 4] = [START, MESSAGE, EOM, EOT];
+
+/// The ATEM tool BLOCK pair, which wraps a tool channel's invokes.
+const BLOCK_OPEN: &str = "<atem:function_calls>";
+const BLOCK_CLOSE: &str = "</atem:function_calls>";
+
+// The ATEM block pair is deliberately NOT stripped from visible runs. Outside a
+// tool channel this family treats ATEM as ORDINARY TEXT — `unframed_atem_does_not_parse`
+// and `quoted_atem_in_content_is_not_a_call` pin that, and it is the safety rule that
+// keeps a model quoting ATEM in prose from being read as a call. Only the guided
+// reader strips it, because guided decoding constrains the payload to bare JSON and
+// leaves any native markup around it stray by construction.
 
 /// One complete ATEM invoke open tag, capturing the tool name. `[^>]*?` ends the tag at
 /// the first `>`, so only a `>` inside a non-`name` attribute value (which the template
@@ -232,6 +241,148 @@ fn first_header_start(s: &str) -> Option<usize> {
 fn valid_header_fragment(after: &str) -> bool {
     let rest = &after[recipient_run_len(after)..];
     rest.is_empty() || (rest.len() < MESSAGE.len() && MESSAGE.starts_with(rest))
+}
+
+/// The markers the guided reader may strip ON THEIR OWN, without reading anything
+/// around them.
+///
+/// `<|start|>` and `<|message|>` are deliberately ABSENT even though they are this
+/// grammar's most common markup. They are header CONSTITUENTS, not standalone
+/// markers: stripping `<|start|>` the moment it arrives consumes the very byte
+/// [`resolve_header`] looks back for, so the role word and the recipient behind it
+/// are released as visible text and the thought then opens at the wrong offset. A
+/// header is consumed whole by [`guided_reasoning_open`] or [`guided_stray_header`]
+/// instead. `<|eom|>` and `<|eot|>` stay here because they really are standalone —
+/// nothing is read around them to decide what they mean.
+///
+/// The ATEM entries matter for the guided cases where native markup BRACKETS a
+/// constrained payload: a `<atem:function_calls>` that is not stripped enters the
+/// JSON buffer, breaks the parse and costs the call.
+pub(crate) const GUIDED_CONTROL_MARKERS: [&str; 5] = [
+    EOM,
+    EOT,
+    BLOCK_OPEN,
+    BLOCK_CLOSE,
+    // The PREFIX FORM of the invoke opener: it introduces the tool name, which runs
+    // to the tag's `>`. Declared through the name's opening quote rather than as the
+    // bare `<atem:invoke`, so an opener that is never terminated is stripped whole
+    // instead of leaving ` name="` behind to poison the payload.
+    INVOKE_OPEN_HEADER,
+];
+
+// `</atem:invoke>` is deliberately NOT in that set, exactly as qwen3 omits its own
+// `</function>`. The invoke CLOSER is supplied separately as the grammar's
+// `invoke_end`, and the opener consumes through it to take the whole invoke —
+// parameter elements and all — in one strip. Listing it here made it bound the
+// opener's own terminator search, so the pair was cut at the header and the
+// `<atem:parameter …>` body between them was emitted to the user as text.
+
+/// The invoke opener through the tool name's opening quote.
+const INVOKE_OPEN_HEADER: &str = "<atem:invoke name=\"";
+
+/// The framing markers that compete with tool syntax for a terminator, and whose
+/// split prefixes are held back.
+///
+/// Only the FIXED bytes of a header can compete; the recipient inside one is data
+/// whose length the grammar does not bound.
+pub(crate) const GUIDED_COMPETITORS: [&str; 4] = MARKERS;
+
+/// The markers that CLOSE a message, and so close a thought.
+pub(crate) const GUIDED_CLOSE_MARKERS: [&str; 2] = [EOM, EOT];
+
+/// Earliest header in `haystack` whose recipient satisfies `want`.
+///
+/// Routes through [`resolve_header`], the SAME owner the native scan uses, so the
+/// guided path and the native path cannot disagree about where a header begins or
+/// how much of it is framing. A fixed opener string would be wrong in both
+/// directions: it would miss the bare `to=self<|message|>` form this family accepts
+/// when the prompt consumed `<|start|>assistant`, and it would read a `to=user`
+/// content header as a thought.
+///
+/// Returns `(header_start, bytes through `<|message|>`)`. Whole headers only — an
+/// incomplete one is retained by [`guided_header_holdback`] instead, so a header is
+/// never half-consumed and never released as text.
+fn guided_header(haystack: &str, want: fn(Option<&str>) -> bool) -> Option<(usize, usize)> {
+    let mut search = 0;
+    while let Some(relative) = haystack[search..].find(MESSAGE) {
+        let msg_pos = search + relative;
+        let (header_start, recipient) = resolve_header(haystack, msg_pos);
+        if want(recipient) {
+            return Some((header_start, msg_pos + MESSAGE.len() - header_start));
+        }
+        search = msg_pos + MESSAGE.len();
+    }
+    None
+}
+
+/// Earliest REASONING header: the one that OPENS a thought.
+///
+/// `flush` is unused because a header is recognised only once its `<|message|>` has
+/// arrived; at end of stream a header that never completed is not a header.
+pub(crate) fn guided_reasoning_open(haystack: &str, _flush: bool) -> Option<(usize, usize)> {
+    guided_header(haystack, |recipient| recipient == Some(REASONING_RECIPIENT))
+}
+
+/// Earliest NON-reasoning header: framing to strip rather than a thought to open.
+///
+/// Under guided decoding the tool payload arrives as bare JSON, so a `to=user`
+/// content header or a `to=NAME` tool header is markup the model emitted around a
+/// payload that does not need it. It has to be consumed WHOLE. Listing `<|start|>`
+/// and `<|message|>` as ordinary control markers is not enough — that strips the two
+/// markers and releases the role word and the recipient between them as visible
+/// text, so the user reads `assistant to=user` as the model's answer.
+pub(crate) fn guided_stray_header(haystack: &str, flush: bool) -> Option<(usize, usize)> {
+    if let Some(found) = guided_header(haystack, |recipient| recipient != Some(REASONING_RECIPIENT))
+    {
+        return Some(found);
+    }
+    // At end of stream a `<|start|>` whose `<|message|>` never arrived can no longer
+    // become a header. It is committed parser-owned markup and is dropped rather than
+    // shown to the user, which is the same judgement `flush_open_text` makes for the
+    // native path; anything after it is ordinary prose and stays visible.
+    if flush {
+        return haystack.find(START).map(|at| (at, START.len()));
+    }
+    None
+}
+
+/// Earliest message terminator in `haystack`: `(offset, bytes to consume)`.
+///
+/// Both terminators close a thought. `<|eot|>` ends the whole turn while `<|eom|>`
+/// continues it, but the guided reader's question is only "is this span over", and
+/// answering it differently for the two would leave a thought open past the end of
+/// the turn and emit the payload that follows as reasoning.
+pub(crate) fn guided_reasoning_close(haystack: &str) -> Option<(usize, usize)> {
+    GUIDED_CLOSE_MARKERS
+        .iter()
+        .filter_map(|marker| haystack.find(marker).map(|at| (at, marker.len())))
+        .min_by_key(|(at, _)| *at)
+}
+
+/// Trailing bytes the guided reader must retain so a header split across a chunk
+/// boundary is never flushed as text or into the payload buffer.
+///
+/// Two ways a header can be mid-arrival, and holding only the second is what made
+/// the same bytes parse differently whole than one character at a time:
+///
+/// 1. A COMPLETE `<|start|>` whose `<|message|>` has not arrived yet. Everything
+///    after it — the role word, the spacing, the `to=` and the recipient — is header
+///    bytes. Releasing them emitted `assistant` as visible text, and by the time
+///    `<|message|>` arrived [`resolve_header`] could no longer see the `<|start|>`
+///    it needed to look back at, so the thought opened at the wrong offset.
+/// 2. A trailing `to=`-shaped fragment with no framing, which is the bare-header
+///    form. [`open_header_tail`] is the same helper the native scan holds bodies
+///    with, so a recipient cannot leak on one path and be held on the other.
+///
+/// A PARTIAL `<|start|>` (`<|sta`) needs no case here: it is a split marker, and the
+/// shared holdback already retains every declared marker's prefix.
+pub(crate) fn guided_header_holdback(haystack: &str) -> usize {
+    if let Some(at) = haystack.rfind(START)
+        && !haystack[at..].contains(MESSAGE)
+    {
+        return haystack.len() - at;
+    }
+    open_header_tail(haystack)
 }
 
 /// Visible text with orphan framing markers removed so they never reach the
@@ -437,27 +588,25 @@ impl MuseChannelScanner {
     /// shares with the content and tool channels. Supporting guided muse means teaching
     /// the guided machinery to work without a marker pair, which is a change to the
     /// shared unified layer, not to this family.
-    pub(crate) fn apply_init(&mut self, init: UnifiedParserInit) -> anyhow::Result<()> {
-        if self.started {
-            anyhow::bail!("cannot initialize the muse parser after parsing has started");
-        }
-        // Validate BEFORE mutating, so a rejected initialize is a no-op and a caller that
-        // retries in a supported mode is not building on half-applied state.
-        if init.tool_output_mode != UnifiedToolOutputMode::Native {
-            anyhow::bail!(
-                "muse_glimmer has no reasoning marker pair, so the guided-JSON path has no                  reasoning spec to build on; use native tool output"
-            );
-        }
-        self.state = match init.starting_state {
+    /// Apply the channel state the prompt left this stream in.
+    ///
+    /// Guided decoding is NOT rejected here any more. It used to be, on the ground
+    /// that this family has no reasoning marker PAIR — but "no pair" is a statement
+    /// about how the opener is spelled, not about whether a reasoning channel
+    /// exists. Muse has one; it is routed by recipient. The guided reader now asks
+    /// [`GuidedReasoning`] where a thought starts rather than assuming a fixed
+    /// string, so this family answers with [`guided_reasoning_open`] and is served
+    /// like any other.
+    pub(crate) fn apply_starting_state(&mut self, starting_state: UnifiedParserStartingState) {
+        self.state = match starting_state {
             UnifiedParserStartingState::None => State::Idle,
             UnifiedParserStartingState::Reasoning => State::InReasoning,
             UnifiedParserStartingState::Response => State::InContent,
         };
         // A header the prompt already consumed cannot arrive again, so the turn-start
         // latch only stays armed when this stream really does begin at `Idle`.
-        self.allow_bare_header = init.starting_state != UnifiedParserStartingState::Response;
+        self.allow_bare_header = starting_state != UnifiedParserStartingState::Response;
         self.last_body_char = None;
-        Ok(())
     }
 
     pub(crate) fn finish_ordered(&mut self) -> anyhow::Result<Vec<UnifiedParserEvent>> {

@@ -17,38 +17,83 @@
 //! the end-of-stream drop stay a single implementation.
 //!
 //! There is deliberately no `ReasoningSpec`: Muse has no reasoning marker PAIR — a
-//! dynamic `to=self<|message|>` header opens reasoning, sharing its opener with the
-//! content and tool channels, so routing is by recipient, not marker. That is why this
-//! family does not run on [`crate::unified::ScannerUnified`].
+//! dynamic `to=self<|message|>` header opens reasoning, sharing every literal byte
+//! except the recipient with the content and tool channels, so routing is by
+//! recipient, not marker. That is why this family does not run on
+//! [`crate::unified::ScannerUnified`].
+//!
+//! Having no marker pair is NOT the same as having no reasoning channel, and the two
+//! were conflated for a while: guided tool output was refused outright for this
+//! family, which left 37 of the 81 unified conformance scenarios ungenerated. The
+//! guided reader now asks [`crate::unified::GuidedReasoning`] where a thought begins
+//! instead of assuming a fixed opener string, so this family supplies the header
+//! resolver it already uses natively and is served guided output like any other.
 //!
 //! What the unified path adds is ORDER: one machine routes reasoning, content and calls
 //! directly, so a thought between two calls stays between them instead of being hoisted
 //! ahead of the calls the way the split path does.
 
-use crate::tool_calling::muse_glimmer::{MuseChannelScanner, muse_scanner};
+use crate::tool_calling::muse_glimmer::{
+    GUIDED_CLOSE_MARKERS, GUIDED_COMPETITORS, GUIDED_CONTROL_MARKERS, MuseChannelScanner,
+    guided_header_holdback, guided_reasoning_close, guided_reasoning_open, guided_stray_header,
+    muse_scanner,
+};
 use crate::tool_calling::traits::{Result, Tool};
-use crate::unified::{UnifiedParser, UnifiedParserEvent, UnifiedParserInit, UnifiedParserOutput};
+use crate::unified::{
+    GuidedChannel, GuidedGrammar, GuidedReasoning, GuidedRouted, NativeUnified, UnifiedParser,
+    UnifiedParserEvent, UnifiedParserOutput, UnifiedParserStartingState,
+};
 
-impl UnifiedParser for MuseChannelScanner {
+/// The invoke opener, in the prefix form the guided reader anchors on.
+const INVOKE_START: &str = "<atem:invoke";
+const INVOKE_END: &str = "</atem:invoke>";
+
+impl NativeUnified for MuseChannelScanner {
     fn preserve_special_tokens(&self) -> bool {
         true
     }
 
-    fn initialize_request(&mut self, init: UnifiedParserInit) -> Result<()> {
-        self.apply_init(init)
+    /// Reasoning recognised by RECIPIENT rather than by a marker pair.
+    ///
+    /// Always `Some`: this family does have a reasoning channel, so an explicitly
+    /// prefilled thought and guided tool output are both honourable. Returning
+    /// `None` here would silently reinstate the refusal this replaced.
+    fn guided_reasoning(&self) -> Option<GuidedReasoning> {
+        Some(GuidedReasoning::Channel(GuidedChannel {
+            find_open: guided_reasoning_open,
+            find_close: guided_reasoning_close,
+            find_stray: guided_stray_header,
+            holdback: guided_header_holdback,
+            competitors: &GUIDED_COMPETITORS,
+            close_markers: &GUIDED_CLOSE_MARKERS,
+        }))
     }
 
-    /// The trait default returns an empty string and clears nothing. Muse buffers on
-    /// every path — a partial marker, an open channel, the bare-header latch and a used
-    /// `next_index` — so inheriting it would report an empty carry while the scanner
-    /// still held all of that. A caller on the documented recovery path would drop the
-    /// held bytes and resume on a counter that re-numbers its first call onto an index
-    /// the abandoned stream already dispatched.
-    fn reset(&mut self) -> String {
-        self.reset_stream()
+    fn guided_grammar(&self) -> GuidedGrammar {
+        GuidedGrammar {
+            control_markers: GUIDED_CONTROL_MARKERS
+                .iter()
+                .map(|m| m.to_string())
+                .collect(),
+            invoke_start: INVOKE_START.to_string(),
+            invoke_end: INVOKE_END.to_string(),
+            // The marker-only rules are enough here: an ATEM invoke is delimited by a
+            // literal opener and closer, with no grammar-aware location rule of the
+            // kind gemma4's value wrapping needs.
+            invoke_scan: None,
+        }
     }
 
-    fn parse_into(&mut self, delta: &str, output: &mut UnifiedParserOutput) -> Result<()> {
+    fn apply_native_init(&mut self, starting_state: UnifiedParserStartingState) {
+        self.reset_stream();
+        self.apply_starting_state(starting_state);
+    }
+
+    fn restore_native_state(&mut self, starting_state: UnifiedParserStartingState) {
+        self.apply_starting_state(starting_state);
+    }
+
+    fn push_native(&mut self, delta: &str, output: &mut UnifiedParserOutput) -> Result<()> {
         // Through a carry the caller keeps on `Err`, not `push_ordered`'s owned
         // `Result<Vec<_>>`: the drain types arguments mid-advance (`parse_invoke`), so it
         // can commit events and THEN fail, and the trait promises those stay in `output`.
@@ -60,12 +105,21 @@ impl UnifiedParser for MuseChannelScanner {
         result
     }
 
-    fn finish(&mut self) -> Result<UnifiedParserOutput> {
-        let mut output = UnifiedParserOutput::default();
+    fn finish_native(&mut self, output: &mut UnifiedParserOutput) -> Result<()> {
         for event in self.finish_ordered()? {
-            push_event(&mut output, event);
+            push_event(output, event);
         }
-        Ok(output)
+        Ok(())
+    }
+
+    /// The trait default returns an empty string and clears nothing. Muse buffers on
+    /// every path — a partial marker, an open channel, the bare-header latch and a used
+    /// `next_index` — so inheriting it would report an empty carry while the scanner
+    /// still held all of that. A caller on the documented recovery path would drop the
+    /// held bytes and resume on a counter that re-numbers its first call onto an index
+    /// the abandoned stream already dispatched.
+    fn reset_native(&mut self) -> String {
+        self.reset_stream()
     }
 }
 
@@ -79,13 +133,15 @@ fn push_event(output: &mut UnifiedParserOutput, event: UnifiedParserEvent) {
 
 /// Build the Muse Glimmer unified parser for one stream.
 pub(crate) fn muse_glimmer_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
-    Box::new(muse_scanner(tools))
+    Box::new(GuidedRouted::new(muse_scanner(tools)))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::unified::{UnifiedEvent, UnifiedParserExt, assemble};
+    use crate::unified::{
+        UnifiedEvent, UnifiedParserExt, UnifiedParserInit, UnifiedToolOutputMode, assemble,
+    };
 
     /// The conformance harness vocabulary, so a unit test and a golden case can
     /// describe the same call.
@@ -844,6 +900,100 @@ mod tests {
         // half; a marker it merely quotes whole is stripped by the run it sits in.
     }
 
+    /// Guided tool output, on the family that had none.
+    ///
+    /// The guided reader used to be refused outright here, on the ground that muse has
+    /// no reasoning marker PAIR. It has a reasoning CHANNEL — routed by recipient — and
+    /// conflating the two skipped 37 of the 81 unified conformance scenarios for this
+    /// family.
+    ///
+    /// Each shape is driven twice, whole and one character at a time, and the two must
+    /// agree. That is the assertion that matters, not the literal events: the first
+    /// working version of this parsed every shape correctly whole and, per character,
+    /// released `assistant` from the middle of `<|start|>assistant to=self<|message|>`
+    /// as the model's visible answer — then could no longer see the `<|start|>` it
+    /// needed to look back at, so the thought opened at the wrong offset. Same bytes,
+    /// two answers, decided by where the chunk boundaries fell (`I6`).
+    #[test]
+    fn guided_payloads_parse_the_same_whole_and_split() {
+        let one_call = r#"[{"name": "get_weather", "arguments": {"city": "Paris"}}]"#;
+        let call = |args: &str| UnifiedEvent::ToolCall {
+            name: "get_weather".into(),
+            arguments: serde_json::from_str(args).expect("golden arguments are JSON"),
+        };
+        for (label, named, input, want) in [
+            (
+                "a named choice sends the argument object alone",
+                Some("get_weather"),
+                r#"{"city": "Paris"}"#.to_string(),
+                vec![call(r#"{"city": "Paris"}"#)],
+            ),
+            (
+                "a required choice sends an array of envelopes",
+                None,
+                one_call.to_string(),
+                vec![call(r#"{"city": "Paris"}"#)],
+            ),
+            (
+                "a framed thought precedes the payload",
+                None,
+                format!("<|start|>assistant to=self<|message|>thinking<|eom|>{one_call}"),
+                vec![
+                    UnifiedEvent::Reasoning {
+                        text: "thinking".into(),
+                    },
+                    call(r#"{"city": "Paris"}"#),
+                ],
+            ),
+            (
+                // The form the prompt leaves when it has already consumed
+                // `<|start|>assistant`. A fixed opener string would not match it.
+                "a BARE thought header precedes the payload",
+                None,
+                format!(" to=self<|message|>thinking<|eom|>{one_call}"),
+                vec![
+                    UnifiedEvent::Reasoning {
+                        text: "thinking".into(),
+                    },
+                    call(r#"{"city": "Paris"}"#),
+                ],
+            ),
+            (
+                // Guided decoding constrains the payload to bare JSON, so ATEM around
+                // it is markup with nothing behind it. Left in, it enters the JSON
+                // buffer, breaks the parse and costs the call.
+                "native ATEM markup brackets the payload",
+                None,
+                format!("<atem:function_calls>{one_call}</atem:function_calls>"),
+                vec![call(r#"{"city": "Paris"}"#)],
+            ),
+        ] {
+            let drive = |chunks: Vec<String>| {
+                let mut parser = muse_glimmer_unified(&tools());
+                parser
+                    .initialize_request(UnifiedParserInit {
+                        prompt_token_ids: Vec::new(),
+                        starting_state: UnifiedParserStartingState::None,
+                        tool_output_mode: UnifiedToolOutputMode::GuidedJson {
+                            named_tool: named.map(str::to_string),
+                        },
+                        invalid_guided_payload: Default::default(),
+                    })
+                    .expect("guided init must be accepted");
+                let mut deltas = Vec::new();
+                for chunk in chunks {
+                    deltas.extend(parser.push(&chunk).expect("push"));
+                }
+                deltas.extend(parser.finish().expect("finish"));
+                assemble(&deltas)
+            };
+            let whole = drive(vec![input.clone()]);
+            let split = drive(input.chars().map(|c| c.to_string()).collect());
+            assert_eq!(whole, want, "{label}: whole input");
+            assert_eq!(split, want, "{label}: one character at a time");
+        }
+    }
+
     #[test]
     fn a_reused_parser_reads_the_next_turn_the_way_a_fresh_one_does() {
         // `finish` cleared the buffer and the state but left every PER-TURN latch set,
@@ -857,9 +1007,16 @@ mod tests {
         // `finish_reasoning_stream` and says why; this is the port catching up. Held as
         // fresh-equals-reused rather than as literal expectations, so the guard cannot
         // rot into asserting whatever the scanner happens to do.
+        // `reset` between turns is the documented reuse path — the trait says one
+        // instance parses exactly one choice of one request, and the shared adapter
+        // rejects a push after `finish` for every family rather than for none. What
+        // this pin is about survives that: the latches below are cleared by the
+        // scanner's own `take_stream_state`, which both `finish` and `reset` run, so a
+        // latch that leaked would still show up as reused-diverges-from-fresh.
         fn turn(parser: &mut Box<dyn UnifiedParser>, text: &str) -> Vec<UnifiedParserEvent> {
             let mut deltas = parser.push(text).expect("push");
             deltas.extend(parser.finish().expect("finish"));
+            parser.reset();
             deltas
         }
         let reasoning_turn = " to=self<|message|>one<|eom|>";
@@ -958,6 +1115,7 @@ mod tests {
         let mut reused = muse_glimmer_unified(&tools());
         let mut warmup = reused.push(&first).expect("push");
         warmup.extend(reused.finish().expect("finish"));
+        reused.reset();
         let mut got = reused.push(&second).expect("push");
         got.extend(reused.finish().expect("finish"));
         let mut fresh = muse_glimmer_unified(&tools());

@@ -205,17 +205,15 @@ unified:
     # Prefilled channels ARE supported: `initialize_request` opens the stream in the
     # channel the prompt already opened, which is a two-line change for this grammar.
     #
-    # Guided tool output is not, and the reason is structural rather than unfinished
-    # work: `GuidedState` is built around a `ReasoningSpec` (an open/close marker PAIR)
-    # and muse has none — reasoning opens with a dynamic `to=self<|message|>` header it
-    # shares with the content and tool channels. The harness applies `init` before
-    # parsing and would panic on the rejection, so those scenarios are not emitted.
-    #
-    # TODO(muse-guided-output): 37 of the 81 unified scenarios stay skipped for this
-    # family. Closing it means teaching the guided machinery to work WITHOUT a marker
-    # pair, which is a change to the shared unified layer, not to muse. Flip this key to
-    # `true` in the same change and those scenarios come back automatically.
-    guided_tool_output: false
+    # Guided tool output is supported. It used to be refused for this
+    # family on the ground that `GuidedState` was built around a `ReasoningSpec` (an
+    # open/close marker PAIR) and muse has none — reasoning opens with a dynamic
+    # `to=self<|message|>` header it shares with the content and tool channels. Having
+    # no marker pair is not the same as having no reasoning channel: the guided reader
+    # now asks the family where a thought begins rather than assuming a fixed opener
+    # string, and muse answers with the same header resolver its native scan uses. All
+    # 81 unified scenarios are emitted for this family.
+    guided_tool_output: true
     reasoning_parser: muse_glimmer
     tool_parser: muse_glimmer
     golden_spec: muse_glimmer.yaml
