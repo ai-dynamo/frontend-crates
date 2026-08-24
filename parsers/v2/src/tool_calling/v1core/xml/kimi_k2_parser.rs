@@ -12,7 +12,7 @@ use regex::Regex;
 use super::super::ToolDefinition;
 use super::super::config::KimiK2ParserConfig;
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
-use crate::tool_calling::scan::json_value_end;
+use crate::tool_calling::scan::{find_first_outside_strings, json_value_end};
 
 static ID_REGEX: OnceLock<Regex> = OnceLock::new();
 
@@ -123,9 +123,10 @@ fn find_section_start(
 ///   never be mistaken for a boundary, because `json_value_end` parses the
 ///   whole value rather than pattern-matching mid-string.
 /// - A MALFORMED (non-JSON) argument -- not itself illegal Kimi output,
-///   just a raw-string-fallback case -- falls back to a literal search for
-///   THIS call's own `call_end` token, bounded to just this call's span; no
-///   quote state escapes to influence any other call.
+///   just a raw-string-fallback case -- uses the shared quote-aware marker
+///   scan for THIS call's own boundaries. If its quotes never close, the
+///   conservative raw fence comparison keeps a real section end from being
+///   swallowed into the argument.
 ///
 /// Neither path lets one call's content affect how a DIFFERENT call is
 /// scanned, so a malformed call's damage is bounded to itself and a
@@ -183,8 +184,8 @@ fn find_section_end(
         cursor = match valid_json_end {
             Some(json_end) => arg_pos + json_end,
             None => {
-                // Malformed argument (json_value_end failed): the literal
-                // `call_end` fallback below must not blindly trust a match
+                // Malformed argument (json_value_end failed): the boundary
+                // fallback below must not blindly trust a `call_end` match
                 // that has a REAL section-end marker sitting before it --
                 // that means this call never got its own closer and the
                 // section actually ends at that marker. Without this
@@ -198,24 +199,66 @@ fn find_section_end(
                 // recovered a call streaming correctly dropped, a real
                 // streaming/batch divergence in the opposite direction).
                 let after_arg = &region[arg_pos..];
-                let intervening_section_end = config
-                    .section_end_variants
-                    .iter()
-                    .filter_map(|m| after_arg.find(m.as_str()).map(|p| (p, m.len())))
-                    .min_by_key(|&(p, _)| p);
-                match after_arg.find(config.call_end.as_str()) {
-                    Some(p) => match intervening_section_end {
-                        Some((sp, slen)) if sp < p => return Some((arg_pos + sp, slen)),
-                        _ => arg_pos + p + config.call_end.len(),
-                    },
-                    // No literal call_end at all -- if a section-end
-                    // exists ahead, the section ends there (this malformed
-                    // call is truncated inside a still-open section);
-                    // otherwise genuinely nothing further to skip.
-                    None => match intervening_section_end {
-                        Some((sp, slen)) => return Some((arg_pos + sp, slen)),
-                        None => return None,
-                    },
+                // Quote state from malformed arguments is meaningful only
+                // inside this call. Bound every structural and raw fallback
+                // search at the next literal opener, then restart the loop
+                // there so an unmatched quote cannot hide the next call and
+                // later resynchronize on that call's quotes.
+                let next_call_start = after_arg.find(config.call_start.as_str());
+                let current_call_region = &after_arg[..next_call_start.unwrap_or(after_arg.len())];
+                let structural_call_end =
+                    find_first_outside_strings(current_call_region, [config.call_end.as_str()]);
+                let structural_section_end = find_first_outside_strings(
+                    current_call_region,
+                    config.section_end_variants.iter().map(String::as_str),
+                );
+                if let Some((call_pos, call_len)) = structural_call_end {
+                    if let Some((section_pos, section_len)) = structural_section_end
+                        && section_pos < call_pos
+                    {
+                        return Some((arg_pos + section_pos, section_len));
+                    }
+                    arg_pos + call_pos + call_len
+                } else {
+                    // No quote-aware call end means this malformed call has
+                    // no structurally provable boundary. Do not trust a later
+                    // quote-aware section match either: an unmatched quote in
+                    // this call can coincidentally resynchronize on a quote in
+                    // the next call, recreating cross-call state leakage.
+                    // Preserve the conservative historical fallback for this
+                    // shape by comparing the first raw section end and call
+                    // end, so the current call is bounded before scanning the
+                    // next one independently.
+                    let raw_section_end = config
+                        .section_end_variants
+                        .iter()
+                        .filter_map(|marker| {
+                            current_call_region
+                                .find(marker.as_str())
+                                .map(|position| (position, marker.len()))
+                        })
+                        .min_by_key(|&(position, _)| position);
+                    match current_call_region.find(config.call_end.as_str()) {
+                        Some(call_pos) => match raw_section_end {
+                            Some((section_pos, section_len)) if section_pos < call_pos => {
+                                return Some((arg_pos + section_pos, section_len));
+                            }
+                            _ => arg_pos + call_pos + config.call_end.len(),
+                        },
+                        // No literal call_end at all -- if a section-end
+                        // exists ahead, the section ends there (this malformed
+                        // call is truncated inside a still-open section);
+                        // otherwise genuinely nothing further to skip.
+                        None => match raw_section_end {
+                            Some((section_pos, section_len)) => {
+                                return Some((arg_pos + section_pos, section_len));
+                            }
+                            None => match next_call_start {
+                                Some(next) => arg_pos + next,
+                                None => return None,
+                            },
+                        },
+                    }
                 }
             }
         };
@@ -425,48 +468,42 @@ fn parse_section_block(
             .map(|m| m.as_str().trim())
             .unwrap_or("{}");
 
-        // The capture above is lazy (`.*?`) and stops at the FIRST literal
-        // `call_end` in the block -- including a copy embedded inside a
-        // quoted string argument (`I7`). Prefer the structurally balanced
-        // JSON boundary, anchored at the SAME start position the lazy
-        // capture used, whenever the body is clean JSON immediately followed
-        // by the real closer; fall back to the lazy capture for genuinely
-        // malformed/non-JSON argument bodies, which still need the
-        // permissive raw-string path (`serde_json::from_str` below falls
-        // back to the raw text on a parse error either way).
-        //
-        // `json_value_end` only proves bracket/quote NESTING is balanced,
-        // not that the bytes are valid JSON. Without validating here, a
-        // bracket-balanced-but-invalid body containing an embedded
-        // `call_end`-looking substring as literal (non-string) data --
-        // e.g. `{not<|tool_call_end|>json}` -- can still pass this override
-        // whenever a literal `call_end` genuinely follows it, silently
-        // REPLACING the lazy capture's own (differently wrong, but at least
-        // independently-derived) boundary with a longer span that swallows
-        // the embedded fake closer as content instead of stopping there.
-        // Neither span is valid JSON either way, but which raw string ships
-        // to the caller should not depend on an unvalidated coincidence of
-        // where `json_value_end` happens to balance. Validating here means
-        // the override only ever fires for genuinely valid JSON, matching
-        // the identical hoist already applied to `kimi_invoke_end` and
-        // `find_section_end`'s own `json_value_end` consumers.
+        // The capture above is lazy (`.*?`) and stops at the first literal
+        // `call_end`, including a copy inside a closed quoted span. That
+        // corrupts both valid JSON strings and Kimi's permissive malformed
+        // raw-string fallback before the latter reaches its typing branch.
+        // Reuse the same quote-aware marker owner as streaming and section
+        // discovery, bounded against a later invoke opener. An unmatched
+        // quote intentionally falls back to the lazy capture: no structural
+        // closer can be proved in that shape, and the historical conservative
+        // recovery remains the safer contract.
         let arguments_raw = cap
             .name("arguments")
             .and_then(|m| {
                 let args_start = m.start();
-                let json_end = args_start + json_value_end(&block[args_start..])?;
-                let candidate = block[args_start..json_end].trim();
-                // Match the SAME `\s*` tolerance the regex above (and the
-                // streaming boundary finder, `kimi_invoke_end`) already give
-                // the closer -- an exact `starts_with` here silently falls
-                // back to the lazy capture (the original I7 bug) whenever
-                // the model puts ordinary whitespace between the JSON and
-                // `call_end`, corrupting an argument that WAS byte-exact.
-                (block[json_end..]
-                    .trim_start()
-                    .starts_with(config.call_end.as_str())
-                    && serde_json::from_str::<serde_json::Value>(candidate).is_ok())
-                .then_some(candidate)
+                let argument_region = &block[args_start..];
+                if let Some(json_len) = json_value_end(argument_region).filter(|&json_len| {
+                    serde_json::from_str::<serde_json::Value>(&argument_region[..json_len]).is_ok()
+                }) {
+                    let after_json = &argument_region[json_len..];
+                    let call_end = after_json.find(config.call_end.as_str())?;
+                    let next_call_start = after_json.find(config.call_start.as_str());
+                    next_call_start
+                        .is_none_or(|next| call_end < next)
+                        .then(|| argument_region[..json_len].trim())
+                } else {
+                    // Once JSON is malformed, quote state cannot safely span
+                    // a later invoke: two adjacent calls with unmatched
+                    // quotes can cancel each other's state and make the first
+                    // call borrow the second call's closer. The raw opener is
+                    // therefore the conservative per-call damage boundary.
+                    let next_call_start = argument_region.find(config.call_start.as_str());
+                    let (call_end, _) =
+                        find_first_outside_strings(argument_region, [config.call_end.as_str()])?;
+                    next_call_start
+                        .is_none_or(|next| call_end < next)
+                        .then(|| argument_region[..call_end].trim())
+                }
             })
             .unwrap_or(lazy_arguments);
 
@@ -682,6 +719,25 @@ mod tests {
             "the override must still extend past the embedded fake closer when it's \
              genuinely inside a well-formed JSON string"
         );
+    }
+
+    /// This stays a unit-level regression because the unified fixture corpus
+    /// normalizes malformed raw arguments; it cannot assert the byte-exact
+    /// v1 fallback values that prove each regex capture kept its own call.
+    #[test]
+    fn adjacent_malformed_calls_keep_their_own_raw_argument_boundaries() {
+        let config = KimiK2ParserConfig::default();
+        let msg = "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>x\"1<|tool_call_end|><|tool_call_begin|>functions.run:1<|tool_call_argument_begin|>y\"2<|tool_call_end|><|tool_calls_section_end|>";
+        let (calls, _content) = try_tool_call_parse_kimi_k2(msg, &config, None).unwrap();
+        assert_eq!(
+            calls.len(),
+            2,
+            "one malformed call must not absorb the next"
+        );
+        assert_eq!(calls[0].function.name, "get_weather");
+        assert_eq!(calls[0].function.arguments, "x\"1");
+        assert_eq!(calls[1].function.name, "run");
+        assert_eq!(calls[1].function.arguments, "y\"2");
     }
 
     /// Finding 1 regression: the tool-call regex must be built from the config

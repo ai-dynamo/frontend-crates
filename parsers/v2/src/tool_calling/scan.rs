@@ -392,7 +392,10 @@ fn find_first(text: &str, markers: &[String]) -> Option<(usize, usize)> {
 /// it. Callers checking "did the block end before this invoke's own
 /// resolved close" need this variant; callers scanning plain narration
 /// (never inside an open JSON string) can keep using `find_first`.
-pub(crate) fn find_first_outside_strings(text: &str, markers: &[String]) -> Option<(usize, usize)> {
+pub(crate) fn find_first_outside_strings<'a, I>(text: &str, markers: I) -> Option<(usize, usize)>
+where
+    I: Clone + IntoIterator<Item = &'a str>,
+{
     let mut in_string = false;
     let mut escape = false;
     for (idx, c) in text.char_indices() {
@@ -411,8 +414,9 @@ pub(crate) fn find_first_outside_strings(text: &str, markers: &[String]) -> Opti
             continue;
         }
         if let Some((_, len)) = markers
-            .iter()
-            .find(|m| text[idx..].starts_with(m.as_str()))
+            .clone()
+            .into_iter()
+            .find(|m| text[idx..].starts_with(m))
             .map(|m| (idx, m.len()))
         {
             return Some((idx, len));
@@ -1002,8 +1006,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 // `tool_index`, since `next_index` never advances for a
                 // dropped call.
                 if self.spec.drop_invoke_crossing_block_end
-                    && let Some((be_pos, be_len)) =
-                        find_first_outside_strings(&self.buffer, &self.spec.block_ends)
+                    && let Some((be_pos, be_len)) = find_first_outside_strings(
+                        &self.buffer,
+                        self.spec.block_ends.iter().map(String::as_str),
+                    )
                     && be_pos < end
                 {
                     tracing::warn!(
@@ -1270,45 +1276,45 @@ mod tests {
 
     #[test]
     fn find_first_outside_strings_skips_a_marker_inside_a_quoted_string() {
-        let markers = vec!["CLOSE".to_string()];
+        let markers = ["CLOSE"];
         // A marker-looking sequence entirely inside a string is data, not
         // structure -- must be skipped in favor of the real one afterward.
         assert_eq!(
-            find_first_outside_strings(r#"{"a":"has CLOSE inside"}CLOSE"#, &markers),
+            find_first_outside_strings(r#"{"a":"has CLOSE inside"}CLOSE"#, markers,),
             Some((24, 5)),
         );
     }
 
     #[test]
     fn find_first_outside_strings_handles_an_escaped_quote_next_to_the_marker() {
-        let markers = vec!["CLOSE".to_string()];
+        let markers = ["CLOSE"];
         // `\"` immediately before the embedded marker must not be misread as
         // the string's real closing quote (which would wrongly un-toggle
         // `in_string` one byte early and expose the embedded marker).
         assert_eq!(
-            find_first_outside_strings(r#"{"a":"ends with \" then CLOSE inside"}CLOSE"#, &markers),
+            find_first_outside_strings(r#"{"a":"ends with \" then CLOSE inside"}CLOSE"#, markers,),
             Some((38, 5)),
         );
     }
 
     #[test]
     fn find_first_outside_strings_returns_the_earliest_of_multiple_markers() {
-        let markers = vec!["BB".to_string(), "A".to_string()];
+        let markers = ["BB", "A"];
         // Earliest BYTE POSITION wins regardless of which marker string it
         // belongs to or the order markers are listed in.
         assert_eq!(
-            find_first_outside_strings("xxAxxBBxx", &markers),
+            find_first_outside_strings("xxAxxBBxx", markers),
             Some((2, 1))
         );
     }
 
     #[test]
     fn find_first_outside_strings_on_empty_or_no_match_is_none() {
-        let markers = vec!["CLOSE".to_string()];
-        assert_eq!(find_first_outside_strings("", &markers), None);
-        assert_eq!(find_first_outside_strings("no marker here", &markers), None);
+        let markers = ["CLOSE"];
+        assert_eq!(find_first_outside_strings("", markers), None);
+        assert_eq!(find_first_outside_strings("no marker here", markers), None);
         assert_eq!(
-            find_first_outside_strings(r#""CLOSE only inside a string""#, &markers),
+            find_first_outside_strings(r#""CLOSE only inside a string""#, markers,),
             None
         );
     }

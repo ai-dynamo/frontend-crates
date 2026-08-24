@@ -1480,14 +1480,39 @@ impl GuidedState {
                 // types or emits a call -- that goes entirely through the
                 // independent, array-indexed `GuidedJsonCursor`/
                 // `emit_completed_json` path, untouched by this value. Proven
-                // end-to-end, including the disputed "properly-closed first
-                // marker, incomplete second marker" shape, by
-                // `two_native_markers_in_guided_reasoning_second_incomplete_one_is_not_recovered`
-                // in `unified/kimi_k2.rs`.
-                if let Some(len) = (scan.end)(suffix, flush, 0) {
+                // end-to-end, including a properly closed first marker and
+                // an incomplete second marker, by the Kimi guided-reasoning
+                // every-split tests in `unified/kimi_k2.rs`.
+                let competing_boundary = limit.filter(|boundary| {
+                    *boundary > at
+                        && competing
+                            .iter()
+                            .any(|marker| haystack[*boundary..].starts_with(marker))
+                });
+                let local_flush = flush || competing_boundary.is_some();
+                if let Some(len) = (scan.end)(suffix, local_flush, 0)
+                    && competing_boundary.is_none_or(|boundary| at + len <= boundary)
+                {
                     return regular
                         .filter(|(regular_at, _)| *regular_at < at)
                         .or(Some((at, len)));
+                }
+                // A competing reasoning marker proves the native envelope
+                // ended locally even while the overall stream remains open.
+                // Strip only through that boundary so the reasoning closer
+                // and guided JSON after it are scanned independently.
+                if let Some(boundary) = competing_boundary {
+                    return regular
+                        .filter(|(regular_at, _)| *regular_at < at)
+                        .or(Some((at, boundary - at)));
+                }
+                // At true EOF an unresolved native envelope is an
+                // unrecoverable partial call (P2), not visible recovery text.
+                // No future bytes can establish a narrower safe boundary.
+                if flush {
+                    return regular
+                        .filter(|(regular_at, _)| *regular_at < at)
+                        .or(Some((at, suffix.len())));
                 }
                 return regular.filter(|(regular_at, _)| *regular_at < at);
             }

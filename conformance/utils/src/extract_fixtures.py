@@ -213,11 +213,16 @@ def update_symlinks(cache_root, snap_dir, verbose=False):
         link = cache_root / name
         # Relative target: <snapshot>/<name>  (e.g. 20260707_215709/toolcalling)
         target = Path(snap_dir.name) / name
-        tmp = cache_root / f".{name}.tmp"
-        if tmp.is_symlink() or tmp.exists():
-            tmp.unlink()
-        tmp.symlink_to(target)
-        tmp.rename(link)
+        # Every publisher owns a distinct temporary link. A shared
+        # `.{name}.tmp` is a check-then-act race: one publisher can rename
+        # another's temp link, leaving the second with FileNotFoundError.
+        tmp = cache_root / f".{name}.tmp.{os.getpid()}.{secrets.token_hex(8)}"
+        try:
+            tmp.symlink_to(target)
+            tmp.replace(link)
+        finally:
+            if tmp.is_symlink() or tmp.exists():
+                tmp.unlink()
         if verbose:
             print(f"  [symlink] {link} -> {target}", file=sys.stderr)
 

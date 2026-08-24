@@ -25,6 +25,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import threading
 from pathlib import Path
 
 import pytest
@@ -68,6 +69,44 @@ def _run_main(tmp_path, monkeypatch, manifest, argv=()):
     monkeypatch.setattr(extract_fixtures, "MANIFEST_PATH", manifest_path)
     monkeypatch.setattr(sys, "argv", ["extract_fixtures.py", *argv])
     extract_fixtures.main()
+
+
+def test_concurrent_symlink_publishers_do_not_share_a_temp_path(tmp_path, monkeypatch):
+    """Two publishers may race on the stable link, but each must own its temporary link until the atomic replace."""
+    cache = tmp_path / "cache"
+    snapshots = [cache / "snap-a", cache / "snap-b"]
+    for snapshot in snapshots:
+        (snapshot / "toolcalling").mkdir(parents=True)
+
+    real_symlink_to = Path.symlink_to
+    both_temps_created = threading.Barrier(2)
+
+    def synchronized_symlink_to(path, target, target_is_directory=False):
+        real_symlink_to(path, target, target_is_directory)
+        if path.name.startswith(".toolcalling.tmp"):
+            both_temps_created.wait(timeout=5)
+
+    monkeypatch.setattr(Path, "symlink_to", synchronized_symlink_to)
+    errors = []
+
+    def publish(snapshot):
+        try:
+            extract_fixtures.update_symlinks(cache, snapshot)
+        except Exception as error:
+            errors.append(error)
+
+    threads = [threading.Thread(target=publish, args=(snapshot,)) for snapshot in snapshots]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=10)
+
+    assert all(not thread.is_alive() for thread in threads)
+    assert not errors
+    assert os.readlink(cache / "toolcalling") in {
+        "snap-a/toolcalling",
+        "snap-b/toolcalling",
+    }
 
 
 def test_two_shard_sets_under_the_same_pin_do_not_collide(cache_root, tmp_path, monkeypatch, capsys):

@@ -36,7 +36,7 @@
 
 use crate::tool_calling::scan::{
     BareRecoveryLatch, InvokeEmitter, InvokeLatch, InvokeScan, WrappedBlockScanner,
-    WrappedBlockSpec, json_value_end,
+    WrappedBlockSpec, find_first_outside_strings, json_value_end,
 };
 use crate::tool_calling::v1core::{
     KimiK2ParserConfig, ToolDefinition, try_tool_call_parse_kimi_k2,
@@ -327,10 +327,30 @@ fn kimi_invoke_end(text: &str, flush: bool, tool_index: usize) -> Option<usize> 
         // search in this function) and let the raw text through to that
         // fallback, rather than deciding here that it can never be
         // recovered.
-        if flush
-            && let Some(rel) = after_args.find(CALL_END)
-            && after_args.find(CALL_START).is_none_or(|next| rel < next)
-        {
+        // In malformed input, quote state is not a trustworthy owner across
+        // invoke boundaries. An unmatched quote in this call can hide the
+        // next call's opener, then a second unmatched quote can restore the
+        // scanner state and make that later call's closer look structural.
+        // Treat the earliest raw opener as a hard damage boundary before
+        // accepting any quote-aware closer; valid JSON took the branch below
+        // and therefore keeps marker-looking bytes inside strings as data.
+        let next_call_start = after_args.find(CALL_START);
+        let structural_call_end = find_first_outside_strings(after_args, [CALL_END])
+            .map(|(position, _)| position)
+            .filter(|position| next_call_start.is_none_or(|next| *position < next));
+        let raw_call_end = after_args.find(CALL_END);
+        let bounded_raw_call_end =
+            raw_call_end.filter(|position| next_call_start.is_some_and(|next| *position < next));
+        let (rel, markers_are_structural) = match structural_call_end {
+            Some(position) => (position, true),
+            // A later raw opener makes the earlier raw closer stable before
+            // EOF: future bytes belong to the next invoke and cannot turn
+            // this closer into quoted data for the current one.
+            None if bounded_raw_call_end.is_some() => (bounded_raw_call_end?, false),
+            None if flush => (raw_call_end?, false),
+            None => return None,
+        };
+        if next_call_start.is_none_or(|next| rel < next) {
             // Mirror the well-formed-JSON sibling's section-end guard
             // below: a real section-end marker occurring before this
             // literal `call_end` means the model explicitly closed the
@@ -345,9 +365,17 @@ fn kimi_invoke_end(text: &str, flush: bool, tool_index: usize) -> Option<usize> 
             // followed by a literal `call_end` recovered a call whose raw
             // argument absorbed the section-end marker as text.
             let before_call_end = &after_args[..rel];
-            let section_end_intervenes = [SECTION_END_PLURAL, SECTION_END_SINGULAR]
-                .iter()
-                .any(|marker| before_call_end.contains(marker));
+            let section_end_intervenes = if markers_are_structural {
+                find_first_outside_strings(
+                    before_call_end,
+                    [SECTION_END_PLURAL, SECTION_END_SINGULAR],
+                )
+                .is_some()
+            } else {
+                [SECTION_END_PLURAL, SECTION_END_SINGULAR]
+                    .iter()
+                    .any(|marker| before_call_end.contains(marker))
+            };
             if !section_end_intervenes {
                 return Some(args_at + rel + CALL_END.len());
             }
@@ -932,6 +960,98 @@ mod tests {
             "a malformed raw-string argument with its own real call_end and no \
              intervening section-end must still be recovered"
         );
+    }
+
+    #[test]
+    fn closed_malformed_arguments_emit_on_the_closing_chunk() {
+        let mut parser = KimiK2ToolStreamParser::new(&weather_tools());
+        assert!(
+            parser
+                .push("<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>")
+                .unwrap()
+                .calls
+                .is_empty()
+        );
+
+        let emitted = parser
+            .push("{\"location\":\"NYC\"<|tool_call_end|><|tool_calls_section_end|>")
+            .unwrap();
+        assert_eq!(emitted.calls.len(), 1);
+        assert_eq!(emitted.calls[0].arguments, r#"{"location":"NYC""#);
+        assert!(parser.finish().unwrap().calls.is_empty());
+    }
+
+    #[test]
+    fn closed_malformed_arguments_emit_before_finish_at_every_valid_utf8_split() {
+        let input = "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"location\":\"München\"<|tool_call_end|><|tool_calls_section_end|>";
+        for split in (0..=input.len()).filter(|&index| input.is_char_boundary(index)) {
+            let mut parser = KimiK2ToolStreamParser::new(&weather_tools());
+            let mut emitted = parser.push(&input[..split]).unwrap();
+            emitted.append(parser.push(&input[split..]).unwrap());
+            assert_eq!(
+                emitted.calls.len(),
+                1,
+                "split at byte {split} must emit once the closer is available"
+            );
+            assert_eq!(emitted.calls[0].arguments, r#"{"location":"München""#);
+            assert!(
+                parser.finish().unwrap().calls.is_empty(),
+                "split at byte {split} must not defer the call until finish"
+            );
+        }
+    }
+
+    fn assert_closed_malformed_quoted_marker_emits_on_the_closing_chunk(marker: &str) {
+        let arguments = format!(r#"{{"location" "München {marker} literal"}}"#);
+        let mut parser = KimiK2ToolStreamParser::new(&weather_tools());
+        assert!(
+            parser
+                .push("<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>")
+                .unwrap()
+                .calls
+                .is_empty()
+        );
+
+        let emitted = parser
+            .push(&format!("{arguments}{CALL_END}{SECTION_END_PLURAL}"))
+            .unwrap();
+        assert_eq!(emitted.calls.len(), 1);
+        assert_eq!(emitted.calls[0].arguments, arguments);
+        assert!(parser.finish().unwrap().calls.is_empty());
+    }
+
+    #[test]
+    fn malformed_quoted_call_end_is_data_and_emits_on_the_closing_chunk() {
+        assert_closed_malformed_quoted_marker_emits_on_the_closing_chunk(CALL_END);
+    }
+
+    #[test]
+    fn malformed_quoted_section_end_is_data_and_emits_on_the_closing_chunk() {
+        assert_closed_malformed_quoted_marker_emits_on_the_closing_chunk(SECTION_END_PLURAL);
+    }
+
+    #[test]
+    fn closed_malformed_quoted_markers_emit_before_finish_at_every_valid_utf8_split() {
+        let header = "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>";
+        for marker in [CALL_END, SECTION_END_PLURAL] {
+            let arguments = format!(r#"{{"location" "München {marker} literal"}}"#);
+            let input = format!("{header}{arguments}{CALL_END}{SECTION_END_PLURAL}");
+            for split in (0..=input.len()).filter(|&index| input.is_char_boundary(index)) {
+                let mut parser = KimiK2ToolStreamParser::new(&weather_tools());
+                let mut emitted = parser.push(&input[..split]).unwrap();
+                emitted.append(parser.push(&input[split..]).unwrap());
+                assert_eq!(
+                    emitted.calls.len(),
+                    1,
+                    "marker {marker:?}, split at byte {split} must emit once the closer is available"
+                );
+                assert_eq!(emitted.calls[0].arguments, arguments);
+                assert!(
+                    parser.finish().unwrap().calls.is_empty(),
+                    "marker {marker:?}, split at byte {split} must not defer the call until finish"
+                );
+            }
+        }
     }
 
     #[test]

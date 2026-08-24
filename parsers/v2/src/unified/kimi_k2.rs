@@ -39,8 +39,8 @@ pub(crate) fn kimi_k2_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
 mod tests {
     use super::*;
     use crate::unified::{
-        InvalidGuidedPayloadPolicy, UnifiedEvent, UnifiedParserExt, UnifiedParserInit,
-        UnifiedParserStartingState, UnifiedToolOutputMode, assemble,
+        InvalidGuidedPayloadPolicy, UnifiedEvent, UnifiedParserEvent, UnifiedParserExt,
+        UnifiedParserInit, UnifiedParserStartingState, UnifiedToolOutputMode, assemble,
     };
 
     fn tools() -> Vec<Tool> {
@@ -159,6 +159,111 @@ mod tests {
                 arguments: serde_json::json!({}),
             }]
         );
+    }
+
+    fn assert_malformed_quoted_marker_emits_before_finish_at_every_split(marker: &str) {
+        let header = "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>";
+        let arguments = format!(r#"{{"location" "München {marker} literal"}}"#);
+        let input = format!("{header}{arguments}<|tool_call_end|><|tool_calls_section_end|>");
+        for split in (0..=input.len()).filter(|&index| input.is_char_boundary(index)) {
+            let mut parser = kimi_k2_unified(&tools());
+            let mut emitted = parser.push(&input[..split]).unwrap();
+            emitted.extend(parser.push(&input[split..]).unwrap());
+            let calls: Vec<_> = emitted
+                .iter()
+                .filter_map(|event| match event {
+                    UnifiedParserEvent::ToolCall(call) => Some(call),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(
+                calls.len(),
+                1,
+                "marker {marker:?}, split at byte {split} must emit once the closer is available"
+            );
+            assert_eq!(calls[0].arguments, arguments);
+            assert!(
+                parser.finish().unwrap().events.is_empty(),
+                "marker {marker:?}, split at byte {split} must not defer the call until finish"
+            );
+        }
+    }
+
+    fn assert_malformed_quoted_marker_emits_on_the_closing_chunk(marker: &str) {
+        let arguments = format!(r#"{{"location" "München {marker} literal"}}"#);
+        let mut parser = kimi_k2_unified(&tools());
+        assert!(
+            parser
+                .push("<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>")
+                .unwrap()
+                .is_empty()
+        );
+        let emitted = parser
+            .push(&format!(
+                "{arguments}<|tool_call_end|><|tool_calls_section_end|>"
+            ))
+            .unwrap();
+        assert_eq!(
+            emitted,
+            vec![UnifiedParserEvent::ToolCall(
+                crate::tool_calling::traits::ToolCallDelta {
+                    tool_index: 0,
+                    name: Some("get_weather".to_string()),
+                    arguments,
+                }
+            )]
+        );
+        assert!(parser.finish().unwrap().events.is_empty());
+    }
+
+    #[test]
+    fn malformed_quoted_call_end_emits_on_the_closing_chunk() {
+        assert_malformed_quoted_marker_emits_on_the_closing_chunk("<|tool_call_end|>");
+    }
+
+    #[test]
+    fn malformed_quoted_section_end_emits_on_the_closing_chunk() {
+        assert_malformed_quoted_marker_emits_on_the_closing_chunk("<|tool_calls_section_end|>");
+    }
+
+    #[test]
+    fn malformed_quoted_call_end_emits_before_finish_at_every_valid_utf8_split() {
+        assert_malformed_quoted_marker_emits_before_finish_at_every_split("<|tool_call_end|>");
+    }
+
+    #[test]
+    fn malformed_quoted_section_end_emits_before_finish_at_every_valid_utf8_split() {
+        assert_malformed_quoted_marker_emits_before_finish_at_every_split(
+            "<|tool_calls_section_end|>",
+        );
+    }
+
+    /// This stays a unit-level property test because the fixture corpus uses
+    /// fixed delivery schedules and normalized JSON output; it cannot sweep
+    /// every UTF-8 split or preserve malformed raw argument bytes.
+    #[test]
+    fn adjacent_malformed_calls_stay_separate_at_every_valid_utf8_split() {
+        let tools = vec![tools()[0].clone(), run_tool()[0].clone()];
+        let input = "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>x\"1<|tool_call_end|><|tool_call_begin|>functions.run:1<|tool_call_argument_begin|>y\"2<|tool_call_end|><|tool_calls_section_end|>";
+        let first = UnifiedParserEvent::ToolCall(crate::tool_calling::traits::ToolCallDelta {
+            tool_index: 0,
+            name: Some("get_weather".to_string()),
+            arguments: "x\"1".to_string(),
+        });
+        let second = UnifiedParserEvent::ToolCall(crate::tool_calling::traits::ToolCallDelta {
+            tool_index: 1,
+            name: Some("run".to_string()),
+            arguments: "y\"2".to_string(),
+        });
+
+        for split in (0..=input.len()).filter(|&index| input.is_char_boundary(index)) {
+            let mut parser = kimi_k2_unified(&tools);
+            let mut emitted = parser.push(&input[..split]).unwrap();
+            emitted.extend(parser.push(&input[split..]).unwrap());
+            assert_eq!(emitted, vec![first.clone()], "split at byte {split}");
+            let finished = parser.finish().unwrap().events;
+            assert_eq!(finished, vec![second.clone()], "split at byte {split}");
+        }
     }
 
     /// Every valid UTF-8 split point of `input`, pushed as separate chunks
@@ -327,16 +432,15 @@ mod tests {
     /// thought as stray markup to strip; it never types or emits a call --
     /// that happens entirely through the independent, array-indexed
     /// `GuidedJsonCursor`/`emit_completed_json` path.
-    /// Concretely: a properly CLOSED first native marker is fully stripped
-    /// from reasoning, an INCOMPLETE second one survives verbatim as
-    /// reasoning text (no phantom call), and the real guided payload after
-    /// both still types exactly once, correctly.
+    /// Concretely: both a properly closed first native marker and an
+    /// incomplete second one are stripped from reasoning, while the real
+    /// guided payload after both still types exactly once.
     #[test]
-    fn two_native_markers_in_guided_reasoning_second_incomplete_one_is_not_recovered() {
+    fn two_native_markers_in_guided_reasoning_are_stripped_before_the_guided_payload() {
         let input = "<think>First: <|tool_call_begin|>functions.run:0<|tool_call_argument_begin|>{\"cmd\":\"ok\"}<|tool_call_end|> Second: <|tool_call_begin|>functions.other:1<|tool_call_argument_begin|>{\"cmd\":\"partial</think>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]";
         let want = vec![
             UnifiedEvent::Reasoning {
-                text: "First:  Second: <|tool_call_begin|>functions.other:1<|tool_call_argument_begin|>{\"cmd\":\"partial".into(),
+                text: "First:  Second: ".into(),
             },
             UnifiedEvent::ToolCall {
                 name: "get_weather".into(),
@@ -348,6 +452,22 @@ mod tests {
             .enumerate()
         {
             assert_eq!(got, want, "split at byte {i}, got {got:?}");
+        }
+    }
+
+    /// The fixture corpus does not cover native envelopes inside guided
+    /// output, so this unit property sweeps every split and checks the public
+    /// event stream directly: an unrecoverable partial call is dropped at
+    /// EOF rather than emitted as visible recovery text.
+    #[test]
+    fn incomplete_native_envelope_in_guided_mode_does_not_leak_at_finish() {
+        let input =
+            "<|tool_call_begin|>functions.other:1<|tool_call_argument_begin|>{\"cmd\":\"partial";
+        for (i, got) in assemble_guided_at_every_split(&tools(), input)
+            .into_iter()
+            .enumerate()
+        {
+            assert!(got.is_empty(), "split at byte {i}, got {got:?}");
         }
     }
 

@@ -394,10 +394,31 @@ fn parse_section_block(
             .name("function_id")
             .map(|m| m.as_str().trim())
             .unwrap_or("");
-        let arguments_raw = cap
+        let lazy_arguments = cap
             .name("arguments")
             .map(|m| m.as_str().trim())
             .unwrap_or("{}");
+        // The lazy regex capture stops at the first literal `call_end`, even
+        // when that byte sequence belongs to a valid JSON string. Let the
+        // JSON parser own the payload boundary first, then require this
+        // call's real closer before any later call opener. Malformed JSON
+        // keeps the historical permissive raw-string fallback above.
+        let arguments_raw = cap
+            .name("arguments")
+            .and_then(|capture| {
+                let argument_region = &block[capture.start()..];
+                let mut values = serde_json::Deserializer::from_str(argument_region)
+                    .into_iter::<serde::de::IgnoredAny>();
+                values.next()?.ok()?;
+                let json_len = values.byte_offset();
+                let after_json = &argument_region[json_len..];
+                let call_end = after_json.find(config.call_end.as_str())?;
+                let next_call_start = after_json.find(config.call_start.as_str());
+                next_call_start
+                    .is_none_or(|next| call_end < next)
+                    .then(|| argument_region[..json_len].trim())
+            })
+            .unwrap_or(lazy_arguments);
 
         // Parse function ID
         let function_name = if let Some(id_cap) = id_regex.captures(function_id) {
@@ -513,6 +534,22 @@ mod tests {
 
         let args: serde_json::Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
         assert_eq!(args["location"], "NYC");
+    }
+
+    /// The v2 fixture corpus does not execute this separate v1 owner. Pin the
+    /// shared payload-ownership contract here: a marker-looking substring in
+    /// a valid JSON string is argument data, not the call boundary.
+    #[test]
+    fn test_parse_preserves_call_end_inside_a_json_string() {
+        let config = default_config();
+        let input = r#"<|tool_calls_section_begin|><|tool_call_begin|>functions.run:0<|tool_call_argument_begin|>{"cmd":"echo <|tool_call_end|> literal"}<|tool_call_end|><|tool_calls_section_end|>"#;
+
+        let (calls, _) = try_tool_call_parse_kimi_k2(input, &config, None).unwrap();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(
+            calls[0].function.arguments,
+            r#"{"cmd":"echo <|tool_call_end|> literal"}"#
+        );
     }
 
     // DEPRECATED(parser-fixture-duplicate): Duplicate of YAML fixture coverage: TOOLCALLING.batch.1, TOOLCALLING.batch.7.d in tests/parity/toolcalling/fixtures/kimi_k2/TOOLCALLING.batch.7.yaml, tests/parity/toolcalling/fixtures/kimi_k2/TOOLCALLING.batch.yaml.
