@@ -144,6 +144,7 @@ def run_container(impl: str, container: str, cases: list[dict]) -> dict[str, dic
     """Ship the adapter + a worker into ``container`` and run all cases there."""
     dest = "/tmp/conformance_validate"
     bundle = {
+        "fixture_snapshot.py": PH / "fixture_snapshot.py",
         "tables/__init__.py": PKG / "__init__.py",
         "tables/common.py": PKG / "common.py",
         "tables/toolcalling/__init__.py": PKG / "toolcalling" / "__init__.py",

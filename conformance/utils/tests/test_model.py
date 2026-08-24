@@ -19,7 +19,6 @@ so the guards keep working across version bumps.
 """
 import copy
 import json
-import os
 import re
 import subprocess
 import sys
@@ -32,23 +31,13 @@ REPO = UTILS.parents[1]
 if str(UTILS / "src") not in sys.path:
     sys.path.insert(0, str(UTILS / "src"))
 
-import check_family_coverage as _cfc  # noqa: E402
+from fixture_snapshot import fixture_snapshot_root  # noqa: E402
 import model as model_mod  # noqa: E402
 
 
 def _resolve_cache_root() -> Path:
-    """Manifest-pinned snapshot dir — NEVER the shared `<cache>/toolcalling`
-    symlink, which sibling checkouts race to repoint mid-run (the peer-version
-    guards below flaked exactly that way; see conformance/README "Invariants").
-    Honors CONFORMANCE_FIXTURES_ROOT (exported by _common.sh). Falls back to the
-    symlink path when extraction is impossible so _HAVE_FIXTURES turns into a
-    clean skip instead of a collection error."""
-    try:
-        return _cfc.resolve_fixtures_root()
-    except (SystemExit, subprocess.CalledProcessError):
-        xdg = os.environ.get("XDG_CACHE_HOME")
-        base = Path(xdg) if xdg else Path.home() / ".cache"
-        return base / "dynamo/conformance-fixtures"
+    """Manifest-pinned snapshot dir, never the mutable compatibility links."""
+    return fixture_snapshot_root()
 
 
 _CACHE_ROOT = _resolve_cache_root()
@@ -480,7 +469,6 @@ def test_v2_no_verbose_todo_baked_in_cells(model_v2):
 
 def test_v2_reasoning_uses_current_peers(model_v2):
     # reasoning tab uses the same current peer versions as the toolcalling tabs.
-    tc = " ".join(c["label"] for c in _tab(model_v2, "tab-toolcalling-batch")["candidates"])
     peers = _peer_versions("reasoning/fixtures-v1")
     r = " ".join(c["label"] for c in _tab(model_v2, "tab-reasoning-batch")["candidates"])
     for impl in ("vllm_python", "sglang_python"):

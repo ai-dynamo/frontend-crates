@@ -26,6 +26,7 @@ import json
 import os
 import sys
 import threading
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
@@ -36,6 +37,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 import extract_fixtures  # noqa: E402
+import fixture_snapshot  # noqa: E402
 
 
 def _shard(path, sha256, size=1):
@@ -107,6 +109,121 @@ def test_concurrent_symlink_publishers_do_not_share_a_temp_path(tmp_path, monkey
         "snap-a/toolcalling",
         "snap-b/toolcalling",
     }
+
+
+def test_concurrent_refreshers_cannot_retarget_links_to_an_older_generation(
+    cache_root, monkeypatch
+):
+    """Generation publication and stable-link retargeting are one serialized transition."""
+    pin = "20260101_000000"
+    shards = [_shard("toolcalling/a.tar.gz", "hash1")]
+    pinned_shards = extract_fixtures.shard_hash_map(shards)
+    fid = extract_fixtures.fixtures_identity(shards)
+    base = cache_root / f"{pin}-{fid}"
+    (base / "toolcalling").mkdir(parents=True)
+    extract_fixtures.write_state(base, pin, shards)
+
+    tmp_dirs = [cache_root / ".tmp.first", cache_root / ".tmp.second"]
+    for tmp_dir in tmp_dirs:
+        (tmp_dir / "toolcalling").mkdir(parents=True)
+        extract_fixtures.write_state(tmp_dir, pin, shards)
+
+    real_update_symlinks = extract_fixtures.update_symlinks
+    first_update_started = threading.Event()
+    release_first_update = threading.Event()
+    second_finished = threading.Event()
+    second_lock_attempted = threading.Event()
+    errors = []
+
+    real_cache_publish_lock = extract_fixtures.cache_publish_lock
+
+    @contextmanager
+    def observed_cache_publish_lock(cache_root_):
+        if threading.current_thread().name == "second-publisher":
+            second_lock_attempted.set()
+        with real_cache_publish_lock(cache_root_):
+            yield
+
+    def ordered_update_symlinks(cache_root_, snap_dir, verbose=False):
+        if snap_dir.name.endswith(".refresh1"):
+            first_update_started.set()
+            assert release_first_update.wait(timeout=5)
+        real_update_symlinks(cache_root_, snap_dir, verbose=verbose)
+
+    monkeypatch.setattr(extract_fixtures, "cache_publish_lock", observed_cache_publish_lock)
+    monkeypatch.setattr(extract_fixtures, "update_symlinks", ordered_update_symlinks)
+
+    def publish(tmp_dir, finished=None):
+        try:
+            extract_fixtures.publish_extracted_snapshot(
+                tmp_dir,
+                cache_root,
+                pin,
+                fid,
+                pinned_shards,
+                full_refresh=True,
+            )
+        except Exception as error:
+            errors.append(error)
+        finally:
+            if finished is not None:
+                finished.set()
+
+    first = threading.Thread(target=publish, args=(tmp_dirs[0],))
+    first.start()
+    assert first_update_started.wait(timeout=5)
+
+    second = threading.Thread(
+        target=publish,
+        args=(tmp_dirs[1], second_finished),
+        name="second-publisher",
+    )
+    second.start()
+    assert second_lock_attempted.wait(timeout=5)
+    assert not second_finished.is_set(), "the second publisher crossed the locked transition"
+    release_first_update.set()
+
+    first.join(timeout=5)
+    second.join(timeout=5)
+    assert not first.is_alive()
+    assert not second.is_alive()
+    assert not errors
+
+    current, generation = extract_fixtures.resolve_current_generation(
+        cache_root, pin, fid, pinned_shards
+    )
+    assert generation == 2
+    assert os.readlink(cache_root / "toolcalling") == f"{current.name}/toolcalling"
+
+
+def test_python_consumers_resolve_an_immutable_snapshot_instead_of_stable_links(
+    cache_root, monkeypatch
+):
+    stale = cache_root / "stale"
+    current = cache_root / "current"
+    (stale / "toolcalling").mkdir(parents=True)
+    (current / "toolcalling").mkdir(parents=True)
+    (stale / "toolcalling" / "marker.txt").write_text("stale")
+    (current / "toolcalling" / "marker.txt").write_text("current")
+    (cache_root / "toolcalling").symlink_to(stale / "toolcalling")
+
+    monkeypatch.delenv("CONFORMANCE_FIXTURES_ROOT", raising=False)
+    monkeypatch.setattr(
+        fixture_snapshot.subprocess,
+        "run",
+        lambda *args, **kwargs: fixture_snapshot.subprocess.CompletedProcess(
+            args=args[0], returncode=0, stdout=f"{current}\n", stderr=""
+        ),
+    )
+    fixture_snapshot.fixture_snapshot_root.cache_clear()
+    try:
+        resolved = fixture_snapshot.fixture_snapshot_root()
+    finally:
+        fixture_snapshot.fixture_snapshot_root.cache_clear()
+
+    assert resolved == current
+    assert (resolved / "toolcalling" / "marker.txt").read_text() == "current"
+    assert (cache_root / "toolcalling" / "marker.txt").read_text() == "stale"
 
 
 def test_two_shard_sets_under_the_same_pin_do_not_collide(cache_root, tmp_path, monkeypatch, capsys):
@@ -247,6 +364,28 @@ def test_plain_run_after_full_refresh_resolves_to_the_new_generation(cache_root,
     assert "Cache hit" in out.err
 
 
+@pytest.mark.parametrize("current_generation", [1, 3])
+def test_full_refresh_with_missing_base_advances_past_the_current_generation(
+    cache_root, tmp_path, monkeypatch, capsys, current_generation
+):
+    """A missing generation-0 directory must not make a later refresh publish
+    an older generation number than the one readers already resolve."""
+    manifest = {"snapshot": "20260101_000000", "shards": [_shard("toolcalling/a.tar.gz", "hash1")]}
+    fid = extract_fixtures.fixtures_identity(manifest["shards"])
+    current = cache_root / f"20260101_000000-{fid}.refresh{current_generation}"
+    (current / "toolcalling").mkdir(parents=True)
+    (current / "marker.txt").write_text("current")
+    extract_fixtures.write_state(current, manifest["snapshot"], manifest["shards"])
+
+    _run_main(tmp_path, monkeypatch, manifest, argv=["--full-refresh"])
+    refreshed = Path(capsys.readouterr().out.strip())
+    assert refreshed.name.endswith(f".refresh{current_generation + 1}"), refreshed.name
+
+    _run_main(tmp_path, monkeypatch, manifest)
+    plain = Path(capsys.readouterr().out.strip())
+    assert plain == refreshed
+
+
 def test_extracted_snapshot_dir_resolves_to_the_new_generation_after_full_refresh(
     cache_root, tmp_path, monkeypatch, capsys
 ):
@@ -287,21 +426,9 @@ def test_refresh_publish_retries_past_a_colliding_generation_name(cache_root, tm
     generation number via the same narrowed-errno handling the generation-0
     publish path already uses, not raise an unhandled `OSError`.
 
-    A first version of this test injected the competitor on the FIRST call
-    to `resolve_current_generation` -- but `main()`'s `--full-refresh` path
-    calls it TWICE: once for the cache-hit check near the top (which still
-    runs even when `--full-refresh` is set, before the flag is even
-    consulted), and once inside this retry loop, right before computing
-    `refresh_n`. Injecting on the first call means the SECOND call already
-    observes the competitor and correctly picks `.refresh2` on its very
-    first attempt -- the retry-on-collision branch this test exists to
-    cover never actually runs, even though the assertions still pass (a
-    coverage gap a later audit caught: the test's own docstring claimed to
-    reproduce the race but did not). This version counts calls and injects
-    strictly AFTER the SECOND call returns its own (pre-injection) result,
-    so `refresh_n` is computed as if no competitor exists yet, and the
-    injected competitor is only on disk by the time the loop's own
-    `tmp_dir.rename(candidate)` actually runs -- a genuine collision.
+    The competitor is injected after `publish_refresh_generation` resolves
+    the current generation but before its rename. The final resolve after
+    publication adds a third call, after the collision has been handled.
     """
     manifest = {"snapshot": "20260101_000000", "shards": [_shard("toolcalling/a.tar.gz", "hash1")]}
     fid = extract_fixtures.fixtures_identity(manifest["shards"])
@@ -316,13 +443,10 @@ def test_refresh_publish_retries_past_a_colliding_generation_name(cache_root, tm
         call_count["n"] += 1
         result = real_resolve(cache_root_, pin_, fid_, pinned_shards_)
         if call_count["n"] == 2:
-            # Call #1 was the cache-hit check near the top of main() (runs
-            # even under --full-refresh); call #2 is the one inside the
-            # retry loop, immediately before `refresh_n` is computed from
-            # its result. Injecting AFTER this call returns means `result`
-            # (and therefore `refresh_n`) reflects the pre-competitor state,
-            # but the competitor is on disk before the loop's own rename
-            # attempt -- the exact check-to-rename race window.
+            # Call #1 selects the current generation for the publication
+            # transition. Call #2 computes the refresh candidate, so an
+            # injection after this result occupies the chosen name before
+            # rename -- the exact check-to-rename race window.
             competitor = cache_root_ / f"{pin_}-{fid_}.refresh1"
             competitor.mkdir(parents=True)
             (competitor / "marker.txt").write_text("sentinel-from-a-competing-refresh")
@@ -337,7 +461,7 @@ def test_refresh_publish_retries_past_a_colliding_generation_name(cache_root, tm
     out = capsys.readouterr()
     new_dir = Path(out.out.strip())
 
-    assert call_count["n"] == 2, "sanity: --full-refresh must call resolve_current_generation exactly twice"
+    assert call_count["n"] == 3, "sanity: publication must select, publish, then resolve the final generation"
     assert new_dir.name.endswith(".refresh2"), (
         f"the retry must land on the next free generation after the collision, got {new_dir.name}"
     )
@@ -349,20 +473,9 @@ def test_refresh_publish_retries_past_a_colliding_generation_name(cache_root, tm
 
 def test_refresh_publish_collision_retry_negative_control(cache_root, tmp_path, monkeypatch, capsys):
     """Negative control for the test above: prove it can actually fail. The
-    retry loop's collision handling is disabled -- but ONLY from the moment
-    the SAME real collision the positive test exercises would occur, not
-    from the start of the run. Disabling `RENAME_DEST_EXISTS_ERRNOS` before
-    `_run_main` even starts (a first draft of this control did that) also
-    breaks the unrelated, pre-existing generation-0 collision check earlier
-    in `main()`, so the run fails there instead -- a real failure, but not
-    evidence the RETRY loop's own handling matters. Instead the errno tuple
-    is flipped from inside the `resolve_current_generation` wrapper, exactly
-    when the positive test's competitor is injected: the first (pre-existing)
-    collision check has already run and succeeded by that point, so only the
-    retry loop's own narrowed catch is disabled. With it disabled, the
-    identical race must surface as an unhandled `OSError` instead of a
-    successful `.refresh2` publish -- proving the positive test's green
-    result actually depends on this code, not on some other path."""
+    retry loop's collision handling is disabled at the same moment the
+    positive test injects its competitor. The identical race must surface as
+    an `OSError` instead of a successful `.refresh2` publish."""
     manifest = {"snapshot": "20260101_000000", "shards": [_shard("toolcalling/a.tar.gz", "hash1")]}
     _run_main(tmp_path, monkeypatch, manifest)  # publish generation 0
     capsys.readouterr()

@@ -28,6 +28,7 @@ Usage:
 
 import argparse
 import errno
+import fcntl
 import hashlib
 import json
 import os
@@ -35,6 +36,7 @@ import secrets
 import shutil
 import sys
 import tarfile
+from contextlib import contextmanager
 from pathlib import Path
 
 # The only errnos `Path.rename()` onto an existing directory is expected to
@@ -45,11 +47,12 @@ from pathlib import Path
 RENAME_DEST_EXISTS_ERRNOS = (errno.ENOTEMPTY, errno.EEXIST)
 
 # Bound on retrying a `.refreshN` publish name after a collision with a
-# concurrent `--full-refresh` run (see the retry loop in `main()`). A bounded
+# concurrent `--full-refresh` run (see `publish_refresh_generation`). A bounded
 # retry, not a `while .exists()` probe-then-rename: the probe alone is
 # check-then-act and a genuine concurrent racer can occupy the exact name
 # between the check and the rename.
 REFRESH_RENAME_RETRY_LIMIT = 20
+CACHE_PUBLISH_LOCK = ".publish.lock"
 
 # conformance/utils/src/extract_fixtures.py -> repo root: 4 .parent calls
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -70,6 +73,18 @@ def sha256_file(path):
 def get_cache_root():
     xdg = os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache"))
     return Path(xdg) / "dynamo" / "conformance-fixtures"
+
+
+@contextmanager
+def cache_publish_lock(cache_root):
+    """Serialize generation selection, publication, and link retargeting."""
+    cache_root.mkdir(parents=True, exist_ok=True)
+    with (cache_root / CACHE_PUBLISH_LOCK).open("w") as lock_file:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock_file, fcntl.LOCK_UN)
 
 
 def shard_hash_map(shards):
@@ -151,6 +166,96 @@ def resolve_current_generation(cache_root, pin, fid, pinned_shards):
     return best_dir, best_n
 
 
+def publish_refresh_generation(tmp_dir, cache_root, pin, fid, pinned_shards):
+    """Publish ``tmp_dir`` at the next immutable refresh generation.
+
+    A forced rebuild never renames or deletes a previously published path:
+    a reader may still be using it. The highest valid generation owns
+    recency even when generation 0 has been removed, and rename collisions
+    advance to the next number so concurrent refreshers cannot overwrite one
+    another.
+    """
+    _, current_n = resolve_current_generation(cache_root, pin, fid, pinned_shards)
+    refresh_n = max(current_n, 0) + 1
+    for _attempt in range(REFRESH_RENAME_RETRY_LIMIT):
+        candidate = cache_root / f"{pin}-{fid}.refresh{refresh_n}"
+        try:
+            tmp_dir.rename(candidate)
+            print(
+                f"  --full-refresh: identity {fid} already published; built a new "
+                f"generation at {candidate} instead of mutating the existing one "
+                "(a reader still using the prior generation is unaffected)",
+                file=sys.stderr,
+            )
+            return candidate
+        except OSError as exc:
+            if exc.errno not in RENAME_DEST_EXISTS_ERRNOS:
+                raise
+            refresh_n += 1
+    raise OSError(
+        f"could not publish a --full-refresh generation for identity "
+        f"{fid} in {cache_root} after {REFRESH_RENAME_RETRY_LIMIT} "
+        "name collisions -- persistent concurrent refreshers?"
+    )
+
+
+def publish_extracted_snapshot(
+    tmp_dir, cache_root, pin, fid, pinned_shards, full_refresh, verbose=False
+):
+    """Publish one completed build and point readers at the newest generation."""
+    base_dir = cache_root / f"{pin}-{fid}"
+    with cache_publish_lock(cache_root):
+        current_dir, _current_n = resolve_current_generation(
+            cache_root, pin, fid, pinned_shards
+        )
+        if full_refresh and current_dir is not None:
+            publish_refresh_generation(tmp_dir, cache_root, pin, fid, pinned_shards)
+        elif current_dir is not None:
+            print(
+                f"  identity {fid} already published by a concurrent extraction, "
+                f"discarding redundant build",
+                file=sys.stderr,
+            )
+            shutil.rmtree(str(tmp_dir))
+        else:
+            try:
+                tmp_dir.rename(base_dir)
+            except OSError as exc:
+                # A non-cooperating older publisher may still win generation 0.
+                # Accept it only when its state proves the same identity.
+                if exc.errno not in RENAME_DEST_EXISTS_ERRNOS:
+                    raise
+                published = read_state(base_dir)
+                if not (base_dir.is_dir() and published.get("shards") == pinned_shards):
+                    raise OSError(
+                        exc.errno,
+                        f"{base_dir} is occupied but is not a valid published extraction "
+                        f"for identity {fid} (state mismatch) -- refusing to treat it as "
+                        "authoritative or overwrite it",
+                    ) from exc
+                if full_refresh:
+                    publish_refresh_generation(tmp_dir, cache_root, pin, fid, pinned_shards)
+                else:
+                    print(
+                        f"  identity {fid} already published by a concurrent extraction, "
+                        f"discarding redundant build",
+                        file=sys.stderr,
+                    )
+                    shutil.rmtree(str(tmp_dir))
+
+        # Prefer any higher generation already published before this writer
+        # retargets the compatibility links. Correctness-critical consumers
+        # use the immutable path returned below, because an older checkout
+        # that does not know this lock can still overwrite those links later.
+        newest_dir, _newest_n = resolve_current_generation(
+            cache_root, pin, fid, pinned_shards
+        )
+        if newest_dir is None:
+            raise OSError(f"published fixture identity {fid} has no valid generation")
+        update_symlinks(cache_root, newest_dir, verbose=verbose)
+        return newest_dir
+
+
 def write_state(snap_dir, snapshot, shards):
     state = {
         "snapshot": snapshot,
@@ -205,7 +310,7 @@ def shard_file(shard):
 
 
 def update_symlinks(cache_root, snap_dir, verbose=False):
-    """Create/retarget relative symlinks cache_root/{toolcalling,reasoning} -> snap_dir/..."""
+    """Retarget compatibility links; readers use the returned immutable snapshot path."""
     for name in ("toolcalling", "reasoning", "unified"):
         src = snap_dir / name
         if not src.exists():
@@ -313,22 +418,18 @@ def main():
     # function's docstring).
     snap_dir = cache_root / f"{pin}-{fid}"
 
-    current_dir, current_n = resolve_current_generation(cache_root, pin, fid, pinned_shards)
-    if current_dir and not args.full_refresh:
-        # A directory only ever exists at this exact content-addressed name
-        # once it is fully built (see the atomic publish below), so its
-        # presence alone is already sufficient; `resolve_current_generation`'s
-        # state-file check is a cheap extra sanity check against out-of-band
-        # interference, not the thing establishing correctness.
-        #
-        # Retarget the stable symlinks even on a hit: switching between two
-        # already-cached identities/generations (e.g. a pin rollback) must
-        # repoint toolcalling/ + reasoning/ or readers keep using the other
-        # snapshot.
-        update_symlinks(cache_root, current_dir, verbose=args.verbose)
-        print(f"Cache hit: {current_dir}", file=sys.stderr)
-        print(current_dir)
-        return
+    if not args.full_refresh:
+        with cache_publish_lock(cache_root):
+            current_dir, _current_n = resolve_current_generation(
+                cache_root, pin, fid, pinned_shards
+            )
+            if current_dir:
+                # Retarget while holding the same lock as publishers: a cache
+                # hit must not restore an older identity after a newer publish.
+                update_symlinks(cache_root, current_dir, verbose=args.verbose)
+                print(f"Cache hit: {current_dir}", file=sys.stderr)
+                print(current_dir)
+                return
 
     if args.dry_run:
         for s in shards:
@@ -367,98 +468,15 @@ def main():
         extract_tarball(shard_file(s), tmp_dir, verbose=args.verbose)
     write_state(tmp_dir, pin, shards)
 
-    try:
-        tmp_dir.rename(snap_dir)
-    except OSError as exc:
-        # Only "the destination already exists" may mean a concurrent process
-        # published the SAME identity first (two uncoordinated first-time
-        # builds of one new identity, e.g. via the unlocked `_common.sh`
-        # path). Any other errno -- permission, I/O, disk full, cross-device
-        # EXDEV -- is a real failure with nothing to reconcile against and
-        # must propagate with its original cause, not be swallowed here.
-        if exc.errno not in RENAME_DEST_EXISTS_ERRNOS:
-            raise
-        # Even a "destination exists" error must be verified, not trusted:
-        # the directory occupying this name could be a stray/partial one
-        # from manual intervention or a bug, not a genuine prior publish.
-        published = read_state(snap_dir)
-        if not (snap_dir.is_dir() and published.get("shards") == pinned_shards):
-            raise OSError(
-                exc.errno,
-                f"{snap_dir} is occupied but is not a valid published extraction "
-                f"for identity {fid} (state mismatch) -- refusing to treat it as "
-                "authoritative or overwrite it",
-            ) from exc
-        if args.full_refresh:
-            # `--full-refresh` means "rebuild regardless of cache validity" --
-            # e.g. to recover from local corruption that doesn't change the
-            # shard-source hash this identity is keyed on (state only records
-            # the shard SOURCES' hashes, never the extracted output content).
-            # Silently discarding the rebuild here (the plain branch below)
-            # defeats the flag's purpose. But renaming/deleting the EXISTING
-            # `snap_dir` to make room -- an earlier version of this fix did
-            # exactly that -- reopens the identical hazard the rest of this
-            # function exists to close: a reader that resolved a symlink
-            # pointing at `snap_dir` before this run started may still be
-            # reading files through that exact path for the rest of ITS OWN
-            # lifetime, with no bound on how long that takes. There is no
-            # safe moment to rename or delete a path a reader might still be
-            # using -- "briefly" is still unsafe.
-            #
-            # So a forced rebuild of an identity that already exists NEVER
-            # touches `snap_dir` at all. It publishes to a new, disambiguated
-            # generation path instead; `snap_dir` itself is simply
-            # abandoned, exactly like any other published directory (see the
-            # "no orphan sweep, never delete a published dir" decision
-            # above) -- a reader already using it keeps working, unaffected,
-            # for its entire lifetime. The symlinks (the one mutable
-            # "current" locator, already updated via its own atomic
-            # temp-then-rename) retarget to the new generation for whoever
-            # resolves them AFTER this run.
-            # `resolve_current_generation` (not a fresh `.exists()` probe loop
-            # from 1) picks the starting number: another concurrent
-            # `--full-refresh` racing on the SAME base identity could have
-            # already published `.refresh1`, and starting from 1 again would
-            # just re-collide. The `.exists()` check on the next candidate is
-            # still check-then-act, so the actual rename below is wrapped in
-            # the same narrowed-errno retry as the generation-0 publish path
-            # above -- two runs computing the identical candidate name is a
-            # real, reachable race, not a hypothetical one.
-            _, current_n = resolve_current_generation(cache_root, pin, fid, pinned_shards)
-            refresh_n = max(current_n, 0) + 1
-            published_refresh = False
-            for _attempt in range(REFRESH_RENAME_RETRY_LIMIT):
-                candidate = cache_root / f"{pin}-{fid}.refresh{refresh_n}"
-                try:
-                    tmp_dir.rename(candidate)
-                    published_refresh = True
-                    break
-                except OSError as exc2:
-                    if exc2.errno not in RENAME_DEST_EXISTS_ERRNOS:
-                        raise
-                    refresh_n += 1
-            if not published_refresh:
-                raise OSError(
-                    f"could not publish a --full-refresh generation for identity "
-                    f"{fid} in {cache_root} after {REFRESH_RENAME_RETRY_LIMIT} "
-                    "name collisions -- persistent concurrent refreshers?"
-                )
-            snap_dir = candidate
-            print(
-                f"  --full-refresh: identity {fid} already published; built a new "
-                f"generation at {snap_dir} instead of mutating the existing one "
-                "(a reader still using the prior generation is unaffected)",
-                file=sys.stderr,
-            )
-        else:
-            print(
-                f"  identity {fid} already published by a concurrent extraction, "
-                f"discarding redundant build",
-                file=sys.stderr,
-            )
-            shutil.rmtree(str(tmp_dir))
-
-    update_symlinks(cache_root, snap_dir, verbose=args.verbose)
+    snap_dir = publish_extracted_snapshot(
+        tmp_dir,
+        cache_root,
+        pin,
+        fid,
+        pinned_shards,
+        full_refresh=args.full_refresh,
+        verbose=args.verbose,
+    )
 
     print(snap_dir)
 

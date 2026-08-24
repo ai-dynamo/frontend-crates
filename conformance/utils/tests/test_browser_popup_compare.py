@@ -12,8 +12,8 @@ test_browser_smoke.py).
 """
 from __future__ import annotations
 
-import os
 import shutil
+import sys
 import time
 from pathlib import Path
 
@@ -22,6 +22,13 @@ import pytest
 selenium = pytest.importorskip("selenium")
 from selenium import webdriver  # noqa: E402
 from selenium.webdriver.chrome.options import Options  # noqa: E402
+
+UTILS = Path(__file__).resolve().parents[1]
+SRC = UTILS / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from fixture_snapshot import fixture_snapshot_root  # noqa: E402
 
 pytestmark = pytest.mark.skipif(
     not any(
@@ -35,11 +42,7 @@ def _dynamo_key(impl: str) -> str:
     """Candidate key of the LATEST stream capture dir for a Dynamo impl
     (`dynamo_v1` = jail reference, `dynamo_v2` = stream parser); older version
     dirs are capture history and render as extra candidates."""
-    root = Path(
-        os.environ.get("CONFORMANCE_FIXTURES_ROOT")
-        or Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
-        / "dynamo/conformance-fixtures"
-    )
+    root = fixture_snapshot_root()
     import re as _re
 
     dirs = [
