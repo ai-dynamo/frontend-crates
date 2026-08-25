@@ -569,16 +569,67 @@ pub const RESPONSE_INPUT_TOKENS_OBJECT: &str = "response.input_tokens";
 /// Dynamo does not serve (`conversation`, `previous_response_id`) are accepted
 /// and disregarded rather than rejected. This endpoint reports a pre-flight
 /// estimate; it never generates, so there is nothing for them to affect.
+///
+/// Deserialization is forgiving in two further places — an explicit
+/// `"input": null` and unrecognized tool shapes — for the same reason
+/// `AnthropicTool` keeps every field but `name` optional: a pre-flight
+/// estimate that rejects a body it could have scored is strictly worse than
+/// one that scores it approximately. See [`deserialize_lenient_tools`].
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
 pub struct CountInputTokensRequest {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
-    #[serde(default)]
+    /// `#[serde(default)]` alone covers an absent `input`, but not an explicit
+    /// `"input": null` — serde still hands that null to `InputParam`, whose
+    /// deserializer rejects it. Here both mean "nothing to count".
+    #[serde(default, deserialize_with = "deserialize_null_default_input")]
     pub input: InputParam,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub instructions: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "deserialize_lenient_tools"
+    )]
     pub tools: Option<Vec<Tool>>,
+}
+
+fn deserialize_null_default_input<'de, D>(deserializer: D) -> Result<InputParam, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Ok(Option::<InputParam>::deserialize(deserializer)?.unwrap_or_default())
+}
+
+/// Drop tool entries that do not deserialize into a known [`Tool`], rather than
+/// failing the whole request.
+///
+/// `Tool` is upstream's `#[serde(tag = "type")]` enum, so it models only the
+/// tool types the pinned `async-openai` knows. A caller that forwards a tool in
+/// a shape upstream does not model — a Chat-Completions-style `{"type":
+/// "custom", "custom": {...}}`, or a tool type newer than the pin — would
+/// otherwise get a 400 for a field that contributes almost nothing to the
+/// estimate.
+///
+/// Dropping costs nothing: [`estimate_tool_len`] already scores every
+/// non-function tool as 0, because `convert_tools` forwards only function tools
+/// to the backend. An unparseable tool was going to be worth 0 either way; this
+/// only decides whether the rest of the body still gets counted. That is the
+/// same trade `estimate_tool_len` documents when it wildcards where
+/// `estimate_item_len` is exhaustive — `Tool` is upstream's type, and we carry
+/// no obligation to mirror its variants.
+fn deserialize_lenient_tools<'de, D>(deserializer: D) -> Result<Option<Vec<Tool>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let Some(raw) = Option::<Vec<serde_json::Value>>::deserialize(deserializer)? else {
+        return Ok(None);
+    };
+    Ok(Some(
+        raw.into_iter()
+            .filter_map(|tool| serde_json::from_value::<Tool>(tool).ok())
+            .collect(),
+    ))
 }
 
 /// Response body for `POST /v1/responses/input_tokens`.
@@ -1740,6 +1791,73 @@ mod tests {
         );
         assert!(matches!(request.input, InputParam::Items(ref items) if items.len() == 1));
         assert!(request.estimate_tokens() > 0);
+    }
+
+    #[test]
+    fn count_tokens_accepts_explicit_null_input() {
+        // `#[serde(default)]` covers an absent `input`; this covers the null
+        // an emitter produces when it always writes the key.
+        assert_eq!(count(serde_json::json!({"model": "m", "input": null})), 0);
+        assert_eq!(
+            count(serde_json::json!({
+                "model": "m",
+                "input": null,
+                "instructions": "You are helpful."
+            })),
+            5
+        );
+    }
+
+    #[test]
+    fn count_tokens_drops_unparseable_tools_instead_of_failing() {
+        // A Chat-Completions-shaped `custom` tool: `Tool` models the Responses
+        // shape (`{"type": "custom", "name": ...}`), not the nested chat one.
+        // It must not take the whole request down with it.
+        let request: CountInputTokensRequest = serde_json::from_value(serde_json::json!({
+            "model": "m",
+            "input": "Hello, world!",
+            "tools": [{"type": "custom", "custom": {"name": "x"}}],
+        }))
+        .expect("an unparseable tool should be dropped, not rejected");
+        assert_eq!(request.tools.as_deref(), Some(&[][..]));
+        // Same count as the identical body with no `tools` key at all: the
+        // dropped tool was worth 0 either way.
+        assert_eq!(request.estimate_tokens(), 4);
+    }
+
+    #[test]
+    fn count_tokens_keeps_parseable_tools_alongside_dropped_ones() {
+        // Dropping is per-entry, not all-or-nothing: a good function tool in
+        // the same array still gets counted.
+        let request: CountInputTokensRequest = serde_json::from_value(serde_json::json!({
+            "model": "m",
+            "input": "Hello, world!",
+            "tools": [
+                {"type": "custom", "custom": {"name": "x"}},
+                {"type": "function", "name": "get_weather", "description": "Get weather"},
+            ],
+        }))
+        .expect("a mixed tool array should deserialize");
+        assert_eq!(request.tools.as_ref().map(Vec::len), Some(1));
+        assert!(
+            request.estimate_tokens()
+                > count(serde_json::json!({"model": "m", "input": "Hello, world!"}))
+        );
+    }
+
+    #[test]
+    fn count_tokens_distinguishes_absent_tools_from_empty_tools() {
+        // `None` and `Some([])` both score 0, but the field must round-trip
+        // its presence: `skip_serializing_if` relies on the distinction.
+        let absent: CountInputTokensRequest =
+            serde_json::from_value(serde_json::json!({"input": "hi"})).unwrap();
+        assert_eq!(absent.tools, None);
+        let empty: CountInputTokensRequest =
+            serde_json::from_value(serde_json::json!({"input": "hi", "tools": []})).unwrap();
+        assert_eq!(empty.tools.as_deref(), Some(&[][..]));
+        let null: CountInputTokensRequest =
+            serde_json::from_value(serde_json::json!({"input": "hi", "tools": null})).unwrap();
+        assert_eq!(null.tools, None);
     }
 
     #[test]
