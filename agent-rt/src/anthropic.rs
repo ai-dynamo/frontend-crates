@@ -4,13 +4,16 @@
 use std::convert::Infallible;
 
 use dynamo_protocols::types::anthropic::{
-    AnthropicCreateMessageRequest, AnthropicMessage, AnthropicMessageResponse, AnthropicStopReason,
+    AnthropicContentBlock, AnthropicCreateMessageRequest, AnthropicMessage,
+    AnthropicMessageContent, AnthropicMessageResponse, AnthropicResponseContentBlock,
+    AnthropicRole, AnthropicStopReason, ToolResultContent,
 };
 use thiserror::Error;
 
 use crate::{
     AnthropicMessages, CheckpointRecord, InterpretedOutput, MaterializedTurn, OutputIdentity,
-    OutputInterpreter, RequestMaterializer, TurnState,
+    OutputInterpreter, RequestMaterializer, RuntimeToolCall, RuntimeToolResult, ToolLoopAdapter,
+    ToolRouter, TurnState,
 };
 
 /// Materializes Anthropic Messages requests without introducing a shared IR.
@@ -69,6 +72,133 @@ impl AnthropicOutcomePolicy for ClientToolAnthropicPolicy {
     }
 }
 
+/// Outcome policy that promotes configured Anthropic tools to runtime work.
+#[derive(Debug, Clone)]
+pub struct RoutedAnthropicOutcomePolicy<R> {
+    router: R,
+}
+
+impl<R> RoutedAnthropicOutcomePolicy<R> {
+    pub fn new(router: R) -> Self {
+        Self { router }
+    }
+}
+
+#[derive(Debug, Error, Clone, Copy, PartialEq, Eq)]
+pub enum RoutedAnthropicOutcomeError {
+    #[error("one model step mixed runtime-owned and client-owned tool calls")]
+    MixedToolOwnership,
+}
+
+impl<R> AnthropicOutcomePolicy for RoutedAnthropicOutcomePolicy<R>
+where
+    R: ToolRouter,
+{
+    type Error = RoutedAnthropicOutcomeError;
+
+    fn next_state(&self, response: &AnthropicMessageResponse) -> Result<TurnState, Self::Error> {
+        if response.stop_reason != Some(AnthropicStopReason::ToolUse) {
+            return Ok(TurnState::Completed);
+        }
+
+        let (runtime_calls, client_calls) =
+            response
+                .content
+                .iter()
+                .fold(
+                    (0_u32, 0_u32),
+                    |(runtime_calls, client_calls), block| match block {
+                        AnthropicResponseContentBlock::ToolUse { name, .. }
+                            if self.router.route(name).is_some() =>
+                        {
+                            (runtime_calls + 1, client_calls)
+                        }
+                        AnthropicResponseContentBlock::ToolUse { .. } => {
+                            (runtime_calls, client_calls + 1)
+                        }
+                        _ => (runtime_calls, client_calls),
+                    },
+                );
+        match (runtime_calls > 0, client_calls > 0) {
+            (true, true) => Err(RoutedAnthropicOutcomeError::MixedToolOwnership),
+            (true, false) => Ok(TurnState::ToolStarted),
+            (false, _) => Ok(TurnState::AwaitingClientToolOutput),
+        }
+    }
+}
+
+/// Anthropic custom-tool adapter backed by trusted server routing.
+#[derive(Debug, Clone)]
+pub struct AnthropicToolLoopAdapter<R> {
+    router: R,
+}
+
+impl<R> AnthropicToolLoopAdapter<R> {
+    pub fn new(router: R) -> Self {
+        Self { router }
+    }
+}
+
+impl<R> ToolLoopAdapter<AnthropicMessages> for AnthropicToolLoopAdapter<R>
+where
+    R: ToolRouter,
+{
+    type Error = Infallible;
+
+    fn runtime_calls(
+        &self,
+        response: &AnthropicMessageResponse,
+    ) -> Result<Vec<RuntimeToolCall>, Self::Error> {
+        Ok(response
+            .content
+            .iter()
+            .filter_map(|block| match block {
+                AnthropicResponseContentBlock::ToolUse { id, name, input } => {
+                    self.router.route(name).map(|route| RuntimeToolCall {
+                        call_id: id.clone(),
+                        connector: route.connector,
+                        operation: route.operation,
+                        arguments: input.clone(),
+                    })
+                }
+                _ => None,
+            })
+            .collect())
+    }
+
+    fn append_results(
+        &self,
+        request: &mut AnthropicCreateMessageRequest,
+        response: &AnthropicMessageResponse,
+        results: &[RuntimeToolResult],
+    ) -> Result<Vec<AnthropicMessage>, Self::Error> {
+        request.messages.push(AnthropicMessage::from(response));
+        let content = results
+            .iter()
+            .map(|result| {
+                let output = result
+                    .result
+                    .output
+                    .as_str()
+                    .map(str::to_owned)
+                    .unwrap_or_else(|| result.result.output.to_string());
+                AnthropicContentBlock::ToolResult {
+                    tool_use_id: result.call.call_id.clone(),
+                    content: Some(ToolResultContent::Text(output)),
+                    is_error: Some(false),
+                    cache_control: None,
+                }
+            })
+            .collect();
+        let result_message = AnthropicMessage {
+            role: AnthropicRole::User,
+            content: AnthropicMessageContent::Blocks { content },
+        };
+        request.messages.push(result_message.clone());
+        Ok(vec![result_message])
+    }
+}
+
 /// Native Anthropic output interpreter composed with deployment outcome policy.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct PolicyAnthropicOutputInterpreter<P> {
@@ -110,13 +240,15 @@ mod tests {
 
     use crate::{
         AgentProtocol, AnthropicMessages, AuthorizationScope, CheckpointRecord, CheckpointVersion,
-        IdempotencyKey, OutputIdentity, OutputInterpreter, RequestFingerprint, ResponseId,
-        TurnState,
+        ConfiguredToolRouter, IdempotencyKey, OutputIdentity, OutputInterpreter,
+        RequestFingerprint, ResponseId, RuntimeToolResult, ToolExecutionResult, ToolLoopAdapter,
+        ToolRoute, TurnState,
     };
 
     use super::{
         AnthropicMaterializationError, AnthropicOutputInterpreter, AnthropicRequestMaterializer,
-        RequestMaterializer,
+        AnthropicToolLoopAdapter, PolicyAnthropicOutputInterpreter, RequestMaterializer,
+        RoutedAnthropicOutcomePolicy,
     };
 
     fn request() -> AnthropicCreateMessageRequest {
@@ -222,5 +354,67 @@ mod tests {
             .interpret(response("end_turn"), &identity)
             .unwrap();
         assert_eq!(interpreted.next_state, TurnState::Completed);
+    }
+
+    fn router() -> ConfiguredToolRouter {
+        ConfiguredToolRouter::new([("lookup".to_owned(), ToolRoute::new("search", "query"))])
+    }
+
+    #[test]
+    fn routed_tool_use_starts_runtime_work() {
+        let interpreter =
+            PolicyAnthropicOutputInterpreter::new(RoutedAnthropicOutcomePolicy::new(router()));
+        let identity = OutputIdentity {
+            response_id: ResponseId::from("internal-turn"),
+            parent_response_id: None,
+        };
+
+        let interpreted = interpreter
+            .interpret(response("tool_use"), &identity)
+            .unwrap();
+        assert_eq!(interpreted.next_state, TurnState::ToolStarted);
+    }
+
+    #[test]
+    fn tool_adapter_appends_native_assistant_and_result_messages() {
+        let adapter = AnthropicToolLoopAdapter::new(router());
+        let response = response("tool_use");
+        let calls = adapter.runtime_calls(&response).unwrap();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].connector, "search");
+        assert_eq!(calls[0].arguments, serde_json::json!({}));
+
+        let mut request = request();
+        let replay = adapter
+            .append_results(
+                &mut request,
+                &response,
+                &[RuntimeToolResult {
+                    call: calls[0].clone(),
+                    result: ToolExecutionResult {
+                        output: serde_json::json!({"answer": 42}),
+                    },
+                }],
+            )
+            .unwrap();
+
+        assert_eq!(request.messages.len(), 3);
+        assert_eq!(replay.len(), 1);
+        assert_eq!(
+            replay[0].role,
+            dynamo_protocols::types::anthropic::AnthropicRole::User
+        );
+        let dynamo_protocols::types::anthropic::AnthropicMessageContent::Blocks { content } =
+            &replay[0].content
+        else {
+            panic!("tool result must use structured native blocks")
+        };
+        assert!(matches!(
+            content.as_slice(),
+            [dynamo_protocols::types::anthropic::AnthropicContentBlock::ToolResult {
+                tool_use_id,
+                ..
+            }] if tool_use_id == "tool_1"
+        ));
     }
 }

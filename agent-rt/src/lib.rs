@@ -29,7 +29,8 @@ mod tool_memory;
 
 pub use anthropic::{
     AnthropicMaterializationError, AnthropicOutcomePolicy, AnthropicOutputInterpreter,
-    AnthropicRequestMaterializer, ClientToolAnthropicPolicy, PolicyAnthropicOutputInterpreter,
+    AnthropicRequestMaterializer, AnthropicToolLoopAdapter, ClientToolAnthropicPolicy,
+    PolicyAnthropicOutputInterpreter, RoutedAnthropicOutcomeError, RoutedAnthropicOutcomePolicy,
 };
 pub use authorization::{AuthorizationScope, RuntimeAuthorization, RuntimeLimits};
 pub use checkpoint::{
