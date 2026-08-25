@@ -39,7 +39,9 @@ pub use materialize::{
 };
 pub use memory::{InMemoryCheckpointStore, InMemoryStoreError};
 pub use protocol::{AgentProtocol, AnthropicMessages, OpenAiResponses};
-pub use selector::{RuntimeSelector, StatefulRequestSelector};
+pub use selector::{
+    AnthropicRequestSelector, RuntimeSelectionContext, RuntimeSelector, StatefulRequestSelector,
+};
 pub use tool::{ToolExecutionRequest, ToolExecutionResult, ToolExecutor};
 
 /// A boxed future used by object-safe asynchronous runtime traits.
