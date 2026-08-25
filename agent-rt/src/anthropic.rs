@@ -1,10 +1,17 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use dynamo_protocols::types::anthropic::AnthropicCreateMessageRequest;
+use std::convert::Infallible;
+
+use dynamo_protocols::types::anthropic::{
+    AnthropicCreateMessageRequest, AnthropicMessage, AnthropicMessageResponse, AnthropicStopReason,
+};
 use thiserror::Error;
 
-use crate::{AnthropicMessages, CheckpointRecord, MaterializedTurn, RequestMaterializer};
+use crate::{
+    AnthropicMessages, CheckpointRecord, InterpretedOutput, MaterializedTurn, OutputIdentity,
+    OutputInterpreter, RequestMaterializer, TurnState,
+};
 
 /// Materializes Anthropic Messages requests without introducing a shared IR.
 ///
@@ -39,16 +46,78 @@ impl RequestMaterializer<AnthropicMessages> for AnthropicRequestMaterializer {
     }
 }
 
+/// Selects the durable transition for one native Anthropic Messages result.
+pub trait AnthropicOutcomePolicy: Send + Sync + 'static {
+    type Error: std::error::Error + Send + Sync + 'static;
+
+    fn next_state(&self, response: &AnthropicMessageResponse) -> Result<TurnState, Self::Error>;
+}
+
+/// Conservative default for client-executed Anthropic tool calls.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ClientToolAnthropicPolicy;
+
+impl AnthropicOutcomePolicy for ClientToolAnthropicPolicy {
+    type Error = Infallible;
+
+    fn next_state(&self, response: &AnthropicMessageResponse) -> Result<TurnState, Self::Error> {
+        if response.stop_reason == Some(AnthropicStopReason::ToolUse) {
+            Ok(TurnState::AwaitingClientToolOutput)
+        } else {
+            Ok(TurnState::Completed)
+        }
+    }
+}
+
+/// Native Anthropic output interpreter composed with deployment outcome policy.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct PolicyAnthropicOutputInterpreter<P> {
+    policy: P,
+}
+
+impl<P> PolicyAnthropicOutputInterpreter<P> {
+    pub fn new(policy: P) -> Self {
+        Self { policy }
+    }
+}
+
+pub type AnthropicOutputInterpreter = PolicyAnthropicOutputInterpreter<ClientToolAnthropicPolicy>;
+
+impl<P> OutputInterpreter<AnthropicMessages> for PolicyAnthropicOutputInterpreter<P>
+where
+    P: AnthropicOutcomePolicy,
+{
+    type Error = P::Error;
+
+    fn interpret(
+        &self,
+        response: AnthropicMessageResponse,
+        _identity: &OutputIdentity,
+    ) -> Result<InterpretedOutput<AnthropicMessages>, Self::Error> {
+        let next_state = self.policy.next_state(&response)?;
+        let replay_items = vec![AnthropicMessage::from(&response)];
+        Ok(InterpretedOutput {
+            response,
+            replay_items,
+            next_state,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use dynamo_protocols::types::anthropic::AnthropicCreateMessageRequest;
 
     use crate::{
         AgentProtocol, AnthropicMessages, AuthorizationScope, CheckpointRecord, CheckpointVersion,
-        IdempotencyKey, RequestFingerprint, ResponseId, TurnState,
+        IdempotencyKey, OutputIdentity, OutputInterpreter, RequestFingerprint, ResponseId,
+        TurnState,
     };
 
-    use super::{AnthropicMaterializationError, AnthropicRequestMaterializer, RequestMaterializer};
+    use super::{
+        AnthropicMaterializationError, AnthropicOutputInterpreter, AnthropicRequestMaterializer,
+        RequestMaterializer,
+    };
 
     fn request() -> AnthropicCreateMessageRequest {
         serde_json::from_value(serde_json::json!({
@@ -103,5 +172,55 @@ mod tests {
                 .unwrap_err(),
             AnthropicMaterializationError::ExternalContinuationUnsupported
         );
+    }
+
+    fn response(stop_reason: &str) -> dynamo_protocols::types::anthropic::AnthropicMessageResponse {
+        serde_json::from_value(serde_json::json!({
+            "id": "msg_backend",
+            "type": "message",
+            "role": "assistant",
+            "content": [{
+                "type": "tool_use",
+                "id": "tool_1",
+                "name": "lookup",
+                "input": {}
+            }],
+            "model": "claude",
+            "stop_reason": stop_reason,
+            "stop_sequence": null,
+            "usage": {"input_tokens": 10, "output_tokens": 4}
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn tool_use_response_waits_for_client_and_replays_native_message() {
+        let identity = OutputIdentity {
+            response_id: ResponseId::from("internal-turn"),
+            parent_response_id: None,
+        };
+        let interpreted = AnthropicOutputInterpreter::default()
+            .interpret(response("tool_use"), &identity)
+            .unwrap();
+
+        assert_eq!(interpreted.next_state, TurnState::AwaitingClientToolOutput);
+        assert_eq!(interpreted.response.id, "msg_backend");
+        assert_eq!(interpreted.replay_items.len(), 1);
+        assert_eq!(
+            interpreted.replay_items[0].role,
+            dynamo_protocols::types::anthropic::AnthropicRole::Assistant
+        );
+    }
+
+    #[test]
+    fn end_turn_response_completes() {
+        let identity = OutputIdentity {
+            response_id: ResponseId::from("internal-turn"),
+            parent_response_id: None,
+        };
+        let interpreted = AnthropicOutputInterpreter::default()
+            .interpret(response("end_turn"), &identity)
+            .unwrap();
+        assert_eq!(interpreted.next_state, TurnState::Completed);
     }
 }

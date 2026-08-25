@@ -25,7 +25,10 @@ mod responses;
 mod selector;
 mod tool;
 
-pub use anthropic::{AnthropicMaterializationError, AnthropicRequestMaterializer};
+pub use anthropic::{
+    AnthropicMaterializationError, AnthropicOutcomePolicy, AnthropicOutputInterpreter,
+    AnthropicRequestMaterializer, ClientToolAnthropicPolicy, PolicyAnthropicOutputInterpreter,
+};
 pub use authorization::{AuthorizationScope, RuntimeAuthorization, RuntimeLimits};
 pub use checkpoint::{
     BeginTurn, BeginTurnResult, CheckpointRecord, CheckpointStore, CheckpointVersion, CommitTurn,
