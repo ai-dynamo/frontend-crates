@@ -113,6 +113,25 @@ pub type RuntimeErrorFor<P, S, M, F, I, O> = AgentRuntimeError<
     <O as OutputInterpreter<P>>::Error,
 >;
 
+struct PreparedTurn<P, C>
+where
+    P: AgentProtocol,
+{
+    inference_request: P::Request,
+    invocation_context: C,
+    inference_intent: InferenceIntent,
+    identity: OutputIdentity,
+    lease: TurnLease,
+}
+
+enum PrepareTurnResult<P, C>
+where
+    P: AgentProtocol,
+{
+    Acquired(Box<PreparedTurn<P, C>>),
+    Existing(Box<CheckpointRecord<P>>),
+}
+
 /// Protocol-generic coordinator composed entirely from replaceable boundaries.
 pub struct AgentRuntime<P, S, M, F, I, O, G, C>
 where
@@ -550,6 +569,81 @@ where
         &self,
         command: RunTurn<P, I::Context>,
     ) -> Result<RunTurnResult<P>, RuntimeErrorFor<P, S, M, F, I, O>> {
+        let prepared = match self.prepare_turn(command).await? {
+            PrepareTurnResult::Acquired(prepared) => *prepared,
+            PrepareTurnResult::Existing(record) => return Ok(RunTurnResult::Existing(record)),
+        };
+        let PreparedTurn {
+            inference_request,
+            invocation_context,
+            inference_intent,
+            identity,
+            lease,
+            ..
+        } = prepared;
+
+        let inference = self
+            .invoker
+            .invoke(InferenceRequest {
+                request: inference_request,
+                context: invocation_context,
+                intent: inference_intent,
+            })
+            .await;
+        let response = match inference {
+            Ok(InferenceOutput::Unary(response)) => *response,
+            Ok(InferenceOutput::Streaming(_)) => {
+                let checkpoint_error = self.mark_failed(lease).await;
+                return Err(AgentRuntimeError::StreamingUnsupported { checkpoint_error });
+            }
+            Err(error) => {
+                let checkpoint_error = self.mark_failed(lease).await;
+                return Err(AgentRuntimeError::Inference {
+                    error,
+                    checkpoint_error,
+                });
+            }
+        };
+
+        let output = match self.output_interpreter.interpret(response, &identity) {
+            Ok(output) => output,
+            Err(error) => {
+                let checkpoint_error = self.mark_failed(lease).await;
+                return Err(AgentRuntimeError::Output {
+                    error,
+                    checkpoint_error,
+                });
+            }
+        };
+        if !TurnState::InFlight.permits_transition_to(&output.next_state) {
+            let state = output.next_state;
+            let checkpoint_error = self.mark_failed(lease).await;
+            return Err(AgentRuntimeError::InvalidOutputState {
+                state,
+                checkpoint_error,
+            });
+        }
+
+        let committed = self
+            .store
+            .commit_turn(CommitTurn {
+                lease,
+                next_state: output.next_state,
+                append_output_items: output.replay_items,
+                response: Some(output.response),
+            })
+            .await
+            .map_err(AgentRuntimeError::Store)?;
+        Ok(RunTurnResult::Committed {
+            record: Box::new(committed.record),
+            lease: committed.lease,
+        })
+    }
+
+    async fn prepare_turn(
+        &self,
+        command: RunTurn<P, I::Context>,
+    ) -> Result<PrepareTurnResult<P, I::Context>, RuntimeErrorFor<P, S, M, F, I, O>> {
         let chain = match &command.parent_response_id {
             Some(parent_response_id) => self
                 .store
@@ -594,69 +688,19 @@ where
             .map_err(AgentRuntimeError::Store)?
         {
             BeginTurnResult::Acquired(lease) => lease,
-            BeginTurnResult::Existing(record) => return Ok(RunTurnResult::Existing(record)),
+            BeginTurnResult::Existing(record) => return Ok(PrepareTurnResult::Existing(record)),
         };
 
-        let inference = self
-            .invoker
-            .invoke(InferenceRequest {
-                request: materialized.inference_request,
-                context: command.invocation_context,
-                intent: command.inference_intent,
-            })
-            .await;
-        let response = match inference {
-            Ok(InferenceOutput::Unary(response)) => *response,
-            Ok(InferenceOutput::Streaming(_)) => {
-                let checkpoint_error = self.mark_failed(lease).await;
-                return Err(AgentRuntimeError::StreamingUnsupported { checkpoint_error });
-            }
-            Err(error) => {
-                let checkpoint_error = self.mark_failed(lease).await;
-                return Err(AgentRuntimeError::Inference {
-                    error,
-                    checkpoint_error,
-                });
-            }
-        };
-
-        let identity = OutputIdentity {
-            response_id,
-            parent_response_id: command.parent_response_id,
-        };
-        let output = match self.output_interpreter.interpret(response, &identity) {
-            Ok(output) => output,
-            Err(error) => {
-                let checkpoint_error = self.mark_failed(lease).await;
-                return Err(AgentRuntimeError::Output {
-                    error,
-                    checkpoint_error,
-                });
-            }
-        };
-        if !TurnState::InFlight.permits_transition_to(&output.next_state) {
-            let state = output.next_state;
-            let checkpoint_error = self.mark_failed(lease).await;
-            return Err(AgentRuntimeError::InvalidOutputState {
-                state,
-                checkpoint_error,
-            });
-        }
-
-        let committed = self
-            .store
-            .commit_turn(CommitTurn {
-                lease,
-                next_state: output.next_state,
-                append_output_items: output.replay_items,
-                response: Some(output.response),
-            })
-            .await
-            .map_err(AgentRuntimeError::Store)?;
-        Ok(RunTurnResult::Committed {
-            record: Box::new(committed.record),
-            lease: committed.lease,
-        })
+        Ok(PrepareTurnResult::Acquired(Box::new(PreparedTurn {
+            inference_request: materialized.inference_request,
+            invocation_context: command.invocation_context,
+            inference_intent: command.inference_intent,
+            identity: OutputIdentity {
+                response_id,
+                parent_response_id: command.parent_response_id,
+            },
+            lease,
+        })))
     }
 
     async fn mark_failed(&self, lease: TurnLease) -> Option<S::Error> {
