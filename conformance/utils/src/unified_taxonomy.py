@@ -104,6 +104,7 @@ UNIFIED_TAX = {
     "guided_json_stray_prefix_before_reasoning": (31, "u"),
     "guided_json_narrated_prefix_inside_reasoning": (31, "v"),
     "guided_json_native_markup_only": (31, "w"),
+    "guided_json_unterminated_reasoning_then_wrapped_payload": (31, "x"),
 
     # Group 40 — Prefilled reasoning, happy
     "prefilled_reasoning_with_tool": (40, "a"), "prefilled_reasoning_with_guided_json": (40, "b"),

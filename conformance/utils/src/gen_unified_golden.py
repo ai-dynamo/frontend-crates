@@ -1209,6 +1209,25 @@ EDGE += [
      guided_surroundings(
          lambda fam: r_tool(fam, "get_weather", "city", "Paris", 0),
          "native markup is stripped as one control-only turn, independent of chunking")),
+
+    # Missing reasoning terminator CROSSED with a guided wrapper. `31.g`
+    # (`guided_json_wrapped_in_tool_markup`) already pins a wrapper around the payload
+    # OUTSIDE reasoning, and `41.*` pins an unterminated thought on its own; neither
+    # asks what happens when a thought the model never closed runs straight into the
+    # wrapper. That crossing is where both shipped families emitted the payload as
+    # REASONING and dispatched nothing — the worst outcome available, because the
+    # client sees a plausible answer and never learns a call was lost.
+    ("guided_json_unterminated_reasoning_then_wrapped_payload",
+     "A thought whose closer never arrives, running straight into native tool markup wrapping the guided payload. The model routed away from the reasoning channel and simply omitted the terminator, so the thought ends at that markup and the payload is a call. Contrast with `31.h`, where the same markup has PROSE behind it and is narration the model wrote while thinking — there the span stays open and the markup is stripped. What separates the two is whether the guided payload follows, not which marker appeared.",
+     ["P2", "I6"],
+     [{"kind": "reasoning", "text": "thinking"},
+      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     {"finish_reason": "tool_calls"},
+     guided_surroundings(
+         lambda fam: (f"{control_tokens(fam)[0]}thinking"
+                      f"{control_tokens(fam)[2]}{GUIDED_ONE_CALL}{control_tokens(fam)[3]}"),
+         "unterminated thought ends at the wrapper; the wrapped payload still dispatches")),
 ]
 
 

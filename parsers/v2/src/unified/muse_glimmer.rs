@@ -903,6 +903,77 @@ mod tests {
         // half; a marker it merely quotes whole is stripped by the run it sits in.
     }
 
+    /// A thought whose terminator never arrived, running into the guided payload
+    /// through the family's own tool WRAPPER rather than straight into the JSON.
+    ///
+    /// The sibling of the direct case, and the one the first fix missed: recovery
+    /// tested for JSON IMMEDIATELY after the routed header, so
+    /// `to=NAME<|message|>[{…}]` recovered while
+    /// `to=NAME<|message|><atem:function_calls>[{…}]` still emitted the payload as
+    /// REASONING and dispatched nothing. qwen3 dropped the call the same way on
+    /// `<think>a<tool_call>[{…}]`, which has no routed header at all — so the rule
+    /// lives in the shared owner and both families run the one implementation.
+    ///
+    /// The narrated contrast is asserted beside it: the same markup with PROSE behind
+    /// it is something the model wrote while thinking, and the span stays open.
+    #[test]
+    fn an_unterminated_thought_recovers_through_a_tool_wrapper() {
+        let call = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        let weather = || UnifiedEvent::ToolCall {
+            name: "get_weather".into(),
+            arguments: serde_json::json!({"city": "Paris"}),
+        };
+        let reasoning = |text: &str| UnifiedEvent::Reasoning { text: text.into() };
+        for (label, input, want) in [
+            (
+                "wrapper between the header and the payload still recovers",
+                format!(
+                    "<|start|>assistant to=self<|message|>thinking\
+                     <|start|>assistant to=get_weather<|message|>\
+                     <atem:function_calls>{call}</atem:function_calls><|eom|>"
+                ),
+                vec![reasoning("thinking"), weather()],
+            ),
+            (
+                "the same wrapper with prose behind it is narration",
+                format!(
+                    "<|start|>assistant to=self<|message|>thinking about \
+                     <atem:function_calls> and more<|eom|>{call}"
+                ),
+                vec![reasoning("thinking about  and more"), weather()],
+            ),
+        ] {
+            let drive = |chunks: Vec<&str>| {
+                let mut parser = muse_glimmer_unified(&tools());
+                parser
+                    .initialize_request(UnifiedParserInit {
+                        prompt_token_ids: Vec::new(),
+                        starting_state: UnifiedParserStartingState::None,
+                        tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                        invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                    })
+                    .expect("guided init must be accepted");
+                let mut deltas = Vec::new();
+                for c in chunks {
+                    deltas.extend(parser.push(c).expect("push"));
+                }
+                deltas.extend(parser.finish().expect("finish"));
+                assemble(&deltas)
+            };
+            assert_eq!(drive(vec![&input]), want, "{label}: whole input");
+            for at in 1..input.len() {
+                if !input.is_char_boundary(at) {
+                    continue;
+                }
+                assert_eq!(
+                    drive(vec![&input[..at], &input[at..]]),
+                    want,
+                    "{label}: split at byte {at}"
+                );
+            }
+        }
+    }
+
     /// Guided framing cases an independent review found after the first round, each
     /// one measured at every split point rather than only whole and per-character.
     ///

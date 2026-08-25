@@ -632,27 +632,21 @@ impl MuseChannelScanner {
         self.drain(out)
     }
 
-    /// Apply the resolved request configuration before any byte is parsed.
+    /// Apply the channel state the prompt left this stream in, before any byte is
+    /// parsed.
     ///
     /// `starting_state` is cheap for this grammar: the prompt consumed a channel header,
     /// so the stream simply opens in that channel instead of `Idle`. It is the whole
     /// reason `State` is an enum rather than a bool.
     ///
-    /// Guided tool output is REJECTED, and the rejection is the honest answer rather than
-    /// a gap. `GuidedState` is built around a `ReasoningSpec` — an open/close marker PAIR
-    /// — and muse has none: reasoning opens with a dynamic `to=self<|message|>` header it
-    /// shares with the content and tool channels. Supporting guided muse means teaching
-    /// the guided machinery to work without a marker pair, which is a change to the
-    /// shared unified layer, not to this family.
-    /// Apply the channel state the prompt left this stream in.
-    ///
-    /// Guided decoding is NOT rejected here any more. It used to be, on the ground
-    /// that this family has no reasoning marker PAIR — but "no pair" is a statement
-    /// about how the opener is spelled, not about whether a reasoning channel
-    /// exists. Muse has one; it is routed by recipient. The guided reader now asks
-    /// [`GuidedReasoning`] where a thought starts rather than assuming a fixed
-    /// string, so this family answers with [`guided_reasoning_open`] and is served
-    /// like any other.
+    /// Guided tool output used to be REJECTED here, on the ground that `GuidedState` was
+    /// built around a `ReasoningSpec` — an open/close marker PAIR — and muse has none:
+    /// reasoning opens with a dynamic `to=self<|message|>` header it shares with the
+    /// content and tool channels. Having no marker pair is a statement about how the
+    /// opener is SPELLED, not about whether a reasoning channel exists. Muse has one; it
+    /// is routed by recipient. The guided reader now asks [`crate::unified::GuidedReasoning`]
+    /// where a thought starts instead of assuming a fixed string, this family answers
+    /// with [`guided_reasoning_open`], and there is nothing left to reject.
     pub(crate) fn apply_starting_state(&mut self, starting_state: UnifiedParserStartingState) {
         self.state = match starting_state {
             UnifiedParserStartingState::None => State::Idle,

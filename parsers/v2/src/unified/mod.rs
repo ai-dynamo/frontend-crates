@@ -1777,6 +1777,42 @@ impl GuidedState {
         self.reasoning.start_label()
     }
 
+    /// Whether the bytes at `from` reach the guided payload through nothing but
+    /// recognized control markup.
+    ///
+    /// `Some(true)` -- a payload follows, so an interrupting marker before it was the
+    /// point where the model left the reasoning channel without closing it.
+    /// `Some(false)` -- ordinary prose follows, so that marker was narration.
+    /// `None` -- nothing has arrived yet and neither reading is safe; the caller must
+    /// hold the bytes instead of committing to one, or the same input parses
+    /// differently depending on where the chunk boundaries fell (`I6`).
+    fn leads_into_payload(&self, from: usize, flush: bool) -> Option<bool> {
+        let mut at = from;
+        loop {
+            let rest = &self.input[at..];
+            if json_payload_started(rest) {
+                return Some(true);
+            }
+            if rest.trim().is_empty() {
+                return flush.then_some(false);
+            }
+            // Step over further control markup sitting between the recovery point and
+            // the payload -- a block opener wrapping the payload is exactly this shape.
+            let skip = self
+                .control_marker_at(rest, rest.find(['{', '[']), &[], flush)
+                .filter(|(pos, _)| *pos == 0)
+                .or_else(|| {
+                    self.reasoning
+                        .find_stray(rest, flush)
+                        .filter(|(pos, _)| *pos == 0)
+                });
+            match skip {
+                Some((_, len)) if len > 0 => at += len,
+                _ => return Some(false),
+            }
+        }
+    }
+
     fn invoke_control(&self) -> Option<(&str, InvokeScan)> {
         self.grammar
             .invoke_scan
@@ -2152,67 +2188,86 @@ impl GuidedState {
                     // the model's visible answer into its private thinking — the user
                     // read the answer as chain-of-thought and the payload behind it
                     // never reached the payload buffer.
-                    let close = self
+                    // Two ways this thought can END on its own terms: its own
+                    // terminator, or the model ROUTING to another channel. For a
+                    // marker-pair family only the first exists; for a header-routed one
+                    // a `to=user` header is a channel transition, and treating it as
+                    // removable markup folded the model's visible answer into its
+                    // private thinking.
+                    let ends = self
                         .reasoning
                         .find_close(&self.input)
                         .into_iter()
                         .chain(self.reasoning.find_transition(&self.input, flush))
-                        // Missing-terminator recovery: a tool-routed header that leads
-                        // straight into the guided payload ENDS the thought.
-                        .chain(
-                            self.reasoning
-                                .find_stray(&self.input, flush)
-                                .filter(|(at, len)| json_payload_started(&self.input[at + len..])),
-                        )
-                        .min_by_key(|(at, _)| *at)
-                        .map(|(at, len)| (at, len, true));
-                    // Under guided decoding the reasoning channel is UNCONSTRAINED, so
-                    // the model can legitimately narrate `<tool_call>` while thinking —
-                    // and the real call arrives later as JSON, not as markup. So a tool
-                    // opener here is STRAY markup to strip (span stays open), not
-                    // structure that ends the turn. Terminating on it discarded the
-                    // guided payload that followed and returned an empty response.
-                    // The native scanner does treat it as structural, but it can: it
-                    // opens a block and recovers the call from the markup itself.
-                    let stray = self
+                        .min_by_key(|(at, _)| *at);
+
+                    // Everything else that interrupts the run. Under guided decoding the
+                    // reasoning channel is UNCONSTRAINED, so the model can narrate
+                    // `<tool_call>` while thinking and the real call still arrives later
+                    // as JSON — that markup is prose to strip, and terminating on it
+                    // discarded the payload that followed.
+                    //
+                    // A REPEATED opener of this same channel is never a boundary: it is
+                    // the missing-terminator recovery shape, and the native scan keeps
+                    // one thought open across it.
+                    let reopen = self.reasoning.find_open(&self.input, flush);
+                    let interrupt = self
                         .control_marker_at(
                             &self.input,
                             // A narrated invoke lives INSIDE this thought, so its
                             // terminator cannot be past the span's closer.
-                            close.map(|(at, _, _)| at),
+                            ends.map(|(at, _)| at),
                             &close_markers,
                             flush,
                         )
                         .into_iter()
-                        // A REPEATED opener of this same channel is not a transition —
-                        // it is the missing-terminator recovery shape, and the native
-                        // scan keeps one thought open across it.
-                        .chain(self.reasoning.find_open(&self.input, flush))
-                        // A tool-routed header is narration here for the same reason a
-                        // narrated `<tool_call>` is: guided decoding delivers the real
-                        // call as JSON, so the markup is prose the model wrote while
-                        // thinking. UNLESS the guided payload itself follows it — then
-                        // the model routed away from the thought and simply omitted the
-                        // terminator, and stripping the header left the payload inside
-                        // the thought where it was emitted as private reasoning and the
-                        // call was never made.
-                        .chain(
-                            self.reasoning
-                                .find_stray(&self.input, flush)
-                                .filter(|(at, len)| {
-                                    let rest = &self.input[at + len..];
-                                    // Undecided until one more byte arrives: neither
-                                    // branch may consume the header, or a per-character
-                                    // stream would strip it before the payload that
-                                    // changes its meaning could be seen. Falling through
-                                    // leaves it to the holdback below, which retains
-                                    // from the header start.
-                                    !json_payload_started(rest)
-                                        && (flush || !rest.trim().is_empty())
-                                }),
-                        )
+                        .chain(self.reasoning.find_stray(&self.input, flush))
+                        .min_by_key(|(at, _)| *at);
+
+                    // MISSING-TERMINATOR RECOVERY. An interrupting marker that leads
+                    // straight into the guided payload means the model left the
+                    // reasoning channel and simply omitted the closer, so the thought
+                    // ends HERE and the payload is a call. The same marker with prose
+                    // behind it is narration and stays stripped, which is what
+                    // `guided_json_narrated_invoke_in_reasoning` pins.
+                    //
+                    // "Leads into" deliberately allows a run of further control markup
+                    // in between: the family's own block opener wraps the payload
+                    // exactly that way, and testing for JSON IMMEDIATELY after the first
+                    // marker recovered `to=NAME<|message|>[{…}]` while still dropping
+                    // the call for `to=NAME<|message|><atem:function_calls>[{…}]` — and
+                    // for qwen3's `<tool_call>[{…}]`, which has no routed header at all.
+                    // One rule in the shared owner, so no family carries its own copy.
+                    let recovers = interrupt
+                        .filter(|hit| Some(*hit) != reopen)
+                        .map(|(at, len)| (at, len, self.leads_into_payload(at + len, flush)));
+                    // Where an UNDECIDED interrupt begins. Everything from here on has
+                    // to stay buffered: the marker is complete, so no split-marker rule
+                    // retains it, and releasing it as reasoning is the very reading the
+                    // next byte may overturn.
+                    let undecided_at = match recovers {
+                        Some((at, _, None)) => Some(at),
+                        _ => None,
+                    };
+                    // An interrupt that recovers joins `ends`; one that does not is
+                    // stripped. A repeated opener is ALWAYS stripped, so it stays in the
+                    // strip set whatever the interrupt turned out to be -- dropping it
+                    // from that set leaked a duplicate `<think>` into the thought.
+                    let recovering = matches!(recovers, Some((_, _, Some(true))));
+                    let undecided = matches!(recovers, Some((_, _, None)));
+                    let close = [ends, recovering.then_some(interrupt).flatten()]
+                        .into_iter()
+                        .flatten()
                         .min_by_key(|(at, _)| *at)
-                        .map(|(at, len)| (at, len, false));
+                        .map(|(at, len)| (at, len, true));
+                    let stray = [
+                        reopen,
+                        (!recovering && !undecided).then_some(interrupt).flatten(),
+                    ]
+                    .into_iter()
+                    .flatten()
+                    .min_by_key(|(at, _)| *at)
+                    .map(|(at, len)| (at, len, false));
                     if let Some((at, consume, closes)) = [close, stray]
                         .into_iter()
                         .flatten()
@@ -2252,6 +2307,7 @@ impl GuidedState {
                             flush,
                         )
                         .max(self.reasoning.holdback(&self.input))
+                        .max(undecided_at.map_or(0, |at| self.input.len() - at))
                     };
                     let reasoning_len = self.input.len().saturating_sub(keep);
                     if reasoning_len > 0 {
