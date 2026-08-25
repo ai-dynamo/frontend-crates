@@ -2699,6 +2699,43 @@ mod reset_and_payload_tests {
         }]
     }
 
+    /// The invoke CLOSER behind a guided payload is control markup, not an answer.
+    ///
+    /// A wrapper whose opener is stripped ahead of the payload left `</function>`
+    /// trailing after the call as visible text. This predates the Muse work — the same
+    /// bytes did it on `origin/main` — and is fixed in the shared guided owner, so this
+    /// pin and its Muse counterpart exercise ONE implementation.
+    #[test]
+    fn a_guided_payload_wrapped_in_an_invoke_leaves_no_closer_behind() {
+        let input = r#"<function=get_weather>[{"name":"get_weather","arguments":{"city":"Paris"}}]</function>"#;
+        let want = vec![UnifiedEvent::ToolCall {
+            name: "get_weather".into(),
+            arguments: serde_json::json!({"city": "Paris"}),
+        }];
+        let drive = |chunks: Vec<&str>| {
+            let mut p = qwen3_unified(&tools());
+            p.initialize_request(guided_init(None, InvalidGuidedPayloadPolicy::RecoverAsText))
+                .expect("init");
+            let mut d = Vec::new();
+            for c in chunks {
+                d.extend(p.push(c).expect("push"));
+            }
+            d.extend(p.finish().expect("finish"));
+            assemble(&d)
+        };
+        assert_eq!(drive(vec![input]), want, "whole input");
+        for at in 1..input.len() {
+            if !input.is_char_boundary(at) {
+                continue;
+            }
+            assert_eq!(
+                drive(vec![&input[..at], &input[at..]]),
+                want,
+                "split at byte {at}"
+            );
+        }
+    }
+
     fn guided_init(
         named_tool: Option<&str>,
         invalid_guided_payload: InvalidGuidedPayloadPolicy,

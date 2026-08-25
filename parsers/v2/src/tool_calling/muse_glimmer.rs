@@ -302,12 +302,19 @@ pub(crate) const GUIDED_CLOSE_MARKERS: [&str; 2] = [EOM, EOT];
 /// Returns `(header_start, bytes through `<|message|>`)`. Whole headers only — an
 /// incomplete one is retained by [`guided_header_holdback`] instead, so a header is
 /// never half-consumed and never released as text.
-fn guided_header(haystack: &str, want: fn(Option<&str>) -> bool) -> Option<(usize, usize)> {
+fn guided_header(
+    haystack: &str,
+    want: fn(recipient: Option<&str>, framed: bool) -> bool,
+) -> Option<(usize, usize)> {
     let mut search = 0;
     while let Some(relative) = haystack[search..].find(MESSAGE) {
         let msg_pos = search + relative;
         let (header_start, recipient) = resolve_header(haystack, msg_pos);
-        if want(recipient) {
+        // Whether `<|start|>` really opens this header, the same test the native scan
+        // makes. It is what separates a recipient-less HEADER from a bare `<|message|>`
+        // the model wrote mid-thought.
+        let framed = haystack[header_start..].starts_with(START);
+        if want(recipient, framed) {
             return Some((header_start, msg_pos + MESSAGE.len() - header_start));
         }
         search = msg_pos + MESSAGE.len();
@@ -320,14 +327,25 @@ fn guided_header(haystack: &str, want: fn(Option<&str>) -> bool) -> Option<(usiz
 /// `flush` is unused because a header is recognised only once its `<|message|>` has
 /// arrived; at end of stream a header that never completed is not a header.
 pub(crate) fn guided_reasoning_open(haystack: &str, _flush: bool) -> Option<(usize, usize)> {
-    guided_header(haystack, |recipient| recipient == Some(REASONING_RECIPIENT))
+    guided_header(haystack, |recipient, _framed| {
+        recipient == Some(REASONING_RECIPIENT)
+    })
 }
 
-/// Whether a recipient routes to the VISIBLE content channel.
+/// Whether a header routes to the VISIBLE content channel.
 ///
-/// `user`, or no recipient at all — the same rule the native scan applies.
-fn is_content_recipient(recipient: Option<&str>) -> bool {
-    matches!(recipient, None | Some(USER_RECIPIENT))
+/// `to=user` always does. A recipient-LESS header does only when `<|start|>` frames
+/// it: an unframed bare `<|message|>` is not a header at all, it is a stray marker
+/// the model emitted inside whatever channel is already open. Reading every
+/// recipient-less `<|message|>` as a content header ENDED an open thought on that
+/// marker, so `…<|message|>still thinking` split one thought into a thought plus a
+/// visible answer, while the native scan strips the marker and keeps thinking.
+fn is_content_header(recipient: Option<&str>, framed: bool) -> bool {
+    match recipient {
+        Some(USER_RECIPIENT) => true,
+        None => framed,
+        _ => false,
+    }
 }
 
 /// Earliest header that routes to VISIBLE CONTENT, which ENDS an open thought.
@@ -338,7 +356,7 @@ fn is_content_recipient(recipient: Option<&str>) -> bool {
 /// out as its private thinking. A `to=<tool>` header under guided decoding cannot be
 /// a real tool channel — the call arrives as JSON — so that one really is narration.
 pub(crate) fn guided_content_header(haystack: &str, _flush: bool) -> Option<(usize, usize)> {
-    guided_header(haystack, is_content_recipient)
+    guided_header(haystack, is_content_header)
 }
 
 /// Earliest header that is neither a thought nor a channel switch: markup to strip.
@@ -349,8 +367,8 @@ pub(crate) fn guided_content_header(haystack: &str, _flush: bool) -> Option<(usi
 /// word and the recipient between them as visible text, so the user reads
 /// `assistant to=weather` as the model's answer.
 pub(crate) fn guided_stray_header(haystack: &str, flush: bool) -> Option<(usize, usize)> {
-    if let Some(found) = guided_header(haystack, |recipient| {
-        recipient != Some(REASONING_RECIPIENT) && !is_content_recipient(recipient)
+    if let Some(found) = guided_header(haystack, |recipient, framed| {
+        recipient != Some(REASONING_RECIPIENT) && !is_content_header(recipient, framed)
     }) {
         return Some(found);
     }
@@ -408,6 +426,15 @@ pub(crate) fn guided_strip_text(text: &str) -> String {
 pub(crate) fn guided_header_holdback(haystack: &str) -> usize {
     if let Some(at) = haystack.rfind(START)
         && !haystack[at..].contains(MESSAGE)
+    {
+        return haystack.len() - at;
+    }
+    // A COMPLETE header with nothing after it yet is also unfinished business: what
+    // follows decides whether a tool-routed header is narration or the recovery point
+    // for a thought whose terminator never arrived. Releasing it before that byte
+    // arrives made a per-character stream answer differently from a whole-input push.
+    if let Some((at, len)) = guided_stray_header(haystack, true)
+        && haystack[at + len..].trim().is_empty()
     {
         return haystack.len() - at;
     }

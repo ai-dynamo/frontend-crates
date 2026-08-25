@@ -903,6 +903,95 @@ mod tests {
         // half; a marker it merely quotes whole is stripped by the run it sits in.
     }
 
+    /// Guided framing cases an independent review found after the first round, each
+    /// one measured at every split point rather than only whole and per-character.
+    ///
+    /// - a bare `<|message|>` the model writes mid-thought is a stray marker, not a
+    ///   recipient-less content header; reading it as one ENDED the thought and sent
+    ///   the rest of the reasoning to the user as the answer;
+    /// - an invoke wrapper whose opener was stripped ahead of a guided payload left
+    ///   its CLOSER trailing behind the call as visible text, on both families;
+    /// - a tool-routed header that leads straight into the guided payload is the
+    ///   missing-terminator recovery point, not narration — stripping it left the
+    ///   payload inside the thought, so the call was never made and the model's
+    ///   private reasoning carried the raw JSON.
+    #[test]
+    fn guided_framing_survives_every_split_point() {
+        let call = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        let weather = || UnifiedEvent::ToolCall {
+            name: "get_weather".into(),
+            arguments: serde_json::json!({"city": "Paris"}),
+        };
+        let reasoning = |text: &str| UnifiedEvent::Reasoning { text: text.into() };
+
+        for (label, input, want) in [
+            (
+                "a bare message marker mid-thought does not end the thought",
+                format!(
+                    "<|start|>assistant to=self<|message|>thinking<|message|>still thinking<|eom|>{call}"
+                ),
+                vec![reasoning("thinkingstill thinking"), weather()],
+            ),
+            (
+                "an invoke closer behind the payload is not visible text",
+                format!("<atem:invoke name=\"get_weather\">{call}</atem:invoke>"),
+                vec![weather()],
+            ),
+            (
+                "a tool header leading into the payload recovers the missing terminator",
+                format!(
+                    "<|start|>assistant to=self<|message|>thinking\
+                     <|start|>assistant to=get_weather<|message|>{call}<|eom|>"
+                ),
+                vec![reasoning("thinking"), weather()],
+            ),
+            (
+                // The contrast case for the one above: the same header shape NARRATED,
+                // with no payload behind it, stays stripped and the thought stays open.
+                "a narrated tool header with no payload behind it stays narration",
+                format!(
+                    "<|start|>assistant to=self<|message|>I will call \
+                     <|start|>assistant to=get_weather<|message|> soon<|eom|>{call}"
+                ),
+                vec![reasoning("I will call  soon"), weather()],
+            ),
+        ] {
+            let drive = |chunks: Vec<&str>| {
+                let mut parser = muse_glimmer_unified(&tools());
+                parser
+                    .initialize_request(UnifiedParserInit {
+                        prompt_token_ids: Vec::new(),
+                        starting_state: UnifiedParserStartingState::None,
+                        tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                        invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                    })
+                    .expect("guided init must be accepted");
+                let mut deltas = Vec::new();
+                for c in chunks {
+                    deltas.extend(parser.push(c).expect("push"));
+                }
+                deltas.extend(parser.finish().expect("finish"));
+                assemble(&deltas)
+            };
+
+            assert_eq!(drive(vec![&input]), want, "{label}: whole input");
+            // EVERY valid split point, not a sample. A boundary that lands one byte
+            // inside a header is exactly where the holdback rules are load-bearing, and
+            // picking a few offsets by hand is how the first version passed while a
+            // per-character drive still leaked.
+            for at in 1..input.len() {
+                if !input.is_char_boundary(at) {
+                    continue;
+                }
+                assert_eq!(
+                    drive(vec![&input[..at], &input[at..]]),
+                    want,
+                    "{label}: split at byte {at}"
+                );
+            }
+        }
+    }
+
     /// Guided mode must read the same bytes the same way the native path does.
     ///
     /// Three defects an independent review found in the first version of the guided
