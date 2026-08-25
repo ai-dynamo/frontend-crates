@@ -60,8 +60,10 @@ pub use selector::{
     AnthropicRequestSelector, RuntimeSelectionContext, RuntimeSelector, StatefulRequestSelector,
 };
 pub use tool::{
-    ToolClaimResult, ToolExecutionFailure, ToolExecutionRequest, ToolExecutionResult, ToolExecutor,
-    ToolJournal, ToolJournalKey, ToolJournalOutcome, ToolJournalRecord, ToolJournalState,
+    RuntimeToolCall, RuntimeToolResult, ToolClaimResult, ToolExecutionFailure,
+    ToolExecutionRequest, ToolExecutionResult, ToolExecutor, ToolJournal, ToolJournalKey,
+    ToolJournalOutcome, ToolJournalRecord, ToolJournalState, ToolLoopAdapter, ToolRoute,
+    ToolRouter,
 };
 pub use tool_memory::{InMemoryToolJournal, InMemoryToolJournalError};
 

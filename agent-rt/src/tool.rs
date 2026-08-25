@@ -3,7 +3,55 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{AuthorizationScope, BoxFuture, IdempotencyKey, ResponseId};
+use crate::{AgentProtocol, AuthorizationScope, BoxFuture, IdempotencyKey, ResponseId};
+
+/// Credential-free external call selected by trusted deployment routing.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RuntimeToolCall {
+    pub call_id: String,
+    pub connector: String,
+    pub operation: String,
+    pub arguments: serde_json::Value,
+}
+
+/// Result paired with its normalized call for deterministic protocol replay.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RuntimeToolResult {
+    pub call: RuntimeToolCall,
+    pub result: ToolExecutionResult,
+}
+
+/// Protocol-specific extraction and continuation mutation for runtime tools.
+pub trait ToolLoopAdapter<P>: Send + Sync + 'static
+where
+    P: AgentProtocol,
+{
+    type Error: std::error::Error + Send + Sync + 'static;
+
+    /// Extract calls owned by the runtime according to trusted server policy.
+    fn runtime_calls(&self, response: &P::Response) -> Result<Vec<RuntimeToolCall>, Self::Error>;
+
+    /// Append the model response and ordered tool results to the next native
+    /// inference request. Returns only the new result replay items that must be
+    /// appended to the active checkpoint.
+    fn append_results(
+        &self,
+        request: &mut P::Request,
+        response: &P::Response,
+        results: &[RuntimeToolResult],
+    ) -> Result<Vec<P::ReplayItem>, Self::Error>;
+}
+
+/// Trusted server-side mapping from a model-visible tool name to an executor.
+pub trait ToolRouter: Send + Sync + 'static {
+    fn route(&self, tool_name: &str) -> Option<ToolRoute>;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ToolRoute {
+    pub connector: String,
+    pub operation: String,
+}
 
 /// Durable lookup key for one external tool execution.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
