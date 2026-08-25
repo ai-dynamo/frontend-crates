@@ -480,19 +480,27 @@ impl DecodeStream {
         )?;
 
         let new_text = new_result.as_str();
-        if new_text.len() > prefix_text.len() && !new_result.is_partial() {
-            let requested_split = prefix_text.len();
-            let split = new_text.floor_char_boundary(requested_split);
+        let is_partial = new_result.is_partial();
 
-            // Rewinding into prompt context is safe because prompt text was not
-            // returned by this stream. Once generated text has been returned,
-            // rewinding would duplicate or corrupt text already seen by the caller.
-            if self.has_emitted && split != requested_split {
-                return Err(Error::msg(format!(
-                    "incremental decoding rewrote already emitted text: byte offset \
-                     {requested_split} is not a character boundary in the new decode"
-                )));
-            }
+        // Once generated text has been returned, decoding must remain append-only.
+        // A complete rewrite cannot be repaired after the caller has seen the old text.
+        if self.has_emitted && !is_partial && !new_text.starts_with(prefix_text.as_str()) {
+            return Err(Error::msg(
+                "incremental decoding rewrote already emitted text",
+            ));
+        }
+
+        if new_text.len() > prefix_text.len() && !is_partial {
+            let requested_split = prefix_text.len();
+            let split = if self.has_emitted {
+                // starts_with() guarantees this is a character boundary and preserves
+                // everything already returned to the caller.
+                requested_split
+            } else {
+                // Rewinding into prompt context is safe because prompt text was not
+                // returned by this stream.
+                new_text.floor_char_boundary(requested_split)
+            };
 
             let emitted = new_text[split..].to_string();
 
@@ -568,8 +576,11 @@ mod decode_stream_unicode_tests {
     }
 
     #[test]
-    fn errors_when_boundary_recovery_would_reemit_generated_text() {
+    fn errors_when_incremental_decode_rewrites_emitted_text() {
         for (prefix_text, rewritten_text) in [
+            ("abcde", "abcdXY"),
+            ("abcde", "abcdX"),
+            ("abcde", "abcd"),
             ("㺄馉凓鄗abc", "㺄馉凓鄗𫷲"),
             (
                 "JUnitworkflow Completion intuitionabc",
@@ -588,6 +599,19 @@ mod decode_stream_unicode_tests {
             let error = stream.step(2).unwrap_err();
             assert!(error.to_string().contains("already emitted text"));
         }
+    }
+
+    #[test]
+    fn emits_suffix_when_incremental_decode_preserves_emitted_text() {
+        let tokenizer: Arc<dyn super::traits::Tokenizer> = Arc::new(RewritingTokenizer {
+            prefix_text: "abcde",
+            rewritten_text: "abcdeXY",
+            prefix_is_partial: false,
+        });
+        let mut stream = DecodeStream::new(tokenizer, &[], false);
+
+        assert_eq!(stream.step(1).unwrap(), Some("abcde".to_string()));
+        assert_eq!(stream.step(2).unwrap(), Some("XY".to_string()));
     }
 }
 
