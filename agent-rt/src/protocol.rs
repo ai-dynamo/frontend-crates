@@ -14,7 +14,7 @@ use serde::{Serialize, de::DeserializeOwned};
 ///
 /// This trait bundles concrete DTOs; it is not a universal request or message
 /// representation. Materializers continue to operate on the native protocol.
-pub trait AgentProtocol: Send + Sync + 'static {
+pub trait AgentProtocol: std::fmt::Debug + Clone + Send + Sync + 'static {
     type Request: std::fmt::Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static;
     type ReplayItem: std::fmt::Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static;
     type Response: std::fmt::Debug + Send + 'static;

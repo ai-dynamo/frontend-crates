@@ -7,9 +7,9 @@ use std::sync::Mutex;
 use thiserror::Error;
 
 use crate::{
-    AuthorizationScope, BeginTurn, BeginTurnResult, BoxFuture, CheckpointRecord, CheckpointStore,
-    CheckpointVersion, Clock, CommitTurn, CommitTurnResult, IdempotencyKey, LoadChain, RenewLease,
-    ResponseId, SystemClock, TurnLease, TurnState,
+    AgentProtocol, AuthorizationScope, BeginTurn, BeginTurnResult, BoxFuture, CheckpointRecord,
+    CheckpointStore, CheckpointVersion, Clock, CommitTurn, CommitTurnResult, IdempotencyKey,
+    LoadChain, OpenAiResponses, RenewLease, ResponseId, SystemClock, TurnLease, TurnState,
 };
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
@@ -44,11 +44,27 @@ pub enum InMemoryStoreError {
     CorruptChain,
 }
 
-#[derive(Debug, Default)]
-struct StoreState {
-    records: HashMap<ResponseId, CheckpointRecord>,
+#[derive(Debug)]
+struct StoreState<P>
+where
+    P: AgentProtocol,
+{
+    records: HashMap<ResponseId, CheckpointRecord<P>>,
     idempotency: HashMap<(AuthorizationScope, IdempotencyKey), ResponseId>,
     leases: HashMap<ResponseId, TurnLease>,
+}
+
+impl<P> Default for StoreState<P>
+where
+    P: AgentProtocol,
+{
+    fn default() -> Self {
+        Self {
+            records: HashMap::new(),
+            idempotency: HashMap::new(),
+            leases: HashMap::new(),
+        }
+    }
 }
 
 /// Single-process checkpoint store for tests and local proofs of concept.
@@ -56,18 +72,27 @@ struct StoreState {
 /// A mutex protects each multi-index operation so turn creation, idempotency
 /// lookup, and lease fencing are atomic with respect to each other.
 #[derive(Debug)]
-pub struct InMemoryCheckpointStore<C = SystemClock> {
+pub struct InMemoryCheckpointStore<P = OpenAiResponses, C = SystemClock>
+where
+    P: AgentProtocol,
+{
     clock: C,
-    state: Mutex<StoreState>,
+    state: Mutex<StoreState<P>>,
 }
 
-impl Default for InMemoryCheckpointStore<SystemClock> {
+impl<P> Default for InMemoryCheckpointStore<P, SystemClock>
+where
+    P: AgentProtocol,
+{
     fn default() -> Self {
         Self::new(SystemClock)
     }
 }
 
-impl<C> InMemoryCheckpointStore<C> {
+impl<P, C> InMemoryCheckpointStore<P, C>
+where
+    P: AgentProtocol,
+{
     pub fn new(clock: C) -> Self {
         Self {
             clock,
@@ -76,13 +101,14 @@ impl<C> InMemoryCheckpointStore<C> {
     }
 }
 
-impl<C> InMemoryCheckpointStore<C>
+impl<P, C> InMemoryCheckpointStore<P, C>
 where
+    P: AgentProtocol,
     C: Clock,
 {
     fn validate_lease(
         &self,
-        state: &StoreState,
+        state: &StoreState<P>,
         supplied: &TurnLease,
     ) -> Result<TurnLease, InMemoryStoreError> {
         let current = state
@@ -102,16 +128,17 @@ where
     }
 }
 
-impl<C> CheckpointStore for InMemoryCheckpointStore<C>
+impl<P, C> CheckpointStore<P> for InMemoryCheckpointStore<P, C>
 where
+    P: AgentProtocol,
     C: Clock,
 {
     type Error = InMemoryStoreError;
 
     fn begin_turn(
         &self,
-        command: BeginTurn,
-    ) -> BoxFuture<'_, Result<BeginTurnResult, Self::Error>> {
+        command: BeginTurn<P>,
+    ) -> BoxFuture<'_, Result<BeginTurnResult<P>, Self::Error>> {
         Box::pin(async move {
             let now = self.clock.now_millis();
             if command.lease_deadline.0 <= now {
@@ -132,7 +159,7 @@ where
                     .get(existing_id)
                     .ok_or(InMemoryStoreError::CorruptChain)?;
                 if existing.parent_response_id != command.parent_response_id
-                    || existing.request != command.request
+                    || existing.request_fingerprint != command.request_fingerprint
                 {
                     return Err(InMemoryStoreError::IdempotencyConflict);
                 }
@@ -166,6 +193,7 @@ where
                 parent_response_id: command.parent_response_id,
                 scope: command.authorization.scope,
                 idempotency_key: command.idempotency_key,
+                request_fingerprint: command.request_fingerprint,
                 state: TurnState::InFlight,
                 version: CheckpointVersion(0),
                 request: command.request,
@@ -192,7 +220,7 @@ where
     fn load_chain(
         &self,
         query: LoadChain,
-    ) -> BoxFuture<'_, Result<Vec<CheckpointRecord>, Self::Error>> {
+    ) -> BoxFuture<'_, Result<Vec<CheckpointRecord<P>>, Self::Error>> {
         Box::pin(async move {
             let state = self
                 .state
@@ -222,8 +250,8 @@ where
 
     fn commit_turn(
         &self,
-        command: CommitTurn,
-    ) -> BoxFuture<'_, Result<CommitTurnResult, Self::Error>> {
+        command: CommitTurn<P>,
+    ) -> BoxFuture<'_, Result<CommitTurnResult<P>, Self::Error>> {
         Box::pin(async move {
             let mut state = self
                 .state
@@ -309,8 +337,8 @@ mod tests {
     use super::{InMemoryCheckpointStore, InMemoryStoreError};
     use crate::{
         AuthorizationScope, BeginTurn, BeginTurnResult, CheckpointStore, Clock, CommitTurn,
-        IdempotencyKey, LeaseDeadline, LoadChain, RenewLease, ResponseId, RuntimeAuthorization,
-        RuntimeLimits, TurnId, TurnState,
+        IdempotencyKey, LeaseDeadline, LoadChain, OpenAiResponses, RenewLease, RequestFingerprint,
+        ResponseId, RuntimeAuthorization, RuntimeLimits, TurnId, TurnState,
     };
 
     #[derive(Debug, Clone)]
@@ -348,13 +376,14 @@ mod tests {
         parent_response_id: Option<&str>,
         tenant: &str,
         idempotency_key: &str,
-    ) -> BeginTurn {
+    ) -> BeginTurn<OpenAiResponses> {
         BeginTurn {
             response_id: ResponseId::from(response_id),
             turn_id: TurnId::from(format!("turn_{response_id}")),
             parent_response_id: parent_response_id.map(ResponseId::from),
             authorization: authorization(tenant),
             idempotency_key: IdempotencyKey::from(idempotency_key),
+            request_fingerprint: RequestFingerprint::new([response_id.len() as u8; 32]),
             request: CreateResponse::default(),
             lease_deadline: LeaseDeadline(2_000),
         }
@@ -378,6 +407,22 @@ mod tests {
             panic!("expected existing turn");
         };
         assert_eq!(existing.response_id.as_str(), "resp_one");
+    }
+
+    #[tokio::test]
+    async fn duplicate_idempotency_key_rejects_a_different_fingerprint() {
+        let store = InMemoryCheckpointStore::new(TestClock::new(1_000));
+        store
+            .begin_turn(begin("resp_one", None, "tenant", "idem"))
+            .await
+            .unwrap();
+        let mut conflicting = begin("resp_two", None, "tenant", "idem");
+        conflicting.request_fingerprint = RequestFingerprint::new([99; 32]);
+
+        assert_eq!(
+            store.begin_turn(conflicting).await.unwrap_err(),
+            InMemoryStoreError::IdempotencyConflict
+        );
     }
 
     #[tokio::test]

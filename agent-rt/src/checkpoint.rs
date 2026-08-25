@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use dynamo_protocols::types::responses::{CreateResponse, InputItem};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AuthorizationScope, BoxFuture, IdempotencyKey, ResponseId, RuntimeAuthorization, TurnId,
+    AgentProtocol, AuthorizationScope, BoxFuture, IdempotencyKey, OpenAiResponses, ResponseId,
+    RuntimeAuthorization, TurnId,
 };
 
 /// Monotonic checkpoint version used for fenced state transitions.
@@ -18,7 +18,22 @@ pub struct CheckpointVersion(pub u64);
 #[serde(transparent)]
 pub struct LeaseDeadline(pub u64);
 
-/// Durable state of one public Responses turn.
+/// Stable protocol-specific digest of the append-only checkpoint request.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct RequestFingerprint([u8; 32]);
+
+impl RequestFingerprint {
+    pub fn new(bytes: [u8; 32]) -> Self {
+        Self(bytes)
+    }
+
+    pub fn as_bytes(&self) -> &[u8; 32] {
+        &self.0
+    }
+}
+
+/// Durable state of one public agent turn.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TurnState {
@@ -59,39 +74,56 @@ pub struct TurnLease {
     pub deadline: LeaseDeadline,
 }
 
-/// Append-oriented checkpoint record for one response in a response chain.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct CheckpointRecord {
+/// Append-oriented checkpoint record for one turn in a continuation chain.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(bound(
+    serialize = "P::Request: Serialize, P::ReplayItem: Serialize",
+    deserialize = "P::Request: Deserialize<'de>, P::ReplayItem: Deserialize<'de>"
+))]
+pub struct CheckpointRecord<P>
+where
+    P: AgentProtocol,
+{
     pub response_id: ResponseId,
     pub parent_response_id: Option<ResponseId>,
     pub scope: AuthorizationScope,
     pub idempotency_key: IdempotencyKey,
+    pub request_fingerprint: RequestFingerprint,
     pub state: TurnState,
     pub version: CheckpointVersion,
     /// Original input and effective per-turn request controls. Implementations
     /// must not place bearer credentials or arbitrary headers in this value.
-    pub request: CreateResponse,
+    pub request: P::Request,
     /// Model-visible items produced by this turn and replayable by descendants.
-    pub output_items: Vec<InputItem>,
+    pub output_items: Vec<P::ReplayItem>,
 }
 
+pub type ResponsesCheckpointRecord = CheckpointRecord<OpenAiResponses>;
+
 /// Atomically creates and claims a new response turn.
-#[derive(Debug, Clone, PartialEq)]
-pub struct BeginTurn {
+#[derive(Debug, Clone)]
+pub struct BeginTurn<P>
+where
+    P: AgentProtocol,
+{
     pub response_id: ResponseId,
     pub turn_id: TurnId,
     pub parent_response_id: Option<ResponseId>,
     pub authorization: RuntimeAuthorization,
     pub idempotency_key: IdempotencyKey,
-    pub request: CreateResponse,
+    pub request_fingerprint: RequestFingerprint,
+    pub request: P::Request,
     pub lease_deadline: LeaseDeadline,
 }
 
 /// Result of an idempotent turn claim.
-#[derive(Debug, Clone, PartialEq)]
-pub enum BeginTurnResult {
+#[derive(Debug, Clone)]
+pub enum BeginTurnResult<P>
+where
+    P: AgentProtocol,
+{
     Acquired(TurnLease),
-    Existing(Box<CheckpointRecord>),
+    Existing(Box<CheckpointRecord<P>>),
 }
 
 /// Loads a complete parent-first response chain within an authenticated scope.
@@ -102,17 +134,23 @@ pub struct LoadChain {
 }
 
 /// Applies one fenced durable state transition.
-#[derive(Debug, Clone, PartialEq)]
-pub struct CommitTurn {
+#[derive(Debug, Clone)]
+pub struct CommitTurn<P>
+where
+    P: AgentProtocol,
+{
     pub lease: TurnLease,
     pub next_state: TurnState,
-    pub append_output_items: Vec<InputItem>,
+    pub append_output_items: Vec<P::ReplayItem>,
 }
 
 /// Result of a durable state transition.
-#[derive(Debug, Clone, PartialEq)]
-pub struct CommitTurnResult {
-    pub record: CheckpointRecord,
+#[derive(Debug, Clone)]
+pub struct CommitTurnResult<P>
+where
+    P: AgentProtocol,
+{
+    pub record: CheckpointRecord<P>,
     /// Updated lease for another nonterminal transition. `None` means the
     /// transition released ownership of this turn.
     pub lease: Option<TurnLease>,
@@ -130,21 +168,26 @@ pub struct RenewLease {
 /// Implementations must make `begin_turn` idempotent for `(scope,
 /// idempotency_key)`, validate parent access before acquiring a lease, and
 /// fence every commit by turn id and checkpoint version.
-pub trait CheckpointStore: Send + Sync + 'static {
+pub trait CheckpointStore<P>: Send + Sync + 'static
+where
+    P: AgentProtocol,
+{
     type Error: std::error::Error + Send + Sync + 'static;
 
-    fn begin_turn(&self, command: BeginTurn)
-    -> BoxFuture<'_, Result<BeginTurnResult, Self::Error>>;
+    fn begin_turn(
+        &self,
+        command: BeginTurn<P>,
+    ) -> BoxFuture<'_, Result<BeginTurnResult<P>, Self::Error>>;
 
     fn load_chain(
         &self,
         query: LoadChain,
-    ) -> BoxFuture<'_, Result<Vec<CheckpointRecord>, Self::Error>>;
+    ) -> BoxFuture<'_, Result<Vec<CheckpointRecord<P>>, Self::Error>>;
 
     fn commit_turn(
         &self,
-        command: CommitTurn,
-    ) -> BoxFuture<'_, Result<CommitTurnResult, Self::Error>>;
+        command: CommitTurn<P>,
+    ) -> BoxFuture<'_, Result<CommitTurnResult<P>, Self::Error>>;
 
     fn renew_lease(&self, command: RenewLease) -> BoxFuture<'_, Result<TurnLease, Self::Error>>;
 }

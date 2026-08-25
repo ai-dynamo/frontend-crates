@@ -24,7 +24,8 @@ mod tool;
 pub use authorization::{AuthorizationScope, RuntimeAuthorization, RuntimeLimits};
 pub use checkpoint::{
     BeginTurn, BeginTurnResult, CheckpointRecord, CheckpointStore, CheckpointVersion, CommitTurn,
-    CommitTurnResult, LeaseDeadline, LoadChain, RenewLease, TurnLease, TurnState,
+    CommitTurnResult, LeaseDeadline, LoadChain, RenewLease, RequestFingerprint,
+    ResponsesCheckpointRecord, TurnLease, TurnState,
 };
 pub use clock::{Clock, SystemClock};
 pub use ids::{IdGenerator, IdempotencyKey, ResponseId, TurnId, UuidGenerator};

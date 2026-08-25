@@ -8,7 +8,7 @@ use dynamo_protocols::types::responses::{
 };
 use thiserror::Error;
 
-use crate::{CheckpointRecord, ResponseId, TurnState};
+use crate::{ResponseId, ResponsesCheckpointRecord, TurnState};
 
 /// Resolves controls omitted by a continuation request.
 ///
@@ -20,7 +20,7 @@ pub trait ContinuationPolicy: Send + Sync + 'static {
     fn resolve(
         &self,
         current: &mut CreateResponse,
-        parent: Option<&CheckpointRecord>,
+        parent: Option<&ResponsesCheckpointRecord>,
     ) -> Result<(), Self::Error>;
 }
 
@@ -38,7 +38,7 @@ impl ContinuationPolicy for InheritContinuationControls {
     fn resolve(
         &self,
         current: &mut CreateResponse,
-        parent: Option<&CheckpointRecord>,
+        parent: Option<&ResponsesCheckpointRecord>,
     ) -> Result<(), Self::Error> {
         let Some(parent) = parent else {
             return Ok(());
@@ -70,7 +70,7 @@ pub trait RequestMaterializer: Send + Sync + 'static {
     fn materialize(
         &self,
         current: CreateResponse,
-        chain: &[CheckpointRecord],
+        chain: &[ResponsesCheckpointRecord],
     ) -> Result<MaterializedTurn, Self::Error>;
 }
 
@@ -125,7 +125,7 @@ where
     fn materialize(
         &self,
         current: CreateResponse,
-        chain: &[CheckpointRecord],
+        chain: &[ResponsesCheckpointRecord],
     ) -> Result<MaterializedTurn, Self::Error> {
         validate_chain(&current, chain)?;
 
@@ -150,7 +150,7 @@ where
 
 fn validate_chain<E>(
     current: &CreateResponse,
-    chain: &[CheckpointRecord],
+    chain: &[ResponsesCheckpointRecord],
 ) -> Result<(), MaterializationError<E>>
 where
     E: std::error::Error + Send + Sync + 'static,
@@ -196,7 +196,7 @@ where
     Ok(())
 }
 
-fn flatten_inputs(chain: &[CheckpointRecord], current: &CreateResponse) -> Vec<InputItem> {
+fn flatten_inputs(chain: &[ResponsesCheckpointRecord], current: &CreateResponse) -> Vec<InputItem> {
     let item_count = chain
         .iter()
         .map(|record| input_len(&record.request.input) + record.output_items.len())
@@ -239,8 +239,8 @@ mod tests {
     };
 
     use crate::{
-        AuthorizationScope, CheckpointRecord, CheckpointVersion, IdempotencyKey, ResponseId,
-        TurnState,
+        AuthorizationScope, CheckpointVersion, IdempotencyKey, RequestFingerprint, ResponseId,
+        ResponsesCheckpointRecord, TurnState,
     };
 
     use super::{MaterializationError, RequestMaterializer, ResponsesRequestMaterializer};
@@ -261,12 +261,18 @@ mod tests {
         }
     }
 
-    fn record(id: &str, parent: Option<&str>, input: &str, output: &str) -> CheckpointRecord {
-        CheckpointRecord {
+    fn record(
+        id: &str,
+        parent: Option<&str>,
+        input: &str,
+        output: &str,
+    ) -> ResponsesCheckpointRecord {
+        ResponsesCheckpointRecord {
             response_id: ResponseId::from(id),
             parent_response_id: parent.map(ResponseId::from),
             scope: scope("principal-a"),
             idempotency_key: IdempotencyKey::new(format!("idem-{id}")),
+            request_fingerprint: RequestFingerprint::new([id.len() as u8; 32]),
             state: TurnState::Completed,
             version: CheckpointVersion(1),
             request: CreateResponse {
