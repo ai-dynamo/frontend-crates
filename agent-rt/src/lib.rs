@@ -53,7 +53,8 @@ pub use output::{InterpretedOutput, OutputIdentity, OutputInterpreter};
 pub use protocol::{AgentProtocol, AnthropicMessages, OpenAiResponses};
 pub use responses::{
     ClientToolResponsesPolicy, PolicyResponsesOutputInterpreter, ResponsesOutcomePolicy,
-    ResponsesOutputError, ResponsesOutputInterpreter,
+    ResponsesOutputError, ResponsesOutputInterpreter, ResponsesToolAdapterError,
+    ResponsesToolLoopAdapter, RoutedResponsesOutcomeError, RoutedResponsesOutcomePolicy,
 };
 pub use runtime::{AgentRuntime, AgentRuntimeError, RunTurn, RunTurnResult, RuntimeErrorFor};
 pub use selector::{
