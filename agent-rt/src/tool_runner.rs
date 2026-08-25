@@ -23,6 +23,7 @@ where
     #[error("tool execution failed: {error}; journal finalization: {journal_error:?}")]
     Executor {
         error: ExecutorError,
+        outcome_unknown: bool,
         journal_error: Option<JournalError>,
     },
     #[error("tool recovery lookup failed: {error}; journal finalization: {journal_error:?}")]
@@ -30,8 +31,8 @@ where
         error: ExecutorError,
         journal_error: Option<JournalError>,
     },
-    #[error("tool side-effect outcome is unknown")]
-    OutcomeUnknown,
+    #[error("tool side-effect outcome is unknown; journal finalization: {journal_error:?}")]
+    OutcomeUnknown { journal_error: Option<JournalError> },
     #[error("tool execution previously failed: {0:?}")]
     PersistedFailure(ToolExecutionFailure),
     #[error("tool journal record is internally inconsistent")]
@@ -46,6 +47,29 @@ where
     },
     #[error("tool completed but its result could not be journaled: {0}")]
     JournalAfterExecution(JournalError),
+}
+
+impl<JournalError, ExecutorError> ToolRunError<JournalError, ExecutorError>
+where
+    JournalError: std::error::Error + Send + Sync + 'static,
+    ExecutorError: std::error::Error + Send + Sync + 'static,
+{
+    /// Whether retrying the public turn could duplicate an unresolved side effect.
+    pub fn requires_unknown_outcome(&self) -> bool {
+        match self {
+            Self::UnauthorizedConnector(_) | Self::Journal(_) | Self::PersistedFailure(_) => false,
+            Self::Executor {
+                outcome_unknown,
+                journal_error,
+                ..
+            } => *outcome_unknown || journal_error.is_some(),
+            Self::RecoveryLookup { .. }
+            | Self::OutcomeUnknown { .. }
+            | Self::CorruptJournal
+            | Self::JournalAfterExecution(_) => true,
+            Self::OutputTooLarge { journal_error, .. } => journal_error.is_some(),
+        }
+    }
 }
 
 /// Protocol-independent execution of one already-routed runtime tool call.
@@ -124,13 +148,18 @@ where
                 Ok(RuntimeToolResult { call, result })
             }
             Err(error) => {
-                let outcome = match self.failure_policy.classify(&error) {
-                    ToolFailureDisposition::Failed(failure) => ToolJournalOutcome::Failed(failure),
-                    ToolFailureDisposition::OutcomeUnknown => ToolJournalOutcome::OutcomeUnknown,
+                let (outcome, outcome_unknown) = match self.failure_policy.classify(&error) {
+                    ToolFailureDisposition::Failed(failure) => {
+                        (ToolJournalOutcome::Failed(failure), false)
+                    }
+                    ToolFailureDisposition::OutcomeUnknown => {
+                        (ToolJournalOutcome::OutcomeUnknown, true)
+                    }
                 };
                 let journal_error = self.journal.finish(key, outcome).await.err();
                 Err(ToolRunError::Executor {
                     error,
+                    outcome_unknown,
                     journal_error,
                 })
             }
@@ -151,7 +180,9 @@ where
             ToolJournalState::Failed => Err(ToolRunError::PersistedFailure(
                 record.failure.ok_or(ToolRunError::CorruptJournal)?,
             )),
-            ToolJournalState::OutcomeUnknown => Err(ToolRunError::OutcomeUnknown),
+            ToolJournalState::OutcomeUnknown => Err(ToolRunError::OutcomeUnknown {
+                journal_error: None,
+            }),
             ToolJournalState::Started => {
                 let key = record.request.journal_key();
                 match self
@@ -168,11 +199,12 @@ where
                         Ok(RuntimeToolResult { call, result })
                     }
                     Ok(None) => {
-                        self.journal
+                        let journal_error = self
+                            .journal
                             .finish(key, ToolJournalOutcome::OutcomeUnknown)
                             .await
-                            .map_err(ToolRunError::Journal)?;
-                        Err(ToolRunError::OutcomeUnknown)
+                            .err();
+                        Err(ToolRunError::OutcomeUnknown { journal_error })
                     }
                     Err(error) => {
                         let journal_error = self
@@ -348,17 +380,20 @@ mod tests {
         let executes = Arc::new(AtomicUsize::new(0));
         let runner = runner(executes.clone(), false, json!(null));
 
+        let error = runner
+            .run(
+                &ResponseId::from("resp-1"),
+                call("filesystem"),
+                &authorization(1024),
+                0,
+            )
+            .await
+            .unwrap_err();
         assert!(matches!(
-            runner
-                .run(
-                    &ResponseId::from("resp-1"),
-                    call("filesystem"),
-                    &authorization(1024),
-                    0,
-                )
-                .await,
-            Err(ToolRunError::UnauthorizedConnector(connector)) if connector == "filesystem"
+            &error,
+            ToolRunError::UnauthorizedConnector(connector) if connector == "filesystem"
         ));
+        assert!(!error.requires_unknown_outcome());
         assert_eq!(executes.load(Ordering::SeqCst), 0);
     }
 
@@ -370,17 +405,17 @@ mod tests {
         let authorization = authorization(1024);
         let runtime_call = call("search");
 
+        let error = runner
+            .run(&response_id, runtime_call.clone(), &authorization, 0)
+            .await
+            .unwrap_err();
+        assert!(matches!(&error, ToolRunError::Executor { .. }));
+        assert!(error.requires_unknown_outcome());
         assert!(matches!(
             runner
                 .run(&response_id, runtime_call.clone(), &authorization, 0)
                 .await,
-            Err(ToolRunError::Executor { .. })
-        ));
-        assert!(matches!(
-            runner
-                .run(&response_id, runtime_call.clone(), &authorization, 0)
-                .await,
-            Err(ToolRunError::OutcomeUnknown)
+            Err(ToolRunError::OutcomeUnknown { .. })
         ));
         assert_eq!(executes.load(Ordering::SeqCst), 1);
 
@@ -406,16 +441,19 @@ mod tests {
         let authorization = authorization(5);
         let runtime_call = call("search");
 
+        let error = runner
+            .run(&response_id, runtime_call.clone(), &authorization, 0)
+            .await
+            .unwrap_err();
         assert!(matches!(
-            runner
-                .run(&response_id, runtime_call.clone(), &authorization, 0)
-                .await,
-            Err(ToolRunError::OutputTooLarge {
+            &error,
+            ToolRunError::OutputTooLarge {
                 actual_bytes: 6,
                 limit_bytes: 5,
                 ..
-            })
+            }
         ));
+        assert!(!error.requires_unknown_outcome());
         assert_eq!(executes.load(Ordering::SeqCst), 1);
 
         let key = crate::ToolJournalKey {
