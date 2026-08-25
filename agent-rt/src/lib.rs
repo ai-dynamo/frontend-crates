@@ -22,6 +22,7 @@ mod memory;
 mod output;
 mod protocol;
 mod responses;
+mod runtime;
 mod selector;
 mod tool;
 
@@ -53,6 +54,7 @@ pub use responses::{
     ClientToolResponsesPolicy, PolicyResponsesOutputInterpreter, ResponsesOutcomePolicy,
     ResponsesOutputError, ResponsesOutputInterpreter,
 };
+pub use runtime::{AgentRuntime, AgentRuntimeError, RunTurn, RunTurnResult, RuntimeErrorFor};
 pub use selector::{
     AnthropicRequestSelector, RuntimeSelectionContext, RuntimeSelector, StatefulRequestSelector,
 };
