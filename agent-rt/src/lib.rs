@@ -58,7 +58,10 @@ pub use runtime::{AgentRuntime, AgentRuntimeError, RunTurn, RunTurnResult, Runti
 pub use selector::{
     AnthropicRequestSelector, RuntimeSelectionContext, RuntimeSelector, StatefulRequestSelector,
 };
-pub use tool::{ToolExecutionRequest, ToolExecutionResult, ToolExecutor};
+pub use tool::{
+    ToolClaimResult, ToolExecutionFailure, ToolExecutionRequest, ToolExecutionResult, ToolExecutor,
+    ToolJournal, ToolJournalKey, ToolJournalOutcome, ToolJournalRecord, ToolJournalState,
+};
 
 /// A boxed future used by object-safe asynchronous runtime traits.
 pub type BoxFuture<'a, T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + Send + 'a>>;
