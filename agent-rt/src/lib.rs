@@ -10,6 +10,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+mod anthropic;
 mod authorization;
 mod checkpoint;
 mod clock;
@@ -21,6 +22,7 @@ mod protocol;
 mod selector;
 mod tool;
 
+pub use anthropic::{AnthropicMaterializationError, AnthropicRequestMaterializer};
 pub use authorization::{AuthorizationScope, RuntimeAuthorization, RuntimeLimits};
 pub use checkpoint::{
     BeginTurn, BeginTurnResult, CheckpointRecord, CheckpointStore, CheckpointVersion, CommitTurn,

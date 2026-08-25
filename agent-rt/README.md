@@ -16,6 +16,7 @@ The initial public seams are:
 - `CheckpointStore` for atomic turn claims and fenced state transitions.
 - `InferenceInvoker` for sending a fully materialized native Responses request to an inference system.
 - `RequestMaterializer` and `ContinuationPolicy` for protocol hydration and replaceable inheritance behavior.
+- `AnthropicRequestMaterializer` for Claude Code's native full-history Messages requests.
 - `ToolExecutor` for already-authorized runtime-owned tool calls.
 - `RuntimeSelector`, `IdGenerator`, and `Clock` for replaceable frontend policy and deterministic tests.
 
