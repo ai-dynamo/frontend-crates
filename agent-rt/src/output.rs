@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{AgentProtocol, TurnState};
+use crate::{AgentProtocol, ResponseId, TurnState};
+
+/// Runtime-owned identity of one public turn.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OutputIdentity {
+    pub response_id: ResponseId,
+    pub parent_response_id: Option<ResponseId>,
+}
 
 /// Native response plus the durable model-visible result of one inference step.
 #[derive(Debug, Clone)]
@@ -25,5 +32,9 @@ where
 {
     type Error: std::error::Error + Send + Sync + 'static;
 
-    fn interpret(&self, response: P::Response) -> Result<InterpretedOutput<P>, Self::Error>;
+    fn interpret(
+        &self,
+        response: P::Response,
+        identity: &OutputIdentity,
+    ) -> Result<InterpretedOutput<P>, Self::Error>;
 }

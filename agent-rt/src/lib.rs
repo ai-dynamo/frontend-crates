@@ -21,6 +21,7 @@ mod materialize;
 mod memory;
 mod output;
 mod protocol;
+mod responses;
 mod selector;
 mod tool;
 
@@ -43,8 +44,12 @@ pub use materialize::{
     PolicyRequestMaterializer, RequestMaterializer, ResponsesRequestMaterializer,
 };
 pub use memory::{InMemoryCheckpointStore, InMemoryStoreError};
-pub use output::{InterpretedOutput, OutputInterpreter};
+pub use output::{InterpretedOutput, OutputIdentity, OutputInterpreter};
 pub use protocol::{AgentProtocol, AnthropicMessages, OpenAiResponses};
+pub use responses::{
+    ClientToolResponsesPolicy, PolicyResponsesOutputInterpreter, ResponsesOutcomePolicy,
+    ResponsesOutputError, ResponsesOutputInterpreter,
+};
 pub use selector::{
     AnthropicRequestSelector, RuntimeSelectionContext, RuntimeSelector, StatefulRequestSelector,
 };
