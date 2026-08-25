@@ -36,6 +36,7 @@ const ARGUMENT_CLOSE: &str = "<|close|>argument<|sep|>";
 const MESSAGE_CLOSE: &str = "<|close|>message<|sep|>";
 
 const STRING_ATOM: &str = r"(?:[^<]|<[^|])";
+const MAX_PERMUTED_REQUIRED_ARGUMENTS: usize = 5;
 
 fn escape_attr(value: &str) -> String {
     value.replace('&', "&amp;").replace('"', "&quot;")
@@ -428,7 +429,61 @@ fn nonempty_argument_format(key: &str, xtml_type: &str) -> Format {
     })
 }
 
-fn auto_arguments_block(tool: &ToolDefinition) -> Format {
+fn loose_auto_arguments() -> Format {
+    Format::AnyText(AnyTextFormat {
+        excludes: vec![CALL_OPEN.to_string(), CALL_CLOSE.to_string()],
+    })
+}
+
+fn unordered_required_arguments(arguments: &[Format]) -> Format {
+    fn visit(
+        arguments: &[Format],
+        used: &mut [bool],
+        current: &mut Vec<Format>,
+        alternatives: &mut Vec<Format>,
+    ) {
+        if current.len() == arguments.len() {
+            // JSON object properties are unordered. Loose gaps let optional or
+            // additional arguments appear before, between, or after the
+            // required arguments without weakening the required tags
+            // themselves.
+            let mut elements = Vec::with_capacity(current.len() * 2 + 1);
+            elements.push(loose_auto_arguments());
+            for argument in current.iter().cloned() {
+                elements.push(argument);
+                elements.push(loose_auto_arguments());
+            }
+            alternatives.push(Format::Sequence(SequenceFormat { elements }));
+            return;
+        }
+
+        for index in 0..arguments.len() {
+            if used[index] {
+                continue;
+            }
+            used[index] = true;
+            current.push(arguments[index].clone());
+            visit(arguments, used, current, alternatives);
+            current.pop();
+            used[index] = false;
+        }
+    }
+
+    let mut alternatives = Vec::new();
+    visit(
+        arguments,
+        &mut vec![false; arguments.len()],
+        &mut Vec::with_capacity(arguments.len()),
+        &mut alternatives,
+    );
+    one_of(alternatives)
+}
+
+fn auto_arguments_block(tool: &ToolDefinition, strict_schema: bool) -> Format {
+    if !super::builder::kimi_uses_declared_tool_schema(tool, strict_schema) {
+        return arguments_block(None);
+    }
+
     let Some(parameters) = tool.parameters.as_ref().and_then(Value::as_object) else {
         return Format::AnyText(AnyTextFormat { excludes: vec![] });
     };
@@ -447,7 +502,6 @@ fn auto_arguments_block(tool: &ToolDefinition) -> Format {
         Some(_) => return Format::AnyText(AnyTextFormat { excludes: vec![] }),
     };
 
-    let mut elements = Vec::new();
     if required.is_empty() {
         let alternatives: Vec<_> = properties
             .iter()
@@ -461,31 +515,35 @@ fn auto_arguments_block(tool: &ToolDefinition) -> Format {
         if alternatives.is_empty() {
             return Format::AnyText(AnyTextFormat { excludes: vec![] });
         }
-        elements.push(one_of(alternatives));
-    } else {
-        for key in required {
-            let Some(schema) = properties.get(key) else {
-                return Format::AnyText(AnyTextFormat { excludes: vec![] });
-            };
-            if !matches!(schema, Value::Bool(_) | Value::Object(_)) {
-                return Format::AnyText(AnyTextFormat { excludes: vec![] });
-            }
-            let Some(xtml_type) = single_xtml_type(schema, &root) else {
-                return Format::AnyText(AnyTextFormat { excludes: vec![] });
-            };
-            elements.push(nonempty_argument_format(key, xtml_type));
-        }
+        return optional(Format::Sequence(SequenceFormat {
+            elements: vec![one_of(alternatives), loose_auto_arguments()],
+        }));
     }
 
-    // After required arguments are present, keep optional/additional argument
-    // handling deliberately loose, matching SGLang's K3 auto grammar.
-    elements.push(Format::AnyText(AnyTextFormat {
-        excludes: vec![CALL_OPEN.to_string(), CALL_CLOSE.to_string()],
-    }));
-    Format::Sequence(SequenceFormat { elements })
+    // Enumerating every order grows factorially. Preserve schema-valid output
+    // for unusually wide tools by falling back to permissive content instead
+    // of imposing the schema's non-semantic `required` array order.
+    if required.len() > MAX_PERMUTED_REQUIRED_ARGUMENTS {
+        return loose_auto_arguments();
+    }
+
+    let mut arguments = Vec::with_capacity(required.len());
+    for key in required {
+        let Some(schema) = properties.get(key) else {
+            return Format::AnyText(AnyTextFormat { excludes: vec![] });
+        };
+        if !matches!(schema, Value::Bool(_) | Value::Object(_)) {
+            return Format::AnyText(AnyTextFormat { excludes: vec![] });
+        }
+        let Some(xtml_type) = single_xtml_type(schema, &root) else {
+            return Format::AnyText(AnyTextFormat { excludes: vec![] });
+        };
+        arguments.push(nonempty_argument_format(key, xtml_type));
+    }
+    unordered_required_arguments(&arguments)
 }
 
-fn auto_call_tag(tool: &ToolDefinition) -> TagFormat {
+fn auto_call_tag(tool: &ToolDefinition, strict_schema: bool) -> TagFormat {
     TagFormat {
         begin: format!("{OPEN}call tool=\"{}\" index=\"", escape_attr(&tool.name)),
         content: Box::new(Format::Sequence(SequenceFormat {
@@ -496,7 +554,7 @@ fn auto_call_tag(tool: &ToolDefinition) -> TagFormat {
                 Format::ConstString(ConstStringFormat {
                     value: format!("\"{SEP}"),
                 }),
-                auto_arguments_block(tool),
+                auto_arguments_block(tool, strict_schema),
             ],
         })),
         end: CALL_CLOSE.to_string(),
@@ -507,7 +565,11 @@ fn build_auto_structural_tag(
     tools: Vec<&ToolDefinition>,
     ctx: &ToolCallFormatBuildContext<'_>,
 ) -> StructuralTag {
-    let call_tags: Vec<_> = tools.into_iter().map(auto_call_tag).collect();
+    let strict_schema = ctx.strict_schema();
+    let call_tags: Vec<_> = tools
+        .into_iter()
+        .map(|tool| auto_call_tag(tool, strict_schema))
+        .collect();
     let parallel_tool_calls = !ctx.stop_after_first();
     let calls = if parallel_tool_calls {
         Format::TagsWithSeparator(TagsWithSeparatorFormat {
@@ -778,23 +840,99 @@ mod tests {
 
         let arguments = &call["content"]["elements"][2];
         assert_eq!(arguments["type"], "sequence");
+        assert_eq!(arguments["elements"][0]["type"], "any_text");
         assert_eq!(
-            arguments["elements"][0]["begin"],
+            arguments["elements"][1]["begin"],
             "<|open|>argument key=\"city\" type=\"string\"<|sep|>"
         );
         assert_eq!(
-            arguments["elements"][0]["content"]["pattern"],
+            arguments["elements"][1]["content"]["pattern"],
             format!("{STRING_ATOM}+")
         );
-        assert_eq!(arguments["elements"][1]["type"], "any_text");
+        assert_eq!(arguments["elements"][2]["type"], "any_text");
         assert_eq!(
-            arguments["elements"][1]["excludes"],
+            arguments["elements"][2]["excludes"],
             json!([CALL_OPEN, CALL_CLOSE])
         );
     }
 
     #[test]
-    fn auto_without_required_properties_still_requires_one_nonempty_argument() {
+    fn auto_required_arguments_accept_every_property_order() {
+        let tools = vec![ToolDefinition {
+            name: "get_weather".to_string(),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {
+                    "city": {"type": "string"},
+                    "days": {"type": "integer"},
+                    "units": {"type": "string"}
+                },
+                "required": ["city", "days"]
+            })),
+            strict: None,
+        }];
+        let choice = ToolChoice::Auto;
+        let value =
+            serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
+                .unwrap();
+        let arguments = &value["format"]["tags"][0]["content"]["tags"][0]["content"]["elements"][2];
+        let orders = arguments["elements"].as_array().unwrap();
+
+        assert_eq!(arguments["type"], "or");
+        assert_eq!(orders.len(), 2);
+        assert_eq!(
+            orders[0]["elements"][1]["begin"],
+            "<|open|>argument key=\"city\" type=\"string\"<|sep|>"
+        );
+        assert_eq!(
+            orders[0]["elements"][3]["begin"],
+            "<|open|>argument key=\"days\" type=\"number\"<|sep|>"
+        );
+        assert_eq!(
+            orders[1]["elements"][1]["begin"],
+            "<|open|>argument key=\"days\" type=\"number\"<|sep|>"
+        );
+        assert_eq!(
+            orders[1]["elements"][3]["begin"],
+            "<|open|>argument key=\"city\" type=\"string\"<|sep|>"
+        );
+        for order in orders {
+            assert_eq!(order["elements"][0]["type"], "any_text");
+            assert_eq!(order["elements"][2]["type"], "any_text");
+            assert_eq!(order["elements"][4]["type"], "any_text");
+        }
+    }
+
+    #[test]
+    fn auto_wide_required_schema_falls_back_instead_of_fixing_argument_order() {
+        let tools = vec![ToolDefinition {
+            name: "wide_tool".to_string(),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {
+                    "a": {"type": "string"},
+                    "b": {"type": "string"},
+                    "c": {"type": "string"},
+                    "d": {"type": "string"},
+                    "e": {"type": "string"},
+                    "f": {"type": "string"}
+                },
+                "required": ["a", "b", "c", "d", "e", "f"]
+            })),
+            strict: None,
+        }];
+        let choice = ToolChoice::Auto;
+        let value =
+            serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
+                .unwrap();
+        let arguments = &value["format"]["tags"][0]["content"]["tags"][0]["content"]["elements"][2];
+
+        assert_eq!(arguments["type"], "any_text");
+        assert_eq!(arguments["excludes"], json!([CALL_OPEN, CALL_CLOSE]));
+    }
+
+    #[test]
+    fn auto_without_required_properties_allows_an_empty_argument_body() {
         let tools = vec![ToolDefinition {
             name: "run_command".to_string(),
             parameters: Some(json!({
@@ -812,16 +950,54 @@ mod tests {
                 .unwrap();
         let arguments = &value["format"]["tags"][0]["content"]["tags"][0]["content"]["elements"][2];
 
-        assert_eq!(arguments["type"], "sequence");
-        assert_eq!(arguments["elements"][0]["type"], "or");
+        assert_eq!(arguments["type"], "optional");
+        assert_eq!(arguments["content"]["type"], "sequence");
+        assert_eq!(arguments["content"]["elements"][0]["type"], "or");
         assert_eq!(
-            arguments["elements"][0]["elements"]
+            arguments["content"]["elements"][0]["elements"]
                 .as_array()
                 .unwrap()
                 .len(),
             2
         );
-        assert_eq!(arguments["elements"][1]["type"], "any_text");
+        assert_eq!(arguments["content"]["elements"][1]["type"], "any_text");
+    }
+
+    #[test]
+    fn auto_explicit_non_strict_tool_uses_permissive_arguments() {
+        let tools = vec![ToolDefinition {
+            name: "get_weather".to_string(),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {"city": {"type": "string"}},
+                "required": ["city"]
+            })),
+            strict: Some(false),
+        }];
+        let choice = ToolChoice::Auto;
+        let value =
+            serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
+                .unwrap();
+        let arguments = &value["format"]["tags"][0]["content"]["tags"][0]["content"]["elements"][2];
+
+        assert_eq!(arguments["type"], "star");
+        assert_eq!(arguments["content"]["begin"], "<|open|>argument ");
+        assert!(!arguments.to_string().contains("key=\\\"city\\\""));
+
+        let strict_ctx = ToolCallFormatBuildContext {
+            tool_choice: &choice,
+            tools: &tools,
+            parallel_tool_calls: None,
+            schema_mode: StructuralTagSchemaMode::Strict,
+            starts_in_reasoning: false,
+        };
+        let strict_value =
+            serde_json::to_value(build_kimi_k3(&strict_ctx).unwrap().unwrap()).unwrap();
+        let strict_arguments =
+            &strict_value["format"]["tags"][0]["content"]["tags"][0]["content"]["elements"][2];
+
+        assert_eq!(strict_arguments["type"], "sequence");
+        assert!(strict_arguments.to_string().contains("key=\\\"city\\\""));
     }
 
     #[test]
