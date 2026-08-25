@@ -550,6 +550,279 @@ pub struct CreateResponse {
     pub truncation: Option<Truncation>,
 }
 
+// ---------------------------------------------------------------------------
+// CountInputTokens (`POST /v1/responses/input_tokens`)
+// ---------------------------------------------------------------------------
+
+/// The `object` discriminator on a [`CountInputTokensResponse`].
+pub const RESPONSE_INPUT_TOKENS_OBJECT: &str = "response.input_tokens";
+
+/// Request body for `POST /v1/responses/input_tokens`.
+///
+/// A subset of [`CreateResponse`] — only the fields that reach the rendered
+/// prompt. This mirrors `AnthropicCountTokensRequest`, which is the same
+/// subset-of-the-create-request shape for `POST /v1/messages/count_tokens`.
+///
+/// Two deliberate differences from `CreateResponse`: `input` defaults (the
+/// count endpoint accepts a body without one, whereas creating a response
+/// requires it), and unknown fields are ignored, so stateful parameters
+/// Dynamo does not serve (`conversation`, `previous_response_id`) are accepted
+/// and disregarded rather than rejected. This endpoint reports a pre-flight
+/// estimate; it never generates, so there is nothing for them to affect.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
+pub struct CountInputTokensRequest {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    #[serde(default)]
+    pub input: InputParam,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub instructions: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tools: Option<Vec<Tool>>,
+}
+
+/// Response body for `POST /v1/responses/input_tokens`.
+///
+/// `Deserialize` is derived where the Anthropic count response is
+/// serialize-only: this body is round-tripped by the frontend's integration
+/// tests, which assert on the parsed shape rather than on raw JSON.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct CountInputTokensResponse {
+    /// Always [`RESPONSE_INPUT_TOKENS_OBJECT`]. Required by the OpenAI spec.
+    pub object: String,
+    pub input_tokens: u32,
+}
+
+impl CountInputTokensResponse {
+    pub fn new(input_tokens: u32) -> Self {
+        Self {
+            object: RESPONSE_INPUT_TOKENS_OBJECT.to_string(),
+            input_tokens,
+        }
+    }
+}
+
+impl CountInputTokensRequest {
+    /// Estimate input token count using a `len/3` heuristic.
+    ///
+    /// Same contract as `AnthropicCountTokensRequest::estimate_tokens`: sum the
+    /// character lengths of everything that reaches the prompt, divide by three,
+    /// and never report zero for input that carried content.
+    ///
+    /// This is an estimate, not a tokenization. A frontend serving a
+    /// backend that tokenizes for itself has no tokenizer loaded, so this
+    /// endpoint has to be able to answer without one.
+    pub fn estimate_tokens(&self) -> u32 {
+        let mut total_len: usize = 0;
+
+        if let Some(instructions) = &self.instructions {
+            total_len += instructions.len();
+        }
+
+        match &self.input {
+            InputParam::Text(text) => total_len += text.len(),
+            InputParam::Items(items) => {
+                for item in items {
+                    total_len += estimate_input_item_len(item);
+                }
+            }
+        }
+
+        if let Some(tools) = &self.tools {
+            for tool in tools {
+                total_len += estimate_tool_len(tool);
+            }
+        }
+
+        let tokens = total_len / 3;
+        if tokens == 0 && total_len > 0 {
+            1
+        } else {
+            tokens as u32
+        }
+    }
+}
+
+/// Approximate character cost of a role marker, using the same constants
+/// `AnthropicCountTokensRequest::estimate_tokens` applies for the same purpose.
+fn role_len(role: Role) -> usize {
+    match role {
+        Role::User => 4,
+        Role::Assistant => 9,
+        Role::System => 6,
+        Role::Developer => 9,
+    }
+}
+
+fn input_role_len(role: InputRole) -> usize {
+    match role {
+        InputRole::User => 4,
+        InputRole::System => 6,
+        InputRole::Developer => 9,
+    }
+}
+
+fn estimate_input_item_len(item: &InputItem) -> usize {
+    match item {
+        // A pointer to an item held server-side. The content it names is not in
+        // this request, so there is nothing here to measure.
+        InputItem::ItemReference(_) => 0,
+        InputItem::EasyMessage(message) => {
+            role_len(message.role) + estimate_easy_content_len(&message.content)
+        }
+        InputItem::Item(item) => estimate_item_len(item),
+    }
+}
+
+fn estimate_easy_content_len(content: &EasyInputContent) -> usize {
+    match content {
+        EasyInputContent::Text(text) => text.len(),
+        EasyInputContent::ContentList(parts) => parts.iter().map(estimate_input_content_len).sum(),
+    }
+}
+
+/// Only text parts are measured. An image or file contributes tokens as a
+/// function of its decoded form, which a character count cannot model at all —
+/// the Anthropic estimator skips non-text blocks for the same reason.
+fn estimate_input_content_len(part: &InputContent) -> usize {
+    match part {
+        InputContent::InputText(text) => text.text.len(),
+        InputContent::InputImage(_) | InputContent::InputFile(_) => 0,
+    }
+}
+
+fn estimate_item_len(item: &Item) -> usize {
+    match item {
+        Item::Message(MessageItem::Input(message)) => {
+            input_role_len(message.role)
+                + message
+                    .content
+                    .iter()
+                    .map(estimate_input_content_len)
+                    .sum::<usize>()
+        }
+        Item::Message(MessageItem::Output(message)) => {
+            role_len(Role::Assistant)
+                + message
+                    .content
+                    .iter()
+                    .map(|part| match part {
+                        InputOutputMessageContent::OutputText(text) => text.text.len(),
+                        InputOutputMessageContent::Refusal(refusal) => refusal.refusal.len(),
+                    })
+                    .sum::<usize>()
+        }
+        Item::FunctionCall(call) => call.name.len() + call.arguments.len(),
+        Item::FunctionCallOutput(output) => match &output.output {
+            FunctionCallOutput::Text(text) => text.len(),
+            FunctionCallOutput::Content(parts) => parts
+                .iter()
+                .map(|part| match part {
+                    UpstreamInputContent::InputText(text) => text.text.len(),
+                    UpstreamInputContent::InputImage(_) | UpstreamInputContent::InputFile(_) => 0,
+                })
+                .sum(),
+        },
+        // Only `summary` is measured, because only `summary` is rendered:
+        // the converter joins the summary parts and drops the rest of the
+        // item. `content` is excluded for that reason alone — if Dynamo
+        // learns to render it, it needs to start counting here too.
+        // `encrypted_content` is excluded on its own merits: it is an opaque
+        // blob the model never sees as prompt text, and it is routinely far
+        // larger than the reasoning it stands for.
+        Item::Reasoning(reasoning) => reasoning
+            .summary
+            .iter()
+            .map(|part| match part {
+                SummaryPart::SummaryText(text) => text.text.len(),
+            })
+            .sum(),
+        // Everything below contributes nothing, because nothing below reaches
+        // the prompt: Dynamo's `convert_input_items_to_messages` flushes and
+        // skips every one of these ("we do not have a faithful Chat
+        // Completions mapping"). The arms above are exactly its handled set.
+        // Measuring the serialized form instead would bill callers for JSON
+        // scaffolding the model never sees: a bare `web_search_call` is 59
+        // characters, or 19 phantom tokens, and agentic clients echo many
+        // such items per turn.
+        //
+        // Listed out rather than wildcarded on purpose. `Item` is a shadow
+        // enum that "mirrors upstream variant-for-variant" and has to be
+        // extended by hand whenever upstream grows a variant (see CLAUDE.md,
+        // "Owned input chain"). A `_` arm would let that new variant default
+        // to zero silently; an exhaustive match turns it into a compile error
+        // that forces a render-or-not decision here, which is the same
+        // mechanism CLAUDE.md relies on to catch drift in `From` impls.
+        Item::FileSearchCall(_)
+        | Item::ComputerCall(_)
+        | Item::ComputerCallOutput(_)
+        | Item::WebSearchCall(_)
+        | Item::ToolSearchCall(_)
+        | Item::ToolSearchOutput(_)
+        | Item::Compaction(_)
+        | Item::ImageGenerationCall(_)
+        | Item::CodeInterpreterCall(_)
+        | Item::LocalShellCall(_)
+        | Item::LocalShellCallOutput(_)
+        | Item::ShellCall(_)
+        | Item::ShellCallOutput(_)
+        | Item::ApplyPatchCall(_)
+        | Item::ApplyPatchCallOutput(_)
+        | Item::McpListTools(_)
+        | Item::McpApprovalRequest(_)
+        | Item::McpApprovalResponse(_)
+        | Item::McpCall(_)
+        | Item::CustomToolCallOutput(_)
+        | Item::CustomToolCall(_) => 0,
+    }
+}
+
+/// Mirrors `convert_tools`: only function tools are forwarded to the backend,
+/// namespaced ones flattened to their bare function members. Hosted tools
+/// (web search, file search, computer use) are dropped there and so cost
+/// nothing here.
+///
+/// Wildcarded where `estimate_item_len` is exhaustive, and deliberately so:
+/// `Tool` is upstream's type, not one of our shadows, so we carry no
+/// obligation to mirror its variants. Pinning it exhaustively would only
+/// break the build every time async-openai adds a hosted tool we would
+/// score as zero anyway.
+fn estimate_tool_len(tool: &Tool) -> usize {
+    match tool {
+        Tool::Function(function) => function_tool_len(
+            &function.name,
+            function.description.as_ref(),
+            function.parameters.as_ref(),
+        ),
+        Tool::Namespace(namespace) => namespace
+            .tools
+            .iter()
+            .map(|tool| match tool {
+                // The namespace name is an origin marker used to detect
+                // collisions, not prompt text — `push_function` forwards the
+                // bare function name.
+                NamespaceToolParamTool::Function(function) => function_tool_len(
+                    &function.name,
+                    function.description.as_ref(),
+                    function.parameters.as_ref(),
+                ),
+                NamespaceToolParamTool::Custom(_) => 0,
+            })
+            .sum(),
+        _ => 0,
+    }
+}
+
+fn function_tool_len(
+    name: &str,
+    description: Option<&String>,
+    parameters: Option<&serde_json::Value>,
+) -> usize {
+    name.len()
+        + description.map_or(0, |description| description.len())
+        + parameters.map_or(0, |schema| schema.to_string().len())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1167,5 +1440,313 @@ mod tests {
                 "turn {idx} did not route to EasyMessage: {item:?}",
             );
         }
+    }
+
+    // ---- count input tokens (POST /v1/responses/input_tokens) ----
+
+    fn count(body: serde_json::Value) -> u32 {
+        serde_json::from_value::<CountInputTokensRequest>(body)
+            .expect("count request should deserialize")
+            .estimate_tokens()
+    }
+
+    #[test]
+    fn count_tokens_plain_text_input() {
+        // "Hello, world!" is 13 chars; 13 / 3 == 4.
+        assert_eq!(
+            count(serde_json::json!({"model": "m", "input": "Hello, world!"})),
+            4
+        );
+    }
+
+    #[test]
+    fn count_tokens_input_is_optional() {
+        // The count endpoint accepts a body without `input`, unlike CreateResponse.
+        assert_eq!(count(serde_json::json!({"model": "m"})), 0);
+    }
+
+    #[test]
+    fn count_tokens_empty_input_is_zero() {
+        assert_eq!(count(serde_json::json!({"input": ""})), 0);
+    }
+
+    #[test]
+    fn count_tokens_short_input_never_rounds_to_zero() {
+        // 2 chars / 3 == 0, but content was present, so report 1.
+        assert_eq!(count(serde_json::json!({"input": "Hi"})), 1);
+    }
+
+    #[test]
+    fn count_tokens_instructions_contribute() {
+        // "You are helpful." (16) + "Hi" (2) == 18; 18 / 3 == 6.
+        assert_eq!(
+            count(serde_json::json!({"input": "Hi", "instructions": "You are helpful."})),
+            6
+        );
+    }
+
+    #[test]
+    fn count_tokens_easy_message_counts_role_and_content() {
+        // user role (4) + "Hello" (5) == 9; 9 / 3 == 3.
+        assert_eq!(
+            count(serde_json::json!({"input": [{"role": "user", "content": "Hello"}]})),
+            3
+        );
+    }
+
+    #[test]
+    fn count_tokens_structured_input_message() {
+        // user role (4) + "Hello" (5) == 9; 9 / 3 == 3.
+        assert_eq!(
+            count(serde_json::json!({"input": [{
+                "type": "message",
+                "role": "user",
+                "content": [{"type": "input_text", "text": "Hello"}],
+            }]})),
+            3
+        );
+    }
+
+    #[test]
+    fn count_tokens_function_call_counts_name_and_arguments() {
+        // "get_weather" (11) + r#"{"city":"SF"}"# (13) == 24; 24 / 3 == 8.
+        assert_eq!(
+            count(serde_json::json!({"input": [{
+                "type": "function_call",
+                "call_id": "call_1",
+                "name": "get_weather",
+                "arguments": r#"{"city":"SF"}"#,
+            }]})),
+            8
+        );
+    }
+
+    #[test]
+    fn count_tokens_function_call_output_counts_text() {
+        // "sunny" (5) == 5; 5 / 3 == 1.
+        assert_eq!(
+            count(serde_json::json!({"input": [{
+                "type": "function_call_output",
+                "call_id": "call_1",
+                "output": "sunny",
+            }]})),
+            1
+        );
+    }
+
+    #[test]
+    fn count_tokens_tools_contribute() {
+        // "get_weather" (11) + "Get weather" (11) + r#"{"type":"object"}"# (17)
+        // == 39; 39 / 3 == 13.
+        assert_eq!(
+            count(serde_json::json!({
+                "input": "",
+                "tools": [{
+                    "type": "function",
+                    "name": "get_weather",
+                    "description": "Get weather",
+                    "parameters": {"type": "object"},
+                }],
+            })),
+            13
+        );
+    }
+
+    #[test]
+    fn count_tokens_images_contribute_nothing() {
+        // Only the text part is measured; the image part cannot be estimated
+        // from character length.
+        let with_image = count(serde_json::json!({"input": [{
+            "type": "message",
+            "role": "user",
+            "content": [
+                {"type": "input_text", "text": "Describe this"},
+                {"type": "input_image", "image_url": "https://example.com/a-very-long-url.png"},
+            ],
+        }]}));
+        let without_image = count(serde_json::json!({"input": [{
+            "type": "message",
+            "role": "user",
+            "content": [{"type": "input_text", "text": "Describe this"}],
+        }]}));
+        assert_eq!(with_image, without_image);
+    }
+
+    #[test]
+    fn count_tokens_dropped_item_variants_cost_nothing() {
+        // Dynamo's `convert_input_items_to_messages` flushes and skips these,
+        // so they never reach the prompt. Counting their serialized form would
+        // bill callers for JSON scaffolding the model never sees.
+        for item in [
+            serde_json::json!({"type": "web_search_call", "id": "ws_1", "status": "completed"}),
+            serde_json::json!({
+                "type": "computer_call",
+                "call_id": "c_1",
+                "id": "cu_1",
+                "action": {"type": "screenshot"},
+                "pending_safety_checks": [],
+                "status": "completed",
+            }),
+        ] {
+            assert_eq!(
+                count(serde_json::json!({ "input": [item.clone()] })),
+                0,
+                "dropped item variant should not be counted: {item}"
+            );
+        }
+    }
+
+    #[test]
+    fn count_tokens_counts_exactly_the_variants_the_converter_renders() {
+        // Guards the coupling documented on `estimate_item_len`: the explicit
+        // arms are meant to be the same set Dynamo's converter handles. Each
+        // variant is asserted on its own — a single assertion over an array of
+        // all four would still pass with three of the arms deleted. If dynamo
+        // grows support for another variant, this test should gain a case.
+        for item in [
+            serde_json::json!({"role": "user", "content": "Hello"}),
+            serde_json::json!({
+                "type": "message",
+                "role": "user",
+                "content": [{"type": "input_text", "text": "Hello"}],
+            }),
+            serde_json::json!({
+                "type": "message",
+                "role": "assistant",
+                "content": [{"type": "output_text", "text": "Hi", "annotations": []}],
+            }),
+            serde_json::json!({
+                "type": "function_call",
+                "call_id": "c1",
+                "name": "get_weather",
+                "arguments": "{}",
+            }),
+            serde_json::json!({"type": "function_call_output", "call_id": "c1", "output": "sunny"}),
+            serde_json::json!({
+                "type": "reasoning",
+                "summary": [{"type": "summary_text", "text": "thinking"}],
+            }),
+        ] {
+            assert!(
+                count(serde_json::json!({ "input": [item.clone()] })) > 0,
+                "rendered variant should be counted: {item}"
+            );
+        }
+    }
+
+    #[test]
+    fn count_tokens_reasoning_counts_summary_only() {
+        // The converter joins `summary` and drops everything else on the item,
+        // so `content` and `encrypted_content` must not inflate the estimate.
+        let summary_only = serde_json::json!({"input": [{
+            "type": "reasoning",
+            "summary": [{"type": "summary_text", "text": "thinking"}],
+        }]});
+        let with_dropped_fields = serde_json::json!({"input": [{
+            "type": "reasoning",
+            "summary": [{"type": "summary_text", "text": "thinking"}],
+            "content": [{"type": "reasoning_text", "text": "a much longer private chain of thought"}],
+            "encrypted_content": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        }]});
+
+        // "thinking" (8) == 8; 8 / 3 == 2.
+        assert_eq!(count(summary_only.clone()), 2);
+        assert_eq!(count(with_dropped_fields), count(summary_only));
+    }
+
+    #[test]
+    fn count_tokens_hosted_tools_cost_nothing() {
+        // `convert_tools` forwards only function tools; hosted tools are
+        // dropped, so they must not inflate the estimate.
+        assert_eq!(
+            count(serde_json::json!({
+                "input": "",
+                "tools": [{"type": "web_search"}],
+            })),
+            0
+        );
+    }
+
+    #[test]
+    fn count_tokens_namespaced_tools_count_their_functions() {
+        // `convert_tools` flattens namespaces to their bare function members,
+        // so the members count and the namespace name does not.
+        // "get_weather" (11) + "Get weather" (11) + r#"{"type":"object"}"# (17)
+        // == 39; 39 / 3 == 13 — the same as the un-namespaced tool above.
+        assert_eq!(
+            count(serde_json::json!({
+                "input": "",
+                "tools": [{
+                    "type": "namespace",
+                    "name": "weather_ns",
+                    "description": "Weather tools",
+                    "tools": [{
+                        "type": "function",
+                        "name": "get_weather",
+                        "description": "Get weather",
+                        "parameters": {"type": "object"},
+                    }],
+                }],
+            })),
+            13
+        );
+    }
+
+    #[test]
+    fn count_tokens_item_reference_contributes_nothing() {
+        // The referenced content is held server-side and is not in this request.
+        assert_eq!(
+            count(serde_json::json!({"input": [{"type": "item_reference", "id": "msg_1"}]})),
+            0
+        );
+    }
+
+    #[test]
+    fn count_tokens_ignores_unsupported_stateful_fields() {
+        // `previous_response_id` / `conversation` are accepted and disregarded
+        // rather than rejected — this endpoint only estimates.
+        assert_eq!(
+            count(serde_json::json!({
+                "model": "m",
+                "input": "Hello, world!",
+                "previous_response_id": "resp_abc123",
+                "conversation": {"id": "conv_1"},
+            })),
+            4
+        );
+    }
+
+    #[test]
+    fn count_tokens_deserializes_the_litellm_request_shape() {
+        // The exact body LiteLLM's CountTokens handler sends:
+        // {model, input, instructions?, tools?} with chat tools already
+        // flattened into the Responses shape.
+        let request: CountInputTokensRequest = serde_json::from_value(serde_json::json!({
+            "model": "dynamo/deepseek-ai/deepseek-v4-pro-sglang",
+            "input": [{"role": "user", "content": "Hello"}],
+            "instructions": "You are helpful.",
+            "tools": [{
+                "type": "function",
+                "name": "get_weather",
+                "description": "Get weather",
+                "parameters": {"type": "object"},
+            }],
+        }))
+        .expect("LiteLLM request shape should deserialize");
+
+        assert_eq!(
+            request.model.as_deref(),
+            Some("dynamo/deepseek-ai/deepseek-v4-pro-sglang")
+        );
+        assert!(matches!(request.input, InputParam::Items(ref items) if items.len() == 1));
+        assert!(request.estimate_tokens() > 0);
+    }
+
+    #[test]
+    fn count_tokens_response_serializes_to_the_openai_shape() {
+        assert_eq!(
+            serde_json::to_value(CountInputTokensResponse::new(42)).unwrap(),
+            serde_json::json!({"object": "response.input_tokens", "input_tokens": 42})
+        );
     }
 }
