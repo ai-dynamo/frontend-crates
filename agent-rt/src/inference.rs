@@ -1,9 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use dynamo_protocols::types::responses::{CreateResponse, Response, ResponseStreamEvent};
-
-use crate::{BoxFuture, BoxStream};
+use crate::{AgentProtocol, BoxFuture, BoxStream};
 
 /// Marker for frontend-owned invocation metadata.
 ///
@@ -31,25 +29,37 @@ pub struct InferenceIntent {
 
 /// Fully materialized native Responses invocation.
 #[derive(Debug, Clone)]
-pub struct InferenceRequest<C> {
-    pub request: CreateResponse,
+pub struct InferenceRequest<P, C>
+where
+    P: AgentProtocol,
+{
+    pub request: P::Request,
     pub context: C,
     pub intent: InferenceIntent,
 }
 
 /// Unary or streaming inference result normalized at the invocation boundary.
-pub enum InferenceOutput<'a, E> {
-    Unary(Box<Response>),
-    Streaming(BoxStream<'a, Result<ResponseStreamEvent, E>>),
+pub enum InferenceOutput<'a, P, E>
+where
+    P: AgentProtocol,
+{
+    Unary(Box<P::Response>),
+    Streaming(BoxStream<'a, Result<P::StreamEvent, E>>),
 }
 
+/// Future returned by a native protocol inference invocation.
+pub type InferenceFuture<'a, P, E> = BoxFuture<'a, Result<InferenceOutput<'a, P, E>, E>>;
+
 /// Invokes inference without exposing engine or routing details to the runtime.
-pub trait InferenceInvoker: Send + Sync + 'static {
+pub trait InferenceInvoker<P>: Send + Sync + 'static
+where
+    P: AgentProtocol,
+{
     type Context: InvocationContext;
     type Error: std::error::Error + Send + Sync + 'static;
 
     fn invoke(
         &self,
-        request: InferenceRequest<Self::Context>,
-    ) -> BoxFuture<'_, Result<InferenceOutput<'_, Self::Error>, Self::Error>>;
+        request: InferenceRequest<P, Self::Context>,
+    ) -> InferenceFuture<'_, P, Self::Error>;
 }

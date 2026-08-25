@@ -29,8 +29,8 @@ pub use checkpoint::{
 pub use clock::{Clock, SystemClock};
 pub use ids::{IdGenerator, IdempotencyKey, ResponseId, TurnId, UuidGenerator};
 pub use inference::{
-    InferenceIntent, InferenceInvoker, InferenceOutput, InferenceRequest, InvocationContext,
-    ModelStepKind,
+    InferenceFuture, InferenceIntent, InferenceInvoker, InferenceOutput, InferenceRequest,
+    InvocationContext, ModelStepKind,
 };
 pub use materialize::{
     ContinuationPolicy, InheritContinuationControls, MaterializationError, MaterializedTurn,
