@@ -113,18 +113,19 @@ pub type RuntimeErrorFor<P, S, M, F, I, O> = AgentRuntimeError<
     <O as OutputInterpreter<P>>::Error,
 >;
 
-struct PreparedTurn<P, C>
+pub(crate) struct PreparedTurn<P, C>
 where
     P: AgentProtocol,
 {
-    inference_request: P::Request,
-    invocation_context: C,
-    inference_intent: InferenceIntent,
-    identity: OutputIdentity,
-    lease: TurnLease,
+    pub(crate) inference_request: P::Request,
+    pub(crate) authorization: RuntimeAuthorization,
+    pub(crate) invocation_context: C,
+    pub(crate) inference_intent: InferenceIntent,
+    pub(crate) identity: OutputIdentity,
+    pub(crate) lease: TurnLease,
 }
 
-enum PrepareTurnResult<P, C>
+pub(crate) enum PrepareTurnResult<P, C>
 where
     P: AgentProtocol,
 {
@@ -596,7 +597,7 @@ where
         })
     }
 
-    async fn invoke_step(
+    pub(crate) async fn invoke_step(
         &self,
         request: &InferenceRequest<P, I::Context>,
         identity: &OutputIdentity,
@@ -650,7 +651,7 @@ where
         Ok(committed)
     }
 
-    async fn prepare_turn(
+    pub(crate) async fn prepare_turn(
         &self,
         command: RunTurn<P, I::Context>,
     ) -> Result<PrepareTurnResult<P, I::Context>, RuntimeErrorFor<P, S, M, F, I, O>> {
@@ -688,7 +689,7 @@ where
                 response_id: response_id.clone(),
                 turn_id,
                 parent_response_id: command.parent_response_id.clone(),
-                authorization: command.authorization,
+                authorization: command.authorization.clone(),
                 idempotency_key: command.idempotency_key,
                 request_fingerprint,
                 request: materialized.checkpoint_request,
@@ -703,6 +704,7 @@ where
 
         Ok(PrepareTurnResult::Acquired(Box::new(PreparedTurn {
             inference_request: materialized.inference_request,
+            authorization: command.authorization,
             invocation_context: command.invocation_context,
             inference_intent: command.inference_intent,
             identity: OutputIdentity {
