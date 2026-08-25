@@ -158,14 +158,19 @@ where
 #[allow(clippy::items_after_test_module)]
 mod tests {
     use std::collections::BTreeSet;
+    use std::convert::Infallible;
     use std::sync::Mutex;
     use std::sync::atomic::{AtomicU64, Ordering};
 
-    use dynamo_protocols::types::responses::{CreateResponse, InputParam, Response};
+    use dynamo_protocols::types::{
+        anthropic::{AnthropicCreateMessageRequest, AnthropicMessageResponse},
+        responses::{CreateResponse, InputParam, Response},
+    };
     use thiserror::Error;
 
     use crate::{
-        AgentRuntime, AgentRuntimeError, AuthorizationScope, CanonicalJsonFingerprinter,
+        AgentRuntime, AgentRuntimeError, AnthropicMessages, AnthropicOutputInterpreter,
+        AnthropicRequestMaterializer, AuthorizationScope, CanonicalJsonFingerprinter,
         CheckpointStore, Clock, IdGenerator, IdempotencyKey, InMemoryCheckpointStore,
         InferenceFuture, InferenceIntent, InferenceInvoker, InferenceOutput, InferenceRequest,
         LoadChain, ModelStepKind, OpenAiResponses, ResponseId, ResponsesOutputInterpreter,
@@ -266,6 +271,45 @@ mod tests {
                     Ok(InferenceOutput::Unary(Box::new(response)))
                 }
             })
+        }
+    }
+
+    #[derive(Debug)]
+    struct AnthropicInvoker {
+        requests: Mutex<Vec<AnthropicCreateMessageRequest>>,
+        response: AnthropicMessageResponse,
+    }
+
+    impl AnthropicInvoker {
+        fn new() -> Self {
+            Self {
+                requests: Mutex::new(Vec::new()),
+                response: serde_json::from_value(serde_json::json!({
+                    "id": "msg_backend",
+                    "type": "message",
+                    "role": "assistant",
+                    "content": [{"type": "text", "text": "answer"}],
+                    "model": "claude",
+                    "stop_reason": "end_turn",
+                    "stop_sequence": null,
+                    "usage": {"input_tokens": 10, "output_tokens": 4}
+                }))
+                .unwrap(),
+            }
+        }
+    }
+
+    impl InferenceInvoker<AnthropicMessages> for AnthropicInvoker {
+        type Context = ();
+        type Error = Infallible;
+
+        fn invoke(
+            &self,
+            request: InferenceRequest<AnthropicMessages, Self::Context>,
+        ) -> InferenceFuture<'_, AnthropicMessages, Self::Error> {
+            self.requests.lock().unwrap().push(request.request);
+            let response = self.response.clone();
+            Box::pin(async move { Ok(InferenceOutput::Unary(Box::new(response))) })
         }
     }
 
@@ -434,6 +478,54 @@ mod tests {
             .pop()
             .unwrap();
         assert_eq!(record.state, TurnState::Failed);
+    }
+
+    #[tokio::test]
+    async fn anthropic_turn_stays_native_end_to_end() {
+        let clock = FixedClock(1_000);
+        let runtime = AgentRuntime::<AnthropicMessages, _, _, _, _, _, _, _>::new(
+            InMemoryCheckpointStore::new(clock),
+            AnthropicRequestMaterializer,
+            CanonicalJsonFingerprinter,
+            AnthropicInvoker::new(),
+            AnthropicOutputInterpreter::default(),
+            SequentialIds::default(),
+            clock,
+        );
+        let request: AnthropicCreateMessageRequest = serde_json::from_value(serde_json::json!({
+            "model": "claude",
+            "max_tokens": 1024,
+            "messages": [{"role": "user", "content": "hello"}]
+        }))
+        .unwrap();
+
+        let result = runtime
+            .run_unary(RunTurn {
+                request,
+                parent_response_id: None,
+                authorization: authorization(),
+                idempotency_key: IdempotencyKey::from("idem-anthropic"),
+                invocation_context: (),
+                inference_intent: InferenceIntent {
+                    step_kind: ModelStepKind::Initial,
+                    session_final: true,
+                },
+                lease_duration_millis: 30_000,
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(result.record().state, TurnState::Completed);
+        assert_eq!(
+            result
+                .record()
+                .response
+                .as_ref()
+                .map(|response| response.id.as_str()),
+            Some("msg_backend")
+        );
+        assert_eq!(result.record().output_items.len(), 1);
+        assert_eq!(runtime.invoker.requests.lock().unwrap().len(), 1);
     }
 }
 
