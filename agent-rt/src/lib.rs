@@ -25,6 +25,7 @@ mod responses;
 mod runtime;
 mod selector;
 mod tool;
+mod tool_memory;
 
 pub use anthropic::{
     AnthropicMaterializationError, AnthropicOutcomePolicy, AnthropicOutputInterpreter,
@@ -62,6 +63,7 @@ pub use tool::{
     ToolClaimResult, ToolExecutionFailure, ToolExecutionRequest, ToolExecutionResult, ToolExecutor,
     ToolJournal, ToolJournalKey, ToolJournalOutcome, ToolJournalRecord, ToolJournalState,
 };
+pub use tool_memory::{InMemoryToolJournal, InMemoryToolJournalError};
 
 /// A boxed future used by object-safe asynchronous runtime traits.
 pub type BoxFuture<'a, T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + Send + 'a>>;
