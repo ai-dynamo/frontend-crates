@@ -398,6 +398,92 @@ pub enum InputItem {
     EasyMessage(EasyInputMessage),
 }
 
+impl From<Item> for InputItem {
+    fn from(item: Item) -> Self {
+        Self::Item(item)
+    }
+}
+
+impl From<OutputMessage> for InputOutputMessage {
+    fn from(message: OutputMessage) -> Self {
+        Self {
+            content: message
+                .content
+                .into_iter()
+                .map(|content| match content {
+                    OutputMessageContent::OutputText(text) => {
+                        InputOutputMessageContent::OutputText(InputOutputTextContent {
+                            annotations: text.annotations,
+                            logprobs: text.logprobs,
+                            text: text.text,
+                        })
+                    }
+                    OutputMessageContent::Refusal(refusal) => {
+                        InputOutputMessageContent::Refusal(refusal)
+                    }
+                })
+                .collect(),
+            id: Some(message.id),
+            role: message.role,
+            phase: message.phase,
+            status: Some(message.status),
+        }
+    }
+}
+
+impl From<ReasoningItem> for InputReasoningItem {
+    fn from(reasoning: ReasoningItem) -> Self {
+        Self {
+            id: reasoning.id,
+            summary: reasoning.summary,
+            content: reasoning.content.map(|content| {
+                content
+                    .into_iter()
+                    .map(|part| match part {
+                        ReasoningItemContent::ReasoningText(text) => text,
+                    })
+                    .collect()
+            }),
+            encrypted_content: reasoning.encrypted_content,
+            status: reasoning.status,
+        }
+    }
+}
+
+/// Converts a server output into the owned input shape used for manual
+/// conversation replay. This is allocation-free except for containers already
+/// owned by the output item.
+impl From<OutputItem> for InputItem {
+    fn from(item: OutputItem) -> Self {
+        let item = match item {
+            OutputItem::Message(message) => Item::Message(MessageItem::Output(message.into())),
+            OutputItem::FileSearchCall(call) => Item::FileSearchCall(call),
+            OutputItem::FunctionCall(call) => Item::FunctionCall(call),
+            OutputItem::FunctionCallOutput(output) => Item::FunctionCallOutput(output.into()),
+            OutputItem::WebSearchCall(call) => Item::WebSearchCall(call),
+            OutputItem::ComputerCall(call) => Item::ComputerCall(call),
+            OutputItem::ComputerCallOutput(output) => Item::ComputerCallOutput(output.into()),
+            OutputItem::Reasoning(reasoning) => Item::Reasoning(reasoning.into()),
+            OutputItem::Compaction(compaction) => Item::Compaction(compaction.into()),
+            OutputItem::ImageGenerationCall(call) => Item::ImageGenerationCall(call),
+            OutputItem::CodeInterpreterCall(call) => Item::CodeInterpreterCall(call),
+            OutputItem::LocalShellCall(call) => Item::LocalShellCall(call),
+            OutputItem::ShellCall(call) => Item::ShellCall(call.into()),
+            OutputItem::ShellCallOutput(output) => Item::ShellCallOutput(output.into()),
+            OutputItem::ApplyPatchCall(call) => Item::ApplyPatchCall(call.into()),
+            OutputItem::ApplyPatchCallOutput(output) => Item::ApplyPatchCallOutput(output.into()),
+            OutputItem::McpCall(call) => Item::McpCall(call),
+            OutputItem::McpListTools(tools) => Item::McpListTools(tools),
+            OutputItem::McpApprovalRequest(request) => Item::McpApprovalRequest(request),
+            OutputItem::CustomToolCall(call) => Item::CustomToolCall(call),
+            OutputItem::CustomToolCallOutput(output) => Item::CustomToolCallOutput(output.into()),
+            OutputItem::ToolSearchCall(call) => Item::ToolSearchCall(call.into()),
+            OutputItem::ToolSearchOutput(output) => Item::ToolSearchOutput(output.into()),
+        };
+        Self::Item(item)
+    }
+}
+
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum InputItemWire {
@@ -1309,6 +1395,73 @@ mod tests {
             }
             other => panic!("expected Item::Message(Output), got {other:?}"),
         }
+    }
+
+    #[test]
+    fn output_message_converts_directly_to_replay_input() {
+        let output: OutputItem = serde_json::from_value(serde_json::json!({
+            "type": "message",
+            "id": "msg_1",
+            "role": "assistant",
+            "status": "completed",
+            "content": [{
+                "type": "output_text",
+                "text": "hello",
+                "annotations": [],
+                "logprobs": null
+            }]
+        }))
+        .unwrap();
+
+        let input = InputItem::from(output);
+        let InputItem::Item(Item::Message(MessageItem::Output(message))) = input else {
+            panic!("expected assistant message input")
+        };
+        assert_eq!(message.id.as_deref(), Some("msg_1"));
+        assert_eq!(message.status, Some(OutputStatus::Completed));
+        assert!(matches!(
+            message.content.as_slice(),
+            [InputOutputMessageContent::OutputText(text)] if text.text == "hello"
+        ));
+    }
+
+    #[test]
+    fn output_tool_call_converts_directly_to_replay_input() {
+        let output: OutputItem = serde_json::from_value(serde_json::json!({
+            "type": "function_call",
+            "id": "fc_1",
+            "call_id": "call_1",
+            "name": "lookup",
+            "arguments": "{}",
+            "status": "completed"
+        }))
+        .unwrap();
+
+        assert!(matches!(
+            InputItem::from(output),
+            InputItem::Item(Item::FunctionCall(call)) if call.call_id == "call_1"
+        ));
+    }
+
+    #[test]
+    fn output_reasoning_converts_directly_to_relaxed_replay_input() {
+        let output: OutputItem = serde_json::from_value(serde_json::json!({
+            "type": "reasoning",
+            "id": "rs_1",
+            "summary": [],
+            "content": [{"type": "reasoning_text", "text": "analysis"}],
+            "status": "completed"
+        }))
+        .unwrap();
+
+        let InputItem::Item(Item::Reasoning(reasoning)) = InputItem::from(output) else {
+            panic!("expected reasoning input")
+        };
+        assert_eq!(reasoning.id.as_deref(), Some("rs_1"));
+        assert!(matches!(
+            reasoning.content.as_deref(),
+            Some([ReasoningTextContent { text }]) if text == "analysis"
+        ));
     }
 
     #[test]
