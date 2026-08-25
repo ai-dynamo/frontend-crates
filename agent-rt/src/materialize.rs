@@ -8,7 +8,10 @@ use dynamo_protocols::types::responses::{
 };
 use thiserror::Error;
 
-use crate::{ResponseId, ResponsesCheckpointRecord, TurnState};
+use crate::{
+    AgentProtocol, CheckpointRecord, OpenAiResponses, ResponseId, ResponsesCheckpointRecord,
+    TurnState,
+};
 
 /// Resolves controls omitted by a continuation request.
 ///
@@ -56,22 +59,28 @@ impl ContinuationPolicy for InheritContinuationControls {
 
 /// The two request forms produced for one stateful turn.
 #[derive(Debug, Clone, PartialEq)]
-pub struct MaterializedTurn {
+pub struct MaterializedTurn<P>
+where
+    P: AgentProtocol,
+{
     /// Append-only current-turn request persisted in the checkpoint.
-    pub checkpoint_request: CreateResponse,
+    pub checkpoint_request: P::Request,
     /// Complete model-visible request sent through the inference frontend.
-    pub inference_request: CreateResponse,
+    pub inference_request: P::Request,
 }
 
 /// Hydrates a protocol request from an authorized checkpoint chain.
-pub trait RequestMaterializer: Send + Sync + 'static {
+pub trait RequestMaterializer<P>: Send + Sync + 'static
+where
+    P: AgentProtocol,
+{
     type Error: std::error::Error + Send + Sync + 'static;
 
     fn materialize(
         &self,
-        current: CreateResponse,
-        chain: &[ResponsesCheckpointRecord],
-    ) -> Result<MaterializedTurn, Self::Error>;
+        current: P::Request,
+        chain: &[CheckpointRecord<P>],
+    ) -> Result<MaterializedTurn<P>, Self::Error>;
 }
 
 #[derive(Debug, Error)]
@@ -116,7 +125,7 @@ impl<P> PolicyRequestMaterializer<P> {
 /// Default Responses materializer with inherited continuation controls.
 pub type ResponsesRequestMaterializer = PolicyRequestMaterializer<InheritContinuationControls>;
 
-impl<P> RequestMaterializer for PolicyRequestMaterializer<P>
+impl<P> RequestMaterializer<OpenAiResponses> for PolicyRequestMaterializer<P>
 where
     P: ContinuationPolicy,
 {
@@ -126,7 +135,7 @@ where
         &self,
         current: CreateResponse,
         chain: &[ResponsesCheckpointRecord],
-    ) -> Result<MaterializedTurn, Self::Error> {
+    ) -> Result<MaterializedTurn<OpenAiResponses>, Self::Error> {
         validate_chain(&current, chain)?;
 
         let mut checkpoint_request = current;
