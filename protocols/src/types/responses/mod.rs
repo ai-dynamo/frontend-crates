@@ -666,12 +666,22 @@ impl CountInputTokensRequest {
     pub fn estimate_tokens(&self) -> u32 {
         let mut total_len: usize = 0;
 
-        if let Some(instructions) = &self.instructions {
-            total_len += instructions.len();
+        // `instructions` and a top-level string `input` are not free-floating
+        // text: the converter turns them into a system and a user chat message
+        // respectively, exactly like the item messages below. Charge them the
+        // same role markers, or the identical prompt scores differently
+        // depending on which shape the caller used to express it.
+        //
+        // Both are skipped when empty, because an absent field is not a
+        // message. `InputParam::default()` is `Text("")`, so a body with no
+        // `input` at all lands here — and it must stay worth zero.
+        if let Some(instructions) = &self.instructions.as_ref().filter(|text| !text.is_empty()) {
+            total_len += role_len(Role::System) + instructions.len();
         }
 
         match &self.input {
-            InputParam::Text(text) => total_len += text.len(),
+            InputParam::Text(text) if text.is_empty() => {}
+            InputParam::Text(text) => total_len += role_len(Role::User) + text.len(),
             InputParam::Items(items) => {
                 for item in items {
                     total_len += estimate_input_item_len(item);
@@ -1503,10 +1513,10 @@ mod tests {
 
     #[test]
     fn count_tokens_plain_text_input() {
-        // "Hello, world!" is 13 chars; 13 / 3 == 4.
+        // user role (4) + "Hello, world!" (13) == 17; 17 / 3 == 5.
         assert_eq!(
             count(serde_json::json!({"model": "m", "input": "Hello, world!"})),
-            4
+            5
         );
     }
 
@@ -1523,16 +1533,53 @@ mod tests {
 
     #[test]
     fn count_tokens_short_input_never_rounds_to_zero() {
-        // 2 chars / 3 == 0, but content was present, so report 1.
-        assert_eq!(count(serde_json::json!({"input": "Hi"})), 1);
+        // A function call carries no role marker, so it is the smallest
+        // non-empty body there is: name (1) + arguments (0) == 1, and
+        // 1 / 3 == 0 — but content was present, so report 1.
+        assert_eq!(
+            count(serde_json::json!({"input": [{
+                "type": "function_call",
+                "call_id": "c",
+                "name": "a",
+                "arguments": ""
+            }]})),
+            1
+        );
+        // A bare string input clears the guard on its role marker alone:
+        // user (4) + "Hi" (2) == 6; 6 / 3 == 2.
+        assert_eq!(count(serde_json::json!({"input": "Hi"})), 2);
     }
 
     #[test]
     fn count_tokens_instructions_contribute() {
-        // "You are helpful." (16) + "Hi" (2) == 18; 18 / 3 == 6.
+        // system role (6) + "You are helpful." (16)
+        //   + user role (4) + "Hi" (2) == 28; 28 / 3 == 9.
         assert_eq!(
             count(serde_json::json!({"input": "Hi", "instructions": "You are helpful."})),
-            6
+            9
+        );
+    }
+
+    #[test]
+    fn count_tokens_scores_the_two_spellings_of_a_prompt_identically() {
+        // `TryFrom<NvCreateResponse>` turns a top-level string `input` into a
+        // user message and `instructions` into a system message, so these two
+        // bodies build the same chat request and must score the same. Counting
+        // the top-level forms as bare text undercounted them by the role
+        // markers the item forms were already charged.
+        assert_eq!(
+            count(serde_json::json!({"input": "Hello"})),
+            count(serde_json::json!({"input": [{"role": "user", "content": "Hello"}]})),
+        );
+        assert_eq!(
+            count(serde_json::json!({
+                "input": "Hello",
+                "instructions": "You are helpful."
+            })),
+            count(serde_json::json!({"input": [
+                {"role": "system", "content": "You are helpful."},
+                {"role": "user", "content": "Hello"}
+            ]})),
         );
     }
 
@@ -1763,7 +1810,7 @@ mod tests {
                 "previous_response_id": "resp_abc123",
                 "conversation": {"id": "conv_1"},
             })),
-            4
+            5
         );
     }
 
@@ -1804,7 +1851,7 @@ mod tests {
                 "input": null,
                 "instructions": "You are helpful."
             })),
-            5
+            7
         );
     }
 
@@ -1822,7 +1869,7 @@ mod tests {
         assert_eq!(request.tools.as_deref(), Some(&[][..]));
         // Same count as the identical body with no `tools` key at all: the
         // dropped tool was worth 0 either way.
-        assert_eq!(request.estimate_tokens(), 4);
+        assert_eq!(request.estimate_tokens(), 5);
     }
 
     #[test]
