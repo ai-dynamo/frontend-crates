@@ -9,6 +9,8 @@ SPDX-License-Identifier: Apache-2.0
 
 The crate owns continuation state and orchestration contracts. It does not own HTTP ingress, authentication, model rendering, tokenization, routing, engine adapters, or external tool credentials.
 
+Runtime instances retain native protocol DTOs through `AgentProtocol`. The initial families are OpenAI Responses and Anthropic Messages (including Claude Code traffic); there is no shared lossy agent-request IR.
+
 The initial public seams are:
 
 - `CheckpointStore` for atomic turn claims and fenced state transitions.
