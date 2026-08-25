@@ -587,7 +587,22 @@ where
             context: invocation_context,
             intent: inference_intent,
         };
-        let inference = self.invoker.invoke(&inference_request).await;
+        let committed = self
+            .invoke_step(&inference_request, &identity, lease)
+            .await?;
+        Ok(RunTurnResult::Committed {
+            record: Box::new(committed.record),
+            lease: committed.lease,
+        })
+    }
+
+    async fn invoke_step(
+        &self,
+        request: &InferenceRequest<P, I::Context>,
+        identity: &OutputIdentity,
+        lease: TurnLease,
+    ) -> Result<crate::CommitTurnResult<P>, RuntimeErrorFor<P, S, M, F, I, O>> {
+        let inference = self.invoker.invoke(request).await;
         let response = match inference {
             Ok(InferenceOutput::Unary(response)) => *response,
             Ok(InferenceOutput::Streaming(_)) => {
@@ -603,7 +618,7 @@ where
             }
         };
 
-        let output = match self.output_interpreter.interpret(response, &identity) {
+        let output = match self.output_interpreter.interpret(response, identity) {
             Ok(output) => output,
             Err(error) => {
                 let checkpoint_error = self.mark_failed(lease).await;
@@ -632,10 +647,7 @@ where
             })
             .await
             .map_err(AgentRuntimeError::Store)?;
-        Ok(RunTurnResult::Committed {
-            record: Box::new(committed.record),
-            lease: committed.lease,
-        })
+        Ok(committed)
     }
 
     async fn prepare_turn(
