@@ -11,6 +11,7 @@ mod harmony_recovery;
 pub mod kimi_k2;
 pub mod minimax_m2;
 pub mod minimax_m3;
+pub mod muse_glimmer;
 pub mod qwen3_coder;
 mod registry;
 /// Shared marker-scan core. Crate-visible because `crate::unified` builds on the

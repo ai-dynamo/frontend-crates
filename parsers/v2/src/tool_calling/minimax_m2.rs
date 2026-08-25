@@ -76,6 +76,7 @@ fn spec() -> WrappedBlockSpec {
         drop_invoke_crossing_block_end: false,
         // Every wrapped family's markers are special tokens today.
         preserve_special_tokens: true,
+        ..Default::default()
     }
 }
 

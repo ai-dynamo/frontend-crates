@@ -37,7 +37,10 @@ FAMILY_PARSERS = {
 TOOLS = [
     {"type": "function", "function": {"name": n, "parameters": {
         "type": "object", "properties": {k: {"type": "string"}}}}}
-    for n, k in (("get_weather", "city"), ("f", "x"), ("g", "y"), ("run", "cmd"))
+    # Must match `tools()` in conformance/tests/unified_parity.rs, or the `log`
+    # cases (UNIFIED.12.a / 12.c) capture a harness-induced dropped call.
+    for n, k in (("get_weather", "city"), ("f", "x"), ("g", "y"), ("run", "cmd"),
+                 ("log", "note"))
 ]
 
 

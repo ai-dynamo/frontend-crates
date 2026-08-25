@@ -2246,11 +2246,16 @@ def _load_unified_fixtures(base: Path):
         ddoc = engine_cases.get("dynamo_v2", {}).get((fam, key), {})
         in_chunks = inp.get("chunks") or []
         dyn_chunks = ddoc.get("chunks") or []
+        raw_init = inp.get("init") or {}
         cases.append({
             "id": cid, "scenario": scenario, "family": fam,
             "description": inp.get("description", ""),
             "policy": inp.get("policy") or [], "policy_tags": inp.get("policy") or [],
-            "init": inp.get("init") or {"prefill": "None", "tool_output_mode": "Native", "named_tool": None},
+            "init": {
+                "starting_state": raw_init.get("starting_state") or "None",
+                "tool_output_mode": raw_init.get("tool_output_mode") or "Native",
+                "named_tool": raw_init.get("named_tool"),
+            },
             "finish_reason": inp.get("finish_reason") or "stop",
             "input": inp.get("input", ""),
             "golden": gdoc.get("assembled") or [],
@@ -2486,9 +2491,13 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                 "vllm": markers.cmp_entry(vsig, leak=1 if vverd == "LEAK" else 0),
             }
             if vrust_events is not None:
-                cmp["vllm_rust"] = markers.cmp_entry(rsig, leak=1 if rverd == "LEAK" else 0)
+                cmp["vllm_rust"] = markers.cmp_entry(
+                    rsig, leak=1 if rverd == "LEAK" else 0, err=1 if vrust_err else 0
+                )
             if sgl_events is not None:
-                cmp["sglang"] = markers.cmp_entry(ssig, leak=1 if sverd == "LEAK" else 0)
+                cmp["sglang"] = markers.cmp_entry(
+                    ssig, leak=1 if sverd == "LEAK" else 0, err=1 if sgl_err else 0
+                )
             # Older Dynamo builds, scored against GOLDEN exactly like the latest one, so a
             # cell that changed between builds shows a real NΔ instead of a styling hint.
             prev_by_ver = c.get("dynamo_by_ver") or {}
@@ -2497,15 +2506,15 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                 pdoc = prev_by_ver.get(pv)
                 if pdoc is None:
                     # Capture predates this case: n/a, not a divergence.
-                    cmp[f"dynamo@{pv}"] = {"sig": 0, "leak": 0, "na": 1}
+                    cmp[f"dynamo@{pv}"] = markers.cmp_entry(0, na=1)
                     prev_chunks_by_ver[pv] = []
                     continue
                 pchunks = pdoc.get("chunks") or []
                 pevents = _assemble_stream(pchunks)
                 pverd = _unified_classify(f, gold, pevents)
-                cmp[f"dynamo@{pv}"] = {
-                    "sig": _sig(pevents), "leak": 1 if pverd == "LEAK" else 0, "na": 0,
-                }
+                cmp[f"dynamo@{pv}"] = markers.cmp_entry(
+                    _sig(pevents), leak=1 if pverd == "LEAK" else 0
+                )
                 prev_chunks_by_ver[pv] = pchunks
             desc = c["description"]
             if c.get("policy_tags"):

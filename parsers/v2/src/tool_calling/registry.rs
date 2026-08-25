@@ -13,6 +13,7 @@ use super::harmony::HarmonyToolStreamParser;
 use super::kimi_k2::KimiK2ToolStreamParser;
 use super::minimax_m2::MiniMaxM2ToolStreamParser;
 use super::minimax_m3::MiniMaxM3ToolStreamParser;
+use super::muse_glimmer::MuseGlimmerToolStreamParser;
 use super::qwen3_coder::Qwen3CoderToolStreamParser;
 use super::traits::{Tool, ToolParser};
 
@@ -50,6 +51,7 @@ family_registry! {
         Qwen3CoderToolStreamParser::create,
         Some(&crate::structural_tag::builders::QWEN3_CODER)
     ),
+    "muse_glimmer" => (MuseGlimmerToolStreamParser::create, None),
     "minimax_m2"   => (MiniMaxM2ToolStreamParser::create, None),
     "minimax_m3"   => (MiniMaxM3ToolStreamParser::create, None),
     "gemma4"       => (Gemma4ToolStreamParser::create, None),

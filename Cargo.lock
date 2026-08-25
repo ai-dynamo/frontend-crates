@@ -1109,6 +1109,8 @@ dependencies = [
  "anyhow",
  "dynamo-parsers",
  "dynamo-parsers-v2",
+ "dynamo-protocols",
+ "futures",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -1139,7 +1141,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers"
-version = "8.0.0"
+version = "8.1.0"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -1161,7 +1163,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2"
-version = "0.2.0"
+version = "0.3.2"
 dependencies = [
  "anyhow",
  "num-traits",
@@ -1171,6 +1173,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "tracing",
+ "tracing-subscriber",
  "uuid",
 ]
 
@@ -1184,7 +1187,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-protocols"
-version = "5.3.1"
+version = "5.4.0"
 dependencies = [
  "async-openai",
  "derive_builder",
