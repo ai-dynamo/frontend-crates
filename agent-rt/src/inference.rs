@@ -58,8 +58,8 @@ where
     type Context: InvocationContext;
     type Error: std::error::Error + Send + Sync + 'static;
 
-    fn invoke(
-        &self,
-        request: InferenceRequest<P, Self::Context>,
-    ) -> InferenceFuture<'_, P, Self::Error>;
+    fn invoke<'a>(
+        &'a self,
+        request: &'a InferenceRequest<P, Self::Context>,
+    ) -> InferenceFuture<'a, P, Self::Error>;
 }

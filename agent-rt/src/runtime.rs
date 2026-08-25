@@ -281,11 +281,11 @@ mod tests {
         type Context = ();
         type Error = MockInferenceError;
 
-        fn invoke(
-            &self,
-            request: InferenceRequest<OpenAiResponses, Self::Context>,
-        ) -> InferenceFuture<'_, OpenAiResponses, Self::Error> {
-            self.requests.lock().unwrap().push(request.request);
+        fn invoke<'a>(
+            &'a self,
+            request: &'a InferenceRequest<OpenAiResponses, Self::Context>,
+        ) -> InferenceFuture<'a, OpenAiResponses, Self::Error> {
+            self.requests.lock().unwrap().push(request.request.clone());
             let fail = self.fail;
             let response = self.response.clone();
             Box::pin(async move {
@@ -327,11 +327,11 @@ mod tests {
         type Context = ();
         type Error = Infallible;
 
-        fn invoke(
-            &self,
-            request: InferenceRequest<AnthropicMessages, Self::Context>,
-        ) -> InferenceFuture<'_, AnthropicMessages, Self::Error> {
-            self.requests.lock().unwrap().push(request.request);
+        fn invoke<'a>(
+            &'a self,
+            request: &'a InferenceRequest<AnthropicMessages, Self::Context>,
+        ) -> InferenceFuture<'a, AnthropicMessages, Self::Error> {
+            self.requests.lock().unwrap().push(request.request.clone());
             let response = self.response.clone();
             Box::pin(async move { Ok(InferenceOutput::Unary(Box::new(response))) })
         }
@@ -582,14 +582,12 @@ where
             ..
         } = prepared;
 
-        let inference = self
-            .invoker
-            .invoke(InferenceRequest {
-                request: inference_request,
-                context: invocation_context,
-                intent: inference_intent,
-            })
-            .await;
+        let inference_request = InferenceRequest {
+            request: inference_request,
+            context: invocation_context,
+            intent: inference_intent,
+        };
+        let inference = self.invoker.invoke(&inference_request).await;
         let response = match inference {
             Ok(InferenceOutput::Unary(response)) => *response,
             Ok(InferenceOutput::Streaming(_)) => {
