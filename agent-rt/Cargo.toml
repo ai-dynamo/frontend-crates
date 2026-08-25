@@ -15,6 +15,7 @@ keywords = ["llm", "agents", "responses", "inference", "runtime"]
 include = ["src/**/*", "Cargo.toml", "README.md"]
 
 [dependencies]
+blake3.workspace = true
 dynamo-protocols.workspace = true
 futures.workspace = true
 serde = { workspace = true, features = ["derive"] }

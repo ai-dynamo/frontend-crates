@@ -19,5 +19,6 @@ The initial public seams are:
 - `AnthropicRequestMaterializer` for Claude Code's native full-history Messages requests.
 - `ToolExecutor` for already-authorized runtime-owned tool calls.
 - `RuntimeSelector`, `IdGenerator`, and `Clock` for replaceable frontend policy and deterministic tests.
+- `RequestFingerprinter` for stable idempotency without requiring protocol DTO equality.
 
 Implementations can embed the runtime in a local frontend or invoke a private Kubernetes inference route without changing the state model.

@@ -14,6 +14,7 @@ mod anthropic;
 mod authorization;
 mod checkpoint;
 mod clock;
+mod fingerprint;
 mod ids;
 mod inference;
 mod materialize;
@@ -30,6 +31,7 @@ pub use checkpoint::{
     ResponsesCheckpointRecord, TurnLease, TurnState,
 };
 pub use clock::{Clock, SystemClock};
+pub use fingerprint::{CanonicalJsonFingerprinter, RequestFingerprinter};
 pub use ids::{IdGenerator, IdempotencyKey, ResponseId, TurnId, UuidGenerator};
 pub use inference::{
     InferenceFuture, InferenceIntent, InferenceInvoker, InferenceOutput, InferenceRequest,
