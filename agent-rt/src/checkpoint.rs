@@ -109,6 +109,22 @@ pub struct CommitTurn {
     pub append_output_items: Vec<InputItem>,
 }
 
+/// Result of a durable state transition.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CommitTurnResult {
+    pub record: CheckpointRecord,
+    /// Updated lease for another nonterminal transition. `None` means the
+    /// transition released ownership of this turn.
+    pub lease: Option<TurnLease>,
+}
+
+/// Extends a live lease without changing checkpoint state.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RenewLease {
+    pub lease: TurnLease,
+    pub new_deadline: LeaseDeadline,
+}
+
 /// Durable checkpoint storage boundary.
 ///
 /// Implementations must make `begin_turn` idempotent for `(scope,
@@ -128,7 +144,9 @@ pub trait CheckpointStore: Send + Sync + 'static {
     fn commit_turn(
         &self,
         command: CommitTurn,
-    ) -> BoxFuture<'_, Result<CheckpointRecord, Self::Error>>;
+    ) -> BoxFuture<'_, Result<CommitTurnResult, Self::Error>>;
+
+    fn renew_lease(&self, command: RenewLease) -> BoxFuture<'_, Result<TurnLease, Self::Error>>;
 }
 
 #[cfg(test)]

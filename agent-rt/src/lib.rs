@@ -15,13 +15,14 @@ mod checkpoint;
 mod clock;
 mod ids;
 mod inference;
+mod memory;
 mod selector;
 mod tool;
 
 pub use authorization::{AuthorizationScope, RuntimeAuthorization, RuntimeLimits};
 pub use checkpoint::{
     BeginTurn, BeginTurnResult, CheckpointRecord, CheckpointStore, CheckpointVersion, CommitTurn,
-    LeaseDeadline, LoadChain, TurnLease, TurnState,
+    CommitTurnResult, LeaseDeadline, LoadChain, RenewLease, TurnLease, TurnState,
 };
 pub use clock::{Clock, SystemClock};
 pub use ids::{IdGenerator, IdempotencyKey, ResponseId, TurnId, UuidGenerator};
@@ -29,6 +30,7 @@ pub use inference::{
     InferenceIntent, InferenceInvoker, InferenceOutput, InferenceRequest, InvocationContext,
     ModelStepKind,
 };
+pub use memory::{InMemoryCheckpointStore, InMemoryStoreError};
 pub use selector::{RuntimeSelector, StatefulRequestSelector};
 pub use tool::{ToolExecutionRequest, ToolExecutionResult, ToolExecutor};
 
