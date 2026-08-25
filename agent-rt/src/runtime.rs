@@ -34,7 +34,12 @@ pub enum RunTurnResult<P>
 where
     P: AgentProtocol,
 {
-    Committed(Box<CheckpointRecord<P>>),
+    Committed {
+        record: Box<CheckpointRecord<P>>,
+        /// Present only when the committed state retains fenced ownership for
+        /// immediate runtime work such as tool execution.
+        lease: Option<TurnLease>,
+    },
     Existing(Box<CheckpointRecord<P>>),
 }
 
@@ -44,7 +49,7 @@ where
 {
     pub fn record(&self) -> &CheckpointRecord<P> {
         match self {
-            Self::Committed(record) | Self::Existing(record) => record,
+            Self::Committed { record, .. } | Self::Existing(record) => record,
         }
     }
 
@@ -380,9 +385,10 @@ mod tests {
             .await
             .unwrap();
 
-        let RunTurnResult::Committed(record) = result else {
+        let RunTurnResult::Committed { record, lease } = result else {
             panic!("expected a newly committed turn")
         };
+        assert!(lease.is_none());
         assert_eq!(record.response_id.as_str(), "resp-1");
         assert_eq!(record.state, TurnState::Completed);
         assert_eq!(
@@ -647,7 +653,10 @@ where
             })
             .await
             .map_err(AgentRuntimeError::Store)?;
-        Ok(RunTurnResult::Committed(Box::new(committed.record)))
+        Ok(RunTurnResult::Committed {
+            record: Box::new(committed.record),
+            lease: committed.lease,
+        })
     }
 
     async fn mark_failed(&self, lease: TurnLease) -> Option<S::Error> {
