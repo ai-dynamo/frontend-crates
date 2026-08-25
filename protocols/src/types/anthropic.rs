@@ -660,6 +660,65 @@ pub struct AnthropicMessageResponse {
     pub usage: AnthropicUsage,
 }
 
+impl From<&AnthropicMessageResponse> for AnthropicMessage {
+    fn from(response: &AnthropicMessageResponse) -> Self {
+        let content = response
+            .content
+            .iter()
+            .map(|block| match block {
+                AnthropicResponseContentBlock::Thinking {
+                    thinking,
+                    signature,
+                } => AnthropicContentBlock::Thinking {
+                    thinking: thinking.clone(),
+                    signature: signature.clone(),
+                    cache_control: None,
+                },
+                AnthropicResponseContentBlock::Text { text, citations } => {
+                    AnthropicContentBlock::Text {
+                        text: text.clone(),
+                        citations: citations.clone(),
+                        cache_control: None,
+                    }
+                }
+                AnthropicResponseContentBlock::ToolUse { id, name, input } => {
+                    AnthropicContentBlock::ToolUse {
+                        id: id.clone(),
+                        name: name.clone(),
+                        input: input.clone(),
+                        cache_control: None,
+                    }
+                }
+                AnthropicResponseContentBlock::RedactedThinking { data } => {
+                    AnthropicContentBlock::RedactedThinking { data: data.clone() }
+                }
+                AnthropicResponseContentBlock::ServerToolUse { id, name, input } => {
+                    AnthropicContentBlock::ServerToolUse {
+                        id: id.clone(),
+                        name: name.clone(),
+                        input: input.clone(),
+                    }
+                }
+                AnthropicResponseContentBlock::WebSearchToolResult {
+                    tool_use_id,
+                    content,
+                } => AnthropicContentBlock::WebSearchToolResult {
+                    tool_use_id: tool_use_id.clone(),
+                    content: content.clone(),
+                },
+                AnthropicResponseContentBlock::Other(value) => {
+                    AnthropicContentBlock::Other(value.clone())
+                }
+            })
+            .collect();
+
+        Self {
+            role: AnthropicRole::Assistant,
+            content: AnthropicMessageContent::Blocks { content },
+        }
+    }
+}
+
 /// A content block in the response.
 ///
 /// The Anthropic API returns up to 12 different block types. We model the
@@ -994,5 +1053,34 @@ mod tests {
         let legacy: ToolResultContentBlock =
             serde_json::from_value(serde_json::json!({"text": "legacy"})).unwrap();
         assert!(matches!(legacy, ToolResultContentBlock::Text { .. }));
+    }
+
+    #[test]
+    fn message_response_converts_to_native_assistant_replay() {
+        let response: AnthropicMessageResponse = serde_json::from_value(serde_json::json!({
+            "id": "msg_1",
+            "type": "message",
+            "role": "assistant",
+            "content": [
+                {"type": "thinking", "thinking": "work", "signature": "sig"},
+                {"type": "tool_use", "id": "tool_1", "name": "lookup", "input": {}}
+            ],
+            "model": "claude",
+            "stop_reason": "tool_use",
+            "stop_sequence": null,
+            "usage": {"input_tokens": 10, "output_tokens": 4}
+        }))
+        .unwrap();
+
+        let replay = AnthropicMessage::from(&response);
+        assert_eq!(replay.role, AnthropicRole::Assistant);
+        let AnthropicMessageContent::Blocks { content } = replay.content else {
+            panic!("response must replay as structured blocks")
+        };
+        assert!(matches!(
+            content.as_slice(),
+            [AnthropicContentBlock::Thinking { .. }, AnthropicContentBlock::ToolUse { name, .. }]
+                if name == "lookup"
+        ));
     }
 }
