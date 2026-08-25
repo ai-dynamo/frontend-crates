@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{AgentProtocol, AuthorizationScope, BoxFuture, IdempotencyKey, ResponseId};
@@ -51,6 +53,35 @@ pub trait ToolRouter: Send + Sync + 'static {
 pub struct ToolRoute {
     pub connector: String,
     pub operation: String,
+}
+
+impl ToolRoute {
+    pub fn new(connector: impl Into<String>, operation: impl Into<String>) -> Self {
+        Self {
+            connector: connector.into(),
+            operation: operation.into(),
+        }
+    }
+}
+
+/// Immutable trusted routing table built by frontend deployment policy.
+#[derive(Debug, Clone, Default)]
+pub struct ConfiguredToolRouter {
+    routes: HashMap<String, ToolRoute>,
+}
+
+impl ConfiguredToolRouter {
+    pub fn new(routes: impl IntoIterator<Item = (String, ToolRoute)>) -> Self {
+        Self {
+            routes: routes.into_iter().collect(),
+        }
+    }
+}
+
+impl ToolRouter for ConfiguredToolRouter {
+    fn route(&self, tool_name: &str) -> Option<ToolRoute> {
+        self.routes.get(tool_name).cloned()
+    }
 }
 
 /// Durable lookup key for one external tool execution.
