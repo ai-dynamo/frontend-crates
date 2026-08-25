@@ -23,6 +23,70 @@ pub struct RuntimeToolResult {
     pub result: ToolExecutionResult,
 }
 
+/// Derives a stable executor idempotency key for one tool-call attempt.
+pub trait ToolIdempotencyKeyProvider: Send + Sync + 'static {
+    fn idempotency_key(
+        &self,
+        response_id: &ResponseId,
+        call: &RuntimeToolCall,
+        attempt: u32,
+    ) -> IdempotencyKey;
+}
+
+/// BLAKE3-backed deterministic tool idempotency keys.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Blake3ToolIdempotencyKeys;
+
+impl ToolIdempotencyKeyProvider for Blake3ToolIdempotencyKeys {
+    fn idempotency_key(
+        &self,
+        response_id: &ResponseId,
+        call: &RuntimeToolCall,
+        attempt: u32,
+    ) -> IdempotencyKey {
+        let mut hasher = blake3::Hasher::new();
+        for value in [
+            response_id.as_str(),
+            call.call_id.as_str(),
+            call.connector.as_str(),
+            call.operation.as_str(),
+        ] {
+            hasher.update(&(value.len() as u64).to_le_bytes());
+            hasher.update(value.as_bytes());
+        }
+        hasher.update(&attempt.to_le_bytes());
+        IdempotencyKey::new(format!("tool_{}", hasher.finalize().to_hex()))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ToolFailureDisposition {
+    Failed(ToolExecutionFailure),
+    OutcomeUnknown,
+}
+
+/// Classifies whether an executor error proves that no unknown side effect is
+/// outstanding. Implementations must be conservative for transport failures.
+pub trait ToolFailurePolicy<E>: Send + Sync + 'static
+where
+    E: std::error::Error + Send + Sync + 'static,
+{
+    fn classify(&self, error: &E) -> ToolFailureDisposition;
+}
+
+/// Safe default for executors without an explicit side-effect contract.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ConservativeToolFailurePolicy;
+
+impl<E> ToolFailurePolicy<E> for ConservativeToolFailurePolicy
+where
+    E: std::error::Error + Send + Sync + 'static,
+{
+    fn classify(&self, _error: &E) -> ToolFailureDisposition {
+        ToolFailureDisposition::OutcomeUnknown
+    }
+}
+
 /// Protocol-specific extraction and continuation mutation for runtime tools.
 pub trait ToolLoopAdapter<P>: Send + Sync + 'static
 where
