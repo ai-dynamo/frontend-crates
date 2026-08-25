@@ -1103,6 +1103,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
 
 [[package]]
+name = "dynamo-agent-rt"
+version = "0.1.0"
+dependencies = [
+ "dynamo-protocols",
+ "futures",
+ "serde",
+ "serde_json",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "dynamo-conformance-fixtures-v2"
 version = "0.1.0"
 dependencies = [
