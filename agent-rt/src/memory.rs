@@ -198,6 +198,7 @@ where
                 version: CheckpointVersion(0),
                 request: command.request,
                 output_items: Vec::new(),
+                response: None,
             };
             let lease = TurnLease {
                 response_id: record.response_id.clone(),
@@ -281,6 +282,9 @@ where
             );
             record.state = command.next_state;
             record.output_items.extend(command.append_output_items);
+            if let Some(response) = command.response {
+                record.response = Some(response);
+            }
             let record = record.clone();
 
             let lease = if matches!(record.state, TurnState::InFlight | TurnState::ToolStarted) {
@@ -469,6 +473,7 @@ mod tests {
                 lease: first_lease.clone(),
                 next_state: TurnState::ToolStarted,
                 append_output_items: Vec::new(),
+                response: None,
             })
             .await
             .unwrap();
@@ -480,6 +485,7 @@ mod tests {
                 lease: first_lease,
                 next_state: TurnState::Failed,
                 append_output_items: Vec::new(),
+                response: None,
             })
             .await;
         assert_eq!(stale.unwrap_err(), InMemoryStoreError::VersionConflict);
@@ -489,6 +495,7 @@ mod tests {
                 lease: updated_lease,
                 next_state: TurnState::InFlight,
                 append_output_items: Vec::new(),
+                response: None,
             })
             .await
             .unwrap();
@@ -511,6 +518,7 @@ mod tests {
                 lease: parent_lease,
                 next_state: TurnState::Completed,
                 append_output_items: Vec::new(),
+                response: None,
             })
             .await
             .unwrap();
@@ -557,6 +565,7 @@ mod tests {
                 lease,
                 next_state: TurnState::Failed,
                 append_output_items: Vec::new(),
+                response: None,
             })
             .await;
         assert_eq!(result.unwrap_err(), InMemoryStoreError::LeaseExpired);

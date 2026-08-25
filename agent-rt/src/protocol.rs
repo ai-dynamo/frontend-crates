@@ -17,7 +17,7 @@ use serde::{Serialize, de::DeserializeOwned};
 pub trait AgentProtocol: std::fmt::Debug + Clone + Send + Sync + 'static {
     type Request: std::fmt::Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static;
     type ReplayItem: std::fmt::Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static;
-    type Response: std::fmt::Debug + Send + 'static;
+    type Response: std::fmt::Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static;
     type StreamEvent: std::fmt::Debug + Send + 'static;
 }
 

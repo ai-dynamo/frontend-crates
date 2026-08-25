@@ -289,6 +289,7 @@ mod tests {
                 ..Default::default()
             },
             output_items: vec![message(Role::Assistant, output)],
+            response: None,
         }
     }
 

@@ -94,6 +94,7 @@ mod tests {
             version: CheckpointVersion(1),
             request: request(),
             output_items: Vec::<<AnthropicMessages as AgentProtocol>::ReplayItem>::new(),
+            response: None,
         };
 
         assert_eq!(

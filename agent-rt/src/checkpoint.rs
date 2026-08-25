@@ -77,8 +77,8 @@ pub struct TurnLease {
 /// Append-oriented checkpoint record for one turn in a continuation chain.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound(
-    serialize = "P::Request: Serialize, P::ReplayItem: Serialize",
-    deserialize = "P::Request: Deserialize<'de>, P::ReplayItem: Deserialize<'de>"
+    serialize = "P::Request: Serialize, P::ReplayItem: Serialize, P::Response: Serialize",
+    deserialize = "P::Request: Deserialize<'de>, P::ReplayItem: Deserialize<'de>, P::Response: Deserialize<'de>"
 ))]
 pub struct CheckpointRecord<P>
 where
@@ -96,6 +96,8 @@ where
     pub request: P::Request,
     /// Model-visible items produced by this turn and replayable by descendants.
     pub output_items: Vec<P::ReplayItem>,
+    /// Complete native result returned for idempotent retrieval.
+    pub response: Option<P::Response>,
 }
 
 pub type ResponsesCheckpointRecord = CheckpointRecord<OpenAiResponses>;
@@ -142,6 +144,8 @@ where
     pub lease: TurnLease,
     pub next_state: TurnState,
     pub append_output_items: Vec<P::ReplayItem>,
+    /// Native result to persist before releasing the turn lease.
+    pub response: Option<P::Response>,
 }
 
 /// Result of a durable state transition.
