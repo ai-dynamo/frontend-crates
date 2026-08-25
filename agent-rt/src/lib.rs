@@ -19,6 +19,7 @@ mod ids;
 mod inference;
 mod materialize;
 mod memory;
+mod output;
 mod protocol;
 mod selector;
 mod tool;
@@ -42,6 +43,7 @@ pub use materialize::{
     PolicyRequestMaterializer, RequestMaterializer, ResponsesRequestMaterializer,
 };
 pub use memory::{InMemoryCheckpointStore, InMemoryStoreError};
+pub use output::{InterpretedOutput, OutputInterpreter};
 pub use protocol::{AgentProtocol, AnthropicMessages, OpenAiResponses};
 pub use selector::{
     AnthropicRequestSelector, RuntimeSelectionContext, RuntimeSelector, StatefulRequestSelector,
