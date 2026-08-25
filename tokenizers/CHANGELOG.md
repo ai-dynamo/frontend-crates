@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.8.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v1.8.0...dynamo-tokenizers-v1.8.1) - 2026-08-25
+
+### Bug fixes
+
+- *(tokenizers)* Avoid UTF-8 boundary panic in DecodeStream ([#187](https://github.com/ai-dynamo/frontend-crates/pull/187))
+
 ## [1.8.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v1.7.0...dynamo-tokenizers-v1.8.0) - 2026-08-04
 
 ### Features
