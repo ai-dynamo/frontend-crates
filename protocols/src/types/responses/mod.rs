@@ -616,7 +616,7 @@ where
 /// to the backend. An unparseable tool was going to be worth 0 either way; this
 /// only decides whether the rest of the body still gets counted. That is the
 /// same trade `estimate_tool_len` documents when it wildcards where
-/// `estimate_item_len` is exhaustive — `Tool` is upstream's type, and we carry
+/// `measure_item` is exhaustive — `Tool` is upstream's type, and we carry
 /// no obligation to mirror its variants.
 fn deserialize_lenient_tools<'de, D>(deserializer: D) -> Result<Option<Vec<Tool>>, D::Error>
 where
@@ -682,11 +682,7 @@ impl CountInputTokensRequest {
         match &self.input {
             InputParam::Text(text) if text.is_empty() => {}
             InputParam::Text(text) => total_len += role_len(Role::User) + text.len(),
-            InputParam::Items(items) => {
-                for item in items {
-                    total_len += estimate_input_item_len(item);
-                }
-            }
+            InputParam::Items(items) => total_len += estimate_input_items_len(items),
         }
 
         if let Some(tools) = &self.tools {
@@ -723,15 +719,78 @@ fn input_role_len(role: InputRole) -> usize {
     }
 }
 
-fn estimate_input_item_len(item: &InputItem) -> usize {
+/// The `tool` role marker on a tool-result message.
+///
+/// `role_len` covers only the roles upstream's `Role` enum models; chat
+/// completions' `tool` role has no variant there, so it gets its own constant
+/// on the same basis the others use — the length of the role word.
+const TOOL_ROLE_LEN: usize = 4;
+
+/// What an input item does to the converter's pending assistant message.
+enum GroupEffect {
+    /// Opens or extends the pending assistant message, emitting no message of
+    /// its own.
+    Assistant,
+    /// Flushes any pending assistant message and emits its own.
+    Flush,
+    /// Neither emits nor flushes — the converter skips it outright.
+    Skip,
+}
+
+/// Sum the input items, mirroring `convert_input_items_to_messages` — including
+/// its coalescing.
+///
+/// Assistant-side items do not each become a message. An echoed assistant
+/// message, a function call, and a reasoning summary all push into one
+/// `PendingAssistant`, which is flushed only by the next non-assistant item or
+/// by the end of the list. So the assistant role marker is charged once per
+/// flushed group, not once per item: two parallel function calls are one
+/// assistant turn and cost one marker between them.
+///
+/// A per-item sum cannot express that, which is why this walks the list rather
+/// than mapping over it.
+fn estimate_input_items_len(items: &[InputItem]) -> usize {
+    let mut total = 0;
+    let mut assistant_open = false;
+
+    for item in items {
+        let (effect, len) = measure_input_item(item);
+        total += len;
+        match effect {
+            GroupEffect::Assistant => {
+                if !assistant_open {
+                    assistant_open = true;
+                    total += role_len(Role::Assistant);
+                }
+            }
+            GroupEffect::Flush => assistant_open = false,
+            GroupEffect::Skip => {}
+        }
+    }
+
+    total
+}
+
+/// Measure one item and report what it does to the pending assistant group.
+///
+/// Assistant-side arms return content only: their role marker is the caller's
+/// to add, once per group.
+fn measure_input_item(item: &InputItem) -> (GroupEffect, usize) {
     match item {
         // A pointer to an item held server-side. The content it names is not in
-        // this request, so there is nothing here to measure.
-        InputItem::ItemReference(_) => 0,
+        // this request, so there is nothing here to measure — and the converter
+        // skips it without flushing, so it cannot split an assistant group.
+        InputItem::ItemReference(_) => (GroupEffect::Skip, 0),
         InputItem::EasyMessage(message) => {
-            role_len(message.role) + estimate_easy_content_len(&message.content)
+            let content = estimate_easy_content_len(&message.content);
+            match message.role {
+                // A prior assistant turn echoed back; coalesces like the strict
+                // `MessageItem::Output` path.
+                Role::Assistant => (GroupEffect::Assistant, content),
+                role => (GroupEffect::Flush, role_len(role) + content),
+            }
         }
-        InputItem::Item(item) => estimate_item_len(item),
+        InputItem::Item(item) => measure_item(item),
     }
 }
 
@@ -752,38 +811,54 @@ fn estimate_input_content_len(part: &InputContent) -> usize {
     }
 }
 
-fn estimate_item_len(item: &Item) -> usize {
+fn measure_item(item: &Item) -> (GroupEffect, usize) {
     match item {
-        Item::Message(MessageItem::Input(message)) => {
+        Item::Message(MessageItem::Input(message)) => (
+            GroupEffect::Flush,
             input_role_len(message.role)
                 + message
                     .content
                     .iter()
                     .map(estimate_input_content_len)
-                    .sum::<usize>()
-        }
-        Item::Message(MessageItem::Output(message)) => {
-            role_len(Role::Assistant)
-                + message
-                    .content
-                    .iter()
-                    .map(|part| match part {
-                        InputOutputMessageContent::OutputText(text) => text.text.len(),
-                        InputOutputMessageContent::Refusal(refusal) => refusal.refusal.len(),
-                    })
-                    .sum::<usize>()
-        }
-        Item::FunctionCall(call) => call.name.len() + call.arguments.len(),
-        Item::FunctionCallOutput(output) => match &output.output {
-            FunctionCallOutput::Text(text) => text.len(),
-            FunctionCallOutput::Content(parts) => parts
+                    .sum::<usize>(),
+        ),
+        // Assistant-side: pushed into the pending message, so no role marker
+        // here. See `estimate_input_items_len`.
+        Item::Message(MessageItem::Output(message)) => (
+            GroupEffect::Assistant,
+            message
+                .content
                 .iter()
                 .map(|part| match part {
-                    UpstreamInputContent::InputText(text) => text.text.len(),
-                    UpstreamInputContent::InputImage(_) | UpstreamInputContent::InputFile(_) => 0,
+                    InputOutputMessageContent::OutputText(text) => text.text.len(),
+                    InputOutputMessageContent::Refusal(refusal) => refusal.refusal.len(),
                 })
-                .sum(),
-        },
+                .sum::<usize>(),
+        ),
+        // Rendered as a tool call on the pending assistant message. `call_id`
+        // is excluded deliberately: it is correlation plumbing, not prompt
+        // text, in the templates Dynamo renders.
+        Item::FunctionCall(call) => (
+            GroupEffect::Assistant,
+            call.name.len() + call.arguments.len(),
+        ),
+        // Its own `tool`-role message, one per output, so it both flushes the
+        // assistant group and carries a role marker of its own.
+        Item::FunctionCallOutput(output) => (
+            GroupEffect::Flush,
+            TOOL_ROLE_LEN
+                + match &output.output {
+                    FunctionCallOutput::Text(text) => text.len(),
+                    FunctionCallOutput::Content(parts) => parts
+                        .iter()
+                        .map(|part| match part {
+                            UpstreamInputContent::InputText(text) => text.text.len(),
+                            UpstreamInputContent::InputImage(_)
+                            | UpstreamInputContent::InputFile(_) => 0,
+                        })
+                        .sum(),
+                },
+        ),
         // Only `summary` is measured, because only `summary` is rendered:
         // the converter joins the summary parts and drops the rest of the
         // item. `content` is excluded for that reason alone — if Dynamo
@@ -791,13 +866,16 @@ fn estimate_item_len(item: &Item) -> usize {
         // `encrypted_content` is excluded on its own merits: it is an opaque
         // blob the model never sees as prompt text, and it is routinely far
         // larger than the reasoning it stands for.
-        Item::Reasoning(reasoning) => reasoning
-            .summary
-            .iter()
-            .map(|part| match part {
-                SummaryPart::SummaryText(text) => text.text.len(),
-            })
-            .sum(),
+        Item::Reasoning(reasoning) => (
+            GroupEffect::Assistant,
+            reasoning
+                .summary
+                .iter()
+                .map(|part| match part {
+                    SummaryPart::SummaryText(text) => text.text.len(),
+                })
+                .sum(),
+        ),
         // Everything below contributes nothing, because nothing below reaches
         // the prompt: Dynamo's `convert_input_items_to_messages` flushes and
         // skips every one of these ("we do not have a faithful Chat
@@ -834,7 +912,7 @@ fn estimate_item_len(item: &Item) -> usize {
         | Item::McpApprovalResponse(_)
         | Item::McpCall(_)
         | Item::CustomToolCallOutput(_)
-        | Item::CustomToolCall(_) => 0,
+        | Item::CustomToolCall(_) => (GroupEffect::Flush, 0),
     }
 }
 
@@ -843,7 +921,7 @@ fn estimate_item_len(item: &Item) -> usize {
 /// (web search, file search, computer use) are dropped there and so cost
 /// nothing here.
 ///
-/// Wildcarded where `estimate_item_len` is exhaustive, and deliberately so:
+/// Wildcarded where `measure_item` is exhaustive, and deliberately so:
 /// `Tool` is upstream's type, not one of our shadows, so we carry no
 /// obligation to mirror its variants. Pinning it exhaustively would only
 /// break the build every time async-openai adds a hosted tool we would
@@ -1533,20 +1611,18 @@ mod tests {
 
     #[test]
     fn count_tokens_short_input_never_rounds_to_zero() {
-        // A function call carries no role marker, so it is the smallest
-        // non-empty body there is: name (1) + arguments (0) == 1, and
-        // 1 / 3 == 0 — but content was present, so report 1.
+        // Every item that reaches the prompt now carries a role marker of at
+        // least 4, so no `input` can land under the rounding threshold. Tools
+        // are the one remaining path: they are appended to the request rather
+        // than rendered as a message, so they carry no marker. A one-character
+        // function name is 1, and 1 / 3 == 0 — but content was present, so
+        // report 1.
         assert_eq!(
-            count(serde_json::json!({"input": [{
-                "type": "function_call",
-                "call_id": "c",
-                "name": "a",
-                "arguments": ""
-            }]})),
+            count(serde_json::json!({"tools": [{"type": "function", "name": "a"}]})),
             1
         );
-        // A bare string input clears the guard on its role marker alone:
-        // user (4) + "Hi" (2) == 6; 6 / 3 == 2.
+        // For comparison, the shortest possible input clears the guard on its
+        // role marker alone: user (4) + "Hi" (2) == 6; 6 / 3 == 2.
         assert_eq!(count(serde_json::json!({"input": "Hi"})), 2);
     }
 
@@ -1607,7 +1683,9 @@ mod tests {
 
     #[test]
     fn count_tokens_function_call_counts_name_and_arguments() {
-        // "get_weather" (11) + r#"{"city":"SF"}"# (13) == 24; 24 / 3 == 8.
+        // A function call is rendered as a tool call on an assistant message:
+        // assistant role (9) + "get_weather" (11) + r#"{"city":"SF"}"# (13)
+        // == 33; 33 / 3 == 11.
         assert_eq!(
             count(serde_json::json!({"input": [{
                 "type": "function_call",
@@ -1615,20 +1693,93 @@ mod tests {
                 "name": "get_weather",
                 "arguments": r#"{"city":"SF"}"#,
             }]})),
-            8
+            11
         );
     }
 
     #[test]
+    fn count_tokens_charges_one_assistant_marker_per_coalesced_turn() {
+        // `convert_input_items_to_messages` accumulates assistant-side items
+        // into one `PendingAssistant`, so two parallel tool calls are a single
+        // assistant message. Charging a marker per item would invent a turn
+        // that never reaches the prompt.
+        let one = serde_json::json!({"input": [
+            {"type": "function_call", "call_id": "c1", "name": "aa", "arguments": ""}
+        ]});
+        let two = serde_json::json!({"input": [
+            {"type": "function_call", "call_id": "c1", "name": "aa", "arguments": ""},
+            {"type": "function_call", "call_id": "c2", "name": "bb", "arguments": ""}
+        ]});
+        // assistant (9) + "aa" (2) == 11 → 3; adding "bb" (2) == 13 → 4.
+        // The marker is paid once, not twice.
+        assert_eq!(count(one), 3);
+        assert_eq!(count(two), 4);
+
+        // Assistant text, reasoning, and a tool call in one turn: still one
+        // marker across all three.
+        let mixed = serde_json::json!({"input": [
+            {"role": "assistant", "content": "aa"},
+            {"type": "reasoning", "summary": [{"type": "summary_text", "text": "bb"}]},
+            {"type": "function_call", "call_id": "c1", "name": "cc", "arguments": ""}
+        ]});
+        assert_eq!(count(mixed), 5); // 9 + 2 + 2 + 2 == 15 → 5
+    }
+
+    #[test]
+    fn count_tokens_reopens_the_assistant_turn_after_a_flush() {
+        // A tool result ends the assistant turn, so the assistant items after
+        // it are a second turn and pay a second marker.
+        let two_turns = serde_json::json!({"input": [
+            {"type": "function_call", "call_id": "c1", "name": "aa", "arguments": ""},
+            {"type": "function_call_output", "call_id": "c1", "output": ""},
+            {"type": "function_call", "call_id": "c2", "name": "bb", "arguments": ""}
+        ]});
+        // assistant (9) + "aa" (2) + tool (4) + assistant (9) + "bb" (2)
+        // == 26; 26 / 3 == 8.
+        assert_eq!(count(two_turns), 8);
+    }
+
+    #[test]
+    fn count_tokens_item_reference_does_not_split_an_assistant_turn() {
+        // The converter skips item references without flushing, so one sitting
+        // between two tool calls must not make them look like two turns.
+        let split = serde_json::json!({"input": [
+            {"type": "function_call", "call_id": "c1", "name": "aa", "arguments": ""},
+            {"type": "item_reference", "id": "item_abc"},
+            {"type": "function_call", "call_id": "c2", "name": "bb", "arguments": ""}
+        ]});
+        let unsplit = serde_json::json!({"input": [
+            {"type": "function_call", "call_id": "c1", "name": "aa", "arguments": ""},
+            {"type": "function_call", "call_id": "c2", "name": "bb", "arguments": ""}
+        ]});
+        assert_eq!(count(split), count(unsplit));
+    }
+
+    #[test]
+    fn count_tokens_unsupported_item_splits_an_assistant_turn() {
+        // The converter flushes before skipping an unsupported variant
+        // precisely so a later function call cannot coalesce across it. The
+        // estimate has to agree, or it undercounts the second turn's marker.
+        let across = serde_json::json!({"input": [
+            {"type": "function_call", "call_id": "c1", "name": "aa", "arguments": ""},
+            {"type": "web_search_call", "id": "ws_1", "status": "completed"},
+            {"type": "function_call", "call_id": "c2", "name": "bb", "arguments": ""}
+        ]});
+        // Two turns: 9 + 2 + 9 + 2 == 22; 22 / 3 == 7.
+        assert_eq!(count(across), 7);
+    }
+
+    #[test]
     fn count_tokens_function_call_output_counts_text() {
-        // "sunny" (5) == 5; 5 / 3 == 1.
+        // Rendered as its own tool-role message: tool role (4) + "sunny" (5)
+        // == 9; 9 / 3 == 3.
         assert_eq!(
             count(serde_json::json!({"input": [{
                 "type": "function_call_output",
                 "call_id": "call_1",
                 "output": "sunny",
             }]})),
-            1
+            3
         );
     }
 
@@ -1696,7 +1847,7 @@ mod tests {
 
     #[test]
     fn count_tokens_counts_exactly_the_variants_the_converter_renders() {
-        // Guards the coupling documented on `estimate_item_len`: the explicit
+        // Guards the coupling documented on `measure_item`: the explicit
         // arms are meant to be the same set Dynamo's converter handles. Each
         // variant is asserted on its own — a single assertion over an array of
         // all four would still pass with three of the arms deleted. If dynamo
@@ -1747,8 +1898,9 @@ mod tests {
             "encrypted_content": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
         }]});
 
-        // "thinking" (8) == 8; 8 / 3 == 2.
-        assert_eq!(count(summary_only.clone()), 2);
+        // Reasoning rides on the pending assistant message:
+        // assistant role (9) + "thinking" (8) == 17; 17 / 3 == 5.
+        assert_eq!(count(summary_only.clone()), 5);
         assert_eq!(count(with_dropped_fields), count(summary_only));
     }
 
