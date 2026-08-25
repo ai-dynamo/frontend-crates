@@ -256,6 +256,21 @@ fn kimi_invoke_end(text: &str, flush: bool, tool_index: usize) -> Option<usize> 
         // genuine partial -- wait for it rather than prematurely bounding
         // the header.
         let remainder = &text[end..];
+        // Reviewer-caught regression: the Kimi batch grammar permits `\s*`
+        // between `NAME:IDX` and `argument_begin` (the regex in
+        // `get_tool_call_regex` matches `\s*` there too), but the two
+        // holdback checks below used `remainder` verbatim -- a chunk split
+        // landing right after that permitted whitespace (`remainder == " "`)
+        // matched neither marker's prefix, so this function committed to
+        // `Some(end)` one push early, before `argument_begin` streamed in.
+        // The caller then bounds the invoke to a header-only span with no
+        // argument section at all, and the real call is silently lost
+        // (`K2Emitter` can't parse a header with no `argument_begin`).
+        // Deciding over the whitespace-trimmed view (never emitting or
+        // discarding that whitespace -- it stays buffered either way, since
+        // `end` doesn't move) closes this without weakening the check for
+        // any non-whitespace byte.
+        let structural_remainder = remainder.trim_start();
         // A COMPLETE `call_end` right here is the one case that is still
         // NOT settled: it could be this invoke's own (no-args) close, or it
         // could be a premature echo that a real `argument_begin` further
@@ -265,13 +280,14 @@ fn kimi_invoke_end(text: &str, flush: bool, tool_index: usize) -> Option<usize> 
         // trust it only once nothing more is coming (`flush`). Same class of
         // bug either commit destroyed -- reading it early made the outcome
         // depend on the chunk boundary instead of the bytes.
-        if !flush && remainder.starts_with(CALL_END) {
+        if !flush && structural_remainder.starts_with(CALL_END) {
             return None;
         }
         if !flush
-            && [ARGUMENT_BEGIN, CALL_END]
-                .iter()
-                .any(|marker| remainder.len() < marker.len() && marker.starts_with(remainder))
+            && [ARGUMENT_BEGIN, CALL_END].iter().any(|marker| {
+                structural_remainder.len() < marker.len()
+                    && marker.starts_with(structural_remainder)
+            })
         {
             return None;
         }
@@ -890,6 +906,28 @@ mod tests {
         );
         assert_eq!(out.normal_text, "");
         assert!(out.calls.is_empty());
+    }
+
+    /// Reviewer-caught regression, sibling of the test above: dropping a
+    /// call with mismatched fences is correct, but the ABOVE test ends
+    /// right after `section_end` and so cannot detect a different bug --
+    /// `WrappedBlockScanner::drain` used to treat `invoke_end_at`
+    /// returning `None` at flush as ALWAYS "genuinely incomplete", clearing
+    /// the entire remaining buffer including any real visible text that
+    /// followed the section-end marker. Batch mode's regex-based
+    /// extraction correctly preserves that trailing text; streaming
+    /// dropped it too. The correct result is an empty call list AND the
+    /// visible suffix preserved as `normal_text`.
+    #[test]
+    fn mismatched_fences_preserve_text_after_section_end() {
+        let out = parse_chunks(
+            &weather_tools(),
+            &[
+                "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{}<|tool_calls_section_end|>Visible answer",
+            ],
+        );
+        assert!(out.calls.is_empty());
+        assert_eq!(out.normal_text, "Visible answer");
     }
 
     /// Reviewer-caught regression: a bracket-balanced but JSON-GRAMMAR-INVALID

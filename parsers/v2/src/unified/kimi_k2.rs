@@ -555,6 +555,35 @@ mod tests {
         }
     }
 
+    /// Reviewer-caught regression: the Kimi batch grammar permits `\s*`
+    /// between `NAME:IDX` and `argument_begin`, but the two partial-marker
+    /// holdback checks in `kimi_invoke_end` used the raw remainder verbatim
+    /// -- a chunk split landing right after that permitted whitespace
+    /// (`remainder == " "`) matched neither marker's prefix, so the
+    /// function wrongly committed to a header-only boundary one push
+    /// early, before `argument_begin` streamed in. `K2Emitter` cannot parse
+    /// that header-only span, and the real call was silently lost. This
+    /// sibling of the test above adds exactly one space before
+    /// `argument_begin` -- absent from that test, which is why it never
+    /// caught this.
+    #[test]
+    fn whitespace_before_argument_marker_is_split_invariant() {
+        let input = "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0 <|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>";
+        let want = vec![UnifiedEvent::ToolCall {
+            name: "get_weather".into(),
+            arguments: serde_json::json!({"city": "Paris"}),
+        }];
+        for (i, got) in assemble_at_every_split(&tools(), input)
+            .into_iter()
+            .enumerate()
+        {
+            assert_eq!(
+                got, want,
+                "valid whitespace-delimited call changed at split byte {i}: {got:?}"
+            );
+        }
+    }
+
     /// A first invoke that never closes (`call_end` missing) before a
     /// second invoke opens must not reach across the new opener and swallow
     /// the second call's bytes as if they belonged to the first -- that

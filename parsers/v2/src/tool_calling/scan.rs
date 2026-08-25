@@ -976,6 +976,42 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 }
                 let Some(end) = self.invoke_end_at(&self.buffer, flush) else {
                     if flush {
+                        // Reviewer-caught regression: `invoke_end_at`
+                        // returning `None` at flush does NOT always mean
+                        // "genuinely incomplete, nothing left to salvage".
+                        // Kimi's own "mismatched fences" guard (in
+                        // `kimi_invoke_end`) also returns `None` when a
+                        // REAL block-end marker follows a call that never
+                        // got its own closer -- deliberately dropping just
+                        // that call while the section boundary itself is
+                        // still genuine. Unconditionally clearing the whole
+                        // buffer here discarded that boundary too, along
+                        // with any visible text genuinely following it --
+                        // batch mode's regex-based section extraction
+                        // preserves that trailing narration; streaming
+                        // didn't. Same string-aware search as the
+                        // `drop_invoke_crossing_block_end` check above
+                        // (safe for the identical reason): if a real
+                        // block-end marker is present, drop through it and
+                        // resume draining the suffix as ordinary text
+                        // instead of discarding everything after it.
+                        if self.spec.drop_invoke_crossing_block_end
+                            && let Some((be_pos, be_len)) = find_first_outside_strings(
+                                &self.buffer,
+                                self.spec.block_ends.iter().map(String::as_str),
+                            )
+                        {
+                            tracing::warn!(
+                                why = %format!("{}_incomplete_invoke", self.spec.family),
+                                "stream dropped invoke with no evidence it ever closed before the block end"
+                            );
+                            self.buffer.drain(..be_pos + be_len);
+                            self.uncommitted_block.clear();
+                            self.in_block = false;
+                            self.suppress_normal_text = false;
+                            self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
+                            continue;
+                        }
                         tracing::warn!(
                             why = %format!("{}_incomplete_invoke", self.spec.family),
                             "stream dropped incomplete invoke at EOF"
