@@ -281,7 +281,7 @@ pub(crate) struct MuseInvokeEmitter {
 
 impl InvokeEmitter for MuseInvokeEmitter {
     fn parse_invoke(
-        &self,
+        &mut self,
         invoke: &str,
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>> {

@@ -21,8 +21,8 @@ Modes (any subset; default all):
 
 The tree is the working copy that package_and_publish.py packages
 (conformance/toolcalling/...). If a fixture tree is missing there, it is first
-copied from the fixture cache (CONFORMANCE_FIXTURES_ROOT or
-~/.cache/dynamo/conformance-fixtures) so peer data carries over unchanged.
+copied from the immutable snapshot resolved by `extract_fixtures.py` so peer data
+carries over unchanged.
 
 Usage:
   python3 refresh_dynamo_captures.py                # all three modes
@@ -31,7 +31,6 @@ Usage:
 import argparse
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -41,6 +40,7 @@ from pathlib import Path
 import yaml
 
 from dynamo_version import crate_version, dynamo_v2_label
+from fixture_snapshot import fixture_snapshot_root
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent.parent  # conformance/utils/src -> repo root
@@ -58,20 +58,11 @@ _FAMILIES = yaml.safe_load((HERE / "parser_families.yaml").read_text())["familie
 V2_FAMILIES = sorted(f for f, s in _FAMILIES.items() if s.get("dynamo_v2"))
 
 
-def cache_root() -> Path:
-    env = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
-    if env:
-        return Path(env)
-    xdg = os.environ.get("XDG_CACHE_HOME")
-    base = Path(xdg) if xdg else Path.home() / ".cache"
-    return base / "dynamo" / "conformance-fixtures"
-
-
 def ensure_tree(name: str) -> Path:
     """Return TREE/<name>, copying it from the fixture cache on first use."""
     dst = TREE / name
     if not (dst / "inputs").is_dir() and not any(dst.glob("*/*.yaml")):
-        src = cache_root() / "toolcalling" / name
+        src = fixture_snapshot_root() / "toolcalling" / name
         if not src.is_dir():
             raise SystemExit(f"{src} not cached — run extract_fixtures.py first")
         print(f"[refresh] copying {src} -> {dst}")

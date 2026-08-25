@@ -49,6 +49,7 @@
 //! divergence is stated at the item.
 
 mod guided_cursor;
+pub mod kimi_k2;
 pub mod muse_glimmer;
 pub mod qwen3;
 
@@ -855,6 +856,14 @@ impl<E: InvokeEmitter + Send> UnifiedParser for ScannerUnified<E> {
         self.finished = false;
         recovered
     }
+
+    /// The model-emitted id for a call, delegated to the scanner's emitter.
+    /// See [`InvokeEmitter::tool_call_id`] — the trait default (`None`) is
+    /// correct for every family whose grammar does not name the call; Kimi
+    /// is the one family that overrides it.
+    fn tool_call_id(&self, tool_index: usize) -> Option<&str> {
+        self.scanner.tool_call_id(tool_index)
+    }
 }
 
 /// Where a guided-decoding stream currently is, relative to the reasoning span.
@@ -1142,7 +1151,12 @@ fn guided_holdback_len(
                 .match_indices(start)
                 .filter_map(|(at, _)| {
                     let suffix = &input[at..];
-                    ((scan.opens)(input, at) && (scan.end)(suffix, false).is_none())
+                    // `flush: false` here always makes `tool_index` inert (Kimi's
+                    // EOF-only recovery gate can only fire when `flush` is true) --
+                    // 0 is not a claim about which call this is, just the value
+                    // that keeps this holdback-length probe's result identical to
+                    // before `tool_index` existed.
+                    ((scan.opens)(input, at) && (scan.end)(suffix, false, 0).is_none())
                         .then_some(input.len() - at)
                 })
                 .max()
@@ -1455,10 +1469,50 @@ impl GuidedState {
             let at = cursor + relative;
             let suffix = &haystack[at..];
             if (scan.opens)(haystack, at) {
-                if let Some(len) = (scan.end)(suffix, flush) {
+                // `tool_index: 0` is provably safe here, not merely convenient:
+                // this loop can NEVER walk past a first `invoke_start` match to
+                // examine a second one for a family whose `opens` hook always
+                // returns `true` (Kimi's `kimi_invoke_opens` does) -- this `if`
+                // branch returns unconditionally on the first match, so the
+                // `cursor = at + ...` advance below is unreachable for Kimi. And
+                // the result only classifies a native-looking marker leaking into
+                // otherwise-guided output as stray markup to strip; it never
+                // types or emits a call -- that goes entirely through the
+                // independent, array-indexed `GuidedJsonCursor`/
+                // `emit_completed_json` path, untouched by this value. Proven
+                // end-to-end, including a properly closed first marker and
+                // an incomplete second marker, by the Kimi guided-reasoning
+                // every-split tests in `unified/kimi_k2.rs`.
+                let competing_boundary = limit.filter(|boundary| {
+                    *boundary > at
+                        && competing
+                            .iter()
+                            .any(|marker| haystack[*boundary..].starts_with(marker))
+                });
+                let local_flush = flush || competing_boundary.is_some();
+                if let Some(len) = (scan.end)(suffix, local_flush, 0)
+                    && competing_boundary.is_none_or(|boundary| at + len <= boundary)
+                {
                     return regular
                         .filter(|(regular_at, _)| *regular_at < at)
                         .or(Some((at, len)));
+                }
+                // A competing reasoning marker proves the native envelope
+                // ended locally even while the overall stream remains open.
+                // Strip only through that boundary so the reasoning closer
+                // and guided JSON after it are scanned independently.
+                if let Some(boundary) = competing_boundary {
+                    return regular
+                        .filter(|(regular_at, _)| *regular_at < at)
+                        .or(Some((at, boundary - at)));
+                }
+                // At true EOF an unresolved native envelope is an
+                // unrecoverable partial call (P2), not visible recovery text.
+                // No future bytes can establish a narrower safe boundary.
+                if flush {
+                    return regular
+                        .filter(|(regular_at, _)| *regular_at < at)
+                        .or(Some((at, suffix.len())));
                 }
                 return regular.filter(|(regular_at, _)| *regular_at < at);
             }
@@ -2443,6 +2497,7 @@ macro_rules! unified_registry {
 unified_registry! {
     "qwen3" | "qwen3_coder" => qwen3::qwen3_unified,
     "muse_glimmer" => muse_glimmer::muse_glimmer_unified,
+    "kimi_k2"               => kimi_k2::kimi_k2_unified,
 }
 
 /// Stderr instrumentation for the unified path under `DYNAMO_PARSERS_DEBUG`.
