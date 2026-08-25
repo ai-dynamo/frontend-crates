@@ -15,6 +15,7 @@ mod checkpoint;
 mod clock;
 mod ids;
 mod inference;
+mod materialize;
 mod memory;
 mod selector;
 mod tool;
@@ -29,6 +30,10 @@ pub use ids::{IdGenerator, IdempotencyKey, ResponseId, TurnId, UuidGenerator};
 pub use inference::{
     InferenceIntent, InferenceInvoker, InferenceOutput, InferenceRequest, InvocationContext,
     ModelStepKind,
+};
+pub use materialize::{
+    ContinuationPolicy, InheritContinuationControls, MaterializationError, MaterializedTurn,
+    PolicyRequestMaterializer, RequestMaterializer, ResponsesRequestMaterializer,
 };
 pub use memory::{InMemoryCheckpointStore, InMemoryStoreError};
 pub use selector::{RuntimeSelector, StatefulRequestSelector};
