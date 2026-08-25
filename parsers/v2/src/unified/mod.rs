@@ -1033,8 +1033,13 @@ pub(crate) struct GuidedChannel {
     pub(crate) find_open: fn(haystack: &str, flush: bool) -> Option<(usize, usize)>,
     /// Earliest reasoning CLOSER: `(offset, bytes to consume)`.
     pub(crate) find_close: fn(haystack: &str) -> Option<(usize, usize)>,
-    /// Earliest framing run that is NOT a thought — a header routed to another
-    /// channel — to be stripped WHOLE.
+    /// Earliest header that routes to VISIBLE CONTENT, which ENDS an open thought.
+    ///
+    /// `None` for a marker-pair family: its thought ends only at its own closer.
+    pub(crate) find_transition: fn(haystack: &str, flush: bool) -> Option<(usize, usize)>,
+    /// Earliest framing run that is neither a thought nor a channel switch — under
+    /// guided decoding a tool-routed header wraps a payload delivered as JSON — to
+    /// be stripped WHOLE.
     ///
     /// A marker-pair family has nothing here: its framing is exactly two literals,
     /// and the grammar's own `control_markers` already strip them. A header-routed
@@ -1045,6 +1050,16 @@ pub(crate) struct GuidedChannel {
     /// Trailing bytes to retain so a header split across a chunk boundary is never
     /// flushed into the payload buffer, where it would break the JSON parse.
     pub(crate) holdback: fn(haystack: &str) -> usize,
+    /// Remove this family's framing from a run about to be shown to the user.
+    ///
+    /// A marker-pair family needs nothing here: its framing is two literals the
+    /// grammar's `control_markers` already strip positionally. A header-routed
+    /// channel does, because a header only PARTLY resolves — `<|start|>wrong-role
+    /// to=self<|message|>` yields a valid thought whose prefix is not part of the
+    /// header, and that prefix still carries a control marker. Without this the
+    /// marker went to the user verbatim while the native path stripped it, so the
+    /// same bytes read differently by request mode (`I3`).
+    pub(crate) strip_text: fn(text: &str) -> String,
     /// Literal marker texts that compete with tool syntax for a terminator, and
     /// whose split prefixes are held back. The dynamic parts of a header cannot
     /// compete for a terminator — only its fixed markers can.
@@ -1109,11 +1124,19 @@ impl GuidedReasoning {
         }
     }
 
-    /// Earliest channel framing that is NOT a thought, to be stripped whole.
+    /// Earliest channel framing that is neither a thought nor a switch: strip it.
     fn find_stray(&self, haystack: &str, flush: bool) -> Option<(usize, usize)> {
         match self {
             Self::Pair(_) => None,
             Self::Channel(channel) => (channel.find_stray)(haystack, flush),
+        }
+    }
+
+    /// Earliest switch to the visible-content channel, which ends an open thought.
+    fn find_transition(&self, haystack: &str, flush: bool) -> Option<(usize, usize)> {
+        match self {
+            Self::Pair(_) => None,
+            Self::Channel(channel) => (channel.find_transition)(haystack, flush),
         }
     }
 
@@ -1148,6 +1171,14 @@ impl GuidedReasoning {
         match self {
             Self::Pair(spec) => vec![spec.end],
             Self::Channel(channel) => channel.close_markers.to_vec(),
+        }
+    }
+
+    /// Remove this family's framing from a run about to be shown to the user.
+    fn strip_text<'a>(&self, text: &'a str) -> std::borrow::Cow<'a, str> {
+        match self {
+            Self::Pair(_) => std::borrow::Cow::Borrowed(text),
+            Self::Channel(channel) => std::borrow::Cow::Owned((channel.strip_text)(text)),
         }
     }
 
@@ -1319,6 +1350,29 @@ fn control_marker_len_at(
         return None;
     }
     if is_prefix_form(marker) {
+        // A COMPLETE native invoke owns its own closer, and it owns it BEFORE the
+        // payload bound applies. `limit` exists to stop a BARE header from borrowing
+        // a `>` out of the guided payload; it must not stop a TERMINATED invoke from
+        // reaching the closer that ends it, because an argument VALUE may itself open
+        // with `{` and that brace is argument data, not the start of a payload.
+        // Without this, `<function=f><parameter=p>{"x":1}</parameter></function>` was
+        // cut at its header and the parameter body went to the user as visible text,
+        // with no call dispatched.
+        let pair_bound = prefix_header_end(haystack, at, None, competing);
+        if let Some(end) = haystack[at..pair_bound].find(invoke_end)
+            && let Some(gt) = haystack[at..at + end].find('>')
+            // ...but only when the body between them is NATIVE markup, not the
+            // payload itself. `<function=f>{"city":"Paris"}</function>` is a guided
+            // payload WRAPPED in native markup: the call is recovered from the JSON
+            // and the markup stripped around it. `<function=f><parameter=p>{"x":1}
+            // </parameter></function>` is a native invoke whose ARGUMENT VALUE opens
+            // with a brace, and there the pair owns everything between its ends.
+            // Both start with the same two bytes after the header, so the test has to
+            // be on what follows the header, not on whether a brace exists at all.
+            && !json_payload_started(&haystack[at + gt + 1..at + end])
+        {
+            return Some(end + invoke_end.len());
+        }
         // BOTH searches stop at `limit`. Bounding only the `</function>`
         // search let the `>` scan run into the payload: for
         // `<function=[{"city": "a>b"}]` it consumed through the `>` INSIDE
@@ -1817,6 +1871,10 @@ impl GuidedState {
         // channel it is the fixed framing only, because the recipient inside a
         // header is data and cannot compete for a terminator.
         let reasoning_markers = self.reasoning.competitors();
+        // Hoisted with it: this was rebuilt on every pass of the loop below, so a
+        // stream driven one character at a time allocated a marker list per chunk.
+        // Neither set can change while a single drain runs.
+        let close_markers = self.reasoning.close_markers();
         let mut output = Vec::new();
 
         loop {
@@ -1889,6 +1947,7 @@ impl GuidedState {
                                 .flatten(),
                         )
                         .chain(self.reasoning.find_stray(&self.input, flush))
+                        .chain(self.reasoning.find_transition(&self.input, flush))
                         .min_by_key(|(at, _)| *at);
                     let close_at = stray_close.map(|(at, _)| at);
                     let closer_first = matches!((open_at, close_at), (Some(o), Some(c)) if c < o)
@@ -1904,7 +1963,11 @@ impl GuidedState {
                                 self.json = pending;
                             }
                         } else {
-                            push_run(&mut output, Kind::Text, &pending);
+                            push_run(
+                                &mut output,
+                                Kind::Text,
+                                &self.reasoning.strip_text(&pending),
+                            );
                             if self.payload_emitted {
                                 self.post_payload_text_started = true;
                             }
@@ -1929,7 +1992,11 @@ impl GuidedState {
                                 self.json = pending;
                             }
                         } else {
-                            push_run(&mut output, Kind::Text, &pending);
+                            push_run(
+                                &mut output,
+                                Kind::Text,
+                                &self.reasoning.strip_text(&pending),
+                            );
                             if self.payload_emitted {
                                 self.post_payload_text_started = true;
                             }
@@ -1983,7 +2050,11 @@ impl GuidedState {
                                 }));
                             }
                         } else if self.payload_emitted {
-                            push_run(&mut output, Kind::Text, &self.input[..visible_len]);
+                            push_run(
+                                &mut output,
+                                Kind::Text,
+                                &self.reasoning.strip_text(&self.input[..visible_len]),
+                            );
                             self.post_payload_text_started = true;
                         } else {
                             self.json.push_str(&self.input[..visible_len]);
@@ -2002,7 +2073,11 @@ impl GuidedState {
                     }
                     if flush && !self.input.is_empty() {
                         if self.payload_emitted {
-                            push_run(&mut output, Kind::Text, &self.input);
+                            push_run(
+                                &mut output,
+                                Kind::Text,
+                                &self.reasoning.strip_text(&self.input),
+                            );
                             self.post_payload_text_started = true;
                         } else {
                             self.json.push_str(&self.input);
@@ -2043,9 +2118,19 @@ impl GuidedState {
                     // terminates the span without being consumed because tool
                     // structure dominates reasoning; or a stray, which is stripped
                     // and leaves the span open.
+                    // Two ways this thought can END: its own terminator, or the model
+                    // ROUTING to another channel. For a marker-pair family only the
+                    // first exists; for a header-routed one a `to=user` header is a
+                    // channel transition, and treating it as removable markup folded
+                    // the model's visible answer into its private thinking — the user
+                    // read the answer as chain-of-thought and the payload behind it
+                    // never reached the payload buffer.
                     let close = self
                         .reasoning
                         .find_close(&self.input)
+                        .into_iter()
+                        .chain(self.reasoning.find_transition(&self.input, flush))
+                        .min_by_key(|(at, _)| *at)
                         .map(|(at, len)| (at, len, true));
                     // Under guided decoding the reasoning channel is UNCONSTRAINED, so
                     // the model can legitimately narrate `<tool_call>` while thinking —
@@ -2061,10 +2146,15 @@ impl GuidedState {
                             // A narrated invoke lives INSIDE this thought, so its
                             // terminator cannot be past the span's closer.
                             close.map(|(at, _, _)| at),
-                            &self.reasoning.close_markers(),
+                            &close_markers,
                             flush,
                         )
                         .into_iter()
+                        // A REPEATED opener of this same channel is not a transition —
+                        // it is the missing-terminator recovery shape, and the native
+                        // scan keeps one thought open across it. A tool-routed header
+                        // is narration here for the same reason a narrated `<tool_call>`
+                        // is: guided decoding delivers the real call as JSON.
                         .chain(self.reasoning.find_open(&self.input, flush))
                         .chain(self.reasoning.find_stray(&self.input, flush))
                         .min_by_key(|(at, _)| *at)

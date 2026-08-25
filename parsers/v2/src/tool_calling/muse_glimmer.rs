@@ -323,17 +323,35 @@ pub(crate) fn guided_reasoning_open(haystack: &str, _flush: bool) -> Option<(usi
     guided_header(haystack, |recipient| recipient == Some(REASONING_RECIPIENT))
 }
 
-/// Earliest NON-reasoning header: framing to strip rather than a thought to open.
+/// Whether a recipient routes to the VISIBLE content channel.
 ///
-/// Under guided decoding the tool payload arrives as bare JSON, so a `to=user`
-/// content header or a `to=NAME` tool header is markup the model emitted around a
-/// payload that does not need it. It has to be consumed WHOLE. Listing `<|start|>`
-/// and `<|message|>` as ordinary control markers is not enough — that strips the two
-/// markers and releases the role word and the recipient between them as visible
-/// text, so the user reads `assistant to=user` as the model's answer.
+/// `user`, or no recipient at all — the same rule the native scan applies.
+fn is_content_recipient(recipient: Option<&str>) -> bool {
+    matches!(recipient, None | Some(USER_RECIPIENT))
+}
+
+/// Earliest header that routes to VISIBLE CONTENT, which ENDS an open thought.
+///
+/// Separate from [`guided_stray_header`] because guided decoding constrains only the
+/// TOOL channel. A `to=user` header is a real channel switch whatever the request
+/// mode, and folding it into strippable markup made the model's visible answer come
+/// out as its private thinking. A `to=<tool>` header under guided decoding cannot be
+/// a real tool channel — the call arrives as JSON — so that one really is narration.
+pub(crate) fn guided_content_header(haystack: &str, _flush: bool) -> Option<(usize, usize)> {
+    guided_header(haystack, is_content_recipient)
+}
+
+/// Earliest header that is neither a thought nor a channel switch: markup to strip.
+///
+/// Under guided decoding a `to=NAME` tool header wraps a payload that does not need
+/// it. It has to be consumed WHOLE. Listing `<|start|>` and `<|message|>` as ordinary
+/// control markers is not enough — that strips the two markers and releases the role
+/// word and the recipient between them as visible text, so the user reads
+/// `assistant to=weather` as the model's answer.
 pub(crate) fn guided_stray_header(haystack: &str, flush: bool) -> Option<(usize, usize)> {
-    if let Some(found) = guided_header(haystack, |recipient| recipient != Some(REASONING_RECIPIENT))
-    {
+    if let Some(found) = guided_header(haystack, |recipient| {
+        recipient != Some(REASONING_RECIPIENT) && !is_content_recipient(recipient)
+    }) {
         return Some(found);
     }
     // At end of stream a `<|start|>` whose `<|message|>` never arrived can no longer
@@ -376,6 +394,17 @@ pub(crate) fn guided_reasoning_close(haystack: &str) -> Option<(usize, usize)> {
 ///
 /// A PARTIAL `<|start|>` (`<|sta`) needs no case here: it is a split marker, and the
 /// shared holdback already retains every declared marker's prefix.
+/// Remove this grammar's framing from a run the guided reader is about to show.
+///
+/// The SAME `stripped()` the native path applies, so a marker cannot leak on one
+/// request mode and be stripped on the other. It matters where a header only
+/// partly resolves: `<|start|>wrong-role to=self<|message|>` opens a real thought,
+/// but `<|start|>wrong-role` is not part of the header and would otherwise reach
+/// the user with the control marker still attached.
+pub(crate) fn guided_strip_text(text: &str) -> String {
+    stripped(text)
+}
+
 pub(crate) fn guided_header_holdback(haystack: &str) -> usize {
     if let Some(at) = haystack.rfind(START)
         && !haystack[at..].contains(MESSAGE)

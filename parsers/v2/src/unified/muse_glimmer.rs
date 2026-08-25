@@ -35,8 +35,8 @@
 
 use crate::tool_calling::muse_glimmer::{
     GUIDED_CLOSE_MARKERS, GUIDED_COMPETITORS, GUIDED_CONTROL_MARKERS, MuseChannelScanner,
-    guided_header_holdback, guided_reasoning_close, guided_reasoning_open, guided_stray_header,
-    muse_scanner,
+    guided_content_header, guided_header_holdback, guided_reasoning_close, guided_reasoning_open,
+    guided_stray_header, guided_strip_text, muse_scanner,
 };
 use crate::tool_calling::traits::{Result, Tool};
 use crate::unified::{
@@ -63,7 +63,9 @@ impl NativeUnified for MuseChannelScanner {
             find_open: guided_reasoning_open,
             find_close: guided_reasoning_close,
             find_stray: guided_stray_header,
+            find_transition: guided_content_header,
             holdback: guided_header_holdback,
+            strip_text: guided_strip_text,
             competitors: &GUIDED_COMPETITORS,
             close_markers: &GUIDED_CLOSE_MARKERS,
         }))
@@ -140,7 +142,8 @@ pub(crate) fn muse_glimmer_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
 mod tests {
     use super::*;
     use crate::unified::{
-        UnifiedEvent, UnifiedParserExt, UnifiedParserInit, UnifiedToolOutputMode, assemble,
+        InvalidGuidedPayloadPolicy, UnifiedEvent, UnifiedParserExt, UnifiedParserInit,
+        UnifiedToolOutputMode, assemble,
     };
 
     /// The conformance harness vocabulary, so a unit test and a golden case can
@@ -898,6 +901,87 @@ mod tests {
         // every `<` a model writes. Reaching this needs the model to emit a marker's
         // first half as ordinary text, then a real special token, then the second
         // half; a marker it merely quotes whole is stripped by the run it sits in.
+    }
+
+    /// Guided mode must read the same bytes the same way the native path does.
+    ///
+    /// Three defects an independent review found in the first version of the guided
+    /// wiring, each one a case where the two paths disagreed about identical input:
+    ///
+    /// - a `to=user` header inside a thought was stripped as markup instead of
+    ///   ENDING the thought, so the model's visible answer came out as its private
+    ///   thinking (and, with a tool recipient, the payload behind it was never read);
+    /// - a native invoke whose ARGUMENT VALUE opened with `{` had its closer hidden
+    ///   behind the payload bound, so only its header was stripped and the parameter
+    ///   body went to the user as text with no call dispatched;
+    /// - a header whose role word is not `assistant` resolves from its `to=` run, and
+    ///   the `<|start|>` sitting in front of it was emitted verbatim.
+    ///
+    /// Held as guided-equals-native rather than as literal expectations, so the pin
+    /// cannot rot into asserting whatever the guided path happens to do.
+    #[test]
+    fn guided_reads_channel_framing_the_way_the_native_path_does() {
+        let guided = |input: &str, split: bool| {
+            let mut parser = muse_glimmer_unified(&tools());
+            parser
+                .initialize_request(UnifiedParserInit {
+                    prompt_token_ids: Vec::new(),
+                    starting_state: UnifiedParserStartingState::None,
+                    tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                    invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                })
+                .expect("guided init must be accepted");
+            let mut deltas = Vec::new();
+            if split {
+                for ch in input.chars() {
+                    deltas.extend(parser.push(&ch.to_string()).expect("push"));
+                }
+            } else {
+                deltas.extend(parser.push(input).expect("push"));
+            }
+            deltas.extend(parser.finish().expect("finish"));
+            assemble(&deltas)
+        };
+        let native = |input: &str| {
+            let mut parser = muse_glimmer_unified(&tools());
+            let mut deltas = parser.push(input).expect("push");
+            deltas.extend(parser.finish().expect("finish"));
+            assemble(&deltas)
+        };
+
+        for (label, input) in [
+            (
+                "a switch to the visible channel ends the thought",
+                "<|start|>assistant to=self<|message|>thinking\
+                 <|start|>assistant to=user<|message|>answer",
+            ),
+            (
+                "a role word the grammar does not know leaks no marker",
+                "<|start|>wrong-role to=self<|message|>secret<|eom|>",
+            ),
+        ] {
+            assert_eq!(guided(input, false), native(input), "{label}: whole input");
+            assert_eq!(
+                guided(input, true),
+                native(input),
+                "{label}: one character at a time"
+            );
+        }
+
+        // A complete native invoke under guided decoding emits NOTHING — the mode
+        // promised bare JSON and this turn carried none, so there is no call to make
+        // and no markup to show. The brace inside the argument value must not be
+        // mistaken for the payload.
+        let native_only = concat!(
+            "<|start|>assistant to=get_weather<|message|><atem:function_calls>",
+            "<atem:invoke name=\"get_weather\"><atem:parameter name=\"city\">{\"x\":1}</atem:parameter>",
+            "</atem:invoke></atem:function_calls><|eom|>"
+        );
+        assert_eq!(
+            guided(native_only, false),
+            vec![],
+            "a native invoke with a brace-opening argument leaked under guided decoding"
+        );
     }
 
     /// Guided tool output, on the family that had none.
