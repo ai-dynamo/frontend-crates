@@ -7,6 +7,9 @@ repo_root=$(git rev-parse --show-toplevel)
 service_image=agent-rt-sandbox-service:local
 sandbox_image=agent-rt-python-sandbox:local
 token=local-sandbox-token-0123456789abcdef
+run_id=$(date +%s%N)
+workspace_id=kind-workspace-${run_id}
+execution_id=kind-execution-${run_id}
 
 for command in docker kind kubectl curl jq rg; do
   command -v "$command" >/dev/null || {
@@ -35,18 +38,24 @@ kubectl -n agent-rt-sandbox-system port-forward service/agent-rt-sandbox-service
 port_forward_pid=$!
 trap 'kill "$port_forward_pid" 2>/dev/null || true' EXIT
 
+service_ready=false
 for _ in $(seq 1 30); do
   if curl -fsS http://127.0.0.1:18090/healthz >/dev/null; then
+    service_ready=true
     break
   fi
   sleep 1
 done
+if [[ "$service_ready" != "true" ]]; then
+  echo "sandbox service did not become ready" >&2
+  exit 1
+fi
 
 start_request='{
   "api_version": "v1",
   "scope": {"tenant_id": "tenant-a", "principal_id": "principal-a"},
-  "workspace_id": "kind-workspace",
-  "execution_id": "kind-execution",
+  "workspace_id": "kind-workspace-placeholder",
+  "execution_id": "kind-execution-placeholder",
   "profile": "python-deny-egress",
   "command": {
     "argv": ["python", "-c", "from pathlib import Path; Path(\"/workspace/result.txt\").write_text(\"done\"); print(42)"],
@@ -61,6 +70,10 @@ start_request='{
     "max_artifact_bytes": 4096
   }
 }'
+start_request=$(jq -c \
+  --arg workspace_id "$workspace_id" \
+  --arg execution_id "$execution_id" \
+  '.workspace_id = $workspace_id | .execution_id = $execution_id' <<<"$start_request")
 scope_headers=(
   -H "Authorization: Bearer ${token}"
   -H "x-agent-sandbox-tenant-id: tenant-a"
@@ -72,10 +85,14 @@ curl -fsS "${scope_headers[@]}" -d "$start_request" http://127.0.0.1:18090/v1/ex
 
 lookup_request='{
   "scope": {"tenant_id": "tenant-a", "principal_id": "principal-a"},
-  "workspace_id": "kind-workspace",
+  "workspace_id": "kind-workspace-placeholder",
   "profile": "python-deny-egress",
-  "execution_id": "kind-execution"
+  "execution_id": "kind-execution-placeholder"
 }'
+lookup_request=$(jq -c \
+  --arg workspace_id "$workspace_id" \
+  --arg execution_id "$execution_id" \
+  '.workspace_id = $workspace_id | .execution_id = $execution_id' <<<"$lookup_request")
 for _ in $(seq 1 60); do
   outcome=$(curl -fsS "${scope_headers[@]}" -d "$lookup_request" http://127.0.0.1:18090/v1/executions:lookup)
   state=$(jq -r '.state // "missing"' <<<"$outcome")
