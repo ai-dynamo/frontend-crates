@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+use std::time::Duration;
+
 use thiserror::Error;
 
 use crate::{
@@ -35,6 +37,20 @@ where
     OutcomeUnknown { journal_error: Option<JournalError> },
     #[error("tool execution previously failed: {0:?}")]
     PersistedFailure(ToolExecutionFailure),
+    #[error(
+        "tool execution exceeded its {limit_millis}ms limit; journal finalization: {journal_error:?}"
+    )]
+    ExecutionTimedOut {
+        limit_millis: u64,
+        journal_error: Option<JournalError>,
+    },
+    #[error(
+        "tool recovery lookup exceeded its {limit_millis}ms limit; journal finalization: {journal_error:?}"
+    )]
+    RecoveryTimedOut {
+        limit_millis: u64,
+        journal_error: Option<JournalError>,
+    },
     #[error("tool journal record is internally inconsistent")]
     CorruptJournal,
     #[error(
@@ -64,6 +80,8 @@ where
                 ..
             } => *outcome_unknown || journal_error.is_some(),
             Self::RecoveryLookup { .. }
+            | Self::ExecutionTimedOut { .. }
+            | Self::RecoveryTimedOut { .. }
             | Self::OutcomeUnknown { .. }
             | Self::CorruptJournal
             | Self::JournalAfterExecution(_) => true,
@@ -139,13 +157,35 @@ where
             ToolClaimResult::Acquired(_) => {}
         }
 
-        match self.executor.execute(request).await {
+        let execution = tokio::time::timeout(
+            Duration::from_millis(authorization.limits.max_external_work_millis),
+            self.executor.execute(request),
+        )
+        .await;
+        let execution = match execution {
+            Ok(execution) => execution,
+            Err(_) => {
+                let journal_error = self
+                    .journal
+                    .finish(key, ToolJournalOutcome::OutcomeUnknown)
+                    .await
+                    .err();
+                return Err(ToolRunError::ExecutionTimedOut {
+                    limit_millis: authorization.limits.max_external_work_millis,
+                    journal_error,
+                });
+            }
+        };
+
+        match execution {
             Ok(result) => {
                 self.validate_output(&key, &result, authorization).await?;
-                self.journal
-                    .finish(key, ToolJournalOutcome::Completed(result.clone()))
+                let record = self
+                    .journal
+                    .finish(key, ToolJournalOutcome::Completed(result))
                     .await
                     .map_err(ToolRunError::JournalAfterExecution)?;
+                let result = record.result.ok_or(ToolRunError::CorruptJournal)?;
                 Ok(RuntimeToolResult { call, result })
             }
             Err(error) => {
@@ -186,13 +226,34 @@ where
             }),
             ToolJournalState::Started => {
                 let key = record.request.journal_key();
-                match self.executor.lookup(&record.request).await {
+                let lookup = tokio::time::timeout(
+                    Duration::from_millis(authorization.limits.max_external_work_millis),
+                    self.executor.lookup(&record.request),
+                )
+                .await;
+                let lookup = match lookup {
+                    Ok(lookup) => lookup,
+                    Err(_) => {
+                        let journal_error = self
+                            .journal
+                            .finish(key, ToolJournalOutcome::OutcomeUnknown)
+                            .await
+                            .err();
+                        return Err(ToolRunError::RecoveryTimedOut {
+                            limit_millis: authorization.limits.max_external_work_millis,
+                            journal_error,
+                        });
+                    }
+                };
+                match lookup {
                     Ok(Some(result)) => {
                         self.validate_output(&key, &result, authorization).await?;
-                        self.journal
-                            .finish(key, ToolJournalOutcome::Completed(result.clone()))
+                        let record = self
+                            .journal
+                            .finish(key, ToolJournalOutcome::Completed(result))
                             .await
                             .map_err(ToolRunError::JournalAfterExecution)?;
+                        let result = record.result.ok_or(ToolRunError::CorruptJournal)?;
                         Ok(RuntimeToolResult { call, result })
                     }
                     Ok(None) => {
@@ -303,6 +364,26 @@ mod tests {
             _request: &ToolExecutionRequest,
         ) -> BoxFuture<'_, Result<Option<ToolExecutionResult>, Self::Error>> {
             Box::pin(async { Ok(None) })
+        }
+    }
+
+    struct PendingExecutor;
+
+    impl ToolExecutor for PendingExecutor {
+        type Error = MockExecutorError;
+
+        fn execute(
+            &self,
+            _request: ToolExecutionRequest,
+        ) -> BoxFuture<'_, Result<ToolExecutionResult, Self::Error>> {
+            Box::pin(std::future::pending())
+        }
+
+        fn lookup(
+            &self,
+            _request: &ToolExecutionRequest,
+        ) -> BoxFuture<'_, Result<Option<ToolExecutionResult>, Self::Error>> {
+            Box::pin(std::future::pending())
         }
     }
 
@@ -430,6 +511,38 @@ mod tests {
         ));
         assert_eq!(executes.load(Ordering::SeqCst), 1);
 
+        let key = crate::ToolJournalKey {
+            scope: authorization.scope,
+            idempotency_key: Blake3ToolIdempotencyKeys.idempotency_key(
+                &response_id,
+                &runtime_call,
+                0,
+            ),
+        };
+        assert_eq!(
+            runner.journal().load(&key).await.unwrap().unwrap().state,
+            ToolJournalState::OutcomeUnknown
+        );
+    }
+
+    #[tokio::test]
+    async fn execution_timeout_is_persisted_as_outcome_unknown() {
+        let runner = ToolRunner::new(
+            InMemoryToolJournal::default(),
+            PendingExecutor,
+            Blake3ToolIdempotencyKeys,
+            ConservativeToolFailurePolicy,
+        );
+        let response_id = ResponseId::from("resp-1");
+        let runtime_call = call("search");
+        let mut authorization = authorization(1024);
+        authorization.limits.max_external_work_millis = 1;
+
+        let error = runner
+            .run(&response_id, runtime_call.clone(), &authorization, 0)
+            .await
+            .unwrap_err();
+        assert!(matches!(error, ToolRunError::ExecutionTimedOut { .. }));
         let key = crate::ToolJournalKey {
             scope: authorization.scope,
             idempotency_key: Blake3ToolIdempotencyKeys.idempotency_key(

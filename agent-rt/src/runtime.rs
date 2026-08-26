@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+use std::future::Future;
 use std::marker::PhantomData;
 use std::sync::Arc;
+use std::time::Duration;
 
 use futures::StreamExt;
 use thiserror::Error;
@@ -10,7 +12,7 @@ use thiserror::Error;
 use crate::{
     AgentProtocol, BeginTurn, BeginTurnResult, BoxStream, CheckpointRecord, CheckpointStore, Clock,
     CommitTurn, IdGenerator, IdempotencyKey, InferenceIntent, InferenceInvoker, InferenceOutput,
-    InferenceRequest, LeaseDeadline, LoadChain, OutputIdentity, OutputInterpreter,
+    InferenceRequest, LeaseDeadline, LoadChain, OutputIdentity, OutputInterpreter, RenewLease,
     RequestFingerprinter, RequestMaterializer, ResponseId, RuntimeAuthorization, StreamEventAction,
     StreamEventInterpreter, TurnLease, TurnState,
 };
@@ -182,6 +184,7 @@ where
     pub(crate) inference_intent: InferenceIntent,
     pub(crate) identity: OutputIdentity,
     pub(crate) lease: TurnLease,
+    pub(crate) lease_duration_millis: u64,
 }
 
 pub(crate) enum PrepareTurnResult<P, C>
@@ -249,6 +252,7 @@ mod tests {
     use std::convert::Infallible;
     use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
     use std::sync::{Arc, Mutex};
+    use std::time::Duration;
 
     use dynamo_protocols::types::{
         anthropic::{AnthropicCreateMessageRequest, AnthropicMessageResponse},
@@ -268,8 +272,8 @@ mod tests {
         InferenceFuture, InferenceIntent, InferenceInvoker, InferenceOutput, InferenceRequest,
         LoadChain, ModelStepKind, OpenAiResponses, RenewLease, ResponseId,
         ResponsesOutputInterpreter, ResponsesRequestMaterializer, ResponsesStreamEventInterpreter,
-        RunStreamResult, RunTurn, RunTurnResult, RuntimeAuthorization, RuntimeLimits, TurnId,
-        TurnLease, TurnState,
+        RunStreamResult, RunTurn, RunTurnResult, RuntimeAuthorization, RuntimeLimits, SystemClock,
+        TurnId, TurnLease, TurnState,
     };
 
     #[derive(Debug, Clone, Copy)]
@@ -364,6 +368,28 @@ mod tests {
                 } else {
                     Ok(InferenceOutput::Unary(Box::new(response)))
                 }
+            })
+        }
+    }
+
+    struct DelayedInvoker {
+        response: Response,
+        delay: Duration,
+    }
+
+    impl InferenceInvoker<OpenAiResponses> for DelayedInvoker {
+        type Context = ();
+        type Error = MockInferenceError;
+
+        fn invoke<'a>(
+            &'a self,
+            _request: &'a InferenceRequest<OpenAiResponses, Self::Context>,
+        ) -> InferenceFuture<'a, OpenAiResponses, Self::Error> {
+            let response = self.response.clone();
+            let delay = self.delay;
+            Box::pin(async move {
+                tokio::time::sleep(delay).await;
+                Ok(InferenceOutput::Unary(Box::new(response)))
             })
         }
     }
@@ -584,6 +610,28 @@ mod tests {
         assert_eq!(requests.len(), 1);
         assert_eq!(requests[0].store, Some(false));
         assert_eq!(requests[0].previous_response_id, None);
+    }
+
+    #[tokio::test]
+    async fn renews_the_turn_lease_during_slow_inference() {
+        let clock = SystemClock;
+        let runtime = AgentRuntime::new(
+            InMemoryCheckpointStore::new(clock),
+            ResponsesRequestMaterializer::default(),
+            CanonicalJsonFingerprinter,
+            DelayedInvoker {
+                response: MockInvoker::new(false).response,
+                delay: Duration::from_millis(50),
+            },
+            ResponsesOutputInterpreter::default(),
+            SequentialIds::default(),
+            clock,
+        );
+        let mut command = command("hello", None, "slow-inference");
+        command.lease_duration_millis = 20;
+
+        let result = runtime.run_unary(command).await.unwrap();
+        assert_eq!(result.record().state, TurnState::Completed);
     }
 
     #[tokio::test]
@@ -1021,6 +1069,7 @@ where
             inference_intent,
             identity,
             lease,
+            lease_duration_millis,
             ..
         } = prepared;
 
@@ -1030,7 +1079,7 @@ where
             intent: inference_intent,
         };
         let committed = self
-            .invoke_step(&inference_request, &identity, lease)
+            .invoke_step(&inference_request, &identity, lease, lease_duration_millis)
             .await?;
         Ok(RunTurnResult::Committed {
             record: Box::new(committed.record),
@@ -1068,13 +1117,18 @@ where
             inference_intent,
             identity,
             lease,
+            lease_duration_millis,
         } = prepared;
         let request = InferenceRequest {
             request: inference_request,
             context: invocation_context,
             intent: inference_intent,
         };
-        let inference = match self.invoker.invoke(&request).await {
+        let (inference, lease) = self
+            .wait_with_lease(lease, lease_duration_millis, self.invoker.invoke(&request))
+            .await
+            .map_err(AgentStreamRuntimeError::Runtime)?;
+        let inference = match inference {
             Ok(InferenceOutput::Streaming(stream)) => stream,
             Ok(InferenceOutput::Unary(_)) => {
                 let checkpoint_error = self.mark_failed(lease).await;
@@ -1095,14 +1149,30 @@ where
         let runtime = self;
         let output = async_stream::stream! {
             let mut inference = inference;
-            let mut lease = Some(lease);
+            let mut lease = lease;
             let mut staged_events = Vec::new();
             let mut staged_event_bytes = 0_u64;
-            while let Some(item) = inference.next().await {
+            loop {
+                let (item, renewed_lease) = match runtime
+                    .wait_with_lease(lease, lease_duration_millis, inference.next())
+                    .await
+                {
+                    Ok(result) => result,
+                    Err(error) => {
+                        yield Err(AgentStreamRuntimeError::Runtime(error));
+                        return;
+                    }
+                };
+                lease = renewed_lease;
+                let Some(item) = item else {
+                    let checkpoint_error = runtime.mark_failed(lease).await;
+                    yield Err(AgentStreamRuntimeError::MissingTerminal { checkpoint_error });
+                    return;
+                };
                 let event = match item {
                     Ok(event) => event,
                     Err(error) => {
-                        let checkpoint_error = runtime.mark_failed(lease.take().expect("live stream lease")).await;
+                        let checkpoint_error = runtime.mark_failed(lease).await;
                         yield Err(AgentStreamRuntimeError::Runtime(AgentRuntimeError::Inference {
                             error,
                             checkpoint_error,
@@ -1113,7 +1183,7 @@ where
                 let action = match stream_interpreter.observe(event, &identity) {
                     Ok(action) => action,
                     Err(error) => {
-                        let checkpoint_error = runtime.mark_failed(lease.take().expect("live stream lease")).await;
+                        let checkpoint_error = runtime.mark_failed(lease).await;
                         yield Err(AgentStreamRuntimeError::Interpreter {
                             error,
                             checkpoint_error,
@@ -1130,9 +1200,7 @@ where
                         let event_bytes = match serde_json::to_vec(&event) {
                             Ok(encoded) => encoded.len() as u64,
                             Err(error) => {
-                                let checkpoint_error = runtime.mark_failed(
-                                    lease.take().expect("live stream lease")
-                                ).await;
+                                let checkpoint_error = runtime.mark_failed(lease).await;
                                 yield Err(AgentStreamRuntimeError::StagedEventEncoding {
                                     error,
                                     checkpoint_error,
@@ -1142,9 +1210,7 @@ where
                         };
                         staged_event_bytes = staged_event_bytes.saturating_add(event_bytes);
                         if staged_event_bytes > authorization.limits.max_staged_model_event_bytes {
-                            let checkpoint_error = runtime.mark_failed(
-                                lease.take().expect("live stream lease")
-                            ).await;
+                            let checkpoint_error = runtime.mark_failed(lease).await;
                             yield Err(AgentStreamRuntimeError::StagedEventLimit {
                                 limit_bytes: authorization.limits.max_staged_model_event_bytes,
                                 checkpoint_error,
@@ -1155,8 +1221,7 @@ where
                     }
                     StreamEventAction::Suppress => {}
                     StreamEventAction::Terminal { mut event, response } => {
-                        let live_lease = lease.take().expect("live stream lease");
-                        if let Err(error) = runtime.commit_response(response, &identity, live_lease).await {
+                        if let Err(error) = runtime.commit_response(response, &identity, lease).await {
                             yield Err(AgentStreamRuntimeError::Runtime(error));
                             return;
                         }
@@ -1170,9 +1235,6 @@ where
                     }
                 }
             }
-
-            let checkpoint_error = runtime.mark_failed(lease.take().expect("live stream lease")).await;
-            yield Err(AgentStreamRuntimeError::MissingTerminal { checkpoint_error });
         };
         Ok(RunStreamResult::Live(Box::pin(output)))
     }
@@ -1182,8 +1244,11 @@ where
         request: &InferenceRequest<P, I::Context>,
         identity: &OutputIdentity,
         lease: TurnLease,
+        lease_duration_millis: u64,
     ) -> Result<crate::CommitTurnResult<P>, RuntimeErrorFor<P, S, M, F, I, O>> {
-        let inference = self.invoker.invoke(request).await;
+        let (inference, lease) = self
+            .wait_with_lease(lease, lease_duration_millis, self.invoker.invoke(request))
+            .await?;
         let response = match inference {
             Ok(InferenceOutput::Unary(response)) => *response,
             Ok(InferenceOutput::Streaming(_)) => {
@@ -1302,7 +1367,38 @@ where
                 parent_response_id: command.parent_response_id,
             },
             lease,
+            lease_duration_millis: command.lease_duration_millis,
         })))
+    }
+
+    pub(crate) async fn wait_with_lease<T>(
+        &self,
+        mut lease: TurnLease,
+        lease_duration_millis: u64,
+        future: impl Future<Output = T>,
+    ) -> Result<(T, TurnLease), RuntimeErrorFor<P, S, M, F, I, O>> {
+        let mut future = std::pin::pin!(future);
+        loop {
+            let remaining = lease.deadline.0.saturating_sub(self.clock.now_millis());
+            let renewal_delay = remaining.saturating_sub(lease_duration_millis / 2);
+            tokio::select! {
+                biased;
+                output = &mut future => return Ok((output, lease)),
+                () = tokio::time::sleep(Duration::from_millis(renewal_delay)) => {
+                    let new_deadline = LeaseDeadline(
+                        self.clock
+                            .now_millis()
+                            .checked_add(lease_duration_millis)
+                            .ok_or(AgentRuntimeError::LeaseDeadlineOverflow)?,
+                    );
+                    lease = self
+                        .store
+                        .renew_lease(RenewLease { lease, new_deadline })
+                        .await
+                        .map_err(AgentRuntimeError::Store)?;
+                }
+            }
+        }
     }
 
     pub(crate) async fn mark_failed(&self, lease: TurnLease) -> Option<S::Error> {

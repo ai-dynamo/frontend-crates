@@ -267,8 +267,8 @@ pub trait ToolExecutor: Send + Sync + 'static {
     /// An executor for an explicitly side-effect-free operation may safely
     /// re-execute the request and return that result from this method.
     /// `None` means the executor cannot prove whether the side effect occurred.
-    fn lookup(
-        &self,
-        request: &ToolExecutionRequest,
-    ) -> BoxFuture<'_, Result<Option<ToolExecutionResult>, Self::Error>>;
+    fn lookup<'a>(
+        &'a self,
+        request: &'a ToolExecutionRequest,
+    ) -> BoxFuture<'a, Result<Option<ToolExecutionResult>, Self::Error>>;
 }

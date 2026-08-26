@@ -129,6 +129,7 @@ where
             inference_intent,
             identity,
             lease,
+            lease_duration_millis,
         } = prepared;
         let mut request = InferenceRequest {
             request: inference_request,
@@ -140,7 +141,7 @@ where
 
         loop {
             let committed = self
-                .invoke_step(&request, &identity, lease)
+                .invoke_step(&request, &identity, lease, lease_duration_millis)
                 .await
                 .map_err(AgentToolRuntimeError::Runtime)?;
             let record = committed.record;
@@ -190,8 +191,12 @@ where
             let outcomes =
                 join_all(calls.into_iter().map(|call| {
                     tool_runner.run(&identity.response_id, call, &authorization, round)
-                }))
-                .await;
+                }));
+            let (outcomes, renewed_lease) = self
+                .wait_with_lease(lease, lease_duration_millis, outcomes)
+                .await
+                .map_err(AgentToolRuntimeError::Runtime)?;
+            lease = renewed_lease;
             let mut results = Vec::with_capacity(outcomes.len());
             let mut errors = Vec::new();
             let mut outcome_unknown = false;
@@ -283,6 +288,7 @@ where
             inference_intent,
             identity,
             lease,
+            lease_duration_millis,
         } = prepared;
         let mut request = InferenceRequest {
             request: inference_request,
@@ -298,7 +304,24 @@ where
                 stream_interpreter.begin_step(request.intent.step_kind);
                 let mut staged_events = Vec::new();
                 let mut staged_event_bytes = 0_u64;
-                let mut inference = match runtime.invoker().invoke(&request).await {
+                let (inference, renewed_lease) = match runtime
+                    .wait_with_lease(
+                        lease,
+                        lease_duration_millis,
+                        runtime.invoker().invoke(&request),
+                    )
+                    .await
+                {
+                    Ok(result) => result,
+                    Err(error) => {
+                        yield Err(AgentToolRuntimeError::Runtime(
+                            AgentStreamRuntimeError::Runtime(error),
+                        ));
+                        return;
+                    }
+                };
+                lease = renewed_lease;
+                let mut inference = match inference {
                     Ok(InferenceOutput::Streaming(stream)) => stream,
                     Ok(InferenceOutput::Unary(_)) => {
                         let checkpoint_error = runtime.mark_failed(lease).await;
@@ -320,7 +343,24 @@ where
                 };
 
                 let terminal = loop {
-                    let Some(item) = futures::StreamExt::next(&mut inference).await else {
+                    let (item, renewed_lease) = match runtime
+                        .wait_with_lease(
+                            lease,
+                            lease_duration_millis,
+                            futures::StreamExt::next(&mut inference),
+                        )
+                        .await
+                    {
+                        Ok(result) => result,
+                        Err(error) => {
+                            yield Err(AgentToolRuntimeError::Runtime(
+                                AgentStreamRuntimeError::Runtime(error),
+                            ));
+                            return;
+                        }
+                    };
+                    lease = renewed_lease;
+                    let Some(item) = item else {
                         let checkpoint_error = runtime.mark_failed(lease).await;
                         yield Err(AgentToolRuntimeError::Runtime(
                             AgentStreamRuntimeError::MissingTerminal { checkpoint_error },
@@ -468,8 +508,20 @@ where
 
                 let outcomes = join_all(calls.into_iter().map(|call| {
                     tool_runner.run(&identity.response_id, call, &authorization, round)
-                }))
-                .await;
+                }));
+                let (outcomes, renewed_lease) = match runtime
+                    .wait_with_lease(lease, lease_duration_millis, outcomes)
+                    .await
+                {
+                    Ok(result) => result,
+                    Err(error) => {
+                        yield Err(AgentToolRuntimeError::Runtime(
+                            AgentStreamRuntimeError::Runtime(error),
+                        ));
+                        return;
+                    }
+                };
+                lease = renewed_lease;
                 let mut results = Vec::with_capacity(outcomes.len());
                 let mut errors = Vec::new();
                 let mut outcome_unknown = false;
