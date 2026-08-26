@@ -22,13 +22,13 @@ if ! kind get clusters | rg -Fxq "$cluster_name"; then
   kind create cluster --name "$cluster_name"
 fi
 
-docker build -f "$repo_root/agent-sandbox-service/images/service/Dockerfile" -t "$service_image" "$repo_root"
-docker build -f "$repo_root/agent-sandbox-service/images/python-sandbox/Dockerfile" -t "$sandbox_image" "$repo_root"
+docker build -f "$repo_root/agent-rt/sandbox-service/images/service/Dockerfile" -t "$service_image" "$repo_root"
+docker build -f "$repo_root/agent-rt/sandbox-service/images/python-sandbox/Dockerfile" -t "$sandbox_image" "$repo_root"
 kind load docker-image --name "$cluster_name" "$service_image" "$sandbox_image"
 
 kubectl apply -f "https://github.com/kubernetes-sigs/agent-sandbox/releases/download/${agent_sandbox_version}/sandbox-with-extensions.yaml"
 kubectl -n agent-sandbox-system wait --for=condition=Available deployment --all --timeout=180s
-kubectl apply -k "$repo_root/agent-sandbox-service/deploy/kubernetes/local"
+kubectl apply -k "$repo_root/agent-rt/sandbox-service/deploy/kubernetes/local"
 kubectl -n agent-rt-sandbox-system rollout restart deployment/agent-rt-sandbox-service
 kubectl -n agent-rt-sandbox-system rollout status statefulset/postgres --timeout=180s
 kubectl -n agent-rt-sandbox-system rollout status deployment/agent-rt-sandbox-service --timeout=180s

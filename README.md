@@ -4,7 +4,7 @@ Standalone Rust crates for building OpenAI/Anthropic-compatible inference server
 
 | Crate | What it does |
 | -- | -- |
-| [`dynamo-agent-rt`](./agent-rt/)     | Pluggable stateful Responses runtime contracts for continuation storage, inference invocation, and external tool execution. |
+| [`dynamo-agent-rt`](./agent-rt/core/) | Pluggable stateful Responses runtime contracts for continuation storage, inference invocation, and external tool execution. |
 | [`dynamo-protocols`](./protocols/)   | Request/response types for OpenAI Chat / Completions / Responses + Anthropic Messages. Built on `async-openai` v0.34 with inference-serving extensions. |
 | [`dynamo-tokenizers`](./tokenizers/) | HuggingFace + tiktoken + FastTokenizer wrappers with fast incremental detokenization and prefix-caching for shared-prefix workloads. |
 | [`dynamo-parsers`](./parsers/v1/)    | Reasoning + tool-calling parsers across 18+ model families (DeepSeek R1/V4, Qwen3, GPT-OSS, Kimi K2/K3, Gemma 4, Llama, Hermes, ...). The stable batch parser — the *decode* side, and the crate to depend on. |
@@ -18,7 +18,12 @@ The three parser crates live under `parsers/`: `parsers/v1` is the stable, publi
 
 ```
 frontend-crates/
-├── agent-rt/               # dynamo-agent-rt
+├── agent-rt/
+│   ├── core/               # dynamo-agent-rt
+│   ├── store/              # dynamo-agent-rt-store
+│   ├── tools/              # dynamo-agent-tools
+│   ├── sandbox/            # agent-rt-sandbox
+│   └── sandbox-service/    # agent-rt-sandbox-service
 ├── protocols/              # dynamo-protocols
 ├── tokenizers/             # dynamo-tokenizers
 ├── parsers/

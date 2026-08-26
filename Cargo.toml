@@ -1,11 +1,11 @@
 [workspace]
 resolver = "3"
 members = [
-    "agent-rt",
-    "agent-rt-store",
-    "agent-tools",
-    "agent-sandbox",
-    "agent-sandbox-service",
+    "agent-rt/core",
+    "agent-rt/store",
+    "agent-rt/tools",
+    "agent-rt/sandbox",
+    "agent-rt/sandbox-service",
     "protocols",
     "parsers/v1",
     "renderer",
@@ -40,9 +40,9 @@ chrono = { version = "0.4", default-features = false, features = [
 ] }
 clap = "4"
 derive_builder = "0.20"
-dynamo-agent-rt = { path = "agent-rt", version = "0.1.0" }
-dynamo-agent-tools = { path = "agent-tools", version = "0.1.0" }
-agent-rt-sandbox = { path = "agent-sandbox", version = "0.1.0" }
+dynamo-agent-rt = { path = "agent-rt/core", version = "0.1.0" }
+dynamo-agent-tools = { path = "agent-rt/tools", version = "0.1.0" }
+agent-rt-sandbox = { path = "agent-rt/sandbox", version = "0.1.0" }
 deadpool-postgres = "0.14.1"
 dynamo-parsers = { path = "parsers/v1", version = "8.2.0" }
 dynamo-protocols = { path = "protocols", version = "5.4.0" }
