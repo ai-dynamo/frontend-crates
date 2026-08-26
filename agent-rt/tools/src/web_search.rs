@@ -611,7 +611,7 @@ mod tests {
         ToolFailureDisposition, ToolFailurePolicy, ToolIdempotencyKeyProvider, ToolJournal,
         ToolJournalState, ToolRunner,
     };
-    use dynamo_agent_rt_store::DuckDbStore;
+    use dynamo_agent_rt_store::SqliteStore;
     use serde_json::json;
     use tokio::net::TcpListener;
     use url::Url;
@@ -790,10 +790,10 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn started_search_recovers_through_durable_duckdb_journal() {
+    async fn started_search_recovers_through_durable_sqlite_journal() {
         let directory = tempfile::tempdir().unwrap();
-        let path = directory.path().join("agent-tools.duckdb");
-        let journal = DuckDbStore::<OpenAiResponses>::open(&path).unwrap();
+        let path = directory.path().join("agent-tools.sqlite");
+        let journal = SqliteStore::<OpenAiResponses>::open(&path).unwrap();
         let (executor, state, server) = fake_executor(Duration::from_secs(1), 32 * 1024).await;
         let response_id = ResponseId::from("resp-recovery");
         let call = RuntimeToolCall {
@@ -845,7 +845,7 @@ mod tests {
 
         drop(runner);
         drop(journal);
-        let reopened = DuckDbStore::<OpenAiResponses>::open(&path).unwrap();
+        let reopened = SqliteStore::<OpenAiResponses>::open(&path).unwrap();
         let record = reopened
             .load(&dynamo_agent_rt::ToolJournalKey {
                 scope,

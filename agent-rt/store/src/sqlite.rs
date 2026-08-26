@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
-use ::duckdb::{Connection, OptionalExt, params};
+use ::rusqlite::{Connection, OptionalExtension, params};
 use dynamo_agent_rt::{
     AgentProtocol, AuthorizationScope, BeginTurn, BeginTurnResult, BoxFuture, CheckpointRecord,
     CheckpointStore, CheckpointVersion, Clock, CommitTurn, CommitTurnResult, IdempotencyKey,
@@ -20,21 +20,27 @@ use tokio::sync::Semaphore;
 
 use crate::StoreInvariantError;
 
-const MIGRATION: &str = include_str!("../migrations/duckdb/0001_agent_rt.sql");
+const MIGRATION: &str = include_str!("../migrations/sqlite/0001_agent_rt.sql");
+const CONNECTION_CONFIG: &str = "
+PRAGMA foreign_keys = ON;
+PRAGMA journal_mode = WAL;
+PRAGMA synchronous = FULL;
+PRAGMA busy_timeout = 5000;
+";
 
 #[derive(Debug, Error)]
-pub enum DuckDbStoreError {
+pub enum SqliteStoreError {
     #[error(transparent)]
     Invariant(#[from] StoreInvariantError),
-    #[error("DuckDB failed: {0}")]
-    Database(#[from] ::duckdb::Error),
+    #[error("SQLite failed: {0}")]
+    Database(#[from] ::rusqlite::Error),
     #[error("persisted JSON failed: {0}")]
     Json(#[from] serde_json::Error),
-    #[error("DuckDB connection mutex is poisoned")]
+    #[error("SQLite connection mutex is poisoned")]
     Poisoned,
-    #[error("DuckDB operation gate is closed")]
+    #[error("SQLite operation gate is closed")]
     Closed,
-    #[error("DuckDB blocking task failed: {0}")]
+    #[error("SQLite blocking task failed: {0}")]
     Join(#[from] tokio::task::JoinError),
 }
 
@@ -43,7 +49,7 @@ pub enum DuckDbStoreError {
 /// Every operation runs on Tokio's blocking pool and one connection mutex
 /// serializes transactions. This type is intentionally not a multi-replica
 /// coordination mechanism.
-pub struct DuckDbStore<P, C = SystemClock>
+pub struct SqliteStore<P, C = SystemClock>
 where
     P: AgentProtocol,
 {
@@ -53,7 +59,7 @@ where
     protocol: PhantomData<fn() -> P>,
 }
 
-impl<P, C> Clone for DuckDbStore<P, C>
+impl<P, C> Clone for SqliteStore<P, C>
 where
     P: AgentProtocol,
     C: Clone,
@@ -68,28 +74,29 @@ where
     }
 }
 
-impl<P> DuckDbStore<P, SystemClock>
+impl<P> SqliteStore<P, SystemClock>
 where
     P: AgentProtocol,
 {
-    pub fn open(path: impl AsRef<Path>) -> Result<Self, DuckDbStoreError> {
+    pub fn open(path: impl AsRef<Path>) -> Result<Self, SqliteStoreError> {
         Self::open_with_clock(path, SystemClock)
     }
 
-    pub fn open_in_memory() -> Result<Self, DuckDbStoreError> {
+    pub fn open_in_memory() -> Result<Self, SqliteStoreError> {
         Self::from_connection(Connection::open_in_memory()?, SystemClock)
     }
 }
 
-impl<P, C> DuckDbStore<P, C>
+impl<P, C> SqliteStore<P, C>
 where
     P: AgentProtocol,
 {
-    pub fn open_with_clock(path: impl AsRef<Path>, clock: C) -> Result<Self, DuckDbStoreError> {
+    pub fn open_with_clock(path: impl AsRef<Path>, clock: C) -> Result<Self, SqliteStoreError> {
         Self::from_connection(Connection::open(path)?, clock)
     }
 
-    pub fn from_connection(connection: Connection, clock: C) -> Result<Self, DuckDbStoreError> {
+    pub fn from_connection(connection: Connection, clock: C) -> Result<Self, SqliteStoreError> {
+        connection.execute_batch(CONNECTION_CONFIG)?;
         connection.execute_batch(MIGRATION)?;
         Ok(Self {
             connection: Arc::new(Mutex::new(connection)),
@@ -99,31 +106,31 @@ where
         })
     }
 
-    async fn blocking<R, F>(&self, operation: F) -> Result<R, DuckDbStoreError>
+    async fn blocking<R, F>(&self, operation: F) -> Result<R, SqliteStoreError>
     where
         R: Send + 'static,
-        F: FnOnce(&mut Connection) -> Result<R, DuckDbStoreError> + Send + 'static,
+        F: FnOnce(&mut Connection) -> Result<R, SqliteStoreError> + Send + 'static,
     {
         let permit = Arc::clone(&self.blocking_gate)
             .acquire_owned()
             .await
-            .map_err(|_| DuckDbStoreError::Closed)?;
+            .map_err(|_| SqliteStoreError::Closed)?;
         let connection = Arc::clone(&self.connection);
         tokio::task::spawn_blocking(move || {
             let _permit = permit;
-            let mut connection = connection.lock().map_err(|_| DuckDbStoreError::Poisoned)?;
+            let mut connection = connection.lock().map_err(|_| SqliteStoreError::Poisoned)?;
             operation(&mut connection)
         })
         .await?
     }
 }
 
-impl<P, C> CheckpointStore<P> for DuckDbStore<P, C>
+impl<P, C> CheckpointStore<P> for SqliteStore<P, C>
 where
     P: AgentProtocol,
     C: Clock + Clone,
 {
-    type Error = DuckDbStoreError;
+    type Error = SqliteStoreError;
 
     fn begin_turn(
         &self,
@@ -166,12 +173,12 @@ where
     }
 }
 
-impl<P, C> ToolJournal for DuckDbStore<P, C>
+impl<P, C> ToolJournal for SqliteStore<P, C>
 where
     P: AgentProtocol,
     C: Send + Sync + 'static,
 {
-    type Error = DuckDbStoreError;
+    type Error = SqliteStoreError;
 
     fn claim(
         &self,
@@ -219,7 +226,7 @@ fn begin_turn<P: AgentProtocol>(
     connection: &mut Connection,
     command: BeginTurn<P>,
     now: u64,
-) -> Result<BeginTurnResult<P>, DuckDbStoreError> {
+) -> Result<BeginTurnResult<P>, SqliteStoreError> {
     if command.lease_deadline.0 <= now {
         return Err(StoreInvariantError::InvalidLeaseDeadline.into());
     }
@@ -352,7 +359,7 @@ fn begin_turn<P: AgentProtocol>(
 fn load_chain<P: AgentProtocol>(
     connection: &mut Connection,
     query: LoadChain,
-) -> Result<Vec<CheckpointRecord<P>>, DuckDbStoreError> {
+) -> Result<Vec<CheckpointRecord<P>>, SqliteStoreError> {
     let mut current = Some(query.response_id);
     let mut seen = HashSet::new();
     let mut reversed = Vec::new();
@@ -372,7 +379,7 @@ fn commit_turn<P: AgentProtocol>(
     connection: &mut Connection,
     command: CommitTurn<P>,
     now: u64,
-) -> Result<CommitTurnResult<P>, DuckDbStoreError> {
+) -> Result<CommitTurnResult<P>, SqliteStoreError> {
     let transaction = connection.transaction()?;
     let stored = load_checkpoint::<P>(&transaction, command.lease.response_id.as_str(), None)?;
     validate_lease(&stored, &command.lease, now)?;
@@ -459,7 +466,7 @@ fn renew_lease<P: AgentProtocol>(
     connection: &mut Connection,
     command: RenewLease,
     now: u64,
-) -> Result<TurnLease, DuckDbStoreError> {
+) -> Result<TurnLease, SqliteStoreError> {
     if command.new_deadline.0 <= now {
         return Err(StoreInvariantError::InvalidLeaseDeadline.into());
     }
@@ -496,7 +503,7 @@ fn renew_lease<P: AgentProtocol>(
 fn claim_tool(
     connection: &mut Connection,
     request: ToolExecutionRequest,
-) -> Result<ToolClaimResult, DuckDbStoreError> {
+) -> Result<ToolClaimResult, SqliteStoreError> {
     let transaction = connection.transaction()?;
     let key = request.journal_key();
     if let Some(existing) = load_tool(&transaction, &key)? {
@@ -530,7 +537,7 @@ fn claim_tool(
 fn load_tool(
     connection: &Connection,
     key: &ToolJournalKey,
-) -> Result<Option<ToolJournalRecord>, DuckDbStoreError> {
+) -> Result<Option<ToolJournalRecord>, SqliteStoreError> {
     let raw = connection
         .query_row(
             "SELECT request_json, state, result_json, failure_json
@@ -558,7 +565,7 @@ fn finish_tool(
     connection: &mut Connection,
     key: ToolJournalKey,
     outcome: ToolJournalOutcome,
-) -> Result<ToolJournalRecord, DuckDbStoreError> {
+) -> Result<ToolJournalRecord, SqliteStoreError> {
     let transaction = connection.transaction()?;
     let existing = load_tool(&transaction, &key)?.ok_or(StoreInvariantError::NotFound)?;
     if existing.state != ToolJournalState::Started {
@@ -602,7 +609,7 @@ fn finish_tool(
 fn checkpoint_exists<P: AgentProtocol>(
     connection: &Connection,
     response_id: &str,
-) -> Result<bool, DuckDbStoreError> {
+) -> Result<bool, SqliteStoreError> {
     connection
         .query_row(
             "SELECT 1 FROM agent_rt_checkpoints WHERE protocol = ?1 AND response_id = ?2",
@@ -618,7 +625,7 @@ fn load_checkpoint<P: AgentProtocol>(
     connection: &Connection,
     response_id: &str,
     expected_scope: Option<&AuthorizationScope>,
-) -> Result<StoredCheckpoint<P>, DuckDbStoreError> {
+) -> Result<StoredCheckpoint<P>, SqliteStoreError> {
     let raw = connection
         .query_row(
             "SELECT parent_response_id, tenant_id, principal_id, idempotency_key,
@@ -744,7 +751,7 @@ struct RawToolRecord {
     failure_json: Option<String>,
 }
 
-fn decode_tool(raw: RawToolRecord) -> Result<ToolJournalRecord, DuckDbStoreError> {
+fn decode_tool(raw: RawToolRecord) -> Result<ToolJournalRecord, SqliteStoreError> {
     Ok(ToolJournalRecord {
         request: serde_json::from_str(&raw.request_json)?,
         state: parse_tool_state(&raw.state)?,
@@ -894,13 +901,39 @@ mod tests {
         }
     }
 
+    #[test]
+    fn file_store_enables_durable_connection_settings() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("settings.sqlite");
+        let store = SqliteStore::<OpenAiResponses>::open(&path).unwrap();
+        let connection = store.connection.lock().unwrap();
+
+        let foreign_keys: i64 = connection
+            .query_row("PRAGMA foreign_keys", [], |row| row.get(0))
+            .unwrap();
+        let journal_mode: String = connection
+            .query_row("PRAGMA journal_mode", [], |row| row.get(0))
+            .unwrap();
+        let synchronous: i64 = connection
+            .query_row("PRAGMA synchronous", [], |row| row.get(0))
+            .unwrap();
+        let busy_timeout: i64 = connection
+            .query_row("PRAGMA busy_timeout", [], |row| row.get(0))
+            .unwrap();
+
+        assert_eq!(foreign_keys, 1);
+        assert_eq!(journal_mode, "wal");
+        assert_eq!(synchronous, 2);
+        assert_eq!(busy_timeout, 5_000);
+    }
+
     #[tokio::test]
     async fn survives_restart_and_loads_parent_first() {
         let directory = tempfile::tempdir().unwrap();
-        let path = directory.path().join("agent.duckdb");
+        let path = directory.path().join("agent.sqlite");
         let clock = TestClock::new(1_000);
         let store =
-            DuckDbStore::<OpenAiResponses, _>::open_with_clock(&path, clock.clone()).unwrap();
+            SqliteStore::<OpenAiResponses, _>::open_with_clock(&path, clock.clone()).unwrap();
         let BeginTurnResult::Acquired(parent) = store
             .begin_turn(begin("parent", None, 2_000))
             .await
@@ -923,7 +956,7 @@ mod tests {
             .unwrap();
         drop(store);
 
-        let reopened = DuckDbStore::<OpenAiResponses, _>::open_with_clock(&path, clock).unwrap();
+        let reopened = SqliteStore::<OpenAiResponses, _>::open_with_clock(&path, clock).unwrap();
         let chain = reopened
             .load_chain(LoadChain {
                 scope: scope("tenant-a"),
@@ -939,7 +972,7 @@ mod tests {
     #[tokio::test]
     async fn expired_owner_is_replaced_and_stale_commit_is_fenced() {
         let clock = TestClock::new(1_000);
-        let store = DuckDbStore::<OpenAiResponses, _>::from_connection(
+        let store = SqliteStore::<OpenAiResponses, _>::from_connection(
             Connection::open_in_memory().unwrap(),
             clock.clone(),
         )
@@ -972,7 +1005,7 @@ mod tests {
             .unwrap_err();
         assert!(matches!(
             error,
-            DuckDbStoreError::Invariant(
+            SqliteStoreError::Invariant(
                 StoreInvariantError::LeaseMismatch | StoreInvariantError::VersionConflict
             )
         ));
@@ -980,7 +1013,7 @@ mod tests {
 
     #[tokio::test]
     async fn cross_scope_chain_reads_are_denied() {
-        let store = DuckDbStore::<OpenAiResponses>::open_in_memory().unwrap();
+        let store = SqliteStore::<OpenAiResponses>::open_in_memory().unwrap();
         store
             .begin_turn(begin("response", None, u64::MAX / 2))
             .await
@@ -994,15 +1027,15 @@ mod tests {
             .unwrap_err();
         assert!(matches!(
             error,
-            DuckDbStoreError::Invariant(StoreInvariantError::NotFound)
+            SqliteStoreError::Invariant(StoreInvariantError::NotFound)
         ));
     }
 
     #[tokio::test]
     async fn tool_result_survives_restart_and_is_not_reclaimed() {
         let directory = tempfile::tempdir().unwrap();
-        let path = directory.path().join("tools.duckdb");
-        let store = DuckDbStore::<OpenAiResponses>::open(&path).unwrap();
+        let path = directory.path().join("tools.sqlite");
+        let store = SqliteStore::<OpenAiResponses>::open(&path).unwrap();
         let request = tool_request("query", "tenant-a");
         let key = request.journal_key();
         assert!(matches!(
@@ -1020,7 +1053,7 @@ mod tests {
             .unwrap();
         drop(store);
 
-        let reopened = DuckDbStore::<OpenAiResponses>::open(&path).unwrap();
+        let reopened = SqliteStore::<OpenAiResponses>::open(&path).unwrap();
         let record = reopened.load(&key).await.unwrap().unwrap();
         assert_eq!(record.result.unwrap().output["answer"], 42);
         assert!(matches!(
@@ -1031,7 +1064,7 @@ mod tests {
 
     #[tokio::test]
     async fn tool_idempotency_is_scoped_and_binds_the_full_request() {
-        let store = DuckDbStore::<OpenAiResponses>::open_in_memory().unwrap();
+        let store = SqliteStore::<OpenAiResponses>::open_in_memory().unwrap();
         store
             .claim(tool_request("query", "tenant-a"))
             .await
@@ -1042,7 +1075,7 @@ mod tests {
             .unwrap_err();
         assert!(matches!(
             error,
-            DuckDbStoreError::Invariant(StoreInvariantError::IdempotencyConflict)
+            SqliteStoreError::Invariant(StoreInvariantError::IdempotencyConflict)
         ));
         assert!(
             store

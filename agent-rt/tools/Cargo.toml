@@ -25,7 +25,7 @@ url.workspace = true
 
 [dev-dependencies]
 axum.workspace = true
-dynamo-agent-rt-store = { path = "../store", features = ["duckdb"] }
+dynamo-agent-rt-store = { path = "../store", features = ["sqlite"] }
 serde_json.workspace = true
 tempfile.workspace = true
 tokio = { workspace = true, features = ["macros", "net", "rt"] }
