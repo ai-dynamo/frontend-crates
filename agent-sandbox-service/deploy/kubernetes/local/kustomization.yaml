@@ -1,0 +1,41 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../base
+  - postgres.yaml
+secretGenerator:
+  - name: agent-rt-sandbox-secrets
+    namespace: agent-rt-sandbox-system
+    literals:
+      - database-url=postgresql://agent_rt_sandbox:local-postgres-password@postgres.agent-rt-sandbox-system.svc.cluster.local:5432/agent_rt_sandbox
+      - postgres-password=local-postgres-password
+      - trusted-proxy-token=local-sandbox-token-0123456789abcdef
+generatorOptions:
+  disableNameSuffixHash: true
+patches:
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: agent-rt-sandbox-service
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      group: extensions.agents.x-k8s.io
+      version: v1beta1
+      kind: SandboxWarmPool
+      name: python-deny-egress
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      group: extensions.agents.x-k8s.io
+      version: v1beta1
+      kind: SandboxTemplate
+      name: python-deny-egress
+    patch: |-
+      - op: remove
+        path: /spec/podTemplate/spec/runtimeClassName
