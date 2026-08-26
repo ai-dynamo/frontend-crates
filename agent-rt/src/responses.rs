@@ -1,16 +1,172 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+use std::convert::Infallible;
+
 use dynamo_protocols::types::responses::{
     FunctionCallOutput, FunctionCallOutputItemParam, InputItem, InputParam, Item, OutputItem,
-    OutputStatus, Response, Status,
+    OutputStatus, Response, ResponseStreamEvent, Status,
 };
 use thiserror::Error;
 
 use crate::{
     InterpretedOutput, OpenAiResponses, OutputIdentity, OutputInterpreter, RuntimeToolCall,
-    RuntimeToolResult, ToolLoopAdapter, ToolRouter, TurnState,
+    RuntimeToolResult, StreamEventAction, StreamEventInterpreter, ToolLoopAdapter, ToolRouter,
+    TurnState,
 };
+
+/// Rewrites backend Responses events into one public response stream.
+#[derive(Debug, Default)]
+pub struct ResponsesStreamEventInterpreter {
+    next_sequence_number: u64,
+    expose_step_lifecycle: bool,
+    public_stream_started: bool,
+}
+
+impl StreamEventInterpreter<OpenAiResponses> for ResponsesStreamEventInterpreter {
+    type Error = Infallible;
+
+    fn begin_step(&mut self, _step_kind: crate::ModelStepKind) {
+        self.expose_step_lifecycle = !self.public_stream_started;
+        self.public_stream_started = true;
+    }
+
+    fn observe(
+        &mut self,
+        mut event: ResponseStreamEvent,
+        identity: &OutputIdentity,
+    ) -> Result<StreamEventAction<OpenAiResponses>, Self::Error> {
+        let expose_lifecycle = self.expose_step_lifecycle;
+        let action = match &mut event {
+            ResponseStreamEvent::ResponseCreated(inner) => {
+                apply_response_identity(&mut inner.response, identity);
+                if expose_lifecycle {
+                    StreamEventAction::Emit(event)
+                } else {
+                    StreamEventAction::Suppress
+                }
+            }
+            ResponseStreamEvent::ResponseInProgress(inner) => {
+                apply_response_identity(&mut inner.response, identity);
+                if expose_lifecycle {
+                    StreamEventAction::Emit(event)
+                } else {
+                    StreamEventAction::Suppress
+                }
+            }
+            ResponseStreamEvent::ResponseQueued(inner) => {
+                apply_response_identity(&mut inner.response, identity);
+                if expose_lifecycle {
+                    StreamEventAction::Emit(event)
+                } else {
+                    StreamEventAction::Suppress
+                }
+            }
+            ResponseStreamEvent::ResponseCompleted(inner) => {
+                apply_response_identity(&mut inner.response, identity);
+                StreamEventAction::Terminal {
+                    response: inner.response.clone(),
+                    event,
+                }
+            }
+            ResponseStreamEvent::ResponseFailed(inner) => {
+                apply_response_identity(&mut inner.response, identity);
+                StreamEventAction::Terminal {
+                    response: inner.response.clone(),
+                    event,
+                }
+            }
+            ResponseStreamEvent::ResponseIncomplete(inner) => {
+                apply_response_identity(&mut inner.response, identity);
+                StreamEventAction::Terminal {
+                    response: inner.response.clone(),
+                    event,
+                }
+            }
+            _ => StreamEventAction::Emit(event),
+        };
+        Ok(action)
+    }
+
+    fn prepare_emit(&mut self, event: &mut ResponseStreamEvent) {
+        set_sequence_number(event, self.next_sequence_number);
+        self.next_sequence_number += 1;
+    }
+}
+
+fn apply_response_identity(response: &mut Response, identity: &OutputIdentity) {
+    response.id = identity.response_id.to_string();
+    response.previous_response_id = identity
+        .parent_response_id
+        .as_ref()
+        .map(ToString::to_string);
+}
+
+macro_rules! set_event_sequence_number {
+    ($event:expr, $sequence_number:expr, $($variant:ident),+ $(,)?) => {
+        match $event {
+            $(ResponseStreamEvent::$variant(inner) => {
+                inner.sequence_number = $sequence_number;
+            })+
+        }
+    };
+}
+
+fn set_sequence_number(event: &mut ResponseStreamEvent, sequence_number: u64) {
+    set_event_sequence_number!(
+        event,
+        sequence_number,
+        ResponseCreated,
+        ResponseInProgress,
+        ResponseCompleted,
+        ResponseFailed,
+        ResponseIncomplete,
+        ResponseOutputItemAdded,
+        ResponseOutputItemDone,
+        ResponseContentPartAdded,
+        ResponseContentPartDone,
+        ResponseOutputTextDelta,
+        ResponseOutputTextDone,
+        ResponseRefusalDelta,
+        ResponseRefusalDone,
+        ResponseFunctionCallArgumentsDelta,
+        ResponseFunctionCallArgumentsDone,
+        ResponseFileSearchCallInProgress,
+        ResponseFileSearchCallSearching,
+        ResponseFileSearchCallCompleted,
+        ResponseWebSearchCallInProgress,
+        ResponseWebSearchCallSearching,
+        ResponseWebSearchCallCompleted,
+        ResponseReasoningSummaryPartAdded,
+        ResponseReasoningSummaryPartDone,
+        ResponseReasoningSummaryTextDelta,
+        ResponseReasoningSummaryTextDone,
+        ResponseReasoningTextDelta,
+        ResponseReasoningTextDone,
+        ResponseImageGenerationCallCompleted,
+        ResponseImageGenerationCallGenerating,
+        ResponseImageGenerationCallInProgress,
+        ResponseImageGenerationCallPartialImage,
+        ResponseMCPCallArgumentsDelta,
+        ResponseMCPCallArgumentsDone,
+        ResponseMCPCallCompleted,
+        ResponseMCPCallFailed,
+        ResponseMCPCallInProgress,
+        ResponseMCPListToolsCompleted,
+        ResponseMCPListToolsFailed,
+        ResponseMCPListToolsInProgress,
+        ResponseCodeInterpreterCallInProgress,
+        ResponseCodeInterpreterCallInterpreting,
+        ResponseCodeInterpreterCallCompleted,
+        ResponseCodeInterpreterCallCodeDelta,
+        ResponseCodeInterpreterCallCodeDone,
+        ResponseOutputTextAnnotationAdded,
+        ResponseQueued,
+        ResponseCustomToolCallInputDelta,
+        ResponseCustomToolCallInputDone,
+        ResponseError,
+    );
+}
 
 /// Selects the durable transition for one native Responses result.
 pub trait ResponsesOutcomePolicy: Send + Sync + 'static {
@@ -249,16 +405,18 @@ where
 mod tests {
     use dynamo_protocols::types::responses::{
         CreateResponse, FunctionCallOutput, InputItem, InputParam, Item, Response,
+        ResponseCompletedEvent, ResponseCreatedEvent, ResponseStreamEvent, ResponseTextDeltaEvent,
     };
 
     use crate::{
-        ConfiguredToolRouter, OutputIdentity, OutputInterpreter, ResponseId, RuntimeToolResult,
-        ToolExecutionResult, ToolLoopAdapter, ToolRoute, TurnState,
+        ConfiguredToolRouter, ModelStepKind, OutputIdentity, OutputInterpreter, ResponseId,
+        RuntimeToolResult, StreamEventAction, StreamEventInterpreter, ToolExecutionResult,
+        ToolLoopAdapter, ToolRoute, TurnState,
     };
 
     use super::{
         PolicyResponsesOutputInterpreter, ResponsesOutputError, ResponsesOutputInterpreter,
-        ResponsesToolLoopAdapter, RoutedResponsesOutcomePolicy,
+        ResponsesStreamEventInterpreter, ResponsesToolLoopAdapter, RoutedResponsesOutcomePolicy,
     };
 
     fn response(status: &str, output: serde_json::Value) -> Response {
@@ -309,6 +467,84 @@ mod tests {
             interpreted.replay_items.as_slice(),
             [InputItem::Item(Item::Message(_))]
         ));
+    }
+
+    #[test]
+    fn stream_interpreter_rewrites_identity_and_public_sequence() {
+        let mut interpreter = ResponsesStreamEventInterpreter::default();
+        interpreter.begin_step(ModelStepKind::Initial);
+
+        let created = ResponseStreamEvent::ResponseCreated(ResponseCreatedEvent {
+            sequence_number: 9,
+            response: response("in_progress", serde_json::json!([])),
+        });
+        let StreamEventAction::Emit(mut created) =
+            interpreter.observe(created, &identity()).unwrap()
+        else {
+            panic!("created event must be emitted")
+        };
+        interpreter.prepare_emit(&mut created);
+        let ResponseStreamEvent::ResponseCreated(created) = created else {
+            unreachable!()
+        };
+        assert_eq!(created.sequence_number, 0);
+        assert_eq!(created.response.id, "resp-public");
+        assert_eq!(
+            created.response.previous_response_id.as_deref(),
+            Some("resp-parent")
+        );
+
+        let terminal = ResponseStreamEvent::ResponseCompleted(ResponseCompletedEvent {
+            sequence_number: 99,
+            response: response("completed", serde_json::json!([])),
+        });
+        let StreamEventAction::Terminal {
+            mut event,
+            response,
+        } = interpreter.observe(terminal, &identity()).unwrap()
+        else {
+            panic!("completed event must be retained as terminal")
+        };
+        assert_eq!(response.id, "resp-public");
+        interpreter.prepare_emit(&mut event);
+        let ResponseStreamEvent::ResponseCompleted(completed) = event else {
+            unreachable!()
+        };
+        assert_eq!(completed.sequence_number, 1);
+    }
+
+    #[test]
+    fn internal_step_lifecycle_is_suppressed_without_sequence_gap() {
+        let mut interpreter = ResponsesStreamEventInterpreter::default();
+        interpreter.begin_step(ModelStepKind::Initial);
+        interpreter.begin_step(ModelStepKind::RuntimeToolContinuation);
+
+        let created = ResponseStreamEvent::ResponseCreated(ResponseCreatedEvent {
+            sequence_number: 0,
+            response: response("in_progress", serde_json::json!([])),
+        });
+        assert!(matches!(
+            interpreter.observe(created, &identity()).unwrap(),
+            StreamEventAction::Suppress
+        ));
+
+        let delta = ResponseStreamEvent::ResponseOutputTextDelta(ResponseTextDeltaEvent {
+            sequence_number: 42,
+            item_id: "msg-1".to_owned(),
+            output_index: 0,
+            content_index: 0,
+            delta: "hello".to_owned(),
+            logprobs: None,
+        });
+        let StreamEventAction::Emit(mut delta) = interpreter.observe(delta, &identity()).unwrap()
+        else {
+            panic!("content delta must be emitted")
+        };
+        interpreter.prepare_emit(&mut delta);
+        let ResponseStreamEvent::ResponseOutputTextDelta(delta) = delta else {
+            unreachable!()
+        };
+        assert_eq!(delta.sequence_number, 0);
     }
 
     #[test]

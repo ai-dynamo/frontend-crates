@@ -24,6 +24,7 @@ mod protocol;
 mod responses;
 mod runtime;
 mod selector;
+mod stream;
 mod tool;
 mod tool_memory;
 mod tool_runner;
@@ -56,13 +57,15 @@ pub use output::{InterpretedOutput, OutputIdentity, OutputInterpreter};
 pub use protocol::{AgentProtocol, AnthropicMessages, OpenAiResponses};
 pub use responses::{
     ClientToolResponsesPolicy, PolicyResponsesOutputInterpreter, ResponsesOutcomePolicy,
-    ResponsesOutputError, ResponsesOutputInterpreter, ResponsesToolAdapterError,
-    ResponsesToolLoopAdapter, RoutedResponsesOutcomeError, RoutedResponsesOutcomePolicy,
+    ResponsesOutputError, ResponsesOutputInterpreter, ResponsesStreamEventInterpreter,
+    ResponsesToolAdapterError, ResponsesToolLoopAdapter, RoutedResponsesOutcomeError,
+    RoutedResponsesOutcomePolicy,
 };
 pub use runtime::{AgentRuntime, AgentRuntimeError, RunTurn, RunTurnResult, RuntimeErrorFor};
 pub use selector::{
     AnthropicRequestSelector, RuntimeSelectionContext, RuntimeSelector, StatefulRequestSelector,
 };
+pub use stream::{StreamEventAction, StreamEventInterpreter};
 pub use tool::{
     Blake3ToolIdempotencyKeys, ConfiguredToolRouter, ConservativeToolFailurePolicy,
     RuntimeToolCall, RuntimeToolResult, ToolClaimResult, ToolExecutionFailure,
