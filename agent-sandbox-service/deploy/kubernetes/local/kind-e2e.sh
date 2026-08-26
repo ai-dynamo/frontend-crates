@@ -93,6 +93,7 @@ lookup_request=$(jq -c \
   --arg workspace_id "$workspace_id" \
   --arg execution_id "$execution_id" \
   '.workspace_id = $workspace_id | .execution_id = $execution_id' <<<"$lookup_request")
+execution_succeeded=false
 for _ in $(seq 1 60); do
   outcome=$(curl -fsS "${scope_headers[@]}" -d "$lookup_request" http://127.0.0.1:18090/v1/executions:lookup)
   state=$(jq -r '.state // "missing"' <<<"$outcome")
@@ -105,8 +106,9 @@ for _ in $(seq 1 60); do
       '{execution: $execution, artifact_id: $artifact_id}')
     artifact=$(curl -fsS "${scope_headers[@]}" -d "$artifact_request" http://127.0.0.1:18090/v1/artifacts:read)
     jq -e '.metadata.name == "result.txt" and .bytes_base64 == "ZG9uZQ=="' <<<"$artifact" >/dev/null
-    echo "Kubernetes sandbox execution succeeded"
-    exit 0
+    sandbox_id=$(jq -r '.provider_sandbox_id' <<<"$outcome")
+    execution_succeeded=true
+    break
   fi
   if [[ "$state" =~ ^(failed|cancelled|timed_out|outcome_unknown)$ ]]; then
     jq . <<<"$outcome" >&2
@@ -114,6 +116,47 @@ for _ in $(seq 1 60); do
   fi
   sleep 1
 done
+if [[ "$execution_succeeded" != "true" ]]; then
+  echo "sandbox execution did not finish" >&2
+  exit 1
+fi
 
-echo "sandbox execution did not finish" >&2
-exit 1
+cancel_execution_id=kind-cancel-${run_id}
+cancel_start_request=$(jq -c \
+  --arg execution_id "$cancel_execution_id" \
+  '.execution_id = $execution_id
+    | .command.argv = ["python", "-c", "import time; time.sleep(60)"]
+    | .command.artifact_paths = []
+    | .limits.timeout_millis = 60000' <<<"$start_request")
+curl -fsS "${scope_headers[@]}" -d "$cancel_start_request" http://127.0.0.1:18090/v1/executions >/dev/null
+cancel_lookup_request=$(jq -c \
+  --arg execution_id "$cancel_execution_id" \
+  '.execution_id = $execution_id' <<<"$lookup_request")
+curl -fsS "${scope_headers[@]}" -d "$cancel_lookup_request" http://127.0.0.1:18090/v1/executions:cancel >/dev/null
+
+execution_cancelled=false
+for _ in $(seq 1 30); do
+  outcome=$(curl -fsS "${scope_headers[@]}" -d "$cancel_lookup_request" http://127.0.0.1:18090/v1/executions:lookup)
+  state=$(jq -r '.state // "missing"' <<<"$outcome")
+  if [[ "$state" == "cancelled" ]]; then
+    execution_cancelled=true
+    break
+  fi
+  if [[ "$state" =~ ^(succeeded|failed|timed_out|outcome_unknown)$ ]]; then
+    jq . <<<"$outcome" >&2
+    exit 1
+  fi
+  sleep 1
+done
+if [[ "$execution_cancelled" != "true" ]]; then
+  echo "sandbox execution was not cancelled" >&2
+  exit 1
+fi
+
+workspace_request=$(jq -n \
+  --arg workspace_id "$workspace_id" \
+  '{scope: {tenant_id: "tenant-a", principal_id: "principal-a"}, workspace_id: $workspace_id, profile: "python-deny-egress"}')
+curl -fsS "${scope_headers[@]}" -d "$workspace_request" http://127.0.0.1:18090/v1/workspaces:delete >/dev/null
+kubectl -n agent-sandboxes wait --for=delete "sandbox/${sandbox_id}" --timeout=60s
+
+echo "Kubernetes sandbox execution, cancellation, artifact recovery, and cleanup succeeded"
