@@ -3,14 +3,15 @@
 
 use std::marker::PhantomData;
 
+use futures::StreamExt;
 use thiserror::Error;
 
 use crate::{
-    AgentProtocol, BeginTurn, BeginTurnResult, CheckpointRecord, CheckpointStore, Clock,
+    AgentProtocol, BeginTurn, BeginTurnResult, BoxStream, CheckpointRecord, CheckpointStore, Clock,
     CommitTurn, IdGenerator, IdempotencyKey, InferenceIntent, InferenceInvoker, InferenceOutput,
     InferenceRequest, LeaseDeadline, LoadChain, OutputIdentity, OutputInterpreter,
-    RequestFingerprinter, RequestMaterializer, ResponseId, RuntimeAuthorization, TurnLease,
-    TurnState,
+    RequestFingerprinter, RequestMaterializer, ResponseId, RuntimeAuthorization, StreamEventAction,
+    StreamEventInterpreter, TurnLease, TurnState,
 };
 
 /// Inputs supplied by authenticated frontend policy for one public turn.
@@ -40,6 +41,15 @@ where
         /// immediate runtime work such as tool execution.
         lease: Option<TurnLease>,
     },
+    Existing(Box<CheckpointRecord<P>>),
+}
+
+/// A newly acquired live stream or an idempotently existing checkpoint.
+pub enum RunStreamResult<'a, P, E>
+where
+    P: AgentProtocol,
+{
+    Live(BoxStream<'a, Result<P::StreamEvent, E>>),
     Existing(Box<CheckpointRecord<P>>),
 }
 
@@ -111,6 +121,40 @@ pub type RuntimeErrorFor<P, S, M, F, I, O> = AgentRuntimeError<
     <F as RequestFingerprinter<P>>::Error,
     <I as InferenceInvoker<P>>::Error,
     <O as OutputInterpreter<P>>::Error,
+>;
+
+#[derive(Debug, Error)]
+pub enum AgentStreamRuntimeError<RuntimeError, InterpreterError, StoreError>
+where
+    RuntimeError: std::error::Error + Send + Sync + 'static,
+    InterpreterError: std::error::Error + Send + Sync + 'static,
+    StoreError: std::error::Error + Send + Sync + 'static,
+{
+    #[error("agent runtime failed: {0}")]
+    Runtime(RuntimeError),
+    #[error("stream inference returned a unary result; failed-state commit: {checkpoint_error:?}")]
+    ExpectedStreaming {
+        checkpoint_error: Option<StoreError>,
+    },
+    #[error(
+        "stream event interpretation failed: {error}; failed-state commit: {checkpoint_error:?}"
+    )]
+    Interpreter {
+        error: InterpreterError,
+        checkpoint_error: Option<StoreError>,
+    },
+    #[error(
+        "inference stream ended without a terminal response; failed-state commit: {checkpoint_error:?}"
+    )]
+    MissingTerminal {
+        checkpoint_error: Option<StoreError>,
+    },
+}
+
+pub type StreamRuntimeErrorFor<P, S, M, F, I, O, V> = AgentStreamRuntimeError<
+    RuntimeErrorFor<P, S, M, F, I, O>,
+    <V as StreamEventInterpreter<P>>::Error,
+    <S as CheckpointStore<P>>::Error,
 >;
 
 pub(crate) struct PreparedTurn<P, C>
@@ -189,8 +233,12 @@ mod tests {
 
     use dynamo_protocols::types::{
         anthropic::{AnthropicCreateMessageRequest, AnthropicMessageResponse},
-        responses::{CreateResponse, InputParam, Response},
+        responses::{
+            CreateResponse, InputParam, Response, ResponseCompletedEvent, ResponseCreatedEvent,
+            ResponseStreamEvent, ResponseTextDeltaEvent, Status,
+        },
     };
+    use futures::StreamExt;
     use thiserror::Error;
 
     use crate::{
@@ -199,8 +247,8 @@ mod tests {
         CheckpointStore, Clock, IdGenerator, IdempotencyKey, InMemoryCheckpointStore,
         InferenceFuture, InferenceIntent, InferenceInvoker, InferenceOutput, InferenceRequest,
         LoadChain, ModelStepKind, OpenAiResponses, ResponseId, ResponsesOutputInterpreter,
-        ResponsesRequestMaterializer, RunTurn, RunTurnResult, RuntimeAuthorization, RuntimeLimits,
-        TurnId, TurnState,
+        ResponsesRequestMaterializer, ResponsesStreamEventInterpreter, RunStreamResult, RunTurn,
+        RunTurnResult, RuntimeAuthorization, RuntimeLimits, TurnId, TurnState,
     };
 
     #[derive(Debug, Clone, Copy)]
@@ -295,6 +343,36 @@ mod tests {
                 } else {
                     Ok(InferenceOutput::Unary(Box::new(response)))
                 }
+            })
+        }
+    }
+
+    #[derive(Debug)]
+    struct StreamingInvoker {
+        events: Mutex<Option<Vec<ResponseStreamEvent>>>,
+    }
+
+    impl StreamingInvoker {
+        fn new(events: Vec<ResponseStreamEvent>) -> Self {
+            Self {
+                events: Mutex::new(Some(events)),
+            }
+        }
+    }
+
+    impl InferenceInvoker<OpenAiResponses> for StreamingInvoker {
+        type Context = ();
+        type Error = MockInferenceError;
+
+        fn invoke<'a>(
+            &'a self,
+            _request: &'a InferenceRequest<OpenAiResponses, Self::Context>,
+        ) -> InferenceFuture<'a, OpenAiResponses, Self::Error> {
+            let events = self.events.lock().unwrap().take().unwrap();
+            Box::pin(async move {
+                Ok(InferenceOutput::Streaming(Box::pin(futures::stream::iter(
+                    events.into_iter().map(Ok),
+                ))))
             })
         }
     }
@@ -506,6 +584,138 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn native_stream_commits_before_yielding_terminal_event() {
+        let clock = FixedClock(1_000);
+        let response = MockInvoker::new(false).response;
+        let created_response = Response {
+            status: Status::InProgress,
+            output: Vec::new(),
+            ..response.clone()
+        };
+        let runtime = AgentRuntime::new(
+            InMemoryCheckpointStore::new(clock),
+            ResponsesRequestMaterializer::default(),
+            CanonicalJsonFingerprinter,
+            StreamingInvoker::new(vec![
+                ResponseStreamEvent::ResponseCreated(ResponseCreatedEvent {
+                    sequence_number: 41,
+                    response: created_response,
+                }),
+                ResponseStreamEvent::ResponseOutputTextDelta(ResponseTextDeltaEvent {
+                    sequence_number: 42,
+                    item_id: "msg-1".to_owned(),
+                    output_index: 0,
+                    content_index: 0,
+                    delta: "answer".to_owned(),
+                    logprobs: None,
+                }),
+                ResponseStreamEvent::ResponseCompleted(ResponseCompletedEvent {
+                    sequence_number: 43,
+                    response,
+                }),
+            ]),
+            ResponsesOutputInterpreter::default(),
+            SequentialIds::default(),
+            clock,
+        );
+        let result = runtime
+            .run_stream(
+                command("hello", None, "idem-stream"),
+                ResponsesStreamEventInterpreter::default(),
+            )
+            .await
+            .unwrap();
+        let RunStreamResult::Live(mut stream) = result else {
+            panic!("expected a newly acquired stream")
+        };
+
+        let ResponseStreamEvent::ResponseCreated(created) = stream.next().await.unwrap().unwrap()
+        else {
+            panic!("expected created event")
+        };
+        assert_eq!(created.sequence_number, 0);
+        assert_eq!(created.response.id, "resp-1");
+        let ResponseStreamEvent::ResponseOutputTextDelta(delta) =
+            stream.next().await.unwrap().unwrap()
+        else {
+            panic!("expected text delta")
+        };
+        assert_eq!(delta.sequence_number, 1);
+        let ResponseStreamEvent::ResponseCompleted(completed) =
+            stream.next().await.unwrap().unwrap()
+        else {
+            panic!("expected completed event")
+        };
+        assert_eq!(completed.sequence_number, 2);
+        assert_eq!(completed.response.id, "resp-1");
+        assert!(stream.next().await.is_none());
+
+        let record = runtime
+            .store()
+            .load_chain(LoadChain {
+                scope: authorization().scope,
+                response_id: ResponseId::from("resp-1"),
+            })
+            .await
+            .unwrap()
+            .pop()
+            .unwrap();
+        assert_eq!(record.state, TurnState::Completed);
+        assert_eq!(record.response.unwrap().id, "resp-1");
+    }
+
+    #[tokio::test]
+    async fn stream_without_terminal_event_is_marked_failed() {
+        let clock = FixedClock(1_000);
+        let mut response = MockInvoker::new(false).response;
+        response.status = Status::InProgress;
+        response.output.clear();
+        let runtime = AgentRuntime::new(
+            InMemoryCheckpointStore::new(clock),
+            ResponsesRequestMaterializer::default(),
+            CanonicalJsonFingerprinter,
+            StreamingInvoker::new(vec![ResponseStreamEvent::ResponseCreated(
+                ResponseCreatedEvent {
+                    sequence_number: 0,
+                    response,
+                },
+            )]),
+            ResponsesOutputInterpreter::default(),
+            SequentialIds::default(),
+            clock,
+        );
+        let result = runtime
+            .run_stream(
+                command("hello", None, "idem-missing-terminal"),
+                ResponsesStreamEventInterpreter::default(),
+            )
+            .await
+            .unwrap();
+        let RunStreamResult::Live(mut stream) = result else {
+            panic!("expected a newly acquired stream")
+        };
+        assert!(stream.next().await.unwrap().is_ok());
+        assert!(matches!(
+            stream.next().await.unwrap(),
+            Err(crate::AgentStreamRuntimeError::MissingTerminal {
+                checkpoint_error: None
+            })
+        ));
+
+        let record = runtime
+            .store()
+            .load_chain(LoadChain {
+                scope: authorization().scope,
+                response_id: ResponseId::from("resp-1"),
+            })
+            .await
+            .unwrap()
+            .pop()
+            .unwrap();
+        assert_eq!(record.state, TurnState::Failed);
+    }
+
+    #[tokio::test]
     async fn anthropic_turn_stays_native_end_to_end() {
         let clock = FixedClock(1_000);
         let runtime = AgentRuntime::<AnthropicMessages, _, _, _, _, _, _, _>::new(
@@ -595,6 +805,111 @@ where
         })
     }
 
+    /// Runs one native inference stream through checkpoint-gated completion.
+    ///
+    /// Events remain pull-based. The terminal event is yielded only after the
+    /// native response has been interpreted and durably committed.
+    pub async fn run_stream<'a, V>(
+        &'a self,
+        command: RunTurn<P, I::Context>,
+        mut stream_interpreter: V,
+    ) -> Result<
+        RunStreamResult<'a, P, StreamRuntimeErrorFor<P, S, M, F, I, O, V>>,
+        StreamRuntimeErrorFor<P, S, M, F, I, O, V>,
+    >
+    where
+        V: StreamEventInterpreter<P> + 'a,
+    {
+        let prepared = match self
+            .prepare_turn(command)
+            .await
+            .map_err(AgentStreamRuntimeError::Runtime)?
+        {
+            PrepareTurnResult::Acquired(prepared) => *prepared,
+            PrepareTurnResult::Existing(record) => return Ok(RunStreamResult::Existing(record)),
+        };
+        let PreparedTurn {
+            inference_request,
+            invocation_context,
+            inference_intent,
+            identity,
+            lease,
+            ..
+        } = prepared;
+        let request = InferenceRequest {
+            request: inference_request,
+            context: invocation_context,
+            intent: inference_intent,
+        };
+        let inference = match self.invoker.invoke(&request).await {
+            Ok(InferenceOutput::Streaming(stream)) => stream,
+            Ok(InferenceOutput::Unary(_)) => {
+                let checkpoint_error = self.mark_failed(lease).await;
+                return Err(AgentStreamRuntimeError::ExpectedStreaming { checkpoint_error });
+            }
+            Err(error) => {
+                let checkpoint_error = self.mark_failed(lease).await;
+                return Err(AgentStreamRuntimeError::Runtime(
+                    AgentRuntimeError::Inference {
+                        error,
+                        checkpoint_error,
+                    },
+                ));
+            }
+        };
+        stream_interpreter.begin_step(inference_intent.step_kind);
+
+        let output = async_stream::stream! {
+            let mut inference = inference;
+            let mut lease = Some(lease);
+            while let Some(item) = inference.next().await {
+                let event = match item {
+                    Ok(event) => event,
+                    Err(error) => {
+                        let checkpoint_error = self.mark_failed(lease.take().expect("live stream lease")).await;
+                        yield Err(AgentStreamRuntimeError::Runtime(AgentRuntimeError::Inference {
+                            error,
+                            checkpoint_error,
+                        }));
+                        return;
+                    }
+                };
+                let action = match stream_interpreter.observe(event, &identity) {
+                    Ok(action) => action,
+                    Err(error) => {
+                        let checkpoint_error = self.mark_failed(lease.take().expect("live stream lease")).await;
+                        yield Err(AgentStreamRuntimeError::Interpreter {
+                            error,
+                            checkpoint_error,
+                        });
+                        return;
+                    }
+                };
+                match action {
+                    StreamEventAction::Emit(mut event) => {
+                        stream_interpreter.prepare_emit(&mut event);
+                        yield Ok(event);
+                    }
+                    StreamEventAction::Suppress => {}
+                    StreamEventAction::Terminal { mut event, response } => {
+                        let live_lease = lease.take().expect("live stream lease");
+                        if let Err(error) = self.commit_response(response, &identity, live_lease).await {
+                            yield Err(AgentStreamRuntimeError::Runtime(error));
+                            return;
+                        }
+                        stream_interpreter.prepare_emit(&mut event);
+                        yield Ok(event);
+                        return;
+                    }
+                }
+            }
+
+            let checkpoint_error = self.mark_failed(lease.take().expect("live stream lease")).await;
+            yield Err(AgentStreamRuntimeError::MissingTerminal { checkpoint_error });
+        };
+        Ok(RunStreamResult::Live(Box::pin(output)))
+    }
+
     pub(crate) async fn invoke_step(
         &self,
         request: &InferenceRequest<P, I::Context>,
@@ -617,6 +932,15 @@ where
             }
         };
 
+        self.commit_response(response, identity, lease).await
+    }
+
+    pub(crate) async fn commit_response(
+        &self,
+        response: P::Response,
+        identity: &OutputIdentity,
+        lease: TurnLease,
+    ) -> Result<crate::CommitTurnResult<P>, RuntimeErrorFor<P, S, M, F, I, O>> {
         let output = match self.output_interpreter.interpret(response, identity) {
             Ok(output) => output,
             Err(error) => {

@@ -61,7 +61,10 @@ pub use responses::{
     ResponsesToolAdapterError, ResponsesToolLoopAdapter, RoutedResponsesOutcomeError,
     RoutedResponsesOutcomePolicy,
 };
-pub use runtime::{AgentRuntime, AgentRuntimeError, RunTurn, RunTurnResult, RuntimeErrorFor};
+pub use runtime::{
+    AgentRuntime, AgentRuntimeError, AgentStreamRuntimeError, RunStreamResult, RunTurn,
+    RunTurnResult, RuntimeErrorFor, StreamRuntimeErrorFor,
+};
 pub use selector::{
     AnthropicRequestSelector, RuntimeSelectionContext, RuntimeSelector, StatefulRequestSelector,
 };
