@@ -1587,6 +1587,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "dynamo-agent-tools"
+version = "0.1.0"
+dependencies = [
+ "dynamo-agent-rt",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "dynamo-conformance-fixtures-v2"
 version = "0.1.0"
 dependencies = [
