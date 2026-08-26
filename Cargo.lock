@@ -12,10 +12,12 @@ checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
 name = "agent-rt-sandbox"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "blake3",
  "chrono",
  "deadpool-postgres",
  "dynamo-agent-rt",
+ "futures",
  "k8s-openapi",
  "kube",
  "postgresql_embedded",
@@ -31,6 +33,7 @@ dependencies = [
  "tonic-prost",
  "tonic-prost-build",
  "tracing",
+ "url",
 ]
 
 [[package]]

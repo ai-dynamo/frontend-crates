@@ -179,6 +179,8 @@ pub trait SandboxProvider: Send + Sync + 'static {
 
 mod durable_supervisor;
 mod execution_store;
+#[cfg(feature = "http-client")]
+mod http_client;
 mod kubernetes;
 #[cfg(feature = "kubernetes-client")]
 mod kubernetes_client;
@@ -195,6 +197,11 @@ pub use durable_supervisor::{
 pub use execution_store::{
     ClaimExecution, ExecutionClaimResult, ExecutionLease, ExecutionStore, InMemoryExecutionStore,
     InMemoryExecutionStoreError, RenewExecution, RenewedExecutionLease, StoredExecution,
+};
+#[cfg(feature = "http-client")]
+pub use http_client::{
+    HttpSandboxProvider, HttpSandboxProviderConfig, HttpSandboxProviderConfigError,
+    HttpSandboxProviderError,
 };
 pub use kubernetes::{
     AgentSandboxControlPlane, CommandPolicy, KubernetesSandboxConfig, KubernetesSandboxError,
