@@ -293,6 +293,7 @@ fn scoped_execution(request: &StartExecution) -> ScopedExecutionId {
     ScopedExecutionId {
         scope: request.scope.clone(),
         workspace_id: request.workspace_id.clone(),
+        profile: request.profile.clone(),
         execution_id: request.execution_id.clone(),
     }
 }
@@ -323,7 +324,7 @@ mod tests {
 
     use crate::{
         Artifact, ExecutionRecord, ExecutionState, SandboxProvider, ScopedExecutionId,
-        StartExecution, WorkspaceId,
+        StartExecution,
     };
 
     use super::{SandboxProviderExecutor, SandboxToolExecutorConfig};
@@ -356,6 +357,7 @@ mod tests {
             let matches = request.filter(|request| {
                 request.scope == execution.scope
                     && request.workspace_id == execution.workspace_id
+                    && request.profile == execution.profile
                     && request.execution_id == execution.execution_id
             });
             Box::pin(async move { Ok(matches.as_ref().map(success)) })
@@ -378,8 +380,7 @@ mod tests {
 
         fn delete_workspace(
             &self,
-            _scope: &AuthorizationScope,
-            _workspace_id: &WorkspaceId,
+            _workspace: &crate::ScopedWorkspaceId,
         ) -> BoxFuture<'_, Result<(), Self::Error>> {
             Box::pin(async { Ok(()) })
         }

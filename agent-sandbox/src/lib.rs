@@ -126,7 +126,15 @@ pub struct ExecutionRecord {
 pub struct ScopedExecutionId {
     pub scope: AuthorizationScope,
     pub workspace_id: WorkspaceId,
+    pub profile: SandboxProfile,
     pub execution_id: ExecutionId,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct ScopedWorkspaceId {
+    pub scope: AuthorizationScope,
+    pub workspace_id: WorkspaceId,
+    pub profile: SandboxProfile,
 }
 
 /// Artifact bytes returned only after a scoped lookup.
@@ -165,13 +173,18 @@ pub trait SandboxProvider: Send + Sync + 'static {
 
     fn delete_workspace(
         &self,
-        scope: &AuthorizationScope,
-        workspace_id: &WorkspaceId,
+        workspace: &ScopedWorkspaceId,
     ) -> BoxFuture<'_, Result<(), Self::Error>>;
 }
 
+mod kubernetes;
 mod tool_executor;
 
+pub use kubernetes::{
+    AgentSandboxControlPlane, CommandPolicy, KubernetesSandboxConfig, KubernetesSandboxError,
+    KubernetesSandboxProfile, KubernetesSandboxProvider, SandboxClaimHandle, SandboxClaimRequest,
+    SandboxSupervisor,
+};
 pub use tool_executor::{
     SandboxFailurePolicy, SandboxProviderExecutor, SandboxToolError, SandboxToolExecutorConfig,
 };
