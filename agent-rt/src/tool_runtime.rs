@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use futures::future::join_all;
+use std::sync::Arc;
 use thiserror::Error;
 
 use crate::runtime::{PrepareTurnResult, PreparedTurn};
@@ -251,18 +252,18 @@ where
     ///
     /// Intermediate model-step terminal events are retained internally. The
     /// sole public terminal event is emitted after the final fenced commit.
-    pub async fn run_stream_with_tools<'a, V, A, J, E, K, H>(
-        &'a self,
+    pub async fn run_stream_with_tools<V, A, J, E, K, H>(
+        self: Arc<Self>,
         command: RunTurn<P, I::Context>,
         mut stream_interpreter: V,
-        adapter: &'a A,
-        tool_runner: &'a ToolRunner<J, E, K, H>,
+        adapter: Arc<A>,
+        tool_runner: Arc<ToolRunner<J, E, K, H>>,
     ) -> Result<
-        RunStreamResult<'a, P, ToolStreamRuntimeErrorFor<P, S, M, F, I, O, V, A, J, E>>,
+        RunStreamResult<'static, P, ToolStreamRuntimeErrorFor<P, S, M, F, I, O, V, A, J, E>>,
         ToolStreamRuntimeErrorFor<P, S, M, F, I, O, V, A, J, E>,
     >
     where
-        V: StreamEventInterpreter<P> + 'a,
+        V: StreamEventInterpreter<P>,
         A: ToolLoopAdapter<P>,
         J: ToolJournal,
         E: ToolExecutor,
@@ -289,22 +290,23 @@ where
             intent: inference_intent,
         };
 
+        let runtime = self;
         let output = async_stream::stream! {
             let mut lease = lease;
             let mut round = 0_u32;
             loop {
                 stream_interpreter.begin_step(request.intent.step_kind);
-                let mut inference = match self.invoker().invoke(&request).await {
+                let mut inference = match runtime.invoker().invoke(&request).await {
                     Ok(InferenceOutput::Streaming(stream)) => stream,
                     Ok(InferenceOutput::Unary(_)) => {
-                        let checkpoint_error = self.mark_failed(lease).await;
+                        let checkpoint_error = runtime.mark_failed(lease).await;
                         yield Err(AgentToolRuntimeError::Runtime(
                             AgentStreamRuntimeError::ExpectedStreaming { checkpoint_error },
                         ));
                         return;
                     }
                     Err(error) => {
-                        let checkpoint_error = self.mark_failed(lease).await;
+                        let checkpoint_error = runtime.mark_failed(lease).await;
                         yield Err(AgentToolRuntimeError::Runtime(
                             AgentStreamRuntimeError::Runtime(AgentRuntimeError::Inference {
                                 error,
@@ -317,7 +319,7 @@ where
 
                 let terminal = loop {
                     let Some(item) = futures::StreamExt::next(&mut inference).await else {
-                        let checkpoint_error = self.mark_failed(lease).await;
+                        let checkpoint_error = runtime.mark_failed(lease).await;
                         yield Err(AgentToolRuntimeError::Runtime(
                             AgentStreamRuntimeError::MissingTerminal { checkpoint_error },
                         ));
@@ -326,7 +328,7 @@ where
                     let event = match item {
                         Ok(event) => event,
                         Err(error) => {
-                            let checkpoint_error = self.mark_failed(lease).await;
+                            let checkpoint_error = runtime.mark_failed(lease).await;
                             yield Err(AgentToolRuntimeError::Runtime(
                                 AgentStreamRuntimeError::Runtime(AgentRuntimeError::Inference {
                                     error,
@@ -339,7 +341,7 @@ where
                     let action = match stream_interpreter.observe(event, &identity) {
                         Ok(action) => action,
                         Err(error) => {
-                            let checkpoint_error = self.mark_failed(lease).await;
+                            let checkpoint_error = runtime.mark_failed(lease).await;
                             yield Err(AgentToolRuntimeError::Runtime(
                                 AgentStreamRuntimeError::Interpreter {
                                     error,
@@ -362,7 +364,7 @@ where
                 };
 
                 let (mut terminal_event, response) = terminal;
-                let committed = match self.commit_response(response, &identity, lease).await {
+                let committed = match runtime.commit_response(response, &identity, lease).await {
                     Ok(committed) => committed,
                     Err(error) => {
                         yield Err(AgentToolRuntimeError::Runtime(
@@ -393,7 +395,7 @@ where
                     }
                 };
                 if round >= authorization.limits.max_tool_rounds {
-                    let checkpoint_error = self.finish_tool_turn(lease, TurnState::Failed).await;
+                    let checkpoint_error = runtime.finish_tool_turn(lease, TurnState::Failed).await;
                     yield Err(AgentToolRuntimeError::ToolRoundLimit {
                         limit: authorization.limits.max_tool_rounds,
                         checkpoint_error,
@@ -404,7 +406,7 @@ where
                 let calls = match adapter.runtime_calls(response) {
                     Ok(calls) => calls,
                     Err(error) => {
-                        let checkpoint_error = self.finish_tool_turn(lease, TurnState::Failed).await;
+                        let checkpoint_error = runtime.finish_tool_turn(lease, TurnState::Failed).await;
                         yield Err(AgentToolRuntimeError::Adapter {
                             error,
                             checkpoint_error,
@@ -413,12 +415,12 @@ where
                     }
                 };
                 if calls.is_empty() {
-                    let checkpoint_error = self.finish_tool_turn(lease, TurnState::Failed).await;
+                    let checkpoint_error = runtime.finish_tool_turn(lease, TurnState::Failed).await;
                     yield Err(AgentToolRuntimeError::MissingCalls { checkpoint_error });
                     return;
                 }
                 if calls.len() > authorization.limits.max_parallel_tools as usize {
-                    let checkpoint_error = self.finish_tool_turn(lease, TurnState::Failed).await;
+                    let checkpoint_error = runtime.finish_tool_turn(lease, TurnState::Failed).await;
                     yield Err(AgentToolRuntimeError::ParallelToolLimit {
                         actual: calls.len(),
                         limit: authorization.limits.max_parallel_tools,
@@ -449,7 +451,7 @@ where
                     } else {
                         TurnState::Failed
                     };
-                    let checkpoint_error = self.finish_tool_turn(lease, next_state).await;
+                    let checkpoint_error = runtime.finish_tool_turn(lease, next_state).await;
                     yield Err(AgentToolRuntimeError::ToolBatch {
                         errors_len: errors.len(),
                         errors,
@@ -465,7 +467,7 @@ where
                 ) {
                     Ok(items) => items,
                     Err(error) => {
-                        let checkpoint_error = self.finish_tool_turn(lease, TurnState::Failed).await;
+                        let checkpoint_error = runtime.finish_tool_turn(lease, TurnState::Failed).await;
                         yield Err(AgentToolRuntimeError::Adapter {
                             error,
                             checkpoint_error,
@@ -473,7 +475,7 @@ where
                         return;
                     }
                 };
-                let resumed = match self.store().commit_turn(CommitTurn {
+                let resumed = match runtime.store().commit_turn(CommitTurn {
                     lease,
                     next_state: TurnState::InFlight,
                     append_output_items: replay_items,
@@ -821,7 +823,7 @@ mod tests {
             ConfiguredToolRouter::new([("lookup".to_owned(), ToolRoute::new("search", "query"))]);
         let inference_requests = Arc::new(Mutex::new(Vec::new()));
         let tool_calls = Arc::new(AtomicUsize::new(0));
-        let runtime = AgentRuntime::new(
+        let runtime = Arc::new(AgentRuntime::new(
             InMemoryCheckpointStore::<OpenAiResponses, _>::new(FixedClock),
             ResponsesRequestMaterializer::default(),
             CanonicalJsonFingerprinter,
@@ -837,23 +839,24 @@ mod tests {
             )),
             SequentialIds::default(),
             FixedClock,
-        );
-        let adapter = ResponsesToolLoopAdapter::new(router);
-        let tool_runner = ToolRunner::new(
+        ));
+        let adapter = Arc::new(ResponsesToolLoopAdapter::new(router));
+        let tool_runner = Arc::new(ToolRunner::new(
             InMemoryToolJournal::default(),
             CountingExecutor {
                 calls: tool_calls.clone(),
             },
             Blake3ToolIdempotencyKeys,
             ConservativeToolFailurePolicy,
-        );
+        ));
         let command = command("idem-stream-tools");
         let result = runtime
+            .clone()
             .run_stream_with_tools(
                 command.clone(),
                 ResponsesStreamEventInterpreter::default(),
-                &adapter,
-                &tool_runner,
+                adapter.clone(),
+                tool_runner.clone(),
             )
             .await
             .unwrap();
@@ -909,11 +912,12 @@ mod tests {
         );
 
         let duplicate = runtime
+            .clone()
             .run_stream_with_tools(
                 command,
                 ResponsesStreamEventInterpreter::default(),
-                &adapter,
-                &tool_runner,
+                adapter,
+                tool_runner,
             )
             .await
             .unwrap();

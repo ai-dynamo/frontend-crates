@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::marker::PhantomData;
+use std::sync::Arc;
 
 use futures::StreamExt;
 use thiserror::Error;
@@ -232,8 +233,8 @@ where
 mod tests {
     use std::collections::BTreeSet;
     use std::convert::Infallible;
-    use std::sync::Mutex;
     use std::sync::atomic::{AtomicU64, Ordering};
+    use std::sync::{Arc, Mutex};
 
     use dynamo_protocols::types::{
         anthropic::{AnthropicCreateMessageRequest, AnthropicMessageResponse},
@@ -596,7 +597,7 @@ mod tests {
             output: Vec::new(),
             ..response.clone()
         };
-        let runtime = AgentRuntime::new(
+        let runtime = Arc::new(AgentRuntime::new(
             InMemoryCheckpointStore::new(clock),
             ResponsesRequestMaterializer::default(),
             CanonicalJsonFingerprinter,
@@ -621,8 +622,9 @@ mod tests {
             ResponsesOutputInterpreter::default(),
             SequentialIds::default(),
             clock,
-        );
+        ));
         let result = runtime
+            .clone()
             .run_stream(
                 command("hello", None, "idem-stream"),
                 ResponsesStreamEventInterpreter::default(),
@@ -674,7 +676,7 @@ mod tests {
         let mut response = MockInvoker::new(false).response;
         response.status = Status::InProgress;
         response.output.clear();
-        let runtime = AgentRuntime::new(
+        let runtime = Arc::new(AgentRuntime::new(
             InMemoryCheckpointStore::new(clock),
             ResponsesRequestMaterializer::default(),
             CanonicalJsonFingerprinter,
@@ -687,8 +689,9 @@ mod tests {
             ResponsesOutputInterpreter::default(),
             SequentialIds::default(),
             clock,
-        );
+        ));
         let result = runtime
+            .clone()
             .run_stream(
                 command("hello", None, "idem-missing-terminal"),
                 ResponsesStreamEventInterpreter::default(),
@@ -813,16 +816,16 @@ where
     ///
     /// Events remain pull-based. The terminal event is yielded only after the
     /// native response has been interpreted and durably committed.
-    pub async fn run_stream<'a, V>(
-        &'a self,
+    pub async fn run_stream<V>(
+        self: Arc<Self>,
         command: RunTurn<P, I::Context>,
         mut stream_interpreter: V,
     ) -> Result<
-        RunStreamResult<'a, P, StreamRuntimeErrorFor<P, S, M, F, I, O, V>>,
+        RunStreamResult<'static, P, StreamRuntimeErrorFor<P, S, M, F, I, O, V>>,
         StreamRuntimeErrorFor<P, S, M, F, I, O, V>,
     >
     where
-        V: StreamEventInterpreter<P> + 'a,
+        V: StreamEventInterpreter<P>,
     {
         let prepared = match self
             .prepare_turn(command)
@@ -863,6 +866,7 @@ where
         };
         stream_interpreter.begin_step(inference_intent.step_kind);
 
+        let runtime = self;
         let output = async_stream::stream! {
             let mut inference = inference;
             let mut lease = Some(lease);
@@ -870,7 +874,7 @@ where
                 let event = match item {
                     Ok(event) => event,
                     Err(error) => {
-                        let checkpoint_error = self.mark_failed(lease.take().expect("live stream lease")).await;
+                        let checkpoint_error = runtime.mark_failed(lease.take().expect("live stream lease")).await;
                         yield Err(AgentStreamRuntimeError::Runtime(AgentRuntimeError::Inference {
                             error,
                             checkpoint_error,
@@ -881,7 +885,7 @@ where
                 let action = match stream_interpreter.observe(event, &identity) {
                     Ok(action) => action,
                     Err(error) => {
-                        let checkpoint_error = self.mark_failed(lease.take().expect("live stream lease")).await;
+                        let checkpoint_error = runtime.mark_failed(lease.take().expect("live stream lease")).await;
                         yield Err(AgentStreamRuntimeError::Interpreter {
                             error,
                             checkpoint_error,
@@ -897,7 +901,7 @@ where
                     StreamEventAction::Suppress => {}
                     StreamEventAction::Terminal { mut event, response } => {
                         let live_lease = lease.take().expect("live stream lease");
-                        if let Err(error) = self.commit_response(response, &identity, live_lease).await {
+                        if let Err(error) = runtime.commit_response(response, &identity, live_lease).await {
                             yield Err(AgentStreamRuntimeError::Runtime(error));
                             return;
                         }
@@ -908,7 +912,7 @@ where
                 }
             }
 
-            let checkpoint_error = self.mark_failed(lease.take().expect("live stream lease")).await;
+            let checkpoint_error = runtime.mark_failed(lease.take().expect("live stream lease")).await;
             yield Err(AgentStreamRuntimeError::MissingTerminal { checkpoint_error });
         };
         Ok(RunStreamResult::Live(Box::pin(output)))
