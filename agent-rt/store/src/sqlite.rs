@@ -1047,6 +1047,7 @@ mod tests {
                 key.clone(),
                 ToolJournalOutcome::Completed(ToolExecutionResult {
                     output: json!({"answer": 42}),
+                    is_error: false,
                 }),
             )
             .await

@@ -237,6 +237,7 @@ where
                     "artifacts": record.artifacts,
                     "sandbox_id": record.provider_sandbox_id,
                 }),
+                is_error: false,
             }),
             ExecutionState::OutcomeUnknown => Err(SandboxToolError::OutcomeUnknown),
             state => Err(SandboxToolError::KnownFailure {

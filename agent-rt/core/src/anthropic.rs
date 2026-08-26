@@ -187,7 +187,7 @@ where
                 AnthropicContentBlock::ToolResult {
                     tool_use_id: result.call.call_id.clone(),
                     content: Some(ToolResultContent::Text(output)),
-                    is_error: Some(false),
+                    is_error: Some(result.result.is_error),
                     cache_control: None,
                 }
             })
@@ -758,6 +758,7 @@ mod tests {
                     call: calls[0].clone(),
                     result: ToolExecutionResult {
                         output: serde_json::json!({"answer": 42}),
+                        is_error: false,
                     },
                 }],
             )
@@ -778,8 +779,46 @@ mod tests {
             content.as_slice(),
             [dynamo_protocols::types::anthropic::AnthropicContentBlock::ToolResult {
                 tool_use_id,
+                is_error: Some(false),
                 ..
             }] if tool_use_id == "tool_1"
+        ));
+    }
+
+    #[test]
+    fn tool_adapter_preserves_native_error_results() {
+        let adapter = AnthropicToolLoopAdapter::new(router());
+        let response = response("tool_use");
+        let call = adapter.runtime_calls(&response).unwrap().remove(0);
+        let mut request = request();
+
+        let replay = adapter
+            .append_results(
+                &mut request,
+                &response,
+                &[RuntimeToolResult {
+                    call,
+                    result: ToolExecutionResult {
+                        output: serde_json::json!({"message": "refused"}),
+                        is_error: true,
+                    },
+                }],
+            )
+            .unwrap();
+
+        let dynamo_protocols::types::anthropic::AnthropicMessageContent::Blocks { content } =
+            &replay[0].content
+        else {
+            panic!("tool result must use structured native blocks")
+        };
+        assert!(matches!(
+            content.as_slice(),
+            [
+                dynamo_protocols::types::anthropic::AnthropicContentBlock::ToolResult {
+                    is_error: Some(true),
+                    ..
+                }
+            ]
         ));
     }
 }

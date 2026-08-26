@@ -729,6 +729,7 @@ mod tests {
                 assert_eq!(request.operation, "query");
                 Ok(ToolExecutionResult {
                     output: json!({"answer": 42}),
+                    is_error: false,
                 })
             })
         }

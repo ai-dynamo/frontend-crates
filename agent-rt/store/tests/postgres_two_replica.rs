@@ -181,6 +181,7 @@ async fn two_replicas_serialize_claims_and_fence_expired_owners() {
             key,
             ToolJournalOutcome::Completed(ToolExecutionResult {
                 output: json!({"answer": 42}),
+                is_error: false,
             }),
         )
         .await

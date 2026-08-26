@@ -328,6 +328,7 @@ impl BraveWebSearchExecutor {
         .map_err(|_| BraveWebSearchError::Timeout)??;
         Ok(ToolExecutionResult {
             output: serde_json::to_value(output).map_err(BraveWebSearchError::Normalize)?,
+            is_error: false,
         })
     }
 

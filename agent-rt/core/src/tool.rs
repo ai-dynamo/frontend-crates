@@ -193,6 +193,10 @@ impl ToolExecutionRequest {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ToolExecutionResult {
     pub output: serde_json::Value,
+    /// A completed, model-visible tool error. This is not an executor,
+    /// transport, or protocol failure and is therefore journaled as completed.
+    #[serde(default)]
+    pub is_error: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -271,4 +275,18 @@ pub trait ToolExecutor: Send + Sync + 'static {
         &'a self,
         request: &'a ToolExecutionRequest,
     ) -> BoxFuture<'a, Result<Option<ToolExecutionResult>, Self::Error>>;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn legacy_tool_results_default_to_success() {
+        let result: ToolExecutionResult =
+            serde_json::from_value(serde_json::json!({"output": {"answer": 42}})).unwrap();
+
+        assert_eq!(result.output["answer"], 42);
+        assert!(!result.is_error);
+    }
 }

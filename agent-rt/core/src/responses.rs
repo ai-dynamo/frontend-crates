@@ -349,12 +349,20 @@ where
         let result_items = results
             .iter()
             .map(|result| {
-                let output = result
-                    .result
-                    .output
-                    .as_str()
-                    .map(str::to_owned)
-                    .unwrap_or_else(|| result.result.output.to_string());
+                let output = if result.result.is_error {
+                    serde_json::json!({
+                        "is_error": true,
+                        "output": &result.result.output,
+                    })
+                    .to_string()
+                } else {
+                    result
+                        .result
+                        .output
+                        .as_str()
+                        .map(str::to_owned)
+                        .unwrap_or_else(|| result.result.output.to_string())
+                };
                 InputItem::Item(Item::FunctionCallOutput(FunctionCallOutputItemParam {
                     call_id: result.call.call_id.clone(),
                     output: FunctionCallOutput::Text(output),
@@ -418,7 +426,7 @@ where
 #[cfg(test)]
 mod tests {
     use dynamo_protocols::types::responses::{
-        CreateResponse, FunctionCallOutput, InputItem, InputParam, Item, Response,
+        CreateResponse, FunctionCallOutput, InputItem, InputParam, Item, OutputStatus, Response,
         ResponseCompletedEvent, ResponseCreatedEvent, ResponseStreamEvent, ResponseTextDeltaEvent,
     };
 
@@ -660,6 +668,7 @@ mod tests {
                     call: calls[0].clone(),
                     result: ToolExecutionResult {
                         output: serde_json::json!({"answer": 42}),
+                        is_error: false,
                     },
                 }],
             )
@@ -674,6 +683,45 @@ mod tests {
             &items[1],
             InputItem::Item(Item::FunctionCallOutput(output))
                 if matches!(&output.output, FunctionCallOutput::Text(text) if text == "{\"answer\":42}")
+        ));
+    }
+
+    #[test]
+    fn tool_adapter_preserves_model_visible_errors_as_completed_outputs() {
+        let adapter = ResponsesToolLoopAdapter::new(router());
+        let response = routed_tool_response();
+        let call = adapter.runtime_calls(&response).unwrap().remove(0);
+        let mut request = CreateResponse {
+            input: InputParam::Items(Vec::new()),
+            ..Default::default()
+        };
+
+        adapter
+            .append_results(
+                &mut request,
+                &response,
+                &[RuntimeToolResult {
+                    call,
+                    result: ToolExecutionResult {
+                        output: serde_json::json!({"message": "refused"}),
+                        is_error: true,
+                    },
+                }],
+            )
+            .unwrap();
+
+        let InputParam::Items(items) = request.input else {
+            panic!("tool continuation must remain item input")
+        };
+        assert!(matches!(
+            &items[1],
+            InputItem::Item(Item::FunctionCallOutput(output))
+                if output.status == Some(OutputStatus::Completed)
+                    && matches!(
+                        &output.output,
+                        FunctionCallOutput::Text(text)
+                            if text == "{\"is_error\":true,\"output\":{\"message\":\"refused\"}}"
+                    )
         ));
     }
 }

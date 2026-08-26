@@ -354,6 +354,7 @@ mod tests {
                 } else {
                     Ok(ToolExecutionResult {
                         output: self.output.clone(),
+                        is_error: false,
                     })
                 }
             })
