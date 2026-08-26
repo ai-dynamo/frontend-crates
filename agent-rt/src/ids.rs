@@ -66,3 +66,17 @@ impl IdGenerator for UuidGenerator {
         TurnId::new(format!("turn_{}", uuid::Uuid::new_v4().simple()))
     }
 }
+
+/// UUID-backed identifiers using Anthropic's public message prefix.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct AnthropicUuidGenerator;
+
+impl IdGenerator for AnthropicUuidGenerator {
+    fn response_id(&self) -> ResponseId {
+        ResponseId::new(format!("msg_{}", uuid::Uuid::new_v4().simple()))
+    }
+
+    fn turn_id(&self) -> TurnId {
+        TurnId::new(format!("turn_{}", uuid::Uuid::new_v4().simple()))
+    }
+}

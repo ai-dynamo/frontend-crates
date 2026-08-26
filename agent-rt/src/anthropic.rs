@@ -1,19 +1,20 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::BTreeMap;
 use std::convert::Infallible;
 
 use dynamo_protocols::types::anthropic::{
-    AnthropicContentBlock, AnthropicCreateMessageRequest, AnthropicMessage,
+    AnthropicContentBlock, AnthropicCreateMessageRequest, AnthropicDelta, AnthropicMessage,
     AnthropicMessageContent, AnthropicMessageResponse, AnthropicResponseContentBlock,
-    AnthropicRole, AnthropicStopReason, ToolResultContent,
+    AnthropicRole, AnthropicStopReason, AnthropicStreamEvent, ToolResultContent,
 };
 use thiserror::Error;
 
 use crate::{
     AnthropicMessages, CheckpointRecord, InterpretedOutput, MaterializedTurn, OutputIdentity,
-    OutputInterpreter, RequestMaterializer, RuntimeToolCall, RuntimeToolResult, ToolLoopAdapter,
-    ToolRouter, TurnState,
+    OutputInterpreter, RequestMaterializer, RuntimeToolCall, RuntimeToolResult, StreamEventAction,
+    StreamEventInterpreter, ToolLoopAdapter, ToolRouter, TurnState,
 };
 
 /// Materializes Anthropic Messages requests without introducing a shared IR.
@@ -200,6 +201,202 @@ where
     }
 }
 
+/// Reconstructs one native Anthropic response while preserving Dynamo's typed stream.
+#[derive(Debug, Default)]
+pub struct AnthropicStreamEventInterpreter {
+    response: Option<AnthropicMessageResponse>,
+    blocks: BTreeMap<u32, AnthropicResponseContentBlock>,
+    tool_input_fragments: BTreeMap<u32, String>,
+    expose_message_start: bool,
+    public_stream_started: bool,
+    stage_step_output: bool,
+}
+
+impl AnthropicStreamEventInterpreter {
+    /// Stages model output until the step reveals whether a tool call is runtime-owned.
+    pub fn stage_runtime_tool_rounds() -> Self {
+        Self {
+            stage_step_output: true,
+            ..Self::default()
+        }
+    }
+
+    fn output_action(&self, event: AnthropicStreamEvent) -> StreamEventAction<AnthropicMessages> {
+        if self.stage_step_output {
+            StreamEventAction::Stage(event)
+        } else {
+            StreamEventAction::Emit(event)
+        }
+    }
+
+    fn apply_delta(
+        &mut self,
+        index: u32,
+        delta: &AnthropicDelta,
+    ) -> Result<(), AnthropicStreamEventError> {
+        let block = self
+            .blocks
+            .get_mut(&index)
+            .ok_or(AnthropicStreamEventError::UnknownContentBlock(index))?;
+        match (block, delta) {
+            (
+                AnthropicResponseContentBlock::Thinking { thinking, .. },
+                AnthropicDelta::ThinkingDelta { thinking: fragment },
+            ) => thinking.push_str(fragment),
+            (
+                AnthropicResponseContentBlock::Thinking { signature, .. },
+                AnthropicDelta::SignatureDelta {
+                    signature: fragment,
+                },
+            ) => signature.push_str(fragment),
+            (
+                AnthropicResponseContentBlock::Text { text, .. },
+                AnthropicDelta::TextDelta { text: fragment },
+            ) => text.push_str(fragment),
+            (
+                AnthropicResponseContentBlock::Text { citations, .. },
+                AnthropicDelta::CitationsDelta { citation },
+            ) => citations
+                .get_or_insert_with(Vec::new)
+                .push(citation.clone()),
+            (
+                AnthropicResponseContentBlock::ToolUse { .. },
+                AnthropicDelta::InputJsonDelta { partial_json },
+            ) => self
+                .tool_input_fragments
+                .entry(index)
+                .or_default()
+                .push_str(partial_json),
+            _ => return Err(AnthropicStreamEventError::MismatchedDelta(index)),
+        }
+        Ok(())
+    }
+
+    fn finish_block(&mut self, index: u32) -> Result<(), AnthropicStreamEventError> {
+        let Some(input) = self.tool_input_fragments.remove(&index) else {
+            return Ok(());
+        };
+        let block = self
+            .blocks
+            .get_mut(&index)
+            .ok_or(AnthropicStreamEventError::UnknownContentBlock(index))?;
+        let AnthropicResponseContentBlock::ToolUse {
+            input: tool_input, ..
+        } = block
+        else {
+            return Err(AnthropicStreamEventError::MismatchedDelta(index));
+        };
+        *tool_input = serde_json::from_str(&input)
+            .map_err(|source| AnthropicStreamEventError::InvalidToolInput { index, source })?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum AnthropicStreamEventError {
+    #[error("Anthropic stream emitted more than one message_start event")]
+    DuplicateMessageStart,
+    #[error("Anthropic stream emitted content before message_start")]
+    MissingMessageStart,
+    #[error("Anthropic stream emitted duplicate content block {0}")]
+    DuplicateContentBlock(u32),
+    #[error("Anthropic stream referenced unknown content block {0}")]
+    UnknownContentBlock(u32),
+    #[error("Anthropic stream emitted a mismatched delta for content block {0}")]
+    MismatchedDelta(u32),
+    #[error("Anthropic stream emitted invalid JSON for tool block {index}: {source}")]
+    InvalidToolInput {
+        index: u32,
+        #[source]
+        source: serde_json::Error,
+    },
+    #[error("Anthropic inference stream failed ({error_type}): {message}")]
+    Backend { error_type: String, message: String },
+}
+
+impl StreamEventInterpreter<AnthropicMessages> for AnthropicStreamEventInterpreter {
+    type Error = AnthropicStreamEventError;
+
+    fn begin_step(&mut self, _step_kind: crate::ModelStepKind) {
+        self.response = None;
+        self.blocks.clear();
+        self.tool_input_fragments.clear();
+        self.expose_message_start = !self.public_stream_started;
+        self.public_stream_started = true;
+    }
+
+    fn observe(
+        &mut self,
+        mut event: AnthropicStreamEvent,
+        identity: &OutputIdentity,
+    ) -> Result<StreamEventAction<AnthropicMessages>, Self::Error> {
+        match &mut event {
+            AnthropicStreamEvent::MessageStart { message } => {
+                if self.response.is_some() {
+                    return Err(AnthropicStreamEventError::DuplicateMessageStart);
+                }
+                message.id = identity.response_id.to_string();
+                self.blocks
+                    .extend((0_u32..).zip(message.content.iter().cloned()));
+                self.response = Some(message.clone());
+                if self.expose_message_start {
+                    Ok(StreamEventAction::Emit(event))
+                } else {
+                    Ok(StreamEventAction::Suppress)
+                }
+            }
+            AnthropicStreamEvent::ContentBlockStart {
+                index,
+                content_block,
+            } => {
+                if self.response.is_none() {
+                    return Err(AnthropicStreamEventError::MissingMessageStart);
+                }
+                if self.blocks.insert(*index, content_block.clone()).is_some() {
+                    return Err(AnthropicStreamEventError::DuplicateContentBlock(*index));
+                }
+                Ok(self.output_action(event))
+            }
+            AnthropicStreamEvent::ContentBlockDelta { index, delta } => {
+                self.apply_delta(*index, delta)?;
+                Ok(self.output_action(event))
+            }
+            AnthropicStreamEvent::ContentBlockStop { index } => {
+                self.finish_block(*index)?;
+                Ok(self.output_action(event))
+            }
+            AnthropicStreamEvent::MessageDelta { delta, usage } => {
+                let response = self
+                    .response
+                    .as_mut()
+                    .ok_or(AnthropicStreamEventError::MissingMessageStart)?;
+                response.stop_reason.clone_from(&delta.stop_reason);
+                response.stop_sequence.clone_from(&delta.stop_sequence);
+                response.usage = usage.clone();
+                Ok(self.output_action(event))
+            }
+            AnthropicStreamEvent::MessageStop {} => {
+                while let Some(index) = self.tool_input_fragments.keys().next().copied() {
+                    self.finish_block(index)?;
+                }
+                let mut response = self
+                    .response
+                    .take()
+                    .ok_or(AnthropicStreamEventError::MissingMessageStart)?;
+                response.content = std::mem::take(&mut self.blocks).into_values().collect();
+                Ok(StreamEventAction::Terminal { event, response })
+            }
+            AnthropicStreamEvent::Ping {} => Ok(StreamEventAction::Emit(event)),
+            AnthropicStreamEvent::Error { error } => Err(AnthropicStreamEventError::Backend {
+                error_type: error.error_type.clone(),
+                message: error.message.clone(),
+            }),
+        }
+    }
+
+    fn prepare_emit(&mut self, _event: &mut AnthropicStreamEvent) {}
+}
+
 /// Native Anthropic output interpreter composed with deployment outcome policy.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct PolicyAnthropicOutputInterpreter<P> {
@@ -222,9 +419,10 @@ where
 
     fn interpret(
         &self,
-        response: AnthropicMessageResponse,
-        _identity: &OutputIdentity,
+        mut response: AnthropicMessageResponse,
+        identity: &OutputIdentity,
     ) -> Result<InterpretedOutput<AnthropicMessages>, Self::Error> {
+        response.id = identity.response_id.to_string();
         let next_state = self.policy.next_state(&response)?;
         let replay_items = vec![AnthropicMessage::from(&response)];
         Ok(InterpretedOutput {
@@ -237,19 +435,22 @@ where
 
 #[cfg(test)]
 mod tests {
-    use dynamo_protocols::types::anthropic::AnthropicCreateMessageRequest;
+    use dynamo_protocols::types::anthropic::{
+        AnthropicCreateMessageRequest, AnthropicDelta, AnthropicMessageDeltaBody,
+        AnthropicResponseContentBlock, AnthropicStopReason, AnthropicStreamEvent, AnthropicUsage,
+    };
 
     use crate::{
         AgentProtocol, AnthropicMessages, AuthorizationScope, CheckpointRecord, CheckpointVersion,
-        ConfiguredToolRouter, IdempotencyKey, OutputIdentity, OutputInterpreter,
-        RequestFingerprint, ResponseId, RuntimeToolResult, ToolExecutionResult, ToolLoopAdapter,
-        ToolRoute, TurnState,
+        ConfiguredToolRouter, IdempotencyKey, ModelStepKind, OutputIdentity, OutputInterpreter,
+        RequestFingerprint, ResponseId, RuntimeToolResult, StreamEventAction,
+        StreamEventInterpreter, ToolExecutionResult, ToolLoopAdapter, ToolRoute, TurnState,
     };
 
     use super::{
         AnthropicMaterializationError, AnthropicOutputInterpreter, AnthropicRequestMaterializer,
-        AnthropicToolLoopAdapter, PolicyAnthropicOutputInterpreter, RequestMaterializer,
-        RoutedAnthropicOutcomePolicy,
+        AnthropicStreamEventInterpreter, AnthropicToolLoopAdapter,
+        PolicyAnthropicOutputInterpreter, RequestMaterializer, RoutedAnthropicOutcomePolicy,
     };
 
     fn request() -> AnthropicCreateMessageRequest {
@@ -337,7 +538,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(interpreted.next_state, TurnState::AwaitingClientToolOutput);
-        assert_eq!(interpreted.response.id, "msg_backend");
+        assert_eq!(interpreted.response.id, "internal-turn");
         assert_eq!(interpreted.replay_items.len(), 1);
         assert_eq!(
             interpreted.replay_items[0].role,
@@ -355,6 +556,166 @@ mod tests {
             .interpret(response("end_turn"), &identity)
             .unwrap();
         assert_eq!(interpreted.next_state, TurnState::Completed);
+    }
+
+    fn stream_start() -> AnthropicStreamEvent {
+        serde_json::from_value(serde_json::json!({
+            "type": "message_start",
+            "message": {
+                "id": "msg_backend",
+                "type": "message",
+                "role": "assistant",
+                "content": [],
+                "model": "claude",
+                "stop_reason": null,
+                "stop_sequence": null,
+                "usage": {"input_tokens": 10, "output_tokens": 0}
+            }
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn native_stream_reconstructs_and_rewrites_the_public_message() {
+        let identity = OutputIdentity {
+            response_id: ResponseId::from("msg_public"),
+            parent_response_id: None,
+        };
+        let mut interpreter = AnthropicStreamEventInterpreter::default();
+        interpreter.begin_step(ModelStepKind::Initial);
+
+        let StreamEventAction::Emit(AnthropicStreamEvent::MessageStart { message }) =
+            interpreter.observe(stream_start(), &identity).unwrap()
+        else {
+            panic!("message_start must be public")
+        };
+        assert_eq!(message.id, "msg_public");
+
+        let start = AnthropicStreamEvent::ContentBlockStart {
+            index: 0,
+            content_block: AnthropicResponseContentBlock::Text {
+                text: String::new(),
+                citations: None,
+            },
+        };
+        assert!(matches!(
+            interpreter.observe(start, &identity).unwrap(),
+            StreamEventAction::Emit(_)
+        ));
+        let delta = AnthropicStreamEvent::ContentBlockDelta {
+            index: 0,
+            delta: AnthropicDelta::TextDelta {
+                text: "hello".to_owned(),
+            },
+        };
+        assert!(matches!(
+            interpreter.observe(delta, &identity).unwrap(),
+            StreamEventAction::Emit(_)
+        ));
+        let message_delta = AnthropicStreamEvent::MessageDelta {
+            delta: AnthropicMessageDeltaBody {
+                stop_reason: Some(AnthropicStopReason::EndTurn),
+                stop_sequence: None,
+            },
+            usage: AnthropicUsage {
+                input_tokens: 10,
+                output_tokens: 1,
+                ..Default::default()
+            },
+        };
+        interpreter.observe(message_delta, &identity).unwrap();
+
+        let StreamEventAction::Terminal { response, .. } = interpreter
+            .observe(AnthropicStreamEvent::MessageStop {}, &identity)
+            .unwrap()
+        else {
+            panic!("message_stop must be terminal")
+        };
+        assert_eq!(response.id, "msg_public");
+        assert_eq!(response.stop_reason, Some(AnthropicStopReason::EndTurn));
+        assert_eq!(response.usage.output_tokens, 1);
+        assert!(matches!(
+            response.content.as_slice(),
+            [AnthropicResponseContentBlock::Text { text, .. }] if text == "hello"
+        ));
+    }
+
+    #[test]
+    fn native_stream_reassembles_tool_input_and_stages_internal_output() {
+        let identity = OutputIdentity {
+            response_id: ResponseId::from("msg_public"),
+            parent_response_id: None,
+        };
+        let mut interpreter = AnthropicStreamEventInterpreter::stage_runtime_tool_rounds();
+        interpreter.begin_step(ModelStepKind::Initial);
+        assert!(matches!(
+            interpreter.observe(stream_start(), &identity).unwrap(),
+            StreamEventAction::Emit(_)
+        ));
+        assert!(matches!(
+            interpreter
+                .observe(
+                    AnthropicStreamEvent::ContentBlockStart {
+                        index: 0,
+                        content_block: AnthropicResponseContentBlock::ToolUse {
+                            id: "tool_1".to_owned(),
+                            name: "lookup".to_owned(),
+                            input: serde_json::json!({}),
+                        },
+                    },
+                    &identity,
+                )
+                .unwrap(),
+            StreamEventAction::Stage(_)
+        ));
+        for partial_json in ["{\"query\":", "\"rust\"}"] {
+            interpreter
+                .observe(
+                    AnthropicStreamEvent::ContentBlockDelta {
+                        index: 0,
+                        delta: AnthropicDelta::InputJsonDelta {
+                            partial_json: partial_json.to_owned(),
+                        },
+                    },
+                    &identity,
+                )
+                .unwrap();
+        }
+        interpreter
+            .observe(
+                AnthropicStreamEvent::ContentBlockStop { index: 0 },
+                &identity,
+            )
+            .unwrap();
+        interpreter
+            .observe(
+                AnthropicStreamEvent::MessageDelta {
+                    delta: AnthropicMessageDeltaBody {
+                        stop_reason: Some(AnthropicStopReason::ToolUse),
+                        stop_sequence: None,
+                    },
+                    usage: AnthropicUsage::default(),
+                },
+                &identity,
+            )
+            .unwrap();
+        let StreamEventAction::Terminal { response, .. } = interpreter
+            .observe(AnthropicStreamEvent::MessageStop {}, &identity)
+            .unwrap()
+        else {
+            panic!("message_stop must be terminal")
+        };
+        assert!(matches!(
+            response.content.as_slice(),
+            [AnthropicResponseContentBlock::ToolUse { input, .. }]
+                if input == &serde_json::json!({"query": "rust"})
+        ));
+
+        interpreter.begin_step(ModelStepKind::RuntimeToolContinuation);
+        assert!(matches!(
+            interpreter.observe(stream_start(), &identity).unwrap(),
+            StreamEventAction::Suppress
+        ));
     }
 
     fn router() -> ConfiguredToolRouter {

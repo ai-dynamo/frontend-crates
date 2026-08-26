@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Stateful OpenAI Responses runtime contracts.
+//! Protocol-native stateful agent runtime contracts.
 //!
 //! This crate deliberately stops before HTTP ingress, authentication, request
 //! rendering, routing, engine selection, and tool-worker implementation. Those
@@ -32,8 +32,9 @@ mod tool_runtime;
 
 pub use anthropic::{
     AnthropicMaterializationError, AnthropicOutcomePolicy, AnthropicOutputInterpreter,
-    AnthropicRequestMaterializer, AnthropicToolLoopAdapter, ClientToolAnthropicPolicy,
-    PolicyAnthropicOutputInterpreter, RoutedAnthropicOutcomeError, RoutedAnthropicOutcomePolicy,
+    AnthropicRequestMaterializer, AnthropicStreamEventError, AnthropicStreamEventInterpreter,
+    AnthropicToolLoopAdapter, ClientToolAnthropicPolicy, PolicyAnthropicOutputInterpreter,
+    RoutedAnthropicOutcomeError, RoutedAnthropicOutcomePolicy,
 };
 pub use authorization::{AuthorizationScope, RuntimeAuthorization, RuntimeLimits};
 pub use checkpoint::{
@@ -43,7 +44,9 @@ pub use checkpoint::{
 };
 pub use clock::{Clock, SystemClock};
 pub use fingerprint::{CanonicalJsonFingerprinter, RequestFingerprinter};
-pub use ids::{IdGenerator, IdempotencyKey, ResponseId, TurnId, UuidGenerator};
+pub use ids::{
+    AnthropicUuidGenerator, IdGenerator, IdempotencyKey, ResponseId, TurnId, UuidGenerator,
+};
 pub use inference::{
     InferenceFuture, InferenceIntent, InferenceInvoker, InferenceOutput, InferenceRequest,
     InvocationContext, ModelStepKind,

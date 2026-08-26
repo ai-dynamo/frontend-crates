@@ -1037,7 +1037,7 @@ mod tests {
                 .response
                 .as_ref()
                 .map(|response| response.id.as_str()),
-            Some("msg_backend")
+            Some("resp-1")
         );
         assert_eq!(result.record().output_items.len(), 1);
         assert_eq!(runtime.invoker.requests.lock().unwrap().len(), 1);
