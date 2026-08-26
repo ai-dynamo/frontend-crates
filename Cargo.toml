@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
     "agent-rt",
+    "agent-rt-store",
     "agent-sandbox",
     "protocols",
     "parsers/v1",

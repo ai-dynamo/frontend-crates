@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "dynamo-agent-rt-store"
+readme = "README.md"
+version = "0.1.0"
+edition.workspace = true
+description = "Durable DuckDB and PostgreSQL stores for dynamo-agent-rt."
+authors.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+keywords = ["agents", "duckdb", "postgresql", "state"]
+include = ["src/**/*", "migrations/**/*", "Cargo.toml", "README.md"]
+
+[dependencies]
+dynamo-agent-rt.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["rt"] }
+
+[dependencies.duckdb]
+version = "1.10505"
+features = ["bundled"]
+optional = true
+
+[dev-dependencies]
+tempfile.workspace = true
+tokio = { workspace = true, features = ["macros", "rt"] }
+
+[features]
+default = []
+duckdb = ["dep:duckdb"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
