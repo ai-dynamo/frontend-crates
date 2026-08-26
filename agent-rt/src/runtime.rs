@@ -247,7 +247,7 @@ where
 mod tests {
     use std::collections::BTreeSet;
     use std::convert::Infallible;
-    use std::sync::atomic::{AtomicU64, Ordering};
+    use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
     use std::sync::{Arc, Mutex};
 
     use dynamo_protocols::types::{
@@ -262,12 +262,14 @@ mod tests {
 
     use crate::{
         AgentRuntime, AgentRuntimeError, AnthropicMessages, AnthropicOutputInterpreter,
-        AnthropicRequestMaterializer, AuthorizationScope, CanonicalJsonFingerprinter,
-        CheckpointStore, Clock, IdGenerator, IdempotencyKey, InMemoryCheckpointStore,
+        AnthropicRequestMaterializer, AuthorizationScope, BeginTurn, BeginTurnResult, BoxFuture,
+        CanonicalJsonFingerprinter, CheckpointRecord, CheckpointStore, Clock, CommitTurn,
+        CommitTurnResult, IdGenerator, IdempotencyKey, InMemoryCheckpointStore, InMemoryStoreError,
         InferenceFuture, InferenceIntent, InferenceInvoker, InferenceOutput, InferenceRequest,
-        LoadChain, ModelStepKind, OpenAiResponses, ResponseId, ResponsesOutputInterpreter,
-        ResponsesRequestMaterializer, ResponsesStreamEventInterpreter, RunStreamResult, RunTurn,
-        RunTurnResult, RuntimeAuthorization, RuntimeLimits, TurnId, TurnState,
+        LoadChain, ModelStepKind, OpenAiResponses, RenewLease, ResponseId,
+        ResponsesOutputInterpreter, ResponsesRequestMaterializer, ResponsesStreamEventInterpreter,
+        RunStreamResult, RunTurn, RunTurnResult, RuntimeAuthorization, RuntimeLimits, TurnId,
+        TurnLease, TurnState,
     };
 
     #[derive(Debug, Clone, Copy)]
@@ -393,6 +395,68 @@ mod tests {
                     events.into_iter().map(Ok),
                 ))))
             })
+        }
+    }
+
+    #[derive(Debug, Error)]
+    enum FailingStoreError {
+        #[error(transparent)]
+        Inner(#[from] InMemoryStoreError),
+        #[error("injected terminal commit failure")]
+        TerminalCommit,
+    }
+
+    #[derive(Debug)]
+    struct FailingCompletedStore {
+        inner: InMemoryCheckpointStore<OpenAiResponses, FixedClock>,
+        fail_completed: AtomicBool,
+    }
+
+    impl FailingCompletedStore {
+        fn new(clock: FixedClock) -> Self {
+            Self {
+                inner: InMemoryCheckpointStore::new(clock),
+                fail_completed: AtomicBool::new(true),
+            }
+        }
+    }
+
+    impl CheckpointStore<OpenAiResponses> for FailingCompletedStore {
+        type Error = FailingStoreError;
+
+        fn begin_turn(
+            &self,
+            command: BeginTurn<OpenAiResponses>,
+        ) -> BoxFuture<'_, Result<BeginTurnResult<OpenAiResponses>, Self::Error>> {
+            Box::pin(async move { Ok(self.inner.begin_turn(command).await?) })
+        }
+
+        fn load_chain(
+            &self,
+            query: LoadChain,
+        ) -> BoxFuture<'_, Result<Vec<CheckpointRecord<OpenAiResponses>>, Self::Error>> {
+            Box::pin(async move { Ok(self.inner.load_chain(query).await?) })
+        }
+
+        fn commit_turn(
+            &self,
+            command: CommitTurn<OpenAiResponses>,
+        ) -> BoxFuture<'_, Result<CommitTurnResult<OpenAiResponses>, Self::Error>> {
+            Box::pin(async move {
+                if command.next_state == TurnState::Completed
+                    && self.fail_completed.swap(false, Ordering::SeqCst)
+                {
+                    return Err(FailingStoreError::TerminalCommit);
+                }
+                Ok(self.inner.commit_turn(command).await?)
+            })
+        }
+
+        fn renew_lease(
+            &self,
+            command: RenewLease,
+        ) -> BoxFuture<'_, Result<TurnLease, Self::Error>> {
+            Box::pin(async move { Ok(self.inner.renew_lease(command).await?) })
         }
     }
 
@@ -682,6 +746,79 @@ mod tests {
             .unwrap();
         assert_eq!(record.state, TurnState::Completed);
         assert_eq!(record.response.unwrap().id, "resp-1");
+    }
+
+    #[tokio::test]
+    async fn terminal_commit_failure_never_yields_terminal_event() {
+        let clock = FixedClock(1_000);
+        let response = MockInvoker::new(false).response;
+        let created_response = Response {
+            status: Status::InProgress,
+            output: Vec::new(),
+            ..response.clone()
+        };
+        let runtime = Arc::new(AgentRuntime::new(
+            FailingCompletedStore::new(clock),
+            ResponsesRequestMaterializer::default(),
+            CanonicalJsonFingerprinter,
+            StreamingInvoker::new(vec![
+                ResponseStreamEvent::ResponseCreated(ResponseCreatedEvent {
+                    sequence_number: 0,
+                    response: created_response,
+                }),
+                ResponseStreamEvent::ResponseOutputTextDelta(ResponseTextDeltaEvent {
+                    sequence_number: 1,
+                    item_id: "msg-1".to_owned(),
+                    output_index: 0,
+                    content_index: 0,
+                    delta: "must remain staged".to_owned(),
+                    logprobs: None,
+                }),
+                ResponseStreamEvent::ResponseCompleted(ResponseCompletedEvent {
+                    sequence_number: 2,
+                    response,
+                }),
+            ]),
+            ResponsesOutputInterpreter::default(),
+            SequentialIds::default(),
+            clock,
+        ));
+        let result = runtime
+            .clone()
+            .run_stream(
+                command("hello", None, "idem-commit-failure"),
+                ResponsesStreamEventInterpreter::stage_runtime_tool_rounds(),
+            )
+            .await
+            .unwrap();
+        let RunStreamResult::Live(mut stream) = result else {
+            panic!("expected a newly acquired stream")
+        };
+
+        assert!(matches!(
+            stream.next().await.unwrap().unwrap(),
+            ResponseStreamEvent::ResponseCreated(_)
+        ));
+        assert!(matches!(
+            stream.next().await.unwrap(),
+            Err(crate::AgentStreamRuntimeError::Runtime(
+                AgentRuntimeError::Store(FailingStoreError::TerminalCommit)
+            ))
+        ));
+        assert!(stream.next().await.is_none());
+
+        let record = runtime
+            .store()
+            .load_chain(LoadChain {
+                scope: authorization().scope,
+                response_id: ResponseId::from("resp-1"),
+            })
+            .await
+            .unwrap()
+            .pop()
+            .unwrap();
+        assert_eq!(record.state, TurnState::InFlight);
+        assert!(record.response.is_none());
     }
 
     #[tokio::test]
