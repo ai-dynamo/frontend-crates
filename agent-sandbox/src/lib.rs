@@ -177,6 +177,7 @@ pub trait SandboxProvider: Send + Sync + 'static {
     ) -> BoxFuture<'_, Result<(), Self::Error>>;
 }
 
+mod durable_supervisor;
 mod execution_store;
 mod kubernetes;
 #[cfg(feature = "kubernetes-client")]
@@ -185,6 +186,10 @@ mod kubernetes_client;
 mod sandboxd;
 mod tool_executor;
 
+pub use durable_supervisor::{
+    DurableSandboxSupervisor, DurableSandboxSupervisorConfig, DurableSandboxSupervisorConfigError,
+    DurableSandboxSupervisorError, SandboxDataPlane, SandboxRunOutcome,
+};
 pub use execution_store::{
     ClaimExecution, ExecutionClaimResult, ExecutionLease, ExecutionStore, InMemoryExecutionStore,
     InMemoryExecutionStoreError, RenewExecution, RenewedExecutionLease, StoredExecution,
