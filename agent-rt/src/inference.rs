@@ -37,16 +37,18 @@ where
 }
 
 /// Unary or streaming inference result normalized at the invocation boundary.
-pub enum InferenceOutput<'a, P, E>
+pub enum InferenceOutput<P, E>
 where
     P: AgentProtocol,
 {
     Unary(Box<P::Response>),
-    Streaming(BoxStream<'a, Result<P::StreamEvent, E>>),
+    /// The returned stream owns all per-invocation state. It must not borrow
+    /// the request because the runtime retains it only through invocation.
+    Streaming(BoxStream<'static, Result<P::StreamEvent, E>>),
 }
 
 /// Future returned by a native protocol inference invocation.
-pub type InferenceFuture<'a, P, E> = BoxFuture<'a, Result<InferenceOutput<'a, P, E>, E>>;
+pub type InferenceFuture<'a, P, E> = BoxFuture<'a, Result<InferenceOutput<P, E>, E>>;
 
 /// Invokes inference without exposing engine or routing details to the runtime.
 pub trait InferenceInvoker<P>: Send + Sync + 'static
