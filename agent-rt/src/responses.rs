@@ -21,6 +21,18 @@ pub struct ResponsesStreamEventInterpreter {
     next_sequence_number: u64,
     expose_step_lifecycle: bool,
     public_stream_started: bool,
+    stage_step_output: bool,
+}
+
+impl ResponsesStreamEventInterpreter {
+    /// Stages each model step's output until its terminal response reveals
+    /// whether the step is an internal runtime-tool transition.
+    pub fn stage_runtime_tool_rounds() -> Self {
+        Self {
+            stage_step_output: true,
+            ..Self::default()
+        }
+    }
 }
 
 impl StreamEventInterpreter<OpenAiResponses> for ResponsesStreamEventInterpreter {
@@ -83,6 +95,7 @@ impl StreamEventInterpreter<OpenAiResponses> for ResponsesStreamEventInterpreter
                     event,
                 }
             }
+            _ if self.stage_step_output => StreamEventAction::Stage(event),
             _ => StreamEventAction::Emit(event),
         };
         Ok(action)
@@ -546,6 +559,25 @@ mod tests {
             unreachable!()
         };
         assert_eq!(delta.sequence_number, 0);
+    }
+
+    #[test]
+    fn runtime_tool_mode_stages_output_events() {
+        let mut interpreter = ResponsesStreamEventInterpreter::stage_runtime_tool_rounds();
+        interpreter.begin_step(ModelStepKind::Initial);
+
+        let delta = ResponseStreamEvent::ResponseOutputTextDelta(ResponseTextDeltaEvent {
+            sequence_number: 42,
+            item_id: "msg-1".to_owned(),
+            output_index: 0,
+            content_index: 0,
+            delta: "internal".to_owned(),
+            logprobs: None,
+        });
+        assert!(matches!(
+            interpreter.observe(delta, &identity()).unwrap(),
+            StreamEventAction::Stage(_)
+        ));
     }
 
     #[test]

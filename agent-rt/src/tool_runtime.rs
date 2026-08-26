@@ -296,6 +296,8 @@ where
             let mut round = 0_u32;
             loop {
                 stream_interpreter.begin_step(request.intent.step_kind);
+                let mut staged_events = Vec::new();
+                let mut staged_event_bytes = 0_u64;
                 let mut inference = match runtime.invoker().invoke(&request).await {
                     Ok(InferenceOutput::Streaming(stream)) => stream,
                     Ok(InferenceOutput::Unary(_)) => {
@@ -356,6 +358,37 @@ where
                             stream_interpreter.prepare_emit(&mut event);
                             yield Ok(event);
                         }
+                        StreamEventAction::Stage(event) => {
+                            let event_bytes = match serde_json::to_vec(&event) {
+                                Ok(encoded) => encoded.len() as u64,
+                                Err(error) => {
+                                    let checkpoint_error = runtime.mark_failed(lease).await;
+                                    yield Err(AgentToolRuntimeError::Runtime(
+                                        AgentStreamRuntimeError::StagedEventEncoding {
+                                            error,
+                                            checkpoint_error,
+                                        },
+                                    ));
+                                    return;
+                                }
+                            };
+                            staged_event_bytes = staged_event_bytes.saturating_add(event_bytes);
+                            if staged_event_bytes
+                                > authorization.limits.max_staged_model_event_bytes
+                            {
+                                let checkpoint_error = runtime.mark_failed(lease).await;
+                                yield Err(AgentToolRuntimeError::Runtime(
+                                    AgentStreamRuntimeError::StagedEventLimit {
+                                        limit_bytes: authorization
+                                            .limits
+                                            .max_staged_model_event_bytes,
+                                        checkpoint_error,
+                                    },
+                                ));
+                                return;
+                            }
+                            staged_events.push(event);
+                        }
                         StreamEventAction::Suppress => {}
                         StreamEventAction::Terminal { event, response } => {
                             break (event, response);
@@ -375,6 +408,10 @@ where
                 };
                 let record = committed.record;
                 if record.state != TurnState::ToolStarted {
+                    for mut staged_event in staged_events {
+                        stream_interpreter.prepare_emit(&mut staged_event);
+                        yield Ok(staged_event);
+                    }
                     stream_interpreter.prepare_emit(&mut terminal_event);
                     yield Ok(terminal_event);
                     return;
@@ -829,7 +866,7 @@ mod tests {
             StreamingSequenceInvoker {
                 requests: inference_requests.clone(),
                 responses: Mutex::new(VecDeque::from([
-                    stream_events(tool_response(), None),
+                    stream_events(tool_response(), Some("internal tool choice")),
                     stream_events(final_response(), Some("42")),
                 ])),
             },
@@ -853,7 +890,7 @@ mod tests {
             .clone()
             .run_stream_with_tools(
                 command.clone(),
-                ResponsesStreamEventInterpreter::default(),
+                ResponsesStreamEventInterpreter::stage_runtime_tool_rounds(),
                 adapter.clone(),
                 tool_runner.clone(),
             )

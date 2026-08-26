@@ -19,6 +19,9 @@ pub struct RuntimeLimits {
     pub max_parallel_tools: u32,
     pub max_tool_output_bytes: u64,
     pub max_external_work_millis: u64,
+    /// Maximum encoded size of one staged model step when runtime-owned tools
+    /// require the public stream to wait for the step outcome.
+    pub max_staged_model_event_bytes: u64,
 }
 
 impl Default for RuntimeLimits {
@@ -28,6 +31,7 @@ impl Default for RuntimeLimits {
             max_parallel_tools: 4,
             max_tool_output_bytes: 1024 * 1024,
             max_external_work_millis: 60_000,
+            max_staged_model_event_bytes: 8 * 1024 * 1024,
         }
     }
 }

@@ -150,6 +150,20 @@ where
     MissingTerminal {
         checkpoint_error: Option<StoreError>,
     },
+    #[error(
+        "failed to encode a staged model event: {error}; failed-state commit: {checkpoint_error:?}"
+    )]
+    StagedEventEncoding {
+        error: serde_json::Error,
+        checkpoint_error: Option<StoreError>,
+    },
+    #[error(
+        "staged model events exceeded the {limit_bytes}-byte limit; failed-state commit: {checkpoint_error:?}"
+    )]
+    StagedEventLimit {
+        limit_bytes: u64,
+        checkpoint_error: Option<StoreError>,
+    },
 }
 
 pub type StreamRuntimeErrorFor<P, S, M, F, I, O, V> = AgentStreamRuntimeError<
@@ -671,6 +685,81 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn staged_stream_is_failed_when_its_byte_limit_is_exceeded() {
+        let clock = FixedClock(1_000);
+        let response = MockInvoker::new(false).response;
+        let created_response = Response {
+            status: Status::InProgress,
+            output: Vec::new(),
+            ..response.clone()
+        };
+        let runtime = Arc::new(AgentRuntime::new(
+            InMemoryCheckpointStore::new(clock),
+            ResponsesRequestMaterializer::default(),
+            CanonicalJsonFingerprinter,
+            StreamingInvoker::new(vec![
+                ResponseStreamEvent::ResponseCreated(ResponseCreatedEvent {
+                    sequence_number: 0,
+                    response: created_response,
+                }),
+                ResponseStreamEvent::ResponseOutputTextDelta(ResponseTextDeltaEvent {
+                    sequence_number: 1,
+                    item_id: "msg-1".to_owned(),
+                    output_index: 0,
+                    content_index: 0,
+                    delta: "too large".to_owned(),
+                    logprobs: None,
+                }),
+                ResponseStreamEvent::ResponseCompleted(ResponseCompletedEvent {
+                    sequence_number: 2,
+                    response,
+                }),
+            ]),
+            ResponsesOutputInterpreter::default(),
+            SequentialIds::default(),
+            clock,
+        ));
+        let mut command = command("hello", None, "idem-staged-limit");
+        command.authorization.limits.max_staged_model_event_bytes = 1;
+        let result = runtime
+            .clone()
+            .run_stream(
+                command,
+                ResponsesStreamEventInterpreter::stage_runtime_tool_rounds(),
+            )
+            .await
+            .unwrap();
+        let RunStreamResult::Live(mut stream) = result else {
+            panic!("expected a newly acquired stream")
+        };
+
+        assert!(matches!(
+            stream.next().await.unwrap().unwrap(),
+            ResponseStreamEvent::ResponseCreated(_)
+        ));
+        assert!(matches!(
+            stream.next().await.unwrap(),
+            Err(crate::AgentStreamRuntimeError::StagedEventLimit {
+                limit_bytes: 1,
+                checkpoint_error: None,
+            })
+        ));
+        assert!(stream.next().await.is_none());
+
+        let record = runtime
+            .store()
+            .load_chain(LoadChain {
+                scope: authorization().scope,
+                response_id: ResponseId::from("resp-1"),
+            })
+            .await
+            .unwrap()
+            .pop()
+            .unwrap();
+        assert_eq!(record.state, TurnState::Failed);
+    }
+
+    #[tokio::test]
     async fn stream_without_terminal_event_is_marked_failed() {
         let clock = FixedClock(1_000);
         let mut response = MockInvoker::new(false).response;
@@ -837,11 +926,11 @@ where
         };
         let PreparedTurn {
             inference_request,
+            authorization,
             invocation_context,
             inference_intent,
             identity,
             lease,
-            ..
         } = prepared;
         let request = InferenceRequest {
             request: inference_request,
@@ -870,6 +959,8 @@ where
         let output = async_stream::stream! {
             let mut inference = inference;
             let mut lease = Some(lease);
+            let mut staged_events = Vec::new();
+            let mut staged_event_bytes = 0_u64;
             while let Some(item) = inference.next().await {
                 let event = match item {
                     Ok(event) => event,
@@ -898,12 +989,43 @@ where
                         stream_interpreter.prepare_emit(&mut event);
                         yield Ok(event);
                     }
+                    StreamEventAction::Stage(event) => {
+                        let event_bytes = match serde_json::to_vec(&event) {
+                            Ok(encoded) => encoded.len() as u64,
+                            Err(error) => {
+                                let checkpoint_error = runtime.mark_failed(
+                                    lease.take().expect("live stream lease")
+                                ).await;
+                                yield Err(AgentStreamRuntimeError::StagedEventEncoding {
+                                    error,
+                                    checkpoint_error,
+                                });
+                                return;
+                            }
+                        };
+                        staged_event_bytes = staged_event_bytes.saturating_add(event_bytes);
+                        if staged_event_bytes > authorization.limits.max_staged_model_event_bytes {
+                            let checkpoint_error = runtime.mark_failed(
+                                lease.take().expect("live stream lease")
+                            ).await;
+                            yield Err(AgentStreamRuntimeError::StagedEventLimit {
+                                limit_bytes: authorization.limits.max_staged_model_event_bytes,
+                                checkpoint_error,
+                            });
+                            return;
+                        }
+                        staged_events.push(event);
+                    }
                     StreamEventAction::Suppress => {}
                     StreamEventAction::Terminal { mut event, response } => {
                         let live_lease = lease.take().expect("live stream lease");
                         if let Err(error) = runtime.commit_response(response, &identity, live_lease).await {
                             yield Err(AgentStreamRuntimeError::Runtime(error));
                             return;
+                        }
+                        for mut staged_event in staged_events {
+                            stream_interpreter.prepare_emit(&mut staged_event);
+                            yield Ok(staged_event);
                         }
                         stream_interpreter.prepare_emit(&mut event);
                         yield Ok(event);

@@ -13,6 +13,10 @@ where
     P: AgentProtocol,
 {
     Emit(P::StreamEvent),
+    /// Retain this typed event until the model step commits. The tool runtime
+    /// discards staged events when the step selects a runtime-owned tool and
+    /// emits them when the step is the public result.
+    Stage(P::StreamEvent),
     Suppress,
     Terminal {
         event: P::StreamEvent,
