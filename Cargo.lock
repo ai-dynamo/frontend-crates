@@ -1592,9 +1592,11 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "dynamo-agent-rt",
+ "dynamo-agent-rt-store",
  "reqwest 0.13.4",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror",
  "tokio",
  "url",

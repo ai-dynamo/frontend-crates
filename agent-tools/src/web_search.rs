@@ -584,7 +584,7 @@ fn truncate_utf8(value: &str, max_bytes: usize) -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use std::collections::{BTreeSet, HashMap};
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::Duration;
@@ -595,9 +595,12 @@ mod tests {
     use axum::routing::get;
     use axum::{Json, Router};
     use dynamo_agent_rt::{
-        AuthorizationScope, IdempotencyKey, ResponseId, ToolExecutionRequest, ToolExecutor,
-        ToolFailureDisposition, ToolFailurePolicy,
+        AuthorizationScope, Blake3ToolIdempotencyKeys, IdempotencyKey, OpenAiResponses, ResponseId,
+        RuntimeAuthorization, RuntimeLimits, RuntimeToolCall, ToolExecutionRequest, ToolExecutor,
+        ToolFailureDisposition, ToolFailurePolicy, ToolIdempotencyKeyProvider, ToolJournal,
+        ToolJournalState, ToolRunner,
     };
+    use dynamo_agent_rt_store::DuckDbStore;
     use serde_json::json;
     use tokio::net::TcpListener;
     use url::Url;
@@ -772,6 +775,76 @@ mod tests {
             executor.execute(tool_request("oversize", None)).await,
             Err(BraveWebSearchError::ResponseTooLarge { limit_bytes: 512 })
         ));
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn started_search_recovers_through_durable_duckdb_journal() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("agent-tools.duckdb");
+        let journal = DuckDbStore::<OpenAiResponses>::open(&path).unwrap();
+        let (executor, state, server) = fake_executor(Duration::from_secs(1), 32 * 1024).await;
+        let response_id = ResponseId::from("resp-recovery");
+        let call = RuntimeToolCall {
+            call_id: "call-recovery".to_owned(),
+            connector: "web_search".to_owned(),
+            operation: "search".to_owned(),
+            profile: "default".to_owned(),
+            arguments: json!({
+                "query": "dynamo agents",
+                "count": 2,
+                "freshness": "week"
+            }),
+        };
+        let scope = AuthorizationScope {
+            tenant_id: "tenant-a".to_owned(),
+            principal_id: "principal-a".to_owned(),
+        };
+        let idempotency_key = Blake3ToolIdempotencyKeys.idempotency_key(&response_id, &call, 0);
+        let execution_request = ToolExecutionRequest {
+            response_id: response_id.clone(),
+            call_id: call.call_id.clone(),
+            connector: call.connector.clone(),
+            operation: call.operation.clone(),
+            profile: call.profile.clone(),
+            arguments: call.arguments.clone(),
+            scope: scope.clone(),
+            idempotency_key: idempotency_key.clone(),
+            attempt: 0,
+        };
+        journal.claim(execution_request).await.unwrap();
+        let runner = ToolRunner::new(
+            journal.clone(),
+            executor,
+            Blake3ToolIdempotencyKeys,
+            BraveWebSearchFailurePolicy,
+        );
+        let authorization = RuntimeAuthorization {
+            scope: scope.clone(),
+            permitted_connectors: BTreeSet::from(["web_search".to_owned()]),
+            limits: RuntimeLimits::default(),
+        };
+
+        let result = runner
+            .run(&response_id, call, &authorization, 0)
+            .await
+            .unwrap();
+        assert_eq!(result.result.output["content_is_untrusted"], true);
+        assert_eq!(state.calls.load(Ordering::SeqCst), 1);
+
+        drop(runner);
+        drop(journal);
+        let reopened = DuckDbStore::<OpenAiResponses>::open(&path).unwrap();
+        let record = reopened
+            .load(&dynamo_agent_rt::ToolJournalKey {
+                scope,
+                idempotency_key,
+            })
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(record.state, ToolJournalState::Completed);
+        assert_eq!(record.result.unwrap().output, result.result.output);
         server.abort();
     }
 
