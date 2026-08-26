@@ -28,14 +28,21 @@ const WEB_SEARCH_CONNECTOR: &str = "web_search";
 const WEB_SEARCH_OPERATION: &str = "search";
 
 /// Model-visible arguments for the read-only `web_search` tool.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WebSearchArguments {
     pub query: String,
-    #[serde(default)]
-    pub count: Option<u8>,
-    #[serde(default)]
+    pub count: u8,
     pub freshness: Option<WebSearchFreshness>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RawWebSearchArguments {
+    query: String,
+    #[serde(default)]
+    count: Option<u8>,
+    #[serde(default)]
+    freshness: Option<WebSearchFreshness>,
 }
 
 impl WebSearchArguments {
@@ -43,14 +50,14 @@ impl WebSearchArguments {
         arguments: serde_json::Value,
         max_results: u8,
     ) -> Result<Self, WebSearchArgumentsError> {
-        let mut arguments: Self = serde_json::from_value(arguments)
+        let arguments: RawWebSearchArguments = serde_json::from_value(arguments)
             .map_err(|error| WebSearchArgumentsError::Schema(error.to_string()))?;
-        arguments.query = arguments.query.trim().to_owned();
-        if arguments.query.is_empty() {
+        let query = arguments.query.trim().to_owned();
+        if query.is_empty() {
             return Err(WebSearchArgumentsError::EmptyQuery);
         }
-        let query_bytes = arguments.query.len();
-        let query_words = arguments.query.split_whitespace().count();
+        let query_bytes = query.len();
+        let query_words = query.split_whitespace().count();
         if query_bytes > PROVIDER_MAX_QUERY_BYTES || query_words > PROVIDER_MAX_QUERY_WORDS {
             return Err(WebSearchArgumentsError::QueryTooLarge {
                 actual_bytes: query_bytes,
@@ -64,12 +71,15 @@ impl WebSearchArguments {
                 max: max_results,
             });
         }
-        arguments.count = Some(count);
-        Ok(arguments)
+        Ok(Self {
+            query,
+            count,
+            freshness: arguments.freshness,
+        })
     }
 
     pub fn effective_count(&self) -> u8 {
-        self.count.expect("validated web-search count")
+        self.count
     }
 }
 
@@ -146,7 +156,7 @@ impl BraveWebSearchProfile {
         Ok(Self {
             api_key,
             endpoint: Url::parse(BRAVE_WEB_SEARCH_ENDPOINT)
-                .expect("hard-coded Brave Search endpoint is valid"),
+                .map_err(|error| WebSearchConfigError::InvalidEndpoint(error.to_string()))?,
             country: "US".to_owned(),
             search_language: "en".to_owned(),
             max_results: DEFAULT_MAX_RESULTS,
@@ -217,6 +227,8 @@ pub enum WebSearchConfigError {
     EmptyApiKey,
     #[error("Brave Search API key is not a valid HTTP header value")]
     InvalidApiKey,
+    #[error("Brave Search endpoint is invalid: {0}")]
+    InvalidEndpoint(String),
     #[error("Brave Search max_results must be in 1..=20, got {0}")]
     InvalidMaxResults(u8),
     #[error("Brave Search response byte limit must be nonzero")]
@@ -397,14 +409,13 @@ impl ToolExecutor for BraveWebSearchExecutor {
         Box::pin(async move { self.execute_inner(&request).await })
     }
 
-    fn lookup(
-        &self,
-        request: &ToolExecutionRequest,
-    ) -> BoxFuture<'_, Result<Option<ToolExecutionResult>, Self::Error>> {
+    fn lookup<'a>(
+        &'a self,
+        request: &'a ToolExecutionRequest,
+    ) -> BoxFuture<'a, Result<Option<ToolExecutionResult>, Self::Error>> {
         // Web search is explicitly read-only. Re-executing a journaled request
         // after restart cannot duplicate an external side effect.
-        let request = request.clone();
-        Box::pin(async move { self.execute_inner(&request).await.map(Some) })
+        Box::pin(async move { self.execute_inner(request).await.map(Some) })
     }
 }
 
