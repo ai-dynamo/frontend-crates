@@ -10,8 +10,10 @@ use ::duckdb::{Connection, OptionalExt, params};
 use dynamo_agent_rt::{
     AgentProtocol, AuthorizationScope, BeginTurn, BeginTurnResult, BoxFuture, CheckpointRecord,
     CheckpointStore, CheckpointVersion, Clock, CommitTurn, CommitTurnResult, IdempotencyKey,
-    LeaseDeadline, LoadChain, RenewLease, RequestFingerprint, ResponseId, SystemClock, TurnId,
-    TurnLease, TurnState,
+    LeaseDeadline, LoadChain, RenewLease, RequestFingerprint, ResponseId, SystemClock,
+    ToolClaimResult, ToolExecutionFailure, ToolExecutionRequest, ToolExecutionResult, ToolJournal,
+    ToolJournalKey, ToolJournalOutcome, ToolJournalRecord, ToolJournalState, TurnId, TurnLease,
+    TurnState,
 };
 use thiserror::Error;
 
@@ -148,6 +150,46 @@ where
         let now = self.clock.now_millis();
         Box::pin(async move {
             self.blocking(move |connection| renew_lease::<P>(connection, command, now))
+                .await
+        })
+    }
+}
+
+impl<P, C> ToolJournal for DuckDbStore<P, C>
+where
+    P: AgentProtocol,
+    C: Send + Sync + 'static,
+{
+    type Error = DuckDbStoreError;
+
+    fn claim(
+        &self,
+        request: ToolExecutionRequest,
+    ) -> BoxFuture<'_, Result<ToolClaimResult, Self::Error>> {
+        Box::pin(async move {
+            self.blocking(move |connection| claim_tool(connection, request))
+                .await
+        })
+    }
+
+    fn load(
+        &self,
+        key: &ToolJournalKey,
+    ) -> BoxFuture<'_, Result<Option<ToolJournalRecord>, Self::Error>> {
+        let key = key.clone();
+        Box::pin(async move {
+            self.blocking(move |connection| load_tool(connection, &key))
+                .await
+        })
+    }
+
+    fn finish(
+        &self,
+        key: ToolJournalKey,
+        outcome: ToolJournalOutcome,
+    ) -> BoxFuture<'_, Result<ToolJournalRecord, Self::Error>> {
+        Box::pin(async move {
+            self.blocking(move |connection| finish_tool(connection, key, outcome))
                 .await
         })
     }
@@ -440,6 +482,112 @@ fn renew_lease<P: AgentProtocol>(
     Ok(renewed)
 }
 
+fn claim_tool(
+    connection: &mut Connection,
+    request: ToolExecutionRequest,
+) -> Result<ToolClaimResult, DuckDbStoreError> {
+    let transaction = connection.transaction()?;
+    let key = request.journal_key();
+    if let Some(existing) = load_tool(&transaction, &key)? {
+        if existing.request != request {
+            return Err(StoreInvariantError::IdempotencyConflict.into());
+        }
+        transaction.commit()?;
+        return Ok(ToolClaimResult::Existing(Box::new(existing)));
+    }
+    transaction.execute(
+        "INSERT INTO agent_rt_tool_journal
+         (tenant_id, principal_id, idempotency_key, request_json, state, result_json, failure_json)
+         VALUES (?1, ?2, ?3, ?4, 'started', NULL, NULL)",
+        params![
+            request.scope.tenant_id,
+            request.scope.principal_id,
+            request.idempotency_key.as_str(),
+            serde_json::to_string(&request)?,
+        ],
+    )?;
+    let record = ToolJournalRecord {
+        request,
+        state: ToolJournalState::Started,
+        result: None,
+        failure: None,
+    };
+    transaction.commit()?;
+    Ok(ToolClaimResult::Acquired(Box::new(record)))
+}
+
+fn load_tool(
+    connection: &Connection,
+    key: &ToolJournalKey,
+) -> Result<Option<ToolJournalRecord>, DuckDbStoreError> {
+    let raw = connection
+        .query_row(
+            "SELECT request_json, state, result_json, failure_json
+             FROM agent_rt_tool_journal
+             WHERE tenant_id = ?1 AND principal_id = ?2 AND idempotency_key = ?3",
+            params![
+                key.scope.tenant_id,
+                key.scope.principal_id,
+                key.idempotency_key.as_str(),
+            ],
+            |row| {
+                Ok(RawToolRecord {
+                    request_json: row.get(0)?,
+                    state: row.get(1)?,
+                    result_json: row.get(2)?,
+                    failure_json: row.get(3)?,
+                })
+            },
+        )
+        .optional()?;
+    raw.map(decode_tool).transpose()
+}
+
+fn finish_tool(
+    connection: &mut Connection,
+    key: ToolJournalKey,
+    outcome: ToolJournalOutcome,
+) -> Result<ToolJournalRecord, DuckDbStoreError> {
+    let transaction = connection.transaction()?;
+    let existing = load_tool(&transaction, &key)?.ok_or(StoreInvariantError::NotFound)?;
+    if existing.state != ToolJournalState::Started {
+        return Err(StoreInvariantError::ToolAlreadyFinished(existing.state).into());
+    }
+    let (state, result, failure) = match outcome {
+        ToolJournalOutcome::Completed(result) => (
+            ToolJournalState::Completed,
+            Some(serde_json::to_string(&result)?),
+            None,
+        ),
+        ToolJournalOutcome::Failed(failure) => (
+            ToolJournalState::Failed,
+            None,
+            Some(serde_json::to_string(&failure)?),
+        ),
+        ToolJournalOutcome::OutcomeUnknown => (ToolJournalState::OutcomeUnknown, None, None),
+    };
+    let updated = transaction.execute(
+        "UPDATE agent_rt_tool_journal
+         SET state = ?1, result_json = ?2, failure_json = ?3
+         WHERE tenant_id = ?4 AND principal_id = ?5 AND idempotency_key = ?6
+           AND state = 'started'",
+        params![
+            tool_state_name(&state),
+            result,
+            failure,
+            key.scope.tenant_id,
+            key.scope.principal_id,
+            key.idempotency_key.as_str(),
+        ],
+    )?;
+    if updated != 1 {
+        return Err(StoreInvariantError::ToolAlreadyFinished(existing.state).into());
+    }
+    let record = load_tool(&transaction, &key)?.ok_or(StoreInvariantError::Corrupt)?;
+    transaction.commit()?;
+    Ok(record)
+}
+
 fn checkpoint_exists<P: AgentProtocol>(
     connection: &Connection,
     response_id: &str,
@@ -578,6 +726,30 @@ struct RawCheckpoint {
     lease_deadline: Option<i64>,
 }
 
+struct RawToolRecord {
+    request_json: String,
+    state: String,
+    result_json: Option<String>,
+    failure_json: Option<String>,
+}
+
+fn decode_tool(raw: RawToolRecord) -> Result<ToolJournalRecord, DuckDbStoreError> {
+    Ok(ToolJournalRecord {
+        request: serde_json::from_str(&raw.request_json)?,
+        state: parse_tool_state(&raw.state)?,
+        result: raw
+            .result_json
+            .as_deref()
+            .map(serde_json::from_str::<ToolExecutionResult>)
+            .transpose()?,
+        failure: raw
+            .failure_json
+            .as_deref()
+            .map(serde_json::from_str::<ToolExecutionFailure>)
+            .transpose()?,
+    })
+}
+
 fn state_name(state: &TurnState) -> &'static str {
     match state {
         TurnState::InFlight => "in_flight",
@@ -597,6 +769,25 @@ fn parse_state(value: &str) -> Result<TurnState, StoreInvariantError> {
         "outcome_unknown" => Ok(TurnState::OutcomeUnknown),
         "completed" => Ok(TurnState::Completed),
         "failed" => Ok(TurnState::Failed),
+        _ => Err(StoreInvariantError::Corrupt),
+    }
+}
+
+fn tool_state_name(state: &ToolJournalState) -> &'static str {
+    match state {
+        ToolJournalState::Started => "started",
+        ToolJournalState::Completed => "completed",
+        ToolJournalState::Failed => "failed",
+        ToolJournalState::OutcomeUnknown => "outcome_unknown",
+    }
+}
+
+fn parse_tool_state(value: &str) -> Result<ToolJournalState, StoreInvariantError> {
+    match value {
+        "started" => Ok(ToolJournalState::Started),
+        "completed" => Ok(ToolJournalState::Completed),
+        "failed" => Ok(ToolJournalState::Failed),
+        "outcome_unknown" => Ok(ToolJournalState::OutcomeUnknown),
         _ => Err(StoreInvariantError::Corrupt),
     }
 }
@@ -623,13 +814,15 @@ mod tests {
     use std::sync::atomic::{AtomicU64, Ordering};
 
     use dynamo_agent_rt::{
-        AuthorizationScope, Clock, IdempotencyKey, RequestFingerprint, ResponseId, TurnId,
+        AuthorizationScope, Clock, IdempotencyKey, RequestFingerprint, ResponseId,
+        ToolExecutionRequest, ToolExecutionResult, ToolJournal, ToolJournalOutcome, TurnId,
         TurnState,
     };
     use dynamo_agent_rt::{
         BeginTurn, BeginTurnResult, CheckpointStore, CommitTurn, LeaseDeadline, LoadChain,
         OpenAiResponses, RuntimeAuthorization, RuntimeLimits,
     };
+    use serde_json::json;
 
     use super::*;
 
@@ -673,6 +866,20 @@ mod tests {
             request_fingerprint: RequestFingerprint::new([response_id.len() as u8; 32]),
             request: Default::default(),
             lease_deadline: LeaseDeadline(deadline),
+        }
+    }
+
+    fn tool_request(operation: &str, tenant: &str) -> ToolExecutionRequest {
+        ToolExecutionRequest {
+            response_id: ResponseId::from("response"),
+            call_id: "call-a".to_owned(),
+            connector: "search".to_owned(),
+            operation: operation.to_owned(),
+            profile: "default".to_owned(),
+            arguments: json!({"query": "rust"}),
+            scope: scope(tenant),
+            idempotency_key: IdempotencyKey::from("tool-idem"),
+            attempt: 0,
         }
     }
 
@@ -778,5 +985,60 @@ mod tests {
             error,
             DuckDbStoreError::Invariant(StoreInvariantError::NotFound)
         ));
+    }
+
+    #[tokio::test]
+    async fn tool_result_survives_restart_and_is_not_reclaimed() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("tools.duckdb");
+        let store = DuckDbStore::<OpenAiResponses>::open(&path).unwrap();
+        let request = tool_request("query", "tenant-a");
+        let key = request.journal_key();
+        assert!(matches!(
+            store.claim(request.clone()).await.unwrap(),
+            ToolClaimResult::Acquired(_)
+        ));
+        store
+            .finish(
+                key.clone(),
+                ToolJournalOutcome::Completed(ToolExecutionResult {
+                    output: json!({"answer": 42}),
+                }),
+            )
+            .await
+            .unwrap();
+        drop(store);
+
+        let reopened = DuckDbStore::<OpenAiResponses>::open(&path).unwrap();
+        let record = reopened.load(&key).await.unwrap().unwrap();
+        assert_eq!(record.result.unwrap().output["answer"], 42);
+        assert!(matches!(
+            reopened.claim(request).await.unwrap(),
+            ToolClaimResult::Existing(_)
+        ));
+    }
+
+    #[tokio::test]
+    async fn tool_idempotency_is_scoped_and_binds_the_full_request() {
+        let store = DuckDbStore::<OpenAiResponses>::open_in_memory().unwrap();
+        store
+            .claim(tool_request("query", "tenant-a"))
+            .await
+            .unwrap();
+        let error = store
+            .claim(tool_request("different", "tenant-a"))
+            .await
+            .unwrap_err();
+        assert!(matches!(
+            error,
+            DuckDbStoreError::Invariant(StoreInvariantError::IdempotencyConflict)
+        ));
+        assert!(
+            store
+                .load(&tool_request("query", "tenant-b").journal_key())
+                .await
+                .unwrap()
+                .is_none()
+        );
     }
 }
