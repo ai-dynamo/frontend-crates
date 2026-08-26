@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
     "agent-rt/core",
+    "agent-rt/mcp",
     "agent-rt/store",
     "agent-rt/tools",
     "agent-rt/sandbox",
@@ -41,6 +42,7 @@ chrono = { version = "0.4", default-features = false, features = [
 clap = "4"
 derive_builder = "0.20"
 dynamo-agent-rt = { path = "agent-rt/core", version = "0.1.0" }
+dynamo-agent-rt-mcp = { path = "agent-rt/mcp", version = "0.1.0" }
 dynamo-agent-tools = { path = "agent-rt/tools", version = "0.1.0" }
 agent-rt-sandbox = { path = "agent-rt/sandbox", version = "0.1.0" }
 deadpool-postgres = "0.14.1"

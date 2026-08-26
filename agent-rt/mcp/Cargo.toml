@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "dynamo-agent-rt-mcp"
+readme = "README.md"
+version = "0.1.0"
+edition.workspace = true
+description = "Configured outbound MCP tools for dynamo-agent-rt."
+authors.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+keywords = ["agents", "mcp", "tools"]
+include = ["src/**/*", "Cargo.toml", "README.md"]
+
+[dependencies]
+dynamo-agent-rt.workspace = true
+reqwest = { version = "0.13", default-features = false, features = ["rustls"] }
+rmcp = { version = "=3.1.4", default-features = false, features = [
+    "client",
+    "reqwest",
+    "transport-streamable-http-client-reqwest",
+] }
+serde_json.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["sync", "time"] }
+tracing.workspace = true
+url.workspace = true
+
+[dev-dependencies]
+axum.workspace = true
+dynamo-agent-rt-store = { path = "../store", features = ["sqlite"] }
+serde.workspace = true
+tempfile.workspace = true
+tokio = { workspace = true, features = ["macros", "net", "rt"] }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
