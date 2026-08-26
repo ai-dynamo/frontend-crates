@@ -18,6 +18,8 @@ use dynamo_agent_rt::AuthorizationScope;
 use serde::{Deserialize, Serialize};
 use subtle::ConstantTimeEq;
 
+pub mod config;
+
 const TENANT_HEADER: &str = "x-agent-sandbox-tenant-id";
 const PRINCIPAL_HEADER: &str = "x-agent-sandbox-principal-id";
 
