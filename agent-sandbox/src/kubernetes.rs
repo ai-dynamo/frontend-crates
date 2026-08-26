@@ -70,6 +70,8 @@ pub struct SandboxClaimHandle {
     pub namespace: String,
     pub claim_name: String,
     pub sandbox_id: String,
+    /// In-cluster Service endpoint requested by the operator-owned template.
+    pub service_fqdn: String,
 }
 
 /// Kubernetes Agent Sandbox CRD lifecycle seam.
@@ -559,6 +561,10 @@ mod tests {
             namespace: request.namespace.clone(),
             claim_name: request.claim_name.clone(),
             sandbox_id: format!("{}-sandbox", request.claim_name),
+            service_fqdn: format!(
+                "{}.{}.svc.cluster.local",
+                request.claim_name, request.namespace
+            ),
         }
     }
 

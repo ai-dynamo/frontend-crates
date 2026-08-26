@@ -50,6 +50,8 @@ pub enum KubeControlPlaneError {
     ReadyTimeout(Duration),
     #[error("ready sandbox claim does not contain status.sandbox.name")]
     MissingSandboxIdentity,
+    #[error("ready sandbox claim does not contain status.sandbox.serviceFQDN")]
+    MissingServiceEndpoint,
     #[error("sandbox workspace TTL is outside the supported timestamp range")]
     InvalidTtl,
 }
@@ -151,10 +153,17 @@ impl KubeAgentSandboxControlPlane {
                     .and_then(|value| value.as_str())
                     .filter(|name| !name.is_empty())
                     .ok_or(KubeControlPlaneError::MissingSandboxIdentity)?;
+                let service_fqdn = claim
+                    .data
+                    .pointer("/status/sandbox/serviceFQDN")
+                    .and_then(|value| value.as_str())
+                    .filter(|name| !name.is_empty())
+                    .ok_or(KubeControlPlaneError::MissingServiceEndpoint)?;
                 return Ok(SandboxClaimHandle {
                     namespace: request.namespace.clone(),
                     claim_name: request.claim_name.clone(),
                     sandbox_id: sandbox_id.to_owned(),
+                    service_fqdn: service_fqdn.to_owned(),
                 });
             }
             let now = tokio::time::Instant::now();

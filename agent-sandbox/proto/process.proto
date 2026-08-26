@@ -1,0 +1,56 @@
+// Derived from the Kubernetes SIG Apps Agent Sandbox sandboxd ProcessService
+// protocol, Apache-2.0. Only the client surface used by agent-rt is retained.
+syntax = "proto3";
+
+package process.v1;
+
+service ProcessService {
+  rpc Start(StartRequest) returns (stream StartResponse);
+  rpc WriteStdin(WriteStdinRequest) returns (WriteStdinResponse);
+  rpc SendSignal(SendSignalRequest) returns (SendSignalResponse);
+}
+
+enum Signal {
+  SIGNAL_UNSPECIFIED = 0;
+  SIGNAL_SIGINT = 2;
+  SIGNAL_SIGKILL = 9;
+  SIGNAL_SIGTERM = 15;
+}
+
+message ProcessConfig {
+  repeated string command = 1;
+  map<string, string> env_vars = 2;
+  string cwd = 3;
+}
+
+message StartRequest { ProcessConfig config = 1; }
+message InitEvent { int32 process_id = 1; }
+message ExitEvent { int32 exit_code = 1; }
+
+message StartResponse {
+  oneof event {
+    InitEvent init = 1;
+    bytes stdout = 2;
+    bytes stderr = 3;
+    ExitEvent exit = 4;
+  }
+}
+
+message Empty {}
+
+message WriteStdinRequest {
+  int32 process_id = 1;
+  oneof payload {
+    bytes input = 2;
+    Empty eof = 3;
+  }
+}
+
+message WriteStdinResponse {}
+
+message SendSignalRequest {
+  int32 process_id = 1;
+  Signal signal = 2;
+}
+
+message SendSignalResponse {}

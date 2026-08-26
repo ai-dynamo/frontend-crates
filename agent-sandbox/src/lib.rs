@@ -180,6 +180,8 @@ pub trait SandboxProvider: Send + Sync + 'static {
 mod kubernetes;
 #[cfg(feature = "kubernetes-client")]
 mod kubernetes_client;
+#[cfg(feature = "sandboxd-client")]
+mod sandboxd;
 mod tool_executor;
 
 pub use kubernetes::{
@@ -192,6 +194,8 @@ pub use kubernetes_client::{
     HttpSandboxSupervisor, HttpSandboxSupervisorConfig, KubeAgentSandboxControlPlane,
     KubeAgentSandboxControlPlaneConfig, KubeControlPlaneError, SandboxSupervisorHttpError,
 };
+#[cfg(feature = "sandboxd-client")]
+pub use sandboxd::{SandboxdClient, SandboxdClientConfig, SandboxdClientError, SandboxdRunOutcome};
 pub use tool_executor::{
     SandboxFailurePolicy, SandboxProviderExecutor, SandboxToolError, SandboxToolExecutorConfig,
 };
