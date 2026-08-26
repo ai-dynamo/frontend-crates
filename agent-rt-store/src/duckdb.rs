@@ -16,6 +16,7 @@ use dynamo_agent_rt::{
     TurnState,
 };
 use thiserror::Error;
+use tokio::sync::Semaphore;
 
 use crate::StoreInvariantError;
 
@@ -31,6 +32,8 @@ pub enum DuckDbStoreError {
     Json(#[from] serde_json::Error),
     #[error("DuckDB connection mutex is poisoned")]
     Poisoned,
+    #[error("DuckDB operation gate is closed")]
+    Closed,
     #[error("DuckDB blocking task failed: {0}")]
     Join(#[from] tokio::task::JoinError),
 }
@@ -45,6 +48,7 @@ where
     P: AgentProtocol,
 {
     connection: Arc<Mutex<Connection>>,
+    blocking_gate: Arc<Semaphore>,
     clock: C,
     protocol: PhantomData<fn() -> P>,
 }
@@ -57,6 +61,7 @@ where
     fn clone(&self) -> Self {
         Self {
             connection: Arc::clone(&self.connection),
+            blocking_gate: Arc::clone(&self.blocking_gate),
             clock: self.clock.clone(),
             protocol: PhantomData,
         }
@@ -88,6 +93,7 @@ where
         connection.execute_batch(MIGRATION)?;
         Ok(Self {
             connection: Arc::new(Mutex::new(connection)),
+            blocking_gate: Arc::new(Semaphore::new(1)),
             clock,
             protocol: PhantomData,
         })
@@ -98,8 +104,13 @@ where
         R: Send + 'static,
         F: FnOnce(&mut Connection) -> Result<R, DuckDbStoreError> + Send + 'static,
     {
+        let permit = Arc::clone(&self.blocking_gate)
+            .acquire_owned()
+            .await
+            .map_err(|_| DuckDbStoreError::Closed)?;
         let connection = Arc::clone(&self.connection);
         tokio::task::spawn_blocking(move || {
+            let _permit = permit;
             let mut connection = connection.lock().map_err(|_| DuckDbStoreError::Poisoned)?;
             operation(&mut connection)
         })
