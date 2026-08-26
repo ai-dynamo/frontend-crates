@@ -1,6 +1,9 @@
 # syntax=docker/dockerfile:1.7
 
 FROM rust:1.96.1-bookworm AS builder
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends protobuf-compiler \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY . .
 RUN cargo build --locked --release -p agent-rt-sandbox-service
