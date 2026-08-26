@@ -646,8 +646,7 @@ mod tests {
 
         fn lookup(
             &self,
-            _scope: &AuthorizationScope,
-            _idempotency_key: &crate::IdempotencyKey,
+            _request: &ToolExecutionRequest,
         ) -> BoxFuture<'_, Result<Option<ToolExecutionResult>, Self::Error>> {
             Box::pin(async { Ok(None) })
         }

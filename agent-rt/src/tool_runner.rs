@@ -186,11 +186,7 @@ where
             }),
             ToolJournalState::Started => {
                 let key = record.request.journal_key();
-                match self
-                    .executor
-                    .lookup(&authorization.scope, &key.idempotency_key)
-                    .await
-                {
+                match self.executor.lookup(&record.request).await {
                     Ok(Some(result)) => {
                         self.validate_output(&key, &result, authorization).await?;
                         self.journal
@@ -304,8 +300,7 @@ mod tests {
 
         fn lookup(
             &self,
-            _scope: &AuthorizationScope,
-            _idempotency_key: &crate::IdempotencyKey,
+            _request: &ToolExecutionRequest,
         ) -> BoxFuture<'_, Result<Option<ToolExecutionResult>, Self::Error>> {
             Box::pin(async { Ok(None) })
         }

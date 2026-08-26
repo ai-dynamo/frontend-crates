@@ -267,7 +267,6 @@ pub trait ToolExecutor: Send + Sync + 'static {
     /// `None` means the executor cannot prove whether the side effect occurred.
     fn lookup(
         &self,
-        scope: &AuthorizationScope,
-        idempotency_key: &IdempotencyKey,
+        request: &ToolExecutionRequest,
     ) -> BoxFuture<'_, Result<Option<ToolExecutionResult>, Self::Error>>;
 }
