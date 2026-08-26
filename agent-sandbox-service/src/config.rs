@@ -30,6 +30,10 @@ pub struct SandboxProfileFile {
     pub max_arguments: usize,
     #[serde(default = "default_max_argument_bytes")]
     pub max_argument_bytes: usize,
+    #[serde(default = "default_max_environment_variables")]
+    pub max_environment_variables: usize,
+    #[serde(default = "default_max_environment_bytes")]
+    pub max_environment_bytes: usize,
     #[serde(default = "default_max_stdin_bytes")]
     pub max_stdin_bytes: usize,
     #[serde(default = "default_max_artifacts")]
@@ -88,6 +92,8 @@ impl TryFrom<SandboxCatalogFile> for KubernetesSandboxConfig {
                 || profile.max_artifact_bytes == 0
                 || profile.max_arguments == 0
                 || profile.max_argument_bytes == 0
+                || profile.max_environment_variables == 0
+                || profile.max_environment_bytes == 0
                 || profile.max_stdin_bytes == 0
                 || profile.max_artifacts == 0
             {
@@ -108,6 +114,8 @@ impl TryFrom<SandboxCatalogFile> for KubernetesSandboxConfig {
                         allow_environment: profile.allow_environment,
                         max_arguments: profile.max_arguments,
                         max_argument_bytes: profile.max_argument_bytes,
+                        max_environment_variables: profile.max_environment_variables,
+                        max_environment_bytes: profile.max_environment_bytes,
                         max_stdin_bytes: profile.max_stdin_bytes,
                         max_artifacts: profile.max_artifacts,
                     },
@@ -157,6 +165,14 @@ const fn default_max_arguments() -> usize {
 
 const fn default_max_argument_bytes() -> usize {
     1024 * 1024
+}
+
+const fn default_max_environment_variables() -> usize {
+    64
+}
+
+const fn default_max_environment_bytes() -> usize {
+    256 * 1024
 }
 
 const fn default_max_stdin_bytes() -> usize {

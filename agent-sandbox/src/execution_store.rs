@@ -4,9 +4,9 @@
 //! Fenced execution ownership for the external sandbox service.
 
 use std::collections::HashMap;
-use std::sync::Mutex;
 
 use dynamo_agent_rt::BoxFuture;
+use parking_lot::Mutex;
 use thiserror::Error;
 
 use crate::{Artifact, ExecutionRecord, ExecutionState, ScopedExecutionId, StartExecution};
@@ -144,7 +144,7 @@ impl ExecutionStore for InMemoryExecutionStore {
         Box::pin(async move {
             let execution = scoped(&claim.request);
             let fingerprint = claim.request.fingerprint();
-            let mut state = self.inner.lock().expect("execution store lock poisoned");
+            let mut state = self.inner.lock();
             if let Some(existing) = state.executions.get_mut(&execution) {
                 if existing.record.request_fingerprint != fingerprint
                     || existing.record.provider_sandbox_id != claim.provider_sandbox_id
@@ -207,7 +207,7 @@ impl ExecutionStore for InMemoryExecutionStore {
     ) -> BoxFuture<'_, Result<StoredExecution, Self::Error>> {
         let lease = lease.clone();
         Box::pin(async move {
-            let mut state = self.inner.lock().expect("execution store lock poisoned");
+            let mut state = self.inner.lock();
             let stored = state
                 .executions
                 .get_mut(&lease.execution)
@@ -226,7 +226,7 @@ impl ExecutionStore for InMemoryExecutionStore {
         renewal: RenewExecution,
     ) -> BoxFuture<'_, Result<RenewedExecutionLease, Self::Error>> {
         Box::pin(async move {
-            let mut state = self.inner.lock().expect("execution store lock poisoned");
+            let mut state = self.inner.lock();
             let stored = state
                 .executions
                 .get_mut(&renewal.lease.execution)
@@ -255,7 +255,7 @@ impl ExecutionStore for InMemoryExecutionStore {
     ) -> BoxFuture<'_, Result<StoredExecution, Self::Error>> {
         let lease = lease.clone();
         Box::pin(async move {
-            let mut state = self.inner.lock().expect("execution store lock poisoned");
+            let mut state = self.inner.lock();
             let stored = state
                 .executions
                 .get(&lease.execution)
@@ -309,7 +309,7 @@ impl ExecutionStore for InMemoryExecutionStore {
     ) -> BoxFuture<'_, Result<Option<StoredExecution>, Self::Error>> {
         let execution = execution.clone();
         Box::pin(async move {
-            let mut state = self.inner.lock().expect("execution store lock poisoned");
+            let mut state = self.inner.lock();
             let Some(stored) = state.executions.get_mut(&execution) else {
                 return Ok(None);
             };
@@ -325,7 +325,7 @@ impl ExecutionStore for InMemoryExecutionStore {
     ) -> BoxFuture<'_, Result<Option<StoredExecution>, Self::Error>> {
         let execution = execution.clone();
         Box::pin(async move {
-            let mut state = self.inner.lock().expect("execution store lock poisoned");
+            let mut state = self.inner.lock();
             let Some(stored) = state.executions.get_mut(&execution) else {
                 return Ok(None);
             };
@@ -344,7 +344,7 @@ impl ExecutionStore for InMemoryExecutionStore {
     ) -> BoxFuture<'_, Result<Option<Artifact>, Self::Error>> {
         let key = (execution.clone(), artifact_id.to_owned());
         Box::pin(async move {
-            let state = self.inner.lock().expect("execution store lock poisoned");
+            let state = self.inner.lock();
             Ok(state.artifacts.get(&key).cloned())
         })
     }

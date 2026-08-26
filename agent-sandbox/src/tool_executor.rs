@@ -36,6 +36,14 @@ impl Default for SandboxToolExecutorConfig {
     }
 }
 
+#[derive(Debug, Error, PartialEq, Eq)]
+pub enum SandboxToolExecutorConfigError {
+    #[error("sandbox polling interval must be nonzero")]
+    ZeroPollInterval,
+    #[error("sandbox maximum wait must be nonzero")]
+    ZeroMaxWait,
+}
+
 #[derive(Debug, Error)]
 pub enum SandboxToolError<E>
 where
@@ -97,8 +105,17 @@ pub struct SandboxProviderExecutor<P> {
 }
 
 impl<P> SandboxProviderExecutor<P> {
-    pub fn new(provider: P, config: SandboxToolExecutorConfig) -> Self {
-        Self { provider, config }
+    pub fn new(
+        provider: P,
+        config: SandboxToolExecutorConfig,
+    ) -> Result<Self, SandboxToolExecutorConfigError> {
+        if config.poll_interval.is_zero() {
+            return Err(SandboxToolExecutorConfigError::ZeroPollInterval);
+        }
+        if config.max_wait.is_zero() {
+            return Err(SandboxToolExecutorConfigError::ZeroMaxWait);
+        }
+        Ok(Self { provider, config })
     }
 
     pub fn provider(&self) -> &P {
@@ -267,13 +284,12 @@ where
         })
     }
 
-    fn lookup(
-        &self,
-        request: &ToolExecutionRequest,
-    ) -> BoxFuture<'_, Result<Option<ToolExecutionResult>, Self::Error>> {
-        let request = request.clone();
+    fn lookup<'a>(
+        &'a self,
+        request: &'a ToolExecutionRequest,
+    ) -> BoxFuture<'a, Result<Option<ToolExecutionResult>, Self::Error>> {
         Box::pin(async move {
-            let provider_request = self.provider_request(&request)?;
+            let provider_request = self.provider_request(request)?;
             let Some(record) = self
                 .provider
                 .lookup(&scoped_execution(&provider_request))
@@ -314,6 +330,7 @@ fn workspace_id(request: &ToolExecutionRequest) -> WorkspaceId {
 #[cfg(test)]
 mod tests {
     use std::sync::Mutex;
+    use std::time::Duration;
 
     use dynamo_agent_rt::{
         AuthorizationScope, BoxFuture, IdempotencyKey, ResponseId, ToolExecutionRequest,
@@ -327,7 +344,9 @@ mod tests {
         StartExecution,
     };
 
-    use super::{SandboxProviderExecutor, SandboxToolExecutorConfig};
+    use super::{
+        SandboxProviderExecutor, SandboxToolExecutorConfig, SandboxToolExecutorConfigError,
+    };
 
     #[derive(Debug, Error)]
     #[error("fake provider failed")]
@@ -424,7 +443,8 @@ mod tests {
         let executor = SandboxProviderExecutor::new(
             FakeProvider::default(),
             SandboxToolExecutorConfig::default(),
-        );
+        )
+        .unwrap();
 
         let result = executor.execute(request()).await.unwrap();
         assert_eq!(result.output["stdout"], "42\n");
@@ -438,11 +458,40 @@ mod tests {
         let executor = SandboxProviderExecutor::new(
             FakeProvider::default(),
             SandboxToolExecutorConfig::default(),
-        );
+        )
+        .unwrap();
         let request = request();
         executor.execute(request.clone()).await.unwrap();
 
         let recovered = executor.lookup(&request).await.unwrap().unwrap();
         assert_eq!(recovered.output["exit_code"], 0);
+    }
+
+    #[test]
+    fn rejects_a_zero_poll_interval() {
+        let config = SandboxToolExecutorConfig {
+            poll_interval: Duration::ZERO,
+            ..SandboxToolExecutorConfig::default()
+        };
+
+        let result = SandboxProviderExecutor::new(FakeProvider::default(), config);
+        assert!(matches!(
+            result,
+            Err(SandboxToolExecutorConfigError::ZeroPollInterval)
+        ));
+    }
+
+    #[test]
+    fn rejects_a_zero_maximum_wait() {
+        let config = SandboxToolExecutorConfig {
+            max_wait: Duration::ZERO,
+            ..SandboxToolExecutorConfig::default()
+        };
+
+        let result = SandboxProviderExecutor::new(FakeProvider::default(), config);
+        assert!(matches!(
+            result,
+            Err(SandboxToolExecutorConfigError::ZeroMaxWait)
+        ));
     }
 }

@@ -19,6 +19,8 @@ pub struct CommandPolicy {
     pub allow_environment: bool,
     pub max_arguments: usize,
     pub max_argument_bytes: usize,
+    pub max_environment_variables: usize,
+    pub max_environment_bytes: usize,
     pub max_stdin_bytes: usize,
     pub max_artifacts: usize,
 }
@@ -30,6 +32,8 @@ impl Default for CommandPolicy {
             allow_environment: false,
             max_arguments: 64,
             max_argument_bytes: 1024 * 1024,
+            max_environment_variables: 64,
+            max_environment_bytes: 256 * 1024,
             max_stdin_bytes: 1024 * 1024,
             max_artifacts: 32,
         }
@@ -139,8 +143,14 @@ where
     ExecutableDenied,
     #[error("sandbox command exceeds its argument count or byte limit")]
     ArgumentsTooLarge,
+    #[error("sandbox command argument contains a NUL byte")]
+    InvalidArgument,
     #[error("sandbox environment variables are not allowed by the profile")]
     EnvironmentDenied,
+    #[error("sandbox environment variables exceed the profile limit")]
+    EnvironmentTooLarge,
+    #[error("sandbox environment variable name or value is invalid")]
+    InvalidEnvironment,
     #[error("sandbox stdin exceeds the profile limit")]
     StdinTooLarge,
     #[error("sandbox working directory must remain beneath /workspace")]
@@ -250,8 +260,35 @@ where
         {
             return Err(KubernetesSandboxError::ArgumentsTooLarge);
         }
+        if request
+            .command
+            .argv
+            .iter()
+            .any(|argument| argument.as_bytes().contains(&0))
+        {
+            return Err(KubernetesSandboxError::InvalidArgument);
+        }
         if !profile.command_policy.allow_environment && !request.command.env.is_empty() {
             return Err(KubernetesSandboxError::EnvironmentDenied);
+        }
+        let environment_bytes = request
+            .command
+            .env
+            .iter()
+            .map(|(name, value)| name.len().saturating_add(value.len()))
+            .try_fold(0_usize, usize::checked_add)
+            .unwrap_or(usize::MAX);
+        if request.command.env.len() > profile.command_policy.max_environment_variables
+            || environment_bytes > profile.command_policy.max_environment_bytes
+        {
+            return Err(KubernetesSandboxError::EnvironmentTooLarge);
+        }
+        if request.command.env.iter().any(|(name, value)| {
+            name.is_empty()
+                || name.bytes().any(|byte| matches!(byte, b'=' | 0))
+                || value.as_bytes().contains(&0)
+        }) {
+            return Err(KubernetesSandboxError::InvalidEnvironment);
         }
         if request.command.stdin.len() > profile.command_policy.max_stdin_bytes {
             return Err(KubernetesSandboxError::StdinTooLarge);
@@ -671,6 +708,30 @@ mod tests {
         assert!(matches!(
             provider.start(request).await,
             Err(KubernetesSandboxError::ExecutableDenied)
+        ));
+    }
+
+    #[tokio::test]
+    async fn bounds_model_supplied_environment_variables() {
+        let mut config = config();
+        let policy = &mut config
+            .profiles
+            .get_mut("python-deny-egress")
+            .unwrap()
+            .command_policy;
+        policy.allow_environment = true;
+        policy.max_environment_bytes = 4;
+        let provider =
+            KubernetesSandboxProvider::new(FakeControlPlane::default(), FakeSupervisor, config);
+        let mut request = request();
+        request
+            .command
+            .env
+            .insert("TOKEN".to_owned(), "secret".to_owned());
+
+        assert!(matches!(
+            provider.start(request).await,
+            Err(KubernetesSandboxError::EnvironmentTooLarge)
         ));
     }
 }

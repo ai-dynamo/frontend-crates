@@ -69,10 +69,56 @@ impl StartExecution {
     /// Stable request fingerprint used to reject execution-ID reuse with a
     /// different command, profile, scope, workspace, or limit.
     pub fn fingerprint(&self) -> String {
-        let encoded =
-            serde_json::to_vec(self).expect("serializing a sandbox execution request cannot fail");
-        blake3::hash(&encoded).to_hex().to_string()
+        let mut hasher = blake3::Hasher::new();
+        hash_bytes(&mut hasher, b"agent-rt-sandbox-request-v1");
+        hash_bytes(&mut hasher, self.api_version.as_bytes());
+        hash_bytes(&mut hasher, self.scope.tenant_id.as_bytes());
+        hash_bytes(&mut hasher, self.scope.principal_id.as_bytes());
+        hash_bytes(&mut hasher, self.workspace_id.0.as_bytes());
+        hash_bytes(&mut hasher, self.execution_id.0.as_bytes());
+        hash_bytes(&mut hasher, self.profile.0.as_bytes());
+        hash_strings(&mut hasher, &self.command.argv);
+        hash_optional_string(&mut hasher, self.command.cwd.as_deref());
+        hash_length(&mut hasher, self.command.env.len());
+        for (name, value) in &self.command.env {
+            hash_bytes(&mut hasher, name.as_bytes());
+            hash_bytes(&mut hasher, value.as_bytes());
+        }
+        hash_bytes(&mut hasher, &self.command.stdin);
+        hash_strings(&mut hasher, &self.command.artifact_paths);
+        hasher.update(&self.limits.timeout_millis.to_le_bytes());
+        hasher.update(&self.limits.max_output_bytes.to_le_bytes());
+        hasher.update(&self.limits.max_artifact_bytes.to_le_bytes());
+        hasher.finalize().to_hex().to_string()
     }
+}
+
+fn hash_strings(hasher: &mut blake3::Hasher, values: &[String]) {
+    hash_length(hasher, values.len());
+    for value in values {
+        hash_bytes(hasher, value.as_bytes());
+    }
+}
+
+fn hash_optional_string(hasher: &mut blake3::Hasher, value: Option<&str>) {
+    match value {
+        Some(value) => {
+            hasher.update(&[1]);
+            hash_bytes(hasher, value.as_bytes());
+        }
+        None => {
+            hasher.update(&[0]);
+        }
+    }
+}
+
+fn hash_bytes(hasher: &mut blake3::Hasher, value: &[u8]) {
+    hash_length(hasher, value.len());
+    hasher.update(value);
+}
+
+fn hash_length(hasher: &mut blake3::Hasher, length: usize) {
+    hasher.update(&(length as u64).to_le_bytes());
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -218,6 +264,7 @@ pub use postgres_store::{PostgresExecutionStore, PostgresExecutionStoreError};
 pub use sandboxd::{SandboxdClient, SandboxdClientConfig, SandboxdClientError, SandboxdRunOutcome};
 pub use tool_executor::{
     SandboxFailurePolicy, SandboxProviderExecutor, SandboxToolError, SandboxToolExecutorConfig,
+    SandboxToolExecutorConfigError,
 };
 
 #[cfg(test)]
@@ -262,6 +309,16 @@ mod tests {
             request("python-deny-egress").fingerprint(),
             request("python-public-egress").fingerprint()
         );
+    }
+
+    #[test]
+    fn fingerprint_length_prefixes_variable_fields() {
+        let mut left = request("python-deny-egress");
+        left.command.argv = vec!["a".to_owned(), "bc".to_owned()];
+        let mut right = left.clone();
+        right.command.argv = vec!["ab".to_owned(), "c".to_owned()];
+
+        assert_ne!(left.fingerprint(), right.fingerprint());
     }
 
     #[test]

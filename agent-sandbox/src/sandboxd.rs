@@ -50,6 +50,8 @@ pub struct SandboxdRunOutcome {
 
 #[derive(Debug, Error)]
 pub enum SandboxdClientError {
+    #[error("sandboxd ports and timeouts must be nonzero")]
+    InvalidConfig,
     #[error("sandboxd service FQDN is invalid")]
     InvalidServiceEndpoint,
     #[error("sandboxd gRPC endpoint is invalid: {0}")]
@@ -76,6 +78,13 @@ pub struct SandboxdClient {
 
 impl SandboxdClient {
     pub fn new(config: SandboxdClientConfig) -> Result<Self, SandboxdClientError> {
+        if config.grpc_port == 0
+            || config.rest_port == 0
+            || config.connect_timeout.is_zero()
+            || config.request_timeout.is_zero()
+        {
+            return Err(SandboxdClientError::InvalidConfig);
+        }
         let http = reqwest::Client::builder()
             .redirect(reqwest::redirect::Policy::none())
             .timeout(config.request_timeout)
@@ -234,18 +243,14 @@ impl SandboxdClient {
         }
         if !response.status().is_success() {
             let status = response.status().as_u16();
-            let body = response.text().await.unwrap_or_default();
+            let body = read_body_prefix(response, 512).await?;
             return Err(SandboxdClientError::FileHttp {
                 status,
-                body: body.chars().take(512).collect(),
+                body: String::from_utf8_lossy(&body).into_owned(),
             });
         }
         let limit = usize::try_from(max_bytes).unwrap_or(usize::MAX);
-        let bytes = response.bytes().await?;
-        if bytes.len() > limit {
-            return Err(SandboxdClientError::FileTooLarge);
-        }
-        Ok(bytes.to_vec())
+        read_bounded_body(response, limit).await
     }
 
     async fn connect(
@@ -257,7 +262,8 @@ impl SandboxdClient {
             "http://{}:{}",
             sandbox.service_fqdn, self.config.grpc_port
         ))?
-        .connect_timeout(self.config.connect_timeout);
+        .connect_timeout(self.config.connect_timeout)
+        .timeout(self.config.request_timeout);
         Ok(ProcessServiceClient::new(endpoint.connect().await?))
     }
 
@@ -319,12 +325,59 @@ fn unknown_outcome() -> SandboxdRunOutcome {
     }
 }
 
+async fn read_bounded_body(
+    mut response: reqwest::Response,
+    max_bytes: usize,
+) -> Result<Vec<u8>, SandboxdClientError> {
+    if response
+        .content_length()
+        .is_some_and(|length| length > max_bytes as u64)
+    {
+        return Err(SandboxdClientError::FileTooLarge);
+    }
+    let mut body = Vec::new();
+    while let Some(chunk) = response.chunk().await? {
+        if body.len().saturating_add(chunk.len()) > max_bytes {
+            return Err(SandboxdClientError::FileTooLarge);
+        }
+        body.extend_from_slice(&chunk);
+    }
+    Ok(body)
+}
+
+async fn read_body_prefix(
+    mut response: reqwest::Response,
+    max_bytes: usize,
+) -> Result<Vec<u8>, reqwest::Error> {
+    let mut body = Vec::new();
+    while body.len() < max_bytes {
+        let Some(chunk) = response.chunk().await? else {
+            break;
+        };
+        let remaining = max_bytes - body.len();
+        body.extend_from_slice(&chunk[..chunk.len().min(remaining)]);
+    }
+    Ok(body)
+}
+
 fn validate_service_fqdn(fqdn: &str) -> Result<(), SandboxdClientError> {
     if !fqdn.is_empty()
         && fqdn.len() <= 253
-        && fqdn
-            .bytes()
-            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.'))
+        && fqdn.split('.').all(|label| {
+            !label.is_empty()
+                && label.len() <= 63
+                && label
+                    .bytes()
+                    .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
+                && label
+                    .as_bytes()
+                    .first()
+                    .is_some_and(u8::is_ascii_alphanumeric)
+                && label
+                    .as_bytes()
+                    .last()
+                    .is_some_and(u8::is_ascii_alphanumeric)
+        })
     {
         Ok(())
     } else {

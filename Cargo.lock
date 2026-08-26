@@ -20,6 +20,7 @@ dependencies = [
  "futures",
  "k8s-openapi",
  "kube",
+ "parking_lot",
  "postgresql_embedded",
  "prost",
  "reqwest 0.13.4",

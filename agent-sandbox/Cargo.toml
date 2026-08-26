@@ -18,6 +18,7 @@ include = ["src/**/*", "proto/**/*", "migrations/**/*", "build.rs", "Cargo.toml"
 [dependencies]
 blake3.workspace = true
 dynamo-agent-rt.workspace = true
+parking_lot.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 thiserror.workspace = true

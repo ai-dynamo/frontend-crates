@@ -61,6 +61,8 @@ pub enum HttpSandboxProviderConfigError {
     WeakBearerToken,
     #[error("sandbox service response limit must be nonzero")]
     ZeroResponseLimit,
+    #[error("sandbox service connect and request timeouts must be nonzero")]
+    ZeroTimeout,
     #[error("sandbox service HTTP client could not be built: {0}")]
     Client(String),
 }
@@ -94,6 +96,9 @@ impl HttpSandboxProvider {
         }
         if config.max_response_bytes == 0 {
             return Err(HttpSandboxProviderConfigError::ZeroResponseLimit);
+        }
+        if config.connect_timeout.is_zero() || config.request_timeout.is_zero() {
+            return Err(HttpSandboxProviderConfigError::ZeroTimeout);
         }
         let endpoint = Url::parse(&config.endpoint)
             .map_err(|error| HttpSandboxProviderConfigError::InvalidEndpoint(error.to_string()))?;
@@ -136,11 +141,7 @@ impl HttpSandboxProvider {
     {
         let response = self
             .client
-            .post(
-                self.endpoint
-                    .join(path)
-                    .expect("constant API path is valid"),
-            )
+            .post(self.request_url(path))
             .bearer_auth(&self.bearer_token)
             .header(TENANT_HEADER, &scope.tenant_id)
             .header(PRINCIPAL_HEADER, &scope.principal_id)
@@ -169,11 +170,7 @@ impl HttpSandboxProvider {
     ) -> Result<(), HttpSandboxProviderError> {
         let response = self
             .client
-            .post(
-                self.endpoint
-                    .join(path)
-                    .expect("constant API path is valid"),
-            )
+            .post(self.request_url(path))
             .bearer_auth(&self.bearer_token)
             .header(TENANT_HEADER, &scope.tenant_id)
             .header(PRINCIPAL_HEADER, &scope.principal_id)
@@ -192,6 +189,12 @@ impl HttpSandboxProvider {
             status: status.as_u16(),
             code,
         })
+    }
+
+    fn request_url(&self, path: &str) -> Url {
+        let mut url = self.endpoint.clone();
+        url.set_path(path);
+        url
     }
 }
 

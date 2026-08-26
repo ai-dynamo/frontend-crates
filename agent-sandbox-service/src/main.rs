@@ -121,7 +121,7 @@ async fn main() -> anyhow::Result<()> {
             ready_timeout: Duration::from_millis(cli.claim_ready_timeout_millis),
             poll_interval: Duration::from_millis(cli.claim_poll_millis),
         },
-    );
+    )?;
     let provider = Arc::new(KubernetesSandboxProvider::new(
         kubernetes,
         supervisor,

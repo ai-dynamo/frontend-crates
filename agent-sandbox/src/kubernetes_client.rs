@@ -36,6 +36,8 @@ impl Default for KubeAgentSandboxControlPlaneConfig {
 
 #[derive(Debug, Error)]
 pub enum KubeControlPlaneError {
+    #[error("Kubernetes sandbox readiness timeout and polling interval must be nonzero")]
+    InvalidPollingConfig,
     #[error("Kubernetes API failed: {0}")]
     Kube(#[from] kube::Error),
     #[error("sandbox claim exists with a different workspace or warm pool")]
@@ -59,16 +61,22 @@ pub struct KubeAgentSandboxControlPlane {
 }
 
 impl KubeAgentSandboxControlPlane {
-    pub fn new(client: Client, config: KubeAgentSandboxControlPlaneConfig) -> Self {
+    pub fn new(
+        client: Client,
+        config: KubeAgentSandboxControlPlaneConfig,
+    ) -> Result<Self, KubeControlPlaneError> {
+        if config.ready_timeout.is_zero() || config.poll_interval.is_zero() {
+            return Err(KubeControlPlaneError::InvalidPollingConfig);
+        }
         let claim_gvk =
             GroupVersionKind::gvk("extensions.agents.x-k8s.io", "v1beta1", "SandboxClaim");
         let sandbox_gvk = GroupVersionKind::gvk("agents.x-k8s.io", "v1beta1", "Sandbox");
-        Self {
+        Ok(Self {
             client,
             config,
             claim_resource: ApiResource::from_gvk_with_plural(&claim_gvk, "sandboxclaims"),
             sandbox_resource: ApiResource::from_gvk_with_plural(&sandbox_gvk, "sandboxes"),
-        }
+        })
     }
 
     fn claims(&self, namespace: &str) -> Api<DynamicObject> {

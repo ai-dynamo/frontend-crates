@@ -57,6 +57,7 @@ minijinja-contrib = { version = "2.24.0" }
 moka = { version = "0.12" }
 num-traits = "0.2"
 openai-harmony = "0.0.8"
+parking_lot = "0.12"
 pyo3 = { version = "0.22", features = ["extension-module"] }
 rayon = "1"
 regex = "1"

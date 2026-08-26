@@ -4,10 +4,11 @@
 //! Durable supervision for commands executed through an isolated data plane.
 
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use dynamo_agent_rt::BoxFuture;
+use parking_lot::Mutex;
 use thiserror::Error;
 use tokio::sync::watch;
 
@@ -162,7 +163,6 @@ where
         let (cancel, cancellation) = watch::channel(stored.cancel_requested);
         self.active
             .lock()
-            .expect("sandbox active execution lock poisoned")
             .insert(lease.execution.clone(), cancel.clone());
 
         let data_plane = Arc::clone(&self.data_plane);
@@ -194,10 +194,7 @@ where
                     "sandbox execution supervisor stopped"
                 );
             }
-            active
-                .lock()
-                .expect("sandbox active execution lock poisoned")
-                .remove(&execution);
+            active.lock().remove(&execution);
         });
         Ok(stored.record)
     }
@@ -274,12 +271,7 @@ where
                 .map_err(DurableSandboxSupervisorError::Store)?
                 .ok_or(DurableSandboxSupervisorError::NotFound)?;
             validate_stored(&sandbox, &stored)?;
-            if let Some(sender) = self
-                .active
-                .lock()
-                .expect("sandbox active execution lock poisoned")
-                .get(&execution)
-            {
+            if let Some(sender) = self.active.lock().get(&execution) {
                 let _ = sender.send(true);
             }
             Ok(stored.record)
