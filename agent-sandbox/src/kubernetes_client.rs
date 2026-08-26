@@ -54,28 +54,36 @@ pub enum KubeControlPlaneError {
 pub struct KubeAgentSandboxControlPlane {
     client: Client,
     config: KubeAgentSandboxControlPlaneConfig,
-    resource: ApiResource,
+    claim_resource: ApiResource,
+    sandbox_resource: ApiResource,
 }
 
 impl KubeAgentSandboxControlPlane {
     pub fn new(client: Client, config: KubeAgentSandboxControlPlaneConfig) -> Self {
-        let gvk = GroupVersionKind::gvk("extensions.agents.x-k8s.io", "v1beta1", "SandboxClaim");
+        let claim_gvk =
+            GroupVersionKind::gvk("extensions.agents.x-k8s.io", "v1beta1", "SandboxClaim");
+        let sandbox_gvk = GroupVersionKind::gvk("agents.x-k8s.io", "v1beta1", "Sandbox");
         Self {
             client,
             config,
-            resource: ApiResource::from_gvk_with_plural(&gvk, "sandboxclaims"),
+            claim_resource: ApiResource::from_gvk_with_plural(&claim_gvk, "sandboxclaims"),
+            sandbox_resource: ApiResource::from_gvk_with_plural(&sandbox_gvk, "sandboxes"),
         }
     }
 
-    fn api(&self, namespace: &str) -> Api<DynamicObject> {
-        Api::namespaced_with(self.client.clone(), namespace, &self.resource)
+    fn claims(&self, namespace: &str) -> Api<DynamicObject> {
+        Api::namespaced_with(self.client.clone(), namespace, &self.claim_resource)
+    }
+
+    fn sandboxes(&self, namespace: &str) -> Api<DynamicObject> {
+        Api::namespaced_with(self.client.clone(), namespace, &self.sandbox_resource)
     }
 
     fn claim(&self, request: &SandboxClaimRequest) -> Result<DynamicObject, KubeControlPlaneError> {
         let ttl = chrono::Duration::from_std(request.expires_after)
             .map_err(|_| KubeControlPlaneError::InvalidTtl)?;
         let shutdown_time = (Utc::now() + ttl).to_rfc3339();
-        let mut claim = DynamicObject::new(&request.claim_name, &self.resource).data(json!({
+        let mut claim = DynamicObject::new(&request.claim_name, &self.claim_resource).data(json!({
             "spec": {
                 "warmPoolRef": {"name": request.warm_pool},
                 "lifecycle": {
@@ -125,10 +133,13 @@ impl KubeAgentSandboxControlPlane {
         &self,
         request: &SandboxClaimRequest,
     ) -> Result<SandboxClaimHandle, KubeControlPlaneError> {
-        let api = self.api(&request.namespace);
+        let claims = self.claims(&request.namespace);
+        let sandboxes = self.sandboxes(&request.namespace);
         let deadline = tokio::time::Instant::now() + self.config.ready_timeout;
+        let mut ready_without_identity = false;
+        let mut ready_without_endpoint = false;
         loop {
-            let claim = api.get(&request.claim_name).await?;
+            let claim = claims.get(&request.claim_name).await?;
             self.validate_claim(&claim, request)?;
             let ready = claim
                 .data
@@ -141,37 +152,56 @@ impl KubeAgentSandboxControlPlane {
                     })
                 });
             if ready {
-                let sandbox_id = claim
+                let Some(sandbox_id) = claim
                     .data
                     .pointer("/status/sandbox/name")
                     .and_then(|value| value.as_str())
                     .filter(|name| !name.is_empty())
-                    .ok_or(KubeControlPlaneError::MissingSandboxIdentity)?;
-                let service_fqdn = claim
+                else {
+                    ready_without_identity = true;
+                    continue_after_poll(&self.config, deadline).await?;
+                    continue;
+                };
+                let claim_service_fqdn = claim
                     .data
                     .pointer("/status/sandbox/serviceFQDN")
                     .and_then(|value| value.as_str())
-                    .filter(|name| !name.is_empty())
-                    .ok_or(KubeControlPlaneError::MissingServiceEndpoint)?;
-                return Ok(SandboxClaimHandle {
-                    namespace: request.namespace.clone(),
-                    claim_name: request.claim_name.clone(),
-                    sandbox_id: sandbox_id.to_owned(),
-                    service_fqdn: service_fqdn.to_owned(),
-                });
+                    .filter(|name| !name.is_empty());
+                let service_fqdn = if let Some(service_fqdn) = claim_service_fqdn {
+                    Some(service_fqdn.to_owned())
+                } else {
+                    sandboxes.get_opt(sandbox_id).await?.and_then(|sandbox| {
+                        sandbox
+                            .data
+                            .pointer("/status/serviceFQDN")
+                            .and_then(|value| value.as_str())
+                            .filter(|name| !name.is_empty())
+                            .map(str::to_owned)
+                    })
+                };
+                if let Some(service_fqdn) = service_fqdn {
+                    return Ok(SandboxClaimHandle {
+                        namespace: request.namespace.clone(),
+                        claim_name: request.claim_name.clone(),
+                        sandbox_id: sandbox_id.to_owned(),
+                        service_fqdn,
+                    });
+                }
+                ready_without_endpoint = true;
             }
-            let now = tokio::time::Instant::now();
-            if now >= deadline {
-                return Err(KubeControlPlaneError::ReadyTimeout(
-                    self.config.ready_timeout,
-                ));
+            if let Err(KubeControlPlaneError::ReadyTimeout(_)) =
+                continue_after_poll(&self.config, deadline).await
+            {
+                return if ready_without_endpoint {
+                    Err(KubeControlPlaneError::MissingServiceEndpoint)
+                } else if ready_without_identity {
+                    Err(KubeControlPlaneError::MissingSandboxIdentity)
+                } else {
+                    Err(KubeControlPlaneError::ReadyTimeout(
+                        self.config.ready_timeout,
+                    ))
+                };
             }
-            tokio::time::sleep(
-                self.config
-                    .poll_interval
-                    .min(deadline.saturating_duration_since(now)),
-            )
-            .await;
         }
     }
 }
@@ -184,7 +214,7 @@ impl AgentSandboxControlPlane for KubeAgentSandboxControlPlane {
         request: SandboxClaimRequest,
     ) -> BoxFuture<'_, Result<SandboxClaimHandle, Self::Error>> {
         Box::pin(async move {
-            let api = self.api(&request.namespace);
+            let api = self.claims(&request.namespace);
             match api.get_opt(&request.claim_name).await? {
                 Some(existing) => self.validate_claim(&existing, &request)?,
                 None => {
@@ -209,7 +239,7 @@ impl AgentSandboxControlPlane for KubeAgentSandboxControlPlane {
     ) -> BoxFuture<'_, Result<Option<SandboxClaimHandle>, Self::Error>> {
         let request = request.clone();
         Box::pin(async move {
-            let api = self.api(&request.namespace);
+            let api = self.claims(&request.namespace);
             let Some(claim) = api.get_opt(&request.claim_name).await? else {
                 return Ok(None);
             };
@@ -224,7 +254,7 @@ impl AgentSandboxControlPlane for KubeAgentSandboxControlPlane {
     ) -> BoxFuture<'_, Result<(), Self::Error>> {
         let request = request.clone();
         Box::pin(async move {
-            let api = self.api(&request.namespace);
+            let api = self.claims(&request.namespace);
             let Some(claim) = api.get_opt(&request.claim_name).await? else {
                 return Ok(());
             };
@@ -240,4 +270,21 @@ impl AgentSandboxControlPlane for KubeAgentSandboxControlPlane {
             Ok(())
         })
     }
+}
+
+async fn continue_after_poll(
+    config: &KubeAgentSandboxControlPlaneConfig,
+    deadline: tokio::time::Instant,
+) -> Result<(), KubeControlPlaneError> {
+    let now = tokio::time::Instant::now();
+    if now >= deadline {
+        return Err(KubeControlPlaneError::ReadyTimeout(config.ready_timeout));
+    }
+    tokio::time::sleep(
+        config
+            .poll_interval
+            .min(deadline.saturating_duration_since(now)),
+    )
+    .await;
+    Ok(())
 }
