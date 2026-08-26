@@ -221,6 +221,10 @@ where
     pub fn store(&self) -> &S {
         &self.store
     }
+
+    pub(crate) fn invoker(&self) -> &I {
+        &self.invoker
+    }
 }
 
 #[cfg(test)]
@@ -1037,7 +1041,7 @@ where
         })))
     }
 
-    async fn mark_failed(&self, lease: TurnLease) -> Option<S::Error> {
+    pub(crate) async fn mark_failed(&self, lease: TurnLease) -> Option<S::Error> {
         self.store
             .commit_turn(CommitTurn {
                 lease,
