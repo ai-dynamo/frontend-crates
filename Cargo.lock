@@ -18,6 +18,7 @@ dependencies = [
  "dynamo-agent-rt",
  "k8s-openapi",
  "kube",
+ "postgresql_embedded",
  "prost",
  "reqwest 0.13.4",
  "serde",

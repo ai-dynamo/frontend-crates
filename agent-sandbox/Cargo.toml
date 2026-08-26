@@ -36,6 +36,11 @@ default = []
 kubernetes-client = ["dep:chrono", "dep:k8s-openapi", "dep:kube", "sandboxd-client"]
 sandboxd-client = ["dep:prost", "dep:reqwest", "dep:tokio-stream", "dep:tonic", "dep:tonic-prost"]
 postgres = ["dep:deadpool-postgres", "dep:tokio-postgres"]
+postgres-integration = ["postgres", "dep:postgresql_embedded"]
+
+[[test]]
+name = "postgres_execution_store"
+required-features = ["postgres-integration"]
 
 [dependencies.chrono]
 workspace = true
@@ -69,6 +74,12 @@ optional = true
 
 [dependencies.prost]
 version = "0.14"
+optional = true
+
+[dependencies.postgresql_embedded]
+version = "0.21.0"
+default-features = false
+features = ["theseus", "tls-rustls-ring", "tokio"]
 optional = true
 
 [dependencies.tokio-stream]

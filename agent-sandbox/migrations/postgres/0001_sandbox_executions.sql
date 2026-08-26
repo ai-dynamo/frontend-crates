@@ -9,8 +9,8 @@ CREATE TABLE IF NOT EXISTS agent_sandbox_executions (
     execution_id TEXT NOT NULL,
     request_fingerprint TEXT NOT NULL,
     provider_sandbox_id TEXT NOT NULL,
-    request_json JSONB NOT NULL,
-    record_json JSONB NOT NULL,
+    request_json TEXT NOT NULL,
+    record_json TEXT NOT NULL,
     state TEXT NOT NULL CHECK (state IN (
         'pending', 'running', 'succeeded', 'failed', 'cancelled', 'timed_out', 'outcome_unknown'
     )),
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS agent_sandbox_artifacts (
     profile TEXT NOT NULL,
     execution_id TEXT NOT NULL,
     artifact_id TEXT NOT NULL,
-    metadata_json JSONB NOT NULL,
+    metadata_json TEXT NOT NULL,
     bytes BYTEA NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
     PRIMARY KEY (

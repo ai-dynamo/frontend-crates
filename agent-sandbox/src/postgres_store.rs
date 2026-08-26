@@ -293,7 +293,7 @@ impl ExecutionStore for PostgresExecutionStore {
             let client = self.pool.get().await?;
             let row = client
                 .query_opt(
-            "SELECT metadata_json::TEXT AS metadata_json, bytes FROM agent_sandbox_artifacts
+                    "SELECT metadata_json, bytes FROM agent_sandbox_artifacts
                      WHERE tenant_id = $1 AND principal_id = $2 AND workspace_id = $3
                        AND profile = $4 AND execution_id = $5 AND artifact_id = $6",
                     &[
@@ -324,14 +324,18 @@ async fn lock_execution(
     transaction: &Transaction<'_>,
     execution: &ScopedExecutionId,
 ) -> Result<(), PostgresExecutionStoreError> {
-    let key = format!(
-        "{}\0{}\0{}\0{}\0{}",
-        execution.scope.tenant_id,
-        execution.scope.principal_id,
-        execution.workspace_id.0,
-        execution.profile.0,
-        execution.execution_id.0
-    );
+    let mut hasher = blake3::Hasher::new();
+    for value in [
+        execution.scope.tenant_id.as_str(),
+        execution.scope.principal_id.as_str(),
+        execution.workspace_id.0.as_str(),
+        execution.profile.0.as_str(),
+        execution.execution_id.0.as_str(),
+    ] {
+        hasher.update(&(value.len() as u64).to_le_bytes());
+        hasher.update(value.as_bytes());
+    }
+    let key = hasher.finalize().to_hex().to_string();
     transaction
         .query_one(
             "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
@@ -347,7 +351,7 @@ async fn load_locked(
 ) -> Result<Option<StoredExecution>, PostgresExecutionStoreError> {
     transaction
         .query_opt(
-            "SELECT request_json::TEXT AS request_json, record_json::TEXT AS record_json,
+            "SELECT request_json, record_json,
                     state, lease_owner_id, lease_fence,
                     lease_deadline_unix_millis, cancel_requested
              FROM agent_sandbox_executions
@@ -418,7 +422,7 @@ async fn insert_execution(
                 tenant_id, principal_id, workspace_id, profile, execution_id,
                 request_fingerprint, provider_sandbox_id, request_json, record_json, state,
                 lease_owner_id, lease_fence, lease_deadline_unix_millis, cancel_requested
-             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::JSONB, $9::JSONB, $10, $11, $12, $13, $14)",
+             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
             &[
                 &execution.scope.tenant_id,
                 &execution.scope.principal_id,
@@ -450,7 +454,7 @@ async fn persist_record(
     let updated = transaction
         .execute(
             "UPDATE agent_sandbox_executions
-             SET record_json = $1::JSONB, state = $2, lease_owner_id = $3, lease_fence = $4,
+             SET record_json = $1, state = $2, lease_owner_id = $3, lease_fence = $4,
                  lease_deadline_unix_millis = $5, cancel_requested = $6,
                  updated_at = clock_timestamp()
              WHERE tenant_id = $7 AND principal_id = $8 AND workspace_id = $9
@@ -487,7 +491,7 @@ async fn insert_artifact(
             "INSERT INTO agent_sandbox_artifacts (
                 tenant_id, principal_id, workspace_id, profile, execution_id,
                 artifact_id, metadata_json, bytes
-             ) VALUES ($1, $2, $3, $4, $5, $6, $7::JSONB, $8)",
+             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
             &[
                 &execution.scope.tenant_id,
                 &execution.scope.principal_id,
