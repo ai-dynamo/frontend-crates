@@ -12,6 +12,11 @@ secretGenerator:
       - trusted-proxy-token=local-sandbox-token-0123456789abcdef
 generatorOptions:
   disableNameSuffixHash: true
+images:
+  - name: agent-rt-sandbox-service
+    newTag: local
+  - name: agent-rt-python-sandbox
+    newTag: local
 patches:
   - target:
       group: apps
