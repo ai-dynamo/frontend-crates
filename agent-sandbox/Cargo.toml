@@ -16,6 +16,7 @@ include = ["src/**/*", "Cargo.toml", "README.md"]
 
 [dependencies]
 blake3.workspace = true
+base64.workspace = true
 dynamo-agent-rt.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
@@ -28,3 +29,29 @@ tokio = { workspace = true, features = ["macros", "rt", "time"] }
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+default = []
+kubernetes-client = ["dep:chrono", "dep:k8s-openapi", "dep:kube", "dep:reqwest"]
+
+[dependencies.chrono]
+workspace = true
+features = ["serde"]
+optional = true
+
+[dependencies.k8s-openapi]
+version = "0.28"
+features = ["v1_36"]
+optional = true
+
+[dependencies.kube]
+version = "4.2"
+default-features = false
+features = ["client", "rustls-tls", "ring"]
+optional = true
+
+[dependencies.reqwest]
+version = "0.13"
+default-features = false
+features = ["json", "rustls"]
+optional = true

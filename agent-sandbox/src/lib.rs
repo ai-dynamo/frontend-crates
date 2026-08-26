@@ -138,7 +138,7 @@ pub struct ScopedWorkspaceId {
 }
 
 /// Artifact bytes returned only after a scoped lookup.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Artifact {
     pub metadata: ArtifactRef,
     pub bytes: Vec<u8>,
@@ -178,12 +178,19 @@ pub trait SandboxProvider: Send + Sync + 'static {
 }
 
 mod kubernetes;
+#[cfg(feature = "kubernetes-client")]
+mod kubernetes_client;
 mod tool_executor;
 
 pub use kubernetes::{
     AgentSandboxControlPlane, CommandPolicy, KubernetesSandboxConfig, KubernetesSandboxError,
     KubernetesSandboxProfile, KubernetesSandboxProvider, SandboxClaimHandle, SandboxClaimRequest,
     SandboxSupervisor,
+};
+#[cfg(feature = "kubernetes-client")]
+pub use kubernetes_client::{
+    HttpSandboxSupervisor, HttpSandboxSupervisorConfig, KubeAgentSandboxControlPlane,
+    KubeAgentSandboxControlPlaneConfig, KubeControlPlaneError, SandboxSupervisorHttpError,
 };
 pub use tool_executor::{
     SandboxFailurePolicy, SandboxProviderExecutor, SandboxToolError, SandboxToolExecutorConfig,
