@@ -14,6 +14,7 @@ version = "0.1.0"
 dependencies = [
  "blake3",
  "chrono",
+ "deadpool-postgres",
  "dynamo-agent-rt",
  "k8s-openapi",
  "kube",
@@ -23,6 +24,7 @@ dependencies = [
  "serde_json",
  "thiserror",
  "tokio",
+ "tokio-postgres",
  "tokio-stream",
  "tonic",
  "tonic-prost",

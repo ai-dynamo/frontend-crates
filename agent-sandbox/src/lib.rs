@@ -182,6 +182,8 @@ mod execution_store;
 mod kubernetes;
 #[cfg(feature = "kubernetes-client")]
 mod kubernetes_client;
+#[cfg(feature = "postgres")]
+mod postgres_store;
 #[cfg(feature = "sandboxd-client")]
 mod sandboxd;
 mod tool_executor;
@@ -203,6 +205,8 @@ pub use kubernetes::{
 pub use kubernetes_client::{
     KubeAgentSandboxControlPlane, KubeAgentSandboxControlPlaneConfig, KubeControlPlaneError,
 };
+#[cfg(feature = "postgres")]
+pub use postgres_store::{PostgresExecutionStore, PostgresExecutionStoreError};
 #[cfg(feature = "sandboxd-client")]
 pub use sandboxd::{SandboxdClient, SandboxdClientConfig, SandboxdClientError, SandboxdRunOutcome};
 pub use tool_executor::{

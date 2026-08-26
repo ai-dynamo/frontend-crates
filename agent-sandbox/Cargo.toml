@@ -13,7 +13,7 @@ license = "Apache-2.0"
 homepage.workspace = true
 repository.workspace = true
 keywords = ["agents", "sandbox", "kubernetes", "runtime"]
-include = ["src/**/*", "proto/**/*", "build.rs", "Cargo.toml", "README.md"]
+include = ["src/**/*", "proto/**/*", "migrations/**/*", "build.rs", "Cargo.toml", "README.md"]
 
 [dependencies]
 blake3.workspace = true
@@ -21,7 +21,7 @@ dynamo-agent-rt.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 thiserror.workspace = true
-tokio = { workspace = true, features = ["rt", "sync", "time"] }
+tokio = { workspace = true, features = ["macros", "rt", "sync", "time"] }
 tracing.workspace = true
 
 [dev-dependencies]
@@ -35,6 +35,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 default = []
 kubernetes-client = ["dep:chrono", "dep:k8s-openapi", "dep:kube", "sandboxd-client"]
 sandboxd-client = ["dep:prost", "dep:reqwest", "dep:tokio-stream", "dep:tonic", "dep:tonic-prost"]
+postgres = ["dep:deadpool-postgres", "dep:tokio-postgres"]
 
 [dependencies.chrono]
 workspace = true
@@ -50,6 +51,14 @@ optional = true
 version = "4.2"
 default-features = false
 features = ["client", "rustls-tls", "ring"]
+optional = true
+
+[dependencies.deadpool-postgres]
+workspace = true
+optional = true
+
+[dependencies.tokio-postgres]
+workspace = true
 optional = true
 
 [dependencies.reqwest]

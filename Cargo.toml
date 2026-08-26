@@ -42,6 +42,7 @@ derive_builder = "0.20"
 dynamo-agent-rt = { path = "agent-rt", version = "0.1.0" }
 dynamo-agent-tools = { path = "agent-tools", version = "0.1.0" }
 agent-rt-sandbox = { path = "agent-sandbox", version = "0.1.0" }
+deadpool-postgres = "0.14.1"
 dynamo-parsers = { path = "parsers/v1", version = "8.2.0" }
 dynamo-protocols = { path = "protocols", version = "5.4.0" }
 dynamo-renderer = { path = "renderer", version = "5.1.0" }
@@ -69,6 +70,7 @@ tempfile = "3"
 thiserror = "2.0.17"
 tiktoken-rs = { version = "0.9", default-features = false }
 tokio = "1.48"
+tokio-postgres = "0.7.18"
 tokio-test = "0.4.4"
 tokenizers = { version = "0.21.4", default-features = false }
 tracing = "0.1"
