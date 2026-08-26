@@ -26,6 +26,7 @@ kind load docker-image --name "$cluster_name" "$service_image" "$sandbox_image"
 kubectl apply -f "https://github.com/kubernetes-sigs/agent-sandbox/releases/download/${agent_sandbox_version}/sandbox-with-extensions.yaml"
 kubectl -n agent-sandbox-system wait --for=condition=Available deployment --all --timeout=180s
 kubectl apply -k "$repo_root/agent-sandbox-service/deploy/kubernetes/local"
+kubectl -n agent-rt-sandbox-system rollout restart deployment/agent-rt-sandbox-service
 kubectl -n agent-rt-sandbox-system rollout status statefulset/postgres --timeout=180s
 kubectl -n agent-rt-sandbox-system rollout status deployment/agent-rt-sandbox-service --timeout=180s
 kubectl -n agent-sandboxes wait --for=condition=Ready pod -l agents.x-k8s.io/pool --timeout=180s
