@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "agent-rt-sandbox"
+readme = "README.md"
+version = "0.1.0"
+edition.workspace = true
+description = "External sandbox execution contracts and providers for agent-rt."
+authors.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+keywords = ["agents", "sandbox", "kubernetes", "runtime"]
+include = ["src/**/*", "Cargo.toml", "README.md"]
+
+[dependencies]
+blake3.workspace = true
+dynamo-agent-rt.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

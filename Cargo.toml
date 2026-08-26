@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
     "agent-rt",
+    "agent-sandbox",
     "protocols",
     "parsers/v1",
     "renderer",
@@ -37,6 +38,7 @@ chrono = { version = "0.4", default-features = false, features = [
 clap = "4"
 derive_builder = "0.20"
 dynamo-agent-rt = { path = "agent-rt", version = "0.1.0" }
+agent-rt-sandbox = { path = "agent-sandbox", version = "0.1.0" }
 dynamo-parsers = { path = "parsers/v1", version = "8.2.0" }
 dynamo-protocols = { path = "protocols", version = "5.4.0" }
 dynamo-renderer = { path = "renderer", version = "5.1.0" }
