@@ -6,6 +6,7 @@
 mod web_search;
 
 pub use web_search::{
-    WebSearchArguments, WebSearchArgumentsError, WebSearchFreshness, WebSearchOutput,
-    WebSearchResult,
+    BraveWebSearchError, BraveWebSearchExecutor, BraveWebSearchFailurePolicy,
+    BraveWebSearchProfile, WebSearchArguments, WebSearchArgumentsError, WebSearchConfigError,
+    WebSearchFreshness, WebSearchOutput, WebSearchResult,
 };
