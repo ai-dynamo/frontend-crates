@@ -235,7 +235,6 @@ where
             round += 1;
             request.intent = InferenceIntent {
                 step_kind: ModelStepKind::RuntimeToolContinuation,
-                session_final: false,
             };
         }
     }
@@ -446,7 +445,6 @@ mod tests {
             invocation_context: (),
             inference_intent: InferenceIntent {
                 step_kind: ModelStepKind::Initial,
-                session_final: false,
             },
             lease_duration_millis: 30_000,
         };

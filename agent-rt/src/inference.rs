@@ -19,12 +19,10 @@ pub enum ModelStepKind {
     RuntimeToolContinuation,
 }
 
-/// Per-step lifecycle intent supplied to an inference implementation.
+/// Per-step orchestration intent supplied to an inference implementation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InferenceIntent {
     pub step_kind: ModelStepKind,
-    /// True only when the runtime knows no additional model step follows.
-    pub session_final: bool,
 }
 
 /// Fully materialized native Responses invocation.

@@ -391,7 +391,6 @@ mod tests {
             invocation_context: (),
             inference_intent: InferenceIntent {
                 step_kind: ModelStepKind::Initial,
-                session_final: true,
             },
             lease_duration_millis: 30_000,
         }
@@ -534,7 +533,6 @@ mod tests {
                 invocation_context: (),
                 inference_intent: InferenceIntent {
                     step_kind: ModelStepKind::Initial,
-                    session_final: true,
                 },
                 lease_duration_millis: 30_000,
             })
