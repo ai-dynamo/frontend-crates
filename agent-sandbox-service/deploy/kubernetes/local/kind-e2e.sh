@@ -29,7 +29,7 @@ kubectl apply -k "$repo_root/agent-sandbox-service/deploy/kubernetes/local"
 kubectl -n agent-rt-sandbox-system rollout restart deployment/agent-rt-sandbox-service
 kubectl -n agent-rt-sandbox-system rollout status statefulset/postgres --timeout=180s
 kubectl -n agent-rt-sandbox-system rollout status deployment/agent-rt-sandbox-service --timeout=180s
-kubectl -n agent-sandboxes wait --for=condition=Ready pod -l agents.x-k8s.io/pool --timeout=180s
+kubectl -n agent-sandboxes wait --for=condition=Ready pod -l agents.x-k8s.io/warm-pool-sandbox --timeout=180s
 
 kubectl -n agent-rt-sandbox-system port-forward service/agent-rt-sandbox-service 18090:8090 >/tmp/agent-rt-sandbox-port-forward.log 2>&1 &
 port_forward_pid=$!
@@ -81,6 +81,13 @@ for _ in $(seq 1 60); do
   state=$(jq -r '.state // "missing"' <<<"$outcome")
   if [[ "$state" == "succeeded" ]]; then
     jq -e '.exit_code == 0 and .stdout == [52, 50, 10] and .artifacts[0].name == "result.txt"' <<<"$outcome" >/dev/null
+    artifact_id=$(jq -r '.artifacts[0].artifact_id' <<<"$outcome")
+    artifact_request=$(jq -n \
+      --argjson execution "$lookup_request" \
+      --arg artifact_id "$artifact_id" \
+      '{execution: $execution, artifact_id: $artifact_id}')
+    artifact=$(curl -fsS "${scope_headers[@]}" -d "$artifact_request" http://127.0.0.1:18090/v1/artifacts:read)
+    jq -e '.metadata.name == "result.txt" and .bytes_base64 == "ZG9uZQ=="' <<<"$artifact" >/dev/null
     echo "Kubernetes sandbox execution succeeded"
     exit 0
   fi
