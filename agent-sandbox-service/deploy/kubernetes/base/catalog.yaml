@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agent-rt-sandbox-catalog
+  namespace: agent-rt-sandbox-system
+data:
+  catalog.json: |
+    {
+      "tenant_namespaces": {
+        "tenant-a": "agent-sandboxes"
+      },
+      "profiles": {
+        "python-deny-egress": {
+          "warm_pool": "python-deny-egress",
+          "workspace_ttl_seconds": 3600,
+          "max_execution_timeout_millis": 60000,
+          "max_output_bytes": 1048576,
+          "max_artifact_bytes": 16777216,
+          "allowed_executables": ["python", "python3"],
+          "allow_environment": false,
+          "max_arguments": 64,
+          "max_argument_bytes": 1048576,
+          "max_stdin_bytes": 1048576,
+          "max_artifacts": 32
+        }
+      }
+    }

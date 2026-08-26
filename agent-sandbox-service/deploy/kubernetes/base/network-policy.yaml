@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: agent-rt-sandbox-service-ingress
+  namespace: agent-rt-sandbox-system
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: agent-rt-sandbox-service
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              agent-rt.nvidia.com/sandbox-client: "true"
+          podSelector:
+            matchLabels:
+              agent-rt.nvidia.com/sandbox-client: "true"
+      ports:
+        - protocol: TCP
+          port: 8090

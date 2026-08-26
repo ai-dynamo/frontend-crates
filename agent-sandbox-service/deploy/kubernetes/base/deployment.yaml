@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-rt-sandbox-service
+  namespace: agent-rt-sandbox-system
+  labels:
+    app.kubernetes.io/name: agent-rt-sandbox-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: agent-rt-sandbox-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: agent-rt-sandbox-service
+    spec:
+      serviceAccountName: agent-rt-sandbox-service
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: agent-rt-sandbox-service
+      containers:
+        - name: service
+          image: agent-rt-sandbox-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8090
+              protocol: TCP
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: AGENT_SANDBOX_CATALOG
+              value: /etc/agent-rt-sandbox/catalog.json
+            - name: AGENT_SANDBOX_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: agent-rt-sandbox-secrets
+                  key: database-url
+            - name: AGENT_SANDBOX_TRUSTED_PROXY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: agent-rt-sandbox-secrets
+                  key: trusted-proxy-token
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: catalog
+              mountPath: /etc/agent-rt-sandbox
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: catalog
+          configMap:
+            name: agent-rt-sandbox-catalog
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi
