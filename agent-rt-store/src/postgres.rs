@@ -8,8 +8,9 @@ use deadpool_postgres::{GenericClient, Manager, ManagerConfig, Pool, RecyclingMe
 use dynamo_agent_rt::{
     AgentProtocol, AuthorizationScope, BeginTurn, BeginTurnResult, BoxFuture, CheckpointRecord,
     CheckpointStore, CheckpointVersion, CommitTurn, CommitTurnResult, IdempotencyKey,
-    LeaseDeadline, LoadChain, RenewLease, RequestFingerprint, ResponseId, TurnId, TurnLease,
-    TurnState,
+    LeaseDeadline, LoadChain, RenewLease, RequestFingerprint, ResponseId, ToolClaimResult,
+    ToolExecutionFailure, ToolExecutionRequest, ToolExecutionResult, ToolJournal, ToolJournalKey,
+    ToolJournalOutcome, ToolJournalRecord, ToolJournalState, TurnId, TurnLease, TurnState,
 };
 use thiserror::Error;
 use tokio_postgres::{NoTls, Row};
@@ -128,6 +129,39 @@ where
 
     fn renew_lease(&self, command: RenewLease) -> BoxFuture<'_, Result<TurnLease, Self::Error>> {
         Box::pin(async move { renew_lease::<P>(&self.pool, command).await })
+    }
+}
+
+impl<P> ToolJournal for PostgresStore<P>
+where
+    P: AgentProtocol,
+{
+    type Error = PostgresStoreError;
+
+    fn claim(
+        &self,
+        request: ToolExecutionRequest,
+    ) -> BoxFuture<'_, Result<ToolClaimResult, Self::Error>> {
+        Box::pin(async move { claim_tool(&self.pool, request).await })
+    }
+
+    fn load(
+        &self,
+        key: &ToolJournalKey,
+    ) -> BoxFuture<'_, Result<Option<ToolJournalRecord>, Self::Error>> {
+        let key = key.clone();
+        Box::pin(async move {
+            let client = self.pool.get().await?;
+            load_tool(&client, &key, false).await
+        })
+    }
+
+    fn finish(
+        &self,
+        key: ToolJournalKey,
+        outcome: ToolJournalOutcome,
+    ) -> BoxFuture<'_, Result<ToolJournalRecord, Self::Error>> {
+        Box::pin(async move { finish_tool(&self.pool, key, outcome).await })
     }
 }
 
@@ -467,22 +501,173 @@ async fn renew_lease<P: AgentProtocol>(
     Ok(renewed)
 }
 
+async fn claim_tool(
+    pool: &Pool,
+    request: ToolExecutionRequest,
+) -> Result<ToolClaimResult, PostgresStoreError> {
+    let mut client = pool.get().await?;
+    let transaction = client.transaction().await?;
+    let key = request.journal_key();
+    advisory_lock(
+        &transaction,
+        &lock_key(&[
+            "tool_journal",
+            key.scope.tenant_id.as_str(),
+            key.scope.principal_id.as_str(),
+            key.idempotency_key.as_str(),
+        ]),
+    )
+    .await?;
+    if let Some(existing) = load_tool(&transaction, &key, false).await? {
+        if existing.request != request {
+            return Err(StoreInvariantError::IdempotencyConflict.into());
+        }
+        transaction.commit().await?;
+        return Ok(ToolClaimResult::Existing(Box::new(existing)));
+    }
+    let request_json = serde_json::to_string(&request)?;
+    transaction
+        .execute(
+            "INSERT INTO agent_rt_tool_journal
+             (tenant_id, principal_id, idempotency_key, request_json, state, result_json, failure_json)
+             VALUES ($1, $2, $3, $4, 'started', NULL, NULL)",
+            &[
+                &request.scope.tenant_id,
+                &request.scope.principal_id,
+                &request.idempotency_key.as_str(),
+                &request_json,
+            ],
+        )
+        .await?;
+    let record = ToolJournalRecord {
+        request,
+        state: ToolJournalState::Started,
+        result: None,
+        failure: None,
+    };
+    transaction.commit().await?;
+    Ok(ToolClaimResult::Acquired(Box::new(record)))
+}
+
+async fn finish_tool(
+    pool: &Pool,
+    key: ToolJournalKey,
+    outcome: ToolJournalOutcome,
+) -> Result<ToolJournalRecord, PostgresStoreError> {
+    let mut client = pool.get().await?;
+    let transaction = client.transaction().await?;
+    let existing = load_tool(&transaction, &key, true)
+        .await?
+        .ok_or(StoreInvariantError::NotFound)?;
+    if existing.state != ToolJournalState::Started {
+        return Err(StoreInvariantError::ToolAlreadyFinished(existing.state).into());
+    }
+    let (state, result, failure) = match outcome {
+        ToolJournalOutcome::Completed(result) => (
+            ToolJournalState::Completed,
+            Some(serde_json::to_string(&result)?),
+            None,
+        ),
+        ToolJournalOutcome::Failed(failure) => (
+            ToolJournalState::Failed,
+            None,
+            Some(serde_json::to_string(&failure)?),
+        ),
+        ToolJournalOutcome::OutcomeUnknown => (ToolJournalState::OutcomeUnknown, None, None),
+    };
+    let updated = transaction
+        .execute(
+            "UPDATE agent_rt_tool_journal
+             SET state = $1, result_json = $2, failure_json = $3
+             WHERE tenant_id = $4 AND principal_id = $5 AND idempotency_key = $6
+               AND state = 'started'",
+            &[
+                &tool_state_name(&state),
+                &result,
+                &failure,
+                &key.scope.tenant_id,
+                &key.scope.principal_id,
+                &key.idempotency_key.as_str(),
+            ],
+        )
+        .await?;
+    if updated != 1 {
+        return Err(StoreInvariantError::ToolAlreadyFinished(existing.state).into());
+    }
+    let record = load_tool(&transaction, &key, false)
+        .await?
+        .ok_or(StoreInvariantError::Corrupt)?;
+    transaction.commit().await?;
+    Ok(record)
+}
+
+async fn load_tool<C: GenericClient + Sync>(
+    client: &C,
+    key: &ToolJournalKey,
+    for_update: bool,
+) -> Result<Option<ToolJournalRecord>, PostgresStoreError> {
+    let suffix = if for_update { " FOR UPDATE" } else { "" };
+    let statement = format!(
+        "SELECT request_json, state, result_json, failure_json
+         FROM agent_rt_tool_journal
+         WHERE tenant_id = $1 AND principal_id = $2 AND idempotency_key = $3{suffix}"
+    );
+    let row = client
+        .query_opt(
+            &statement,
+            &[
+                &key.scope.tenant_id,
+                &key.scope.principal_id,
+                &key.idempotency_key.as_str(),
+            ],
+        )
+        .await?;
+    row.map(decode_tool).transpose()
+}
+
+fn decode_tool(row: Row) -> Result<ToolJournalRecord, PostgresStoreError> {
+    let result_json: Option<&str> = row.get(2);
+    let failure_json: Option<&str> = row.get(3);
+    Ok(ToolJournalRecord {
+        request: serde_json::from_str(row.get(0))?,
+        state: parse_tool_state(row.get(1))?,
+        result: result_json
+            .map(serde_json::from_str::<ToolExecutionResult>)
+            .transpose()?,
+        failure: failure_json
+            .map(serde_json::from_str::<ToolExecutionFailure>)
+            .transpose()?,
+    })
+}
+
 async fn lock_idempotency<P: AgentProtocol>(
-    transaction: &tokio_postgres::Transaction<'_>,
+    transaction: &deadpool_postgres::Transaction<'_>,
     command: &BeginTurn<P>,
 ) -> Result<(), PostgresStoreError> {
     let scope = &command.authorization.scope;
-    let mut key = String::new();
-    for value in [
+    let key = lock_key(&[
         P::STORAGE_KEY,
         scope.tenant_id.as_str(),
         scope.principal_id.as_str(),
         command.idempotency_key.as_str(),
-    ] {
+    ]);
+    advisory_lock(transaction, &key).await
+}
+
+fn lock_key(values: &[&str]) -> String {
+    let mut key = String::new();
+    for value in values {
         key.push_str(&value.len().to_string());
         key.push(':');
         key.push_str(value);
     }
+    key
+}
+
+async fn advisory_lock(
+    transaction: &deadpool_postgres::Transaction<'_>,
+    key: &str,
+) -> Result<(), PostgresStoreError> {
     transaction
         .query_one(
             "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
@@ -632,6 +817,25 @@ fn parse_state(value: &str) -> Result<TurnState, StoreInvariantError> {
     }
 }
 
+fn tool_state_name(state: &ToolJournalState) -> &'static str {
+    match state {
+        ToolJournalState::Started => "started",
+        ToolJournalState::Completed => "completed",
+        ToolJournalState::Failed => "failed",
+        ToolJournalState::OutcomeUnknown => "outcome_unknown",
+    }
+}
+
+fn parse_tool_state(value: &str) -> Result<ToolJournalState, StoreInvariantError> {
+    match value {
+        "started" => Ok(ToolJournalState::Started),
+        "completed" => Ok(ToolJournalState::Completed),
+        "failed" => Ok(ToolJournalState::Failed),
+        "outcome_unknown" => Ok(ToolJournalState::OutcomeUnknown),
+        _ => Err(StoreInvariantError::Corrupt),
+    }
+}
+
 fn increment_version(version: CheckpointVersion) -> Result<CheckpointVersion, StoreInvariantError> {
     version
         .0
@@ -650,8 +854,8 @@ fn from_i64(value: i64) -> Result<u64, StoreInvariantError> {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_state, state_name};
-    use dynamo_agent_rt::TurnState;
+    use super::{parse_state, parse_tool_state, state_name, tool_state_name};
+    use dynamo_agent_rt::{ToolJournalState, TurnState};
 
     #[test]
     fn checkpoint_states_round_trip() {
@@ -664,6 +868,18 @@ mod tests {
             TurnState::Failed,
         ] {
             assert_eq!(parse_state(state_name(&state)).unwrap(), state);
+        }
+    }
+
+    #[test]
+    fn tool_states_round_trip() {
+        for state in [
+            ToolJournalState::Started,
+            ToolJournalState::Completed,
+            ToolJournalState::Failed,
+            ToolJournalState::OutcomeUnknown,
+        ] {
+            assert_eq!(parse_tool_state(tool_state_name(&state)).unwrap(), state);
         }
     }
 }

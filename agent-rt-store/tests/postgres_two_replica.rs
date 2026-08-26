@@ -7,10 +7,12 @@ use std::time::Duration;
 use dynamo_agent_rt::{
     AuthorizationScope, BeginTurn, BeginTurnResult, CheckpointStore, CommitTurn, IdempotencyKey,
     LeaseDeadline, OpenAiResponses, RequestFingerprint, ResponseId, RuntimeAuthorization,
-    RuntimeLimits, TurnId, TurnState,
+    RuntimeLimits, ToolClaimResult, ToolExecutionRequest, ToolExecutionResult, ToolJournal,
+    ToolJournalOutcome, TurnId, TurnState,
 };
 use dynamo_agent_rt_store::{PostgresStore, PostgresStoreError, StoreInvariantError};
 use postgresql_embedded::PostgreSQL;
+use serde_json::json;
 
 fn authorization(tenant: &str) -> RuntimeAuthorization {
     RuntimeAuthorization {
@@ -38,6 +40,20 @@ fn begin(
         request_fingerprint: RequestFingerprint::new([42; 32]),
         request: Default::default(),
         lease_deadline: LeaseDeadline(deadline),
+    }
+}
+
+fn tool_request() -> ToolExecutionRequest {
+    ToolExecutionRequest {
+        response_id: ResponseId::from("response-a"),
+        call_id: "call-a".to_owned(),
+        connector: "search".to_owned(),
+        operation: "query".to_owned(),
+        profile: "default".to_owned(),
+        arguments: json!({"query": "rust"}),
+        scope: authorization("tenant-a").scope,
+        idempotency_key: IdempotencyKey::from("tool-concurrent"),
+        attempt: 0,
     }
 }
 
@@ -138,6 +154,41 @@ async fn two_replicas_serialize_claims_and_fence_expired_owners() {
         })
         .await
         .unwrap();
+
+    let request = tool_request();
+    let key = request.journal_key();
+    let (left, right) = tokio::join!(
+        replica_a.claim(request.clone()),
+        replica_b.claim(request.clone())
+    );
+    let claims = [left.unwrap(), right.unwrap()];
+    assert_eq!(
+        claims
+            .iter()
+            .filter(|claim| matches!(claim, ToolClaimResult::Acquired(_)))
+            .count(),
+        1
+    );
+    assert_eq!(
+        claims
+            .iter()
+            .filter(|claim| matches!(claim, ToolClaimResult::Existing(_)))
+            .count(),
+        1
+    );
+    replica_a
+        .finish(
+            key,
+            ToolJournalOutcome::Completed(ToolExecutionResult {
+                output: json!({"answer": 42}),
+            }),
+        )
+        .await
+        .unwrap();
+    let ToolClaimResult::Existing(replayed) = replica_b.claim(request).await.unwrap() else {
+        panic!("completed tool call was reclaimed");
+    };
+    assert_eq!(replayed.result.unwrap().output["answer"], 42);
 
     drop(replica_a);
     drop(replica_b);
