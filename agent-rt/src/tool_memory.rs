@@ -128,6 +128,7 @@ mod tests {
             call_id: "call-1".to_owned(),
             connector: "search".to_owned(),
             operation: operation.to_owned(),
+            profile: "default".to_owned(),
             arguments: json!({"query": "rust"}),
             scope: AuthorizationScope {
                 tenant_id: "tenant".to_owned(),

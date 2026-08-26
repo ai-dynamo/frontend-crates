@@ -158,6 +158,7 @@ where
                         call_id: id.clone(),
                         connector: route.connector,
                         operation: route.operation,
+                        profile: route.profile,
                         arguments: input.clone(),
                     })
                 }
@@ -382,6 +383,7 @@ mod tests {
         let calls = adapter.runtime_calls(&response).unwrap();
         assert_eq!(calls.len(), 1);
         assert_eq!(calls[0].connector, "search");
+        assert_eq!(calls[0].profile, "default");
         assert_eq!(calls[0].arguments, serde_json::json!({}));
 
         let mut request = request();

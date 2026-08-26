@@ -315,6 +315,7 @@ where
                     call_id: call.call_id.clone(),
                     connector: route.connector,
                     operation: route.operation,
+                    profile: route.profile,
                     arguments,
                 })
             })
@@ -612,6 +613,7 @@ mod tests {
         assert_eq!(calls.len(), 1);
         assert_eq!(calls[0].connector, "search");
         assert_eq!(calls[0].operation, "query");
+        assert_eq!(calls[0].profile, "default");
         assert_eq!(calls[0].arguments["query"], "rust");
 
         let mut request = CreateResponse {

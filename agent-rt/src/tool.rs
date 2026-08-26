@@ -13,6 +13,9 @@ pub struct RuntimeToolCall {
     pub call_id: String,
     pub connector: String,
     pub operation: String,
+    /// Trusted deployment profile selected by [`ToolRouter`]. This is never
+    /// taken from model-generated arguments.
+    pub profile: String,
     pub arguments: serde_json::Value,
 }
 
@@ -50,6 +53,7 @@ impl ToolIdempotencyKeyProvider for Blake3ToolIdempotencyKeys {
             call.call_id.as_str(),
             call.connector.as_str(),
             call.operation.as_str(),
+            call.profile.as_str(),
         ] {
             hasher.update(&(value.len() as u64).to_le_bytes());
             hasher.update(value.as_bytes());
@@ -117,6 +121,7 @@ pub trait ToolRouter: Send + Sync + 'static {
 pub struct ToolRoute {
     pub connector: String,
     pub operation: String,
+    pub profile: String,
 }
 
 impl ToolRoute {
@@ -124,7 +129,13 @@ impl ToolRoute {
         Self {
             connector: connector.into(),
             operation: operation.into(),
+            profile: "default".to_owned(),
         }
+    }
+
+    pub fn with_profile(mut self, profile: impl Into<String>) -> Self {
+        self.profile = profile.into();
+        self
     }
 }
 
@@ -162,6 +173,7 @@ pub struct ToolExecutionRequest {
     pub call_id: String,
     pub connector: String,
     pub operation: String,
+    pub profile: String,
     pub arguments: serde_json::Value,
     pub scope: AuthorizationScope,
     pub idempotency_key: IdempotencyKey,

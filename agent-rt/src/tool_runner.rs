@@ -117,6 +117,7 @@ where
             call_id: call.call_id.clone(),
             connector: call.connector.clone(),
             operation: call.operation.clone(),
+            profile: call.profile.clone(),
             arguments: call.arguments.clone(),
             scope: authorization.scope.clone(),
             idempotency_key: self
@@ -329,6 +330,7 @@ mod tests {
             call_id: "call-1".to_owned(),
             connector: connector.to_owned(),
             operation: "query".to_owned(),
+            profile: "default".to_owned(),
             arguments: json!({"query": "rust"}),
         }
     }
@@ -353,6 +355,20 @@ mod tests {
             Blake3ToolIdempotencyKeys,
             ConservativeToolFailurePolicy,
         )
+    }
+
+    #[test]
+    fn execution_profile_changes_the_idempotency_key() {
+        let mut first = call("sandbox");
+        first.profile = "python-deny-egress".to_owned();
+        let mut second = first.clone();
+        second.profile = "python-public-egress".to_owned();
+
+        let keys = Blake3ToolIdempotencyKeys;
+        assert_ne!(
+            keys.idempotency_key(&ResponseId::from("resp-1"), &first, 0),
+            keys.idempotency_key(&ResponseId::from("resp-1"), &second, 0)
+        );
     }
 
     #[tokio::test]
