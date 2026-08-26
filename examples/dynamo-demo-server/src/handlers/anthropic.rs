@@ -100,6 +100,7 @@ fn make_stream(
                 delta: AnthropicDelta::TextDelta {
                     text: word.to_string(),
                 },
+                usage: None,
             };
             yield Ok(Event::default()
                 .event("content_block_delta")

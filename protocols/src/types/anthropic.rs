@@ -804,7 +804,13 @@ pub enum AnthropicStreamEvent {
     },
 
     #[serde(rename = "content_block_delta")]
-    ContentBlockDelta { index: u32, delta: AnthropicDelta },
+    ContentBlockDelta {
+        index: u32,
+        delta: AnthropicDelta,
+        /// Optional cumulative usage attached by Dynamo-compatible frontends.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        usage: Option<AnthropicUsage>,
+    },
 
     #[serde(rename = "content_block_stop")]
     ContentBlockStop { index: u32 },

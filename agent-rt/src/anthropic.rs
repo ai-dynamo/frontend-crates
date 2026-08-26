@@ -357,7 +357,7 @@ impl StreamEventInterpreter<AnthropicMessages> for AnthropicStreamEventInterpret
                 }
                 Ok(self.output_action(event))
             }
-            AnthropicStreamEvent::ContentBlockDelta { index, delta } => {
+            AnthropicStreamEvent::ContentBlockDelta { index, delta, .. } => {
                 self.apply_delta(*index, delta)?;
                 Ok(self.output_action(event))
             }
@@ -607,6 +607,7 @@ mod tests {
             delta: AnthropicDelta::TextDelta {
                 text: "hello".to_owned(),
             },
+            usage: None,
         };
         assert!(matches!(
             interpreter.observe(delta, &identity).unwrap(),
@@ -676,6 +677,7 @@ mod tests {
                         delta: AnthropicDelta::InputJsonDelta {
                             partial_json: partial_json.to_owned(),
                         },
+                        usage: None,
                     },
                     &identity,
                 )
