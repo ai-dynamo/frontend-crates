@@ -16,6 +16,7 @@ dependencies = [
  "dynamo-agent-rt",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
 ]
 

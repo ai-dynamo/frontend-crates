@@ -40,6 +40,9 @@ pub struct SandboxCommand {
     pub env: BTreeMap<String, String>,
     #[serde(default)]
     pub stdin: Vec<u8>,
+    /// Exact workspace-relative files to expose as artifacts after completion.
+    #[serde(default)]
+    pub artifact_paths: Vec<String>,
 }
 
 /// Per-execution ceilings. Providers may enforce stricter profile limits.
@@ -122,6 +125,7 @@ pub struct ExecutionRecord {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ScopedExecutionId {
     pub scope: AuthorizationScope,
+    pub workspace_id: WorkspaceId,
     pub execution_id: ExecutionId,
 }
 
@@ -166,6 +170,12 @@ pub trait SandboxProvider: Send + Sync + 'static {
     ) -> BoxFuture<'_, Result<(), Self::Error>>;
 }
 
+mod tool_executor;
+
+pub use tool_executor::{
+    SandboxFailurePolicy, SandboxProviderExecutor, SandboxToolError, SandboxToolExecutorConfig,
+};
+
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
@@ -192,6 +202,7 @@ mod tests {
                 cwd: Some("/workspace".to_owned()),
                 env: BTreeMap::new(),
                 stdin: Vec::new(),
+                artifact_paths: Vec::new(),
             },
             limits: SandboxLimits {
                 timeout_millis: 10_000,
