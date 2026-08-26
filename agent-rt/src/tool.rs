@@ -264,6 +264,8 @@ pub trait ToolExecutor: Send + Sync + 'static {
     ) -> BoxFuture<'_, Result<ToolExecutionResult, Self::Error>>;
 
     /// Resolves a previously dispatched idempotency key after process failure.
+    /// An executor for an explicitly side-effect-free operation may safely
+    /// re-execute the request and return that result from this method.
     /// `None` means the executor cannot prove whether the side effect occurred.
     fn lookup(
         &self,
