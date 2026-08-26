@@ -9,8 +9,12 @@ mod error;
 
 #[cfg(feature = "duckdb")]
 mod duckdb;
+#[cfg(feature = "postgres")]
+mod postgres;
 
 pub use error::StoreInvariantError;
 
 #[cfg(feature = "duckdb")]
 pub use duckdb::{DuckDbStore, DuckDbStoreError};
+#[cfg(feature = "postgres")]
+pub use postgres::{PostgresStore, PostgresStoreError};

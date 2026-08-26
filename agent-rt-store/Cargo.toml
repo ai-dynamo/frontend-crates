@@ -26,6 +26,20 @@ version = "1.10505"
 features = ["bundled"]
 optional = true
 
+[dependencies.deadpool-postgres]
+version = "0.14.1"
+optional = true
+
+[dependencies.tokio-postgres]
+version = "0.7.18"
+optional = true
+
+[dependencies.postgresql_embedded]
+version = "0.21.0"
+default-features = false
+features = ["theseus", "tls-rustls-ring", "tokio"]
+optional = true
+
 [dev-dependencies]
 tempfile.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }
@@ -33,6 +47,12 @@ tokio = { workspace = true, features = ["macros", "rt"] }
 [features]
 default = []
 duckdb = ["dep:duckdb"]
+postgres = ["dep:deadpool-postgres", "dep:tokio-postgres"]
+postgres-integration = ["postgres", "dep:postgresql_embedded"]
+
+[[test]]
+name = "postgres_two_replica"
+required-features = ["postgres-integration"]
 
 [package.metadata.docs.rs]
 all-features = true
