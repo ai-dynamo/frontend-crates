@@ -1031,6 +1031,7 @@ where
             BeginTurnResult::Acquired(lease) => lease,
             BeginTurnResult::Existing(record) => return Ok(PrepareTurnResult::Existing(record)),
         };
+        let response_id = lease.response_id.clone();
 
         Ok(PrepareTurnResult::Acquired(Box::new(PreparedTurn {
             inference_request: materialized.inference_request,

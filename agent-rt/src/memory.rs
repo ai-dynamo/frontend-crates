@@ -153,16 +153,63 @@ where
                 command.authorization.scope.clone(),
                 command.idempotency_key.clone(),
             );
-            if let Some(existing_id) = state.idempotency.get(&idempotency) {
+            if let Some(existing_id) = state.idempotency.get(&idempotency).cloned() {
                 let existing = state
                     .records
-                    .get(existing_id)
+                    .get(&existing_id)
                     .ok_or(InMemoryStoreError::CorruptChain)?;
                 if existing.parent_response_id != command.parent_response_id
                     || existing.request_fingerprint != command.request_fingerprint
                 {
                     return Err(InMemoryStoreError::IdempotencyConflict);
                 }
+                let expired = state
+                    .leases
+                    .get(&existing_id)
+                    .is_some_and(|lease| lease.deadline.0 <= now);
+                if expired && existing.state == TurnState::InFlight {
+                    let version = CheckpointVersion(
+                        existing
+                            .version
+                            .0
+                            .checked_add(1)
+                            .ok_or(InMemoryStoreError::VersionOverflow)?,
+                    );
+                    state
+                        .records
+                        .get_mut(&existing_id)
+                        .ok_or(InMemoryStoreError::CorruptChain)?
+                        .version = version;
+                    let lease = TurnLease {
+                        response_id: existing_id.clone(),
+                        turn_id: command.turn_id,
+                        version,
+                        deadline: command.lease_deadline,
+                    };
+                    state.leases.insert(existing_id, lease.clone());
+                    return Ok(BeginTurnResult::Acquired(lease));
+                }
+                if expired && existing.state == TurnState::ToolStarted {
+                    let existing = state
+                        .records
+                        .get_mut(&existing_id)
+                        .ok_or(InMemoryStoreError::CorruptChain)?;
+                    existing.version = CheckpointVersion(
+                        existing
+                            .version
+                            .0
+                            .checked_add(1)
+                            .ok_or(InMemoryStoreError::VersionOverflow)?,
+                    );
+                    existing.state = TurnState::OutcomeUnknown;
+                    let existing = existing.clone();
+                    state.leases.remove(&existing_id);
+                    return Ok(BeginTurnResult::Existing(Box::new(existing)));
+                }
+                let existing = state
+                    .records
+                    .get(&existing_id)
+                    .ok_or(InMemoryStoreError::CorruptChain)?;
                 return Ok(BeginTurnResult::Existing(Box::new(existing.clone())));
             }
 
@@ -569,6 +616,74 @@ mod tests {
             })
             .await;
         assert_eq!(result.unwrap_err(), InMemoryStoreError::LeaseExpired);
+    }
+
+    #[tokio::test]
+    async fn expired_inference_claim_is_taken_over_with_a_new_fence() {
+        let clock = TestClock::new(1_000);
+        let store = InMemoryCheckpointStore::new(clock.clone());
+        let first = begin("resp_one", None, "tenant", "idem");
+        let BeginTurnResult::Acquired(first_lease) = store.begin_turn(first.clone()).await.unwrap()
+        else {
+            panic!("expected first lease");
+        };
+        clock.set(2_000);
+        let replacement = BeginTurn {
+            response_id: ResponseId::from("resp_ignored"),
+            turn_id: TurnId::from("turn_replacement"),
+            lease_deadline: LeaseDeadline(3_000),
+            ..first
+        };
+        let BeginTurnResult::Acquired(replacement_lease) =
+            store.begin_turn(replacement).await.unwrap()
+        else {
+            panic!("expected replacement lease");
+        };
+        assert_eq!(replacement_lease.response_id.as_str(), "resp_one");
+        assert_eq!(replacement_lease.version.0, 1);
+        assert_ne!(replacement_lease.turn_id, first_lease.turn_id);
+        assert!(matches!(
+            store
+                .commit_turn(CommitTurn {
+                    lease: first_lease,
+                    next_state: TurnState::Failed,
+                    append_output_items: Vec::new(),
+                    response: None,
+                })
+                .await,
+            Err(InMemoryStoreError::LeaseMismatch | InMemoryStoreError::VersionConflict)
+        ));
+    }
+
+    #[tokio::test]
+    async fn expired_tool_owner_is_not_replayed_blindly() {
+        let clock = TestClock::new(1_000);
+        let store = InMemoryCheckpointStore::new(clock.clone());
+        let first = begin("resp_one", None, "tenant", "idem");
+        let BeginTurnResult::Acquired(lease) = store.begin_turn(first.clone()).await.unwrap()
+        else {
+            panic!("expected lease");
+        };
+        store
+            .commit_turn(CommitTurn {
+                lease,
+                next_state: TurnState::ToolStarted,
+                append_output_items: Vec::new(),
+                response: None,
+            })
+            .await
+            .unwrap();
+        clock.set(2_000);
+        let duplicate = BeginTurn {
+            response_id: ResponseId::from("resp_ignored"),
+            turn_id: TurnId::from("turn_replacement"),
+            lease_deadline: LeaseDeadline(3_000),
+            ..first
+        };
+        let BeginTurnResult::Existing(record) = store.begin_turn(duplicate).await.unwrap() else {
+            panic!("tool work was incorrectly reacquired");
+        };
+        assert_eq!(record.state, TurnState::OutcomeUnknown);
     }
 
     #[tokio::test]
