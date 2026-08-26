@@ -15,6 +15,10 @@ use serde::{Serialize, de::DeserializeOwned};
 /// This trait bundles concrete DTOs; it is not a universal request or message
 /// representation. Materializers continue to operate on the native protocol.
 pub trait AgentProtocol: std::fmt::Debug + Clone + Send + Sync + 'static {
+    /// Stable discriminator used by shared durable stores. This value is part
+    /// of the persisted schema and must not be renamed after deployment.
+    const STORAGE_KEY: &'static str;
+
     type Request: std::fmt::Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static;
     type ReplayItem: std::fmt::Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static;
     type Response: std::fmt::Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static;
@@ -26,6 +30,8 @@ pub trait AgentProtocol: std::fmt::Debug + Clone + Send + Sync + 'static {
 pub struct OpenAiResponses;
 
 impl AgentProtocol for OpenAiResponses {
+    const STORAGE_KEY: &'static str = "openai_responses_v1";
+
     type Request = CreateResponse;
     type ReplayItem = InputItem;
     type Response = Response;
@@ -37,6 +43,8 @@ impl AgentProtocol for OpenAiResponses {
 pub struct AnthropicMessages;
 
 impl AgentProtocol for AnthropicMessages {
+    const STORAGE_KEY: &'static str = "anthropic_messages_v1";
+
     type Request = AnthropicCreateMessageRequest;
     type ReplayItem = AnthropicMessage;
     type Response = AnthropicMessageResponse;
