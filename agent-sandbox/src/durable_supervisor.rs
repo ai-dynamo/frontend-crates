@@ -288,7 +288,6 @@ where
 
     fn read_artifact(
         &self,
-        _sandbox: &SandboxClaimHandle,
         execution: &ScopedExecutionId,
         artifact_id: &str,
     ) -> BoxFuture<'_, Result<Artifact, Self::Error>> {
@@ -761,7 +760,7 @@ mod tests {
         assert_eq!(record.state, ExecutionState::Succeeded);
         assert_eq!(record.stdout, b"42\n");
         let artifact = supervisor
-            .read_artifact(&sandbox(), &execution, &record.artifacts[0].artifact_id)
+            .read_artifact(&execution, &record.artifacts[0].artifact_id)
             .await
             .unwrap();
         assert_eq!(artifact.bytes, b"done");

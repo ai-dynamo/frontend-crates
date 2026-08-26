@@ -116,7 +116,6 @@ pub trait SandboxSupervisor: Send + Sync + 'static {
 
     fn read_artifact(
         &self,
-        sandbox: &SandboxClaimHandle,
         execution: &ScopedExecutionId,
         artifact_id: &str,
     ) -> BoxFuture<'_, Result<Artifact, Self::Error>>;
@@ -403,9 +402,13 @@ where
         let execution = execution.clone();
         let artifact_id = artifact_id.to_owned();
         Box::pin(async move {
-            let sandbox = self.existing_sandbox(&execution).await?;
+            self.prepare(
+                &execution.scope,
+                &execution.workspace_id,
+                &execution.profile,
+            )?;
             self.supervisor
-                .read_artifact(&sandbox, &execution, &artifact_id)
+                .read_artifact(&execution, &artifact_id)
                 .await
                 .map_err(KubernetesSandboxError::Supervisor)
         })
@@ -548,7 +551,6 @@ mod tests {
 
         fn read_artifact(
             &self,
-            _sandbox: &SandboxClaimHandle,
             _execution: &ScopedExecutionId,
             _artifact_id: &str,
         ) -> BoxFuture<'_, Result<Artifact, Self::Error>> {

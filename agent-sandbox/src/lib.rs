@@ -201,8 +201,7 @@ pub use kubernetes::{
 };
 #[cfg(feature = "kubernetes-client")]
 pub use kubernetes_client::{
-    HttpSandboxSupervisor, HttpSandboxSupervisorConfig, KubeAgentSandboxControlPlane,
-    KubeAgentSandboxControlPlaneConfig, KubeControlPlaneError, SandboxSupervisorHttpError,
+    KubeAgentSandboxControlPlane, KubeAgentSandboxControlPlaneConfig, KubeControlPlaneError,
 };
 #[cfg(feature = "sandboxd-client")]
 pub use sandboxd::{SandboxdClient, SandboxdClientConfig, SandboxdClientError, SandboxdRunOutcome};
