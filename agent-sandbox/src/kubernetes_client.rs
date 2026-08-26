@@ -17,7 +17,7 @@ use thiserror::Error;
 use crate::{AgentSandboxControlPlane, SandboxClaimHandle, SandboxClaimRequest};
 
 const WORKSPACE_FINGERPRINT_ANNOTATION: &str = "agent-rt.nvidia.com/workspace-fingerprint";
-const MANAGED_BY_LABEL: &str = "app.kubernetes.io/managed-by";
+const WORKSPACE_LABEL: &str = "sandbox.users.io/workspace";
 
 #[derive(Debug, Clone)]
 pub struct KubeAgentSandboxControlPlaneConfig {
@@ -93,8 +93,7 @@ impl KubeAgentSandboxControlPlane {
                 },
                 "additionalPodMetadata": {
                     "labels": {
-                        MANAGED_BY_LABEL: "agent-rt-sandbox",
-                        "agent-rt.nvidia.com/workspace": &request.workspace_fingerprint[..40]
+                        WORKSPACE_LABEL: &request.workspace_fingerprint[..40]
                     }
                 }
             }
