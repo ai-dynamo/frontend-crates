@@ -62,6 +62,7 @@ rayon = "1"
 regex = "1"
 rstest = "0.25"
 rustc-hash = "1.1"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
 ruff-python-ast = { package = "rustpython-ruff_python_ast", version = "0.15.8" }
 ruff-python-parser = { package = "rustpython-ruff_python_parser", version = "0.15.8" }
 serde = "1"

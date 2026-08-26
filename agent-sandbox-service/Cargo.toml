@@ -23,6 +23,7 @@ blake3.workspace = true
 clap = { workspace = true, features = ["derive", "env"] }
 dynamo-agent-rt.workspace = true
 kube = { version = "4.2", default-features = false, features = ["client", "rustls-tls", "ring"] }
+rustls.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 subtle.workspace = true
