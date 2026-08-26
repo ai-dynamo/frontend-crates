@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "agent-rt-sandbox-service"
+readme = "README.md"
+version = "0.1.0"
+edition.workspace = true
+description = "Authenticated Kubernetes-native sandbox execution service for agent-rt."
+authors.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+keywords = ["agents", "sandbox", "kubernetes", "service"]
+include = ["src/**/*", "Cargo.toml", "README.md"]
+
+[dependencies]
+agent-rt-sandbox = { workspace = true, features = ["http-client", "kubernetes-client", "postgres"] }
+anyhow.workspace = true
+axum.workspace = true
+base64.workspace = true
+blake3.workspace = true
+clap = { workspace = true, features = ["derive", "env"] }
+dynamo-agent-rt.workspace = true
+kube = { version = "4.2", default-features = false, features = ["client", "rustls-tls", "ring"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+subtle.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["full"] }
+tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+
+[dev-dependencies]
+reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
+tower = { version = "0.5", features = ["util"] }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
