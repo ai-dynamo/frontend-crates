@@ -254,6 +254,39 @@ def test_v2_exactly_one_reference_bucket_per_tab(model_v2):
         assert len(refs) == 1, f"{t['id']}: expected one bucket-A reference, got {len(refs)}"
 
 
+def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
+    """The Unified tab must show both historical Combined and current native captures."""
+    tab = _tab(model_v2, "tab-unified")
+    labels = [candidate["label"] for candidate in tab["candidates"]]
+    assert "vLLM Rust 0.26.0 (stream, Combined & Unified)" in labels
+    assert "vLLM Rust 0.25.1 (stream, Combined & Unified)" in labels
+    assert "vLLM Python 0.25.1 (batch, Combined)" in labels
+
+    muse = next(row for row in tab["rows"] if row["family"] == "muse_glimmer")
+    peer_keys = {candidate["key"] for candidate in tab["candidates"] if candidate["impl"] == "vllm"}
+    assert all(
+        all(cell["cmp"][key].get("na") == 1 for key in peer_keys)
+        for cell in muse["cells"].values()
+    )
+    muse_tip = next(iter(muse["cells"].values()))["tooltip"]
+    native = next(candidate for candidate in muse_tip["candidates"] if candidate["key"] == "vllm_rust@0.26.0")
+    assert native["block"]["unavailable"] == "vLLM Rust 0.26.0 (stream, Combined & Unified) has no parser for muse_glimmer"
+
+
+def test_unified_tab_marks_only_unsupported_vllm_families_na(model_v2):
+    """Every captured vLLM parser family has data for every Unified case."""
+    tab = _tab(model_v2, "tab-unified")
+    peer_keys = {candidate["key"] for candidate in tab["candidates"] if candidate["impl"] == "vllm"}
+    assert peer_keys == {"vllm", "vllm_rust", "vllm_rust@0.26.0"}
+    for row in tab["rows"]:
+        for key in peer_keys:
+            unavailable = [cell["cmp"][key].get("na") == 1 for cell in row["cells"].values()]
+            if row["family"] == "muse_glimmer":
+                assert all(unavailable), f"{key} must say n/a for Muse"
+            else:
+                assert not any(unavailable), f"{key} is missing captured cases for {row['family']}"
+
+
 _IMPL_KEYS = ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python")
 
 

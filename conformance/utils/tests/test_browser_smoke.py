@@ -322,8 +322,8 @@ def test_compare_shows_one_marker_per_cell(driver):
 def test_overview_hides_compare_column(driver):
     """In Overview (Detailed off) the compare bar shows only the Reference picker;
     the CMP checkboxes + header are hidden, because an overview cell's color is
-    leak-only (depends on the Reference, not the Compares). Turning Detailed on
-    reveals the CMP column again — the selections themselves are preserved."""
+    leak-only (depends on the Reference, not the Compares). Leaving Detailed clears
+    its comparison, so turning it back on shows exactly the starred Reference."""
     driver.execute_script(
         "document.querySelector('.tab-button[data-tab-target=\"tab-toolcalling-batch\"]').click();"
     )
@@ -352,11 +352,46 @@ def test_overview_hides_compare_column(driver):
             "return r ? (r.offsetParent !== null) : null;"
         )
 
+    set_detailed(True)
+    selected = driver.execute_script(
+        "const p=document.querySelector('.tab-panel.active .cmpctl');"
+        "const x=[...p.querySelectorAll('input.cmp-on:not(:disabled)')][0];"
+        "if(!x){return null;} x.checked=true; x.dispatchEvent(new Event('change',{bubbles:true}));"
+        "return x.value;"
+    )
+    assert selected, "test needs a selectable Compare-with checkbox"
     set_detailed(False)
     assert cmp_box_visible() is False, "CMP column should be hidden in Overview"
     assert ref_box_visible() is True, "REF picker must still show in Overview"
     set_detailed(True)
     assert cmp_box_visible() is True, "CMP column should reappear in Details"
+    remaining = driver.execute_script(
+        "const p=document.querySelector('.tab-panel.active .cmpctl');"
+        "return {refs:p.querySelectorAll('input.cmp-ref:checked').length,"
+        "extra:[...p.querySelectorAll('input.cmp-on:checked:not(:disabled)')].map(x=>x.value)};"
+    )
+    assert remaining == {"refs": 1, "extra": []}, (
+        "leaving Detailed must clear the compare checkbox and retain one Reference"
+    )
+
+
+def test_compare_url_restores_legacy_reference_without_self_compare(driver):
+    """An existing shared vLLM Rust URL keeps its star and drops cmp=base."""
+    page = driver.current_url.split("?", 1)[0]
+    driver.get(
+        page + "?tab=tab-unified&base_tab-unified=vllm_rust&cmp_tab-unified=vllm_rust"
+    )
+    state = driver.execute_script(
+        "const p=document.querySelector('.tab-panel.active'), c=p.querySelector('.cmpctl');"
+        "return {base:c.querySelector('input.cmp-ref:checked')?.value,"
+        "extra:[...c.querySelectorAll('input.cmp-on:checked:not(:disabled)')].map(x=>x.value),"
+        "url:location.search};"
+    )
+    assert state["base"] == "vllm_rust"
+    assert state["extra"] == []
+    assert "base_tab-unified=vllm_rust" in state["url"]
+    assert "cmp_tab-unified" not in state["url"]
+    assert "base_tab-toolcalling" not in state["url"]
 
 
 def _click_tab(driver, panel_id):

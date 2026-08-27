@@ -1,9 +1,9 @@
 {
-  "snapshot": "20260826_181000",
-  "created_pt": "20260826_181000 (stamp override) America/Los_Angeles",
+  "snapshot": "20260827_091023",
+  "created_pt": "2026-08-27 09:10:23 America/Los_Angeles",
   "crates": {
     "dynamo-parsers": "8.2.0",
-    "dynamo-parsers-v2": "0.3.3"
+    "dynamo-parsers-v2": "0.3.4"
   },
   "peers": {
     "vllm": "0.26.0",
@@ -217,8 +217,8 @@
     },
     {
       "path": "unified/dynamo_v2-0.3.1.tar.gz",
-      "sha256": "dddbe7cef1a411995dfb0ba83b36d69cecce03f6961bbd904bebf16d6f199e37",
-      "size": 13687
+      "sha256": "2d146a67e5da2d74a7726d0c53e2d8c23389a3941c6df140b6141980439800c1",
+      "size": 12317
     },
     {
       "path": "unified/dynamo_v2-0.3.2.tar.gz",
@@ -229,6 +229,11 @@
       "path": "unified/dynamo_v2-0.3.3.tar.gz",
       "sha256": "ab6021d70826d91174a05a6bf143d7661502991440aace22983ba014b9475f4d",
       "size": 13798
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.4.tar.gz",
+      "sha256": "19b6f45dc869378a86af35a4a06395cbb6fb3f8976705ded2738405a536bca25",
+      "size": 13715
     },
     {
       "path": "unified/golden.tar.gz",
@@ -251,14 +256,29 @@
       "size": 8409
     },
     {
+      "path": "unified/vllm_python-0.25.1.patch1.tar.gz",
+      "sha256": "8386306659ab51fff33274ba7a0db8fbb59bae2f16289ae0e0ae4e6c488c5c5f",
+      "size": 866
+    },
+    {
       "path": "unified/vllm_python-0.25.1.tar.gz",
       "sha256": "ac45a91593eb85a694321e86216eceeeb6134108a0aed7e352231910c930aa2a",
       "size": 9365
     },
     {
+      "path": "unified/vllm_rust-0.25.1.patch1.tar.gz",
+      "sha256": "bdd4c62c18965704e90e7f4a9c47d029bdcd9562ee83f80a5e41759987367873",
+      "size": 924
+    },
+    {
       "path": "unified/vllm_rust-0.25.1.tar.gz",
       "sha256": "0ef327ee87ac8df71dd8bee069ba33561cd4fc06486acb99298e73f1cac8ff9a",
       "size": 10472
+    },
+    {
+      "path": "unified/vllm_rust-0.26.0.tar.gz",
+      "sha256": "81e468b820afb37af850146a6d1c044ef146c726edc132706de8b506d9045fd5",
+      "size": 10941
     }
   ]
 }

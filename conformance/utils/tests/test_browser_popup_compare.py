@@ -360,9 +360,9 @@ def _row_state(driver, key):
     )
 
 
-def test_switching_star_keeps_old_ref_as_checked_compare(driver):
-    # Moving the star to a new row makes that row the Reference and demotes the OLD
-    # Reference to a normal CHECKED compare box (new-ref vs old-ref), not a dropout.
+def test_switching_star_clears_old_compare_and_hides_its_popup_column(driver):
+    # A new star is a new one-version view. The old Reference becomes available to
+    # compare again, but stays unchecked until the user asks to show it.
     _open_stream_tab(driver)
     _select(driver, V2_KEY, [])
     assert _active_base(driver) == V2_KEY, "precondition: V2 is the Reference"
@@ -372,11 +372,13 @@ def test_switching_star_keeps_old_ref_as_checked_compare(driver):
 
     assert _active_base(driver) == V1_KEY, "clicking V1's star must make V1 the Reference"
     old = _row_state(driver, V2_KEY)
-    assert old == {"isRef": False, "refChecked": False, "cmpChecked": True, "cmpDisabled": False}, (
-        f"old ref V2 must become an enabled, checked compare box, got {old}"
+    assert old == {"isRef": False, "refChecked": False, "cmpChecked": False, "cmpDisabled": False}, (
+        f"old ref V2 must become an enabled, unchecked compare box, got {old}"
     )
     new = _row_state(driver, V1_KEY)
     assert new["isRef"] and new["refChecked"], f"V1 must be the new Reference, got {new}"
+    visible = [key for key, state in _grid_state(driver).items() if not state["hidden"]]
+    assert visible == [V1_KEY], f"the popup must show only the new Reference, got {visible}"
 
 
 def test_active_star_stays_when_a_compare_is_selected(driver):
