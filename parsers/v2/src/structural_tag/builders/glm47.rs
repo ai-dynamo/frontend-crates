@@ -19,6 +19,13 @@ const TOOL_CALL_MARKERS: &[&str] = &[
     "<arg_value>",
     "</arg_value>",
 ];
+const FREE_TEXT_EXCLUDES: &[&str] = &[
+    TOOL_CALL_END,
+    "<arg_key>",
+    "</arg_key>",
+    "<arg_value>",
+    "</arg_value>",
+];
 
 static GLM47_FORMAT: TemplatedToolCallFormat = TemplatedToolCallFormat {
     tool_call_begin_prefix: TOOL_CALL_BEGIN,
@@ -30,6 +37,8 @@ static GLM47_FORMAT: TemplatedToolCallFormat = TemplatedToolCallFormat {
     arguments_style: JsonSchemaStyle::GlmXml,
     reasoning_begin: Some(THINK_BEGIN),
     reasoning_end: Some(THINK_END),
+    reasoning_suffix: "",
+    free_text_excludes: FREE_TEXT_EXCLUDES,
     tool_call_excludes: TOOL_CALL_MARKERS,
     exclude_special_tokens: true,
 };
@@ -38,7 +47,7 @@ static GLM47_FORMAT: TemplatedToolCallFormat = TemplatedToolCallFormat {
 mod tests {
     use serde_json::json;
 
-    use super::{GLM47, THINK_BEGIN, THINK_END, TOOL_CALL_MARKERS};
+    use super::{GLM47, THINK_BEGIN, THINK_END, TOOL_CALL_END, TOOL_CALL_MARKERS};
     use crate::structural_tag::test_support::{build, tools};
     use crate::structural_tag::{StructuralTagSchemaMode, StructuralTagToolChoice};
 
@@ -58,10 +67,6 @@ mod tests {
         assert_eq!(actual["format"]["triggers"], json!(["<tool_call>"]));
         assert_eq!(actual["format"]["at_least_one"], false);
         assert_eq!(actual["format"]["stop_after_first"], false);
-        assert_eq!(
-            actual["format"]["excludes"],
-            json!([THINK_BEGIN, THINK_END])
-        );
         assert_eq!(
             actual["format"]["tags"][0]["begin"],
             "<tool_call>add_numbers"
@@ -95,6 +100,32 @@ mod tests {
         assert_eq!(actual["format"]["triggers"], json!(["<tool_call>"]));
         assert_eq!(actual["format"]["at_least_one"], true);
         assert_eq!(actual["format"]["stop_after_first"], true);
+    }
+
+    #[test]
+    fn auto_excludes_non_trigger_markers_from_free_text() {
+        let tools = tools();
+        let actual = build(
+            &GLM47,
+            StructuralTagToolChoice::Auto,
+            &tools,
+            None,
+            StructuralTagSchemaMode::Auto,
+            false,
+        );
+
+        assert_eq!(
+            actual["format"]["excludes"],
+            json!([
+                THINK_BEGIN,
+                THINK_END,
+                TOOL_CALL_END,
+                "<arg_key>",
+                "</arg_key>",
+                "<arg_value>",
+                "</arg_value>"
+            ])
+        );
     }
 
     #[test]

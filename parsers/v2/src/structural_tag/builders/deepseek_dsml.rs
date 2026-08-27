@@ -93,6 +93,7 @@ impl ToolCallGrammar for DeepSeekDsmlFormat {
             vec![self.tool_call_block(policy, tool_arguments_any_order)],
             self.reasoning_begin(),
             self.reasoning_end(),
+            &[],
             exclude_special_tokens,
             policy,
         );

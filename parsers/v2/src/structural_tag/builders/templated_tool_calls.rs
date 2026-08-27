@@ -59,6 +59,11 @@ use crate::structural_tag::wire::{
 /// When `first_tool_call_prefix` is empty, `Required` returns `TriggeredTags`
 /// directly instead of wrapping it in a `Sequence`.
 ///
+/// If generation starts inside reasoning, the common builder first closes the
+/// reasoning tag and then emits `reasoning_suffix` before the format above.
+/// `free_text_excludes` reserves model control strings in `TriggeredTags`
+/// without preventing the configured trigger itself.
+///
 /// `tool_call_trigger` must be a prefix of `tool_call_begin_prefix`. Optional
 /// whitespace before a call belongs in `first_tool_call_prefix`, so it is
 /// omitted from the `Auto` trigger but emitted before the first `Required`
@@ -88,6 +93,10 @@ pub(super) struct TemplatedToolCallFormat {
     pub reasoning_begin: Option<&'static str>,
     /// Model reasoning close, also used to close an active reasoning block.
     pub reasoning_end: Option<&'static str>,
+    /// Bytes emitted after a structural-tag-owned reasoning close.
+    pub reasoning_suffix: &'static str,
+    /// Reserved strings excluded from free text outside tool calls.
+    pub free_text_excludes: &'static [&'static str],
     /// Strings excluded for `tool_choice = none` and, when enabled, reasoning.
     pub tool_call_excludes: &'static [&'static str],
     /// Default for excluding reasoning and tool-call special strings.
@@ -146,6 +155,10 @@ impl ToolCallGrammar for TemplatedToolCallFormat {
         self.reasoning_end
     }
 
+    fn reasoning_suffix(&self) -> &'static str {
+        self.reasoning_suffix
+    }
+
     fn tool_call_excludes(&self) -> &'static [&'static str] {
         self.tool_call_excludes
     }
@@ -178,6 +191,7 @@ impl ToolCallGrammar for TemplatedToolCallFormat {
             self.tool_tags(policy, tool_arguments_any_order),
             self.reasoning_begin,
             self.reasoning_end,
+            self.free_text_excludes,
             exclude_special_tokens,
             policy,
         );
@@ -255,6 +269,8 @@ mod tests {
         arguments_style: JsonSchemaStyle::QwenXml,
         reasoning_begin: None,
         reasoning_end: None,
+        reasoning_suffix: "",
+        free_text_excludes: &[],
         tool_call_excludes: &[],
         exclude_special_tokens: true,
     };
@@ -273,10 +289,7 @@ mod tests {
             false,
         );
 
-        assert_eq!(actual["format"]["type"], "sequence");
-        assert_eq!(actual["format"]["elements"][0]["type"], "const_string");
-        assert_eq!(actual["format"]["elements"][0]["value"], "\n\n");
-        let calls = &actual["format"]["elements"][1];
+        let calls = &actual["format"];
         assert_eq!(calls["type"], "triggered_tags");
         assert_eq!(calls["at_least_one"], true);
         assert_eq!(calls["stop_after_first"], false);
@@ -302,7 +315,7 @@ mod tests {
         assert_eq!(actual["format"]["type"], "tag");
         assert_eq!(
             actual["format"]["begin"],
-            "\n\n<tool_call>\n<function=get_weather>\n"
+            "<tool_call>\n<function=get_weather>\n"
         );
         assert!(actual["format"].get("triggers").is_none());
     }
@@ -319,7 +332,7 @@ mod tests {
             false,
         );
 
-        assert_eq!(actual["format"]["elements"][1]["stop_after_first"], true);
+        assert_eq!(actual["format"]["stop_after_first"], true);
     }
 
     #[test]
@@ -443,10 +456,6 @@ mod tests {
                 "excludes": []
             })
         );
-        assert!(
-            actual["format"]["elements"][1]["elements"][1]
-                .get("excludes")
-                .is_none()
-        );
+        assert!(actual["format"]["elements"][2].get("excludes").is_none());
     }
 }

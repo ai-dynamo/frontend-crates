@@ -41,13 +41,42 @@ fn call_sequence(format: &Value) -> &Value {
     }
 }
 
+fn post_reasoning_format<'a>(
+    format: &'a Value,
+    family: &str,
+    reasoning_suffix: Option<&str>,
+) -> &'a Value {
+    let elements = format["elements"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{family} should build a reasoning sequence"));
+    if let Some(reasoning_suffix) = reasoning_suffix {
+        assert_eq!(elements[1]["type"], "const_string", "{family}");
+        assert_eq!(elements[1]["value"], reasoning_suffix, "{family}");
+    }
+    elements
+        .last()
+        .unwrap_or_else(|| panic!("{family} reasoning sequence should have a suffix"))
+}
+
 #[test]
 fn common_builder_closes_prompt_opened_reasoning_before_tool_output() {
     let tools = tools();
-    for (family, builder, tool_call_exclude, required_prefix) in [
-        ("qwen3_coder", &QWEN3_CODER, "<tool_call>", Some("\n\n")),
-        ("deepseek_v4", &DEEPSEEK_DSML, "<｜DSML｜", Some("\n\n")),
-        ("glm47", &GLM47, "<tool_call>", None),
+    for (family, builder, tool_call_exclude, required_prefix, reasoning_suffix) in [
+        (
+            "qwen3_coder",
+            &QWEN3_CODER,
+            "<tool_call>",
+            None,
+            Some("\n\n"),
+        ),
+        (
+            "deepseek_v4",
+            &DEEPSEEK_DSML,
+            "<｜DSML｜",
+            Some("\n\n"),
+            None,
+        ),
+        ("glm47", &GLM47, "<tool_call>", None, None),
     ] {
         for tool_choice in [
             StructuralTagToolChoice::Required,
@@ -80,7 +109,7 @@ fn common_builder_closes_prompt_opened_reasoning_before_tool_output() {
                 actual["format"]["elements"][0]["end"], "</think>",
                 "{family}"
             );
-            let output = &actual["format"]["elements"][1];
+            let output = post_reasoning_format(&actual["format"], family, reasoning_suffix);
             match (tool_choice, required_prefix) {
                 (StructuralTagToolChoice::Required, Some(prefix)) => {
                     assert_eq!(output["type"], "sequence", "{family}");
@@ -102,10 +131,10 @@ fn common_builder_closes_prompt_opened_reasoning_before_tool_output() {
 #[test]
 fn auto_closes_prompt_opened_reasoning_before_triggered_dispatch() {
     let tools = tools();
-    for (family, builder, tool_call_exclude) in [
-        ("qwen3_coder", &QWEN3_CODER, "<tool_call>"),
-        ("deepseek_v4", &DEEPSEEK_DSML, "<｜DSML｜"),
-        ("glm47", &GLM47, "<tool_call>"),
+    for (family, builder, tool_call_exclude, reasoning_suffix) in [
+        ("qwen3_coder", &QWEN3_CODER, "<tool_call>", Some("\n\n")),
+        ("deepseek_v4", &DEEPSEEK_DSML, "<｜DSML｜", None),
+        ("glm47", &GLM47, "<tool_call>", None),
     ] {
         let actual = build(
             builder,
@@ -127,7 +156,8 @@ fn auto_closes_prompt_opened_reasoning_before_triggered_dispatch() {
             "{family} reasoning must exclude {tool_call_exclude}"
         );
         assert_eq!(
-            actual["format"]["elements"][1]["type"], "triggered_tags",
+            post_reasoning_format(&actual["format"], family, reasoning_suffix)["type"],
+            "triggered_tags",
             "{family}"
         );
     }
@@ -202,10 +232,10 @@ fn auto_with_structured_output_closes_prompt_opened_reasoning_before_choice() {
     let tools = tools();
     let schema = serde_json::json!({"type": "object"});
 
-    for (family, builder) in [
-        ("qwen3_coder", &QWEN3_CODER),
-        ("deepseek_v4", &DEEPSEEK_DSML),
-        ("glm47", &GLM47),
+    for (family, builder, reasoning_suffix) in [
+        ("qwen3_coder", &QWEN3_CODER, Some("\n\n")),
+        ("deepseek_v4", &DEEPSEEK_DSML, None),
+        ("glm47", &GLM47, None),
     ] {
         let actual = build_with_structured_output(
             builder,
@@ -218,7 +248,10 @@ fn auto_with_structured_output_closes_prompt_opened_reasoning_before_choice() {
 
         assert_eq!(actual["format"]["type"], "sequence", "{family}");
         assert_eq!(actual["format"]["elements"][0]["end"], "</think>");
-        assert_eq!(actual["format"]["elements"][1]["type"], "or");
+        assert_eq!(
+            post_reasoning_format(&actual["format"], family, reasoning_suffix)["type"],
+            "or"
+        );
     }
 }
 

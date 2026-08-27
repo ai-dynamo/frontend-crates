@@ -16,8 +16,8 @@ use super::policy::{
     ResolvedToolCalling, ResolvedToolCallingPolicy, ToolCallingMode, resolve_tool_calling,
 };
 use super::wire::{
-    AnyTextFormat, Format, JsonSchemaFormat, JsonSchemaStyle, OrFormat, SequenceFormat,
-    StructuralTag, TagFormat, TriggeredTagsFormat,
+    AnyTextFormat, ConstStringFormat, Format, JsonSchemaFormat, JsonSchemaStyle, OrFormat,
+    SequenceFormat, StructuralTag, TagFormat, TriggeredTagsFormat,
 };
 use super::{ReasoningBoundary, StructuralTagContext, StructuralTagOptions};
 
@@ -98,6 +98,10 @@ pub(super) trait ToolCallGrammar: Send + Sync {
 
     fn reasoning_end(&self) -> Option<&'static str>;
 
+    fn reasoning_suffix(&self) -> &'static str {
+        ""
+    }
+
     fn tool_call_excludes(&self) -> &'static [&'static str];
 
     fn default_exclude_special_tokens(&self) -> bool {
@@ -169,6 +173,7 @@ pub(super) fn triggered_calls_format(
     tags: Vec<TagFormat>,
     reasoning_begin: Option<&str>,
     reasoning_end: Option<&str>,
+    free_text_excludes: &[&str],
     exclude_special_tokens: bool,
     policy: &ResolvedToolCallingPolicy<'_>,
 ) -> Format {
@@ -179,6 +184,7 @@ pub(super) fn triggered_calls_format(
             [reasoning_begin, reasoning_end]
                 .into_iter()
                 .flatten()
+                .chain(free_text_excludes.iter().copied())
                 .map(str::to_string)
                 .collect()
         } else {
@@ -229,12 +235,19 @@ fn wrap_reasoning_if_needed(
         .reasoning_end()
         .ok_or_else(|| anyhow::anyhow!("reasoning end tag is not configured for structural tag"))?;
 
-    Ok(Format::Sequence(SequenceFormat {
-        elements: vec![
-            reasoning_tag(grammar, reasoning_end, exclude_special_tokens),
-            suffix,
-        ],
-    }))
+    let mut elements = vec![reasoning_tag(
+        grammar,
+        reasoning_end,
+        exclude_special_tokens,
+    )];
+    if !grammar.reasoning_suffix().is_empty() {
+        elements.push(Format::ConstString(ConstStringFormat {
+            value: grammar.reasoning_suffix().to_string(),
+        }));
+    }
+    elements.push(suffix);
+
+    Ok(Format::Sequence(SequenceFormat { elements }))
 }
 
 fn serialize(tag: StructuralTag) -> anyhow::Result<Value> {
