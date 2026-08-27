@@ -2234,7 +2234,8 @@ def _load_unified_fixtures(base: Path):
     engine_dirs = {impl: (vs[-1][1], vs[-1][0]) for impl, vs in engine_versions.items()}
     engine_cases = {impl: _read_dir(dirname) for impl, (dirname, _v) in engine_dirs.items()}
     dynamo_by_ver = {
-        ver: _read_dir(dirname) for ver, dirname in engine_versions.get("dynamo_v2", [])
+        _base_stream_version(ver): _read_dir(dirname)
+        for ver, dirname in engine_versions.get("dynamo_v2", [])
     }
 
     cases = []
@@ -2303,7 +2304,9 @@ def _load_unified_fixtures(base: Path):
                 }
     versions = {impl: v for impl, (_d, v) in engine_dirs.items()}
     # Ascending; the tab makes the last one the reference and the rest compare-on.
-    versions["dynamo_v2_all"] = [v for v, _d in engine_versions.get("dynamo_v2", [])]
+    versions["dynamo_v2_all"] = list(
+        dict.fromkeys(_base_stream_version(v) for v, _d in engine_versions.get("dynamo_v2", []))
+    )
     return cases, caps, versions
 
 
