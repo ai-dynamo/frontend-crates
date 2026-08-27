@@ -697,6 +697,10 @@ impl<E: InvokeEmitter + Send> NativeUnified for ScannerUnified<E> {
         self.scanner.preserve_special_tokens()
     }
 
+    fn tool_call_id(&self, tool_index: usize) -> Option<&str> {
+        self.scanner.tool_call_id(tool_index)
+    }
+
     /// Every family on this scanner declares its reasoning channel as a marker
     /// PAIR, which is the shape `ReasoningSpec` holds.
     fn guided_reasoning(&self) -> Option<GuidedReasoning> {
@@ -763,6 +767,11 @@ pub(crate) trait NativeUnified {
     /// made two surfaces report contradictory decoding requirements for identical
     /// markup.
     fn preserve_special_tokens(&self) -> bool;
+
+    /// The model-emitted id for a tool call, when the native grammar carries one.
+    fn tool_call_id(&self, _tool_index: usize) -> Option<&str> {
+        None
+    }
 
     /// How the guided reader recognises this family's reasoning channel, or `None`
     /// if the family has no reasoning channel at all.
@@ -944,7 +953,7 @@ impl<N: NativeUnified + Send> UnifiedParser for GuidedRouted<N> {
     /// correct for every family whose grammar does not name the call; Kimi
     /// is the one family that overrides it.
     fn tool_call_id(&self, tool_index: usize) -> Option<&str> {
-        self.scanner.tool_call_id(tool_index)
+        self.native.tool_call_id(tool_index)
     }
 }
 
@@ -1020,6 +1029,53 @@ pub(crate) enum GuidedReasoning {
     Channel(GuidedChannel),
 }
 
+/// What the guided reader knows about the channel run so far.
+///
+/// Passed to every header hook because header resolution is not a pure function of
+/// the bytes: a family may resolve an UNFRAMED header at turn start and refuse the
+/// identical bytes later, once the turn has been routed and they are something the
+/// model merely quoted. A stateless hook cannot tell those apart, and reading the
+/// quoted form as a real channel switch split a visible answer into an answer plus a
+/// thought.
+#[derive(Clone, Copy)]
+pub(crate) struct GuidedChannelState {
+    pub(crate) scope: GuidedTurnScope,
+}
+
+/// Where the turn stands, for families whose header resolution depends on it.
+///
+/// A single boolean cannot carry this: "has the turn been routed" and "which channel
+/// is open" are INDEPENDENT, and collapsing them broke both directions at once. With
+/// one flag, a guided payload that routed the turn left it permissive, so a bare
+/// header quoted after the call was promoted; and consuming the turn's opening
+/// reasoning header closed it, so a real bare tool header inside the thought — the
+/// missing-terminator recovery boundary the native scan honours — was demoted and its
+/// recipient words leaked into the reasoning.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum GuidedTurnScope {
+    /// Nothing has routed the turn yet, so a header may resolve without its framing:
+    /// the prompt consumed the turn's opening framing and the model continues from
+    /// there.
+    Unrouted,
+    /// A thought is open. A bare header here ENDS it — the recovery boundary — rather
+    /// than being something the model quoted.
+    InReasoning,
+    /// Visible content or a tool payload has already routed this turn, so bare-looking
+    /// headers from here on are words.
+    Routed,
+}
+
+impl GuidedTurnScope {
+    /// Whether a header may resolve without its framing marker in this scope.
+    ///
+    /// The guided reader's only translation of scope into the bool the shared
+    /// [`crate::tool_calling::muse_glimmer::resolve_header_latched`] takes, so the
+    /// rule itself still lives in exactly one place, beside the native path.
+    pub(crate) fn allows_bare_header(self) -> bool {
+        self != Self::Routed
+    }
+}
+
 /// The scan hooks a header-routed reasoning channel supplies to the guided path.
 ///
 /// Function pointers rather than a trait object for the same reason [`InvokeScan`]
@@ -1030,13 +1086,18 @@ pub(crate) struct GuidedChannel {
     /// Earliest reasoning OPENER in the haystack: `(offset, bytes to consume)`.
     /// `flush` marks end of stream, where a still-incomplete header can no longer
     /// grow and must be resolved rather than held.
-    pub(crate) find_open: fn(haystack: &str, flush: bool) -> Option<(usize, usize)>,
+    pub(crate) find_open:
+        fn(haystack: &str, flush: bool, state: GuidedChannelState) -> Option<(usize, usize)>,
     /// Earliest reasoning CLOSER: `(offset, bytes to consume)`.
     pub(crate) find_close: fn(haystack: &str) -> Option<(usize, usize)>,
+    /// Earliest TURN-END marker, as distinct from a message closer. `None` for a family
+    /// whose grammar does not separate the two.
+    pub(crate) find_turn_end: fn(haystack: &str) -> Option<(usize, usize)>,
     /// Earliest header that routes to VISIBLE CONTENT, which ENDS an open thought.
     ///
     /// `None` for a marker-pair family: its thought ends only at its own closer.
-    pub(crate) find_transition: fn(haystack: &str, flush: bool) -> Option<(usize, usize)>,
+    pub(crate) find_transition:
+        fn(haystack: &str, flush: bool, state: GuidedChannelState) -> Option<(usize, usize)>,
     /// Earliest framing run that is neither a thought nor a channel switch — under
     /// guided decoding a tool-routed header wraps a payload delivered as JSON — to
     /// be stripped WHOLE.
@@ -1046,10 +1107,15 @@ pub(crate) struct GuidedChannel {
     /// channel does: its framing spans a role word and a recipient whose lengths
     /// the grammar does not bound, so stripping only the literal markers releases
     /// the bytes between them to the user as the model's answer.
-    pub(crate) find_stray: fn(haystack: &str, flush: bool) -> Option<(usize, usize)>,
+    pub(crate) find_stray:
+        fn(haystack: &str, flush: bool, state: GuidedChannelState) -> Option<(usize, usize)>,
+    /// Earliest run that actually ROUTES the turn, as opposed to control markup that
+    /// merely gets stripped. Only this spends the turn's routing scope.
+    pub(crate) find_routing:
+        fn(haystack: &str, flush: bool, state: GuidedChannelState) -> Option<(usize, usize)>,
     /// Trailing bytes to retain so a header split across a chunk boundary is never
     /// flushed into the payload buffer, where it would break the JSON parse.
-    pub(crate) holdback: fn(haystack: &str) -> usize,
+    pub(crate) holdback: fn(haystack: &str, state: GuidedChannelState) -> usize,
     /// Remove this family's framing from a run about to be shown to the user.
     ///
     /// A marker-pair family needs nothing here: its framing is two literals the
@@ -1075,7 +1141,12 @@ impl GuidedReasoning {
     /// arriving, which is what makes the caller hold the bytes back instead of
     /// splitting the label; the channel form makes the same judgement about a
     /// half-arrived header.
-    fn find_open(&self, haystack: &str, flush: bool) -> Option<(usize, usize)> {
+    fn find_open(
+        &self,
+        haystack: &str,
+        flush: bool,
+        state: GuidedChannelState,
+    ) -> Option<(usize, usize)> {
         match self {
             Self::Pair(spec) => {
                 let at = haystack.find(spec.start)?;
@@ -1087,7 +1158,7 @@ impl GuidedReasoning {
                 )?;
                 Some((at, len))
             }
-            Self::Channel(channel) => (channel.find_open)(haystack, flush),
+            Self::Channel(channel) => (channel.find_open)(haystack, flush, state),
         }
     }
 
@@ -1098,7 +1169,13 @@ impl GuidedReasoning {
     /// the earlier, the other is consuming a redundant opener the prompt already
     /// wrote — and re-searching from byte zero there would find a DIFFERENT opener
     /// than the one the branch decided on.
-    fn open_len_at(&self, haystack: &str, at: usize, flush: bool) -> Option<usize> {
+    fn open_len_at(
+        &self,
+        haystack: &str,
+        at: usize,
+        flush: bool,
+        state: GuidedChannelState,
+    ) -> Option<usize> {
         match self {
             Self::Pair(spec) => {
                 if !haystack[at..].starts_with(spec.start) {
@@ -1111,7 +1188,7 @@ impl GuidedReasoning {
                     flush,
                 )
             }
-            Self::Channel(channel) => (channel.find_open)(&haystack[at..], flush)
+            Self::Channel(channel) => (channel.find_open)(&haystack[at..], flush, state)
                 .and_then(|(found, len)| (found == 0).then_some(len)),
         }
     }
@@ -1125,18 +1202,49 @@ impl GuidedReasoning {
     }
 
     /// Earliest channel framing that is neither a thought nor a switch: strip it.
-    fn find_stray(&self, haystack: &str, flush: bool) -> Option<(usize, usize)> {
+    fn find_stray(
+        &self,
+        haystack: &str,
+        flush: bool,
+        state: GuidedChannelState,
+    ) -> Option<(usize, usize)> {
         match self {
             Self::Pair(_) => None,
-            Self::Channel(channel) => (channel.find_stray)(haystack, flush),
+            Self::Channel(channel) => (channel.find_stray)(haystack, flush, state),
+        }
+    }
+
+    /// Earliest TURN-END marker, distinct from a message closer.
+    fn find_turn_end(&self, haystack: &str) -> Option<(usize, usize)> {
+        match self {
+            Self::Pair(_) => None,
+            Self::Channel(channel) => (channel.find_turn_end)(haystack),
+        }
+    }
+
+    /// Earliest run that ROUTES the turn, rather than being stripped as markup.
+    fn find_routing(
+        &self,
+        haystack: &str,
+        flush: bool,
+        state: GuidedChannelState,
+    ) -> Option<(usize, usize)> {
+        match self {
+            Self::Pair(_) => None,
+            Self::Channel(channel) => (channel.find_routing)(haystack, flush, state),
         }
     }
 
     /// Earliest switch to the visible-content channel, which ends an open thought.
-    fn find_transition(&self, haystack: &str, flush: bool) -> Option<(usize, usize)> {
+    fn find_transition(
+        &self,
+        haystack: &str,
+        flush: bool,
+        state: GuidedChannelState,
+    ) -> Option<(usize, usize)> {
         match self {
             Self::Pair(_) => None,
-            Self::Channel(channel) => (channel.find_transition)(haystack, flush),
+            Self::Channel(channel) => (channel.find_transition)(haystack, flush, state),
         }
     }
 
@@ -1144,10 +1252,10 @@ impl GuidedReasoning {
     ///
     /// The redundant-opener branch needs this to keep waiting on a prefix instead
     /// of emitting it as the first bytes of the thought.
-    fn open_pending(&self, haystack: &str) -> bool {
+    fn open_pending(&self, haystack: &str, state: GuidedChannelState) -> bool {
         match self {
             Self::Pair(spec) => spec.start.starts_with(haystack),
-            Self::Channel(channel) => (channel.holdback)(haystack) == haystack.len(),
+            Self::Channel(channel) => (channel.holdback)(haystack, state) == haystack.len(),
         }
     }
 
@@ -1183,12 +1291,12 @@ impl GuidedReasoning {
     }
 
     /// Trailing bytes this channel needs retained beyond the shared marker rules.
-    fn holdback(&self, haystack: &str) -> usize {
+    fn holdback(&self, haystack: &str, state: GuidedChannelState) -> usize {
         match self {
             // The pair form's label holdback is expressed through `start_label`,
             // which `guided_holdback_len` already consumes.
             Self::Pair(_) => 0,
-            Self::Channel(channel) => (channel.holdback)(haystack),
+            Self::Channel(channel) => (channel.holdback)(haystack, state),
         }
     }
 
@@ -1222,6 +1330,23 @@ struct GuidedState {
     /// nothing — the first is worth a log line, the second is not.
     stripped_markup: bool,
     reasoning: GuidedReasoning,
+    /// A visible-content header has routed the turn, so NO guided payload can follow.
+    ///
+    /// This is the visible-content mode. `GuidedMode::VisibleOnly` is not it — despite
+    /// the name that variant is the PAYLOAD accumulator — and treating a `to=user`
+    /// transition as an ordinary reasoning closer dropped the turn back into that
+    /// accumulator. A JSON-shaped ANSWER was then read as a call and dispatched: the
+    /// model chose text and the client executed a tool, which is failing OPEN on a side
+    /// effect and the worst outcome this parser can produce.
+    ///
+    /// A transition and a closer are different state transitions. A closer ends a span;
+    /// a transition ROUTES the turn, and routing to content is one-way for the rest of
+    /// the turn — through push, finish and reset alike.
+    content_routed: bool,
+    /// Whether anything has ROUTED this turn yet — a header consumed, visible text
+    /// emitted, or a payload dispatched. Half of [`GuidedTurnScope`]; the other half
+    /// is the open channel, which `mode` already carries.
+    turn_routed: bool,
     /// EVERY control marker of the family's tool grammar, from the scanner's own
     /// declaration. One set, used for both lookup and chunk-boundary holdback, in
     /// both the inside-a-thought and outside-a-thought scopes. Assembling it
@@ -1570,7 +1695,17 @@ fn guided_payload_syntax_boundary(
         // is two literals; the channel form has to be asked, because its opener is
         // a header whose bytes are not a fixed string.
         if reasoning
-            .find_open(&input[at..], true)
+            .find_open(
+                &input[at..],
+                true,
+                // Boundary PROBE, not a routing decision: the question is only
+                // whether a reasoning marker sits at this byte. The permissive scope
+                // is right here — a header the turn would have demoted is still a
+                // marker that ends the payload.
+                GuidedChannelState {
+                    scope: GuidedTurnScope::Unrouted,
+                },
+            )
             .is_some_and(|(found, _)| found == 0)
             || reasoning
                 .find_close(&input[at..])
@@ -1609,6 +1744,14 @@ impl GuidedState {
             named_tool,
             invalid_payload,
             reasoning_enabled: starting_state != UnifiedParserStartingState::Response,
+            // A prompt that already opened VISIBLE content has routed the turn, so
+            // nothing bare may resolve after it — the same seed the native scan uses.
+            turn_routed: starting_state == UnifiedParserStartingState::Response,
+            // NOT seeded from `Response`. A prompt that opened visible content has
+            // still asked for a guided payload — that is `prefilled_response_with_guided_json`
+            // — so only a content transition the model itself emits closes the payload
+            // off. Seeding it here turned every prefilled-response call into text.
+            content_routed: false,
             mode: Self::mode_for(starting_state),
             accept_redundant_reasoning_start: starting_state
                 == UnifiedParserStartingState::Reasoning,
@@ -1675,6 +1818,9 @@ impl GuidedState {
             }
             output.extend(self.finish_json()?);
             self.payload_emitted = true;
+            // A dispatched payload ROUTES the turn even though no header did, so a
+            // bare-looking header after it is a quote (`GuidedTurnScope`).
+            self.turn_routed = true;
             self.mode = GuidedMode::OutsideReasoning;
             output.extend(self.drain(true));
         }
@@ -1689,6 +1835,8 @@ impl GuidedState {
         // so put the channel back where `new` would have started it.
         self.mode = Self::mode_for(starting_state);
         self.reasoning_enabled = starting_state != UnifiedParserStartingState::Response;
+        self.turn_routed = starting_state == UnifiedParserStartingState::Response;
+        self.content_routed = false;
         self.accept_redundant_reasoning_start =
             starting_state == UnifiedParserStartingState::Reasoning;
         self.stripped_markup = false;
@@ -1752,6 +1900,9 @@ impl GuidedState {
             // trailing visible text is still emitted. Skipping this dropped the text
             // after the call entirely.
             self.payload_emitted = true;
+            // A dispatched payload ROUTES the turn even though no header did, so a
+            // bare-looking header after it is a quote (`GuidedTurnScope`).
+            self.turn_routed = true;
             self.mode = GuidedMode::OutsideReasoning;
             self.input.push_str(&tail);
             return Ok(out);
@@ -1764,17 +1915,117 @@ impl GuidedState {
             }
         };
         self.payload_emitted = true;
+        // A dispatched payload ROUTES the turn even though no header did, so a
+        // bare-looking header after it is a quote (`GuidedTurnScope`).
+        self.turn_routed = true;
         self.mode = GuidedMode::OutsideReasoning;
         self.input.push_str(&tail);
         Ok(std::mem::take(&mut output))
     }
 
     fn opener_len_at(&self, at: usize, flush: bool) -> Option<usize> {
-        self.reasoning.open_len_at(&self.input, at, flush)
+        self.reasoning
+            .open_len_at(&self.input, at, flush, self.channel_state())
     }
 
     fn start_label(&self) -> Option<(&str, &str)> {
         self.reasoning.start_label()
+    }
+
+    /// What the family's header hooks need to know about the run so far.
+    ///
+    /// Derived, never stored: an open thought outranks having been routed, because a
+    /// bare header inside one is the recovery boundary rather than a quote.
+    fn channel_state(&self) -> GuidedChannelState {
+        GuidedChannelState {
+            scope: if self.mode == GuidedMode::Reasoning {
+                GuidedTurnScope::InReasoning
+            } else if self.turn_routed {
+                GuidedTurnScope::Routed
+            } else {
+                GuidedTurnScope::Unrouted
+            },
+        }
+    }
+
+    /// Move a RECOVERY boundary past the whitespace the header resolver absorbed.
+    ///
+    /// A bare header absorbs the separator space in front of it, which is correct when
+    /// that header OPENS a channel — the space is template framing between the previous
+    /// message and this one. It is wrong when the same header is the recovery point for
+    /// a thought whose terminator never arrived: the native scan cuts the body at the
+    /// `to=` itself, so that space is the thought's last byte and belongs in the
+    /// reasoning run. Guided swallowed it, and the two paths disagreed by one byte on
+    /// identical input.
+    fn recovery_boundary(&self, at: usize, len: usize) -> (usize, usize) {
+        let span = &self.input[at..at + len];
+        let absorbed = span.len() - span.trim_start().len();
+        (at + absorbed, len - absorbed)
+    }
+
+    /// Close the bare-header latch if the run being consumed at `at` is a HEADER.
+    ///
+    /// The native scan drops its latch on the first header that routes the turn, so
+    /// this drops it on exactly the same event: a control marker is not a header and
+    /// leaves it open. Called before the bytes are drained, while the offsets still
+    /// refer to the live buffer.
+    /// Whether no guided payload can follow, so bytes belong to the visible answer.
+    ///
+    /// Two ways to get here: the one payload this turn allows has already been
+    /// dispatched, or a content header routed the turn before any payload arrived. The
+    /// second was missing, so post-transition bytes were still being pushed into the
+    /// JSON accumulator and a visible answer that happened to look like a call was
+    /// dispatched as one.
+    fn answer_only(&self) -> bool {
+        self.payload_emitted || self.content_routed
+    }
+
+    /// Note that the run consumed at `at` routed the turn to VISIBLE CONTENT, or that
+    /// a message CLOSER ended that routing.
+    ///
+    /// Routing to content is not one-way for the whole turn — the native scan opens a
+    /// tool channel after a content message quite happily — it is one-way until the
+    /// message ENDS. So a closer puts the turn back where a later header, or a guided
+    /// payload, can route it again. Without the second half, a payload legitimately
+    /// following `…<|eom|>` was emitted as text and the call was lost, which is the
+    /// same defect as the one this method exists to prevent, in the other direction.
+    fn note_content_transition(&mut self, at: usize, len: usize) {
+        let state = self.channel_state();
+        if self
+            .reasoning
+            .find_transition(&self.input, true, state)
+            .is_some_and(|hit| hit == (at, len))
+        {
+            self.content_routed = true;
+        } else if self
+            .reasoning
+            .find_turn_end(&self.input)
+            .is_some_and(|hit| hit == (at, len))
+        {
+            // TURN END, not a message close. There is no later message to route, so the
+            // bytes behind it are trailing text — re-opening the payload accumulator here
+            // dispatched a call from text that arrived after the turn was over.
+            self.content_routed = true;
+        } else if self
+            .reasoning
+            .find_close(&self.input)
+            .is_some_and(|hit| hit == (at, len))
+        {
+            self.content_routed = false;
+        }
+    }
+
+    fn note_consumed(&mut self, at: usize, len: usize) {
+        // ROUTING headers only. `find_stray` also yields orphan control markup, and
+        // counting that as a header spent the turn's scope on bytes that route nothing —
+        // the next real bare header was then demoted and its recipient leaked as text.
+        let routed = self
+            .reasoning
+            .find_routing(&self.input, true, self.channel_state())
+            .is_some_and(|hit| hit == (at, len));
+        if routed {
+            self.turn_routed = true;
+        }
     }
 
     /// Whether the bytes at `from` reach the guided payload through nothing but
@@ -1803,7 +2054,7 @@ impl GuidedState {
                 .filter(|(pos, _)| *pos == 0)
                 .or_else(|| {
                     self.reasoning
-                        .find_stray(rest, flush)
+                        .find_stray(rest, flush, self.channel_state())
                         .filter(|(pos, _)| *pos == 0)
                 });
             match skip {
@@ -1929,7 +2180,8 @@ impl GuidedState {
                     // dropped the call — while the same bytes arriving in small chunks
                     // latched here first and parsed correctly. Same input, two answers,
                     // decided by chunking (`I6`).
-                    if !self.payload_emitted
+                    if !self.content_routed
+                        && !self.payload_emitted
                         && (json_payload_started(&self.json)
                             || (self.json.trim().is_empty() && json_payload_started(&self.input)))
                     {
@@ -1954,14 +2206,20 @@ impl GuidedState {
                     // holdback below, so the two cannot drift apart again.
                     let open = self
                         .reasoning_enabled
-                        .then(|| self.reasoning.find_open(&self.input, flush))
+                        .then(|| {
+                            self.reasoning
+                                .find_open(&self.input, flush, self.channel_state())
+                        })
                         .flatten();
                     // Position only: an opener still waiting on its label or its
                     // recipient is not YET an opener, but it already proves the
                     // bytes ahead of it are visible text rather than payload.
                     let open_at = self
                         .reasoning_enabled
-                        .then(|| self.reasoning.find_open(&self.input, true))
+                        .then(|| {
+                            self.reasoning
+                                .find_open(&self.input, true, self.channel_state())
+                        })
                         .flatten()
                         .map(|(at, _)| at);
                     let stray_close = self
@@ -1982,8 +2240,15 @@ impl GuidedState {
                                 .then(|| self.reasoning.find_close(&self.input))
                                 .flatten(),
                         )
-                        .chain(self.reasoning.find_stray(&self.input, flush))
-                        .chain(self.reasoning.find_transition(&self.input, flush))
+                        .chain(
+                            self.reasoning
+                                .find_stray(&self.input, flush, self.channel_state()),
+                        )
+                        .chain(self.reasoning.find_transition(
+                            &self.input,
+                            flush,
+                            self.channel_state(),
+                        ))
                         // The invoke CLOSER, once the payload is out. It is deliberately
                         // not a standalone control marker — listing it there makes it
                         // bound the opener's own terminator search, which cut a native
@@ -2012,7 +2277,7 @@ impl GuidedState {
                         let mut pending = std::mem::take(&mut self.json);
                         pending.push_str(&self.input[..at]);
                         if pending.trim().is_empty() {
-                            if !self.payload_emitted {
+                            if !self.payload_emitted && !self.content_routed {
                                 self.json = pending;
                             }
                         } else {
@@ -2025,6 +2290,7 @@ impl GuidedState {
                                 self.post_payload_text_started = true;
                             }
                         }
+                        self.note_consumed(at, open_len);
                         self.input.drain(..at + open_len);
                         self.mode = GuidedMode::Reasoning;
                         self.accept_redundant_reasoning_start = false;
@@ -2041,7 +2307,7 @@ impl GuidedState {
                         let mut pending = std::mem::take(&mut self.json);
                         pending.push_str(&self.input[..at]);
                         if pending.trim().is_empty() {
-                            if !self.payload_emitted {
+                            if !self.payload_emitted && !self.content_routed {
                                 self.json = pending;
                             }
                         } else {
@@ -2055,6 +2321,8 @@ impl GuidedState {
                             }
                         }
                         self.stripped_markup = true;
+                        self.note_consumed(at, close_len);
+                        self.note_content_transition(at, close_len);
                         self.input.drain(..at + close_len);
                         continue;
                     }
@@ -2081,7 +2349,7 @@ impl GuidedState {
                             flush,
                         )
                         .max(if self.reasoning_enabled {
-                            self.reasoning.holdback(&self.input)
+                            self.reasoning.holdback(&self.input, self.channel_state())
                         } else {
                             0
                         })
@@ -2112,7 +2380,7 @@ impl GuidedState {
                                     arguments: self.input[..visible_len].to_string(),
                                 }));
                             }
-                        } else if self.payload_emitted {
+                        } else if self.answer_only() {
                             push_run(
                                 &mut output,
                                 Kind::Text,
@@ -2129,13 +2397,13 @@ impl GuidedState {
                         // still follow it in a later chunk. Latching on any
                         // non-whitespace byte is what let prose arriving in its own
                         // chunk swallow the thought that came after it.
-                        if json_payload_started(&self.json) {
+                        if !self.content_routed && json_payload_started(&self.json) {
                             self.mode = GuidedMode::VisibleOnly;
                             continue;
                         }
                     }
                     if flush && !self.input.is_empty() {
-                        if self.payload_emitted {
+                        if self.answer_only() {
                             push_run(
                                 &mut output,
                                 Kind::Text,
@@ -2155,11 +2423,16 @@ impl GuidedState {
                         let leading = self.input.len() - non_whitespace.len();
                         if let Some(open_len) = self.opener_len_at(leading, flush) {
                             push_run(&mut output, Kind::Reasoning, &self.input[..leading]);
+                            self.note_consumed(leading, open_len);
                             self.input.drain(..leading + open_len);
                             self.accept_redundant_reasoning_start = false;
                             continue;
                         }
-                        if !flush && self.reasoning.open_pending(non_whitespace) {
+                        if !flush
+                            && self
+                                .reasoning
+                                .open_pending(non_whitespace, self.channel_state())
+                        {
                             push_run(&mut output, Kind::Reasoning, &self.input[..leading]);
                             self.input.drain(..leading);
                             break;
@@ -2198,7 +2471,11 @@ impl GuidedState {
                         .reasoning
                         .find_close(&self.input)
                         .into_iter()
-                        .chain(self.reasoning.find_transition(&self.input, flush))
+                        .chain(self.reasoning.find_transition(
+                            &self.input,
+                            flush,
+                            self.channel_state(),
+                        ))
                         .min_by_key(|(at, _)| *at);
 
                     // Everything else that interrupts the run. Under guided decoding the
@@ -2210,7 +2487,9 @@ impl GuidedState {
                     // A REPEATED opener of this same channel is never a boundary: it is
                     // the missing-terminator recovery shape, and the native scan keeps
                     // one thought open across it.
-                    let reopen = self.reasoning.find_open(&self.input, flush);
+                    let reopen = self
+                        .reasoning
+                        .find_open(&self.input, flush, self.channel_state());
                     let interrupt = self
                         .control_marker_at(
                             &self.input,
@@ -2221,7 +2500,10 @@ impl GuidedState {
                             flush,
                         )
                         .into_iter()
-                        .chain(self.reasoning.find_stray(&self.input, flush))
+                        .chain(
+                            self.reasoning
+                                .find_stray(&self.input, flush, self.channel_state()),
+                        )
                         .min_by_key(|(at, _)| *at);
 
                     // MISSING-TERMINATOR RECOVERY. An interrupting marker that leads
@@ -2255,7 +2537,11 @@ impl GuidedState {
                     // from that set leaked a duplicate `<think>` into the thought.
                     let recovering = matches!(recovers, Some((_, _, Some(true))));
                     let undecided = matches!(recovers, Some((_, _, None)));
-                    let close = [ends, recovering.then_some(interrupt).flatten()]
+                    let recovery = recovering
+                        .then_some(interrupt)
+                        .flatten()
+                        .map(|(at, len)| self.recovery_boundary(at, len));
+                    let close = [ends, recovery]
                         .into_iter()
                         .flatten()
                         .min_by_key(|(at, _)| *at)
@@ -2275,6 +2561,8 @@ impl GuidedState {
                     {
                         push_run(&mut output, Kind::Reasoning, &self.input[..at]);
                         self.stripped_markup = true;
+                        self.note_consumed(at, consume);
+                        self.note_content_transition(at, consume);
                         self.input.drain(..at + consume);
                         if closes {
                             // Back to OutsideReasoning, NOT straight to VisibleOnly. The
@@ -2306,7 +2594,7 @@ impl GuidedState {
                             self.invoke_control(),
                             flush,
                         )
-                        .max(self.reasoning.holdback(&self.input))
+                        .max(self.reasoning.holdback(&self.input, self.channel_state()))
                         .max(undecided_at.map_or(0, |at| self.input.len() - at))
                     };
                     let reasoning_len = self.input.len().saturating_sub(keep);

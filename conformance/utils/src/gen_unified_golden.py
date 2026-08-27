@@ -150,6 +150,28 @@ def D(cls, note):
 
 # --- per-family input helpers for EDGE scenarios ------------------------------
 
+class OnlyFamilies(dict):
+    """A per-family map that DECLARES its scenario applies to a subset of families.
+
+    Absence from a PLAIN dict must stay a hard failure: an accidentally omitted family
+    is missing coverage, and letting it read as "not applicable" hides exactly what this
+    corpus exists to measure. So the narrow scope is a statement the scenario makes
+    about itself, carried by its own type, rather than something inferred from a gap.
+
+    Use only when a family's GRAMMAR cannot express the scenario, and say why at the
+    authoring site and in UNIFIED_CASES.md. "We have not written it yet" is a gap, not
+    a scope.
+    """
+
+    def __init__(self, mapping):
+        super().__init__(mapping)
+        if not self:
+            raise ValueError("OnlyFamilies() with no families declares nothing")
+        unknown = sorted(set(self) - set(FAMILIES))
+        if unknown:
+            raise ValueError(f"OnlyFamilies() names families that do not exist: {unknown}")
+
+
 def every_family(input_text, vllm, dynamo, *rest):
     """One input for EVERY family.
 
@@ -1231,6 +1253,82 @@ EDGE += [
 ]
 
 
+# A control marker the model QUOTES inside its visible answer is words, not structure.
+# Only families whose header resolution depends on turn state can express this: muse
+# resolves an unframed `to=…<|message|>` at turn start and must refuse the identical
+# bytes afterwards. A marker-pair family has no equivalent — its opener is a fixed
+# string that means the same thing wherever it appears, and a duplicate opener inside a
+# span is already `41.c`. So this is authored for muse and skipped elsewhere rather than
+# rendered per family into a case that tests nothing.
+QUOTED_BARE_HEADER = [
+    ("guided_json_quoted_bare_header_in_answer", "self",
+     "A `to=self` header QUOTED inside the visible answer, after the turn has already been routed to the user. The words are the model's prose and only the marker is structural, so the answer stays one run. Promoting the quote opened a real THOUGHT and split the answer in two, which reaches the client as an answer plus chain-of-thought the model never meant to expose."),
+    ("guided_json_quoted_bare_tool_header_in_answer", "get_weather",
+     "The same quote naming a TOOL recipient. Paired with the case above because the failure differs: promoting a quoted tool recipient DELETED the `to=…` words from the answer instead of splitting it, so the client silently received different prose than the model wrote."),
+]
+
+# The scope siblings: turn position and open channel are independent axes, and the
+# quoted-header pair above only exercises one of them (routed by a HEADER). These two
+# cross the other axis — routed by a PAYLOAD, and inside an open thought — which is
+# where a single boolean silently gave the wrong answer in both directions.
+QUOTED_BARE_HEADER += [
+    ("guided_json_quoted_bare_header_after_payload", "self",
+     "A `to=self` header quoted AFTER the guided payload has already dispatched. No header routed this turn — the payload did — so a reader that tracks only 'has a header been seen' stays permissive and promotes the quote into a thought. Same corruption as the header-routed case, reached down the other axis."),
+]
+
+_RECOVERY_INSIDE_THOUGHT = (
+    "guided_json_bare_tool_header_recovers_inside_a_thought",
+    "A bare `to=NAME` header inside an OPEN thought, leading into the guided payload — the missing-terminator recovery boundary, with no framing on the header because the prompt consumed the turn's opening framing. The contrast with the quoted cases is the point: the same bare shape is structural here and prose there, decided by scope, not by whether a header has been seen before. A reader that closes its latch on the turn's first header demotes this one and leaks `to=NAME` into the reasoning.",
+)
+
+for _name, _rcpt, _desc in QUOTED_BARE_HEADER:
+    EDGE.append((
+        _name,
+        _desc,
+        ["I3"],
+        ([{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+          {"kind": "text", "text": f"I mean to={_rcpt}literal"}]
+         if _name.endswith("after_payload") else
+         [{"kind": "text", "text": f"I mean to={_rcpt}literal"},
+          {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]),
+        {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+        {"finish_reason": "tool_calls"},
+        OnlyFamilies({
+            "muse_glimmer": (
+                f"{GUIDED_ONE_CALL}I mean to={_rcpt}<|message|>literal"
+                if _name.endswith("after_payload")
+                else f"<|start|>assistant to=user<|message|>I mean to={_rcpt}"
+                f"<|message|>literal<|eom|>{GUIDED_ONE_CALL}",
+                GUIDED_UNSUPPORTED,
+                {"verdict": "match",
+                 "note": "a quoted bare header stays visible words; only the marker is stripped"},
+            ),
+        }),
+    ))
+
+EDGE.append((
+    _RECOVERY_INSIDE_THOUGHT[0],
+    _RECOVERY_INSIDE_THOUGHT[1],
+    ["P2"],
+    # `"thinking "` keeps the separator space, byte-for-byte what the native scan emits:
+    # it cuts the body at the `to=`, so that space is the thought's last byte. A bare
+    # header ABSORBS that space when it opens a channel, which is right there and wrong
+    # here, and the one-byte difference is still a parity failure.
+    [{"kind": "reasoning", "text": "thinking "},
+     {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+    {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+    {"finish_reason": "tool_calls"},
+    OnlyFamilies({
+        "muse_glimmer": (
+            f" to=self<|message|>thinking to=get_weather<|message|>{GUIDED_ONE_CALL}",
+            GUIDED_UNSUPPORTED,
+            {"verdict": "match",
+             "note": "a bare tool header inside an open thought is the recovery boundary, not a quote; the separator space stays in the thought as it does natively"},
+        ),
+    }),
+))
+
+
 # The corpus had no case where one control marker's terminator sits INSIDE a later
 # marker, so nothing exercised "which marker owns this `>`". That gap let a stray
 # prefix header borrow the `>` from a following thought opener and emit the model's
@@ -1320,7 +1418,21 @@ def build_cases(fam):
         if (init or {}).get("tool_output_mode", "Native") != "Native" and fam not in GUIDED_FAMILIES:
             continue
 
+        # A scenario may DECLARE a narrow scope when a family's grammar cannot express
+        # it (`OnlyFamilies`). Absence from a plain map is still a hard failure — an
+        # accidentally omitted family must break generation rather than quietly read as
+        # "not applicable", which would hide missing coverage behind the same cell the
+        # corpus uses for a real structural gap.
+        if isinstance(per_fam, OnlyFamilies) and fam not in per_fam:
+            continue
+
         cid = f"UNIFIED.{name}.{fam}"
+        if fam not in per_fam:
+            raise KeyError(
+                f"{name}: no input authored for family {fam!r}. Add one, or wrap the map "
+                f"in OnlyFamilies({{...}}) if this family's grammar cannot express the "
+                f"scenario (and say why at the authoring site and in UNIFIED_CASES.md)."
+            )
         inp, vllm, dynamo, *rest = per_fam[fam]
         g = json.loads(json.dumps(golden))  # deep copy
         if rest:
@@ -1396,7 +1508,15 @@ def emit_yaml(fam):
         lines.append(f"    policy: {json.dumps(c['policy'])}")
         lines.append(f"    init: {json.dumps(c['init'], ensure_ascii=False)}")
         lines.append(f"    finish_reason: {json.dumps(c['finish_reason'])}")
-        lines.append("    input: |-")
+        # EXPLICIT indentation indicator. A bare `|-` lets YAML infer the block's
+        # indentation from its first non-empty line, so an input that legitimately
+        # BEGINS with a space loses that byte on reload — the reader cannot tell
+        # content-space from indent-space. `31-28` is authored with a leading space
+        # (the bare-header form) and was emitted 110 bytes, reloaded 109: the corpus
+        # was measuring a different input than the one authored. `2` is the content
+        # indentation relative to this mapping node, and the trailing `-` keeps the
+        # existing strip-final-newline behaviour.
+        lines.append("    input: |2-")
         for ln in c["input"].split("\n"):
             lines.append(f"      {ln}")
         lines.append(f"    golden: {json.dumps(c['golden'], ensure_ascii=False)}")

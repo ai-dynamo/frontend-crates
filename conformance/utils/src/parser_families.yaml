@@ -211,8 +211,13 @@ unified:
     # `to=self<|message|>` header it shares with the content and tool channels. Having
     # no marker pair is not the same as having no reasoning channel: the guided reader
     # now asks the family where a thought begins rather than assuming a fixed opener
-    # string, and muse answers with the same header resolver its native scan uses. All
-    # 81 unified scenarios are emitted for this family.
+    # string, and muse answers with the same header resolver its native scan uses. Every
+    # shared unified scenario is emitted for this family, plus the muse-only ones the
+    # generator declares with `OnlyFamilies`. Deliberately no COUNT here: a number in
+    # this registry cannot be checked against anything and went stale the first time a
+    # scenario was added. `test_registry_prose_states_no_unified_case_count` keeps it
+    # out, and the live counts are asserted in
+    # `test_unified_case_counts_match_the_generator`.
     guided_tool_output: true
     reasoning_parser: muse_glimmer
     tool_parser: muse_glimmer

@@ -36,7 +36,7 @@
 use crate::tool_calling::muse_glimmer::{
     GUIDED_CLOSE_MARKERS, GUIDED_COMPETITORS, GUIDED_CONTROL_MARKERS, MuseChannelScanner,
     guided_content_header, guided_header_holdback, guided_reasoning_close, guided_reasoning_open,
-    guided_stray_header, guided_strip_text, muse_scanner,
+    guided_routing_header, guided_stray_header, guided_strip_text, guided_turn_end, muse_scanner,
 };
 use crate::tool_calling::traits::{Result, Tool};
 use crate::unified::{
@@ -62,7 +62,9 @@ impl NativeUnified for MuseChannelScanner {
         Some(GuidedReasoning::Channel(GuidedChannel {
             find_open: guided_reasoning_open,
             find_close: guided_reasoning_close,
+            find_turn_end: guided_turn_end,
             find_stray: guided_stray_header,
+            find_routing: guided_routing_header,
             find_transition: guided_content_header,
             holdback: guided_header_holdback,
             strip_text: guided_strip_text,
@@ -901,6 +903,414 @@ mod tests {
         // every `<` a model writes. Reaching this needs the model to emit a marker's
         // first half as ordinary text, then a real special token, then the second
         // half; a marker it merely quotes whole is stripped by the run it sits in.
+    }
+
+    /// A channel TRANSITION is not a channel CLOSER, and confusing them dispatched a
+    /// tool call the model never made.
+    ///
+    /// `to=user` routes the turn to visible content. Consuming it as if it were an
+    /// ordinary reasoning closer dropped the turn back into the guided JSON
+    /// accumulator, so a visible answer that happened to look like a call was parsed as
+    /// one. The model chose text and the client executed a tool — failing OPEN on a side
+    /// effect, which is the worst outcome this parser can produce.
+    ///
+    /// Routing to content is one-way until the MESSAGE ends, not for the whole turn:
+    /// the native scan opens a tool channel after a content message, so a closer puts
+    /// the turn back where a later payload can route it again. Both halves are asserted
+    /// here, because fixing only the first loses a legitimate call after `<|eom|>`.
+    ///
+    /// And `<|eom|>` is not `<|eot|>`. A message close leaves room for a later routed
+    /// message; a TURN END does not, so bytes behind it are trailing text however much
+    /// they look like a call. Treating the two as one closer re-opened the payload
+    /// accumulator after the turn was already over.
+    #[test]
+    fn a_content_transition_keeps_the_answer_visible() {
+        let call = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        let text = |t: &str| UnifiedEvent::Text { text: t.into() };
+        let reasoning = |t: &str| UnifiedEvent::Reasoning { text: t.into() };
+        let weather = || UnifiedEvent::ToolCall {
+            name: "get_weather".into(),
+            arguments: serde_json::json!({"city": "Paris"}),
+        };
+        for (label, start, input, want) in [
+            (
+                "JSON-shaped answer from outside reasoning",
+                UnifiedParserStartingState::None,
+                format!("<|start|>assistant to=user<|message|>{call}"),
+                vec![text(call)],
+            ),
+            (
+                "JSON-shaped answer after an open thought",
+                UnifiedParserStartingState::None,
+                format!(
+                    "<|start|>assistant to=self<|message|>t<|start|>assistant to=user<|message|>{call}"
+                ),
+                vec![reasoning("t"), text(call)],
+            ),
+            (
+                "JSON-shaped answer from a PREFILLED thought",
+                UnifiedParserStartingState::Reasoning,
+                format!("t<|start|>assistant to=user<|message|>{call}"),
+                vec![reasoning("t"), text(call)],
+            ),
+            (
+                "ordinary prose is unaffected",
+                UnifiedParserStartingState::None,
+                "<|start|>assistant to=user<|message|>just words".to_string(),
+                vec![text("just words")],
+            ),
+            (
+                "malformed JSON stays visible too",
+                UnifiedParserStartingState::None,
+                r#"<|start|>assistant to=user<|message|>[{"name": "#.to_string(),
+                vec![text(r#"[{"name": "#)],
+            ),
+            (
+                // The other direction: the message ENDS, so a payload may route again.
+                "a closed content message releases the turn",
+                UnifiedParserStartingState::None,
+                format!("<|start|>assistant to=user<|message|>ans<|eom|>{call}"),
+                vec![text("ans"), weather()],
+            ),
+            (
+                // ...but the TURN ending does not. Nothing routes after `<|eot|>`.
+                "a terminal closer does not release the turn",
+                UnifiedParserStartingState::None,
+                format!("<|start|>assistant to=user<|message|>ans<|eot|>{call}"),
+                vec![text(&format!("ans{call}"))],
+            ),
+        ] {
+            let drive = |chunks: Vec<&str>| {
+                let mut parser = muse_glimmer_unified(&tools());
+                parser
+                    .initialize_request(UnifiedParserInit {
+                        prompt_token_ids: Vec::new(),
+                        starting_state: start,
+                        tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                        invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                    })
+                    .expect("guided init must be accepted");
+                let mut deltas = Vec::new();
+                for c in chunks {
+                    deltas.extend(parser.push(c).expect("push"));
+                }
+                deltas.extend(parser.finish().expect("finish"));
+                assemble(&deltas)
+            };
+            assert_eq!(drive(vec![&input]), want, "{label}: whole input");
+            let per_char: Vec<String> = input.chars().map(|c| c.to_string()).collect();
+            assert_eq!(
+                drive(per_char.iter().map(String::as_str).collect()),
+                want,
+                "{label}: one character at a time"
+            );
+            for at in 1..input.len() {
+                if !input.is_char_boundary(at) {
+                    continue;
+                }
+                assert_eq!(
+                    drive(vec![&input[..at], &input[at..]]),
+                    want,
+                    "{label}: split at byte {at}"
+                );
+            }
+            // Conservation: a transition must never dispatch a call from the answer.
+            if !label.starts_with("a closed") {
+                assert!(
+                    !drive(vec![&input])
+                        .iter()
+                        .any(|e| matches!(e, UnifiedEvent::ToolCall { .. })),
+                    "{label}: a visible answer was dispatched as a tool call"
+                );
+            }
+        }
+    }
+
+    /// Stripping control markup is not a routing decision, and a routed turn must not
+    /// hold prose back.
+    ///
+    /// Two consequences of tracking turn scope, each measured before being fixed:
+    ///
+    /// - an ORPHAN recipient-less `<|message|>` is markup that gets stripped and routes
+    ///   nothing, but it was counted as a header and spent the turn's routing scope. The
+    ///   next REAL bare header was then demoted and its recipient came out as visible
+    ///   text — ` to=get_weather` in the user's answer.
+    /// - once a payload has routed the turn, a trailing `to=`-shaped fragment can no
+    ///   longer become a header, so holding it back delays bytes whose meaning is already
+    ///   settled. Asserted on what `push` RETURNS, before `finish`, because that is the
+    ///   only place the delay is observable.
+    #[test]
+    fn markup_does_not_route_and_a_routed_turn_makes_progress() {
+        let call = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        let weather = || UnifiedEvent::ToolCall {
+            name: "get_weather".into(),
+            arguments: serde_json::json!({"city": "Paris"}),
+        };
+        let guided = |start: UnifiedParserStartingState| {
+            let mut parser = muse_glimmer_unified(&tools());
+            parser
+                .initialize_request(UnifiedParserInit {
+                    prompt_token_ids: Vec::new(),
+                    starting_state: start,
+                    tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                    invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                })
+                .expect("guided init must be accepted");
+            parser
+        };
+
+        // An orphan marker leaves the scope alone, so the later bare header still routes.
+        let orphan = format!("thinking<|message|>still<|eom|> to=get_weather<|message|>{call}");
+        // A real stray header DOES spend it: the same trailing bare header is a quote
+        // once a tool-routed header has already run the turn.
+        // No payload on this one: prose ahead of the JSON means it is not a guided
+        // payload, which is existing behaviour and not what this sibling is about.
+        let real = " to=other<|message|>body<|eom|>I mean to=self<|message|>literal".to_string();
+        for (label, start, input, want) in [
+            (
+                "an orphan marker does not spend routing scope",
+                UnifiedParserStartingState::Reasoning,
+                orphan,
+                vec![
+                    UnifiedEvent::Reasoning {
+                        text: "thinkingstill".into(),
+                    },
+                    weather(),
+                ],
+            ),
+            (
+                "a real routed header does spend it",
+                UnifiedParserStartingState::None,
+                real,
+                vec![UnifiedEvent::Text {
+                    text: "bodyI mean to=selfliteral".into(),
+                }],
+            ),
+        ] {
+            let drive = |chunks: Vec<&str>| {
+                let mut parser = guided(start);
+                let mut deltas = Vec::new();
+                for c in chunks {
+                    deltas.extend(parser.push(c).expect("push"));
+                }
+                deltas.extend(parser.finish().expect("finish"));
+                assemble(&deltas)
+            };
+            assert_eq!(drive(vec![&input]), want, "{label}: whole input");
+            let per_char: Vec<String> = input.chars().map(|c| c.to_string()).collect();
+            assert_eq!(
+                drive(per_char.iter().map(String::as_str).collect()),
+                want,
+                "{label}: one character at a time"
+            );
+            for at in 1..input.len() {
+                if !input.is_char_boundary(at) {
+                    continue;
+                }
+                assert_eq!(
+                    drive(vec![&input[..at], &input[at..]]),
+                    want,
+                    "{label}: split at byte {at}"
+                );
+            }
+        }
+
+        // INTERMEDIATE PROGRESS: what `push` returns, with no `finish` behind it.
+        let mut routed = guided(UnifiedParserStartingState::None);
+        let pushed = routed.push(&format!("{call}I mean to=self")).expect("push");
+        assert_eq!(
+            assemble(&pushed),
+            vec![
+                weather(),
+                UnifiedEvent::Text {
+                    text: "I mean to=self".into(),
+                },
+            ],
+            "a routed turn held prose back until finish"
+        );
+
+        // ...and the contrast: before anything routes the turn, and inside an open
+        // thought, a bare-header prefix really can still complete, so it stays held.
+        for (label, start, head) in [
+            (
+                "unrouted",
+                UnifiedParserStartingState::None,
+                "I mean to=self",
+            ),
+            (
+                "in reasoning",
+                UnifiedParserStartingState::Reasoning,
+                "thinking to=self",
+            ),
+        ] {
+            let mut parser = guided(start);
+            let pushed = parser.push(head).expect("push");
+            let held = assemble(&pushed);
+            assert!(
+                held.iter().all(|e| match e {
+                    UnifiedEvent::Text { text } | UnifiedEvent::Reasoning { text } =>
+                        !text.contains("to=self"),
+                    _ => true,
+                }),
+                "{label}: a still-completable bare header was released early: {held:?}"
+            );
+        }
+    }
+
+    /// Turn position and open channel are INDEPENDENT, and header resolution needs
+    /// both.
+    ///
+    /// A single "bare headers still allowed" flag cannot carry them, and collapsing
+    /// them broke this in both directions at once:
+    ///
+    /// - a guided payload routes the turn without any header doing it, so the flag
+    ///   stayed permissive and a bare header the model QUOTED after the call was
+    ///   promoted into a real thought;
+    /// - consuming the turn's opening reasoning header closed the flag, so a real bare
+    ///   tool header INSIDE the thought — the missing-terminator recovery boundary —
+    ///   was demoted and its recipient words leaked into the reasoning.
+    ///
+    /// Both expectations are taken from the NATIVE parser on the same shapes, not
+    /// authored by hand — including the separator space in `"thinking "`, which the
+    /// native scan keeps because it cuts the body at the `to=`. Guided absorbed that
+    /// byte, and a one-byte disagreement on identical input is still a parity failure.
+    #[test]
+    fn header_resolution_tracks_turn_scope_not_a_single_flag() {
+        let call = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        let weather = || UnifiedEvent::ToolCall {
+            name: "get_weather".into(),
+            arguments: serde_json::json!({"city": "Paris"}),
+        };
+        for (label, input, want) in [
+            (
+                "a payload routes the turn, so a later bare header is a quote",
+                format!("{call}I mean to=self<|message|>literal"),
+                vec![
+                    weather(),
+                    UnifiedEvent::Text {
+                        text: "I mean to=selfliteral".into(),
+                    },
+                ],
+            ),
+            (
+                "a bare tool header inside an open thought still recovers",
+                format!(" to=self<|message|>thinking to=get_weather<|message|>{call}"),
+                // `"thinking "` WITH the separator space, byte-for-byte what the native
+                // scan emits: it cuts the body at the `to=`, so that space is the last
+                // byte of the thought. Guided absorbed it and the two paths disagreed
+                // by one byte, which is a parity failure however small it looks.
+                vec![
+                    UnifiedEvent::Reasoning {
+                        text: "thinking ".into(),
+                    },
+                    weather(),
+                ],
+            ),
+        ] {
+            let drive = |chunks: Vec<&str>| {
+                let mut parser = muse_glimmer_unified(&tools());
+                parser
+                    .initialize_request(UnifiedParserInit {
+                        prompt_token_ids: Vec::new(),
+                        starting_state: UnifiedParserStartingState::None,
+                        tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                        invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                    })
+                    .expect("guided init must be accepted");
+                let mut deltas = Vec::new();
+                for c in chunks {
+                    deltas.extend(parser.push(c).expect("push"));
+                }
+                deltas.extend(parser.finish().expect("finish"));
+                assemble(&deltas)
+            };
+            assert_eq!(drive(vec![&input]), want, "{label}: whole input");
+            let per_char: Vec<String> = input.chars().map(|c| c.to_string()).collect();
+            assert_eq!(
+                drive(per_char.iter().map(String::as_str).collect()),
+                want,
+                "{label}: one character at a time"
+            );
+            for at in 1..input.len() {
+                if !input.is_char_boundary(at) {
+                    continue;
+                }
+                assert_eq!(
+                    drive(vec![&input[..at], &input[at..]]),
+                    want,
+                    "{label}: split at byte {at}"
+                );
+            }
+        }
+    }
+
+    /// A bare header the model QUOTED inside its visible answer is words, not a
+    /// channel switch.
+    ///
+    /// This family resolves an unframed `to=…<|message|>` header at turn start, when
+    /// the prompt has consumed `<|start|>assistant`. Once the turn has been routed,
+    /// the identical bytes are something the model wrote — and the native scan demotes
+    /// them, keeping the `to=…` words visible and stripping only the marker. The
+    /// guided hooks were stateless, so they promoted the quote: a `to=self` quote
+    /// split one answer into an answer plus a THOUGHT, and a quoted tool recipient
+    /// silently deleted the words from the answer.
+    ///
+    /// Both paths now consult one `resolve_header_latched`, so the two request modes
+    /// cannot disagree about which bytes are structural.
+    #[test]
+    fn a_quoted_bare_header_inside_the_answer_stays_visible() {
+        let call = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        for (label, quoted) in [
+            ("a quoted reasoning recipient", "to=self"),
+            ("a quoted tool recipient", "to=get_weather"),
+        ] {
+            let input = format!(
+                "<|start|>assistant to=user<|message|>I mean {quoted}<|message|>literal<|eom|>{call}"
+            );
+            let want = vec![
+                UnifiedEvent::Text {
+                    text: format!("I mean {quoted}literal"),
+                },
+                UnifiedEvent::ToolCall {
+                    name: "get_weather".into(),
+                    arguments: serde_json::json!({"city": "Paris"}),
+                },
+            ];
+            let drive = |chunks: Vec<&str>| {
+                let mut parser = muse_glimmer_unified(&tools());
+                parser
+                    .initialize_request(UnifiedParserInit {
+                        prompt_token_ids: Vec::new(),
+                        starting_state: UnifiedParserStartingState::None,
+                        tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                        invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                    })
+                    .expect("guided init must be accepted");
+                let mut deltas = Vec::new();
+                for c in chunks {
+                    deltas.extend(parser.push(c).expect("push"));
+                }
+                deltas.extend(parser.finish().expect("finish"));
+                assemble(&deltas)
+            };
+            assert_eq!(drive(vec![&input]), want, "{label}: whole input");
+            let per_char: Vec<String> = input.chars().map(|c| c.to_string()).collect();
+            assert_eq!(
+                drive(per_char.iter().map(String::as_str).collect()),
+                want,
+                "{label}: one character at a time"
+            );
+            for at in 1..input.len() {
+                if !input.is_char_boundary(at) {
+                    continue;
+                }
+                assert_eq!(
+                    drive(vec![&input[..at], &input[at..]]),
+                    want,
+                    "{label}: split at byte {at}"
+                );
+            }
+        }
     }
 
     /// A thought whose terminator never arrived, running into the guided payload

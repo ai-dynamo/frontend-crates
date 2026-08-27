@@ -2272,6 +2272,16 @@ def _load_unified_fixtures(base: Path):
                 for ver, vcases in dynamo_by_ver.items()
                 if (vdoc := vcases.get((fam, key))) is not None
             },
+            # Versions whose capture contains this FAMILY at all. A version missing from
+            # here never had a parser for the family, which is a different fact from a
+            # case it simply predates — the capture harness refuses to write an empty
+            # dir for exactly that reason ("no parser here" and "parser emitted nothing"
+            # must not look alike), so the distinction has to be carried to the cell.
+            "dynamo_family_vers": sorted(
+                ver
+                for ver, vcases in dynamo_by_ver.items()
+                if any(f == fam for (f, _k) in vcases)
+            ),
             "dynamo_verdict": None, "vllm_verdict": None, "vllm_note": None,
             "chunks": [
                 {"delta_text": ic.get("delta_text", ""),
@@ -2352,12 +2362,12 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     def _band(group_num):
         return "case-band-0" if group_num % 2 == 1 else "case-band-1"
 
-    ordered = sorted(scenarios, key=_tax)
+    ordered = sorted(scenarios, key=unified_taxonomy.taxonomy_sort_key)
     columns = []
     for s in ordered:
         g, sub = _tax(s)
         columns.append({"sub": s, "group_key": f"unified_g{g}", "band": _band(g),
-                        "label": f"{g}.{sub}", "desc": scn_desc.get(s, ""),
+                        "label": unified_taxonomy.case_label(s), "desc": scn_desc.get(s, ""),
                         # The parser knobs are declared per SCENARIO, so a column
                         # header can show exactly what its cells ran under.
                         "init": scn_init.get(s)})
@@ -2501,6 +2511,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             # Older Dynamo builds, scored against GOLDEN exactly like the latest one, so a
             # cell that changed between builds shows a real NΔ instead of a styling hint.
             prev_by_ver = c.get("dynamo_by_ver") or {}
+            prev_family_vers = set(c.get("dynamo_family_vers") or [])
             prev_chunks_by_ver = {}
             for pv in dynamo_all_vers[:-1]:
                 pdoc = prev_by_ver.get(pv)
@@ -2547,9 +2558,9 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                                "after a tool call (LOSS), merges/leaks reasoning channel markers (MERGE/LEAK), "
                                "or truncates a string arg at a marker-looking substring (ARG_MISMATCH)."),
                 })
-            g_num, g_sub = _tax(s)
+            g_num, _g_sub = _tax(s)
             tooltip = {
-                "head": f'UNIFIED.{g_num}.{g_sub} ({s}) — {f}',
+                "head": f'{unified_taxonomy.numbered_id(s)} ({s}) — {f}',
                 "description": desc,
                 "init": c.get("init"),
                 "finish_reason": c.get("finish_reason"),
@@ -2593,7 +2604,10 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                      "label": f"Dynamo v2 Rust {pv} (stream, Combined & Unified)",
                      "impl": "dynamo", "version": pv, "parse_mode": "unified",
                      "leak": bool(cmp.get(f"dynamo@{pv}", {}).get("leak")),
-                     "block": ({"unavailable": f"not captured at {pv} — this case postdates that build"}
+                     "block": ({"unavailable": (
+                                    f"no {f} parser in Dynamo v2 {pv} — this build could not run the case"
+                                    if pv not in prev_family_vers
+                                    else f"not captured at {pv} — this case postdates that build")}
                                if (prev_by_ver.get(pv) is None)
                                else {"events": _assemble_stream(prev_chunks_by_ver.get(pv) or []),
                                      "verdict": _unified_classify(
@@ -2605,7 +2619,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                 "leak_note": None, "na_note": None,
             }
             cells[s] = {
-                "kind": "cell", "case_id": f"UNIFIED.{g_num}.{g_sub}", "family": f, "sub": s,
+                "kind": "cell", "case_id": unified_taxonomy.numbered_id(s), "family": f, "sub": s,
                 "col_group": f"unified_g{g_num}", "band": _band(g_num),
                 "status": "ok", "red_on_diff": True,
                 "cmp": cmp, "facts": [], "tooltip": tooltip,
@@ -2625,7 +2639,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     unified_glossary = []
     for grp in column_groups:
         gnum = int(grp["key"].removeprefix("unified_g"))
-        grp_rows = [(f"{_tax(s)[0]}.{_tax(s)[1]}", scn_desc.get(s, ""))
+        grp_rows = [(unified_taxonomy.case_label(s), scn_desc.get(s, ""))
                     for s in ordered if _tax(s)[0] == gnum]
         unified_glossary.append({"label": grp["label"], "rows": grp_rows})
 

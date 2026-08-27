@@ -13,15 +13,15 @@
 use crate::tool_calling::kimi_k2::kimi_k2_scanner;
 use crate::tool_calling::scan::ReasoningSpec;
 use crate::tool_calling::traits::Tool;
-use crate::unified::{ScannerUnified, UnifiedParser};
+use crate::unified::{GuidedRouted, ScannerUnified, UnifiedParser};
 
 const REASONING_START: &str = "<think>";
 const REASONING_END: &str = "</think>";
 
 /// Build the Kimi K2 unified parser for one stream.
 pub(crate) fn kimi_k2_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
-    Box::new(ScannerUnified::new(kimi_k2_scanner(tools).with_reasoning(
-        ReasoningSpec {
+    Box::new(GuidedRouted::new(ScannerUnified::new(
+        kimi_k2_scanner(tools).with_reasoning(ReasoningSpec {
             start: REASONING_START,
             end: REASONING_END,
             // Kimi emits its own `<think>`; the template does not pre-fill one,
@@ -31,7 +31,7 @@ pub(crate) fn kimi_k2_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
             // grammar's own markers carry that requirement via the block spec.
             preserve_special_tokens: false,
             ..Default::default()
-        },
+        }),
     )))
 }
 
@@ -553,6 +553,16 @@ mod tests {
         {
             assert_eq!(got, want, "split at byte {i}, got {got:?}");
         }
+    }
+
+    #[test]
+    fn native_tool_call_id_survives_the_guided_router() {
+        let input = "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>";
+        let mut parser = kimi_k2_unified(&tools());
+        parser.push(input).expect("push");
+
+        assert_eq!(parser.tool_call_id(0), Some("functions.get_weather:0"));
+        assert_eq!(parser.tool_call_id(1), None);
     }
 
     /// Reviewer-caught regression: the Kimi batch grammar permits `\s*`

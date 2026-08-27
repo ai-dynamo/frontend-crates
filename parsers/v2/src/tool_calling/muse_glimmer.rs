@@ -33,7 +33,7 @@ use crate::tool_calling::scan::{
 };
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
 use crate::tool_calling::v1core::ToolDefinition;
-use crate::unified::{Kind, UnifiedParserEvent, UnifiedParserStartingState};
+use crate::unified::{GuidedChannelState, Kind, UnifiedParserEvent, UnifiedParserStartingState};
 
 const START: &str = "<|start|>";
 const MESSAGE: &str = "<|message|>";
@@ -302,17 +302,42 @@ pub(crate) const GUIDED_CLOSE_MARKERS: [&str; 2] = [EOM, EOT];
 /// Returns `(header_start, bytes through `<|message|>`)`. Whole headers only — an
 /// incomplete one is retained by [`guided_header_holdback`] instead, so a header is
 /// never half-consumed and never released as text.
+/// Resolve the header ending at `msg_pos`, applying the QUOTED-BARE-HEADER demotion.
+///
+/// The one place that rule lives, consulted by the native scan and the guided reader
+/// alike. An unframed header carrying a recipient, seen after the turn has already
+/// been routed, is text the model QUOTED: the `to=…` words are prose and only
+/// `<|message|>` is structural, so it demotes to a recipient-less content header
+/// starting at the marker. The native scan applied this inline while the guided hooks
+/// did not, so `I mean to=self<|message|>literal` inside a `to=user` answer opened a
+/// real thought under guided decoding and stayed visible text natively — the same
+/// bytes read two ways by request mode (`I3`).
+pub(crate) fn resolve_header_latched(
+    text: &str,
+    msg_pos: usize,
+    allow_bare_header: bool,
+) -> (usize, Option<&str>) {
+    let (header_start, recipient) = resolve_header(text, msg_pos);
+    // Whether `<|start|>` really opens this header. It is also what separates a
+    // recipient-less HEADER from a bare `<|message|>` written mid-body.
+    let framed = text[header_start..].starts_with(START);
+    if !framed && !allow_bare_header && recipient.is_some() {
+        (msg_pos, None)
+    } else {
+        (header_start, recipient)
+    }
+}
+
 fn guided_header(
     haystack: &str,
+    state: GuidedChannelState,
     want: fn(recipient: Option<&str>, framed: bool) -> bool,
 ) -> Option<(usize, usize)> {
     let mut search = 0;
     while let Some(relative) = haystack[search..].find(MESSAGE) {
         let msg_pos = search + relative;
-        let (header_start, recipient) = resolve_header(haystack, msg_pos);
-        // Whether `<|start|>` really opens this header, the same test the native scan
-        // makes. It is what separates a recipient-less HEADER from a bare `<|message|>`
-        // the model wrote mid-thought.
+        let (header_start, recipient) =
+            resolve_header_latched(haystack, msg_pos, state.scope.allows_bare_header());
         let framed = haystack[header_start..].starts_with(START);
         if want(recipient, framed) {
             return Some((header_start, msg_pos + MESSAGE.len() - header_start));
@@ -326,8 +351,12 @@ fn guided_header(
 ///
 /// `flush` is unused because a header is recognised only once its `<|message|>` has
 /// arrived; at end of stream a header that never completed is not a header.
-pub(crate) fn guided_reasoning_open(haystack: &str, _flush: bool) -> Option<(usize, usize)> {
-    guided_header(haystack, |recipient, _framed| {
+pub(crate) fn guided_reasoning_open(
+    haystack: &str,
+    _flush: bool,
+    state: GuidedChannelState,
+) -> Option<(usize, usize)> {
+    guided_header(haystack, state, |recipient, _framed| {
         recipient == Some(REASONING_RECIPIENT)
     })
 }
@@ -355,8 +384,31 @@ fn is_content_header(recipient: Option<&str>, framed: bool) -> bool {
 /// mode, and folding it into strippable markup made the model's visible answer come
 /// out as its private thinking. A `to=<tool>` header under guided decoding cannot be
 /// a real tool channel — the call arrives as JSON — so that one really is narration.
-pub(crate) fn guided_content_header(haystack: &str, _flush: bool) -> Option<(usize, usize)> {
-    guided_header(haystack, is_content_header)
+pub(crate) fn guided_content_header(
+    haystack: &str,
+    _flush: bool,
+    state: GuidedChannelState,
+) -> Option<(usize, usize)> {
+    guided_header(haystack, state, is_content_header)
+}
+
+/// Earliest header that actually ROUTES the turn — one that names a channel.
+///
+/// An orphan recipient-less `<|message|>` is control markup, not a routing decision:
+/// stripping it says nothing about where the turn is going. Counting it as a header
+/// spent the turn's routing scope, and the next REAL bare header was then demoted and
+/// its recipient words leaked into the visible answer.
+///
+/// "Names a channel" is `to=<recipient>`, or framing that stands in for one — the same
+/// two things `resolve_header` treats as structural.
+pub(crate) fn guided_routing_header(
+    haystack: &str,
+    _flush: bool,
+    state: GuidedChannelState,
+) -> Option<(usize, usize)> {
+    guided_header(haystack, state, |recipient, framed| {
+        recipient.is_some() || framed
+    })
 }
 
 /// Earliest header that is neither a thought nor a channel switch: markup to strip.
@@ -366,8 +418,12 @@ pub(crate) fn guided_content_header(haystack: &str, _flush: bool) -> Option<(usi
 /// control markers is not enough — that strips the two markers and releases the role
 /// word and the recipient between them as visible text, so the user reads
 /// `assistant to=weather` as the model's answer.
-pub(crate) fn guided_stray_header(haystack: &str, flush: bool) -> Option<(usize, usize)> {
-    if let Some(found) = guided_header(haystack, |recipient, framed| {
+pub(crate) fn guided_stray_header(
+    haystack: &str,
+    flush: bool,
+    state: GuidedChannelState,
+) -> Option<(usize, usize)> {
+    if let Some(found) = guided_header(haystack, state, |recipient, framed| {
         recipient != Some(REASONING_RECIPIENT) && !is_content_header(recipient, framed)
     }) {
         return Some(found);
@@ -393,6 +449,15 @@ pub(crate) fn guided_reasoning_close(haystack: &str) -> Option<(usize, usize)> {
         .iter()
         .filter_map(|marker| haystack.find(marker).map(|at| (at, marker.len())))
         .min_by_key(|(at, _)| *at)
+}
+
+/// The TERMINAL closer: `<|eot|>` ends the turn, where `<|eom|>` only ends a message.
+///
+/// The two are not interchangeable. After `<|eom|>` a later message may route the turn
+/// again, so a guided payload behind it is still a payload. After `<|eot|>` there is no
+/// later message, so those same bytes are trailing text and must never dispatch a call.
+pub(crate) fn guided_turn_end(haystack: &str) -> Option<(usize, usize)> {
+    haystack.find(EOT).map(|at| (at, EOT.len()))
 }
 
 /// Trailing bytes the guided reader must retain so a header split across a chunk
@@ -423,7 +488,7 @@ pub(crate) fn guided_strip_text(text: &str) -> String {
     stripped(text)
 }
 
-pub(crate) fn guided_header_holdback(haystack: &str) -> usize {
+pub(crate) fn guided_header_holdback(haystack: &str, state: GuidedChannelState) -> usize {
     if let Some(at) = haystack.rfind(START)
         && !haystack[at..].contains(MESSAGE)
     {
@@ -433,10 +498,17 @@ pub(crate) fn guided_header_holdback(haystack: &str) -> usize {
     // follows decides whether a tool-routed header is narration or the recovery point
     // for a thought whose terminator never arrived. Releasing it before that byte
     // arrives made a per-character stream answer differently from a whole-input push.
-    if let Some((at, len)) = guided_stray_header(haystack, true)
+    if let Some((at, len)) = guided_stray_header(haystack, true, state)
         && haystack[at + len..].trim().is_empty()
     {
         return haystack.len() - at;
+    }
+    // Once the turn is ROUTED, a trailing bare-looking `to=` fragment can no longer
+    // become a header — it is prose, and holding it back delays bytes whose meaning is
+    // already unambiguous. Framed and partial-marker holdback above still applies,
+    // because those really can still complete.
+    if !state.scope.allows_bare_header() {
+        return 0;
     }
     open_header_tail(haystack)
 }
@@ -862,17 +934,9 @@ impl MuseChannelScanner {
         let Some(msg_pos) = self.buffer.find(MESSAGE) else {
             return false;
         };
-        let (header_start, recipient) = resolve_header(&self.buffer, msg_pos);
-        let framed = self.buffer[header_start..].starts_with(START);
-        let mut recipient = recipient.map(str::to_string);
-        // Quoted bare header: keep the `to=...` text as prose and treat the marker
-        // as a recipient-less content header.
-        let header_start = if !framed && !self.allow_bare_header && recipient.is_some() {
-            recipient = None;
-            msg_pos
-        } else {
-            header_start
-        };
+        let (header_start, recipient) =
+            resolve_header_latched(&self.buffer, msg_pos, self.allow_bare_header);
+        let recipient = recipient.map(str::to_string);
 
         let prefix = self.buffer[..header_start].to_string();
         self.buffer.drain(..msg_pos + MESSAGE.len());

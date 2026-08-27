@@ -200,6 +200,32 @@ def test_v2_all_tabs_present(model_v2):
     ], ids
 
 
+def test_unified_numeric_case_ids_use_dash_everywhere(model_v2):
+    """Fixture IDs, headers, columns, and glossary rows share one numeric format."""
+    tab = _tab(model_v2, "tab-unified")
+    numeric = {
+        "guided_json_quoted_bare_header_in_answer": "31-25",
+        "guided_json_quoted_bare_tool_header_in_answer": "31-26",
+        "guided_json_quoted_bare_header_after_payload": "31-27",
+        "guided_json_bare_tool_header_recovers_inside_a_thought": "31-28",
+    }
+    columns = {column["sub"]: column["label"] for column in tab["columns"]}
+    glossary_ids = {
+        short_id
+        for group in tab["glossary"]
+        for short_id, _description in group["rows"]
+    }
+    cells = {cell["sub"]: cell for cell in _iter_cells(tab) if cell["sub"] in numeric}
+
+    assert set(cells) == set(numeric)
+    for scenario, short_id in numeric.items():
+        full_id = f"UNIFIED.{short_id}"
+        assert columns[scenario] == short_id
+        assert short_id in glossary_ids
+        assert cells[scenario]["case_id"] == full_id
+        assert cells[scenario]["tooltip"]["head"].startswith(f"{full_id} (")
+
+
 def test_v2_exactly_one_active_tab(model_v2):
     assert sum(1 for t in model_v2["tabs"] if t.get("active")) == 1
     assert model_v2["tabs"][0]["active"] is True
