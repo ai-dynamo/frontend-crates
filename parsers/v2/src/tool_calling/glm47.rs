@@ -429,6 +429,24 @@ mod tests {
     }
 
     #[test]
+    fn accepts_whitespace_between_glm_xml_elements() {
+        let out = parse_chunks(
+            &weather_tools(),
+            &[
+                "<tool_call>get_weather\n",
+                "<arg_key>location</arg_key> \n\t<arg_value>Tokyo</arg_value>\n",
+                "</tool_call>",
+            ],
+        );
+
+        assert_eq!(out.normal_text, "");
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 1);
+        assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
+        assert_eq!(merged.calls[0].arguments, r#"{"location":"Tokyo"}"#);
+    }
+
+    #[test]
     fn emits_two_parallel_calls() {
         let tools = vec![
             Tool {
