@@ -261,6 +261,7 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
     assert "vLLM Rust 0.26.0 (stream, Combined & Unified)" in labels
     assert "vLLM Rust 0.25.1 (stream, Combined & Unified)" in labels
     assert "vLLM Python 0.25.1 (batch, Combined)" in labels
+    assert "vLLM Python 0.26.0 (batch, Combined)" in labels
 
     muse = next(row for row in tab["rows"] if row["family"] == "muse_glimmer")
     peer_keys = {candidate["key"] for candidate in tab["candidates"] if candidate["impl"] == "vllm"}
@@ -277,7 +278,7 @@ def test_unified_tab_marks_only_unsupported_vllm_families_na(model_v2):
     """Every captured vLLM parser family has data for every Unified case."""
     tab = _tab(model_v2, "tab-unified")
     peer_keys = {candidate["key"] for candidate in tab["candidates"] if candidate["impl"] == "vllm"}
-    assert peer_keys == {"vllm", "vllm_rust", "vllm_rust@0.26.0"}
+    assert peer_keys == {"vllm", "vllm_python@0.26.0", "vllm_rust", "vllm_rust@0.26.0"}
     for row in tab["rows"]:
         for key in peer_keys:
             unavailable = [cell["cmp"][key].get("na") == 1 for cell in row["cells"].values()]
