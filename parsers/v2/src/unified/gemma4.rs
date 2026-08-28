@@ -23,9 +23,9 @@
 //! Gemma 4 was the hardest family to move because its END MARKER IS DATA: a
 //! literal `<tool_call|>` inside a `<|"|>`-delimited string value is an argument
 //! value, so the plain `find` every other wrapped family uses would cut the value
-//! there (`I7`, case `7.b`). The scanner takes a grammar-aware
-//! [`crate::tool_calling::scan::InvokeScan`] for exactly that; see
-//! `tool_calling/gemma4.rs`.
+//! there (`I7`, case `7.b`). A model-owned incremental invoke driver resolves
+//! that lexical ambiguity without putting Gemma state in the shared scanner;
+//! see `tool_calling/gemma4.rs`.
 //!
 //! The reasoning side needed the other extension. Gemma 4's opener is a marker
 //! PLUS a `thought\n` role label, and the label is OPTIONAL — folding it into
@@ -40,16 +40,12 @@
 //! inside a quoted argument value is data and survives byte-exact (`I7`, case
 //! `12.a`).
 
-use crate::tool_calling::gemma4::gemma4_scanner;
+use crate::tool_calling::gemma4::{
+    REASONING_END, REASONING_START, REASONING_START_LABEL, gemma4_scanner,
+};
 use crate::tool_calling::scan::ReasoningSpec;
 use crate::tool_calling::traits::Tool;
 use crate::unified::{GuidedRouted, ScannerUnified, UnifiedParser};
-
-const REASONING_START: &str = "<|channel>";
-const REASONING_END: &str = "<channel|>";
-/// The role label the tokenizer writes inside the channel, analogous to the
-/// `user\n` in `<|turn>user\n`. Structural, and stripped from the thought.
-const REASONING_START_LABEL: &str = "thought\n";
 
 /// Build the Gemma 4 unified parser for one stream.
 pub(crate) fn gemma4_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
@@ -663,6 +659,33 @@ mod tests {
             &["{\"unexpected\": \"shape\"}"],
         );
         assert_eq!(out, vec![text("{\"unexpected\": \"shape\"}")]);
+    }
+
+    #[test]
+    fn guided_native_recovery_cannot_cross_a_reasoning_closer() {
+        let input = concat!(
+            "<|channel>thought\ncall:broken{",
+            "<channel|>",
+            "<|tool_call>call:get_weather{city:<|\"|>trap<|\"|>}<tool_call|>",
+            "[{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Paris\"}}]",
+        );
+        let expected = vec![call("get_weather", serde_json::json!({"city": "Paris"}))];
+        for split in input
+            .char_indices()
+            .map(|(index, _)| index)
+            .chain(std::iter::once(input.len()))
+        {
+            assert_eq!(
+                configured_events(
+                    &weather_tools(),
+                    UnifiedParserStartingState::None,
+                    UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                    &[&input[..split], &input[split..]],
+                ),
+                expected,
+                "split={split}"
+            );
+        }
     }
 
     /// gemma4's opener carries a `thought\n` ROLE LABEL. It is grammar, not

@@ -13,11 +13,11 @@
 //! The streaming concerns (buffering, chunk-split marker safety, normal_text
 //! suppression, orphan-close stripping, EOF-truncation drop) live in the shared
 //! [`WrappedBlockScanner`], not here. Gemma 4 supplies only what its markers
-//! cannot express, through [`InvokeScan`]: `<tool_call|>` and `call:` both occur
-//! legitimately INSIDE a `<|"|>`-delimited string value, so where an invoke ends
-//! and whether a `call:` opens one are answered by the v1 balanced,
-//! string-aware scan rather than by `find`. One scanner, one boundary
-//! definition, shared with the batch parser and with the unified parser
+//! cannot express, through [`GemmaInvokeDriver`]: `<tool_call|>` and `call:` both
+//! occur legitimately INSIDE a `<|"|>`-delimited string value. The model-owned
+//! driver advances one cursor across chunks; the shared coordinator owns no
+//! Gemma markers or states. One scanner, one boundary definition, shared with
+//! the batch parser and with the unified parser
 //! ([`crate::unified::gemma4`]).
 //!
 //! Per-invoke name + value typing is delegated to the v1 batch parser
@@ -34,38 +34,30 @@
 //! preserves), so order has to be pinned to source order.
 
 use crate::tool_calling::scan::{
-    BareRecoveryLatch, GuidedPrefix, InvokeEmitter, InvokeLatch, InvokeScan, WrappedBlockScanner,
+    BareRecoveryLatch, GuidedInvokeContext, GuidedPrefix, GuidedPrefixScan, InvokeBoundary,
+    InvokeDriver, InvokeEmitter, InvokeLatch, InvokeScan, InvokeStart, WrappedBlockScanner,
     WrappedBlockSpec, reorder_arguments,
 };
 use crate::tool_calling::v1core::ToolDefinition;
-use crate::tool_calling::v1core::gemma4::{
-    find_complete_wrapped_call_after_gemma4, find_leading_tool_call_end_gemma4,
-    has_bare_call_body_start_gemma4, is_call_prefix_boundary, parse_one_tool_call_gemma4,
-};
+use crate::tool_calling::v1core::gemma4::{is_call_prefix_boundary, parse_one_tool_call_gemma4};
 
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
 
 pub(crate) const TOOL_CALL_START: &str = "<|tool_call>";
 pub(crate) const TOOL_CALL_END: &str = "<tool_call|>";
+pub(crate) const REASONING_START: &str = "<|channel>";
+pub(crate) const REASONING_END: &str = "<channel|>";
+pub(crate) const REASONING_START_LABEL: &str = "thought\n";
 const CALL_PREFIX: &str = "call:";
 const STRING_DELIM: &str = "<|\"|>";
-
-/// The Gemma 4 grammar hooks: end, opener test, and holdback, all answered by the
-/// v1 string-aware scan so the streaming, batch and unified paths agree on where
-/// a call begins and ends.
-const GEMMA4_INVOKE_SCAN: InvokeScan = InvokeScan {
-    end: find_leading_tool_call_end_gemma4,
-    opens: opens_bare_call,
-    holdback: partial_bare_opener_suffix_len,
-    guided_prefix: guided_call_prefix,
-    resync: Some(find_complete_wrapped_call_after_gemma4),
-};
 
 /// Build the Gemma 4 scanner. ONE construction site, shared by the tool-only
 /// parser below and by the unified parser, so the grammar cannot drift between
 /// the two surfaces.
-pub(crate) fn gemma4_scanner(tools: &[Tool]) -> WrappedBlockScanner<Gemma4InvokeEmitter> {
-    WrappedBlockScanner::new(
+pub(crate) fn gemma4_scanner(
+    tools: &[Tool],
+) -> WrappedBlockScanner<Gemma4InvokeEmitter, GemmaInvokeDriver> {
+    WrappedBlockScanner::with_driver(
         WrappedBlockSpec {
             family: "gemma4",
             block_starts: vec![TOOL_CALL_START.to_string()],
@@ -76,7 +68,7 @@ pub(crate) fn gemma4_scanner(tools: &[Tool]) -> WrappedBlockScanner<Gemma4Invoke
             orphan_markers: vec![TOOL_CALL_END.to_string()],
             // Only unconditional structural markers belong here because the
             // guided path strips this set as markup. The ambiguous `call:`
-            // prefix has grammar-aware holdback through `GEMMA4_INVOKE_SCAN`.
+            // prefix is owned entirely by `GemmaInvokeDriver`.
             // The string delimiter is unconditionally structural and must not
             // be released when split across a chunk boundary.
             holdback_markers: vec![
@@ -89,30 +81,386 @@ pub(crate) fn gemma4_scanner(tools: &[Tool]) -> WrappedBlockScanner<Gemma4Invoke
             bare_recovery_latch: BareRecoveryLatch::Clear,
             invoke_latch: InvokeLatch::IfEmitted,
             drop_invoke_crossing_block_end: false,
-            invoke_scan: Some(GEMMA4_INVOKE_SCAN),
+            invoke_scan: None,
             preserve_special_tokens: true,
         },
         Gemma4InvokeEmitter {
             tools: tools.iter().map(ToolDefinition::from).collect(),
         },
+        GemmaInvokeDriver::default(),
     )
 }
 
-/// Whether the `call:` at `at` opens a real call rather than being the English
-/// word: it must sit on an identifier boundary AND look like a call start to the
-/// candidate-local grammar probe (`call:NAME{`).
-///
-/// Without the second test, "I will call: you tomorrow" would be buffered as an
-/// invoke that never closes and then dropped at EOF — losing ordinary prose.
-fn opens_bare_call(text: &str, at: usize) -> bool {
-    is_call_prefix_boundary(text, at) && has_bare_call_body_start_gemma4(&text[at..])
+/// Incremental ownership of Gemma's ambiguous `call:NAME{...}` envelope.
+/// The shared coordinator sees only [`InvokeDriver`]; all marker, string, and
+/// recovery policy remains beside the grammar that defines it.
+#[derive(Default)]
+pub(crate) struct GemmaInvokeDriver {
+    base: Option<usize>,
+    cursor: usize,
+    name_started: bool,
+    depth: usize,
+    in_string: bool,
+    body_end: Option<usize>,
+    invalid: bool,
+    saw_recovery_candidate: bool,
+    recovery: GemmaRecovery,
+    resync_target: Option<usize>,
+    #[cfg(test)]
+    visited_bytes: usize,
 }
 
-/// Guided decoding may retain Gemma's lexical `call:` prefix, but only when the
-/// next byte opens the constrained JSON payload. A split prefix stays pending;
-/// ordinary prose such as `call: you` is never reclassified as control markup.
-fn guided_call_prefix(text: &str, at: usize) -> GuidedPrefix {
-    if !text[..at].trim().is_empty() || !is_call_prefix_boundary(text, at) {
+#[derive(Default)]
+struct GemmaRecovery {
+    cursor: usize,
+    in_string: bool,
+    candidate: Option<RecoveryCandidate>,
+}
+
+#[derive(Clone, Copy)]
+struct RecoveryCandidate {
+    start: usize,
+    phase: RecoveryPhase,
+}
+
+#[derive(Clone, Copy)]
+enum RecoveryPhase {
+    Prefix(usize),
+    Name(bool),
+    Body(usize),
+    Closer,
+}
+
+impl GemmaInvokeDriver {
+    fn begin_at(&mut self, at: usize) {
+        if self.base != Some(at) {
+            *self = Self {
+                base: Some(at),
+                cursor: at + CALL_PREFIX.len(),
+                ..Self::default()
+            };
+        }
+    }
+
+    fn visit(&mut self, bytes: usize) {
+        #[cfg(test)]
+        {
+            self.visited_bytes += bytes;
+        }
+        #[cfg(not(test))]
+        let _ = bytes;
+    }
+
+    fn advance(&mut self, text: &str, flush: bool) -> InvokeBoundary {
+        if self.invalid {
+            return self.resynchronize(text);
+        }
+
+        while self.body_end.is_none() && self.cursor < text.len() {
+            let rest = &text[self.cursor..];
+            let Some(ch) = rest.chars().next() else {
+                break;
+            };
+            if self.depth == 0 {
+                if ch == '{' && self.name_started {
+                    self.depth = 1;
+                } else if ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.') {
+                    self.name_started = true;
+                } else {
+                    self.invalid = true;
+                    return self.resynchronize(text);
+                }
+                self.visit(ch.len_utf8());
+                self.cursor += ch.len_utf8();
+                continue;
+            }
+
+            if !self.in_string
+                && (rest.starts_with(TOOL_CALL_START) || TOOL_CALL_START.starts_with(rest))
+            {
+                if rest.len() < TOOL_CALL_START.len() {
+                    return InvokeBoundary::Pending;
+                }
+                self.saw_recovery_candidate = true;
+            }
+
+            if STRING_DELIM.starts_with(rest) && rest.len() < STRING_DELIM.len() {
+                return InvokeBoundary::Pending;
+            }
+            if rest.starts_with(STRING_DELIM) {
+                self.in_string = !self.in_string;
+                self.visit(STRING_DELIM.len());
+                self.cursor += STRING_DELIM.len();
+                continue;
+            }
+            if !self.in_string {
+                match ch {
+                    '{' => self.depth += 1,
+                    '}' => {
+                        self.depth -= 1;
+                        if self.depth == 0 {
+                            self.body_end = Some(self.cursor);
+                            self.cursor += ch.len_utf8();
+                            break;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            self.visit(ch.len_utf8());
+            self.cursor += ch.len_utf8();
+        }
+
+        let Some(body_end) = self.body_end else {
+            return if self.saw_recovery_candidate {
+                self.resynchronize(text)
+            } else {
+                InvokeBoundary::Pending
+            };
+        };
+        let after = &text[body_end + 1..];
+        if after.starts_with(TOOL_CALL_END) {
+            let mut end = body_end + 1 + TOOL_CALL_END.len();
+            while text[end..].starts_with(TOOL_CALL_END) {
+                end += TOOL_CALL_END.len();
+            }
+            return InvokeBoundary::Complete(end - self.base.unwrap_or_default());
+        }
+        if after.is_empty() {
+            return if flush {
+                InvokeBoundary::Complete(body_end + 1 - self.base.unwrap_or_default())
+            } else {
+                InvokeBoundary::Pending
+            };
+        }
+        if after.len() < TOOL_CALL_END.len() && TOOL_CALL_END.starts_with(after) {
+            return InvokeBoundary::Pending;
+        }
+        while self.cursor < text.len() {
+            let ch = text[self.cursor..]
+                .chars()
+                .next()
+                .expect("cursor is before end");
+            if !ch.is_whitespace() {
+                self.invalid = true;
+                return self.resynchronize(text);
+            }
+            self.visit(ch.len_utf8());
+            self.cursor += ch.len_utf8();
+        }
+        if flush {
+            return InvokeBoundary::Complete(body_end + 1 - self.base.unwrap_or_default());
+        }
+        InvokeBoundary::Pending
+    }
+
+    fn resynchronize(&mut self, text: &str) -> InvokeBoundary {
+        if let Some(next) = self.resync_target {
+            return InvokeBoundary::Resynchronize(next - self.base.unwrap_or_default());
+        }
+
+        let base = self.base.unwrap_or_default();
+        if self.recovery.cursor <= base {
+            // Skip the malformed invoke's own `call:` start. A structural
+            // recovery target must be a later wrapped call.
+            self.recovery.cursor = base + 1;
+        }
+
+        while self.recovery.cursor < text.len() {
+            let rest = &text[self.recovery.cursor..];
+
+            if STRING_DELIM.starts_with(rest) && rest.len() < STRING_DELIM.len() {
+                return InvokeBoundary::Pending;
+            }
+            if rest.starts_with(STRING_DELIM) {
+                self.recovery.in_string = !self.recovery.in_string;
+                self.visit(STRING_DELIM.len());
+                self.recovery.cursor += STRING_DELIM.len();
+                continue;
+            }
+
+            if self.recovery.in_string {
+                let ch = rest.chars().next().expect("cursor is before end");
+                self.visit(ch.len_utf8());
+                self.recovery.cursor += ch.len_utf8();
+                continue;
+            }
+
+            if TOOL_CALL_START.starts_with(rest) && rest.len() < TOOL_CALL_START.len() {
+                return InvokeBoundary::Pending;
+            }
+            if rest.starts_with(TOOL_CALL_START) {
+                self.recovery.candidate = Some(RecoveryCandidate {
+                    start: self.recovery.cursor,
+                    phase: RecoveryPhase::Prefix(0),
+                });
+                self.visit(TOOL_CALL_START.len());
+                self.recovery.cursor += TOOL_CALL_START.len();
+                continue;
+            }
+
+            let phase = self.recovery.candidate.map(|candidate| candidate.phase);
+            match phase {
+                Some(RecoveryPhase::Prefix(matched)) => {
+                    let byte = text.as_bytes()[self.recovery.cursor];
+                    if byte == CALL_PREFIX.as_bytes()[matched] {
+                        self.visit(1);
+                        self.recovery.cursor += 1;
+                        let next = matched + 1;
+                        self.recovery
+                            .candidate
+                            .as_mut()
+                            .expect("candidate exists")
+                            .phase = if next == CALL_PREFIX.len() {
+                            RecoveryPhase::Name(false)
+                        } else {
+                            RecoveryPhase::Prefix(next)
+                        };
+                    } else {
+                        self.recovery.candidate = None;
+                    }
+                    continue;
+                }
+                Some(RecoveryPhase::Name(started)) => {
+                    let ch = rest.chars().next().expect("cursor is before end");
+                    if ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.') {
+                        self.visit(ch.len_utf8());
+                        self.recovery.cursor += ch.len_utf8();
+                        self.recovery
+                            .candidate
+                            .as_mut()
+                            .expect("candidate exists")
+                            .phase = RecoveryPhase::Name(true);
+                    } else if ch == '{' && started {
+                        self.visit(1);
+                        self.recovery.cursor += 1;
+                        self.recovery
+                            .candidate
+                            .as_mut()
+                            .expect("candidate exists")
+                            .phase = RecoveryPhase::Body(1);
+                    } else {
+                        self.recovery.candidate = None;
+                    }
+                    continue;
+                }
+                Some(RecoveryPhase::Body(depth)) => {
+                    let ch = rest.chars().next().expect("cursor is before end");
+                    let next_depth = match ch {
+                        '{' => depth + 1,
+                        '}' => depth - 1,
+                        _ => depth,
+                    };
+                    self.visit(ch.len_utf8());
+                    self.recovery.cursor += ch.len_utf8();
+                    self.recovery
+                        .candidate
+                        .as_mut()
+                        .expect("candidate exists")
+                        .phase = if next_depth == 0 {
+                        RecoveryPhase::Closer
+                    } else {
+                        RecoveryPhase::Body(next_depth)
+                    };
+                    continue;
+                }
+                Some(RecoveryPhase::Closer) => {
+                    if TOOL_CALL_END.starts_with(rest) && rest.len() < TOOL_CALL_END.len() {
+                        return InvokeBoundary::Pending;
+                    }
+                    if rest.starts_with(TOOL_CALL_END) {
+                        let next = self.recovery.candidate.expect("candidate exists").start;
+                        self.resync_target = Some(next);
+                        return InvokeBoundary::Resynchronize(next - base);
+                    }
+                    self.recovery.candidate = None;
+                    continue;
+                }
+                None => {}
+            }
+
+            let ch = rest.chars().next().expect("cursor is before end");
+            self.visit(ch.len_utf8());
+            self.recovery.cursor += ch.len_utf8();
+        }
+        InvokeBoundary::Pending
+    }
+}
+
+impl InvokeDriver for GemmaInvokeDriver {
+    fn guided_prefix(&self) -> Option<GuidedPrefixScan> {
+        Some(GuidedPrefixScan {
+            classify: guided_call_prefix,
+            max_pending_len: CALL_PREFIX.len() + REASONING_START.len() - 1,
+        })
+    }
+
+    fn start(
+        &mut self,
+        _scan: Option<InvokeScan>,
+        text: &str,
+        at: usize,
+        flush: bool,
+    ) -> InvokeStart {
+        if !is_call_prefix_boundary(text, at) {
+            return InvokeStart::NoMatch;
+        }
+        self.begin_at(at);
+        let boundary = self.advance(text, flush);
+        if self.invalid && self.body_end.is_none() && self.depth == 0 {
+            return InvokeStart::NoMatch;
+        }
+        match boundary {
+            InvokeBoundary::Complete(_) => InvokeStart::Match,
+            InvokeBoundary::Pending if self.depth > 0 || (flush && self.body_end.is_some()) => {
+                InvokeStart::Match
+            }
+            InvokeBoundary::Pending if flush => InvokeStart::NoMatch,
+            InvokeBoundary::Pending => InvokeStart::Pending,
+            InvokeBoundary::Resynchronize(_) => InvokeStart::Match,
+        }
+    }
+
+    fn boundary(
+        &mut self,
+        _scan: Option<InvokeScan>,
+        text: &str,
+        _invoke_end: &str,
+        at: usize,
+        flush: bool,
+        _tool_index: usize,
+    ) -> InvokeBoundary {
+        self.begin_at(at);
+        self.advance(text, flush)
+    }
+
+    fn holdback(&self, _scan: Option<InvokeScan>, text: &str) -> usize {
+        partial_bare_opener_suffix_len(text)
+    }
+
+    fn pending_start(&self) -> Option<usize> {
+        if self.depth == 0 && !self.invalid {
+            self.base
+        } else {
+            None
+        }
+    }
+
+    fn reset(&mut self) {
+        *self = Self::default();
+    }
+}
+
+/// Classify Gemma's guided `call:` prefix at payload and reasoning boundaries.
+/// A split prefix remains pending; ordinary prose is never reclassified as
+/// control markup.
+fn guided_call_prefix(
+    text: &str,
+    at: usize,
+    context: GuidedInvokeContext,
+    flush: bool,
+) -> GuidedPrefix {
+    if !is_call_prefix_boundary(text, at) {
         return GuidedPrefix::NoMatch;
     }
     let suffix = &text[at..];
@@ -122,16 +470,42 @@ fn guided_call_prefix(text: &str, at: usize) -> GuidedPrefix {
     let Some(after_prefix) = suffix.strip_prefix(CALL_PREFIX) else {
         return GuidedPrefix::NoMatch;
     };
-    match after_prefix.as_bytes().first() {
-        None => GuidedPrefix::Pending,
-        Some(b'{') | Some(b'[') => GuidedPrefix::Match,
-        Some(_) => GuidedPrefix::NoMatch,
+    match context {
+        GuidedInvokeContext::PayloadBoundary if !text[..at].trim().is_empty() => {
+            GuidedPrefix::NoMatch
+        }
+        GuidedInvokeContext::PayloadBoundary => match after_prefix.as_bytes().first() {
+            None if flush => GuidedPrefix::NoMatch,
+            None => GuidedPrefix::Pending,
+            Some(b'{') | Some(b'[') => GuidedPrefix::Match,
+            Some(_) if after_prefix.starts_with(REASONING_START) => GuidedPrefix::Match,
+            Some(_) if REASONING_START.starts_with(after_prefix) => GuidedPrefix::Pending,
+            Some(_) => GuidedPrefix::NoMatch,
+        },
+        GuidedInvokeContext::Reasoning => {
+            let name_len = after_prefix
+                .char_indices()
+                .take_while(|(_, ch)| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
+                .map(|(at, ch)| at + ch.len_utf8())
+                .last()
+                .unwrap_or_default();
+            if name_len == 0 {
+                GuidedPrefix::NoMatch
+            } else {
+                match after_prefix[name_len..].chars().next() {
+                    Some('{') => GuidedPrefix::NoMatch,
+                    Some(_) => GuidedPrefix::Match,
+                    None if flush => GuidedPrefix::Match,
+                    None => GuidedPrefix::Pending,
+                }
+            }
+        }
     }
 }
 
 /// Stream parser for Gemma 4 tool calls.
 pub struct Gemma4ToolStreamParser {
-    scanner: WrappedBlockScanner<Gemma4InvokeEmitter>,
+    scanner: WrappedBlockScanner<Gemma4InvokeEmitter, GemmaInvokeDriver>,
 }
 
 impl Gemma4ToolStreamParser {
@@ -198,26 +572,14 @@ impl InvokeEmitter for Gemma4InvokeEmitter {
     }
 }
 
-/// Trailing run that may still grow into a recoverable bare call but that the
-/// v1 probes cannot detect yet: a partial `call:` prefix at a word boundary
-/// (`c`, `ca`, ..., `call:`), or a complete boundary `call:` followed only by
-/// identifier characters (the function name, awaiting its `{`). Once the `{`
-/// arrives, the scanner's candidate-local opener probe recognizes it directly.
-/// Held-back bytes are flushed on the next chunk (or at EOF), so the
-/// concatenated output is unchanged — only its chunk boundaries shift.
+/// A partial `call:` prefix at a word boundary. A complete prefix and growing
+/// function name are retained by [`GemmaInvokeDriver::pending_start`] without a
+/// suffix-wide search.
 fn partial_bare_opener_suffix_len(text: &str) -> usize {
-    for len in (1..=CALL_PREFIX.len()).rev() {
+    for len in (1..CALL_PREFIX.len()).rev() {
         if text.ends_with(&CALL_PREFIX[..len]) && is_call_prefix_boundary(text, text.len() - len) {
             return len;
         }
-    }
-    if let Some(idx) = text.rfind(CALL_PREFIX)
-        && is_call_prefix_boundary(text, idx)
-        && text[idx + CALL_PREFIX.len()..]
-            .chars()
-            .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
-    {
-        return text.len() - idx;
     }
     0
 }
@@ -342,6 +704,58 @@ mod tests {
         }
         out.append(parser.finish().expect("finish"));
         out
+    }
+
+    #[test]
+    fn incremental_driver_visits_long_pending_regions_once() {
+        let mut driver = GemmaInvokeDriver::default();
+        let mut pending = CALL_PREFIX.to_string();
+        for chunk in "n".repeat(32 * 1024).as_bytes().chunks(4) {
+            pending.push_str(std::str::from_utf8(chunk).expect("ASCII name"));
+            assert_eq!(driver.start(None, &pending, 0, false), InvokeStart::Pending);
+        }
+        assert!(
+            driver.visited_bytes <= pending.len(),
+            "visited {} bytes for {} buffered bytes",
+            driver.visited_bytes,
+            pending.len()
+        );
+
+        driver.reset();
+        let value = TOOL_CALL_END.repeat(2048);
+        let complete =
+            format!("call:get_weather{{city:{STRING_DELIM}{value}{STRING_DELIM}}}{TOOL_CALL_END}");
+        let mut streamed = String::new();
+        for chunk in complete.as_bytes().chunks(4) {
+            streamed.push_str(std::str::from_utf8(chunk).expect("ASCII call"));
+            let status = driver.start(None, &streamed, 0, false);
+            if status == InvokeStart::Match {
+                let _ = driver.boundary(None, &streamed, TOOL_CALL_END, 0, false, 0);
+            }
+        }
+        assert!(
+            driver.visited_bytes <= complete.len(),
+            "visited {} bytes for {} buffered bytes",
+            driver.visited_bytes,
+            complete.len()
+        );
+
+        driver.reset();
+        let mut malformed = "call:f{}junk".to_string();
+        for chunk in TOOL_CALL_END.repeat(2048).as_bytes().chunks(4) {
+            malformed.push_str(std::str::from_utf8(chunk).expect("ASCII closer"));
+            let _ = driver.start(None, &malformed, 0, false);
+            assert_eq!(
+                driver.boundary(None, &malformed, TOOL_CALL_END, 0, false, 0),
+                InvokeBoundary::Pending
+            );
+        }
+        assert!(
+            driver.visited_bytes <= malformed.len() * 2,
+            "visited {} bytes for {} malformed buffered bytes",
+            driver.visited_bytes,
+            malformed.len()
+        );
     }
 
     #[test]

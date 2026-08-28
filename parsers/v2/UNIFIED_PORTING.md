@@ -2,11 +2,11 @@
 
 The unified parser is ONE state machine per stream that owns reasoning, visible content, and tool calls, and emits ONE ordered event list. The split path Dynamo still serves for most families runs the v1 reasoning parser over the whole stream first, then a v2 tool parser on the leftover — which cannot represent WHERE reasoning happened, so every thought is hoisted to the front and merged. See [`../../conformance/utils/lib/parsers/UNIFIED_CASES.md`](../../conformance/utils/lib/parsers/UNIFIED_CASES.md) for what that costs, case by case.
 
-This doc is for adding a family to the unified path. `qwen3` and `muse_glimmer` are on it today; `gemma4` follows in the stacked PR, and the machinery it needed is already shared here.
+This doc is for adding a family to the unified path. The current corpus families — `qwen3`, `muse_glimmer`, `gemma4`, and `kimi_k2` — all use native unified parsers.
 
 ## What you get for free
 
-`ScannerUnified` (`src/unified/mod.rs`) is the shared body. It is generic over the emitter and holds a `WrappedBlockScanner`, and the whole `UnifiedParser` impl is family-blind: `initialize`, `initialize_request`, `parse_into`, `finish`, `reset`.
+`ScannerUnified` (`src/unified/mod.rs`) is the shared body. It is generic over the emitter and invoke driver and holds a `WrappedBlockScanner`; the whole `UnifiedParser` impl is family-blind: `initialize`, `initialize_request`, `parse_into`, `finish`, `reset`.
 
 Everything below is already generic in `src/tool_calling/scan.rs` — do NOT reimplement any of it per family:
 
@@ -15,12 +15,12 @@ Everything below is already generic in `src/tool_calling/scan.rs` — do NOT rei
 - reasoning open/close, and EOF promotion of an unterminated thought
 - tool-open break-out from INSIDE a thought, and resume after the call closes (invariant `I3`; case `12.b`)
 - guided-JSON decoding, including the reasoning envelope around the payload
-- a grammar-aware invoke scan for families whose markers cannot delimit a call on their own (`InvokeScan`)
+- stateless invoke hooks for marker-oriented grammars (`InvokeScan`), plus a model-owned incremental driver when a retained region needs lexical state (`InvokeDriver`)
 - an optional structural role label after the reasoning opener (`ReasoningSpec::start_label`)
 
-The last two are the gemma4 port's contribution. Reach for them before writing a
-bespoke drain — the whole point of Tier C was to find out whether the shared loop
-could be *extended* to the hardest family rather than forked for it. It could.
+The invoke driver and structural role label are the gemma4 port's contribution.
+Reach for them before writing a bespoke drain: the shared coordinator owns buffer
+and channel transitions, while the family driver owns only its lexical grammar.
 
 Guided decoding is a BACKEND feature, not a model feature — any family can be served with it — which is why `GuidedState` lives on the shared type and is parameterized on the family's `ReasoningSpec` markers rather than on any one grammar. A family that joins the unified path inherits it.
 
@@ -75,7 +75,7 @@ Then add the family's inputs to `gen_unified_golden.py` and run the pipeline (se
 
 **Tier B — generalize the scanner, no new state machine.** `deepseek_v4` (dsml) and `glm47` have bespoke drain loops. dsml's grammar maps onto `WrappedBlockSpec` almost directly; its only special part is an early-name state. glm47 needs `WrappedBlockSpec.invoke_start` to become optional, because its block IS the invoke (`<tool_call>NAME<arg_key>…</tool_call>`) with no inner marker. Tier B touches shared code, so every Tier A family regression-tests with it.
 
-**Tier C — real new machinery.** `gemma4` is DONE, and what it needed is now shared. Its end marker can legitimately appear inside a `<|"|>`-delimited string value, so a plain `find` cuts the value (`I7`, case `7.b`); the same string rule makes `call:` ambiguous with the English word and lets a body be complete before its closer streams. All three are answered by one `InvokeScan` hook rather than a bespoke drain — see `tool_calling/gemma4.rs`. `harmony` is still Tier C and is not a marker scan at all: it routes by channel and depends on token IDs, and `UnifiedParser` has no `push_tokens`, so porting it means extending the trait, not adding a factory.
+**Tier C — real new machinery.** `gemma4` is DONE, and what it needed is now shared. Its end marker can legitimately appear inside a `<|"|>`-delimited string value, so a plain `find` cuts the value (`I7`, case `7.b`); the same string rule makes `call:` ambiguous with the English word and lets a body be complete before its closer streams. Its `GemmaInvokeDriver` owns those rules and advances one cursor across pushes; `WrappedBlockScanner` remains family-blind — see `tool_calling/gemma4.rs`. `harmony` is still Tier C and is not a marker scan at all: it routes by channel and depends on token IDs, and `UnifiedParser` has no `push_tokens`, so porting it means extending the trait, not adding a factory.
 
 **Not portable yet.** `granite`, `inkling`, `mistral`, `step3`, `kimi_k3`, `minimax_append_think` have v1 reasoning parsers but no v2 tool parser. `ScannerUnified` has no reasoning-only shape, so there is nothing to hang them on until a tool parser exists.
 

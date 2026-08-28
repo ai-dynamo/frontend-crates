@@ -49,6 +49,8 @@ const INVOKE_START: &str = "<atem:invoke";
 const INVOKE_END: &str = "</atem:invoke>";
 
 impl NativeUnified for MuseChannelScanner {
+    type Driver = crate::tool_calling::scan::StatelessInvokeDriver;
+
     fn preserve_special_tokens(&self) -> bool {
         true
     }

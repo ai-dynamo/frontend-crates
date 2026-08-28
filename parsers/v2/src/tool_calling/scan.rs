@@ -20,8 +20,8 @@
 //! * [`WrappedBlockScanner`] — the whole drain loop for the five families
 //!   whose grammar is `BLOCK_START (INVOKE .. INVOKE_END)* BLOCK_END` with a
 //!   bare-invoke back-off: qwen3_coder, minimax_m2, minimax_m3, kimi_k2, gemma4.
-//!   Gemma uses [`InvokeScan`] to supply grammar-aware opener, end, and holdback
-//!   decisions where static markers cannot distinguish structure from data.
+//!   A family whose boundaries need lexical state supplies an [`InvokeDriver`];
+//!   the coordinator never branches on a family name or owns its markers.
 //!   dsml (incremental invoke-header state), glm47 (identifier-anchored bare
 //!   recovery) keep bespoke drains and share the primitives.
 //!
@@ -261,12 +261,7 @@ pub(crate) enum InvokeLatch {
     Always,
 }
 
-/// Grammar-aware overrides for locating invokes when marker-only scanning is
-/// insufficient.
-///
-/// Gemma 4 needs all three answers because its string-delimited values may
-/// contain both `call:` and `<tool_call|>` as data. Keeping them on one hook
-/// prevents opener, end, and holdback ownership from drifting apart.
+/// Optional guided-payload prefix recognition for a model grammar.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum GuidedPrefix {
     /// The bytes are ordinary text for guided decoding.
@@ -277,8 +272,44 @@ pub(crate) enum GuidedPrefix {
     Match,
 }
 
+/// Where guided decoding encountered a model-owned invoke prefix.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum GuidedInvokeContext {
+    /// No visible text precedes the constrained JSON payload.
+    PayloadBoundary,
+    /// The prefix occurred inside the model's reasoning channel.
+    Reasoning,
+}
+
+/// Model-owned guided prefix classifier and its maximum pending suffix.
+#[derive(Clone, Copy)]
+pub(crate) struct GuidedPrefixScan {
+    pub classify:
+        fn(text: &str, at: usize, context: GuidedInvokeContext, flush: bool) -> GuidedPrefix,
+    pub max_pending_len: usize,
+}
+
+/// Classification of an `invoke_start` occurrence in the streaming buffer.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum InvokeStart {
+    NoMatch,
+    Pending,
+    Match,
+}
+
+/// Result of advancing the invoke that begins at `at`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum InvokeBoundary {
+    Pending,
+    Complete(usize),
+    Resynchronize(usize),
+}
+
 #[derive(Clone, Copy)]
 pub(crate) struct InvokeScan {
+    /// Stateless boundary hooks. Stateful grammars override these operations
+    /// with an [`InvokeDriver`] while retaining this table for guided-prefix
+    /// policy and batch-compatible fallbacks.
     /// End of the invoke that begins at byte zero, just past its closer. `flush`
     /// allows a family to recover a balanced body whose closer never arrived.
     /// `tool_index` is the invoke's position in this stream (0 for the first
@@ -289,108 +320,71 @@ pub(crate) struct InvokeScan {
     pub opens: fn(text: &str, at: usize) -> bool,
     /// Additional trailing bytes to retain while an opener is still arriving.
     pub holdback: fn(text: &str) -> usize,
-    /// Whether bytes at `at` are a guided-payload prefix. The guided drain uses
-    /// this one answer for both consumption and chunk-boundary holdback.
-    pub guided_prefix: fn(text: &str, at: usize) -> GuidedPrefix,
-    /// Find a later complete wrapped invoke after the current one proved
-    /// malformed. Families with ambiguous string syntax own this scan so a
-    /// block marker inside argument data cannot become a resynchronization
-    /// point. The hook must inspect `text` in linear time.
-    pub resync: Option<fn(text: &str, tool_index: usize) -> Option<usize>>,
 }
 
-/// Retained state for Gemma's leading `call:NAME{...}` scan. Keeping this in
-/// the shared wrapped scanner makes both public adapters advance one cursor
-/// across pushes instead of re-parsing the buffered prefix on every token.
-#[derive(Default)]
-struct GemmaInvokeProgress {
-    cursor: usize,
-    name_started: bool,
-    depth: usize,
-    in_string: bool,
-    body_end: Option<usize>,
-    invalid: bool,
-}
-
-impl GemmaInvokeProgress {
-    fn reset(&mut self) {
-        *self = Self::default();
+/// Model-owned incremental recognition for grammars whose invoke boundaries
+/// cannot be found with bounded marker lookups.
+pub(crate) trait InvokeDriver: Default {
+    /// Optional model-owned guided prefix recognizer. Returning a function
+    /// pointer makes the capability explicit without copying native boundary
+    /// hooks into [`InvokeScan`].
+    fn guided_prefix(&self) -> Option<GuidedPrefixScan> {
+        None
     }
 
-    fn end(&mut self, text: &str, flush: bool) -> Option<usize> {
-        const PREFIX: &str = "call:";
-        const CLOSE: &str = "<tool_call|>";
-        const STRING: &str = "<|\"|>";
-
-        if self.invalid || !text.starts_with(PREFIX) {
-            self.invalid = true;
-            return None;
-        }
-
-        if self.body_end.is_none() {
-            if self.cursor < PREFIX.len() {
-                self.cursor = PREFIX.len();
-            }
-            while self.cursor < text.len() {
-                let rest = &text[self.cursor..];
-                let ch = rest.chars().next()?;
-                if self.depth == 0 {
-                    if ch == '{' && self.name_started {
-                        self.depth = 1;
-                    } else if ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.') {
-                        self.name_started = true;
-                    } else {
-                        self.invalid = true;
-                        return None;
-                    }
-                    self.cursor += ch.len_utf8();
-                    continue;
-                }
-
-                if STRING.starts_with(rest) && rest.len() < STRING.len() {
-                    return None;
-                }
-                if rest.starts_with(STRING) {
-                    self.in_string = !self.in_string;
-                    self.cursor += STRING.len();
-                    continue;
-                }
-                if !self.in_string {
-                    match ch {
-                        '{' => self.depth += 1,
-                        '}' => {
-                            self.depth = self.depth.checked_sub(1)?;
-                            if self.depth == 0 {
-                                self.body_end = Some(self.cursor);
-                                self.cursor += ch.len_utf8();
-                                break;
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                self.cursor += ch.len_utf8();
-            }
-        }
-
-        let body_end = self.body_end?;
-        let after = &text[body_end + 1..];
-        if after.starts_with(CLOSE) {
-            let mut end = body_end + 1 + CLOSE.len();
-            while text[end..].starts_with(CLOSE) {
-                end += CLOSE.len();
-            }
-            return Some(end);
-        }
-        if !flush
-            || !after.trim().is_empty()
-            || (!after.is_empty() && after.len() < CLOSE.len() && CLOSE.starts_with(after))
+    fn start(
+        &mut self,
+        scan: Option<InvokeScan>,
+        text: &str,
+        at: usize,
+        flush: bool,
+    ) -> InvokeStart {
+        let opens = scan.is_none_or(|scan| (scan.opens)(text, at));
+        if opens {
+            InvokeStart::Match
+        } else if !flush && scan.is_some_and(|scan| (scan.holdback)(&text[at..]) == text.len() - at)
         {
-            return None;
+            InvokeStart::Pending
+        } else {
+            InvokeStart::NoMatch
         }
-        Some(body_end + 1)
     }
+
+    fn boundary(
+        &mut self,
+        scan: Option<InvokeScan>,
+        text: &str,
+        invoke_end: &str,
+        at: usize,
+        flush: bool,
+        tool_index: usize,
+    ) -> InvokeBoundary {
+        let suffix = &text[at..];
+        let end = match scan {
+            Some(scan) => (scan.end)(suffix, flush, tool_index),
+            None => suffix.find(invoke_end).map(|at| at + invoke_end.len()),
+        };
+        if let Some(end) = end {
+            return InvokeBoundary::Complete(end);
+        }
+        InvokeBoundary::Pending
+    }
+
+    fn holdback(&self, scan: Option<InvokeScan>, text: &str) -> usize {
+        scan.map(|scan| (scan.holdback)(text)).unwrap_or_default()
+    }
+
+    fn pending_start(&self) -> Option<usize> {
+        None
+    }
+
+    fn reset(&mut self) {}
 }
+
+#[derive(Default)]
+pub(crate) struct StatelessInvokeDriver;
+
+impl InvokeDriver for StatelessInvokeDriver {}
 
 /// Declarative description of one wrapped-invoke grammar.
 #[derive(Default)]
@@ -553,7 +547,7 @@ enum Marker {
     /// A block opener; carries the matched token length.
     Block(usize),
     /// A bare invoke opener with no block wrapper (recovery path).
-    BareInvoke,
+    BareInvoke(InvokeStart),
     /// A reasoning opener; carries the matched token length.
     ReasoningStart(usize),
 }
@@ -636,7 +630,7 @@ pub(crate) fn push_run<S: EventSink + ?Sized>(out: &mut S, kind: Kind, text: &st
 /// and never leak; a partial marker at a chunk boundary is held back; at
 /// flush (EOF) incomplete blocks/invokes are dropped with a `why=` warning
 /// rather than leaked.
-pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
+pub(crate) struct WrappedBlockScanner<E: InvokeEmitter, D: InvokeDriver = StatelessInvokeDriver> {
     spec: WrappedBlockSpec,
     emitter: E,
     reasoning: Option<ReasoningSpec>,
@@ -655,18 +649,17 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     resume_reasoning: bool,
     suppress_normal_text: bool,
     next_index: usize,
-    /// Gemma's grammar-aware end scan is the only wrapped grammar that can
-    /// retain a large structured body; carry its parse state between pushes.
-    gemma_invoke: Option<GemmaInvokeProgress>,
-    /// Bytes already checked for a new Gemma recovery closer. A later wrapped
-    /// call cannot be complete until its closer arrives, so this avoids a
-    /// suffix-wide recovery probe for ordinary argument chunks.
-    gemma_resync_checked: usize,
+    invoke: D,
 }
 
-impl<E: InvokeEmitter> WrappedBlockScanner<E> {
+impl<E: InvokeEmitter> WrappedBlockScanner<E, StatelessInvokeDriver> {
     pub(crate) fn new(spec: WrappedBlockSpec, emitter: E) -> Self {
-        let gemma_invoke = (spec.family == "gemma4").then(GemmaInvokeProgress::default);
+        Self::with_driver(spec, emitter, StatelessInvokeDriver)
+    }
+}
+
+impl<E: InvokeEmitter, D: InvokeDriver> WrappedBlockScanner<E, D> {
+    pub(crate) fn with_driver(spec: WrappedBlockSpec, emitter: E, invoke: D) -> Self {
         Self {
             spec,
             emitter,
@@ -681,8 +674,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             resume_reasoning: false,
             suppress_normal_text: false,
             next_index: 0,
-            gemma_invoke,
-            gemma_resync_checked: 0,
+            invoke,
         }
     }
 
@@ -835,10 +827,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.resume_reasoning = false;
         self.suppress_normal_text = false;
         self.next_index = 0;
-        if let Some(progress) = &mut self.gemma_invoke {
-            progress.reset();
-        }
-        self.gemma_resync_checked = 0;
+        self.invoke.reset();
         self.emitter.reset();
         pending
     }
@@ -849,75 +838,44 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     }
 
     /// Find the next real invoke opener, applying the family hook when present.
-    fn find_invoke_start(&self, text: &str) -> Option<usize> {
-        let Some(scan) = self.spec.invoke_scan else {
-            return text.find(self.spec.invoke_start.as_str());
-        };
+    fn find_invoke_start(&mut self, flush: bool) -> Option<(usize, InvokeStart)> {
         let mut cursor = 0;
-        while let Some(relative) = text[cursor..].find(self.spec.invoke_start.as_str()) {
+        while let Some(relative) = self.buffer[cursor..].find(self.spec.invoke_start.as_str()) {
             let at = cursor + relative;
-            if (scan.opens)(text, at) {
-                return Some(at);
+            let status = self
+                .invoke
+                .start(self.spec.invoke_scan, &self.buffer, at, flush);
+            if status != InvokeStart::NoMatch {
+                return Some((at, status));
             }
             cursor = at + self.spec.invoke_start.len();
         }
         None
     }
 
-    /// Offset just past the closer of the invoke beginning at byte zero.
-    fn invoke_end_at(&mut self, flush: bool) -> Option<usize> {
-        if let Some(progress) = &mut self.gemma_invoke {
-            if let Some(end) = progress.end(&self.buffer, flush) {
-                return Some(end);
-            }
-            // EOF recovery has no further incremental work to preserve. Reuse
-            // the batch-compatible probe for the rare missing-wrapper cases.
-            if flush {
-                return self
-                    .spec
-                    .invoke_scan
-                    .and_then(|scan| (scan.end)(&self.buffer, true, self.next_index));
-            }
-            return None;
-        }
-        match self.spec.invoke_scan {
-            Some(scan) => (scan.end)(&self.buffer, flush, self.next_index),
-            None => self
-                .buffer
-                .find(self.spec.invoke_end.as_str())
-                .map(|position| position + self.spec.invoke_end.len()),
-        }
+    fn invoke_boundary_at(&mut self, flush: bool) -> InvokeBoundary {
+        self.invoke.boundary(
+            self.spec.invoke_scan,
+            &self.buffer,
+            &self.spec.invoke_end,
+            0,
+            flush,
+            self.next_index,
+        )
     }
 
     fn reset_invoke_progress(&mut self) {
-        if let Some(progress) = &mut self.gemma_invoke {
-            progress.reset();
-        }
-        self.gemma_resync_checked = 0;
+        self.invoke.reset();
     }
 
-    /// Find a later complete block that can safely restart scanning after the
-    /// current invoke proved malformed. The new block must begin with a real,
-    /// complete invoke; a marker-looking string inside the malformed payload
-    /// cannot satisfy both grammar checks.
-    fn resync_block_start(&mut self) -> Option<usize> {
-        let scan = self.spec.invoke_scan?;
-        if self.gemma_invoke.is_some() {
-            const CLOSE: &str = "<tool_call|>";
-            let start = self
-                .buffer
-                .floor_char_boundary(self.gemma_resync_checked.saturating_sub(CLOSE.len() - 1));
-            let closer_arrived = self.buffer[start..].contains(CLOSE);
-            self.gemma_resync_checked = self.buffer.len();
-            // A wrapped Gemma recovery candidate cannot be complete before its
-            // close token arrives. This is intentionally incremental: scanning
-            // the newly appended marker window is bounded, while the expensive
-            // grammar-aware resync runs only when a candidate can now finish.
-            if !closer_arrived {
-                return None;
-            }
-        }
-        (scan.resync?)(&self.buffer, self.next_index)
+    fn drain_buffer(&mut self, end: usize) {
+        self.buffer.drain(..end);
+        self.reset_invoke_progress();
+    }
+
+    fn clear_buffer(&mut self) {
+        self.buffer.clear();
+        self.reset_invoke_progress();
     }
 
     /// Bytes a reasoning opener occupies at `at`, structural label included.
@@ -974,10 +932,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             })
             .unwrap_or_default();
         let invoke = self
-            .spec
-            .invoke_scan
-            .map(|scan| (scan.holdback)(&self.buffer))
-            .unwrap_or_default();
+            .invoke
+            .pending_start()
+            .map(|at| self.buffer.len() - at)
+            .unwrap_or_else(|| self.invoke.holdback(self.spec.invoke_scan, &self.buffer));
         regular
             .max(reasoning)
             .max(self.pending_label_len())
@@ -1034,10 +992,14 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         //    same rule the orphan handler applies outside reasoning, so being inside
         //    a thought cannot turn markup into content (`I3`). The closer is excluded
         //    from this set because it legitimately ends the span.
+        let invoke_open = self
+            .find_invoke_start(flush)
+            .filter(|(_, status)| *status == InvokeStart::Match)
+            .map(|(at, _)| at);
         let tool_open = find_first(&self.buffer, &self.spec.block_starts)
             .map(|(pos, _)| pos)
             .into_iter()
-            .chain(self.find_invoke_start(&self.buffer))
+            .chain(invoke_open)
             .min();
         let duplicate_start = self
             .buffer
@@ -1064,7 +1026,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 InReasoning::Stray(len) => (len, true, false),
             };
             push_run(out, Kind::Reasoning, &self.buffer[..at]);
-            self.buffer.drain(..at + consume);
+            self.drain_buffer(at + consume);
             self.in_reasoning = in_reasoning;
             self.resume_reasoning = resume;
             if matches!(what, InReasoning::Stray(_)) {
@@ -1082,7 +1044,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         let emit_len = self.buffer.len().saturating_sub(keep);
         if emit_len > 0 {
             push_run(out, Kind::Reasoning, &self.buffer[..emit_len]);
-            self.buffer.drain(..emit_len);
+            self.drain_buffer(emit_len);
         }
         if flush {
             // 4.e: the stream ended mid-thought. The open reasoning is promoted
@@ -1111,33 +1073,33 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             }
 
             if self.in_block {
-                let invoke_start = self.find_invoke_start(&self.buffer);
-
-                // Close the block once no more complete invokes precede its end.
-                if let Some((end_pos, end_len)) = find_first(&self.buffer, &self.spec.block_ends) {
-                    let invoke_before_end = invoke_start.is_some_and(|start| start < end_pos);
-                    if !invoke_before_end {
-                        // Complete block fully closed: drop its markup and resume
-                        // keeping natural text (inter-block / trailing). Any later
-                        // block re-enters `in_block` and re-suppresses its markup.
-                        // Matches the v1 batch parsers (cases 8.b/8.c/8.d).
-                        self.buffer.drain(..end_pos + end_len);
-                        self.reset_invoke_progress();
-                        self.uncommitted_block.clear();
-                        self.in_block = false;
-                        self.suppress_normal_text = false;
-                        self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
-                        continue;
-                    }
+                let invoke_start = self.find_invoke_start(flush);
+                let block_end = if !self.spec.drop_invoke_crossing_block_end
+                    && invoke_start.is_some_and(|(start, _)| start == 0)
+                {
+                    None
+                } else {
+                    find_first(&self.buffer, &self.spec.block_ends)
+                };
+                let close_before_invoke = block_end
+                    .is_some_and(|(end, _)| invoke_start.is_none_or(|(start, _)| end <= start));
+                if close_before_invoke {
+                    let (end_pos, end_len) = block_end.expect("checked above");
+                    self.drain_buffer(end_pos + end_len);
+                    self.uncommitted_block.clear();
+                    self.in_block = false;
+                    self.suppress_normal_text = false;
+                    self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
+                    continue;
                 }
 
-                let Some(start) = invoke_start else {
+                let Some((start, status)) = invoke_start else {
                     if flush {
                         tracing::warn!(
                             why = %format!("{}_block_without_complete_invoke", self.spec.family),
                             "stream dropped incomplete block at EOF"
                         );
-                        self.buffer.clear();
+                        self.clear_buffer();
                         self.uncommitted_block.clear();
                         self.in_block = false;
                     }
@@ -1145,71 +1107,75 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 };
                 if start > 0 {
                     self.uncommitted_block.push_str(&self.buffer[..start]);
-                    self.buffer.drain(..start);
-                    self.reset_invoke_progress();
+                    self.drain_buffer(start);
+                    continue;
                 }
-                let Some(end) = self.invoke_end_at(flush) else {
-                    if let Some(next_block) = self.resync_block_start() {
+                if status == InvokeStart::Pending {
+                    break;
+                }
+                let end = match self.invoke_boundary_at(flush) {
+                    InvokeBoundary::Complete(end) => end,
+                    InvokeBoundary::Resynchronize(next_block) => {
                         tracing::warn!(
                             why = %format!("{}_resynchronized_after_incomplete_invoke", self.spec.family),
                             skipped_bytes = next_block,
                             "stream skipped a malformed invoke and resumed at the next complete block"
                         );
-                        self.buffer.drain(..next_block);
-                        self.reset_invoke_progress();
+                        self.drain_buffer(next_block);
                         self.uncommitted_block.clear();
                         self.in_block = false;
                         self.suppress_normal_text = false;
                         self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
                         continue;
                     }
-                    if flush {
-                        // Reviewer-caught regression: `invoke_end_at`
-                        // returning `None` at flush does NOT always mean
-                        // "genuinely incomplete, nothing left to salvage".
-                        // Kimi's own "mismatched fences" guard (in
-                        // `kimi_invoke_end`) also returns `None` when a
-                        // REAL block-end marker follows a call that never
-                        // got its own closer -- deliberately dropping just
-                        // that call while the section boundary itself is
-                        // still genuine. Unconditionally clearing the whole
-                        // buffer here discarded that boundary too, along
-                        // with any visible text genuinely following it --
-                        // batch mode's regex-based section extraction
-                        // preserves that trailing narration; streaming
-                        // didn't. Same string-aware search as the
-                        // `drop_invoke_crossing_block_end` check above
-                        // (safe for the identical reason): if a real
-                        // block-end marker is present, drop through it and
-                        // resume draining the suffix as ordinary text
-                        // instead of discarding everything after it.
-                        if self.spec.drop_invoke_crossing_block_end
-                            && let Some((be_pos, be_len)) = find_first_outside_strings(
-                                &self.buffer,
-                                self.spec.block_ends.iter().map(String::as_str),
-                            )
-                        {
+                    InvokeBoundary::Pending => {
+                        if flush {
+                            // Reviewer-caught regression: `invoke_end_at`
+                            // returning `None` at flush does NOT always mean
+                            // "genuinely incomplete, nothing left to salvage".
+                            // Kimi's own "mismatched fences" guard (in
+                            // `kimi_invoke_end`) also returns `None` when a
+                            // REAL block-end marker follows a call that never
+                            // got its own closer -- deliberately dropping just
+                            // that call while the section boundary itself is
+                            // still genuine. Unconditionally clearing the whole
+                            // buffer here discarded that boundary too, along
+                            // with any visible text genuinely following it --
+                            // batch mode's regex-based section extraction
+                            // preserves that trailing narration; streaming
+                            // didn't. Same string-aware search as the
+                            // `drop_invoke_crossing_block_end` check above
+                            // (safe for the identical reason): if a real
+                            // block-end marker is present, drop through it and
+                            // resume draining the suffix as ordinary text
+                            // instead of discarding everything after it.
+                            if self.spec.drop_invoke_crossing_block_end
+                                && let Some((be_pos, be_len)) = find_first_outside_strings(
+                                    &self.buffer,
+                                    self.spec.block_ends.iter().map(String::as_str),
+                                )
+                            {
+                                tracing::warn!(
+                                    why = %format!("{}_incomplete_invoke", self.spec.family),
+                                    "stream dropped invoke with no evidence it ever closed before the block end"
+                                );
+                                self.drain_buffer(be_pos + be_len);
+                                self.uncommitted_block.clear();
+                                self.in_block = false;
+                                self.suppress_normal_text = false;
+                                self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
+                                continue;
+                            }
                             tracing::warn!(
                                 why = %format!("{}_incomplete_invoke", self.spec.family),
-                                "stream dropped invoke with no evidence it ever closed before the block end"
+                                "stream dropped incomplete invoke at EOF"
                             );
-                            self.buffer.drain(..be_pos + be_len);
-                            self.reset_invoke_progress();
+                            self.clear_buffer();
                             self.uncommitted_block.clear();
                             self.in_block = false;
-                            self.suppress_normal_text = false;
-                            self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
-                            continue;
                         }
-                        tracing::warn!(
-                            why = %format!("{}_incomplete_invoke", self.spec.family),
-                            "stream dropped incomplete invoke at EOF"
-                        );
-                        self.buffer.clear();
-                        self.uncommitted_block.clear();
-                        self.in_block = false;
+                        break;
                     }
-                    break;
                 };
                 // Mismatched fences: a block close inside the invoke body means
                 // the invoke never closed. Drop it and close the block; narration
@@ -1241,7 +1207,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         why = %format!("{}_incomplete_invoke", self.spec.family),
                         "stream dropped invoke missing its close before the block end"
                     );
-                    self.buffer.drain(..be_pos + be_len);
+                    self.drain_buffer(be_pos + be_len);
                     self.uncommitted_block.clear();
                     self.in_block = false;
                     self.suppress_normal_text = false;
@@ -1253,8 +1219,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 // the buffer, so `reset` could no longer hand them back and the
                 // documented recovery contract was false for the only shipped family.
                 let emitted = self.emitter.parse_invoke(&invoke, self.next_index)?;
-                self.buffer.drain(..end);
-                self.reset_invoke_progress();
+                self.drain_buffer(end);
                 if let Some(delta) = emitted {
                     out.push_call(delta);
                     self.next_index += 1;
@@ -1277,16 +1242,32 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 continue;
             }
 
+            // Let a family-owned driver claim an invoke at byte zero before
+            // searching the whole buffer for unrelated grammar markers. This is
+            // the common retained-stream case; rescanning a growing invoke on
+            // every chunk makes otherwise incremental drivers quadratic.
+            let leading_invoke = if self.buffer.starts_with(&self.spec.invoke_start) {
+                let status = self
+                    .invoke
+                    .start(self.spec.invoke_scan, &self.buffer, 0, flush);
+                (status != InvokeStart::NoMatch).then_some(status)
+            } else {
+                None
+            };
+
             // Not in a block. A COMPLETE orphan marker (stray close / inner
             // marker) before any opener is malformed markup: strip it so it can
             // NEVER leak into normal_text; when suppression is off, first emit
             // the natural text preceding it. Clear the latch either way (the
             // markup context has ended).
-            if let Some((pos, len)) = self.find_orphan_marker() {
+            if leading_invoke.is_none()
+                && let Some((pos, len)) = self.find_orphan_marker()
+            {
+                let invoke_open = self.find_invoke_start(flush).map(|(at, _)| at);
                 let next_open = find_first(&self.buffer, &self.spec.block_starts)
                     .map(|(p, _)| p)
                     .into_iter()
-                    .chain(self.find_invoke_start(&self.buffer))
+                    .chain(invoke_open)
                     // A reasoning opener counts as an opener here, so the
                     // matching closer in `<think>a</think>` is not mistaken for
                     // an orphan and stripped.
@@ -1296,22 +1277,28 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     if !self.suppress_normal_text && pos > 0 {
                         push_run(out, Kind::Text, &self.buffer[..pos]);
                     }
-                    self.buffer.drain(..pos + len);
+                    self.drain_buffer(pos + len);
                     self.suppress_normal_text = false;
                     continue;
                 }
             }
 
-            // Block wins a tie with a bare invoke, preserving the pre-unified
-            // tie-break.
-            let next_marker = earliest([
-                find_first(&self.buffer, &self.spec.block_starts)
-                    .map(|(pos, len)| (pos, Marker::Block(len))),
-                self.find_invoke_start(&self.buffer)
-                    .map(|pos| (pos, Marker::BareInvoke)),
-                self.find_reasoning_start(flush)
-                    .map(|(pos, len)| (pos, Marker::ReasoningStart(len))),
-            ]);
+            let next_marker = leading_invoke
+                .map(|status| (0, Marker::BareInvoke(status)))
+                .or_else(|| {
+                    // Block wins a tie with a bare invoke, preserving the
+                    // pre-unified tie-break.
+                    let invoke_marker = self
+                        .find_invoke_start(flush)
+                        .map(|(pos, status)| (pos, Marker::BareInvoke(status)));
+                    earliest([
+                        find_first(&self.buffer, &self.spec.block_starts)
+                            .map(|(pos, len)| (pos, Marker::Block(len))),
+                        invoke_marker,
+                        self.find_reasoning_start(flush)
+                            .map(|(pos, len)| (pos, Marker::ReasoningStart(len))),
+                    ])
+                });
 
             let Some((start, marker)) = next_marker else {
                 // No marker present: emit buffered text, but hold back a trailing
@@ -1322,7 +1309,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     if !self.suppress_normal_text {
                         push_run(out, Kind::Text, &self.buffer[..emit_len]);
                     }
-                    self.buffer.drain(..emit_len);
+                    self.drain_buffer(emit_len);
                 }
                 break;
             };
@@ -1331,18 +1318,18 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 if !self.suppress_normal_text {
                     push_run(out, Kind::Text, &self.buffer[..start]);
                 }
-                self.buffer.drain(..start);
+                self.drain_buffer(start);
             }
 
             match marker {
                 Marker::Block(blen) => {
                     self.uncommitted_block.push_str(&self.buffer[..blen]);
-                    self.buffer.drain(..blen);
+                    self.drain_buffer(blen);
                     self.in_block = true;
                     self.suppress_normal_text = true;
                 }
                 Marker::ReasoningStart(rlen) => {
-                    self.buffer.drain(..rlen);
+                    self.drain_buffer(rlen);
                     self.in_reasoning = true;
                     // An explicit reasoning opener is an unambiguous return to
                     // real content, so it ends any markup-suppression context
@@ -1350,28 +1337,45 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     // thought following a recovered call would be dropped.
                     self.suppress_normal_text = false;
                 }
-                Marker::BareInvoke => {
+                Marker::BareInvoke(InvokeStart::Pending) => break,
+                Marker::BareInvoke(InvokeStart::NoMatch) => unreachable!("filtered above"),
+                Marker::BareInvoke(InvokeStart::Match) => {
                     // A bare invoke (no wrapper) is recovered only once its close
                     // has streamed; otherwise wait for more input.
                     // A bare invoke already lacks its opener, so it may recover
                     // only after a real closer arrives. Passing `flush` here used
                     // to combine missing-start and missing-end recovery and turn
                     // narrated syntax into a dispatched call.
-                    let Some(end) = self.invoke_end_at(false) else {
-                        if flush {
+                    let end = match self.invoke_boundary_at(false) {
+                        InvokeBoundary::Complete(end) => end,
+                        InvokeBoundary::Resynchronize(next_block) => {
                             tracing::warn!(
-                                why = %format!("{}_incomplete_bare_invoke", self.spec.family),
-                                "stream dropped incomplete bare invoke at EOF"
+                                why = %format!("{}_resynchronized_after_incomplete_bare_invoke", self.spec.family),
+                                skipped_bytes = next_block,
+                                "stream skipped a malformed bare invoke and resumed at the next complete block"
                             );
-                            self.buffer.clear();
+                            self.drain_buffer(next_block);
+                            self.uncommitted_block.clear();
+                            self.in_block = false;
+                            self.suppress_normal_text = false;
+                            self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
+                            continue;
                         }
-                        break;
+                        InvokeBoundary::Pending => {
+                            if flush {
+                                tracing::warn!(
+                                    why = %format!("{}_incomplete_bare_invoke", self.spec.family),
+                                    "stream dropped incomplete bare invoke at EOF"
+                                );
+                                self.clear_buffer();
+                            }
+                            break;
+                        }
                     };
                     let invoke = self.buffer[..end].to_string();
                     // Emit before consuming — same recovery contract as the wrapped site.
                     let emitted = self.emitter.parse_invoke(&invoke, self.next_index)?;
-                    self.buffer.drain(..end);
-                    self.reset_invoke_progress();
+                    self.drain_buffer(end);
                     if let Some(delta) = emitted {
                         tracing::warn!(
                             why = %format!("{}_bare_invoke_recovery", self.spec.family),

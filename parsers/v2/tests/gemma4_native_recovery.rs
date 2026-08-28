@@ -86,6 +86,35 @@ fn assert_both_adapters(input: &str, expected_text: &str) {
     assert_unified_at_every_split(input, expected_text);
 }
 
+fn assert_empty_at_every_split(input: &str) {
+    let tools = weather_tools();
+    for chunks in chunkings(input) {
+        let mut tool_only = create_tool_parser_for_family("gemma4", &tools).expect("Gemma parser");
+        let mut tool_output = ToolParseResult::default();
+        for chunk in &chunks {
+            tool_output.append(tool_only.push(chunk).expect("tool-only push"));
+        }
+        tool_output.append(tool_only.finish().expect("tool-only finish"));
+        assert_eq!(
+            tool_output.coalesce_calls(),
+            ToolParseResult::default(),
+            "tool-only chunks={chunks:?}"
+        );
+
+        let mut unified = dynamo_parsers_v2::create_unified_parser_for_family("gemma4", &tools)
+            .expect("Gemma unified parser");
+        unified
+            .initialize_request(UnifiedParserInit::default())
+            .expect("native request");
+        let mut events = Vec::new();
+        for chunk in &chunks {
+            events.extend(unified.push(chunk).expect("unified push"));
+        }
+        events.extend(unified.finish().expect("unified finish").events);
+        assert!(assemble(&events).is_empty(), "unified chunks={chunks:?}");
+    }
+}
+
 fn assert_both_adapters_at_chunk_sizes(input: &str, chunk_sizes: &[usize], expected_calls: usize) {
     let tools = weather_tools();
     for &chunk_size in chunk_sizes {
@@ -147,6 +176,29 @@ fn malformed_block_resynchronizes_to_a_later_valid_block() {
 }
 
 #[test]
+fn malformed_bare_call_resynchronizes_at_every_split() {
+    let input = concat!(
+        "call:broken{}junk",
+        "<|tool_call>call:get_weather{city:<|\"|>NYC<|\"|>}<tool_call|>",
+    );
+    assert_both_adapters(input, "");
+}
+
+#[test]
+fn malformed_standalone_bare_call_never_leaks_as_text() {
+    assert_empty_at_every_split("call:f{}junk");
+}
+
+#[test]
+fn unbalanced_block_resynchronizes_at_every_split() {
+    let input = concat!(
+        "<|tool_call>call:broken{nested:{",
+        "<|tool_call>call:get_weather{city:<|\"|>NYC<|\"|>}<tool_call|>",
+    );
+    assert_both_adapters(input, "");
+}
+
+#[test]
 fn incomplete_intermediate_block_does_not_hide_a_later_valid_block() {
     let input = concat!(
         "<|tool_call>call:broken{city:<|\"|>Paris<|\"|>}",
@@ -172,8 +224,10 @@ fn long_incremental_invokes_preserve_both_adapter_contracts() {
     let value = "x".repeat(32 * 1024);
     let valid = format!("<|tool_call>call:get_weather{{city:<|\"|>{value}<|\"|>}}<tool_call|>");
     let incomplete = format!("<|tool_call>call:get_weather{{city:<|\"|>{value}");
+    let bare_incomplete = format!("call:{}", "n".repeat(32 * 1024));
     assert_both_adapters_at_chunk_sizes(&valid, &[4, 16], 1);
     assert_both_adapters_at_chunk_sizes(&incomplete, &[4, 16], 0);
+    assert_both_adapters_at_chunk_sizes(&bare_incomplete, &[4, 16], 0);
 }
 
 #[test]
