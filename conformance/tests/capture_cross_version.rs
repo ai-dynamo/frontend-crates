@@ -352,7 +352,15 @@ fn capture_this_build_against_the_current_corpus() {
         // reported, not written as an empty dir: "no parser here" and "parser emitted
         // nothing" must not look alike on the page.
         let native = create_unified_parser_for_family(&family, &tools()).is_ok();
-        if !native && parsers_for(&family).is_none() {
+        // Availability is whether THIS BUILD can construct the parsers, not whether the
+        // current registry names them. `XVER_FAMILIES` travels with the corpus and lists
+        // families a historical build never shipped, so a name-only check let such a
+        // family reach the capture and panic inside `split_path_capture` — taking down
+        // the whole run and discarding every family already captured before it.
+        let split_available = parsers_for(&family).is_some_and(|(_reasoning, tool)| {
+            create_tool_parser_for_family(&tool, &tools()).is_ok()
+        });
+        if !native && !split_available {
             skipped_families.push(family);
             continue;
         }

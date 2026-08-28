@@ -104,6 +104,13 @@ UNIFIED_TAX = {
     "guided_json_stray_prefix_before_reasoning": (31, "u"),
     "guided_json_narrated_prefix_inside_reasoning": (31, "v"),
     "guided_json_native_markup_only": (31, "w"),
+    "guided_json_unterminated_reasoning_then_wrapped_payload": (31, "x"),
+    # Keep a-x as letters until their planned numeric migration. From y onward,
+    # use each case's numeric position directly: y -> 25, z -> 26, aa -> 27, and so on.
+    "guided_json_quoted_bare_header_in_answer": (31, "25"),
+    "guided_json_quoted_bare_tool_header_in_answer": (31, "26"),
+    "guided_json_quoted_bare_header_after_payload": (31, "27"),
+    "guided_json_bare_tool_header_recovers_inside_a_thought": (31, "28"),
 
     # Group 40 — Prefilled reasoning, happy
     "prefilled_reasoning_with_tool": (40, "a"), "prefilled_reasoning_with_guided_json": (40, "b"),
@@ -134,7 +141,7 @@ UNIFIED_GROUP_LABEL = {
 
 
 def tax(scenario):
-    """(group_num, sub_letter) for a scenario slug; group 9 for anything unmapped.
+    """(group_num, subcase_label) for a scenario slug; group 9 for anything unmapped.
 
     NUMBERING ONLY. A case's parser configuration (`init`) and its stream
     properties (`finish_reason`) are declared per case in `gen_unified_golden.py` and flow
@@ -144,11 +151,27 @@ def tax(scenario):
     return UNIFIED_TAX.get(scenario, (9, scenario))
 
 
+def taxonomy_sort_key(scenario):
+    """Sort legacy letter labels and numeric positions in one sequence."""
+    group, sub = tax(scenario)
+    if len(sub) == 1 and "a" <= sub <= "z":
+        return group, ord(sub) - ord("a") + 1, ""
+    if sub.isdecimal():
+        return group, int(sub), ""
+    return group, 10_000, sub
+
+
+def case_label(scenario):
+    """Scenario slug -> short case label; numeric positions use a dash."""
+    group, sub = tax(scenario)
+    separator = "-" if sub.isdecimal() else "."
+    return f"{group}{separator}{sub}"
+
+
 def numbered_id(scenario):
     """Scenario slug -> intrinsic numbered case id, e.g. 'arg_marker_in_string' ->
-    'UNIFIED.7.b' (mirrors TOOLCALLING.streamv2.N naming)."""
-    g, sub = tax(scenario)
-    return f"UNIFIED.{g}.{sub}"
+    'UNIFIED.7.b'; numeric positions use a dash, e.g. 'UNIFIED.31-25'."""
+    return f"UNIFIED.{case_label(scenario)}"
 
 
 # The unified corpus names a family by its MODEL family (`qwen3`); the grammar-token

@@ -32,15 +32,15 @@
 use crate::tool_calling::qwen3_coder::qwen3_scanner;
 use crate::tool_calling::scan::ReasoningSpec;
 use crate::tool_calling::traits::Tool;
-use crate::unified::{ScannerUnified, UnifiedParser};
+use crate::unified::{GuidedRouted, ScannerUnified, UnifiedParser};
 
 const REASONING_START: &str = "<think>";
 const REASONING_END: &str = "</think>";
 
 /// Build the Qwen3 unified parser for one stream.
 pub(crate) fn qwen3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
-    Box::new(ScannerUnified::new(qwen3_scanner(tools).with_reasoning(
-        ReasoningSpec {
+    Box::new(GuidedRouted::new(ScannerUnified::new(
+        qwen3_scanner(tools).with_reasoning(ReasoningSpec {
             start: REASONING_START,
             end: REASONING_END,
             // Qwen3 emits its own `<think>`; the template does not pre-fill one,
@@ -49,7 +49,7 @@ pub(crate) fn qwen3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
             // `<think>` is not a special token for this family; the OR comes from the grammar.
             preserve_special_tokens: false,
             ..Default::default()
-        },
+        }),
     )))
 }
 
@@ -2697,6 +2697,43 @@ mod reset_and_payload_tests {
             parameters: serde_json::json!({"type":"object","properties":{"city":{"type":"string"}}}),
             strict: None,
         }]
+    }
+
+    /// The invoke CLOSER behind a guided payload is control markup, not an answer.
+    ///
+    /// A wrapper whose opener is stripped ahead of the payload left `</function>`
+    /// trailing after the call as visible text. This predates the Muse work — the same
+    /// bytes did it on `origin/main` — and is fixed in the shared guided owner, so this
+    /// pin and its Muse counterpart exercise ONE implementation.
+    #[test]
+    fn a_guided_payload_wrapped_in_an_invoke_leaves_no_closer_behind() {
+        let input = r#"<function=get_weather>[{"name":"get_weather","arguments":{"city":"Paris"}}]</function>"#;
+        let want = vec![UnifiedEvent::ToolCall {
+            name: "get_weather".into(),
+            arguments: serde_json::json!({"city": "Paris"}),
+        }];
+        let drive = |chunks: Vec<&str>| {
+            let mut p = qwen3_unified(&tools());
+            p.initialize_request(guided_init(None, InvalidGuidedPayloadPolicy::RecoverAsText))
+                .expect("init");
+            let mut d = Vec::new();
+            for c in chunks {
+                d.extend(p.push(c).expect("push"));
+            }
+            d.extend(p.finish().expect("finish"));
+            assemble(&d)
+        };
+        assert_eq!(drive(vec![input]), want, "whole input");
+        for at in 1..input.len() {
+            if !input.is_char_boundary(at) {
+                continue;
+            }
+            assert_eq!(
+                drive(vec![&input[..at], &input[at..]]),
+                want,
+                "split at byte {at}"
+            );
+        }
     }
 
     fn guided_init(

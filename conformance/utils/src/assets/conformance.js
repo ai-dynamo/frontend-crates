@@ -137,7 +137,8 @@
   function updateCompareUrl(panel, ctl) {
     const url = new URL(window.location.href);
     const pid = panel.id;
-    const base = ctlBase(ctl), b = ctlShown(ctl);
+    const base = ctlBase(ctl);
+    const b = ctlShown(ctl).filter(function (key) { return key !== base; });
     url.searchParams.delete('base_' + pid); url.searchParams.delete('cmp_' + pid);
     // Only record params when this panel differs from its default layout, so the
     // default state keeps a clean URL (and Reset lands on an empty query).
@@ -157,7 +158,9 @@
     const base = params.get('base_' + pid);
     const inB = new Set((params.get('cmp_' + pid) || '').split(',').filter(Boolean));
     ctl.querySelectorAll('input.cmp-ref').forEach(function (r) { r.checked = (r.value === base); });
-    ctl.querySelectorAll('input.cmp-on').forEach(function (cb) { cb.checked = inB.has(cb.value); });
+    ctl.querySelectorAll('input.cmp-on').forEach(function (cb) {
+      cb.checked = cb.value !== base && inB.has(cb.value);
+    });
   }
   function applyCtl(panel) {
     const ctl = panelCtl(panel);
@@ -300,13 +303,12 @@
     return Array.prototype.find.call(
       ctl.querySelectorAll('input.cmp-on'), function (x) { return x.value === val; }) || null;
   }
-  // Picking a new Reference (starring a row): the starred row is the reference, so its
-  // Compare box shows pressed. The PREVIOUS reference stays in the comparison as a normal
-  // checked Compare box, so moving the star to a new row keeps the old one visible
-  // (you're now comparing new-ref vs old-ref). syncRefDisable re-enables the old ref's
-  // box on the next applyCtl; leaving it checked here is what turns it into a compare.
+  // Picking a new Reference (starring a row) clears the previous comparison. The
+  // starred row is the only visible version until the user explicitly checks another
+  // Compare box.
   function handleRefChange(ctl) {
     const newBase = ctlBase(ctl);
+    ctl.querySelectorAll('input.cmp-on').forEach(function (box) { box.checked = false; });
     const newBox = _boxFor(ctl, newBase);
     if (newBox) { newBox.checked = true; }
     ctl.dataset.prevBase = newBase || '';
@@ -372,7 +374,11 @@
       if (!ctl) { return; }
       // Record the server-rendered default layout BEFORE applying any URL state,
       // so updateCompareUrl can keep the URL clean while at defaults.
-      cmpDefaults[panel.id] = { base: ctlBase(ctl), shown: ctlShown(ctl).slice() };
+      const base = ctlBase(ctl);
+      cmpDefaults[panel.id] = {
+        base: base,
+        shown: ctlShown(ctl).filter(function (key) { return key !== base; }),
+      };
       restoreCtlFromUrl(panel, ctl);
     });
     initCompareInputs();
@@ -401,13 +407,25 @@
     document.body.classList.toggle('view-overview', !detailed);
     document.body.classList.toggle('view-details', detailed);
     viewCheckboxes.forEach(function (cb) { cb.checked = detailed; });
+    // Compare-with only exists in Detailed. Leaving it returns to one reference (★),
+    // rather than carrying a hidden comparison into the next Detailed session.
+    if (!detailed && Object.keys(cmpDefaults).length > 0) {
+      document.querySelectorAll('.tab-panel').forEach(function (panel) {
+        const ctl = panelCtl(panel);
+        if (!ctl) { return; }
+        ctl.querySelectorAll('input.cmp-on:not(:disabled)').forEach(function (cb) {
+          cb.checked = false;
+        });
+        applyCtl(panel);
+      });
+    }
     if (shouldUpdateUrl) {
       updateViewUrl(detailed);
     }
   }
 
-  applyView(readDetailed(), false);
   initCompare();
+  applyView(readDetailed(), false);
   viewCheckboxes.forEach(function (cb) {
     cb.addEventListener('change', function () { applyView(cb.checked, true); });
   });

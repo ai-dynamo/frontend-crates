@@ -200,6 +200,32 @@ def test_v2_all_tabs_present(model_v2):
     ], ids
 
 
+def test_unified_numeric_case_ids_use_dash_everywhere(model_v2):
+    """Fixture IDs, headers, columns, and glossary rows share one numeric format."""
+    tab = _tab(model_v2, "tab-unified")
+    numeric = {
+        "guided_json_quoted_bare_header_in_answer": "31-25",
+        "guided_json_quoted_bare_tool_header_in_answer": "31-26",
+        "guided_json_quoted_bare_header_after_payload": "31-27",
+        "guided_json_bare_tool_header_recovers_inside_a_thought": "31-28",
+    }
+    columns = {column["sub"]: column["label"] for column in tab["columns"]}
+    glossary_ids = {
+        short_id
+        for group in tab["glossary"]
+        for short_id, _description in group["rows"]
+    }
+    cells = {cell["sub"]: cell for cell in _iter_cells(tab) if cell["sub"] in numeric}
+
+    assert set(cells) == set(numeric)
+    for scenario, short_id in numeric.items():
+        full_id = f"UNIFIED.{short_id}"
+        assert columns[scenario] == short_id
+        assert short_id in glossary_ids
+        assert cells[scenario]["case_id"] == full_id
+        assert cells[scenario]["tooltip"]["head"].startswith(f"{full_id} (")
+
+
 def test_v2_exactly_one_active_tab(model_v2):
     assert sum(1 for t in model_v2["tabs"] if t.get("active")) == 1
     assert model_v2["tabs"][0]["active"] is True
@@ -226,6 +252,40 @@ def test_v2_exactly_one_reference_bucket_per_tab(model_v2):
     for t in model_v2["tabs"]:
         refs = [c for c in t["candidates"] if c["default_bucket"] == "A"]
         assert len(refs) == 1, f"{t['id']}: expected one bucket-A reference, got {len(refs)}"
+
+
+def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
+    """The Unified tab must show both historical Combined and current native captures."""
+    tab = _tab(model_v2, "tab-unified")
+    labels = [candidate["label"] for candidate in tab["candidates"]]
+    assert "vLLM Rust 0.26.0 (stream, Combined & Unified)" in labels
+    assert "vLLM Rust 0.25.1 (stream, Combined & Unified)" in labels
+    assert "vLLM Python 0.25.1 (batch, Combined)" in labels
+    assert "vLLM Python 0.26.0 (batch, Combined)" in labels
+
+    muse = next(row for row in tab["rows"] if row["family"] == "muse_glimmer")
+    peer_keys = {candidate["key"] for candidate in tab["candidates"] if candidate["impl"] == "vllm"}
+    assert all(
+        all(cell["cmp"][key].get("na") == 1 for key in peer_keys)
+        for cell in muse["cells"].values()
+    )
+    muse_tip = next(iter(muse["cells"].values()))["tooltip"]
+    native = next(candidate for candidate in muse_tip["candidates"] if candidate["key"] == "vllm_rust@0.26.0")
+    assert native["block"]["unavailable"] == "vLLM Rust 0.26.0 (stream, Combined & Unified) has no parser for muse_glimmer"
+
+
+def test_unified_tab_marks_only_unsupported_vllm_families_na(model_v2):
+    """Every captured vLLM parser family has data for every Unified case."""
+    tab = _tab(model_v2, "tab-unified")
+    peer_keys = {candidate["key"] for candidate in tab["candidates"] if candidate["impl"] == "vllm"}
+    assert peer_keys == {"vllm", "vllm_python@0.26.0", "vllm_rust", "vllm_rust@0.26.0"}
+    for row in tab["rows"]:
+        for key in peer_keys:
+            unavailable = [cell["cmp"][key].get("na") == 1 for cell in row["cells"].values()]
+            if row["family"] == "muse_glimmer":
+                assert all(unavailable), f"{key} must say n/a for Muse"
+            else:
+                assert not any(unavailable), f"{key} is missing captured cases for {row['family']}"
 
 
 _IMPL_KEYS = ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python")

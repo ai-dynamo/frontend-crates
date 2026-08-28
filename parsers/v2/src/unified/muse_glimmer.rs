@@ -17,38 +17,87 @@
 //! the end-of-stream drop stay a single implementation.
 //!
 //! There is deliberately no `ReasoningSpec`: Muse has no reasoning marker PAIR — a
-//! dynamic `to=self<|message|>` header opens reasoning, sharing its opener with the
-//! content and tool channels, so routing is by recipient, not marker. That is why this
-//! family does not run on [`crate::unified::ScannerUnified`].
+//! dynamic `to=self<|message|>` header opens reasoning, sharing every literal byte
+//! except the recipient with the content and tool channels, so routing is by
+//! recipient, not marker. That is why this family does not run on
+//! [`crate::unified::ScannerUnified`].
+//!
+//! Having no marker pair is NOT the same as having no reasoning channel, and the two
+//! were conflated for a while: guided tool output was refused outright for this
+//! family, which left 37 of the 81 unified conformance scenarios ungenerated. The
+//! guided reader now asks [`crate::unified::GuidedReasoning`] where a thought begins
+//! instead of assuming a fixed opener string, so this family supplies the header
+//! resolver it already uses natively and is served guided output like any other.
 //!
 //! What the unified path adds is ORDER: one machine routes reasoning, content and calls
 //! directly, so a thought between two calls stays between them instead of being hoisted
 //! ahead of the calls the way the split path does.
 
-use crate::tool_calling::muse_glimmer::{MuseChannelScanner, muse_scanner};
+use crate::tool_calling::muse_glimmer::{
+    GUIDED_CLOSE_MARKERS, GUIDED_COMPETITORS, GUIDED_CONTROL_MARKERS, MuseChannelScanner,
+    guided_content_header, guided_header_holdback, guided_reasoning_close, guided_reasoning_open,
+    guided_routing_header, guided_stray_header, guided_strip_text, guided_turn_end, muse_scanner,
+};
 use crate::tool_calling::traits::{Result, Tool};
-use crate::unified::{UnifiedParser, UnifiedParserEvent, UnifiedParserInit, UnifiedParserOutput};
+use crate::unified::{
+    GuidedChannel, GuidedGrammar, GuidedReasoning, GuidedRouted, NativeUnified, UnifiedParser,
+    UnifiedParserEvent, UnifiedParserOutput, UnifiedParserStartingState,
+};
 
-impl UnifiedParser for MuseChannelScanner {
+/// The invoke opener, in the prefix form the guided reader anchors on.
+const INVOKE_START: &str = "<atem:invoke";
+const INVOKE_END: &str = "</atem:invoke>";
+
+impl NativeUnified for MuseChannelScanner {
     fn preserve_special_tokens(&self) -> bool {
         true
     }
 
-    fn initialize_request(&mut self, init: UnifiedParserInit) -> Result<()> {
-        self.apply_init(init)
+    /// Reasoning recognised by RECIPIENT rather than by a marker pair.
+    ///
+    /// Always `Some`: this family does have a reasoning channel, so an explicitly
+    /// prefilled thought and guided tool output are both honourable. Returning
+    /// `None` here would silently reinstate the refusal this replaced.
+    fn guided_reasoning(&self) -> Option<GuidedReasoning> {
+        Some(GuidedReasoning::Channel(GuidedChannel {
+            find_open: guided_reasoning_open,
+            find_close: guided_reasoning_close,
+            find_turn_end: guided_turn_end,
+            find_stray: guided_stray_header,
+            find_routing: guided_routing_header,
+            find_transition: guided_content_header,
+            holdback: guided_header_holdback,
+            strip_text: guided_strip_text,
+            competitors: &GUIDED_COMPETITORS,
+            close_markers: &GUIDED_CLOSE_MARKERS,
+        }))
     }
 
-    /// The trait default returns an empty string and clears nothing. Muse buffers on
-    /// every path — a partial marker, an open channel, the bare-header latch and a used
-    /// `next_index` — so inheriting it would report an empty carry while the scanner
-    /// still held all of that. A caller on the documented recovery path would drop the
-    /// held bytes and resume on a counter that re-numbers its first call onto an index
-    /// the abandoned stream already dispatched.
-    fn reset(&mut self) -> String {
-        self.reset_stream()
+    fn guided_grammar(&self) -> GuidedGrammar {
+        GuidedGrammar {
+            control_markers: GUIDED_CONTROL_MARKERS
+                .iter()
+                .map(|m| m.to_string())
+                .collect(),
+            invoke_start: INVOKE_START.to_string(),
+            invoke_end: INVOKE_END.to_string(),
+            // The marker-only rules are enough here: an ATEM invoke is delimited by a
+            // literal opener and closer, with no grammar-aware location rule of the
+            // kind gemma4's value wrapping needs.
+            invoke_scan: None,
+        }
     }
 
-    fn parse_into(&mut self, delta: &str, output: &mut UnifiedParserOutput) -> Result<()> {
+    fn apply_native_init(&mut self, starting_state: UnifiedParserStartingState) {
+        self.reset_stream();
+        self.apply_starting_state(starting_state);
+    }
+
+    fn restore_native_state(&mut self, starting_state: UnifiedParserStartingState) {
+        self.apply_starting_state(starting_state);
+    }
+
+    fn push_native(&mut self, delta: &str, output: &mut UnifiedParserOutput) -> Result<()> {
         // Through a carry the caller keeps on `Err`, not `push_ordered`'s owned
         // `Result<Vec<_>>`: the drain types arguments mid-advance (`parse_invoke`), so it
         // can commit events and THEN fail, and the trait promises those stay in `output`.
@@ -60,12 +109,21 @@ impl UnifiedParser for MuseChannelScanner {
         result
     }
 
-    fn finish(&mut self) -> Result<UnifiedParserOutput> {
-        let mut output = UnifiedParserOutput::default();
+    fn finish_native(&mut self, output: &mut UnifiedParserOutput) -> Result<()> {
         for event in self.finish_ordered()? {
-            push_event(&mut output, event);
+            push_event(output, event);
         }
-        Ok(output)
+        Ok(())
+    }
+
+    /// The trait default returns an empty string and clears nothing. Muse buffers on
+    /// every path — a partial marker, an open channel, the bare-header latch and a used
+    /// `next_index` — so inheriting it would report an empty carry while the scanner
+    /// still held all of that. A caller on the documented recovery path would drop the
+    /// held bytes and resume on a counter that re-numbers its first call onto an index
+    /// the abandoned stream already dispatched.
+    fn reset_native(&mut self) -> String {
+        self.reset_stream()
     }
 }
 
@@ -79,13 +137,16 @@ fn push_event(output: &mut UnifiedParserOutput, event: UnifiedParserEvent) {
 
 /// Build the Muse Glimmer unified parser for one stream.
 pub(crate) fn muse_glimmer_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
-    Box::new(muse_scanner(tools))
+    Box::new(GuidedRouted::new(muse_scanner(tools)))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::unified::{UnifiedEvent, UnifiedParserExt, assemble};
+    use crate::unified::{
+        InvalidGuidedPayloadPolicy, UnifiedEvent, UnifiedParserExt, UnifiedParserInit,
+        UnifiedToolOutputMode, assemble,
+    };
 
     /// The conformance harness vocabulary, so a unit test and a golden case can
     /// describe the same call.
@@ -844,6 +905,749 @@ mod tests {
         // half; a marker it merely quotes whole is stripped by the run it sits in.
     }
 
+    /// A channel TRANSITION is not a channel CLOSER, and confusing them dispatched a
+    /// tool call the model never made.
+    ///
+    /// `to=user` routes the turn to visible content. Consuming it as if it were an
+    /// ordinary reasoning closer dropped the turn back into the guided JSON
+    /// accumulator, so a visible answer that happened to look like a call was parsed as
+    /// one. The model chose text and the client executed a tool — failing OPEN on a side
+    /// effect, which is the worst outcome this parser can produce.
+    ///
+    /// Routing to content is one-way until the MESSAGE ends, not for the whole turn:
+    /// the native scan opens a tool channel after a content message, so a closer puts
+    /// the turn back where a later payload can route it again. Both halves are asserted
+    /// here, because fixing only the first loses a legitimate call after `<|eom|>`.
+    ///
+    /// And `<|eom|>` is not `<|eot|>`. A message close leaves room for a later routed
+    /// message; a TURN END does not, so bytes behind it are trailing text however much
+    /// they look like a call. Treating the two as one closer re-opened the payload
+    /// accumulator after the turn was already over.
+    #[test]
+    fn a_content_transition_keeps_the_answer_visible() {
+        let call = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        let text = |t: &str| UnifiedEvent::Text { text: t.into() };
+        let reasoning = |t: &str| UnifiedEvent::Reasoning { text: t.into() };
+        let weather = || UnifiedEvent::ToolCall {
+            name: "get_weather".into(),
+            arguments: serde_json::json!({"city": "Paris"}),
+        };
+        for (label, start, input, want) in [
+            (
+                "JSON-shaped answer from outside reasoning",
+                UnifiedParserStartingState::None,
+                format!("<|start|>assistant to=user<|message|>{call}"),
+                vec![text(call)],
+            ),
+            (
+                "JSON-shaped answer after an open thought",
+                UnifiedParserStartingState::None,
+                format!(
+                    "<|start|>assistant to=self<|message|>t<|start|>assistant to=user<|message|>{call}"
+                ),
+                vec![reasoning("t"), text(call)],
+            ),
+            (
+                "JSON-shaped answer from a PREFILLED thought",
+                UnifiedParserStartingState::Reasoning,
+                format!("t<|start|>assistant to=user<|message|>{call}"),
+                vec![reasoning("t"), text(call)],
+            ),
+            (
+                "ordinary prose is unaffected",
+                UnifiedParserStartingState::None,
+                "<|start|>assistant to=user<|message|>just words".to_string(),
+                vec![text("just words")],
+            ),
+            (
+                "malformed JSON stays visible too",
+                UnifiedParserStartingState::None,
+                r#"<|start|>assistant to=user<|message|>[{"name": "#.to_string(),
+                vec![text(r#"[{"name": "#)],
+            ),
+            (
+                // The other direction: the message ENDS, so a payload may route again.
+                "a closed content message releases the turn",
+                UnifiedParserStartingState::None,
+                format!("<|start|>assistant to=user<|message|>ans<|eom|>{call}"),
+                vec![text("ans"), weather()],
+            ),
+            (
+                // ...but the TURN ending does not. Nothing routes after `<|eot|>`.
+                "a terminal closer does not release the turn",
+                UnifiedParserStartingState::None,
+                format!("<|start|>assistant to=user<|message|>ans<|eot|>{call}"),
+                vec![text(&format!("ans{call}"))],
+            ),
+        ] {
+            let drive = |chunks: Vec<&str>| {
+                let mut parser = muse_glimmer_unified(&tools());
+                parser
+                    .initialize_request(UnifiedParserInit {
+                        prompt_token_ids: Vec::new(),
+                        starting_state: start,
+                        tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                        invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                    })
+                    .expect("guided init must be accepted");
+                let mut deltas = Vec::new();
+                for c in chunks {
+                    deltas.extend(parser.push(c).expect("push"));
+                }
+                deltas.extend(parser.finish().expect("finish"));
+                assemble(&deltas)
+            };
+            assert_eq!(drive(vec![&input]), want, "{label}: whole input");
+            let per_char: Vec<String> = input.chars().map(|c| c.to_string()).collect();
+            assert_eq!(
+                drive(per_char.iter().map(String::as_str).collect()),
+                want,
+                "{label}: one character at a time"
+            );
+            for at in 1..input.len() {
+                if !input.is_char_boundary(at) {
+                    continue;
+                }
+                assert_eq!(
+                    drive(vec![&input[..at], &input[at..]]),
+                    want,
+                    "{label}: split at byte {at}"
+                );
+            }
+            // Conservation: a transition must never dispatch a call from the answer.
+            if !label.starts_with("a closed") {
+                assert!(
+                    !drive(vec![&input])
+                        .iter()
+                        .any(|e| matches!(e, UnifiedEvent::ToolCall { .. })),
+                    "{label}: a visible answer was dispatched as a tool call"
+                );
+            }
+        }
+    }
+
+    /// Stripping control markup is not a routing decision, and a routed turn must not
+    /// hold prose back.
+    ///
+    /// Two consequences of tracking turn scope, each measured before being fixed:
+    ///
+    /// - an ORPHAN recipient-less `<|message|>` is markup that gets stripped and routes
+    ///   nothing, but it was counted as a header and spent the turn's routing scope. The
+    ///   next REAL bare header was then demoted and its recipient came out as visible
+    ///   text — ` to=get_weather` in the user's answer.
+    /// - once a payload has routed the turn, a trailing `to=`-shaped fragment can no
+    ///   longer become a header, so holding it back delays bytes whose meaning is already
+    ///   settled. Asserted on what `push` RETURNS, before `finish`, because that is the
+    ///   only place the delay is observable.
+    #[test]
+    fn markup_does_not_route_and_a_routed_turn_makes_progress() {
+        let call = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        let weather = || UnifiedEvent::ToolCall {
+            name: "get_weather".into(),
+            arguments: serde_json::json!({"city": "Paris"}),
+        };
+        let guided = |start: UnifiedParserStartingState| {
+            let mut parser = muse_glimmer_unified(&tools());
+            parser
+                .initialize_request(UnifiedParserInit {
+                    prompt_token_ids: Vec::new(),
+                    starting_state: start,
+                    tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                    invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                })
+                .expect("guided init must be accepted");
+            parser
+        };
+
+        // An orphan marker leaves the scope alone, so the later bare header still routes.
+        let orphan = format!("thinking<|message|>still<|eom|> to=get_weather<|message|>{call}");
+        // A real stray header DOES spend it: the same trailing bare header is a quote
+        // once a tool-routed header has already run the turn.
+        // No payload on this one: prose ahead of the JSON means it is not a guided
+        // payload, which is existing behaviour and not what this sibling is about.
+        let real = " to=other<|message|>body<|eom|>I mean to=self<|message|>literal".to_string();
+        for (label, start, input, want) in [
+            (
+                "an orphan marker does not spend routing scope",
+                UnifiedParserStartingState::Reasoning,
+                orphan,
+                vec![
+                    UnifiedEvent::Reasoning {
+                        text: "thinkingstill".into(),
+                    },
+                    weather(),
+                ],
+            ),
+            (
+                "a real routed header does spend it",
+                UnifiedParserStartingState::None,
+                real,
+                vec![UnifiedEvent::Text {
+                    text: "bodyI mean to=selfliteral".into(),
+                }],
+            ),
+        ] {
+            let drive = |chunks: Vec<&str>| {
+                let mut parser = guided(start);
+                let mut deltas = Vec::new();
+                for c in chunks {
+                    deltas.extend(parser.push(c).expect("push"));
+                }
+                deltas.extend(parser.finish().expect("finish"));
+                assemble(&deltas)
+            };
+            assert_eq!(drive(vec![&input]), want, "{label}: whole input");
+            let per_char: Vec<String> = input.chars().map(|c| c.to_string()).collect();
+            assert_eq!(
+                drive(per_char.iter().map(String::as_str).collect()),
+                want,
+                "{label}: one character at a time"
+            );
+            for at in 1..input.len() {
+                if !input.is_char_boundary(at) {
+                    continue;
+                }
+                assert_eq!(
+                    drive(vec![&input[..at], &input[at..]]),
+                    want,
+                    "{label}: split at byte {at}"
+                );
+            }
+        }
+
+        // INTERMEDIATE PROGRESS: what `push` returns, with no `finish` behind it.
+        let mut routed = guided(UnifiedParserStartingState::None);
+        let pushed = routed.push(&format!("{call}I mean to=self")).expect("push");
+        assert_eq!(
+            assemble(&pushed),
+            vec![
+                weather(),
+                UnifiedEvent::Text {
+                    text: "I mean to=self".into(),
+                },
+            ],
+            "a routed turn held prose back until finish"
+        );
+
+        // ...and the contrast: before anything routes the turn, and inside an open
+        // thought, a bare-header prefix really can still complete, so it stays held.
+        for (label, start, head) in [
+            (
+                "unrouted",
+                UnifiedParserStartingState::None,
+                "I mean to=self",
+            ),
+            (
+                "in reasoning",
+                UnifiedParserStartingState::Reasoning,
+                "thinking to=self",
+            ),
+        ] {
+            let mut parser = guided(start);
+            let pushed = parser.push(head).expect("push");
+            let held = assemble(&pushed);
+            assert!(
+                held.iter().all(|e| match e {
+                    UnifiedEvent::Text { text } | UnifiedEvent::Reasoning { text } =>
+                        !text.contains("to=self"),
+                    _ => true,
+                }),
+                "{label}: a still-completable bare header was released early: {held:?}"
+            );
+        }
+    }
+
+    /// Turn position and open channel are INDEPENDENT, and header resolution needs
+    /// both.
+    ///
+    /// A single "bare headers still allowed" flag cannot carry them, and collapsing
+    /// them broke this in both directions at once:
+    ///
+    /// - a guided payload routes the turn without any header doing it, so the flag
+    ///   stayed permissive and a bare header the model QUOTED after the call was
+    ///   promoted into a real thought;
+    /// - consuming the turn's opening reasoning header closed the flag, so a real bare
+    ///   tool header INSIDE the thought — the missing-terminator recovery boundary —
+    ///   was demoted and its recipient words leaked into the reasoning.
+    ///
+    /// Both expectations are taken from the NATIVE parser on the same shapes, not
+    /// authored by hand — including the separator space in `"thinking "`, which the
+    /// native scan keeps because it cuts the body at the `to=`. Guided absorbed that
+    /// byte, and a one-byte disagreement on identical input is still a parity failure.
+    #[test]
+    fn header_resolution_tracks_turn_scope_not_a_single_flag() {
+        let call = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        let weather = || UnifiedEvent::ToolCall {
+            name: "get_weather".into(),
+            arguments: serde_json::json!({"city": "Paris"}),
+        };
+        for (label, input, want) in [
+            (
+                "a payload routes the turn, so a later bare header is a quote",
+                format!("{call}I mean to=self<|message|>literal"),
+                vec![
+                    weather(),
+                    UnifiedEvent::Text {
+                        text: "I mean to=selfliteral".into(),
+                    },
+                ],
+            ),
+            (
+                "a bare tool header inside an open thought still recovers",
+                format!(" to=self<|message|>thinking to=get_weather<|message|>{call}"),
+                // `"thinking "` WITH the separator space, byte-for-byte what the native
+                // scan emits: it cuts the body at the `to=`, so that space is the last
+                // byte of the thought. Guided absorbed it and the two paths disagreed
+                // by one byte, which is a parity failure however small it looks.
+                vec![
+                    UnifiedEvent::Reasoning {
+                        text: "thinking ".into(),
+                    },
+                    weather(),
+                ],
+            ),
+        ] {
+            let drive = |chunks: Vec<&str>| {
+                let mut parser = muse_glimmer_unified(&tools());
+                parser
+                    .initialize_request(UnifiedParserInit {
+                        prompt_token_ids: Vec::new(),
+                        starting_state: UnifiedParserStartingState::None,
+                        tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                        invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                    })
+                    .expect("guided init must be accepted");
+                let mut deltas = Vec::new();
+                for c in chunks {
+                    deltas.extend(parser.push(c).expect("push"));
+                }
+                deltas.extend(parser.finish().expect("finish"));
+                assemble(&deltas)
+            };
+            assert_eq!(drive(vec![&input]), want, "{label}: whole input");
+            let per_char: Vec<String> = input.chars().map(|c| c.to_string()).collect();
+            assert_eq!(
+                drive(per_char.iter().map(String::as_str).collect()),
+                want,
+                "{label}: one character at a time"
+            );
+            for at in 1..input.len() {
+                if !input.is_char_boundary(at) {
+                    continue;
+                }
+                assert_eq!(
+                    drive(vec![&input[..at], &input[at..]]),
+                    want,
+                    "{label}: split at byte {at}"
+                );
+            }
+        }
+    }
+
+    /// A bare header the model QUOTED inside its visible answer is words, not a
+    /// channel switch.
+    ///
+    /// This family resolves an unframed `to=…<|message|>` header at turn start, when
+    /// the prompt has consumed `<|start|>assistant`. Once the turn has been routed,
+    /// the identical bytes are something the model wrote — and the native scan demotes
+    /// them, keeping the `to=…` words visible and stripping only the marker. The
+    /// guided hooks were stateless, so they promoted the quote: a `to=self` quote
+    /// split one answer into an answer plus a THOUGHT, and a quoted tool recipient
+    /// silently deleted the words from the answer.
+    ///
+    /// Both paths now consult one `resolve_header_latched`, so the two request modes
+    /// cannot disagree about which bytes are structural.
+    #[test]
+    fn a_quoted_bare_header_inside_the_answer_stays_visible() {
+        let call = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        for (label, quoted) in [
+            ("a quoted reasoning recipient", "to=self"),
+            ("a quoted tool recipient", "to=get_weather"),
+        ] {
+            let input = format!(
+                "<|start|>assistant to=user<|message|>I mean {quoted}<|message|>literal<|eom|>{call}"
+            );
+            let want = vec![
+                UnifiedEvent::Text {
+                    text: format!("I mean {quoted}literal"),
+                },
+                UnifiedEvent::ToolCall {
+                    name: "get_weather".into(),
+                    arguments: serde_json::json!({"city": "Paris"}),
+                },
+            ];
+            let drive = |chunks: Vec<&str>| {
+                let mut parser = muse_glimmer_unified(&tools());
+                parser
+                    .initialize_request(UnifiedParserInit {
+                        prompt_token_ids: Vec::new(),
+                        starting_state: UnifiedParserStartingState::None,
+                        tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                        invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                    })
+                    .expect("guided init must be accepted");
+                let mut deltas = Vec::new();
+                for c in chunks {
+                    deltas.extend(parser.push(c).expect("push"));
+                }
+                deltas.extend(parser.finish().expect("finish"));
+                assemble(&deltas)
+            };
+            assert_eq!(drive(vec![&input]), want, "{label}: whole input");
+            let per_char: Vec<String> = input.chars().map(|c| c.to_string()).collect();
+            assert_eq!(
+                drive(per_char.iter().map(String::as_str).collect()),
+                want,
+                "{label}: one character at a time"
+            );
+            for at in 1..input.len() {
+                if !input.is_char_boundary(at) {
+                    continue;
+                }
+                assert_eq!(
+                    drive(vec![&input[..at], &input[at..]]),
+                    want,
+                    "{label}: split at byte {at}"
+                );
+            }
+        }
+    }
+
+    /// A thought whose terminator never arrived, running into the guided payload
+    /// through the family's own tool WRAPPER rather than straight into the JSON.
+    ///
+    /// The sibling of the direct case, and the one the first fix missed: recovery
+    /// tested for JSON IMMEDIATELY after the routed header, so
+    /// `to=NAME<|message|>[{…}]` recovered while
+    /// `to=NAME<|message|><atem:function_calls>[{…}]` still emitted the payload as
+    /// REASONING and dispatched nothing. qwen3 dropped the call the same way on
+    /// `<think>a<tool_call>[{…}]`, which has no routed header at all — so the rule
+    /// lives in the shared owner and both families run the one implementation.
+    ///
+    /// The narrated contrast is asserted beside it: the same markup with PROSE behind
+    /// it is something the model wrote while thinking, and the span stays open.
+    #[test]
+    fn an_unterminated_thought_recovers_through_a_tool_wrapper() {
+        let call = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        let weather = || UnifiedEvent::ToolCall {
+            name: "get_weather".into(),
+            arguments: serde_json::json!({"city": "Paris"}),
+        };
+        let reasoning = |text: &str| UnifiedEvent::Reasoning { text: text.into() };
+        for (label, input, want) in [
+            (
+                "wrapper between the header and the payload still recovers",
+                format!(
+                    "<|start|>assistant to=self<|message|>thinking\
+                     <|start|>assistant to=get_weather<|message|>\
+                     <atem:function_calls>{call}</atem:function_calls><|eom|>"
+                ),
+                vec![reasoning("thinking"), weather()],
+            ),
+            (
+                "the same wrapper with prose behind it is narration",
+                format!(
+                    "<|start|>assistant to=self<|message|>thinking about \
+                     <atem:function_calls> and more<|eom|>{call}"
+                ),
+                vec![reasoning("thinking about  and more"), weather()],
+            ),
+        ] {
+            let drive = |chunks: Vec<&str>| {
+                let mut parser = muse_glimmer_unified(&tools());
+                parser
+                    .initialize_request(UnifiedParserInit {
+                        prompt_token_ids: Vec::new(),
+                        starting_state: UnifiedParserStartingState::None,
+                        tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                        invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                    })
+                    .expect("guided init must be accepted");
+                let mut deltas = Vec::new();
+                for c in chunks {
+                    deltas.extend(parser.push(c).expect("push"));
+                }
+                deltas.extend(parser.finish().expect("finish"));
+                assemble(&deltas)
+            };
+            assert_eq!(drive(vec![&input]), want, "{label}: whole input");
+            for at in 1..input.len() {
+                if !input.is_char_boundary(at) {
+                    continue;
+                }
+                assert_eq!(
+                    drive(vec![&input[..at], &input[at..]]),
+                    want,
+                    "{label}: split at byte {at}"
+                );
+            }
+        }
+    }
+
+    /// Guided framing cases an independent review found after the first round, each
+    /// one measured at every split point rather than only whole and per-character.
+    ///
+    /// - a bare `<|message|>` the model writes mid-thought is a stray marker, not a
+    ///   recipient-less content header; reading it as one ENDED the thought and sent
+    ///   the rest of the reasoning to the user as the answer;
+    /// - an invoke wrapper whose opener was stripped ahead of a guided payload left
+    ///   its CLOSER trailing behind the call as visible text, on both families;
+    /// - a tool-routed header that leads straight into the guided payload is the
+    ///   missing-terminator recovery point, not narration — stripping it left the
+    ///   payload inside the thought, so the call was never made and the model's
+    ///   private reasoning carried the raw JSON.
+    #[test]
+    fn guided_framing_survives_every_split_point() {
+        let call = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        let weather = || UnifiedEvent::ToolCall {
+            name: "get_weather".into(),
+            arguments: serde_json::json!({"city": "Paris"}),
+        };
+        let reasoning = |text: &str| UnifiedEvent::Reasoning { text: text.into() };
+
+        for (label, input, want) in [
+            (
+                "a bare message marker mid-thought does not end the thought",
+                format!(
+                    "<|start|>assistant to=self<|message|>thinking<|message|>still thinking<|eom|>{call}"
+                ),
+                vec![reasoning("thinkingstill thinking"), weather()],
+            ),
+            (
+                "an invoke closer behind the payload is not visible text",
+                format!("<atem:invoke name=\"get_weather\">{call}</atem:invoke>"),
+                vec![weather()],
+            ),
+            (
+                "a tool header leading into the payload recovers the missing terminator",
+                format!(
+                    "<|start|>assistant to=self<|message|>thinking\
+                     <|start|>assistant to=get_weather<|message|>{call}<|eom|>"
+                ),
+                vec![reasoning("thinking"), weather()],
+            ),
+            (
+                // The contrast case for the one above: the same header shape NARRATED,
+                // with no payload behind it, stays stripped and the thought stays open.
+                "a narrated tool header with no payload behind it stays narration",
+                format!(
+                    "<|start|>assistant to=self<|message|>I will call \
+                     <|start|>assistant to=get_weather<|message|> soon<|eom|>{call}"
+                ),
+                vec![reasoning("I will call  soon"), weather()],
+            ),
+        ] {
+            let drive = |chunks: Vec<&str>| {
+                let mut parser = muse_glimmer_unified(&tools());
+                parser
+                    .initialize_request(UnifiedParserInit {
+                        prompt_token_ids: Vec::new(),
+                        starting_state: UnifiedParserStartingState::None,
+                        tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                        invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                    })
+                    .expect("guided init must be accepted");
+                let mut deltas = Vec::new();
+                for c in chunks {
+                    deltas.extend(parser.push(c).expect("push"));
+                }
+                deltas.extend(parser.finish().expect("finish"));
+                assemble(&deltas)
+            };
+
+            assert_eq!(drive(vec![&input]), want, "{label}: whole input");
+            // EVERY valid split point, not a sample. A boundary that lands one byte
+            // inside a header is exactly where the holdback rules are load-bearing, and
+            // picking a few offsets by hand is how the first version passed while a
+            // per-character drive still leaked.
+            for at in 1..input.len() {
+                if !input.is_char_boundary(at) {
+                    continue;
+                }
+                assert_eq!(
+                    drive(vec![&input[..at], &input[at..]]),
+                    want,
+                    "{label}: split at byte {at}"
+                );
+            }
+        }
+    }
+
+    /// Guided mode must read the same bytes the same way the native path does.
+    ///
+    /// Three defects an independent review found in the first version of the guided
+    /// wiring, each one a case where the two paths disagreed about identical input:
+    ///
+    /// - a `to=user` header inside a thought was stripped as markup instead of
+    ///   ENDING the thought, so the model's visible answer came out as its private
+    ///   thinking (and, with a tool recipient, the payload behind it was never read);
+    /// - a native invoke whose ARGUMENT VALUE opened with `{` had its closer hidden
+    ///   behind the payload bound, so only its header was stripped and the parameter
+    ///   body went to the user as text with no call dispatched;
+    /// - a header whose role word is not `assistant` resolves from its `to=` run, and
+    ///   the `<|start|>` sitting in front of it was emitted verbatim.
+    ///
+    /// Held as guided-equals-native rather than as literal expectations, so the pin
+    /// cannot rot into asserting whatever the guided path happens to do.
+    #[test]
+    fn guided_reads_channel_framing_the_way_the_native_path_does() {
+        let guided = |input: &str, split: bool| {
+            let mut parser = muse_glimmer_unified(&tools());
+            parser
+                .initialize_request(UnifiedParserInit {
+                    prompt_token_ids: Vec::new(),
+                    starting_state: UnifiedParserStartingState::None,
+                    tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                    invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                })
+                .expect("guided init must be accepted");
+            let mut deltas = Vec::new();
+            if split {
+                for ch in input.chars() {
+                    deltas.extend(parser.push(&ch.to_string()).expect("push"));
+                }
+            } else {
+                deltas.extend(parser.push(input).expect("push"));
+            }
+            deltas.extend(parser.finish().expect("finish"));
+            assemble(&deltas)
+        };
+        let native = |input: &str| {
+            let mut parser = muse_glimmer_unified(&tools());
+            let mut deltas = parser.push(input).expect("push");
+            deltas.extend(parser.finish().expect("finish"));
+            assemble(&deltas)
+        };
+
+        for (label, input) in [
+            (
+                "a switch to the visible channel ends the thought",
+                "<|start|>assistant to=self<|message|>thinking\
+                 <|start|>assistant to=user<|message|>answer",
+            ),
+            (
+                "a role word the grammar does not know leaks no marker",
+                "<|start|>wrong-role to=self<|message|>secret<|eom|>",
+            ),
+        ] {
+            assert_eq!(guided(input, false), native(input), "{label}: whole input");
+            assert_eq!(
+                guided(input, true),
+                native(input),
+                "{label}: one character at a time"
+            );
+        }
+
+        // A complete native invoke under guided decoding emits NOTHING — the mode
+        // promised bare JSON and this turn carried none, so there is no call to make
+        // and no markup to show. The brace inside the argument value must not be
+        // mistaken for the payload.
+        let native_only = concat!(
+            "<|start|>assistant to=get_weather<|message|><atem:function_calls>",
+            "<atem:invoke name=\"get_weather\"><atem:parameter name=\"city\">{\"x\":1}</atem:parameter>",
+            "</atem:invoke></atem:function_calls><|eom|>"
+        );
+        assert_eq!(
+            guided(native_only, false),
+            vec![],
+            "a native invoke with a brace-opening argument leaked under guided decoding"
+        );
+    }
+
+    /// Guided tool output, on the family that had none.
+    ///
+    /// The guided reader used to be refused outright here, on the ground that muse has
+    /// no reasoning marker PAIR. It has a reasoning CHANNEL — routed by recipient — and
+    /// conflating the two skipped 37 of the 81 unified conformance scenarios for this
+    /// family.
+    ///
+    /// Each shape is driven twice, whole and one character at a time, and the two must
+    /// agree. That is the assertion that matters, not the literal events: the first
+    /// working version of this parsed every shape correctly whole and, per character,
+    /// released `assistant` from the middle of `<|start|>assistant to=self<|message|>`
+    /// as the model's visible answer — then could no longer see the `<|start|>` it
+    /// needed to look back at, so the thought opened at the wrong offset. Same bytes,
+    /// two answers, decided by where the chunk boundaries fell (`I6`).
+    #[test]
+    fn guided_payloads_parse_the_same_whole_and_split() {
+        let one_call = r#"[{"name": "get_weather", "arguments": {"city": "Paris"}}]"#;
+        let call = |args: &str| UnifiedEvent::ToolCall {
+            name: "get_weather".into(),
+            arguments: serde_json::from_str(args).expect("golden arguments are JSON"),
+        };
+        for (label, named, input, want) in [
+            (
+                "a named choice sends the argument object alone",
+                Some("get_weather"),
+                r#"{"city": "Paris"}"#.to_string(),
+                vec![call(r#"{"city": "Paris"}"#)],
+            ),
+            (
+                "a required choice sends an array of envelopes",
+                None,
+                one_call.to_string(),
+                vec![call(r#"{"city": "Paris"}"#)],
+            ),
+            (
+                "a framed thought precedes the payload",
+                None,
+                format!("<|start|>assistant to=self<|message|>thinking<|eom|>{one_call}"),
+                vec![
+                    UnifiedEvent::Reasoning {
+                        text: "thinking".into(),
+                    },
+                    call(r#"{"city": "Paris"}"#),
+                ],
+            ),
+            (
+                // The form the prompt leaves when it has already consumed
+                // `<|start|>assistant`. A fixed opener string would not match it.
+                "a BARE thought header precedes the payload",
+                None,
+                format!(" to=self<|message|>thinking<|eom|>{one_call}"),
+                vec![
+                    UnifiedEvent::Reasoning {
+                        text: "thinking".into(),
+                    },
+                    call(r#"{"city": "Paris"}"#),
+                ],
+            ),
+            (
+                // Guided decoding constrains the payload to bare JSON, so ATEM around
+                // it is markup with nothing behind it. Left in, it enters the JSON
+                // buffer, breaks the parse and costs the call.
+                "native ATEM markup brackets the payload",
+                None,
+                format!("<atem:function_calls>{one_call}</atem:function_calls>"),
+                vec![call(r#"{"city": "Paris"}"#)],
+            ),
+        ] {
+            let drive = |chunks: Vec<String>| {
+                let mut parser = muse_glimmer_unified(&tools());
+                parser
+                    .initialize_request(UnifiedParserInit {
+                        prompt_token_ids: Vec::new(),
+                        starting_state: UnifiedParserStartingState::None,
+                        tool_output_mode: UnifiedToolOutputMode::GuidedJson {
+                            named_tool: named.map(str::to_string),
+                        },
+                        invalid_guided_payload: Default::default(),
+                    })
+                    .expect("guided init must be accepted");
+                let mut deltas = Vec::new();
+                for chunk in chunks {
+                    deltas.extend(parser.push(&chunk).expect("push"));
+                }
+                deltas.extend(parser.finish().expect("finish"));
+                assemble(&deltas)
+            };
+            let whole = drive(vec![input.clone()]);
+            let split = drive(input.chars().map(|c| c.to_string()).collect());
+            assert_eq!(whole, want, "{label}: whole input");
+            assert_eq!(split, want, "{label}: one character at a time");
+        }
+    }
+
     #[test]
     fn a_reused_parser_reads_the_next_turn_the_way_a_fresh_one_does() {
         // `finish` cleared the buffer and the state but left every PER-TURN latch set,
@@ -857,9 +1661,16 @@ mod tests {
         // `finish_reasoning_stream` and says why; this is the port catching up. Held as
         // fresh-equals-reused rather than as literal expectations, so the guard cannot
         // rot into asserting whatever the scanner happens to do.
+        // `reset` between turns is the documented reuse path — the trait says one
+        // instance parses exactly one choice of one request, and the shared adapter
+        // rejects a push after `finish` for every family rather than for none. What
+        // this pin is about survives that: the latches below are cleared by the
+        // scanner's own `take_stream_state`, which both `finish` and `reset` run, so a
+        // latch that leaked would still show up as reused-diverges-from-fresh.
         fn turn(parser: &mut Box<dyn UnifiedParser>, text: &str) -> Vec<UnifiedParserEvent> {
             let mut deltas = parser.push(text).expect("push");
             deltas.extend(parser.finish().expect("finish"));
+            parser.reset();
             deltas
         }
         let reasoning_turn = " to=self<|message|>one<|eom|>";
@@ -958,6 +1769,7 @@ mod tests {
         let mut reused = muse_glimmer_unified(&tools());
         let mut warmup = reused.push(&first).expect("push");
         warmup.extend(reused.finish().expect("finish"));
+        reused.reset();
         let mut got = reused.push(&second).expect("push");
         got.extend(reused.finish().expect("finish"));
         let mut fresh = muse_glimmer_unified(&tools());
