@@ -299,99 +299,6 @@ pub(crate) struct InvokeScan {
     pub resync: Option<fn(text: &str, tool_index: usize) -> Option<usize>>,
 }
 
-/// Retained state for Gemma's leading `call:NAME{...}` scan. Keeping this in
-/// the shared wrapped scanner makes both public adapters advance one cursor
-/// across pushes instead of re-parsing the buffered prefix on every token.
-#[derive(Default)]
-struct GemmaInvokeProgress {
-    cursor: usize,
-    name_started: bool,
-    depth: usize,
-    in_string: bool,
-    body_end: Option<usize>,
-    invalid: bool,
-}
-
-impl GemmaInvokeProgress {
-    fn reset(&mut self) {
-        *self = Self::default();
-    }
-
-    fn end(&mut self, text: &str, flush: bool) -> Option<usize> {
-        const PREFIX: &str = "call:";
-        const CLOSE: &str = "<tool_call|>";
-        const STRING: &str = "<|\"|>";
-
-        if self.invalid || !text.starts_with(PREFIX) {
-            self.invalid = true;
-            return None;
-        }
-
-        if self.body_end.is_none() {
-            if self.cursor < PREFIX.len() {
-                self.cursor = PREFIX.len();
-            }
-            while self.cursor < text.len() {
-                let rest = &text[self.cursor..];
-                let ch = rest.chars().next()?;
-                if self.depth == 0 {
-                    if ch == '{' && self.name_started {
-                        self.depth = 1;
-                    } else if ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.') {
-                        self.name_started = true;
-                    } else {
-                        self.invalid = true;
-                        return None;
-                    }
-                    self.cursor += ch.len_utf8();
-                    continue;
-                }
-
-                if STRING.starts_with(rest) && rest.len() < STRING.len() {
-                    return None;
-                }
-                if rest.starts_with(STRING) {
-                    self.in_string = !self.in_string;
-                    self.cursor += STRING.len();
-                    continue;
-                }
-                if !self.in_string {
-                    match ch {
-                        '{' => self.depth += 1,
-                        '}' => {
-                            self.depth = self.depth.checked_sub(1)?;
-                            if self.depth == 0 {
-                                self.body_end = Some(self.cursor);
-                                self.cursor += ch.len_utf8();
-                                break;
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                self.cursor += ch.len_utf8();
-            }
-        }
-
-        let body_end = self.body_end?;
-        let after = &text[body_end + 1..];
-        if after.starts_with(CLOSE) {
-            let mut end = body_end + 1 + CLOSE.len();
-            while text[end..].starts_with(CLOSE) {
-                end += CLOSE.len();
-            }
-            return Some(end);
-        }
-        if !flush
-            || !after.trim().is_empty()
-            || (!after.is_empty() && after.len() < CLOSE.len() && CLOSE.starts_with(after))
-        {
-            return None;
-        }
-        Some(body_end + 1)
-    }
-}
-
 /// Declarative description of one wrapped-invoke grammar.
 #[derive(Default)]
 pub(crate) struct WrappedBlockSpec {
@@ -477,12 +384,43 @@ pub(crate) trait InvokeEmitter {
         None
     }
 
+    /// A family-owned incremental boundary scan. `Pending` prevents the shared
+    /// scanner from falling back to its stateless hook and rescanning old bytes.
+    fn incremental_invoke_end(
+        &mut self,
+        _text: &str,
+        _flush: bool,
+        _tool_index: usize,
+    ) -> IncrementalInvokeEnd {
+        IncrementalInvokeEnd::NotApplicable
+    }
+
+    /// Whether newly appended bytes can make a grammar-aware recovery candidate
+    /// complete. Stateful families use this to defer expensive resynchronization.
+    fn resync_ready(&mut self, _text: &str) -> bool {
+        true
+    }
+
+    /// Clear mutable state tied to the current invoke without discarding
+    /// per-stream metadata such as Kimi's emitted call ids.
+    fn reset_incremental_boundary(&mut self) {}
+
     /// Clear any per-stream state before [`WrappedBlockScanner::reset`] hands
     /// the scanner back for a NEW stream at `tool_index` 0. A no-op default
     /// is correct for every stateless emitter; an emitter that tracks ids per
     /// `tool_index` (Kimi) must override this or a new stream's index 0
     /// would read back the abandoned stream's id.
     fn reset(&mut self) {}
+}
+
+/// Result of a family-owned incremental invoke-boundary scan.
+pub(crate) enum IncrementalInvokeEnd {
+    /// This family uses the scanner's stateless `InvokeScan::end` hook.
+    NotApplicable,
+    /// The family owns the scan and needs more input.
+    Pending,
+    /// A complete invoke ends at this byte offset.
+    Complete(usize),
 }
 
 /// First occurrence of any of `markers` in `text`: `(position, marker_len)`.
@@ -655,18 +593,10 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     resume_reasoning: bool,
     suppress_normal_text: bool,
     next_index: usize,
-    /// Gemma's grammar-aware end scan is the only wrapped grammar that can
-    /// retain a large structured body; carry its parse state between pushes.
-    gemma_invoke: Option<GemmaInvokeProgress>,
-    /// Bytes already checked for a new Gemma recovery closer. A later wrapped
-    /// call cannot be complete until its closer arrives, so this avoids a
-    /// suffix-wide recovery probe for ordinary argument chunks.
-    gemma_resync_checked: usize,
 }
 
 impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     pub(crate) fn new(spec: WrappedBlockSpec, emitter: E) -> Self {
-        let gemma_invoke = (spec.family == "gemma4").then(GemmaInvokeProgress::default);
         Self {
             spec,
             emitter,
@@ -681,8 +611,6 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             resume_reasoning: false,
             suppress_normal_text: false,
             next_index: 0,
-            gemma_invoke,
-            gemma_resync_checked: 0,
         }
     }
 
@@ -835,10 +763,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.resume_reasoning = false;
         self.suppress_normal_text = false;
         self.next_index = 0;
-        if let Some(progress) = &mut self.gemma_invoke {
-            progress.reset();
-        }
-        self.gemma_resync_checked = 0;
+        self.emitter.reset_incremental_boundary();
         self.emitter.reset();
         pending
     }
@@ -866,19 +791,13 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
     /// Offset just past the closer of the invoke beginning at byte zero.
     fn invoke_end_at(&mut self, flush: bool) -> Option<usize> {
-        if let Some(progress) = &mut self.gemma_invoke {
-            if let Some(end) = progress.end(&self.buffer, flush) {
-                return Some(end);
-            }
-            // EOF recovery has no further incremental work to preserve. Reuse
-            // the batch-compatible probe for the rare missing-wrapper cases.
-            if flush {
-                return self
-                    .spec
-                    .invoke_scan
-                    .and_then(|scan| (scan.end)(&self.buffer, true, self.next_index));
-            }
-            return None;
+        match self
+            .emitter
+            .incremental_invoke_end(&self.buffer, flush, self.next_index)
+        {
+            IncrementalInvokeEnd::Complete(end) => return Some(end),
+            IncrementalInvokeEnd::Pending => return None,
+            IncrementalInvokeEnd::NotApplicable => {}
         }
         match self.spec.invoke_scan {
             Some(scan) => (scan.end)(&self.buffer, flush, self.next_index),
@@ -889,33 +808,14 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         }
     }
 
-    fn reset_invoke_progress(&mut self) {
-        if let Some(progress) = &mut self.gemma_invoke {
-            progress.reset();
-        }
-        self.gemma_resync_checked = 0;
-    }
-
     /// Find a later complete block that can safely restart scanning after the
     /// current invoke proved malformed. The new block must begin with a real,
     /// complete invoke; a marker-looking string inside the malformed payload
     /// cannot satisfy both grammar checks.
     fn resync_block_start(&mut self) -> Option<usize> {
         let scan = self.spec.invoke_scan?;
-        if self.gemma_invoke.is_some() {
-            const CLOSE: &str = "<tool_call|>";
-            let start = self
-                .buffer
-                .floor_char_boundary(self.gemma_resync_checked.saturating_sub(CLOSE.len() - 1));
-            let closer_arrived = self.buffer[start..].contains(CLOSE);
-            self.gemma_resync_checked = self.buffer.len();
-            // A wrapped Gemma recovery candidate cannot be complete before its
-            // close token arrives. This is intentionally incremental: scanning
-            // the newly appended marker window is bounded, while the expensive
-            // grammar-aware resync runs only when a candidate can now finish.
-            if !closer_arrived {
-                return None;
-            }
+        if !self.emitter.resync_ready(&self.buffer) {
+            return None;
         }
         (scan.resync?)(&self.buffer, self.next_index)
     }
@@ -1122,7 +1022,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         // block re-enters `in_block` and re-suppresses its markup.
                         // Matches the v1 batch parsers (cases 8.b/8.c/8.d).
                         self.buffer.drain(..end_pos + end_len);
-                        self.reset_invoke_progress();
+                        self.emitter.reset_incremental_boundary();
                         self.uncommitted_block.clear();
                         self.in_block = false;
                         self.suppress_normal_text = false;
@@ -1146,7 +1046,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 if start > 0 {
                     self.uncommitted_block.push_str(&self.buffer[..start]);
                     self.buffer.drain(..start);
-                    self.reset_invoke_progress();
+                    self.emitter.reset_incremental_boundary();
                 }
                 let Some(end) = self.invoke_end_at(flush) else {
                     if let Some(next_block) = self.resync_block_start() {
@@ -1156,7 +1056,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             "stream skipped a malformed invoke and resumed at the next complete block"
                         );
                         self.buffer.drain(..next_block);
-                        self.reset_invoke_progress();
+                        self.emitter.reset_incremental_boundary();
                         self.uncommitted_block.clear();
                         self.in_block = false;
                         self.suppress_normal_text = false;
@@ -1194,7 +1094,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                                 "stream dropped invoke with no evidence it ever closed before the block end"
                             );
                             self.buffer.drain(..be_pos + be_len);
-                            self.reset_invoke_progress();
+                            self.emitter.reset_incremental_boundary();
                             self.uncommitted_block.clear();
                             self.in_block = false;
                             self.suppress_normal_text = false;
@@ -1254,7 +1154,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 // documented recovery contract was false for the only shipped family.
                 let emitted = self.emitter.parse_invoke(&invoke, self.next_index)?;
                 self.buffer.drain(..end);
-                self.reset_invoke_progress();
+                self.emitter.reset_incremental_boundary();
                 if let Some(delta) = emitted {
                     out.push_call(delta);
                     self.next_index += 1;
@@ -1371,7 +1271,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     // Emit before consuming — same recovery contract as the wrapped site.
                     let emitted = self.emitter.parse_invoke(&invoke, self.next_index)?;
                     self.buffer.drain(..end);
-                    self.reset_invoke_progress();
+                    self.emitter.reset_incremental_boundary();
                     if let Some(delta) = emitted {
                         tracing::warn!(
                             why = %format!("{}_bare_invoke_recovery", self.spec.family),

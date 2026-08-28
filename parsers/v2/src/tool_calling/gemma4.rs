@@ -34,8 +34,8 @@
 //! preserves), so order has to be pinned to source order.
 
 use crate::tool_calling::scan::{
-    BareRecoveryLatch, GuidedPrefix, InvokeEmitter, InvokeLatch, InvokeScan, WrappedBlockScanner,
-    WrappedBlockSpec, reorder_arguments,
+    BareRecoveryLatch, GuidedPrefix, IncrementalInvokeEnd, InvokeEmitter, InvokeLatch, InvokeScan,
+    WrappedBlockScanner, WrappedBlockSpec, reorder_arguments,
 };
 use crate::tool_calling::v1core::ToolDefinition;
 use crate::tool_calling::v1core::gemma4::{
@@ -49,6 +49,101 @@ pub(crate) const TOOL_CALL_START: &str = "<|tool_call>";
 pub(crate) const TOOL_CALL_END: &str = "<tool_call|>";
 const CALL_PREFIX: &str = "call:";
 const STRING_DELIM: &str = "<|\"|>";
+
+#[derive(Default)]
+struct Gemma4InvokeProgress {
+    cursor: usize,
+    name_started: bool,
+    depth: usize,
+    in_string: bool,
+    body_end: Option<usize>,
+    invalid: bool,
+    resync_checked: usize,
+}
+
+impl Gemma4InvokeProgress {
+    fn reset(&mut self) {
+        *self = Self::default();
+    }
+
+    fn end(&mut self, text: &str, flush: bool) -> IncrementalInvokeEnd {
+        if self.invalid || !text.starts_with(CALL_PREFIX) {
+            self.invalid = true;
+            return IncrementalInvokeEnd::Pending;
+        }
+        if self.body_end.is_none() {
+            self.cursor = self.cursor.max(CALL_PREFIX.len());
+            while self.cursor < text.len() {
+                let rest = &text[self.cursor..];
+                let Some(ch) = rest.chars().next() else {
+                    return IncrementalInvokeEnd::Pending;
+                };
+                if self.depth == 0 {
+                    if ch == '{' && self.name_started {
+                        self.depth = 1;
+                    } else if ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.') {
+                        self.name_started = true;
+                    } else {
+                        self.invalid = true;
+                        return IncrementalInvokeEnd::Pending;
+                    }
+                    self.cursor += ch.len_utf8();
+                    continue;
+                }
+                if STRING_DELIM.starts_with(rest) && rest.len() < STRING_DELIM.len() {
+                    return IncrementalInvokeEnd::Pending;
+                }
+                if rest.starts_with(STRING_DELIM) {
+                    self.in_string = !self.in_string;
+                    self.cursor += STRING_DELIM.len();
+                    continue;
+                }
+                if !self.in_string {
+                    match ch {
+                        '{' => self.depth += 1,
+                        '}' => {
+                            let Some(depth) = self.depth.checked_sub(1) else {
+                                self.invalid = true;
+                                return IncrementalInvokeEnd::Pending;
+                            };
+                            self.depth = depth;
+                            if self.depth == 0 {
+                                self.body_end = Some(self.cursor);
+                                self.cursor += ch.len_utf8();
+                                break;
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                self.cursor += ch.len_utf8();
+            }
+        }
+        let Some(body_end) = self.body_end else {
+            return IncrementalInvokeEnd::Pending;
+        };
+        let after = &text[body_end + 1..];
+        if after.starts_with(TOOL_CALL_END) {
+            let mut end = body_end + 1 + TOOL_CALL_END.len();
+            while text[end..].starts_with(TOOL_CALL_END) {
+                end += TOOL_CALL_END.len();
+            }
+            return IncrementalInvokeEnd::Complete(end);
+        }
+        if flush && after.trim().is_empty() {
+            return IncrementalInvokeEnd::Complete(body_end + 1);
+        }
+        IncrementalInvokeEnd::Pending
+    }
+
+    fn resync_ready(&mut self, text: &str) -> bool {
+        let start =
+            text.floor_char_boundary(self.resync_checked.saturating_sub(TOOL_CALL_END.len() - 1));
+        let ready = text[start..].contains(TOOL_CALL_END);
+        self.resync_checked = text.len();
+        ready
+    }
+}
 
 /// The Gemma 4 grammar hooks: end, opener test, and holdback, all answered by the
 /// v1 string-aware scan so the streaming, batch and unified paths agree on where
@@ -94,6 +189,7 @@ pub(crate) fn gemma4_scanner(tools: &[Tool]) -> WrappedBlockScanner<Gemma4Invoke
         },
         Gemma4InvokeEmitter {
             tools: tools.iter().map(ToolDefinition::from).collect(),
+            progress: Gemma4InvokeProgress::default(),
         },
     )
 }
@@ -167,6 +263,7 @@ impl ToolParser for Gemma4ToolStreamParser {
 /// block to the v1 batch parser, then restore source key order.
 pub(crate) struct Gemma4InvokeEmitter {
     tools: Vec<ToolDefinition>,
+    progress: Gemma4InvokeProgress,
 }
 
 impl InvokeEmitter for Gemma4InvokeEmitter {
@@ -195,6 +292,29 @@ impl InvokeEmitter for Gemma4InvokeEmitter {
             name: Some(call.function.name),
             arguments: reorder_arguments(&call.function.arguments, &source_key_order(invoke)),
         }))
+    }
+
+    fn incremental_invoke_end(
+        &mut self,
+        text: &str,
+        flush: bool,
+        _tool_index: usize,
+    ) -> IncrementalInvokeEnd {
+        let result = self.progress.end(text, flush);
+        if matches!(result, IncrementalInvokeEnd::Pending) && flush {
+            return find_leading_tool_call_end_gemma4(text, true, 0)
+                .map(IncrementalInvokeEnd::Complete)
+                .unwrap_or(IncrementalInvokeEnd::Pending);
+        }
+        result
+    }
+
+    fn resync_ready(&mut self, text: &str) -> bool {
+        self.progress.resync_ready(text)
+    }
+
+    fn reset_incremental_boundary(&mut self) {
+        self.progress.reset();
     }
 }
 
