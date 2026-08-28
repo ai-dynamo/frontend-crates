@@ -117,3 +117,33 @@ fn consumes_valid_call_prefix_at_every_split() {
         assert_guided_at_every_split(input, mode, &expected);
     }
 }
+
+#[test]
+fn strips_malformed_call_prefixes_without_losing_reasoning_at_every_split() {
+    let cases = [
+        (
+            "call:<|channel>thought\nsecret<channel|>[{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Paris\"}}]",
+            "secret",
+        ),
+        (
+            "<|channel>thought\nI'll call call:get_weather<channel|>[{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Paris\"}}]",
+            "I'll call get_weather",
+        ),
+    ];
+    for (input, reasoning) in cases {
+        let expected = vec![
+            UnifiedEvent::Reasoning {
+                text: reasoning.into(),
+            },
+            UnifiedEvent::ToolCall {
+                name: "get_weather".into(),
+                arguments: serde_json::json!({"city": "Paris"}),
+            },
+        ];
+        assert_guided_at_every_split(
+            input,
+            UnifiedToolOutputMode::GuidedJson { named_tool: None },
+            &expected,
+        );
+    }
+}

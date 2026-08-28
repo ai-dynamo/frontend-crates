@@ -1647,6 +1647,27 @@ fn guided_holdback_len(
     let pending_invoke = invoke_control
         .map(|(start, scan)| {
             let guided = guided_pending_suffix_len(input, start, scan.guided_prefix);
+            // A lexical prefix directly before an incomplete reasoning marker is
+            // undecided until the marker finishes. Releasing it first makes a
+            // whole-input parse strip malformed `call:` syntax while a split parse
+            // exposes it as visible text.
+            let before_reasoning_marker = if start == "call:" {
+                input
+                    .match_indices(start)
+                    .filter_map(|(at, _)| {
+                        let tail = &input[at + start.len()..];
+                        let marker_tail =
+                            marker_prefix_suffix_len(tail, reasoning_markers.iter().copied());
+                        (marker_tail == tail.len()
+                            && marker_tail > 0
+                            && (scan.guided_prefix)(input, at) == GuidedPrefix::NoMatch)
+                            .then_some(input.len() - at)
+                    })
+                    .max()
+                    .unwrap_or(0)
+            } else {
+                0
+            };
             // Native invocation prefixes are a separate grammar concern. Keep
             // their existing holdback, but let `guided_prefix` exclusively own
             // the guided prefix's Match/Pending distinction.
@@ -1655,7 +1676,7 @@ fn guided_holdback_len(
             // recovery gate can only fire when `flush` is true). Zero preserves
             // the pre-index behavior of this holdback-only probe.
             let body = pending_native_invoke_len(input, start, scan.opens, scan.end);
-            guided.max(native).max(body)
+            guided.max(before_reasoning_marker).max(native).max(body)
         })
         .unwrap_or(0);
     split
@@ -2141,6 +2162,33 @@ impl GuidedState {
                     return regular.filter(|(regular_at, _)| *regular_at < at);
                 }
                 Some(GuidedPrefix::Pending | GuidedPrefix::NoMatch) | None => {}
+            }
+            // A lexical invoke prefix immediately before a reasoning opener cannot
+            // belong to the JSON payload. Strip the malformed prefix so it cannot
+            // consume the thought opener as its own terminator.
+            if self.grammar.invoke_start == "call:"
+                && self.mode == GuidedMode::OutsideReasoning
+                && competing
+                    .iter()
+                    .any(|marker| suffix[self.grammar.invoke_start.len()..].starts_with(marker))
+            {
+                return regular
+                    .filter(|(regular_at, _)| *regular_at < at)
+                    .or(Some((at, self.grammar.invoke_start.len())));
+            }
+            // Inside a reasoning span, a glued `call:NAME` is malformed syntax,
+            // not part of the private reasoning. Keep the name as prose while
+            // dropping only the control prefix.
+            if self.grammar.invoke_start == "call:"
+                && self.mode == GuidedMode::Reasoning
+                && suffix[self.grammar.invoke_start.len()..]
+                    .chars()
+                    .next()
+                    .is_some_and(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
+            {
+                return regular
+                    .filter(|(regular_at, _)| *regular_at < at)
+                    .or(Some((at, self.grammar.invoke_start.len())));
             }
             if (scan.opens)(haystack, at) {
                 // `tool_index: 0` is provably safe here, not merely convenient:

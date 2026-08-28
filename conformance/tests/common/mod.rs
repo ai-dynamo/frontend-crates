@@ -257,9 +257,8 @@ pub fn version_dirs_ascending(root: &Path, prefix: &str) -> Vec<PathBuf> {
     dirs.into_iter().map(|(_, p)| p).collect()
 }
 
-/// Sort a release-qualified capture immediately before the plain release with the
-/// same numeric version. A newer `+pr` capture still outranks every older release,
-/// while a historical `+pre` capture cannot shadow its matching plain release.
+/// Sort a PR-qualified capture after its matching release. The PR capture represents
+/// the current branch, while a plain release remains a historical comparison point.
 pub fn version_capture_sort_key(name: &str, prefix: &str) -> Option<VersionCaptureSortKey> {
     let version = name.strip_prefix(prefix)?;
     // `.patchN` dirs are display-only overlays from an old binary. They fill missing
@@ -273,7 +272,7 @@ pub fn version_capture_sort_key(name: &str, prefix: &str) -> Option<VersionCaptu
         .filter(|s| !s.is_empty())
         .map(|s| s.parse().unwrap_or(0))
         .collect();
-    Some((numeric, !version.contains('+'), version.to_string()))
+    Some((numeric, version.contains('+'), version.to_string()))
 }
 
 /// One row of the `unified:` block in `conformance/utils/src/parser_families.yaml`.
