@@ -236,46 +236,44 @@ pub fn fixture_name(path: &Path) -> String {
 /// fixtures-batch-v1, `dynamo_v2-` under fixtures-stream-v2), ASCENDING by
 /// numeric version. Multiple dirs per impl are capture HISTORY (never deleted);
 /// readers fold them ascending so the latest capture wins per case.
+pub type VersionCaptureSortKey = (Vec<u64>, bool, String);
+
 pub fn version_dirs_ascending(root: &Path, prefix: &str) -> Vec<PathBuf> {
-    let mut dirs: Vec<(Vec<u64>, PathBuf)> = std::fs::read_dir(root)
+    let mut dirs: Vec<(VersionCaptureSortKey, PathBuf)> = std::fs::read_dir(root)
         .into_iter()
         .flatten()
         .flatten()
         .map(|e| e.path())
-        .filter(|p| {
-            p.is_dir()
-                && p.file_name().and_then(|n| n.to_str()).is_some_and(|n| {
-                    // `<ver>.patchN` dirs are DISPLAY-ONLY overlays: an OLD parser
-                    // binary re-run to backfill a newer case onto version `<ver>`
-                    // (e.g. dynamo_v2-0.1.11.patch1 = the 0.1.11 binary on streamv2.5.h,
-                    // rendered under the 0.1.11 column in HTML). They are NOT the current
-                    // parser, so they must never join this "latest capture wins" fold —
-                    // otherwise a stale old-binary result can shadow the real latest.
-                    //
-                    // `<ver>+<tag>` dirs are the same kind of thing for the same reason:
-                    // a change-scoped capture, an older build run over the current corpus
-                    // (see `capture_cross_version.rs`). Excluded HERE rather than at each
-                    // call site because the version key below splits on non-digits, so
-                    // `0.1.24+pre163` folds to [0,1,24,163] and would sort ABOVE the real
-                    // 0.1.24 — letting a historical snapshot win "latest capture".
-                    n.starts_with(prefix) && !n.contains(".patch") && !n.contains('+')
-                })
-        })
-        .map(|p| {
-            let key: Vec<u64> = p
+        .filter(|p| p.is_dir())
+        .filter_map(|p| {
+            let key = p
                 .file_name()
                 .and_then(|n| n.to_str())
-                .and_then(|n| n.strip_prefix(prefix))
-                .unwrap_or("")
-                .split(|c: char| !c.is_ascii_digit())
-                .filter(|s| !s.is_empty())
-                .map(|s| s.parse().unwrap_or(0))
-                .collect();
-            (key, p)
+                .and_then(|n| version_capture_sort_key(n, prefix))?;
+            Some((key, p))
         })
         .collect();
     dirs.sort();
     dirs.into_iter().map(|(_, p)| p).collect()
+}
+
+/// Sort a release-qualified capture immediately before the plain release with the
+/// same numeric version. A newer `+pr` capture still outranks every older release,
+/// while a historical `+pre` capture cannot shadow its matching plain release.
+pub fn version_capture_sort_key(name: &str, prefix: &str) -> Option<VersionCaptureSortKey> {
+    let version = name.strip_prefix(prefix)?;
+    // `.patchN` dirs are display-only overlays from an old binary. They fill missing
+    // cases in that binary's column and must never participate in latest-capture folds.
+    if version.contains(".patch") {
+        return None;
+    }
+    let base = version.split_once('+').map_or(version, |(base, _)| base);
+    let numeric = base
+        .split(|c: char| !c.is_ascii_digit())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.parse().unwrap_or(0))
+        .collect();
+    Some((numeric, !version.contains('+'), version.to_string()))
 }
 
 /// One row of the `unified:` block in `conformance/utils/src/parser_families.yaml`.

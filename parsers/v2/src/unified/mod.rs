@@ -48,6 +48,7 @@
 //! adopted without a translation layer. Where it diverges from the peer shape, the
 //! divergence is stated at the item.
 
+pub mod gemma4;
 mod guided_cursor;
 pub mod kimi_k2;
 pub mod muse_glimmer;
@@ -60,8 +61,8 @@ pub use guided_cursor::{CommittedCall, GuidedJsonCursor};
 use serde::{Deserialize, Serialize};
 
 use crate::tool_calling::scan::{
-    InvokeEmitter, InvokeScan, ReasoningSpec, WrappedBlockScanner, marker_prefix_suffix_len,
-    push_run, reasoning_opener_len,
+    GuidedPrefix, InvokeEmitter, InvokeScan, ReasoningSpec, WrappedBlockScanner,
+    marker_prefix_suffix_len, push_run, reasoning_opener_len,
 };
 use crate::tool_calling::traits::{Result, Tool, ToolCallDelta, ToolParseResult};
 
@@ -1537,6 +1538,44 @@ fn control_marker_len_at(
     }
 }
 
+/// Hold back a guided prefix only when it can still occupy the trailing invoke-marker suffix.
+fn guided_pending_suffix_len<F>(input: &str, invoke_start: &str, guided_prefix: F) -> usize
+where
+    F: Fn(&str, usize) -> GuidedPrefix,
+{
+    input
+        .char_indices()
+        .rev()
+        .take_while(|(at, _)| input.len() - *at <= invoke_start.len())
+        .filter_map(|(at, _)| {
+            (guided_prefix(input, at) == GuidedPrefix::Pending).then_some(input.len() - at)
+        })
+        .max()
+        .unwrap_or(0)
+}
+
+/// Hold back from the first native invocation opener that is still incomplete.
+fn pending_native_invoke_len<Opens, End>(
+    input: &str,
+    invoke_start: &str,
+    opens: Opens,
+    end: End,
+) -> usize
+where
+    Opens: Fn(&str, usize) -> bool,
+    End: Fn(&str, bool, usize) -> Option<usize>,
+{
+    input
+        .match_indices(invoke_start)
+        .find_map(|(at, _)| {
+            let suffix = &input[at..];
+            // The first qualifying opener gives the largest holdback, so later
+            // matches cannot change the result and must not be rescanned.
+            (opens(input, at) && end(suffix, false, 0).is_none()).then_some(input.len() - at)
+        })
+        .unwrap_or(0)
+}
+
 /// Trailing bytes the guided drain must retain across a chunk boundary.
 ///
 /// Two reasons to hold back, and missing either one loses the payload:
@@ -1607,22 +1646,16 @@ fn guided_holdback_len(
         .unwrap_or(0);
     let pending_invoke = invoke_control
         .map(|(start, scan)| {
-            let partial = (scan.holdback)(input);
-            let body = input
-                .match_indices(start)
-                .filter_map(|(at, _)| {
-                    let suffix = &input[at..];
-                    // `flush: false` here always makes `tool_index` inert (Kimi's
-                    // EOF-only recovery gate can only fire when `flush` is true) --
-                    // 0 is not a claim about which call this is, just the value
-                    // that keeps this holdback-length probe's result identical to
-                    // before `tool_index` existed.
-                    ((scan.opens)(input, at) && (scan.end)(suffix, false, 0).is_none())
-                        .then_some(input.len() - at)
-                })
-                .max()
-                .unwrap_or(0);
-            partial.max(body)
+            let guided = guided_pending_suffix_len(input, start, scan.guided_prefix);
+            // Native invocation prefixes are a separate grammar concern. Keep
+            // their existing holdback, but let `guided_prefix` exclusively own
+            // the guided prefix's Match/Pending distinction.
+            let native = (scan.holdback)(input);
+            // `flush: false` always makes `tool_index` inert (Kimi's EOF-only
+            // recovery gate can only fire when `flush` is true). Zero preserves
+            // the pre-index behavior of this holdback-only probe.
+            let body = pending_native_invoke_len(input, start, scan.opens, scan.end);
+            guided.max(native).max(body)
         })
         .unwrap_or(0);
     split
@@ -2090,9 +2123,25 @@ impl GuidedState {
         };
 
         let mut cursor = 0;
+        let guided_prefix_at_payload_boundary =
+            self.mode == GuidedMode::OutsideReasoning && self.json.trim().is_empty();
         while let Some(relative) = haystack[cursor..].find(&self.grammar.invoke_start) {
             let at = cursor + relative;
             let suffix = &haystack[at..];
+            if limit.is_some_and(|limit| at >= limit) {
+                break;
+            }
+            match guided_prefix_at_payload_boundary.then(|| (scan.guided_prefix)(haystack, at)) {
+                Some(GuidedPrefix::Match) => {
+                    return regular
+                        .filter(|(regular_at, _)| *regular_at < at)
+                        .or(Some((at, self.grammar.invoke_start.len())));
+                }
+                Some(GuidedPrefix::Pending) if !flush => {
+                    return regular.filter(|(regular_at, _)| *regular_at < at);
+                }
+                Some(GuidedPrefix::Pending | GuidedPrefix::NoMatch) | None => {}
+            }
             if (scan.opens)(haystack, at) {
                 // `tool_index: 0` is provably safe here, not merely convenient:
                 // this loop can NEVER walk past a first `invoke_start` match to
@@ -2345,7 +2394,8 @@ impl GuidedState {
                             &self.grammar.control_markers,
                             &self.grammar.invoke_end,
                             self.start_label(),
-                            self.invoke_control(),
+                            self.invoke_control()
+                                .filter(|_| self.json.trim().is_empty()),
                             flush,
                         )
                         .max(if self.reasoning_enabled {
@@ -2585,6 +2635,20 @@ impl GuidedState {
                     let keep = if flush {
                         0
                     } else {
+                        // Same `invoke_scan` awareness the `stray` lookup above
+                        // already applies to this exact channel: a COMPLETE
+                        // `invoke_start` marker sitting at the tail of buffered
+                        // reasoning text, with its own `scan.end` still Pending
+                        // (e.g. `<|tool_call_begin|>` with no `functions.NAME`
+                        // after it yet), used to fall straight through this `keep`
+                        // computation because it hardcoded `None` here instead of
+                        // `self.invoke_control()` -- unlike the `OutsideReasoning`
+                        // arm's own holdback call, which already passes it. That
+                        // flushed the marker out as literal reasoning text one
+                        // push early, before `control_marker_at` ever got a
+                        // chance to classify it once the rest of the header
+                        // streamed in on a later push, and no chunking split it
+                        // could still be recovered.
                         guided_holdback_len(
                             &self.input,
                             &reasoning_markers,
@@ -3280,6 +3344,7 @@ macro_rules! unified_registry {
 }
 
 unified_registry! {
+    "gemma4" => gemma4::gemma4_unified,
     "qwen3" | "qwen3_coder" => qwen3::qwen3_unified,
     "muse_glimmer" => muse_glimmer::muse_glimmer_unified,
     "kimi_k2"               => kimi_k2::kimi_k2_unified,
@@ -3390,6 +3455,7 @@ impl UnifiedParser for DebugUnifiedParser {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::cell::Cell;
 
     fn call(tool_index: usize, name: Option<&str>, arguments: &str) -> UnifiedParserEvent {
         UnifiedParserEvent::ToolCall(ToolCallDelta {
@@ -3397,6 +3463,51 @@ mod tests {
             name: name.map(str::to_string),
             arguments: arguments.to_string(),
         })
+    }
+
+    #[test]
+    fn guided_pending_probe_is_bounded_to_the_invoke_suffix() {
+        let input = "x".repeat(32 * 1024);
+        let probes = Cell::new(0);
+
+        assert_eq!(
+            guided_pending_suffix_len(&input, "call:", |_, _| {
+                probes.set(probes.get() + 1);
+                GuidedPrefix::NoMatch
+            }),
+            0
+        );
+        assert!(
+            probes.get() <= "call:".len(),
+            "guided holdback probed {} offsets for a {}-byte marker",
+            probes.get(),
+            "call:".len()
+        );
+    }
+
+    #[test]
+    fn native_pending_probe_stops_at_the_first_qualifying_opener() {
+        let input = "call:".repeat(32 * 1024);
+        let open_probes = Cell::new(0);
+        let end_probes = Cell::new(0);
+
+        assert_eq!(
+            pending_native_invoke_len(
+                &input,
+                "call:",
+                |_, _| {
+                    open_probes.set(open_probes.get() + 1);
+                    true
+                },
+                |_, _, _| {
+                    end_probes.set(end_probes.get() + 1);
+                    None
+                },
+            ),
+            input.len()
+        );
+        assert_eq!(open_probes.get(), 1);
+        assert_eq!(end_probes.get(), 1);
     }
 
     #[test]

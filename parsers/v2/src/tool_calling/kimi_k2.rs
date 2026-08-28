@@ -35,7 +35,7 @@
 //! malformed payloads, which is exactly what the fixtures expect.
 
 use crate::tool_calling::scan::{
-    BareRecoveryLatch, InvokeEmitter, InvokeLatch, InvokeScan, WrappedBlockScanner,
+    BareRecoveryLatch, GuidedPrefix, InvokeEmitter, InvokeLatch, InvokeScan, WrappedBlockScanner,
     WrappedBlockSpec, find_first_outside_strings, json_value_end,
 };
 use crate::tool_calling::v1core::{
@@ -458,10 +458,20 @@ fn kimi_invoke_holdback(_text: &str) -> usize {
     0
 }
 
+/// Kimi's markers are unambiguous structural tokens with no ordinary-prose
+/// collision (unlike Gemma 4's lexical `call:` prefix), so it has no guided
+/// prefix of its own: always `NoMatch`, which the guided drain treats
+/// identically to not having `invoke_scan` set at all.
+fn kimi_no_guided_prefix(_text: &str, _at: usize) -> GuidedPrefix {
+    GuidedPrefix::NoMatch
+}
+
 const KIMI_INVOKE_SCAN: InvokeScan = InvokeScan {
     end: kimi_invoke_end,
     opens: kimi_invoke_opens,
     holdback: kimi_invoke_holdback,
+    guided_prefix: kimi_no_guided_prefix,
+    resync: None,
 };
 
 fn spec(config: &KimiK2ParserConfig) -> WrappedBlockSpec {
