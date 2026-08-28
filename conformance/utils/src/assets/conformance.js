@@ -424,8 +424,8 @@
     }
   }
 
-  applyView(readDetailed(), false);
   initCompare();
+  applyView(readDetailed(), false);
   viewCheckboxes.forEach(function (cb) {
     cb.addEventListener('change', function () { applyView(cb.checked, true); });
   });

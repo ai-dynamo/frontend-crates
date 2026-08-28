@@ -375,6 +375,31 @@ def test_overview_hides_compare_column(driver):
     )
 
 
+def test_overview_url_clears_restored_compare_selection(driver):
+    """A shared Overview URL must not carry a hidden comparison into Details."""
+    page = driver.current_url.split("?", 1)[0]
+    driver.get(
+        page
+        + "?tab=tab-unified&base_tab-unified=vllm_rust&cmp_tab-unified=vllm_python"
+    )
+    state = driver.execute_script(
+        "const p=document.querySelector('.tab-panel.active'), c=p.querySelector('.cmpctl');"
+        "return {overview:document.body.classList.contains('view-overview'),"
+        "extra:[...c.querySelectorAll('input.cmp-on:checked:not(:disabled)')].map(x=>x.value)};"
+    )
+    assert state == {"overview": True, "extra": []}
+
+    driver.execute_script(
+        "const v=document.querySelector('[data-view-detailed]');"
+        "v.checked=true; v.dispatchEvent(new Event('change'));"
+    )
+    restored = driver.execute_script(
+        "const c=document.querySelector('.tab-panel.active .cmpctl');"
+        "return [...c.querySelectorAll('input.cmp-on:checked:not(:disabled)')].map(x=>x.value);"
+    )
+    assert restored == []
+
+
 def test_compare_url_restores_legacy_reference_without_self_compare(driver):
     """An existing shared vLLM Rust URL keeps its star and drops cmp=base."""
     page = driver.current_url.split("?", 1)[0]
