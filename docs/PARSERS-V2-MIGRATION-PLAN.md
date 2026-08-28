@@ -24,7 +24,7 @@ Use `Dynamo parser v2` as the parser label. The fixture key `expected.dynamo` an
 
 ## Why The Split Exists
 
-Parser source and parser fixtures are **frontend-crates-owned** — `scripts/sync-from-dynamo.sh` no longer syncs `parsers/`, parser fixtures, or `conformance/utils/`. frontend-crates publishes `dynamo-parsers` to crates.io and Dynamo consumes it from there.
+Parser source, parser fixtures, and conformance utilities are **frontend-crates-owned**. frontend-crates publishes `dynamo-parsers` to crates.io and Dynamo consumes it from there.
 
 The v1/v2 split is kept because **v2 is still under active development**: it lives on a `0.x` line where breaking changes are free and expected, while `dynamo-parsers` (v1) is a stable, semver-checked `3.x` crate. Merging v2 into v1 now would either force major bumps on the stable crate or block v2's fast iteration under `cargo-semver-checks`. Keep them separate until the v2 streaming API stabilizes.
 
@@ -48,11 +48,11 @@ The v1/v2 split is kept because **v2 is still under active development**: it liv
 
 Already done:
 
-- Parser source, fixtures, and conformance utilities are frontend-crates-owned; `sync-from-dynamo.sh` no longer touches `parsers/`.
+- Parser source, fixtures, and conformance utilities are frontend-crates-owned.
 - `dynamo-parsers` (v1) is published to crates.io and consumed by Dynamo from there.
 - All three parser crates are grouped under `parsers/{v1,v2,v2-py}` (packaging-neutral; names unchanged).
 - `dynamo-parsers-v2-py` is marked `publish = false` (test-only).
-- The tokenizer test fixtures moved out of the top-level `llm/tests/data` into `tokenizers/tests/data` (removing the lone root `llm/` dir), and the `tokenizers/` crate was **detached from the Dynamo sync** as a result. The synced tokenizer tests hard-coded `../llm/tests/data`, so the fixtures could not move without either detaching or fragile post-sync path patching; `tokenizers/` is now frontend-crates-owned like `parsers/`. Trade-off: `tokenizers/src` no longer receives Dynamo updates automatically — port upstream tokenizer changes by hand. Only `protocols/` and `renderer/` are still Dynamo-synced.
+- The tokenizer test fixtures moved out of the top-level `llm/tests/data` into `tokenizers/tests/data` (removing the lone root `llm/` dir). All frontend crates are now owned here and consumed by Dynamo as published dependencies.
 
 Remaining, gated on **v2's streaming API stabilizing** (do not start while v2 is still churning on `0.x`):
 
@@ -71,36 +71,21 @@ parsers/v2/src/tool_calling/*  ->  parsers/v1/src/tool_calling/*   (e.g. dynamo_
 
 The `v1`/`v2` directory names are transitional; when the merge happens the surviving crate keeps the `dynamo-parsers` name and the directory split collapses. The Python binding should also lose the `v2` name (there is no v1 Python binding, so this is just a `dynamo_parsers_v2` → final-name module rename).
 
-## Sync Commands
+## Ownership
 
-Use the general sync script for the ordinary non-parser Dynamo mirrors:
-
-```bash
-scripts/sync-from-dynamo.sh /path/to/dynamo          # dry-run
-scripts/sync-from-dynamo.sh --apply /path/to/dynamo  # apply
-```
-
-Parser source, parser fixtures, and conformance utilities are frontend-crates-owned after the parser crate migration; do not sync them from Dynamo. After changing parser fixtures or conformance code, verify the renderer:
+All source, tests, fixtures, and conformance utilities in this repository are frontend-crates-owned. After changing parser fixtures or conformance code, verify the renderer:
 
 ```bash
 conformance/utils/render_table_v2.sh
 ```
 
-## Manual Version Pins
+## Version Pins
 
-`sync-from-dynamo.sh` syncs non-parser `src/`, `tests/`, and tokenizer fixtures but never dependency versions. It lists `Cargo.toml` as manual-review and never auto-applies it. Check this table on every sync. `last-synced` is the value verified against Dynamo `main` on 2026-06-04; re-verify against current `main`, not a stale local checkout.
+Frontend crate and parser dependency versions are owned by the workspace `Cargo.toml` files. Peer engine versions used by conformance fixtures are owned by `conformance/utils/src/pyproject.stub.toml`; Dynamo manages its published-crate pins independently.
 
-| Pin | frontend-crates file | Dynamo file | last-synced value | Notes |
-|---|---|---|---|---|
-| `openai-harmony` (Rust crate) | root `Cargo.toml` `[workspace.dependencies]` | `lib/parsers/Cargo.toml` | `0.0.3` (both) | Build matches. The real risk is the runtime gap below. |
-| `openai_harmony` (Python, in the engine containers) | recorded as `captured_with` in `conformance/toolcalling/fixtures-stream-v2/harmony*/` | n/a (engine container) | vLLM container `0.0.8`, SGLang container `0.0.4` | The gpt-oss/Harmony parser behavior is defined by the Harmony grammar; a Rust-`0.0.3`-vs-Python-`0.0.8` gap is the most likely source of a Harmony conformance mismatch. Re-check the in-container version after any vLLM/SGLang bump. Consider bumping the Rust crate to match. |
-| `fastokens` (Rust) | root `Cargo.toml` | root `Cargo.toml` | frontend-crates `0.1.0` vs Dynamo `0.2.0` (skew) | Tokenizer backend; low parser conformance impact but the one hard Rust skew. Bump to `0.2.0` to stay honest. |
-| `vllm` / `sglang` (Python engine pins) | `conformance/utils/src/pyproject.stub.toml` | `pyproject.toml` | `vllm==0.22.0`, `sglang==0.5.12.post1` | Matches current `main`. After bumping, re-capture peer streaming data and update `captured_with`. |
-| Shared crate versions + parser deps | `parsers/v1/`, `tokenizers/`, `protocols/`, `renderer/` `Cargo.toml` + root | `lib/*/Cargo.toml` + root | all `1.3.0`; async-openai `0.34`, tokenizers `0.21.4`, tiktoken-rs `0.9`, rustpython-parser `0.4.0`, minijinja `2.20.0`; Rust `1.96.1` | Should always match the Dynamo workspace; verify on sync. |
+## Migration-Only Files
 
-## Frontend-Crate-Only Files
-
-These files have no upstream Dynamo counterpart. Never overwrite them during a sync.
+These files exist only for the parser v1/v2 migration and conformance workflow.
 
 | File | Purpose |
 |---|---|
