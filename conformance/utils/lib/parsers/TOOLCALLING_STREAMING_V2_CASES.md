@@ -7,7 +7,7 @@ Streaming corner cases (`TOOLCALLING.streamv2.*`), mirroring the batch taxonomy
 in `TOOLCALLING_CASES.md`. Each case feeds the batch sample's `model_text` to the
 engine streaming parser **1-3 tokens at a time** and records the per-chunk deltas
 each engine emits. The `streamv2` prefix keeps these distinct from the
-dynamo-synced `TOOLCALLING.stream.*` cases, and a streaming case carries the
+legacy `TOOLCALLING.stream.*` cases, and a streaming case carries the
 **same number as its batch counterpart** — `TOOLCALLING.streamv2.1` is the
 streaming form of `TOOLCALLING.batch.1`, and so on. Streaming-only cases with no
 batch analog live in a separate band (e.g. partial-token chunking is

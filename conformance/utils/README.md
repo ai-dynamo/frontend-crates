@@ -259,6 +259,6 @@ Add YAML files locally under the appropriate fixture tree, then publish a new sn
 
 ## Notes
 
-Peer parser versions for vLLM Python and SGLang are pinned in `src/pyproject.stub.toml` — currently vLLM Python `0.23.0` and SGLang `0.5.12.post1`. This stub is the single source of truth for both the v2 `captured_with` stamps and the v1 batch fixtures (`expected.vllm` / `expected.sglang`), which carry no per-file version stamp; `check.sh vllm|sglang --container` validates the live engine against the committed v1 fixtures and reports it as `pinned (fixtures captured against)`. As of the 0.23.0 bump the live vLLM `0.23.0` and SGLang `0.5.12.post1` batch parsers match all committed v1 cases (519 vLLM, 448 SGLang). vLLM Rust is captured from a local source checkout and recorded in YAML under `captured_with.vllm_rust`.
+Peer parser versions for vLLM Python and SGLang are pinned in `src/pyproject.stub.toml`, the single source of truth for renderer and validation selection. Captures record their concrete versions under `captured_with`; vLLM Rust is captured from a local source checkout.
 
-The scripts build an ephemeral `.stage/` tree because the vendored Dynamo Python table code assumes Dynamo's repo layout. `.stage*/` is gitignored.
+The scripts build an ephemeral `.stage/` tree because the table code retains the historical Dynamo repository layout. `.stage*/` is gitignored.

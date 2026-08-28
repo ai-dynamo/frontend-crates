@@ -87,7 +87,7 @@ FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures"
 STREAM_ON_BATCH_FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures-batch-on-stream-v2"
 TOOLCALLING_CASES_MD = REPO_ROOT / "lib/parsers/TOOLCALLING_CASES.md"
 # Streaming cases use our own doc (renumbered to the batch+10 taxonomy), not the
-# dynamo-synced TOOLCALLING_CASES.md.
+# v1 TOOLCALLING_CASES.md.
 TOOLCALLING_STREAMING_V2_CASES_MD = REPO_ROOT / "lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"
 PYPROJECT_TOML = REPO_ROOT / "pyproject.toml"
 TEMPLATE_DIR = REPO_ROOT / "tests/parity"
@@ -252,7 +252,7 @@ _VISIBLE_CONFORMANCE_REPLACEMENTS = (
     ("Dynamo Tool Calling Parser - Parity Table", "Dynamo Tool Calling Parser v2 Conformance Table"),
     ("Parity Table", "Conformance Table"),
     ("parity table", "conformance table"),
-    ("tests/parity/README.md", "Dynamo-synced parser fixture README"),
+    ("tests/parity/README.md", "parser fixture README"),
 )
 
 
@@ -750,7 +750,7 @@ def _parse_subcase_descriptions(mode: str) -> dict[str, str]:
     `{"1": "...", "2.a": "...", ...}`.
     """
     # Streaming descriptions come from our own renumbered doc; batch/others from
-    # the dynamo-synced TOOLCALLING_CASES.md.
+    # the v1 TOOLCALLING_CASES.md.
     cases_md = TOOLCALLING_STREAMING_V2_CASES_MD if mode == "streamv2" else TOOLCALLING_CASES_MD
     if not cases_md.exists():
         return {}
@@ -1600,8 +1600,8 @@ def _build_stream_on_batch_cases(batch_cases: dict) -> dict:
             "description": bcase.get("description"),
             "model_text": bcase.get("model_text"),
             "ref": bcase.get("ref"),
-            # Baseline rationale lives in the fc-local overlay (sync-safe); fall
-            # back to the synced v1 batch fixture if it ever carries one upstream.
+            # Baseline rationale lives in the local overlay; fall back to the v1
+            # batch fixture if it carries one.
             "dynamo_note": overlay_case.get("dynamo_note") or bcase.get("dynamo_note"),
             "expected": _stream_on_batch_expected(
                 overlay_case, has_batch_text="model_text" in bcase
@@ -2700,7 +2700,7 @@ def build_combined_model(output_path: Path | None = None,
         "candidates": _candidate_model(_merged_candidate_items()),
         "captured_note": _captured_note("batch"),
         "toolbar_desc_html": (
-            f'Parsers: <strong>v1</strong> Dynamo-synced batch '
+            f'Parsers: <strong>v1</strong> batch '
             f'(<a href="{hrefs["toolcalling_src"]}">parsers/src/tool_calling/</a>) '
             f'plus <strong>v2</strong> streaming on the same batch text '
             f'(<a href="{hrefs["streaming_src"]}">parsers_v2/src/tool_calling/*</a>) · '
@@ -2763,7 +2763,7 @@ def build_combined_model(output_path: Path | None = None,
             "candidates": _candidate_model(rtab.get("candidates", [])),
             "captured_note": "",
             "toolbar_desc_html": (
-                f'Parser: <strong>v1</strong> Dynamo-synced reasoning parser '
+                f'Parser: <strong>v1</strong> reasoning parser '
                 f'(<a href="{hrefs["reasoning_src"]}">parsers/v1/src/reasoning/</a>) · '
                 f'Input: <strong>v1</strong> reasoning fixtures '
                 f'(<a href="{hrefs["reasoning_fixtures"]}">conformance/reasoning/fixtures/</a>).'),

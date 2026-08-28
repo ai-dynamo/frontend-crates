@@ -16,7 +16,6 @@ set -euo pipefail
 # conformance/utils/src/ (internal modules) is three levels below the repo root.
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 export FRONTEND_CRATES_ROOT="$ROOT"
-# tests/ and lib/ stay at conformance/utils/ (Dynamo-sync targets); the rest is in src/.
 UTILS="$ROOT/conformance/utils"
 TOOLS="$ROOT/conformance/utils/src"
 # Fixture trees are cached in ~/.cache/dynamo/conformance-fixtures/ (extracted

@@ -16,7 +16,7 @@ what one-time setup it requires, and how to recover when it goes wrong.
 2. The workflow decides **per crate, path-scoped** (DIS-2414). For each publishable workspace crate it compares the crate's `Cargo.toml` version against the crate's latest release tag (e.g. `dynamo-protocols-v2.0.2`):
    - **version ≠ last tag** → the version was **manually pegged** in a PR. The workflow does not touch it; the publish step ships exactly that version. See "Manual version peg" below.
    - **version == last tag, no changes under the crate's own directory** since that tag → nothing happens. In particular, a change to one crate never re-releases its dependents: all inter-crate deps are caret reqs, so a compatible bump never requires a dependent re-release (the old blanket `release-plz update` cascaded these, churning versions of crates whose code never changed).
-   - **version == last tag, changes under the crate's own directory** → `release-plz update -p <crate>` bumps that crate only. Within the crate, release-plz still applies its own two filters: only **packaged contents** count (the `include = [...]` list in the crate's `Cargo.toml`: `src/**/*`, `Cargo.toml`, `README.md` — not `tests/` etc.), and only commits matching `release_commits` in `release-plz.toml` count (`feat:`, `fix:`, `perf:`, `refactor:`, `sync:`, plus — temporarily, for the dynamo→frontend-crates transition — `chore:`). If neither filter passes, no bump is proposed even though the directory changed.
+   - **version == last tag, changes under the crate's own directory** → `release-plz update -p <crate>` bumps that crate only. Within the crate, release-plz still applies its own two filters: only **packaged contents** count (the `include = [...]` list in the crate's `Cargo.toml`: `src/**/*`, `Cargo.toml`, `README.md` — not `tests/` etc.), and only commits matching `release_commits` in `release-plz.toml` count (`feat:`, `fix:`, `perf:`, `refactor:`). If neither filter passes, no bump is proposed even though the directory changed.
 3. If any bumps were proposed, the workflow commits them with an informative
    subject listing every crate whose version changed this run — e.g.
    `chore: release dynamo-protocols v1.4.0, dynamo-renderer v1.3.1` (with
@@ -64,7 +64,7 @@ the API change it sees, the workflow fails before publishing anything.
 
 - **Catches:** removed/renamed pub items, signature changes, narrowed
   visibility, removed trait method defaults, and similar structural breaks
-  that were labeled `fix:`/`chore:` instead of `feat!:`.
+  that were labeled `fix:` instead of `feat!:`.
 - **Does NOT catch:** behavioral changes with unchanged signatures, new
   panic conditions, MSRV bumps, dependency-surface drift, some trait
   default-impl subtleties. For these, the contributor must label the commit

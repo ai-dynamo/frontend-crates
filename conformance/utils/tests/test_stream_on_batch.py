@@ -387,7 +387,7 @@ def test_expected_dynamo_present_and_peer_unavailable() -> None:
 
 def test_explanation_and_legacy_reason_both_recognized() -> None:
     # Backward-compat: the divergence note reads from `explanation` (current) or the
-    # legacy `reason` (older fixtures / Dynamo-synced code); explanation wins.
+    # legacy `reason` (older fixtures / code); explanation wins.
     assert g._explanation({"explanation": "new"}) == "new"
     assert g._explanation({"reason": "old"}) == "old"
     assert g._explanation({"explanation": "new", "reason": "old"}) == "new"
@@ -859,7 +859,7 @@ def test_structured_error_block_marks_x_string_error_marks_bang() -> None:
 def test_v2_overlays_are_canonical_only() -> None:
     """D3: the v2 overlays carry no legacy impl keys and stamp captured_with — locks
     the canonical-key migration (the renderer's legacy aliases exist only for the
-    Dynamo-synced v1 corpus, so legacy keys here are silent drift)."""
+    v1 corpus, so legacy keys here are silent drift)."""
     assert vf.validate_overlays() == []
 
 
