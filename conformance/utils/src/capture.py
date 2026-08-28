@@ -140,7 +140,7 @@ def _stream_vllm(parser_name, cases):
                     prev, cur, delta, prev_token_ids, current_token_ids,
                     delta_token_ids, req)
             except Exception as e:
-                per_chunk.append({"deltas": [], "normal_text": "", "error": str(e)})
+                per_chunk.append({"deltas": [], "normal_text": "", "error": f"{type(e).__name__}: {e}"})
                 prev = cur
                 prev_token_ids = current_token_ids
                 continue
@@ -193,7 +193,7 @@ def _stream_sglang(parser_name, cases):
             try:
                 r = det.parse_streaming_increment(delta, tools)
             except Exception as e:
-                per_chunk.append({"deltas": [], "normal_text": "", "error": str(e)})
+                per_chunk.append({"deltas": [], "normal_text": "", "error": f"{type(e).__name__}: {e}"})
                 continue
             deltas = []
             for c in (r.calls or []):
@@ -227,7 +227,7 @@ def _run_stream(args):
                 cases = fn(job["parser"], doc.get("cases", {}))
                 out[job["fixture"]] = {"cases": cases}
             except Exception as e:
-                out[job["fixture"]] = {"error": str(e)}
+                out[job["fixture"]] = {"error": f"{type(e).__name__}: {e}"}
         print(json.dumps({"version": version, "fixtures": out}, ensure_ascii=False))
         return
     doc = yaml.safe_load(open(args.fixture))
@@ -439,7 +439,7 @@ def _run_batch_on_stream(args):
                     )
                 }
             except Exception as e:
-                fixtures[job["fixture"]] = {"error": str(e)}
+                fixtures[job["fixture"]] = {"error": f"{type(e).__name__}: {e}"}
         print(
             json.dumps(
                 {"version": engine_version(args.impl), "fixtures": fixtures},

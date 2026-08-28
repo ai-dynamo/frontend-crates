@@ -9,6 +9,7 @@
 //! fine (hence the allow).
 #![allow(dead_code)]
 
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 /// Recursively collect `*.yaml` fixture files under `dir` into `out`.
@@ -46,35 +47,150 @@ pub fn ensure_fixtures() -> PathBuf {
         return PathBuf::from(r);
     }
 
-    let cache_root = std::env::var("XDG_CACHE_HOME")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| {
-            PathBuf::from(std::env::var("HOME").expect("HOME not set")).join(".cache")
-        })
-        .join("dynamo/conformance-fixtures");
-
     let script = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("utils/src/extract_fixtures.py");
 
     // flock serializes parallel test binaries so only one extraction runs.
-    let status = std::process::Command::new("flock")
+    let output = std::process::Command::new("flock")
         .args([
             "/tmp/dynamo-conformance-extract.lock",
             "python3",
             script.to_str().expect("non-UTF-8 script path"),
         ])
-        .status()
+        .output()
         .expect("flock/python3 not found — ensure python3 is in PATH");
 
-    if !status.success() {
+    // `.output()` captures stderr instead of inheriting it (needed to also
+    // capture stdout below) -- forward it so extraction progress ("Extracting
+    // N shard(s)...", "Cache hit: ...") is still visible in the test run,
+    // not silently swallowed. A failure writing to this process's own
+    // stderr is itself unusual enough to fail fast on rather than ignore.
+    std::io::stderr()
+        .write_all(&output.stderr)
+        .expect("failed to forward extract_fixtures.py stderr to this process's stderr");
+
+    if !output.status.success() {
         panic!(
             "fixture extraction failed (exit {}). If the shards are git-lfs \
              pointers, run:\n  git lfs install && git lfs pull\nthen retry:\n  python3 {}",
-            status.code().unwrap_or(-1),
+            output.status.code().unwrap_or(-1),
             script.display()
         );
     }
 
-    cache_root
+    // `extract_fixtures.py` prints its resolved, content-addressed snapshot
+    // dir as the last stdout line. Return THAT, not `cache_root` (the
+    // directory holding the mutable `toolcalling`/`reasoning`/`unified`
+    // symlinks): every caller does `ensure_fixtures().join("<family>/...")`
+    // and then reads many files under it over the test's lifetime, and
+    // `Path::join` never touches the filesystem — the OS re-resolves any
+    // symlink component on EVERY subsequent file access. A concurrent
+    // sibling checkout publishing a different manifest's identity and
+    // retargeting the symlink mid-test would silently switch which
+    // snapshot later reads in the SAME test see, even though extraction
+    // itself is now race-free (`fixtures_identity`-keyed, atomically
+    // published). Resolving to the immutable identity dir once, up front,
+    // matches the same fix `_common.sh` already applies for the identical
+    // reason (see its `FIXTURES_SNAP` comment) — one shared pattern, not two.
+    let stdout = String::from_utf8(output.stdout).expect("extract_fixtures.py stdout is not UTF-8");
+    match resolve_snap_dir(&stdout) {
+        Ok(snap_dir) => snap_dir,
+        // A missing, malformed, or non-directory printed path is NOT
+        // recovered by falling back to `cache_root` — that fallback is
+        // exactly the mutable, racy path this function exists to stop
+        // returning. Fail loudly with the full captured output instead, so a
+        // broken contract is caught here, not silently downgraded back to
+        // the old ownership model.
+        Err(reason) => panic!(
+            "extract_fixtures.py did not print a valid resolved snapshot directory as its \
+             last stdout line: {reason}.\nfull stdout: {stdout:?}\nstderr: {:?}",
+            String::from_utf8_lossy(&output.stderr)
+        ),
+    }
+}
+
+/// Pure parsing/validation of `ensure_fixtures`'s subprocess contract,
+/// split out so the failure shapes (empty output, a non-existent path, a
+/// malformed line, extra noisy lines) are directly unit-testable without a
+/// real `flock`/`python3` subprocess.
+fn resolve_snap_dir(stdout: &str) -> Result<PathBuf, String> {
+    let printed = stdout.lines().next_back().unwrap_or("").trim();
+    if printed.is_empty() {
+        return Err("stdout was empty (or only blank lines)".to_string());
+    }
+    let snap_dir = PathBuf::from(printed);
+    if !snap_dir.is_dir() {
+        return Err(format!(
+            "printed path {printed:?} is not an existing directory"
+        ));
+    }
+    Ok(snap_dir)
+}
+
+#[cfg(test)]
+mod resolve_snap_dir_tests {
+    use super::resolve_snap_dir;
+
+    #[test]
+    fn accepts_a_real_directory_on_the_last_line() {
+        let dir = std::env::temp_dir().join(format!(
+            "dynamo-resolve-snap-dir-test-{}-{}",
+            std::process::id(),
+            "ok"
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let stdout = format!("Extracting 3 shard(s) into ...\n{}\n", dir.display());
+        assert_eq!(resolve_snap_dir(&stdout), Ok(dir.clone()));
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn rejects_empty_stdout() {
+        assert!(resolve_snap_dir("").is_err());
+        assert!(resolve_snap_dir("\n\n").is_err());
+    }
+
+    #[test]
+    fn rejects_a_malformed_or_missing_path() {
+        let err = resolve_snap_dir("not a real path at all\n").unwrap_err();
+        assert!(err.contains("not an existing directory"), "{err}");
+    }
+
+    #[test]
+    fn rejects_a_path_that_does_not_exist_on_disk() {
+        let err = resolve_snap_dir("/definitely/does/not/exist/anywhere\n").unwrap_err();
+        assert!(err.contains("not an existing directory"), "{err}");
+    }
+
+    #[test]
+    fn uses_only_the_last_line_ignoring_noisy_progress_output() {
+        let dir = std::env::temp_dir().join(format!(
+            "dynamo-resolve-snap-dir-test-{}-{}",
+            std::process::id(),
+            "noisy"
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let stdout = format!(
+            "Extracting 47 shard(s) into {}\n  [extract] a.tar.gz -> ...\n  [extract] b.tar.gz -> ...\n{}\n",
+            dir.display(),
+            dir.display()
+        );
+        assert_eq!(resolve_snap_dir(&stdout), Ok(dir.clone()));
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn rejects_a_directory_that_is_actually_a_file() {
+        let file = std::env::temp_dir().join(format!(
+            "dynamo-resolve-snap-dir-test-{}-{}",
+            std::process::id(),
+            "file"
+        ));
+        std::fs::write(&file, b"not a directory").unwrap();
+        let stdout = format!("{}\n", file.display());
+        let err = resolve_snap_dir(&stdout).unwrap_err();
+        assert!(err.contains("not an existing directory"), "{err}");
+        std::fs::remove_file(&file).unwrap();
+    }
 }
 
 /// Ensures the authored unified golden spec exists and returns its directory.
@@ -225,4 +341,76 @@ pub fn unified_family(corpus_name: &str) -> UnifiedFamily {
             family_manifest_path().display()
         )
     })
+}
+
+/// The request-scoped parser configuration a unified case declares.
+///
+/// Read from the case's `init:` block and passed to the parser verbatim, by BOTH
+/// unified harnesses (`unified_render` draws the tab, `unified_parity` gates CI). It
+/// lives here so there is exactly one answer to "how is a case's parser configured":
+/// each harness previously carried its own copy that INFERRED the config by sniffing
+/// the input text, and the copies could disagree with each other and with the `init:`
+/// the popup displayed — a case could declare `tool_output_mode=GuidedJson` and be
+/// parsed as `Native` because its input did not happen to start with `[`.
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, PartialEq)]
+pub struct Init {
+    #[serde(default)]
+    pub starting_state: String,
+    #[serde(default)]
+    pub tool_output_mode: String,
+    #[serde(default)]
+    pub named_tool: Option<String>,
+}
+
+impl Init {
+    /// An unknown value is a spec bug, not something to paper over with a default:
+    /// silently falling back to `None`/`Native` is exactly the failure this replaced.
+    pub fn starting_state(&self) -> dynamo_parsers_v2::UnifiedParserStartingState {
+        use dynamo_parsers_v2::UnifiedParserStartingState as P;
+        match self.starting_state.as_str() {
+            "" | "None" => P::None,
+            "Reasoning" => P::Reasoning,
+            "Response" => P::Response,
+            other => panic!("unknown init.starting_state `{other}` (None|Reasoning|Response)"),
+        }
+    }
+
+    pub fn output_mode(&self) -> dynamo_parsers_v2::UnifiedToolOutputMode {
+        use dynamo_parsers_v2::UnifiedToolOutputMode as O;
+        match self.tool_output_mode.as_str() {
+            "" | "Native" => O::Native,
+            "GuidedJson" => O::GuidedJson {
+                named_tool: self.named_tool.clone(),
+            },
+            other => panic!("unknown init.tool_output_mode `{other}` (Native|GuidedJson)"),
+        }
+    }
+
+    /// Apply this configuration to a freshly created parser.
+    pub fn apply(&self, parser: &mut Box<dyn dynamo_parsers_v2::UnifiedParser>, what: &str) {
+        use dynamo_parsers_v2::{InvalidGuidedPayloadPolicy, UnifiedParserInit};
+        parser
+            .initialize_request(UnifiedParserInit {
+                starting_state: self.starting_state(),
+                tool_output_mode: self.output_mode(),
+                invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                ..UnifiedParserInit::default()
+            })
+            .unwrap_or_else(|e| panic!("{what}: initialize_request {self:?}: {e}"));
+    }
+
+    /// The config as APPLIED, not as written — an omitted field is reported as the
+    /// value the parser actually received, so what the popup shows and what the
+    /// parser ran under are the same object by construction.
+    pub fn applied(&self) -> serde_json::Value {
+        use dynamo_parsers_v2::UnifiedToolOutputMode as O;
+        serde_json::json!({
+            "starting_state": format!("{:?}", self.starting_state()),
+            "tool_output_mode": match self.output_mode() {
+                O::Native => "Native",
+                O::GuidedJson { .. } => "GuidedJson",
+            },
+            "named_tool": self.named_tool,
+        })
+    }
 }

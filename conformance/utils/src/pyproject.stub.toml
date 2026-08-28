@@ -3,5 +3,5 @@
 [tool.parity]
 peers = [
   "sglang[diffusion]==0.5.14",
-  "vllm[flashinfer,runai,otel]==0.24.0",
+  "vllm[flashinfer,runai,otel]==0.26.0",
 ]

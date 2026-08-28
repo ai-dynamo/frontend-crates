@@ -26,7 +26,8 @@ import yaml
 from vllm.entrypoints.openai.chat_completion.protocol import ChatCompletionRequest
 from vllm.parser.parser_manager import ParserManager
 
-# family -> (reasoning_parser_name, tool_parser_name) for vLLM 0.25.1
+# family -> (reasoning_parser_name, tool_parser_name) shared by the released
+# 0.25.1 and 0.26.0 Python captures.
 FAMILY_PARSERS = {
     "gemma4": ("gemma4", "gemma4"),
     "qwen3": ("qwen3", "qwen3_coder"),
@@ -37,7 +38,10 @@ FAMILY_PARSERS = {
 TOOLS = [
     {"type": "function", "function": {"name": n, "parameters": {
         "type": "object", "properties": {k: {"type": "string"}}}}}
-    for n, k in (("get_weather", "city"), ("f", "x"), ("g", "y"), ("run", "cmd"))
+    # Must match `tools()` in conformance/tests/unified_parity.rs, or the `log`
+    # cases (UNIFIED.12.a / 12.c) capture a harness-induced dropped call.
+    for n, k in (("get_weather", "city"), ("f", "x"), ("g", "y"), ("run", "cmd"),
+                 ("log", "note"))
 ]
 
 

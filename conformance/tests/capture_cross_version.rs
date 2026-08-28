@@ -37,7 +37,8 @@ use std::path::{Path, PathBuf};
 
 use dynamo_parsers::{ReasoningParser, ReasoningParserType};
 use dynamo_parsers_v2::{
-    Tool, UnifiedEvent, assemble, create_tool_parser_for_family, create_unified_parser_for_family,
+    Tool, UnifiedEvent, UnifiedParserExt, assemble, create_tool_parser_for_family,
+    create_unified_parser_for_family,
 };
 use serde_json::{Value, json};
 
@@ -88,10 +89,13 @@ fn tool_deltas(res: &dynamo_parsers_v2::ToolParseResult, out: &mut Vec<Value>) {
 /// parser, and what `unified_render::dynamo_chunks` records for them — so a
 /// cross-version capture has to reproduce it or those rows come out empty and the
 /// table reads "this build produced nothing" for gemma4/kimi_k2.
-fn split_path_chunks(family: &str, input: &str) -> Option<Vec<Vec<Value>>> {
-    let (reasoning_name, tool_family) = parsers_for(family)?;
-    let mut rp = ReasoningParserType::get_reasoning_parser_from_name(&reasoning_name);
-    let mut tp = create_tool_parser_for_family(&tool_family, &tools()).ok()?;
+fn split_path_chunks_with_parsers(
+    reasoning_name: &str,
+    tool_family: &str,
+    input: &str,
+) -> Option<Vec<Vec<Value>>> {
+    let mut rp = ReasoningParserType::get_reasoning_parser_from_name(reasoning_name);
+    let mut tp = create_tool_parser_for_family(tool_family, &tools()).ok()?;
 
     let mut rows = Vec::new();
     for chunk in chunk_input(input) {
@@ -240,18 +244,84 @@ fn fold_chunks(rows: &[Vec<Value>]) -> Vec<serde_yaml::Value> {
         .collect()
 }
 
+fn split_path_capture_with_parsers(
+    reasoning_name: &str,
+    tool_family: &str,
+    input: &str,
+) -> Option<(Vec<Vec<Value>>, Vec<serde_yaml::Value>)> {
+    let rows = split_path_chunks_with_parsers(reasoning_name, tool_family, input)?;
+
+    // The split serving path assembles reasoning over the WHOLE input before it
+    // streams the leftover through the tool parser. Its raw chunk evidence comes
+    // from the incremental APIs, but folding those rows invents interleaving the
+    // assembled contract cannot represent and rewrites released capture behavior.
+    let mut rp = ReasoningParserType::get_reasoning_parser_from_name(reasoning_name);
+    let split = rp.detect_and_parse_reasoning(input, &[]);
+    let mut assembled_rows = Vec::new();
+    if !split.reasoning_text.is_empty() {
+        assembled_rows.push(vec![json!({
+            "kind": "reasoning",
+            "text": split.reasoning_text,
+        })]);
+    }
+    let mut tp = create_tool_parser_for_family(tool_family, &tools()).ok()?;
+    for ch in split.normal_text.chars() {
+        let mut buf = [0u8; 4];
+        let mut deltas = Vec::new();
+        tool_deltas(
+            &tp.push(ch.encode_utf8(&mut buf)).unwrap_or_default(),
+            &mut deltas,
+        );
+        if !deltas.is_empty() {
+            assembled_rows.push(deltas);
+        }
+    }
+    let mut tail = Vec::new();
+    tool_deltas(&tp.finish().unwrap_or_default(), &mut tail);
+    if !tail.is_empty() {
+        assembled_rows.push(tail);
+    }
+    let assembled = fold_chunks(&assembled_rows);
+    Some((rows, assembled))
+}
+
+fn split_path_capture(
+    family: &str,
+    input: &str,
+) -> Option<(Vec<Vec<Value>>, Vec<serde_yaml::Value>)> {
+    let (reasoning_name, tool_family) = parsers_for(family)?;
+    split_path_capture_with_parsers(&reasoning_name, &tool_family, input)
+}
+
+#[test]
+fn split_capture_assembles_reasoning_over_the_whole_input() {
+    let input = "<|channel>thought\nLook it up.<channel|><|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|><|channel>thought\nNow answer.<channel|>It's 18C.";
+    let (_, assembled) =
+        split_path_capture_with_parsers("gemma4", "gemma4", input).expect("split path");
+    let want = vec![
+        serde_yaml::to_value(json!({"kind": "reasoning", "text": "Look it up.Now answer."}))
+            .expect("reasoning"),
+        serde_yaml::to_value(
+            json!({"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}),
+        )
+        .expect("tool call"),
+        serde_yaml::to_value(json!({"kind": "text", "text": "It's 18C."})).expect("text"),
+    ];
+    assert_eq!(assembled, want);
+}
+
 /// Per-chunk rows record RAW deltas, not assembled events — `arguments` stays the
 /// literal fragment the parser emitted. Mirrors `unified_render::unified_delta_json`.
 /// (Assembling per chunk instead produces a mapping and makes every case look changed.)
-fn delta_to_yaml(d: &dynamo_parsers_v2::UnifiedDelta) -> serde_yaml::Value {
+fn delta_to_yaml(d: &dynamo_parsers_v2::UnifiedParserEvent) -> serde_yaml::Value {
     let v = match d {
-        dynamo_parsers_v2::UnifiedDelta::Reasoning { text } => {
+        dynamo_parsers_v2::UnifiedParserEvent::Reasoning(text) => {
             serde_json::json!({"kind": "reasoning", "text": text})
         }
-        dynamo_parsers_v2::UnifiedDelta::Text { text } => {
+        dynamo_parsers_v2::UnifiedParserEvent::Text(text) => {
             serde_json::json!({"kind": "text", "text": text})
         }
-        dynamo_parsers_v2::UnifiedDelta::ToolCall(c) => {
+        dynamo_parsers_v2::UnifiedParserEvent::ToolCall(c) => {
             serde_json::json!({"kind": "tool_call", "name": c.name, "arguments": c.arguments})
         }
     };
@@ -282,7 +352,15 @@ fn capture_this_build_against_the_current_corpus() {
         // reported, not written as an empty dir: "no parser here" and "parser emitted
         // nothing" must not look alike on the page.
         let native = create_unified_parser_for_family(&family, &tools()).is_ok();
-        if !native && parsers_for(&family).is_none() {
+        // Availability is whether THIS BUILD can construct the parsers, not whether the
+        // current registry names them. `XVER_FAMILIES` travels with the corpus and lists
+        // families a historical build never shipped, so a name-only check let such a
+        // family reach the capture and panic inside `split_path_capture` — taking down
+        // the whole run and discarding every family already captured before it.
+        let split_available = parsers_for(&family).is_some_and(|(_reasoning, tool)| {
+            create_tool_parser_for_family(&tool, &tools()).is_ok()
+        });
+        if !native && !split_available {
             skipped_families.push(family);
             continue;
         }
@@ -324,11 +402,8 @@ fn capture_this_build_against_the_current_corpus() {
                         }
                         (rows, assemble(&deltas).iter().map(ev_to_yaml).collect())
                     } else {
-                        let rows = split_path_chunks(&family, input).expect("split path");
-                        // The page assembles the Dynamo column from the per-chunk deltas
-                        // (`_assemble_stream`), not from this field, so folding the same
-                        // rows keeps the two consistent by construction.
-                        let assembled = fold_chunks(&rows);
+                        let (rows, assembled) =
+                            split_path_capture(&family, input).expect("split path");
                         let rows = rows
                             .into_iter()
                             .map(|r| {

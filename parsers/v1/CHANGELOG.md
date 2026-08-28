@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [8.2.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v8.1.0...dynamo-parsers-v8.2.0) - 2026-08-25
+
+### Features
+
+- *(parsers)* Port kimi_k2 to the v2 parser ([#191](https://github.com/ai-dynamo/frontend-crates/pull/191))
+
+## [8.1.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v8.0.0...dynamo-parsers-v8.1.0) - 2026-08-21
+
+### Features
+
+- *(parsers)* Stream guided tool calls in v1 and v2 ([#194](https://github.com/ai-dynamo/frontend-crates/pull/194))
+
+## [8.0.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v7.1.1...dynamo-parsers-v8.0.0) - 2026-08-14
+
+### Features
+
+- *(parsers)* [**breaking**] Add native Kimi K2 structural-tag generation and make `StructuralTagBuilder` non-exhaustive ([#188](https://github.com/ai-dynamo/frontend-crates/pull/188))
+
+## [7.1.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v7.1.0...dynamo-parsers-v7.1.1) - 2026-08-08
+
+### Miscellaneous
+
+- Update Cargo.lock dependencies
+
 ## [7.1.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v7.0.3...dynamo-parsers-v7.1.0) - 2026-08-06
 
 ### Features

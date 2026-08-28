@@ -16,6 +16,8 @@ from typing import Any
 
 import yaml
 
+import markers  # the cmp payload/marker contract owner
+
 from .. import common
 from ..common import _FAMILY_TO_SGLANG_REASONING, _FAMILY_TO_VLLM_REASONING
 from ..common import TOP_N_TOOL_CALLING_FAMILIES as TOP_N_FAMILIES
@@ -482,7 +484,7 @@ def _reasoning_cmp_json(case: dict[str, Any] | None, family: str | None) -> str:
         return ""
     ids: dict[str, int] = {}
     out = {
-        impl: {"sig": ids.setdefault(e["s"], len(ids)), "leak": e["leak"], "na": e["na"]}
+        impl: markers.cmp_entry(ids.setdefault(e["s"], len(ids)), leak=e["leak"], na=e["na"])
         for impl, e in raw.items()
     }
     return html_lib.escape(json.dumps(out, separators=(",", ":")), quote=True)

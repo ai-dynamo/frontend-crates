@@ -3,9 +3,16 @@
 # SPDX-License-Identifier: Apache-2.0
 """Capture fixture output through the vLLM Rust tool-parser crate.
 
-This runs on the host. It builds a small temporary Rust binary that depends on
-`vllm-tool-parser` by path from a checked-out vLLM source tree, then feeds the
+This runs on the host. It builds a small temporary Rust binary that depends on the
+vLLM Rust parser crate by path from a checked-out vLLM source tree, then feeds the
 fixture cases to the requested parser.
+
+Both crate layouts are supported so older tags stay capturable: `vllm-tool-parser` at
+`rust/src/tool-parser` (< 0.25, parsers at the crate root, `ToolParserOutput.calls` /
+`.normal_text` fields) and `vllm-parser` at `rust/src/parser` (>= 0.25, parsers under
+`vllm_parser::tool`, ordered-events output read via `calls()` / `normal_text()`).
+capture_driver.vllm_rust_crate_dir() picks the layout; _DIALECTS holds the per-layout
+substitutions for RUST_MAIN_TEMPLATE.
 """
 
 from __future__ import annotations
@@ -13,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import string
 import subprocess
 import sys
 import tempfile
@@ -27,34 +35,20 @@ if str(HERE) not in sys.path:
 
 import capture_driver as cd  # noqa: E402
 
-RUST_MAIN = r'''
+RUST_MAIN_TEMPLATE = string.Template(r'''
 use std::collections::BTreeMap;
 use std::fs;
 use std::io::{self, Read};
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use vllm_tool_parser::{
+use $use_root::{
     DeepSeekV31ToolParser, DeepSeekV32ToolParser, DeepSeekV3ToolParser, DeepSeekV4ToolParser,
-    Gemma4ToolParser, Glm47MoeToolParser, HermesToolParser, KimiK2ToolParser,
-    Llama3JsonToolParser, MinimaxM2ToolParser, MistralToolParser, Qwen3CoderToolParser,
-    Qwen3XmlToolParser, Tool, ToolCallDelta, ToolParser, ToolParserError, ToolParserOutput,
+    Glm45MoeToolParser, Glm47MoeToolParser, Granite4ToolParser, HermesToolParser, HyV3ToolParser,
+    Internlm2ToolParser, KimiK2ToolParser, Llama3JsonToolParser, MinimaxM2ToolParser,
+    MinimaxM3ToolParser, MistralToolParser, Phi4MiniJsonToolParser, Qwen3CoderToolParser,
+    Qwen3XmlToolParser, Tool, ToolCallDelta, ToolParser, ToolParserOutput,$extra_imports
 };
-
-/// Record the EXACT Rust error type, not just its Display.
-///
-/// The parser calls return `ToolParserError`, whose only variant renders as
-/// "tool parser parsing failed: {message}". anyhow's `{:#}` erases the type and, when
-/// `message` is empty, collapses to a bare "tool parser parsing failed: " that names
-/// neither the type nor the failure. Downcasting back to the concrete error and using
-/// its Debug keeps the variant AND its fields, so an empty message reads as
-/// `ToolParserError::ParsingFailed { message: "" }` instead of a dangling colon.
-fn error_detail(error: &anyhow::Error) -> String {
-    match error.downcast_ref::<ToolParserError>() {
-        Some(e) => format!("ToolParserError::{e:?}"),
-        None => format!("{error:#}"),
-    }
-}
 
 #[derive(Debug, Deserialize)]
 struct Input {
@@ -125,53 +119,72 @@ fn create_parser(parser: &str, tools: &[Tool]) -> anyhow::Result<Box<dyn ToolPar
         "deepseek_v31" | "deepseek_v3_1" => Ok(DeepSeekV31ToolParser::create(tools)?),
         "deepseek_v32" | "deepseek_v3_2" => Ok(DeepSeekV32ToolParser::create(tools)?),
         "deepseek_v4" => Ok(DeepSeekV4ToolParser::create(tools)?),
-        "gemma4" => Ok(Gemma4ToolParser::create(tools)?),
+        $gemma4_arm
+        "glm45" | "glm45_moe" => Ok(Glm45MoeToolParser::create(tools)?),
         "glm47" | "glm47_moe" => Ok(Glm47MoeToolParser::create(tools)?),
+        "granite4" => Ok(Granite4ToolParser::create(tools)?),
         "hermes" => Ok(HermesToolParser::create(tools)?),
+        "hy_v3" => Ok(HyV3ToolParser::create(tools)?),
+        "internlm2" => Ok(Internlm2ToolParser::create(tools)?),
         "kimi_k2" => Ok(KimiK2ToolParser::create(tools)?),
         "llama3_json" => Ok(Llama3JsonToolParser::create(tools)?),
         "minimax_m2" => Ok(MinimaxM2ToolParser::create(tools)?),
+        "minimax_m3" => Ok(MinimaxM3ToolParser::create(tools)?),
         "mistral" => Ok(MistralToolParser::create(tools)?),
+        "phi4" | "phi4_mini_json" => Ok(Phi4MiniJsonToolParser::create(tools)?),
         "qwen3_coder" => Ok(Qwen3CoderToolParser::create(tools)?),
         "qwen3_xml" => Ok(Qwen3XmlToolParser::create(tools)?),
         _ => anyhow::bail!("unsupported vLLM Rust parser: {parser}"),
     }
 }
 
-fn output_delta(delta: ToolCallDelta) -> OutputDelta {
+// vLLM 0.25.x reworked `ToolParserOutput` into an ordered `events` list, so calls and
+// plain text are read through `calls()` / `normal_text()` accessors; 0.23/0.24 expose
+// them as the public `calls` / `normal_text` fields. Both spellings are substituted in
+// per dialect ($calls_iter / $normal_text) so the rest of this probe stays identical.
+fn output_delta(delta: &ToolCallDelta) -> OutputDelta {
     OutputDelta {
         index: delta.tool_index,
-        name: delta.name,
+        name: delta.name.clone(),
         arguments: if delta.arguments.is_empty() {
             None
         } else {
-            Some(delta.arguments)
+            Some(delta.arguments.clone())
         },
     }
 }
 
-fn output_chunk(result: ToolParserOutput) -> OutputChunk {
+fn output_chunk(result: &ToolParserOutput) -> OutputChunk {
     OutputChunk {
-        deltas: result.calls.into_iter().map(output_delta).collect(),
-        normal_text: result.normal_text,
+        deltas: $calls_iter.map(output_delta).collect(),
+        normal_text: $normal_text,
     }
 }
 
-fn append_result(out: &mut ToolParserOutput, mut next: ToolParserOutput) {
-    out.normal_text.push_str(&next.normal_text);
-    out.calls.append(&mut next.calls);
+// A thrown parser error, named by its crate enum variant so the fixture surfaces the
+// real diagnostic (e.g. `ToolParserError::ParsingFailed (near " not")`) instead of a
+// bare, type-less message. Downcast the anyhow wrapper back to the crate error; fall
+// back to the anyhow chain only for errors this probe can't name.
+fn error_detail(error: &anyhow::Error) -> String {
+    match error.downcast_ref::<$use_root::ToolParserError>() {
+        Some($use_root::ToolParserError::ParsingFailed { message }) => {
+            format!("ToolParserError::ParsingFailed ({message})")
+        }
+        Some(other) => format!("ToolParserError::{other:?}"),
+        None => format!("{error:#}"),
+    }
 }
 
-fn assembled_call_map(result: ToolParserOutput) -> Vec<Value> {
+fn assembled_call_map(result: &ToolParserOutput) -> Vec<Value> {
     let mut order = Vec::<usize>::new();
     let mut names = BTreeMap::<usize, String>::new();
     let mut args = BTreeMap::<usize, String>::new();
-    for call in result.calls {
+    for call in $calls_iter {
         if !order.contains(&call.tool_index) {
             order.push(call.tool_index);
         }
-        if let Some(name) = call.name {
-            names.entry(call.tool_index).or_default().push_str(&name);
+        if let Some(name) = &call.name {
+            names.entry(call.tool_index).or_default().push_str(name);
         }
         args.entry(call.tool_index).or_default().push_str(&call.arguments);
     }
@@ -203,9 +216,9 @@ fn run_stream(input: Input) -> anyhow::Result<Value> {
                 let mut result = ToolParserOutput::default();
                 parser.parse_into(&chunk.delta_text, &mut result)?;
                 if chunk.finish_reason.is_some() {
-                    append_result(&mut result, parser.finish()?);
+                    result.append(parser.finish()?);
                 }
-                chunks.push(output_chunk(result));
+                chunks.push(output_chunk(&result));
             }
             Ok(serde_json::to_value(chunks)?)
         })();
@@ -230,9 +243,9 @@ fn run_batch_on_stream(input: Input) -> anyhow::Result<Value> {
             let mut result = ToolParserOutput::default();
             if let Some(model_text) = case.model_text {
                 parser.parse_into(&model_text, &mut result)?;
-                append_result(&mut result, parser.finish()?);
-                let normal_text = std::mem::take(&mut result.normal_text);
-                let calls = assembled_call_map(result);
+                result.append(parser.finish()?);
+                let normal_text = $normal_text;
+                let calls = assembled_call_map(&result);
                 return Ok(Some(json!({
                     "calls": calls,
                     "normal_text": normal_text,
@@ -270,14 +283,53 @@ fn main() -> anyhow::Result<()> {
     println!("{}", serde_json::to_string(&out)?);
     Ok(())
 }
-'''
+''')
+
+# Per-layout substitutions for RUST_MAIN_TEMPLATE, keyed by the `dialect` recorded in
+# capture_driver.VLLM_RUST_CRATE_LAYOUTS. The parser NAME list is identical across both
+# (0.24.0 already exports Granite4/Internlm2/MinimaxM3/Phi4MiniJson), so only the module
+# root, the output accessors, and gemma4's availability differ.
+_DIALECTS = {
+    # vLLM >= 0.25: crate `vllm-parser`, tool parsers under the `tool` module.
+    "unified": {
+        "use_root": "vllm_parser::tool",
+        "calls_iter": "result.calls().into_iter()",
+        "normal_text": "result.normal_text()",
+        "extra_imports": "",
+        # gemma4 lost its `tool::ToolParser` impl in 0.25.0: it is now a native unified
+        # parser (`vllm_parser::unified::Gemma4UnifiedParser`) on a tokenizer-backed API
+        # that this probe cannot drive. Recorded as unavailable, not as a failure.
+        "gemma4_arm": (
+            '"gemma4" => anyhow::bail!(\n'
+            '            "gemma4 moved to the native unified parser in vLLM 0.25.0; \\\n'
+            '             not exposed via the tool::ToolParser probe"\n'
+            "        ),"
+        ),
+    },
+    # vLLM < 0.25: crate `vllm-tool-parser`, parsers at the crate root, and
+    # ToolParserOutput still exposes `calls` / `normal_text` as public fields.
+    "tool": {
+        "use_root": "vllm_tool_parser",
+        "calls_iter": "result.calls.iter()",
+        "normal_text": "result.normal_text.clone()",
+        # gemma4 still implements tool::ToolParser here; 0.25+ dropped it from this list.
+        "extra_imports": "\n    Gemma4ToolParser,",
+        "gemma4_arm": '"gemma4" => Ok(Gemma4ToolParser::create(tools)?),',
+    },
+}
+
+
+def _rust_main(layout: dict) -> str:
+    """The probe's main.rs for one crate layout."""
+    dialect = _DIALECTS[layout["dialect"]]
+    return RUST_MAIN_TEMPLATE.substitute(dialect)
 
 
 def _parser_input(mode: str, parser: str, cases: dict) -> dict:
     return {"mode": mode, "parser": parser, "cases": cases}
 
 
-def _write_probe_project(project_dir: Path, crate_path: Path) -> None:
+def _write_probe_project(project_dir: Path, crate_path: Path, layout: dict) -> None:
     (project_dir / "src").mkdir(parents=True, exist_ok=True)
     cargo_toml = f"""
 [package]
@@ -289,21 +341,18 @@ edition = "2024"
 anyhow = "1"
 serde = {{ version = "1", features = ["derive"] }}
 serde_json = "1"
-vllm-tool-parser = {{ path = {json.dumps(str(crate_path))} }}
+{layout["crate"]} = {{ path = {json.dumps(str(crate_path))} }}
 """
     (project_dir / "Cargo.toml").write_text(textwrap.dedent(cargo_toml).lstrip(), encoding="utf-8")
-    (project_dir / "src/main.rs").write_text(RUST_MAIN, encoding="utf-8")
+    (project_dir / "src/main.rs").write_text(_rust_main(layout), encoding="utf-8")
 
 
 def _run_probe(source: str, payload: dict, work: str | None) -> dict:
-    root = Path(source).expanduser().resolve()
-    crate_path = root / "rust/src/tool-parser"
-    if not crate_path.joinpath("Cargo.toml").exists():
-        raise SystemExit(f"vLLM Rust source path {root} does not contain rust/src/tool-parser/Cargo.toml")
+    crate_path, layout = cd.vllm_rust_crate_dir(source)
     work_root = Path(work) if work else Path(tempfile.mkdtemp(prefix="vllm_rust_probe_"))
     project_dir = work_root / "probe"
     input_path = work_root / "vllm_rust_probe_input.json"
-    _write_probe_project(project_dir, crate_path)
+    _write_probe_project(project_dir, crate_path, layout)
     input_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     env = os.environ.copy()
     env.setdefault("CARGO_TARGET_DIR", "/tmp/vllm-rust-parser-probe-target")

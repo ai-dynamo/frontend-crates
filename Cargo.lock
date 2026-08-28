@@ -1106,8 +1106,11 @@ checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
 name = "dynamo-conformance-fixtures-v2"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "dynamo-parsers",
  "dynamo-parsers-v2",
+ "dynamo-protocols",
+ "futures",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -1138,7 +1141,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers"
-version = "7.1.0"
+version = "8.2.0"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -1160,7 +1163,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2"
-version = "0.1.27"
+version = "0.3.4"
 dependencies = [
  "anyhow",
  "num-traits",
@@ -1170,6 +1173,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "tracing",
+ "tracing-subscriber",
  "uuid",
 ]
 
@@ -1183,7 +1187,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-protocols"
-version = "5.3.0"
+version = "5.4.0"
 dependencies = [
  "async-openai",
  "derive_builder",
@@ -1200,7 +1204,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-renderer"
-version = "5.0.0"
+version = "5.1.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1217,7 +1221,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-tokenizers"
-version = "1.8.0"
+version = "1.8.1"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -2519,9 +2523,9 @@ dependencies = [
 
 [[package]]
 name = "minijinja"
-version = "2.21.0"
+version = "2.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb3d648e68cea56d9858d535ee28f9538404e2dd8cb08ed0bd05dca379477f39"
+checksum = "86886cf6dbf4e614b19c9a1eec9775f021869d7eadde0fc73921a81b90c9b4c9"
 dependencies = [
  "indexmap 2.14.0",
  "memo-map",
@@ -2531,9 +2535,9 @@ dependencies = [
 
 [[package]]
 name = "minijinja-contrib"
-version = "2.21.0"
+version = "2.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85342f6fac0be8ccd5bd00d9066be538f34f393f577b75d81b17c8398a6b43bb"
+checksum = "bd3e5f077bc2379f0f7d911e7cfdd921114ed99fc884533dca502944cb355b11"
 dependencies = [
  "minijinja",
  "serde",

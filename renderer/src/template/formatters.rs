@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use super::tokcfg::{ChatTemplate, raise_exception, strftime_now, tojson};
+use super::tokcfg::{ChatTemplate, fromjson, raise_exception, strftime_now, tojson};
 use super::{ContextMixins, HfTokenizerConfigJsonFormatter, JinjaEnvironment};
 use either::Either;
 use minijinja::{Environment, Value, context};
@@ -385,6 +385,11 @@ impl HfTokenizerConfigJsonFormatter {
         env.set_unknown_method_callback(minijinja_contrib::pycompat::unknown_method_callback);
 
         env.add_filter("tojson", tojson);
+
+        // Templates that round-trip tool call `arguments` (a JSON string) back into an
+        // object need this; minijinja has no builtin. Both spellings are in the wild.
+        env.add_filter("fromjson", fromjson);
+        env.add_filter("from_json", fromjson);
 
         env.add_function("raise_exception", raise_exception);
         env.add_function("strftime_now", strftime_now);
