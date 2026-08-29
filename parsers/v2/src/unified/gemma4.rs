@@ -40,10 +40,12 @@
 //! inside a quoted argument value is data and survives byte-exact (`I7`, case
 //! `12.a`).
 
-use crate::tool_calling::gemma4::gemma4_scanner;
+use crate::tool_calling::gemma4::{gemma4_scanner, is_gemma_call_prefix_boundary};
 use crate::tool_calling::scan::ReasoningSpec;
 use crate::tool_calling::traits::Tool;
-use crate::unified::{GuidedRouted, ScannerUnified, UnifiedParser};
+use crate::unified::{
+    GuidedPrefix, GuidedPrefixContext, GuidedRouted, ScannerUnified, UnifiedParser,
+};
 
 const REASONING_START: &str = "<|channel>";
 const REASONING_END: &str = "<channel|>";
@@ -51,14 +53,53 @@ const REASONING_END: &str = "<channel|>";
 /// `user\n` in `<|turn>user\n`. Structural, and stripped from the thought.
 const REASONING_START_LABEL: &str = "thought\n";
 
+/// Gemma's lexical `call:` prefix is guided syntax only before an otherwise empty
+/// payload and only when it immediately introduces JSON. The generic guided parser
+/// supplies the surrounding context; this family owns the literal spelling.
+fn guided_call_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
+    if !is_gemma_call_prefix_boundary(context.text, context.at) {
+        return GuidedPrefix::NoMatch;
+    }
+
+    let suffix = &context.text[context.at..];
+    if suffix.len() < "call:".len() && "call:".starts_with(suffix) {
+        return GuidedPrefix::Pending;
+    }
+    let Some(after_prefix) = suffix.strip_prefix("call:") else {
+        return GuidedPrefix::NoMatch;
+    };
+    if context.followed_by_competing_marker {
+        return GuidedPrefix::Strip;
+    }
+    if !context.outside_reasoning
+        && after_prefix
+            .chars()
+            .next()
+            .is_some_and(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
+    {
+        return GuidedPrefix::Strip;
+    }
+    if !context.outside_reasoning
+        || !context.payload_is_empty
+        || !context.text[..context.at].trim().is_empty()
+    {
+        return GuidedPrefix::NoMatch;
+    }
+    match after_prefix.as_bytes().first() {
+        None => GuidedPrefix::Pending,
+        Some(b'{') | Some(b'[') => GuidedPrefix::Match,
+        Some(_) => GuidedPrefix::NoMatch,
+    }
+}
+
 /// Build the Gemma 4 unified parser for one stream.
 pub(crate) fn gemma4_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
     // `preserve_special_tokens` must match the TOOL-ONLY parser for this same
     // grammar (`Gemma4ToolStreamParser` answers `true`): gemma4's markers ARE
     // tokenizer special tokens, so a host told `false` would strip them and the
     // calls would vanish on the unified path only.
-    Box::new(GuidedRouted::new(ScannerUnified::new(
-        gemma4_scanner(tools).with_reasoning(ReasoningSpec {
+    Box::new(GuidedRouted::new(
+        ScannerUnified::new(gemma4_scanner(tools).with_reasoning(ReasoningSpec {
             start: REASONING_START,
             end: REASONING_END,
             start_label: Some(REASONING_START_LABEL),
@@ -66,13 +107,18 @@ pub(crate) fn gemma4_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
             // one, so the stream starts in visible content (policy P5).
             forced_start: false,
             preserve_special_tokens: true,
-        }),
-    )))
+        }))
+        .with_guided_prefix_policy(guided_call_prefix),
+    ))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::tool_calling::gemma4::{
+        Gemma4ToolStreamParser, boundary_examined_bytes, reset_boundary_examined_bytes,
+    };
+    use crate::tool_calling::traits::ToolParser;
     use crate::unified::{
         InvalidGuidedPayloadPolicy, UnifiedEvent, UnifiedParserExt, UnifiedParserInit,
         UnifiedParserStartingState, UnifiedToolOutputMode, assemble,
@@ -146,6 +192,110 @@ mod tests {
             name: name.into(),
             arguments,
         }
+    }
+
+    fn one_byte_events(
+        tools: &[Tool],
+        starting_state: UnifiedParserStartingState,
+        tool_output_mode: UnifiedToolOutputMode,
+        input: &str,
+    ) -> Vec<UnifiedEvent> {
+        let chunks = input
+            .as_bytes()
+            .iter()
+            .map(|byte| std::str::from_utf8(std::slice::from_ref(byte)).expect("ASCII input"))
+            .collect::<Vec<_>>();
+        configured_events(tools, starting_state, tool_output_mode, &chunks)
+    }
+
+    #[test]
+    fn native_and_guided_boundary_scans_are_linear_across_one_byte_streams() {
+        let native = "<|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|>";
+        let guided = "<|channel>thought\nprivate<channel|>[{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Paris\"}}]";
+
+        reset_boundary_examined_bytes();
+        let mut tool_only = Gemma4ToolStreamParser::new(&weather_tools());
+        for byte in native.bytes() {
+            tool_only
+                .push(&char::from(byte).to_string())
+                .expect("tool-only push");
+        }
+        tool_only.finish().expect("tool-only finish");
+        assert!(
+            boundary_examined_bytes() <= native.len() * 2,
+            "tool-only boundary examined {} bytes for a {}-byte one-byte stream",
+            boundary_examined_bytes(),
+            native.len()
+        );
+
+        for (mode, input) in [
+            (UnifiedToolOutputMode::Native, native),
+            (
+                UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                guided,
+            ),
+        ] {
+            reset_boundary_examined_bytes();
+            let _ = one_byte_events(
+                &weather_tools(),
+                UnifiedParserStartingState::None,
+                mode,
+                input,
+            );
+            assert!(
+                boundary_examined_bytes() <= input.len() * 2,
+                "boundary examined {} bytes for a {}-byte one-byte stream",
+                boundary_examined_bytes(),
+                input.len()
+            );
+        }
+    }
+
+    #[test]
+    fn guided_native_looking_candidates_scan_each_byte_once() {
+        for payload_len in [8 * 1024, 16 * 1024, 32 * 1024] {
+            let input = format!(
+                "<|tool_call>call:get_weather{{city:<|\"|>{}}}",
+                "x".repeat(payload_len)
+            );
+
+            reset_boundary_examined_bytes();
+            let events = one_byte_events(
+                &weather_tools(),
+                UnifiedParserStartingState::None,
+                UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                &input,
+            );
+
+            assert!(
+                events.is_empty(),
+                "incomplete native candidate must be retained"
+            );
+            assert!(
+                boundary_examined_bytes() <= input.len() * 2,
+                "guided boundary examined {} bytes for a {}-byte native-looking candidate",
+                boundary_examined_bytes(),
+                input.len()
+            );
+        }
+    }
+
+    #[test]
+    fn one_byte_guided_stream_strips_native_envelope_before_reasoning() {
+        let input = "<|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<|channel>thought\nprivate<channel|>[{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Rome\"}}]";
+        assert_eq!(
+            one_byte_events(
+                &weather_tools(),
+                UnifiedParserStartingState::None,
+                UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                input,
+            ),
+            vec![
+                text("call:get_weather{city:<|\"|>Paris<|\"|>}"),
+                reasoning("private"),
+                call("get_weather", serde_json::json!({"city": "Rome"})),
+            ]
+        );
     }
 
     #[test]

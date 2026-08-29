@@ -35,8 +35,8 @@
 //! malformed payloads, which is exactly what the fixtures expect.
 
 use crate::tool_calling::scan::{
-    BareRecoveryLatch, GuidedPrefix, InvokeEmitter, InvokeLatch, InvokeScan, WrappedBlockScanner,
-    WrappedBlockSpec, find_first_outside_strings, json_value_end,
+    BareRecoveryLatch, InvokeBoundaryFactory, InvokeEmitter, InvokeLatch, InvokeScan,
+    WrappedBlockScanner, WrappedBlockSpec, find_first_outside_strings, json_value_end,
 };
 use crate::tool_calling::v1core::{
     KimiK2ParserConfig, ToolDefinition, try_tool_call_parse_kimi_k2,
@@ -458,19 +458,10 @@ fn kimi_invoke_holdback(_text: &str) -> usize {
     0
 }
 
-/// Kimi's markers are unambiguous structural tokens with no ordinary-prose
-/// collision (unlike Gemma 4's lexical `call:` prefix), so it has no guided
-/// prefix of its own: always `NoMatch`, which the guided drain treats
-/// identically to not having `invoke_scan` set at all.
-fn kimi_no_guided_prefix(_text: &str, _at: usize) -> GuidedPrefix {
-    GuidedPrefix::NoMatch
-}
-
 const KIMI_INVOKE_SCAN: InvokeScan = InvokeScan {
     end: kimi_invoke_end,
     opens: kimi_invoke_opens,
     holdback: kimi_invoke_holdback,
-    guided_prefix: kimi_no_guided_prefix,
     resync: None,
 };
 
@@ -503,7 +494,24 @@ fn spec(config: &KimiK2ParserConfig) -> WrappedBlockSpec {
         drop_invoke_crossing_block_end: true,
         // Every wrapped family's markers are special tokens today.
         preserve_special_tokens: true,
-        invoke_scan: Some(KIMI_INVOKE_SCAN),
+        invoke_boundary_factory: Some(InvokeBoundaryFactory::stateless(KIMI_INVOKE_SCAN)),
+    }
+}
+
+#[cfg(test)]
+mod boundary_tests {
+    use super::*;
+
+    #[test]
+    fn kimi_exposes_its_stateless_boundary_as_family_metadata() {
+        let scanner = kimi_k2_scanner(&[]);
+        let factory = scanner
+            .invoke_boundary_factory()
+            .expect("Kimi needs grammar-aware boundary callbacks");
+        let boundary = factory.create();
+
+        assert!(boundary.opens(CALL_START, 0));
+        assert_eq!(boundary.holdback("ordinary text"), 0);
     }
 }
 

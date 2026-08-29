@@ -2205,33 +2205,50 @@ def _load_unified_fixtures(base: Path):
                 out[(fp.parent.name, k)] = cd
         return out
 
-    inputs = _read_dir("inputs")
-    golden = _read_dir("golden")
+    def _overlay_base(name):
+        return re.sub(r"\+pr\d+\.patch\d+$", "", name)
+
+    def _merge_layers(layers):
+        merged = {}
+        for name in layers:
+            merged.update(_read_dir(name))
+        return merged
+
+    # Shared inputs and the authored golden oracle are immutable once released. New
+    # cases are carried by PR-qualified sparse overlays instead of rewriting them.
+    input_layers = ["inputs"] + sorted(
+        d.name
+        for d in base.iterdir()
+        if d.is_dir() and _overlay_base(d.name) == "inputs" and d.name != "inputs"
+    )
+    golden_layers = ["golden"] + sorted(
+        d.name
+        for d in base.iterdir()
+        if d.is_dir() and _overlay_base(d.name) == "golden" and d.name != "golden"
+    )
+    inputs = _merge_layers(input_layers)
+    golden = _merge_layers(golden_layers)
     # impl -> [(version, dirname)] ascending. Dynamo keeps EVERY capture so the tab can
     # compare one parser build against another; a dict keyed by impl silently dropped
     # all but the last dir, which is why only one Dynamo column could ever render.
     # `sorted()` alone is lexicographic (0.1.9 > 0.1.10), so sort on the version key.
     engine_versions: dict[str, list[tuple[str, str]]] = {}
     for d in sorted(base.iterdir()):
-        if not d.is_dir() or d.name in ("inputs", "golden"):
+        if not d.is_dir() or _overlay_base(d.name) in ("inputs", "golden"):
             continue
         m = re.match(r"^([a-z0-9_]+)-(\d.*)$", d.name)
         if m:
             engine_versions.setdefault(m.group(1), []).append((m.group(2), d.name))
     for impl in engine_versions:
         # `_version_sort_key` reads only the leading digits, so `0.1.24+pre163` ties with
-        # `0.1.24`. Break the tie so a `+tag` capture sorts BEFORE the plain release it
-        # qualifies: the tag marks a code state within that version (a pre-merge branch
-        # point), while the unadorned version is the released build. Without this the
-        # tagged capture wins the tie and becomes the reference, which would star the OLD
-        # parser and quietly measure everything against it.
+        # `0.1.24`. A qualified capture is a newer branch state than the release, matching
+        # Rust's `version_capture_sort_key`: keep it after the release so it is selected
+        # as the current capture while the release remains a historical comparison.
         engine_versions[impl].sort(
-            key=lambda vd: (fixtures._version_sort_key(vd[0]), "+" not in vd[0])
+            key=lambda vd: (fixtures._version_sort_key(vd[0]), "+" in vd[0])
         )
     # The Unified tab compares every captured vLLM version. Keep each peer version
     # separate instead of silently replacing 0.25.1 with the newest 0.26.x shard.
-    engine_dirs = {impl: (vs[-1][1], vs[-1][0]) for impl, vs in engine_versions.items()}
-    engine_cases = {impl: _read_dir(dirname) for impl, (dirname, _v) in engine_dirs.items()}
     peer_by_ver = {}
     for impl, vers in engine_versions.items():
         if impl not in ("vllm_python", "vllm_rust", "sglang_python"):
@@ -2240,17 +2257,38 @@ def _load_unified_fixtures(base: Path):
         for ver, dirname in vers:
             base_ver = re.sub(r"\.patch\d+$", "", ver)
             target = merged.setdefault(base_ver, {})
-            patch_cases = _read_dir(dirname)
-            overlap = set(target).intersection(patch_cases)
-            if overlap:
-                raise ValueError(
-                    f"{dirname} rewrites existing {impl} capture cases: {sorted(overlap)!r}"
-                )
-            target.update(patch_cases)
-    dynamo_by_ver = {
-        _base_stream_version(ver): _read_dir(dirname)
-        for ver, dirname in engine_versions.get("dynamo_v2", [])
-    }
+            # A `.patchN` shard is an append-only correction layer for the same
+            # released parser, not a second release. It may intentionally replace
+            # an earlier capture for a case while leaving every other base case
+            # intact. Applying layers in version order preserves the release's
+            # identity and makes the patch's listed entries authoritative.
+            target.update(_read_dir(dirname))
+    engine_dirs = {impl: (vs[-1][1], vs[-1][0]) for impl, vs in engine_versions.items()}
+    engine_cases = {impl: _read_dir(dirname) for impl, (dirname, _v) in engine_dirs.items()}
+    for impl, captures in peer_by_ver.items():
+        latest = max(captures, key=fixtures._version_sort_key)
+        engine_cases[impl] = captures[latest]
+    dynamo_by_ver = {}
+    for ver, dirname in engine_versions.get("dynamo_v2", []):
+        # `.patchN` is a sparse backfill for its released binary, but `+tag` identifies
+        # a distinct branch capture and must remain selectable beside that release.
+        display_ver = _base_stream_version(ver)
+        captured_cases = _read_dir(dirname)
+        if _PATCH_SUFFIX_RE.search(ver):
+            dynamo_by_ver.setdefault(display_ver, {}).update(captured_cases)
+        else:
+            dynamo_by_ver[display_ver] = captured_cases
+
+    if dynamo_by_ver:
+        current_dynamo_ver, current_dynamo_cases = next(reversed(dynamo_by_ver.items()))
+        missing_current_cases = sorted(set(inputs).difference(current_dynamo_cases))
+        if missing_current_cases:
+            missing = ", ".join(f"{family}/{case}" for family, case in missing_current_cases)
+            raise ValueError(
+                f"selected Dynamo v2 capture {current_dynamo_ver} lacks input case(s): {missing}; "
+                "add an applicable append-only .patchN overlay"
+            )
+        engine_cases["dynamo_v2"] = current_dynamo_cases
 
     cases = []
     caps = {"vllm_python": {}, "vllm_rust": {}, "sglang_python": {}}
@@ -2309,6 +2347,16 @@ def _load_unified_fixtures(base: Path):
                 }
                 for impl in ("vllm_python", "vllm_rust", "sglang_python")
             },
+            # A peer version with no entry for this family has no parser. A version
+            # that captured the family but not this case predates the case instead.
+            "peer_family_vers": {
+                impl: sorted(
+                    ver
+                    for ver, docs in peer_by_ver.get(impl, {}).items()
+                    if any(captured_family == fam for captured_family, _key in docs)
+                )
+                for impl in ("vllm_python", "vllm_rust", "sglang_python")
+            },
             "chunks": [
                 {"delta_text": ic.get("delta_text", ""),
                  "dynamo": (dyn_chunks[i].get("expected") if i < len(dyn_chunks) else []) or []}
@@ -2328,10 +2376,12 @@ def _load_unified_fixtures(base: Path):
                     "parser": edoc.get("parser"),
                 }
     versions = {impl: v for impl, (_d, v) in engine_dirs.items()}
+    if dynamo_by_ver:
+        versions["dynamo_v2"] = next(reversed(dynamo_by_ver))
+    for impl, captures in peer_by_ver.items():
+        versions[impl] = max(captures, key=fixtures._version_sort_key)
     # Ascending; the tab makes the last one the reference and the rest compare-on.
-    versions["dynamo_v2_all"] = list(
-        dict.fromkeys(_base_stream_version(v) for v, _d in engine_versions.get("dynamo_v2", []))
-    )
+    versions["dynamo_v2_all"] = list(dynamo_by_ver)
     for impl in ("vllm_python", "vllm_rust", "sglang_python"):
         versions[f"{impl}_all"] = sorted(
             peer_by_ver.get(impl, {}), key=fixtures._version_sort_key
@@ -2488,8 +2538,8 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             dyn = _assemble_stream(dyn_chunk_deltas)
             gsig, dsig = _sig(gold), _sig(dyn)
             dverd = _unified_classify(f, gold, dyn)
-            # Score every captured vLLM version. Missing family coverage is n/a, not an
-            # assumed match: Muse Glimmer has no released vLLM parser to run.
+            # Score every captured vLLM version. Missing family coverage and a case that
+            # postdates a capture are both n/a, never an assumed match.
             peer_results = {}
             for spec in peer_specs:
                 cap = (c.get("peer_by_ver", {}).get(spec["source"], {})
@@ -2586,8 +2636,10 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                      "version": spec["version"], "parse_mode": "unified",
                      "leak": peer_results[spec["key"]]["verdict"] == "LEAK",
                      "block": ({"unavailable": (
-                                   f"{spec['label']} has no parser for {f}")}
-                               if peer_results[spec["key"]]["events"] is None else
+                                    f"not captured at {spec['version']}; this case postdates that capture"
+                                    if spec["version"] in c["peer_family_vers"][spec["source"]]
+                                    else f"{spec['label']} has no parser for {f}")}
+                                if peer_results[spec["key"]]["events"] is None else
                                ({"error": peer_results[spec["key"]]["error"]}
                                 if peer_results[spec["key"]]["error"] else
                                 {"events": peer_results[spec["key"]]["events"],

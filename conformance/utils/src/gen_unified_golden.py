@@ -814,6 +814,36 @@ EDGE = [
          lambda fam: f"{control_tokens(fam)[0]}I'll use {control_tokens(fam)[2]} next{control_tokens(fam)[1]}{GUIDED_ONE_CALL}",
          "narrated markup stripped, thought preserved, payload survives")),
 
+    ("gemma4_guided_json_visible_call_prose_before_reasoning",
+     "Gemma 4 only: ordinary visible prose contains `call:` immediately before a thought and the guided JSON payload. `call:` is a lexical prefix in Gemma's native invoke grammar, but without a valid native call body here it is prose and must remain visible. This cannot be shared with another family because only Gemma's grammar assigns any possible structural meaning to this exact prefix.",
+     [],
+     [{"kind": "text", "text": "I will call: you tomorrow"},
+      {"kind": "reasoning", "text": "checking"},
+      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     OnlyFamilies({
+         "gemma4": (
+             "I will call: you tomorrow<|channel>thought\nchecking<channel|>" + GUIDED_ONE_CALL,
+             D("UNSUPPORTED", "vLLM base case does not use GuidedJson"),
+             {"verdict": "match", "note": "ordinary visible `call:` prose remains text before reasoning and the guided payload"},
+         ),
+     })),
+
+    ("gemma4_guided_json_malformed_call_prefix_before_reasoning",
+     "Gemma 4 only: an incomplete native-looking `call:get_weather` prefix sits immediately before a thought and guided JSON. It lacks the `{` that makes a Gemma invoke body, so it remains visible text rather than being silently suppressed; the following thought and guided payload still route normally. The contrast with `31-29` fixes the boundary between ordinary `call:` prose and a malformed-but-still-visible Gemma candidate.",
+     ["P2"],
+     [{"kind": "text", "text": "call:get_weather"},
+      {"kind": "reasoning", "text": "secret"},
+      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     OnlyFamilies({
+         "gemma4": (
+             "call:get_weather<|channel>thought\nsecret<channel|>" + GUIDED_ONE_CALL,
+             D("UNSUPPORTED", "vLLM base case does not use GuidedJson"),
+             {"verdict": "match", "note": "incomplete Gemma `call:get_weather` remains visible; reasoning and guided payload survive"},
+         ),
+     })),
+
     ("guided_json_prose_before_reasoning",
      "Visible prose, THEN a thought, then the payload. Every other guided case opens its thought at byte 0; when prose came first the run latched the payload buffer and the model's private thinking was surfaced to the user as the answer.",
      ["P2"],

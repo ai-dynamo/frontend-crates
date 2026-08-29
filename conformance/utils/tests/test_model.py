@@ -274,8 +274,27 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
     assert native["block"]["unavailable"] == "vLLM Rust 0.26.0 (stream, Combined & Unified) has no parser for muse_glimmer"
 
 
-def test_unified_tab_marks_only_unsupported_vllm_families_na(model_v2):
-    """Every captured vLLM parser family has data for every Unified case."""
+def test_unified_default_dynamo_uses_pr_capture_and_keeps_release_history(tmp_path):
+    """The actual packaged 0.3.4 fixtures retain the release and select the PR capture."""
+    page_path = tmp_path / "CONFORMANCE_v2.html"
+    subprocess.run(
+        [str(UTILS / "render_table_v2.sh"), "--output", str(page_path)],
+        check=True,
+        capture_output=True,
+        cwd=REPO,
+    )
+    tab = _tab(_read_model(page_path, "render_table_v2.sh"), "tab-unified")
+    dynamo = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
+    release = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo@0.3.4")
+
+    assert dynamo["label"] == "Dynamo v2 Rust 0.3.4+pr166 (stream, Combined & Unified)"
+    assert dynamo["default_bucket"] == "A"
+    assert release["label"] == "Dynamo v2 Rust 0.3.4 (stream, Combined & Unified)"
+    assert release["default_bucket"] == "C"
+
+
+def test_unified_tab_marks_unsupported_and_postdated_vllm_cases_na(model_v2):
+    """n/a distinguishes an unsupported family from a case absent from an old capture."""
     tab = _tab(model_v2, "tab-unified")
     peer_keys = {candidate["key"] for candidate in tab["candidates"] if candidate["impl"] == "vllm"}
     assert peer_keys == {"vllm", "vllm_python@0.26.0", "vllm_rust", "vllm_rust@0.26.0"}
@@ -284,8 +303,25 @@ def test_unified_tab_marks_only_unsupported_vllm_families_na(model_v2):
             unavailable = [cell["cmp"][key].get("na") == 1 for cell in row["cells"].values()]
             if row["family"] == "muse_glimmer":
                 assert all(unavailable), f"{key} must say n/a for Muse"
-            else:
+            elif row["family"] != "gemma4":
                 assert not any(unavailable), f"{key} is missing captured cases for {row['family']}"
+
+    gemma = next(row for row in tab["rows"] if row["family"] == "gemma4")
+    for key in peer_keys:
+        for cell in gemma["cells"].values():
+            if cell["cmp"][key].get("na") == 1:
+                peer = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == key)
+                assert "this case postdates that capture" in peer["block"]["unavailable"]
+
+    for scenario in (
+        "gemma4_guided_json_visible_call_prose_before_reasoning",
+        "gemma4_guided_json_malformed_call_prefix_before_reasoning",
+    ):
+        for key in peer_keys:
+            cell = gemma["cells"][scenario]
+            assert cell["cmp"][key].get("na") == 1
+            peer = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == key)
+            assert "this case postdates that capture" in peer["block"]["unavailable"]
 
 
 _IMPL_KEYS = ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python")

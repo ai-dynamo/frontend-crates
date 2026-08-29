@@ -167,110 +167,6 @@ fn bare_call_body_start_probe(input: &str) -> (bool, usize) {
     (false, inspected)
 }
 
-/// Return the position immediately after the one call beginning at byte zero,
-/// or `None` while that call is incomplete. Gemma 4's recovery rules apply
-/// uniformly regardless of the call's position in the stream, unlike Kimi's
-/// first-call-only heuristic, so `tool_index` is accepted (to match the
-/// shared [`InvokeScan::end`] signature) and unused.
-pub fn find_leading_tool_call_end_gemma4(
-    chunk: &str,
-    allow_missing_end: bool,
-    _tool_index: usize,
-) -> Option<usize> {
-    let starts_wrapped = chunk.starts_with(TOOL_CALL_START);
-    if !starts_wrapped && !chunk.starts_with(CALL_PREFIX) {
-        return None;
-    }
-    let allow_missing_start = !starts_wrapped;
-
-    if let Some((_, _, consumed)) = parse_recoverable_call_at(chunk, allow_missing_start, false) {
-        let mut end = consumed;
-        while chunk[end..].starts_with(TOOL_CALL_END) {
-            end += TOOL_CALL_END.len();
-        }
-        return Some(end);
-    }
-
-    if !allow_missing_end {
-        return None;
-    }
-    parse_recoverable_call_at(chunk, allow_missing_start, true).map(|(_, _, consumed)| consumed)
-}
-
-/// Find the next complete wrapped call after the malformed call at byte zero.
-///
-/// One forward cursor owns Gemma string delimiters. A marker-looking complete
-/// call inside `<|\"|>` argument data is therefore skipped, while a structural
-/// wrapper outside string data remains a recovery boundary even when an earlier
-/// malformed candidate left braces open.
-pub fn find_complete_wrapped_call_after_gemma4(input: &str, _tool_index: usize) -> Option<usize> {
-    let mut cursor = 0;
-    let mut in_string = false;
-    let mut candidate: Option<(usize, usize)> = None;
-
-    while cursor < input.len() {
-        let rest = &input[cursor..];
-        if rest.starts_with(STRING_DELIM) {
-            in_string = !in_string;
-            cursor += STRING_DELIM.len();
-            continue;
-        }
-
-        if !in_string && cursor > 0 && rest.starts_with(TOOL_CALL_START) {
-            let candidate_body = &rest[TOOL_CALL_START.len()..];
-            let Some(after_prefix) = candidate_body.strip_prefix(CALL_PREFIX) else {
-                cursor += TOOL_CALL_START.len();
-                continue;
-            };
-
-            let mut open_brace = None;
-            for (at, ch) in after_prefix.char_indices() {
-                if ch == '{' {
-                    if at > 0 {
-                        open_brace = Some(TOOL_CALL_START.len() + CALL_PREFIX.len() + at);
-                    }
-                    break;
-                }
-                if !(ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.')) {
-                    break;
-                }
-            }
-
-            let Some(open_brace) = open_brace else {
-                cursor += TOOL_CALL_START.len();
-                continue;
-            };
-            // A later structural wrapper replaces an unfinished candidate. The
-            // byte walker below owns string state and brace depth, so unmatched
-            // candidates never rescan the suffix they just rejected.
-            candidate = Some((cursor, 1));
-            cursor += open_brace + 1;
-            continue;
-        }
-
-        if let Some((start, depth)) = candidate {
-            if depth == 0 {
-                if rest.starts_with(TOOL_CALL_END) {
-                    return Some(start);
-                }
-                candidate = None;
-            } else if !in_string {
-                let ch = rest.chars().next()?;
-                candidate = match ch {
-                    '{' => Some((start, depth + 1)),
-                    '}' => Some((start, depth - 1)),
-                    _ => Some((start, depth)),
-                };
-            }
-        }
-
-        let ch = rest.chars().next()?;
-        cursor += ch.len_utf8();
-    }
-
-    None
-}
-
 /// Type one call whose boundaries have already been resolved by the caller.
 pub fn parse_one_tool_call_gemma4(
     invoke: &str,
@@ -539,13 +435,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_body_missing_its_close_marker_resolves_only_at_flush() {
+    fn a_body_missing_its_close_marker_is_still_typeable() {
         let body = "call:get_weather{city:<|\"|>Paris<|\"|>}";
-        assert_eq!(find_leading_tool_call_end_gemma4(body, false, 0), None);
-        assert_eq!(
-            find_leading_tool_call_end_gemma4(body, true, 0),
-            Some(body.len())
-        );
         assert_eq!(
             parse_one_tool_call_gemma4(body, None)
                 .unwrap()
@@ -557,32 +448,25 @@ mod tests {
     }
 
     #[test]
-    fn a_mismatched_xml_close_is_not_missing_close_recovery() {
+    fn a_mismatched_xml_close_is_not_typeable_as_a_call() {
         let input = "call:get_weather{city:<|\"|>Paris<|\"|>}</tool_call>";
-        assert_eq!(find_leading_tool_call_end_gemma4(input, true, 0), None);
+        assert!(parse_one_tool_call_gemma4(input, None).unwrap().is_none());
     }
 
     #[test]
     fn narration_does_not_hide_a_later_mismatched_close() {
         let input = "<|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>} trailing </tool_call>";
-        assert_eq!(find_leading_tool_call_end_gemma4(input, true, 0), None);
         assert!(parse_one_tool_call_gemma4(input, None).unwrap().is_none());
     }
 
     #[test]
-    fn a_call_missing_both_wrapper_boundaries_is_not_recovered() {
+    fn bare_complete_call_remains_typeable() {
         let input = "call:get_weather{city:<|\"|>Paris<|\"|>}";
-        assert_eq!(find_leading_tool_call_end_gemma4(input, false, 0), None);
+        assert!(parse_one_tool_call_gemma4(input, None).unwrap().is_some());
     }
 
     #[test]
     fn prose_containing_the_word_call_is_not_a_leading_call() {
-        for flush in [false, true] {
-            assert_eq!(
-                find_leading_tool_call_end_gemma4("call: you tomorrow", flush, 0),
-                None
-            );
-        }
         assert!(
             parse_one_tool_call_gemma4("call: you tomorrow", None)
                 .unwrap()

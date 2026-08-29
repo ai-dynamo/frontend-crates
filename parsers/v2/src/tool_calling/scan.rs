@@ -264,19 +264,6 @@ pub(crate) enum InvokeLatch {
 /// Grammar-aware overrides for locating invokes when marker-only scanning is
 /// insufficient.
 ///
-/// Gemma 4 needs all three answers because its string-delimited values may
-/// contain both `call:` and `<tool_call|>` as data. Keeping them on one hook
-/// prevents opener, end, and holdback ownership from drifting apart.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum GuidedPrefix {
-    /// The bytes are ordinary text for guided decoding.
-    NoMatch,
-    /// The bytes can still grow into this family's guided prefix.
-    Pending,
-    /// A complete guided prefix immediately precedes the JSON payload.
-    Match,
-}
-
 #[derive(Clone, Copy)]
 pub(crate) struct InvokeScan {
     /// End of the invoke that begins at byte zero, just past its closer. `flush`
@@ -289,14 +276,80 @@ pub(crate) struct InvokeScan {
     pub opens: fn(text: &str, at: usize) -> bool,
     /// Additional trailing bytes to retain while an opener is still arriving.
     pub holdback: fn(text: &str) -> usize,
-    /// Whether bytes at `at` are a guided-payload prefix. The guided drain uses
-    /// this one answer for both consumption and chunk-boundary holdback.
-    pub guided_prefix: fn(text: &str, at: usize) -> GuidedPrefix,
     /// Find a later complete wrapped invoke after the current one proved
     /// malformed. Families with ambiguous string syntax own this scan so a
     /// block marker inside argument data cannot become a resynchronization
     /// point. The hook must inspect `text` in linear time.
     pub resync: Option<fn(text: &str, tool_index: usize) -> Option<usize>>,
+}
+
+/// Immutable family recipe for a request-local invoke boundary.
+#[derive(Clone, Copy)]
+pub(crate) enum InvokeBoundaryFactory {
+    Stateless(InvokeScan),
+    Custom(fn() -> Box<dyn InvokeBoundary>),
+}
+
+impl InvokeBoundaryFactory {
+    pub(crate) const fn stateless(stateless: InvokeScan) -> Self {
+        Self::Stateless(stateless)
+    }
+
+    pub(crate) fn create(self) -> Box<dyn InvokeBoundary> {
+        match self {
+            Self::Stateless(scan) => Box::new(StatelessInvokeBoundary { scan }),
+            Self::Custom(create) => create(),
+        }
+    }
+
+    pub(crate) const fn custom(create: fn() -> Box<dyn InvokeBoundary>) -> Self {
+        Self::Custom(create)
+    }
+}
+
+/// Family-owned request-local invoke-boundary contract.
+///
+pub(crate) trait InvokeBoundary: Send {
+    /// Advance the bound candidate with newly appended bytes only.
+    fn end_append(
+        &mut self,
+        candidate: &str,
+        append: &str,
+        flush: bool,
+        tool_index: usize,
+    ) -> Option<usize>;
+    fn opens(&self, text: &str, at: usize) -> bool;
+    fn holdback(&self, text: &str) -> usize;
+    fn resync(&mut self, text: &str, flush: bool, tool_index: usize) -> Option<usize>;
+    fn reset(&mut self) {}
+}
+
+struct StatelessInvokeBoundary {
+    scan: InvokeScan,
+}
+
+impl InvokeBoundary for StatelessInvokeBoundary {
+    fn end_append(
+        &mut self,
+        candidate: &str,
+        _append: &str,
+        flush: bool,
+        tool_index: usize,
+    ) -> Option<usize> {
+        (self.scan.end)(candidate, flush, tool_index)
+    }
+
+    fn opens(&self, text: &str, at: usize) -> bool {
+        (self.scan.opens)(text, at)
+    }
+
+    fn holdback(&self, text: &str) -> usize {
+        (self.scan.holdback)(text)
+    }
+
+    fn resync(&mut self, text: &str, _flush: bool, tool_index: usize) -> Option<usize> {
+        self.scan.resync.and_then(|resync| resync(text, tool_index))
+    }
 }
 
 /// Declarative description of one wrapped-invoke grammar.
@@ -323,8 +376,9 @@ pub(crate) struct WrappedBlockSpec {
     /// the `invoke_end` means the call is malformed — drop it and close the
     /// block (Kimi K2's mismatched-fences rule).
     pub drop_invoke_crossing_block_end: bool,
-    /// Grammar-aware invoke location; `None` uses the marker-only rules.
-    pub invoke_scan: Option<InvokeScan>,
+    /// Optional family-owned boundary capability. `None` preserves the
+    /// marker-only path with no boundary allocation.
+    pub invoke_boundary_factory: Option<InvokeBoundaryFactory>,
     /// Whether a decoder must keep tokenizer special tokens so this grammar's
     /// markers survive to the parser.
     ///
@@ -384,43 +438,12 @@ pub(crate) trait InvokeEmitter {
         None
     }
 
-    /// A family-owned incremental boundary scan. `Pending` prevents the shared
-    /// scanner from falling back to its stateless hook and rescanning old bytes.
-    fn incremental_invoke_end(
-        &mut self,
-        _text: &str,
-        _flush: bool,
-        _tool_index: usize,
-    ) -> IncrementalInvokeEnd {
-        IncrementalInvokeEnd::NotApplicable
-    }
-
-    /// Whether newly appended bytes can make a grammar-aware recovery candidate
-    /// complete. Stateful families use this to defer expensive resynchronization.
-    fn resync_ready(&mut self, _text: &str) -> bool {
-        true
-    }
-
-    /// Clear mutable state tied to the current invoke without discarding
-    /// per-stream metadata such as Kimi's emitted call ids.
-    fn reset_incremental_boundary(&mut self) {}
-
     /// Clear any per-stream state before [`WrappedBlockScanner::reset`] hands
     /// the scanner back for a NEW stream at `tool_index` 0. A no-op default
     /// is correct for every stateless emitter; an emitter that tracks ids per
     /// `tool_index` (Kimi) must override this or a new stream's index 0
     /// would read back the abandoned stream's id.
     fn reset(&mut self) {}
-}
-
-/// Result of a family-owned incremental invoke-boundary scan.
-pub(crate) enum IncrementalInvokeEnd {
-    /// This family uses the scanner's stateless `InvokeScan::end` hook.
-    NotApplicable,
-    /// The family owns the scan and needs more input.
-    Pending,
-    /// A complete invoke ends at this byte offset.
-    Complete(usize),
 }
 
 /// First occurrence of any of `markers` in `text`: `(position, marker_len)`.
@@ -593,10 +616,15 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     resume_reasoning: bool,
     suppress_normal_text: bool,
     next_index: usize,
+    invoke_boundary: Option<Box<dyn InvokeBoundary>>,
+    invoke_boundary_len: usize,
 }
 
 impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     pub(crate) fn new(spec: WrappedBlockSpec, emitter: E) -> Self {
+        let invoke_boundary = spec
+            .invoke_boundary_factory
+            .map(InvokeBoundaryFactory::create);
         Self {
             spec,
             emitter,
@@ -611,6 +639,8 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             resume_reasoning: false,
             suppress_normal_text: false,
             next_index: 0,
+            invoke_boundary,
+            invoke_boundary_len: 0,
         }
     }
 
@@ -665,8 +695,8 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         &self.spec.invoke_start
     }
 
-    pub(crate) fn invoke_scan(&self) -> Option<InvokeScan> {
-        self.spec.invoke_scan
+    pub(crate) fn invoke_boundary_factory(&self) -> Option<InvokeBoundaryFactory> {
+        self.spec.invoke_boundary_factory
     }
 
     /// The model-emitted id for a call at `tool_index`, delegated to the
@@ -763,8 +793,8 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.resume_reasoning = false;
         self.suppress_normal_text = false;
         self.next_index = 0;
-        self.emitter.reset_incremental_boundary();
         self.emitter.reset();
+        self.reset_invoke_boundary();
         pending
     }
 
@@ -773,15 +803,22 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.spec.block_ends.contains(&self.spec.invoke_end)
     }
 
+    fn reset_invoke_boundary(&mut self) {
+        if let Some(boundary) = self.invoke_boundary.as_mut() {
+            boundary.reset();
+        }
+        self.invoke_boundary_len = 0;
+    }
+
     /// Find the next real invoke opener, applying the family hook when present.
     fn find_invoke_start(&self, text: &str) -> Option<usize> {
-        let Some(scan) = self.spec.invoke_scan else {
+        let Some(boundary) = self.invoke_boundary.as_ref() else {
             return text.find(self.spec.invoke_start.as_str());
         };
         let mut cursor = 0;
         while let Some(relative) = text[cursor..].find(self.spec.invoke_start.as_str()) {
             let at = cursor + relative;
-            if (scan.opens)(text, at) {
+            if boundary.opens(text, at) {
                 return Some(at);
             }
             cursor = at + self.spec.invoke_start.len();
@@ -791,16 +828,12 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
     /// Offset just past the closer of the invoke beginning at byte zero.
     fn invoke_end_at(&mut self, flush: bool) -> Option<usize> {
-        match self
-            .emitter
-            .incremental_invoke_end(&self.buffer, flush, self.next_index)
-        {
-            IncrementalInvokeEnd::Complete(end) => return Some(end),
-            IncrementalInvokeEnd::Pending => return None,
-            IncrementalInvokeEnd::NotApplicable => {}
-        }
-        match self.spec.invoke_scan {
-            Some(scan) => (scan.end)(&self.buffer, flush, self.next_index),
+        match self.invoke_boundary.as_mut() {
+            Some(boundary) => {
+                let append = &self.buffer[self.invoke_boundary_len..];
+                self.invoke_boundary_len = self.buffer.len();
+                boundary.end_append(&self.buffer, append, flush, self.next_index)
+            }
             None => self
                 .buffer
                 .find(self.spec.invoke_end.as_str())
@@ -812,12 +845,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     /// current invoke proved malformed. The new block must begin with a real,
     /// complete invoke; a marker-looking string inside the malformed payload
     /// cannot satisfy both grammar checks.
-    fn resync_block_start(&mut self) -> Option<usize> {
-        let scan = self.spec.invoke_scan?;
-        if !self.emitter.resync_ready(&self.buffer) {
-            return None;
-        }
-        (scan.resync?)(&self.buffer, self.next_index)
+    fn resync_block_start(&mut self, flush: bool) -> Option<usize> {
+        self.invoke_boundary
+            .as_mut()?
+            .resync(&self.buffer, flush, self.next_index)
     }
 
     /// Bytes a reasoning opener occupies at `at`, structural label included.
@@ -874,9 +905,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             })
             .unwrap_or_default();
         let invoke = self
-            .spec
-            .invoke_scan
-            .map(|scan| (scan.holdback)(&self.buffer))
+            .invoke_boundary
+            .as_ref()
+            .map(|boundary| boundary.holdback(&self.buffer))
             .unwrap_or_default();
         regular
             .max(reasoning)
@@ -1022,7 +1053,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         // block re-enters `in_block` and re-suppresses its markup.
                         // Matches the v1 batch parsers (cases 8.b/8.c/8.d).
                         self.buffer.drain(..end_pos + end_len);
-                        self.emitter.reset_incremental_boundary();
+                        self.reset_invoke_boundary();
                         self.uncommitted_block.clear();
                         self.in_block = false;
                         self.suppress_normal_text = false;
@@ -1046,17 +1077,17 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 if start > 0 {
                     self.uncommitted_block.push_str(&self.buffer[..start]);
                     self.buffer.drain(..start);
-                    self.emitter.reset_incremental_boundary();
+                    self.reset_invoke_boundary();
                 }
                 let Some(end) = self.invoke_end_at(flush) else {
-                    if let Some(next_block) = self.resync_block_start() {
+                    if let Some(next_block) = self.resync_block_start(flush) {
                         tracing::warn!(
                             why = %format!("{}_resynchronized_after_incomplete_invoke", self.spec.family),
                             skipped_bytes = next_block,
                             "stream skipped a malformed invoke and resumed at the next complete block"
                         );
                         self.buffer.drain(..next_block);
-                        self.emitter.reset_incremental_boundary();
+                        self.reset_invoke_boundary();
                         self.uncommitted_block.clear();
                         self.in_block = false;
                         self.suppress_normal_text = false;
@@ -1094,7 +1125,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                                 "stream dropped invoke with no evidence it ever closed before the block end"
                             );
                             self.buffer.drain(..be_pos + be_len);
-                            self.emitter.reset_incremental_boundary();
+                            self.reset_invoke_boundary();
                             self.uncommitted_block.clear();
                             self.in_block = false;
                             self.suppress_normal_text = false;
@@ -1154,7 +1185,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 // documented recovery contract was false for the only shipped family.
                 let emitted = self.emitter.parse_invoke(&invoke, self.next_index)?;
                 self.buffer.drain(..end);
-                self.emitter.reset_incremental_boundary();
+                self.reset_invoke_boundary();
                 if let Some(delta) = emitted {
                     out.push_call(delta);
                     self.next_index += 1;
@@ -1238,6 +1269,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 Marker::Block(blen) => {
                     self.uncommitted_block.push_str(&self.buffer[..blen]);
                     self.buffer.drain(..blen);
+                    self.reset_invoke_boundary();
                     self.in_block = true;
                     self.suppress_normal_text = true;
                 }
@@ -1271,7 +1303,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     // Emit before consuming — same recovery contract as the wrapped site.
                     let emitted = self.emitter.parse_invoke(&invoke, self.next_index)?;
                     self.buffer.drain(..end);
-                    self.emitter.reset_incremental_boundary();
+                    self.reset_invoke_boundary();
                     if let Some(delta) = emitted {
                         tracing::warn!(
                             why = %format!("{}_bare_invoke_recovery", self.spec.family),
@@ -1337,7 +1369,7 @@ pub(crate) mod test_support {
                 bare_recovery_latch: BareRecoveryLatch::Set,
                 invoke_latch: InvokeLatch::IfEmitted,
                 drop_invoke_crossing_block_end: false,
-                invoke_scan: None,
+                invoke_boundary_factory: None,
                 preserve_special_tokens: true,
             },
             FailOnBoom,
@@ -1386,6 +1418,41 @@ mod recovery_tests {
 mod tests {
     use super::test_support::failing_scanner;
     use super::*;
+
+    #[test]
+    fn invoke_boundary_factory_constructs_and_dispatches_stateless_callbacks() {
+        fn end(text: &str, flush: bool, tool_index: usize) -> Option<usize> {
+            (flush && tool_index == 2).then_some(text.len())
+        }
+        fn opens(text: &str, at: usize) -> bool {
+            text[at..].starts_with("open")
+        }
+        fn holdback(text: &str) -> usize {
+            text.len().min(3)
+        }
+        fn resync(text: &str, tool_index: usize) -> Option<usize> {
+            (tool_index == 2).then(|| text.find("resume")).flatten()
+        }
+
+        let factory = InvokeBoundaryFactory::stateless(InvokeScan {
+            end,
+            opens,
+            holdback,
+            resync: Some(resync),
+        });
+        let mut boundary = factory.create();
+
+        assert_eq!(boundary.end_append("call", "call", false, 2), None);
+        assert_eq!(boundary.end_append("call", "", true, 2), Some(4));
+        assert!(boundary.opens("open-call", 0));
+        assert_eq!(boundary.holdback("abcdef"), 3);
+        assert_eq!(boundary.resync("skip resume", false, 2), Some(5));
+    }
+
+    #[test]
+    fn marker_only_scanner_has_no_invoke_boundary_factory() {
+        assert!(failing_scanner().invoke_boundary_factory().is_none());
+    }
 
     #[test]
     fn json_value_end_rejects_mismatched_bracket_types() {

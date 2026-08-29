@@ -111,6 +111,8 @@ UNIFIED_TAX = {
     "guided_json_quoted_bare_tool_header_in_answer": (31, "26"),
     "guided_json_quoted_bare_header_after_payload": (31, "27"),
     "guided_json_bare_tool_header_recovers_inside_a_thought": (31, "28"),
+    "gemma4_guided_json_visible_call_prose_before_reasoning": (31, "29"),
+    "gemma4_guided_json_malformed_call_prefix_before_reasoning": (31, "30"),
 
     # Group 40 — Prefilled reasoning, happy
     "prefilled_reasoning_with_tool": (40, "a"), "prefilled_reasoning_with_guided_json": (40, "b"),

@@ -8,6 +8,11 @@ use dynamo_parsers_v2::{
     Tool, ToolParseResult, UnifiedEvent, UnifiedParserExt, UnifiedParserInit, assemble,
 };
 
+#[cfg(feature = "test-utils")]
+use dynamo_parsers_v2::tool_calling::gemma4::{
+    boundary_examined_bytes, reset_boundary_examined_bytes,
+};
+
 fn weather_tools() -> Vec<Tool> {
     vec![Tool {
         name: "get_weather".into(),
@@ -129,6 +134,14 @@ fn assert_both_adapters_at_chunk_sizes(input: &str, chunk_sizes: &[usize], expec
 }
 
 #[test]
+fn later_balanced_call_without_wrapper_close_recovers_at_eof_at_each_chunk_size() {
+    let malformed = "<|tool_call>call:broken{note:<|\"|>unterminated";
+    let later_balanced = "<|\"|>}<|tool_call>call:get_weather{city:<|\"|>NYC<|\"|>}";
+    let input = format!("{malformed}{later_balanced}");
+    assert_both_adapters_at_chunk_sizes(&input, &[1, 4, 16], 1);
+}
+
+#[test]
 fn prose_call_prefix_does_not_capture_a_later_wrapped_call() {
     let input = concat!(
         "I will call: you tomorrow",
@@ -182,4 +195,70 @@ fn repeated_unmatched_wrappers_recover_the_later_complete_call() {
     let input =
         format!("{malformed}<|tool_call>call:get_weather{{city:<|\"|>NYC<|\"|>}}<tool_call|>");
     assert_both_adapters_at_chunk_sizes(&input, &[4, 16], 1);
+}
+
+/// This cannot be represented by the shared corpus: its assertion is a bound on
+/// scanner work, not parser output. Exercise each exported adapter factory so a
+/// future wiring change cannot bypass Gemma's request-local resynchronizer.
+#[cfg(feature = "test-utils")]
+#[test]
+fn repeated_closers_in_an_unterminated_string_resynchronize_in_linear_time() {
+    for chunk_size in [1, 7, 64] {
+        let mut tool_only_scans = Vec::new();
+        let mut unified_scans = Vec::new();
+
+        for repeats in [4 * 1024, 8 * 1024] {
+            let input = format!(
+                "<|tool_call>call:broken{{note:<|\"|>{}",
+                "<tool_call|>".repeat(repeats)
+            );
+            let chunks: Vec<_> = input
+                .as_bytes()
+                .chunks(chunk_size)
+                .map(|chunk| std::str::from_utf8(chunk).expect("ASCII Gemma fixture"))
+                .collect();
+
+            reset_boundary_examined_bytes();
+            let mut tool_only = create_tool_parser_for_family("gemma4", &weather_tools())
+                .expect("Gemma tool-only parser");
+            let mut output = ToolParseResult::default();
+            for chunk in &chunks {
+                output.append(tool_only.push(chunk).expect("tool-only push"));
+            }
+            output.append(tool_only.finish().expect("tool-only finish"));
+            assert!(
+                output.coalesce_calls().calls.is_empty(),
+                "unterminated string cannot recover a call at chunk_size={chunk_size}"
+            );
+            tool_only_scans.push(boundary_examined_bytes());
+
+            reset_boundary_examined_bytes();
+            let mut unified =
+                dynamo_parsers_v2::create_unified_parser_for_family("gemma4", &weather_tools())
+                    .expect("Gemma unified parser");
+            unified
+                .initialize_request(UnifiedParserInit::default())
+                .expect("native request");
+            let mut events = Vec::new();
+            for chunk in &chunks {
+                events.extend(unified.push(chunk).expect("unified push"));
+            }
+            events.extend(unified.finish().expect("unified finish").events);
+            assert!(
+                assemble(&events).is_empty(),
+                "unterminated string cannot recover unified events at chunk_size={chunk_size}"
+            );
+            unified_scans.push(boundary_examined_bytes());
+        }
+
+        for (adapter, scans) in [("tool-only", tool_only_scans), ("unified", unified_scans)] {
+            let [at_n, at_2n] = scans.as_slice() else {
+                unreachable!("the N/2N measurement always has two inputs");
+            };
+            assert!(
+                *at_2n <= *at_n * 3,
+                "{adapter} rescanned superlinearly: N={at_n}, 2N={at_2n}, chunk_size={chunk_size}"
+            );
+        }
+    }
 }
