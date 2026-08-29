@@ -110,6 +110,118 @@ def test_pr_overlay_merges_shared_inputs_and_golden_without_rewriting_releases(t
     assert next(case for case in cases if case["scenario"] == "pr_only")["golden"] == [{"kind": "text", "text": "overlay"}]
 
 
+@pytest.mark.parametrize(
+    ("dirname", "base_body", "overlay_body", "kind"),
+    [
+        (
+            "inputs",
+            {"scenario": "released", "chunks": [{"delta_text": "base"}]},
+            {"scenario": "changed", "chunks": [{"delta_text": "base"}]},
+            "input",
+        ),
+        (
+            "golden",
+            {"assembled": [{"kind": "text", "text": "base"}]},
+            {"assembled": [{"kind": "text", "text": "changed"}]},
+            "golden",
+        ),
+    ],
+)
+def test_shared_overlay_rejects_conflicting_duplicate_records(
+    tmp_path, dirname, base_body, overlay_body, kind
+):
+    family = "gemma4"
+    key = "UNIFIED.1.a"
+    if dirname == "golden":
+        _write_case(
+            tmp_path,
+            "inputs",
+            family,
+            key,
+            {"scenario": "released", "chunks": [{"delta_text": "base"}]},
+            model_label=family,
+        )
+    else:
+        _write_case(
+            tmp_path,
+            "golden",
+            family,
+            key,
+            {"assembled": [{"kind": "text", "text": "base"}]},
+            captured_with={"golden": "v1"},
+        )
+    metadata = {"model_label": family} if dirname == "inputs" else {"captured_with": {"golden": "v1"}}
+    _write_case(tmp_path, dirname, family, key, base_body, **metadata)
+    _write_case(tmp_path, f"{dirname}+pr166.patch1", family, key, overlay_body, **metadata)
+
+    with pytest.raises(ValueError, match=rf"conflicting shared {kind} record gemma4/UNIFIED\.1\.a"):
+        table._load_unified_fixtures(tmp_path)
+
+
+@pytest.mark.parametrize("dirname, body", [
+    ("inputs", {"scenario": "same", "chunks": [{"delta_text": "same"}]}),
+    ("golden", {"assembled": [{"kind": "text", "text": "same"}]}),
+])
+def test_shared_overlay_accepts_byte_identical_duplicate_records(tmp_path, dirname, body):
+    family = "gemma4"
+    key = "UNIFIED.1.a"
+    if dirname == "golden":
+        _write_case(
+            tmp_path,
+            "inputs",
+            family,
+            key,
+            {"scenario": "same", "chunks": [{"delta_text": "same"}]},
+            model_label=family,
+        )
+    else:
+        _write_case(
+            tmp_path,
+            "golden",
+            family,
+            key,
+            {"assembled": [{"kind": "text", "text": "same"}]},
+            captured_with={"golden": "v1"},
+        )
+    metadata = {"model_label": family} if dirname == "inputs" else {"captured_with": {"golden": "v1"}}
+    _write_case(tmp_path, dirname, family, key, body, **metadata)
+    _write_case(tmp_path, f"{dirname}+pr166.patch1", family, key, body, **metadata)
+    _write_case(
+        tmp_path,
+        "dynamo_v2-0.3.4+pr166",
+        family,
+        key,
+        {"assembled": [{"kind": "text", "text": "same"}], "chunks": []},
+        captured_with={"dynamo_v2": "0.3.4+pr166"},
+    )
+
+    cases, _caps, _versions = table._load_unified_fixtures(tmp_path)
+
+    assert len(cases) == 1
+
+
+def test_shared_overlay_rejects_semantically_equal_but_byte_different_record(tmp_path):
+    family = "gemma4"
+    key = "UNIFIED.1.a"
+    _write_case(
+        tmp_path,
+        "inputs",
+        family,
+        key,
+        {"scenario": "same", "chunks": [{"delta_text": "same"}]},
+        model_label=family,
+    )
+    overlay = tmp_path / "inputs+pr166.patch1" / family / f"{key}.yaml"
+    overlay.parent.mkdir(parents=True)
+    overlay.write_text(
+        "family: gemma4\nmode: unified\nmodel_label: gemma4\ncases:\n"
+        "  UNIFIED.1.a: {chunks: [{delta_text: same}], scenario: same}\n"
+    )
+
+    with pytest.raises(ValueError, match=r"conflicting shared input record gemma4/UNIFIED\.1\.a"):
+        table._load_unified_fixtures(tmp_path)
+
+
 def test_unified_qualified_capture_is_current_and_keeps_the_release(tmp_path):
     family = "gemma4"
     key = "UNIFIED.1.a"

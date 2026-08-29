@@ -859,16 +859,20 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
         .pop()
         .expect("no committed dynamo_v2-<ver> capture dir");
 
-    // key -> (family, scenario, input, init), from the inputs shard.
+    // key -> (family, scenario, input, init), from the base inputs shard plus
+    // PR-qualified sparse overlays. New cases must carry their input metadata in
+    // the same overlay as the capture, rather than making the released shard mutable.
     let mut meta: BTreeMap<(String, String), (String, String, Init)> = BTreeMap::new();
-    for entry in glob_yaml(&root.join("inputs")) {
-        let doc: InputDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
-            .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
-        for (key, case) in doc.cases {
-            meta.insert(
-                (doc.family.clone(), key),
-                (case.scenario, case.input, case.init),
-            );
+    for input_dir in shared_overlay_dirs(&root, "inputs") {
+        for entry in glob_yaml(&input_dir) {
+            let doc: InputDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
+                .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
+            for (key, case) in doc.cases {
+                meta.insert(
+                    (doc.family.clone(), key),
+                    (case.scenario, case.input, case.init),
+                );
+            }
         }
     }
 
@@ -879,6 +883,10 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
             .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
         for (key, committed) in doc.cases {
             let Some((scenario, input, init)) = meta.get(&(doc.family.clone(), key.clone())) else {
+                stale.push(format!(
+                    "{} [{key}] has no input metadata in inputs or its PR overlays",
+                    doc.family
+                ));
                 continue;
             };
             checked += 1;
@@ -929,6 +937,30 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
     );
 }
 
+/// Return the released shared shard followed by its PR-qualified sparse overlays.
+/// The overlays are ordered by PR number and then patch number so a later patch is
+/// authoritative if a branch intentionally extends its own metadata.
+fn shared_overlay_dirs(root: &std::path::Path, base: &str) -> Vec<PathBuf> {
+    let mut overlays: Vec<(u64, u64, PathBuf)> = std::fs::read_dir(root)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.is_dir())
+        .filter_map(|path| {
+            let name = path.file_name()?.to_str()?;
+            let rest = name.strip_prefix(&format!("{base}+pr"))?;
+            let (pr, patch) = rest.split_once(".patch")?;
+            Some((pr.parse().ok()?, patch.parse().ok()?, path))
+        })
+        .collect();
+    overlays.sort_by_key(|(pr, patch, _)| (*pr, *patch));
+
+    let mut dirs = vec![root.join(base)];
+    dirs.extend(overlays.into_iter().map(|(_, _, path)| path));
+    dirs
+}
+
 #[test]
 fn release_qualified_capture_order_preserves_current_and_released_owners() {
     let prefix = "dynamo_v2-";
@@ -938,6 +970,33 @@ fn release_qualified_capture_order_preserves_current_and_released_owners() {
     assert!(older_release < current_release);
     assert!(current_release < current_pr);
     assert!(common::version_capture_sort_key("dynamo_v2-0.3.3.patch1", prefix).is_none());
+}
+
+#[test]
+fn shared_input_overlays_are_folded_after_the_released_shard() {
+    let root = std::env::temp_dir().join(format!(
+        "unified-render-overlay-order-{}",
+        std::process::id()
+    ));
+    std::fs::create_dir_all(root.join("inputs")).unwrap();
+    std::fs::create_dir_all(root.join("inputs+pr166.patch10")).unwrap();
+    std::fs::create_dir_all(root.join("inputs+pr166.patch2")).unwrap();
+    std::fs::create_dir_all(root.join("inputs+pr167.patch1")).unwrap();
+
+    let names: Vec<String> = shared_overlay_dirs(&root, "inputs")
+        .into_iter()
+        .map(|path| path.file_name().unwrap().to_string_lossy().into_owned())
+        .collect();
+    assert_eq!(
+        names,
+        [
+            "inputs",
+            "inputs+pr166.patch2",
+            "inputs+pr166.patch10",
+            "inputs+pr167.patch1",
+        ]
+    );
+    std::fs::remove_dir_all(root).unwrap();
 }
 
 fn glob_yaml(dir: &std::path::Path) -> Vec<PathBuf> {

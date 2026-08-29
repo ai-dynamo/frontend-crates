@@ -2197,22 +2197,33 @@ def _load_unified_fixtures(base: Path):
     if not (base / "inputs").is_dir():
         return None
 
-    def _read_dir(name):
+    def _read_dir(name, include_bytes=False):
         out = {}  # (family, case_key) -> case_doc
         for fp in sorted((base / name).glob("*/*.yaml")):
-            doc = yaml.safe_load(fp.read_text()) or {}
+            raw = fp.read_bytes()
+            doc = yaml.safe_load(raw) or {}
             for k, cd in (doc.get("cases") or {}).items():
-                out[(fp.parent.name, k)] = cd
+                out[(fp.parent.name, k)] = (cd, raw) if include_bytes else cd
         return out
 
     def _overlay_base(name):
         return re.sub(r"\+pr\d+\.patch\d+$", "", name)
 
-    def _merge_layers(layers):
+    def _merge_layers(layers, kind):
         merged = {}
+        sources = {}
         for name in layers:
-            merged.update(_read_dir(name))
-        return merged
+            for key, (record, raw) in _read_dir(name, include_bytes=True).items():
+                if key in merged and raw != merged[key]:
+                    family, case_key = key
+                    raise ValueError(
+                        f"conflicting shared {kind} record {family}/{case_key} in "
+                        f"{sources[key]} and {name}; shared overlays may repeat only "
+                        "byte-identical records"
+                    )
+                merged[key] = raw
+                sources.setdefault(key, name)
+        return {key: _read_dir(sources[key])[key] for key in merged}
 
     # Shared inputs and the authored golden oracle are immutable once released. New
     # cases are carried by PR-qualified sparse overlays instead of rewriting them.
@@ -2226,8 +2237,8 @@ def _load_unified_fixtures(base: Path):
         for d in base.iterdir()
         if d.is_dir() and _overlay_base(d.name) == "golden" and d.name != "golden"
     )
-    inputs = _merge_layers(input_layers)
-    golden = _merge_layers(golden_layers)
+    inputs = _merge_layers(input_layers, "input")
+    golden = _merge_layers(golden_layers, "golden")
     # impl -> [(version, dirname)] ascending. Dynamo keeps EVERY capture so the tab can
     # compare one parser build against another; a dict keyed by impl silently dropped
     # all but the last dir, which is why only one Dynamo column could ever render.
