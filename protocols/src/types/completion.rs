@@ -13,34 +13,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::OpenAIError;
 
-use super::{ChatCompletionStreamOptions, Choice, CompletionUsage, Prompt, Stop};
+use super::{ChatCompletionStreamOptions, Prompt, Stop};
 
-/// Legacy completion response.
-///
-/// Owned (instead of re-exported) so `usage` is the crate-owned
-/// [`CompletionUsage`] — upstream's serializes absent usage-details fields
-/// as `null`, violating the spec's optional non-nullable marking. Also
-/// omits `system_fingerprint`/`usage` when absent (optional in the spec;
-/// upstream serializes them as `null`). Field set mirrors upstream
-/// `CreateCompletionResponse`.
-#[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
-pub struct CreateCompletionResponse {
-    /// A unique identifier for the completion.
-    pub id: String,
-    pub choices: Vec<Choice>,
-    /// The Unix timestamp (in seconds) of when the completion was created.
-    pub created: u32,
-    /// The model used for completion.
-    pub model: String,
-    /// This fingerprint represents the backend configuration that the model
-    /// runs with.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub system_fingerprint: Option<String>,
-    /// The object type, which is always "text_completion"
-    pub object: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub usage: Option<CompletionUsage>,
-}
+// Re-export response type from upstream (identical)
+pub use async_openai::types::completions::CreateCompletionResponse;
 
 /// Custom deserializer for the echo parameter that only accepts booleans.
 /// Rejects integers and strings with clear error messages.
