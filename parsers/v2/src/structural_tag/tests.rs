@@ -72,7 +72,7 @@ fn common_builder_closes_prompt_opened_reasoning_before_tool_output() {
         (
             "deepseek_v4",
             &DEEPSEEK_DSML,
-            "<｜DSML｜",
+            "<｜DSML｜tool_calls>",
             Some("\n\n"),
             None,
         ),
@@ -133,7 +133,7 @@ fn auto_closes_prompt_opened_reasoning_before_triggered_dispatch() {
     let tools = tools();
     for (family, builder, tool_call_exclude, reasoning_suffix) in [
         ("qwen3_coder", &QWEN3_CODER, "<tool_call>", Some("\n\n")),
-        ("deepseek_v4", &DEEPSEEK_DSML, "<｜DSML｜", None),
+        ("deepseek_v4", &DEEPSEEK_DSML, "<｜DSML｜tool_calls>", None),
         ("glm47", &GLM47, "<tool_call>", None),
     ] {
         let actual = build(

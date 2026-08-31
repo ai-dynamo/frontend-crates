@@ -376,7 +376,7 @@ mod tests {
                             "end": "\n</function>\n</tool_call>"
                         }
                     ],
-                    "excludes": ["<think>", "</think>"],
+                    "excludes": ["<think>", "</think>", "<function="],
                     "at_least_one": false,
                     "stop_after_first": false
                 }

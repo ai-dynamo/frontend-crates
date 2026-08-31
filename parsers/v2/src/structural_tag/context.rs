@@ -43,7 +43,7 @@ pub enum ReasoningBoundary {
 pub struct StructuralTagOptions {
     /// Overrides whether reasoning and tool-call markers are excluded from free-text regions.
     pub exclude_special_tokens: Option<bool>,
-    /// Controls which layer owns a reasoning boundary opened by the prompt.
+    /// Defaults to [`ReasoningBoundary::StructuralTag`].
     pub reasoning_boundary: ReasoningBoundary,
     /// Allow tool argument object properties to appear in any order.
     ///

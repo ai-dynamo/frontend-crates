@@ -21,6 +21,7 @@ const TRIGGER: &str = "<｜DSML｜tool_calls>";
 const TOOL_CALLS_PREFIX: &str = "\n\n";
 const TOOL_CALLS_BEGIN: &str = "<｜DSML｜tool_calls>\n";
 const TOOL_CALLS_END: &str = "</｜DSML｜tool_calls>";
+const BARE_INVOKE_BEGIN: &str = "<｜DSML｜invoke name=";
 const INVOKE_BEGIN_PREFIX: &str = "<｜DSML｜invoke name=\"";
 const INVOKE_BEGIN_SUFFIX: &str = "\">\n";
 const INVOKE_END: &str = "</｜DSML｜invoke>\n";
@@ -71,7 +72,7 @@ impl ToolCallGrammar for DeepSeekDsmlFormat {
     }
 
     fn tool_call_excludes(&self) -> &'static [&'static str] {
-        &["<｜DSML｜"]
+        &[TRIGGER, BARE_INVOKE_BEGIN]
     }
 
     fn build_triggered_calls(
@@ -93,7 +94,7 @@ impl ToolCallGrammar for DeepSeekDsmlFormat {
             vec![self.tool_call_block(policy, tool_arguments_any_order)],
             self.reasoning_begin(),
             self.reasoning_end(),
-            &[],
+            &[BARE_INVOKE_BEGIN],
             exclude_special_tokens,
             policy,
         );
@@ -255,7 +256,8 @@ mod tests {
                     }],
                     "excludes": [
                         "<think>",
-                        "</think>"
+                        "</think>",
+                        "<｜DSML｜invoke name="
                     ],
                     "at_least_one": false,
                     "stop_after_first": false
@@ -285,7 +287,10 @@ mod tests {
                     "begin": "",
                     "content": {
                         "type": "any_text",
-                        "excludes": ["<｜DSML｜"]
+                        "excludes": [
+                            "<｜DSML｜tool_calls>",
+                            "<｜DSML｜invoke name="
+                        ]
                     },
                     "end": ""
                 }
