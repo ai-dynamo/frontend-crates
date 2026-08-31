@@ -6,6 +6,7 @@ members = [
     "renderer",
     "tokenizers",
     "conformance",
+    "mm-preprocessor",
     "parsers/v2",
     "parsers/v2-py",
     "examples/dynamo-demo-server",
@@ -35,6 +36,7 @@ chrono = { version = "0.4", default-features = false, features = [
 ] }
 clap = "4"
 derive_builder = "0.20"
+dynamo-mm-preprocessor = { path = "mm-preprocessor", version = "0.1.0" }
 dynamo-parsers = { path = "parsers/v1", version = "8.2.0" }
 dynamo-protocols = { path = "protocols", version = "5.4.0" }
 dynamo-renderer = { path = "renderer", version = "5.1.1" }
@@ -43,6 +45,14 @@ either = { version = "1.13", features = ["serde"] }
 fastokens = "0.3.1"
 futures = "0.3"
 hf-hub = { version = "1.0", default-features = false, features = ["rustls-tls"] }
+# The image formats the Python (PIL) path commonly accepts; all pure-Rust decoders.
+image = { version = "0.25", default-features = false, features = [
+    "jpeg",
+    "png",
+    "webp",
+    "gif",
+    "bmp",
+] }
 minijinja = { version = "2.24.0" }
 minijinja-contrib = { version = "2.24.0" }
 moka = { version = "0.12" }
@@ -66,5 +76,7 @@ tokio-test = "0.4.4"
 tokenizers = { version = "0.21.4", default-features = false }
 tracing = "0.1"
 tracing-subscriber = "0.3"
+# rustls so consumers never link the system OpenSSL.
+ureq = { version = "2", default-features = false, features = ["tls", "gzip"] }
 url = "2.5"
 uuid = "1.18.1"

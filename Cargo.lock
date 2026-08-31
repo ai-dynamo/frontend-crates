@@ -1140,6 +1140,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "dynamo-mm-preprocessor"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "blake3",
+ "image",
+ "rayon",
+ "serde",
+ "serde_json",
+ "ureq",
+]
+
+[[package]]
 name = "dynamo-parsers"
 version = "8.2.0"
 dependencies = [
