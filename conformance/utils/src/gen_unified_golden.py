@@ -740,7 +740,7 @@ EDGE = [
                   {"verdict": "match", "note": "one invalid element voids the whole array; payload surfaces as text"})),
 
     ("guided_json_list_with_broken_element",
-     "A guided array whose SECOND element is not valid JSON — the payload is `[<valid call>, <broken>]`, which is what a constrained decode produces when it is cut off partway through a later call. Output is the whole payload as text and no call, same as 31.c but reached differently: there the array parsed and one element failed to convert, here the array does not parse at all, so per-element recovery never gets a chance. Both land on all-or-nothing, which is the point — a half-validated array must not dispatch the half that looked fine.",
+     "A guided array whose SECOND element is not valid JSON — the payload is `[<valid call>, <broken>]`, which is what a constrained decode produces when it is cut off partway through a later call. Output is the whole payload as text and no call, same as 31-3 but reached differently: there the array parsed and one element failed to convert, here the array does not parse at all, so per-element recovery never gets a chance. Both land on all-or-nothing, which is the point — a half-validated array must not dispatch the half that looked fine.",
      ["P2"],
      [{"kind": "text", "text": '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'}],
      {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
@@ -1052,7 +1052,7 @@ EDGE = [
                   {"verdict": "match", "note": "one invalid element voids the whole array; payload surfaces as text"})),
 
     ("prefilled_response_reasoning_markers_literal",
-     "The ONLY case where starting_state=Response is observable. Response says the prompt already opened VISIBLE content, so this stream has no reasoning channel at all and `<think>`/`</think>` are ordinary characters the model happened to write — they must reach the user as text, markers and all. Every other 50.*/51.* case has no reasoning markers in its input, which is why they parse identically under starting_state=None (50.a matches 8.a, 50.b matches 30.b, 50.c matches 30.c, 51.b matches 31.c); this one does not.",
+     "The ONLY case where starting_state=Response is observable. Response says the prompt already opened VISIBLE content, so this stream has no reasoning channel at all and `<think>`/`</think>` are ordinary characters the model happened to write — they must reach the user as text, markers and all. Every other 50/51 case has no reasoning markers in its input and therefore parses identically under starting_state=None: 50.a matches 8.a, 50.b matches 30.b, 50.c matches 30.c, and 51.b matches 31-3. This one does not.",
      ["P5"],
      # The literal text is the family's OWN reasoning markers, so the golden is
      # filled per family (below) rather than hardcoding one grammar's.
@@ -1166,14 +1166,14 @@ def _guided_product():
     """Every (payload x surrounding) crossing that says something distinct.
 
     `clean` x `valid` is `30.a`/`30.b` and `clean` x the malformed payloads is
-    `31.a`-`31.d`; those already exist, so the predicate drops them rather than
+    `31-1` through `31-4`; those already exist, so the predicate drops them rather than
     emitting a duplicate under a second name.
     """
     out = []
     for pay_name, (payload, want_args) in GUIDED_PAYLOADS.items():
         dispatches = want_args is not None
         for sur_name, (wrap, sur_desc, strips_tail) in GUIDED_SURROUNDS.items():
-            # `clean` is already authored as 30.a/30.b and 31.a-31.d. The
+            # `clean` is already authored as 30.a/30.b and 31-1 through 31-4. The
             # `valid` payload crossings are also already authored by hand
             # (guided_json_tool_open_before_payload / _tool_close_after_payload /
             # _wrapped_in_tool_markup) — generating them produced 3 scenarios x 3
@@ -1262,7 +1262,7 @@ EDGE += [
          lambda fam: r_tool(fam, "get_weather", "city", "Paris", 0),
          "native markup is stripped as one control-only turn, independent of chunking")),
 
-    # Missing reasoning terminator CROSSED with a guided wrapper. `31.g`
+    # Missing reasoning terminator CROSSED with a guided wrapper. `31-7`
     # (`guided_json_wrapped_in_tool_markup`) already pins a wrapper around the payload
     # OUTSIDE reasoning, and `41.*` pins an unterminated thought on its own; neither
     # asks what happens when a thought the model never closed runs straight into the
@@ -1270,7 +1270,7 @@ EDGE += [
     # REASONING and dispatched nothing — the worst outcome available, because the
     # client sees a plausible answer and never learns a call was lost.
     ("guided_json_unterminated_reasoning_then_wrapped_payload",
-     "A thought whose closer never arrives, running straight into native tool markup wrapping the guided payload. The model routed away from the reasoning channel and simply omitted the terminator, so the thought ends at that markup and the payload is a call. Contrast with `31.h`, where the same markup has PROSE behind it and is narration the model wrote while thinking — there the span stays open and the markup is stripped. What separates the two is whether the guided payload follows, not which marker appeared.",
+     "A thought whose closer never arrives, running straight into native tool markup wrapping the guided payload. The model routed away from the reasoning channel and simply omitted the terminator, so the thought ends at that markup and the payload is a call. Contrast with `31-8`, where the same markup has PROSE behind it and is narration the model wrote while thinking — there the span stays open and the markup is stripped. What separates the two is whether the guided payload follows, not which marker appeared.",
      ["P2", "I6"],
      [{"kind": "reasoning", "text": "thinking"},
       {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
@@ -1283,13 +1283,11 @@ EDGE += [
 ]
 
 
-# A control marker the model QUOTES inside its visible answer is words, not structure.
-# Only families whose header resolution depends on turn state can express this: muse
-# resolves an unframed `to=…<|message|>` at turn start and must refuse the identical
-# bytes afterwards. A marker-pair family has no equivalent — its opener is a fixed
-# string that means the same thing wherever it appears, and a duplicate opener inside a
-# span is already `41.c`. So this is authored for muse and skipped elsewhere rather than
-# rendered per family into a case that tests nothing.
+# A control marker in a response that the prompt already opened is text, not structure.
+# Muse exercises this through its unframed recipient headers; marker-pair families use
+# their reasoning envelope. The bytes differ, but each variant tests the same request
+# initialization boundary: the parser must not reopen a private channel after Response
+# was selected, then must still dispatch the following guided payload.
 QUOTED_BARE_HEADER = [
     ("guided_json_quoted_bare_header_in_answer", "self",
      "A `to=self` header QUOTED inside the visible answer, after the turn has already been routed to the user. The words are the model's prose and only the marker is structural, so the answer stays one run. Promoting the quote opened a real THOUGHT and split the answer in two, which reaches the client as an answer plus chain-of-thought the model never meant to expose."),
@@ -1311,29 +1309,50 @@ _RECOVERY_INSIDE_THOUGHT = (
     "A bare `to=NAME` header inside an OPEN thought, leading into the guided payload — the missing-terminator recovery boundary, with no framing on the header because the prompt consumed the turn's opening framing. The contrast with the quoted cases is the point: the same bare shape is structural here and prose there, decided by scope, not by whether a header has been seen before. A reader that closes its latch on the turn's first header demotes this one and leaks `to=NAME` into the reasoning.",
 )
 
+
+def _guided_response_markup(fam, recipient, after_payload=False):
+    """A response-state control marker followed by (or following) guided JSON.
+
+    `to=…<|message|>` is the control marker that can be quoted for muse. Fixed
+    marker-pair grammars cannot quote an opener without a response-state contract, so
+    their family-equivalent input is their own reasoning envelope while Response is
+    prefilled. Return the expected visible text separately because muse strips its
+    special-token framing while the marker-pair families preserve their literal bytes.
+    """
+    if fam == "muse_glimmer":
+        text = f"I mean to={recipient}literal"
+        markup = f"I mean to={recipient}<|message|>literal<|eom|>"
+    else:
+        reason_open, reason_close, _tool_open, _tool_close = control_tokens(fam)
+        text = f"I mean {reason_open}{recipient} literal{reason_close}"
+        markup = text
+    return ((f"{GUIDED_ONE_CALL}{markup}" if after_payload else f"{markup}{GUIDED_ONE_CALL}"), text)
+
+
+def _guided_response_markup_cases(recipient, after_payload=False):
+    return {
+        fam: (
+            _guided_response_markup(fam, recipient, after_payload)[0],
+            GUIDED_UNSUPPORTED,
+            {"verdict": "match", "note": "Response keeps the quoted control marker out of the reasoning channel and the guided payload dispatches"},
+            _guided_response_markup(fam, recipient, after_payload)[1],
+        )
+        for fam in FAMILIES
+    }
+
 for _name, _rcpt, _desc in QUOTED_BARE_HEADER:
     EDGE.append((
         _name,
         _desc,
         ["I3"],
         ([{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
-          {"kind": "text", "text": f"I mean to={_rcpt}literal"}]
+          {"kind": "text", "text": None}]
          if _name.endswith("after_payload") else
-         [{"kind": "text", "text": f"I mean to={_rcpt}literal"},
+         [{"kind": "text", "text": None},
           {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]),
-        {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+        {"starting_state": "Response", "tool_output_mode": "GuidedJson", "named_tool": None},
         {"finish_reason": "tool_calls"},
-        OnlyFamilies({
-            "muse_glimmer": (
-                f"{GUIDED_ONE_CALL}I mean to={_rcpt}<|message|>literal"
-                if _name.endswith("after_payload")
-                else f"<|start|>assistant to=user<|message|>I mean to={_rcpt}"
-                f"<|message|>literal<|eom|>{GUIDED_ONE_CALL}",
-                GUIDED_UNSUPPORTED,
-                {"verdict": "match",
-                 "note": "a quoted bare header stays visible words; only the marker is stripped"},
-            ),
-        }),
+        _guided_response_markup_cases(_rcpt, _name.endswith("after_payload")),
     ))
 
 EDGE.append((
@@ -1346,16 +1365,19 @@ EDGE.append((
     # here, and the one-byte difference is still a parity failure.
     [{"kind": "reasoning", "text": "thinking "},
      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
-    {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+    {"starting_state": "Reasoning", "tool_output_mode": "GuidedJson", "named_tool": None},
     {"finish_reason": "tool_calls"},
-    OnlyFamilies({
-        "muse_glimmer": (
-            f" to=self<|message|>thinking to=get_weather<|message|>{GUIDED_ONE_CALL}",
+    {
+        fam: (
+            f"thinking {control_tokens(fam)[2]}{GUIDED_ONE_CALL}{control_tokens(fam)[3]}"
+            if fam != "muse_glimmer"
+            else f"thinking to=get_weather<|message|>{GUIDED_ONE_CALL}",
             GUIDED_UNSUPPORTED,
             {"verdict": "match",
-             "note": "a bare tool header inside an open thought is the recovery boundary, not a quote; the separator space stays in the thought as it does natively"},
-        ),
-    }),
+             "note": "a native tool boundary inside prefilled reasoning ends the thought and dispatches the guided payload"},
+        )
+        for fam in FAMILIES
+    },
 ))
 
 

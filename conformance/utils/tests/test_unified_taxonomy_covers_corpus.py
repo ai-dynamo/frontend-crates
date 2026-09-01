@@ -111,8 +111,8 @@ def test_every_used_group_has_a_label() -> None:
     )
 
 
-def test_case_labels_use_numeric_positions_from_y_onward() -> None:
-    """Keep a-x stable for now, then use 25, 26, 27 instead of y, z, aa."""
+def test_case_labels_use_numeric_positions_for_the_full_guided_recovery_series() -> None:
+    """Guided recovery positions use one sortable numeric sequence, 31-1 through 31-28."""
     assert tax("guided_json_quoted_bare_header_in_answer") == (31, "25")
     assert tax("guided_json_quoted_bare_tool_header_in_answer") == (31, "26")
     assert tax("guided_json_quoted_bare_header_after_payload") == (31, "27")
@@ -390,24 +390,23 @@ def test_an_undeclared_missing_family_fails_generation():
         G.EDGE[:] = original
 
 
-def test_declared_muse_only_scenarios_generate_only_for_muse():
-    """The quoted-bare-header pair is scoped on purpose, and the scope is enforced.
+def test_request_state_boundary_scenarios_generate_for_every_family():
+    """All four request-state boundaries have a family-specific input.
 
-    They need a header whose resolution depends on turn state; a fixed marker pair has
-    no equivalent. `OnlyFamilies` is how a scenario says that about itself, so the two
-    appear for muse_glimmer and for nobody else.
+    Muse exercises dynamic recipient headers, while marker-pair families exercise their
+    own reasoning/tool boundaries under the same request initialization. A missing
+    family here would be a coverage gap, not an unsupported grammar.
     """
     scoped = {
         "guided_json_quoted_bare_header_in_answer",
         "guided_json_quoted_bare_tool_header_in_answer",
+        "guided_json_quoted_bare_header_after_payload",
+        "guided_json_bare_tool_header_recovers_inside_a_thought",
     }
     for fam in FAMILIES:
         names = {k.split(".", 2)[1] for k in build_cases(fam)}
         present = scoped & names
-        if fam == "muse_glimmer":
-            assert present == scoped, f"muse_glimmer is missing {scoped - present}"
-        else:
-            assert not present, f"{fam} rendered a muse-only scenario: {present}"
+        assert present == scoped, f"{fam} is missing {scoped - present}"
 
 
 def test_only_families_rejects_an_empty_or_unknown_scope():
@@ -458,15 +457,6 @@ def test_every_authored_case_survives_emission_and_reload():
             )
             assert loaded["golden"] == case["golden"], f"{cid}: golden changed"
             assert loaded["init"] == case["init"], f"{cid}: init changed"
-
-
-def test_the_bare_header_case_keeps_its_leading_space():
-    """The exact regression, named so a future emitter change cannot quietly undo it."""
-    fam = "muse_glimmer"
-    cid = f"UNIFIED.guided_json_bare_tool_header_recovers_inside_a_thought.{fam}"
-    constructed = build_cases(fam)[cid]["input"]
-    assert constructed.startswith(" to=self"), "authored input lost its leading space"
-    assert _emitted_spec(fam)[cid]["input"] == constructed
 
 
 # --- counts live where they can be checked, not in registry prose ---------------
