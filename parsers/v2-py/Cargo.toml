@@ -22,5 +22,5 @@ name = "dynamo_parsers_v2"
 crate-type = ["cdylib"]
 
 [dependencies]
-dynamo-parsers-v2 = { path = "../v2", version = "0.3.3" }
+dynamo-parsers-v2 = { path = "../v2", version = "0.4.0" }
 pyo3 = { workspace = true }
