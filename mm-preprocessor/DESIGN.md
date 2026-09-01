@@ -32,10 +32,10 @@ their module layout and decode boundary.
 ## 1. Architecture
 
 The following shows functionalities of this crate, working together with an
-inference engine-side pipeline.
+inference engine-side pipeline (the full pixel path):
 
 ```
-consumer (router / engine driver)   │   dynamo-mm-preprocessor (this crate)
+engine driver                       │   dynamo-mm-preprocessor (this crate)
 ────────────────────────────────────│──────────────────────────────────────
 boot: locate model configs ────────►│  registry::spec_from_model_dir (or a
                                     │  pre-resolved spec) ─► build_processor
@@ -53,6 +53,28 @@ tokenize (if text) ─ ids, geoms ───►│  family.layout ─► token_la
         └─ offsets, geoms ─────────►│  family.positions          (e.g. M-RoPE)
                                     │
 drain: pack tensors for scheduler   │
+```
+
+A dynamo router uses a different, pixel-free slice of the same crate —
+accounting and routing only (§4.1):
+
+```
+dynamo router                       │   dynamo-mm-preprocessor (this crate)
+────────────────────────────────────│──────────────────────────────────────
+boot: locate model configs ────────►│  registry::spec_from_model_dir
+                                    │    ─► build_processor ─► Box<dyn MmFamilyProcessor>
+per request                         │
+(OpenAI image parts):               │
+   image_url ──────────────────────►│  fetch::fetch_bytes         ─► raw bytes
+      ├─ bytes ────────────────────►│  content_hash_u64           ─► cache-affinity key
+      └─ bytes ────────────────────►│  image::decode::dimensions  ─► (h, w), header-only
+              └─ (w, h) ───────────►│  family.num_media_tokens    ─► token cost per image
+                                    │
+route: pick the engine by prefix-   │
+cache affinity (hashes) + expanded  │
+prompt length (token costs);        │
+forward media + mm_hashes; the      │
+engine runs the pixel path above    │
 ```
 
 | module | responsibility |
