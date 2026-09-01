@@ -26,7 +26,7 @@ and the roadmap.
 
 | feature    | default | adds                                              |
 | ---------- | ------- | -------------------------------------------------- |
-| `parallel` | off     | crate-owned rayon pool for the kernels' fan-out (off = inline, zero threads owned) |
+| `parallel` | **on**  | links rayon; kernels still run inline until `execution::init_pool` arms the crate-owned pool (opt out to drop rayon entirely) |
 
 Supported families: `models::qwen_vl` (Qwen2-VL / Qwen2.5-VL / Qwen3-VL /
 Qwen3.5 VL) — `pixel_values`, `image_grid_thw`, image-only M-RoPE. Adding a

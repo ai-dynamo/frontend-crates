@@ -18,9 +18,11 @@ include = ["src/**/*", "Cargo.toml", "README.md"]
 publish = false
 
 [features]
-default = []
-# Fan work out on a crate-owned rayon pool; off = inline on the caller and no
-# threads owned. The implementation PR wires `parallel = ["dep:rayon"]`.
+default = ["parallel"]
+# Links rayon; kernels still run inline until `execution::init_pool` arms the
+# crate-owned pool at runtime. Opt out (`default-features = false`) to drop
+# rayon from the dependency graph and force the inline path at compile time.
+# The implementation PR wires `parallel = ["dep:rayon"]`.
 parallel = []
 
 [dependencies]

@@ -3,29 +3,40 @@
 
 //! The crate's only parallelism seam.
 //!
-//! Every fan-out in the crate goes through the functions below, so whether
-//! this crate owns worker threads at all is decided in exactly one place: the
-//! `parallel` cargo feature.
+//! Every fan-out in the crate goes through the functions below, and whether
+//! any of them actually fans out is a **runtime** decision made in exactly one
+//! place: until a consumer arms the crate's rayon pool with [`init_pool`],
+//! everything runs inline on the calling thread and the crate owns no
+//! threads.
 //!
-//! * **feature on**: work is fanned out on the crate's rayon pool. A consumer
-//!   calling in from one or two worker threads (e.g. a Python processor with
-//!   the GIL released) gets intra-call parallelism.
-//! * **feature off**: rayon is not even a dependency, and everything runs
-//!   inline on the calling thread. A server supplies concurrency across
-//!   requests and owns its own core budget (it may pin threads), so a library
-//!   that silently spawns its own pools would fight it.
+//! * **inline (the default)**: a server supplies concurrency across requests
+//!   and owns its own core budget (it may pin threads), so a library that
+//!   silently spawned pools behind its back would fight it.
+//! * **armed**: work fans out on the crate-owned pool. A consumer calling in
+//!   from one or two threads (e.g. a Python processor with the GIL released)
+//!   arms the pool once at startup to get intra-call parallelism.
+//!
+//! Note that "inline" means *on the caller*, not a one-thread pool:
+//! `ThreadPool::install` injects work into the pool and blocks the caller, so
+//! sizing a pool to 1 would serialize every concurrent request in the process
+//! instead of just declining to fan out.
 //!
 //! Results are identical either way — the fan-outs are order-preserving maps
 //! and writes into disjoint slices, never reductions.
+//!
+//! The `parallel` cargo feature (default: **on**) only controls whether rayon
+//! is linked at all; disabling it (`default-features = false`) drops the
+//! dependency and [`init_pool`] with it, forcing the inline path at compile
+//! time.
 
-/// Size the crate's CPU pool before its first use. Idempotent — the first
-/// caller wins, and once the pool exists the size is fixed; zero is ignored.
-/// When no caller ever sizes it, the pool defaults to
-/// `min(available_parallelism, 8)`.
+/// Arm the crate's CPU pool: from the first call on, the helpers below fan
+/// out on it instead of running inline. `threads == 0` picks the default size
+/// `min(available_parallelism, 8)`. Idempotent — the first caller wins, and
+/// once armed the size is fixed.
 #[cfg(feature = "parallel")]
 pub fn init_pool(threads: usize) {
     let _ = threads;
-    todo!("PR2: OnceLock-backed rayon pool sizing")
+    todo!("PR2: arm the OnceLock-backed rayon pool")
 }
 
 /// Map `items`, short-circuiting on the first error. Output order matches input
@@ -41,7 +52,7 @@ where
     E: Send,
 {
     let _ = (items, &f);
-    todo!("PR2: rayon par_iter under `parallel`, inline iterator otherwise")
+    todo!("PR2: rayon par_iter when the pool is armed, inline iterator otherwise")
 }
 
 /// Apply `f(chunk_index, chunk)` over disjoint `chunk_size`-element windows of
@@ -52,7 +63,7 @@ pub fn for_chunks_mut<T: Send>(
     f: impl Fn(usize, &mut [T]) + Send + Sync,
 ) {
     let _ = (buf, chunk_size, &f);
-    todo!("PR2: rayon par_chunks_mut under `parallel`, inline otherwise")
+    todo!("PR2: rayon par_chunks_mut when the pool is armed, inline otherwise")
 }
 
 /// Run `f` with the CPU pool already entered, so nested [`for_chunks_mut`]
@@ -61,5 +72,5 @@ pub fn for_chunks_mut<T: Send>(
 /// would otherwise pay per-stage pool entry.
 pub fn in_pool<R: Send>(f: impl FnOnce() -> R + Send) -> R {
     let _ = &f;
-    todo!("PR2: pool().install under `parallel`, direct call otherwise")
+    todo!("PR2: pool().install when the pool is armed, direct call otherwise")
 }

@@ -22,9 +22,11 @@
 //! request-rejection message a serving engine surfaces to its client, not a
 //! recoverable taxonomy.
 //!
-//! The crate reads no environment variables and, without the `parallel`
-//! feature, owns no threads; pool sizing (`execution::init_pool`, feature
-//! `parallel`) is explicit configuration.
+//! The crate reads no environment variables and owns no threads until asked:
+//! kernels run inline on the caller by default, fanning out on a crate-owned
+//! rayon pool only after a consumer arms it (`execution::init_pool`). The
+//! default-on `parallel` feature merely links rayon; opting out
+//! (`default-features = false`) forces the inline path at compile time.
 
 pub mod execution;
 pub mod image;
