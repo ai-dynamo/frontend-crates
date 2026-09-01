@@ -41,7 +41,9 @@ boot: resolve HF params ── spec ───►│  registry::build_processor �
 per request:                        │
 fetch sources, hash, caps           │
    └─ raw bytes ───────────────────►│  image::decode::decode_rgb
-        └─ rgb ────────────────────►│  family.process_item      (per item; engine fans out)
+        └─ rgb ────────────────────►│  family.process_item      (per item; the engine drives
+                                    │                            the loop, optionally fanning
+                                    │                            out on `execution`)
                                     │     │ ProcessedItem { feature, aux, geometry }
 tokenize (if text) ─ ids, geoms ───►│  family.layout ─► token_layout::apply_layout
                                     │     │ expanded input_ids + per-item offsets
@@ -61,10 +63,10 @@ drain: pack tensors for scheduler   │
 
 Cross-cutting decisions:
 
-- **Errors are `Result<T, String>`.** Every `Err` is a request-rejection
-  message the engine returns to its client (a 400). There is no fallback
-  path and no recoverable error taxonomy to model; `anyhow` is a candidate
-  0.2 migration.
+- **Errors are `Result<T, String>`.** Every `Err` is a human-readable
+  preprocessing failure for the engine to surface however its failure policy
+  dictates (SGLang: reject the request with a 400); the crate models no
+  recoverable error taxonomy. `anyhow` is a candidate 0.2 migration.
 - **No environment variables, no implicit threads.** Kernels run inline on
   the caller until a consumer arms the crate-owned rayon pool at runtime
   (`execution::init_pool(n)`; `0` = `min(cores, 8)`) — a server owns its core
@@ -150,7 +152,7 @@ live on the Python path (SGLang's Rust driver keeps them in `sglang-mm`):
 
 | engine concern | Python home |
 | --- | --- |
-| request orchestration (fetch → hash → decode → layout control flow, caps, failure→400) | SGLang `BaseMultimodalProcessor.process_mm_data_async` |
+| request orchestration — the control flow that fetches, hashes, and calls the crate, plus caps and failure policy | SGLang `BaseMultimodalProcessor.process_mm_data_async` |
 | media source resolution (data:/base64/file/http, proxies, byte budgets) | SGLang `get_image_bytes` (≈ `transformers.image_utils.load_image`) |
 | content hashing for cache/dedup identity | SGLang `mm_utils.data_hash` |
 | scheduler-shaped packing / zero-copy drain | SGLang `wrap_encoded` / `MultimodalDataItem` |
