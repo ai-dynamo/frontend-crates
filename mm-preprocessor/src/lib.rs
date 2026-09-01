@@ -25,9 +25,6 @@
 //! The crate reads no environment variables and, without the `parallel`
 //! feature, owns no threads; pool sizing (`execution::init_pool`, feature
 //! `parallel`) is explicit configuration.
-//!
-//! This is the skeleton stage: signatures are final, bodies land with the
-//! implementation PRs noted on each `todo!`.
 
 pub mod execution;
 pub mod image;

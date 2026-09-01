@@ -60,12 +60,11 @@ impl From<Resampler> for resize::Resample {
 }
 
 pub struct QwenVlProcessor {
-    // PR3 adds: the spec, plus a per-channel u8 → normalized-f32 lookup table
-    // that rounds as the mirrored HF processor rounds (the slow path rescales
-    // then normalizes; the fast path folds the rescale into mean/std first —
-    // the two differ on 128 of the 256 u8 inputs, so picking the wrong form
-    // silently costs bit-exactness).
-    #[allow(dead_code)] // read from PR3
+    // Normalization must use the arithmetic form of the HF processor the spec
+    // mirrors: the slow path rescales then normalizes, the fast path folds the
+    // rescale into mean/std first, and the two differ on 128 of the 256 u8
+    // inputs — picking the wrong form silently costs bit-exactness.
+    #[allow(dead_code)]
     spec: QwenVlSpec,
 }
 
@@ -87,16 +86,11 @@ impl QwenVlProcessor {
 impl MmFamilyProcessor for QwenVlProcessor {
     fn process_item(&self, media: &DecodedMedia) -> Result<ProcessedItem, String> {
         let _ = media;
-        // PR3: smart_resize → resize (skipped when dims already match) →
-        // fused normalize+patchify (HF flatten order) → feature tensor
-        // `[gh*gw, 3*tps*ps*ps]` + aux `image_grid_thw` + `Grid([1, gh, gw])`.
         todo!("PR3: HF Qwen2VLImageProcessor equivalent")
     }
 
     fn layout(&self, input_ids: &[i32], items: &[Geometry]) -> Result<TokenLayout, String> {
         let _ = (input_ids, items);
-        // PR3: `t*h*w / merge_size²` tokens per image, via
-        // `token_layout::layout_by_placeholder`.
         todo!("PR3: placeholder-repeat layout")
     }
 

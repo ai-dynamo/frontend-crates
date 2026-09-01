@@ -20,7 +20,8 @@
 
 /// Size the crate's CPU pool before its first use. Idempotent — the first
 /// caller wins, and once the pool exists the size is fixed; zero is ignored.
-/// Never called: `min(available_parallelism, 8)`.
+/// When no caller ever sizes it, the pool defaults to
+/// `min(available_parallelism, 8)`.
 #[cfg(feature = "parallel")]
 pub fn init_pool(threads: usize) {
     let _ = threads;

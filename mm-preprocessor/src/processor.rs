@@ -12,17 +12,9 @@
 //! ([`crate::token_layout::apply_layout`]), so expansion, per-item offsets,
 //! and position inputs all derive from one declarative structure.
 //!
-//! The carriers below are `#[non_exhaustive]` so a new family can grow them
-//! without a breaking change. Known future needs, validated against the
-//! GLM-4V and Kimi K2.5/K3 Python processors:
-//! * GLM-4V's `<|begin_of_image|>` … `<|end_of_image|>` framing is a
-//!   [`TokenPattern::Explicit`] span; its M-RoPE variant is a new
-//!   [`PositionOutput`] variant if it diverges from the Qwen shape.
-//! * Kimi K3 interleaves tokenized text (`image {w}x{h}`) inside the media
-//!   span, so `layout` will need encode access — planned as a defaulted
-//!   `layout_with(&LayoutContext)` method carrying an engine-supplied encode
-//!   hook, added without breaking existing families.
-//! * Video/audio grow [`DecodedMedia`] variants and [`Capabilities`] flags.
+//! The carriers below are `#[non_exhaustive]` so a new family, modality, or
+//! position scheme can grow them as a semver-minor addition; the concrete
+//! growth plan (GLM-4V, Kimi K2.5/K3, video/audio) lives in DESIGN.md §6.
 
 /// Typed tensor payload. Grows a variant per dtype actually produced by a
 /// family — not speculatively.
