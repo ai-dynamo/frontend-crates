@@ -84,7 +84,8 @@ impl NativeUnified for MuseChannelScanner {
             // The marker-only rules are enough here: an ATEM invoke is delimited by a
             // literal opener and closer, with no grammar-aware location rule of the
             // kind gemma4's value wrapping needs.
-            invoke_scan: None,
+            invoke_boundary_factory: None,
+            guided_prefix_policy: None,
         }
     }
 

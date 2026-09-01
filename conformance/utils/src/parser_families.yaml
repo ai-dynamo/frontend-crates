@@ -188,7 +188,7 @@ markers:
 unified:
   gemma4:
     registry: gemma4
-    native: false
+    native: true
     reasoning_parser: gemma4
     tool_parser: gemma4
     golden_spec: gemma4.yaml

@@ -117,11 +117,16 @@ def test_case_labels_use_numeric_positions_from_y_onward() -> None:
     assert tax("guided_json_quoted_bare_tool_header_in_answer") == (31, "26")
     assert tax("guided_json_quoted_bare_header_after_payload") == (31, "27")
     assert tax("guided_json_bare_tool_header_recovers_inside_a_thought") == (31, "28")
+    assert tax("gemma4_guided_json_visible_call_prose_before_reasoning") == (31, "29")
+    assert tax("gemma4_guided_json_malformed_call_prefix_before_reasoning") == (31, "30")
     assert case_label("guided_json_quoted_bare_header_in_answer") == "31-25"
     assert case_label("guided_json_quoted_bare_tool_header_in_answer") == "31-26"
     assert case_label("guided_json_quoted_bare_header_after_payload") == "31-27"
     assert case_label("guided_json_bare_tool_header_recovers_inside_a_thought") == "31-28"
+    assert case_label("gemma4_guided_json_visible_call_prose_before_reasoning") == "31-29"
+    assert case_label("gemma4_guided_json_malformed_call_prefix_before_reasoning") == "31-30"
     assert numbered_id("guided_json_quoted_bare_header_in_answer") == "UNIFIED.31-25"
+    assert numbered_id("gemma4_guided_json_visible_call_prose_before_reasoning") == "UNIFIED.31-29"
     assert case_label("guided_json_invalid_call") == "31.a"
     assert numbered_id("guided_json_invalid_call") == "UNIFIED.31.a"
     assert not [sub for _group, sub in UNIFIED_TAX.values() if re.fullmatch(r"[a-z]{2,}", sub)]
@@ -132,10 +137,12 @@ def test_case_labels_use_numeric_positions_from_y_onward() -> None:
             "guided_json_quoted_bare_tool_header_in_answer",
             "guided_json_quoted_bare_header_after_payload",
             "guided_json_bare_tool_header_recovers_inside_a_thought",
+            "gemma4_guided_json_visible_call_prose_before_reasoning",
+            "gemma4_guided_json_malformed_call_prefix_before_reasoning",
         ),
         key=taxonomy_sort_key,
     )
-    assert [tax(scenario)[1] for scenario in ordered] == ["25", "26", "27", "28"]
+    assert [tax(scenario)[1] for scenario in ordered] == ["25", "26", "27", "28", "29", "30"]
 
 
 # --- End-to-end test cases: the SAME mapping is written in two places -----------
@@ -474,12 +481,17 @@ def test_unified_case_counts_match_the_generator():
     """
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     shared = min(per_family.values())
+    gemma_only = {
+        "gemma4_guided_json_visible_call_prose_before_reasoning",
+        "gemma4_guided_json_malformed_call_prefix_before_reasoning",
+    }
     assert per_family["muse_glimmer"] > shared, (
         "muse_glimmer should carry the OnlyFamilies scenarios on top of the shared set"
     )
     for fam in FAMILIES:
-        if fam != "muse_glimmer":
+        if fam not in {"gemma4", "muse_glimmer"}:
             assert per_family[fam] == shared, f"{fam} diverged from the shared set"
+    assert per_family["gemma4"] == shared + len(gemma_only)
     assert sum(per_family.values()) == sum(len(build_cases(f)) for f in FAMILIES)
 
 
@@ -535,7 +547,7 @@ def _packed_layer(shard: str, fam: str, field_map):
 
 
 def _taxonomy_scenarios(fam: str):
-    """Taxonomy id (`UNIFIED.31-28`) -> scenario slug, from the packaged INPUTS shard.
+    """Taxonomy id (`UNIFIED.31-28`) -> scenario slug, from packaged input layers.
 
     The golden shard keys by taxonomy id and carries no scenario field, so the mapping
     comes from the one shard holding both. A key JOIN, not a value normalization.
@@ -548,15 +560,16 @@ def _taxonomy_scenarios(fam: str):
     if cached is not None:
         return cached
     out = {}
-    path = UTILS.parent / "fixtures" / "unified" / "inputs.tar.gz"
-    with tarfile.open(path) as tar:
-        for member in tar.getmembers():
-            if not member.name.endswith(".yaml") or f"/{fam}/" not in member.name:
-                continue
-            doc = yaml.safe_load(tar.extractfile(member).read()) or {}
-            for cid, case in (doc.get("cases") or {}).items():
-                if case.get("scenario"):
-                    out[cid] = case["scenario"]
+    fixtures = UTILS.parent / "fixtures" / "unified"
+    for path in sorted(fixtures.glob("inputs*.tar.gz")):
+        with tarfile.open(path) as tar:
+            for member in tar.getmembers():
+                if not member.name.endswith(".yaml") or f"/{fam}/" not in member.name:
+                    continue
+                doc = yaml.safe_load(tar.extractfile(member).read()) or {}
+                for cid, case in (doc.get("cases") or {}).items():
+                    if case.get("scenario"):
+                        out[cid] = case["scenario"]
     _taxonomy_scenarios._cache[fam] = out
     return out
 
@@ -586,8 +599,12 @@ def test_every_case_triple_is_identical_at_every_layer():
     checked = 0
     for fam in FAMILIES:
         spec = _emitted_spec(fam)
-        packed_in = _packed_layer("inputs.tar.gz", fam, {"input": "input", "init": "init"})
-        packed_gold = _packed_layer("golden.tar.gz", fam, {"golden": "assembled"})
+        packed_in = {}
+        packed_gold = {}
+        for path in sorted((UTILS.parent / "fixtures" / "unified").glob("inputs*.tar.gz")):
+            packed_in.update(_packed_layer(path.name, fam, {"input": "input", "init": "init"}))
+        for path in sorted((UTILS.parent / "fixtures" / "unified").glob("golden*.tar.gz")):
+            packed_gold.update(_packed_layer(path.name, fam, {"golden": "assembled"}))
 
         for cid, case in build_cases(fam).items():
             scenario = _scenario_of(cid, fam)

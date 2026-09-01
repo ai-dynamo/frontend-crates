@@ -7,21 +7,25 @@
 //!   `<|tool_call>call:NAME{key:<|"|>value<|"|>, key2:42, key3:[...]}<tool_call|>`
 //! with bare unquoted keys, `<|"|>`-delimited strings, nested objects/arrays, and
 //! MULTIPLE calls concatenated with NO separator. START = `<|tool_call>`,
-//! END = `<tool_call|>` (asymmetric).
+//! END = `<tool_call|>` (asymmetric), and the block IS the invoke — the same
+//! `<tool_call|>` closes both.
 //!
-//! The streaming concern (buffering, chunk-split marker safety, normal_text
-//! suppression, EOF-truncation drop) is owned here. Per-block name + value typing
-//! is delegated to the v1 batch parser `try_tool_call_parse_gemma4`, so a streamed
-//! call matches exactly what the batch parser produces. A call is emitted only
-//! once its complete `<|tool_call> ... <tool_call|>` block has streamed; an
-//! incomplete trailing block at EOF is DROPPED (v1 parity), not emitted with empty
-//! arguments.
+//! The streaming concerns (buffering, chunk-split marker safety, normal_text
+//! suppression, orphan-close stripping, EOF-truncation drop) live in the shared
+//! [`WrappedBlockScanner`], not here. Gemma 4 supplies only what its markers
+//! cannot express, through [`InvokeScan`]: `<tool_call|>` and `call:` both occur
+//! legitimately INSIDE a `<|"|>`-delimited string value, so where an invoke ends
+//! and whether a `call:` opens one are answered by the v1 balanced,
+//! string-aware scan rather than by `find`. One scanner, one boundary
+//! definition, shared with the batch parser and with the unified parser
+//! ([`crate::unified::gemma4`]).
 //!
-//! Block-completion detection (where the `<tool_call|>` end marker actually closes
-//! a call, ignoring a bare `<tool_call|>` literal embedded inside a `<|"|>` string
-//! value) reuses the v1 helper `find_tool_call_end_position_gemma4` rather than
-//! re-implementing the balanced-brace + string-delimiter scan, so the streaming
-//! and batch paths share one block boundary definition.
+//! Per-invoke name + value typing is delegated to the v1 batch parser
+//! `parse_one_tool_call_gemma4`, so a streamed call matches exactly what the
+//! batch parser produces. A call is emitted only once its complete block has
+//! streamed; at EOF a body that balanced without its close marker is still
+//! recovered (v1 parity, case `5.b`), while one truncated mid-value is DROPPED
+//! rather than emitted with empty arguments.
 //!
 //! Arguments are re-serialized in source key order because the v1 parser builds
 //! them from a `serde_json::Map` (a `BTreeMap` without the `preserve_order`
@@ -29,277 +33,312 @@
 //! exact JSON string in the model-emitted order (the order vLLM's Rust parser also
 //! preserves), so order has to be pinned to source order.
 
-use crate::tool_calling::scan::reorder_arguments;
+use crate::tool_calling::scan::{
+    BareRecoveryLatch, InvokeBoundary, InvokeBoundaryFactory, InvokeEmitter, InvokeLatch,
+    WrappedBlockScanner, WrappedBlockSpec, reorder_arguments,
+};
 use crate::tool_calling::v1core::ToolDefinition;
 use crate::tool_calling::v1core::gemma4::{
-    detect_tool_call_start_gemma4, find_tool_call_end_position_gemma4, try_tool_call_parse_gemma4,
+    has_bare_call_body_start_gemma4, is_call_prefix_boundary, parse_one_tool_call_gemma4,
 };
 
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
 
-const TOOL_CALL_START: &str = "<|tool_call>";
+pub(crate) const TOOL_CALL_START: &str = "<|tool_call>";
+pub(crate) const TOOL_CALL_END: &str = "<tool_call|>";
 const CALL_PREFIX: &str = "call:";
 const STRING_DELIM: &str = "<|\"|>";
 
-/// Which kind of opener started the call span currently being buffered.
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Block {
-    /// A wrapped call opened by a literal `<|tool_call>` marker (still in the
-    /// buffer as the block's leading marker).
-    Wrapped,
-    /// A bare call opened by a boundary `call:` token with NO `<|tool_call>`
-    /// opener (the "orphan close" / "missing start" recovery shape). The v1 batch
-    /// parser recovers these; the streaming parser does too, so the call body is
-    /// recovered as a tool call instead of leaking as normal_text. Genuine prose
-    /// before the `call:` token has already been emitted as normal_text before
-    /// the block was entered.
-    Bare,
+#[cfg(any(test, feature = "test-utils"))]
+std::thread_local! {
+    static BOUNDARY_EXAMINED_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+#[cfg(any(test, feature = "test-utils"))]
+#[doc(hidden)]
+pub fn reset_boundary_examined_bytes() {
+    BOUNDARY_EXAMINED_BYTES.with(|examined| examined.set(0));
+}
+
+#[cfg(any(test, feature = "test-utils"))]
+#[doc(hidden)]
+pub fn boundary_examined_bytes() -> usize {
+    BOUNDARY_EXAMINED_BYTES.with(std::cell::Cell::get)
+}
+
+fn count_boundary_bytes(bytes: usize) {
+    #[cfg(any(test, feature = "test-utils"))]
+    BOUNDARY_EXAMINED_BYTES.with(|examined| examined.set(examined.get() + bytes));
+    #[cfg(not(any(test, feature = "test-utils")))]
+    let _ = bytes;
+}
+
+#[derive(Default)]
+struct Gemma4InvokeProgress {
+    cursor: usize,
+    name_started: bool,
+    depth: usize,
+    in_string: bool,
+    body_end: Option<usize>,
+    invalid: bool,
+}
+
+impl Gemma4InvokeProgress {
+    fn reset(&mut self) {
+        *self = Self::default();
+    }
+
+    fn end(&mut self, text: &str, flush: bool) -> Option<usize> {
+        if self.invalid || !text.starts_with(CALL_PREFIX) {
+            self.invalid = true;
+            return None;
+        }
+        if self.body_end.is_none() {
+            self.cursor = self.cursor.max(CALL_PREFIX.len());
+            while self.cursor < text.len() {
+                let rest = &text[self.cursor..];
+                let ch = rest.chars().next()?;
+                count_boundary_bytes(ch.len_utf8());
+                if self.depth == 0 {
+                    if ch == '{' && self.name_started {
+                        self.depth = 1;
+                    } else if ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.') {
+                        self.name_started = true;
+                    } else {
+                        self.invalid = true;
+                        return None;
+                    }
+                    self.cursor += ch.len_utf8();
+                    continue;
+                }
+                if STRING_DELIM.starts_with(rest) && rest.len() < STRING_DELIM.len() {
+                    return None;
+                }
+                if rest.starts_with(STRING_DELIM) {
+                    self.in_string = !self.in_string;
+                    self.cursor += STRING_DELIM.len();
+                    continue;
+                }
+                if !self.in_string {
+                    match ch {
+                        '{' => self.depth += 1,
+                        '}' => {
+                            let Some(depth) = self.depth.checked_sub(1) else {
+                                self.invalid = true;
+                                return None;
+                            };
+                            self.depth = depth;
+                            if self.depth == 0 {
+                                self.body_end = Some(self.cursor);
+                                self.cursor += ch.len_utf8();
+                                break;
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                self.cursor += ch.len_utf8();
+            }
+        }
+        let body_end = self.body_end?;
+        let after = &text[body_end + 1..];
+        if after.starts_with(TOOL_CALL_END) {
+            let mut end = body_end + 1 + TOOL_CALL_END.len();
+            while text[end..].starts_with(TOOL_CALL_END) {
+                end += TOOL_CALL_END.len();
+            }
+            return Some(end);
+        }
+        if flush && after.trim().is_empty() {
+            return Some(body_end + 1);
+        }
+        None
+    }
+}
+
+#[derive(Default)]
+struct Gemma4InvokeBoundary {
+    progress: Gemma4InvokeProgress,
+    candidate: String,
+    resync_cursor: usize,
+    resync_in_string: bool,
+    resync_candidate: Option<(usize, usize)>,
+}
+
+impl InvokeBoundary for Gemma4InvokeBoundary {
+    fn end_append(
+        &mut self,
+        _candidate: &str,
+        append: &str,
+        flush: bool,
+        _tool_index: usize,
+    ) -> Option<usize> {
+        self.candidate.push_str(append);
+        self.progress.end(&self.candidate, flush)
+    }
+
+    fn opens(&self, text: &str, at: usize) -> bool {
+        opens_bare_call(text, at)
+    }
+
+    fn holdback(&self, text: &str) -> usize {
+        partial_bare_opener_suffix_len(text)
+    }
+
+    fn resync(&mut self, input: &str, flush: bool, _tool_index: usize) -> Option<usize> {
+        if self.resync_cursor > input.len() {
+            self.resync_cursor = 0;
+            self.resync_in_string = false;
+            self.resync_candidate = None;
+        }
+        while self.resync_cursor < input.len() {
+            let cursor = self.resync_cursor;
+            let rest = &input[cursor..];
+            if STRING_DELIM.starts_with(rest) && rest.len() < STRING_DELIM.len() {
+                return None;
+            }
+            if TOOL_CALL_START.starts_with(rest) && rest.len() < TOOL_CALL_START.len() {
+                return None;
+            }
+            if rest.starts_with(STRING_DELIM) {
+                self.resync_in_string = !self.resync_in_string;
+                self.resync_cursor += STRING_DELIM.len();
+                count_boundary_bytes(STRING_DELIM.len());
+                continue;
+            }
+            if !self.resync_in_string && cursor > 0 && rest.starts_with(TOOL_CALL_START) {
+                let after_marker = &rest[TOOL_CALL_START.len()..];
+                if CALL_PREFIX.starts_with(after_marker) {
+                    return None;
+                }
+                if let Some(after_prefix) = after_marker.strip_prefix(CALL_PREFIX)
+                    && after_prefix.find('{').is_none()
+                    && after_prefix
+                        .chars()
+                        .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
+                {
+                    return None;
+                }
+                if let Some(after_prefix) = after_marker.strip_prefix(CALL_PREFIX)
+                    && let Some(name_len) = after_prefix
+                        .char_indices()
+                        .find_map(|(at, ch)| (ch == '{' && at > 0).then_some(at))
+                    && after_prefix[..name_len]
+                        .chars()
+                        .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
+                {
+                    self.resync_candidate = Some((cursor, 1));
+                    let consumed = TOOL_CALL_START.len() + CALL_PREFIX.len() + name_len + 1;
+                    self.resync_cursor += consumed;
+                    count_boundary_bytes(consumed);
+                    continue;
+                }
+            }
+            if let Some((start, depth)) = self.resync_candidate {
+                if depth == 0 {
+                    if rest.starts_with(TOOL_CALL_END) {
+                        return Some(start);
+                    }
+                    if TOOL_CALL_END.starts_with(rest) {
+                        return None;
+                    }
+                    if !rest.chars().next()?.is_whitespace() {
+                        self.resync_candidate = None;
+                    }
+                } else if !self.resync_in_string {
+                    self.resync_candidate = match rest.chars().next()? {
+                        '{' => Some((start, depth + 1)),
+                        '}' => Some((start, depth - 1)),
+                        _ => self.resync_candidate,
+                    };
+                }
+            }
+            let consumed = rest.chars().next()?.len_utf8();
+            self.resync_cursor += consumed;
+            count_boundary_bytes(consumed);
+        }
+        flush
+            .then(|| {
+                self.resync_candidate
+                    .and_then(|(start, depth)| (depth == 0).then_some(start))
+            })
+            .flatten()
+    }
+
+    fn reset(&mut self) {
+        self.progress.reset();
+        self.candidate.clear();
+        self.resync_cursor = 0;
+        self.resync_in_string = false;
+        self.resync_candidate = None;
+    }
+}
+
+fn gemma4_invoke_boundary() -> Box<dyn InvokeBoundary> {
+    Box::new(Gemma4InvokeBoundary::default())
+}
+
+/// Build the Gemma 4 scanner. ONE construction site, shared by the tool-only
+/// parser below and by the unified parser, so the grammar cannot drift between
+/// the two surfaces.
+pub(crate) fn gemma4_scanner(tools: &[Tool]) -> WrappedBlockScanner<Gemma4InvokeEmitter> {
+    WrappedBlockScanner::new(
+        WrappedBlockSpec {
+            family: "gemma4",
+            block_starts: vec![TOOL_CALL_START.to_string()],
+            // Same token as `invoke_end`: closing the call closes the block.
+            block_ends: vec![TOOL_CALL_END.to_string()],
+            invoke_start: CALL_PREFIX.to_string(),
+            invoke_end: TOOL_CALL_END.to_string(),
+            orphan_markers: vec![TOOL_CALL_END.to_string()],
+            // Only unconditional structural markers belong here because the
+            // guided path strips this set as markup. The ambiguous `call:`
+            // prefix has grammar-aware holdback through `Gemma4InvokeBoundary`.
+            // The string delimiter is unconditionally structural and must not
+            // be released when split across a chunk boundary.
+            holdback_markers: vec![
+                TOOL_CALL_START.to_string(),
+                TOOL_CALL_END.to_string(),
+                STRING_DELIM.to_string(),
+            ],
+            // No outer wrapper survives a recovered bare call, so later narration
+            // is the user's text again.
+            bare_recovery_latch: BareRecoveryLatch::Clear,
+            invoke_latch: InvokeLatch::IfEmitted,
+            drop_invoke_crossing_block_end: false,
+            invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(gemma4_invoke_boundary)),
+            preserve_special_tokens: true,
+        },
+        Gemma4InvokeEmitter {
+            tools: tools.iter().map(ToolDefinition::from).collect(),
+        },
+    )
+}
+
+/// Whether the `call:` at `at` opens a real call rather than being the English
+/// word: it must sit on an identifier boundary AND look like a call start to the
+/// candidate-local grammar probe (`call:NAME{`).
+///
+/// Without the second test, "I will call: you tomorrow" would be buffered as an
+/// invoke that never closes and then dropped at EOF — losing ordinary prose.
+fn opens_bare_call(text: &str, at: usize) -> bool {
+    is_call_prefix_boundary(text, at) && has_bare_call_body_start_gemma4(&text[at..])
+}
+
+pub(crate) fn is_gemma_call_prefix_boundary(text: &str, at: usize) -> bool {
+    is_call_prefix_boundary(text, at)
 }
 
 /// Stream parser for Gemma 4 tool calls.
 pub struct Gemma4ToolStreamParser {
-    buffer: String,
-    /// `Some(kind)` once a call opener (`<|tool_call>` or a recoverable bare
-    /// `call:`) has been entered and we are buffering the call body until its
-    /// complete `<tool_call|>` end marker arrives. While set, intra-call bytes
-    /// never leak to `normal_text`; suppression is scoped to this in-block window
-    /// (narration after a call is preserved, matching the engines).
-    block: Option<Block>,
-    /// Stable parser-local tool index, incremented per emitted call.
-    next_index: usize,
-    tools: Vec<ToolDefinition>,
+    scanner: WrappedBlockScanner<Gemma4InvokeEmitter>,
 }
 
 impl Gemma4ToolStreamParser {
     pub fn new(tools: &[Tool]) -> Self {
         Self {
-            buffer: String::new(),
-            block: None,
-            next_index: 0,
-            tools: tools.iter().map(ToolDefinition::from).collect(),
+            scanner: gemma4_scanner(tools),
         }
-    }
-
-    fn drain(&mut self, flush: bool) -> anyhow::Result<ToolParseResult> {
-        let mut out = ToolParseResult::default();
-
-        loop {
-            if let Some(kind) = self.block {
-                // Inside a call span. For a wrapped block the leading `<|tool_call>`
-                // is still in the buffer; for a bare block the buffer starts at the
-                // `call:` token. Find the end of the FIRST complete `}<tool_call|>`
-                // block (the v1 helper respects brace balance + `<|"|>` strings, so
-                // an embedded `<tool_call|>` literal inside a string value does not
-                // close the block early). The helper returns the position after the
-                // LAST complete block, so isolating the buffer to a single leading
-                // block (next opener onward held back) keeps us emitting one call
-                // per iteration with the correct per-call source order.
-                let next_opener = self.next_opener_after_current(kind);
-                let scan = match next_opener {
-                    Some(s) => &self.buffer[..s],
-                    None => &self.buffer[..],
-                };
-                match find_tool_call_end_position_gemma4(scan) {
-                    Some(end) => {
-                        let block = self.buffer[..end].to_string();
-                        self.buffer.drain(..end);
-                        self.block = None;
-                        self.emit_block(&block, kind, &mut out)?;
-                        continue;
-                    }
-                    None => {
-                        // No complete block in the leading segment. If a later
-                        // opener exists, the leading block is malformed/incomplete
-                        // (e.g. missing end before the next call); drop it and
-                        // continue scanning from the next opener.
-                        if let Some(s) = next_opener {
-                            tracing::warn!(
-                                why = "gemma4_incomplete_tool_call",
-                                next_index = self.next_index,
-                                "Gemma 4 stream dropped an incomplete leading block before the next call"
-                            );
-                            self.buffer.drain(..s);
-                            self.block = None; // re-enter on the next opener below
-                        } else if flush {
-                            // EOF with no `<tool_call|>` end marker. The streamv2
-                            // conformance tab grades dynamo's stream output against
-                            // dynamo's own v1 BATCH output, and the v1 batch parser
-                            // recovers a call whose body is complete even when the end
-                            // marker never streamed (batch 5.a/5.d). Match it:
-                            // delegate the recover-or-drop decision to the v1 parser
-                            // via emit_block. A complete body is recovered; a
-                            // genuinely incomplete body (truncated mid-value, 5.c)
-                            // yields no call and is dropped (emit_block logs it). The
-                            // buffered markup never leaks to normal_text either way.
-                            let block = std::mem::take(&mut self.buffer);
-                            self.block = None;
-                            self.emit_block(&block, kind, &mut out)?;
-                            break;
-                        } else {
-                            break;
-                        }
-                        // Fall through to the not-in-block opener scan.
-                    }
-                }
-            }
-
-            // Not in a block: find the next opener — either a literal `<|tool_call>`
-            // marker, or a bare boundary `call:` token that is a recoverable call
-            // (orphan-close / missing-start shape). Whichever comes first wins.
-            let wrapped_pos = self.buffer.find(TOOL_CALL_START);
-            let bare_pos = self.first_bare_call_opener();
-            let opener = match (wrapped_pos, bare_pos) {
-                (Some(w), Some(b)) if w <= b => Some((w, Block::Wrapped)),
-                (Some(_), Some(b)) => Some((b, Block::Bare)),
-                (Some(w), None) => Some((w, Block::Wrapped)),
-                (None, Some(b)) => Some((b, Block::Bare)),
-                (None, None) => None,
-            };
-
-            match opener {
-                Some((start, kind)) => {
-                    // Text before the opener is user-visible normal_text. For the
-                    // bare case this is the genuine prose prefix (e.g. 5.g's
-                    // "I will check that. "), which must stay normal_text.
-                    if start > 0 {
-                        out.normal_text.push_str(&self.buffer[..start]);
-                    }
-                    // Keep the opener bytes in the buffer; the in-block branch needs
-                    // them as the block's leading content for the v1 parser and for
-                    // next-opener detection.
-                    self.buffer.drain(..start);
-                    self.block = Some(kind);
-                }
-                None => {
-                    // No complete opener present. Hold back a trailing partial
-                    // opener (a `<|tool_call>` start marker OR a `call:` token that
-                    // may still grow into a recoverable bare call) split across this
-                    // chunk boundary. At flush, an in-progress bare call that never
-                    // completed is DROPPED (truncation parity) rather than leaked as
-                    // normal_text; its preceding prose is still emitted.
-                    let pending_bare = pending_bare_call_suffix_len(&self.buffer);
-                    let keep = if flush {
-                        pending_bare
-                    } else {
-                        self.opener_holdback_len()
-                    };
-                    let emit_len = self.buffer.len().saturating_sub(keep);
-                    if emit_len > 0 {
-                        out.normal_text.push_str(&self.buffer[..emit_len]);
-                        self.buffer.drain(..emit_len);
-                    }
-                    if flush && pending_bare > 0 {
-                        tracing::warn!(
-                            why = "gemma4_incomplete_tool_call",
-                            next_index = self.next_index,
-                            "Gemma 4 stream truncated an incomplete bare call at EOF; dropping it (v1 parity)"
-                        );
-                        self.buffer.clear();
-                    }
-                    break;
-                }
-            }
-        }
-
-        Ok(out)
-    }
-
-    /// Position of the next opener strictly after the current leading block, used
-    /// to bound the end-scan to a single block. For a wrapped block, the current
-    /// block starts at the leading `<|tool_call>`; for a bare block it starts at
-    /// the leading `call:`. The next opener is the earliest of a later
-    /// `<|tool_call>` marker or a later recoverable bare `call:`.
-    fn next_opener_after_current(&self, kind: Block) -> Option<usize> {
-        let skip = match kind {
-            Block::Wrapped => TOOL_CALL_START.len(),
-            Block::Bare => CALL_PREFIX.len(),
-        };
-        if skip > self.buffer.len() {
-            return None;
-        }
-        let tail = &self.buffer[skip..];
-        let wrapped = tail.find(TOOL_CALL_START).map(|rel| rel + skip);
-        // A bare `call:` at the very start of a WRAPPED block's tail is the
-        // block's OWN body (`<|tool_call>call:...`), not a next call. Without
-        // this skip, every complete wrapped block truncated its own end-scan
-        // and detoured through drop + bare-recovery (correct output, but two
-        // misleading warnings per call and a dead Wrapped emit path).
-        let mut bare = first_bare_call_opener_in(tail);
-        if kind == Block::Wrapped && bare == Some(0) {
-            bare = first_bare_call_opener_in(&tail[CALL_PREFIX.len()..])
-                .map(|rel| rel + CALL_PREFIX.len());
-        }
-        let bare = bare.map(|rel| rel + skip);
-        match (wrapped, bare) {
-            (Some(w), Some(b)) => Some(w.min(b)),
-            (Some(w), None) => Some(w),
-            (None, Some(b)) => Some(b),
-            (None, None) => None,
-        }
-    }
-
-    /// First boundary `call:` in the buffer that begins a recoverable bare call
-    /// (its complete `}<tool_call|>` close has streamed). A boundary `call:` whose
-    /// body has not yet completed is NOT returned here (it is held back by
-    /// `opener_holdback_len` until it completes or EOF drops it), so an in-progress
-    /// body is never leaked as normal_text.
-    fn first_bare_call_opener(&self) -> Option<usize> {
-        first_bare_call_opener_in(&self.buffer)
-    }
-
-    /// Bytes to hold back from the tail when no complete opener is present: the
-    /// longest of a trailing partial `<|tool_call>` prefix, a trailing boundary
-    /// `call:`-prefixed run that `detect_tool_call_start_gemma4` thinks may still
-    /// grow into a tool call (so a bare call whose end marker has not yet arrived
-    /// is buffered, not leaked), or a trailing run the v1 probe cannot see YET —
-    /// a partial `call:` prefix or a `call:NAME` tail still awaiting its `{`.
-    /// Without that last component, streaming in small chunks releases `c`,
-    /// `ca`, ... as normal_text before `call:` can ever accumulate, and a bare
-    /// call that single-shot parsing recovers is lost (streamv2.5.b/f/g).
-    fn opener_holdback_len(&self) -> usize {
-        let partial_start = start_marker_suffix_len(&self.buffer);
-        let partial_bare = pending_bare_call_suffix_len(&self.buffer);
-        let partial_opener = partial_bare_opener_suffix_len(&self.buffer);
-        partial_start.max(partial_bare).max(partial_opener)
-    }
-
-    /// Parse one complete call block into a delta, delegating name + value typing
-    /// to the v1 batch parser. For a wrapped block the input includes its leading
-    /// `<|tool_call>` start marker; for a bare block it starts at `call:` (the v1
-    /// parser's missing-start recovery handles the absent opener). Both end with
-    /// the closing `<tool_call|>`.
-    fn emit_block(
-        &mut self,
-        block: &str,
-        kind: Block,
-        out: &mut ToolParseResult,
-    ) -> anyhow::Result<()> {
-        let (calls, _content) = try_tool_call_parse_gemma4(block, Some(&self.tools))?;
-        // A complete-but-malformed block (no `call:NAME{...}` body, e.g. the
-        // `<|tool_call>nonsense<tool_call|>` recovery case) yields zero calls;
-        // drop it without leaking markup, matching the v1 no-leak contract.
-        let Some(call) = calls.into_iter().next() else {
-            tracing::warn!(
-                why = "gemma4_block_without_call",
-                "Gemma 4 stream dropped a complete block that produced no call"
-            );
-            return Ok(());
-        };
-        if kind == Block::Bare {
-            tracing::warn!(
-                why = "gemma4_bare_call_recovery",
-                tool_index = self.next_index,
-                "Gemma 4 stream recovered a bare call (no <|tool_call> opener) instead of leaking it as normal_text"
-            );
-        }
-        let arguments = reorder_arguments(&call.function.arguments, &source_key_order(block));
-        out.calls.push(ToolCallDelta {
-            tool_index: self.next_index,
-            name: Some(call.function.name),
-            arguments,
-        });
-        self.next_index += 1;
-        Ok(())
     }
 }
 
@@ -312,108 +351,136 @@ impl ToolParser for Gemma4ToolStreamParser {
     }
 
     fn preserve_special_tokens(&self) -> bool {
-        true
+        self.scanner.preserve_special_tokens()
     }
 
     fn push(&mut self, chunk: &str) -> anyhow::Result<ToolParseResult> {
-        self.buffer.push_str(chunk);
-        self.drain(false)
+        self.scanner.push(chunk)
     }
 
     fn finish(&mut self) -> anyhow::Result<ToolParseResult> {
-        self.drain(true)
+        self.scanner.finish()
     }
 }
 
-/// Longest non-empty proper prefix of the `<|tool_call>` start marker that `text`
-/// ends with, so a marker split across chunk boundaries is held back instead of
-/// leaked as text. The `<|"|>` string delimiter and `<tool_call|>` end marker also
-/// start with `<`, but only `<|tool_call>` opens a call from the not-in-block
-/// state, so holding back its prefixes is sufficient.
-fn start_marker_suffix_len(text: &str) -> usize {
-    TOOL_CALL_START
-        .char_indices()
-        .map(|(idx, _)| idx)
-        .filter(|idx| *idx > 0 && *idx < TOOL_CALL_START.len())
-        .rev()
-        .find(|&len| text.ends_with(&TOOL_CALL_START[..len]))
-        .unwrap_or(0)
-}
+#[cfg(test)]
+mod boundary_tests {
+    use super::*;
 
-/// True if `s` begins (at `idx`) on a `call:` word boundary — the preceding char
-/// is not part of an identifier, so `"call:"` at the start of a word counts but
-/// the `call:` inside `"recall:..."` does not. Mirrors the v1 parser's
-/// `is_call_prefix_boundary`.
-fn is_call_boundary(s: &str, idx: usize) -> bool {
-    idx == 0
-        || s[..idx]
-            .chars()
-            .next_back()
-            .is_none_or(|c| !(c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.')))
-}
+    #[test]
+    fn gemma_exposes_its_request_local_boundary() {
+        let scanner = gemma4_scanner(&[]);
+        let factory = scanner
+            .invoke_boundary_factory()
+            .expect("Gemma needs a grammar-aware boundary factory");
+        let boundary = factory.create();
 
-/// Position of the first boundary `call:` token in `text` that begins a COMPLETE
-/// recoverable bare call (its `}<tool_call|>` close has streamed). Reuses the v1
-/// helper `find_tool_call_end_position_gemma4` to confirm the candidate completes
-/// (and to reject a `call:` that is just prose, e.g. "I will call: you"). An
-/// in-progress bare call (no end marker yet) returns `None` here; it is held back
-/// by `pending_bare_call_suffix_len` until it completes or EOF drops it.
-fn first_bare_call_opener_in(text: &str) -> Option<usize> {
-    let mut cursor = 0usize;
-    while let Some(rel) = text[cursor..].find(CALL_PREFIX) {
-        let idx = cursor + rel;
-        if is_call_boundary(text, idx) && find_tool_call_end_position_gemma4(&text[idx..]).is_some()
-        {
-            return Some(idx);
-        }
-        cursor = idx + CALL_PREFIX.len();
+        assert!(boundary.opens("call:get_weather{}", 0));
+        assert_eq!(boundary.holdback("ordinary text"), 0);
     }
-    None
-}
 
-/// Bytes to hold back from the tail of `text` for a boundary `call:` run that may
-/// still grow into a recoverable bare call. Finds the last boundary `call:` whose
-/// suffix `detect_tool_call_start_gemma4` still considers a tool-call start (a
-/// complete or in-progress `call:NAME{...}` shape) but whose end marker has not
-/// yet arrived (`find_tool_call_end_position_gemma4` is `None`), and returns the
-/// number of trailing bytes from that `call:` onward so they are buffered, not
-/// leaked. Returns 0 when no such pending bare call is present.
-fn pending_bare_call_suffix_len(text: &str) -> usize {
-    let mut cursor = 0usize;
-    let mut best = 0usize;
-    while let Some(rel) = text[cursor..].find(CALL_PREFIX) {
-        let idx = cursor + rel;
-        if is_call_boundary(text, idx) {
-            let suffix = &text[idx..];
-            // Hold back only an in-progress bare call (looks like a tool-call start
-            // but has not completed yet); a completed one is handled as an opener.
-            if find_tool_call_end_position_gemma4(suffix).is_none()
-                && detect_tool_call_start_gemma4(suffix)
-            {
-                best = best.max(suffix.len());
+    #[test]
+    fn resync_advances_only_over_new_bytes_and_recovers_a_balanced_eof_candidate() {
+        let mut boundary = Gemma4InvokeBoundary::default();
+        let mut input = "<|tool_call>call:broken{note:<|\"|>unterminated".to_string();
+
+        assert_eq!(boundary.resync(&input, false, 0), None);
+        let examined_after_first_push = boundary.resync_cursor;
+        assert_eq!(examined_after_first_push, input.len());
+
+        input.push_str("<|\"|>}<|tool_call>call:get_weather{city:<|\"|>NYC<|\"|>}");
+        assert_eq!(boundary.resync(&input, false, 0), None);
+        assert_eq!(boundary.resync_cursor, input.len());
+        assert!(boundary.resync_cursor > examined_after_first_push);
+
+        // The later candidate is balanced but truncated before the wrapper close.
+        // At EOF it is the safe forward recovery point, without revisiting bytes
+        // from either preceding push.
+        assert_eq!(
+            boundary.resync(&input, true, 0),
+            Some(input.rfind(TOOL_CALL_START).unwrap())
+        );
+    }
+
+    #[test]
+    fn resync_examines_each_byte_once_across_sequential_chunk_sizes() {
+        let stream = concat!(
+            "<|tool_call>call:broken{note:<|\"|>unterminated<|\"|>}",
+            "<|tool_call>call:get_weather{city:<|\"|>NYC<|\"|>}<|tool_call|>"
+        );
+
+        for chunk_size in [1, 4, 16] {
+            let mut boundary = Gemma4InvokeBoundary::default();
+            let mut input = String::new();
+            let mut examined = 0;
+            for chunk in stream.as_bytes().chunks(chunk_size) {
+                input.push_str(std::str::from_utf8(chunk).expect("ASCII test input"));
+                let before = boundary.resync_cursor;
+                let _ = boundary.resync(&input, false, 0);
+                examined += boundary.resync_cursor - before;
             }
+            assert_eq!(examined, stream.len(), "chunk_size={chunk_size}");
+            let _ = boundary.resync(&input, true, 0);
+
+            boundary.reset();
+            assert_eq!(
+                boundary.resync("<|tool_call>call:get_weather{}<|tool_call|>", true, 0),
+                None
+            );
         }
-        cursor = idx + CALL_PREFIX.len();
     }
-    best
+}
+
+/// Per-invoke typing for Gemma 4: hand the complete `call:NAME{…}<tool_call|>`
+/// block to the v1 batch parser, then restore source key order.
+pub(crate) struct Gemma4InvokeEmitter {
+    tools: Vec<ToolDefinition>,
+}
+
+impl InvokeEmitter for Gemma4InvokeEmitter {
+    fn parse_invoke(
+        &mut self,
+        invoke: &str,
+        tool_index: usize,
+    ) -> anyhow::Result<Option<ToolCallDelta>> {
+        // The scanner already delimited this invoke, so type it directly rather
+        // than re-scanning: re-discovering bounds is what truncates a value at an
+        // embedded `<tool_call|>` (`I7`), and the span scanner also refuses a call
+        // missing BOTH its opener and closer — the exact shape of case `5.b`.
+        let call = parse_one_tool_call_gemma4(invoke, Some(&self.tools))?;
+        // A complete-but-malformed block (no `call:NAME{...}` body, e.g. the
+        // `<|tool_call>nonsense<tool_call|>` recovery case) yields no call;
+        // drop it without leaking markup, matching the v1 no-leak contract.
+        let Some(call) = call else {
+            tracing::warn!(
+                why = "gemma4_block_without_call",
+                "Gemma 4 stream dropped a complete block that produced no call"
+            );
+            return Ok(None);
+        };
+        Ok(Some(ToolCallDelta {
+            tool_index,
+            name: Some(call.function.name),
+            arguments: reorder_arguments(&call.function.arguments, &source_key_order(invoke)),
+        }))
+    }
 }
 
 /// Trailing run that may still grow into a recoverable bare call but that the
 /// v1 probes cannot detect yet: a partial `call:` prefix at a word boundary
 /// (`c`, `ca`, ..., `call:`), or a complete boundary `call:` followed only by
 /// identifier characters (the function name, awaiting its `{`). Once the `{`
-/// arrives, `detect_tool_call_start_gemma4` takes over via
-/// `pending_bare_call_suffix_len`. Held-back bytes are flushed on the next
-/// chunk (or at EOF), so the concatenated normal_text is unchanged — only its
-/// chunk boundaries shift.
+/// arrives, the scanner's candidate-local opener probe recognizes it directly.
+/// Held-back bytes are flushed on the next chunk (or at EOF), so the
+/// concatenated output is unchanged — only its chunk boundaries shift.
 fn partial_bare_opener_suffix_len(text: &str) -> usize {
     for len in (1..=CALL_PREFIX.len()).rev() {
-        if text.ends_with(&CALL_PREFIX[..len]) && is_call_boundary(text, text.len() - len) {
+        if text.ends_with(&CALL_PREFIX[..len]) && is_call_prefix_boundary(text, text.len() - len) {
             return len;
         }
     }
     if let Some(idx) = text.rfind(CALL_PREFIX)
-        && is_call_boundary(text, idx)
+        && is_call_prefix_boundary(text, idx)
         && text[idx + CALL_PREFIX.len()..]
             .chars()
             .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
@@ -681,6 +748,81 @@ mod tests {
     }
 
     #[test]
+    fn complete_body_missing_end_marker_is_recovered_at_every_split() {
+        // 5.b at every chunk boundary: the body balances but the close marker
+        // never streams, so `finish` must recover it regardless of split point.
+        let input = "<|tool_call>call:get_weather{location:<|\"|>NYC<|\"|>}";
+        for split in input
+            .char_indices()
+            .map(|(index, _)| index)
+            .chain(std::iter::once(input.len()))
+        {
+            let out = parse_chunks(&weather_tools(), &[&input[..split], &input[split..]]);
+            assert_eq!(out.normal_text, "", "split={split}");
+            let merged = out.coalesce_calls();
+            assert_eq!(merged.calls.len(), 1, "split={split}");
+            assert_eq!(
+                merged.calls[0].name.as_deref(),
+                Some("get_weather"),
+                "split={split}"
+            );
+            assert_eq!(
+                merged.calls[0].arguments, r#"{"location":"NYC"}"#,
+                "split={split}"
+            );
+        }
+    }
+
+    #[test]
+    fn later_balanced_call_with_trailing_whitespace_is_recovered_at_eof() {
+        let input = concat!(
+            "<|tool_call>call:broken{note:<|\"|>unterminated",
+            "<|\"|>}<|tool_call>call:get_weather{location:<|\"|>NYC<|\"|>}   \n\t"
+        );
+        for chunk_size in [1, 4, 16] {
+            let chunks = input
+                .as_bytes()
+                .chunks(chunk_size)
+                .map(|chunk| std::str::from_utf8(chunk).expect("ASCII test input"))
+                .collect::<Vec<_>>();
+            let out = parse_chunks(&weather_tools(), &chunks);
+            assert_eq!(out.normal_text, "   \n\t", "chunk_size={chunk_size}");
+            let merged = out.coalesce_calls();
+            assert_eq!(merged.calls.len(), 1, "chunk_size={chunk_size}");
+            assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
+            assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
+        }
+    }
+
+    #[test]
+    fn mismatched_close_after_narration_is_rejected_at_every_split() {
+        let input = "<|tool_call>call:get_weather{location:<|\"|>NYC<|\"|>} trailing </tool_call>";
+        for split in input
+            .char_indices()
+            .map(|(index, _)| index)
+            .chain(std::iter::once(input.len()))
+        {
+            let out = parse_chunks(&weather_tools(), &[&input[..split], &input[split..]]);
+            assert_eq!(out.normal_text, "", "split={split}");
+            assert!(out.calls.is_empty(), "split={split}");
+        }
+    }
+
+    #[test]
+    fn narrated_call_missing_both_wrappers_is_not_dispatched_at_every_split() {
+        let input = "for example, call:get_weather{location:<|\"|>NYC<|\"|>}";
+        for split in input
+            .char_indices()
+            .map(|(index, _)| index)
+            .chain(std::iter::once(input.len()))
+        {
+            let out = parse_chunks(&weather_tools(), &[&input[..split], &input[split..]]);
+            assert_eq!(out.normal_text, "for example, ", "split={split}");
+            assert!(out.calls.is_empty(), "split={split}");
+        }
+    }
+
+    #[test]
     fn drops_call_truncated_mid_value() {
         let out = parse_chunks(
             &weather_tools(),
@@ -688,6 +830,23 @@ mod tests {
         );
         assert_eq!(out.normal_text, "");
         assert!(out.calls.is_empty());
+    }
+
+    #[test]
+    fn truncated_mid_value_call_is_dropped_at_every_split() {
+        // EOF-mid-value truncation is unrecoverable at every chunk boundary: the
+        // string value never closes, so the whole call is dropped with no leak,
+        // regardless of where the stream happens to be cut.
+        let input = "<|tool_call>call:get_weather{location:<|\"|>N";
+        for split in input
+            .char_indices()
+            .map(|(index, _)| index)
+            .chain(std::iter::once(input.len()))
+        {
+            let out = parse_chunks(&weather_tools(), &[&input[..split], &input[split..]]);
+            assert_eq!(out.normal_text, "", "split={split}");
+            assert!(out.calls.is_empty(), "split={split}");
+        }
     }
 
     #[test]
@@ -810,6 +969,33 @@ mod tests {
         assert_eq!(merged.calls.len(), 1);
         assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
         assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
+    }
+
+    #[test]
+    fn recovers_bare_call_without_opener_at_every_split() {
+        // streamv2.5.b at every chunk boundary: a bare `call:NAME{...}<tool_call|>`
+        // with no `<|tool_call>` opener must recover as a call, never leak as text,
+        // no matter where the stream happens to be cut.
+        let input = "call:get_weather{location:<|\"|>NYC<|\"|>}<tool_call|>";
+        for split in input
+            .char_indices()
+            .map(|(index, _)| index)
+            .chain(std::iter::once(input.len()))
+        {
+            let out = parse_chunks(&weather_tools(), &[&input[..split], &input[split..]]);
+            assert_eq!(out.normal_text, "", "split={split}");
+            let merged = out.coalesce_calls();
+            assert_eq!(merged.calls.len(), 1, "split={split}");
+            assert_eq!(
+                merged.calls[0].name.as_deref(),
+                Some("get_weather"),
+                "split={split}"
+            );
+            assert_eq!(
+                merged.calls[0].arguments, r#"{"location":"NYC"}"#,
+                "split={split}"
+            );
+        }
     }
 
     #[test]

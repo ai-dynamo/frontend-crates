@@ -7,6 +7,9 @@ edition.workspace = true
 license = "Apache-2.0"
 description = "Token-incremental tool-call streaming parsers for Dynamo"
 
+[features]
+test-utils = []
+
 [dependencies]
 openai-harmony = { workspace = true }
 anyhow = { workspace = true }

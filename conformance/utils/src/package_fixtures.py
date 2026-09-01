@@ -176,7 +176,8 @@ def build_shards(tmpdir, blobs_dir, prune=False):
             # <impl>-<version>/. Anything else (a stray family dir, an
             # overlays/ nest from a raw capture) would produce a tarball the
             # resolvers ignore — reject it loudly instead.
-            if subdir.name not in ("inputs", "golden") and not re.match(r"^[a-z0-9_]+-\d", subdir.name):
+            shared_overlay = re.match(r"^(inputs|golden)\+pr\d+\.patch\d+$", subdir.name)
+            if subdir.name not in ("inputs", "golden") and not shared_overlay and not re.match(r"^[a-z0-9_]+-\d", subdir.name):
                 print(
                     f"  warn: skipping {tree_rel}/{subdir.name} — not inputs/ or "
                     "<impl>-<version>/ (normalize the capture output first)",
