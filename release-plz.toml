@@ -84,3 +84,11 @@ commit_parsers = [
     { message = "^build", skip = true },
     { message = "^test", skip = true },
 ]
+
+# `dynamo-mm-preprocessor` is at the skeleton (design-review) stage — the
+# implementation PRs flip it to publishable; until then both flags mirror the
+# crate's `publish = false`.
+[[package]]
+name = "dynamo-mm-preprocessor"
+publish = false
+release = false

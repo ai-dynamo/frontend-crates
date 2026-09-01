@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "dynamo-mm-preprocessor"
+readme = "README.md"
+version = "0.1.0"
+edition.workspace = true
+description = "Model-family multimodal preprocessing for LLM inference serving: a Rust replacement for HF AutoProcessor image pipelines."
+authors.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+keywords = ["llm", "multimodal", "vision", "preprocessing", "inference"]
+include = ["src/**/*", "Cargo.toml", "README.md"]
+# Skeleton (design-review) stage: flips to publishable once the implementation
+# PRs land. release-plz mirrors this (publish = false, release = false).
+publish = false
+
+[features]
+default = []
+# Resolve string media sources (data:/base64/file/http). The implementation PR
+# wires the deps: `fetch = ["dep:ureq", "dep:base64"]`.
+fetch = []
+# Fan work out on a crate-owned rayon pool; off = inline on the caller and no
+# threads owned. The implementation PR wires `parallel = ["dep:rayon"]`.
+parallel = []
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
