@@ -8,5 +8,5 @@
 /// conversion would rescale, so refusing is the only bit-exact answer.
 pub fn decode_rgb(data: &[u8]) -> Result<(Vec<u8>, usize, usize), String> {
     let _ = data;
-    todo!("PR2: pure-Rust decoders via the `image` crate")
+    todo!("pure-Rust decoders via the `image` crate")
 }

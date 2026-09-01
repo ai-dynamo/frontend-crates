@@ -19,7 +19,7 @@ chat-template rendering down to media placeholder markers lives in
 `dynamo-renderer`.
 
 **Status: skeleton (design review).** Signatures and module layout are final;
-bodies land with the implementation PRs and the crate flips to publishable
+bodies land with the follow-up implementation and the crate flips to publishable
 then. Start with [`DESIGN.md`](DESIGN.md): the boundary, key APIs, the
 Python-parity map, an engine-side (SGLang) driver sketch, testing strategy,
 and the roadmap.

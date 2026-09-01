@@ -36,7 +36,7 @@
 #[cfg(feature = "parallel")]
 pub fn init_pool(threads: usize) {
     let _ = threads;
-    todo!("PR2: arm the OnceLock-backed rayon pool")
+    todo!("arm the OnceLock-backed rayon pool")
 }
 
 /// Map `items`, short-circuiting on the first error. Output order matches input
@@ -52,7 +52,7 @@ where
     E: Send,
 {
     let _ = (items, &f);
-    todo!("PR2: rayon par_iter when the pool is armed, inline iterator otherwise")
+    todo!("rayon par_iter when the pool is armed, inline iterator otherwise")
 }
 
 /// Apply `f(chunk_index, chunk)` over disjoint `chunk_size`-element windows of
@@ -63,7 +63,7 @@ pub fn for_chunks_mut<T: Send>(
     f: impl Fn(usize, &mut [T]) + Send + Sync,
 ) {
     let _ = (buf, chunk_size, &f);
-    todo!("PR2: rayon par_chunks_mut when the pool is armed, inline otherwise")
+    todo!("rayon par_chunks_mut when the pool is armed, inline otherwise")
 }
 
 /// Run `f` with the CPU pool already entered, so nested [`for_chunks_mut`]
@@ -72,5 +72,5 @@ pub fn for_chunks_mut<T: Send>(
 /// would otherwise pay per-stage pool entry.
 pub fn in_pool<R: Send>(f: impl FnOnce() -> R + Send) -> R {
     let _ = &f;
-    todo!("PR2: pool().install when the pool is armed, direct call otherwise")
+    todo!("pool().install when the pool is armed, direct call otherwise")
 }

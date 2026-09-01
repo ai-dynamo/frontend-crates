@@ -86,12 +86,12 @@ impl QwenVlProcessor {
 impl MmFamilyProcessor for QwenVlProcessor {
     fn process_item(&self, media: &DecodedMedia) -> Result<ProcessedItem, String> {
         let _ = media;
-        todo!("PR3: HF Qwen2VLImageProcessor equivalent")
+        todo!("HF Qwen2VLImageProcessor equivalent")
     }
 
     fn layout(&self, input_ids: &[i32], items: &[Geometry]) -> Result<TokenLayout, String> {
         let _ = (input_ids, items);
-        todo!("PR3: placeholder-repeat layout")
+        todo!("placeholder-repeat layout")
     }
 
     fn positions(
@@ -101,7 +101,7 @@ impl MmFamilyProcessor for QwenVlProcessor {
         items: &[Geometry],
     ) -> Result<PositionOutput, String> {
         let _ = (input_len, offsets, items);
-        todo!("PR3: mrope_image_only over the item offsets/grids")
+        todo!("mrope_image_only over the item offsets/grids")
     }
 }
 
@@ -118,7 +118,7 @@ pub fn smart_resize(
     max_pixels: usize,
 ) -> Result<(usize, usize), String> {
     let _ = (height, width, factor, min_pixels, max_pixels);
-    todo!("PR3: banker's-rounding resize targets")
+    todo!("banker's-rounding resize targets")
 }
 
 /// Image-only M-RoPE fast path (the image branch of
@@ -133,5 +133,5 @@ pub fn mrope_image_only(
     merge_size: usize,
 ) -> Result<(Vec<i64>, i64), String> {
     let _ = (input_len, items, merge_size);
-    todo!("PR3: three-row position fill")
+    todo!("three-row position fill")
 }

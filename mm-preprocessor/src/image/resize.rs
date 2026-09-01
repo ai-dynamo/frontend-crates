@@ -36,7 +36,7 @@ pub fn resize_rgb(
     resample: Resample,
 ) -> Vec<u8> {
     let _ = (src, h, w, out_h, out_w, resample);
-    todo!("PR2: precomputed fixed-point coefficients, horizontal then vertical pass")
+    todo!("precomputed fixed-point coefficients, horizontal then vertical pass")
 }
 
 pub fn resize_lanczos_rgb(src: &[u8], h: usize, w: usize, out_h: usize, out_w: usize) -> Vec<u8> {
@@ -47,5 +47,5 @@ pub fn resize_lanczos_rgb(src: &[u8], h: usize, w: usize, out_h: usize, out_w: u
 /// `(w, h)` in, `(w, h)` out.
 pub fn scaled_dims(w: usize, h: usize, frac: Option<f64>, cap: Option<i64>) -> (usize, usize) {
     let _ = (w, h, frac, cap);
-    todo!("PR2: long-edge fraction with cap")
+    todo!("long-edge fraction with cap")
 }

@@ -34,7 +34,7 @@ pub fn apply_layout(
     n_items: usize,
 ) -> Result<ExpandedPrompt, String> {
     let _ = (src, layout, n_items);
-    todo!("PR2: validating single-pass expansion")
+    todo!("validating single-pass expansion")
 }
 
 /// Build the simplest layout: each occurrence of `placeholder_id` in `ids`
@@ -46,5 +46,5 @@ pub fn layout_by_placeholder(
     counts: &[usize],
 ) -> Result<TokenLayout, String> {
     let _ = (ids, placeholder_id, counts);
-    todo!("PR2: qwen-style repeat layout")
+    todo!("qwen-style repeat layout")
 }

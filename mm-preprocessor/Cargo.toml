@@ -14,7 +14,7 @@ repository.workspace = true
 keywords = ["llm", "multimodal", "vision", "preprocessing", "inference"]
 include = ["src/**/*", "Cargo.toml", "README.md"]
 # Skeleton (design-review) stage: flips to publishable once the implementation
-# PRs land. release-plz mirrors this (publish = false, release = false).
+# lands. release-plz mirrors this (publish = false, release = false).
 publish = false
 
 [features]
@@ -22,7 +22,7 @@ default = ["parallel"]
 # Links rayon; kernels still run inline until `execution::init_pool` arms the
 # crate-owned pool at runtime. Opt out (`default-features = false`) to drop
 # rayon from the dependency graph and force the inline path at compile time.
-# The implementation PR wires `parallel = ["dep:rayon"]`.
+# The implementation wires `parallel = ["dep:rayon"]`.
 parallel = []
 
 [dependencies]

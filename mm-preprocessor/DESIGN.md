@@ -230,11 +230,11 @@ This PR is the skeleton: module layout, public API signatures (`todo!()`
 bodies), and this document. Implementation lands next (a working, fully
 tested implementation exists and gets re-homed into this layout):
 
-1. **PR 2 — primitives**: `image` (decode + resize kernels + transforms),
+1. **primitives**: `image` (decode + resize kernels + transforms),
    `token_layout`, `execution`, with their unit tests; wires the `parallel`
    feature dep.
-2. **PR 3 — registry + `models/qwen_vl`**: the family implementation, the
-   golden fixtures + replay test, the no-threads guard; flips the crate to
+2. **registry + `models/qwen_vl`**: the family implementation, the golden
+   fixtures + replay test, the no-threads guard; flips the crate to
    publishable.
 
 Family growth (validated against the GLM-4V and Kimi K2.5/K3 Python

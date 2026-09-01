@@ -18,7 +18,7 @@ pub fn normalize_rgb_f32(
     out: &mut [f32],
 ) {
     let _ = (rgb, h, w, mean, std, out);
-    todo!("PR2")
+    todo!()
 }
 
 /// Pad an HWC image to a grid-aligned size, filling padded pixels with
@@ -33,7 +33,7 @@ pub fn pad_to_grid(
     pad_value: &[f32],
 ) -> (Vec<f32>, usize, usize) {
     let _ = (rgb_f32, h, w, channels, grid_h, grid_w, pad_value);
-    todo!("PR2")
+    todo!()
 }
 
 /// Reshape a padded HWC image into patches of shape `[num_patches, ph, pw, C]`.
@@ -47,5 +47,5 @@ pub fn extract_patches_hwc(
     pw: usize,
 ) -> Vec<f32> {
     let _ = (data, h, w, channels, ph, pw);
-    todo!("PR2")
+    todo!()
 }

@@ -86,7 +86,7 @@ commit_parsers = [
 ]
 
 # `dynamo-mm-preprocessor` is at the skeleton (design-review) stage — the
-# implementation PRs flip it to publishable; until then both flags mirror the
+# implementation flips it to publishable; until then both flags mirror the
 # crate's `publish = false`.
 [[package]]
 name = "dynamo-mm-preprocessor"
