@@ -251,7 +251,7 @@ and lands next in two steps:
 2. **registry + `models/qwen_vl`** — the family, golden fixtures + replay
    test, the no-threads guard; flips the crate to publishable.
 
-**Family coverage** grows next — GLM-4V and Kimi are the validated
+**Family coverage** grows next — GLM and Kimi are the validated
 candidates after `models::qwen_vl`.
 
 ### Video and audio: planned layout
