@@ -14,7 +14,7 @@
 //!
 //! The carriers below are `#[non_exhaustive]` so a new family, modality, or
 //! position scheme can grow them as a semver-minor addition; the concrete
-//! growth plan (GLM-4V, Kimi K2.5/K3, video/audio) lives in DESIGN.md §6.
+//! growth plan (GLM-4V, Kimi K2.5/K3, video/audio) lives in the README §6.
 
 /// Typed tensor payload. Grows a variant per dtype actually produced by a
 /// family — not speculatively.

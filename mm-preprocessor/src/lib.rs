@@ -11,10 +11,10 @@
 //! from the HF config files ([`registry::spec_from_model_dir`], the
 //! `AutoProcessor.from_pretrained` equivalent) or handed over pre-resolved.
 //! The crate also carries the consumer-agnostic utilities a router and an
-//! engine must agree on: media source resolution ([`fetch`], feature `fetch`)
-//! and content-hash identity ([`content_hash_u64`]). Request orchestration
+//! engine must agree on: media source resolution (the `fetch` module, feature
+//! `fetch`) and content-hash identity ([`content_hash_u64`]). Request orchestration
 //! (concurrency, caps, failure policy, packing) stays in the consumer's
-//! driver, exactly as on the Python path; see `DESIGN.md` for the boundary
+//! driver, exactly as on the Python path; see the crate README for the boundary
 //! and per-consumer sketches.
 //!
 //! Bit-exactness is the contract: the resize kernels ([`image::resize`]) and
