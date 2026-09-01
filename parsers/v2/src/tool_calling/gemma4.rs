@@ -242,7 +242,9 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
                     if TOOL_CALL_END.starts_with(rest) {
                         return None;
                     }
-                    self.resync_candidate = None;
+                    if !rest.chars().next()?.is_whitespace() {
+                        self.resync_candidate = None;
+                    }
                 } else if !self.resync_in_string {
                     self.resync_candidate = match rest.chars().next()? {
                         '{' => Some((start, depth + 1)),
@@ -768,6 +770,27 @@ mod tests {
                 merged.calls[0].arguments, r#"{"location":"NYC"}"#,
                 "split={split}"
             );
+        }
+    }
+
+    #[test]
+    fn later_balanced_call_with_trailing_whitespace_is_recovered_at_eof() {
+        let input = concat!(
+            "<|tool_call>call:broken{note:<|\"|>unterminated",
+            "<|\"|>}<|tool_call>call:get_weather{location:<|\"|>NYC<|\"|>}   \n\t"
+        );
+        for chunk_size in [1, 4, 16] {
+            let chunks = input
+                .as_bytes()
+                .chunks(chunk_size)
+                .map(|chunk| std::str::from_utf8(chunk).expect("ASCII test input"))
+                .collect::<Vec<_>>();
+            let out = parse_chunks(&weather_tools(), &chunks);
+            assert_eq!(out.normal_text, "   \n\t", "chunk_size={chunk_size}");
+            let merged = out.coalesce_calls();
+            assert_eq!(merged.calls.len(), 1, "chunk_size={chunk_size}");
+            assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
+            assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
         }
     }
 

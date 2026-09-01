@@ -610,6 +610,30 @@ mod tests {
     }
 
     #[test]
+    fn later_balanced_call_with_trailing_whitespace_is_recovered_at_eof() {
+        let input = concat!(
+            "<|tool_call>call:broken{note:<|\"|>unterminated",
+            "<|\"|>}<|tool_call>call:get_weather{city:<|\"|>NYC<|\"|>}   \n\t"
+        );
+        let expected = vec![
+            call("get_weather", serde_json::json!({"city": "NYC"})),
+            text("   \n\t"),
+        ];
+        for chunk_size in [1, 4, 16] {
+            let chunks = input
+                .as_bytes()
+                .chunks(chunk_size)
+                .map(|chunk| std::str::from_utf8(chunk).expect("ASCII test input"))
+                .collect::<Vec<_>>();
+            assert_eq!(
+                events(&weather_tools(), &chunks),
+                expected,
+                "chunk_size={chunk_size}"
+            );
+        }
+    }
+
+    #[test]
     fn concatenated_calls_stay_separate_events() {
         // Gemma 4 concatenates calls with NO separator between them.
         let out = events(
