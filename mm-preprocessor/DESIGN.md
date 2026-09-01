@@ -18,21 +18,20 @@ On the Python path, the *engine* (e.g. SGLang's `BaseMultimodalProcessor`)
 owns request orchestration — fetching sources, content hashing, per-request
 caps, failure policy — and calls into HF for the processor math. This crate
 keeps that layering: engines write their own driver against the
-[`MmFamilyProcessor`] trait; the crate supplies the processor. Deliberately
+`MmFamilyProcessor` trait; the crate supplies the processor. Deliberately
 **not** in this crate: source fetching (Python: the engine's
 `get_image_bytes`), content hashing (Python: the engine's `data_hash`),
 request caps and failure semantics, and any async runtime.
 
-**Other non-goals.** Chat-template rendering (that is `dynamo-renderer`,
-which deliberately stops at media placeholder markers); GPU preprocessing;
-video and audio (the seams exist, no family implements them yet).
+**Other non-goals (for now).** Chat-template rendering (that is
+`dynamo-renderer`, which deliberately stops at media placeholder markers) and
+GPU preprocessing. Video and audio are planned, not implemented — §6 records
+their module layout and decode boundary.
 
 ## 1. Architecture
 
-One rule organizes the crate: **families produce data, the engine's driver
-owns control flow.** A family never sees the request loop, the thread pool,
-or the failure protocol; it turns decoded media into named tensors and
-*describes* its prompt geometry as a value the engine applies mechanically.
+The following shows functionalities of this crate, working together with an
+inference engine-side pipeline.
 
 ```
 serving engine (its driver)         │   dynamo-mm-preprocessor (this crate)
