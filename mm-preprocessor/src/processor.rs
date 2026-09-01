@@ -4,17 +4,15 @@
 //! The model-family seam: the interface a family implements and the data
 //! carriers it exchanges with the engine's driver.
 //!
-//! Design rule: **families produce data, the engine's driver owns control
-//! flow.** A family never sees the request loop, the thread pool, or the
-//! failure protocol — it implements [`MmFamilyProcessor`], turning decoded
-//! media into named tensors and describing its prompt geometry as a
-//! [`TokenLayout`] value. The engine applies the layout mechanically
-//! ([`crate::token_layout::apply_layout`]), so expansion, per-item offsets,
-//! and position inputs all derive from one declarative structure.
+//! Design rule: **families produce data, the driver owns control flow.** A
+//! family never sees the request loop, thread pool, or failure protocol — it
+//! turns decoded media into named tensors and describes its prompt geometry
+//! as a [`TokenLayout`], which the driver applies mechanically
+//! ([`crate::token_layout::apply_layout`]).
 //!
-//! The carriers below are `#[non_exhaustive]` so a new family, modality, or
-//! position scheme can grow them as a semver-minor addition; the concrete
-//! growth plan (GLM-4V, Kimi K2.5/K3, video/audio) lives in the README §6.
+//! The carriers are `#[non_exhaustive]` so new families, modalities, and
+//! position schemes are semver-minor additions; README §5 has the growth
+//! plan.
 
 /// Typed tensor payload. Grows a variant per dtype actually produced by a
 /// family — not speculatively.
@@ -82,10 +80,9 @@ pub enum Segment {
     Media { item: usize, pattern: TokenPattern },
 }
 
-/// Prompt geometry as data: the family *describes* the expansion, the driver
-/// *applies* it ([`crate::token_layout::apply_layout`]) — deriving final input
-/// ids and per-item offsets, and validating that every item is placed exactly
-/// once.
+/// Prompt geometry as data: the family describes the expansion,
+/// [`crate::token_layout::apply_layout`] derives final input ids and
+/// per-item offsets from it.
 pub struct TokenLayout {
     pub segments: Vec<Segment>,
 }
@@ -108,11 +105,9 @@ pub enum PositionOutput {
     MRope { positions: Vec<i64>, delta: i64 },
 }
 
-/// The per-model-family hooks. Adding a family =
-/// implementing this in `src/models/<model>.rs` and adding its `family` arm
-/// to [`crate::registry::ProcessorSpec`]. All parameters come from the runtime
-/// spec (resolved from the HF config by the consumer); nothing is hardcoded
-/// per model.
+/// The per-model-family hooks: implement in `src/models/<model>.rs` and add a
+/// `family` arm to [`crate::registry::ProcessorSpec`]. All parameters come
+/// from the runtime spec; nothing is hardcoded per model.
 pub trait MmFamilyProcessor: Send + Sync {
     /// Modalities beyond images this family accepts. Default: images only.
     fn capabilities(&self) -> Capabilities {
@@ -120,20 +115,18 @@ pub trait MmFamilyProcessor: Send + Sync {
     }
 
     /// Tokens one image will occupy in the expanded prompt, from its source
-    /// dimensions alone — no decode, resize, or pixel work (the HF
-    /// `_get_num_multimodal_tokens` equivalent). Routers use this for
-    /// scheduling and prompt-length accounting before any media is fetched
-    /// past its header.
+    /// dimensions alone — no pixel work (HF's `_get_num_multimodal_tokens`).
+    /// Lets routers account prompt length before fetching past the header.
     fn num_media_tokens(&self, width: usize, height: usize) -> Result<usize, String>;
 
-    /// Preprocess one decoded media item: the model's HF processor
-    /// equivalent (resize/tile/normalize/patchify → named tensors) plus the
+    /// Preprocess one decoded media item — the model's HF processor
+    /// equivalent (resize/tile/normalize/patchify) — into tensors plus the
     /// geometry `layout`/`positions` will need.
     fn process_item(&self, media: &DecodedMedia) -> Result<ProcessedItem, String>;
 
-    /// Describe how the prompt expands around the processed items (in
-    /// prompt order). Sees the full original prompt and all items, so
-    /// structured schemes (tile markers, separators) are expressible.
+    /// Describe how the prompt expands around the processed items (in prompt
+    /// order). Sees the full prompt and all items, so structured schemes
+    /// (tile markers, separators) are expressible.
     fn layout(&self, input_ids: &[i32], items: &[Geometry]) -> Result<TokenLayout, String>;
 
     /// Positions for the expanded prompt. Families without a custom scheme

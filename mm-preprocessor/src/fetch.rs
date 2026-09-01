@@ -1,20 +1,17 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Resolve one media source to raw bytes — shared by routers and engines so
-//! both resolve sources identically (the Python parity anchor is
-//! `transformers.image_utils.load_image`, which engine fetchers like SGLang's
-//! `get_image_bytes` mirror).
+//! Resolve one media source to raw bytes, identically for routers and
+//! engines. Parity anchor: `transformers.image_utils.load_image`.
 //!
-//! Source precedence: `http(s)://` (bounded download,
-//! [`FetchOptions::timeout`] and the proxy env vars honored the way
-//! `requests` honors them, including `NO_PROXY` host/subdomain/CIDR/port
-//! matching), `file://` / absolute path, `data:` URL, else bare base64.
-//! Every read is charged against a byte budget *as it streams*, so an
-//! oversized source stops mid-download instead of going fully resident first.
+//! Source precedence: `http(s)://`, `file://` / absolute path, `data:` URL,
+//! else bare base64. HTTP downloads honor [`FetchOptions::timeout`] and the
+//! proxy env vars with `requests` semantics (including `NO_PROXY` matching).
+//! Reads are charged against a byte budget as they stream, so an oversized
+//! source stops mid-download instead of going fully resident first.
 //!
-//! This resolves one source, synchronously — scheduling many fetches
-//! concurrently (and any async runtime) stays the consumer's concern.
+//! Resolution is synchronous and per-source; concurrency and async scheduling
+//! stay the consumer's concern.
 
 /// Cap on any single resolved payload — HTTP, file, or base64 — so no source
 /// form can exhaust memory.

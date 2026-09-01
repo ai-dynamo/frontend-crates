@@ -3,31 +3,20 @@
 
 //! The crate's only parallelism seam.
 //!
-//! Every fan-out in the crate goes through the functions below, and whether
-//! any of them actually fans out is a **runtime** decision made in exactly one
-//! place: until a consumer arms the crate's rayon pool with [`init_pool`],
-//! everything runs inline on the calling thread and the crate owns no
-//! threads.
+//! All fan-out goes through the functions below. By default they run inline
+//! on the calling thread — servers already provide cross-request concurrency
+//! and shouldn't have a library spawning pools behind their back. Consumers
+//! that call in from few threads (e.g. a Python processor) can call
+//! [`init_pool`] once to fan out on a crate-owned rayon pool instead.
 //!
-//! * **inline (the default)**: a server supplies concurrency across requests
-//!   and owns its own core budget (it may pin threads), so a library that
-//!   silently spawned pools behind its back would fight it.
-//! * **armed**: work fans out on the crate-owned pool. A consumer calling in
-//!   from one or two threads (e.g. a Python processor with the GIL released)
-//!   arms the pool once at startup to get intra-call parallelism.
-//!
-//! Note that "inline" means *on the caller*, not a one-thread pool:
-//! `ThreadPool::install` injects work into the pool and blocks the caller, so
-//! sizing a pool to 1 would serialize every concurrent request in the process
-//! instead of just declining to fan out.
+//! "Inline" means *on the caller*, not a one-thread pool: `install` on a
+//! 1-sized pool would serialize every concurrent request in the process.
 //!
 //! Results are identical either way — the fan-outs are order-preserving maps
-//! and writes into disjoint slices, never reductions.
+//! and disjoint-slice writes, never reductions.
 //!
-//! The `parallel` cargo feature (default: **on**) only controls whether rayon
-//! is linked at all; disabling it (`default-features = false`) drops the
-//! dependency and [`init_pool`] with it, forcing the inline path at compile
-//! time.
+//! The `parallel` cargo feature (default on) only controls whether rayon is
+//! linked; disabling it drops [`init_pool`] and forces the inline path.
 
 /// Arm the crate's CPU pool: from the first call on, the helpers below fan
 /// out on it instead of running inline. `threads == 0` picks the default size

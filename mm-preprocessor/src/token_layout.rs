@@ -17,17 +17,13 @@ pub struct ExpandedPrompt {
     pub offsets: Vec<(u32, u32)>,
 }
 
-/// Apply a family's [`TokenLayout`] to the original prompt.
-///
-/// The point of the layout being data is that a family cannot get expansion,
-/// offsets, and positions out of sync, so this validates the whole contract
-/// rather than just indexing safely:
+/// Apply a family's [`TokenLayout`] to the original prompt, validating the
+/// whole contract rather than just indexing safely:
 /// * text ranges are in bounds, ascending, and non-overlapping;
-/// * together with the media placeholders they cover every source token
-///   exactly once — a family that forgets a tail segment must not silently
-///   truncate the prompt;
-/// * every one of the `n_items` media items is placed exactly once;
-/// * no item expands to zero tokens (which would have no representable offset).
+/// * segments cover every source token exactly once — a forgotten tail
+///   segment must not silently truncate the prompt;
+/// * each of the `n_items` media items is placed exactly once;
+/// * no item expands to zero tokens (no representable offset).
 pub fn apply_layout(
     src: &[i32],
     layout: &TokenLayout,

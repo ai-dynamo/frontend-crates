@@ -5,10 +5,8 @@
 //!
 //! Pure-Rust equivalent of the HF `Qwen2VLImageProcessor` pipeline:
 //! `smart_resize` → bicubic resize → rescale + normalize → patchify into
-//! `[grid_h*grid_w, C*tps*ps*ps]` (HF flatten order: patches by
-//! `(gh/m, gw/m, m, m)`, features by `(C, tps, ps, ps)`, temporal copies
-//! duplicated for stills) — plus the image-only M-RoPE fast path.
-//! All parameters come from the runtime spec; nothing is hardcoded per model.
+//! `[grid_h*grid_w, C*tps*ps*ps]` in HF flatten order — plus the image-only
+//! M-RoPE fast path. All parameters come from the runtime spec.
 
 use crate::image::resize;
 use crate::processor::{
@@ -60,10 +58,9 @@ impl From<Resampler> for resize::Resample {
 }
 
 pub struct QwenVlProcessor {
-    // Normalization must use the arithmetic form of the HF processor the spec
-    // mirrors: the slow path rescales then normalizes, the fast path folds the
-    // rescale into mean/std first, and the two differ on 128 of the 256 u8
-    // inputs — picking the wrong form silently costs bit-exactness.
+    // Normalization must match the mirrored HF processor's arithmetic form:
+    // the slow path rescales then normalizes, the fast path folds the rescale
+    // into mean/std, and the two differ on half the u8 inputs.
     #[allow(dead_code)]
     spec: QwenVlSpec,
 }
@@ -110,11 +107,10 @@ impl MmFamilyProcessor for QwenVlProcessor {
     }
 }
 
-/// The Qwen `smart_resize`: dims divisible by `factor`, total pixels within
+/// Qwen's `smart_resize`: dims divisible by `factor`, total pixels within
 /// `[min_pixels, max_pixels]`, aspect ratio preserved as closely as possible.
-/// Matches the Python reference exactly, including `round()`'s
-/// round-half-to-even; rejects (rather than reaches PIL with) the degenerate
-/// case where a very thin image floors a side to 0.
+/// Matches the Python reference exactly (including round-half-to-even);
+/// `Err` when a very thin image would floor a side to 0.
 pub fn smart_resize(
     height: usize,
     width: usize,
@@ -126,11 +122,10 @@ pub fn smart_resize(
     todo!("banker's-rounding resize targets")
 }
 
-/// Image-only M-RoPE fast path (the image branch of
-/// `MRotaryEmbedding.get_rope_index`, identical across Qwen generations):
-/// text runs sequentially on all three rows; each image spans `(t, h/m, w/m)`
-/// index grids; positions advance by `max(t, h/m, w/m)` past an image.
-/// Returns flattened row-major `[3, input_len]` positions and the delta
+/// Image-only M-RoPE (the image branch of `MRotaryEmbedding.get_rope_index`):
+/// text runs sequentially on all three rows, each image spans `(t, h/m, w/m)`
+/// index grids, and positions advance by the grid's max past an image.
+/// Returns row-major `[3, input_len]` positions and the delta
 /// (`max + 1 - input_len`). `items` must be in prompt order.
 pub fn mrope_image_only(
     input_len: usize,

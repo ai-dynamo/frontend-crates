@@ -6,10 +6,9 @@
 //! consumer selects one by its typed [`ProcessorSpec`] or by serializing a
 //! spec (`{"family": ..., resolved processor params}`).
 
-/// The resolved parameters of one family processor — the typed form of the
-/// consumer-side spec, one variant per family arm. A consumer builds it
-/// directly, or reaches it through [`processor_from_spec`], where the `family`
-/// key selects the variant.
+/// Resolved parameters of one family processor, one variant per family.
+/// Built directly or deserialized via [`processor_from_spec`], where the
+/// `family` key selects the variant.
 #[derive(Clone, Debug, serde::Deserialize)]
 #[serde(tag = "family", rename_all = "snake_case")]
 #[non_exhaustive]
@@ -39,16 +38,15 @@ pub fn processor_from_spec(
     build_processor(spec)
 }
 
-/// Resolve a [`ProcessorSpec`] from the HF config files themselves — the
-/// `AutoProcessor.from_pretrained` equivalent for consumers with no Python
-/// side (a router resolves once per model at boot). `config.json` selects the
-/// family (`model_type`) and carries the token ids; `preprocessor_config.json`
-/// carries the processor knobs.
+/// Resolve a [`ProcessorSpec`] from the HF config files — the
+/// `AutoProcessor.from_pretrained` equivalent, resolved once per model at
+/// boot. `config.json` selects the family (`model_type`) and carries the
+/// token ids; `preprocessor_config.json` carries the processor knobs.
 ///
-/// Deliberately conservative, like an engine's Python gate: an unknown
-/// `model_type`, an unrecognized knob, or a knob the Rust pipeline cannot
-/// honor bit-exactly (e.g. `do_normalize: false`) is an `Err` — "no native
-/// processor" — never a silent approximation.
+/// Deliberately conservative: an unknown `model_type`, an unrecognized knob,
+/// or one the Rust pipeline cannot honor bit-exactly (e.g. `do_normalize:
+/// false`) is an `Err` — "no native processor" — never a silent
+/// approximation.
 pub fn spec_from_hf_configs(
     config_json: &str,
     preprocessor_config_json: &str,
