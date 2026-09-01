@@ -243,5 +243,52 @@ framing fits `TokenPattern::Explicit` and its M-RoPE variant is a new
 `PositionOutput` variant; Kimi's NaViT resize/pad and `(h, w)` merge kernels
 are family-internal; Kimi K3 interleaves *tokenized text* inside the media
 span, so `layout` gains a defaulted `layout_with(&LayoutContext)` method
-(semver-minor) carrying an engine-supplied encode hook. Video/audio grow
-`DecodedMedia` variants and `Capabilities` flags.
+(semver-minor) carrying an engine-supplied encode hook.
+
+### Video and audio: planned layout
+
+The trait seam already carries modalities (`Capabilities`; the
+`#[non_exhaustive]` `DecodedMedia`/`Geometry`), so growing them is
+semver-minor. What is worth planning ahead is the module layout and where
+decoding happens:
+
+```
+src/
+  image/                 as today
+  video/
+    sample.rs            frame-sampling policies (Qwen smart_nframes, GLM fps
+                         windows) — pure index/timestamp math, no decoders
+  audio/                 (feature `audio`)
+    decode.rs            container decode + resample to mono f32 (symphonia)
+    features.rs          STFT + log-mel filterbank, the HF feature-extractor
+                         equivalent (rustfft)
+  models/
+    qwen_vl/             a single-file family grows into a directory when its
+      mod.rs             video path lands: image path + spec + registry glue
+      video.rs           temporal patchify over real frames, timestamp
+                         layouts, video M-RoPE inputs
+```
+
+- **Video container decode stays engine-side.** There is no production
+  pure-Rust H.264/HEVC path (vLLM's `llm-multimodal` resorts to optional
+  OpenCV), and engines already own GPU decode. The crate takes
+  already-decoded frames:
+  `DecodedMedia::Video { frames /* T·H·W·C u8 */, height, width, timestamps }`.
+- **Frame sampling is a planning API, not part of `process_item`.** Which
+  frames to decode is processor knowledge that must run *before* decoding so
+  the engine never decodes frames it will drop. Families expose it as pure
+  functions (`video::sample` + a per-family policy); the engine consults it
+  between probing the container and decoding: probe → sample plan → decode
+  those frames → `process_item`.
+- **Audio decode lives in the crate**, like `image::decode`: symphonia and
+  rustfft are pure Rust, and mel/fbank extraction is exactly what HF's
+  feature extractors ship (`WhisperFeatureExtractor`), under the same
+  bit-exactness contract. Behind an `audio` feature (`dep:symphonia`,
+  `dep:rustfft`) so image-only consumers stay lean.
+- **Carriers.** `Geometry::Grid` already models video (`t > 1` with real
+  frames instead of a still's duplicated temporal copies); audio adds a
+  frame-count variant. Timestamp-interleaved token layouts (Qwen3's
+  `<t seconds>` text, GLM's per-frame integers) ride the same `layout_with`
+  encode hook planned for Kimi K3, and video M-RoPE
+  (`tokens_per_second` / `second_per_grid_ts`) stays family-internal behind
+  `positions`.
