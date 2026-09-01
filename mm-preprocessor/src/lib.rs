@@ -5,9 +5,9 @@
 //! Rust replacement for the image pipelines behind HF `AutoProcessor`.
 //!
 //! Scope mirrors what HF ships, nothing more: model families implement
-//! [`pipeline::MmFamilyProcessor`] (decoded media → named tensors; prompt
+//! [`processor::MmFamilyProcessor`] (decoded media → named tensors; prompt
 //! geometry as data; position encodings), selected and configured through
-//! [`registry::PipelineSpec`] — the `AutoProcessor.from_pretrained`
+//! [`registry::ProcessorSpec`] — the `AutoProcessor.from_pretrained`
 //! equivalent. Request orchestration (source fetching, content hashing,
 //! per-request caps, failure policy) is the serving engine's driver, exactly
 //! as it is on the Python path where the engine drives the HF processor; see
@@ -23,15 +23,15 @@
 //! recoverable taxonomy.
 //!
 //! The crate reads no environment variables and, without the `parallel`
-//! feature, owns no threads; pool sizing (`par::init_pool`, feature
+//! feature, owns no threads; pool sizing (`execution::init_pool`, feature
 //! `parallel`) is explicit configuration.
 //!
 //! This is the skeleton stage: signatures are final, bodies land with the
 //! implementation PRs noted on each `todo!`.
 
+pub mod execution;
 pub mod image;
 pub mod models;
-pub mod par;
-pub mod pipeline;
+pub mod processor;
 pub mod registry;
 pub mod token_layout;

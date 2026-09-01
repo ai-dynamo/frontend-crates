@@ -4,11 +4,11 @@
 //! Token-layout mechanics for the preprocessing pipeline.
 //!
 //! Families describe their prompt geometry as a [`TokenLayout`] value
-//! (`pipeline.rs`); [`apply_layout`] applies it mechanically. Expanding the
+//! (`processor.rs`); [`apply_layout`] applies it mechanically. Expanding the
 //! already-tokenized prompt means non-media tokens can never drift from a
 //! retokenize.
 
-use crate::pipeline::TokenLayout;
+use crate::processor::TokenLayout;
 
 /// The expanded prompt plus, per media item (indexed as in the layout), the
 /// inclusive `(start, end)` token range it occupies.

@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! The model-family seam of the preprocessing pipeline.
+//! The model-family seam: the interface a family implements and the data
+//! carriers it exchanges with the engine's driver.
 //!
 //! Design rule: **families produce data, the engine's driver owns control
 //! flow.** A family never sees the request loop, the thread pool, or the
@@ -115,9 +116,9 @@ pub enum PositionOutput {
     MRope { positions: Vec<i64>, delta: i64 },
 }
 
-/// The per-model-family hooks of the pipeline. Adding a family =
+/// The per-model-family hooks. Adding a family =
 /// implementing this in `src/models/<model>.rs` and adding its `family` arm
-/// to [`crate::registry::PipelineSpec`]. All parameters come from the runtime
+/// to [`crate::registry::ProcessorSpec`]. All parameters come from the runtime
 /// spec (resolved from the HF config by the consumer); nothing is hardcoded
 /// per model.
 pub trait MmFamilyProcessor: Send + Sync {

@@ -45,7 +45,7 @@ or the failure protocol; it turns decoded media into named tensors and
 ```
 serving engine (its driver)         │   dynamo-mm-preprocessor (this crate)
 ────────────────────────────────────│──────────────────────────────────────
-boot: resolve HF params ── spec ───►│  registry::build_pipeline ─► Box<dyn MmFamilyProcessor>
+boot: resolve HF params ── spec ───►│  registry::build_processor ─► Box<dyn MmFamilyProcessor>
                                     │
 per request:                        │
 fetch sources, hash, caps           │
@@ -61,12 +61,12 @@ drain: pack tensors for scheduler   │
 
 | module | responsibility |
 | --- | --- |
-| `pipeline` | the model-family seam: `MmFamilyProcessor` trait + data carriers |
+| `processor` | the model-family seam: `MmFamilyProcessor` trait + data carriers |
 | `registry` | family selection from a typed or JSON spec (the `AutoProcessor` entry) |
 | `models/` | one module per family — `models::qwen_vl` first |
 | `image` | decode (8-bit only, PIL-matching), bit-exact resize kernels, transforms |
 | `token_layout` | validating placeholder expansion of the *already tokenized* prompt |
-| `par` *(feature)* | the crate's only parallelism seam for its kernels: rayon pool or inline |
+| `execution` *(feature)* | the crate's only parallelism seam for its kernels: rayon pool or inline |
 
 Cross-cutting decisions:
 
@@ -75,21 +75,21 @@ Cross-cutting decisions:
   path and no recoverable error taxonomy to model; `anyhow` is a candidate
   0.2 migration.
 - **No environment variables, no implicit threads.** Pool sizing
-  (`par::init_pool`) is explicit configuration; without the `parallel`
+  (`execution::init_pool`) is explicit configuration; without the `parallel`
   feature rayon is not even linked and everything runs inline on the caller
   (a server owns its core budget — a library spawning pools behind its back
-  would fight it). Engine drivers may reuse the `par` seam for their own
+  would fight it). Engine drivers may reuse the `execution` seam for their own
   per-item fan-out so one pool serves both.
 - **Expansion never retokenizes.** The prompt is expanded in token-id space,
   so non-media tokens can never drift from a re-encode.
 - **Growth without breakage.** `DecodedMedia`, `Geometry`, `TokenPattern`,
-  `TensorData`, `PositionOutput`, and `PipelineSpec` are `#[non_exhaustive]`;
+  `TensorData`, `PositionOutput`, and `ProcessorSpec` are `#[non_exhaustive]`;
   new families, modalities, and position schemes land as semver-minor
   additions (release-plz runs cargo-semver-checks).
 
 ## 2. Key APIs
 
-The family seam (`pipeline`) — everything an engine's driver programs against:
+The family seam (`processor`) — everything an engine's driver programs against:
 
 ```rust
 pub trait MmFamilyProcessor: Send + Sync {
@@ -107,14 +107,14 @@ pub enum PositionOutput { Rope1D, MRope { positions: Vec<i64>, delta: i64 } }
 Family selection (`registry`) — the `AutoProcessor`-shaped entry point. The
 consumer resolves processor parameters however it likes (SGLang: from the
 already-loaded HF processor, conservatively — unknown knobs mean "no Rust
-pipeline" rather than approximation) and hands them over typed or as JSON:
+processor" rather than approximation) and hands them over typed or as JSON:
 
 ```rust
 #[serde(tag = "family", rename_all = "snake_case")]
-pub enum PipelineSpec { QwenVl(QwenVlSpec) }          // one variant per family
+pub enum ProcessorSpec { QwenVl(QwenVlSpec) }          // one variant per family
 
-pub fn build_pipeline(spec: PipelineSpec) -> Result<Box<dyn MmFamilyProcessor>, String>;
-pub fn pipeline_from_spec(json: &str)     -> Result<Box<dyn MmFamilyProcessor>, String>;
+pub fn build_processor(spec: ProcessorSpec) -> Result<Box<dyn MmFamilyProcessor>, String>;
+pub fn processor_from_spec(json: &str)     -> Result<Box<dyn MmFamilyProcessor>, String>;
 ```
 
 Layout application (`token_layout`) — the one piece of mechanics the crate
@@ -141,7 +141,7 @@ Each item reproduces a specific Python behavior — most of them **bit-exactly**
 
 | this crate | on-par Python API | parity |
 | --- | --- | --- |
-| `registry::pipeline_from_spec` | `AutoProcessor.from_pretrained` + resolved image-processor kwargs | selection semantics |
+| `registry::processor_from_spec` | `AutoProcessor.from_pretrained` + resolved image-processor kwargs | selection semantics |
 | `models::qwen_vl::QwenVlProcessor::process_item` | HF `Qwen2VLImageProcessor(Fast)` / `Qwen2VLImageProcessorPil` `__call__` → `pixel_values`, `image_grid_thw` | **bitwise** |
 | `models::qwen_vl::smart_resize` | HF/SGLang `smart_resize` (incl. Python banker's rounding) | exact, plus an explicit reject of the degenerate 0-side case Python leaves to PIL |
 | `models::qwen_vl::mrope_image_only` | `get_rope_index` (ships in transformers' Qwen model code; image-only branch, identical across Qwen generations) | exact |
@@ -172,7 +172,7 @@ workers. Anything unrecognized → launch error, never silent approximation.
 ```rust
 // per worker pool, once at boot
 let family: Box<dyn MmFamilyProcessor> =
-    registry::build_pipeline(PipelineSpec::QwenVl(QwenVlSpec {
+    registry::build_processor(ProcessorSpec::QwenVl(QwenVlSpec {
         image_token_id, patch_size: 14, merge_size: 2, temporal_patch_size: 2,
         min_pixels, max_pixels, image_mean, image_std, resample: Resampler::AtenU8,
     }))?;
@@ -220,7 +220,7 @@ Three layers, all pinned to byte-equality:
 2. **Crate-local golden replay** — this repo's CI has no Python/HF, so
    committed fixtures (generated by SGLang tooling from the HF processor and
    `get_rope_index`, cross-checked before writing) drive the §4 composition
-   (`build_pipeline` → `decode_rgb` → `process_item` → `layout` →
+   (`build_processor` → `decode_rgb` → `process_item` → `layout` →
    `apply_layout` → `positions`) and compare **every output field bitwise**:
    both resamplers, both smart_resize branches, multi-image.
 3. **Consumer parity (SGLang CI)** — per-step and end-to-end pytest suites
@@ -236,7 +236,7 @@ bodies), and this document. Implementation lands next (a working, fully
 tested implementation exists and gets re-homed into this layout):
 
 1. **PR 2 — primitives**: `image` (decode + resize kernels + transforms),
-   `token_layout`, `par`, with their unit tests; wires the `parallel`
+   `token_layout`, `execution`, with their unit tests; wires the `parallel`
    feature dep.
 2. **PR 3 — registry + `models/qwen_vl`**: the family implementation, the
    golden fixtures + replay test, the no-threads guard; flips the crate to

@@ -11,7 +11,7 @@
 //! All parameters come from the runtime spec; nothing is hardcoded per model.
 
 use crate::image::resize;
-use crate::pipeline::{
+use crate::processor::{
     DecodedMedia, Geometry, MmFamilyProcessor, PositionOutput, ProcessedItem, TokenLayout,
 };
 

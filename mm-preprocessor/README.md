@@ -30,5 +30,5 @@ and the roadmap.
 
 Supported families: `models::qwen_vl` (Qwen2-VL / Qwen2.5-VL / Qwen3-VL /
 Qwen3.5 VL) — `pixel_values`, `image_grid_thw`, image-only M-RoPE. Adding a
-family = one module in `src/models/` + one `registry::PipelineSpec` arm; see
+family = one module in `src/models/` + one `registry::ProcessorSpec` arm; see
 DESIGN.md §6 for the GLM-4V / Kimi growth plan.
