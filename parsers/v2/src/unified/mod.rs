@@ -2941,8 +2941,9 @@ impl GuidedState {
                                 &[],
                                 &self.grammar.control_markers,
                                 &self.grammar.invoke_end,
+                                &self.grammar.invoke_start,
                                 self.start_label(),
-                                self.invoke_control(),
+                                self.grammar.guided_prefix_policy,
                                 flush,
                             )
                             .max(
