@@ -18,6 +18,12 @@
 //!
 //! No fallback to whitespace/punctuation — better to not cache than risk corruption.
 //!
+//! Atomicity alone is not enough: the split must also land after the token the tokenizer
+//! *actually emitted*. Boundary detection therefore mirrors HuggingFace `AddedVocabulary`'s
+//! matching semantics exactly — leftmost-longest, non-overlapping — so a special token that
+//! is a proper prefix of another (`〈|` inside `〈|EOS|〉`) can never open a boundary inside
+//! the longer token. See [`build_boundary_matcher`] and [`boundaries_with`].
+//!
 //! Storage and eviction are delegated to a weighted [`moka`] `sync::Cache` (W-TinyLFU):
 //! entries are keyed by the blake3 digest of `input[0..boundary]` and weighed by their
 //! resident token-vector bytes, so the byte budget is enforced — and recency/frequency
@@ -32,7 +38,7 @@ use std::{
     },
 };
 
-use aho_corasick::AhoCorasick;
+use aho_corasick::{AhoCorasick, MatchKind};
 use moka::sync::Cache;
 use rustc_hash::FxHasher;
 
@@ -48,37 +54,84 @@ type PrefixHasher = BuildHasherDefault<FxHasher>;
 /// Weighted W-TinyLFU cache mapping a prefix's blake3 digest to its cumulative tokens.
 type PrefixCache = Cache<Blake3Hash, Arc<[TokenIdType]>, PrefixHasher>;
 
+/// Build the special-token boundary automaton.
+///
+/// Returns `None` when there is nothing to match, so callers can skip scanning entirely.
+///
+/// # Match semantics are load-bearing
+///
+/// [`MatchKind::LeftmostLongest`] is not an optimization — it is required for correctness,
+/// and it is chosen to mirror HuggingFace exactly. `tokenizers`' `AddedVocabulary` builds
+/// its own added-token trie with `MatchKind::LeftmostLongest` and scans it with
+/// non-overlapping `find_iter`, so at any position the tokenizer emits the *longest*
+/// registered token that matches. Our boundary scan must reach the same verdict: a
+/// boundary is only a real token boundary if it sits immediately after the token the
+/// tokenizer actually emitted.
+///
+/// An overlapping scan does not. When one special token is a proper prefix of another it
+/// also reports the short match, whose end lands *inside* the token the tokenizer emits —
+/// see [`boundaries_with`] for the failure it caused.
+///
+/// Empty patterns are dropped: an empty needle matches at every position, which would make
+/// every offset a "boundary" and defeat the whole invariant.
+fn build_boundary_matcher<S: AsRef<str>>(special_tokens: &[S]) -> Option<AhoCorasick> {
+    let patterns: Vec<&str> = special_tokens
+        .iter()
+        .map(AsRef::as_ref)
+        .filter(|token| !token.is_empty())
+        .collect();
+    if patterns.is_empty() {
+        return None;
+    }
+    Some(
+        AhoCorasick::builder()
+            .match_kind(MatchKind::LeftmostLongest)
+            .build(&patterns)
+            .expect("special tokens form a valid Aho-Corasick automaton"),
+    )
+}
+
 /// All special-token boundaries in `text`: positions immediately after each special-token
 /// occurrence (where prefixes can be cached).
 ///
 /// **ONLY uses special tokens** — these are atomic (`special: true, normalized: false`) in
 /// BPE, so a boundary right after one is a safe split point:
-/// `tokenize(prefix) + tokenize(suffix) == tokenize(prefix + suffix)`. A single overlapping
-/// Aho-Corasick pass reports every occurrence of every pattern (matching the per-token scan
-/// it replaces, for the non-self-overlapping special tokens real tokenizers use). Boundaries
-/// at the very end of the text are dropped (no suffix left to tokenize). Match ends land on
-/// char boundaries because the patterns are valid UTF-8 matched against valid UTF-8.
+/// `tokenize(prefix) + tokenize(suffix) == tokenize(prefix + suffix)`.
+///
+/// Atomicity of each token *individually* is not sufficient, though: the boundary must also
+/// sit after the token the tokenizer actually emitted. When special token `A` is a proper
+/// prefix of special token `B`, the position after `A` falls in the middle of `B`, and
+/// splitting there makes `B` unformable — the halves re-tokenize as ordinary text and the
+/// encoding is silently corrupted. `poolside/Laguna-S-2.1-FP8` registers both `〈|` (id 14)
+/// and `〈|EOS|〉` (id 2, and its `bos_token`); an overlapping scan reported the `〈|` match
+/// ending at byte 4, so `"〈|EOS|〉"` was split into `"〈|"` + `"EOS|〉"` and encoded as
+/// `[14, 80592, 15]` instead of `[2]` — dropping BOS from every prompt with no error.
+///
+/// [`build_boundary_matcher`] therefore matches leftmost-longest and non-overlapping, in
+/// lockstep with HuggingFace's own added-token segmentation.
+///
+/// Boundaries at the very end of the text are dropped (no suffix left to tokenize). Match
+/// ends land on char boundaries because the patterns are valid UTF-8 matched against valid
+/// UTF-8.
 fn boundaries_with(text: &str, matcher: &AhoCorasick) -> Vec<usize> {
-    let mut boundaries: Vec<usize> = matcher
-        .find_overlapping_iter(text)
+    // Leftmost-longest `find_iter` yields disjoint matches in ascending order, so each end
+    // is strictly greater than the last: the result is already sorted and duplicate-free.
+    matcher
+        .find_iter(text)
         .map(|m| m.end())
         .filter(|&end| end < text.len())
-        .collect();
-    boundaries.sort_unstable();
-    boundaries.dedup();
-    boundaries
+        .collect()
 }
 
 /// Test-only reference: build a one-off automaton and find boundaries. Production goes
-/// through [`L1Cache::boundaries`], which reuses a process-once automaton.
+/// through [`L1Cache::boundaries`], which reuses a process-once automaton. Both share
+/// [`build_boundary_matcher`] so test and production can never drift on match semantics.
 #[cfg(test)]
 fn find_special_token_boundaries(text: &str, special_tokens: &[&str]) -> Vec<usize> {
-    if special_tokens.is_empty() {
-        return Vec::new();
+    match build_boundary_matcher(special_tokens) {
+        Some(matcher) => boundaries_with(text, &matcher),
+        None => Vec::new(),
     }
-    let matcher = AhoCorasick::new(special_tokens)
-        .expect("special tokens form a valid Aho-Corasick automaton");
-    boundaries_with(text, &matcher)
 }
 
 /// Optional per-event observer. `on_hit` runs after each cache hit, `on_miss`
@@ -104,6 +157,21 @@ pub struct L1Cache {
 impl L1Cache {
     /// `special_tokens` is the atomic special-token set whose boundaries the cache splits
     /// at; an empty set leaves L1 inert (no boundaries, no entries).
+    ///
+    /// # Caller contract
+    ///
+    /// Every entry must be an added token the tokenizer emits verbatim at the exact byte
+    /// span it occupies in the input, i.e. declared with `special: true` **and**
+    /// `single_word: false`, `lstrip: false`, `rstrip: false`, `normalized: false`.
+    ///
+    /// Those flags all move the span the tokenizer consumes away from the literal match:
+    /// `rstrip` extends it forward over trailing whitespace, `single_word` can suppress the
+    /// match entirely, and `normalized` makes the tokenizer match against normalized text
+    /// this scan never sees. A boundary derived from such a token can land inside — or
+    /// outside — what the tokenizer actually emitted, which breaks the split/concat
+    /// invariant the cache relies on. Tokens that are a proper prefix of another token are
+    /// handled here (boundary matching is leftmost-longest and non-overlapping, mirroring
+    /// HuggingFace); the flags above cannot be, because this API receives only the strings.
     pub fn new(max_memory: usize, special_tokens: Vec<String>) -> Self {
         // Capacity is the byte budget; each entry weighs its resident token-vector bytes
         // (the prefix text is hashed and discarded, never stored). moka's W-TinyLFU policy
@@ -115,11 +183,8 @@ impl L1Cache {
             })
             .build_with_hasher(PrefixHasher::default());
 
-        // Build the boundary automaton once; `None` when there are no special tokens.
-        let matcher = (!special_tokens.is_empty()).then(|| {
-            AhoCorasick::new(&special_tokens)
-                .expect("special tokens form a valid Aho-Corasick automaton")
-        });
+        // Build the boundary automaton once; `None` when there is nothing to match.
+        let matcher = build_boundary_matcher(&special_tokens);
 
         Self {
             cache,
@@ -453,6 +518,94 @@ mod tests {
     #[test]
     fn no_special_tokens_yields_no_boundaries() {
         assert!(find_special_token_boundaries("plain text", &[]).is_empty());
+    }
+
+    #[test]
+    fn shadowed_prefix_special_never_opens_an_interior_boundary() {
+        // Regression: `poolside/Laguna-S-2.1-FP8` registers the bracket fragments `〈|`
+        // (id 14) and `|〉` (id 15) as `special: true` alongside the complete markers built
+        // from them, e.g. `〈|EOS|〉` (id 2, also its `bos_token`). HuggingFace resolves
+        // added tokens leftmost-longest and emits `〈|EOS|〉` as a single id, so the ONLY
+        // legal boundary is after the full marker. An overlapping scan additionally
+        // reported `〈|` ending at byte 4, splitting `"〈|EOS|〉"` into `"〈|"` + `"EOS|〉"`;
+        // the halves re-tokenized as ordinary text (`[14, 80592, 15]` instead of `[2]`),
+        // silently dropping BOS from every prompt.
+        const SPECIALS: &[&str] = &["〈|", "|〉", "〈|EOS|〉", "〈|PAD|〉"];
+        const MARKER_LEN: usize = "〈|EOS|〉".len(); // 11 bytes
+        const SHORT_LEN: usize = "〈|".len(); // 4 bytes — the bad boundary
+
+        // Marker alone: the sole match spans the whole string and a boundary at
+        // `text.len()` is dropped, so there is nothing to split and the cache falls
+        // through to one plain encode.
+        assert!(
+            find_special_token_boundaries("〈|EOS|〉", SPECIALS).is_empty(),
+            "a lone marker must not be split"
+        );
+
+        // Marker followed by text: exactly one boundary, immediately after the full marker.
+        let text = "〈|EOS|〉hello";
+        let bounds = find_special_token_boundaries(text, SPECIALS);
+        assert_eq!(bounds, vec![MARKER_LEN]);
+        assert!(
+            !bounds.contains(&SHORT_LEN),
+            "boundary at {SHORT_LEN} is inside the emitted token"
+        );
+
+        // Repeated markers: one boundary after each, and never after a fragment.
+        let text = "〈|EOS|〉mid〈|PAD|〉tail";
+        let second = MARKER_LEN + "mid".len() + "〈|PAD|〉".len();
+        assert_eq!(
+            find_special_token_boundaries(text, SPECIALS),
+            vec![MARKER_LEN, second]
+        );
+    }
+
+    #[test]
+    fn shadowing_is_not_a_unicode_concern() {
+        // The trigger is "one special is a proper prefix of another", not the encoding.
+        // The identical ASCII shape must behave identically — this is the cheap fixture
+        // to reach for when reproducing the class.
+        const SPECIALS: &[&str] = &["<|", "|>", "<|EOS|>"];
+        assert!(find_special_token_boundaries("<|EOS|>", SPECIALS).is_empty());
+        assert_eq!(
+            find_special_token_boundaries("<|EOS|>tail", SPECIALS),
+            vec!["<|EOS|>".len()]
+        );
+    }
+
+    #[test]
+    fn boundaries_are_strictly_increasing_and_within_text() {
+        // `boundaries_with` drops the sort/dedup that the overlapping scan needed, relying
+        // on leftmost-longest `find_iter` yielding disjoint ascending matches. Pin that.
+        const SPECIALS: &[&str] = &["<s>", "</s>", "<", "</s>x"];
+        for text in [
+            "<s>a</s>b<s>c</s>",
+            "</s>x</s><s>",
+            "<<s>><s>",
+            "no specials here",
+            "",
+        ] {
+            let bounds = find_special_token_boundaries(text, SPECIALS);
+            assert!(
+                bounds.windows(2).all(|w| w[0] < w[1]),
+                "boundaries must be strictly increasing for {text:?}: {bounds:?}"
+            );
+            for &b in &bounds {
+                assert!(b < text.len(), "boundary {b} out of range for {text:?}");
+                assert!(
+                    text.is_char_boundary(b),
+                    "boundary {b} is not a char boundary in {text:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn empty_special_tokens_are_ignored() {
+        // An empty needle matches at every position; admitting one would turn every offset
+        // into a "boundary" and shred the input.
+        assert!(find_special_token_boundaries("hello world", &["", ""]).is_empty());
+        assert_eq!(find_special_token_boundaries("<s>hi", &["", "<s>"]), vec![3]);
     }
 
     #[test]

@@ -61,6 +61,15 @@ const TIKTOKEN_PATH: &str = concat!(
     "/tests/data/sample-models/mock-tiktoken/tiktoken.model"
 );
 
+/// In-tree fixture reproducing the `poolside/Laguna-S-2.1-FP8` shape: the bracket fragments
+/// `<|` (id 1) and `|>` (id 5) are registered as `special: true` alongside the complete
+/// marker `<|EOS|>` (id 2) built from them. ASCII on purpose — the trigger is "one special
+/// token is a proper prefix of another", not the character encoding.
+const SHADOWED_SPECIALS_PATH: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/data/sample-models/mock-shadowed-specials/tokenizer.json"
+);
+
 /// A tokenizer fixture together with the formatter that re-keys the chat corpus into
 /// that family's native special-token markers.
 struct Setup {
@@ -346,6 +355,84 @@ fn cached_vs_uncached_first_pass() {
             "[{}] expected at least one turn to produce an L1 hit",
             setup.name
         );
+    }
+}
+
+#[test]
+fn shadowed_special_prefix_does_not_corrupt_cached_encoding() {
+    // Regression for the `poolside/Laguna-S-2.1-FP8` corruption: the checkpoint registers
+    // the bracket fragments (`〈|`, `|〉`) as `special: true` alongside the complete markers
+    // built from them (`〈|EOS|〉`, which is also its `bos_token`). HuggingFace resolves
+    // added tokens leftmost-longest and emits the complete marker as a single id; an
+    // overlapping boundary scan additionally saw the fragment and split the marker in half,
+    // so `〈|EOS|〉` encoded as `[14, 80592, 15]` instead of `[2]` — silently dropping BOS
+    // from every prompt while leaving every health signal green.
+    let base: Arc<dyn Tokenizer> = Arc::new(
+        HuggingFaceTokenizer::from_file(SHADOWED_SPECIALS_PATH)
+            .unwrap_or_else(|error| panic!("load tokenizer {SHADOWED_SPECIALS_PATH}: {error}")),
+    );
+    let specials: Vec<String> = ["<unk>", "<|", "|>", "<|EOS|>"]
+        .iter()
+        .map(|token| (*token).to_string())
+        .collect();
+
+    // Guard the guard: the tokenizer itself must resolve the complete marker atomically
+    // even though `<|` is a registered special. If this ever stops holding, the assertions
+    // below would pass vacuously.
+    assert_eq!(
+        base.encode("<|EOS|>").unwrap().token_ids().to_vec(),
+        vec![2_u32],
+        "fixture must resolve <|EOS|> to its declared id, not to the <| fragment"
+    );
+
+    let cached = CachedTokenizer::new(base.clone(), specials, 8 * 1024 * 1024)
+        .expect("fixture tokenizer must support prefix caching");
+
+    for probe in [
+        "<|EOS|>",                  // bare marker: must not be split at all
+        "<|EOS|>hello",             // marker + tail: the only boundary is after the marker
+        "<|EOS|>hello<|EOS|>world", // repeated markers
+        "hello<|EOS|>world",        // marker in the interior
+        "<|hello",                  // the fragment on its own is still a legal token
+        "hello",                    // no marker at all
+    ] {
+        let want = base.encode(probe).unwrap().token_ids().to_vec();
+
+        let miss = cached.encode(probe).unwrap().token_ids().to_vec();
+        assert_eq!(miss, want, "{probe:?}: miss-path cached encode != uncached");
+
+        let hit = cached.encode(probe).unwrap().token_ids().to_vec();
+        assert_eq!(hit, want, "{probe:?}: hit-path cached encode != uncached");
+    }
+}
+
+#[test]
+fn every_special_token_survives_the_cache_intact() {
+    // Class-level guard, one level above the fixture-specific regression above: for every
+    // boundary string the cache is handed, encoding that string — alone, with a tail, and
+    // in the interior — must be byte-identical through the cache. Prefix shadowing is one
+    // way to violate this; any future change to boundary selection that reintroduces the
+    // class fails here regardless of the mechanism.
+    for setup in SETUPS {
+        let (base, specials) = (setup.build)();
+        let cached = CachedTokenizer::new(base.clone(), specials.clone(), 8 * 1024 * 1024)
+            .expect("fixture tokenizer must support prefix caching");
+
+        for special in &specials {
+            for probe in [
+                special.clone(),
+                format!("{special}hello world"),
+                format!("hello {special} world"),
+            ] {
+                let want = base.encode(&probe).unwrap().token_ids().to_vec();
+                let got = cached.encode(&probe).unwrap().token_ids().to_vec();
+                assert_eq!(
+                    got, want,
+                    "[{}] special {special:?}: cached encode != uncached for {probe:?}",
+                    setup.name
+                );
+            }
+        }
     }
 }
 

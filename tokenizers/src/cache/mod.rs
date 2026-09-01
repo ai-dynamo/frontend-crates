@@ -24,6 +24,13 @@
 //! preserves the invariant `tokenize(prefix) + tokenize(suffix) == tokenize(prefix + suffix)`.
 //! No fallback to whitespace or punctuation — better to miss than to corrupt.
 //!
+//! Atomicity of each token in isolation is necessary but not sufficient: the boundary
+//! must also follow the token the tokenizer *actually emitted*. Boundary detection
+//! therefore matches leftmost-longest and non-overlapping, exactly as HuggingFace's
+//! `AddedVocabulary` does, so a special token that is a proper prefix of another
+//! (`〈|` inside `〈|EOS|〉`) can never open a boundary in the middle of the longer token.
+//! See [`L1Cache::new`] for the flags a boundary string is required to carry.
+//!
 //! # Storage normalization
 //!
 //! When L1 is enabled, **every** `encode` returns [`Encoding::Sp`] (token-ids only) —
