@@ -13,15 +13,16 @@ threads unless asked.
 
 Testing: we test **bit-exactness** against the mirrored HF processor. 
 
-**The boundary.** The crate's scope is exactly what HF ships, nothing more.
-On the Python path, the *engine* (e.g. SGLang's `BaseMultimodalProcessor`)
-owns request orchestration — fetching sources, content hashing, per-request
-caps, failure policy — and calls into HF for the processor math. This crate
-keeps that layering: engines write their own driver against the
-`MmFamilyProcessor` trait; the crate supplies the processor. Deliberately
-**not** in this crate: source fetching (Python: the engine's
-`get_image_bytes`), content hashing (Python: the engine's `data_hash`),
-request caps and failure semantics, and any async runtime.
+**The boundary.** The crate carries what HF ships, plus the
+consumer-agnostic utilities a router and an engine must *agree* on: spec
+resolution from the HF config files, pixel-free token accounting, media
+source resolution (`fetch`), and content-hash identity (`content_hash_u64`)
+— if a router and an engine computed these differently, routing keys and
+token accounting would diverge. Request *orchestration* stays in the
+consumer's driver, as on the Python path where the engine (e.g. SGLang's
+`BaseMultimodalProcessor`) drives the HF processor: concurrency and any
+async runtime, per-request caps, failure policy, and scheduler-shaped
+packing are deliberately **not** in this crate.
 
 **Other non-goals (for now).** Chat-template rendering (that is
 `dynamo-renderer`, which deliberately stops at media placeholder markers) and
@@ -34,12 +35,14 @@ The following shows functionalities of this crate, working together with an
 inference engine-side pipeline.
 
 ```
-serving engine (its driver)         │   dynamo-mm-preprocessor (this crate)
+consumer (router / engine driver)   │   dynamo-mm-preprocessor (this crate)
 ────────────────────────────────────│──────────────────────────────────────
-boot: resolve HF params ── spec ───►│  registry::build_processor ─► Box<dyn MmFamilyProcessor>
-                                    │
+boot: locate model configs ────────►│  registry::spec_from_model_dir (or a
+                                    │  pre-resolved spec) ─► build_processor
+                                    │           ─► Box<dyn MmFamilyProcessor>
 per request:                        │
-fetch sources, hash, caps           │
+fetch + hash (via `fetch`,          │
+`content_hash_u64`), caps           │
    └─ raw bytes ───────────────────►│  image::decode::decode_rgb
         └─ rgb ────────────────────►│  family.process_item      (per item; the engine drives
                                     │                            the loop, optionally fanning
@@ -55,9 +58,10 @@ drain: pack tensors for scheduler   │
 | module | responsibility |
 | --- | --- |
 | `processor` | the model-family seam: `MmFamilyProcessor` trait + data carriers |
-| `registry` | family selection from a typed or JSON spec (the `AutoProcessor` entry) |
+| `registry` | family selection from a typed/JSON spec, or resolved straight from the HF config files (the `AutoProcessor` entry) |
 | `models/` | one module per family — `models::qwen_vl` first |
-| `image` | decode (8-bit only, PIL-matching), bit-exact resize kernels, transforms |
+| `image/` | decode (8-bit only, PIL-matching), header-only dimension probe, bit-exact resize kernels, transforms |
+| `fetch` *(feature)* | one media source → raw bytes (data:/base64/file/http, `requests`-parity proxy semantics, streaming byte budgets) |
 | `token_layout` | validating placeholder expansion of the *already tokenized* prompt |
 | `execution` | the crate's only parallelism seam: inline by default, a runtime-armed crate-owned rayon pool otherwise |
 
@@ -90,6 +94,7 @@ The family seam (`processor`) — everything an engine's driver programs against
 ```rust
 pub trait MmFamilyProcessor: Send + Sync {
     fn capabilities(&self) -> Capabilities;                       // images-only default
+    fn num_media_tokens(&self, width: usize, height: usize) -> Result<usize, String>;
     fn process_item(&self, media: &DecodedMedia) -> Result<ProcessedItem, String>;
     fn layout(&self, input_ids: &[i32], items: &[Geometry]) -> Result<TokenLayout, String>;
     fn positions(&self, input_len: usize, offsets: &[(u32, u32)], items: &[Geometry])
@@ -130,10 +135,13 @@ ids:  [ …,  <|vision_start|>, <|image_pad|>, <|vision_end|>,     … ]
 The engine scatters the ViT's 12 output embeddings into positions 2..13
 (from `offsets`) and feeds `positions` to the model's rotary path.
 
-Family selection (`registry`) — the `AutoProcessor`-shaped entry point. The
-consumer resolves processor parameters however it likes (SGLang: from the
-already-loaded HF processor, conservatively — unknown knobs mean "no Rust
-processor" rather than approximation) and hands them over typed or as JSON:
+Family selection (`registry`) — the `AutoProcessor`-shaped entry point, with
+two ways to arrive at a spec: a consumer with its own resolution step hands
+it over pre-resolved (SGLang: from the already-loaded HF processor, via its
+Python gate), and a consumer with no Python side resolves it from the HF
+config files directly. Both are conservative: an unknown `model_type` or a
+knob the Rust pipeline cannot honor bit-exactly means "no native processor",
+never a silent approximation.
 
 ```rust
 #[serde(tag = "family", rename_all = "snake_case")]
@@ -141,6 +149,11 @@ pub enum ProcessorSpec { QwenVl(QwenVlSpec) }          // one variant per family
 
 pub fn build_processor(spec: ProcessorSpec) -> Result<Box<dyn MmFamilyProcessor>, String>;
 pub fn processor_from_spec(json: &str)     -> Result<Box<dyn MmFamilyProcessor>, String>;
+
+// AutoProcessor.from_pretrained parity for Python-free consumers:
+pub fn spec_from_hf_configs(config_json: &str, preprocessor_config_json: &str)
+    -> Result<ProcessorSpec, String>;
+pub fn spec_from_model_dir(dir: &Path) -> Result<ProcessorSpec, String>;
 ```
 
 Layout application (`token_layout`) — the one piece of mechanics the crate
@@ -154,11 +167,13 @@ pub fn layout_by_placeholder(ids: &[i32], placeholder_id: i32, counts: &[usize])
     -> Result<TokenLayout, String>;       // the simple qwen-style repeat layout
 ```
 
-Building blocks families compose (all public, individually testable):
-`image::decode::decode_rgb`, `image::resize::resize_rgb` (bit-exact PIL
-fixed-point Lanczos/Bicubic and torchvision's uint8-antialias bicubic —
-selected per HF processor class), `image::transforms`,
-`models::qwen_vl::{smart_resize, mrope_image_only}`.
+Building blocks families and consumers compose (all public, individually
+testable): `image::decode::{decode_rgb, dimensions}` (the latter a
+header-only probe, PIL's lazy `Image.open(...).size`),
+`image::resize::resize_rgb` (bit-exact PIL fixed-point Lanczos/Bicubic and
+torchvision's uint8-antialias bicubic — selected per HF processor class),
+`image::transforms`, `models::qwen_vl::{smart_resize, mrope_image_only}`,
+`fetch::fetch_bytes` (feature `fetch`), and `content_hash_u64`.
 
 ## 3. Python-parity map
 
@@ -167,7 +182,9 @@ Each item reproduces a specific Python behavior — most of them **bit-exactly**
 
 | this crate | on-par Python API | parity |
 | --- | --- | --- |
-| `registry::processor_from_spec` | `AutoProcessor.from_pretrained` + resolved image-processor kwargs | selection semantics |
+| `registry::spec_from_hf_configs` / `spec_from_model_dir` | `AutoProcessor.from_pretrained` (config parsing + processor selection) | selection semantics; unknown knobs → `Err`, never approximation |
+| `registry::processor_from_spec` | building the processor from already-resolved kwargs | selection semantics |
+| `MmFamilyProcessor::num_media_tokens` | `_get_num_multimodal_tokens(image_sizes=…)` | exact token counts, no pixel work |
 | `models::qwen_vl::QwenVlProcessor::process_item` | HF `Qwen2VLImageProcessor(Fast)` / `Qwen2VLImageProcessorPil` `__call__` → `pixel_values`, `image_grid_thw` | **bitwise** |
 | `models::qwen_vl::smart_resize` | HF/SGLang `smart_resize` (incl. Python banker's rounding) | exact, plus an explicit reject of the degenerate 0-side case Python leaves to PIL |
 | `models::qwen_vl::mrope_image_only` | `get_rope_index` (ships in transformers' Qwen model code; image-only branch, identical across Qwen generations) | exact |
@@ -175,19 +192,54 @@ Each item reproduces a specific Python behavior — most of them **bit-exactly**
 | `image::resize::resize_rgb(AtenU8)` | `torchvision resize(antialias=True)` on uint8 | **bitwise** (ATen's per-axis i16 weight precision) |
 | normalize LUT (family-internal) | slow path `rescale→normalize` vs fast path `_fuse_mean_std_and_rescale_factor` | **bitwise** — the two roundings differ on 128 of 256 u8 inputs, so the spec selects which to mirror |
 | `image::decode::decode_rgb` | `PIL.Image.open(...).convert("RGB")` | same accepted formats; >8-bit samples rejected (PIL clips where Rust would rescale — refuse rather than silently diverge) |
+| `image::decode::dimensions` | lazy `PIL.Image.open(...).size` | header-only probe |
+| `fetch::fetch_bytes` | `transformers.image_utils.load_image` / SGLang `get_image_bytes` (`requests` proxy + `NO_PROXY` semantics, source precedence) | same behavior, plus streaming byte caps Python lacks |
+| `content_hash_u64` | the *role* of SGLang `mm_utils.data_hash` | deliberately blake3, one shared definition — router and Rust-engine keys must agree (the Python path's SHA-256 stays a documented divergence) |
 | `token_layout::apply_layout` + `layout_by_placeholder` | HF `Qwen2VLProcessor`'s own `<|image_pad|>` expansion / SGLang `_expand_input_ids` + `get_mm_items_offset` | exact ids/offsets, plus full-coverage validation |
 
-Engine-side counterparts that stay **out** of this crate, matching where they
+Consumer-side concerns that stay **out** of this crate, matching where they
 live on the Python path (SGLang's Rust driver keeps them in `sglang-mm`):
 
-| engine concern | Python home |
+| consumer concern | Python home |
 | --- | --- |
-| request orchestration — the control flow that fetches, hashes, and calls the crate, plus caps and failure policy | SGLang `BaseMultimodalProcessor.process_mm_data_async` |
-| media source resolution (data:/base64/file/http, proxies, byte budgets) | SGLang `get_image_bytes` (≈ `transformers.image_utils.load_image`) |
-| content hashing for cache/dedup identity | SGLang `mm_utils.data_hash` |
+| request orchestration — concurrency, caps, failure policy, the control flow that calls the crate | SGLang `BaseMultimodalProcessor.process_mm_data_async` |
+| async scheduling of many fetches (the crate resolves one source, synchronously) | SGLang's prefetch layer / a router's connector |
 | scheduler-shaped packing / zero-copy drain | SGLang `wrap_encoded` / `MultimodalDataItem` |
 
-## 4. How a serving engine uses it — SGLang image preprocessing
+## 4. How consumers use it
+
+### 4.1 A router (dynamo) — accounting and routing, no pixel work
+
+A router has no Python side and never runs the pixel pipeline; it needs the
+crate for the parts that must *agree* with the engine behind it.
+
+**Boot** — once per model: locate the model's config files (hub download is
+the router's concern; dynamo already carries `hf-hub`) and resolve:
+
+```rust
+let spec: ProcessorSpec = registry::spec_from_model_dir(&model_dir)?;   // Err => model unsupported
+let family: Box<dyn MmFamilyProcessor> = registry::build_processor(spec)?;
+```
+
+**Ingress** — per request (OpenAI chat parts, e.g. `image_url` from
+`dynamo-protocols`):
+
+```rust
+let bytes: Vec<u8> = fetch::fetch_bytes(&image_url)?;   // or the router's async connector
+let hash: u64 = content_hash_u64(&bytes);               // cache-affinity key — same bytes
+                                                        // an engine on this crate computes
+let (height, width) = image::decode::dimensions(&bytes)?;   // header probe, no decode
+let n: usize = family.num_media_tokens(width, height)?;     // this image's token cost
+```
+
+With per-image token costs the router knows the expanded prompt length for
+scheduling, and with the hashes it can route for prefix-cache affinity and
+forward media identity downstream (`mm_hashes`). What a router deliberately
+does **not** do here: decode pixels, resize, or patchify — that work belongs
+to the engine (or, later, a disaggregated encode worker; out of scope for
+now).
+
+### 4.2 An inference engine's MM preprocessor (SGLang)
 
 **Boot — resolve and gate.** Python inspects the already-loaded HF processor
 and model type; if and only if every knob is recognized (family known,
@@ -214,7 +266,7 @@ and the failure contract, then calls the family:
 let mut items: Vec<ProcessedItem> = Vec::with_capacity(images.len());
 let mut hashes: Vec<u64> = Vec::with_capacity(images.len());
 for bytes in images {                                  // fetched + capped by the engine
-    hashes.push(engine_content_hash(&bytes));          // engine-owned identity
+    hashes.push(content_hash_u64(&bytes));             // same keys as the router
     let (rgb, height, width) = image::decode::decode_rgb(&bytes)?;
     items.push(family.process_item(&DecodedMedia::Image { rgb, height, width })?);
 }
@@ -241,7 +293,8 @@ Three layers, all pinned to byte-equality:
 
 1. **Crate-local unit tests** — smart_resize against Python-derived reference
    values (including rounding ties), patchify layout, normalize-LUT
-   divergence, layout coverage validation, plus a thread-count guard proving
+   divergence, layout coverage validation, fetch budgets and `NO_PROXY`
+   matching, config-resolution gating, plus a thread-count guard proving
    the crate owns no threads while the pool is unarmed (the default).
 2. **Crate-local golden replay** — this repo's CI has no Python/HF, so
    committed fixtures (generated by SGLang tooling from the HF processor and

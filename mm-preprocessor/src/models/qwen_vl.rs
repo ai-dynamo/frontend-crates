@@ -84,6 +84,11 @@ impl QwenVlProcessor {
 }
 
 impl MmFamilyProcessor for QwenVlProcessor {
+    fn num_media_tokens(&self, width: usize, height: usize) -> Result<usize, String> {
+        let _ = (width, height);
+        todo!("smart_resize target grid / merge_size²")
+    }
+
     fn process_item(&self, media: &DecodedMedia) -> Result<ProcessedItem, String> {
         let _ = media;
         todo!("HF Qwen2VLImageProcessor equivalent")

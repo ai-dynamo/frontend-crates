@@ -10,3 +10,12 @@ pub fn decode_rgb(data: &[u8]) -> Result<(Vec<u8>, usize, usize), String> {
     let _ = data;
     todo!("pure-Rust decoders via the `image` crate")
 }
+
+/// `(height, width)` from the encoded header alone — no pixel decode (PIL's
+/// lazy `Image.open(...).size`). Pairs with
+/// [`num_media_tokens`](crate::processor::MmFamilyProcessor::num_media_tokens)
+/// so a router can account tokens without decoding.
+pub fn dimensions(data: &[u8]) -> Result<(usize, usize), String> {
+    let _ = data;
+    todo!("header-only probe via the `image` crate reader")
+}

@@ -12,9 +12,11 @@ model-family position math (M-RoPE), all **bit-exact** against the mirrored
 HF processor.
 
 Scope mirrors the Python layering: this crate is the *processor* (what HF
-ships); request orchestration — source fetching, content hashing, caps,
-failure policy — stays in the serving engine's driver, which composes this
-crate through the `MmFamilyProcessor` trait. The adjacent concern of
+ships) plus the utilities a router and an engine must agree on — config-file
+spec resolution, pixel-free token accounting, source fetching, content-hash
+identity. Request orchestration (concurrency, caps, failure policy, packing)
+stays in the consumer's driver, which composes this crate through the
+`MmFamilyProcessor` trait. The adjacent concern of
 chat-template rendering down to media placeholder markers lives in
 `dynamo-renderer`.
 
@@ -27,6 +29,7 @@ and the roadmap.
 | feature    | default | adds                                              |
 | ---------- | ------- | -------------------------------------------------- |
 | `parallel` | **on**  | links rayon; kernels still run inline until `execution::init_pool` arms the crate-owned pool (opt out to drop rayon entirely) |
+| `fetch`    | off     | media source resolution: data:/base64/file/http with `requests`-parity proxy semantics |
 
 Supported families: `models::qwen_vl` (Qwen2-VL / Qwen2.5-VL / Qwen3-VL /
 Qwen3.5 VL) — `pixel_values`, `image_grid_thw`, image-only M-RoPE. Adding a

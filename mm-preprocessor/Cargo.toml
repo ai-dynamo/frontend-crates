@@ -19,6 +19,9 @@ publish = false
 
 [features]
 default = ["parallel"]
+# Media source resolution (data:/base64/file/http). The implementation wires
+# the deps: `fetch = ["dep:ureq", "dep:base64"]`.
+fetch = []
 # Links rayon; kernels still run inline until `execution::init_pool` arms the
 # crate-owned pool at runtime. Opt out (`default-features = false`) to drop
 # rayon from the dependency graph and force the inline path at compile time.

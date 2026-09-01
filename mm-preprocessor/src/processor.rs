@@ -119,6 +119,13 @@ pub trait MmFamilyProcessor: Send + Sync {
         Capabilities::default()
     }
 
+    /// Tokens one image will occupy in the expanded prompt, from its source
+    /// dimensions alone — no decode, resize, or pixel work (the HF
+    /// `_get_num_multimodal_tokens` equivalent). Routers use this for
+    /// scheduling and prompt-length accounting before any media is fetched
+    /// past its header.
+    fn num_media_tokens(&self, width: usize, height: usize) -> Result<usize, String>;
+
     /// Preprocess one decoded media item: the model's HF processor
     /// equivalent (resize/tile/normalize/patchify → named tensors) plus the
     /// geometry `layout`/`positions` will need.
