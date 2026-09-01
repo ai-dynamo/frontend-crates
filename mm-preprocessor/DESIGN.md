@@ -100,6 +100,36 @@ pub struct ProcessedItem { pub feature: Tensor, pub aux: NamedTensors, pub geome
 pub enum PositionOutput { Rope1D, MRope { positions: Vec<i64>, delta: i64 } }
 ```
 
+**A worked example** — one 100×76 image, Qwen2.5-VL
+(`patch_size 14, merge_size 2, temporal_patch_size 2`), prompt already
+tokenized with one placeholder:
+
+```
+index:  0        1                2               3              4
+ids:  [ …,  <|vision_start|>, <|image_pad|>, <|vision_end|>,     … ]
+```
+
+1. `process_item(image)` — the per-image pixel math. `smart_resize` rounds
+   100×76 up to 112×84 (multiples of `patch·merge = 28`), the bit-exact kernel
+   resizes, then normalize + patchify: a 6×8 grid of 14×14 patches, each
+   flattened to `3·2·14·14 = 1176` floats (the temporal 2 duplicates a still's
+   frame). Returns `feature = [48, 1176] f32` (HF's `pixel_values`),
+   `aux = [("image_grid_thw", [1, 6, 8])]`, `geometry = Grid([1, 6, 8])`.
+2. `layout(ids, geometries)` — how the prompt expands. The image costs
+   `1·6·8 / 2² = 12` tokens (the ViT merges 2×2 patches per token), so the
+   layout says: keep text `0..2`, place item 0 as 12 copies of
+   `<|image_pad|>`, keep text `3..5`. `apply_layout` executes and validates
+   it: expanded ids of length 16, `offsets = [(2, 13)]`.
+3. `positions(16, offsets, geometries)` — M-RoPE coordinates. Text advances
+   the three (t, h, w) rows together; the 12 image tokens span a 3×4 grid
+   (`6/2 × 8/2`) at base 2; text after resumes at `2 + max(1, 3, 4) = 6`.
+   Returns flat `[3, 16]` positions and `delta = 7 + 1 − 16 = −8` (added to
+   the sequence length at decode, since the image packed 12 tokens into 4
+   position steps).
+
+The engine scatters the ViT's 12 output embeddings into positions 2..13
+(from `offsets`) and feeds `positions` to the model's rotary path.
+
 Family selection (`registry`) — the `AutoProcessor`-shaped entry point. The
 consumer resolves processor parameters however it likes (SGLang: from the
 already-loaded HF processor, conservatively — unknown knobs mean "no Rust
