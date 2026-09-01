@@ -28,7 +28,8 @@ pub fn init_pool(threads: usize) {
 }
 
 /// Map `items`, short-circuiting on the first error. Output order matches input
-/// order. CPU-bound work: decode, resize, patchify, hash.
+/// order. CPU-bound work: decode, resize, patchify (engines may also reuse
+/// this seam for their own per-item fan-out, e.g. hashing).
 pub fn try_map<'a, T, R, E>(
     items: &'a [T],
     f: impl Fn(&'a T) -> Result<R, E> + Send + Sync,

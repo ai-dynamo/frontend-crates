@@ -3,13 +3,13 @@
 
 //! The model-family seam of the preprocessing pipeline.
 //!
-//! Design rule: **families produce data, the driver owns control flow.** A
-//! family never sees the request loop, the thread pool, or the failure
-//! protocol — it implements [`MmFamilyProcessor`], turning decoded media into
-//! named tensors and describing its prompt geometry as a [`TokenLayout`]
-//! value. `driver::process` applies the layout mechanically, so expansion,
-//! per-item offsets, and position inputs all derive from one declarative
-//! structure and every family gets identical failure semantics for free.
+//! Design rule: **families produce data, the engine's driver owns control
+//! flow.** A family never sees the request loop, the thread pool, or the
+//! failure protocol — it implements [`MmFamilyProcessor`], turning decoded
+//! media into named tensors and describing its prompt geometry as a
+//! [`TokenLayout`] value. The engine applies the layout mechanically
+//! ([`crate::token_layout::apply_layout`]), so expansion, per-item offsets,
+//! and position inputs all derive from one declarative structure.
 //!
 //! The carriers below are `#[non_exhaustive]` so a new family can grow them
 //! without a breaking change. Known future needs, validated against the
@@ -19,8 +19,8 @@
 //!   [`PositionOutput`] variant if it diverges from the Qwen shape.
 //! * Kimi K3 interleaves tokenized text (`image {w}x{h}`) inside the media
 //!   span, so `layout` will need encode access — planned as a defaulted
-//!   `layout_with(&LayoutContext)` method carrying the driver's tokenize
-//!   closure, added without breaking existing families.
+//!   `layout_with(&LayoutContext)` method carrying an engine-supplied encode
+//!   hook, added without breaking existing families.
 //! * Video/audio grow [`DecodedMedia`] variants and [`Capabilities`] flags.
 
 /// Typed tensor payload. Grows a variant per dtype actually produced by a

@@ -19,9 +19,6 @@ publish = false
 
 [features]
 default = []
-# Resolve string media sources (data:/base64/file/http). The implementation PR
-# wires the deps: `fetch = ["dep:ureq", "dep:base64"]`.
-fetch = []
 # Fan work out on a crate-owned rayon pool; off = inline on the caller and no
 # threads owned. The implementation PR wires `parallel = ["dep:rayon"]`.
 parallel = []
