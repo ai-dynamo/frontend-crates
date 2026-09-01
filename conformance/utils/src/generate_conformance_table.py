@@ -2256,7 +2256,7 @@ def _load_unified_fixtures(base: Path):
         # Rust's `version_capture_sort_key`: keep it after the release so it is selected
         # as the current capture while the release remains a historical comparison.
         engine_versions[impl].sort(
-            key=lambda vd: (fixtures._version_sort_key(vd[0]), "+" in vd[0])
+            key=lambda vd: (fixtures._version_sort_key(vd[0]), "+" in vd[0], vd[0])
         )
     # The Unified tab compares every captured vLLM version. Keep each peer version
     # separate instead of silently replacing 0.25.1 with the newest 0.26.x shard.
