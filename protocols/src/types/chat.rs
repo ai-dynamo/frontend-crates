@@ -259,10 +259,17 @@ pub struct FunctionCall {
 }
 
 /// Streaming variant of [`FunctionCall`] where both fields are optional.
+/// Continuation chunks carry only `arguments`; `name` is omitted rather
+/// than serialized as `null`, matching OpenAI output.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct FunctionCallStream {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    #[serde(default, deserialize_with = "deserialize_arguments_opt")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "deserialize_arguments_opt"
+    )]
     pub arguments: Option<String>,
 }
 
@@ -274,8 +281,13 @@ pub struct FunctionCallStream {
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub struct ChatCompletionMessageToolCallChunk {
     pub index: u32,
+    /// Only `index` is required by the spec; `id`, `type`, and `function`
+    /// are omitted on continuation chunks, matching OpenAI output.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub r#type: Option<FunctionType>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub function: Option<FunctionCallStream>,
 }
 
@@ -775,7 +787,9 @@ pub struct ChatCompletionResponseMessage {
     /// `content` key being present alongside `reasoning_content` or
     /// `tool_calls`. Matches the upstream OpenAI API shape (DGH-651).
     pub content: Option<ChatCompletionMessageContent>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Always serialized (as `null` when None): the spec marks `refusal` as
+    /// required-and-nullable, and OpenAI emits `"refusal": null` on every
+    /// non-refusal response.
     pub refusal: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tool_calls: Option<Vec<ChatCompletionMessageToolCall>>,
@@ -790,7 +804,8 @@ pub struct ChatCompletionResponseMessage {
     /// canonical) or `reasoning` (vLLM native / OpenRouter / OpenAI GPT-OSS)
     /// on input via the alias; output-side key selection is handled at the
     /// HTTP boundary by ai-dynamo/dynamo#11464's `RoutedReasoning` wrapper.
-    #[serde(default, alias = "reasoning")]
+    /// Not part of the OpenAI spec, so it is omitted entirely when absent.
+    #[serde(default, alias = "reasoning", skip_serializing_if = "Option::is_none")]
     pub reasoning_content: Option<String>,
 }
 
@@ -899,16 +914,100 @@ pub struct ChatChoice {
     pub logprobs: Option<ChatChoiceLogprobs>,
 }
 
+/// Serializes `usage` through a shadow struct that omits absent optional
+/// fields.
+///
+/// Upstream async-openai derives serialize `None` usage-details fields as
+/// explicit `null` (e.g. `"audio_tokens": null`), but the spec marks every
+/// usage-details field optional and non-nullable, so absent fields must be
+/// omitted (OpenAI emits `"audio_tokens": 0`, never `null`). The shadow
+/// keeps upstream `CompletionUsage` in the public API — replacing it with a
+/// same-named local type would break callers that pass upstream values.
+fn serialize_usage_omitting_absent<S>(
+    usage: &Option<CompletionUsage>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    #[derive(Serialize)]
+    struct PromptDetailsShadow {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        audio_tokens: Option<u32>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cached_tokens: Option<u32>,
+    }
+
+    #[derive(Serialize)]
+    struct CompletionDetailsShadow {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        accepted_prediction_tokens: Option<u32>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        audio_tokens: Option<u32>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        reasoning_tokens: Option<u32>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        rejected_prediction_tokens: Option<u32>,
+    }
+
+    #[derive(Serialize)]
+    struct UsageShadow {
+        prompt_tokens: u32,
+        completion_tokens: u32,
+        total_tokens: u32,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        prompt_tokens_details: Option<PromptDetailsShadow>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        completion_tokens_details: Option<CompletionDetailsShadow>,
+    }
+
+    match usage {
+        None => serializer.serialize_none(),
+        Some(u) => UsageShadow {
+            prompt_tokens: u.prompt_tokens,
+            completion_tokens: u.completion_tokens,
+            total_tokens: u.total_tokens,
+            prompt_tokens_details: u
+                .prompt_tokens_details
+                .as_ref()
+                .map(|d| PromptDetailsShadow {
+                    audio_tokens: d.audio_tokens,
+                    cached_tokens: d.cached_tokens,
+                }),
+            completion_tokens_details: u.completion_tokens_details.as_ref().map(|d| {
+                CompletionDetailsShadow {
+                    accepted_prediction_tokens: d.accepted_prediction_tokens,
+                    audio_tokens: d.audio_tokens,
+                    reasoning_tokens: d.reasoning_tokens,
+                    rejected_prediction_tokens: d.rejected_prediction_tokens,
+                }
+            }),
+        }
+        .serialize(serializer),
+    }
+}
+
 /// Non-streaming chat completion response.
+///
+/// `service_tier`, `system_fingerprint`, and `usage` are optional in the
+/// spec and omitted (not serialized as `null`) when absent, matching
+/// OpenAI output. `choices[].finish_reason` and `choices[].logprobs` stay
+/// always-present: the spec marks them required (nullable for `logprobs`).
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
 pub struct CreateChatCompletionResponse {
     pub id: String,
     pub choices: Vec<ChatChoice>,
     pub created: u32,
     pub model: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub service_tier: Option<ServiceTierResponse>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub system_fingerprint: Option<String>,
     pub object: String,
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_usage_omitting_absent"
+    )]
     pub usage: Option<CompletionUsage>,
 }
 
@@ -943,8 +1042,13 @@ pub struct ChatCompletionStreamResponseDelta {
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct ChatCompletionStreamResponseDeltaFunctionCall {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    #[serde(default, deserialize_with = "deserialize_arguments_opt")]
+    #[serde(
+        default,
+        deserialize_with = "deserialize_arguments_opt",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub arguments: Option<String>,
 }
 
@@ -958,15 +1062,27 @@ pub struct ChatChoiceStream {
 }
 
 /// Streaming chat completion response with extended choices.
+///
+/// `service_tier`, `system_fingerprint`, and `usage` are optional in the
+/// spec and omitted (not serialized as `null`) when absent. Note: with
+/// `stream_options.include_usage`, OpenAI emits `"usage": null` on every
+/// chunk before the final one; callers needing that exact shape must
+/// inject the key at the HTTP boundary.
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
 pub struct CreateChatCompletionStreamResponse {
     pub id: String,
     pub choices: Vec<ChatChoiceStream>,
     pub created: u32,
     pub model: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub service_tier: Option<ServiceTierResponse>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub system_fingerprint: Option<String>,
     pub object: String,
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_usage_omitting_absent"
+    )]
     pub usage: Option<CompletionUsage>,
 }
 
@@ -1561,5 +1677,165 @@ mod tests {
         assert_eq!(choice_json["refusal"], serde_json::Value::Null);
         assert!(token_json.get("token_id").is_none());
         assert_eq!(token_json["bytes"], serde_json::Value::Null);
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    fn chat_response_omits_absent_optional_fields() {
+        let response = CreateChatCompletionResponse {
+            id: "chatcmpl_dummy".into(),
+            choices: vec![ChatChoice {
+                index: 0,
+                message: ChatCompletionResponseMessage {
+                    content: Some(ChatCompletionMessageContent::Text("hello".into())),
+                    refusal: None,
+                    tool_calls: None,
+                    role: Role::Assistant,
+                    function_call: None,
+                    audio: None,
+                    reasoning_content: None,
+                },
+                finish_reason: Some(FinishReason::Stop),
+                logprobs: None,
+            }],
+            created: 0,
+            model: "dummy-model".into(),
+            service_tier: None,
+            system_fingerprint: None,
+            object: "chat.completion".into(),
+            usage: None,
+        };
+
+        let json = serde_json::to_value(response).unwrap();
+
+        for absent in ["usage", "service_tier", "system_fingerprint"] {
+            assert!(json.get(absent).is_none(), "{absent} should be omitted");
+        }
+        let choice = &json["choices"][0];
+        assert_eq!(choice["finish_reason"], "stop");
+        assert_eq!(choice["logprobs"], serde_json::Value::Null);
+        let message = &choice["message"];
+        assert_eq!(message["refusal"], serde_json::Value::Null);
+        for absent in ["tool_calls", "function_call", "audio", "reasoning_content"] {
+            assert!(
+                message.get(absent).is_none(),
+                "message.{absent} should be omitted"
+            );
+        }
+    }
+
+    #[test]
+    fn stream_response_omits_absent_optional_fields() {
+        let chunk = CreateChatCompletionStreamResponse {
+            id: "chatcmpl_dummy".into(),
+            choices: vec![ChatChoiceStream {
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta {
+                    content: Some(ChatCompletionMessageContent::Text("hello".into())),
+                    function_call: None,
+                    tool_calls: None,
+                    role: None,
+                    refusal: None,
+                    reasoning_content: None,
+                },
+                finish_reason: None,
+                logprobs: None,
+            }],
+            created: 0,
+            model: "dummy-model".into(),
+            service_tier: None,
+            system_fingerprint: None,
+            object: "chat.completion.chunk".into(),
+            usage: None,
+        };
+
+        let json = serde_json::to_value(chunk).unwrap();
+
+        for absent in ["usage", "service_tier", "system_fingerprint"] {
+            assert!(json.get(absent).is_none(), "{absent} should be omitted");
+        }
+    }
+
+    #[test]
+    fn stream_tool_call_continuation_chunk_omits_absent_fields() {
+        let chunk = ChatCompletionMessageToolCallChunk {
+            index: 0,
+            id: None,
+            r#type: None,
+            function: Some(FunctionCallStream {
+                name: None,
+                arguments: Some("{\"a\":".into()),
+            }),
+        };
+
+        let json = serde_json::to_value(chunk).unwrap();
+
+        assert!(json.get("id").is_none());
+        assert!(json.get("type").is_none());
+        assert!(json["function"].get("name").is_none());
+        assert_eq!(json["function"]["arguments"], "{\"a\":");
+    }
+
+    #[test]
+    fn stream_delta_function_call_omits_absent_fields() {
+        let function_call = ChatCompletionStreamResponseDeltaFunctionCall {
+            name: None,
+            arguments: Some("{}".into()),
+        };
+
+        let json = serde_json::to_value(function_call).unwrap();
+
+        assert!(json.get("name").is_none());
+        assert_eq!(json["arguments"], "{}");
+    }
+
+    #[test]
+    fn usage_details_omit_absent_fields() {
+        let response = CreateChatCompletionResponse {
+            id: "chatcmpl_dummy".into(),
+            choices: vec![],
+            created: 0,
+            model: "dummy-model".into(),
+            service_tier: None,
+            system_fingerprint: None,
+            object: "chat.completion".into(),
+            usage: Some(CompletionUsage {
+                prompt_tokens: 10,
+                completion_tokens: 25,
+                total_tokens: 35,
+                prompt_tokens_details: Some(PromptTokensDetails {
+                    audio_tokens: None,
+                    cached_tokens: Some(0),
+                }),
+                completion_tokens_details: Some(CompletionTokensDetails {
+                    reasoning_tokens: Some(5),
+                    ..Default::default()
+                }),
+            }),
+        };
+
+        let json = serde_json::to_value(&response).unwrap();
+        let usage = &json["usage"];
+
+        assert_eq!(usage["total_tokens"], 35);
+        assert_eq!(usage["prompt_tokens_details"]["cached_tokens"], 0);
+        assert!(
+            usage["prompt_tokens_details"].get("audio_tokens").is_none(),
+            "audio_tokens should be omitted, not null"
+        );
+        assert_eq!(usage["completion_tokens_details"]["reasoning_tokens"], 5);
+        for absent in [
+            "accepted_prediction_tokens",
+            "audio_tokens",
+            "rejected_prediction_tokens",
+        ] {
+            assert!(
+                usage["completion_tokens_details"].get(absent).is_none(),
+                "{absent} should be omitted"
+            );
+        }
+
+        let roundtrip: CreateChatCompletionResponse = serde_json::from_value(json).unwrap();
+        assert_eq!(roundtrip, response);
     }
 }
