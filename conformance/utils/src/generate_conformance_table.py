@@ -2258,6 +2258,13 @@ def _load_unified_fixtures(base: Path):
         engine_versions[impl].sort(
             key=lambda vd: (fixtures._version_sort_key(vd[0]), "+" in vd[0], vd[0])
         )
+    qualified_dynamo = [
+        (ver, dirname)
+        for ver, dirname in engine_versions.get("dynamo_v2", [])
+        if ver.startswith("0.3.4+pr")
+    ]
+    if qualified_dynamo:
+        engine_versions["dynamo_v2"] = qualified_dynamo
     # The Unified tab compares every captured vLLM version. Keep each peer version
     # separate instead of silently replacing 0.25.1 with the newest 0.26.x shard.
     peer_by_ver = {}
