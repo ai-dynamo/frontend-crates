@@ -2230,12 +2230,12 @@ def _load_unified_fixtures(base: Path):
     input_layers = ["inputs"] + sorted(
         d.name
         for d in base.iterdir()
-        if d.is_dir() and _overlay_base(d.name) in ("inputs", "inputs+pr200") and d.name != "inputs"
+        if d.is_dir() and _overlay_base(d.name) == "inputs" and d.name != "inputs"
     )
     golden_layers = ["golden"] + sorted(
         d.name
         for d in base.iterdir()
-        if d.is_dir() and _overlay_base(d.name) in ("golden", "golden+pr200") and d.name != "golden"
+        if d.is_dir() and _overlay_base(d.name) == "golden" and d.name != "golden"
     )
     inputs = _merge_layers(input_layers, "input")
     golden = _merge_layers(golden_layers, "golden")
@@ -2256,15 +2256,8 @@ def _load_unified_fixtures(base: Path):
         # Rust's `version_capture_sort_key`: keep it after the release so it is selected
         # as the current capture while the release remains a historical comparison.
         engine_versions[impl].sort(
-            key=lambda vd: (fixtures._version_sort_key(vd[0]), "+" in vd[0], vd[0])
+            key=lambda vd: (fixtures._version_sort_key(vd[0]), "+" in vd[0])
         )
-    qualified_dynamo = [
-        (ver, dirname)
-        for ver, dirname in engine_versions.get("dynamo_v2", [])
-        if ver.startswith("0.3.4+pr") and not ver.endswith(".patch1")
-    ]
-    if qualified_dynamo:
-        engine_versions["dynamo_v2"] = qualified_dynamo
     # The Unified tab compares every captured vLLM version. Keep each peer version
     # separate instead of silently replacing 0.25.1 with the newest 0.26.x shard.
     peer_by_ver = {}
