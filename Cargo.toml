@@ -36,7 +36,7 @@ chrono = { version = "0.4", default-features = false, features = [
 clap = "4"
 derive_builder = "0.20"
 dynamo-parsers = { path = "parsers/v1", version = "8.2.0" }
-dynamo-protocols = { path = "protocols", version = "5.4.0" }
+dynamo-protocols = { path = "protocols", version = "5.4.1" }
 dynamo-renderer = { path = "renderer", version = "5.1.1" }
 dynamo-tokenizers = { path = "tokenizers", version = "1.8.1" }
 either = { version = "1.13", features = ["serde"] }
