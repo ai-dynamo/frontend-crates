@@ -2302,7 +2302,14 @@ def _load_unified_fixtures(base: Path):
 
     if dynamo_by_ver:
         current_dynamo_ver, current_dynamo_cases = next(reversed(dynamo_by_ver.items()))
-        missing_current_cases = sorted(set(inputs).difference(current_dynamo_cases))
+        missing_current_cases = sorted(
+            (family, key)
+            for (family, key), input_case in inputs.items()
+            if (family, key) not in current_dynamo_cases
+            and family in gen_unified_golden.scenario_families(
+                input_case.get("scenario") or key
+            )
+        )
         if missing_current_cases:
             missing = ", ".join(f"{family}/{case}" for family, case in missing_current_cases)
             raise ValueError(
