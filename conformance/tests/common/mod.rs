@@ -233,7 +233,7 @@ pub fn fixture_name(path: &Path) -> String {
 }
 
 /// Current parser-version capture used by stream parity and interleave tests.
-pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.3.1";
+pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.4.0";
 
 pub const UNIFIED_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.4.1";
 

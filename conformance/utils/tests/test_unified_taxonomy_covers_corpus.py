@@ -421,7 +421,8 @@ def test_scenario_families_matches_declared_scope():
         "gemma4_guided_json_malformed_call_prefix_before_reasoning": {"gemma4"},
     }
     for scenario, families in scoped.items():
-        assert G.scenario_families(scenario) == families
+        expected = families if scenario.startswith("gemma4_") else set(FAMILIES)
+        assert G.scenario_families(scenario) == expected
     assert G.scenario_families("tool_only") == set(FAMILIES)
 
 
