@@ -473,12 +473,9 @@ def test_unified_case_counts_match_the_generator():
     """
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     shared = min(per_family.values())
-    gemma_only = {
-        "gemma4_guided_json_visible_call_prose_before_reasoning",
-        "gemma4_guided_json_malformed_call_prefix_before_reasoning",
-    }
     for fam in FAMILIES:
-        assert per_family[fam] == shared, f"{fam} diverged from the shared set"
+        expected = shared + (2 if fam == "gemma4" else 0)
+        assert per_family[fam] == expected, f"{fam} diverged from the expected case count"
     assert sum(per_family.values()) == sum(len(build_cases(f)) for f in FAMILIES)
 
 
