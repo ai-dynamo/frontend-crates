@@ -2261,7 +2261,7 @@ def _load_unified_fixtures(base: Path):
     qualified_dynamo = [
         (ver, dirname)
         for ver, dirname in engine_versions.get("dynamo_v2", [])
-        if ver.startswith("0.3.4+pr")
+        if ver.startswith("0.3.4+pr") and not ver.endswith(".patch1")
     ]
     if qualified_dynamo:
         engine_versions["dynamo_v2"] = qualified_dynamo
