@@ -127,9 +127,11 @@ def test_case_labels_use_numeric_positions_for_the_full_guided_recovery_series()
     assert case_label("gemma4_guided_json_malformed_call_prefix_before_reasoning") == "31-30"
     assert numbered_id("guided_json_quoted_bare_header_in_answer") == "UNIFIED.31-25"
     assert numbered_id("gemma4_guided_json_visible_call_prose_before_reasoning") == "UNIFIED.31-29"
-    assert case_label("guided_json_invalid_call") == "31.a"
-    assert numbered_id("guided_json_invalid_call") == "UNIFIED.31.a"
-    assert not [sub for _group, sub in UNIFIED_TAX.values() if re.fullmatch(r"[a-z]{2,}", sub)]
+    assert case_label("guided_json_invalid_call") == "31-1"
+    assert numbered_id("guided_json_invalid_call") == "UNIFIED.31-1"
+    guided = [sub for group, sub in UNIFIED_TAX.values() if group == 31]
+    assert all(sub.isdecimal() for sub in guided)
+    assert sorted(map(int, guided)) == list(range(1, 31))
 
     ordered = sorted(
         (
@@ -475,13 +477,8 @@ def test_unified_case_counts_match_the_generator():
         "gemma4_guided_json_visible_call_prose_before_reasoning",
         "gemma4_guided_json_malformed_call_prefix_before_reasoning",
     }
-    assert per_family["muse_glimmer"] > shared, (
-        "muse_glimmer should carry the OnlyFamilies scenarios on top of the shared set"
-    )
     for fam in FAMILIES:
-        if fam not in {"gemma4", "muse_glimmer"}:
-            assert per_family[fam] == shared, f"{fam} diverged from the shared set"
-    assert per_family["gemma4"] == shared + len(gemma_only)
+        assert per_family[fam] == shared, f"{fam} diverged from the shared set"
     assert sum(per_family.values()) == sum(len(build_cases(f)) for f in FAMILIES)
 
 
