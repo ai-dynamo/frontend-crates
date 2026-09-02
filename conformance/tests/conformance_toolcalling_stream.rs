@@ -177,7 +177,7 @@ fn stream_dynamo_dirs_include_only_the_explicit_current_tag() {
             .unwrap()
             .as_nanos()
     ));
-    std::fs::create_dir_all(root.join("dynamo_v2-0.3.1")).unwrap();
+    std::fs::create_dir_all(root.join("dynamo_v2-0.2.0")).unwrap();
     std::fs::create_dir_all(root.join("dynamo_v2-0.3.4+historical")).unwrap();
     std::fs::create_dir_all(root.join(common::STREAM_DYNAMO_V2_CURRENT_CAPTURE)).unwrap();
 
@@ -187,7 +187,7 @@ fn stream_dynamo_dirs_include_only_the_explicit_current_tag() {
         .collect();
     assert_eq!(
         names,
-        ["dynamo_v2-0.3.1", common::STREAM_DYNAMO_V2_CURRENT_CAPTURE].map(std::ffi::OsString::from)
+        ["dynamo_v2-0.2.0", common::STREAM_DYNAMO_V2_CURRENT_CAPTURE].map(std::ffi::OsString::from)
     );
 
     std::fs::remove_dir_all(root).unwrap();
