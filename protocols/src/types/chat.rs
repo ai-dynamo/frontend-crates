@@ -739,12 +739,17 @@ pub struct ChatCompletionRequestSystemMessage {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     /// Kimi-style dynamic tool metadata carried on a system message.
-    /// Unlike the top-level `tools` field (`ChatCompletionTool`, wrapped in
-    /// `{"type": "function", "function": {...}}`), Kimi chat templates emit
-    /// bare function-schema objects here, matching `FunctionObject` (`name`,
-    /// `description`, `parameters`) directly.
+    ///
+    /// Kept as raw JSON rather than a typed list on purpose: this crate only
+    /// needs to *preserve* the value for downstream chat-template rendering,
+    /// which reads it back as a generic JSON value by key. A typed schema
+    /// (e.g. `Vec<FunctionObject>`) would silently drop any vendor-specific
+    /// keys serde doesn't know about on round-trip, whereas `serde_json::Value`
+    /// is byte-for-byte faithful. Note the shape also differs from the
+    /// top-level `tools` field: Kimi emits bare function-schema objects here,
+    /// not `{"type": "function", "function": {...}}` wrappers.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tools: Option<Vec<FunctionObject>>,
+    pub tools: Option<serde_json::Value>,
 }
 
 /// Assistant message with reasoning content support.
@@ -1910,8 +1915,9 @@ mod tests {
             ChatCompletionRequestMessage::System(system) => {
                 assert!(system.content.is_none());
                 let tools = system.tools.as_ref().expect("tools should be present");
+                let tools = tools.as_array().expect("tools should be an array");
                 assert_eq!(tools.len(), 1);
-                assert_eq!(tools[0].name, "lookup");
+                assert_eq!(tools[0]["name"], "lookup");
             }
             other => panic!("expected system message, got {other:?}"),
         }
@@ -1922,6 +1928,48 @@ mod tests {
             }
             other => panic!("expected assistant message, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn kimi_style_request_round_trips_byte_for_byte() {
+        // The whole point of `tools` being raw JSON is fidelity: whatever the
+        // client sent must come back out unchanged, including keys this crate
+        // knows nothing about (`vendor_hint` below).
+        let payload = serde_json::json!({
+            "model": "dummy-kimi-model",
+            "messages": [
+                {
+                    "role": "system",
+                    "tools": [
+                        {
+                            "name": "lookup",
+                            "description": "dummy lookup tool",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "query": { "type": "string" }
+                                }
+                            },
+                            "vendor_hint": { "priority": 3 }
+                        }
+                    ]
+                },
+                {
+                    "role": "assistant",
+                    "content": "synthetic prefill",
+                    "partial": true
+                },
+                {
+                    "role": "user",
+                    "content": "continue"
+                }
+            ]
+        });
+
+        let request: CreateChatCompletionRequest = serde_json::from_value(payload.clone()).unwrap();
+        let serialized = serde_json::to_value(request).unwrap();
+
+        assert_eq!(serialized, payload);
     }
 
     #[test]
