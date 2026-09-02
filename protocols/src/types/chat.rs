@@ -22,50 +22,20 @@ use crate::error::OpenAIError;
 // Consumers should use them via `dynamo_protocols::types::*` as before.
 
 pub use async_openai::types::chat::{
-    ChatCompletionAudio,
-    ChatCompletionAudioFormat,
-    ChatCompletionAudioVoice,
-    ChatCompletionFunctionCall,
-    ChatCompletionFunctions,
-    ChatCompletionFunctionsArgs,
-    ChatCompletionRequestAssistantMessageAudio,
-    ChatCompletionRequestAssistantMessageContent,
-    ChatCompletionRequestAssistantMessageContentPart,
-    ChatCompletionRequestDeveloperMessage,
-    ChatCompletionRequestDeveloperMessageArgs,
-    ChatCompletionRequestDeveloperMessageContent,
-    ChatCompletionRequestFunctionMessage,
-    ChatCompletionRequestFunctionMessageArgs,
-    ChatCompletionRequestMessageContentPartAudio,
-    ChatCompletionRequestMessageContentPartRefusal,
-    ChatCompletionRequestMessageContentPartText,
-    ChatCompletionRequestSystemMessageContent,
-    ChatCompletionRequestSystemMessageContentPart,
-    ChatCompletionResponseMessageAudio,
-    Choice,
-    CompletionFinishReason,
-    CompletionTokensDetails,
-    CompletionUsage,
-    FunctionObject,
-    FunctionObjectArgs,
-    ImageDetail,
-    InputAudio,
-    InputAudioFormat,
-    Logprobs,
-    PredictionContent,
-    PredictionContentContent,
-    Prompt,
-    PromptTokensDetails,
-    ResponseFormat,
-    ResponseFormatJsonSchema,
-    Role,
-    ServiceTier,
-    TopLogprobs,
-    WebSearchContextSize,
-    WebSearchLocation,
-    WebSearchOptions,
-    WebSearchUserLocation,
-    WebSearchUserLocationType,
+    ChatCompletionAudio, ChatCompletionAudioFormat, ChatCompletionAudioVoice,
+    ChatCompletionFunctionCall, ChatCompletionFunctions, ChatCompletionFunctionsArgs,
+    ChatCompletionRequestAssistantMessageAudio, ChatCompletionRequestAssistantMessageContent,
+    ChatCompletionRequestAssistantMessageContentPart, ChatCompletionRequestDeveloperMessage,
+    ChatCompletionRequestDeveloperMessageArgs, ChatCompletionRequestDeveloperMessageContent,
+    ChatCompletionRequestFunctionMessage, ChatCompletionRequestFunctionMessageArgs,
+    ChatCompletionRequestMessageContentPartAudio, ChatCompletionRequestMessageContentPartRefusal,
+    ChatCompletionRequestMessageContentPartText, ChatCompletionRequestSystemMessageContent,
+    ChatCompletionRequestSystemMessageContentPart, ChatCompletionResponseMessageAudio, Choice,
+    CompletionFinishReason, CompletionTokensDetails, CompletionUsage, FunctionObject,
+    FunctionObjectArgs, ImageDetail, InputAudio, InputAudioFormat, Logprobs, PredictionContent,
+    PredictionContentContent, Prompt, PromptTokensDetails, ResponseFormat,
+    ResponseFormatJsonSchema, Role, ServiceTier, TopLogprobs, WebSearchContextSize,
+    WebSearchLocation, WebSearchOptions, WebSearchUserLocation, WebSearchUserLocationType,
 };
 
 /// OpenAI stop configuration, with Dynamo's token-id stop extension.
@@ -2056,7 +2026,10 @@ mod tests {
 
         assert_eq!(assistant.partial, None);
         let json = serde_json::to_value(&assistant).unwrap();
-        assert!(json.get("partial").is_none(), "partial should be omitted when absent");
+        assert!(
+            json.get("partial").is_none(),
+            "partial should be omitted when absent"
+        );
     }
 
     #[test]
