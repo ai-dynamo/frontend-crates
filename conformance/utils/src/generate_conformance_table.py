@@ -2207,7 +2207,7 @@ def _load_unified_fixtures(base: Path):
         return out
 
     def _overlay_base(name):
-        return re.sub(r"\+pr\d+\.patch\d+$", "", name)
+        return re.sub(r"\+pr\d+(?:\.patch\d+)?$", "", name)
 
     def _merge_layers(layers, kind):
         merged = {}
@@ -2245,7 +2245,7 @@ def _load_unified_fixtures(base: Path):
     # `sorted()` alone is lexicographic (0.1.9 > 0.1.10), so sort on the version key.
     engine_versions: dict[str, list[tuple[str, str]]] = {}
     for d in sorted(base.iterdir()):
-        if not d.is_dir() or _overlay_base(d.name) in ("inputs", "golden") or d.name == "dynamo_v2-0.3.4+pr200":
+        if not d.is_dir() or _overlay_base(d.name) in ("inputs", "golden"):
             continue
         m = re.match(r"^([a-z0-9_]+)-(\d.*)$", d.name)
         if m:
