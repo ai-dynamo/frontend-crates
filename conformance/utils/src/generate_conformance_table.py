@@ -2207,7 +2207,7 @@ def _load_unified_fixtures(base: Path):
         return out
 
     def _overlay_base(name):
-        return re.sub(r"\+pr\d+\.patch\d+$", "", name)
+        return re.sub(r"\+pr\d+(?:\.patch\d+)?$", "", name)
 
     def _merge_layers(layers, kind):
         merged = {}
@@ -2230,12 +2230,12 @@ def _load_unified_fixtures(base: Path):
     input_layers = ["inputs"] + sorted(
         d.name
         for d in base.iterdir()
-        if d.is_dir() and _overlay_base(d.name) == "inputs" and d.name != "inputs"
+        if d.is_dir() and _overlay_base(d.name) in ("inputs", "inputs+pr200") and d.name != "inputs"
     )
     golden_layers = ["golden"] + sorted(
         d.name
         for d in base.iterdir()
-        if d.is_dir() and _overlay_base(d.name) == "golden" and d.name != "golden"
+        if d.is_dir() and _overlay_base(d.name) in ("golden", "golden+pr200") and d.name != "golden"
     )
     inputs = _merge_layers(input_layers, "input")
     golden = _merge_layers(golden_layers, "golden")
@@ -2283,7 +2283,7 @@ def _load_unified_fixtures(base: Path):
     for ver, dirname in engine_versions.get("dynamo_v2", []):
         # `.patchN` is a sparse backfill for its released binary, but `+tag` identifies
         # a distinct branch capture and must remain selectable beside that release.
-        display_ver = _base_stream_version(ver)
+        display_ver = ver if "+" in ver and not _PATCH_SUFFIX_RE.search(ver) else _base_stream_version(ver)
         captured_cases = _read_dir(dirname)
         if _PATCH_SUFFIX_RE.search(ver):
             dynamo_by_ver.setdefault(display_ver, {}).update(captured_cases)

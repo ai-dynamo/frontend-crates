@@ -1650,6 +1650,29 @@ mod tests {
     }
 
     #[test]
+    fn response_prefilled_guided_text_streams_before_finish() {
+        let mut parser = muse_glimmer_unified(&tools());
+        parser
+            .initialize_request(UnifiedParserInit {
+                prompt_token_ids: Vec::new(),
+                starting_state: UnifiedParserStartingState::Response,
+                tool_output_mode: UnifiedToolOutputMode::GuidedJson {
+                    named_tool: Some("get_weather".to_string()),
+                },
+                invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+            })
+            .expect("guided init must be accepted");
+
+        let pushed = parser.push("ordinary ").expect("push");
+        assert_eq!(pushed, vec![UnifiedParserEvent::Text("ordinary ".into())]);
+        assert_eq!(
+            parser.push("response text").expect("push"),
+            vec![UnifiedParserEvent::Text("response text".into())]
+        );
+        assert!(parser.finish().expect("finish").is_empty());
+    }
+
+    #[test]
     fn a_reused_parser_reads_the_next_turn_the_way_a_fresh_one_does() {
         // `finish` cleared the buffer and the state but left every PER-TURN latch set,
         // so a second turn on the same instance was read through the first turn's tail.

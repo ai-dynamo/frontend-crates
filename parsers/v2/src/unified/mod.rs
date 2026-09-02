@@ -55,6 +55,7 @@ pub mod muse_glimmer;
 pub mod qwen3;
 
 use std::collections::BTreeMap;
+use std::ops::Range;
 
 pub use guided_cursor::{CommittedCall, GuidedJsonCursor};
 
@@ -1311,6 +1312,20 @@ impl GuidedReasoning {
         }
     }
 
+    /// The earliest fixed framing marker that must stay attached to response prose.
+    /// Pair-based reasoning markers are literal in Response; channel framing is still
+    /// normalized when the later guided payload establishes the response boundary.
+    fn response_marker_at(&self, haystack: &str) -> Option<(usize, usize)> {
+        match self {
+            Self::Pair(_) => None,
+            Self::Channel(channel) => channel
+                .competitors
+                .iter()
+                .filter_map(|marker| haystack.find(marker).map(|at| (at, marker.len())))
+                .min_by_key(|(at, _)| *at),
+        }
+    }
+
     /// The role label written immediately after a fixed opener, if any.
     fn start_label(&self) -> Option<(&'static str, &'static str)> {
         match self {
@@ -1416,8 +1431,458 @@ struct GuidedState {
     /// the other two contracts buffer to completion, so under them this never
     /// advances and the completion path below is unchanged.
     cursor: GuidedJsonCursor,
+    /// Forward-only scanner for response-prefilled prose before a guided payload.
+    response_prefill_probe: ResponsePrefillProbe,
+    /// Whitespace after already-emitted response prose remains visible; leading
+    /// whitespace before any prose is structural framing for the guided payload.
+    response_prefill_text_emitted: bool,
+    /// A stripped response wrapper may be followed by framing whitespace in a
+    /// later chunk. Keep that whitespace structural until visible prose resumes.
+    response_prefill_after_marker: bool,
     input: String,
     json: String,
+}
+
+/// Tracks complete JSON values in response-prefilled prose without reparsing the
+/// accumulated response on every streamed chunk.
+#[derive(Debug, Default)]
+struct ResponsePrefillProbe {
+    scan_at: usize,
+    candidates: Vec<(usize, char)>,
+    json: JsonPrefixState,
+    scan_steps: usize,
+}
+
+#[derive(Debug, Default)]
+struct JsonPrefixState {
+    frames: Vec<JsonFrame>,
+    string: Option<JsonStringKind>,
+    string_escaped: bool,
+    unicode_digits: u8,
+    primitive: Option<JsonPrimitive>,
+    invalid: bool,
+    complete: bool,
+}
+
+#[derive(Debug)]
+enum JsonFrame {
+    Object(JsonObjectState),
+    Array(JsonArrayState),
+}
+
+#[derive(Debug)]
+enum JsonObjectState {
+    KeyOrEnd,
+    Key,
+    Colon,
+    Value,
+    CommaOrEnd,
+}
+
+#[derive(Debug)]
+enum JsonArrayState {
+    ValueOrEnd,
+    Value,
+    CommaOrEnd,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum JsonStringKind {
+    Key,
+    Value,
+}
+
+#[derive(Debug)]
+enum JsonPrimitive {
+    Literal {
+        expected: &'static [u8],
+        next: usize,
+    },
+    Number(JsonNumberState),
+}
+
+#[derive(Debug)]
+enum JsonNumberState {
+    Sign,
+    IntegerZero,
+    Integer,
+    FractionStart,
+    Fraction,
+    ExponentStart,
+    ExponentSign,
+    Exponent,
+}
+
+fn is_json_whitespace(ch: char) -> bool {
+    matches!(ch, ' ' | '\t' | '\n' | '\r')
+}
+
+impl JsonPrefixState {
+    fn new(opener: char) -> Self {
+        let mut state = Self::default();
+        state.start_container(opener);
+        state
+    }
+
+    fn in_string(&self) -> bool {
+        self.string.is_some()
+    }
+
+    fn start_container(&mut self, opener: char) {
+        match opener {
+            '{' => self
+                .frames
+                .push(JsonFrame::Object(JsonObjectState::KeyOrEnd)),
+            '[' => self
+                .frames
+                .push(JsonFrame::Array(JsonArrayState::ValueOrEnd)),
+            _ => self.invalid = true,
+        }
+    }
+
+    fn consume(&mut self, ch: char) {
+        if self.invalid {
+            return;
+        }
+        if self.complete {
+            if !is_json_whitespace(ch) {
+                self.invalid = true;
+            }
+            return;
+        }
+        if self.string.is_some() {
+            self.consume_string(ch);
+            return;
+        }
+        if self.primitive.is_some() {
+            self.consume_primitive(ch);
+            return;
+        }
+
+        let Some(frame) = self.frames.last() else {
+            self.invalid = true;
+            return;
+        };
+        match frame {
+            JsonFrame::Object(state) => match *state {
+                JsonObjectState::KeyOrEnd => {
+                    if ch == '}' {
+                        self.close_container();
+                    } else if ch == '"' {
+                        self.string = Some(JsonStringKind::Key);
+                    } else if !is_json_whitespace(ch) {
+                        self.invalid = true;
+                    }
+                }
+                JsonObjectState::Key => {
+                    if ch == '"' {
+                        self.string = Some(JsonStringKind::Key);
+                    } else if !is_json_whitespace(ch) {
+                        self.invalid = true;
+                    }
+                }
+                JsonObjectState::Colon => {
+                    if ch == ':' {
+                        self.set_object_state(JsonObjectState::Value);
+                    } else if !is_json_whitespace(ch) {
+                        self.invalid = true;
+                    }
+                }
+                JsonObjectState::Value => self.start_value(ch),
+                JsonObjectState::CommaOrEnd => {
+                    if ch == ',' {
+                        self.set_object_state(JsonObjectState::Key);
+                    } else if ch == '}' {
+                        self.close_container();
+                    } else if !is_json_whitespace(ch) {
+                        self.invalid = true;
+                    }
+                }
+            },
+            JsonFrame::Array(state) => match *state {
+                JsonArrayState::ValueOrEnd => {
+                    if ch == ']' {
+                        self.close_container();
+                    } else {
+                        self.start_value(ch);
+                    }
+                }
+                JsonArrayState::Value => self.start_value(ch),
+                JsonArrayState::CommaOrEnd => {
+                    if ch == ',' {
+                        self.set_array_state(JsonArrayState::Value);
+                    } else if ch == ']' {
+                        self.close_container();
+                    } else if !is_json_whitespace(ch) {
+                        self.invalid = true;
+                    }
+                }
+            },
+        }
+    }
+
+    fn set_object_state(&mut self, state: JsonObjectState) {
+        if let Some(JsonFrame::Object(current)) = self.frames.last_mut() {
+            *current = state;
+        } else {
+            self.invalid = true;
+        }
+    }
+
+    fn set_array_state(&mut self, state: JsonArrayState) {
+        if let Some(JsonFrame::Array(current)) = self.frames.last_mut() {
+            *current = state;
+        } else {
+            self.invalid = true;
+        }
+    }
+
+    fn consume_string(&mut self, ch: char) {
+        if self.unicode_digits > 0 {
+            if ch.is_ascii_hexdigit() {
+                self.unicode_digits -= 1;
+            } else {
+                self.invalid = true;
+            }
+            return;
+        }
+        if self.string_escaped {
+            self.string_escaped = false;
+            if ch == 'u' {
+                self.unicode_digits = 4;
+            } else if !matches!(ch, '"' | '\\' | '/' | 'b' | 'f' | 'n' | 'r' | 't') {
+                self.invalid = true;
+            }
+            return;
+        }
+        if ch == '\\' {
+            self.string_escaped = true;
+        } else if ch == '"' {
+            let Some(kind) = self.string.take() else {
+                self.invalid = true;
+                return;
+            };
+            match kind {
+                JsonStringKind::Key => {
+                    self.set_object_state(JsonObjectState::Colon);
+                }
+                JsonStringKind::Value => self.value_complete(),
+            }
+        } else if ch <= '\u{1f}' {
+            self.invalid = true;
+        }
+    }
+
+    fn consume_primitive(&mut self, ch: char) {
+        let delimiter = is_json_whitespace(ch) || matches!(ch, ',' | '}' | ']');
+        let Some(primitive) = self.primitive.take() else {
+            self.invalid = true;
+            return;
+        };
+        match primitive {
+            JsonPrimitive::Literal { expected, next } => {
+                if next == expected.len() && delimiter {
+                    self.value_complete();
+                    self.consume(ch);
+                } else if next < expected.len()
+                    && ch.is_ascii()
+                    && Some(ch as u8) == expected.get(next).copied()
+                {
+                    self.primitive = Some(JsonPrimitive::Literal {
+                        expected,
+                        next: next + 1,
+                    });
+                } else {
+                    self.invalid = true;
+                }
+            }
+            JsonPrimitive::Number(mut state) => {
+                if delimiter
+                    && matches!(
+                        state,
+                        JsonNumberState::IntegerZero
+                            | JsonNumberState::Integer
+                            | JsonNumberState::Fraction
+                            | JsonNumberState::Exponent
+                    )
+                {
+                    self.value_complete();
+                    self.consume(ch);
+                } else if let Some(next) = Self::next_number_state(&state, ch) {
+                    state = next;
+                    self.primitive = Some(JsonPrimitive::Number(state));
+                } else {
+                    self.invalid = true;
+                }
+            }
+        }
+    }
+
+    fn next_number_state(state: &JsonNumberState, ch: char) -> Option<JsonNumberState> {
+        match state {
+            JsonNumberState::Sign if ch == '0' => Some(JsonNumberState::IntegerZero),
+            JsonNumberState::Sign if ch.is_ascii_digit() => Some(JsonNumberState::Integer),
+            JsonNumberState::IntegerZero if ch == '.' => Some(JsonNumberState::FractionStart),
+            JsonNumberState::IntegerZero if matches!(ch, 'e' | 'E') => {
+                Some(JsonNumberState::ExponentStart)
+            }
+            JsonNumberState::Integer if ch.is_ascii_digit() => Some(JsonNumberState::Integer),
+            JsonNumberState::Integer if ch == '.' => Some(JsonNumberState::FractionStart),
+            JsonNumberState::Integer if matches!(ch, 'e' | 'E') => {
+                Some(JsonNumberState::ExponentStart)
+            }
+            JsonNumberState::FractionStart if ch.is_ascii_digit() => {
+                Some(JsonNumberState::Fraction)
+            }
+            JsonNumberState::Fraction if ch.is_ascii_digit() => Some(JsonNumberState::Fraction),
+            JsonNumberState::Fraction if matches!(ch, 'e' | 'E') => {
+                Some(JsonNumberState::ExponentStart)
+            }
+            JsonNumberState::ExponentStart if matches!(ch, '+' | '-') => {
+                Some(JsonNumberState::ExponentSign)
+            }
+            JsonNumberState::ExponentStart if ch.is_ascii_digit() => {
+                Some(JsonNumberState::Exponent)
+            }
+            JsonNumberState::ExponentSign if ch.is_ascii_digit() => Some(JsonNumberState::Exponent),
+            JsonNumberState::Exponent if ch.is_ascii_digit() => Some(JsonNumberState::Exponent),
+            _ => None,
+        }
+    }
+
+    fn start_value(&mut self, ch: char) {
+        match ch {
+            '{' | '[' => self.start_container(ch),
+            '"' => self.string = Some(JsonStringKind::Value),
+            't' => {
+                self.primitive = Some(JsonPrimitive::Literal {
+                    expected: b"true",
+                    next: 1,
+                })
+            }
+            'f' => {
+                self.primitive = Some(JsonPrimitive::Literal {
+                    expected: b"false",
+                    next: 1,
+                })
+            }
+            'n' => {
+                self.primitive = Some(JsonPrimitive::Literal {
+                    expected: b"null",
+                    next: 1,
+                })
+            }
+            '-' => self.primitive = Some(JsonPrimitive::Number(JsonNumberState::Sign)),
+            '0' => self.primitive = Some(JsonPrimitive::Number(JsonNumberState::IntegerZero)),
+            ch if ch.is_ascii_digit() => {
+                self.primitive = Some(JsonPrimitive::Number(JsonNumberState::Integer))
+            }
+            _ if is_json_whitespace(ch) => {}
+            _ => self.invalid = true,
+        }
+    }
+
+    fn value_complete(&mut self) {
+        let Some(frame) = self.frames.last_mut() else {
+            self.complete = true;
+            return;
+        };
+        match frame {
+            JsonFrame::Object(state) => *state = JsonObjectState::CommaOrEnd,
+            JsonFrame::Array(state) => *state = JsonArrayState::CommaOrEnd,
+        }
+    }
+
+    fn close_container(&mut self) {
+        self.frames.pop();
+        self.value_complete();
+    }
+}
+
+impl ResponsePrefillProbe {
+    fn reset(&mut self) {
+        *self = Self::default();
+    }
+
+    /// Returns each lexically complete root object or array in forward order.
+    fn next_complete_value(&mut self, input: &str) -> Option<Range<usize>> {
+        while self.scan_at < input.len() {
+            let (relative, ch) = input[self.scan_at..].char_indices().next()?;
+            debug_assert_eq!(relative, 0);
+            let at = self.scan_at;
+            self.scan_at += ch.len_utf8();
+            self.scan_steps += 1;
+
+            if self.candidates.is_empty() {
+                if matches!(ch, '{' | '[') {
+                    self.candidates.push((at, ch));
+                    self.json = JsonPrefixState::new(ch);
+                }
+                continue;
+            }
+
+            match ch {
+                '{' | '[' => {
+                    let in_string = self.json.in_string();
+                    // A prose opener is allowed to contain a later real payload. If the
+                    // prefix state becomes malformed while consuming the opener,
+                    // resynchronize here instead of letting its unmatched bracket swallow
+                    // the payload. This also handles an opener after an already-invalid
+                    // literal, key/colon transition, or escape while preserving openers in
+                    // valid JSON strings and nested values.
+                    // The state is advanced once per byte; unlike reparsing a slice with
+                    // serde_json, this decision remains linear for deeply nested input.
+                    self.json.consume(ch);
+                    if self.json.invalid {
+                        self.candidates.clear();
+                        self.json = JsonPrefixState::new(ch);
+                        self.candidates.push((at, ch));
+                    } else if !in_string {
+                        self.candidates.push((at, ch));
+                    }
+                }
+                '}' | ']' => {
+                    let in_string = self.json.in_string();
+                    self.json.consume(ch);
+                    if in_string {
+                        continue;
+                    }
+                    let Some((start, opener)) = self.candidates.last().copied() else {
+                        continue;
+                    };
+                    if (opener == '{' && ch != '}') || (opener == '[' && ch != ']') {
+                        // A mismatched closer makes the current candidate unusable. The
+                        // closer itself is prose; a later opener can start a new value.
+                        self.candidates.clear();
+                        self.json = JsonPrefixState::default();
+                        continue;
+                    }
+                    self.candidates.pop();
+                    if self.candidates.is_empty() {
+                        return Some(start..self.scan_at);
+                    }
+                }
+                _ => self.json.consume(ch),
+            }
+        }
+        None
+    }
+
+    /// Bytes before this offset are safe visible prose; an active candidate and its
+    /// nested values must remain available for the next chunk.
+    fn safe_prefix_len(&self, input: &str) -> usize {
+        self.candidates
+            .first()
+            .map_or(input.len(), |(start, _)| *start)
+    }
+
+    /// Drop an emitted prefix while keeping lexical state relative to the retained tail.
+    fn discard_prefix(&mut self, prefix_len: usize) {
+        self.scan_at -= prefix_len;
+        for (start, _) in &mut self.candidates {
+            *start -= prefix_len;
+        }
+    }
 }
 
 /// Earliest control marker in `haystack`, as `(pos, consume_len)`.
@@ -1717,6 +2182,12 @@ fn json_payload_started(buf: &str) -> bool {
     matches!(buf.trim_start().as_bytes().first(), Some(b'{') | Some(b'['))
 }
 
+/// First opening brace/bracket whose suffix is valid JSON so far.
+///
+/// Response-prefilled output may quote brackets as ordinary prose before the
+/// guided payload. A syntactically invalid candidate such as `[docs]` remains
+/// visible text; an incomplete valid prefix remains buffered until its payload
+/// finishes streaming.
 fn json_payload_kind(payload: &str) -> &'static str {
     match serde_json::from_str::<serde_json::Value>(payload) {
         Ok(serde_json::Value::Object(_)) => "object",
@@ -1843,6 +2314,9 @@ impl GuidedState {
             payload_emitted: false,
             post_payload_text_started: false,
             cursor,
+            response_prefill_probe: ResponsePrefillProbe::default(),
+            response_prefill_text_emitted: false,
+            response_prefill_after_marker: false,
             input: String::new(),
             json: String::new(),
         }
@@ -1884,7 +2358,28 @@ impl GuidedState {
         Ok(())
     }
 
+    fn push_visible_text(&self, output: &mut Vec<UnifiedParserEvent>, text: &str) {
+        push_run(output, Kind::Text, &self.reasoning.strip_text(text));
+    }
+
+    fn is_guided_payload(&self, payload: &str) -> bool {
+        match self.named_tool {
+            Some(_) => {
+                serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(payload).is_ok()
+            }
+            None => parse_required_guided_calls(payload).is_some_and(|calls| !calls.is_empty()),
+        }
+    }
+
     fn finish(&mut self) -> Result<Vec<UnifiedParserEvent>> {
+        if self.invalid_payload == InvalidGuidedPayloadPolicy::Reject
+            && !self.reasoning_enabled
+            && !self.payload_emitted
+            && self.mode != GuidedMode::VisibleOnly
+        {
+            self.json.push_str(&self.input);
+            self.input.clear();
+        }
         let mut output = self.drain(true);
         output.extend(self.emit_completed_json()?);
         if self.payload_emitted {
@@ -1932,6 +2427,9 @@ impl GuidedState {
             boundary.reset();
         }
         self.invoke_candidate.clear();
+        self.response_prefill_probe.reset();
+        self.response_prefill_text_emitted = false;
+        self.response_prefill_after_marker = false;
         recovered
     }
 
@@ -1940,7 +2438,10 @@ impl GuidedState {
     /// it go back through the channel/control scanner rather than being mistaken
     /// for JSON or stripped by a separate tail-only marker implementation.
     fn emit_completed_json(&mut self) -> Result<Vec<UnifiedParserEvent>> {
-        if self.payload_emitted || !json_payload_started(&self.json) {
+        if self.mode != GuidedMode::VisibleOnly
+            || self.payload_emitted
+            || !json_payload_started(&self.json)
+        {
             return Ok(Vec::new());
         }
 
@@ -2356,11 +2857,235 @@ impl GuidedState {
                     // dropped the call — while the same bytes arriving in small chunks
                     // latched here first and parsed correctly. Same input, two answers,
                     // decided by chunking (`I6`).
-                    if !self.content_routed
+                    if self.reasoning_enabled
+                        && !self.content_routed
                         && !self.payload_emitted
                         && (json_payload_started(&self.json)
                             || (self.json.trim().is_empty() && json_payload_started(&self.input)))
                     {
+                        self.mode = GuidedMode::VisibleOnly;
+                        continue;
+                    }
+
+                    // Response means the prompt already opened visible content, so
+                    // reasoning markers are literal prose.  Keep that prose out of
+                    // the payload buffer even when the guided JSON follows in the
+                    // same chunk; otherwise the literal prefix makes the array no
+                    // longer look like a payload and the call is emitted as text.
+                    // Whitespace stays buffered because it may still be the leading
+                    // structural whitespace of a payload split across chunks.
+                    if !self.reasoning_enabled && !self.payload_emitted {
+                        let reject_buffering = self.invalid_payload
+                            == InvalidGuidedPayloadPolicy::Reject
+                            && self.json.is_empty();
+                        let mut payload = None;
+                        if reject_buffering {
+                            while let Some(candidate) =
+                                self.response_prefill_probe.next_complete_value(&self.input)
+                            {
+                                if self.is_guided_payload(&self.input[candidate.clone()]) {
+                                    payload = Some(candidate);
+                                    break;
+                                }
+                            }
+                            if payload.is_none() {
+                                // Reject is transactional: response prose cannot be
+                                // committed until the later guided payload has passed
+                                // shape validation. Keep this live buffer in place so
+                                // character-sized pushes do not copy it or rescan it.
+                                break;
+                            }
+                        }
+                        let mut combined = if reject_buffering {
+                            std::mem::take(&mut self.input)
+                        } else {
+                            let mut combined = std::mem::take(&mut self.json);
+                            combined.push_str(&self.input);
+                            self.input.clear();
+                            combined
+                        };
+                        if !reject_buffering {
+                            while let Some(candidate) =
+                                self.response_prefill_probe.next_complete_value(&combined)
+                            {
+                                if self.is_guided_payload(&combined[candidate.clone()]) {
+                                    payload = Some(candidate);
+                                    break;
+                                }
+                            }
+                        }
+                        let Some(payload) = payload else {
+                            if self.invalid_payload == InvalidGuidedPayloadPolicy::Reject {
+                                if flush {
+                                    self.json = combined;
+                                } else {
+                                    self.input = combined;
+                                }
+                                break;
+                            }
+                            if self.response_prefill_after_marker {
+                                let leading = combined.len() - combined.trim_start().len();
+                                if leading > 0 {
+                                    self.response_prefill_probe.discard_prefix(leading);
+                                    combined = combined[leading..].to_string();
+                                }
+                                if combined.trim().is_empty() {
+                                    self.input = combined;
+                                    break;
+                                }
+                                self.response_prefill_after_marker = false;
+                            }
+                            let safe_len = self.response_prefill_probe.safe_prefix_len(&combined);
+                            let keep = guided_holdback_len(
+                                &combined[..safe_len],
+                                &[],
+                                &self.grammar.control_markers,
+                                &self.grammar.invoke_end,
+                                &self.grammar.invoke_start,
+                                self.start_label(),
+                                self.grammar.guided_prefix_policy,
+                                flush,
+                            )
+                            .max(
+                                self.reasoning
+                                    .holdback(&combined[..safe_len], self.channel_state()),
+                            )
+                            .max(
+                                if let GuidedReasoning::Channel(channel) = self.reasoning {
+                                    marker_prefix_suffix_len(
+                                        &combined[..safe_len],
+                                        channel.competitors.iter().copied(),
+                                    )
+                                } else {
+                                    0
+                                },
+                            );
+                            let response_marker =
+                                self.reasoning.response_marker_at(&combined[..safe_len]);
+                            let visible_end = response_marker.map_or(safe_len, |(at, _)| at);
+                            let visible_len = visible_end.saturating_sub(keep);
+                            if let Some((marker_at, marker_len)) = response_marker
+                                && marker_at <= visible_end
+                            {
+                                self.push_visible_text(&mut output, &combined[..marker_at]);
+                                self.response_prefill_text_emitted = true;
+                                self.stripped_markup = true;
+                                self.response_prefill_after_marker = true;
+                                let consumed = marker_at + marker_len;
+                                self.response_prefill_probe.discard_prefix(consumed);
+                                self.json = combined[consumed..].to_string();
+                                continue;
+                            }
+                            if visible_len == 0
+                                || (combined[..visible_len].trim().is_empty()
+                                    && !self.response_prefill_text_emitted)
+                            {
+                                self.json = combined;
+                            } else {
+                                let visible = &combined[..visible_len];
+                                if self.response_prefill_after_marker {
+                                    let leading = visible.len() - visible.trim_start().len();
+                                    if leading > 0 {
+                                        self.response_prefill_probe.discard_prefix(leading);
+                                        self.input = combined[leading..].to_string();
+                                        continue;
+                                    }
+                                    self.response_prefill_after_marker = false;
+                                }
+                                if let Some((marker_at, marker_len)) = self.control_marker_at(
+                                    &combined[..visible_len],
+                                    Some(visible_len),
+                                    &[],
+                                    flush,
+                                ) {
+                                    self.push_visible_text(&mut output, &combined[..marker_at]);
+                                    self.response_prefill_text_emitted = true;
+                                    self.stripped_markup = true;
+                                    self.response_prefill_after_marker = true;
+                                    let consumed = marker_at + marker_len;
+                                    self.response_prefill_probe.discard_prefix(consumed);
+                                    self.json = combined[consumed..].to_string();
+                                    continue;
+                                }
+                                self.push_visible_text(&mut output, &combined[..visible_len]);
+                                self.response_prefill_text_emitted = true;
+                                self.response_prefill_probe.discard_prefix(visible_len);
+                                self.input = combined[visible_len..].to_string();
+                            }
+                            break;
+                        };
+                        if payload.start > 0 && !self.response_prefill_text_emitted {
+                            let prefix = &combined[..payload.start];
+                            if prefix.trim().is_empty() {
+                                self.response_prefill_probe.reset();
+                                self.json = combined[payload.start..].to_string();
+                                self.mode = GuidedMode::VisibleOnly;
+                                continue;
+                            }
+                        }
+                        let mut prefix_at = 0;
+                        while prefix_at < payload.start {
+                            if self.response_prefill_after_marker {
+                                while prefix_at < payload.start {
+                                    let ch = combined[prefix_at..]
+                                        .chars()
+                                        .next()
+                                        .expect("prefix_at is before the payload");
+                                    if !ch.is_whitespace() {
+                                        break;
+                                    }
+                                    prefix_at += ch.len_utf8();
+                                }
+                                self.response_prefill_after_marker = false;
+                                if prefix_at == payload.start {
+                                    break;
+                                }
+                            }
+                            let prefix = &combined[prefix_at..payload.start];
+                            if let Some((marker_at, marker_len)) =
+                                self.reasoning.response_marker_at(prefix)
+                            {
+                                let marker_at = prefix_at + marker_at;
+                                self.push_visible_text(
+                                    &mut output,
+                                    &combined[prefix_at..marker_at],
+                                );
+                                self.response_prefill_text_emitted = true;
+                                self.stripped_markup = true;
+                                prefix_at = marker_at + marker_len;
+                                self.response_prefill_after_marker = true;
+                                continue;
+                            }
+                            let marker = self.control_marker_at(
+                                prefix,
+                                Some(prefix.len()),
+                                &[],
+                                // The probe already found a complete guided value after
+                                // this prefix, so the prefix-form header cannot grow into
+                                // a native invoke. Let the shared marker owner consume its
+                                // complete header even when the current push is not EOF.
+                                true,
+                            );
+                            let Some((marker_at, marker_len)) = marker else {
+                                let text = &combined[prefix_at..payload.start];
+                                if self.response_prefill_text_emitted || !text.trim().is_empty() {
+                                    self.push_visible_text(&mut output, text);
+                                    self.response_prefill_text_emitted = true;
+                                }
+                                break;
+                            };
+                            let text_end = prefix_at + marker_at;
+                            let text = &combined[prefix_at..text_end];
+                            if self.response_prefill_text_emitted || !text.trim().is_empty() {
+                                self.push_visible_text(&mut output, text);
+                                self.response_prefill_text_emitted = true;
+                            }
+                            self.stripped_markup = true;
+                            prefix_at = text_end + marker_len;
+                            self.response_prefill_after_marker = true;
+                        }
+                        self.response_prefill_probe.reset();
+                        self.json = combined[payload.start..].to_string();
                         self.mode = GuidedMode::VisibleOnly;
                         continue;
                     }
@@ -2460,11 +3185,7 @@ impl GuidedState {
                                 self.json = pending;
                             }
                         } else {
-                            push_run(
-                                &mut output,
-                                Kind::Text,
-                                &self.reasoning.strip_text(&pending),
-                            );
+                            self.push_visible_text(&mut output, &pending);
                             if self.payload_emitted {
                                 self.post_payload_text_started = true;
                             }
@@ -2490,11 +3211,7 @@ impl GuidedState {
                                 self.json = pending;
                             }
                         } else {
-                            push_run(
-                                &mut output,
-                                Kind::Text,
-                                &self.reasoning.strip_text(&pending),
-                            );
+                            self.push_visible_text(&mut output, &pending);
                             if self.payload_emitted {
                                 self.post_payload_text_started = true;
                             }
@@ -2539,6 +3256,12 @@ impl GuidedState {
                         .max(self.invoke_holdback_len())
                         .max(if self.reasoning_enabled {
                             self.reasoning.holdback(&self.input, self.channel_state())
+                        } else if self.payload_emitted {
+                            // Response-prefilled turns do not interpret a later
+                            // marker as a reasoning transition, but their visible
+                            // text still needs complete marker bytes for the shared
+                            // normalizer to strip them across chunk boundaries.
+                            self.reasoning.holdback(&self.input, self.channel_state())
                         } else {
                             0
                         })
@@ -2549,6 +3272,26 @@ impl GuidedState {
                                 &self.input,
                                 std::iter::once(self.grammar.invoke_end.as_str()),
                             )
+                        } else {
+                            0
+                        })
+                        .max(if self.payload_emitted {
+                            // A response prefill may resume with arbitrary prose after
+                            // a call. Retain an unfinished family framing marker there
+                            // so the visible-text normalizer receives it atomically.
+                            let mut marker_keep = marker_prefix_suffix_len(
+                                &self.input,
+                                self.reasoning
+                                    .competitors()
+                                    .into_iter()
+                                    .chain(self.reasoning.close_markers()),
+                            );
+                            if !self.reasoning_enabled
+                                && let Some(at) = self.input.rfind("to=")
+                            {
+                                marker_keep = marker_keep.max(self.input.len() - at);
+                            }
+                            marker_keep
                         } else {
                             0
                         })
@@ -2570,12 +3313,16 @@ impl GuidedState {
                                 }));
                             }
                         } else if self.answer_only() {
-                            push_run(
-                                &mut output,
-                                Kind::Text,
-                                &self.reasoning.strip_text(&self.input[..visible_len]),
-                            );
+                            self.push_visible_text(&mut output, &self.input[..visible_len]);
                             self.post_payload_text_started = true;
+                        } else if !self.reasoning_enabled && self.json.trim().is_empty() {
+                            let mut visible = std::mem::take(&mut self.json);
+                            visible.push_str(&self.input[..visible_len]);
+                            if visible.trim().is_empty() {
+                                self.json = visible;
+                            } else {
+                                self.push_visible_text(&mut output, &visible);
+                            }
                         } else {
                             self.json.push_str(&self.input[..visible_len]);
                         }
@@ -2593,11 +3340,7 @@ impl GuidedState {
                     }
                     if flush && !self.input.is_empty() {
                         if self.answer_only() {
-                            push_run(
-                                &mut output,
-                                Kind::Text,
-                                &self.reasoning.strip_text(&self.input),
-                            );
+                            self.push_visible_text(&mut output, &self.input);
                             self.post_payload_text_started = true;
                         } else {
                             self.json.push_str(&self.input);
@@ -2975,7 +3718,9 @@ impl GuidedState {
     /// Under the two buffering contracts this is a no-op, so their behaviour is
     /// byte-identical to before the streaming path existed.
     fn emit_incremental(&mut self, output: &mut Vec<UnifiedParserEvent>) {
-        if self.invalid_payload != InvalidGuidedPayloadPolicy::StreamBestEffort {
+        if self.invalid_payload != InvalidGuidedPayloadPolicy::StreamBestEffort
+            || self.mode != GuidedMode::VisibleOnly
+        {
             return;
         }
         // Both choices stream. A named choice's payload is BARE arguments with no
@@ -3214,7 +3959,7 @@ fn convert_guided_call(call: GuidedToolCall) -> Option<GuidedCall> {
     // block, golden `arguments: {}` — so voiding it here made guided disagree with
     // native on an identical shape and made a parameterless tool uncallable. What
     // makes an element invalid is a missing `name` (required on GuidedToolCall);
-    // that still voids the whole array, per `31.c` / `51.b`.
+    // that still voids the whole array, per `31-3` / `51.b`.
     let arguments = match (call.parameters, call.arguments) {
         // PRESENT but not an object is a malformed call, the same judgement the
         // NAMED path makes on its whole payload: arguments that are a string or
@@ -3611,6 +4356,293 @@ mod tests {
             name: name.map(str::to_string),
             arguments: arguments.to_string(),
         })
+    }
+
+    fn guided_events_at_every_split(
+        family: &str,
+        input: &str,
+        starting_state: UnifiedParserStartingState,
+    ) -> Vec<Vec<UnifiedEvent>> {
+        let tools = vec![Tool {
+            name: "get_weather".to_string(),
+            description: None,
+            parameters: serde_json::json!({"type":"object"}),
+            strict: None,
+        }];
+        input
+            .char_indices()
+            .map(|(split, _)| split)
+            .chain(std::iter::once(input.len()))
+            .map(|split| {
+                let mut parser = create_unified_parser_for_family(family, &tools).unwrap();
+                parser
+                    .initialize_request(UnifiedParserInit {
+                        starting_state,
+                        tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                        invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                        ..UnifiedParserInit::default()
+                    })
+                    .unwrap();
+                let mut events = parser.push(&input[..split]).unwrap();
+                events.extend(parser.push(&input[split..]).unwrap());
+                events.extend(parser.finish().unwrap().events);
+                assemble(&events)
+            })
+            .collect()
+    }
+
+    #[test]
+    fn response_prefill_keeps_literal_reasoning_markers_out_of_guided_json_at_every_split() {
+        let payload = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        for prefix in ["I mean <think>self literal</think>", "See [docs] before "] {
+            let input = format!("{prefix}{payload}");
+            let want = vec![
+                UnifiedEvent::Text {
+                    text: prefix.to_string(),
+                },
+                UnifiedEvent::ToolCall {
+                    name: "get_weather".to_string(),
+                    arguments: serde_json::json!({"city":"Paris"}),
+                },
+            ];
+            for (index, got) in
+                guided_events_at_every_split("qwen3", &input, UnifiedParserStartingState::Response)
+                    .into_iter()
+                    .enumerate()
+            {
+                assert_eq!(got, want, "qwen3 split {index}: {prefix}");
+            }
+        }
+    }
+
+    #[test]
+    fn response_prefill_emits_prose_before_guided_payload_closes() {
+        let mut parser = qwen3::qwen3_unified(&[]);
+        parser
+            .initialize_request(UnifiedParserInit {
+                starting_state: UnifiedParserStartingState::Response,
+                tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                ..UnifiedParserInit::default()
+            })
+            .unwrap();
+
+        let prose = "The answer begins before the call. ";
+        assert_eq!(
+            parser.push(prose).unwrap(),
+            vec![UnifiedParserEvent::Text(prose.into())],
+            "response prose must not wait for a complete guided payload"
+        );
+
+        let payload = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        let split = payload.find("Paris").expect("payload shape") + 2;
+        assert_eq!(
+            parser.push(&payload[..split]).unwrap(),
+            Vec::<UnifiedParserEvent>::new(),
+            "the incomplete payload must not dispatch a call"
+        );
+        assert_eq!(
+            parser.push(&payload[split..]).unwrap(),
+            vec![call(0, Some("get_weather"), r#"{"city":"Paris"}"#)],
+            "the call must be emitted by the push that closes its payload"
+        );
+        assert!(parser.finish().unwrap().events.is_empty());
+    }
+
+    #[test]
+    fn reject_response_prefill_buffers_prose_until_guided_payload_validates() {
+        let mut parser = qwen3::qwen3_unified(&[]);
+        parser
+            .initialize_request(UnifiedParserInit {
+                starting_state: UnifiedParserStartingState::Response,
+                tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                invalid_guided_payload: InvalidGuidedPayloadPolicy::Reject,
+                ..UnifiedParserInit::default()
+            })
+            .unwrap();
+
+        assert!(
+            parser.push("ordinary response prose").unwrap().is_empty(),
+            "Reject must not commit response prose before payload validation"
+        );
+        assert!(
+            parser
+                .push(r#"{"not_a_tool_call":true}"#)
+                .unwrap()
+                .is_empty(),
+            "a complete non-call candidate is still uncommitted until finish"
+        );
+
+        let error = parser
+            .finish()
+            .expect_err("the malformed guided payload must be rejected");
+        let typed = error
+            .downcast_ref::<InvalidGuidedPayload>()
+            .expect("Reject must return the typed guided-payload error");
+        assert_eq!(typed.kind, InvalidGuidedPayloadKind::InvalidJson);
+    }
+
+    #[test]
+    fn response_prefill_skips_valid_json_prose_before_required_calls_at_every_split() {
+        let payload = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        let prefix = "{\"message\":\"ordinary JSON prose\",\"items\":[\"cafe\",\"東京\"]} ";
+        let input = format!("{prefix}{payload}");
+        let want = vec![
+            UnifiedEvent::Text {
+                text: prefix.to_string(),
+            },
+            UnifiedEvent::ToolCall {
+                name: "get_weather".to_string(),
+                arguments: serde_json::json!({"city":"Paris"}),
+            },
+        ];
+        for (index, got) in
+            guided_events_at_every_split("qwen3", &input, UnifiedParserStartingState::Response)
+                .into_iter()
+                .enumerate()
+        {
+            assert_eq!(got, want, "qwen3 split {index}");
+        }
+    }
+
+    #[test]
+    fn response_prefill_skips_empty_array_before_required_calls_at_every_split() {
+        let payload = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        let prefix = "The result list is []. ";
+        let input = format!("{prefix}{payload}");
+        let want = vec![
+            UnifiedEvent::Text {
+                text: prefix.to_string(),
+            },
+            UnifiedEvent::ToolCall {
+                name: "get_weather".to_string(),
+                arguments: serde_json::json!({"city":"Paris"}),
+            },
+        ];
+        for (index, got) in
+            guided_events_at_every_split("qwen3", &input, UnifiedParserStartingState::Response)
+                .into_iter()
+                .enumerate()
+        {
+            assert_eq!(got, want, "qwen3 split {index}");
+        }
+    }
+
+    #[test]
+    fn response_prefill_discards_structural_whitespace_before_required_call_at_every_split() {
+        let payload = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        for starting_state in [
+            UnifiedParserStartingState::None,
+            UnifiedParserStartingState::Response,
+        ] {
+            let input = format!(" \n\t{payload}");
+            let want = vec![UnifiedEvent::ToolCall {
+                name: "get_weather".to_string(),
+                arguments: serde_json::json!({"city":"Paris"}),
+            }];
+            for (index, got) in guided_events_at_every_split("qwen3", &input, starting_state)
+                .into_iter()
+                .enumerate()
+            {
+                assert_eq!(
+                    got, want,
+                    "split {index}, starting_state {starting_state:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn response_prefill_resynchronizes_after_unmatched_bracket_prose_at_every_split() {
+        let payload = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        for prefix in ["See { unfinished prose ", "See { mismatched prose ] "] {
+            let input = format!("{prefix}{payload}");
+            let want = vec![
+                UnifiedEvent::Text {
+                    text: prefix.to_string(),
+                },
+                UnifiedEvent::ToolCall {
+                    name: "get_weather".to_string(),
+                    arguments: serde_json::json!({"city":"Paris"}),
+                },
+            ];
+
+            for (index, got) in
+                guided_events_at_every_split("qwen3", &input, UnifiedParserStartingState::Response)
+                    .into_iter()
+                    .enumerate()
+            {
+                assert_eq!(got, want, "qwen3 split {index}: {prefix}");
+            }
+        }
+    }
+
+    #[test]
+    fn response_prefill_resynchronizes_after_invalid_json_before_required_call_at_every_split() {
+        let payload = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        for prefix in [
+            r#"{"note":tru"#,
+            r#"{"a""#,
+            r#"{"a":x"#,
+            r#"{"note":"bad\q"#,
+        ] {
+            let input = format!("{prefix}{payload}");
+            let want = vec![
+                UnifiedEvent::Text {
+                    text: prefix.to_string(),
+                },
+                UnifiedEvent::ToolCall {
+                    name: "get_weather".to_string(),
+                    arguments: serde_json::json!({"city":"Paris"}),
+                },
+            ];
+
+            for (index, got) in
+                guided_events_at_every_split("qwen3", &input, UnifiedParserStartingState::Response)
+                    .into_iter()
+                    .enumerate()
+            {
+                assert_eq!(got, want, "qwen3 split {index}: {prefix}");
+            }
+        }
+    }
+
+    #[test]
+    fn response_prefill_probe_scans_each_byte_once() {
+        let input = r#"{"message":"ordinary JSON prose"} [{"name":"get_weather","arguments":{}}]"#;
+        let expected_start = input.find('[').unwrap();
+        let mut probe = ResponsePrefillProbe::default();
+        let mut candidate = None;
+        for end in input.char_indices().map(|(at, ch)| at + ch.len_utf8()) {
+            while let Some(found) = probe.next_complete_value(&input[..end]) {
+                if parse_required_guided_calls(&input[found.clone()])
+                    .is_some_and(|calls| !calls.is_empty())
+                {
+                    candidate = Some(found);
+                }
+            }
+            assert_eq!(probe.scan_at, end);
+        }
+        assert_eq!(candidate, Some(expected_start..input.len()));
+    }
+
+    #[test]
+    fn response_prefill_probe_resynchronizes_malformed_nested_prose_linearly() {
+        let malformed = format!("{{a{}", "{{".repeat(4096));
+        let payload = r#"[{"name":"get_weather","arguments":{}}]"#;
+        let input = format!("{malformed}{payload}");
+        let mut probe = ResponsePrefillProbe::default();
+
+        assert_eq!(
+            probe.next_complete_value(&input),
+            Some(malformed.len()..input.len()),
+            "the payload must remain discoverable after malformed nested prose"
+        );
+        assert_eq!(
+            probe.scan_steps,
+            input.len(),
+            "resynchronization must not rescan the accumulated candidate"
+        );
     }
 
     #[test]
