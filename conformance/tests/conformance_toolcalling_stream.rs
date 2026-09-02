@@ -81,6 +81,7 @@ struct FixtureDelta {
     name: Option<String>,
     #[serde(default)]
     arguments: Option<String>,
+    complete: Option<bool>,
 }
 
 // The corpus is versioned (inputs/ + <impl>-<version>/): the shared per-chunk
@@ -158,6 +159,40 @@ fn merge_dynamo(fx: &mut Fixture, dyn_dir: &Path, rel: &Path) {
     }
 }
 
+fn stream_dynamo_dirs(sv2: &Path) -> Vec<std::path::PathBuf> {
+    common::version_dirs_ascending_with_current(
+        sv2,
+        "dynamo_v2-",
+        common::STREAM_DYNAMO_V2_CURRENT_CAPTURE,
+    )
+}
+
+#[test]
+fn stream_dynamo_dirs_include_only_the_explicit_current_tag() {
+    let root = std::env::temp_dir().join(format!(
+        "dynamo-stream-dirs-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir_all(root.join("dynamo_v2-0.3.1")).unwrap();
+    std::fs::create_dir_all(root.join("dynamo_v2-0.3.4+historical")).unwrap();
+    std::fs::create_dir_all(root.join(common::STREAM_DYNAMO_V2_CURRENT_CAPTURE)).unwrap();
+
+    let names: Vec<_> = stream_dynamo_dirs(&root)
+        .into_iter()
+        .map(|path| path.file_name().unwrap().to_owned())
+        .collect();
+    assert_eq!(
+        names,
+        ["dynamo_v2-0.3.1", common::STREAM_DYNAMO_V2_CURRENT_CAPTURE].map(std::ffi::OsString::from)
+    );
+
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /// Compare emitted deltas for one chunk against the fixture's expected list.
@@ -210,6 +245,11 @@ fn diff_chunk(input: ChunkDiff<'_>, failures: &mut Vec<String>) {
                 got.arguments, want.arguments
             ));
         }
+        if let Some(complete) = want.complete
+            && got.complete != complete
+        {
+            errs.push(format!("complete {} != {}", got.complete, complete));
+        }
         if !errs.is_empty() {
             failures.push(format!(
                 "{} {} chunk[{}] delta[{i}]: {}",
@@ -228,6 +268,7 @@ struct EmittedDelta {
     id: bool,
     name: Option<String>,
     arguments: Option<String>,
+    complete: bool,
 }
 
 // The v2 stream overlay is fully canonical (`dynamo_v2`); the legacy `dynamo`
@@ -252,6 +293,7 @@ fn dynamo_unavailable(unavailable: &BTreeMap<String, String>) -> bool {
 fn expected_assembled(case: &Case) -> EngineResult {
     let mut names: BTreeMap<usize, String> = BTreeMap::new();
     let mut args: BTreeMap<usize, String> = BTreeMap::new();
+    let mut complete: BTreeMap<usize, bool> = BTreeMap::new();
     let mut normal_text = String::new();
     for chunk in &case.chunks {
         normal_text.push_str(dynamo_normal_text(&chunk.normal_text));
@@ -262,14 +304,20 @@ fn expected_assembled(case: &Case) -> EngineResult {
             if let Some(a) = &d.arguments {
                 args.entry(d.index as usize).or_default().push_str(a);
             }
+            // Older immutable captures predate explicit completion metadata. Their
+            // emitted deltas were all assembled calls, so retain that behavior.
+            *complete.entry(d.index as usize).or_default() |= d.complete.unwrap_or(true);
         }
     }
     let calls = names
         .into_iter()
-        .map(|(idx, name)| {
+        .filter_map(|(idx, name)| {
+            if complete.get(&idx) != Some(&true) {
+                return None;
+            }
             let raw = args.get(&idx).cloned().unwrap_or_default();
             let v = serde_json::from_str(&raw).unwrap_or(Value::String(raw));
-            (name, v)
+            Some((name, v))
         })
         .collect();
     EngineResult { calls, normal_text }
@@ -284,6 +332,7 @@ struct EngineResult {
 fn assemble_emitted(chunks: &[EmittedDelta], normal_text: String) -> EngineResult {
     let mut names: BTreeMap<usize, String> = BTreeMap::new();
     let mut args: BTreeMap<usize, String> = BTreeMap::new();
+    let mut complete: BTreeMap<usize, bool> = BTreeMap::new();
     for chunk in chunks {
         if let Some(name) = &chunk.name {
             names.entry(chunk.index).or_default().push_str(name);
@@ -291,13 +340,17 @@ fn assemble_emitted(chunks: &[EmittedDelta], normal_text: String) -> EngineResul
         if let Some(arguments) = &chunk.arguments {
             args.entry(chunk.index).or_default().push_str(arguments);
         }
+        *complete.entry(chunk.index).or_default() |= chunk.complete;
     }
     let calls = names
         .into_iter()
-        .map(|(idx, name)| {
+        .filter_map(|(idx, name)| {
+            if complete.get(&idx) != Some(&true) {
+                return None;
+            }
             let raw = args.remove(&idx).unwrap_or_default();
             let v = serde_json::from_str(&raw).unwrap_or(Value::String(raw));
-            (name, v)
+            Some((name, v))
         })
         .collect();
     EngineResult { calls, normal_text }
@@ -309,6 +362,7 @@ fn emitted_from_chunk(chunk: ToolCallResponseChunk) -> EmittedDelta {
         id: chunk.id.is_some(),
         name: chunk.function.as_ref().and_then(|f| f.name.clone()),
         arguments: chunk.function.as_ref().and_then(|f| f.arguments.clone()),
+        complete: true,
     }
 }
 
@@ -321,11 +375,14 @@ fn emitted_from_result(result: ToolParseResult) -> Vec<EmittedDelta> {
                  tool_index,
                  name,
                  arguments,
+                 complete,
+                 ..
              }| EmittedDelta {
                 index: tool_index,
                 id: false,
                 name,
                 arguments: Some(arguments),
+                complete,
             },
         )
         .collect()
@@ -342,7 +399,7 @@ fn toolcalling_stream_parity() {
     // history, folded ASCENDING so the latest capture wins per case.
     let sv2 = common::ensure_fixtures().join("toolcalling/fixtures-stream-v2");
     let inputs_root = sv2.join("inputs");
-    let dyn_dirs = common::version_dirs_ascending(&sv2, "dynamo_v2-");
+    let dyn_dirs = stream_dynamo_dirs(&sv2);
     assert!(
         !dyn_dirs.is_empty(),
         "no dynamo_v2-<version> dir under fixtures-stream-v2"

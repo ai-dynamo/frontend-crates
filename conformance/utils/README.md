@@ -182,6 +182,14 @@ conformance/utils/render_table_v2.sh --dry-run
 
 Open the generated HTML file in a browser. The table is generated from extracted fixture directories staged by `render_table_v2.sh`.
 
+Every successful render also writes `conformance/CONFORMANCE_v2.json`, derived from the same inlined model the browser renders, and prints the aggregate empty/red count. The standard compiler-like gate for one or more models and tabs is:
+
+```bash
+conformance/utils/check.sh status --model qwen3 --tab unified
+```
+
+Repeat `--model` or `--tab` to validate more than one. The command always renders first, prints each empty or red model/case pair, and exits `1` when any requested cell is not green. `validate_conformance_status.py` is the lower-level reader for checking an existing HTML file without rerendering.
+
 Use the generated matrix to inspect vLLM Python vs vLLM Rust behavior. `check.sh vllm` runs the live vLLM Python parser against extracted YAML; it does not run vLLM Rust. vLLM Python vs Rust is a fixture comparison in the `TC stream (v2)` and `TC batch-on-stream (v2)` tabs.
 
 ## Matrix Legend
@@ -206,6 +214,7 @@ Run these from `conformance/utils/`:
 | Command | Purpose |
 |---|---|
 | `render_table_v2.sh` | Builds `.stage/` and writes the v2 conformance HTML matrix. The default example path is `conformance/CONFORMANCE_v2.html`. |
+| `check.sh status --model <family> --tab <tab>` | Renders the matrix and fails with the exact empty/red model-case pairs. |
 | `check.sh` | Runs Dynamo, vLLM Python, and SGLang checks against staged fixtures. |
 | `capture.sh` | Consistent entry point for capturing parser behavior and refreshing v2 fixtures. |
 

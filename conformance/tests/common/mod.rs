@@ -232,6 +232,11 @@ pub fn fixture_name(path: &Path) -> String {
         .to_string()
 }
 
+/// Current parser-version capture used by stream parity and interleave tests.
+pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.4.0";
+
+pub const UNIFIED_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.4.1";
+
 /// Version-sorted capture dirs for one impl prefix (e.g. `dynamo-` under
 /// fixtures-batch-v1, `dynamo_v2-` under fixtures-stream-v2), ASCENDING by
 /// numeric version. Multiple dirs per impl are capture HISTORY (never deleted);
@@ -255,6 +260,26 @@ pub fn version_dirs_ascending(root: &Path, prefix: &str) -> Vec<PathBuf> {
         .collect();
     dirs.sort();
     dirs.into_iter().map(|(_, p)| p).collect()
+}
+
+/// The normal capture history plus one caller-selected current capture. `+tag`
+/// directories remain historical unless a test names the exact directory it needs.
+pub fn version_dirs_ascending_with_current(
+    root: &Path,
+    prefix: &str,
+    current_dir: &str,
+) -> Vec<PathBuf> {
+    let mut dirs = version_dirs_ascending(root, prefix);
+    let current = root.join(current_dir);
+    assert!(
+        current.is_dir(),
+        "expected current capture directory {}",
+        current.display()
+    );
+    if !dirs.contains(&current) {
+        dirs.push(current);
+    }
+    dirs
 }
 
 /// Sort a PR-qualified capture after its matching release. The PR capture represents

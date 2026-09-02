@@ -228,14 +228,19 @@ fn stream_result_to_parser_output(r: ToolStreamResult) -> ToolParseResult {
         calls: r
             .tool_call_chunks
             .into_iter()
-            .map(|c| ToolCallDelta {
-                tool_index: c.index as usize,
-                name: c.function.as_ref().and_then(|f| f.name.clone()),
-                arguments: c
+            .map(|c| {
+                let name = c.function.as_ref().and_then(|f| f.name.clone());
+                let arguments = c
                     .function
                     .as_ref()
                     .and_then(|f| f.arguments.clone())
-                    .unwrap_or_default(),
+                    .unwrap_or_default();
+                ToolCallDelta {
+                    tool_index: c.index as usize,
+                    complete: !arguments.is_empty(),
+                    name,
+                    arguments,
+                }
             })
             .collect(),
     }
@@ -473,9 +478,11 @@ mod tests {
         let name_delta = &all[0];
         assert_eq!(name_delta.name.as_deref(), Some("get_weather"));
         assert_eq!(name_delta.arguments, "");
+        assert!(!name_delta.complete);
         // All subsequent deltas: name absent, arguments non-empty fragments.
         for delta in &all[1..] {
             assert!(delta.name.is_none());
+            assert!(delta.complete);
         }
         // Concatenating all arguments gives the full JSON.
         let full_args_str: String = all.iter().map(|d| d.arguments.as_str()).collect();

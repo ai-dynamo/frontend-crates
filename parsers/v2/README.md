@@ -206,6 +206,18 @@ In order:
 9. Capture one case (`conformance/utils/capture.sh dynamo-stream --fixture … --output …`), inspect, fix the parser, then capture all peer behavior (`capture.sh stream` / `capture.sh batch-on-stream`, optionally `--family <family>`).
 10. Verify (`conformance/utils/check.sh`), render the HTML matrix (`conformance/utils/render_table_v2.sh`), and record any intentional divergence (see "How To Record Divergences").
 
+### Unified parser hard gate
+
+Unified parser work is complete only when the affected family's selected current Dynamo column has **zero empty cells and zero red cells**.
+
+1. **Write:** make the parser or fixture change.
+2. **Read:** render `conformance/CONFORMANCE_v2.html` and inspect every affected Unified popup, including its input, initialization, chunks, GOLDEN events, and current Dynamo events.
+3. **Fix:** an empty current cell means capture data is missing. A red current cell means the parser differs from GOLDEN unless the authored oracle is demonstrably wrong.
+4. **Regenerate:** rebuild the qualified current capture, package its shard and manifest, and rerender from the same worktree.
+5. **Re-read:** inspect the rendered current column and repeat until both counts are zero.
+
+Do not hide a failure with `reason:`, `unavailable:`, a historical capture, stale HTML, or an unsupported GOLDEN edit. Run the standard gate `conformance/utils/check.sh status --model <family> --tab unified`; it rerenders, reads the same model as the browser, names every empty or red case, and exits nonzero until the selected row is clear. Finish with `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --nocapture` and `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- --nocapture`.
+
 Harmony is only the first example; DS4 and the other streaming families follow the same file layout, fixture schema, capture flow, and validation flow.
 
 ## Which Fixture Do I Edit?
@@ -236,6 +248,7 @@ For a new parser family, done means:
 - vLLM Python / SGLang live checks pass, or each failure is explicitly recorded (`error`/`unavailable` with exact text).
 - vLLM Rust captures include the source tag/commit in `captured_with` when available.
 - The HTML matrix is regenerated locally and has no unexplained `?`, no accidental tool-call markup leaks (`↯`), and no red-orphan tokens in the popups (undeclared markers).
+- For a native Unified family, its selected current Dynamo column has zero empty cells and zero red cells in the rendered Unified tab.
 - Case descriptions exist for every new sub-case, and any NEW case group/sub-case is added to `conformance/case-taxonomy.yaml` in the same PR (the coverage lint fails on IDs unknown to the taxonomy).
 
 ## Commands

@@ -66,6 +66,7 @@ struct DeltaEmit {
     name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     arguments: Option<String>,
+    complete: bool,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -176,6 +177,7 @@ fn delta_from_tool_delta(delta: ToolCallDelta) -> DeltaEmit {
         id: false,
         name: delta.name,
         arguments: Some(delta.arguments),
+        complete: delta.complete,
     }
 }
 
@@ -185,6 +187,7 @@ fn delta_from_chunk(chunk: ToolCallResponseChunk) -> DeltaEmit {
         id: chunk.id.is_some(),
         name: chunk.function.as_ref().and_then(|f| f.name.clone()),
         arguments: chunk.function.as_ref().and_then(|f| f.arguments.clone()),
+        complete: true,
     }
 }
 

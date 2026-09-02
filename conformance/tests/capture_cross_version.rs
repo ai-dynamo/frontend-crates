@@ -322,7 +322,7 @@ fn delta_to_yaml(d: &dynamo_parsers_v2::UnifiedParserEvent) -> serde_yaml::Value
             serde_json::json!({"kind": "text", "text": text})
         }
         dynamo_parsers_v2::UnifiedParserEvent::ToolCall(c) => {
-            serde_json::json!({"kind": "tool_call", "name": c.name, "arguments": c.arguments})
+            serde_json::json!({"kind": "tool_call", "name": c.name, "arguments": c.arguments, "complete": c.complete})
         }
     };
     serde_yaml::to_value(v).expect("delta serializes")

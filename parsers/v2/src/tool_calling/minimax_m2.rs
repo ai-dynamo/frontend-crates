@@ -105,6 +105,7 @@ impl InvokeEmitter for M2Emitter {
             tool_index,
             name: Some(call.function.name),
             arguments,
+            complete: true,
         }))
     }
 }

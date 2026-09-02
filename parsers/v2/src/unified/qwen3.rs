@@ -192,6 +192,29 @@ mod tests {
     }
 
     #[test]
+    fn native_string_arguments_stream_before_function_close() {
+        let input = "<tool_call><function=get_weather><parameter=city>Montréal café</parameter>still-open</function></tool_call>";
+        let close = input.find("</function>").unwrap();
+        let mut parser = qwen3_unified(&weather_tools());
+        let mut early = Vec::new();
+        for character in input[..close].chars() {
+            early.extend(parser.push(&character.to_string()).expect("push"));
+        }
+        assert!(early.iter().any(
+            |event| matches!(event, UnifiedParserEvent::ToolCall(call) if call.name.as_deref() == Some("get_weather"))
+        ));
+
+        let mut streamed = early;
+        streamed.extend(parser.push(&input[close..]).expect("close"));
+        streamed.extend(parser.finish().expect("finish").events);
+        assert_eq!(
+            assemble(&streamed),
+            events(&weather_tools(), &[input]),
+            "coalesced unified output must match whole-input parsing"
+        );
+    }
+
+    #[test]
     fn content_before_reasoning_is_not_hoisted() {
         let out = events(
             &weather_tools(),
@@ -1127,6 +1150,39 @@ mod tests {
             &["<think>ok</think>Checking. <tool_call><function=get_weather><parameter=city>Par"],
         );
         assert_eq!(out, vec![reasoning("ok"), text("Checking. ")]);
+    }
+
+    #[test]
+    fn truncated_native_string_call_streams_but_does_not_assemble() {
+        let mut parser = qwen3_unified(&weather_tools());
+        let streamed = parser
+            .push("<tool_call><function=get_weather><parameter=city>Paris")
+            .unwrap();
+        assert!(
+            streamed
+                .iter()
+                .any(|event| matches!(event, UnifiedParserEvent::ToolCall(_))),
+            "native stream must retain provisional progress: {streamed:?}"
+        );
+        let finished = parser.finish().unwrap().events;
+        let mut all = streamed;
+        all.extend(finished);
+        assert!(
+            assemble(&all).is_empty(),
+            "unfinished call must not assemble"
+        );
+    }
+
+    #[test]
+    fn header_only_native_string_call_emits_nothing() {
+        let mut parser = qwen3_unified(&weather_tools());
+        let streamed = parser
+            .push("<tool_call><function=get_weather><parameter=city>")
+            .unwrap();
+        assert!(streamed.is_empty());
+        let mut all = streamed;
+        all.extend(parser.finish().unwrap().events);
+        assert!(assemble(&all).is_empty());
     }
 
     #[test]
@@ -2805,6 +2861,7 @@ mod guided_warning_tests {
                     tool_index: 0,
                     name: Some("get_weather".into()),
                     arguments: format!(r#"{{"api_key":"{ARGUMENT_SECRET}""#),
+                    complete: true,
                 },
             )]);
         });

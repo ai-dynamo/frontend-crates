@@ -411,6 +411,20 @@ def test_request_state_boundary_scenarios_generate_for_every_family():
         assert present == scoped, f"{fam} is missing {scoped - present}"
 
 
+def test_scenario_families_matches_declared_scope():
+    scoped = {
+        "guided_json_quoted_bare_header_in_answer": {"muse_glimmer"},
+        "guided_json_quoted_bare_tool_header_in_answer": {"muse_glimmer"},
+        "guided_json_quoted_bare_header_after_payload": {"muse_glimmer"},
+        "guided_json_bare_tool_header_recovers_inside_a_thought": {"muse_glimmer"},
+        "gemma4_guided_json_visible_call_prose_before_reasoning": {"gemma4"},
+        "gemma4_guided_json_malformed_call_prefix_before_reasoning": {"gemma4"},
+    }
+    for scenario, families in scoped.items():
+        assert G.scenario_families(scenario) == families
+    assert G.scenario_families("tool_only") == set(FAMILIES)
+
+
 def test_only_families_rejects_an_empty_or_unknown_scope():
     """A scope that names nothing, or names a family that does not exist, is a typo."""
     with pytest.raises(ValueError, match="declares nothing"):

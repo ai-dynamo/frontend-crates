@@ -602,18 +602,18 @@ pub fn assemble(deltas: &[UnifiedParserEvent]) -> Vec<UnifiedEvent> {
     // fragments of two interleaved calls cannot merge, and carrying each call's
     // position so it stays where its FIRST delta landed.
     let mut out: Vec<UnifiedEvent> = Vec::new();
-    let mut calls: BTreeMap<usize, (usize, String)> = BTreeMap::new();
+    let mut calls: BTreeMap<usize, (usize, String, bool)> = BTreeMap::new();
     for delta in merged {
         match delta {
             UnifiedParserEvent::Reasoning(text) => out.push(UnifiedEvent::Reasoning { text }),
             UnifiedParserEvent::Text(text) => out.push(UnifiedEvent::Text { text }),
             UnifiedParserEvent::ToolCall(call) => {
-                let (pos, raw) = calls.entry(call.tool_index).or_insert_with(|| {
+                let (pos, raw, complete) = calls.entry(call.tool_index).or_insert_with(|| {
                     out.push(UnifiedEvent::ToolCall {
                         name: String::new(),
                         arguments: serde_json::Value::Null,
                     });
-                    (out.len() - 1, String::new())
+                    (out.len() - 1, String::new(), false)
                 });
                 raw.push_str(&call.arguments);
                 if let Some(incoming) = call.name
@@ -622,11 +622,17 @@ pub fn assemble(deltas: &[UnifiedParserEvent]) -> Vec<UnifiedEvent> {
                 {
                     *name = incoming;
                 }
+                *complete |= call.complete;
             }
         }
     }
 
-    for (pos, raw) in calls.into_values() {
+    let mut incomplete_positions = Vec::new();
+    for (pos, raw, complete) in calls.into_values() {
+        if !complete {
+            incomplete_positions.push(pos);
+            continue;
+        }
         if let UnifiedEvent::ToolCall { arguments, .. } = &mut out[pos] {
             // Best-effort (P3): a malformed payload must not take down the turn, but
             // it is NOT discarded silently — `{}` alone is indistinguishable from a
@@ -644,7 +650,25 @@ pub fn assemble(deltas: &[UnifiedParserEvent]) -> Vec<UnifiedEvent> {
             });
         }
     }
-    out
+    incomplete_positions.sort_unstable_by(|left, right| right.cmp(left));
+    for pos in incomplete_positions {
+        out.remove(pos);
+    }
+    let mut recoalesced = Vec::with_capacity(out.len());
+    for event in out {
+        match (recoalesced.last_mut(), event) {
+            (
+                Some(UnifiedEvent::Text { text: existing }),
+                UnifiedEvent::Text { text: incoming },
+            ) => existing.push_str(&incoming),
+            (
+                Some(UnifiedEvent::Reasoning { text: existing }),
+                UnifiedEvent::Reasoning { text: incoming },
+            ) => existing.push_str(&incoming),
+            (_, event) => recoalesced.push(event),
+        }
+    }
+    recoalesced
 }
 
 /// The two payload kinds that carry a text run and coalesce when adjacent (`I8`).
@@ -3310,6 +3334,7 @@ impl GuidedState {
                                     tool_index: 0,
                                     name: None,
                                     arguments: self.input[..visible_len].to_string(),
+                                    complete: false,
                                 }));
                             }
                         } else if self.answer_only() {
@@ -3639,6 +3664,12 @@ impl GuidedState {
                              streamed; it cannot be withdrawn"
                         );
                     }
+                    out.push(UnifiedParserEvent::ToolCall(ToolCallDelta {
+                        tool_index: index,
+                        name: None,
+                        arguments: String::new(),
+                        complete: true,
+                    }));
                 }
                 // Valid but never committed — a parameterless call, or one whose
                 // name closed too late to beat its own payload.
@@ -3647,6 +3678,7 @@ impl GuidedState {
                         tool_index: index,
                         name: Some(call.name),
                         arguments: call.arguments,
+                        complete: true,
                     }));
                 }
                 // Invalid, and nothing went out for it: recover just this element.
@@ -3897,6 +3929,7 @@ impl GuidedState {
                     tool_index,
                     name: Some(call.name),
                     arguments: call.arguments,
+                    complete: true,
                 })
             })
             .collect())
@@ -4355,6 +4388,7 @@ mod tests {
             tool_index,
             name: name.map(str::to_string),
             arguments: arguments.to_string(),
+            complete: true,
         })
     }
 
@@ -4881,6 +4915,70 @@ mod tests {
     }
 
     #[test]
+    fn assemble_keeps_a_malformed_completed_multi_fragment_call() {
+        let mut first = match call(0, Some("f"), r#"{"x":"#) {
+            UnifiedParserEvent::ToolCall(call) => call,
+            _ => unreachable!(),
+        };
+        first.complete = false;
+        let mut second = match call(0, None, "broken") {
+            UnifiedParserEvent::ToolCall(call) => call,
+            _ => unreachable!(),
+        };
+        second.complete = true;
+        assert_eq!(
+            assemble(&[
+                UnifiedParserEvent::ToolCall(first),
+                UnifiedParserEvent::ToolCall(second),
+            ]),
+            vec![UnifiedEvent::ToolCall {
+                name: "f".into(),
+                arguments: serde_json::json!({}),
+            }]
+        );
+    }
+
+    #[test]
+    fn assemble_removes_reverse_indexed_incomplete_calls_without_panicking() {
+        let mut index_one = match call(1, Some("second"), r#"{"x":"#) {
+            UnifiedParserEvent::ToolCall(call) => call,
+            _ => unreachable!(),
+        };
+        index_one.complete = false;
+        let mut index_zero = match call(0, Some("first"), r#"{"y":"#) {
+            UnifiedParserEvent::ToolCall(call) => call,
+            _ => unreachable!(),
+        };
+        index_zero.complete = false;
+        assert!(
+            assemble(&[
+                UnifiedParserEvent::ToolCall(index_one),
+                UnifiedParserEvent::ToolCall(index_zero),
+            ])
+            .is_empty()
+        );
+    }
+
+    #[test]
+    fn assemble_recoalesces_text_after_removing_an_incomplete_call() {
+        let mut incomplete = match call(0, Some("f"), r#"{"x":"#) {
+            UnifiedParserEvent::ToolCall(call) => call,
+            _ => unreachable!(),
+        };
+        incomplete.complete = false;
+        assert_eq!(
+            assemble(&[
+                UnifiedParserEvent::Text("before".into()),
+                UnifiedParserEvent::ToolCall(incomplete),
+                UnifiedParserEvent::Text("after".into()),
+            ]),
+            vec![UnifiedEvent::Text {
+                text: "beforeafter".into()
+            }]
+        );
+    }
+
+    #[test]
     fn tool_only_projection_drops_order_but_not_bytes() {
         let result = ToolParseResult::from_deltas(vec![
             UnifiedParserEvent::Reasoning("a".into()),
@@ -5079,6 +5177,7 @@ mod parse_into_recovery_tests {
             tool_index: index,
             name: Some("ok".to_string()),
             arguments: "{}".to_string(),
+            complete: true,
         })
     }
 

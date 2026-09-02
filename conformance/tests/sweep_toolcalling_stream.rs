@@ -91,6 +91,7 @@ struct Assembled {
 fn assemble(results: &[ToolParseResult]) -> Assembled {
     let mut names: BTreeMap<usize, String> = BTreeMap::new();
     let mut args: BTreeMap<usize, String> = BTreeMap::new();
+    let mut complete: BTreeMap<usize, bool> = BTreeMap::new();
     let mut normal_text = String::new();
     for r in results {
         normal_text.push_str(&r.normal_text);
@@ -99,17 +100,35 @@ fn assemble(results: &[ToolParseResult]) -> Assembled {
                 names.entry(d.tool_index).or_default().push_str(n);
             }
             args.entry(d.tool_index).or_default().push_str(&d.arguments);
+            *complete.entry(d.tool_index).or_default() |= d.complete;
         }
     }
     let calls = names
         .into_iter()
-        .map(|(idx, name)| {
+        .filter_map(|(idx, name)| {
+            if complete.get(&idx) != Some(&true) {
+                return None;
+            }
             let raw = args.remove(&idx).unwrap_or_default();
             let v = serde_json::from_str(&raw).unwrap_or(Value::String(raw));
-            (name, v)
+            Some((name, v))
         })
         .collect();
     Assembled { calls, normal_text }
+}
+
+#[test]
+fn assemble_omits_incomplete_tool_deltas() {
+    let result = ToolParseResult {
+        normal_text: String::new(),
+        calls: vec![dynamo_parsers_v2::ToolCallDelta {
+            tool_index: 0,
+            name: Some("get_weather".into()),
+            arguments: r#"{"city":"Par"#.into(),
+            complete: false,
+        }],
+    };
+    assert!(assemble(&[result]).calls.is_empty());
 }
 
 fn new_parser(family: &str, tools: &[Tool]) -> Box<dyn ToolParser> {

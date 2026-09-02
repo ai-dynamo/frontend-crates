@@ -90,11 +90,13 @@ impl DeepSeekV4ToolStreamParser {
                     tool_index,
                     name: Some(name),
                     arguments: String::new(),
+                    complete: false,
                 });
                 out.calls.push(ToolCallDelta {
                     tool_index,
                     name: None,
                     arguments,
+                    complete: true,
                 });
                 self.next_index += 1;
                 self.open_invoke = None;
@@ -407,9 +409,11 @@ mod tests {
         assert_eq!(out.calls[0].tool_index, 0);
         assert_eq!(out.calls[0].name.as_deref(), Some("get_weather"));
         assert_eq!(out.calls[0].arguments, "");
+        assert!(!out.calls[0].complete);
         assert_eq!(out.calls[1].tool_index, 0);
         assert_eq!(out.calls[1].name, None);
         assert_eq!(out.calls[1].arguments, r#"{"location":"NYC"}"#);
+        assert!(out.calls[1].complete);
 
         // Coalesced wire shape matches the complete call.
         let merged = out.coalesce_calls();

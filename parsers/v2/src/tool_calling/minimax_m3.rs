@@ -93,6 +93,7 @@ impl InvokeEmitter for M3Emitter {
             tool_index,
             name: Some(call.function.name),
             arguments,
+            complete: true,
         }))
     }
 }
