@@ -2230,12 +2230,12 @@ def _load_unified_fixtures(base: Path):
     input_layers = ["inputs"] + sorted(
         d.name
         for d in base.iterdir()
-        if d.is_dir() and _overlay_base(d.name) == "inputs" and d.name != "inputs"
+        if d.is_dir() and _overlay_base(d.name) in ("inputs", "inputs+pr200") and d.name != "inputs"
     )
     golden_layers = ["golden"] + sorted(
         d.name
         for d in base.iterdir()
-        if d.is_dir() and _overlay_base(d.name) == "golden" and d.name != "golden"
+        if d.is_dir() and _overlay_base(d.name) in ("golden", "golden+pr200") and d.name != "golden"
     )
     inputs = _merge_layers(input_layers, "input")
     golden = _merge_layers(golden_layers, "golden")
