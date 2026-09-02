@@ -443,11 +443,20 @@ fn normalize_arguments(arguments: Option<&Value>) -> Result<NormalizedArguments>
     }
 }
 
-fn render_assistant_segments(
+/// Renders an assistant message's think channel.
+///
+/// The think channel is structural in the latest K3 model encoding. Every
+/// historical assistant message carries it in thinking mode, even if its body
+/// is empty. Non-thinking mode drops both the channel and preserved reasoning
+/// content.
+fn render_think_channel(
     segments: &mut Vec<RenderedSegment>,
     message: &Value,
     thinking: bool,
 ) -> Result<()> {
+    if !thinking {
+        return Ok(());
+    }
     // Match encoding_k3.py: `reasoning_content` wins when truthy, otherwise
     // fall back to the Responses-style `reasoning` alias.
     let reasoning = message
@@ -464,17 +473,74 @@ fn render_assistant_segments(
         .map(value_as_body_text)
         .transpose()?;
 
-    // The think channel is structural in the latest K3 model encoding. Every
-    // historical assistant message carries it in thinking mode, even if its
-    // body is empty. Non-thinking mode drops both the channel and preserved
-    // reasoning content.
-    if thinking {
-        open_tag(segments, "think", []);
-        if let Some(reasoning) = reasoning.filter(|reasoning| !reasoning.trim().is_empty()) {
-            text(segments, reasoning);
-        }
-        close_tag(segments, "think");
+    open_tag(segments, "think", []);
+    if let Some(reasoning) = reasoning.filter(|reasoning| !reasoning.trim().is_empty()) {
+        text(segments, reasoning);
     }
+    close_tag(segments, "think");
+    Ok(())
+}
+
+fn assistant_message_attrs(message: &Value) -> Vec<(String, String)> {
+    let mut attrs = vec![("role".to_string(), "assistant".to_string())];
+    if let Some(name) = message
+        .get("name")
+        .and_then(Value::as_str)
+        .filter(|name| !name.is_empty())
+    {
+        attrs.push(("name".to_string(), name.to_string()));
+    }
+    attrs
+}
+
+/// Whether a message carries Kimi's Partial Mode flag (`"partial": true`).
+fn is_partial(message: &Value) -> bool {
+    message.get("partial").and_then(Value::as_bool) == Some(true)
+}
+
+/// Renders a Partial Mode assistant message as the *open* generation turn.
+///
+/// Kimi's API defines Partial Mode as: the final message has `role=assistant`
+/// and `partial=true`, and the model continues directly from its `content`
+/// (with `name`, when set, also counting as part of the prefix). The
+/// checkpoint's `encoding_k3.py` has no notion of this — it is a serving-layer
+/// feature — so this mirrors what the hosted API does: emit the assistant
+/// turn's opening structure and prefix text, and leave `response` and
+/// `message` unclosed so generation resumes inside them. This replaces the
+/// ordinary generation prompt rather than following it.
+///
+/// In thinking mode the think channel is closed before the response opens,
+/// carrying any supplied `reasoning_content` (the API requires callers to pass
+/// it along for thinking models); an empty channel is emitted otherwise, the
+/// same policy [`render_think_channel`] applies to historical turns.
+fn render_partial_assistant_segments(
+    segments: &mut Vec<RenderedSegment>,
+    message: &Value,
+    thinking: bool,
+) -> Result<()> {
+    if message
+        .get("tool_calls")
+        .and_then(Value::as_array)
+        .is_some_and(|calls| !calls.is_empty())
+    {
+        return Err(PromptRenderError::invalid_request(
+            "Kimi K3 partial assistant messages cannot carry tool_calls",
+        )
+        .into());
+    }
+    open_tag(segments, "message", assistant_message_attrs(message));
+    render_think_channel(segments, message, thinking)?;
+    open_tag(segments, "response", []);
+    render_content_segments(segments, message.get("content"))?;
+    Ok(())
+}
+
+fn render_assistant_segments(
+    segments: &mut Vec<RenderedSegment>,
+    message: &Value,
+    thinking: bool,
+) -> Result<()> {
+    render_think_channel(segments, message, thinking)?;
 
     open_tag(segments, "response", []);
     render_content_segments(segments, message.get("content"))?;
@@ -633,6 +699,29 @@ fn build_chat_segments(
     let mut previous_tool_calls: Option<&Value> = None;
     let mut tool_index = 0usize;
 
+    // Kimi Partial Mode: only the final message may be partial, and it must be
+    // an assistant turn. Split it off so the history loop renders everything
+    // before it normally and the partial turn takes the generation prompt's
+    // place at the very end (after any internal system messages).
+    let (history, partial_tail) = match messages.split_last() {
+        Some((last, history)) if is_partial(last) => {
+            if last.get("role").and_then(Value::as_str) != Some("assistant") {
+                return Err(PromptRenderError::invalid_request(
+                    "Kimi K3 `partial` is only supported on an assistant message",
+                )
+                .into());
+            }
+            (history, Some(last))
+        }
+        _ => (messages, None),
+    };
+    if history.iter().any(is_partial) {
+        return Err(PromptRenderError::invalid_request(
+            "Kimi K3 `partial` is only supported on the final message",
+        )
+        .into());
+    }
+
     if let Some(tools) = tools.filter(|tools| !tools.as_array().is_some_and(Vec::is_empty)) {
         render_tool_declare(&mut segments, tools, false)?;
     }
@@ -650,7 +739,7 @@ fn build_chat_segments(
         );
     }
 
-    for message in messages {
+    for message in history {
         let role = message.get("role").and_then(Value::as_str).ok_or_else(|| {
             PromptRenderError::invalid_request("Kimi K3 messages must contain a string role")
         })?;
@@ -677,15 +766,7 @@ fn build_chat_segments(
             "assistant" => {
                 previous_tool_calls = message.get("tool_calls");
                 tool_index = 0;
-                let mut attrs = vec![("role".to_string(), "assistant".to_string())];
-                if let Some(name) = message
-                    .get("name")
-                    .and_then(Value::as_str)
-                    .filter(|name| !name.is_empty())
-                {
-                    attrs.push(("name".to_string(), name.to_string()));
-                }
-                open_tag(&mut segments, "message", attrs);
+                open_tag(&mut segments, "message", assistant_message_attrs(message));
                 render_assistant_segments(&mut segments, message, thinking)?;
                 close_tag(&mut segments, "message");
                 end_of_msg(&mut segments);
@@ -783,7 +864,12 @@ fn build_chat_segments(
         }
     }
 
-    if add_generation_prompt {
+    // A partial assistant turn *is* the generation prompt: it is left open so
+    // the model continues from its prefix, so the generic prompt is skipped
+    // regardless of `add_generation_prompt`.
+    if let Some(partial) = partial_tail {
+        render_partial_assistant_segments(&mut segments, partial, thinking)?;
+    } else if add_generation_prompt {
         open_tag(
             &mut segments,
             "message",
@@ -1066,6 +1152,197 @@ mod tests {
             error.downcast_ref::<PromptRenderError>(),
             Some(PromptRenderError::InvalidRequest(message))
                 if message.contains("thinking_effort=\"medium\"")
+        ));
+    }
+
+    // -- Kimi Partial Mode (prefix continuation) --
+
+    #[test]
+    fn partial_assistant_renders_open_turn_in_place_of_generation_prompt() {
+        let mut request = Request::new(json!([
+            {"role": "user", "content": "Greet the customer"},
+            {"role": "assistant", "content": "Dear customer, hello", "partial": true}
+        ]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+
+        let rendered = fmt().render(&request).unwrap();
+
+        assert_eq!(
+            rendered,
+            concat!(
+                "<|open|>message role=\"user\"<|sep|>Greet the customer",
+                "<|close|>message<|sep|><|end_of_msg|>",
+                "<|open|>message role=\"assistant\"<|sep|>",
+                "<|open|>response<|sep|>Dear customer, hello"
+            ),
+            "the partial turn must stay open: no <|close|>response / <|close|>message / <|end_of_msg|>, \
+             and no extra generation prompt after it"
+        );
+    }
+
+    #[test]
+    fn partial_assistant_ignores_add_generation_prompt_flag() {
+        // The partial turn *is* the generation prompt, so the flag is moot.
+        let mut request = Request::new(json!([
+            {"role": "user", "content": "Go"},
+            {"role": "assistant", "content": "prefix", "partial": true}
+        ]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+        request.add_generation_prompt = false;
+
+        let rendered = fmt().render(&request).unwrap();
+
+        assert!(rendered.ends_with("<|open|>response<|sep|>prefix"));
+        assert_eq!(rendered.matches("role=\"assistant\"").count(), 1);
+    }
+
+    #[test]
+    fn partial_assistant_in_thinking_mode_closes_think_then_opens_response() {
+        let mut request = Request::new(json!([
+            {"role": "user", "content": "Go"},
+            {
+                "role": "assistant",
+                "reasoning_content": "carried over reasoning",
+                "content": "prefix",
+                "partial": true
+            }
+        ]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(true));
+
+        let rendered = fmt().render(&request).unwrap();
+
+        assert!(rendered.ends_with(concat!(
+            "<|open|>message role=\"assistant\"<|sep|>",
+            "<|open|>think<|sep|>carried over reasoning<|close|>think<|sep|>",
+            "<|open|>response<|sep|>prefix"
+        )));
+    }
+
+    #[test]
+    fn partial_assistant_keeps_name_as_part_of_the_prefix() {
+        let mut request = Request::new(json!([
+            {"role": "user", "content": "Who are you?"},
+            {"role": "assistant", "name": "Sherlock", "content": "Elementary", "partial": true}
+        ]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+
+        let rendered = fmt().render(&request).unwrap();
+
+        assert!(rendered.ends_with(concat!(
+            "<|open|>message role=\"assistant\" name=\"Sherlock\"<|sep|>",
+            "<|open|>response<|sep|>Elementary"
+        )));
+    }
+
+    #[test]
+    fn partial_assistant_follows_internal_system_messages() {
+        // tool_choice / response_format hints are injected after history and
+        // before the generation turn; a partial turn must not be split by them.
+        let mut request = Request::new(json!([
+            {"role": "user", "content": "Go"},
+            {"role": "assistant", "content": "prefix", "partial": true}
+        ]));
+        request.response_format = Some(json!({"type": "json_object"}));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+
+        let rendered = fmt().render(&request).unwrap();
+
+        let hint = rendered
+            .find("response_format=json_object")
+            .expect("response-format hint rendered");
+        let turn = rendered
+            .rfind("<|open|>message role=\"assistant\"<|sep|>")
+            .expect("partial turn rendered");
+        assert!(
+            hint < turn,
+            "internal system messages must precede the open partial turn"
+        );
+        assert!(rendered.ends_with("<|open|>response<|sep|>prefix"));
+    }
+
+    #[test]
+    fn partial_false_is_an_ordinary_assistant_turn() {
+        let mut request = Request::new(json!([
+            {"role": "user", "content": "Go"},
+            {"role": "assistant", "content": "done", "partial": false}
+        ]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+
+        let rendered = fmt().render(&request).unwrap();
+
+        assert!(rendered.contains(
+            "<|open|>response<|sep|>done<|close|>response<|sep|><|close|>message<|sep|><|end_of_msg|>"
+        ));
+        assert!(
+            rendered.ends_with("<|open|>message role=\"assistant\"<|sep|><|open|>response<|sep|>")
+        );
+    }
+
+    #[test]
+    fn rejects_partial_on_a_non_final_message() {
+        let request = Request::new(json!([
+            {"role": "assistant", "content": "early", "partial": true},
+            {"role": "user", "content": "Go"}
+        ]));
+
+        let error = fmt().render(&request).unwrap_err();
+
+        assert!(matches!(
+            error.downcast_ref::<PromptRenderError>(),
+            Some(PromptRenderError::InvalidRequest(message))
+                if message == "Kimi K3 `partial` is only supported on the final message"
+        ));
+    }
+
+    #[test]
+    fn rejects_partial_on_a_non_assistant_message() {
+        let request = Request::new(json!([
+            {"role": "user", "content": "Go", "partial": true}
+        ]));
+
+        let error = fmt().render(&request).unwrap_err();
+
+        assert!(matches!(
+            error.downcast_ref::<PromptRenderError>(),
+            Some(PromptRenderError::InvalidRequest(message))
+                if message == "Kimi K3 `partial` is only supported on an assistant message"
+        ));
+    }
+
+    #[test]
+    fn rejects_partial_assistant_with_tool_calls() {
+        let request = Request::new(json!([
+            {"role": "user", "content": "Go"},
+            {
+                "role": "assistant",
+                "content": "prefix",
+                "partial": true,
+                "tool_calls": [{
+                    "id": "call_1",
+                    "type": "function",
+                    "function": {"name": "lookup", "arguments": "{}"}
+                }]
+            }
+        ]));
+
+        let error = fmt().render(&request).unwrap_err();
+
+        assert!(matches!(
+            error.downcast_ref::<PromptRenderError>(),
+            Some(PromptRenderError::InvalidRequest(message))
+                if message == "Kimi K3 partial assistant messages cannot carry tool_calls"
         ));
     }
 
