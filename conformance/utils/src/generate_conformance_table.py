@@ -2258,12 +2258,6 @@ def _load_unified_fixtures(base: Path):
         engine_versions[impl].sort(
             key=lambda vd: (fixtures._version_sort_key(vd[0]), "+" in vd[0])
         )
-    # The PR 200 capture is a complete current capture, not a sparse overlay.
-    # Keep it as the selected Dynamo version while retaining the historical +pr166
-    # branch capture for comparison and provenance.
-    current_pr_capture = [
-        item for item in engine_versions.get("dynamo_v2", []) if item[0] == "0.3.4+pr200"
-    ]
     # The Unified tab compares every captured vLLM version. Keep each peer version
     # separate instead of silently replacing 0.25.1 with the newest 0.26.x shard.
     peer_by_ver = {}
@@ -2289,7 +2283,7 @@ def _load_unified_fixtures(base: Path):
     for ver, dirname in engine_versions.get("dynamo_v2", []):
         # `.patchN` is a sparse backfill for its released binary, but `+tag` identifies
         # a distinct branch capture and must remain selectable beside that release.
-        display_ver = ver if ver == "0.3.4+pr200" else _base_stream_version(ver)
+        display_ver = ver if "+" in ver and not _PATCH_SUFFIX_RE.search(ver) else _base_stream_version(ver)
         captured_cases = _read_dir(dirname)
         if _PATCH_SUFFIX_RE.search(ver):
             dynamo_by_ver.setdefault(display_ver, {}).update(captured_cases)
