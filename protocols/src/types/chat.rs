@@ -745,9 +745,14 @@ pub struct ChatCompletionRequestSystemMessage {
     /// which reads it back as a generic JSON value by key. A typed schema
     /// (e.g. `Vec<FunctionObject>`) would silently drop any vendor-specific
     /// keys serde doesn't know about on round-trip, whereas `serde_json::Value`
-    /// is byte-for-byte faithful. Note the shape also differs from the
-    /// top-level `tools` field: Kimi emits bare function-schema objects here,
-    /// not `{"type": "function", "function": {...}}` wrappers.
+    /// is byte-for-byte faithful.
+    ///
+    /// Kimi's `encoding_k3.py` renders this through the same tool-declare path
+    /// as the top-level `tools` field and never inspects individual entries, so
+    /// the canonical shape is the same OpenAI wrapped form,
+    /// `{"type": "function", "function": {...}}`. Clients that send bare
+    /// function-schema objects (`{"name": ..., "parameters": ...}`) are passed
+    /// through unchanged as well; this crate takes no position on the shape.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<serde_json::Value>,
 }
@@ -1970,6 +1975,51 @@ mod tests {
         let serialized = serde_json::to_value(request).unwrap();
 
         assert_eq!(serialized, payload);
+    }
+
+    #[test]
+    fn system_message_tools_round_trip_official_wrapped_shape() {
+        // Kimi's canonical shape for system-message tools is the same OpenAI
+        // wrapped form as the top-level `tools` field (encoding_k3.py renders
+        // both through one tool-declare path). Must survive untouched.
+        let payload = serde_json::json!({
+            "model": "dummy-kimi-model",
+            "messages": [
+                {
+                    "role": "system",
+                    "tools": [
+                        {
+                            "type": "function",
+                            "function": {
+                                "name": "lookup",
+                                "description": "dummy lookup tool",
+                                "parameters": {
+                                    "type": "object",
+                                    "properties": {
+                                        "query": { "type": "string" }
+                                    },
+                                    "required": ["query"]
+                                },
+                                "strict": true
+                            }
+                        }
+                    ]
+                },
+                { "role": "user", "content": "continue" }
+            ]
+        });
+
+        let request: CreateChatCompletionRequest = serde_json::from_value(payload.clone()).unwrap();
+        match &request.messages[0] {
+            ChatCompletionRequestMessage::System(system) => {
+                let tools = system.tools.as_ref().expect("tools should be present");
+                assert_eq!(tools[0]["type"], "function");
+                assert_eq!(tools[0]["function"]["name"], "lookup");
+            }
+            other => panic!("expected system message, got {other:?}"),
+        }
+
+        assert_eq!(serde_json::to_value(request).unwrap(), payload);
     }
 
     #[test]
