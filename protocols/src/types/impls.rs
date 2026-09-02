@@ -82,9 +82,27 @@ impl From<super::ChatCompletionRequestUserMessage> for ChatCompletionRequestMess
 }
 
 impl From<async_openai::types::chat::ChatCompletionRequestSystemMessage>
+    for super::ChatCompletionRequestSystemMessage
+{
+    fn from(value: async_openai::types::chat::ChatCompletionRequestSystemMessage) -> Self {
+        Self {
+            content: Some(value.content),
+            name: value.name,
+            tools: None,
+        }
+    }
+}
+
+impl From<async_openai::types::chat::ChatCompletionRequestSystemMessage>
     for ChatCompletionRequestMessage
 {
     fn from(value: async_openai::types::chat::ChatCompletionRequestSystemMessage) -> Self {
+        Self::System(value.into())
+    }
+}
+
+impl From<super::ChatCompletionRequestSystemMessage> for ChatCompletionRequestMessage {
+    fn from(value: super::ChatCompletionRequestSystemMessage) -> Self {
         Self::System(value)
     }
 }
