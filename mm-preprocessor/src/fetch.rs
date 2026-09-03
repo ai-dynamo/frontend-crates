@@ -1,8 +1,13 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Resolve one media source to raw bytes, identically for routers and
-//! engines. Parity anchor: `transformers.image_utils.load_image`.
+//! Optional compatibility helper for resolving trusted media sources to raw
+//! bytes. Parity anchor: `transformers.image_utils.load_image`.
+//!
+//! This module is not an API-request security boundary: source syntax includes
+//! local files, and this interface does not define a host allowlist or private
+//! network and redirect policy. Frontends accepting untrusted URLs should use
+//! their protected fetcher and pass the resolved bytes to this crate.
 //!
 //! Source precedence: `http(s)://`, `file://` / absolute path, `data:` URL,
 //! else bare base64. HTTP downloads honor [`FetchOptions::timeout`] and the
@@ -45,14 +50,17 @@ impl Default for FetchOptions {
     }
 }
 
-/// Resolve one string-typed media source into raw encoded bytes.
-pub fn fetch_bytes(src: &str) -> Result<Vec<u8>, String> {
+/// Resolve one trusted, string-typed media source into raw encoded bytes.
+///
+/// Do not call this directly on untrusted request URLs; see the module-level
+/// security note.
+pub fn fetch_bytes(src: &str) -> crate::Result<Vec<u8>> {
     fetch_bytes_budgeted(src, &ByteBudget::new(MAX_FETCH_BYTES))
 }
 
 /// [`fetch_bytes`] against a caller-owned allowance, for resolving several
 /// sources under one whole-request bound. [`MAX_FETCH_BYTES`] still caps each.
-pub fn fetch_bytes_budgeted(src: &str, budget: &ByteBudget) -> Result<Vec<u8>, String> {
+pub fn fetch_bytes_budgeted(src: &str, budget: &ByteBudget) -> crate::Result<Vec<u8>> {
     fetch_bytes_budgeted_with(src, budget, &FetchOptions::default())
 }
 
@@ -61,7 +69,7 @@ pub fn fetch_bytes_budgeted_with(
     src: &str,
     budget: &ByteBudget,
     opts: &FetchOptions,
-) -> Result<Vec<u8>, String> {
+) -> crate::Result<Vec<u8>> {
     let _ = (src, budget, opts);
     todo!(
         "source-precedence dispatch, chunked budget-charged reads, requests-parity proxy handling"

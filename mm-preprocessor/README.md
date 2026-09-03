@@ -13,13 +13,13 @@ position math (M-RoPE), all **bit-exact** against the mirrored HF processor.
 | feature    | default | adds |
 | ---------- | ------- | ---- |
 | `parallel` | **on**  | links rayon; kernels still run inline until `execution::init_pool` arms the crate-owned pool |
-| `fetch`    | off     | data:/base64/file/http source resolution with `requests`-parity proxy semantics |
+| `fetch`    | off     | trusted-source data:/base64/file/http compatibility helper; API frontends should use their protected fetcher for untrusted URLs |
 
 **The boundary.** The crate carries what HF ships, plus what a router and an
 engine must compute *identically* or routing keys and token accounting
 diverge: spec resolution from HF config files, pixel-free token accounting,
-media source resolution (`fetch`), and content-hash identity
-(`content_hash_u64`).
+and content-hash identity (`content_hash_u64`). The optional `fetch` module is
+a convenience helper, not a request security boundary.
 
 ## 1. Where the crate sits
 
@@ -38,10 +38,10 @@ image sources, caps ───────────────►│  fetch::
         └─ rgb ────────────────────►│  family.process_item      (per item; the engine drives
                                     │                            the loop, optionally fanning
                                     │                            out on `execution`)
-                                    │     │ ProcessedItem { feature, aux, geometry }
-tokenize (if text) ─ ids, geoms ───►│  family.layout ─► token_layout::apply_layout
+                                    │     │ ProcessedItem
+tokenize (if text) ─ ids, items ───►│  family.layout ─► token_layout::apply_layout
                                     │     │ expanded input_ids + per-item offsets
-        └─ offsets, geoms ─────────►│  family.positions          (e.g. M-RoPE)
+        └─ offsets, items ─────────►│  family.positions          (optional, e.g. M-RoPE)
                                     │
 ```
 
@@ -69,10 +69,16 @@ prompt length (token costs)         │
 | `registry` | family selection from a typed/JSON spec, or resolved straight from the HF config files (the `AutoProcessor` entry) |
 | `models/` | one module per family — `models::qwen_vl` first |
 | `image/` | decode (8-bit only, PIL-matching), header-only dimension probe, bit-exact resize kernels, transforms |
-| `fetch` *(feature)* | one media source → raw bytes (data:/base64/file/http, `requests`-parity proxy semantics, streaming byte budgets) |
+| `fetch` *(feature)* | optional trusted-source compatibility helper (data:/base64/file/http, `requests`-parity proxy semantics, streaming byte budgets); not for untrusted request URLs |
 | `token_layout` | validating placeholder expansion of the *already tokenized* prompt |
 | `execution` | the crate's only parallelism seam: inline by default, a runtime-armed crate-owned rayon pool otherwise |
 
+Host applications normally own scheduling and invoke processors synchronously;
+they should leave the crate pool unarmed to avoid nested parallelism.
+`execution::init_pool` is an explicit opt-in for callers with little
+host-side concurrency (for example, a Python binding). Repeating the resolved
+thread count is a no-op; requesting a different count returns
+`MmError::InvalidInput`.
 
 ## 2. The API, by consumer
 
@@ -81,15 +87,21 @@ they call and how they obtain the spec:
 
 ```rust
 pub trait MmFamilyProcessor: Send + Sync {
-    fn capabilities(&self) -> Capabilities;                       // images-only default
-    fn num_media_tokens(&self, width: usize, height: usize) -> Result<usize, String>;
-    fn process_item(&self, media: &DecodedMedia) -> Result<ProcessedItem, String>;
-    fn layout(&self, input_ids: &[i32], items: &[Geometry]) -> Result<TokenLayout, String>;
-    fn positions(&self, input_len: usize, offsets: &[(u32, u32)], items: &[Geometry])
-        -> Result<PositionOutput, String>;                        // Rope1D default
+    fn capabilities(&self) -> Capabilities; // query with supports(Modality)
+    fn num_media_tokens(&self, media: &MediaMetadata) -> Result<usize>;
+    fn process_item(&self, media: &DecodedMedia) -> Result<ProcessedItem>;
+    fn layout(&self, input_ids: &[i32], items: &[ProcessedItem]) -> Result<TokenLayout>;
+    fn positions(&self, input_len: usize, offsets: &[(u32, u32)], items: &[ProcessedItem])
+        -> Result<PositionOutput>;                                // Rope1D default
 }
 
-pub struct ProcessedItem { pub feature: Tensor, pub aux: NamedTensors, pub geometry: Geometry }
+pub struct ProcessedItem {
+    pub modality: Modality,
+    pub feature_token_count: usize,
+    pub feature: Tensor,
+    pub aux: NamedTensors,
+    pub geometry: Option<Geometry>,
+}
 pub enum PositionOutput { Rope1D, MRope { positions: Vec<i64>, delta: i64 } }
 ```
 
@@ -102,13 +114,13 @@ never a silent approximation.
 #[serde(tag = "family", rename_all = "snake_case")]
 pub enum ProcessorSpec { QwenVl(QwenVlSpec) }          // one variant per family
 
-pub fn build_processor(spec: ProcessorSpec) -> Result<Box<dyn MmFamilyProcessor>, String>;
-pub fn processor_from_spec(json: &str)     -> Result<Box<dyn MmFamilyProcessor>, String>;
+pub fn build_processor(spec: ProcessorSpec) -> Result<Box<dyn MmFamilyProcessor>>;
+pub fn processor_from_spec(json: &str)     -> Result<Box<dyn MmFamilyProcessor>>;
 
 // AutoProcessor.from_pretrained parity for Python-free consumers:
 pub fn spec_from_hf_configs(config_json: &str, preprocessor_config_json: &str)
-    -> Result<ProcessorSpec, String>;
-pub fn spec_from_model_dir(dir: &Path) -> Result<ProcessorSpec, String>;
+    -> Result<ProcessorSpec>;
+pub fn spec_from_model_dir(dir: &Path) -> Result<ProcessorSpec>;
 ```
 
 ### 2.1 A router (e.g. dynamo) — accounting and routing, no pixel work
@@ -117,10 +129,11 @@ pub fn spec_from_model_dir(dir: &Path) -> Result<ProcessorSpec, String>;
 | --- | --- | --- |
 | boot, per model | `registry::spec_from_model_dir` | config dir (hub download is the router's concern) → `ProcessorSpec`; `Err` = model unsupported |
 | boot, per model | `registry::build_processor` | `ProcessorSpec` → `Box<dyn MmFamilyProcessor>` |
-| per image part | `fetch::fetch_bytes` *(feature `fetch`)* | media source → raw bytes — or the router's own async connector |
+| per media part | consumer's protected fetcher | untrusted media source → raw bytes |
+| per trusted media part | `fetch::fetch_bytes` *(feature `fetch`)* | trusted media source → raw bytes; optional compatibility path |
 | per image part | `content_hash_u64` | bytes → `u64` cache-affinity key, identical to the engine's |
-| per image part | `image::decode::dimensions` | bytes → (h, w) — header probe, no pixel decode |
-| per image part | `MmFamilyProcessor::num_media_tokens` | (width, height) → the image's expanded token count |
+| per image part | `image::decode::dimensions` | bytes → `MediaMetadata::Image` dimensions — header probe, no pixel decode |
+| per media part | `MmFamilyProcessor::num_media_tokens` | typed lightweight metadata → the item's expanded token count |
 
 Token counts give the expanded prompt length for routing; hashes drive
 prefix-cache-affinity routing and might travel downstream as `mm_hashes`.
@@ -132,10 +145,10 @@ prefix-cache-affinity routing and might travel downstream as `mm_hashes`.
 | boot, per worker pool | `registry::build_processor` | spec pre-resolved by the engine's gate or config dir → `Box<dyn MmFamilyProcessor>` |
 | per image | `content_hash_u64` | bytes → `u64` — same keys as the router |
 | per image | `image::decode::decode_rgb` | bytes → `(rgb, h, w)` (8-bit only, PIL-matching); the engine wraps it as `DecodedMedia::Image` |
-| per image | `MmFamilyProcessor::process_item` | `DecodedMedia` → `ProcessedItem { feature, aux, geometry }` |
-| per request | `MmFamilyProcessor::layout` | input_ids + geometries → `TokenLayout` (a description, not yet applied) |
+| per image | `MmFamilyProcessor::process_item` | `DecodedMedia` → `ProcessedItem` (preserves modality, feature-token count, tensors, and optional geometry) |
+| per request | `MmFamilyProcessor::layout` | input_ids + processed items → `TokenLayout` (a description, not yet applied) |
 | per request | `token_layout::apply_layout` | ids + `TokenLayout` → expanded ids + per-item offsets; validates the family contract (full coverage, each item exactly once, no zero-token item) |
-| per request | `MmFamilyProcessor::positions` | expanded length + offsets + geometries → `PositionOutput` (e.g. M-RoPE) |
+| per request, if needed | `MmFamilyProcessor::positions` | expanded length + offsets + processed items → `PositionOutput` (e.g. M-RoPE) |
 
 Example:
 
@@ -160,11 +173,10 @@ for bytes in images {                                  // fetched + capped by th
     items.push(family.process_item(&DecodedMedia::Image { rgb, height, width })?);
 }
 let input_ids: Vec<i32> = match request_ids { Some(ids) => ids, None => tokenizer.encode(&text)? };
-let geometries: Vec<Geometry> = items.iter().map(|i| i.geometry.clone()).collect();
-let layout: TokenLayout = family.layout(&input_ids, &geometries)?;
+let layout: TokenLayout = family.layout(&input_ids, &items)?;
 let expanded: ExpandedPrompt = token_layout::apply_layout(&input_ids, &layout, items.len())?;
 let positions: PositionOutput =
-    family.positions(expanded.input_ids.len(), &expanded.offsets, &geometries)?;
+    family.positions(expanded.input_ids.len(), &expanded.offsets, &items)?;
 ```
 
 
@@ -183,7 +195,9 @@ ids:  [ …,  <|vision_start|>, <|image_pad|>, <|vision_end|>,     … ]
    patchify: a 6×8 grid of 14×14 patches, each flattened to
    `3·2·14·14 = 1176` floats (temporal 2 duplicates a still's frame).
    Returns `feature = [48, 1176] f32` (HF's `pixel_values`),
-   `aux = [("image_grid_thw", [1, 6, 8])]`, `geometry = Grid([1, 6, 8])`.
+   `modality = Image`, `feature_token_count = 12`,
+   `aux = [("image_grid_thw", [1, 6, 8])]`, and
+   `geometry = Some(Grid([1, 6, 8]))`.
 2. `layout` — the image costs `1·6·8 / 2² = 12` tokens (the ViT merges 2×2
    patches per token): keep text `0..2`, place item 0 as 12 copies of
    `<|image_pad|>`, keep text `3..5`. `apply_layout` executes and validates:
@@ -205,18 +219,18 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | --- | --- | --- |
 | `registry::spec_from_hf_configs` / `spec_from_model_dir` | `AutoProcessor.from_pretrained` (config parsing + processor selection) | selection semantics; unknown knobs → `Err`, never approximation |
 | `registry::processor_from_spec` | building the processor from already-resolved kwargs | selection semantics |
-| `MmFamilyProcessor::num_media_tokens` | `_get_num_multimodal_tokens(image_sizes=…)` | exact token counts, no pixel work |
+| `MmFamilyProcessor::num_media_tokens` | `_get_num_multimodal_tokens(…)` | exact token counts from typed image/video/audio metadata, no pixel or feature-extraction work |
 | `image::resize::resize_rgb(Pil(_))` | `PIL.Image.resize` (LANCZOS/BICUBIC, u8) | **bitwise** (PIL's i32 fixed-point kernels) |
 | `image::resize::resize_rgb(AtenU8)` | `torchvision resize(antialias=True)` on uint8 | **bitwise** (ATen's per-axis i16 weight precision) |
 | normalize LUT (family-internal) | slow path `rescale→normalize` vs fast path `_fuse_mean_std_and_rescale_factor` | **bitwise** — the roundings differ on 128 of 256 u8 inputs; the spec selects which to mirror |
 | `image::decode::decode_rgb` | `PIL.Image.open(...).convert("RGB")` | same accepted formats; >8-bit samples rejected rather than silently diverging (PIL clips, Rust would rescale) |
 | `image::decode::dimensions` | lazy `PIL.Image.open(...).size` | header-only probe |
-| `fetch::fetch_bytes` | `transformers.image_utils.load_image` / SGLang `get_image_bytes` (`requests` proxy + `NO_PROXY` semantics, source precedence) | same behavior, plus streaming byte caps Python lacks |
+| `fetch::fetch_bytes` | `transformers.image_utils.load_image` (`requests` proxy + `NO_PROXY` semantics, source precedence) | optional trusted-source compatibility behavior, plus streaming byte caps; untrusted URL policy stays in the frontend |
 | `content_hash_u64` | the *role* of SGLang `mm_utils.data_hash` | deliberately blake3, one shared definition — router and Rust-engine keys must agree (the Python path's SHA-256 stays a documented divergence) |
 | `token_layout::apply_layout` + `layout_by_placeholder` | HF `Qwen2VLProcessor`'s own `<|image_pad|>` expansion / SGLang `_expand_input_ids` + `get_mm_items_offset` | exact ids/offsets, plus full-coverage validation |
 | `models::qwen_vl::QwenVlProcessor::process_item` | HF `Qwen2VLImageProcessor(Fast)` / `Qwen2VLImageProcessorPil` `__call__` → `pixel_values`, `image_grid_thw` | **bitwise** |
 | `models::qwen_vl::smart_resize` | HF/SGLang `smart_resize` (incl. Python banker's rounding) | exact; also rejects the degenerate 0-side case Python leaves to PIL |
-| `models::qwen_vl::mrope_image_only` | `get_rope_index` (in transformers' Qwen model code; image-only branch, identical across Qwen generations) | exact |
+| `models::qwen_vl::mrope_image_only` | `get_rope_index` (in transformers' Qwen model code; image-only branch, identical across Qwen generations) | exact, optional model-input preparation beyond strict `AutoProcessor` parity |
 
 
 ## 4. Testing

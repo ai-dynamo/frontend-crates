@@ -10,8 +10,9 @@
 
 use crate::image::resize;
 use crate::processor::{
-    DecodedMedia, Geometry, MmFamilyProcessor, PositionOutput, ProcessedItem, TokenLayout,
+    DecodedMedia, MediaMetadata, MmFamilyProcessor, PositionOutput, ProcessedItem, TokenLayout,
 };
+use crate::{MmError, Result};
 
 /// One media item's placement for M-RoPE: inclusive token range + patch grid.
 pub struct MropeItem {
@@ -66,32 +67,34 @@ pub struct QwenVlProcessor {
 }
 
 impl QwenVlProcessor {
-    pub fn new(spec: QwenVlSpec) -> Result<Self, String> {
+    pub fn new(spec: QwenVlSpec) -> Result<Self> {
         if spec.patch_size == 0 || spec.merge_size == 0 || spec.temporal_patch_size == 0 {
-            return Err("qwen_vl spec: sizes must be positive".into());
+            return Err(MmError::invalid_input(
+                "qwen_vl spec: sizes must be positive",
+            ));
         }
         Ok(Self { spec })
     }
 
-    pub fn from_spec_json(json: &str) -> Result<Self, String> {
-        let spec: QwenVlSpec =
-            serde_json::from_str(json).map_err(|e| format!("qwen_vl spec: {e}"))?;
+    pub fn from_spec_json(json: &str) -> Result<Self> {
+        let spec: QwenVlSpec = serde_json::from_str(json)
+            .map_err(|error| MmError::invalid_input_with_source("invalid qwen_vl spec", error))?;
         Self::new(spec)
     }
 }
 
 impl MmFamilyProcessor for QwenVlProcessor {
-    fn num_media_tokens(&self, width: usize, height: usize) -> Result<usize, String> {
-        let _ = (width, height);
+    fn num_media_tokens(&self, media: &MediaMetadata) -> Result<usize> {
+        let _ = media;
         todo!("smart_resize target grid / merge_size²")
     }
 
-    fn process_item(&self, media: &DecodedMedia) -> Result<ProcessedItem, String> {
+    fn process_item(&self, media: &DecodedMedia) -> Result<ProcessedItem> {
         let _ = media;
         todo!("HF Qwen2VLImageProcessor equivalent")
     }
 
-    fn layout(&self, input_ids: &[i32], items: &[Geometry]) -> Result<TokenLayout, String> {
+    fn layout(&self, input_ids: &[i32], items: &[ProcessedItem]) -> Result<TokenLayout> {
         let _ = (input_ids, items);
         todo!("placeholder-repeat layout")
     }
@@ -100,8 +103,8 @@ impl MmFamilyProcessor for QwenVlProcessor {
         &self,
         input_len: usize,
         offsets: &[(u32, u32)],
-        items: &[Geometry],
-    ) -> Result<PositionOutput, String> {
+        items: &[ProcessedItem],
+    ) -> Result<PositionOutput> {
         let _ = (input_len, offsets, items);
         todo!("mrope_image_only over the item offsets/grids")
     }
@@ -117,7 +120,7 @@ pub fn smart_resize(
     factor: usize,
     min_pixels: usize,
     max_pixels: usize,
-) -> Result<(usize, usize), String> {
+) -> Result<(usize, usize)> {
     let _ = (height, width, factor, min_pixels, max_pixels);
     todo!("banker's-rounding resize targets")
 }
@@ -131,7 +134,7 @@ pub fn mrope_image_only(
     input_len: usize,
     items: &[MropeItem],
     merge_size: usize,
-) -> Result<(Vec<i64>, i64), String> {
+) -> Result<(Vec<i64>, i64)> {
     let _ = (input_len, items, merge_size);
     todo!("three-row position fill")
 }

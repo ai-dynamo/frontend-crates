@@ -8,6 +8,8 @@
 //! and shouldn't have a library spawning pools behind their back. Consumers
 //! that call in from few threads (e.g. a Python processor) can call
 //! [`init_pool`] once to fan out on a crate-owned rayon pool instead.
+//! Hosts that already parallelize preprocessing should leave it unarmed to
+//! avoid nested parallelism.
 //!
 //! "Inline" means *on the caller*, not a one-thread pool: `install` on a
 //! 1-sized pool would serialize every concurrent request in the process.
@@ -20,10 +22,11 @@
 
 /// Arm the crate's CPU pool: from the first call on, the helpers below fan
 /// out on it instead of running inline. `threads == 0` picks the default size
-/// `min(available_parallelism, 8)`. Idempotent — the first caller wins, and
-/// once armed the size is fixed.
+/// `min(available_parallelism, 8)`. Repeating the resolved thread count is
+/// idempotent; requesting a different count after initialization returns
+/// [`MmError::InvalidInput`](crate::MmError::InvalidInput).
 #[cfg(feature = "parallel")]
-pub fn init_pool(threads: usize) {
+pub fn init_pool(threads: usize) -> crate::Result<()> {
     let _ = threads;
     todo!("arm the OnceLock-backed rayon pool")
 }

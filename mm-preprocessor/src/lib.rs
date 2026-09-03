@@ -9,19 +9,19 @@
 //! token accounting), selected through [`registry::ProcessorSpec`] — resolved
 //! from the HF config files ([`registry::spec_from_model_dir`]) or handed
 //! over pre-resolved. The crate also carries what routers and engines must
-//! agree on: media source resolution (the `fetch` module, feature `fetch`)
-//! and content-hash identity ([`content_hash_u64`]). Request orchestration —
-//! concurrency, caps, failure policy, packing — stays in the consumer's
-//! driver, as on the Python path; the README maps the boundary.
+//! agree on: token accounting and content-hash identity
+//! ([`content_hash_u64`]). The feature-gated `fetch` module is an optional
+//! trusted-source compatibility helper. Request orchestration — concurrency,
+//! caps, URL security policy, failure policy, packing — stays in the
+//! consumer's driver, as on the Python path; the README maps the boundary.
 //!
 //! Bit-exactness is the contract: the resize kernels ([`image::resize`]) and
 //! each family's normalize/patchify reproduce the mirrored HF processor's
 //! arithmetic exactly, so an engine can swap this crate in without output
 //! drift.
 //!
-//! Errors are `Result<T, String>`: every `Err` is a human-readable
-//! preprocessing failure for the consumer to surface, not a recoverable
-//! taxonomy.
+//! [`MmError`] preserves a small failure taxonomy so each consumer can choose
+//! its own fallback or rejection policy without matching display strings.
 //!
 //! The crate reads no environment variables and owns no threads until a
 //! consumer arms the rayon pool; see [`execution`].
@@ -34,6 +34,72 @@ pub mod models;
 pub mod processor;
 pub mod registry;
 pub mod token_layout;
+
+/// A multimodal preprocessing failure.
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum MmError {
+    Unsupported {
+        message: String,
+        source: Option<Box<dyn std::error::Error + Send + Sync>>,
+    },
+    InvalidInput {
+        message: String,
+        source: Option<Box<dyn std::error::Error + Send + Sync>>,
+    },
+    LimitExceeded {
+        message: String,
+        source: Option<Box<dyn std::error::Error + Send + Sync>>,
+    },
+    Internal {
+        message: String,
+        source: Option<Box<dyn std::error::Error + Send + Sync>>,
+    },
+}
+
+impl MmError {
+    pub fn invalid_input(message: impl Into<String>) -> Self {
+        Self::InvalidInput {
+            message: message.into(),
+            source: None,
+        }
+    }
+
+    pub fn invalid_input_with_source(
+        message: impl Into<String>,
+        source: impl std::error::Error + Send + Sync + 'static,
+    ) -> Self {
+        Self::InvalidInput {
+            message: message.into(),
+            source: Some(Box::new(source)),
+        }
+    }
+}
+
+impl std::fmt::Display for MmError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Unsupported { message, .. }
+            | Self::InvalidInput { message, .. }
+            | Self::LimitExceeded { message, .. }
+            | Self::Internal { message, .. } => f.write_str(message),
+        }
+    }
+}
+
+impl std::error::Error for MmError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        let source = match self {
+            Self::Unsupported { source, .. }
+            | Self::InvalidInput { source, .. }
+            | Self::LimitExceeded { source, .. }
+            | Self::Internal { source, .. } => source.as_deref(),
+        };
+        source.map(|source| source as &(dyn std::error::Error + 'static))
+    }
+}
+
+pub type Result<T> = std::result::Result<T, MmError>;
 
 /// Media identity hash: blake3 truncated to its first 8 bytes, big-endian.
 /// One definition, so router cache-affinity keys and engine prefix-cache/dedup

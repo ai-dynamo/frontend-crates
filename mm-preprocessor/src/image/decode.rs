@@ -6,16 +6,16 @@
 ///
 /// Samples deeper than 8 bits are rejected: PIL clips to 255 where a u8
 /// conversion would rescale, so refusing is the only bit-exact answer.
-pub fn decode_rgb(data: &[u8]) -> Result<(Vec<u8>, usize, usize), String> {
+pub fn decode_rgb(data: &[u8]) -> crate::Result<(Vec<u8>, usize, usize)> {
     let _ = data;
     todo!("pure-Rust decoders via the `image` crate")
 }
 
 /// `(height, width)` from the encoded header alone — no pixel decode (PIL's
 /// lazy `Image.open(...).size`). Pairs with
-/// [`num_media_tokens`](crate::processor::MmFamilyProcessor::num_media_tokens)
-/// so a router can account tokens without decoding.
-pub fn dimensions(data: &[u8]) -> Result<(usize, usize), String> {
+/// Supplies [`MediaMetadata::Image`](crate::processor::MediaMetadata::Image)
+/// for pixel-free token accounting.
+pub fn dimensions(data: &[u8]) -> crate::Result<(usize, usize)> {
     let _ = data;
     todo!("header-only probe via the `image` crate reader")
 }

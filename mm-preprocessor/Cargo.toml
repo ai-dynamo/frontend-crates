@@ -19,8 +19,9 @@ publish = false
 
 [features]
 default = ["parallel"]
-# Media source resolution (data:/base64/file/http). The implementation wires
-# the deps: `fetch = ["dep:ureq", "dep:base64"]`.
+# Trusted-source compatibility helper (data:/base64/file/http), not an
+# untrusted URL security boundary. The implementation wires the deps:
+# `fetch = ["dep:ureq", "dep:base64"]`.
 fetch = []
 # Links rayon; kernels still run inline until `execution::init_pool` arms the
 # crate-owned pool at runtime. Opt out (`default-features = false`) to drop
