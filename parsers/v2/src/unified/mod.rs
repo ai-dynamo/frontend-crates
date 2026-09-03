@@ -4939,41 +4939,27 @@ mod tests {
     }
 
     #[test]
-    fn assemble_removes_reverse_indexed_incomplete_calls_without_panicking() {
-        let mut index_one = match call(1, Some("second"), r#"{"x":"#) {
+    fn assemble_recoalesces_text_after_removing_interleaved_incomplete_calls() {
+        let mut second = match call(1, Some("second"), r#"{"x":"#) {
             UnifiedParserEvent::ToolCall(call) => call,
             _ => unreachable!(),
         };
-        index_one.complete = false;
-        let mut index_zero = match call(0, Some("first"), r#"{"y":"#) {
+        second.complete = false;
+        let mut first = match call(0, Some("first"), r#"{"y":"#) {
             UnifiedParserEvent::ToolCall(call) => call,
             _ => unreachable!(),
         };
-        index_zero.complete = false;
-        assert!(
-            assemble(&[
-                UnifiedParserEvent::ToolCall(index_one),
-                UnifiedParserEvent::ToolCall(index_zero),
-            ])
-            .is_empty()
-        );
-    }
-
-    #[test]
-    fn assemble_recoalesces_text_after_removing_an_incomplete_call() {
-        let mut incomplete = match call(0, Some("f"), r#"{"x":"#) {
-            UnifiedParserEvent::ToolCall(call) => call,
-            _ => unreachable!(),
-        };
-        incomplete.complete = false;
+        first.complete = false;
         assert_eq!(
             assemble(&[
                 UnifiedParserEvent::Text("before".into()),
-                UnifiedParserEvent::ToolCall(incomplete),
+                UnifiedParserEvent::ToolCall(second),
+                UnifiedParserEvent::Text("between".into()),
+                UnifiedParserEvent::ToolCall(first),
                 UnifiedParserEvent::Text("after".into()),
             ]),
             vec![UnifiedEvent::Text {
-                text: "beforeafter".into()
+                text: "beforebetweenafter".into()
             }]
         );
     }

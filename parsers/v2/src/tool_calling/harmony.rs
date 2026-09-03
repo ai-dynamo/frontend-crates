@@ -230,16 +230,12 @@ fn stream_result_to_parser_output(r: ToolStreamResult) -> ToolParseResult {
             .into_iter()
             .map(|c| {
                 let name = c.function.as_ref().and_then(|f| f.name.clone());
-                let arguments = c
-                    .function
-                    .as_ref()
-                    .and_then(|f| f.arguments.clone())
-                    .unwrap_or_default();
+                let arguments = c.function.as_ref().and_then(|f| f.arguments.clone());
                 ToolCallDelta {
                     tool_index: c.index as usize,
-                    complete: !arguments.is_empty(),
+                    complete: arguments.is_some(),
                     name,
-                    arguments,
+                    arguments: arguments.unwrap_or_default(),
                 }
             })
             .collect(),
@@ -417,6 +413,23 @@ mod tests {
         assert_eq!(calls[0].0, "get_weather");
         let args: serde_json::Value = serde_json::from_str(&calls[0].1).expect("args json");
         assert_eq!(args, serde_json::json!({"location": "NYC"}));
+    }
+
+    #[test]
+    fn empty_harmony_arguments_are_a_completed_call() {
+        let input = "<|channel|>commentary to=functions.ping <|constrain|>json<|message|><|call|>";
+        let mut parser = HarmonyToolStreamParser::new().expect("new");
+        let mut output = parser.push(input).expect("push");
+        output.append(parser.finish().expect("finish"));
+
+        assert_eq!(output.calls.len(), 2);
+        assert!(!output.calls[0].complete);
+        assert!(output.calls[1].complete);
+        assert_eq!(output.calls[1].arguments, "");
+        let calls = output.coalesce_calls();
+        assert_eq!(calls.calls.len(), 1);
+        assert_eq!(calls.calls[0].name.as_deref(), Some("ping"));
+        assert_eq!(calls.calls[0].arguments, "");
     }
 
     #[test]
