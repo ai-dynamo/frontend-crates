@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use super::tokcfg::{ChatTemplate, fromjson, raise_exception, strftime_now, tojson};
-use super::{ContextMixins, HfTokenizerConfigJsonFormatter, JinjaEnvironment};
+use super::{ContextMixins, HfTokenizerConfigJsonFormatter, JinjaEnvironment, SystemNormalization};
 use either::Either;
 use minijinja::{Environment, Value, context};
 use serde_json::json;
@@ -21,6 +21,86 @@ fn render_default_probe(env: &Environment, messages: serde_json::Value) -> Strin
     env.get_template("default")
         .and_then(|t| t.render(&ctx))
         .unwrap_or_default()
+}
+
+/// Passed to probe renders so a template that appends them doesn't raise for a
+/// missing token, which would read as a message-shape rejection.
+struct ProbeTokens {
+    bos: Option<String>,
+    eos: Option<String>,
+    unk: Option<String>,
+}
+
+/// Unlike [`render_default_probe`], surfaces the error: a template's
+/// `raise_exception` is the signal that it rejects this message shape.
+fn probe_template_raises(
+    env: &Environment,
+    template_name: &str,
+    messages: serde_json::Value,
+    tools: &Option<serde_json::Value>,
+    tok: &ProbeTokens,
+) -> bool {
+    let ctx = context! {
+        messages => messages,
+        add_generation_prompt => false,
+        tools => tools,
+        bos_token => tok.bos,
+        eos_token => tok.eos,
+        unk_token => tok.unk,
+    };
+    match env.get_template(template_name) {
+        Ok(t) => t.render(&ctx).is_err(),
+        Err(_) => false,
+    }
+}
+
+/// Detects which message shapes agent clients send that this template rejects,
+/// so `render` applies only the rewrites this template needs.
+///
+/// The non-leading `system` restriction takes two probes because strict families
+/// disagree on where they enforce it: Gemma-3 accepts `[system, user, system]`
+/// but rejects the same turn after an assistant reply.
+fn detect_system_normalization(
+    env: &Environment,
+    template_name: &str,
+    tools: &Option<serde_json::Value>,
+    tok: &ProbeTokens,
+) -> SystemNormalization {
+    let sys = |c: &str| json!({"role": "system", "content": c});
+    let usr = |c: &str| json!({"role": "user", "content": c});
+    let asst = |c: &str| json!({"role": "assistant", "content": c});
+
+    // A template that can't render even this isn't rejecting shape, it's broken.
+    let baseline_ok =
+        !probe_template_raises(env, template_name, json!([sys("s"), usr("u")]), tools, tok);
+    if !baseline_ok {
+        return SystemNormalization::default();
+    }
+    let nonleading_system = probe_template_raises(
+        env,
+        template_name,
+        json!([sys("s0"), usr("u"), sys("s1")]),
+        tools,
+        tok,
+    );
+    let mid_after_assistant = probe_template_raises(
+        env,
+        template_name,
+        json!([sys("s0"), usr("u"), asst("a"), sys("s1"), usr("u2")]),
+        tools,
+        tok,
+    );
+    let consecutive_users = probe_template_raises(
+        env,
+        template_name,
+        json!([sys("s"), usr("u0"), usr("u1")]),
+        tools,
+        tok,
+    );
+    SystemNormalization {
+        demote_nonleading_system: nonleading_system || mid_after_assistant,
+        coalesce_consecutive_users: consecutive_users,
+    }
 }
 
 /// Detects if a template requires content as arrays (multimodal) vs strings (text-only).
@@ -491,6 +571,25 @@ impl HfTokenizerConfigJsonFormatter {
         let tool_use_template_handles_tool_calls_arguments_string =
             template_handles_args_string("tool_use");
 
+        let probe_tokens = ProbeTokens {
+            bos: config.bos_tok(),
+            eos: config.eos_tok(),
+            unk: config.unk_tok(),
+        };
+        let default_probe_tools = Option::<serde_json::Value>::None;
+        let tool_use_probe_tools = Some(json!([{
+            "type": "function",
+            "function": {
+                "name": "probe",
+                "description": "",
+                "parameters": {"type": "object", "properties": {}}
+            }
+        }]));
+        let default_system_normalization =
+            detect_system_normalization(&env, "default", &default_probe_tools, &probe_tokens);
+        let tool_use_system_normalization =
+            detect_system_normalization(&env, "tool_use", &tool_use_probe_tools, &probe_tokens);
+
         Ok(HfTokenizerConfigJsonFormatter {
             env,
             config,
@@ -503,6 +602,8 @@ impl HfTokenizerConfigJsonFormatter {
             image_placeholder_template,
             default_template_handles_tool_calls_arguments_string,
             tool_use_template_handles_tool_calls_arguments_string,
+            default_system_normalization,
+            tool_use_system_normalization,
         })
     }
 }
