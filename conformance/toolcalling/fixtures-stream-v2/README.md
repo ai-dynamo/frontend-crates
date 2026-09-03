@@ -1,10 +1,10 @@
 # conformance/toolcalling/fixtures-stream-v2
 
-Per-chunk streaming fixtures for the `TC stream (v2)` conformance tab. These are frontend-crate-owned v2 overlays; `render_table_v2.sh` stages them together with the Dynamo-synced `conformance/toolcalling/fixtures-batch-v1/` batch corpus when building the HTML matrix.
+Per-chunk streaming fixtures for the `TC stream (v2)` conformance tab. These are frontend-crate-owned v2 overlays; `render_table_v2.sh` stages them together with the frontend-crates-owned `conformance/toolcalling/fixtures-batch-v1/` batch corpus when building the HTML matrix.
 
 ## Why A Separate Overlay Exists
 
-The Dynamo-synced `conformance/toolcalling/fixtures-batch-v1/` corpus is batch-first v1 data. Streaming is different: vLLM Python, vLLM Rust, SGLang Python, and Dynamo Rust stream parsers emit per-chunk deltas, and those deltas can differ even when the final assembled call is the same. Streaming evidence lives here, not in the synced v1 corpus.
+The `conformance/toolcalling/fixtures-batch-v1/` corpus is batch-first v1 data. Streaming is different: vLLM Python, vLLM Rust, SGLang Python, and Dynamo Rust stream parsers emit per-chunk deltas, and those deltas can differ even when the final assembled call is the same. Streaming evidence lives here, not in the v1 corpus.
 
 Complete batch text fed through streaming parsers lives in `conformance/toolcalling/fixtures-batch-on-stream-v2/`. Use both directories when adding a v2 streaming parser: stream fixtures check chunk behavior, and batch-on-stream fixtures check whether the streaming parser reconstructs the batch result.
 
@@ -23,7 +23,7 @@ fixtures-stream-v2/
                                                      # full anchor, higher = changed-only
 ```
 
-Current version dirs: `dynamo_v2-<version>` (Dynamo v2 stream parser, at its capture-time crate version — refreshed by `refresh_dynamo_captures.py stream` whenever the v2 parser output changes; the shard version SYNCS with `parsers/v2/Cargo.toml`), `dynamo_v1-3.0.0` (Dynamo v1 batch parser run against stream data via the streaming jail — captured by `capture_dynamo_jail_stream.py` / the `record_dynamo_jail_stream` bin), `vllm_rust-0.23.0`, `vllm_python-0.23.0` + `vllm_python-0.24.0`, `sglang_python-0.5.12.post1` + `sglang_python-0.5.14`. So the stream tab compares the v1 batch parser (jailed), the v2 stream parser, and the peer stream parsers on the same chunk inputs.
+Current version dirs: `dynamo_v2-<version>` (Dynamo v2 stream parser, at its capture-time crate version — refreshed by `refresh_dynamo_captures.py stream` whenever the v2 parser output changes; the shard version SYNCS with `parsers/v2/Cargo.toml`), `dynamo_v1-3.0.0` (Dynamo v1 batch parser run against stream data via the streaming jail — captured by `capture_dynamo_jail_stream.py` / the `record_dynamo_jail_stream` bin), `vllm_rust-0.23.0` + `vllm_rust-0.25.1`, `vllm_python-0.23.0` + `vllm_python-0.24.0` + `vllm_python-0.25.1`, `sglang_python-0.5.12.post1` + `sglang_python-0.5.14`. So the stream tab compares the v1 batch parser (jailed), the v2 stream parser, and the peer stream parsers on the same chunk inputs.
 
 **Version dirs are append-only.** A re-record adds the current crate version's dir NEXT TO the old ones (e.g. `dynamo_v2-0.1.11` and `dynamo_v2-0.1.22` coexist) — never delete an existing version dir; the chart renders each as a candidate and readers fold versions ascending within an impl (latest wins per case; `dynamo_v1` and `dynamo_v2` are separate impls and never fold together).
 
@@ -63,7 +63,7 @@ A delta is `{index, name?, arguments?}`. The v2 Rust core delta does not include
 ## Parser Keys
 
 - `expected.dynamo_v2` is Dynamo parser v2 output; `expected.dynamo_v1` (inside `dynamo_v1-<ver>/`) is the v1 jail reference.
-- `expected.vllm_rust` is vLLM Rust stream parser output captured from the checked-out `vllm-tool-parser` crate. There is no separate `V_rb`.
+- `expected.vllm_rust` is vLLM Rust stream parser output captured from the checked-out `vllm-tool-parser` crate. vLLM Rust has no separate batch parser.
 - `expected.vllm_python` is vLLM Python stream parser output from the pinned Python package.
 - `expected.sglang_python` is SGLang Python stream parser output from the pinned Python package.
 - `unavailable.<impl>` or `expected.<impl>.unavailable` records a parser that does not exist, cannot run, or failed before output was available.

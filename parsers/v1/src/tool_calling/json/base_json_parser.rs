@@ -290,6 +290,16 @@ fn parse_calls(
     payload: &str,
     allow_name_only: bool,
 ) -> anyhow::Result<Option<Vec<ToolCallResponse>>> {
+    Ok(parse_indexed_calls(payload, allow_name_only)?
+        .map(|calls| calls.into_iter().map(|(_, call)| call).collect::<Vec<_>>()))
+}
+
+/// Parse the same bare-JSON shapes as [`parse_calls`], retaining each call's
+/// source array position so incremental and buffered consumers share one index space.
+pub(crate) fn parse_indexed_calls(
+    payload: &str,
+    allow_name_only: bool,
+) -> anyhow::Result<Option<Vec<(usize, ToolCallResponse)>>> {
     fn make_tool_call(name: String, args: &RawValue) -> ToolCallResponse {
         ToolCallResponse {
             id: format!("call-{}", Uuid::new_v4()),
@@ -329,11 +339,11 @@ fn parse_calls(
 
     if let Ok(array) = serde_json::from_str::<Vec<Box<RawValue>>>(payload) {
         let mut calls = Vec::new();
-        for item in array {
+        for (index, item) in array.into_iter().enumerate() {
             if let Ok(raw) = serde_json::from_str::<CalledFunctionRaw>(item.get())
                 && let Some(call) = convert_raw(raw, true, allow_name_only)?
             {
-                calls.push(call);
+                calls.push((index, call));
             }
             // Skip malformed entries silently.
         }
@@ -342,7 +352,7 @@ fn parse_calls(
     if let Ok(single) = serde_json::from_str::<CalledFunctionRaw>(payload)
         && let Some(call) = convert_raw(single, false, allow_name_only)?
     {
-        return Ok(Some(vec![call]));
+        return Ok(Some(vec![(0, call)]));
     }
     Ok(None)
 }
@@ -707,6 +717,26 @@ pub fn detect_tool_call_start_basic_json(chunk: &str, config: &JsonParserConfig)
     });
 
     has_partial_token || trimmed.contains('{') || trimmed.contains('[')
+}
+
+#[cfg(test)]
+mod indexed_call_tests {
+    use super::*;
+
+    #[test]
+    fn indexed_and_dense_views_share_one_parse() {
+        let payload = r#"[{"parameters":{"missing":"name"}},{"name":"b","parameters":{"x":1}}]"#;
+        let indexed = parse_indexed_calls(payload, false).unwrap().unwrap();
+        let dense = parse_calls(payload, false).unwrap().unwrap();
+
+        assert_eq!(indexed.len(), 1);
+        assert_eq!(indexed[0].0, 1);
+        assert_eq!(indexed[0].1.function.name, "b");
+        assert_eq!(indexed[0].1.function.arguments, r#"{"x":1}"#);
+        assert_eq!(dense.len(), 1);
+        assert_eq!(dense[0].function.name, indexed[0].1.function.name);
+        assert_eq!(dense[0].function.arguments, indexed[0].1.function.arguments);
+    }
 }
 
 #[cfg(test)]

@@ -174,7 +174,7 @@ _TOOL_CALL_MARKUP_RE = re.compile(
 def _explanation(block: object) -> str | None:
     """The intentional-divergence note on an expected block. `explanation` is the
     current key; `reason` is the legacy spelling still present in older fixtures and
-    Dynamo-synced code. Read both (explanation wins); new fixtures/captures write
+    code. Read both (explanation wins); new fixtures/captures write
     `explanation`."""
     if not isinstance(block, dict):
         return None
@@ -199,6 +199,15 @@ def _block_tool_call_leaks(block: dict) -> bool:
     )
 
 
+def _is_exception(block: object) -> bool:
+    """The parser RAN and RAISED. Distinct from `unavailable` (no such parser exists):
+    an exception is a real, attributable outcome and always colours as a problem, while
+    an absent parser is neutral. Every classifier below goes through this predicate so
+    the exception contract lives in exactly one place.
+    """
+    return isinstance(block, dict) and "exception" in block
+
+
 def _overview_status(case: dict | None, impl: str) -> str:
     if case is None or "expected" not in case:
         return "na"
@@ -210,7 +219,7 @@ def _overview_status(case: dict | None, impl: str) -> str:
         # n/a (like the v1 table, which has no "TODO" concept) — not a distinct
         # orange "todo" state.
         return "na"
-    if "error" in block or _block_tool_call_leaks(block):
+    if _is_exception(block) or "error" in block or _block_tool_call_leaks(block):
         return "problem"
     return "ok"
 
@@ -339,6 +348,10 @@ def _parser_marker(case: dict | None, impl: str) -> str:
         # Un-implemented Dynamo v2 family: plain neutral n/a, no distinct "…" TODO
         # marker (matches the v1 table's clean look; see _overview_status).
         return "n/a"
+    # A captured `exception` is the parser having RUN and RAISED — same class as a
+    # structured error, and never `n/a` (which means the parser does not exist).
+    if _is_exception(block):
+        return "✗"
     if "error" in block:
         # B11: a structured (dict) error = a peer parser ran and threw -> `✗`;
         # a plain-string error is a declared expected-error -> `!`.
@@ -424,7 +437,7 @@ def _sob_status(case: dict | None, impl: str) -> str:
         if _is_parser_error_unavailable(stream):
             return "problem"
         return "na"
-    if "error" in stream or _block_tool_call_leaks(stream):
+    if _is_exception(stream) or "error" in stream or _block_tool_call_leaks(stream):
         return "problem"
     consistent = _sob_calls_consistent(case, impl)
     if consistent is None:
@@ -506,6 +519,11 @@ def candidate_sig(block: object) -> str:
     """Canonical signature of a candidate's output; equal signatures = same output."""
     if not isinstance(block, dict) or "unavailable" in block:
         return "na"
+    # A parser that RAN and RAISED is not the same as one that does not exist. Its
+    # signature carries the verbatim message so two different exceptions stay distinct
+    # (and differ from any real output), instead of collapsing into one "error" bucket.
+    if "exception" in block:
+        return f"exc:{block.get('exception')}"
     if "error" in block:
         return f"err:{block.get('error')}"
     calls = [_canon_call_for_sig(c) for c in block.get("calls") or []]
@@ -515,21 +533,36 @@ def candidate_sig(block: object) -> str:
     )
 
 
+def cmp_entry(sig: int, *, leak: int = 0, na: int = 0, err: int = 0) -> dict:
+    """One compare-payload entry. EVERY producer builds entries through this so the key
+    set cannot drift: the Unified tab assembles its entries by hand from verdicts rather
+    than from expected-blocks, and it silently lacked `err` when the JS view started
+    reading it."""
+    return {"sig": sig, "leak": leak, "na": na, "err": err}
+
+
 def cmp_model(blocks: dict) -> dict[str, dict]:
-    """Per-cell compare payload from {candidate_key: block}: {key: {sig, leak, na}}.
+    """Per-cell compare payload from {candidate_key: block}: {key: {sig, leak, na, err}}.
     `sig` is a per-cell group id (candidates with identical output share an id); `na`
     (unavailable) is excluded from the diff count but still shown in the tooltip. This
     is the structured form the JS view consumes directly (the old page HTML-escaped a
-    `json.dumps` of the same dict into `data-cmp`)."""
+    `json.dumps` of the same dict into `data-cmp`).
+
+    `err` marks a parser that RAN and THREW — distinct from `na` (no such parser). The
+    difference is what the cell colour means: a thrown Reference beside a peer that
+    parsed is a real disagreement (red), while a missing parser is simply absent (grey).
+    Both flags are produced HERE so the generator and assets/conformance.js consume one
+    contract rather than each inferring exceptions from the block shape."""
     ids: dict[str, int] = {}
     out: dict[str, dict] = {}
     for key, block in blocks.items():
         sig = candidate_sig(block)
-        out[key] = {
-            "sig": ids.setdefault(sig, len(ids)),
-            "leak": 1 if (isinstance(block, dict) and _block_tool_call_leaks(block)) else 0,
-            "na": 1 if sig == "na" else 0,
-        }
+        out[key] = cmp_entry(
+            ids.setdefault(sig, len(ids)),
+            leak=1 if (isinstance(block, dict) and _block_tool_call_leaks(block)) else 0,
+            na=1 if sig == "na" else 0,
+            err=1 if sig.startswith("exc:") else 0,
+        )
     return out
 
 

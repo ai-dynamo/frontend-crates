@@ -28,11 +28,17 @@ families:
   kimi_k2:        {vllm_python: kimi_k2,        vllm_rust: kimi_k2,      sglang_python: kimi_k2,     dynamo_v2: kimi_k2,     preferred_input: text}
   llama3_json:    {vllm_python: llama3_json,    vllm_rust: llama3_json,  sglang_python: llama3,      dynamo_v2: null,        preferred_input: text}
   minimax_m2:     {vllm_python: minimax_m2,     vllm_rust: minimax_m2,   sglang_python: minimax-m2,  dynamo_v2: minimax_m2,  preferred_input: text}
-  minimax_m3:     {vllm_python: minimax_m3,     vllm_rust: null,         sglang_python: minimax-m3,  dynamo_v2: minimax_m3,  preferred_input: text}
+  # vllm_rust gained MinimaxM3ToolParser / Phi4MiniJsonToolParser in 0.24.0; the older
+  # vllm_rust-0.23.0 anchor keeps its recorded `unavailable` blocks (append-only), so
+  # mapping them here only affects 0.24.0+ captures.
+  minimax_m3:     {vllm_python: minimax_m3,     vllm_rust: minimax_m3,   sglang_python: minimax-m3,  dynamo_v2: minimax_m3,  preferred_input: text}
   mistral:        {vllm_python: mistral,        vllm_rust: mistral,      sglang_python: mistral,     dynamo_v2: null,        preferred_input: text}
+  # vLLM's muse_glimmer parsers exist only in PR #51655 (unmerged); until a release
+  # carries them, `check.sh vllm` cannot capture this family.
+  muse_glimmer:   {vllm_python: muse_glimmer,   vllm_rust: null,         sglang_python: muse,        dynamo_v2: muse_glimmer, preferred_input: text}
   nemotron_deci:  {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: null,        dynamo_v2: null,        preferred_input: text}
   nemotron_nano:  {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: null,        dynamo_v2: null,        preferred_input: text}
-  phi4:           {vllm_python: phi4_mini_json, vllm_rust: null,         sglang_python: null,        dynamo_v2: null,        preferred_input: text}
+  phi4:           {vllm_python: phi4_mini_json, vllm_rust: phi4_mini_json, sglang_python: null,      dynamo_v2: null,        preferred_input: text}
   pythonic:       {vllm_python: pythonic,       vllm_rust: null,         sglang_python: pythonic,    dynamo_v2: null,        preferred_input: text}
   qwen25:         {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: qwen25,      dynamo_v2: null,        preferred_input: text}
   qwen3_coder:    {vllm_python: qwen3_coder,    vllm_rust: qwen3_coder,  sglang_python: qwen3_coder, dynamo_v2: qwen3_coder, preferred_input: text}
@@ -117,6 +123,16 @@ markers:
     leak: ["<invoke", "</invoke"]
   mistral:
     pairs: [["[TOOL_CALLS]", "[/TOOL_CALLS]"]]
+  muse_glimmer:
+    pairs: [["<atem:function_calls>", "</atem:function_calls>"]]
+    # Channel framing around every routed message; the reasoning stage forwards
+    # tool channels with this framing intact (like inkling's <|message_model|>).
+    singletons: ["<|start|>", "<|message|>", "<|eom|>", "<|eot|>"]
+    # `<atem:parameter name="K">` ... `</atem:parameter>` delimits a raw value the
+    # parser reads to its own closer, so an enclosing marker inside it is data
+    # (`I7`) — same shape as qwen3_coder's `<parameter=K>`.
+    opaque: ["atem:parameter"]
+    leak: ["<atem:invoke", "</atem:invoke", "<atem:parameter", "</atem:parameter"]
   nemotron_deci:
     pairs: [["<TOOLCALL>", "</TOOLCALL>"]]
   nemotron_nano:
@@ -172,18 +188,41 @@ markers:
 unified:
   gemma4:
     registry: gemma4
-    native: false
+    native: true
     reasoning_parser: gemma4
     tool_parser: gemma4
     golden_spec: gemma4.yaml
     leak_markers: ["thought\n"]
   kimi_k2:
     registry: kimi_k2
-    native: false
+    native: true
     reasoning_parser: kimi_k25
     tool_parser: kimi_k2
     golden_spec: kimi.yaml
     leak_markers: []
+  muse_glimmer:
+    native: true
+    # Prefilled channels ARE supported: `initialize_request` opens the stream in the
+    # channel the prompt already opened, which is a two-line change for this grammar.
+    #
+    # Guided tool output is supported. It used to be refused for this
+    # family on the ground that `GuidedState` was built around a `ReasoningSpec` (an
+    # open/close marker PAIR) and muse has none — reasoning opens with a dynamic
+    # `to=self<|message|>` header it shares with the content and tool channels. Having
+    # no marker pair is not the same as having no reasoning channel: the guided reader
+    # now asks the family where a thought begins rather than assuming a fixed opener
+    # string, and muse answers with the same header resolver its native scan uses. Every
+    # shared unified scenario is emitted for this family, plus the muse-only ones the
+    # generator declares with `OnlyFamilies`. Deliberately no COUNT here: a number in
+    # this registry cannot be checked against anything and went stale the first time a
+    # scenario was added. `test_registry_prose_states_no_unified_case_count` keeps it
+    # out, and the live counts are asserted in
+    # `test_unified_case_counts_match_the_generator`.
+    guided_tool_output: true
+    reasoning_parser: muse_glimmer
+    tool_parser: muse_glimmer
+    golden_spec: muse_glimmer.yaml
+    leak_markers: ["<atem:function_calls>", "</atem:function_calls>", "<atem:invoke", "</atem:invoke>", "<atem:parameter", "</atem:parameter>"]
   qwen3:
     registry: qwen3_coder
     native: true

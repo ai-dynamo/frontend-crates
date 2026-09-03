@@ -22,6 +22,8 @@ These goals govern every tool-calling and reasoning parser, v1 and v2, and are t
 
 The end-to-end workflow for adding a parser — fetch the chat template, identify the format, prefer an existing parser + config over new code, register, test, render — lives in the `tool-parser-generator` skill under `.agents/skills/tool-parser-generator/`. Adding a family to the **unified** path (one ordered reasoning + content + tool stream, rather than the reasoning-then-tool split) is a different workflow with its own tiers and traps — see [`UNIFIED_PORTING.md`](UNIFIED_PORTING.md). Reasoning parsers follow the same goals; see [`../parsers/v1/src/reasoning/README.md`](../parsers/v1/src/reasoning/README.md).
 
+**Writing a parser in YOUR OWN crate — including replacing a family this crate already ships — does not require forking or a PR here.** Implement `UnifiedParser`, call `register_unified_parser("family", factory)` at startup, and your parser is used for that family; registering an existing name shadows the built-in, and unregistering restores it. See [`CUSTOM_PARSERS.md`](CUSTOM_PARSERS.md) for the trait, the contract a parser must honour, and how to run the conformance corpus against your implementation.
+
 ## Parser families
 
 This is the single source of truth for the parser-family taxonomy — which grammar family a model belongs to and where the grammar is implemented. Families are shared across both paths: the **batch (v1)** implementation under `parsers/v1/src/tool_calling/` owns the grammar and value-typing, and the **streaming (v2)** implementation under `parsers/v2/src/tool_calling/` reuses it. Pick the family first when adding a model; only write a new module when the grammar is genuinely new.
@@ -38,6 +40,7 @@ Tool-call families:
 | **Harmony** | OpenAI Harmony token stream with `<\|channel\|>`, `<\|message\|>`, `<\|call\|>` | `harmony/harmony_parser.rs` (wraps external `openai_harmony` crate) | gpt-oss-20B / 120B |
 | **Pythonic** | `[func_name(arg=value, ...)]` Python function-call syntax | `pythonic/pythonic_parser.rs` | some Llama variants |
 | **Gemma 4** | Custom: `<\|tool_call>call:name{key:<\|"\|>val<\|"\|>}<tool_call\|>`, bare keys, custom string delimiter | `gemma4/parser.rs` (recursive-descent into `serde_json::Value`) | Google Gemma 4 thinking models |
+| **ATEM** | Recipient-routed channels `<\|start\|>assistant to=<rcpt><\|message\|>...<\|eom\|>` whose tool bodies hold `<atem:invoke name="NAME"><atem:parameter name="KEY">VALUE</atem:parameter></atem:invoke>` | `atem/muse_glimmer_parser.rs` | Muse-Glimmer-30B |
 
 Reasoning families:
 
@@ -48,8 +51,9 @@ Reasoning families:
 | **Harmony channel** | Hidden `analysis` channel | `gpt_oss_parser.rs` (wraps external `openai_harmony`) | gpt-oss-20B / 120B |
 | **Granite** | Custom start/end tokens | `granite_parser.rs` | IBM Granite |
 | **Gemma 4 channel** | `<\|channel>thought\n...<channel\|>` with role-label prefix stripped | `gemma4_parser.rs` | Google Gemma 4 thinking models |
+| **ATEM channel** | `<\|start\|>assistant to=self<\|message\|>...<\|eom\|>` — the recipient picks the channel, so there is no delimiter pair | `muse_glimmer_parser.rs` | Muse-Glimmer-30B |
 
-Streaming (v2) implementations exist today for `harmony`, `deepseek_v4` (DSML), and `qwen3_coder`; the remaining families run on the v1 batch parser until their streaming port lands.
+Streaming (v2) implementations exist today for `harmony`, `deepseek_v4` (DSML), `qwen3_coder`, `gemma4`, and `muse_glimmer` (ATEM); the remaining families run on the v1 batch parser until their streaming port lands.
 
 ## Why It Mimics vLLM Rust
 

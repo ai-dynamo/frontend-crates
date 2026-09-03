@@ -7,8 +7,9 @@ table, tabs, compare bar, and popups from it. Comparison/parity SEMANTICS stay i
 Python (`markers.py`/`impls.py` are the single source of truth) — this module
 orchestrates them into a clean, documented, greppable structure and serializes it as
 one inlined `<script type="application/json">` blob (so `file://` keeps working, no
-fetch). The old `D_rb`/`V_ps` marker mini-language is gone: cells carry STRUCTURED
-comparison facts and the view decides how to display them.
+fetch). The old parser-marker shorthand mini-language is gone: cells carry STRUCTURED
+comparison facts and the view decides how to display them with full descriptive
+labels (e.g. "vLLM Python batch parser", "Dynamo Rust stream parser").
 
 Schema (top-down)
 =================
@@ -74,7 +75,7 @@ cell = {
   "band": str,                       # sub-case band css class
   "fixture_href": str | None,        # link to the fixture yaml
   "status": "ok"|"problem"|"na"|"missing",   # default-reference overview status
-  "cmp": { cand_key: {"sig":int,"leak":0|1,"na":0|1} } | None,
+  "cmp": { cand_key: {"sig":int,"leak":0|1,"na":0|1,"err":0|1} } | None,
                                      # compare payload (was data-cmp) — the view
                                      # colors/counts from this + the picked reference
   "facts": [ fact, ... ],            # structured per-impl comparison facts
@@ -254,6 +255,7 @@ def _iter_intern_slots(page: dict) -> Iterator[tuple[Any, Any]]:
             if isinstance(b, dict):
                 yield b, "explanation"
                 yield b, "unavailable"
+                yield b, "exception"
 
 
 def _slot_get(container: Any, key: Any) -> Any:

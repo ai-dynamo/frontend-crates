@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-use dynamo_parsers::tool_calling::jail::{Annotated, JailedStream, apply_tool_calling_jail};
+use dynamo_parsers::tool_calling::jail::{
+    Annotated, JailedStream, apply_tool_calling_jail, apply_tool_calling_jail_with_guided_streaming,
+};
 use dynamo_protocols::types::{
     ChatChoiceStream, ChatCompletionStreamResponseDelta, ChatCompletionToolChoiceOption,
     CompletionUsage, CreateChatCompletionStreamResponse, FinishReason, Role,
@@ -4564,6 +4566,61 @@ fahrenheit
             tool_call_count, 0,
             "named_tool_filter must drop tool calls whose name doesn't match the requested tool"
         );
+    }
+
+    #[tokio::test]
+    async fn test_tool_choice_named_filter_compacts_surviving_call_indices() {
+        let bare_json = r#"[{"name":"search","parameters":{"q":"foo"}},{"name":"get_weather","parameters":{"location":"Tokyo"}}]"#;
+
+        for guided_streaming in [false, true] {
+            let input_chunks = vec![
+                test_utils::create_mock_response_chunk(bare_json.to_string(), 0),
+                test_utils::create_final_response_chunk(0),
+            ];
+            let tool_choice = Some(ChatCompletionToolChoiceOption::Named(
+                "get_weather".to_string().into(),
+            ));
+            let results: Vec<_> = if guided_streaming {
+                apply_tool_calling_jail_with_guided_streaming(
+                    None,
+                    tool_choice,
+                    None,
+                    false,
+                    stream::iter(input_chunks),
+                )
+                .collect()
+                .await
+            } else {
+                apply_tool_calling_jail(None, tool_choice, None, false, stream::iter(input_chunks))
+                    .collect()
+                    .await
+            };
+
+            let tool_calls: Vec<_> = results
+                .iter()
+                .flat_map(|result| {
+                    result
+                        .data
+                        .as_ref()
+                        .into_iter()
+                        .flat_map(|data| data.choices.iter())
+                        .flat_map(|choice| choice.delta.tool_calls.iter().flatten())
+                })
+                .collect();
+
+            assert_eq!(tool_calls.len(), 1, "guided_streaming={guided_streaming}");
+            assert_eq!(
+                tool_calls[0].index, 0,
+                "the named filter left a gap when guided_streaming={guided_streaming}"
+            );
+            assert_eq!(
+                tool_calls[0]
+                    .function
+                    .as_ref()
+                    .and_then(|function| function.name.as_deref()),
+                Some("get_weather")
+            );
+        }
     }
 
     #[tokio::test]

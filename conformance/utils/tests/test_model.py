@@ -19,7 +19,6 @@ so the guards keep working across version bumps.
 """
 import copy
 import json
-import os
 import re
 import subprocess
 import sys
@@ -32,23 +31,13 @@ REPO = UTILS.parents[1]
 if str(UTILS / "src") not in sys.path:
     sys.path.insert(0, str(UTILS / "src"))
 
-import check_family_coverage as _cfc  # noqa: E402
+from fixture_snapshot import fixture_snapshot_root  # noqa: E402
 import model as model_mod  # noqa: E402
 
 
 def _resolve_cache_root() -> Path:
-    """Manifest-pinned snapshot dir — NEVER the shared `<cache>/toolcalling`
-    symlink, which sibling checkouts race to repoint mid-run (the peer-version
-    guards below flaked exactly that way; see conformance/README "Invariants").
-    Honors CONFORMANCE_FIXTURES_ROOT (exported by _common.sh). Falls back to the
-    symlink path when extraction is impossible so _HAVE_FIXTURES turns into a
-    clean skip instead of a collection error."""
-    try:
-        return _cfc.resolve_fixtures_root()
-    except (SystemExit, subprocess.CalledProcessError):
-        xdg = os.environ.get("XDG_CACHE_HOME")
-        base = Path(xdg) if xdg else Path.home() / ".cache"
-        return base / "dynamo/conformance-fixtures"
+    """Manifest-pinned snapshot dir, never the mutable compatibility links."""
+    return fixture_snapshot_root()
 
 
 _CACHE_ROOT = _resolve_cache_root()
@@ -211,6 +200,32 @@ def test_v2_all_tabs_present(model_v2):
     ], ids
 
 
+def test_unified_numeric_case_ids_use_dash_everywhere(model_v2):
+    """Fixture IDs, headers, columns, and glossary rows share one numeric format."""
+    tab = _tab(model_v2, "tab-unified")
+    numeric = {
+        "guided_json_quoted_bare_header_in_answer": "31-25",
+        "guided_json_quoted_bare_tool_header_in_answer": "31-26",
+        "guided_json_quoted_bare_header_after_payload": "31-27",
+        "guided_json_bare_tool_header_recovers_inside_a_thought": "31-28",
+    }
+    columns = {column["sub"]: column["label"] for column in tab["columns"]}
+    glossary_ids = {
+        short_id
+        for group in tab["glossary"]
+        for short_id, _description in group["rows"]
+    }
+    cells = {cell["sub"]: cell for cell in _iter_cells(tab) if cell["sub"] in numeric}
+
+    assert set(cells) == set(numeric)
+    for scenario, short_id in numeric.items():
+        full_id = f"UNIFIED.{short_id}"
+        assert columns[scenario] == short_id
+        assert short_id in glossary_ids
+        assert cells[scenario]["case_id"] == full_id
+        assert cells[scenario]["tooltip"]["head"].startswith(f"{full_id} (")
+
+
 def test_v2_exactly_one_active_tab(model_v2):
     assert sum(1 for t in model_v2["tabs"] if t.get("active")) == 1
     assert model_v2["tabs"][0]["active"] is True
@@ -237,6 +252,76 @@ def test_v2_exactly_one_reference_bucket_per_tab(model_v2):
     for t in model_v2["tabs"]:
         refs = [c for c in t["candidates"] if c["default_bucket"] == "A"]
         assert len(refs) == 1, f"{t['id']}: expected one bucket-A reference, got {len(refs)}"
+
+
+def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
+    """The Unified tab must show both historical Combined and current native captures."""
+    tab = _tab(model_v2, "tab-unified")
+    labels = [candidate["label"] for candidate in tab["candidates"]]
+    assert "vLLM Rust 0.26.0 (stream, Combined & Unified)" in labels
+    assert "vLLM Rust 0.25.1 (stream, Combined & Unified)" in labels
+    assert "vLLM Python 0.25.1 (batch, Combined)" in labels
+    assert "vLLM Python 0.26.0 (batch, Combined)" in labels
+
+    muse = next(row for row in tab["rows"] if row["family"] == "muse_glimmer")
+    peer_keys = {candidate["key"] for candidate in tab["candidates"] if candidate["impl"] == "vllm"}
+    assert all(
+        all(cell["cmp"][key].get("na") == 1 for key in peer_keys)
+        for cell in muse["cells"].values()
+    )
+    muse_tip = next(iter(muse["cells"].values()))["tooltip"]
+    native = next(candidate for candidate in muse_tip["candidates"] if candidate["key"] == "vllm_rust@0.26.0")
+    assert native["block"]["unavailable"] == "vLLM Rust 0.26.0 (stream, Combined & Unified) has no parser for muse_glimmer"
+
+
+def test_unified_default_dynamo_uses_pr_capture_and_keeps_release_history(tmp_path):
+    """The actual packaged 0.3.4 fixtures retain the release and select the PR capture."""
+    page_path = tmp_path / "CONFORMANCE_v2.html"
+    subprocess.run(
+        [str(UTILS / "render_table_v2.sh"), "--output", str(page_path)],
+        check=True,
+        capture_output=True,
+        cwd=REPO,
+    )
+    tab = _tab(_read_model(page_path, "render_table_v2.sh"), "tab-unified")
+    dynamo = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
+    release = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo@0.4.0")
+
+    assert dynamo["label"] == "Dynamo v2 Rust 0.4.0+pr200 (stream, Combined & Unified)"
+    assert dynamo["default_bucket"] == "A"
+    assert release["label"] == "Dynamo v2 Rust 0.4.0 (stream, Combined & Unified)"
+    assert release["default_bucket"] == "C"
+
+
+def test_unified_tab_marks_unsupported_and_postdated_vllm_cases_na(model_v2):
+    """n/a distinguishes an unsupported family from a case absent from an old capture."""
+    tab = _tab(model_v2, "tab-unified")
+    peer_keys = {candidate["key"] for candidate in tab["candidates"] if candidate["impl"] == "vllm"}
+    assert peer_keys == {"vllm", "vllm_python@0.26.0", "vllm_rust", "vllm_rust@0.26.0"}
+    for row in tab["rows"]:
+        for key in peer_keys:
+            unavailable = [cell["cmp"][key].get("na") == 1 for cell in row["cells"].values()]
+            if row["family"] == "muse_glimmer":
+                assert all(unavailable), f"{key} must say n/a for Muse"
+            elif row["family"] != "gemma4":
+                assert not any(unavailable), f"{key} is missing captured cases for {row['family']}"
+
+    gemma = next(row for row in tab["rows"] if row["family"] == "gemma4")
+    for key in peer_keys:
+        for cell in gemma["cells"].values():
+            if cell["cmp"][key].get("na") == 1:
+                peer = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == key)
+                assert "this case postdates that capture" in peer["block"]["unavailable"]
+
+    for scenario in (
+        "gemma4_guided_json_visible_call_prose_before_reasoning",
+        "gemma4_guided_json_malformed_call_prefix_before_reasoning",
+    ):
+        for key in peer_keys:
+            cell = gemma["cells"][scenario]
+            assert cell["cmp"][key].get("na") == 1
+            peer = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == key)
+            assert "this case postdates that capture" in peer["block"]["unavailable"]
 
 
 _IMPL_KEYS = ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python")
@@ -327,7 +412,9 @@ def test_v2_cmp_payload_shape(model_v2):
     for t in model_v2["tabs"]:
         for cell in _iter_cells(t):
             for key, entry in (cell.get("cmp") or {}).items():
-                assert set(entry) == {"sig", "leak", "na"}, entry
+                # `err` flags a candidate that ran and THREW (an `exception` block): not
+                # `na`, so a threw-Reference vs a parsed peer reddens the cell.
+                assert set(entry) == {"sig", "leak", "na", "err"}, entry
                 assert isinstance(entry["sig"], int)
 
 
@@ -478,7 +565,6 @@ def test_v2_no_verbose_todo_baked_in_cells(model_v2):
 
 def test_v2_reasoning_uses_current_peers(model_v2):
     # reasoning tab uses the same current peer versions as the toolcalling tabs.
-    tc = " ".join(c["label"] for c in _tab(model_v2, "tab-toolcalling-batch")["candidates"])
     peers = _peer_versions("reasoning/fixtures-v1")
     r = " ".join(c["label"] for c in _tab(model_v2, "tab-reasoning-batch")["candidates"])
     for impl in ("vllm_python", "sglang_python"):

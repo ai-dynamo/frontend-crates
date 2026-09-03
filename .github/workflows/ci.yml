@@ -102,7 +102,12 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Render cost scales with the number of peer version dirs: every <impl>-<version>
+    # is another compare candidate on every cell. main sat at ~8m24s of a 10m budget,
+    # so adding the vLLM 0.26.0 / vLLM Rust 0.24.0+0.26.0 captures timed the job out.
+    # Raised to match the `rust` lane's headroom. If this creeps toward 20m, the fix is
+    # to make the render cheaper (or shard it), not to raise the ceiling again.
+    timeout-minutes: 20
     permissions:
       contents: read
       pull-requests: write

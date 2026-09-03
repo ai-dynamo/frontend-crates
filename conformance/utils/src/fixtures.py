@@ -16,6 +16,7 @@ from pathlib import Path
 
 import yaml
 
+from fixture_snapshot import fixture_snapshot_root
 from impls import IMPL_DISPLAY, IMPL_KEYS, PEER_IMPL_KEYS
 from markers import (
     VLLM_RUST_UNAVAILABLE,
@@ -29,24 +30,17 @@ FIXTURES = REPO_ROOT / "tests/parity/toolcalling/fixtures"
 RUST_TOOL_CALLING_DIR = REPO_ROOT / "lib/parsers/src/tool_calling"
 
 # The versioned fixture source (inputs/ + per-impl <impl>-<version>/ dirs) lives in
-# the fixture extraction cache (from the in-repo LFS store). `_common.sh` exports
-# CONFORMANCE_FIXTURES_ROOT (the cache root); fall back to the standard cache path for
-# standalone runs. Powers the per-impl version radios: the generator resolves each
+# an immutable fixture extraction snapshot (from the in-repo LFS store). `_common.sh`
+# exports CONFORMANCE_FIXTURES_ROOT; standalone runs resolve the exact snapshot printed
+# by `extract_fixtures.py`. Powers the per-impl version radios: the generator resolves each
 # version snapshot and re-runs the load path so cell keys align exactly with the
 # rendered (pinned) table.
 _FRONTEND_CRATES_ROOT = Path(os.environ.get("FRONTEND_CRATES_ROOT", str(REPO_ROOT)))
 
 
 def _fixtures_cache_root() -> Path:
-    """Fixture extraction cache root (`~/.cache/dynamo/conformance-fixtures`
-    or `$XDG_CACHE_HOME/...`). `_common.sh` exports CONFORMANCE_FIXTURES_ROOT pointing
-    here; honor it first so staged renders and standalone runs agree."""
-    env = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
-    if env:
-        return Path(env)
-    xdg = os.environ.get("XDG_CACHE_HOME")
-    base = Path(xdg) if xdg else Path.home() / ".cache"
-    return base / "dynamo/conformance-fixtures"
+    """Immutable manifest-pinned snapshot used by all fixture readers."""
+    return fixture_snapshot_root()
 
 
 _SRC_FIXTURES = _fixtures_cache_root() / "toolcalling/fixtures-batch-v1"
@@ -590,12 +584,19 @@ def _derive_stream_expected(case: dict) -> dict:
     sets the call name; `arguments` fragments are concatenated and parsed as JSON
     (kept as a raw string if not valid JSON — e.g. a truncated body)."""
     unavailable = case.get("unavailable", {}) or {}
+    exception = case.get("exception", {}) or {}
     chunks = case.get("chunks", []) or []
     derived: dict = {}
     unavailable = _normalize_impl_mapping(unavailable)
+    exception = _normalize_impl_mapping(exception)
     for impl in IMPL_KEYS:
         if impl in unavailable:
             derived[impl] = {"unavailable": unavailable[impl]}
+            continue
+        # The parser ran and threw: a concrete failure block (surfaced verbatim), NOT a
+        # benign "not applicable". `exception` and `unavailable` are mutually exclusive.
+        if impl in exception:
+            derived[impl] = {"exception": exception[impl]}
             continue
         has_chunk_data = any(
             impl in _normalize_impl_mapping((chunk.get("expected") or {}))
@@ -637,9 +638,9 @@ def _derive_stream_expected(case: dict) -> dict:
         block = {"calls": calls, "normal_text": normal}
         # Peer divergence from Dynamo parser v2 streaming is captured
         # ground truth, not an un-triaged gap — text vs token streaming differ by
-        # design. Tag peer blocks with a reason so the cell shows `S`/`V` (known
-        # divergence), never `S_rs?`/`V_ps?` (research-needed). The per-chunk `expected`
-        # in the fixture is the detailed evidence.
+        # design. Tag peer blocks with a reason so the cell reads as a documented
+        # (known) divergence, never research-needed. The per-chunk `expected` in the
+        # fixture is the detailed evidence.
         if impl in PEER_IMPL_KEYS:
             block["explanation"] = (
                 f"Captured from the {IMPL_DISPLAY[impl]} streaming parser. Streaming output differs "

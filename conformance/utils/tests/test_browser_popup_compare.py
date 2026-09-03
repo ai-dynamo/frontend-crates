@@ -12,8 +12,8 @@ test_browser_smoke.py).
 """
 from __future__ import annotations
 
-import os
 import shutil
+import sys
 import time
 from pathlib import Path
 
@@ -22,6 +22,13 @@ import pytest
 selenium = pytest.importorskip("selenium")
 from selenium import webdriver  # noqa: E402
 from selenium.webdriver.chrome.options import Options  # noqa: E402
+
+UTILS = Path(__file__).resolve().parents[1]
+SRC = UTILS / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from fixture_snapshot import fixture_snapshot_root  # noqa: E402
 
 pytestmark = pytest.mark.skipif(
     not any(
@@ -35,11 +42,7 @@ def _dynamo_key(impl: str) -> str:
     """Candidate key of the LATEST stream capture dir for a Dynamo impl
     (`dynamo_v1` = jail reference, `dynamo_v2` = stream parser); older version
     dirs are capture history and render as extra candidates."""
-    root = Path(
-        os.environ.get("CONFORMANCE_FIXTURES_ROOT")
-        or Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
-        / "dynamo/conformance-fixtures"
-    )
+    root = fixture_snapshot_root()
     import re as _re
 
     dirs = [
@@ -357,9 +360,9 @@ def _row_state(driver, key):
     )
 
 
-def test_switching_star_keeps_old_ref_as_checked_compare(driver):
-    # Moving the star to a new row makes that row the Reference and demotes the OLD
-    # Reference to a normal CHECKED compare box (new-ref vs old-ref), not a dropout.
+def test_switching_star_clears_old_compare_and_hides_its_popup_column(driver):
+    # A new star is a new one-version view. The old Reference becomes available to
+    # compare again, but stays unchecked until the user asks to show it.
     _open_stream_tab(driver)
     _select(driver, V2_KEY, [])
     assert _active_base(driver) == V2_KEY, "precondition: V2 is the Reference"
@@ -369,11 +372,13 @@ def test_switching_star_keeps_old_ref_as_checked_compare(driver):
 
     assert _active_base(driver) == V1_KEY, "clicking V1's star must make V1 the Reference"
     old = _row_state(driver, V2_KEY)
-    assert old == {"isRef": False, "refChecked": False, "cmpChecked": True, "cmpDisabled": False}, (
-        f"old ref V2 must become an enabled, checked compare box, got {old}"
+    assert old == {"isRef": False, "refChecked": False, "cmpChecked": False, "cmpDisabled": False}, (
+        f"old ref V2 must become an enabled, unchecked compare box, got {old}"
     )
     new = _row_state(driver, V1_KEY)
     assert new["isRef"] and new["refChecked"], f"V1 must be the new Reference, got {new}"
+    visible = [key for key, state in _grid_state(driver).items() if not state["hidden"]]
+    assert visible == [V1_KEY], f"the popup must show only the new Reference, got {visible}"
 
 
 def test_active_star_stays_when_a_compare_is_selected(driver):
@@ -463,14 +468,18 @@ def test_batch_tab_uses_candidate_chart(driver):
 
 def test_reasoning_tabs_use_candidate_chart(driver):
     """Both Reasoning tabs render the candidate chart with the dynamo/vllm/sglang
-    columns (stream additionally lists its input chunks as rows)."""
+    columns (stream additionally lists its input chunks as rows). Candidate keys are
+    versioned "<impl>-<slug>" (a peer engine fans out over its captured reasoning
+    versions, e.g. vllm_python-0-24-0 AND vllm_python-0-25-1), so each column key must
+    belong to one of the three reasoning engines."""
+    engines = ("dynamo_v1", "vllm_python", "sglang_python")
     for target in ("reasoning-batch", "reasoning-stream"):
         _open_tab(driver, target)
         order = _grid_column_order(driver)
         assert order, f"{target}: no candidate chart found"
-        assert set(order) <= {"dynamo_v1", "vllm_python", "sglang_python"}, (
-            f"{target}: unexpected candidate keys {order}"
-        )
+        assert all(
+            any(key == e or key.startswith(e + "-") for e in engines) for key in order
+        ), f"{target}: unexpected candidate keys {order}"
         assert not _chart_tooltip_has_cand_list(driver), (
             f"{target}: tooltip shows BOTH chart and legacy list"
         )

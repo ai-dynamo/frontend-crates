@@ -13,7 +13,7 @@ Request-scoped modes use PAIRED TENS: X0 is that mode's happy base case, X1 its
 weird/malformed counterpart — 30/31 guided decoding, 40/41 prefilled reasoning,
 50/51 prefilled response. A new mode takes the next ten.
 There is no separate "input stream mode" axis: which channel the prompt pre-opened IS
-`init.prefill`, so a case that varied only that duplicated groups 31-33, and one that
+`init.starting_state`, so a case that varied only that duplicated groups 31-33, and one that
 varied nothing but a finish_reason label duplicated groups 1-12 (the parser cannot see
 that value — `finish()` takes no argument).
 """
@@ -29,6 +29,10 @@ UNIFIED_TAX = {
     "two_calls": (2, "a"), "two_calls_same_name": (2, "b"),
     # Group 3 — No call (streamv2.3)
     "text_only": (3, "a"),
+    # Group 4 — Malformed envelope. Labelled but EMPTY until now.
+    "tool_block_never_closed_then_text": (4, "a"),
+    "tool_markup_only_emits_nothing": (4, "b"),
+
     # Group 5 — Truncation / recovery (streamv2.5)
     "truncated_tool_eof": (5, "a"), "tool_no_close": (5, "b"),
     "orphan_close_after_prose": (5, "c"),
@@ -43,6 +47,7 @@ UNIFIED_TAX = {
     # Group 10 — Reasoning span (REASONING.*), reasoning-only
     "reason_only": (10, "a"), "reason_then_content": (10, "b"),
     "two_reason_spans": (10, "c"), "reason_unterminated": (10, "d"),
+    "two_adjacent_reason_spans": (10, "e"),
     # Group 11 — Reasoning <-> tool interleaving (UNIQUE to unified)
     "reason_then_tool": (11, "a"), "reason_after_tool": (11, "b"),
     "reason_interleaved": (11, "c"), "reason_tool_text_reason_tool": (11, "d"),
@@ -59,11 +64,54 @@ UNIFIED_TAX = {
     # Group 30 — Guided decoding, happy
     "guided_json_named_tool": (30, "a"), "guided_json_required_tool": (30, "b"),
     "guided_json_two_calls": (30, "c"),
+    "guided_json_escaped_string_args": (30, "d"), "guided_json_array_argument": (30, "e"),
+    "guided_json_after_reasoning": (30, "f"), "guided_json_marker_inside_argument": (30, "g"),
 
     # Group 31 — Guided decoding, weird / malformed
-    "guided_json_invalid_call": (31, "a"), "guided_json_malformed_json": (31, "b"),
-    "guided_json_partial_calls": (31, "c"),
-    "guided_json_list_with_broken_element": (31, "d"),
+    "guided_json_invalid_call": (31, "1"), "guided_json_malformed_json": (31, "2"),
+    "guided_json_partial_calls": (31, "3"),
+    "guided_json_list_with_broken_element": (31, "4"),
+    # 31-5 through 31-11 — the SURROUNDINGS of a guided payload, not the payload itself.
+    "guided_json_tool_open_before_payload": (31, "5"),
+    "guided_json_tool_close_after_payload": (31, "6"),
+    "guided_json_wrapped_in_tool_markup": (31, "7"),
+    "guided_json_narrated_invoke_in_reasoning": (31, "8"),
+    "guided_json_prose_before_reasoning": (31, "9"),
+    "guided_json_orphan_reason_close_before_payload": (31, "10"),
+    "guided_json_orphan_tool_close_before_payload": (31, "11"),
+    # Generated crossings (`_guided_product` in gen_unified_golden.py): payload
+    # shape x surrounding grammar. The 31-12 through 31-20 rows are the quadrant that had ZERO
+    # cases — markup present AND no call recoverable — where both the P2 recovery
+    # leak and the unbounded invoke-header scan lived.
+    "guided_json_syntax_error_trailing_close": (31, "12"),
+    "guided_json_syntax_error_wrapped": (31, "13"),
+    "guided_json_syntax_error_bare_opener": (31, "14"),
+    "guided_json_schema_error_not_a_call_trailing_close": (31, "15"),
+    "guided_json_schema_error_not_a_call_wrapped": (31, "16"),
+    "guided_json_schema_error_not_a_call_bare_opener": (31, "17"),
+    "guided_json_schema_error_nameless_element_trailing_close": (31, "18"),
+    "guided_json_schema_error_nameless_element_wrapped": (31, "19"),
+    "guided_json_schema_error_nameless_element_bare_opener": (31, "20"),
+
+    # Devin-found crossings, added as AXIS entries so the next payload/surrounding
+    # combination is generated rather than noticed later.
+    "guided_json_gt_in_argument_trailing_close": (30, "k"),
+    "guided_json_gt_in_argument_wrapped": (30, "l"),
+    "guided_json_gt_in_argument_bare_opener": (30, "m"),
+
+    # Marker OWNERSHIP: which control marker owns a `>` when two compete. The
+    # corpus had no such case, and the gap leaked private reasoning as text.
+    "guided_json_stray_prefix_before_reasoning": (31, "21"),
+    "guided_json_narrated_prefix_inside_reasoning": (31, "22"),
+    "guided_json_native_markup_only": (31, "23"),
+    "guided_json_unterminated_reasoning_then_wrapped_payload": (31, "24"),
+    "guided_json_quoted_bare_header_in_answer": (31, "25"),
+    "guided_json_quoted_bare_tool_header_in_answer": (31, "26"),
+    "guided_json_quoted_bare_header_after_payload": (31, "27"),
+    "guided_json_bare_tool_header_recovers_inside_a_thought": (31, "28"),
+    "gemma4_guided_json_visible_call_prose_before_reasoning": (31, "29"),
+    "gemma4_guided_json_malformed_call_prefix_before_reasoning": (31, "30"),
+
     # Group 40 — Prefilled reasoning, happy
     "prefilled_reasoning_with_tool": (40, "a"), "prefilled_reasoning_with_guided_json": (40, "b"),
     "prefilled_reasoning_then_text_then_tool": (40, "c"), "prefilled_reasoning_then_text": (40, "d"),
@@ -86,14 +134,14 @@ UNIFIED_GROUP_LABEL = {
     7: "TC Argument fidelity", 8: "TC Content position",
     10: "Reasoning span",
     11: "Reasoning ↔ tool interleaving", 12: "Adversarial nesting (reasoning + tool)",
-    30: "Guided Decoding", 31: "Guided Decoding — malformed",
+    30: "Guided Decoding", 31: "Guided Decoding — payload REJECTED (syntax or schema) / recovery",
     40: "Prefilled Reasoning", 41: "Prefilled Reasoning — malformed",
     50: "Prefilled Response", 51: "Prefilled Response — malformed",
 }
 
 
 def tax(scenario):
-    """(group_num, sub_letter) for a scenario slug; group 9 for anything unmapped.
+    """(group_num, subcase_label) for a scenario slug; group 9 for anything unmapped.
 
     NUMBERING ONLY. A case's parser configuration (`init`) and its stream
     properties (`finish_reason`) are declared per case in `gen_unified_golden.py` and flow
@@ -103,11 +151,27 @@ def tax(scenario):
     return UNIFIED_TAX.get(scenario, (9, scenario))
 
 
+def taxonomy_sort_key(scenario):
+    """Sort legacy letter labels and numeric positions in one sequence."""
+    group, sub = tax(scenario)
+    if len(sub) == 1 and "a" <= sub <= "z":
+        return group, ord(sub) - ord("a") + 1, ""
+    if sub.isdecimal():
+        return group, int(sub), ""
+    return group, 10_000, sub
+
+
+def case_label(scenario):
+    """Scenario slug -> short case label; numeric positions use a dash."""
+    group, sub = tax(scenario)
+    separator = "-" if sub.isdecimal() else "."
+    return f"{group}{separator}{sub}"
+
+
 def numbered_id(scenario):
     """Scenario slug -> intrinsic numbered case id, e.g. 'arg_marker_in_string' ->
-    'UNIFIED.7.b' (mirrors TOOLCALLING.streamv2.N naming)."""
-    g, sub = tax(scenario)
-    return f"UNIFIED.{g}.{sub}"
+    'UNIFIED.7.b'; numeric positions use a dash, e.g. 'UNIFIED.31-25'."""
+    return f"UNIFIED.{case_label(scenario)}"
 
 
 # The unified corpus names a family by its MODEL family (`qwen3`); the grammar-token

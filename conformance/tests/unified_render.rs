@@ -7,9 +7,13 @@
 //! Columns: GOLDEN (authored oracle) | vLLM (captured) | Dynamo v2.
 //!
 //! The Dynamo column is a PER-FAMILY MIXTURE, the same shape as vLLM Rust's: the
-//! native UnifiedParser where one exists (qwen3 today), and the v1-reasoning +
-//! v2-tool split everywhere else. The split is the "before" state — it parses ALL
-//! reasoning first, so reasoning interleaved with tool calls loses its position.
+//! native UnifiedParser where one exists, and the v1-reasoning + v2-tool split
+//! everywhere else. The split is the "before" state — it parses ALL reasoning
+//! first, so reasoning interleaved with tool calls loses its position. Every
+//! family in the current golden corpus (gemma4, kimi_k2, muse_glimmer, qwen3)
+//! has a native UnifiedParser as of gemma4's migration, so nothing in this
+//! corpus exercises the split path today; a new split-only family reintroduces
+//! it.
 //!
 //! Output: `conformance/CONFORMANCE_unified.html` (standalone preview) and
 //! `conformance/unified/unified_results.yaml`. The exploder and packager turn that
@@ -23,12 +27,15 @@ use std::path::PathBuf;
 
 use dynamo_parsers::{ReasoningParser, ReasoningParserType};
 use dynamo_parsers_v2::{
-    Tool, assemble, create_tool_parser_for_family, create_unified_parser_for_family,
+    Tool, UnifiedParserExt, assemble, create_tool_parser_for_family,
+    create_unified_parser_for_family,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
 
 mod common;
+
+use common::Init;
 
 #[derive(Deserialize)]
 struct GoldenFile {
@@ -41,6 +48,10 @@ struct GoldenCase {
     description: String,
     #[serde(default)]
     policy: Vec<String>,
+    #[serde(default)]
+    init: Init,
+    #[serde(default)]
+    finish_reason: Option<String>,
     input: String,
     golden: Vec<Ev>,
     expect: BTreeMap<String, Expect>,
@@ -102,6 +113,8 @@ fn tools() -> Vec<Tool> {
         mk("f", "x"),
         mk("g", "y"),
         mk("run", "cmd"),
+        mk("log", "note"),
+        mk("sum_values", "values"),
     ]
 }
 
@@ -155,13 +168,13 @@ impl From<dynamo_parsers_v2::UnifiedEvent> for Ev {
     }
 }
 
-fn unified_delta_json(d: &dynamo_parsers_v2::UnifiedDelta) -> Value {
+fn unified_delta_json(d: &dynamo_parsers_v2::UnifiedParserEvent) -> Value {
     match d {
-        dynamo_parsers_v2::UnifiedDelta::Reasoning { text } => {
+        dynamo_parsers_v2::UnifiedParserEvent::Reasoning(text) => {
             json!({"kind": "reasoning", "text": text})
         }
-        dynamo_parsers_v2::UnifiedDelta::Text { text } => json!({"kind": "text", "text": text}),
-        dynamo_parsers_v2::UnifiedDelta::ToolCall(c) => {
+        dynamo_parsers_v2::UnifiedParserEvent::Text(text) => json!({"kind": "text", "text": text}),
+        dynamo_parsers_v2::UnifiedParserEvent::ToolCall(c) => {
             json!({"kind": "tool_call", "name": c.name, "arguments": c.arguments})
         }
     }
@@ -169,17 +182,16 @@ fn unified_delta_json(d: &dynamo_parsers_v2::UnifiedDelta) -> Value {
 
 /// Compute the Dynamo v2 unified event list for one input.
 ///
-/// PER-FAMILY MIXTURE, the same shape as vLLM Rust's column: a family that has a
-/// unified parser is parsed by it — one state machine per stream owning
-/// reasoning + content + tool calls. Every other family still goes through the
-/// SPLIT Dynamo serves today: the v1 reasoning parser strips reasoning over the
-/// whole stream into ONE assembled field (the merge), then the v2 tool parser
-/// streams the leftover content (char-by-char) preserving text/call order.
+/// A family with a native unified parser is parsed by one state machine per
+/// stream owning reasoning + content + tool calls. All four families in the
+/// current corpus take this path; the split fallback remains for other inputs.
 ///
 /// Both paths are driven from the SAME chunking as `dynamo_chunks`, so the
 /// assembled row and the per-chunk rows in the popup describe one run.
-fn dynamo_events(family: &str, input: &str) -> Vec<Ev> {
+fn dynamo_events(family: &str, input: &str, init: &Init) -> Vec<Ev> {
     if let Ok(mut parser) = create_unified_parser_for_family(family, &tools()) {
+        init.apply(&mut parser, family);
+
         let mut deltas = Vec::new();
         for chunk in chunk_input(input) {
             deltas.extend(
@@ -291,9 +303,11 @@ fn tool_deltas(res: &dynamo_parsers_v2::ToolParseResult, out: &mut Vec<Value>) {
 /// Stream `input` through Dynamo's split pipeline CHUNK BY CHUNK, recording the
 /// real per-chunk emitted deltas (v1 reasoning streaming incremental -> v2 tool
 /// streaming push on the leftover content).
-fn dynamo_chunks(family: &str, input: &str) -> Vec<ChunkRow> {
+fn dynamo_chunks(family: &str, input: &str, init: &Init) -> Vec<ChunkRow> {
     // Unified families: ONE parser, so a chunk's deltas are simply what it emitted.
     if let Ok(mut parser) = create_unified_parser_for_family(family, &tools()) {
+        init.apply(&mut parser, family);
+
         let mut rows = Vec::new();
         for chunk in chunk_input(input) {
             let deltas = parser.push(&chunk).unwrap_or_default();
@@ -308,12 +322,10 @@ fn dynamo_chunks(family: &str, input: &str) -> Vec<ChunkRow> {
             .iter()
             .map(unified_delta_json)
             .collect();
-        if !tail.is_empty() {
-            rows.push(ChunkRow {
-                delta_text: "‹finish›".to_string(),
-                deltas: tail,
-            });
-        }
+        rows.push(ChunkRow {
+            delta_text: "‹finish›".to_string(),
+            deltas: tail,
+        });
         return rows;
     }
 
@@ -349,13 +361,22 @@ fn dynamo_chunks(family: &str, input: &str) -> Vec<ChunkRow> {
         tool_deltas(&tr, &mut tail);
     }
     tool_deltas(&tp.finish().unwrap_or_default(), &mut tail);
-    if !tail.is_empty() {
-        rows.push(ChunkRow {
-            delta_text: "‹finish›".to_string(),
-            deltas: tail,
-        });
-    }
+    rows.push(ChunkRow {
+        delta_text: "‹finish›".to_string(),
+        deltas: tail,
+    });
     rows
+}
+
+#[test]
+fn finish_is_part_of_the_stream_schedule_even_when_it_emits_nothing() {
+    let rows = dynamo_chunks("qwen3", "plain response", &Init::default());
+    let finish = rows.last().expect("finish row");
+    assert_eq!(finish.delta_text, "‹finish›");
+    assert!(
+        finish.deltas.is_empty(),
+        "fixture must exercise an empty finish"
+    );
 }
 
 /// Classify a Dynamo divergence from the golden.
@@ -427,7 +448,7 @@ fn classify(family: &str, golden: &[Ev], got: &[Ev]) -> &'static str {
             })
             .collect()
     };
-    if cat(golden, true) == cat(got, true) && cat(golden, false) == cat(got, false) {
+    if gc == tc && cat(golden, true) == cat(got, true) && cat(golden, false) == cat(got, false) {
         return "ORDER";
     }
     "LOSS"
@@ -495,6 +516,44 @@ fn cell(
 
 #[test]
 fn render_unified_conformance_html() {
+    // The vLLM column is LIVE, not an expectation. `capture_vllm_rust_unified.py`
+    // records the `vllm-parser` crate against this same corpus; reading it here is
+    // what makes the column evidence instead of a claim.
+    let vllm_live: BTreeMap<(String, String), Vec<Ev>> = {
+        let froot = common::ensure_fixtures().join("unified");
+        let mut m = BTreeMap::new();
+        // Shards key by TAXONOMY id (`UNIFIED.30.a`); the golden keys by SCENARIO
+        // (`UNIFIED.guided_json_named_tool.qwen3`). The inputs shard carries both, so
+        // it is the bridge — without it every cell reads NO-DATA while the capture
+        // sits right there, which is how this first went wrong.
+        let mut by_tax: BTreeMap<(String, String), String> = BTreeMap::new();
+        for entry in glob_yaml(&froot.join("inputs")) {
+            if let Ok(doc) = serde_yaml::from_str::<InputDoc>(
+                &std::fs::read_to_string(&entry).unwrap_or_default(),
+            ) {
+                for (cid, c) in doc.cases {
+                    by_tax.insert((doc.family.clone(), cid), c.scenario);
+                }
+            }
+        }
+        if let Some(d) = common::version_dirs_ascending(&froot, "vllm_rust-").pop() {
+            for entry in glob_yaml(&d) {
+                if let Ok(doc) = serde_yaml::from_str::<CaptureDoc>(
+                    &std::fs::read_to_string(&entry).unwrap_or_default(),
+                ) {
+                    for (cid, c) in doc.cases {
+                        if let Some(sc) = by_tax.get(&(doc.family.clone(), cid)) {
+                            m.insert(
+                                (doc.family.clone(), format!("UNIFIED.{sc}.{}", doc.family)),
+                                c.assembled,
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        m
+    };
     let dir = common::ensure_unified_golden();
     let mut files: Vec<GoldenFile> = Vec::new();
     for entry in std::fs::read_dir(&dir).unwrap() {
@@ -527,13 +586,13 @@ fn render_unified_conformance_html() {
             total += 1;
 
             // Dynamo: live.
-            let got = dynamo_events(&file.family, &case.input);
+            let got = dynamo_events(&file.family, &case.input, &case.init);
             let dclass = classify(&file.family, &case.golden, &got);
             eprintln!(
                 "{id:44} dynamo={dclass:6} :: {}",
                 got.iter().map(Ev::render).collect::<Vec<_>>().join("  |  ")
             );
-            let chunk_feed: Vec<Value> = dynamo_chunks(&file.family, &case.input)
+            let chunk_feed: Vec<Value> = dynamo_chunks(&file.family, &case.input, &case.init)
                 .into_iter()
                 .map(|r| json!({"delta_text": r.delta_text, "dynamo": r.deltas}))
                 .collect();
@@ -549,6 +608,8 @@ fn render_unified_conformance_html() {
                 "scenario": scenario,
                 "description": case.description,
                 "policy": case.policy,
+                "init": case.init.applied(),
+                "finish_reason": case.finish_reason.clone().unwrap_or_else(|| "stop".to_string()),
                 "input": case.input,
                 "golden": case.golden,
                 "dynamo": got,
@@ -570,7 +631,7 @@ fn render_unified_conformance_html() {
                 format!("<hr><div class=todo>{}</div>", esc(todo_for(dclass)))
             };
             let dcell = cell(
-                "Dynamo today (v1 reasoning + v2 tool, LIVE)",
+                "Dynamo today (native unified, LIVE)",
                 &case.input,
                 &case.golden,
                 &events_html(&got),
@@ -601,13 +662,36 @@ fn render_unified_conformance_html() {
                 .note
                 .map(|n| format!("<hr><div class=note>{}</div>", esc(&n)))
                 .unwrap_or_default();
+            let vlive = vllm_live.get(&(file.family.clone(), id.clone()));
+            let (vgot_html, vverdict, vclass_final) = match vlive {
+                Some(ev) => {
+                    let matches = ev == &case.golden;
+                    (
+                        events_html(ev),
+                        if matches { "match" } else { "diverge" },
+                        if matches {
+                            "MATCH".to_string()
+                        } else {
+                            "DIVERGE".to_string()
+                        },
+                    )
+                }
+                // No capture for this case: say so. Do NOT fall back to the authored
+                // expectation dressed up as a result — that is how this column spent
+                // its life claiming MATCH with nothing behind it.
+                None => (
+                    "<i>(no vLLM capture for this case)</i>".to_string(),
+                    "diverge",
+                    "NO-DATA".to_string(),
+                ),
+            };
             let vcell = cell(
-                "vLLM 0.25.x (expected)",
+                "vLLM Rust 0.25.1 (LIVE)",
                 &case.input,
                 &case.golden,
-                "<i>(live capture pending — U1)</i>",
-                &vx.verdict,
-                &vclass,
+                &vgot_html,
+                vverdict,
+                &vclass_final,
                 &vnote,
             );
 
@@ -658,9 +742,9 @@ td.c:hover .tip,td.gold:hover .tip{{display:block}}
 .legend span{{display:inline-block;padding:2px 8px;border-radius:4px;margin-right:8px;font-size:12px}}
 </style>
 <h1>Unified conformance — reasoning + content + tool calls, one ordered stream</h1>
-<p class=lede>Truth column is <b>GOLDEN</b> — the authored, spec-derived oracle (best-effort error recovery), <i>not</i> captured from any implementation. Both engines are measured against it. <b>Dynamo today</b> is computed LIVE this run (v1 reasoning + v2 tool, composed as Dynamo serves today; Dynamo v2 is moving to a per-family mixture). <b>vLLM 0.25.x</b> is the documented expectation (live capture = U1; only gemma4 uses a native unified parser, the rest are combined). Hover any cell.</p>
+<p class=lede>Truth column is <b>GOLDEN</b> — the authored, spec-derived oracle (best-effort error recovery), <i>not</i> captured from any implementation. Both engines are measured against it. <b>Dynamo today</b> is computed LIVE this run with native unified parsers for all four current corpus families. <b>vLLM 0.25.x</b> is the documented expectation (live capture = U1; only gemma4 uses a native unified parser, the rest are combined). Hover any cell.</p>
 <p class=legend><span class=MATCH>matches golden</span><span class=RED>diverges (class shown)</span> &nbsp; Dynamo red: <b>{dynamo_red}</b>/{total} · vLLM red: <b>{vllm_red}</b>/{total}</p>
-<table><tr><td>case</td><td>GOLDEN</td><td>vLLM 0.25.x<br><span class=sub>(expected)</span></td><td>Dynamo today<br><span class=sub>(v1 reasoning + v2 tool, LIVE)</span></td></tr>
+<table><tr><td>case</td><td>GOLDEN</td><td>vLLM 0.25.x<br><span class=sub>(expected)</span></td><td>Dynamo today<br><span class=sub>(native unified, LIVE)</span></td></tr>
 {rows}
 </table>
 <p class=sub>Generated by conformance/tests/unified_render.rs. Cases: conformance/unified/golden_spec/ (authored by gen_unified_golden.py). Taxonomy: conformance/utils/lib/parsers/UNIFIED_CASES.md.</p>
@@ -680,7 +764,7 @@ td.c:hover .tip,td.gold:hover .tip{{display:block}}
     std::fs::create_dir_all(yaml_out.parent().unwrap()).unwrap();
     let feed = serde_json::json!({
         "schema": "unified-results/v1",
-        "note": "GOLDEN = authored oracle. dynamo = LIVE (v1 reasoning + v2 tool). vllm = documented expectation (live capture pending U1).",
+        "note": "GOLDEN = authored oracle. dynamo = LIVE (native unified for all four current corpus families). vllm = documented expectation (live capture pending U1).",
         "cases": json_cases,
     });
     std::fs::write(&yaml_out, serde_yaml::to_string(&feed).unwrap()).unwrap();
@@ -689,11 +773,19 @@ td.c:hover .tip,td.gold:hover .tip{{display:block}}
         out.display()
     );
 
-    // Sanity: the harness computes REAL failures, not a strawman.
+    // Sanity: the harness computes REAL failures, not a strawman. vLLM's
+    // documented-expectation column supplies that signal (`vllm_red` is large
+    // and asserted elsewhere via the rendered legend), so this only needs to
+    // pin Dynamo's own invariant.
     assert!(total >= 14, "expected the seed corpus");
-    assert!(
-        dynamo_red >= 3,
-        "expected the split to fail the interleaving cases (got {dynamo_red})"
+    // Every family in the current golden corpus has a native UnifiedParser
+    // (see the module doc), so Dynamo must match GOLDEN on every case — the
+    // split's interleaving-order loss no longer applies to anything here. A
+    // regression back to >0 means either a native parser broke, or a new
+    // split-only family entered the corpus without a native parser of its own.
+    assert_eq!(
+        dynamo_red, 0,
+        "expected every case to match golden now that every family is native (got {dynamo_red} red)"
     );
 }
 
@@ -732,6 +824,11 @@ struct InputCase {
     scenario: String,
     #[serde(default)]
     input: String,
+    /// The guard must re-run each case under the SAME configuration the shard was
+    /// captured with; re-running everything under the default would report false
+    /// drift for every prefilled / guided-JSON case.
+    #[serde(default)]
+    init: Init,
 }
 
 /// GUARD: the COMMITTED Dynamo capture must equal what the parsers produce NOW.
@@ -753,22 +850,29 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
         );
     }
     // THIS build's capture: the newest version dir, via the shared helper so the
-    // "which capture is current" rule lives in ONE place. The helper already drops
-    // `.patchN` overlays and `+tag` change-scoped captures, both of which are older
-    // parsers and must never be mistaken for the live one. Resolving by readdir order
-    // instead made this guard nondeterministic — the same commit could pass against one
-    // shard and report parser drift against another purely on directory listing order.
+    // "which capture is current" rule lives in ONE place. The helper drops `.patchN`
+    // overlays, orders a `+tag` immediately before its matching plain release, and still
+    // lets a newer PR-qualified capture outrank every older release. Resolving by
+    // readdir order instead made this guard nondeterministic — the same commit could
+    // pass against one shard and report parser drift against another.
     let capture_dir = common::version_dirs_ascending(&root, "dynamo_v2-")
         .pop()
         .expect("no committed dynamo_v2-<ver> capture dir");
 
-    // key -> (family, scenario, input), from the inputs shard.
-    let mut meta: BTreeMap<(String, String), (String, String)> = BTreeMap::new();
-    for entry in glob_yaml(&root.join("inputs")) {
-        let doc: InputDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
-            .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
-        for (key, case) in doc.cases {
-            meta.insert((doc.family.clone(), key), (case.scenario, case.input));
+    // key -> (family, scenario, input, init), from the base inputs shard plus
+    // PR-qualified sparse overlays. New cases must carry their input metadata in
+    // the same overlay as the capture, rather than making the released shard mutable.
+    let mut meta: BTreeMap<(String, String), (String, String, Init)> = BTreeMap::new();
+    for input_dir in shared_overlay_dirs(&root, "inputs") {
+        for entry in glob_yaml(&input_dir) {
+            let doc: InputDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
+                .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
+            for (key, case) in doc.cases {
+                meta.insert(
+                    (doc.family.clone(), key),
+                    (case.scenario, case.input, case.init),
+                );
+            }
         }
     }
 
@@ -778,13 +882,17 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
         let doc: CaptureDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
             .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
         for (key, committed) in doc.cases {
-            let Some((scenario, input)) = meta.get(&(doc.family.clone(), key.clone())) else {
+            let Some((scenario, input, init)) = meta.get(&(doc.family.clone(), key.clone())) else {
+                stale.push(format!(
+                    "{} [{key}] has no input metadata in inputs or its PR overlays",
+                    doc.family
+                ));
                 continue;
             };
             checked += 1;
             let id = format!("UNIFIED.{scenario}.{}", doc.family);
 
-            let live_assembled = dynamo_events(&doc.family, input);
+            let live_assembled = dynamo_events(&doc.family, input, init);
             if live_assembled != committed.assembled {
                 stale.push(format!(
                     "{id} [{key}] assembled\n    committed: {}\n         live: {}",
@@ -804,7 +912,7 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
             }
             // The page assembles the Dynamo column from these per-chunk deltas, so
             // they have to be current too — not just the assembled list.
-            let live_chunks: Vec<Vec<Value>> = dynamo_chunks(&doc.family, input)
+            let live_chunks: Vec<Vec<Value>> = dynamo_chunks(&doc.family, input, init)
                 .into_iter()
                 .map(|r| r.deltas)
                 .collect();
@@ -827,6 +935,68 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
         stale.len(),
         stale.join("\n\n"),
     );
+}
+
+/// Return the released shared shard followed by its PR-qualified sparse overlays.
+/// The overlays are ordered by PR number and then patch number so a later patch is
+/// authoritative if a branch intentionally extends its own metadata.
+fn shared_overlay_dirs(root: &std::path::Path, base: &str) -> Vec<PathBuf> {
+    let mut overlays: Vec<(u64, u64, PathBuf)> = std::fs::read_dir(root)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.is_dir())
+        .filter_map(|path| {
+            let name = path.file_name()?.to_str()?;
+            let rest = name.strip_prefix(&format!("{base}+pr"))?;
+            let (pr, patch) = rest.split_once(".patch")?;
+            Some((pr.parse().ok()?, patch.parse().ok()?, path))
+        })
+        .collect();
+    overlays.sort_by_key(|(pr, patch, _)| (*pr, *patch));
+
+    let mut dirs = vec![root.join(base)];
+    dirs.extend(overlays.into_iter().map(|(_, _, path)| path));
+    dirs
+}
+
+#[test]
+fn release_qualified_capture_order_preserves_current_and_released_owners() {
+    let prefix = "dynamo_v2-";
+    let older_release = common::version_capture_sort_key("dynamo_v2-0.3.2", prefix).unwrap();
+    let current_pr = common::version_capture_sort_key("dynamo_v2-0.4.0+pr200", prefix).unwrap();
+    let current_release = common::version_capture_sort_key("dynamo_v2-0.4.0", prefix).unwrap();
+    assert!(older_release < current_release);
+    assert!(current_release < current_pr);
+    assert!(common::version_capture_sort_key("dynamo_v2-0.3.3.patch1", prefix).is_none());
+}
+
+#[test]
+fn shared_input_overlays_are_folded_after_the_released_shard() {
+    let root = std::env::temp_dir().join(format!(
+        "unified-render-overlay-order-{}",
+        std::process::id()
+    ));
+    std::fs::create_dir_all(root.join("inputs")).unwrap();
+    std::fs::create_dir_all(root.join("inputs+pr166.patch10")).unwrap();
+    std::fs::create_dir_all(root.join("inputs+pr166.patch2")).unwrap();
+    std::fs::create_dir_all(root.join("inputs+pr167.patch1")).unwrap();
+
+    let names: Vec<String> = shared_overlay_dirs(&root, "inputs")
+        .into_iter()
+        .map(|path| path.file_name().unwrap().to_string_lossy().into_owned())
+        .collect();
+    assert_eq!(
+        names,
+        [
+            "inputs",
+            "inputs+pr166.patch2",
+            "inputs+pr166.patch10",
+            "inputs+pr167.patch1",
+        ]
+    );
+    std::fs::remove_dir_all(root).unwrap();
 }
 
 fn glob_yaml(dir: &std::path::Path) -> Vec<PathBuf> {

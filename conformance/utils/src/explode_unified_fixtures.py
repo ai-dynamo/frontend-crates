@@ -21,6 +21,7 @@ Output (conformance/unified/, one YAML per case per family per version-dir):
 Same schema shape as toolcalling/fixtures-stream-v2 (family/mode/captured_with/cases).
 Run:  python3 conformance/utils/src/explode_unified_fixtures.py
 """
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -50,6 +51,39 @@ def _case_key(case_id):
     return numbered_id(scenario), fam, scenario
 
 
+def _peer_cell(result):
+    """Store a peer failure instead of its partial output."""
+    if result.get("error"):
+        return {"error": result["error"]}
+    return {
+        "assembled": result.get("assembled") or [],
+        "chunks": [{"expected": events or []} for events in (result.get("chunks") or [])],
+    }
+
+
+def _clear_generated_dirs():
+    """Remove generated captures but retain append-only sparse patch layers."""
+    for sub in ("inputs", "golden"):
+        shutil.rmtree(BUILD / sub, ignore_errors=True)
+    for d in BUILD.glob("*-*"):
+        if d.is_dir() and ".patch" not in d.name:
+            shutil.rmtree(d, ignore_errors=True)
+
+
+def _shared_overlay_dirs():
+    """Map cases in a PR Dynamo patch capture to their shared sparse overlay."""
+    overlays = {}
+    for patch in BUILD.glob("dynamo_v2-*+pr*.patch*"):
+        suffix = re.search(r"(\+pr\d+\.patch\d+)$", patch.name)
+        if suffix is None:
+            continue
+        for fp in patch.glob("*/*.yaml"):
+            doc = yaml.safe_load(fp.read_text()) or {}
+            for key in doc.get("cases") or {}:
+                overlays[(fp.parent.name, key)] = suffix.group(1)
+    return overlays
+
+
 def main():
     feed = yaml.safe_load((BUILD / "unified_results.yaml").read_text())
     caps = {}
@@ -67,6 +101,7 @@ def main():
         "sglang_python": caps["sglang_python"].get("sglang_version") or "0.5.x",
         "dynamo_v2": _dynamo_v2_version(),
     }
+    shared_overlays = _shared_overlay_dirs()
 
     # A version dir is written once; accumulate cases into per-(dir, family) docs.
     docs = {}  # (dirname, family) -> {family, mode, [model_label|captured_with], cases:{}}
@@ -88,12 +123,14 @@ def main():
         key, fam, scenario = _case_key(cid)
         chunks = c.get("chunks") or []
 
-        # inputs/<family>/<key>.yaml — shared input (delta_text stream + metadata)
-        slot("inputs", fam, model_label=fam)[key] = {
+        # A PR patch capture owns new shared cases in a sparse overlay. The released
+        # shared shards remain byte-identical when this generated tree is repackaged.
+        shared_suffix = shared_overlays.get((fam, key), "")
+        slot(f"inputs{shared_suffix}", fam, model_label=fam)[key] = {
             "scenario": scenario,
             "description": c.get("description", ""),
             "policy": c.get("policy") or [],
-            "init": c.get("init") or {"prefill": "None", "tool_output_mode": "Native", "named_tool": None},
+            "init": c.get("init") or {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
             "finish_reason": c.get("finish_reason") or "stop",
             "input": c.get("input", ""),
             "chunks": [
@@ -102,7 +139,7 @@ def main():
         }
 
         # golden/<family>/<key>.yaml — the authored oracle (assembled events)
-        slot("golden", fam, captured_with={"golden": "v1"})[key] = {
+        slot(f"golden{shared_suffix}", fam, captured_with={"golden": "v1"})[key] = {
             "assembled": c.get("golden") or [],
         }
 
@@ -120,20 +157,10 @@ def main():
                 continue
             vdir = f"{impl}-{ver[impl]}"
             entry = slot(vdir, fam, captured_with={impl: ver[impl]})
-            cell = {}
-            if res.get("error"):
-                cell["error"] = res["error"]
-            else:
-                cell["assembled"] = res.get("assembled") or []
-                cell["chunks"] = [{"expected": e or []} for e in (res.get("chunks") or [])]
-            entry[key] = cell
+            entry[key] = _peer_cell(res)
 
-    # Clear old exploded dirs, then write one file per case.
-    for sub in ("inputs", "golden"):
-        shutil.rmtree(BUILD / sub, ignore_errors=True)
-    for d in BUILD.glob("*-*"):
-        if d.is_dir():
-            shutil.rmtree(d, ignore_errors=True)
+    # Rebuild generated captures while retaining append-only sparse patch layers.
+    _clear_generated_dirs()
 
     n = 0
     for (dirname, family), doc in docs.items():

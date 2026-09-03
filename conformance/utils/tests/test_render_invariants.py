@@ -16,7 +16,6 @@ rendered stream cells depend on).
 """
 from __future__ import annotations
 
-import os
 import sys
 import tempfile
 from pathlib import Path
@@ -30,13 +29,9 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from resolve_stream_fixtures import resolve, version_key  # noqa: E402
+from fixture_snapshot import fixture_snapshot_root  # noqa: E402
 
-FIXTURES_ROOT = Path(
-    os.environ.get(
-        "CONFORMANCE_FIXTURES_ROOT",
-        os.path.expanduser("~/.cache/dynamo/conformance-fixtures"),
-    )
-)
+FIXTURES_ROOT = fixture_snapshot_root()
 STREAM_SRC = FIXTURES_ROOT / "toolcalling" / "fixtures-stream-v2"
 
 pytestmark = pytest.mark.skipif(

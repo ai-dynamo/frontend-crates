@@ -51,6 +51,9 @@ fn spec() -> WrappedBlockSpec {
         bare_recovery_latch: BareRecoveryLatch::Set,
         invoke_latch: InvokeLatch::IfEmitted,
         drop_invoke_crossing_block_end: false,
+        // Every wrapped family's markers are special tokens today.
+        preserve_special_tokens: true,
+        ..Default::default()
     }
 }
 
@@ -63,7 +66,7 @@ pub(crate) struct Qwen3Emitter {
 
 impl InvokeEmitter for Qwen3Emitter {
     fn parse_invoke(
-        &self,
+        &mut self,
         invoke: &str,
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>> {
@@ -126,7 +129,9 @@ impl ToolParser for Qwen3CoderToolStreamParser {
     }
 
     fn preserve_special_tokens(&self) -> bool {
-        true
+        // Delegated, not restated: the unified adapter over this same scanner must not
+        // be able to answer differently for identical markup.
+        self.scanner.preserve_special_tokens()
     }
 
     fn push(&mut self, chunk: &str) -> anyhow::Result<ToolParseResult> {
