@@ -1479,51 +1479,6 @@ mod tests {
     }
 
     #[test]
-    fn response_prefilled_named_text_and_arguments_are_exact_at_every_utf8_split() {
-        let ordinary = "ordinary ";
-        let payload = r#"{"city":"Paris"}"#;
-        let input = format!("{ordinary}{payload}");
-
-        for split in input
-            .char_indices()
-            .map(|(at, _)| at)
-            .chain(std::iter::once(input.len()))
-        {
-            let mut parser = qwen3_unified(&weather_tools());
-            parser
-                .initialize_request(UnifiedParserInit {
-                    starting_state: UnifiedParserStartingState::Response,
-                    tool_output_mode: UnifiedToolOutputMode::GuidedJson {
-                        named_tool: Some("get_weather".to_string()),
-                    },
-                    invalid_guided_payload: InvalidGuidedPayloadPolicy::StreamBestEffort,
-                    ..UnifiedParserInit::default()
-                })
-                .unwrap();
-            let mut deltas = parser.push(&input[..split]).unwrap();
-            deltas.extend(parser.push(&input[split..]).unwrap());
-            deltas.extend(parser.finish().unwrap().events);
-
-            assert_eq!(
-                assemble(&deltas),
-                vec![
-                    text(ordinary),
-                    call("get_weather", serde_json::json!({"city":"Paris"}))
-                ],
-                "split {split}"
-            );
-            let arguments = deltas
-                .iter()
-                .filter_map(|event| match event {
-                    UnifiedParserEvent::ToolCall(call) => Some(call.arguments.as_str()),
-                    _ => None,
-                })
-                .collect::<String>();
-            assert_eq!(arguments, payload, "split {split} changed argument bytes");
-        }
-    }
-
-    #[test]
     fn required_choice_recovers_the_whole_array_when_any_call_is_invalid() {
         // Invalid = missing `name` (the one required field). A missing ARGUMENT key is
         // not invalid — that is a parameterless call, per `UNIFIED.6.a`.

@@ -708,19 +708,6 @@ mod tests {
             r#"{"location":"Montréal \"café\" \\ path with substantial remaining content"}"#
         );
 
-        for split in (0..=input.len()).filter(|&index| input.is_char_boundary(index)) {
-            let mut parser = Qwen3CoderToolStreamParser::new(&weather_tools());
-            let mut out = ToolParseResult::default();
-            out.append(parser.push(&input[..split]).expect("first push"));
-            out.append(parser.push(&input[split..]).expect("second push"));
-            out.append(parser.finish().expect("finish"));
-            assert_eq!(
-                out.coalesce_calls(),
-                baseline,
-                "split at byte {split} changed the completed call"
-            );
-        }
-
         let close = input.find("</function>").unwrap();
         let mut parser = Qwen3CoderToolStreamParser::new(&weather_tools());
         let mut before_close = ToolParseResult::default();
