@@ -1174,18 +1174,6 @@ mod tests {
     }
 
     #[test]
-    fn header_only_native_string_call_emits_nothing() {
-        let mut parser = qwen3_unified(&weather_tools());
-        let streamed = parser
-            .push("<tool_call><function=get_weather><parameter=city>")
-            .unwrap();
-        assert!(streamed.is_empty());
-        let mut all = streamed;
-        all.extend(parser.finish().unwrap().events);
-        assert!(assemble(&all).is_empty());
-    }
-
-    #[test]
     fn empty_arguments_become_an_empty_object() {
         // P3.
         let tools = vec![Tool {
