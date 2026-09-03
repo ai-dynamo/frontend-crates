@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Capture the vLLM 0.25.x RUST unified parser for the Unified conformance tab.
+"""Capture vLLM Rust parser output for the Unified conformance tab.
 
 vLLM's native Rust `UnifiedParser` (crate `vllm-parser`, module `unified`) is NOT
 exposed to Python (the PyO3 bindings only bind tool parsers), so — like
@@ -9,8 +9,8 @@ capture_vllm_rust.py — this builds a small temporary Rust binary that depends 
 `vllm-parser` + `vllm-tokenizer` crates from a checked-out vLLM source tree and feeds
 the cases through the right unified parser per family:
 
-  * gemma4        -> Gemma4UnifiedParser   (NATIVE unified: one ordered pass)
-  * everything else -> CombinedParser(reasoning, tool)  (mock-unified / split)
+  * gemma4 -> Gemma4UnifiedParser (native unified: one ordered pass)
+  * qwen3/kimi_k2 -> CombinedParser(reasoning, tool)
 
 Both emit ordered `UnifiedParserEvent { Text | Reasoning | ToolCall }`, which is exactly
 the golden event schema. Output JSON: {"vllm_rust_version", "results": {id: {assembled,
@@ -24,14 +24,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
+import tomllib
 import yaml
 import sys
 import tempfile
 from pathlib import Path
 
-# family -> (unified-variant, reasoning-parser, tool-parser). gemma4 is the only native
-# unified parser in 0.25.x; the rest compose reasoning + tool via CombinedParser.
+# Family parser wiring for the released 0.25.1 capture.
 FAMILY_PARSERS = {
     "gemma4": ("unified", None, None),
     "qwen3": ("combined", "Qwen3ReasoningParser", "Qwen3CoderToolParser"),
@@ -87,6 +88,8 @@ fn tools() -> Vec<Tool> {
         mk("f", "x"),
         mk("g", "y"),
         mk("run", "cmd"),
+        // Keep in step with `tools()` in conformance/tests/unified_parity.rs.
+        mk("log", "note"),
     ]
 }
 
@@ -117,17 +120,12 @@ fn make_parser(family: &str) -> (Box<dyn UnifiedParser>, String) {
             )
         }
         "kimi_k2" => {
-            // Golden `kimi_k2` is Kimi K2.5, whose reasoning delimiter is `<think>`/`</think>`
-            // (the legacy `KimiReasoningParser` uses Unicode `◁think▷` for OLD Kimi and would
-            // read K2.5 `<think>` as content). vLLM Python's kimi_k2 + Dynamo's kimi_k25 both
-            // use `<think>`, so compose the generic `<think>` reasoning parser with the kimi
-            // tool-section parser.
             let tok: DynTokenizer = Arc::new(
                 TestTokenizer::new()
                     .with_special_token("<think>", 256)
                     .with_special_token("</think>", 257),
             );
-            let reasoning = Qwen3ReasoningParser::create(tok).expect("kimi (K2.5) <think> reasoning");
+            let reasoning = Qwen3ReasoningParser::create(tok).expect("kimi reasoning");
             let tool = KimiK2ToolParser::create(&tools()).expect("kimi tool");
             (
                 Box::new(CombinedParser::new(Some(reasoning), Some(tool))),
@@ -237,6 +235,31 @@ fn main() {
 '''
 
 
+def _vllm_rust_version(vllm_rust_source: Path, parser_crate: Path) -> str:
+    """Read the version from the checked-out vLLM Rust workspace, never a literal."""
+    tag = subprocess.run(
+        ["git", "describe", "--tags", "--exact-match", "HEAD"],
+        cwd=vllm_rust_source.parent, capture_output=True, text=True,
+    )
+    if tag.returncode == 0 and re.fullmatch(r"v?\d+\.\d+\.\d+", tag.stdout.strip()):
+        return tag.stdout.strip().removeprefix("v")
+    parser_manifest = tomllib.loads((parser_crate / "Cargo.toml").read_text())
+    version = (parser_manifest.get("package") or {}).get("version")
+    if isinstance(version, str):
+        return version
+    for parent in (parser_crate, *parser_crate.parents):
+        if parent == vllm_rust_source.parent:
+            break
+        manifest = parent / "Cargo.toml"
+        if not manifest.exists():
+            continue
+        workspace_version = (tomllib.loads(manifest.read_text()).get("workspace", {})
+                             .get("package", {}).get("version"))
+        if isinstance(workspace_version, str):
+            return workspace_version
+    raise ValueError(f"could not determine vLLM Rust version below {vllm_rust_source}")
+
+
 def build_and_run(vllm_rust_source: Path, job_json: str) -> str:
     """Create a temp crate depending on the vLLM rust parser/tokenizer crates, build,
     and run it with the job on stdin. Returns the captured stdout JSON."""
@@ -245,6 +268,7 @@ def build_and_run(vllm_rust_source: Path, job_json: str) -> str:
     for p in (parser_crate / "Cargo.toml", tok_crate / "Cargo.toml"):
         if not p.exists():
             sys.exit(f"vLLM rust crate not found: {p}")
+    version = _vllm_rust_version(vllm_rust_source, parser_crate)
 
     with tempfile.TemporaryDirectory(prefix="vllm-rust-uni-") as td:
         crate = Path(td)
@@ -262,7 +286,10 @@ serde_json = "1"
 
 [workspace]
 ''')
-        (crate / "src/main.rs").write_text(RUST_MAIN)
+        (crate / "src/main.rs").write_text(
+            RUST_MAIN.replace('"vllm_rust_version": "0.25.1"',
+                              f'"vllm_rust_version": {json.dumps(version)}')
+        )
         build = subprocess.run(
             ["cargo", "build", "--release", "--quiet"],
             cwd=crate, capture_output=True, text=True)

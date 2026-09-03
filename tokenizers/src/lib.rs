@@ -427,6 +427,9 @@ pub struct DecodeStream {
     prefix_offset: usize,
 
     read_offset: usize,
+
+    /// Whether any generated text has already been returned to the caller.
+    has_emitted: bool,
 }
 
 impl DecodeStream {
@@ -444,6 +447,7 @@ impl DecodeStream {
             prefix_offset: num_input_tokens
                 .saturating_sub(INITIAL_INCREMENTAL_DETOKENIZATION_OFFSET),
             read_offset: num_input_tokens,
+            has_emitted: false,
         }
     }
 
@@ -456,6 +460,9 @@ impl DecodeStream {
     /// This typically happens with `byte_fallback` options where some tokens do not
     /// represent valid UTF-8, and only follow-up token_ids will help produce
     /// a valid chunk.
+    ///
+    /// An error is terminal for this stream because the token may already have
+    /// been appended to its internal state.
     pub fn step(&mut self, id: u32) -> Result<Option<String>> {
         self.all_token_ids.push(id);
 
@@ -473,16 +480,138 @@ impl DecodeStream {
         )?;
 
         let new_text = new_result.as_str();
-        if new_text.len() > prefix_text.len() && !new_result.is_partial() {
-            let emitted = new_text[prefix_text.len()..].to_string();
+        let is_partial = new_result.is_partial();
+
+        // Once generated text has been returned, decoding must remain append-only.
+        // A complete rewrite cannot be repaired after the caller has seen the old text.
+        if self.has_emitted && !is_partial && !new_text.starts_with(prefix_text.as_str()) {
+            return Err(Error::msg(
+                "incremental decoding rewrote already emitted text",
+            ));
+        }
+
+        if new_text.len() > prefix_text.len() && !is_partial {
+            let requested_split = prefix_text.len();
+            let split = if self.has_emitted {
+                // starts_with() guarantees this is a character boundary and preserves
+                // everything already returned to the caller.
+                requested_split
+            } else {
+                // Rewinding into prompt context is safe because prompt text was not
+                // returned by this stream.
+                new_text.floor_char_boundary(requested_split)
+            };
+
+            let emitted = new_text[split..].to_string();
 
             self.prefix_offset = self.read_offset;
             self.read_offset = self.all_token_ids.len();
+            self.has_emitted = true;
 
             Ok(Some(emitted))
         } else {
             Ok(None)
         }
+    }
+}
+
+#[cfg(test)]
+mod decode_stream_unicode_tests {
+    use super::{DecodeResult, DecodeStream, Encoding, Result, TokenIdType};
+    use std::sync::Arc;
+
+    struct RewritingTokenizer {
+        prefix_text: &'static str,
+        rewritten_text: &'static str,
+        prefix_is_partial: bool,
+    }
+
+    impl super::traits::Encoder for RewritingTokenizer {
+        fn encode(&self, _input: &str) -> Result<Encoding> {
+            Ok(Encoding::Sp(vec![]))
+        }
+
+        fn encode_batch(&self, _inputs: &[&str]) -> Result<Vec<Encoding>> {
+            Ok(vec![])
+        }
+    }
+
+    impl super::traits::Decoder for RewritingTokenizer {
+        fn decode(
+            &self,
+            token_ids: &[TokenIdType],
+            _skip_special_tokens: bool,
+        ) -> Result<DecodeResult> {
+            let result = match token_ids.len() {
+                1 if self.prefix_is_partial => DecodeResult::Partial(self.prefix_text.to_string()),
+                1 => DecodeResult::Complete(self.prefix_text.to_string()),
+                2 => DecodeResult::Complete(self.rewritten_text.to_string()),
+                _ => DecodeResult::Complete(String::new()),
+            };
+            Ok(result)
+        }
+    }
+
+    impl super::traits::Tokenizer for RewritingTokenizer {}
+
+    #[test]
+    fn allows_boundary_recovery_before_generated_text_is_emitted() {
+        for (prefix_text, rewritten_text, expected) in [
+            ("㺄馉凓鄗\u{FFFD}", "㺄馉凓鄗𫷲", "𫷲"),
+            (
+                "JUnitworkflow Completion intuition\u{FFFD}",
+                "JUnitworkflow Completion intuition𝟙",
+                "𝟙",
+            ),
+        ] {
+            let tokenizer: Arc<dyn super::traits::Tokenizer> = Arc::new(RewritingTokenizer {
+                prefix_text,
+                rewritten_text,
+                prefix_is_partial: true,
+            });
+            let mut stream = DecodeStream::new(tokenizer, &[1], false);
+
+            assert_eq!(stream.step(2).unwrap(), Some(expected.to_string()));
+        }
+    }
+
+    #[test]
+    fn errors_when_incremental_decode_rewrites_emitted_text() {
+        for (prefix_text, rewritten_text) in [
+            ("abcde", "abcdXY"),
+            ("abcde", "abcdX"),
+            ("abcde", "abcd"),
+            ("㺄馉凓鄗abc", "㺄馉凓鄗𫷲"),
+            (
+                "JUnitworkflow Completion intuitionabc",
+                "JUnitworkflow Completion intuition𝟙",
+            ),
+        ] {
+            let tokenizer: Arc<dyn super::traits::Tokenizer> = Arc::new(RewritingTokenizer {
+                prefix_text,
+                rewritten_text,
+                prefix_is_partial: false,
+            });
+            let mut stream = DecodeStream::new(tokenizer, &[], false);
+
+            assert_eq!(stream.step(1).unwrap(), Some(prefix_text.to_string()));
+
+            let error = stream.step(2).unwrap_err();
+            assert!(error.to_string().contains("already emitted text"));
+        }
+    }
+
+    #[test]
+    fn emits_suffix_when_incremental_decode_preserves_emitted_text() {
+        let tokenizer: Arc<dyn super::traits::Tokenizer> = Arc::new(RewritingTokenizer {
+            prefix_text: "abcde",
+            rewritten_text: "abcdeXY",
+            prefix_is_partial: false,
+        });
+        let mut stream = DecodeStream::new(tokenizer, &[], false);
+
+        assert_eq!(stream.step(1).unwrap(), Some("abcde".to_string()));
+        assert_eq!(stream.step(2).unwrap(), Some("XY".to_string()));
     }
 }
 

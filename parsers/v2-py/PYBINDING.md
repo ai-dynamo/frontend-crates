@@ -263,4 +263,4 @@ python3 -c "from dynamo_parsers_v2 import HarmonyToolStreamParser; p = HarmonyTo
 
 ## Migration note
 
-`parsers/v2-py` is temporary for the bridge period. It exists so Dynamo parser v2 can expose a Python module without mixing `rlib` and `cdylib` outputs in the same Rust crate. After Dynamo consumes the released frontend-crates parser crate directly and parser-source rsync stops, move this binding surface into the parser crate's normal Python binding package and remove the temporary `dynamo_parsers_v2` module/package name.
+`parsers/v2-py` is temporary for the bridge period. It exists so Dynamo parser v2 can expose a Python module without mixing `rlib` and `cdylib` outputs in the same Rust crate. Once the v2 streaming API stabilizes and v2 is merged into `dynamo-parsers`, move this binding surface into the surviving crate's normal Python binding package and remove the temporary `dynamo_parsers_v2` module/package name.

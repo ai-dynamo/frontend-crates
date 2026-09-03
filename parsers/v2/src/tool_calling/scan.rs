@@ -17,12 +17,13 @@
 //! * [`reorder_arguments`] — source-order argument reserialization for the
 //!   families that delegate typing to a v1core batch parser (which builds
 //!   arguments from a `HashMap` with nondeterministic key order).
-//! * [`WrappedBlockScanner`] — the whole drain loop for the four families
+//! * [`WrappedBlockScanner`] — the whole drain loop for the five families
 //!   whose grammar is `BLOCK_START (INVOKE .. INVOKE_END)* BLOCK_END` with a
-//!   bare-invoke back-off: qwen3_coder, minimax_m2, minimax_m3, kimi_k2.
+//!   bare-invoke back-off: qwen3_coder, minimax_m2, minimax_m3, kimi_k2, gemma4.
+//!   Gemma uses [`InvokeScan`] to supply grammar-aware opener, end, and holdback
+//!   decisions where static markers cannot distinguish structure from data.
 //!   dsml (incremental invoke-header state), glm47 (identifier-anchored bare
-//!   recovery), and gemma4 (brace/string-aware end scanning) keep bespoke
-//!   drains and share the primitives.
+//!   recovery) keep bespoke drains and share the primitives.
 //!
 //! Behavior differences between the wrapped families are explicit
 //! [`WrappedBlockSpec`] fields, not silent copy drift — e.g. MiniMax M2
@@ -134,6 +135,70 @@ where
         .unwrap_or(0)
 }
 
+/// Byte offset just past the first complete top-level JSON value (object or
+/// array) in `text`, skipping leading whitespace before it — or `None` if the
+/// value is absent, not object/array-shaped, or still open (unterminated
+/// string, unbalanced braces).
+///
+/// String contents are tracked with escape awareness, so a marker-looking
+/// byte sequence inside a quoted value is never mistaken for structure (`I7`).
+/// A family whose invoke body is `ARGUMENT_MARKER {json} CLOSE_MARKER` uses
+/// this to find where the json ends BEFORE searching for `CLOSE_MARKER`, so a
+/// copy of that marker embedded in a string argument cannot be mistaken for
+/// the real one (`WrappedBlockSpec::invoke_scan`).
+pub(crate) fn json_value_end(text: &str) -> Option<usize> {
+    let mut chars = text.char_indices();
+    let (_, first) = chars.find(|(_, c)| !c.is_whitespace())?;
+    if first != '{' && first != '[' {
+        return None;
+    }
+    // A stack of the closer each opener actually requires -- not a numeric
+    // depth counter. A numeric counter treats `}` and `]` as interchangeable,
+    // so a mismatched-type input like `{]` or `[}` reads as balanced at
+    // depth 0 instead of being rejected. That's not just cosmetic: this
+    // function's whole purpose (see the doc comment above) is to find the
+    // structural end of the value so a literal closer search past it can't
+    // be fooled by a copy of that closer embedded in an still-open string
+    // (`I7`) -- a false "balanced" reading here can hand back a boundary
+    // BEFORE a string that legitimately belongs to the same value, reopening
+    // exactly that corruption.
+    let mut stack = vec![if first == '{' { '}' } else { ']' }];
+    let mut in_string = false;
+    let mut escape = false;
+    for (idx, c) in chars {
+        if in_string {
+            if escape {
+                escape = false;
+            } else if c == '\\' {
+                escape = true;
+            } else if c == '"' {
+                in_string = false;
+            }
+            continue;
+        }
+        match c {
+            '"' => in_string = true,
+            '{' => stack.push('}'),
+            '[' => stack.push(']'),
+            '}' | ']' => {
+                // A closer that doesn't match the innermost opener's type
+                // can never be part of a well-formed JSON value from here --
+                // there is no future input that fixes a type mismatch, so
+                // this reading can never become balanced (unlike a plain
+                // depth shortfall, which just needs more input).
+                if stack.pop() != Some(c) {
+                    return None;
+                }
+                if stack.is_empty() {
+                    return Some(idx + c.len_utf8());
+                }
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
 /// Re-serialize a v1core arguments JSON object in the model-emitted source
 /// order (`source_names`, extracted from the raw invoke body by the family).
 /// A repeated source name is emitted once (the v1 object holds one value per
@@ -199,18 +264,92 @@ pub(crate) enum InvokeLatch {
 /// Grammar-aware overrides for locating invokes when marker-only scanning is
 /// insufficient.
 ///
-/// Gemma 4 needs all three answers because its string-delimited values may
-/// contain both `call:` and `<tool_call|>` as data. Keeping them on one hook
-/// prevents opener, end, and holdback ownership from drifting apart.
 #[derive(Clone, Copy)]
 pub(crate) struct InvokeScan {
     /// End of the invoke that begins at byte zero, just past its closer. `flush`
     /// allows a family to recover a balanced body whose closer never arrived.
-    pub end: fn(text: &str, flush: bool) -> Option<usize>,
+    /// `tool_index` is the invoke's position in this stream (0 for the first
+    /// call) -- some best-effort recoveries are only justified for the first
+    /// call in a response (see `kimi_invoke_end`'s doc comment).
+    pub end: fn(text: &str, flush: bool, tool_index: usize) -> Option<usize>,
     /// Whether the `invoke_start` occurrence at `at` opens a real invoke.
     pub opens: fn(text: &str, at: usize) -> bool,
     /// Additional trailing bytes to retain while an opener is still arriving.
     pub holdback: fn(text: &str) -> usize,
+    /// Find a later complete wrapped invoke after the current one proved
+    /// malformed. Families with ambiguous string syntax own this scan so a
+    /// block marker inside argument data cannot become a resynchronization
+    /// point. The hook must inspect `text` in linear time.
+    pub resync: Option<fn(text: &str, tool_index: usize) -> Option<usize>>,
+}
+
+/// Immutable family recipe for a request-local invoke boundary.
+#[derive(Clone, Copy)]
+pub(crate) enum InvokeBoundaryFactory {
+    Stateless(InvokeScan),
+    Custom(fn() -> Box<dyn InvokeBoundary>),
+}
+
+impl InvokeBoundaryFactory {
+    pub(crate) const fn stateless(stateless: InvokeScan) -> Self {
+        Self::Stateless(stateless)
+    }
+
+    pub(crate) fn create(self) -> Box<dyn InvokeBoundary> {
+        match self {
+            Self::Stateless(scan) => Box::new(StatelessInvokeBoundary { scan }),
+            Self::Custom(create) => create(),
+        }
+    }
+
+    pub(crate) const fn custom(create: fn() -> Box<dyn InvokeBoundary>) -> Self {
+        Self::Custom(create)
+    }
+}
+
+/// Family-owned request-local invoke-boundary contract.
+///
+pub(crate) trait InvokeBoundary: Send {
+    /// Advance the bound candidate with newly appended bytes only.
+    fn end_append(
+        &mut self,
+        candidate: &str,
+        append: &str,
+        flush: bool,
+        tool_index: usize,
+    ) -> Option<usize>;
+    fn opens(&self, text: &str, at: usize) -> bool;
+    fn holdback(&self, text: &str) -> usize;
+    fn resync(&mut self, text: &str, flush: bool, tool_index: usize) -> Option<usize>;
+    fn reset(&mut self) {}
+}
+
+struct StatelessInvokeBoundary {
+    scan: InvokeScan,
+}
+
+impl InvokeBoundary for StatelessInvokeBoundary {
+    fn end_append(
+        &mut self,
+        candidate: &str,
+        _append: &str,
+        flush: bool,
+        tool_index: usize,
+    ) -> Option<usize> {
+        (self.scan.end)(candidate, flush, tool_index)
+    }
+
+    fn opens(&self, text: &str, at: usize) -> bool {
+        (self.scan.opens)(text, at)
+    }
+
+    fn holdback(&self, text: &str) -> usize {
+        (self.scan.holdback)(text)
+    }
+
+    fn resync(&mut self, text: &str, _flush: bool, tool_index: usize) -> Option<usize> {
+        self.scan.resync.and_then(|resync| resync(text, tool_index))
+    }
 }
 
 /// Declarative description of one wrapped-invoke grammar.
@@ -237,8 +376,9 @@ pub(crate) struct WrappedBlockSpec {
     /// the `invoke_end` means the call is malformed — drop it and close the
     /// block (Kimi K2's mismatched-fences rule).
     pub drop_invoke_crossing_block_end: bool,
-    /// Grammar-aware invoke location; `None` uses the marker-only rules.
-    pub invoke_scan: Option<InvokeScan>,
+    /// Optional family-owned boundary capability. `None` preserves the
+    /// marker-only path with no boundary allocation.
+    pub invoke_boundary_factory: Option<InvokeBoundaryFactory>,
     /// Whether a decoder must keep tokenizer special tokens so this grammar's
     /// markers survive to the parser.
     ///
@@ -276,12 +416,34 @@ pub(crate) struct ReasoningSpec {
 
 /// Per-family hook: parse one complete invoke (opener..closer inclusive) into
 /// a call delta. `None` means the invoke was malformed and is dropped.
+///
+/// `&mut self` (not `&self`): a family whose envelope names the call natively
+/// (Kimi's `functions.NAME:IDX`) needs somewhere to remember that id per
+/// `tool_index` for [`Self::tool_call_id`] to hand back later, and a plain
+/// owned field is the ordinary way to do that — no `RefCell` needed, since
+/// parsing and the later lookup never run at the same time.
 pub(crate) trait InvokeEmitter {
     fn parse_invoke(
-        &self,
+        &mut self,
         invoke: &str,
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>>;
+
+    /// The model-emitted id for a call already parsed at `tool_index`, when
+    /// this family's grammar carries one. Mirrors
+    /// [`crate::unified::UnifiedParser::tool_call_id`] one layer down, so a
+    /// family overrides it in exactly one place regardless of whether it is
+    /// reached through the tool-only or unified adapter.
+    fn tool_call_id(&self, _tool_index: usize) -> Option<&str> {
+        None
+    }
+
+    /// Clear any per-stream state before [`WrappedBlockScanner::reset`] hands
+    /// the scanner back for a NEW stream at `tool_index` 0. A no-op default
+    /// is correct for every stateless emitter; an emitter that tracks ids per
+    /// `tool_index` (Kimi) must override this or a new stream's index 0
+    /// would read back the abandoned stream's id.
+    fn reset(&mut self) {}
 }
 
 /// First occurrence of any of `markers` in `text`: `(position, marker_len)`.
@@ -290,6 +452,50 @@ fn find_first(text: &str, markers: &[String]) -> Option<(usize, usize)> {
         .iter()
         .filter_map(|m| text.find(m.as_str()).map(|p| (p, m.len())))
         .min_by_key(|(p, _)| *p)
+}
+
+/// Same as [`find_first`], but a marker-looking byte sequence inside a
+/// double-quoted JSON string is data, not structure, and is skipped (`I7`,
+/// same escape-aware tracking as [`json_value_end`]). A raw `find_first`
+/// over a buffer that still contains an invoke's own JSON argument body can
+/// match a copy of a block-end marker the model happened to echo inside a
+/// string argument (e.g. a shell command echoing the exact closing tag) and
+/// mistake it for the real block boundary -- silently dropping a
+/// well-formed invoke and corrupting the `tool_index` of every call after
+/// it. Callers checking "did the block end before this invoke's own
+/// resolved close" need this variant; callers scanning plain narration
+/// (never inside an open JSON string) can keep using `find_first`.
+pub(crate) fn find_first_outside_strings<'a, I>(text: &str, markers: I) -> Option<(usize, usize)>
+where
+    I: Clone + IntoIterator<Item = &'a str>,
+{
+    let mut in_string = false;
+    let mut escape = false;
+    for (idx, c) in text.char_indices() {
+        if in_string {
+            if escape {
+                escape = false;
+            } else if c == '\\' {
+                escape = true;
+            } else if c == '"' {
+                in_string = false;
+            }
+            continue;
+        }
+        if c == '"' {
+            in_string = true;
+            continue;
+        }
+        if let Some((_, len)) = markers
+            .clone()
+            .into_iter()
+            .find(|m| text[idx..].starts_with(m))
+            .map(|m| (idx, m.len()))
+        {
+            return Some((idx, len));
+        }
+    }
+    None
 }
 
 /// Earliest `(position, payload)` among the candidates.
@@ -410,10 +616,15 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     resume_reasoning: bool,
     suppress_normal_text: bool,
     next_index: usize,
+    invoke_boundary: Option<Box<dyn InvokeBoundary>>,
+    invoke_boundary_len: usize,
 }
 
 impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     pub(crate) fn new(spec: WrappedBlockSpec, emitter: E) -> Self {
+        let invoke_boundary = spec
+            .invoke_boundary_factory
+            .map(InvokeBoundaryFactory::create);
         Self {
             spec,
             emitter,
@@ -428,6 +639,8 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             resume_reasoning: false,
             suppress_normal_text: false,
             next_index: 0,
+            invoke_boundary,
+            invoke_boundary_len: 0,
         }
     }
 
@@ -482,8 +695,14 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         &self.spec.invoke_start
     }
 
-    pub(crate) fn invoke_scan(&self) -> Option<InvokeScan> {
-        self.spec.invoke_scan
+    pub(crate) fn invoke_boundary_factory(&self) -> Option<InvokeBoundaryFactory> {
+        self.spec.invoke_boundary_factory
+    }
+
+    /// The model-emitted id for a call at `tool_index`, delegated to the
+    /// family's emitter. See [`InvokeEmitter::tool_call_id`].
+    pub(crate) fn tool_call_id(&self, tool_index: usize) -> Option<&str> {
+        self.emitter.tool_call_id(tool_index)
     }
 
     /// Select whether this stream interprets reasoning markers, without
@@ -574,6 +793,8 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.resume_reasoning = false;
         self.suppress_normal_text = false;
         self.next_index = 0;
+        self.emitter.reset();
+        self.reset_invoke_boundary();
         pending
     }
 
@@ -582,15 +803,22 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.spec.block_ends.contains(&self.spec.invoke_end)
     }
 
+    fn reset_invoke_boundary(&mut self) {
+        if let Some(boundary) = self.invoke_boundary.as_mut() {
+            boundary.reset();
+        }
+        self.invoke_boundary_len = 0;
+    }
+
     /// Find the next real invoke opener, applying the family hook when present.
     fn find_invoke_start(&self, text: &str) -> Option<usize> {
-        let Some(scan) = self.spec.invoke_scan else {
+        let Some(boundary) = self.invoke_boundary.as_ref() else {
             return text.find(self.spec.invoke_start.as_str());
         };
         let mut cursor = 0;
         while let Some(relative) = text[cursor..].find(self.spec.invoke_start.as_str()) {
             let at = cursor + relative;
-            if (scan.opens)(text, at) {
+            if boundary.opens(text, at) {
                 return Some(at);
             }
             cursor = at + self.spec.invoke_start.len();
@@ -599,13 +827,28 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     }
 
     /// Offset just past the closer of the invoke beginning at byte zero.
-    fn invoke_end_at(&self, text: &str, flush: bool) -> Option<usize> {
-        match self.spec.invoke_scan {
-            Some(scan) => (scan.end)(text, flush),
-            None => text
+    fn invoke_end_at(&mut self, flush: bool) -> Option<usize> {
+        match self.invoke_boundary.as_mut() {
+            Some(boundary) => {
+                let append = &self.buffer[self.invoke_boundary_len..];
+                self.invoke_boundary_len = self.buffer.len();
+                boundary.end_append(&self.buffer, append, flush, self.next_index)
+            }
+            None => self
+                .buffer
                 .find(self.spec.invoke_end.as_str())
                 .map(|position| position + self.spec.invoke_end.len()),
         }
+    }
+
+    /// Find a later complete block that can safely restart scanning after the
+    /// current invoke proved malformed. The new block must begin with a real,
+    /// complete invoke; a marker-looking string inside the malformed payload
+    /// cannot satisfy both grammar checks.
+    fn resync_block_start(&mut self, flush: bool) -> Option<usize> {
+        self.invoke_boundary
+            .as_mut()?
+            .resync(&self.buffer, flush, self.next_index)
     }
 
     /// Bytes a reasoning opener occupies at `at`, structural label included.
@@ -662,9 +905,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             })
             .unwrap_or_default();
         let invoke = self
-            .spec
-            .invoke_scan
-            .map(|scan| (scan.holdback)(&self.buffer))
+            .invoke_boundary
+            .as_ref()
+            .map(|boundary| boundary.holdback(&self.buffer))
             .unwrap_or_default();
         regular
             .max(reasoning)
@@ -810,6 +1053,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         // block re-enters `in_block` and re-suppresses its markup.
                         // Matches the v1 batch parsers (cases 8.b/8.c/8.d).
                         self.buffer.drain(..end_pos + end_len);
+                        self.reset_invoke_boundary();
                         self.uncommitted_block.clear();
                         self.in_block = false;
                         self.suppress_normal_text = false;
@@ -833,9 +1077,61 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 if start > 0 {
                     self.uncommitted_block.push_str(&self.buffer[..start]);
                     self.buffer.drain(..start);
+                    self.reset_invoke_boundary();
                 }
-                let Some(end) = self.invoke_end_at(&self.buffer, flush) else {
+                let Some(end) = self.invoke_end_at(flush) else {
+                    if let Some(next_block) = self.resync_block_start(flush) {
+                        tracing::warn!(
+                            why = %format!("{}_resynchronized_after_incomplete_invoke", self.spec.family),
+                            skipped_bytes = next_block,
+                            "stream skipped a malformed invoke and resumed at the next complete block"
+                        );
+                        self.buffer.drain(..next_block);
+                        self.reset_invoke_boundary();
+                        self.uncommitted_block.clear();
+                        self.in_block = false;
+                        self.suppress_normal_text = false;
+                        self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
+                        continue;
+                    }
                     if flush {
+                        // Reviewer-caught regression: `invoke_end_at`
+                        // returning `None` at flush does NOT always mean
+                        // "genuinely incomplete, nothing left to salvage".
+                        // Kimi's own "mismatched fences" guard (in
+                        // `kimi_invoke_end`) also returns `None` when a
+                        // REAL block-end marker follows a call that never
+                        // got its own closer -- deliberately dropping just
+                        // that call while the section boundary itself is
+                        // still genuine. Unconditionally clearing the whole
+                        // buffer here discarded that boundary too, along
+                        // with any visible text genuinely following it --
+                        // batch mode's regex-based section extraction
+                        // preserves that trailing narration; streaming
+                        // didn't. Same string-aware search as the
+                        // `drop_invoke_crossing_block_end` check above
+                        // (safe for the identical reason): if a real
+                        // block-end marker is present, drop through it and
+                        // resume draining the suffix as ordinary text
+                        // instead of discarding everything after it.
+                        if self.spec.drop_invoke_crossing_block_end
+                            && let Some((be_pos, be_len)) = find_first_outside_strings(
+                                &self.buffer,
+                                self.spec.block_ends.iter().map(String::as_str),
+                            )
+                        {
+                            tracing::warn!(
+                                why = %format!("{}_incomplete_invoke", self.spec.family),
+                                "stream dropped invoke with no evidence it ever closed before the block end"
+                            );
+                            self.buffer.drain(..be_pos + be_len);
+                            self.reset_invoke_boundary();
+                            self.uncommitted_block.clear();
+                            self.in_block = false;
+                            self.suppress_normal_text = false;
+                            self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
+                            continue;
+                        }
                         tracing::warn!(
                             why = %format!("{}_incomplete_invoke", self.spec.family),
                             "stream dropped incomplete invoke at EOF"
@@ -849,8 +1145,27 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 // Mismatched fences: a block close inside the invoke body means
                 // the invoke never closed. Drop it and close the block; narration
                 // after the close is the user's text again.
+                //
+                // `find_first_outside_strings`, not `find_first`: the search
+                // runs over `self.buffer` from the invoke's start, which can
+                // legitimately contain a block-end-looking byte sequence
+                // inside the invoke's own JSON string argument (a shell
+                // command echoing the closing tag). Safety only needs to
+                // hold for any match this call actually returns, which the
+                // `be_pos < end` filter below always bounds to inside the
+                // invoke (the scan is strictly left-to-right, so `in_string`
+                // at any returned `be_pos < end` depends only on bytes
+                // already known to belong to this invoke) -- not for the
+                // full buffer being scanned. A raw search there mistakes an
+                // embedded copy for the real boundary and drops a
+                // well-formed invoke -- also corrupting every later
+                // `tool_index`, since `next_index` never advances for a
+                // dropped call.
                 if self.spec.drop_invoke_crossing_block_end
-                    && let Some((be_pos, be_len)) = find_first(&self.buffer, &self.spec.block_ends)
+                    && let Some((be_pos, be_len)) = find_first_outside_strings(
+                        &self.buffer,
+                        self.spec.block_ends.iter().map(String::as_str),
+                    )
                     && be_pos < end
                 {
                     tracing::warn!(
@@ -870,6 +1185,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 // documented recovery contract was false for the only shipped family.
                 let emitted = self.emitter.parse_invoke(&invoke, self.next_index)?;
                 self.buffer.drain(..end);
+                self.reset_invoke_boundary();
                 if let Some(delta) = emitted {
                     out.push_call(delta);
                     self.next_index += 1;
@@ -953,6 +1269,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 Marker::Block(blen) => {
                     self.uncommitted_block.push_str(&self.buffer[..blen]);
                     self.buffer.drain(..blen);
+                    self.reset_invoke_boundary();
                     self.in_block = true;
                     self.suppress_normal_text = true;
                 }
@@ -968,7 +1285,11 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 Marker::BareInvoke => {
                     // A bare invoke (no wrapper) is recovered only once its close
                     // has streamed; otherwise wait for more input.
-                    let Some(end) = self.invoke_end_at(&self.buffer, flush) else {
+                    // A bare invoke already lacks its opener, so it may recover
+                    // only after a real closer arrives. Passing `flush` here used
+                    // to combine missing-start and missing-end recovery and turn
+                    // narrated syntax into a dispatched call.
+                    let Some(end) = self.invoke_end_at(false) else {
                         if flush {
                             tracing::warn!(
                                 why = %format!("{}_incomplete_bare_invoke", self.spec.family),
@@ -982,6 +1303,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     // Emit before consuming — same recovery contract as the wrapped site.
                     let emitted = self.emitter.parse_invoke(&invoke, self.next_index)?;
                     self.buffer.drain(..end);
+                    self.reset_invoke_boundary();
                     if let Some(delta) = emitted {
                         tracing::warn!(
                             why = %format!("{}_bare_invoke_recovery", self.spec.family),
@@ -1019,7 +1341,7 @@ pub(crate) mod test_support {
 
     impl InvokeEmitter for FailOnBoom {
         fn parse_invoke(
-            &self,
+            &mut self,
             invoke: &str,
             tool_index: usize,
         ) -> anyhow::Result<Option<ToolCallDelta>> {
@@ -1047,7 +1369,7 @@ pub(crate) mod test_support {
                 bare_recovery_latch: BareRecoveryLatch::Set,
                 invoke_latch: InvokeLatch::IfEmitted,
                 drop_invoke_crossing_block_end: false,
-                invoke_scan: None,
+                invoke_boundary_factory: None,
                 preserve_special_tokens: true,
             },
             FailOnBoom,
@@ -1096,6 +1418,104 @@ mod recovery_tests {
 mod tests {
     use super::test_support::failing_scanner;
     use super::*;
+
+    #[test]
+    fn invoke_boundary_factory_constructs_and_dispatches_stateless_callbacks() {
+        fn end(text: &str, flush: bool, tool_index: usize) -> Option<usize> {
+            (flush && tool_index == 2).then_some(text.len())
+        }
+        fn opens(text: &str, at: usize) -> bool {
+            text[at..].starts_with("open")
+        }
+        fn holdback(text: &str) -> usize {
+            text.len().min(3)
+        }
+        fn resync(text: &str, tool_index: usize) -> Option<usize> {
+            (tool_index == 2).then(|| text.find("resume")).flatten()
+        }
+
+        let factory = InvokeBoundaryFactory::stateless(InvokeScan {
+            end,
+            opens,
+            holdback,
+            resync: Some(resync),
+        });
+        let mut boundary = factory.create();
+
+        assert_eq!(boundary.end_append("call", "call", false, 2), None);
+        assert_eq!(boundary.end_append("call", "", true, 2), Some(4));
+        assert!(boundary.opens("open-call", 0));
+        assert_eq!(boundary.holdback("abcdef"), 3);
+        assert_eq!(boundary.resync("skip resume", false, 2), Some(5));
+    }
+
+    #[test]
+    fn marker_only_scanner_has_no_invoke_boundary_factory() {
+        assert!(failing_scanner().invoke_boundary_factory().is_none());
+    }
+
+    #[test]
+    fn json_value_end_rejects_mismatched_bracket_types() {
+        // A numeric depth counter treats `}`/`]` as interchangeable and
+        // would read these as balanced at the position of the mismatched
+        // closer -- e.g. `{]` closing at index 1. Neither can ever become
+        // valid JSON no matter what follows, so both must be `None`, not a
+        // false-positive boundary.
+        assert_eq!(json_value_end("{]"), None);
+        assert_eq!(json_value_end("[}"), None);
+        assert_eq!(json_value_end(r#"{"a":[1,2}}"#), None);
+        assert_eq!(json_value_end("[1,2}"), None);
+        // Negative control: the same shapes with correctly matched closers
+        // still resolve normally, proving the fix only rejects the type
+        // mismatch, not depth-nesting itself.
+        assert_eq!(json_value_end("{}"), Some(2));
+        assert_eq!(json_value_end(r#"{"a":[1,2]}"#), Some(11));
+    }
+
+    #[test]
+    fn find_first_outside_strings_skips_a_marker_inside_a_quoted_string() {
+        let markers = ["CLOSE"];
+        // A marker-looking sequence entirely inside a string is data, not
+        // structure -- must be skipped in favor of the real one afterward.
+        assert_eq!(
+            find_first_outside_strings(r#"{"a":"has CLOSE inside"}CLOSE"#, markers,),
+            Some((24, 5)),
+        );
+    }
+
+    #[test]
+    fn find_first_outside_strings_handles_an_escaped_quote_next_to_the_marker() {
+        let markers = ["CLOSE"];
+        // `\"` immediately before the embedded marker must not be misread as
+        // the string's real closing quote (which would wrongly un-toggle
+        // `in_string` one byte early and expose the embedded marker).
+        assert_eq!(
+            find_first_outside_strings(r#"{"a":"ends with \" then CLOSE inside"}CLOSE"#, markers,),
+            Some((38, 5)),
+        );
+    }
+
+    #[test]
+    fn find_first_outside_strings_returns_the_earliest_of_multiple_markers() {
+        let markers = ["BB", "A"];
+        // Earliest BYTE POSITION wins regardless of which marker string it
+        // belongs to or the order markers are listed in.
+        assert_eq!(
+            find_first_outside_strings("xxAxxBBxx", markers),
+            Some((2, 1))
+        );
+    }
+
+    #[test]
+    fn find_first_outside_strings_on_empty_or_no_match_is_none() {
+        let markers = ["CLOSE"];
+        assert_eq!(find_first_outside_strings("", markers), None);
+        assert_eq!(find_first_outside_strings("no marker here", markers), None);
+        assert_eq!(
+            find_first_outside_strings(r#""CLOSE only inside a string""#, markers,),
+            None
+        );
+    }
 
     #[test]
     fn reset_recovers_the_complete_push_after_an_emitter_error() {

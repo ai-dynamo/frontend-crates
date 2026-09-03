@@ -352,6 +352,8 @@ suites:
 suite_exemptions:
   harmony_text:
     toolcalling.batch: harmony_text is the text-driven conformance variant of harmony; the v1 batch corpus is captured under the harmony family.
+  muse_glimmer:
+    toolcalling.batch: muse has no v1 batch parser; it is captured through the stream-v2 and unified corpora only.
 
 # Pre-taxonomy coverage gaps, grandfathered so the lint stays green on the current
 # corpus while still holding NEW families to the full bar. Each entry is a backfill

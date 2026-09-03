@@ -26,15 +26,26 @@ SRC = UTILS / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+import pytest  # noqa: E402
+
+import gen_unified_golden as G  # noqa: E402
 from gen_unified_golden import (  # noqa: E402
     CLEAN,
+    OnlyFamilies,
     EDGE,
     FAMILIES,
     build_cases,
     control_tokens,
     invoke_header_prefix,
 )
-from unified_taxonomy import UNIFIED_GROUP_LABEL, UNIFIED_TAX, numbered_id, tax  # noqa: E402
+from unified_taxonomy import (  # noqa: E402
+    UNIFIED_GROUP_LABEL,
+    UNIFIED_TAX,
+    case_label,
+    numbered_id,
+    tax,
+    taxonomy_sort_key,
+)
 
 TAXONOMY_FILE = "conformance/utils/src/unified_taxonomy.py"
 
@@ -100,6 +111,42 @@ def test_every_used_group_has_a_label() -> None:
     )
 
 
+def test_case_labels_use_numeric_positions_for_the_full_guided_recovery_series() -> None:
+    """Guided recovery positions use one sortable numeric sequence, 31-1 through 31-28."""
+    assert tax("guided_json_quoted_bare_header_in_answer") == (31, "25")
+    assert tax("guided_json_quoted_bare_tool_header_in_answer") == (31, "26")
+    assert tax("guided_json_quoted_bare_header_after_payload") == (31, "27")
+    assert tax("guided_json_bare_tool_header_recovers_inside_a_thought") == (31, "28")
+    assert tax("gemma4_guided_json_visible_call_prose_before_reasoning") == (31, "29")
+    assert tax("gemma4_guided_json_malformed_call_prefix_before_reasoning") == (31, "30")
+    assert case_label("guided_json_quoted_bare_header_in_answer") == "31-25"
+    assert case_label("guided_json_quoted_bare_tool_header_in_answer") == "31-26"
+    assert case_label("guided_json_quoted_bare_header_after_payload") == "31-27"
+    assert case_label("guided_json_bare_tool_header_recovers_inside_a_thought") == "31-28"
+    assert case_label("gemma4_guided_json_visible_call_prose_before_reasoning") == "31-29"
+    assert case_label("gemma4_guided_json_malformed_call_prefix_before_reasoning") == "31-30"
+    assert numbered_id("guided_json_quoted_bare_header_in_answer") == "UNIFIED.31-25"
+    assert numbered_id("gemma4_guided_json_visible_call_prose_before_reasoning") == "UNIFIED.31-29"
+    assert case_label("guided_json_invalid_call") == "31-1"
+    assert numbered_id("guided_json_invalid_call") == "UNIFIED.31-1"
+    guided = [sub for group, sub in UNIFIED_TAX.values() if group == 31]
+    assert all(sub.isdecimal() for sub in guided)
+    assert sorted(map(int, guided)) == list(range(1, 31))
+
+    ordered = sorted(
+        (
+            "guided_json_quoted_bare_header_in_answer",
+            "guided_json_quoted_bare_tool_header_in_answer",
+            "guided_json_quoted_bare_header_after_payload",
+            "guided_json_bare_tool_header_recovers_inside_a_thought",
+            "gemma4_guided_json_visible_call_prose_before_reasoning",
+            "gemma4_guided_json_malformed_call_prefix_before_reasoning",
+        ),
+        key=taxonomy_sort_key,
+    )
+    assert [tax(scenario)[1] for scenario in ordered] == ["25", "26", "27", "28", "29", "30"]
+
+
 # --- End-to-end test cases: the SAME mapping is written in two places -----------
 # Case descriptions in gen_unified_golden.py carry `End-to-end: <case> (e2e case-NNNN)` tags, and
 # UNIFIED_CASES.md repeats them in its artifact-index table. Two copies of one fact drift
@@ -107,7 +154,7 @@ def test_every_used_group_has_a_label() -> None:
 
 CASES_MD = UTILS / "lib" / "parsers" / "UNIFIED_CASES.md"
 _E2E_TAG = re.compile(r"\be2e case-(\d{4})-")
-_MD_ROW = re.compile(r"^\|\s*`(\d+\.[a-z])`\s*\|\s*`([^`]+)`\s*\|\s*`end-to-end case-(\d{4})-", re.M)
+_MD_ROW = re.compile(r"^\|\s*`(\d+(?:\.[a-z]|-\d+))`\s*\|\s*`([^`]+)`\s*\|\s*`end-to-end case-(\d{4})-", re.M)
 
 
 def _e2e_ids_from_descriptions() -> dict[str, set[str]]:
@@ -117,7 +164,7 @@ def _e2e_ids_from_descriptions() -> dict[str, set[str]]:
         scenario, desc = spec[0], spec[1]
         ids = set(_E2E_TAG.findall(desc))
         if ids:
-            out.setdefault(f"UNIFIED.{tax(scenario)[0]}.{tax(scenario)[1]}", set()).update(ids)
+            out.setdefault(numbered_id(scenario), set()).update(ids)
     return out
 
 
@@ -312,3 +359,256 @@ def test_no_two_scenarios_have_identical_behaviour() -> None:
             ].append(name)
         dupes = {k: v for k, v in seen.items() if len(v) > 1}
         assert not dupes, f"{fam}: scenarios with identical behaviour: {list(dupes.values())}"
+
+
+# --- scenario scope must be DECLARED, never inferred from a gap -----------------
+
+def test_an_undeclared_missing_family_fails_generation():
+    """An accidentally omitted family breaks generation instead of reading as n/a.
+
+    This is the invariant a blanket `if fam not in per_fam: continue` destroyed: a
+    missing input silently became an accepted skip, so real missing coverage rendered
+    as the same "not applicable" cell the corpus uses for a genuine structural gap. A
+    reviewer cannot tell those apart, and the whole point of the table is telling them
+    apart.
+    """
+    scenario = (
+        "deliberately_incomplete_scenario",
+        "authored for one family only, WITHOUT declaring that scope",
+        [],
+        [{"kind": "text", "text": "x"}],
+        None,
+        {"muse_glimmer": ("x", G.M, G.M)},
+    )
+    original = list(G.EDGE)
+    G.EDGE.append(scenario)
+    try:
+        missing = sorted(set(G.FAMILIES) - {"muse_glimmer"})
+        assert missing, "fixture assumes more than one family exists"
+        with pytest.raises(KeyError, match="deliberately_incomplete_scenario"):
+            for fam in missing:
+                G.build_cases(fam)
+    finally:
+        G.EDGE[:] = original
+
+
+def test_request_state_boundary_scenarios_generate_for_every_family():
+    """All four request-state boundaries have a family-specific input.
+
+    Muse exercises dynamic recipient headers, while marker-pair families exercise their
+    own reasoning/tool boundaries under the same request initialization. A missing
+    family here would be a coverage gap, not an unsupported grammar.
+    """
+    scoped = {
+        "guided_json_quoted_bare_header_in_answer",
+        "guided_json_quoted_bare_tool_header_in_answer",
+        "guided_json_quoted_bare_header_after_payload",
+        "guided_json_bare_tool_header_recovers_inside_a_thought",
+    }
+    for fam in FAMILIES:
+        names = {k.split(".", 2)[1] for k in build_cases(fam)}
+        present = scoped & names
+        assert present == scoped, f"{fam} is missing {scoped - present}"
+
+
+def test_only_families_rejects_an_empty_or_unknown_scope():
+    """A scope that names nothing, or names a family that does not exist, is a typo."""
+    with pytest.raises(ValueError, match="declares nothing"):
+        OnlyFamilies({})
+    with pytest.raises(ValueError, match="do not exist"):
+        OnlyFamilies({"no_such_family": ("x",)})
+
+
+# --- generated YAML must round-trip every authored byte -------------------------
+
+def _emitted_spec(fam: str):
+    """The generated golden spec, produced and reloaded IN MEMORY.
+
+    Never read from `conformance/unified/golden_spec/`: that whole tree is gitignored
+    (`.gitignore:32`) and does not exist in a clean checkout, so a gate that reads it
+    passes locally on leftover state and errors out in CI — which is to say it guards
+    nothing where it matters. `emit_yaml` is tracked source, so emitting and reloading
+    here tests the same emitter with no workspace dependency.
+    """
+    import yaml
+
+    return yaml.safe_load(G.emit_yaml(fam))["cases"]
+
+
+def test_every_authored_case_survives_emission_and_reload():
+    """What the generator CONSTRUCTS is what the corpus measures.
+
+    `input: |-` lets YAML infer a block's indentation from its first non-empty line,
+    so an input that legitimately BEGINS with a space loses that byte on reload — the
+    reader cannot tell content-space from indent-space. `31-28` is authored with a
+    leading space (the bare-header form muse accepts when the prompt consumed the
+    turn's framing) and was emitted at 110 bytes and reloaded at 109. The corpus was
+    scoring the parser against an input nobody wrote.
+
+    Asserted over EVERY case and all three authored fields, not just the one that
+    bit us: any future field that grows a leading-whitespace value fails here rather
+    than silently measuring something else.
+    """
+    for fam in FAMILIES:
+        loaded_cases = _emitted_spec(fam)
+        for cid, case in build_cases(fam).items():
+            loaded = loaded_cases[cid]
+            assert loaded["input"] == case["input"], (
+                f"{cid}: input changed across emission/reload — "
+                f"{len(case['input'])} bytes out, {len(loaded['input'])} back"
+            )
+            assert loaded["golden"] == case["golden"], f"{cid}: golden changed"
+            assert loaded["init"] == case["init"], f"{cid}: init changed"
+
+
+# --- counts live where they can be checked, not in registry prose ---------------
+
+def test_unified_case_counts_match_the_generator():
+    """Name exactly what is counted, and count it from the generator.
+
+    Counted: cases the generator EMITS per family — the shared scenarios every family
+    gets, plus any the scenario itself scoped with `OnlyFamilies`. Not counted: names
+    reserved in the taxonomy map that the generator does not emit, which is how a stale
+    denominator survived in the prose before.
+    """
+    per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
+    shared = min(per_family.values())
+    for fam in FAMILIES:
+        expected = shared + (2 if fam == "gemma4" else 0)
+        assert per_family[fam] == expected, f"{fam} diverged from the expected case count"
+    assert sum(per_family.values()) == sum(len(build_cases(f)) for f in FAMILIES)
+
+
+def test_registry_prose_states_no_unified_case_count():
+    """`parser_families.yaml` must not carry a case count.
+
+    A number there is unverifiable against anything and drifts the moment a scenario is
+    added — it claimed "all 81" while the generator emitted 86 for muse and 332 overall.
+    Counts belong in the test above, where they are computed.
+    """
+    import re
+
+    registry = (SRC / "parser_families.yaml").read_text()
+    stale = re.findall(r"\b\d+\s+unified scenarios\b", registry)
+    assert not stale, f"parser_families.yaml states a unified case count: {stale}"
+
+
+# --- the corpus must be identical at EVERY layer, not just the first two --------
+
+def _scenario_of(cid: str, fam: str) -> str:
+    """`UNIFIED.<scenario>.<family>` -> `<scenario>`; anything else is already one."""
+    if cid.startswith("UNIFIED.") and cid.endswith(f".{fam}"):
+        return cid[len("UNIFIED.") : -(len(fam) + 1)]
+    return cid
+
+
+def _packed_layer(shard: str, fam: str, field_map):
+    """Case records from a PACKAGED shard, keyed by scenario.
+
+    The shards are tracked LFS artifacts, so this layer exists in a clean checkout. They
+    are the committed form of the exploded loose tree, which means comparing against them
+    checks the bytes that actually ship.
+    """
+    import tarfile
+
+    import yaml
+
+    out = {}
+    path = UTILS.parent / "fixtures" / "unified" / shard
+    with tarfile.open(path) as tar:
+        for member in tar.getmembers():
+            if not member.name.endswith(".yaml") or f"/{fam}/" not in member.name:
+                continue
+            doc = yaml.safe_load(tar.extractfile(member).read()) or {}
+            for cid, case in (doc.get("cases") or {}).items():
+                scenario = case.get("scenario") or _taxonomy_scenarios(fam).get(cid)
+                if scenario is None:
+                    continue
+                out.setdefault(scenario, {}).update(
+                    {want: case[have] for want, have in field_map.items() if have in case}
+                )
+    return out
+
+
+def _taxonomy_scenarios(fam: str):
+    """Taxonomy id (`UNIFIED.31-28`) -> scenario slug, from packaged input layers.
+
+    The golden shard keys by taxonomy id and carries no scenario field, so the mapping
+    comes from the one shard holding both. A key JOIN, not a value normalization.
+    """
+    import tarfile
+
+    import yaml
+
+    cached = _taxonomy_scenarios._cache.get(fam)
+    if cached is not None:
+        return cached
+    out = {}
+    fixtures = UTILS.parent / "fixtures" / "unified"
+    for path in sorted(fixtures.glob("inputs*.tar.gz")):
+        with tarfile.open(path) as tar:
+            for member in tar.getmembers():
+                if not member.name.endswith(".yaml") or f"/{fam}/" not in member.name:
+                    continue
+                doc = yaml.safe_load(tar.extractfile(member).read()) or {}
+                for cid, case in (doc.get("cases") or {}).items():
+                    if case.get("scenario"):
+                        out[cid] = case["scenario"]
+    _taxonomy_scenarios._cache[fam] = out
+    return out
+
+
+_taxonomy_scenarios._cache = {}
+
+
+def test_every_case_triple_is_identical_at_every_layer():
+    """One corpus, every tracked representation, zero drift, across all three fields.
+
+    Compares `(input, init, golden)` for every case of every family across the generator's
+    constructed cases, the emitted-and-reloaded golden spec, and the packaged
+    `inputs.tar.gz` / `golden.tar.gz` shards. Only key NAMES are normalized — `assembled`
+    -> `golden`, taxonomy id -> scenario slug. No byte, missing field, value, ordering or
+    type is normalized away; a missing field fails by name rather than being skipped.
+
+    Every layer read here is tracked, so this runs identically in a clean checkout. The
+    previous version read `conformance/unified/`, which `.gitignore:32` excludes entirely:
+    it passed locally on leftover generated state and died with `FileNotFoundError` in
+    0.16s on a fresh checkout, so the corpus it was written to protect shipped unguarded.
+
+    Why this matters at all: the emitter once ate the leading space of `31-28`, the spec
+    and feed carried the fix, and the loose and packaged inputs kept the pre-fix bytes
+    because they had been exploded first. Every gate was green and the shipped corpus was
+    wrong.
+    """
+    checked = 0
+    for fam in FAMILIES:
+        spec = _emitted_spec(fam)
+        packed_in = {}
+        packed_gold = {}
+        for path in sorted((UTILS.parent / "fixtures" / "unified").glob("inputs*.tar.gz")):
+            packed_in.update(_packed_layer(path.name, fam, {"input": "input", "init": "init"}))
+        for path in sorted((UTILS.parent / "fixtures" / "unified").glob("golden*.tar.gz")):
+            packed_gold.update(_packed_layer(path.name, fam, {"golden": "assembled"}))
+
+        for cid, case in build_cases(fam).items():
+            scenario = _scenario_of(cid, fam)
+            want = {k: case[k] for k in ("input", "init", "golden")}
+            layers = {
+                "emitted golden spec": {k: spec[cid][k] for k in want if k in spec[cid]},
+                "packaged shard": {
+                    **packed_in.get(scenario, {}),
+                    **packed_gold.get(scenario, {}),
+                },
+            }
+            for layer, got in layers.items():
+                for field, expected in want.items():
+                    assert field in got, f"{cid}: {field} missing from the {layer} layer"
+                    assert got[field] == expected, (
+                        f"{cid}: {field} differs at the {layer} layer\n"
+                        f"  authored: {expected!r}\n"
+                        f"  {layer}: {got[field]!r}"
+                    )
+            checked += 1
+    assert checked == sum(len(build_cases(f)) for f in FAMILIES), (
+        "the gate must cover every generated case"
+    )

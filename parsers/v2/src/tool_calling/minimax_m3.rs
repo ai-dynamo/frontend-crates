@@ -77,7 +77,7 @@ struct M3Emitter {
 
 impl InvokeEmitter for M3Emitter {
     fn parse_invoke(
-        &self,
+        &mut self,
         invoke: &str,
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>> {

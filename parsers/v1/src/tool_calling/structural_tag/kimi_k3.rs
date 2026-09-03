@@ -382,6 +382,18 @@ fn permissive_argument_tag() -> TagFormat {
     }
 }
 
+fn root_definitions(parameters: &Map<String, Value>) -> Map<String, Value> {
+    ["$defs", "definitions"]
+        .into_iter()
+        .filter_map(|key| {
+            parameters
+                .get(key)
+                .and_then(Value::as_object)
+                .map(|value| (key.to_string(), Value::Object(value.clone())))
+        })
+        .collect()
+}
+
 fn arguments_block(parameters: Option<&Value>) -> Format {
     let Some(parameters) = parameters.and_then(Value::as_object) else {
         return star(Format::Tag(permissive_argument_tag()));
@@ -393,15 +405,7 @@ fn arguments_block(parameters: Option<&Value>) -> Format {
         return star(Format::Tag(permissive_argument_tag()));
     }
 
-    let root_defs: Map<String, Value> = ["$defs", "definitions"]
-        .into_iter()
-        .filter_map(|key| {
-            parameters
-                .get(key)
-                .and_then(Value::as_object)
-                .map(|value| (key.to_string(), Value::Object(value.clone())))
-        })
-        .collect();
+    let root_defs = root_definitions(parameters);
     let tags = properties
         .iter()
         .map(|(key, schema)| {
@@ -413,20 +417,48 @@ fn arguments_block(parameters: Option<&Value>) -> Format {
     star(one_of(tags))
 }
 
-fn nonempty_argument_format(key: &str, xtml_type: &str) -> Format {
-    Format::Tag(TagFormat {
+fn auto_argument_format(
+    key: &str,
+    schema: &Value,
+    root: &Value,
+    root_defs: &Map<String, Value>,
+    require_nonempty_string: bool,
+) -> Option<Format> {
+    let xtml_type = single_xtml_type(schema, root)?;
+    let content = if xtml_type == "string" {
+        // K3 string values are raw rather than JSON quoted. Required string
+        // arguments need at least one atom; optional strings may be empty when
+        // their schema permits it.
+        Format::Regex(RegexFormat {
+            pattern: format!(
+                "{STRING_ATOM}{}",
+                if require_nonempty_string { "+" } else { "*" }
+            ),
+        })
+    } else {
+        // Non-string K3 argument bodies are JSON. Preserve the complete
+        // property schema instead of using the string-only regex, and carry
+        // root definitions so local references remain resolvable.
+        let mut embedded = schema.as_object()?.clone();
+        for (definition_key, definitions) in root_defs {
+            embedded
+                .entry(definition_key.clone())
+                .or_insert_with(|| definitions.clone());
+        }
+        Format::JsonSchema(JsonSchemaFormat {
+            json_schema: Value::Object(embedded),
+            style: JsonSchemaStyle::Json,
+        })
+    };
+
+    Some(Format::Tag(TagFormat {
         begin: format!(
             "{OPEN}argument key=\"{}\" type=\"{xtml_type}\"{SEP}",
             escape_attr(key)
         ),
-        // K3 string values are raw rather than JSON quoted. Requiring one
-        // atom prevents the empty required arguments that pass the generic K3
-        // grammar while still stopping before an XTML close marker.
-        content: Box::new(Format::Regex(RegexFormat {
-            pattern: format!("{STRING_ATOM}+"),
-        })),
+        content: Box::new(content),
         end: ARGUMENT_CLOSE.to_string(),
-    })
+    }))
 }
 
 fn loose_auto_arguments() -> Format {
@@ -480,7 +512,7 @@ fn unordered_required_arguments(arguments: &[Format]) -> Format {
 }
 
 fn auto_arguments_block(tool: &ToolDefinition, strict_schema: bool) -> Format {
-    if !super::builder::kimi_uses_declared_tool_schema(tool, strict_schema) {
+    if !super::builder::uses_declared_tool_schema(tool, strict_schema) {
         return arguments_block(None);
     }
 
@@ -491,6 +523,7 @@ fn auto_arguments_block(tool: &ToolDefinition, strict_schema: bool) -> Format {
     let Some(properties) = parameters.get("properties").and_then(Value::as_object) else {
         return Format::AnyText(AnyTextFormat { excludes: vec![] });
     };
+    let root_defs = root_definitions(parameters);
     let required = match parameters.get("required") {
         None => Vec::new(),
         Some(Value::Array(required)) if required.iter().all(|value| value.as_str().is_some()) => {
@@ -507,9 +540,8 @@ fn auto_arguments_block(tool: &ToolDefinition, strict_schema: bool) -> Format {
             .iter()
             .filter_map(|(key, schema)| {
                 matches!(schema, Value::Bool(_) | Value::Object(_))
-                    .then(|| single_xtml_type(schema, &root))
+                    .then(|| auto_argument_format(key, schema, &root, &root_defs, false))
                     .flatten()
-                    .map(|xtml_type| nonempty_argument_format(key, xtml_type))
             })
             .collect();
         if alternatives.is_empty() {
@@ -535,10 +567,10 @@ fn auto_arguments_block(tool: &ToolDefinition, strict_schema: bool) -> Format {
         if !matches!(schema, Value::Bool(_) | Value::Object(_)) {
             return Format::AnyText(AnyTextFormat { excludes: vec![] });
         }
-        let Some(xtml_type) = single_xtml_type(schema, &root) else {
+        let Some(argument) = auto_argument_format(key, schema, &root, &root_defs, true) else {
             return Format::AnyText(AnyTextFormat { excludes: vec![] });
         };
-        arguments.push(nonempty_argument_format(key, xtml_type));
+        arguments.push(argument);
     }
     unordered_required_arguments(&arguments)
 }
@@ -617,7 +649,7 @@ fn build_auto_structural_tag(
 fn call_tag(tool: &ToolDefinition, strict_schema: bool) -> TagFormat {
     // Match vLLM's K3 behavior: use the declared schema unless the caller
     // explicitly sets strict=false. Global strict mode overrides that opt-out.
-    let parameters = if super::builder::kimi_uses_declared_tool_schema(tool, strict_schema) {
+    let parameters = if super::builder::uses_declared_tool_schema(tool, strict_schema) {
         tool.parameters.as_ref()
     } else {
         None
@@ -888,6 +920,11 @@ mod tests {
             orders[0]["elements"][3]["begin"],
             "<|open|>argument key=\"days\" type=\"number\"<|sep|>"
         );
+        assert_eq!(orders[0]["elements"][3]["content"]["type"], "json_schema");
+        assert_eq!(
+            orders[0]["elements"][3]["content"]["json_schema"]["type"],
+            "integer"
+        );
         assert_eq!(
             orders[1]["elements"][1]["begin"],
             "<|open|>argument key=\"days\" type=\"number\"<|sep|>"
@@ -901,6 +938,81 @@ mod tests {
             assert_eq!(order["elements"][2]["type"], "any_text");
             assert_eq!(order["elements"][4]["type"], "any_text");
         }
+    }
+
+    #[test]
+    fn auto_required_non_string_arguments_use_their_json_schemas() {
+        let tools = vec![ToolDefinition {
+            name: "typed_tool".to_string(),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {
+                    "count": {"type": "integer", "minimum": 1},
+                    "enabled": {"type": "boolean"},
+                    "items": {"type": "array", "items": {"type": "string"}},
+                    "metadata": {
+                        "type": "object",
+                        "properties": {"source": {"type": "string"}},
+                        "required": ["source"]
+                    }
+                },
+                "required": ["count", "enabled", "items", "metadata"]
+            })),
+            strict: None,
+        }];
+        let choice = ToolChoice::Auto;
+        let value =
+            serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
+                .unwrap();
+        let arguments = &value["format"]["tags"][0]["content"]["tags"][0]["content"]["elements"][2];
+        let first_order = &arguments["elements"][0]["elements"];
+
+        for index in [1, 3, 5, 7] {
+            assert_eq!(first_order[index]["content"]["type"], "json_schema");
+        }
+        assert_eq!(first_order[1]["content"]["json_schema"]["minimum"], 1);
+        assert_eq!(
+            first_order[5]["content"]["json_schema"]["items"]["type"],
+            "string"
+        );
+        assert_eq!(
+            first_order[7]["content"]["json_schema"]["required"],
+            json!(["source"])
+        );
+    }
+
+    #[test]
+    fn auto_required_ref_keeps_root_definitions_in_typed_content() {
+        let tools = vec![ToolDefinition {
+            name: "lookup".to_string(),
+            parameters: Some(json!({
+                "type": "object",
+                "$defs": {
+                    "identifier": {"type": "integer", "minimum": 1}
+                },
+                "properties": {
+                    "id": {"$ref": "#/$defs/identifier"}
+                },
+                "required": ["id"]
+            })),
+            strict: None,
+        }];
+        let choice = ToolChoice::Auto;
+        let value =
+            serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
+                .unwrap();
+        let argument = &value["format"]["tags"][0]["content"]["tags"][0]["content"]["elements"][2]
+            ["elements"][1];
+
+        assert_eq!(argument["content"]["type"], "json_schema");
+        assert_eq!(
+            argument["content"]["json_schema"]["$ref"],
+            "#/$defs/identifier"
+        );
+        assert_eq!(
+            argument["content"]["json_schema"]["$defs"]["identifier"]["type"],
+            "integer"
+        );
     }
 
     #[test]
@@ -960,6 +1072,15 @@ mod tests {
                 .len(),
             2
         );
+        let alternatives = arguments["content"]["elements"][0]["elements"]
+            .as_array()
+            .unwrap();
+        assert_eq!(
+            alternatives[0]["content"]["pattern"],
+            format!("{STRING_ATOM}*")
+        );
+        assert_eq!(alternatives[1]["content"]["type"], "json_schema");
+        assert_eq!(alternatives[1]["content"]["json_schema"]["type"], "integer");
         assert_eq!(arguments["content"]["elements"][1]["type"], "any_text");
     }
 

@@ -9,7 +9,7 @@ Parser conformance fixtures, fixture-based Rust tests, and HTML renderers for fr
 
 ## Ownership
 
-Parser v1/v2 terminology, migration steps, fixture ownership, and temporary sync rules are documented in [`../docs/PARSERS-V2-MIGRATION-PLAN.md`](../docs/PARSERS-V2-MIGRATION-PLAN.md). New streaming parser authors should also read [`../parsers/v2/README.md`](../parsers/v2/README.md); it explains the vLLM-shaped Rust parser contract, the v2 fixture schema, and the exact `conformance/toolcalling/*` files to add. This README covers conformance layout, render outputs, and test commands.
+Parser v1/v2 terminology, migration steps, and fixture ownership are documented in [`../docs/PARSERS-V2-MIGRATION-PLAN.md`](../docs/PARSERS-V2-MIGRATION-PLAN.md). New streaming parser authors should also read [`../parsers/v2/README.md`](../parsers/v2/README.md); it explains the vLLM-shaped Rust parser contract, the v2 fixture schema, and the exact `conformance/toolcalling/*` files to add. This README covers conformance layout, render outputs, and test commands.
 
 ## Parser paths and modes (universal convention)
 
@@ -53,7 +53,7 @@ Per-case tagging currently covers the UNIFIED surface only. The reasoning and to
 
 | Output | Command | Parser version | Fixture version |
 |---|---|---|---|
-| v2 conformance HTML | `conformance/utils/render_table_v2.sh` | Mixed bridge table: `TC batch (v1)` and reasoning tabs use v1 Dynamo-synced parser code; `TC batch-on-stream (v2)` and `TC stream (v2)` use Dynamo parser v2 code. | `TC batch (v1)` uses v1 batch fixtures; `TC batch-on-stream (v2)` uses v1 batch fixtures plus v2 batch-on-stream overlays; `TC stream (v2)` uses v2 stream fixtures; reasoning tabs use v1 reasoning fixtures. The default example output is `conformance/CONFORMANCE_v2.html`, and the render script also accepts a custom output path. |
+| v2 conformance HTML | `conformance/utils/render_table_v2.sh` | Mixed bridge table: `TC batch (v1)` and reasoning tabs use the v1 parser; `TC batch-on-stream (v2)` and `TC stream (v2)` use Dynamo parser v2 code. | `TC batch (v1)` uses v1 batch fixtures; `TC batch-on-stream (v2)` uses v1 batch fixtures plus v2 batch-on-stream overlays; `TC stream (v2)` uses v2 stream fixtures; reasoning tabs use v1 reasoning fixtures. The default example output is `conformance/CONFORMANCE_v2.html`, and the render script also accepts a custom output path. |
 
 ## Running the tests
 
@@ -76,7 +76,7 @@ The test package is named `dynamo-conformance-fixtures-v2` for historical compat
 
 | Test | Code under test | Fixtures | Notes |
 |---|---|---|---|
-| `conformance_toolcalling` | v1 Dynamo-synced batch parser in `parsers/src/tool_calling/` | v1 batch fixtures (`toolcalling/fixtures-batch-v1/`) | Each `batch` case's `model_text` is fed through `detect_and_parse_tool_call_with_recovery(text, Some(family), tools)` and compared to `expected.dynamo_v1`. |
+| `conformance_toolcalling` | v1 batch parser in `parsers/src/tool_calling/` | v1 batch fixtures (`toolcalling/fixtures-batch-v1/`) | Each `batch` case's `model_text` is fed through `detect_and_parse_tool_call_with_recovery(text, Some(family), tools)` and compared to `expected.dynamo_v1`. |
 | `conformance_toolcalling_batch_via_stream` | Dynamo parser v2 in `parsers_v2/src/tool_calling/*` | v1 batch fixtures (`toolcalling/fixtures-batch-v1/`) plus v2 overlays (`toolcalling/fixtures-batch-on-stream-v2/`) | Feeds complete batch text into the v2 stream parser and compares assembled calls to the batch-on-stream expectations. |
 | `conformance_toolcalling_stream` | Dynamo parser v2 in `parsers_v2/src/tool_calling/*` | v2 stream fixtures (`toolcalling/fixtures-stream-v2/`) | Checks token-id or text streaming paths per chunk, then checks assembled calls. |
 
@@ -86,7 +86,7 @@ Reasoning fixtures are rendered in the v2 HTML table; a Rust fixture harness for
 
 ## Refreshing Legacy Fixtures (v1)
 
-Parser fixture sync from Dynamo is retired. Update v1 fixtures through normal frontend-crates PRs and verify the renderers listed in [`../docs/PARSERS-V2-MIGRATION-PLAN.md`](../docs/PARSERS-V2-MIGRATION-PLAN.md#temporary-sync-commands).
+Parser fixture sync from Dynamo is retired. Update v1 fixtures through normal frontend-crates PRs and run the renderer documented in [`../docs/PARSERS-V2-MIGRATION-PLAN.md`](../docs/PARSERS-V2-MIGRATION-PLAN.md#ownership).
 
 ## Adding Streaming Parser V2 Fixtures
 
@@ -98,14 +98,14 @@ The v2 stream fixture schema is documented in [`toolcalling/fixtures-stream-v2/R
 
 The four routine loops. All of them end the same way: `package_fixtures.py` rebuilds the LFS shard store + manifest, and you commit `conformance/fixtures/` + `conformance/fixtures-manifest.json` together (see [`utils/README.md`](utils/README.md#fixture-store-git-lfs)).
 
-**Title fixture/table-only PRs `chore(conformance):`, never `feat:`.** The repo is squash-merge only and GitHub is set to `squash_merge_commit_title: PR_TITLE` with a BLANK body, so the PR TITLE becomes the entire commit message on `main` — it is the only Conventional Commit that release-plz ever reads. The branch's own commit types are discarded, so retitling the PR is both necessary and sufficient. `feat:` proposes a MINOR version bump on every crate whose packaged contents changed ([`../RELEASING.md`](../RELEASING.md#bump-policy) has the full bump table); re-capturing fixtures or re-rendering the table is not a library feature and must not move a published version. Use `feat:` only when parser CODE under `parsers/` changed behaviour. Do not assume `chore` is inert either: the bump table lists `chore:` as no bump, but `release_commits` in [`../release-plz.toml`](../release-plz.toml) temporarily includes `chore` for the dynamo -> frontend-crates transition specifically so `chore: trivial parser sync` commits DO release — the two docs disagree, so treat a `chore:` that touches a published crate's packaged contents (`src/**/*`, `Cargo.toml`, `README.md`) as release-capable and check the release-plz PR it opens. Fixture-only work is safe either way: everything under `conformance/` is outside every crate's packaged contents, so it proposes no bump at all.
+**Title fixture/table-only PRs `chore(conformance):`, never `feat:`.** The repo is squash-merge only and GitHub is set to `squash_merge_commit_title: PR_TITLE` with a BLANK body, so the PR TITLE becomes the entire commit message on `main` — it is the only Conventional Commit that release-plz ever reads. The branch's own commit types are discarded, so retitling the PR is both necessary and sufficient. `feat:` proposes a MINOR version bump on every crate whose packaged contents changed ([`../RELEASING.md`](../RELEASING.md#bump-policy) has the full bump table); re-capturing fixtures or re-rendering the table is not a library feature and must not move a published version. Use `feat:` only when parser CODE under `parsers/` changed behaviour. Fixture-only work is outside every crate's packaged contents, so it proposes no bump.
 
 ### 1. Capture a new vLLM/SGLang engine version (new peer shards)
 
 **The rule is ALL corpora, ALL families.** A new vLLM/SGLang version must land on EVERY tab — `TC batch (v1)`, `TC stream (v2)`, `TC batch-on-stream (v2)`, AND `Reasoning` — so the table stays consistent across tabs. Refreshing one tab and leaving the others behind is a bug, not a shortcut: every tab is multi-version and renders each captured version as its own comparison candidate.
 
 0. **Rebase onto `main` FIRST.** The conformance renderer + capture tooling change often (the whole page was rewritten in DIS-2434; the marker layer in #127). Capturing on a stale base means redoing the render/verify against a since-rewritten generator. Rebase, then capture.
-1. **Pin the version** in `utils/src/pyproject.stub.toml` (peer versions are read from there, never hardcoded). This stub is synced from dynamo's `pyproject.toml`; the value should match dynamo's own vLLM/SGLang pin.
+1. **Pin the version** in `utils/src/pyproject.stub.toml` (peer versions are read from there, never hardcoded). This repository owns the peer versions independently of Dynamo's runtime pins.
 2. **Bring up the engine containers at the new versions and extract the corpus** so the capture seeds are on disk. Parser capture needs NO GPU — it feeds stored model-text through the parser, not the model:
    ```bash
    docker run -d --name vllm-localdev   --entrypoint sleep <vllm-image>   infinity

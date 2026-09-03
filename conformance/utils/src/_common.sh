@@ -16,7 +16,6 @@ set -euo pipefail
 # conformance/utils/src/ (internal modules) is three levels below the repo root.
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 export FRONTEND_CRATES_ROOT="$ROOT"
-# tests/ and lib/ stay at conformance/utils/ (Dynamo-sync targets); the rest is in src/.
 UTILS="$ROOT/conformance/utils"
 TOOLS="$ROOT/conformance/utils/src"
 # Fixture trees are cached in ~/.cache/dynamo/conformance-fixtures/ (extracted
@@ -24,7 +23,6 @@ TOOLS="$ROOT/conformance/utils/src"
 # not only when the cache is empty: it exits instantly on a cache hit, and it
 # re-extracts when the committed manifest pin moved — otherwise a render after
 # pulling new shards would silently use a stale snapshot.
-FIXTURES_ROOT="${XDG_CACHE_HOME:-$HOME/.cache}/dynamo/conformance-fixtures"
 # extract_fixtures prints THIS manifest's snapshot dir on stdout. Point readers at
 # that exact dir, NOT the shared `<cache>/toolcalling` symlink: sibling checkouts
 # pinning a different snapshot race to repoint that symlink, so a render could read
@@ -32,12 +30,8 @@ FIXTURES_ROOT="${XDG_CACHE_HOME:-$HOME/.cache}/dynamo/conformance-fixtures"
 # pinned snapshot dir directly is immune to that race.
 FIXTURES_SNAP=$(python3 "$TOOLS/extract_fixtures.py" 2>/dev/null | tail -1)
 if [ -z "$FIXTURES_SNAP" ] || [ ! -d "$FIXTURES_SNAP/toolcalling" ]; then
-  # Fall back to a plain extract (and the symlink) if the snapshot path is unusable.
-  python3 "$TOOLS/extract_fixtures.py" >/dev/null || {
-    echo "[conformance] fixture extraction failed. If shards are LFS pointers, run:" >&2
-    echo "  git lfs install && git lfs pull" >&2
-    exit 1
-  }
+  echo "[conformance] extract_fixtures.py did not return a usable immutable snapshot" >&2
+  exit 1
 else
   FIXTURES_ROOT="$FIXTURES_SNAP"
 fi
@@ -177,6 +171,7 @@ build_stage_conformance() {
   \cp -f "$TOOLS/generate_conformance_table.py" "$STAGE/tests/parity/generate_conformance_table.py"
   # impls.py + markers.py are staged in _build_stage_base.
   \cp -f "$TOOLS/fixtures.py" "$STAGE/tests/parity/fixtures.py"
+  \cp -f "$TOOLS/fixture_snapshot.py" "$STAGE/tests/parity/fixture_snapshot.py"
   \cp -f "$TOOLS/conformance_table.html.j2" "$STAGE/tests/parity/conformance_table.html.j2"
   # Shared CSS/JS assets are staged in _build_stage_base.
   _copy_toolcalling_v2_fixtures
