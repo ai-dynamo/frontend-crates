@@ -2,13 +2,15 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-# check.sh <dynamo|vllm|sglang|coverage|ci|all> [batch|stream|all] [--container N|--pip] [--dry-run]
+# check.sh <dynamo|vllm|sglang|coverage|status|ci|all> [batch|stream|all] [--container N|--pip] [--dry-run]
 #   Run a parser against the committed fixtures and report pass/fail (read-only).
 #     dynamo [batch|stream|all]  Dynamo Rust parser vs expected.dynamo_v2 / expected.dynamo_v1 (cargo test)
 #     vllm   [--container N|--pip]   vLLM Python parser vs expected.vllm_python / expected.vllm
 #     sglang [--container N|--pip]   SGLang Python parser vs expected.sglang_python
 #     coverage [--family F ...]      fixture-coverage + marker-registration lint vs
 #                                    case-taxonomy.yaml (defaults to --all families)
+#     status [--model F ...] [--tab T ...]
+#                                    render, then fail on every empty/red selected cell
 #     ci     what the conformance-table CI job runs, and the ONLY thing it runs:
 #            render the conformance chart, structural sanity, coverage lint,
 #            invariant pytest.
@@ -23,7 +25,7 @@ while [ $# -gt 0 ]; do case "$1" in --dry-run|--dryrun) DRY=1; shift;; *) args+=
 set -- ${args+"${args[@]}"}
 source "$(dirname "$0")/src/_common.sh"
 
-usage() { echo "usage: conformance/utils/check.sh <dynamo|vllm|sglang|coverage|ci|all> [batch|stream|all] [--container N|--pip]" >&2; exit 2; }
+usage() { echo "usage: conformance/utils/check.sh <dynamo|vllm|sglang|coverage|status|ci|all> [batch|stream|all] [--container N|--pip]" >&2; exit 2; }
 
 run_dynamo() {  # $1 = batch|stream|all ; returns non-zero if any target fails
   local targets=() rc=0
@@ -54,12 +56,25 @@ run_coverage() {  # $@ = passthrough (--family F ...); defaults to --all
   else python3 "$TOOLS/check_family_coverage.py" --all; fi
 }
 
+run_status() {  # $@ = passthrough (--model F ... --tab T ...)
+  local out="$ROOT/conformance/CONFORMANCE_v2.html"
+  if [ "$DRY" = 1 ]; then
+    echo "[dry-run] render v2, then validate empty/red status $*"
+    return
+  fi
+  "$UTILS/render_table_v2.sh"
+  python3 "$TOOLS/validate_conformance_status.py" \
+    --html "$out" --require-green "$@"
+}
+
 run_ci() {  # the conformance-table CI gate; fail-fast, also runnable locally
   if [ "$DRY" = 1 ]; then echo "[dry-run] render v2, sanity greps, coverage lint, invariant pytest"; return; fi
   set -e
   "$UTILS/render_table_v2.sh"
   local out="$ROOT/conformance/CONFORMANCE_v2.html"
+  local status="$ROOT/conformance/CONFORMANCE_v2.json"
   test -s "$out"
+  test -s "$status"
   grep -q "TOOLCALLING.batch" "$out"
   grep -q "REASONING.batch" "$out"
   echo "conformance matrix rendered: $(wc -c < "$out") bytes"
@@ -81,6 +96,7 @@ case "$engine" in
   vllm)   run_engine vllm "$@" ;;
   sglang) run_engine sglang "$@" ;;
   coverage) run_coverage "$@" ;;
+  status) run_status "$@" ;;
   ci)     run_ci ;;
   all)
     cv=""; cs=""; allow_peer=0; rc=0

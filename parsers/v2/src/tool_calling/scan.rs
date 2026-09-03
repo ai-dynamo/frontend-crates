@@ -423,6 +423,17 @@ pub(crate) struct ReasoningSpec {
 /// owned field is the ordinary way to do that — no `RefCell` needed, since
 /// parsing and the later lookup never run at the same time.
 pub(crate) trait InvokeEmitter {
+    /// Emit an append-safe update while an invoke is still open. Families that
+    /// cannot prove a fragment will survive their final typing leave this as a
+    /// no-op and continue to emit only at the invoke close.
+    fn parse_partial_invoke(
+        &mut self,
+        _invoke: &str,
+        _tool_index: usize,
+    ) -> anyhow::Result<Option<ToolCallDelta>> {
+        Ok(None)
+    }
+
     fn parse_invoke(
         &mut self,
         invoke: &str,
@@ -1080,6 +1091,14 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     self.reset_invoke_boundary();
                 }
                 let Some(end) = self.invoke_end_at(flush) else {
+                    if !flush
+                        && let Some(delta) = self
+                            .emitter
+                            .parse_partial_invoke(&self.buffer, self.next_index)?
+                    {
+                        out.push_call(delta);
+                        continue;
+                    }
                     if let Some(next_block) = self.resync_block_start(flush) {
                         tracing::warn!(
                             why = %format!("{}_resynchronized_after_incomplete_invoke", self.spec.family),
@@ -1290,6 +1309,14 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     // to combine missing-start and missing-end recovery and turn
                     // narrated syntax into a dispatched call.
                     let Some(end) = self.invoke_end_at(false) else {
+                        if !flush
+                            && let Some(delta) = self
+                                .emitter
+                                .parse_partial_invoke(&self.buffer, self.next_index)?
+                        {
+                            out.push_call(delta);
+                            continue;
+                        }
                         if flush {
                             tracing::warn!(
                                 why = %format!("{}_incomplete_bare_invoke", self.spec.family),
@@ -1352,6 +1379,7 @@ pub(crate) mod test_support {
                 tool_index,
                 name: Some("ok".to_string()),
                 arguments: "{}".to_string(),
+                complete: true,
             }))
         }
     }

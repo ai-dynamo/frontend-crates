@@ -269,7 +269,7 @@ def test_selected_current_capture_requires_every_input_or_a_sparse_overlay(tmp_p
             "inputs",
             family,
             key,
-            {"scenario": key, "chunks": [{"delta_text": key}]},
+            {"scenario": "tool_only" if key == captured_key else "text_only", "chunks": [{"delta_text": key}]},
             model_label=family,
         )
         _write_case(
@@ -304,7 +304,7 @@ def test_selected_current_capture_requires_every_input_or_a_sparse_overlay(tmp_p
     cases, _caps, versions = table._load_unified_fixtures(tmp_path)
 
     assert versions["dynamo_v2"] == "0.3.4+pr166"
-    assert {case["scenario"] for case in cases} == {captured_key, missing_key}
+    assert {case["scenario"] for case in cases} == {"tool_only", "text_only"}
 
 
 def test_sparse_peer_patch_overrides_base_case_without_changing_release(tmp_path):

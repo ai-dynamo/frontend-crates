@@ -11,7 +11,7 @@ usage() {
   cat <<'EOF'
 usage: conformance/utils/render_table_v2.sh [--dry-run] [--output PATH]
 
-Render the v2 conformance matrix to an HTML file.
+  Render the v2 conformance matrix to an HTML file and write a sibling status JSON.
 
 Options:
   --output PATH   Write to PATH. Relative paths resolve from the repo root.
@@ -76,7 +76,14 @@ case "$OUT" in
 esac
 if ( cd "$STAGE" && PYTHONPATH="$STAGE" python3 tests/parity/generate_conformance_table.py all --html --output-path "$OUT" --artifact-root "$ROOT" ) > "$WORK"; then
   mv -f "$WORK" "$OUT"
+  case "$OUT" in
+    *.html) STATUS="${OUT%.html}.json" ;;
+    *)      STATUS="$OUT.status.json" ;;
+  esac
+  python3 "$TOOLS/validate_conformance_status.py" \
+    --html "$OUT" --status-path "$STATUS" --summary-only
   echo "wrote $OUT"
+  echo "wrote $STATUS"
 else
   rc=$?
   rm -f "$WORK"

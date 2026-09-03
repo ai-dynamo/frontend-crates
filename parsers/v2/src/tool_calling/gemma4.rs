@@ -462,6 +462,7 @@ impl InvokeEmitter for Gemma4InvokeEmitter {
             tool_index,
             name: Some(call.function.name),
             arguments: reorder_arguments(&call.function.arguments, &source_key_order(invoke)),
+            complete: true,
         }))
     }
 }
