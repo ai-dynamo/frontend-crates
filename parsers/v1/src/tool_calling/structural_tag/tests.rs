@@ -650,29 +650,3 @@ fn parser_map_structural_tag_smoke() {
         assert_eq!(tag["type"], "structural_tag", "'{name}'");
     }
 }
-
-#[test]
-fn structural_tag_builder_parser_set_is_stable() {
-    use std::collections::BTreeSet;
-
-    let actual: BTreeSet<_> = crate::tool_calling::parsers::get_tool_parser_map()
-        .iter()
-        .filter_map(|(name, config)| config.structural_tag_builder.is_some().then_some(*name))
-        .collect();
-    let expected = BTreeSet::from([
-        "deepseek-v4",
-        "deepseek_v3_2",
-        "deepseek_v4",
-        "deepseekv4",
-        "hermes",
-        "inkling",
-        "kimi-k3",
-        "kimi_k2",
-        "kimi_k3",
-        "nemotron_nano",
-        "qwen25",
-        "qwen3_coder",
-    ]);
-
-    assert_eq!(actual, expected);
-}

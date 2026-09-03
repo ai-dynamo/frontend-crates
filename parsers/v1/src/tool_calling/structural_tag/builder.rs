@@ -21,11 +21,13 @@ use super::triggered_tags::{self, TriggeredTagsConfig};
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum StructuralTagSchemaMode {
-    /// Real schema only for tools with `strict: true`; others get an
-    /// unconstrained schema (`true` in xgrammar).
+    /// Use the declared schema unless the tool explicitly sets `strict: false`.
+    /// An omitted `strict` field is schema-enforced; explicit `false` uses an
+    /// unconstrained argument schema (`true` in xgrammar).
     #[default]
     Auto,
-    /// Real parameter schema for all tools regardless of `strict` flag.
+    /// Use the declared parameter schema for all tools, overriding
+    /// `strict: false`.
     Strict,
 }
 

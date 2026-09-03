@@ -36,7 +36,6 @@ const ARGUMENT_CLOSE: &str = "<|close|>argument<|sep|>";
 const MESSAGE_CLOSE: &str = "<|close|>message<|sep|>";
 
 const STRING_ATOM: &str = r"(?:[^<]|<[^|])";
-const MAX_PERMUTED_REQUIRED_ARGUMENTS: usize = 5;
 
 fn escape_attr(value: &str) -> String {
     value.replace('&', "&amp;").replace('"', "&quot;")
@@ -461,54 +460,24 @@ fn auto_argument_format(
     }))
 }
 
-fn loose_auto_arguments() -> Format {
-    Format::AnyText(AnyTextFormat {
-        excludes: vec![CALL_OPEN.to_string(), CALL_CLOSE.to_string()],
-    })
+fn loose_auto_arguments(required_keys: &[&str]) -> Format {
+    let mut excludes = vec![CALL_OPEN.to_string(), CALL_CLOSE.to_string()];
+    excludes.extend(
+        required_keys
+            .iter()
+            .map(|key| format!("{OPEN}argument key=\"{}\"", escape_attr(key))),
+    );
+    Format::AnyText(AnyTextFormat { excludes })
 }
 
-fn unordered_required_arguments(arguments: &[Format]) -> Format {
-    fn visit(
-        arguments: &[Format],
-        used: &mut [bool],
-        current: &mut Vec<Format>,
-        alternatives: &mut Vec<Format>,
-    ) {
-        if current.len() == arguments.len() {
-            // JSON object properties are unordered. Loose gaps let optional or
-            // additional arguments appear before, between, or after the
-            // required arguments without weakening the required tags
-            // themselves.
-            let mut elements = Vec::with_capacity(current.len() * 2 + 1);
-            elements.push(loose_auto_arguments());
-            for argument in current.iter().cloned() {
-                elements.push(argument);
-                elements.push(loose_auto_arguments());
-            }
-            alternatives.push(Format::Sequence(SequenceFormat { elements }));
-            return;
-        }
-
-        for index in 0..arguments.len() {
-            if used[index] {
-                continue;
-            }
-            used[index] = true;
-            current.push(arguments[index].clone());
-            visit(arguments, used, current, alternatives);
-            current.pop();
-            used[index] = false;
-        }
-    }
-
-    let mut alternatives = Vec::new();
-    visit(
-        arguments,
-        &mut vec![false; arguments.len()],
-        &mut Vec::with_capacity(arguments.len()),
-        &mut alternatives,
-    );
-    one_of(alternatives)
+fn canonical_required_arguments(mut arguments: Vec<Format>, required_keys: &[&str]) -> Format {
+    // Guided decoding only needs one schema-valid order. Keep the schema's
+    // required-array order, then allow optional/additional arguments without
+    // allowing a required key to overwrite its constrained value.
+    arguments.push(loose_auto_arguments(required_keys));
+    Format::Sequence(SequenceFormat {
+        elements: arguments,
+    })
 }
 
 fn auto_arguments_block(tool: &ToolDefinition, strict_schema: bool) -> Format {
@@ -548,20 +517,13 @@ fn auto_arguments_block(tool: &ToolDefinition, strict_schema: bool) -> Format {
             return Format::AnyText(AnyTextFormat { excludes: vec![] });
         }
         return optional(Format::Sequence(SequenceFormat {
-            elements: vec![one_of(alternatives), loose_auto_arguments()],
+            elements: vec![one_of(alternatives), loose_auto_arguments(&[])],
         }));
     }
 
-    // Enumerating every order grows factorially. Preserve schema-valid output
-    // for unusually wide tools by falling back to permissive content instead
-    // of imposing the schema's non-semantic `required` array order.
-    if required.len() > MAX_PERMUTED_REQUIRED_ARGUMENTS {
-        return loose_auto_arguments();
-    }
-
     let mut arguments = Vec::with_capacity(required.len());
-    for key in required {
-        let Some(schema) = properties.get(key) else {
+    for key in &required {
+        let Some(schema) = properties.get(*key) else {
             return Format::AnyText(AnyTextFormat { excludes: vec![] });
         };
         if !matches!(schema, Value::Bool(_) | Value::Object(_)) {
@@ -572,7 +534,7 @@ fn auto_arguments_block(tool: &ToolDefinition, strict_schema: bool) -> Format {
         };
         arguments.push(argument);
     }
-    unordered_required_arguments(&arguments)
+    canonical_required_arguments(arguments, &required)
 }
 
 fn auto_call_tag(tool: &ToolDefinition, strict_schema: bool) -> TagFormat {
@@ -872,24 +834,23 @@ mod tests {
 
         let arguments = &call["content"]["elements"][2];
         assert_eq!(arguments["type"], "sequence");
-        assert_eq!(arguments["elements"][0]["type"], "any_text");
         assert_eq!(
-            arguments["elements"][1]["begin"],
+            arguments["elements"][0]["begin"],
             "<|open|>argument key=\"city\" type=\"string\"<|sep|>"
         );
         assert_eq!(
-            arguments["elements"][1]["content"]["pattern"],
+            arguments["elements"][0]["content"]["pattern"],
             format!("{STRING_ATOM}+")
         );
-        assert_eq!(arguments["elements"][2]["type"], "any_text");
+        assert_eq!(arguments["elements"][1]["type"], "any_text");
         assert_eq!(
-            arguments["elements"][2]["excludes"],
-            json!([CALL_OPEN, CALL_CLOSE])
+            arguments["elements"][1]["excludes"],
+            json!([CALL_OPEN, CALL_CLOSE, "<|open|>argument key=\"city\""])
         );
     }
 
     #[test]
-    fn auto_required_arguments_accept_every_property_order() {
+    fn auto_required_arguments_use_canonical_schema_order() {
         let tools = vec![ToolDefinition {
             name: "get_weather".to_string(),
             parameters: Some(json!({
@@ -908,36 +869,30 @@ mod tests {
             serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
                 .unwrap();
         let arguments = &value["format"]["tags"][0]["content"]["tags"][0]["content"]["elements"][2];
-        let orders = arguments["elements"].as_array().unwrap();
+        let elements = arguments["elements"].as_array().unwrap();
 
-        assert_eq!(arguments["type"], "or");
-        assert_eq!(orders.len(), 2);
+        assert_eq!(arguments["type"], "sequence");
+        assert_eq!(elements.len(), 3);
         assert_eq!(
-            orders[0]["elements"][1]["begin"],
+            elements[0]["begin"],
             "<|open|>argument key=\"city\" type=\"string\"<|sep|>"
         );
         assert_eq!(
-            orders[0]["elements"][3]["begin"],
+            elements[1]["begin"],
             "<|open|>argument key=\"days\" type=\"number\"<|sep|>"
         );
-        assert_eq!(orders[0]["elements"][3]["content"]["type"], "json_schema");
+        assert_eq!(elements[1]["content"]["type"], "json_schema");
+        assert_eq!(elements[1]["content"]["json_schema"]["type"], "integer");
+        assert_eq!(elements[2]["type"], "any_text");
         assert_eq!(
-            orders[0]["elements"][3]["content"]["json_schema"]["type"],
-            "integer"
+            elements[2]["excludes"],
+            json!([
+                CALL_OPEN,
+                CALL_CLOSE,
+                "<|open|>argument key=\"city\"",
+                "<|open|>argument key=\"days\""
+            ])
         );
-        assert_eq!(
-            orders[1]["elements"][1]["begin"],
-            "<|open|>argument key=\"days\" type=\"number\"<|sep|>"
-        );
-        assert_eq!(
-            orders[1]["elements"][3]["begin"],
-            "<|open|>argument key=\"city\" type=\"string\"<|sep|>"
-        );
-        for order in orders {
-            assert_eq!(order["elements"][0]["type"], "any_text");
-            assert_eq!(order["elements"][2]["type"], "any_text");
-            assert_eq!(order["elements"][4]["type"], "any_text");
-        }
     }
 
     #[test]
@@ -965,18 +920,18 @@ mod tests {
             serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
                 .unwrap();
         let arguments = &value["format"]["tags"][0]["content"]["tags"][0]["content"]["elements"][2];
-        let first_order = &arguments["elements"][0]["elements"];
+        let elements = &arguments["elements"];
 
-        for index in [1, 3, 5, 7] {
-            assert_eq!(first_order[index]["content"]["type"], "json_schema");
+        for index in 0..4 {
+            assert_eq!(elements[index]["content"]["type"], "json_schema");
         }
-        assert_eq!(first_order[1]["content"]["json_schema"]["minimum"], 1);
+        assert_eq!(elements[0]["content"]["json_schema"]["minimum"], 1);
         assert_eq!(
-            first_order[5]["content"]["json_schema"]["items"]["type"],
+            elements[2]["content"]["json_schema"]["items"]["type"],
             "string"
         );
         assert_eq!(
-            first_order[7]["content"]["json_schema"]["required"],
+            elements[3]["content"]["json_schema"]["required"],
             json!(["source"])
         );
     }
@@ -1002,7 +957,7 @@ mod tests {
             serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
                 .unwrap();
         let argument = &value["format"]["tags"][0]["content"]["tags"][0]["content"]["elements"][2]
-            ["elements"][1];
+            ["elements"][0];
 
         assert_eq!(argument["content"]["type"], "json_schema");
         assert_eq!(
@@ -1016,7 +971,7 @@ mod tests {
     }
 
     #[test]
-    fn auto_wide_required_schema_falls_back_instead_of_fixing_argument_order() {
+    fn auto_wide_required_schema_uses_canonical_order() {
         let tools = vec![ToolDefinition {
             name: "wide_tool".to_string(),
             parameters: Some(json!({
@@ -1039,8 +994,29 @@ mod tests {
                 .unwrap();
         let arguments = &value["format"]["tags"][0]["content"]["tags"][0]["content"]["elements"][2];
 
-        assert_eq!(arguments["type"], "any_text");
-        assert_eq!(arguments["excludes"], json!([CALL_OPEN, CALL_CLOSE]));
+        assert_eq!(arguments["type"], "sequence");
+        assert_eq!(arguments["elements"].as_array().unwrap().len(), 7);
+        assert_eq!(
+            arguments["elements"][0]["begin"],
+            "<|open|>argument key=\"a\" type=\"string\"<|sep|>"
+        );
+        assert_eq!(
+            arguments["elements"][5]["begin"],
+            "<|open|>argument key=\"f\" type=\"string\"<|sep|>"
+        );
+        assert_eq!(
+            arguments["elements"][6]["excludes"],
+            json!([
+                CALL_OPEN,
+                CALL_CLOSE,
+                "<|open|>argument key=\"a\"",
+                "<|open|>argument key=\"b\"",
+                "<|open|>argument key=\"c\"",
+                "<|open|>argument key=\"d\"",
+                "<|open|>argument key=\"e\"",
+                "<|open|>argument key=\"f\""
+            ])
+        );
     }
 
     #[test]
