@@ -414,9 +414,6 @@ def test_request_state_boundary_scenarios_generate_for_every_family():
 def test_scenario_families_matches_declared_scope():
     scoped = {
         "guided_json_quoted_bare_header_in_answer": {"muse_glimmer"},
-        "guided_json_quoted_bare_tool_header_in_answer": {"muse_glimmer"},
-        "guided_json_quoted_bare_header_after_payload": {"muse_glimmer"},
-        "guided_json_bare_tool_header_recovers_inside_a_thought": {"muse_glimmer"},
         "gemma4_guided_json_visible_call_prose_before_reasoning": {"gemma4"},
         "gemma4_guided_json_malformed_call_prefix_before_reasoning": {"gemma4"},
     }
