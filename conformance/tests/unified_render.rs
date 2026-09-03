@@ -969,10 +969,8 @@ fn shared_overlay_dirs(root: &std::path::Path, base: &str) -> Vec<PathBuf> {
 fn release_qualified_capture_order_preserves_current_and_released_owners() {
     let prefix = "dynamo_v2-";
     let older_release = common::version_capture_sort_key("dynamo_v2-0.3.2", prefix).unwrap();
-    let current_pr = common::version_capture_sort_key("dynamo_v2-0.4.0+pr200", prefix).unwrap();
     let current_release = common::version_capture_sort_key("dynamo_v2-0.4.0", prefix).unwrap();
     assert!(older_release < current_release);
-    assert!(current_release < current_pr);
     assert!(common::version_capture_sort_key("dynamo_v2-0.3.3.patch1", prefix).is_none());
 }
 

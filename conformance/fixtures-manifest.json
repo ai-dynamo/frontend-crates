@@ -246,11 +246,6 @@
       "size": 13715
     },
     {
-      "path": "unified/dynamo_v2-0.4.0+pr200.tar.gz",
-      "sha256": "022d28655fc13888ee7b748ca439dcc0aef57a4464651dda5d44b6d720658307",
-      "size": 14218
-    },
-    {
       "path": "unified/dynamo_v2-0.4.0.tar.gz",
       "sha256": "c2d0c749ab3439fa9f7b43c5ffe621ce8e207ae6905e1fdee8fc4a2ba4486f17",
       "size": 13751
