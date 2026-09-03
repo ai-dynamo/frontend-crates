@@ -31,6 +31,15 @@ pub struct Tensor {
 /// qwen's `image_grid_thw`.
 pub type NamedTensors = Vec<(String, Tensor)>;
 
+/// A media modality understood by processor capability and metadata APIs.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum Modality {
+    Image,
+    Video,
+    Audio,
+}
+
 /// One decoded media item handed to [`MmFamilyProcessor::process_item`].
 /// Grows a variant per modality as families that need it are ported.
 #[non_exhaustive]
@@ -40,6 +49,33 @@ pub enum DecodedMedia {
         rgb: Vec<u8>,
         height: usize,
         width: usize,
+    },
+}
+
+impl DecodedMedia {
+    pub fn modality(&self) -> Modality {
+        match self {
+            Self::Image { .. } => Modality::Image,
+        }
+    }
+}
+
+/// Lightweight media metadata for pixel-free token accounting.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum MediaMetadata {
+    Image {
+        width: u32,
+        height: u32,
+    },
+    Video {
+        width: u32,
+        height: u32,
+        num_frames: u32,
+    },
+    Audio {
+        num_samples: u64,
+        sample_rate: u32,
     },
 }
 
@@ -53,13 +89,16 @@ pub enum Geometry {
     Grid([u32; 3]),
 }
 
-/// One processed media item: the primary feature tensor, named auxiliary
-/// tensors, and the geometry the family's own `layout`/`positions` hooks need.
+/// One processed media item and the metadata needed for prompt preparation.
 pub struct ProcessedItem {
+    pub modality: Modality,
+    /// Number of model feature tokens this item contributes.
+    pub feature_token_count: usize,
     /// The model's feature tensor for this item (qwen: `pixel_values`).
     pub feature: Tensor,
     pub aux: NamedTensors,
-    pub geometry: Geometry,
+    /// Family-specific spatial/temporal geometry, when required.
+    pub geometry: Option<Geometry>,
 }
 
 /// The tokens one media item occupies in the expanded prompt.
@@ -87,12 +126,36 @@ pub struct TokenLayout {
     pub segments: Vec<Segment>,
 }
 
-/// Modalities a family accepts; a serving engine rejects anything a family
-/// does not declare.
-#[derive(Clone, Copy, Debug, Default)]
+/// Modalities a family accepts.
+#[derive(Clone, Copy, Debug)]
 pub struct Capabilities {
-    pub video: bool,
-    pub audio: bool,
+    image: bool,
+    video: bool,
+    audio: bool,
+}
+
+impl Capabilities {
+    pub const fn new(image: bool, video: bool, audio: bool) -> Self {
+        Self {
+            image,
+            video,
+            audio,
+        }
+    }
+
+    pub const fn supports(&self, modality: Modality) -> bool {
+        match modality {
+            Modality::Image => self.image,
+            Modality::Video => self.video,
+            Modality::Audio => self.audio,
+        }
+    }
+}
+
+impl Default for Capabilities {
+    fn default() -> Self {
+        Self::new(true, false, false)
+    }
 }
 
 /// Position scheme of the expanded prompt.
@@ -109,25 +172,26 @@ pub enum PositionOutput {
 /// `family` arm to [`crate::registry::ProcessorSpec`]. All parameters come
 /// from the runtime spec; nothing is hardcoded per model.
 pub trait MmFamilyProcessor: Send + Sync {
-    /// Modalities beyond images this family accepts. Default: images only.
+    /// Modalities this family accepts. Default: images only.
     fn capabilities(&self) -> Capabilities {
         Capabilities::default()
     }
 
-    /// Tokens one image will occupy in the expanded prompt, from its source
-    /// dimensions alone — no pixel work (HF's `_get_num_multimodal_tokens`).
-    /// Lets routers account prompt length before fetching past the header.
-    fn num_media_tokens(&self, width: usize, height: usize) -> Result<usize, String>;
+    /// Tokens one media item will occupy in the expanded prompt, from
+    /// lightweight metadata alone — no pixel or feature-extraction work (HF's
+    /// `_get_num_multimodal_tokens`). Lets routers account prompt length after
+    /// probing only the modality-specific header.
+    fn num_media_tokens(&self, media: &MediaMetadata) -> crate::Result<usize>;
 
     /// Preprocess one decoded media item — the model's HF processor
     /// equivalent (resize/tile/normalize/patchify) — into tensors plus the
     /// geometry `layout`/`positions` will need.
-    fn process_item(&self, media: &DecodedMedia) -> Result<ProcessedItem, String>;
+    fn process_item(&self, media: &DecodedMedia) -> crate::Result<ProcessedItem>;
 
     /// Describe how the prompt expands around the processed items (in prompt
     /// order). Sees the full prompt and all items, so structured schemes
     /// (tile markers, separators) are expressible.
-    fn layout(&self, input_ids: &[i32], items: &[Geometry]) -> Result<TokenLayout, String>;
+    fn layout(&self, input_ids: &[i32], items: &[ProcessedItem]) -> crate::Result<TokenLayout>;
 
     /// Positions for the expanded prompt. Families without a custom scheme
     /// keep the default.
@@ -135,8 +199,8 @@ pub trait MmFamilyProcessor: Send + Sync {
         &self,
         input_len: usize,
         offsets: &[(u32, u32)],
-        items: &[Geometry],
-    ) -> Result<PositionOutput, String> {
+        items: &[ProcessedItem],
+    ) -> crate::Result<PositionOutput> {
         let _ = (input_len, offsets, items);
         Ok(PositionOutput::Rope1D)
     }

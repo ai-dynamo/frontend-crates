@@ -28,7 +28,7 @@ pub fn apply_layout(
     src: &[i32],
     layout: &TokenLayout,
     n_items: usize,
-) -> Result<ExpandedPrompt, String> {
+) -> crate::Result<ExpandedPrompt> {
     let _ = (src, layout, n_items);
     todo!("validating single-pass expansion")
 }
@@ -40,7 +40,7 @@ pub fn layout_by_placeholder(
     ids: &[i32],
     placeholder_id: i32,
     counts: &[usize],
-) -> Result<TokenLayout, String> {
+) -> crate::Result<TokenLayout> {
     let _ = (ids, placeholder_id, counts);
     todo!("qwen-style repeat layout")
 }

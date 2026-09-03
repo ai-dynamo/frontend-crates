@@ -20,7 +20,7 @@ pub enum ProcessorSpec {
 /// rejects its parameters (e.g. a zero patch size).
 pub fn build_processor(
     spec: ProcessorSpec,
-) -> Result<Box<dyn crate::processor::MmFamilyProcessor>, String> {
+) -> crate::Result<Box<dyn crate::processor::MmFamilyProcessor>> {
     match spec {
         ProcessorSpec::QwenVl(spec) => Ok(Box::new(crate::models::qwen_vl::QwenVlProcessor::new(
             spec,
@@ -33,8 +33,9 @@ pub fn build_processor(
 /// or malformed spec — the caller treats that as "no native processor".
 pub fn processor_from_spec(
     json: &str,
-) -> Result<Box<dyn crate::processor::MmFamilyProcessor>, String> {
-    let spec: ProcessorSpec = serde_json::from_str(json).map_err(|e| format!("mm spec: {e}"))?;
+) -> crate::Result<Box<dyn crate::processor::MmFamilyProcessor>> {
+    let spec: ProcessorSpec = serde_json::from_str(json)
+        .map_err(|error| crate::MmError::invalid_input_with_source("invalid mm spec", error))?;
     build_processor(spec)
 }
 
@@ -50,7 +51,7 @@ pub fn processor_from_spec(
 pub fn spec_from_hf_configs(
     config_json: &str,
     preprocessor_config_json: &str,
-) -> Result<ProcessorSpec, String> {
+) -> crate::Result<ProcessorSpec> {
     let _ = (config_json, preprocessor_config_json);
     todo!("model_type → family arm; validate + map processor knobs")
 }
@@ -58,7 +59,7 @@ pub fn spec_from_hf_configs(
 /// [`spec_from_hf_configs`] over a local model directory (reads `config.json`
 /// and `preprocessor_config.json`). Downloading from a hub stays the
 /// consumer's concern — hand this the resolved local dir.
-pub fn spec_from_model_dir(dir: &std::path::Path) -> Result<ProcessorSpec, String> {
+pub fn spec_from_model_dir(dir: &std::path::Path) -> crate::Result<ProcessorSpec> {
     let _ = dir;
     todo!("read the two config files, delegate to spec_from_hf_configs")
 }
