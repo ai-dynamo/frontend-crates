@@ -23,18 +23,20 @@ pub struct ExpandedPrompt {
     pub feature_ranges: Vec<Vec<std::ops::Range<u32>>>,
 }
 
-/// Apply a family's [`TokenLayout`] to the original prompt, and validate it
-/// while expanding:
+/// Apply a family's [`TokenLayout`] to the original prompt. The i-th entry in
+/// `feature_token_counts` is the number of embeddings produced by media item
+/// i. The function validates while expanding:
 /// * the `Text` and `Media::src` ranges cover the original ids exactly once,
 ///   in order — nothing dropped, nothing duplicated;
-/// * each of the `n_items` media items appears exactly once;
-/// * every item has at least one feature token.
+/// * each media item appears exactly once;
+/// * each item's `Feature` parts contain exactly its expected number of
+///   feature tokens.
 pub fn apply_layout(
     src: &[i32],
     layout: &TokenLayout,
-    n_items: usize,
+    feature_token_counts: &[usize],
 ) -> crate::Result<ExpandedPrompt> {
-    let _ = (src, layout, n_items);
+    let _ = (src, layout, feature_token_counts);
     todo!("validating single-pass expansion")
 }
 

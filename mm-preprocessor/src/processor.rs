@@ -133,7 +133,7 @@ pub enum Segment {
 
 /// Prompt geometry as data: the family describes the expansion,
 /// [`crate::token_layout::apply_layout`] derives final input ids and
-/// per-item offsets from it.
+/// per-item offsets and feature ranges from it.
 pub struct TokenLayout {
     pub segments: Vec<Segment>,
 }
