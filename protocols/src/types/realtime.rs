@@ -1,13 +1,63 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 //
-// Re-exports upstream async-openai realtime event types. Per the ownership
-// rubric in `protocols/AGENTS.md`, no local overrides are needed today:
-// upstream covers the full event surface (`RealtimeClientEvent`,
-// `RealtimeServerEvent`, and their per-variant payloads) and no real client
-// has been observed to send a shape upstream rejects.
+// Re-exports upstream async-openai realtime types and adds a narrow wrapper for
+// Dynamo-specific client events without replacing the upstream public enum.
 
 pub use async_openai::types::realtime::*;
+use serde::{Deserialize, Serialize};
+
+/// Append UTF-8 text to the current incremental input buffer.
+///
+/// This is a Dynamo extension for clients that receive text progressively,
+/// such as cascaded ASR -> LLM pipelines. Like `input_audio_buffer.append`, an
+/// append does not finalize a conversation item or request a response.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RealtimeClientEventInputTextBufferAppend {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub event_id: Option<String>,
+    pub text: String,
+}
+
+/// Finalize the current incremental text buffer as a user conversation item.
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct RealtimeClientEventInputTextBufferCommit {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub event_id: Option<String>,
+}
+
+/// Discard the current incremental text buffer without creating an item.
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct RealtimeClientEventInputTextBufferClear {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub event_id: Option<String>,
+}
+
+/// Dynamo-specific extensions to the OpenAI Realtime client event set.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum RealtimeClientEventExtension {
+    #[serde(rename = "input_text_buffer.append")]
+    InputTextBufferAppend(RealtimeClientEventInputTextBufferAppend),
+    #[serde(rename = "input_text_buffer.commit")]
+    InputTextBufferCommit(RealtimeClientEventInputTextBufferCommit),
+    #[serde(rename = "input_text_buffer.clear")]
+    InputTextBufferClear(RealtimeClientEventInputTextBufferClear),
+}
+
+/// OpenAI Realtime client events plus inference-serving extensions from Dynamo.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum DynamoRealtimeClientEvent {
+    OpenAI(RealtimeClientEvent),
+    Extension(RealtimeClientEventExtension),
+}
+
+impl From<RealtimeClientEvent> for DynamoRealtimeClientEvent {
+    fn from(event: RealtimeClientEvent) -> Self {
+        Self::OpenAI(event)
+    }
+}
 
 /// Returns the `type` wire-tag string for a realtime event variant — useful
 /// for logging, error messages, and metric labels that need a stable name
@@ -21,8 +71,8 @@ pub use async_openai::types::realtime::*;
 /// async_openai::traits::EventType;` in here and remove the impls below; call
 /// sites need no changes.
 ///
-/// Implemented today only for `RealtimeClientEvent`. The `RealtimeServerEvent`
-/// impl can be added when a consumer needs it.
+/// Implemented for the upstream and Dynamo client event sets. The
+/// `RealtimeServerEvent` impl can be added when a consumer needs it.
 ///
 /// [NOTE] Could be replaced with a serde-introspection helper (e.g. the
 /// `serde_variant` crate) that reads the wire tag from `#[serde(rename)]`
@@ -48,6 +98,25 @@ impl EventType for RealtimeClientEvent {
             RealtimeClientEvent::ResponseCreate(_) => "response.create",
             RealtimeClientEvent::ResponseCancel(_) => "response.cancel",
             RealtimeClientEvent::OutputAudioBufferClear(_) => "output_audio_buffer.clear",
+        }
+    }
+}
+
+impl EventType for RealtimeClientEventExtension {
+    fn event_type(&self) -> &'static str {
+        match self {
+            RealtimeClientEventExtension::InputTextBufferAppend(_) => "input_text_buffer.append",
+            RealtimeClientEventExtension::InputTextBufferCommit(_) => "input_text_buffer.commit",
+            RealtimeClientEventExtension::InputTextBufferClear(_) => "input_text_buffer.clear",
+        }
+    }
+}
+
+impl EventType for DynamoRealtimeClientEvent {
+    fn event_type(&self) -> &'static str {
+        match self {
+            DynamoRealtimeClientEvent::OpenAI(event) => event.event_type(),
+            DynamoRealtimeClientEvent::Extension(event) => event.event_type(),
         }
     }
 }
@@ -80,5 +149,50 @@ mod tests {
             panic!("expected transcription session");
         };
         assert!(session.audio.input.turn_detection.is_none());
+    }
+
+    #[test]
+    fn text_buffer_events_round_trip() {
+        let values = [
+            (
+                serde_json::json!({
+                    "type": "input_text_buffer.append",
+                    "event_id": "append-1",
+                    "text": "hello "
+                }),
+                "input_text_buffer.append",
+            ),
+            (
+                serde_json::json!({
+                    "type": "input_text_buffer.commit",
+                    "event_id": "commit-1"
+                }),
+                "input_text_buffer.commit",
+            ),
+            (
+                serde_json::json!({
+                    "type": "input_text_buffer.clear",
+                    "event_id": "clear-1"
+                }),
+                "input_text_buffer.clear",
+            ),
+        ];
+
+        for (value, event_type) in values {
+            let event: DynamoRealtimeClientEvent =
+                serde_json::from_value(value.clone()).expect("event should deserialize");
+            assert_eq!(event.event_type(), event_type);
+            assert_eq!(serde_json::to_value(event).unwrap(), value);
+        }
+    }
+
+    #[test]
+    fn text_buffer_append_requires_non_null_text() {
+        for value in [
+            serde_json::json!({"type": "input_text_buffer.append"}),
+            serde_json::json!({"type": "input_text_buffer.append", "text": null}),
+        ] {
+            assert!(serde_json::from_value::<DynamoRealtimeClientEvent>(value).is_err());
+        }
     }
 }
