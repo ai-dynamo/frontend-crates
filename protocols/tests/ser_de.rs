@@ -79,6 +79,22 @@ fn prompt_cache_key_and_builtin_function_round_trip() {
     assert!(plain_json.get("safety_identifier").is_none());
 }
 
+/// Dynamic tool system messages must carry a list; scalars and objects are
+/// rejected at deserialization rather than reaching a renderer.
+#[test]
+fn system_message_tools_must_be_an_array() {
+    for bad in [json!("lookup"), json!({"name": "lookup"}), json!(1)] {
+        let body = json!({
+            "model": "kimi-k3",
+            "messages": [{"role": "system", "tools": bad}]
+        });
+        assert!(
+            serde_json::from_value::<CreateChatCompletionRequest>(body).is_err(),
+            "tools={bad} must not deserialize"
+        );
+    }
+}
+
 /// Kimi Code sends `thinking: {type, effort, keep}`. Only `type` is kept for
 /// now; `effort` / `keep` are accepted and dropped (see `ThinkingObject`).
 #[test]
