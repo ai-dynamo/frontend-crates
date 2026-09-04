@@ -119,9 +119,9 @@ UNIFIED_TAX = {
     "guided_json_quoted_bare_tool_header_in_answer": (31, "26"),
     "guided_json_quoted_bare_header_after_payload": (31, "27"),
     "guided_json_bare_tool_header_recovers_inside_a_thought": (31, "28"),
-    # Group g — Gemma 4 guided call-prefix boundaries
-    "gemma4_guided_json_visible_call_prose_before_reasoning": ("g", "1"),
-    "gemma4_guided_json_malformed_call_prefix_before_reasoning": ("g", "2"),
+    # Group g4 — Gemma 4 guided call-prefix boundaries
+    "gemma4_guided_json_visible_call_prose_before_reasoning": ("g4", "1"),
+    "gemma4_guided_json_malformed_call_prefix_before_reasoning": ("g4", "2"),
 
     # Group 40 — Prefilled reasoning, happy
     "prefilled_reasoning_with_tool": (40, "a"), "prefilled_reasoning_with_guided_json": (40, "b"),
@@ -146,7 +146,7 @@ UNIFIED_GROUP_LABEL = {
     10: "Reasoning span",
     11: "Reasoning ↔ tool interleaving", 12: "Adversarial nesting (reasoning + tool)",
     "k3": "Kimi K3 XTML",
-    "g": "Gemma 4 guided call-prefix boundaries",
+    "g4": "Gemma 4 guided call-prefix boundaries",
     30: "Guided Decoding", 31: "Guided Decoding — payload REJECTED (syntax or schema) / recovery",
     40: "Prefilled Reasoning", 41: "Prefilled Reasoning — malformed",
     50: "Prefilled Response", 51: "Prefilled Response — malformed",

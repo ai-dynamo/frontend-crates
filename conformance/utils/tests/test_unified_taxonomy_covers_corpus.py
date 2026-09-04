@@ -118,16 +118,16 @@ def test_case_labels_keep_gemma_specific_cases_out_of_the_generic_guided_series(
     assert tax("guided_json_quoted_bare_tool_header_in_answer") == (31, "26")
     assert tax("guided_json_quoted_bare_header_after_payload") == (31, "27")
     assert tax("guided_json_bare_tool_header_recovers_inside_a_thought") == (31, "28")
-    assert tax("gemma4_guided_json_visible_call_prose_before_reasoning") == ("g", "1")
-    assert tax("gemma4_guided_json_malformed_call_prefix_before_reasoning") == ("g", "2")
+    assert tax("gemma4_guided_json_visible_call_prose_before_reasoning") == ("g4", "1")
+    assert tax("gemma4_guided_json_malformed_call_prefix_before_reasoning") == ("g4", "2")
     assert case_label("guided_json_quoted_bare_header_in_answer") == "31-25"
     assert case_label("guided_json_quoted_bare_tool_header_in_answer") == "31-26"
     assert case_label("guided_json_quoted_bare_header_after_payload") == "31-27"
     assert case_label("guided_json_bare_tool_header_recovers_inside_a_thought") == "31-28"
-    assert case_label("gemma4_guided_json_visible_call_prose_before_reasoning") == "g-1"
-    assert case_label("gemma4_guided_json_malformed_call_prefix_before_reasoning") == "g-2"
+    assert case_label("gemma4_guided_json_visible_call_prose_before_reasoning") == "g4-1"
+    assert case_label("gemma4_guided_json_malformed_call_prefix_before_reasoning") == "g4-2"
     assert numbered_id("guided_json_quoted_bare_header_in_answer") == "UNIFIED.31-25"
-    assert numbered_id("gemma4_guided_json_visible_call_prose_before_reasoning") == "UNIFIED.g-1"
+    assert numbered_id("gemma4_guided_json_visible_call_prose_before_reasoning") == "UNIFIED.g4-1"
     assert case_label("guided_json_invalid_call") == "31-1"
     assert numbered_id("guided_json_invalid_call") == "UNIFIED.31-1"
     guided = [sub for group, sub in UNIFIED_TAX.values() if group == 31]
