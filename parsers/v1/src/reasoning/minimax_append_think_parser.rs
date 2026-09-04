@@ -69,6 +69,15 @@ impl ReasoningParser for MiniMaxAppendThinkParser {
 mod tests {
     use super::*;
 
+    #[test]
+    fn test_in_reasoning_is_unknown() {
+        // This parser never splits reasoning out, so it holds no span state. It
+        // must report `None` rather than `Some(false)`, so a caller counting
+        // reasoning tokens omits the count instead of reporting a wrong zero.
+        let parser = MiniMaxAppendThinkParser::new();
+        assert_eq!(parser.in_reasoning(), None);
+    }
+
     #[test] // REASONING.batch.2.a — minimax inline-reasoning
     fn test_detect_and_parse_prepends_think_all_as_normal_text() {
         let mut parser = MiniMaxAppendThinkParser::new();
