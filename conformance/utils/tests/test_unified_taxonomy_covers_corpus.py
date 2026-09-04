@@ -112,27 +112,27 @@ def test_every_used_group_has_a_label() -> None:
     )
 
 
-def test_case_labels_use_numeric_positions_for_the_full_guided_recovery_series() -> None:
-    """Guided recovery positions use one sortable numeric sequence, 31-1 through 31-28."""
+def test_case_labels_keep_gemma_specific_cases_out_of_the_generic_guided_series() -> None:
+    """Gemma-only call-prefix cases use their own named numeric group."""
     assert tax("guided_json_quoted_bare_header_in_answer") == (31, "25")
     assert tax("guided_json_quoted_bare_tool_header_in_answer") == (31, "26")
     assert tax("guided_json_quoted_bare_header_after_payload") == (31, "27")
     assert tax("guided_json_bare_tool_header_recovers_inside_a_thought") == (31, "28")
-    assert tax("gemma4_guided_json_visible_call_prose_before_reasoning") == (31, "29")
-    assert tax("gemma4_guided_json_malformed_call_prefix_before_reasoning") == (31, "30")
+    assert tax("gemma4_guided_json_visible_call_prose_before_reasoning") == ("g", "1")
+    assert tax("gemma4_guided_json_malformed_call_prefix_before_reasoning") == ("g", "2")
     assert case_label("guided_json_quoted_bare_header_in_answer") == "31-25"
     assert case_label("guided_json_quoted_bare_tool_header_in_answer") == "31-26"
     assert case_label("guided_json_quoted_bare_header_after_payload") == "31-27"
     assert case_label("guided_json_bare_tool_header_recovers_inside_a_thought") == "31-28"
-    assert case_label("gemma4_guided_json_visible_call_prose_before_reasoning") == "31-29"
-    assert case_label("gemma4_guided_json_malformed_call_prefix_before_reasoning") == "31-30"
+    assert case_label("gemma4_guided_json_visible_call_prose_before_reasoning") == "g-1"
+    assert case_label("gemma4_guided_json_malformed_call_prefix_before_reasoning") == "g-2"
     assert numbered_id("guided_json_quoted_bare_header_in_answer") == "UNIFIED.31-25"
-    assert numbered_id("gemma4_guided_json_visible_call_prose_before_reasoning") == "UNIFIED.31-29"
+    assert numbered_id("gemma4_guided_json_visible_call_prose_before_reasoning") == "UNIFIED.g-1"
     assert case_label("guided_json_invalid_call") == "31-1"
     assert numbered_id("guided_json_invalid_call") == "UNIFIED.31-1"
     guided = [sub for group, sub in UNIFIED_TAX.values() if group == 31]
     assert all(sub.isdecimal() for sub in guided)
-    assert sorted(map(int, guided)) == list(range(1, 31))
+    assert sorted(map(int, guided)) == list(range(1, 29))
 
     ordered = sorted(
         (
@@ -140,12 +140,10 @@ def test_case_labels_use_numeric_positions_for_the_full_guided_recovery_series()
             "guided_json_quoted_bare_tool_header_in_answer",
             "guided_json_quoted_bare_header_after_payload",
             "guided_json_bare_tool_header_recovers_inside_a_thought",
-            "gemma4_guided_json_visible_call_prose_before_reasoning",
-            "gemma4_guided_json_malformed_call_prefix_before_reasoning",
         ),
         key=taxonomy_sort_key,
     )
-    assert [tax(scenario)[1] for scenario in ordered] == ["25", "26", "27", "28", "29", "30"]
+    assert [tax(scenario)[1] for scenario in ordered] == ["25", "26", "27", "28"]
 
 
 def test_kimi_k3_cases_use_numeric_suffixes() -> None:

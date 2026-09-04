@@ -1014,7 +1014,7 @@ EDGE = [
      })),
 
     ("gemma4_guided_json_malformed_call_prefix_before_reasoning",
-     "Gemma 4 only: an incomplete native-looking `call:get_weather` prefix sits immediately before a thought and guided JSON. It lacks the `{` that makes a Gemma invoke body, so it remains visible text rather than being silently suppressed; the following thought and guided payload still route normally. The contrast with `31-29` fixes the boundary between ordinary `call:` prose and a malformed-but-still-visible Gemma candidate.",
+     "Gemma 4 only: an incomplete native-looking `call:get_weather` prefix sits immediately before a thought and guided JSON. It lacks the `{` that makes a Gemma invoke body, so it remains visible text rather than being silently suppressed; the following thought and guided payload still route normally. The contrast with `g-1` fixes the boundary between ordinary `call:` prose and a malformed-but-still-visible Gemma candidate.",
      ["P2"],
      [{"kind": "text", "text": "call:get_weather"},
       {"kind": "reasoning", "text": "secret"},

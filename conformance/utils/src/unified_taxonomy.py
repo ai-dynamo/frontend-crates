@@ -11,7 +11,8 @@ neither STREAM (no reasoning) nor REASONING (no ordered tool events) can express
 Group 12 is adversarial nesting (a marker of one channel inside another).
 Request-scoped modes use PAIRED TENS: X0 is that mode's happy base case, X1 its
 weird/malformed counterpart — 30/31 guided decoding, 40/41 prefilled reasoning,
-50/51 prefilled response. A new mode takes the next ten.
+50/51 prefilled response. Gemma-specific grammar cases use the named `g` group.
+A new mode takes the next ten.
 There is no separate "input stream mode" axis: which channel the prompt pre-opened IS
 `init.starting_state`, so a case that varied only that duplicated groups 31-33, and one that
 varied nothing but a finish_reason label duplicated groups 1-12 (the parser cannot see
@@ -76,7 +77,7 @@ UNIFIED_TAX = {
     "guided_json_escaped_string_args": (30, "d"), "guided_json_array_argument": (30, "e"),
     "guided_json_after_reasoning": (30, "f"), "guided_json_marker_inside_argument": (30, "g"),
 
-    # Group 31 — Guided decoding, weird / malformed
+    # Group 31 — Guided decoding, generic weird / malformed
     "guided_json_invalid_call": (31, "1"), "guided_json_malformed_json": (31, "2"),
     "guided_json_partial_calls": (31, "3"),
     "guided_json_list_with_broken_element": (31, "4"),
@@ -118,8 +119,9 @@ UNIFIED_TAX = {
     "guided_json_quoted_bare_tool_header_in_answer": (31, "26"),
     "guided_json_quoted_bare_header_after_payload": (31, "27"),
     "guided_json_bare_tool_header_recovers_inside_a_thought": (31, "28"),
-    "gemma4_guided_json_visible_call_prose_before_reasoning": (31, "29"),
-    "gemma4_guided_json_malformed_call_prefix_before_reasoning": (31, "30"),
+    # Group g — Gemma 4 guided call-prefix boundaries
+    "gemma4_guided_json_visible_call_prose_before_reasoning": ("g", "1"),
+    "gemma4_guided_json_malformed_call_prefix_before_reasoning": ("g", "2"),
 
     # Group 40 — Prefilled reasoning, happy
     "prefilled_reasoning_with_tool": (40, "a"), "prefilled_reasoning_with_guided_json": (40, "b"),
@@ -144,6 +146,7 @@ UNIFIED_GROUP_LABEL = {
     10: "Reasoning span",
     11: "Reasoning ↔ tool interleaving", 12: "Adversarial nesting (reasoning + tool)",
     "k3": "Kimi K3 XTML",
+    "g": "Gemma 4 guided call-prefix boundaries",
     30: "Guided Decoding", 31: "Guided Decoding — payload REJECTED (syntax or schema) / recovery",
     40: "Prefilled Reasoning", 41: "Prefilled Reasoning — malformed",
     50: "Prefilled Response", 51: "Prefilled Response — malformed",
