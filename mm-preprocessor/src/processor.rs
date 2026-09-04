@@ -101,29 +101,28 @@ pub struct ProcessedItem {
     pub geometry: Option<Geometry>,
 }
 
-/// One run of tokens inside a media item's expansion, tagged by role so
-/// consumers never pattern-match ids to find where features go.
+/// One run of tokens inside a media item's expansion. The role tag tells the
+/// engine which positions receive feature embeddings, so it never has to
+/// recognize special ids itself.
 #[non_exhaustive]
 pub enum TokenRun {
-    /// `n` copies of placeholder `id` whose embeddings the model replaces
-    /// with the item's features — the scatter targets (qwen images:
-    /// `<|image_pad|>` × N).
+    /// `n` copies of the placeholder `id`. These are the positions the
+    /// engine fills with the item's feature embeddings (for a Qwen image:
+    /// `<|image_pad|>` repeated once per feature token).
     Feature { id: i32, n: usize },
-    /// Literal ids emitted verbatim that stay text-like — wrapper markers,
-    /// timestamps, tile/row separators (video scaffolds,
-    /// minicpm/internvl-style structured expansions).
+    /// Fixed ids inserted as-is; the model reads them as normal text.
+    /// Examples: `<|vision_start|>` / `<|vision_end|>` markers, video
+    /// timestamps, tile separators.
     Literal(Vec<i32>),
 }
 
 /// One span of the expanded prompt.
 pub enum Segment {
-    /// Copy `src` (a range into the original ids) verbatim.
+    /// Copy this range of the original ids unchanged.
     Text(std::ops::Range<usize>),
-    /// Media item `item` replaces `src` — its placeholder span in the
-    /// original ids — with the concatenation of `runs`. A single-token image
-    /// placeholder expands to one `Feature` run; a video may interleave
-    /// `Literal` scaffold with per-frame `Feature` runs, e.g.
-    /// `[<vision_start>, timestamp, feature × N, <vision_end>]`.
+    /// Replace the original tokens at `src` (the item's placeholder) with
+    /// `runs`. An image is a single `Feature` run; a video can mix both
+    /// kinds, e.g. `[<vision_start>, timestamp, feature × N, <vision_end>]`.
     Media {
         item: usize,
         src: std::ops::Range<usize>,
