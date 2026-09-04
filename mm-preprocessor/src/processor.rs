@@ -101,11 +101,11 @@ pub struct ProcessedItem {
     pub geometry: Option<Geometry>,
 }
 
-/// One run of tokens inside a media item's expansion. The role tag tells the
-/// engine which positions receive feature embeddings, so it never has to
-/// recognize special ids itself.
+/// One part of a media item's expansion. The two variants tell the engine
+/// which positions receive feature embeddings, so it never has to recognize
+/// special ids itself.
 #[non_exhaustive]
-pub enum TokenRun {
+pub enum ExpansionPart {
     /// `n` copies of the placeholder `id`. These are the positions the
     /// engine fills with the item's feature embeddings (for a Qwen image:
     /// `<|image_pad|>` repeated once per feature token).
@@ -121,12 +121,13 @@ pub enum Segment {
     /// Copy this range of the original ids unchanged.
     Text(std::ops::Range<usize>),
     /// Replace the original tokens at `src` (the item's placeholder) with
-    /// `runs`. An image is a single `Feature` run; a video can mix both
-    /// kinds, e.g. `[<vision_start>, timestamp, feature × N, <vision_end>]`.
+    /// `expansion`. An image is a single `Feature` part; a video can mix
+    /// both kinds, e.g. `[<vision_start>, timestamp, feature × N,
+    /// <vision_end>]`.
     Media {
         item: usize,
         src: std::ops::Range<usize>,
-        runs: Vec<TokenRun>,
+        expansion: Vec<ExpansionPart>,
     },
 }
 
