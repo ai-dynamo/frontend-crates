@@ -26,6 +26,7 @@ families:
   inkling:        {vllm_python: inkling,        vllm_rust: null,         sglang_python: inkling,     dynamo_v2: null,        preferred_input: text}
   jamba:          {vllm_python: jamba,          vllm_rust: null,         sglang_python: null,        dynamo_v2: null,        preferred_input: text}
   kimi_k2:        {vllm_python: kimi_k2,        vllm_rust: kimi_k2,      sglang_python: kimi_k2,     dynamo_v2: kimi_k2,     preferred_input: text}
+  kimi_k3:        {vllm_python: null,           vllm_rust: null,         sglang_python: null,        dynamo_v2: kimi_k3,     preferred_input: text}
   llama3_json:    {vllm_python: llama3_json,    vllm_rust: llama3_json,  sglang_python: llama3,      dynamo_v2: null,        preferred_input: text}
   minimax_m2:     {vllm_python: minimax_m2,     vllm_rust: minimax_m2,   sglang_python: minimax-m2,  dynamo_v2: minimax_m2,  preferred_input: text}
   # vllm_rust gained MinimaxM3ToolParser / Phi4MiniJsonToolParser in 0.24.0; the older
@@ -112,6 +113,18 @@ markers:
     # The JSON argument blob runs from the singleton to the call close; a marker
     # inside one of its string values is data.
     opaque: [{from: "<|tool_call_argument_begin|>", to: "<|tool_call_end|>", json: true}]
+  kimi_k3:
+    pairs:
+      - ["<|open|>think<|sep|>", "<|close|>think<|sep|>"]
+      - ["<|open|>response<|sep|>", "<|close|>response<|sep|>"]
+      - ["<|open|>tools<|sep|>", "<|close|>tools<|sep|>"]
+      - ["<|open|>call", "<|close|>call<|sep|>"]
+      - ["<|open|>argument", "<|close|>argument<|sep|>"]
+      - ["<|open|>json", "<|close|>json<|sep|>"]
+      - ["<|open|>message", "<|close|>message<|sep|>"]
+    singletons: ["<|end_of_msg|>"]
+    opaque: ["argument", {from: "<|open|>json", to: "<|close|>json<|sep|>", json: true}]
+    leak: ["<|open|>", "<|close|>", "<|sep|>", "<|end_of_msg|>"]
   llama3_json:
     singletons: ["<|python_tag|>"]
   minimax_m2:
@@ -186,6 +199,13 @@ markers:
 #                     `<tool_call>` cannot be spotted generically. Families whose markers
 #                     already contain `<|`/`|>` (kimi) need nothing here.
 unified:
+  deepseek_v4:
+    registry: deepseek_v4
+    native: true
+    reasoning_parser: deepseek_v4
+    tool_parser: deepseek_v4
+    golden_spec: deepseek_v4.yaml
+    leak_markers: ["<｜DSML｜", "</｜DSML｜"]
   gemma4:
     registry: gemma4
     native: true
@@ -200,6 +220,13 @@ unified:
     tool_parser: kimi_k2
     golden_spec: kimi.yaml
     leak_markers: []
+  kimi_k3:
+    registry: kimi_k3
+    native: true
+    reasoning_parser: kimi_k3
+    tool_parser: kimi_k3
+    golden_spec: kimi_k3.yaml
+    leak_markers: ["<|open|>", "<|close|>", "<|sep|>", "<|end_of_msg|>"]
   muse_glimmer:
     native: true
     # Prefilled channels ARE supported: `initialize_request` opens the stream in the

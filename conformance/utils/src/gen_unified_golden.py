@@ -43,9 +43,11 @@ UNIFIED_FAMILIES = {f for f, r in _MANIFEST.items() if r.get("native")}
 GUIDED_FAMILIES = {f for f, r in _MANIFEST.items() if r.get("guided_tool_output", True)}
 
 GRAMMAR_NOTE = {
+    "deepseek_v4": "reasoning `<think>...</think>`, tool `<｜DSML｜tool_calls><｜DSML｜invoke name=\"NAME\"><｜DSML｜parameter name=\"KEY\" string=\"true\">VALUE</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>`.",
     "gemma4": "reasoning `<|channel>thought\\n...<channel|>`, tool `<|tool_call>call:NAME{key:<|\"|>value<|\"|>}<tool_call|>` (string values wrapped in `<|\"|>`; an embedded `<tool_call|>` inside a `<|\"|>` string is data, not the end marker).",
     "qwen3": "reasoning `<think>...</think>`, tool `<tool_call><function=NAME><parameter=KEY>VALUE</parameter></function></tool_call>`.",
     "kimi_k2": "reasoning `<think>...</think>`, tool section `<|tool_calls_section_begin|><|tool_call_begin|>functions.NAME:IDX<|tool_call_argument_begin|>{...}<|tool_call_end|><|tool_calls_section_end|>`.",
+    "kimi_k3": "reasoning `<|open|>think<|sep|>...<|close|>think<|sep|>`, tool `<|open|>tools<|sep|><|open|>call tool=\"NAME\" index=\"IDX\"<|sep|><|open|>argument key=\"KEY\" type=\"string\"<|sep|>VALUE<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>`.",
     "muse_glimmer": "recipient-routed messages `<|start|>assistant to=RCPT<|message|>...<|eom|>`: `self` is reasoning, `user` is visible content, any other recipient opens a tool channel whose body is ATEM XML `<atem:function_calls><atem:invoke name=\"NAME\"><atem:parameter name=\"KEY\">VALUE</atem:parameter></atem:invoke></atem:function_calls>`. `<|eom|>` closes a message with more to follow, `<|eot|>` ends the turn. Spec: https://huggingface.co/meta-models/Muse-Glimmer-30B.",
 }
 
@@ -53,6 +55,8 @@ GRAMMAR_NOTE = {
 # --- grammar renderers: one semantic segment -> that family's raw text --------
 
 def r_reason(fam, text):
+    if fam == "kimi_k3":
+        return k3_channel("think", text)
     if fam == "gemma4":
         return f"<|channel>thought\n{text}<channel|>"
     if fam == "muse_glimmer":
@@ -70,6 +74,8 @@ def r_text(fam, text):
     """
     if fam == "muse_glimmer":
         return f"<|start|>assistant to=user<|message|>{text}<|eom|>"
+    if fam == "kimi_k3":
+        return k3_channel("response", text)
     return text
 
 
@@ -94,7 +100,58 @@ def _atem_value(val):
     return json.dumps(val)
 
 
+def k3_open(tag, attrs=(), spaced=False):
+    gap = " " if spaced else ""
+    rendered_attrs = "".join(f' {key}="{value}"' for key, value in attrs)
+    return f"<|open|>{gap}{tag}{rendered_attrs}{gap}<|sep|>"
+
+
+def k3_close(tag, spaced=False):
+    gap = " " if spaced else ""
+    return f"<|close|>{gap}{tag}{gap}<|sep|>"
+
+
+def k3_channel(tag, text, spaced=False):
+    return f"{k3_open(tag, spaced=spaced)}{text}{k3_close(tag, spaced=spaced)}"
+
+
+def k3_argument(key, arg_type, value, spaced=False):
+    return (
+        f"{k3_open('argument', [('key', key), ('type', arg_type)], spaced)}"
+        f"{value}{k3_close('argument', spaced)}"
+    )
+
+
+def k3_json(raw, spaced=False):
+    return (
+        f"{k3_open('json', [('type', 'object')], spaced)}"
+        f"{raw}{k3_close('json', spaced)}"
+    )
+
+
+def k3_call(name, index, body, *, close=True, spaced=False):
+    rendered = f"{k3_open('call', [('tool', name), ('index', str(index))], spaced)}{body}"
+    return rendered + (k3_close("call", spaced) if close else "")
+
+
+def k3_tools(body, *, close=True, spaced=False):
+    rendered = f"{k3_open('tools', spaced=spaced)}{body}"
+    return rendered + (k3_close("tools", spaced) if close else "")
+
+
+def k3_raw_tool(name, raw, index=1, *, close=True, spaced=False):
+    return k3_tools(
+        k3_call(name, index, k3_json(raw, spaced), close=close, spaced=spaced),
+        close=close,
+        spaced=spaced,
+    )
+
+
 def r_tool(fam, name, key, val, idx):
+    if fam == "deepseek_v4":
+        return (f"<｜DSML｜tool_calls><｜DSML｜invoke name=\"{name}\">"
+                f"<｜DSML｜parameter name=\"{key}\" string=\"true\">{val}"
+                f"</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>")
     if fam == "gemma4":
         return f"<|tool_call>call:{name}{{{key}:<|\"|>{val}<|\"|>}}<tool_call|>"
     if fam == "qwen3":
@@ -105,24 +162,81 @@ def r_tool(fam, name, key, val, idx):
                 f"<atem:invoke name=\"{name}\">\n"
                 f"<atem:parameter name=\"{key}\">{_atem_value(val)}</atem:parameter>\n"
                 f"</atem:invoke>\n</atem:function_calls><|eom|>")
+    if fam == "kimi_k3":
+        return k3_tools(k3_call(name, idx + 1, k3_argument(key, "string", val)))
     args = json.dumps({key: val}, ensure_ascii=False)
     return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
             f"<|tool_call_argument_begin|>{args}<|tool_call_end|><|tool_calls_section_end|>")
+
+
+def kimi_input_as_dsml(input_text):
+    """Translate a Kimi-shaped edge fixture into DSML without changing its meaning."""
+    text = input_text.replace("<|tool_calls_section_begin|>", "<｜DSML｜tool_calls>")
+    text = text.replace("<|tool_calls_section_end|>", "</｜DSML｜tool_calls>")
+    opener = "<|tool_call_begin|>functions."
+    args_marker = "<|tool_call_argument_begin|>"
+    end = "<|tool_call_end|>"
+    start = text.find(opener)
+    if start < 0:
+        return text.replace(end, "</｜DSML｜invoke>")
+    args = text.find(args_marker, start)
+    if args < 0:
+        return text.replace(end, "</｜DSML｜invoke>")
+    name_and_index = text[start + len(opener):args]
+    name = name_and_index.rsplit(":", 1)[0]
+    close = text.rfind(end)
+    if close < args:
+        # The incomplete source still needs DSML's incomplete invoke spelling.
+        return (text[:start] + f'<｜DSML｜invoke name="{name}">' +
+                text[args + len(args_marker):].replace(end, "</｜DSML｜invoke>"))
+    raw = text[args + len(args_marker):close]
+    try:
+        arguments = json.loads(raw)
+    except json.JSONDecodeError:
+        return (text[:start] + f'<｜DSML｜invoke name="{name}">{raw}</｜DSML｜invoke>' +
+                text[close + len(end):].replace(end, "</｜DSML｜invoke>"))
+    if not isinstance(arguments, dict):
+        return (text[:start] + f'<｜DSML｜invoke name="{name}">{raw}</｜DSML｜invoke>' +
+                text[close + len(end):].replace(end, "</｜DSML｜invoke>"))
+    params = []
+    for key, value in arguments.items():
+        if isinstance(value, str):
+            value_text = value
+            if value_text == end:
+                value_text = "</｜DSML｜invoke>"
+            attr = ' string="true"'
+        else:
+            value_text, attr = json.dumps(value, ensure_ascii=False), ' string="false"'
+        params.append(f'<｜DSML｜parameter name="{key}"{attr}>{value_text}</｜DSML｜parameter>')
+    return (text[:start] + f'<｜DSML｜invoke name="{name}">' + ''.join(params) +
+            '</｜DSML｜invoke>' + text[close + len(end):].replace(end, "</｜DSML｜invoke>"))
 
 
 def render_input(fam, segs):
     """Concatenate rendered segments (grammars are self-delimiting)."""
     out = []
     tool_idx = 0
-    for s in segs:
+    index = 0
+    while index < len(segs):
+        s = segs[index]
         if s[0] == "reason":
             out.append(r_reason(fam, s[1]))
         elif s[0] == "text":
             out.append(r_text(fam, s[1]))
         elif s[0] == "tool":
+            if fam == "kimi_k3":
+                calls = []
+                while index < len(segs) and segs[index][0] == "tool":
+                    _, name, key, val = segs[index]
+                    calls.append(k3_call(name, tool_idx + 1, k3_argument(key, "string", val)))
+                    tool_idx += 1
+                    index += 1
+                out.append(k3_tools("".join(calls)))
+                continue
             _, name, key, val = s
             out.append(r_tool(fam, name, key, val, tool_idx))
             tool_idx += 1
+        index += 1
     return "".join(out)
 
 
@@ -248,6 +362,8 @@ def control_tokens(fam):
 
     Returns `(reason_open, reason_close, tool_open, tool_close)`.
     """
+    if fam == "kimi_k3":
+        return k3_open("think"), k3_close("think"), k3_open("tools"), k3_close("tools")
     reason_open, reason_close = r_reason(fam, "\x00").split("\x00")
     rendered = r_tool(fam, "NAMEX", "KEYX", "VALX", 0)
     tokens = re.findall(r"<[^<>]*>", rendered)
@@ -264,6 +380,8 @@ def control_tokens(fam):
 
 def invoke_header_prefix(fam):
     """Inner invoke header through the tool name, without its terminator."""
+    if fam == "kimi_k3":
+        return '<|open|>call tool="'
     rendered = r_tool(fam, "NAMEX", "KEYX", "VALX", 0)
     outer = control_tokens(fam)[2]
     # Search for the name AFTER the opener. A family whose opener already carries the
@@ -322,7 +440,11 @@ V_MUSE = {
 # falls back on EVERY case and draws the same plain `expected: MATCH` a captured
 # family earns. Carrying the caveat only on the cases that happened to need a
 # per-family verdict published the other 22 as if an engine had produced them.
-VLLM_UNCAPTURABLE = {"muse_glimmer": V_MUSE}
+VLLM_UNCAPTURABLE = {
+    "deepseek_v4": D("UNSUPPORTED", "no released vLLM UnifiedParser capture for DeepSeek V4"),
+    "muse_glimmer": V_MUSE,
+    "kimi_k3": D("UNSUPPORTED", "no released vLLM UnifiedParser capture for Kimi K3"),
+}
 
 
 # --- CLEAN scenarios: same segments for every family, input is templated ------
@@ -379,9 +501,11 @@ CLEAN = [
      ["P1"], [("tool", "get_weather", "city", "Paris"),
               ("text", "The forecast shows clear skies for the rest of the week.")],
      {"gemma4": M, "qwen3": M, "muse_glimmer": V_MUSE,
+      "kimi_k3": VLLM_UNCAPTURABLE["kimi_k3"],
       "kimi_k2": D("LOSS", "kimi config stays in a tool state and SUPPRESSES trailing text -> arbitrary content dropped; violates best-effort recovery (preserve visible prose, conformance/README.md:142)")},
      {"gemma4": M, "qwen3": M,
       "muse_glimmer": {"verdict": "match", "note": "the tool channel closes at its own `<|eom|>`, so the following `to=user` message is ordinary content"},
+      "kimi_k3": {"verdict": "match", "note": "K3 response framing preserves visible prose after the tools channel"},
       "kimi_k2": {"verdict": "match", "note": "P1 resolved by the v2 recovery contract: preserve trailing prose. Verify v2 kimi_k2 at capture time"}}),
 
     # --- Group 2: multiple tool calls (TOOLCALLING.streamv2.2) — tool-only, green everywhere ---
@@ -464,6 +588,13 @@ EDGE = [
         "kimi_k2": ("<think>ok</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Par",
                     {"verdict": "match", "note": "P2: drop the unterminated call and keep the preceding reasoning"},
                     {"verdict": "match", "note": "P2: v2 drops the partial trailing call, keeps reasoning"}),
+        "kimi_k3": (r_reason("kimi_k3", "ok") + k3_tools(
+                        k3_call("get_weather", 1, k3_open(
+                            "argument", [("key", "city"), ("type", "string")]
+                        ) + "Par", close=False),
+                        close=False),
+                    VLLM_UNCAPTURABLE["kimi_k3"],
+                    {"verdict": "match", "note": "P2: drop the partial XTML argument and keep preceding reasoning"}),
         "muse_glimmer": ("<|start|>assistant to=self<|message|>ok<|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"city\">Par",
                          V_MUSE,
                          {"verdict": "match", "note": "P2: the invoke never reached its `</atem:invoke>` fence, so the call is dropped and its markup never leaks; the reasoning channel is kept"}),
@@ -481,6 +612,9 @@ EDGE = [
                   M, {"verdict": "match", "note": "verify against v1 qwen3 reasoning finish() at capture time"}),
         "kimi_k2": ("<think>thinking but stream ends",
                     M, {"verdict": "match", "note": "verify against v1 kimi reasoning finish() at capture time"}),
+        "kimi_k3": (k3_open("think") + "thinking but stream ends",
+                    VLLM_UNCAPTURABLE["kimi_k3"],
+                    {"verdict": "match", "note": "open K3 think channel promoted at finish"}),
         "muse_glimmer": ("<|start|>assistant to=self<|message|>thinking but stream ends",
                          V_MUSE,
                          {"verdict": "match", "note": "the open `to=self` body is promoted as reasoning at finish, not dropped and not leaked as text"}),
@@ -501,9 +635,19 @@ EDGE = [
                   {"verdict": "match", "note": "v2 reads the parameter value up to `</parameter>`; embedded `</tool_call>` preserved"},
                   "git log </tool_call> --oneline"),
         "kimi_k2": ("<|tool_calls_section_begin|><|tool_call_begin|>functions.run:0<|tool_call_argument_begin|>{\"cmd\": \"git log <|tool_call_end|> --oneline\"}<|tool_call_end|><|tool_calls_section_end|>",
-                    {"verdict": "match", "note": "the JSON string owns embedded `<|tool_call_end|>` bytes as data"},
-                    {"verdict": "match", "note": "v2 parses the JSON arg blob; the marker inside the string is data"},
-                    "git log <|tool_call_end|> --oneline"),
+                     {"verdict": "match", "note": "the JSON string owns embedded `<|tool_call_end|>` bytes as data"},
+                     {"verdict": "match", "note": "v2 parses the JSON arg blob; the marker inside the string is data"},
+                     "git log <|tool_call_end|> --oneline"),
+        "deepseek_v4": ("<｜DSML｜tool_calls><｜DSML｜invoke name=\"run\"><｜DSML｜parameter name=\"cmd\" string=\"true\">git log </｜DSML｜invoke> --oneline</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>",
+                        {"verdict": "match", "note": "the parameter boundary owns the embedded invoke close as data"},
+                        {"verdict": "match", "note": "v2 reads the parameter value up to its own DSML close"},
+                        "git log </｜DSML｜invoke> --oneline"),
+        "kimi_k3": (k3_tools(k3_call(
+                        "run", 1,
+                        k3_argument("cmd", "string", "git log <|close|>call<|sep|> --oneline"))),
+                    VLLM_UNCAPTURABLE["kimi_k3"],
+                    {"verdict": "match", "note": "typed argument owns the embedded K3 call close as data"},
+                    "git log <|close|>call<|sep|> --oneline"),
         "muse_glimmer": ("<|start|>assistant to=run<|message|><atem:function_calls>\n<atem:invoke name=\"run\">\n<atem:parameter name=\"cmd\">git log </atem:function_calls> --oneline</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|>",
                          V_MUSE,
                          {"verdict": "match", "note": "the parameter value runs to its own `</atem:parameter>`, so the enclosing `</atem:function_calls>` inside it is data"},
@@ -525,6 +669,9 @@ EDGE = [
         "kimi_k2": ("I will check that. <|tool_call_end|>",
                     D("LEAK", "the orphan `<|tool_call_end|>` remains in the assembled reasoning output"),
                     D("LEAK", "the split path retains the orphan `<|tool_call_end|>` in assembled reasoning")),
+        "kimi_k3": ("I will check that. " + k3_close("call"),
+                    VLLM_UNCAPTURABLE["kimi_k3"],
+                    {"verdict": "match", "note": "orphan K3 call closer stripped after prose"}),
         # `<|eot|>` already ended the turn, so the trailing `<|eom|>` closes nothing.
         "muse_glimmer": ("<|start|>assistant to=user<|message|>I will check that. <|eot|><|eom|>",
                          V_MUSE,
@@ -540,16 +687,22 @@ EDGE = [
         "gemma4": ("<|tool_call>call:get_weather{}<tool_call|>", M, M),
         "qwen3": ("<tool_call>\n<function=get_weather>\n</function>\n</tool_call>", M, M),
         "kimi_k2": ("<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>", M, M),
+        "kimi_k3": (k3_tools(k3_call("get_weather", 1, "")),
+                    VLLM_UNCAPTURABLE["kimi_k3"], M),
         "muse_glimmer": ("<|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n</atem:invoke>\n</atem:function_calls><|eom|>",
                          V_MUSE, M),
      }),
 
     ("tool_no_close",
-     "A single tool call whose body is complete but the close marker never arrives before EOF. Best-effort recovery emits the complete call at finish. This is also covered in: TOOLCALLING.streamv2.5.a.",
+     "A single tool call whose body is complete but the close marker never arrives before EOF. Most grammars recover the complete call at finish; DSML requires the invoke close, so its malformed turn emits nothing. This is also covered in: TOOLCALLING.streamv2.5.a.",
      [],
      [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "deepseek_v4": ("<｜DSML｜tool_calls><｜DSML｜invoke name=\"get_weather\">{\"city\": \"Paris\"}",
+                        {"verdict": "match", "note": "the missing invoke close makes this DSML call malformed, so it is dropped"},
+                        {"verdict": "match", "note": "the missing invoke close makes this DSML call malformed, so it is dropped"},
+                        []),
         "gemma4": ("<|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}",
                    {"verdict": "match", "note": "body complete; recover the call at finish"},
                    {"verdict": "match", "note": "body complete; recover the call at finish"}),
@@ -559,6 +712,11 @@ EDGE = [
         "kimi_k2": ("<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}",
                     {"verdict": "match", "note": "body complete; recover at finish"},
                     D("DROP", "the complete call body produces no events when the outer close is absent")),
+        "kimi_k3": (k3_tools(
+                        k3_call("get_weather", 1, k3_argument("city", "string", "Paris"), close=False),
+                        close=False),
+                    VLLM_UNCAPTURABLE["kimi_k3"],
+                    {"verdict": "match", "note": "complete typed arguments recover at EOF without a call close"}),
         "muse_glimmer": ("<|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"city\">Paris</atem:parameter>\n</atem:invoke>\n</atem:function_calls>",
                          V_MUSE,
                          {"verdict": "match", "note": "the invoke closed its own `</atem:invoke>` fence, so the call is complete even though the message never emitted `<|eom|>`"}),
@@ -583,6 +741,11 @@ EDGE = [
                     D("ARG_MISMATCH", "captured: reasoning(reconsider) | text(Logging now: ) | tool_call(log) | text( done.) — the `<think>` inside the JSON string arg is extracted as reasoning first, corrupting the arg"),
                     D("MERGE", "captured: reasoning(reconsider) | tool_call(log) — v1 reasoning lifts the embedded `<think>` out of the JSON arg"),
                     "<think>reconsider</think>"),
+        "kimi_k3": (k3_tools(k3_call(
+                        "log", 1, k3_argument("note", "string", k3_channel("think", "reconsider")))),
+                    VLLM_UNCAPTURABLE["kimi_k3"],
+                    {"verdict": "match", "note": "K3 think markers inside a typed string remain argument data"},
+                    k3_channel("think", "reconsider")),
         # Muse's reasoning opener is a header, not a marker pair, so the quoted
         # reasoning markup inside the value is a bare `to=self<|message|>` run.
         "muse_glimmer": ("<|start|>assistant to=log<|message|><atem:function_calls>\n<atem:invoke name=\"log\">\n<atem:parameter name=\"note\">to=self<|message|>reconsider</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|>",
@@ -608,6 +771,11 @@ EDGE = [
         "kimi_k2": ("<think>I should check. <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|> now answer</think>",
                     D("LEAK", "captured: reasoning(I should check. ) | tool_call(get_weather) | text( now answer</think>) — the tool section nested in `<think>...</think>` leaks into reasoning and the call is dropped"),
                     D("LEAK", "captured: reasoning(I should check. ) | text(Sure. ) | tool_call(get_weather) | text( now answer</think> Here you g) — v1 reasoning consumes to `</think>`, leaking the nested section")),
+        "kimi_k3": (k3_open("think") + "I should check. "
+                    + r_tool("kimi_k3", "get_weather", "city", "Paris", 0)
+                    + " now answer" + k3_close("think"),
+                    VLLM_UNCAPTURABLE["kimi_k3"],
+                    {"verdict": "match", "note": "K3 tools inside a thought break out and the thought resumes afterward"}),
         # Muse's channels never nest: the model abandons the analysis channel by
         # writing the tool header directly, without `<|eom|>`. Recovering that
         # boundary is what puts the call between the two thoughts.
@@ -636,6 +804,13 @@ EDGE = [
                     D("ARG_MISMATCH", "captured: reasoning(reconsider) | text(Logging now: ) | tool_call(log) | text( done.) — the `<think>` inside the JSON string arg is extracted as reasoning first, corrupting the arg"),
                     D("MERGE", "captured: reasoning(reconsider) | text(Logging now: ) | tool_call(log) | text( done.) — v1 reasoning lifts the embedded `<think>` out of the JSON arg and ahead of the text"),
                     "<think>reconsider</think>"),
+        "kimi_k3": (r_text("kimi_k3", "Logging now: ")
+                    + k3_tools(k3_call(
+                        "log", 1, k3_argument("note", "string", k3_channel("think", "reconsider"))))
+                    + r_text("kimi_k3", " done."),
+                    VLLM_UNCAPTURABLE["kimi_k3"],
+                    {"verdict": "match", "note": "response channels surround a call whose typed string owns embedded think markers"},
+                    k3_channel("think", "reconsider")),
         "muse_glimmer": ("<|start|>assistant to=user<|message|>Logging now: <|eom|><|start|>assistant to=log<|message|><atem:function_calls>\n<atem:invoke name=\"log\">\n<atem:parameter name=\"note\">to=self<|message|>reconsider</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|><|start|>assistant to=user<|message|> done.<|eom|>",
                          V_MUSE,
                          {"verdict": "match", "note": "both `to=user` messages keep their position and the quoted header stays argument data"},
@@ -661,6 +836,11 @@ EDGE = [
         "kimi_k2": ("Sure. <think>I should check. <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|> now answer</think> Here you go.",
                     D("LEAK", "captured: reasoning(I should check. ) | text(Sure. ) | tool_call(get_weather) | text( now answer</think> Here you g) — the nested tool section leaks into reasoning and the call is dropped"),
                     D("LEAK", "captured: reasoning(I should check. ) | text(Sure. ) | tool_call(get_weather) | text( now answer</think> Here you g) — v1 reasoning consumes to `</think>`, leaking the nested section")),
+        "kimi_k3": (r_text("kimi_k3", "Sure. ") + k3_open("think")
+                    + "I should check. " + r_tool("kimi_k3", "get_weather", "city", "Paris", 0)
+                    + " now answer" + k3_close("think") + r_text("kimi_k3", " Here you go."),
+                    VLLM_UNCAPTURABLE["kimi_k3"],
+                    {"verdict": "match", "note": "framed K3 responses remain visible around the nested thought and call"}),
         "muse_glimmer": ("<|start|>assistant to=user<|message|>Sure. <|eom|><|start|>assistant to=self<|message|>I should check. to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"city\">Paris</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|><|start|>assistant to=self<|message|> now answer<|eom|><|start|>assistant to=user<|message|> Here you go.<|eom|>",
                          V_MUSE,
                          {"verdict": "match", "note": "the bare-header recovery is latched to a reasoning body, so it fires here and stays off inside the surrounding `to=user` messages"}),
@@ -678,6 +858,10 @@ EDGE = [
                   {"verdict": "match", "note": "adjacent reasoning runs coalesce into one event (I8)"}),
         "kimi_k2": ("<think>first</think><think>\nsecond</think>done", M,
                     {"verdict": "match", "note": "adjacent reasoning runs coalesce into one event (I8)"}),
+        "kimi_k3": (k3_channel("think", "first") + k3_channel("think", "\nsecond")
+                    + r_text("kimi_k3", "done"),
+                    VLLM_UNCAPTURABLE["kimi_k3"],
+                    {"verdict": "match", "note": "adjacent K3 think channels coalesce with the authored separator"}),
         "muse_glimmer": ("<|start|>assistant to=self<|message|>first<|eom|><|start|>assistant to=self<|message|>second<|eom|><|start|>assistant to=user<|message|>done<|eom|>",
                          V_MUSE,
                          {"verdict": "match", "note": "the newline is emitted between two ADJACENT `to=self` messages only, matching v1 and both engines' batch parsers"}),
@@ -830,7 +1014,7 @@ EDGE = [
      })),
 
     ("gemma4_guided_json_malformed_call_prefix_before_reasoning",
-     "Gemma 4 only: an incomplete native-looking `call:get_weather` prefix sits immediately before a thought and guided JSON. It lacks the `{` that makes a Gemma invoke body, so it remains visible text rather than being silently suppressed; the following thought and guided payload still route normally. The contrast with `31-29` fixes the boundary between ordinary `call:` prose and a malformed-but-still-visible Gemma candidate.",
+     "Gemma 4 only: an incomplete native-looking `call:get_weather` prefix sits immediately before a thought and guided JSON. It lacks the `{` that makes a Gemma invoke body, so it remains visible text rather than being silently suppressed; the following thought and guided payload still route normally. The contrast with `g4-1` fixes the boundary between ordinary `call:` prose and a malformed-but-still-visible Gemma candidate.",
      ["P2"],
      [{"kind": "text", "text": "call:get_weather"},
       {"kind": "reasoning", "text": "secret"},
@@ -907,6 +1091,9 @@ EDGE = [
                          {"verdict": "match", "note": "starting_state=Reasoning opens the scanner in the to=self channel"}),
         "gemma4": ("checking weather<channel|><|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|>", M, M),
         "kimi_k2": ("checking weather</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>", M, M),
+        "kimi_k3": ("checking weather" + k3_close("think")
+                    + r_tool("kimi_k3", "get_weather", "city", "Paris", 0),
+                    VLLM_UNCAPTURABLE["kimi_k3"], M),
      }),
 
     ("prefilled_reasoning_then_text_then_tool",
@@ -925,6 +1112,10 @@ EDGE = [
                          {"verdict": "match", "note": "all three channels ordered out of one prefilled stream"}),
         "gemma4": ("weighing options<channel|>Here's what I found: <|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|>", M, M),
         "kimi_k2": ("weighing options</think>Here's what I found: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>", M, M),
+        "kimi_k3": ("weighing options" + k3_close("think")
+                    + r_text("kimi_k3", "Here's what I found: ")
+                    + r_tool("kimi_k3", "get_weather", "city", "Paris", 0),
+                    VLLM_UNCAPTURABLE["kimi_k3"], M),
      }),
 
     ("prefilled_reasoning_then_text",
@@ -942,6 +1133,9 @@ EDGE = [
                          {"verdict": "match", "note": "closing a prefilled thought returns the stream to visible content"}),
         "gemma4": ("no tool needed<channel|>The answer is 42.", M, M),
         "kimi_k2": ("no tool needed</think>The answer is 42.", M, M),
+        "kimi_k3": ("no tool needed" + k3_close("think")
+                    + r_text("kimi_k3", "The answer is 42."),
+                    VLLM_UNCAPTURABLE["kimi_k3"], M),
      }),
 
     ("prefilled_response_with_guided_json",
@@ -983,6 +1177,9 @@ EDGE = [
         "kimi_k2": ("output<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>",
                     M,
                     D("MERGE", "the split path has no starting-state signal, so the leading visible `output` is swept into reasoning_content instead of surfacing as text")),
+        "kimi_k3": ("output" + k3_close("response")
+                    + r_tool("kimi_k3", "get_weather", "city", "Paris", 0),
+                    VLLM_UNCAPTURABLE["kimi_k3"], M),
      }),
 
 
@@ -1003,6 +1200,9 @@ EDGE = [
                          {"verdict": "match", "note": "the echoed header is consumed, not leaked, and adds no separator"}),
         "qwen3": ("<think>checking weather</think><tool_call>\n<function=get_weather>\n<parameter=city>\nLondon\n</parameter>\n</function>\n</tool_call>", M, M),
         "kimi_k2": ("<think>checking weather</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"London\"}<|tool_call_end|><|tool_calls_section_end|>", M, M),
+        "kimi_k3": (r_reason("kimi_k3", "checking weather")
+                    + r_tool("kimi_k3", "get_weather", "city", "London", 0),
+                    VLLM_UNCAPTURABLE["kimi_k3"], M),
      }),
 
 
@@ -1026,6 +1226,13 @@ EDGE = [
         "kimi_k2": ("analyzing data</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Par",
                     {"verdict": "match", "note": "P2: drop the unterminated call and keep prefilled output"},
                     {"verdict": "match", "note": "P2: v2 drops the partial trailing call, keeps the prefilled reasoning"}),
+        "kimi_k3": ("analyzing data" + k3_close("think") + k3_tools(
+                        k3_call("get_weather", 1, k3_open(
+                            "argument", [("key", "city"), ("type", "string")]
+                        ) + "Par", close=False),
+                        close=False),
+                    VLLM_UNCAPTURABLE["kimi_k3"],
+                    {"verdict": "match", "note": "P2: drop the partial call and keep prefilled K3 reasoning"}),
      }),
 
 
@@ -1083,6 +1290,10 @@ EDGE = [
                     D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state; it reads the markers as a reasoning span"),
                     M,
                     "<think>literal</think> then a call"),
+        "kimi_k3": (k3_channel("think", "literal") + " then a call"
+                    + r_tool("kimi_k3", "get_weather", "city", "Paris", 0),
+                    VLLM_UNCAPTURABLE["kimi_k3"], M,
+                    k3_channel("think", "literal") + " then a call"),
      }),
 
     ("prefilled_response_truncated",
@@ -1104,7 +1315,137 @@ EDGE = [
         "kimi_k2": ("Working on it... <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Par",
                     {"verdict": "match", "note": "P2: keep leading prose and drop the unterminated call"},
                     {"verdict": "match", "note": "P2: v2 keeps the leading prose and drops the partial call"}),
+        "kimi_k3": ("Working on it... " + k3_close("response") + k3_tools(
+                        k3_call("get_weather", 1, k3_open(
+                            "argument", [("key", "city"), ("type", "string")]
+                        ) + "Par", close=False),
+                        close=False),
+                    VLLM_UNCAPTURABLE["kimi_k3"],
+                    {"verdict": "match", "note": "P2: keep visible K3 response prose and drop the partial call"}),
      }),
+]
+
+
+EDGE += [
+    ("kimi_k3_typed_argument_values",
+     "Kimi K3 native XTML carries each argument in its own typed channel. String, number, boolean, object, array, and null values must preserve their JSON types instead of being coerced to strings.",
+     ["I7"],
+     [{"kind": "tool_call", "name": "run", "arguments": {
+         "cmd": "echo ok", "count": 2, "force": True,
+         "options": {"cwd": "/tmp"}, "tags": ["a", "b"], "note": None,
+     }}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({
+         "kimi_k3": (
+             k3_tools(k3_call("run", 1, "".join([
+                 k3_argument("cmd", "string", "echo ok"),
+                 k3_argument("count", "number", "2"),
+                 k3_argument("force", "boolean", "true"),
+                 k3_argument("options", "object", '{"cwd": "/tmp"}'),
+                 k3_argument("tags", "array", '["a", "b"]'),
+                 k3_argument("note", "null", "null"),
+             ]))),
+             VLLM_UNCAPTURABLE["kimi_k3"], M,
+         ),
+     })),
+
+    ("kimi_k3_raw_json_arguments",
+     "Kimi K3 can carry the complete argument object in a raw JSON channel. Nested values and marker-looking strings remain JSON data until that channel's own closer.",
+     ["I7"],
+     [{"kind": "tool_call", "name": "run", "arguments": {
+         "cmd": "literal <|close|>call<|sep|>",
+         "options": {"retries": 2},
+     }}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({
+         "kimi_k3": (
+             k3_raw_tool("run", '{"cmd":"literal <|close|>call<|sep|>","options":{"retries":2}}'),
+             VLLM_UNCAPTURABLE["kimi_k3"], M,
+         ),
+     })),
+
+    ("kimi_k3_spaced_xtml_markers",
+     "Kimi K3 accepts the checkpoint's spaced XTML marker spelling for response, tools, call, argument, message, and end-of-message framing.",
+     [],
+     [{"kind": "text", "text": "Checking. "},
+      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({
+         "kimi_k3": (
+             k3_channel("response", "Checking. ", spaced=True)
+             + k3_tools(k3_call(
+                 "get_weather", 1, k3_argument("city", "string", "Paris", spaced=True),
+                 spaced=True), spaced=True)
+             + k3_close("message", spaced=True) + "<|end_of_msg|>",
+             VLLM_UNCAPTURABLE["kimi_k3"], M,
+         ),
+     })),
+
+    ("kimi_k3_message_end_after_response",
+     "Canonical Kimi K3 message-close and end-of-message markers terminate a completed response without suppressing its visible text or leaking framing.",
+     [],
+     [{"kind": "text", "text": "done"}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({
+         "kimi_k3": (
+             k3_channel("response", "done") + k3_close("message") + "<|end_of_msg|>",
+             VLLM_UNCAPTURABLE["kimi_k3"], M,
+         ),
+     })),
+
+    ("kimi_k3_elided_think_close_to_response",
+     "Kimi K3 may omit the think closer when it opens the response channel. The channel transition still ends private reasoning and emits the following response as visible text.",
+     ["P2"],
+     [{"kind": "reasoning", "text": "checking"},
+      {"kind": "text", "text": "The answer is 42."}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({
+         "kimi_k3": (
+             k3_open("think") + "checking" + k3_channel("response", "The answer is 42."),
+             VLLM_UNCAPTURABLE["kimi_k3"], M,
+         ),
+     })),
+
+    ("kimi_k3_malformed_call_then_valid",
+     "A malformed Kimi K3 call body followed by a complete call resynchronizes at the later call. The malformed prefix neither leaks as text nor costs the valid call.",
+     ["P2"],
+     [{"kind": "tool_call", "name": "g", "arguments": {"y": 2}}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({
+         "kimi_k3": (
+             k3_open("tools")
+             + k3_open("call", [("tool", "bad"), ("index", "1")]) + "not-an-argument"
+             + k3_call("g", 2, k3_argument("y", "number", "2"))
+             + k3_close("tools"),
+             VLLM_UNCAPTURABLE["kimi_k3"], M,
+         ),
+     })),
+
+    ("kimi_k3_raw_json_eof",
+     "EOF inside Kimi K3's raw JSON argument channel drops the incomplete call and emits nothing, without leaking the partial JSON as visible text.",
+     ["P2"],
+     [],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({
+         "kimi_k3": (
+             k3_open("tools") + k3_open("call", [("tool", "run"), ("index", "1")])
+             + k3_open("json", [("type", "object")]) + '{"cmd":"unfinished',
+             VLLM_UNCAPTURABLE["kimi_k3"], M,
+         ),
+     })),
+
+    ("kimi_k3_guided_native_wrapper",
+     "Guided Kimi K3 output may arrive inside a native XTML tools/call/argument wrapper. The wrapper is stripped and the guided JSON payload still dispatches exactly once.",
+     ["I3"],
+     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     OnlyFamilies({
+         "kimi_k3": (
+             k3_tools(k3_call("ignored", 1, k3_argument("quoted", "string", "literal")))
+             + GUIDED_ONE_CALL,
+             GUIDED_UNSUPPORTED, M,
+         ),
+     })),
 ]
 
 
@@ -1420,7 +1761,9 @@ EDGE += [
 
 def _entry(spec, fam):
     """Resolve a vllm/dynamo verdict spec (single or per-family) for `fam`."""
-    if isinstance(spec, dict) and set(spec) <= set(FAMILIES):
+    if isinstance(spec, dict) and set(spec) <= set(FAMILIES) and "verdict" not in spec:
+        if fam == "deepseek_v4" and fam not in spec:
+            return spec["qwen3"]
         return spec[fam]
     return spec
 
@@ -1480,14 +1823,21 @@ def build_cases(fam):
 
         cid = f"UNIFIED.{name}.{fam}"
         if fam not in per_fam:
-            raise KeyError(
-                f"{name}: no input authored for family {fam!r}. Add one, or wrap the map "
-                f"in OnlyFamilies({{...}}) if this family's grammar cannot express the "
-                f"scenario (and say why at the authoring site and in UNIFIED_CASES.md)."
-            )
+            if fam == "deepseek_v4" and "kimi_k2" in per_fam:
+                kimi_input, *rest = per_fam["kimi_k2"]
+                per_fam = dict(per_fam)
+                per_fam[fam] = (kimi_input_as_dsml(kimi_input), *rest)
+            else:
+                raise KeyError(
+                    f"{name}: no input authored for family {fam!r}. Add one, or wrap the map "
+                    f"in OnlyFamilies({{...}}) if this family's grammar cannot express the "
+                    f"scenario (and say why at the authoring site and in UNIFIED_CASES.md)."
+                )
         inp, vllm, dynamo, *rest = per_fam[fam]
         g = json.loads(json.dumps(golden))  # deep copy
-        if rest:
+        if rest and isinstance(rest[0], list):
+            g = json.loads(json.dumps(rest[0]))
+        elif rest:
             # Fill the ONE `None` placeholder in the golden with this family's
             # value. It may be an argument value (a marker-looking string that has
             # to survive byte-exact, 12.a) or a whole text payload (the family's

@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """A vLLM cell nobody can capture must say so.
 
-`unified_render.rs` reads `expect.vllm` only as a FALLBACK, for a case vLLM did not
-capture, and renders it onto the standalone preview `conformance/CONFORMANCE_unified.html`.
+`unified_render.rs` reads `expect.vllm` only as a FALLBACK for a case vLLM did not
+capture. The packaged feed is rendered in `conformance/CONFORMANCE_v2.html`.
 For a family `capture_vllm_unified.py` cannot run at all, that fallback is every case, so
 the whole column is authored — and a bare `match` there draws the same
 `expected: MATCH` a family an engine really parsed earns.
