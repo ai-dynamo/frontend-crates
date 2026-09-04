@@ -38,6 +38,10 @@ impl ToolParser for KimiK3ToolStreamParser {
     fn finish(&mut self) -> anyhow::Result<ToolParseResult> {
         Ok(ToolParseResult::from_deltas(self.parser.finish()?.events))
     }
+
+    fn tool_call_id(&self, tool_index: usize) -> Option<&str> {
+        self.parser.tool_call_id(tool_index)
+    }
 }
 
 #[cfg(test)]
@@ -79,5 +83,19 @@ mod tests {
         parser.finish().unwrap();
         assert!(parser.push("later").is_err());
         assert!(parser.finish().is_err());
+    }
+
+    #[test]
+    fn legacy_projection_preserves_model_call_id() {
+        let input = concat!(
+            "<|open|>tools<|sep|>",
+            "<|open|>call tool=\"weather\" index=\"2\"<|sep|>",
+            "<|open|>argument key=\"city\" type=\"string\"<|sep|>Paris",
+            "<|close|>argument<|sep|><|close|>call<|sep|>",
+            "<|close|>tools<|sep|>"
+        );
+        let mut parser = KimiK3ToolStreamParser::new(&[]);
+        parser.push(input).unwrap();
+        assert_eq!(parser.tool_call_id(0), Some("weather:1"));
     }
 }

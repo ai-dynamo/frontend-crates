@@ -843,6 +843,25 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
 
     let mut stale: Vec<String> = Vec::new();
     let mut checked = 0usize;
+    let capture_keys: std::collections::BTreeSet<(String, String)> = glob_yaml(&capture_dir)
+        .into_iter()
+        .flat_map(|entry| {
+            let doc: CaptureDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
+                .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
+            doc.cases
+                .into_keys()
+                .map(|key| (doc.family.clone(), key))
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    for key in meta.keys() {
+        if !capture_keys.contains(key) {
+            stale.push(format!(
+                "{} [{}] has no current Dynamo capture",
+                key.0, key.1
+            ));
+        }
+    }
     for entry in glob_yaml(&capture_dir) {
         let doc: CaptureDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
             .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));

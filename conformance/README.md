@@ -164,7 +164,7 @@ cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- -
 python3 -m pytest conformance/utils/tests/test_model.py
 ```
 
-Do not substitute a loose `conformance/unified/unified_results.yaml` feed for the package step. The v2 table reads the extracted packaged snapshot, so an un-packaged family cannot appear in its Unified tab.
+Do not substitute a loose harness feed for the package step. The v2 table reads the extracted packaged snapshot, so an un-packaged family cannot appear in its Unified tab.
 
 ### 3. Version rule: fixture dirs carry the crate version that ships them
 

@@ -484,10 +484,22 @@ impl KimiK3CallBoundary {
             CallBodyKind::Unknown | CallBodyKind::Malformed => Box::new(std::iter::empty()),
         };
         candidates.into_iter().find(|body_end| {
+            let prefix = text[header_len..*body_end].trim();
+            if self.context == CallBoundaryContext::Guided
+                && !prefix.is_empty()
+                && !prefix.contains("<|open|>")
+                && !prefix.contains("<|close|>")
+            {
+                return false;
+            }
             let rest = text[*body_end..].trim_start();
-            json_value_end(rest).is_some_and(|end| {
-                serde_json::from_str::<Value>(&rest[..end]).is_ok() && rest[end..].trim().is_empty()
-            })
+            let Some(end) = json_value_end(rest) else {
+                return false;
+            };
+            let payload = &rest[..end];
+            serde_json::from_str::<Value>(payload).is_ok()
+                && rest[end..].trim().is_empty()
+                && (self.context != CallBoundaryContext::Guided || guided_payload_starts(rest))
         })
     }
 
@@ -2886,6 +2898,46 @@ mod tests {
                     "wrapper {wrapper:?}, split at byte {split}"
                 );
             }
+        }
+    }
+
+    #[test]
+    fn guided_recovery_does_not_dispatch_json_after_prose() {
+        let input = format!(
+            "{}{OPEN}call tool=\"weather\" index=\"1\"{SEP}{}{close}{{\"x\":1}}",
+            TOOLS_OPEN.canonical,
+            arg("city", "string", "Paris"),
+            close = CALL_CLOSE.canonical,
+        );
+        assert_guided_all_utf8_fragmentations(
+            &input,
+            UnifiedParserStartingState::None,
+            &[UnifiedEvent::Text {
+                text: "{\"x\":1}".into(),
+            }],
+        );
+    }
+
+    #[test]
+    fn guided_required_recovery_rejects_non_call_json() {
+        for payload in [r#"{"x":1}"#, "[]", "null", "1"] {
+            let mut parser = kimi_k3_unified(&[]);
+            parser
+                .initialize_request(UnifiedParserInit {
+                    tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                    invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                    ..UnifiedParserInit::default()
+                })
+                .unwrap();
+            let mut events = parser.push(payload).unwrap();
+            events.extend(parser.finish().unwrap().events);
+            assert_eq!(
+                assemble(&events),
+                vec![UnifiedEvent::Text {
+                    text: payload.into()
+                }],
+                "payload {payload:?}"
+            );
         }
     }
 
