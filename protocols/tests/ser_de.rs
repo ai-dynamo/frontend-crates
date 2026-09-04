@@ -11,6 +11,7 @@
 use dynamo_protocols::types::{
     ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestUserMessageArgs,
     ChatCompletionToolType, CreateChatCompletionRequest, CreateChatCompletionRequestArgs,
+    ThinkingConfig, ThinkingObject, ThinkingType,
 };
 use serde_json::json;
 
@@ -76,4 +77,54 @@ fn prompt_cache_key_and_builtin_function_round_trip() {
     let plain_json = serde_json::to_value(&plain).unwrap();
     assert!(plain_json.get("prompt_cache_key").is_none());
     assert!(plain_json.get("safety_identifier").is_none());
+}
+
+/// Kimi Code sends `thinking: {type, effort, keep}`. Only `type` is kept for
+/// now; `effort` / `keep` are accepted and dropped (see `ThinkingObject`).
+#[test]
+fn thinking_accepts_object_and_bool_and_drops_moonshot_sub_fields() {
+    let request: CreateChatCompletionRequest = serde_json::from_value(json!({
+        "model": "kimi-k3",
+        "messages": [{"role": "user", "content": "hi"}],
+        "thinking": {"type": "enabled", "effort": "high", "keep": "all"}
+    }))
+    .unwrap();
+    assert_eq!(
+        request.thinking,
+        Some(ThinkingConfig::Object(ThinkingObject {
+            r#type: Some(ThinkingType::Enabled),
+        }))
+    );
+    assert_eq!(request.thinking.as_ref().unwrap().enabled(), Some(true));
+    let serialized = serde_json::to_value(&request).unwrap();
+    assert_eq!(serialized["thinking"], json!({"type": "enabled"}));
+
+    let as_bool: CreateChatCompletionRequest = serde_json::from_value(json!({
+        "model": "kimi-k3",
+        "messages": [{"role": "user", "content": "hi"}],
+        "thinking": false
+    }))
+    .unwrap();
+    assert_eq!(as_bool.thinking, Some(ThinkingConfig::Enabled(false)));
+    assert_eq!(as_bool.thinking.as_ref().unwrap().enabled(), Some(false));
+
+    let adaptive: CreateChatCompletionRequest = serde_json::from_value(json!({
+        "model": "MiniMax-M3",
+        "messages": [{"role": "user", "content": "hi"}],
+        "thinking": {"type": "adaptive"}
+    }))
+    .unwrap();
+    assert_eq!(adaptive.thinking.as_ref().unwrap().enabled(), None);
+
+    let absent: CreateChatCompletionRequest = serde_json::from_value(json!({
+        "model": "kimi-k3",
+        "messages": [{"role": "user", "content": "hi"}]
+    }))
+    .unwrap();
+    assert!(
+        serde_json::to_value(&absent)
+            .unwrap()
+            .get("thinking")
+            .is_none()
+    );
 }
