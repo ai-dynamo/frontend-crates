@@ -10,7 +10,7 @@
 //! from the HF config files ([`registry::spec_from_model_dir`]) or handed
 //! over pre-resolved. The crate also carries what routers and engines must
 //! agree on: token accounting and content-hash identity
-//! ([`content_hash_u64`]). The feature-gated `fetch` module is an optional
+//! ([`content_hash_bytes`], [`content_hash_canonical`]). The feature-gated `fetch` module is an optional
 //! trusted-source compatibility helper. Request orchestration — concurrency,
 //! caps, URL security policy, failure policy, packing — stays in the
 //! consumer's driver, as on the Python path; the README maps the boundary.
@@ -101,10 +101,20 @@ impl std::error::Error for MmError {
 
 pub type Result<T> = std::result::Result<T, MmError>;
 
-/// Media identity hash: blake3 truncated to its first 8 bytes, big-endian.
-/// One definition, so router cache-affinity keys and engine prefix-cache/dedup
-/// keys agree.
-pub fn content_hash_u64(data: &[u8]) -> u64 {
+/// BLAKE3 over encoded media bytes, truncated to a big-endian `u64`.
+pub fn content_hash_bytes(data: &[u8]) -> u64 {
     let _ = data;
-    todo!("blake3, first 8 bytes BE")
+    todo!("sglang rust native blake3, first 8 bytes BE")
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum MediaDtype {
+    U8,
+}
+
+/// Dynamo's XXH3-64 hash over tensor shape, dtype, and bytes.
+pub fn content_hash_canonical(shape: &[usize], dtype: MediaDtype, data: &[u8]) -> u64 {
+    let _ = (shape, dtype, data);
+    todo!("dynamo canonical tensor hash")
 }
