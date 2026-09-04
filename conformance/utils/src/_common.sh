@@ -39,7 +39,11 @@ fi
 export CONFORMANCE_FIXTURES_ROOT="$FIXTURES_ROOT"
 # Ephemeral build tree stays at conformance/utils/.stage (UTILS), not inside src/,
 # so CI and .gitignore find it where they always have.
-STAGE="${STAGE:-$UTILS/.stage}"
+if [ -z "${STAGE:-}" ]; then
+  STAGE=$(mktemp -d /tmp/frontend-crates-conformance-stage.XXXXXX)
+  export STAGE
+  trap 'rm -rf "$STAGE"' EXIT
+fi
 # Override when the default cargo can't build the workspace (edition 2024 /
 # resolver "3" needs >= 1.85): CARGO='cargo +1.96.1' conformance/utils/check.sh ...
 CARGO="${CARGO:-cargo}"
@@ -58,6 +62,7 @@ _build_stage_base() {
   # its registry at <stage-root>/src/parser_families.yaml, mirroring the repo layout.
   mkdir -p "$STAGE/src"
   \cp -f "$TOOLS/parser_families.yaml" "$STAGE/src/parser_families.yaml"
+  \cp -f "$TOOLS/parser_families.yaml" "$STAGE/parser_families.yaml"
   # Static CSS/JS inlined into the conformance page at render time (the renderer
   # reads tests/parity/assets/*). The compare-bar/coloring logic lives in one place.
   mkdir -p "$STAGE/tests/parity/assets"

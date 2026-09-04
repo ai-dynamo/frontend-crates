@@ -290,6 +290,21 @@ pub(crate) enum InvokeBoundaryFactory {
     Custom(fn() -> Box<dyn InvokeBoundary>),
 }
 
+#[derive(Clone, Copy)]
+pub(crate) struct GuidedInvokePrefixContext {
+    pub outside_reasoning: bool,
+    pub payload_is_empty: bool,
+    pub followed_by_competing_marker: bool,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum GuidedInvokePrefix {
+    NoMatch,
+    Pending,
+    Match(usize),
+    Strip(usize),
+}
+
 impl InvokeBoundaryFactory {
     pub(crate) const fn stateless(stateless: InvokeScan) -> Self {
         Self::Stateless(stateless)
@@ -310,6 +325,21 @@ impl InvokeBoundaryFactory {
 /// Family-owned request-local invoke-boundary contract.
 ///
 pub(crate) trait InvokeBoundary: Send {
+    fn owns_guided_prefix(&self) -> bool {
+        false
+    }
+
+    /// Classify a family-specific guided wrapper using only newly appended bytes.
+    /// `None` leaves classification to the shared stateless policy.
+    fn guided_prefix_append(
+        &mut self,
+        _candidate: &str,
+        _append: &str,
+        _context: GuidedInvokePrefixContext,
+    ) -> Option<GuidedInvokePrefix> {
+        None
+    }
+
     /// Advance the bound candidate with newly appended bytes only.
     fn end_append(
         &mut self,
@@ -439,6 +469,19 @@ pub(crate) trait InvokeEmitter {
         invoke: &str,
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>>;
+
+    /// Emit the wire-level updates for one complete invoke. Families normally
+    /// have one completed update; DSML preserves its historical name-first
+    /// projection at the legacy ToolParser boundary.
+    fn parse_invoke_deltas(
+        &mut self,
+        invoke: &str,
+        tool_index: usize,
+    ) -> anyhow::Result<Option<Vec<ToolCallDelta>>> {
+        Ok(self
+            .parse_invoke(invoke, tool_index)?
+            .map(|delta| vec![delta]))
+    }
 
     /// The model-emitted id for a call already parsed at `tool_index`, when
     /// this family's grammar carries one. Mirrors
@@ -1202,14 +1245,17 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 // meant a failing emitter destroyed the invoke bytes: they were gone from
                 // the buffer, so `reset` could no longer hand them back and the
                 // documented recovery contract was false for the only shipped family.
-                let emitted = self.emitter.parse_invoke(&invoke, self.next_index)?;
+                let emitted = self.emitter.parse_invoke_deltas(&invoke, self.next_index)?;
                 self.buffer.drain(..end);
                 self.reset_invoke_boundary();
-                if let Some(delta) = emitted {
-                    out.push_call(delta);
+                if let Some(deltas) = emitted {
+                    let emitted_call = !deltas.is_empty();
+                    for delta in deltas {
+                        out.push_call(delta);
+                    }
                     self.next_index += 1;
                     self.uncommitted_block.clear();
-                    if self.spec.invoke_latch == InvokeLatch::IfEmitted {
+                    if emitted_call && self.spec.invoke_latch == InvokeLatch::IfEmitted {
                         self.suppress_normal_text = true;
                     }
                 } else {
@@ -1328,16 +1374,18 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     };
                     let invoke = self.buffer[..end].to_string();
                     // Emit before consuming — same recovery contract as the wrapped site.
-                    let emitted = self.emitter.parse_invoke(&invoke, self.next_index)?;
+                    let emitted = self.emitter.parse_invoke_deltas(&invoke, self.next_index)?;
                     self.buffer.drain(..end);
                     self.reset_invoke_boundary();
-                    if let Some(delta) = emitted {
+                    if let Some(deltas) = emitted {
                         tracing::warn!(
                             why = %format!("{}_bare_invoke_recovery", self.spec.family),
-                            tool_index = delta.tool_index,
+                            tool_index = self.next_index,
                             "stream recovered a complete bare invoke"
                         );
-                        out.push_call(delta);
+                        for delta in deltas {
+                            out.push_call(delta);
+                        }
                         self.next_index += 1;
                         self.suppress_normal_text =
                             self.spec.bare_recovery_latch == BareRecoveryLatch::Set;

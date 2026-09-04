@@ -436,6 +436,8 @@ not present in the request's supplied `tools` list.
   of range for grammars that reference tools by ordinal instead of
   name.
 
+New sub-cases use numeric suffixes (`13-1`, `13-2`, ...) rather than letters. Existing lettered IDs remain historical identifiers.
+
 ## `TOOLCALLING.batch.30` — Separator characters inside argument strings
 
 A single call contains a grammar-level separator character inside an

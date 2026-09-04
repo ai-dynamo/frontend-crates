@@ -57,6 +57,15 @@ UNIFIED_TAX = {
     # Group 12 — Adversarial nesting (a marker of one channel inside another)
     "reason_markup_in_arg": (12, "a"), "tool_in_reason": (12, "b"),
     "reason_markup_in_arg_with_text": (12, "c"), "tool_in_reason_with_text": (12, "d"),
+    # Group k3 — Kimi K3 XTML grammar-specific forms
+    "kimi_k3_typed_argument_values": ("k3", "1"),
+    "kimi_k3_raw_json_arguments": ("k3", "2"),
+    "kimi_k3_spaced_xtml_markers": ("k3", "3"),
+    "kimi_k3_message_end_after_response": ("k3", "4"),
+    "kimi_k3_elided_think_close_to_response": ("k3", "5"),
+    "kimi_k3_malformed_call_then_valid": ("k3", "6"),
+    "kimi_k3_raw_json_eof": ("k3", "7"),
+    "kimi_k3_guided_native_wrapper": ("k3", "8"),
     # --- Request-scoped modes. Each axis is a PAIR of tens: X0 is the happy base
     # case for that mode, X1 is the weird / malformed one. A new axis takes the
     # next ten, so "which mode" and "well-formed or not" stay independent and a
@@ -134,6 +143,7 @@ UNIFIED_GROUP_LABEL = {
     7: "TC Argument fidelity", 8: "TC Content position",
     10: "Reasoning span",
     11: "Reasoning ↔ tool interleaving", 12: "Adversarial nesting (reasoning + tool)",
+    "k3": "Kimi K3 XTML",
     30: "Guided Decoding", 31: "Guided Decoding — payload REJECTED (syntax or schema) / recovery",
     40: "Prefilled Reasoning", 41: "Prefilled Reasoning — malformed",
     50: "Prefilled Response", 51: "Prefilled Response — malformed",
@@ -141,7 +151,7 @@ UNIFIED_GROUP_LABEL = {
 
 
 def tax(scenario):
-    """(group_num, subcase_label) for a scenario slug; group 9 for anything unmapped.
+    """(group_label, subcase_label) for a scenario slug; group 9 for anything unmapped.
 
     NUMBERING ONLY. A case's parser configuration (`init`) and its stream
     properties (`finish_reason`) are declared per case in `gen_unified_golden.py` and flow
@@ -152,25 +162,25 @@ def tax(scenario):
 
 
 def taxonomy_sort_key(scenario):
-    """Sort legacy letter labels and numeric positions in one sequence."""
+    """Sort numeric suffixes, including named numeric groups such as Kimi K3."""
     group, sub = tax(scenario)
-    if len(sub) == 1 and "a" <= sub <= "z":
-        return group, ord(sub) - ord("a") + 1, ""
+    group_key = (0, group) if isinstance(group, int) else (1, str(group))
+    if isinstance(group, int) and len(sub) == 1 and "a" <= sub <= "z":
+        return group_key, ord(sub) - ord("a") + 1, ""
     if sub.isdecimal():
-        return group, int(sub), ""
-    return group, 10_000, sub
+        return group_key, int(sub), ""
+    return group_key, 10_000, sub
 
 
 def case_label(scenario):
-    """Scenario slug -> short case label; numeric positions use a dash."""
+    """Scenario slug -> short case label with a numeric suffix."""
     group, sub = tax(scenario)
     separator = "-" if sub.isdecimal() else "."
     return f"{group}{separator}{sub}"
 
 
 def numbered_id(scenario):
-    """Scenario slug -> intrinsic numbered case id, e.g. 'arg_marker_in_string' ->
-    'UNIFIED.7.b'; numeric positions use a dash, e.g. 'UNIFIED.31-25'."""
+    """Scenario slug -> intrinsic numeric case id, such as `UNIFIED.7-1` or `UNIFIED.k3-1`."""
     return f"UNIFIED.{case_label(scenario)}"
 
 

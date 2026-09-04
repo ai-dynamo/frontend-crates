@@ -81,6 +81,24 @@ CASES = [
         '<|tool_call_argument_begin|>{"a": "esc \\" quote <|tool_call_end|>"}'
         '<|tool_call_end|><|tool_calls_section_end|>',
     ),
+    # Kimi K3 declarations are composite tokens. Parameterized headers and the
+    # canonical/space-padded spellings must win before generic `<|...|>` tokenization.
+    (
+        "kimi_k3",
+        '<|open|>think<|sep|>private<|close|>think<|sep|>'
+        '<|open|> call tool="run" index="1" <|sep|>'
+        '<|open|> argument key="cmd" type="string" <|sep|>'
+        "literal <|close|>call<|sep|> text"
+        '<|close|> argument <|sep|><|close|> call <|sep|>',
+    ),
+    (
+        "kimi_k3",
+        '<|open|>json type="object"<|sep|>'
+        '{"cmd":"literal <|close|>json<|sep|> text"}'
+        '<|close|>json<|sep|>'
+        '<|open|> message role="assistant" <|sep|>visible'
+        '<|close|> message <|sep|>',
+    ),
     (None, "no family, plain <tool_call>t</tool_call> & 'text'"),
 ]
 
@@ -100,6 +118,15 @@ STREAM_CASES = [
             {"delta_text": "<tool_call><function=run><parameter=cmd>git log "},
             {"delta_text": "</tool_call> --one"},
             {"delta_text": "line</parameter></function></tool_call>"},
+        ],
+    ),
+    (
+        "kimi_k3",
+        [
+            {"delta_text": '<|open|> call tool="run" index="1" <|'},
+            {"delta_text": 'sep|><|open|> argument key="cmd" type="string" <|sep|>'},
+            {"delta_text": "literal <|close|>call<|sep|> text<|close|> argument <|sep|>"},
+            {"delta_text": "<|close|> call <|sep|>"},
         ],
     ),
 ]
@@ -158,3 +185,24 @@ def test_colorize_stream_deltas_parity():
     )
     for (family, chunks), got in zip(STREAM_CASES, js):
         assert got == _py_stream(chunks, family), f"family={family!r} chunks={chunks!r}"
+
+
+def test_kimi_k3_linked_renderer_has_no_orphan_composite_markers():
+    text = (
+        '<|open|> message role="assistant" <|sep|>'
+        '<|open|>think<|sep|>private<|close|>think<|sep|>'
+        '<|open|> call tool="run" index="1" <|sep|>'
+        '<|open|> argument key="cmd" type="string" <|sep|>'
+        "literal <|close|>call<|sep|> text"
+        '<|close|> argument <|sep|><|close|> call <|sep|>'
+        '<|close|> message <|sep|>'
+    )
+    [rendered] = _node(
+        "const ctx = mc.newLinkCtx();"
+        "mc.colorizeLinked(inp.text, 'kimi_k3', inp.markers, ctx);"
+        "mc.sealLinkCtx(ctx);"
+        "const out = [mc.colorizeLinked(inp.text, 'kimi_k3', inp.markers, ctx)];",
+        {"text": text, "markers": MARKERS},
+    )
+    assert "tt-mbg-orphan" not in rendered
+    assert rendered.count('<span class="tt-mbg ') == 8

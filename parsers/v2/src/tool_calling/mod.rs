@@ -9,6 +9,7 @@ pub mod harmony;
 mod harmony_grammar;
 mod harmony_recovery;
 pub mod kimi_k2;
+pub mod kimi_k3;
 pub mod minimax_m2;
 pub mod minimax_m3;
 pub mod muse_glimmer;
@@ -31,6 +32,7 @@ use self::gemma4::Gemma4ToolStreamParser;
 use self::glm47::Glm47ToolStreamParser;
 use self::harmony::HarmonyToolStreamParser;
 use self::kimi_k2::KimiK2ToolStreamParser;
+use self::kimi_k3::KimiK3ToolStreamParser;
 use self::minimax_m2::MiniMaxM2ToolStreamParser;
 use self::minimax_m3::MiniMaxM3ToolStreamParser;
 use self::muse_glimmer::MuseGlimmerToolStreamParser;
@@ -51,6 +53,7 @@ pub const REGISTERED_FAMILIES: &[&str] = &[
     "gemma4",
     "glm47",
     "kimi_k2",
+    "kimi_k3",
 ];
 
 /// Create the Dynamo v2 tool parser for a conformance family.
@@ -68,6 +71,7 @@ pub fn create_tool_parser_for_family(
         "gemma4" => Gemma4ToolStreamParser::create(tools),
         "glm47" => Glm47ToolStreamParser::create(tools),
         "kimi_k2" => KimiK2ToolStreamParser::create(tools),
+        "kimi_k3" | "kimi-k3" => KimiK3ToolStreamParser::create(tools),
         other => anyhow::bail!("no Dynamo parser v2 for family '{other}'"),
     }?;
 
@@ -94,5 +98,10 @@ mod registry_tests {
                 panic!("REGISTERED_FAMILIES entry '{family}' does not create: {e}")
             });
         }
+    }
+
+    #[test]
+    fn kimi_k3_hyphen_alias_creates() {
+        assert!(create_tool_parser_for_family("kimi-k3", &[]).is_ok());
     }
 }

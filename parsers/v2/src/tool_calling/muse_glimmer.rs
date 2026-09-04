@@ -47,6 +47,12 @@ const USER_RECIPIENT: &str = "user";
 /// Structural markers held back when split across a chunk boundary.
 const MARKERS: [&str; 4] = [START, MESSAGE, EOM, EOT];
 
+/// Markers whose partial prefixes cannot be released from prose yet. ATEM
+/// markup remains ordinary prose when matched, but an unmatched invoke closer
+/// is parser-owned syntax and must be seen whole before it can be suppressed.
+const PROSE_HOLDBACK_MARKERS: [&str; 6] =
+    [START, MESSAGE, EOM, EOT, INVOKE_OPEN_PREFIX, INVOKE_CLOSE];
+
 /// The ATEM tool BLOCK pair, which wraps a tool channel's invokes.
 const BLOCK_OPEN: &str = "<atem:function_calls>";
 const BLOCK_CLOSE: &str = "</atem:function_calls>";
@@ -534,10 +540,59 @@ fn stripped(text: &str) -> String {
     cleaned
 }
 
+/// Strip unmatched invoke closers from prose. Partial closers are held by
+/// `PROSE_HOLDBACK_MARKERS`, so this context is independent of chunk boundaries.
+fn stripped_prose(text: &str, invoke_depth: &mut usize) -> String {
+    let text = stripped(text);
+    let mut cleaned = String::with_capacity(text.len());
+    let mut cursor = 0;
+
+    while cursor < text.len() {
+        let rest = &text[cursor..];
+        let open = rest.find(INVOKE_OPEN_PREFIX);
+        let close = rest.find(INVOKE_CLOSE);
+        match (open, close) {
+            (Some(open), Some(close)) if open < close => {
+                let end = cursor + open + INVOKE_OPEN_PREFIX.len();
+                cleaned.push_str(&text[cursor..end]);
+                *invoke_depth += 1;
+                cursor = end;
+            }
+            (_, Some(close)) => {
+                let start = cursor + close;
+                cleaned.push_str(&text[cursor..start]);
+                cursor = start + INVOKE_CLOSE.len();
+                if *invoke_depth > 0 {
+                    cleaned.push_str(INVOKE_CLOSE);
+                    *invoke_depth -= 1;
+                } else {
+                    tracing::warn!(
+                        why = "muse_glimmer_orphan_invoke_close",
+                        skipped_bytes = INVOKE_CLOSE.len(),
+                        "dropping unmatched ATEM invoke closer from prose"
+                    );
+                }
+            }
+            (Some(open), None) => {
+                let end = cursor + open + INVOKE_OPEN_PREFIX.len();
+                cleaned.push_str(&text[cursor..end]);
+                *invoke_depth += 1;
+                cursor = end;
+            }
+            (None, None) => {
+                cleaned.push_str(rest);
+                break;
+            }
+        }
+    }
+    cleaned
+}
+
 /// At end of stream, drop a committed partial special token from the tail of held
 /// text but keep everything a human could have typed.
 fn flush_open_text(buffered: &str) -> String {
-    let tail = marker_prefix_suffix_len(buffered, MARKERS);
+    let tail = marker_prefix_suffix_len(buffered, MARKERS)
+        .max(marker_prefix_suffix_len(buffered, [INVOKE_CLOSE]));
     if tail <= 2 {
         // `<` / `<|` are ordinary prose as often as framing; keep them.
         return buffered.to_string();
@@ -655,6 +710,10 @@ pub(crate) struct MuseChannelScanner {
     /// nothing left at the terminator, and reading only that last emit made adjacency
     /// depend on where the chunk boundaries fell.
     reasoning_body_emitted: bool,
+    /// Number of quoted ATEM invoke openers emitted as prose without a matching
+    /// closer yet. This distinguishes a quoted complete invoke from an orphan
+    /// closer without making ATEM markup structural outside tool channels.
+    prose_invoke_depth: usize,
     /// Any byte has been fed. `initialize_request` is a BEFORE-parsing hook, so it
     /// must reject a late call rather than silently reinterpret a live stream.
     started: bool,
@@ -678,6 +737,7 @@ pub(crate) fn muse_scanner(tools: &[Tool]) -> MuseChannelScanner {
         pending_reasoning_join: false,
         reasoning_join_armed: false,
         reasoning_body_emitted: false,
+        prose_invoke_depth: 0,
         started: false,
         next_index: 0,
     }
@@ -765,7 +825,7 @@ impl MuseChannelScanner {
     /// reading is deliberate — the conformance suite will score these two cases as
     /// divergences until the engines follow.
     fn emit_reasoning(&mut self, out: &mut Vec<UnifiedParserEvent>, text: &str) -> bool {
-        let text = stripped(text);
+        let text = stripped_prose(text, &mut self.prose_invoke_depth);
         if text.is_empty() {
             return false;
         }
@@ -782,7 +842,7 @@ impl MuseChannelScanner {
     /// route into text, content bodies included, so a quoted `to=x<|message|>` never
     /// leaks its marker.
     fn emit_text(&mut self, out: &mut Vec<UnifiedParserEvent>, text: &str) {
-        let text = stripped(text);
+        let text = stripped_prose(text, &mut self.prose_invoke_depth);
         if text.is_empty() {
             return;
         }
@@ -896,6 +956,7 @@ impl MuseChannelScanner {
                     State::InToolChannel => {}
                     State::Idle => unreachable!("Idle is handled above"),
                 }
+                self.prose_invoke_depth = 0;
                 self.state = State::Idle;
                 continue;
             }
@@ -906,7 +967,7 @@ impl MuseChannelScanner {
             if self.state == State::InToolChannel {
                 return Ok(());
             }
-            let mut hold = marker_prefix_suffix_len(&self.buffer, MARKERS);
+            let mut hold = marker_prefix_suffix_len(&self.buffer, PROSE_HOLDBACK_MARKERS);
             if self.state == State::InReasoning {
                 hold = hold.max(open_header_tail(&self.buffer));
             }
@@ -942,6 +1003,7 @@ impl MuseChannelScanner {
         let prefix = self.buffer[..header_start].to_string();
         self.buffer.drain(..msg_pos + MESSAGE.len());
         self.emit_text(out, &prefix);
+        self.prose_invoke_depth = 0;
         self.allow_bare_header = false;
         self.last_body_char = None;
         match recipient.as_deref() {
@@ -976,7 +1038,7 @@ impl MuseChannelScanner {
             .map(|s| bare_candidate.map_or(s, |b| s.min(b)))
             .or(bare_candidate)
             .unwrap_or_else(|| {
-                let mut tail = marker_prefix_suffix_len(&self.buffer, MARKERS);
+                let mut tail = marker_prefix_suffix_len(&self.buffer, PROSE_HOLDBACK_MARKERS);
                 if self.allow_bare_header {
                     tail = tail.max(open_header_tail(&self.buffer));
                 }
@@ -1002,6 +1064,7 @@ impl MuseChannelScanner {
         self.pending_reasoning_join = false;
         self.reasoning_join_armed = false;
         self.reasoning_body_emitted = false;
+        self.prose_invoke_depth = 0;
         self.next_index = 0;
         (
             std::mem::take(&mut self.buffer),

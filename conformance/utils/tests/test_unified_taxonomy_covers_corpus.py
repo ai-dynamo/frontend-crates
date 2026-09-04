@@ -27,6 +27,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 import pytest  # noqa: E402
+import yaml  # noqa: E402
 
 import gen_unified_golden as G  # noqa: E402
 from gen_unified_golden import (  # noqa: E402
@@ -147,6 +148,23 @@ def test_case_labels_use_numeric_positions_for_the_full_guided_recovery_series()
     assert [tax(scenario)[1] for scenario in ordered] == ["25", "26", "27", "28", "29", "30"]
 
 
+def test_kimi_k3_cases_use_numeric_suffixes() -> None:
+    k3 = [
+        "kimi_k3_typed_argument_values",
+        "kimi_k3_raw_json_arguments",
+        "kimi_k3_spaced_xtml_markers",
+        "kimi_k3_message_end_after_response",
+        "kimi_k3_elided_think_close_to_response",
+        "kimi_k3_malformed_call_then_valid",
+        "kimi_k3_raw_json_eof",
+        "kimi_k3_guided_native_wrapper",
+    ]
+    assert [case_label(scenario) for scenario in k3] == [f"k3-{i}" for i in range(1, 9)]
+    assert [numbered_id(scenario) for scenario in k3] == [
+        f"UNIFIED.k3-{i}" for i in range(1, 9)
+    ]
+
+
 # --- End-to-end test cases: the SAME mapping is written in two places -----------
 # Case descriptions in gen_unified_golden.py carry `End-to-end: <case> (e2e case-NNNN)` tags, and
 # UNIFIED_CASES.md repeats them in its artifact-index table. Two copies of one fact drift
@@ -154,7 +172,7 @@ def test_case_labels_use_numeric_positions_for_the_full_guided_recovery_series()
 
 CASES_MD = UTILS / "lib" / "parsers" / "UNIFIED_CASES.md"
 _E2E_TAG = re.compile(r"\be2e case-(\d{4})-")
-_MD_ROW = re.compile(r"^\|\s*`(\d+(?:\.[a-z]|-\d+))`\s*\|\s*`([^`]+)`\s*\|\s*`end-to-end case-(\d{4})-", re.M)
+_MD_ROW = re.compile(r"^\|\s*`([\w]+(?:\.[a-z]|-\d+))`\s*\|\s*`([^`]+)`\s*\|\s*`end-to-end case-(\d{4})-", re.M)
 
 
 def _e2e_ids_from_descriptions() -> dict[str, set[str]]:
@@ -486,9 +504,42 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     shared = min(per_family.values())
     for fam in FAMILIES:
-        expected = shared + (2 if fam == "gemma4" else 0)
+        family_specific = 2 if fam == "gemma4" else 8 if fam == "kimi_k3" else 0
+        expected = shared + family_specific
         assert per_family[fam] == expected, f"{fam} diverged from the expected case count"
     assert sum(per_family.values()) == sum(len(build_cases(f)) for f in FAMILIES)
+
+
+def test_kimi_k3_corpus_uses_xtml_not_kimi_k2_wire_syntax():
+    forbidden = ("<think>", "</think>", "<|tool_calls_section_begin|>",
+                 "<|tool_call_begin|>", "<|tool_call_argument_begin|>")
+    cases = build_cases("kimi_k3")
+    assert cases
+    for case_id, case in cases.items():
+        leaked = [marker for marker in forbidden if marker in case["input"]]
+        assert not leaked, f"{case_id} copied Kimi K2 wire syntax: {leaked}"
+
+
+def test_kimi_k3_manifest_is_canonical_and_alias_free():
+    manifest = yaml.safe_load((SRC / "parser_families.yaml").read_text())
+    assert "kimi_k3" in manifest["families"]
+    assert "kimi_k3" in manifest["markers"]
+    assert "kimi_k3" in manifest["unified"]
+    assert "kimi-k3" not in manifest["families"]
+    assert "kimi-k3" not in manifest["markers"]
+    assert "kimi-k3" not in manifest["unified"]
+
+
+def test_kimi_k3_response_framing_covers_visible_text_after_tools_and_between_calls():
+    cases = build_cases("kimi_k3")
+    after = cases["UNIFIED.trailing_text_after_tool.kimi_k3"]
+    between = cases["UNIFIED.text_between_calls.kimi_k3"]
+    assert "<|close|>tools<|sep|><|open|>response<|sep|>" in after["input"]
+    assert [event["kind"] for event in after["golden"]] == ["tool_call", "text"]
+    assert "<|close|>tools<|sep|><|open|>response<|sep|>" in between["input"]
+    assert [event["kind"] for event in between["golden"]] == [
+        "tool_call", "text", "tool_call"
+    ]
 
 
 def test_registry_prose_states_no_unified_case_count():

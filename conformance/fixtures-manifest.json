@@ -1,9 +1,9 @@
 {
-  "snapshot": "20260902_160053",
-  "created_pt": "2026-09-02 16:00:53 America/Los_Angeles",
+  "snapshot": "20260904_120000",
+  "created_pt": "20260904_120000 (stamp override) America/Los_Angeles",
   "crates": {
     "dynamo-parsers": "8.2.0",
-    "dynamo-parsers-v2": "0.4.1"
+    "dynamo-parsers-v2": "0.5.1"
   },
   "peers": {
     "vllm": "0.26.0",
@@ -27,8 +27,8 @@
     },
     {
       "path": "toolcalling/fixtures-batch-on-stream-v2.tar.gz",
-      "sha256": "e7375d99c2236df4a48bfdf1fd5d7965bed50ca066fc4380dc91060da989dd96",
-      "size": 16100
+      "sha256": "3f58c8adfb8e332b1326ef890ddea3aa254bd5dc291aef27417a491b503f2f11",
+      "size": 16514
     },
     {
       "path": "toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz",
@@ -52,8 +52,8 @@
     },
     {
       "path": "toolcalling/fixtures-batch-v1/inputs.tar.gz",
-      "sha256": "f3700e8dcedfb6ef851a610ab6f7cb582cc3e4def1389f2f6572adb910849fd4",
-      "size": 38724
+      "sha256": "1afc3b0495f29614f594b67c6baa19a4c02e3eeb5ca81f8aa373a15a3b4d16b7",
+      "size": 44186
     },
     {
       "path": "toolcalling/fixtures-batch-v1/sglang_python-0.5.12.post1.tar.gz",
@@ -131,9 +131,19 @@
       "size": 6767
     },
     {
+      "path": "toolcalling/fixtures-stream-v2/dynamo_v2-0.5.0.tar.gz",
+      "sha256": "9b5bac3ecb7b024dd95ff0151cda080c07e546093d1fa35d6da1e354889853de",
+      "size": 6766
+    },
+    {
+      "path": "toolcalling/fixtures-stream-v2/dynamo_v2-0.5.1.tar.gz",
+      "sha256": "863ef02fb5df6c75846a01e3917de75872bb281e5cb55908157b98756e04b873",
+      "size": 8263
+    },
+    {
       "path": "toolcalling/fixtures-stream-v2/inputs.tar.gz",
-      "sha256": "410bb47c3e90595488feb1b3c76a50e177d969121408642d56654e764a60aa35",
-      "size": 40664
+      "sha256": "08eed2b25c1aba4cfb143e1b225f85f2f930ba6d8bc9bba3ca57ae0becd3f9ff",
+      "size": 47236
     },
     {
       "path": "toolcalling/fixtures-stream-v2/sglang_python-0.5.12.post1.tar.gz",
@@ -186,9 +196,19 @@
       "size": 4308
     },
     {
+      "path": "unified/dynamo_v2-0.1.22.patch2.tar.gz",
+      "sha256": "41bf62b626b106cc577f1b9e6967780c438eee3a0993730af0aaf9886772cb95",
+      "size": 2464
+    },
+    {
       "path": "unified/dynamo_v2-0.1.22.tar.gz",
       "sha256": "a7e7f1d161719e8f6caaa1f3fb07f169718308cc13f6a687916975c0ab144de3",
       "size": 10008
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.23.patch2.tar.gz",
+      "sha256": "eef07b345f0b7cbcdf12352cbb119d0d022ebfad0e14e69c9114a176e05f47fd",
+      "size": 2468
     },
     {
       "path": "unified/dynamo_v2-0.1.23.tar.gz",
@@ -196,9 +216,19 @@
       "size": 10164
     },
     {
+      "path": "unified/dynamo_v2-0.1.25.patch2.tar.gz",
+      "sha256": "d1cf3ad10b97016ea6c4046c83a05d4797f640a34a108f8322e024e433a82470",
+      "size": 6296
+    },
+    {
       "path": "unified/dynamo_v2-0.1.25.tar.gz",
       "sha256": "c3113143c757e206d719538092213268cdfbae1f6df0954ac73a72b6da55a5a1",
       "size": 9660
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.27.patch2.tar.gz",
+      "sha256": "46b0ee4854af71e2db2a629d648aecabf91e8bd6b610bc4ff00ef271bbbadb74",
+      "size": 6299
     },
     {
       "path": "unified/dynamo_v2-0.1.27.tar.gz",
@@ -206,9 +236,24 @@
       "size": 9785
     },
     {
+      "path": "unified/dynamo_v2-0.2.0.patch2.tar.gz",
+      "sha256": "6d64667a72f16535d11f177171016ecb047f6408d6efeca43a1b2cae07b0580b",
+      "size": 6285
+    },
+    {
       "path": "unified/dynamo_v2-0.2.0.tar.gz",
       "sha256": "3e0f153218785fc1a4285d90f19a7a54cc69066462848ba5eda61e25a522772e",
       "size": 10039
+    },
+    {
+      "path": "unified/dynamo_v2-0.2.1.patch1.tar.gz",
+      "sha256": "df96d32937bac1a127fecfe240e9a64536499c39a0fa96dfa137b7ef83777dd8",
+      "size": 3058
+    },
+    {
+      "path": "unified/dynamo_v2-0.2.1.patch2.tar.gz",
+      "sha256": "1d367f2fed0536293ed57bb034946f2fc9e0c49ac234d9993894999d37c1e5d5",
+      "size": 7658
     },
     {
       "path": "unified/dynamo_v2-0.2.1.tar.gz",
@@ -216,9 +261,24 @@
       "size": 9999
     },
     {
+      "path": "unified/dynamo_v2-0.3.0+pr191.patch1.tar.gz",
+      "sha256": "cf5f15b4f62d08928209759677112a69a2c9151d460aa796a6006fcae978e072",
+      "size": 3077
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.0+pr191.patch2.tar.gz",
+      "sha256": "e81575e5f4d13b51a59586346f8c43bc9ed8071b2c99381970b7953a81052d8c",
+      "size": 7584
+    },
+    {
       "path": "unified/dynamo_v2-0.3.0+pr191.tar.gz",
       "sha256": "35bb831633c50d3ee99e8c95adeb69b908247c501387e1d4b8f82be2d6681c65",
       "size": 9989
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.0.patch2.tar.gz",
+      "sha256": "cc95666c042579b167f64358fa9c9b22ad7f8d0cbbbff4aacae10ba07fd9e210",
+      "size": 13684
     },
     {
       "path": "unified/dynamo_v2-0.3.1.patch1.tar.gz",
@@ -226,9 +286,24 @@
       "size": 13900
     },
     {
+      "path": "unified/dynamo_v2-0.3.1.patch2.tar.gz",
+      "sha256": "cee48cc9dc31a31acaa401363631608058f4f79882f620634657c6548cf2b4c9",
+      "size": 6848
+    },
+    {
       "path": "unified/dynamo_v2-0.3.1.tar.gz",
       "sha256": "2d146a67e5da2d74a7726d0c53e2d8c23389a3941c6df140b6141980439800c1",
       "size": 12317
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.2.patch1.tar.gz",
+      "sha256": "cde85bfb976f6d75c112d4289803c72b729e6c26d12fbf88bf297cf218fdcec6",
+      "size": 608
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.2.patch2.tar.gz",
+      "sha256": "d00ad8e0b3addd999dc9e72707038c9f3b8f904769c851081ab70e7ee2cdd314",
+      "size": 7652
     },
     {
       "path": "unified/dynamo_v2-0.3.2.tar.gz",
@@ -236,9 +311,19 @@
       "size": 12234
     },
     {
+      "path": "unified/dynamo_v2-0.3.3.patch2.tar.gz",
+      "sha256": "cac44636229a93f908560a87a14a640d998411e8f5aa43d8789a6d5d8e89d79c",
+      "size": 6675
+    },
+    {
       "path": "unified/dynamo_v2-0.3.3.tar.gz",
       "sha256": "ab6021d70826d91174a05a6bf143d7661502991440aace22983ba014b9475f4d",
       "size": 13798
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.4.patch2.tar.gz",
+      "sha256": "38544bb6a677c694a8680d306c7a729e452e9b67d4494e9c5aa6210551a402d1",
+      "size": 6671
     },
     {
       "path": "unified/dynamo_v2-0.3.4.tar.gz",
@@ -246,9 +331,19 @@
       "size": 13715
     },
     {
+      "path": "unified/dynamo_v2-0.4.0.patch2.tar.gz",
+      "sha256": "5d66e6b49dc0dcfcfab38a7b3646441bea436c74caaa8949b3d5b88ddf67c003",
+      "size": 3687
+    },
+    {
       "path": "unified/dynamo_v2-0.4.0.tar.gz",
       "sha256": "c2d0c749ab3439fa9f7b43c5ffe621ce8e207ae6905e1fdee8fc4a2ba4486f17",
       "size": 13751
+    },
+    {
+      "path": "unified/dynamo_v2-0.4.1.patch2.tar.gz",
+      "sha256": "d5790e66ebc95433dddc5129759df08d7b7c234860e2547e02a0e4a5d17475e9",
+      "size": 3686
     },
     {
       "path": "unified/dynamo_v2-0.4.1.tar.gz",
@@ -256,9 +351,44 @@
       "size": 14316
     },
     {
+      "path": "unified/dynamo_v2-0.5.0.patch2.tar.gz",
+      "sha256": "c377c756492f1400a8a46613a77c4e3091d1ed5e614933e21798066263354a27",
+      "size": 3686
+    },
+    {
+      "path": "unified/dynamo_v2-0.5.0.tar.gz",
+      "sha256": "d798ac9b8f8e584afe7ad38ca77763f1ef2427d68a1b06fab2a1be7f5b01def3",
+      "size": 14240
+    },
+    {
+      "path": "unified/dynamo_v2-0.5.1.tar.gz",
+      "sha256": "4e6188fe723c3f492983a8f7e25ffaf504b4bd7ea79f336e6af6ead170fe7c74",
+      "size": 21823
+    },
+    {
+      "path": "unified/golden+pr191.patch2.tar.gz",
+      "sha256": "5da2a6fef468f75b1bad3fb328da40e1d5c44d149af85bdc3ee1d969fff61a67",
+      "size": 5496
+    },
+    {
+      "path": "unified/golden+pr2851.patch1.tar.gz",
+      "sha256": "14bea242e125a8c974adb6790ef448dbd0309c30e33c091512aee998086ca9b0",
+      "size": 3053
+    },
+    {
       "path": "unified/golden.tar.gz",
       "sha256": "5ff3c90633c3c4a849ee824f2e45e8e6e58d67a5449ce327253c24732600f313",
       "size": 9982
+    },
+    {
+      "path": "unified/inputs+pr191.patch2.tar.gz",
+      "sha256": "9974397566cc425a51a8b202a185134d36ce1b80da546ff6c2adccf42739120f",
+      "size": 32936
+    },
+    {
+      "path": "unified/inputs+pr2851.patch1.tar.gz",
+      "sha256": "f6a9ab2ebd72ee388c2826659d8f85cd99824f75e1c54e8022fd8d3df5a4b0d8",
+      "size": 15799
     },
     {
       "path": "unified/inputs.tar.gz",
