@@ -101,22 +101,34 @@ pub struct ProcessedItem {
     pub geometry: Option<Geometry>,
 }
 
-/// The tokens one media item occupies in the expanded prompt.
+/// One run of tokens inside a media item's expansion, tagged by role so
+/// consumers never pattern-match ids to find where features go.
 #[non_exhaustive]
-pub enum TokenPattern {
-    /// N copies of one placeholder id (qwen-style).
-    Repeat { id: i32, n: usize },
-    /// An explicit id sequence — tile markers, row separators, wrapper
-    /// tokens (minicpm/internvl-style structured expansions).
-    Explicit(Vec<i32>),
+pub enum TokenRun {
+    /// `n` copies of placeholder `id` whose embeddings the model replaces
+    /// with the item's features — the scatter targets (qwen images:
+    /// `<|image_pad|>` × N).
+    Feature { id: i32, n: usize },
+    /// Literal ids emitted verbatim that stay text-like — wrapper markers,
+    /// timestamps, tile/row separators (video scaffolds,
+    /// minicpm/internvl-style structured expansions).
+    Literal(Vec<i32>),
 }
 
 /// One span of the expanded prompt.
 pub enum Segment {
     /// Copy `src` (a range into the original ids) verbatim.
     Text(std::ops::Range<usize>),
-    /// Media item `item`'s token span.
-    Media { item: usize, pattern: TokenPattern },
+    /// Media item `item` replaces `src` — its placeholder span in the
+    /// original ids — with the concatenation of `runs`. A single-token image
+    /// placeholder expands to one `Feature` run; a video may interleave
+    /// `Literal` scaffold with per-frame `Feature` runs, e.g.
+    /// `[<vision_start>, timestamp, feature × N, <vision_end>]`.
+    Media {
+        item: usize,
+        src: std::ops::Range<usize>,
+        runs: Vec<TokenRun>,
+    },
 }
 
 /// Prompt geometry as data: the family describes the expansion,
