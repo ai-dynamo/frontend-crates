@@ -94,10 +94,10 @@ pub struct ProcessedItem {
     pub modality: Modality,
     /// Number of model feature tokens this item contributes.
     pub feature_token_count: usize,
-    /// The model's feature tensor for this item (qwen: `pixel_values`).
+
     pub feature: Tensor,
     pub aux: NamedTensors,
-    /// Family-specific spatial/temporal geometry, when required.
+
     pub geometry: Option<Geometry>,
 }
 

@@ -18,7 +18,7 @@ position math (M-RoPE), all **bit-exact** against the mirrored HF processor.
 **The boundary.** The crate carries what HF ships, plus what a router and an
 engine must compute *identically* or routing keys and token accounting
 diverge: spec resolution from HF config files, pixel-free token accounting,
-and content-hash identity (`content_hash_u64`). The optional `fetch` module is
+and content-hash identity. The optional `fetch` module is
 a convenience helper, not a request security boundary.
 
 ## 1. Where the crate sits
@@ -33,7 +33,8 @@ boot: locate model configs ────────►│  registry::spec_from_m
                                     │           ─► Box<dyn MmFamilyProcessor>
 per request:                        │
 image sources, caps ───────────────►│  fetch::fetch_bytes         ─► raw bytes
-      ├─ bytes ────────────────────►│  content_hash_u64           ─► mm_hashes
+      ├─ supplied mm_hashes ───────►│  use unchanged
+      ├─ bytes, no supplied hash ──►│  content_hash_bytes
       └─ bytes ────────────────────►│  image::decode::decode_rgb
         └─ rgb ────────────────────►│  family.process_item      (per item; the engine drives
                                     │                            the loop, optionally fanning
@@ -54,7 +55,7 @@ boot: locate model configs ────────►│  registry::spec_from_m
                                     │    ─► build_processor ─► Box<dyn MmFamilyProcessor>
 per request                         │
    image_url ──────────────────────►│  fetch::fetch_bytes         ─► raw bytes
-      ├─ bytes ────────────────────►│  content_hash_u64           ─► cache-affinity key
+      ├─ bytes ────────────────────►│  content_hash_canonical     ─► cache-affinity key
       └─ bytes ────────────────────►│  image::decode::dimensions  ─► (h, w), header-only
               └─ (w, h) ───────────►│  family.num_media_tokens    ─► token cost per image
                                     │
@@ -131,19 +132,22 @@ pub fn spec_from_model_dir(dir: &Path) -> Result<ProcessorSpec>;
 | boot, per model | `registry::build_processor` | `ProcessorSpec` → `Box<dyn MmFamilyProcessor>` |
 | per media part | consumer's protected fetcher | untrusted media source → raw bytes |
 | per trusted media part | `fetch::fetch_bytes` *(feature `fetch`)* | trusted media source → raw bytes; optional compatibility path |
-| per image part | `content_hash_u64` | bytes → `u64` cache-affinity key, identical to the engine's |
+| per decoded media | `content_hash_canonical` | shape + dtype + tensor bytes → Dynamo-compatible identity |
+| per passthrough image | consumer's existing URL hash | full URL → `u64` cache-affinity key |
 | per image part | `image::decode::dimensions` | bytes → `MediaMetadata::Image` dimensions — header probe, no pixel decode |
 | per media part | `MmFamilyProcessor::num_media_tokens` | typed lightweight metadata → the item's expanded token count |
 
 Token counts give the expanded prompt length for routing; hashes drive
-prefix-cache-affinity routing and might travel downstream as `mm_hashes`.
+prefix-cache-affinity routing and travel downstream as `mm_hashes`. The engine
+uses supplied hashes unchanged, whether Dynamo derived them from canonical
+decoded media or a passthrough URL.
 
 ### 2.2 An inference engine (e.g. SGLang) — the full pixel path
 
 | when | API | in → out |
 | --- | --- | --- |
 | boot, per worker pool | `registry::build_processor` | spec pre-resolved by the engine's gate or config dir → `Box<dyn MmFamilyProcessor>` |
-| per image | `content_hash_u64` | bytes → `u64` — same keys as the router |
+| per image | `content_hash_bytes` | bytes → `u64` — same keys as the router |
 | per image | `image::decode::decode_rgb` | bytes → `(rgb, h, w)` (8-bit only, PIL-matching); the engine wraps it as `DecodedMedia::Image` |
 | per image | `MmFamilyProcessor::process_item` | `DecodedMedia` → `ProcessedItem` (preserves modality, feature-token count, tensors, and optional geometry) |
 | per request | `MmFamilyProcessor::layout` | input_ids + processed items → `TokenLayout` (a description, not yet applied) |
@@ -167,8 +171,12 @@ crate:
 // sketch
 let mut items: Vec<ProcessedItem> = Vec::with_capacity(images.len());
 let mut hashes: Vec<u64> = Vec::with_capacity(images.len());
-for bytes in images {                                  // fetched + capped by the engine
-    hashes.push(content_hash_u64(&bytes));             // same keys as the router
+for (bytes, supplied_hash) in images {                  // fetched + capped by the engine
+    let hash = match supplied_hash {
+        Some(hash) => hash,
+        None => content_hash_bytes(&bytes),
+    };
+    hashes.push(hash);
     let (rgb, height, width) = image::decode::decode_rgb(&bytes)?;
     items.push(family.process_item(&DecodedMedia::Image { rgb, height, width })?);
 }
@@ -226,7 +234,8 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | `image::decode::decode_rgb` | `PIL.Image.open(...).convert("RGB")` | same accepted formats; >8-bit samples rejected rather than silently diverging (PIL clips, Rust would rescale) |
 | `image::decode::dimensions` | lazy `PIL.Image.open(...).size` | header-only probe |
 | `fetch::fetch_bytes` | `transformers.image_utils.load_image` (`requests` proxy + `NO_PROXY` semantics, source precedence) | optional trusted-source compatibility behavior, plus streaming byte caps; untrusted URL policy stays in the frontend |
-| `content_hash_u64` | the *role* of SGLang `mm_utils.data_hash` | deliberately blake3, one shared definition — router and Rust-engine keys must agree (the Python path's SHA-256 stays a documented divergence) |
+| `content_hash_bytes` | SGLang Rust tokenizer fallback | BLAKE3 over encoded bytes |
+| `content_hash_canonical` | Dynamo decoded-media identity | XXH3-64 over rank, dimensions, dtype, and tensor bytes |
 | `token_layout::apply_layout` + `layout_by_placeholder` | HF `Qwen2VLProcessor`'s own `<|image_pad|>` expansion / SGLang `_expand_input_ids` + `get_mm_items_offset` | exact ids/offsets, plus full-coverage validation |
 | `models::qwen_vl::QwenVlProcessor::process_item` | HF `Qwen2VLImageProcessor(Fast)` / `Qwen2VLImageProcessorPil` `__call__` → `pixel_values`, `image_grid_thw` | **bitwise** |
 | `models::qwen_vl::smart_resize` | HF/SGLang `smart_resize` (incl. Python banker's rounding) | exact; also rejects the degenerate 0-side case Python leaves to PIL |
