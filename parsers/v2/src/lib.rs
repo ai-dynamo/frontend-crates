@@ -3,6 +3,7 @@
 
 //! Dynamo parser v2 implementations.
 
+pub mod structural_tag;
 pub mod tool_calling;
 pub mod unified;
 
@@ -19,7 +20,9 @@ pub use tool_calling::minimax_m3::MiniMaxM3ToolStreamParser;
 pub use tool_calling::muse_glimmer::MuseGlimmerToolStreamParser;
 pub use tool_calling::qwen3_coder::Qwen3CoderToolStreamParser;
 pub use tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser, ToolParserInput};
-pub use tool_calling::{REGISTERED_FAMILIES, create_tool_parser_for_family};
+pub use tool_calling::{
+    REGISTERED_FAMILIES, create_tool_parser_for_family, structural_tag_builder_for_family,
+};
 // Vendored batch-extraction types that surface in the public streaming API
 // (e.g. `ToolStreamResult::tool_call_chunks`). v2 owns these now — see
 // `tool_calling::v1core`.
