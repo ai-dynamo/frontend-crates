@@ -10,10 +10,11 @@
 //! from the HF config files ([`registry::spec_from_model_dir`]) or handed
 //! over pre-resolved. The crate also carries what routers and engines must
 //! agree on: token accounting and content-hash identity
-//! ([`content_hash_bytes`], [`content_hash_canonical`]). The feature-gated `fetch` module is an optional
-//! trusted-source compatibility helper. Request orchestration — concurrency,
-//! caps, URL security policy, failure policy, packing — stays in the
-//! consumer's driver, as on the Python path; the README maps the boundary.
+//! ([`content_hash_bytes`], [`content_hash_canonical_image`]). The
+//! feature-gated `fetch` module is an optional trusted-source compatibility
+//! helper. Request orchestration — concurrency, caps, URL security policy,
+//! failure policy, packing — stays in the consumer's driver, as on the Python
+//! path; the README maps the boundary.
 //!
 //! Bit-exactness is the contract: the resize kernels ([`image::resize`]) and
 //! each family's normalize/patchify reproduce the mirrored HF processor's
@@ -113,8 +114,12 @@ pub enum MediaDtype {
     U8,
 }
 
-/// Dynamo's XXH3-64 hash over tensor shape, dtype, and bytes.
-pub fn content_hash_canonical(shape: &[usize], dtype: MediaDtype, data: &[u8]) -> u64 {
+/// Dynamo's canonical XXH3-64 identity for a decoded image.
+///
+/// Hashes tensor rank, dimensions, dtype, and contiguous RGB bytes. Other
+/// modalities have separate identity contracts; in particular, Dynamo's
+/// video identity also covers decoded metadata.
+pub fn content_hash_canonical_image(shape: &[usize], dtype: MediaDtype, data: &[u8]) -> u64 {
     let _ = (shape, dtype, data);
-    todo!("dynamo canonical tensor hash")
+    todo!("dynamo canonical decoded-image hash")
 }

@@ -56,7 +56,8 @@ boot: locate model configs ────────►│  registry::spec_from_m
                                     │    ─► build_processor ─► Box<dyn MmFamilyProcessor>
 per request                         │
    image_url ──────────────────────►│  fetch::fetch_bytes         ─► raw bytes
-      ├─ bytes ────────────────────►│  content_hash_canonical     ─► cache-affinity key
+      ├─ decoded image ────────────►│  content_hash_canonical_image
+                                    │                           ─► cache-affinity key
       └─ bytes ────────────────────►│  image::decode::dimensions  ─► (h, w), header-only
               └─ (w, h) ───────────►│  family.num_media_tokens    ─► token cost per image
                                     │
@@ -133,7 +134,7 @@ pub fn spec_from_model_dir(dir: &Path) -> Result<ProcessorSpec>;
 | boot, per model | `registry::build_processor` | `ProcessorSpec` → `Box<dyn MmFamilyProcessor>` |
 | per media part | consumer's protected fetcher | untrusted media source → raw bytes |
 | per trusted media part | `fetch::fetch_bytes` *(feature `fetch`)* | trusted media source → raw bytes; optional compatibility path |
-| per decoded media | `content_hash_canonical` | shape + dtype + tensor bytes → Dynamo-compatible identity |
+| per decoded image | `content_hash_canonical_image` | shape + dtype + RGB bytes → Dynamo-compatible identity |
 | per image part | `image::decode::dimensions` | bytes → `MediaMetadata::Image` dimensions — header probe, no pixel decode |
 | per media part | `MmFamilyProcessor::num_media_tokens` | typed lightweight metadata → the item's expanded token count |
 
@@ -147,11 +148,11 @@ decoded media or a passthrough URL.
 | when | API | in → out |
 | --- | --- | --- |
 | boot, per worker pool | `registry::build_processor` | spec pre-resolved by the engine's gate or config dir → `Box<dyn MmFamilyProcessor>` |
-| per image | `content_hash_bytes` | bytes → `u64` — same keys as the router |
+| per image without a supplied hash | `content_hash_bytes` | encoded bytes → SGLang's fallback `u64` identity |
 | per image | `image::decode::decode_rgb` | bytes → `(rgb, h, w)` (8-bit only, PIL-matching); the engine wraps it as `DecodedMedia::Image` |
 | per image | `MmFamilyProcessor::process_item` | `DecodedMedia` → `ProcessedItem` (preserves modality, feature-token count, tensors, and optional geometry) |
 | per request | `MmFamilyProcessor::layout` | input_ids + processed items → `TokenLayout` (a description, not yet applied) |
-| per request | `token_layout::apply_layout` | ids + `TokenLayout` → expanded ids, per-item offsets, and feature ranges (where feature embeddings go); validates the layout (source covered exactly once, each item placed once, every item has feature tokens) |
+| per request | `token_layout::apply_layout` | ids + `TokenLayout` + per-item feature-token counts → expanded ids, per-item offsets, and feature ranges (where feature embeddings go); validates the layout (source covered exactly once, each item placed once, feature ranges match the produced embeddings) |
 | per request, if needed | `MmFamilyProcessor::positions` | expanded length + offsets + processed items → `PositionOutput` (e.g. M-RoPE) |
 
 Example:
@@ -182,7 +183,10 @@ for (bytes, supplied_hash) in images {                  // fetched + capped by t
 }
 let input_ids: Vec<i32> = match request_ids { Some(ids) => ids, None => tokenizer.encode(&text)? };
 let layout: TokenLayout = family.layout(&input_ids, &items)?;
-let expanded: ExpandedPrompt = token_layout::apply_layout(&input_ids, &layout, items.len())?;
+let feature_token_counts: Vec<usize> =
+    items.iter().map(|item| item.feature_token_count).collect();
+let expanded: ExpandedPrompt =
+    token_layout::apply_layout(&input_ids, &layout, &feature_token_counts)?;
 let positions: PositionOutput =
     family.positions(expanded.input_ids.len(), &expanded.offsets, &items)?;
 ```
@@ -238,7 +242,7 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | `image::decode::dimensions` | lazy `PIL.Image.open(...).size` | header-only probe |
 | `fetch::fetch_bytes` | `transformers.image_utils.load_image` (`requests` proxy + `NO_PROXY` semantics, source precedence) | optional trusted-source compatibility behavior, plus streaming byte caps; untrusted URL policy stays in the frontend |
 | `content_hash_bytes` | SGLang Rust tokenizer fallback | BLAKE3 over encoded bytes |
-| `content_hash_canonical` | Dynamo decoded-media identity | XXH3-64 over rank, dimensions, dtype, and tensor bytes |
+| `content_hash_canonical_image` | Dynamo decoded-image identity | XXH3-64 over rank, dimensions, dtype, and contiguous RGB bytes |
 | `token_layout::apply_layout` + `layout_by_placeholder` | HF `Qwen2VLProcessor`'s own `<|image_pad|>` expansion / SGLang `_expand_input_ids` + `get_mm_items_offset` | exact ids/offsets, plus full-coverage validation |
 | `models::qwen_vl::QwenVlProcessor::process_item` | HF `Qwen2VLImageProcessor(Fast)` / `Qwen2VLImageProcessorPil` `__call__` → `pixel_values`, `image_grid_thw` | **bitwise** |
 | `models::qwen_vl::smart_resize` | HF/SGLang `smart_resize` (incl. Python banker's rounding) | exact; also rejects the degenerate 0-side case Python leaves to PIL |
