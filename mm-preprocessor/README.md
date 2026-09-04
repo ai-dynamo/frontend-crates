@@ -208,11 +208,11 @@ ids:  [ …,  <|vision_start|>, <|image_pad|>, <|vision_end|>,     … ]
    `geometry = Some(Grid([1, 6, 8]))`.
 2. `layout` — the image costs `1·6·8 / 2² = 12` tokens (the ViT merges 2×2
    patches per token): keep text `0..2`, replace the placeholder (span `2..3`)
-   with one `Feature` run of 12 `<|image_pad|>` tokens, keep text `3..5`.
+   with a `Feature` part of 12 `<|image_pad|>` tokens, keep text `3..5`.
    `apply_layout` expands and validates: 16 ids, `offsets = [(2, 13)]`,
    `feature_ranges = [[2..14]]`. (A video expansion like
    `[<vision_start>, timestamp, feature × N, <vision_end>]` would also
-   contain `Literal` runs, which the feature ranges skip.)
+   contain `Literal` parts, which the feature ranges skip.)
 3. `positions(16, …)` — M-RoPE. Text advances the three (t, h, w) rows
    together; the 12 image tokens span a 3×4 grid (`6/2 × 8/2`) at base 2;
    text after resumes at `2 + max(1, 3, 4) = 6`. Returns flat `[3, 16]`

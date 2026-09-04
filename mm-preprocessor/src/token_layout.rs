@@ -14,7 +14,7 @@ use crate::processor::TokenLayout;
 /// item, in layout order:
 /// * `offsets` — inclusive `(start, end)` of the item's whole expansion;
 /// * `feature_ranges` — where the engine puts the item's feature embeddings
-///   (the `Feature` runs). For a plain image placeholder this is the whole
+///   (the `Feature` parts). For a plain image placeholder this is the whole
 ///   expansion; when the expansion also has `Literal` tokens (markers,
 ///   timestamps), those are skipped.
 pub struct ExpandedPrompt {
@@ -39,8 +39,9 @@ pub fn apply_layout(
 }
 
 /// Build the simplest layout: the i-th occurrence of `placeholder_id` in
-/// `ids` becomes media item i, expanded to one `Feature` run of `counts[i]`
-/// tokens. Errs if the number of occurrences differs from `counts.len()`.
+/// `ids` becomes media item i, expanded to `counts[i]` copies of the
+/// placeholder (a single `Feature` part). Errs if the number of occurrences
+/// differs from `counts.len()`.
 pub fn layout_by_placeholder(
     ids: &[i32],
     placeholder_id: i32,
