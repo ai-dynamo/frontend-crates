@@ -134,7 +134,6 @@ pub fn spec_from_model_dir(dir: &Path) -> Result<ProcessorSpec>;
 | per media part | consumer's protected fetcher | untrusted media source → raw bytes |
 | per trusted media part | `fetch::fetch_bytes` *(feature `fetch`)* | trusted media source → raw bytes; optional compatibility path |
 | per decoded media | `content_hash_canonical` | shape + dtype + tensor bytes → Dynamo-compatible identity |
-| per passthrough image | consumer's existing URL hash | full URL → `u64` cache-affinity key |
 | per image part | `image::decode::dimensions` | bytes → `MediaMetadata::Image` dimensions — header probe, no pixel decode |
 | per media part | `MmFamilyProcessor::num_media_tokens` | typed lightweight metadata → the item's expanded token count |
 
@@ -152,7 +151,7 @@ decoded media or a passthrough URL.
 | per image | `image::decode::decode_rgb` | bytes → `(rgb, h, w)` (8-bit only, PIL-matching); the engine wraps it as `DecodedMedia::Image` |
 | per image | `MmFamilyProcessor::process_item` | `DecodedMedia` → `ProcessedItem` (preserves modality, feature-token count, tensors, and optional geometry) |
 | per request | `MmFamilyProcessor::layout` | input_ids + processed items → `TokenLayout` (a description, not yet applied) |
-| per request | `token_layout::apply_layout` | ids + `TokenLayout` → expanded ids + per-item offsets + feature ranges (scatter targets, excluding literal scaffold); validates the family contract (text and media `src` ranges cover the source exactly once, each item exactly once, no zero-feature item) |
+| per request | `token_layout::apply_layout` | ids + `TokenLayout` → expanded ids, per-item offsets, and feature ranges (where feature embeddings go); validates the layout (source covered exactly once, each item placed once, every item has feature tokens) |
 | per request, if needed | `MmFamilyProcessor::positions` | expanded length + offsets + processed items → `PositionOutput` (e.g. M-RoPE) |
 
 Example:
@@ -208,13 +207,12 @@ ids:  [ …,  <|vision_start|>, <|image_pad|>, <|vision_end|>,     … ]
    `aux = [("image_grid_thw", [1, 6, 8])]`, and
    `geometry = Some(Grid([1, 6, 8]))`.
 2. `layout` — the image costs `1·6·8 / 2² = 12` tokens (the ViT merges 2×2
-   patches per token): keep text `0..2`, replace the placeholder span `2..3`
-   with item 0 as one `Feature` run (12 copies of `<|image_pad|>`), keep text
-   `3..5`. `apply_layout` executes and validates: expanded ids of length 16,
-   `offsets = [(2, 13)]`, `feature_ranges = [[2..14]]` (for a bare placeholder
-   the whole span is features; a structured expansion — e.g. a video's
-   `[<vision_start>, timestamp, feature × N, <vision_end>]` — would carry
-   literal scaffold runs the feature ranges exclude).
+   patches per token): keep text `0..2`, replace the placeholder (span `2..3`)
+   with one `Feature` run of 12 `<|image_pad|>` tokens, keep text `3..5`.
+   `apply_layout` expands and validates: 16 ids, `offsets = [(2, 13)]`,
+   `feature_ranges = [[2..14]]`. (A video expansion like
+   `[<vision_start>, timestamp, feature × N, <vision_end>]` would also
+   contain `Literal` runs, which the feature ranges skip.)
 3. `positions(16, …)` — M-RoPE. Text advances the three (t, h, w) rows
    together; the 12 image tokens span a 3×4 grid (`6/2 × 8/2`) at base 2;
    text after resumes at `2 + max(1, 3, 4) = 6`. Returns flat `[3, 16]`

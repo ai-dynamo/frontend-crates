@@ -10,25 +10,25 @@
 
 use crate::processor::TokenLayout;
 
-/// The expanded prompt plus two views per media item (indexed as in the
-/// layout): `offsets`, the inclusive `(start, end)` range of the item's whole
-/// expansion, and `feature_ranges`, the sub-ranges of its `Feature` runs —
-/// the consumer's scatter targets. For a bare-placeholder image the two
-/// coincide; a structured expansion's `offsets` also cover literal scaffold
-/// (wrappers, timestamps) that `feature_ranges` exclude.
+/// The expanded prompt. `offsets` and `feature_ranges` are indexed by media
+/// item, in layout order:
+/// * `offsets` — inclusive `(start, end)` of the item's whole expansion;
+/// * `feature_ranges` — where the engine puts the item's feature embeddings
+///   (the `Feature` runs). For a plain image placeholder this is the whole
+///   expansion; when the expansion also has `Literal` tokens (markers,
+///   timestamps), those are skipped.
 pub struct ExpandedPrompt {
     pub input_ids: Vec<i32>,
     pub offsets: Vec<(u32, u32)>,
     pub feature_ranges: Vec<Vec<std::ops::Range<u32>>>,
 }
 
-/// Apply a family's [`TokenLayout`] to the original prompt, validating the
-/// whole contract rather than just indexing safely:
-/// * text and media `src` ranges are in bounds, ascending, and together
-///   cover every source token exactly once — a forgotten tail segment must
-///   not silently truncate the prompt;
-/// * each of the `n_items` media items is placed exactly once;
-/// * no item expands to zero feature tokens (no scatter target).
+/// Apply a family's [`TokenLayout`] to the original prompt, and validate it
+/// while expanding:
+/// * the `Text` and `Media::src` ranges cover the original ids exactly once,
+///   in order — nothing dropped, nothing duplicated;
+/// * each of the `n_items` media items appears exactly once;
+/// * every item has at least one feature token.
 pub fn apply_layout(
     src: &[i32],
     layout: &TokenLayout,
@@ -39,9 +39,8 @@ pub fn apply_layout(
 }
 
 /// Build the simplest layout: the i-th occurrence of `placeholder_id` in
-/// `ids` becomes the i-th media item — one `Feature` run of `counts[i]`
-/// copies replacing the occurrence. Errs when the occurrence count and
-/// `counts` disagree.
+/// `ids` becomes media item i, expanded to one `Feature` run of `counts[i]`
+/// tokens. Errs if the number of occurrences differs from `counts.len()`.
 pub fn layout_by_placeholder(
     ids: &[i32],
     placeholder_id: i32,
