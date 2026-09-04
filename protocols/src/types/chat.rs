@@ -383,6 +383,10 @@ pub struct ChatCompletionTokenLogprob {
 pub enum ChatCompletionToolType {
     #[default]
     Function,
+    /// Provider-hosted tool (Moonshot `$web_search`). Rendered like a function;
+    /// the client executes the resulting call.
+    #[serde(rename = "builtin_function")]
+    BuiltinFunction,
 }
 
 #[derive(Clone, Serialize, Default, Debug, Deserialize, PartialEq)]
@@ -905,6 +909,12 @@ pub struct CreateChatCompletionRequest {
     pub parallel_tool_calls: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<String>,
+    /// Cache-affinity hint for requests sharing a prompt prefix.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prompt_cache_key: Option<String>,
+    /// Stable end-user identifier for abuse detection (successor to `user`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub safety_identifier: Option<String>,
     #[deprecated]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub function_call: Option<ChatCompletionFunctionCall>,
