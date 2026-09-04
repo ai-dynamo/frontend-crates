@@ -142,53 +142,6 @@ impl From<async_openai::types::chat::ReasoningEffort> for ReasoningEffort {
     }
 }
 
-/// Thinking toggle carried by the OpenAI-style `thinking` request field.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-pub enum ThinkingType {
-    Enabled,
-    Disabled,
-    /// The model decides whether to think.
-    Adaptive,
-}
-
-/// Object form of the `thinking` request field.
-///
-/// NOTICE: only `type` is modeled. Moonshot's sub-fields `effort`
-/// (`low|high|max`) and `keep` (`"all"`) are accepted on the wire but DROPPED
-/// on deserialization, so they never reach the renderer.
-// TODO(kimi): model `effort` / `keep` and have the Kimi K3 renderer honor them;
-// today it resolves effort only from `chat_template_args` (`thinking_effort`,
-// `reasoning_effort`), so a client-sent `thinking.effort` has no effect.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub struct ThinkingObject {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub r#type: Option<ThinkingType>,
-}
-
-/// OpenAI-style `thinking` request control (Anthropic / Moonshot / DeepSeek
-/// dialect). Accepts either a bare boolean or an object with `type`.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(untagged)]
-pub enum ThinkingConfig {
-    Enabled(bool),
-    Object(ThinkingObject),
-}
-
-impl ThinkingConfig {
-    /// `Some(true|false)` for an explicit toggle, `None` for adaptive/unspecified.
-    pub fn enabled(&self) -> Option<bool> {
-        match self {
-            Self::Enabled(enabled) => Some(*enabled),
-            Self::Object(object) => match object.r#type {
-                Some(ThinkingType::Enabled) => Some(true),
-                Some(ThinkingType::Disabled) => Some(false),
-                Some(ThinkingType::Adaptive) | None => None,
-            },
-        }
-    }
-}
-
 // ---------------------------------------------------------------------------
 // Flexible `arguments` deserialisation helpers
 // ---------------------------------------------------------------------------
@@ -430,10 +383,6 @@ pub struct ChatCompletionTokenLogprob {
 pub enum ChatCompletionToolType {
     #[default]
     Function,
-    /// Provider-hosted tool (Moonshot `$web_search`). Rendered like a function;
-    /// the client executes the resulting call.
-    #[serde(rename = "builtin_function")]
-    BuiltinFunction,
 }
 
 #[derive(Clone, Serialize, Default, Debug, Deserialize, PartialEq)]
@@ -913,9 +862,6 @@ pub struct CreateChatCompletionRequest {
     pub store: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reasoning_effort: Option<ReasoningEffort>,
-    /// See [`ThinkingConfig`]; `effort` / `keep` sub-fields are dropped for now.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub thinking: Option<ThinkingConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<serde_json::Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -965,12 +911,16 @@ pub struct CreateChatCompletionRequest {
     pub parallel_tool_calls: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<String>,
-    /// Cache-affinity hint for requests sharing a prompt prefix.
+    /// OpenAI cache-affinity hint: requests sharing a prompt prefix send the
+    /// same key (Kimi Code CLI sends its session id on every request).
+    ///
+    /// NOTICE: accepted and preserved only. Nothing in this crate or in Dynamo
+    /// acts on it yet — Dynamo's KV-aware router keys on prompt-prefix block
+    /// hashes, not on this value.
+    // TODO(routing): decide whether `prompt_cache_key` should feed router
+    // affinity (e.g. as a tie-breaker or session pin) and plumb it through.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub prompt_cache_key: Option<String>,
-    /// Stable end-user identifier for abuse detection (successor to `user`).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub safety_identifier: Option<String>,
     #[deprecated]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub function_call: Option<ChatCompletionFunctionCall>,
