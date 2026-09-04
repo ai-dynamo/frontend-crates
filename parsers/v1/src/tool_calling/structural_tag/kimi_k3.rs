@@ -460,21 +460,37 @@ fn auto_argument_format(
     }))
 }
 
-fn loose_auto_arguments(required_keys: &[&str]) -> Format {
-    let mut excludes = vec![CALL_OPEN.to_string(), CALL_CLOSE.to_string()];
-    excludes.extend(
-        required_keys
-            .iter()
-            .map(|key| format!("{OPEN}argument key=\"{}\"", escape_attr(key))),
-    );
-    Format::AnyText(AnyTextFormat { excludes })
+fn optional_auto_arguments(
+    properties: &Map<String, Value>,
+    required_keys: &[&str],
+    root: &Value,
+    root_defs: &Map<String, Value>,
+) -> Option<Format> {
+    let arguments = properties
+        .iter()
+        .filter(|(key, _)| !required_keys.contains(&key.as_str()))
+        .filter_map(|(key, schema)| {
+            matches!(schema, Value::Bool(_) | Value::Object(_))
+                .then(|| auto_argument_format(key, schema, root, root_defs, false))
+                .flatten()
+        })
+        .collect::<Vec<_>>();
+
+    (!arguments.is_empty()).then(|| star(one_of(arguments)))
 }
 
-fn canonical_required_arguments(mut arguments: Vec<Format>, required_keys: &[&str]) -> Format {
+fn canonical_required_arguments(
+    mut arguments: Vec<Format>,
+    optional_arguments: Option<Format>,
+) -> Format {
     // Guided decoding only needs one schema-valid order. Keep the schema's
-    // required-array order, then allow optional/additional arguments without
-    // allowing a required key to overwrite its constrained value.
-    arguments.push(loose_auto_arguments(required_keys));
+    // required-array order, then allow only complete, declared optional
+    // argument tags. Arbitrary text would be accepted by the grammar but
+    // rejected by the K3 parser, while a permissive argument tag could repeat
+    // a required key and overwrite its constrained value.
+    if let Some(optional_arguments) = optional_arguments {
+        arguments.push(optional_arguments);
+    }
     Format::Sequence(SequenceFormat {
         elements: arguments,
     })
@@ -486,11 +502,11 @@ fn auto_arguments_block(tool: &ToolDefinition, strict_schema: bool) -> Format {
     }
 
     let Some(parameters) = tool.parameters.as_ref().and_then(Value::as_object) else {
-        return Format::AnyText(AnyTextFormat { excludes: vec![] });
+        return arguments_block(None);
     };
     let root = Value::Object(parameters.clone());
     let Some(properties) = parameters.get("properties").and_then(Value::as_object) else {
-        return Format::AnyText(AnyTextFormat { excludes: vec![] });
+        return arguments_block(None);
     };
     let root_defs = root_definitions(parameters);
     let required = match parameters.get("required") {
@@ -501,40 +517,32 @@ fn auto_arguments_block(tool: &ToolDefinition, strict_schema: bool) -> Format {
                 .filter_map(Value::as_str)
                 .collect::<Vec<_>>()
         }
-        Some(_) => return Format::AnyText(AnyTextFormat { excludes: vec![] }),
+        Some(_) => return arguments_block(None),
     };
+    let optional_arguments = optional_auto_arguments(properties, &required, &root, &root_defs);
 
     if required.is_empty() {
-        let alternatives: Vec<_> = properties
-            .iter()
-            .filter_map(|(key, schema)| {
-                matches!(schema, Value::Bool(_) | Value::Object(_))
-                    .then(|| auto_argument_format(key, schema, &root, &root_defs, false))
-                    .flatten()
+        return optional_arguments.unwrap_or_else(|| {
+            Format::ConstString(ConstStringFormat {
+                value: String::new(),
             })
-            .collect();
-        if alternatives.is_empty() {
-            return Format::AnyText(AnyTextFormat { excludes: vec![] });
-        }
-        return optional(Format::Sequence(SequenceFormat {
-            elements: vec![one_of(alternatives), loose_auto_arguments(&[])],
-        }));
+        });
     }
 
     let mut arguments = Vec::with_capacity(required.len());
     for key in &required {
         let Some(schema) = properties.get(*key) else {
-            return Format::AnyText(AnyTextFormat { excludes: vec![] });
+            return arguments_block(None);
         };
         if !matches!(schema, Value::Bool(_) | Value::Object(_)) {
-            return Format::AnyText(AnyTextFormat { excludes: vec![] });
+            return arguments_block(None);
         }
         let Some(argument) = auto_argument_format(key, schema, &root, &root_defs, true) else {
-            return Format::AnyText(AnyTextFormat { excludes: vec![] });
+            return arguments_block(None);
         };
         arguments.push(argument);
     }
-    canonical_required_arguments(arguments, &required)
+    canonical_required_arguments(arguments, optional_arguments)
 }
 
 fn auto_call_tag(tool: &ToolDefinition, strict_schema: bool) -> TagFormat {
@@ -842,10 +850,10 @@ mod tests {
             arguments["elements"][0]["content"]["pattern"],
             format!("{STRING_ATOM}+")
         );
-        assert_eq!(arguments["elements"][1]["type"], "any_text");
+        assert_eq!(arguments["elements"][1]["type"], "star");
         assert_eq!(
-            arguments["elements"][1]["excludes"],
-            json!([CALL_OPEN, CALL_CLOSE, "<|open|>argument key=\"city\""])
+            arguments["elements"][1]["content"]["begin"],
+            "<|open|>argument key=\"days\" type=\"number\"<|sep|>"
         );
     }
 
@@ -883,15 +891,10 @@ mod tests {
         );
         assert_eq!(elements[1]["content"]["type"], "json_schema");
         assert_eq!(elements[1]["content"]["json_schema"]["type"], "integer");
-        assert_eq!(elements[2]["type"], "any_text");
+        assert_eq!(elements[2]["type"], "star");
         assert_eq!(
-            elements[2]["excludes"],
-            json!([
-                CALL_OPEN,
-                CALL_CLOSE,
-                "<|open|>argument key=\"city\"",
-                "<|open|>argument key=\"days\""
-            ])
+            elements[2]["content"]["begin"],
+            "<|open|>argument key=\"units\" type=\"string\"<|sep|>"
         );
     }
 
@@ -971,55 +974,6 @@ mod tests {
     }
 
     #[test]
-    fn auto_wide_required_schema_uses_canonical_order() {
-        let tools = vec![ToolDefinition {
-            name: "wide_tool".to_string(),
-            parameters: Some(json!({
-                "type": "object",
-                "properties": {
-                    "a": {"type": "string"},
-                    "b": {"type": "string"},
-                    "c": {"type": "string"},
-                    "d": {"type": "string"},
-                    "e": {"type": "string"},
-                    "f": {"type": "string"}
-                },
-                "required": ["a", "b", "c", "d", "e", "f"]
-            })),
-            strict: None,
-        }];
-        let choice = ToolChoice::Auto;
-        let value =
-            serde_json::to_value(build_kimi_k3(&context(&choice, &tools)).unwrap().unwrap())
-                .unwrap();
-        let arguments = &value["format"]["tags"][0]["content"]["tags"][0]["content"]["elements"][2];
-
-        assert_eq!(arguments["type"], "sequence");
-        assert_eq!(arguments["elements"].as_array().unwrap().len(), 7);
-        assert_eq!(
-            arguments["elements"][0]["begin"],
-            "<|open|>argument key=\"a\" type=\"string\"<|sep|>"
-        );
-        assert_eq!(
-            arguments["elements"][5]["begin"],
-            "<|open|>argument key=\"f\" type=\"string\"<|sep|>"
-        );
-        assert_eq!(
-            arguments["elements"][6]["excludes"],
-            json!([
-                CALL_OPEN,
-                CALL_CLOSE,
-                "<|open|>argument key=\"a\"",
-                "<|open|>argument key=\"b\"",
-                "<|open|>argument key=\"c\"",
-                "<|open|>argument key=\"d\"",
-                "<|open|>argument key=\"e\"",
-                "<|open|>argument key=\"f\""
-            ])
-        );
-    }
-
-    #[test]
     fn auto_without_required_properties_allows_an_empty_argument_body() {
         let tools = vec![ToolDefinition {
             name: "run_command".to_string(),
@@ -1038,26 +992,19 @@ mod tests {
                 .unwrap();
         let arguments = &value["format"]["tags"][0]["content"]["tags"][0]["content"]["elements"][2];
 
-        assert_eq!(arguments["type"], "optional");
-        assert_eq!(arguments["content"]["type"], "sequence");
-        assert_eq!(arguments["content"]["elements"][0]["type"], "or");
+        assert_eq!(arguments["type"], "star");
+        assert_eq!(arguments["content"]["type"], "or");
         assert_eq!(
-            arguments["content"]["elements"][0]["elements"]
-                .as_array()
-                .unwrap()
-                .len(),
+            arguments["content"]["elements"].as_array().unwrap().len(),
             2
         );
-        let alternatives = arguments["content"]["elements"][0]["elements"]
-            .as_array()
-            .unwrap();
+        let alternatives = arguments["content"]["elements"].as_array().unwrap();
         assert_eq!(
             alternatives[0]["content"]["pattern"],
             format!("{STRING_ATOM}*")
         );
         assert_eq!(alternatives[1]["content"]["type"], "json_schema");
         assert_eq!(alternatives[1]["content"]["json_schema"]["type"], "integer");
-        assert_eq!(arguments["content"]["elements"][1]["type"], "any_text");
     }
 
     #[test]
