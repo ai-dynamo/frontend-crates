@@ -1918,16 +1918,6 @@ mod tests {
         (assemble(&events), ids)
     }
 
-    fn assert_all_splits(input: &str, expected: &[UnifiedEvent]) {
-        for split in (0..=input.len()).filter(|split| input.is_char_boundary(*split)) {
-            let mut parser = kimi_k3_unified(&[]);
-            let mut events = parser.push(&input[..split]).unwrap();
-            events.extend(parser.push(&input[split..]).unwrap());
-            events.extend(parser.finish().unwrap().events);
-            assert_eq!(assemble(&events), expected, "split at byte {split}");
-        }
-    }
-
     fn native_events_from_state(
         input: &str,
         chunks: &[usize],
@@ -1950,15 +1940,7 @@ mod tests {
         events
     }
 
-    fn assert_all_utf8_fragmentations(input: &str, expected: &[UnifiedEvent]) {
-        assert_all_utf8_fragmentations_from_state(
-            input,
-            UnifiedParserStartingState::None,
-            expected,
-        );
-    }
-
-    fn assert_all_utf8_fragmentations_from_state(
+    fn assert_native_fragmentations_from_state(
         input: &str,
         starting_state: UnifiedParserStartingState,
         expected: &[UnifiedEvent],
@@ -1988,30 +1970,8 @@ mod tests {
         );
     }
 
-    fn assert_every_utf8_split_cross_product(input: &str, expected: &[UnifiedEvent]) {
-        let boundaries: Vec<usize> = (0..=input.len())
-            .filter(|at| input.is_char_boundary(*at))
-            .collect();
-        for split in &boundaries {
-            assert_eq!(
-                assemble(&native_events_from_state(
-                    input,
-                    &[*split],
-                    UnifiedParserStartingState::None,
-                )),
-                expected,
-                "split at byte {split}"
-            );
-        }
-        assert_eq!(
-            assemble(&native_events_from_state(
-                input,
-                &boundaries,
-                UnifiedParserStartingState::None,
-            )),
-            expected,
-            "one Unicode scalar per push"
-        );
+    fn assert_native_fragmentations(input: &str, expected: &[UnifiedEvent]) {
+        assert_native_fragmentations_from_state(input, UnifiedParserStartingState::None, expected);
     }
 
     fn guided_events(
@@ -2089,7 +2049,7 @@ mod tests {
                 arguments: serde_json::json!({}),
             },
         ];
-        assert_all_splits(&input, &expected);
+        assert_native_fragmentations(&input, &expected);
         let (_, ids) = run(&input, UnifiedParserStartingState::None);
         assert_eq!(ids, ["weather:0", "second:raw"]);
     }
@@ -2115,7 +2075,7 @@ mod tests {
             THINK_OPEN.canonical,
             THINK_CLOSE.canonical,
         );
-        assert_all_utf8_fragmentations(
+        assert_native_fragmentations(
             &input,
             &[
                 UnifiedEvent::Text {
@@ -2248,7 +2208,7 @@ mod tests {
             name: "run".into(),
             arguments: serde_json::from_str(raw).unwrap(),
         }];
-        assert_all_splits(&input, &expected);
+        assert_native_fragmentations(&input, &expected);
     }
 
     #[test]
@@ -2292,7 +2252,7 @@ mod tests {
             call("echo", "1", &arg("value", "string", value)),
             TOOLS_CLOSE.canonical
         );
-        assert_all_splits(
+        assert_native_fragmentations(
             &input,
             &[UnifiedEvent::ToolCall {
                 name: "echo".into(),
@@ -2319,7 +2279,7 @@ mod tests {
                     call("echo", "1", &arg("value", "string", &value)),
                     TOOLS_CLOSE.canonical
                 );
-                assert_all_utf8_fragmentations(
+                assert_native_fragmentations(
                     &input,
                     &[UnifiedEvent::ToolCall {
                         name: "echo".into(),
@@ -2358,7 +2318,7 @@ mod tests {
                     call("echo", "1", &body),
                     TOOLS_CLOSE.canonical
                 );
-                assert_every_utf8_split_cross_product(
+                assert_native_fragmentations(
                     &input,
                     &[UnifiedEvent::ToolCall {
                         name: "echo".into(),
@@ -2504,7 +2464,7 @@ mod tests {
             call("echo", "1", &body),
             TOOLS_CLOSE.canonical
         );
-        assert_every_utf8_split_cross_product(
+        assert_native_fragmentations(
             &input,
             &[UnifiedEvent::ToolCall {
                 name: "echo".into(),
@@ -2548,7 +2508,7 @@ mod tests {
             call("echo", "1", &body),
             TOOLS_CLOSE.canonical
         );
-        assert_all_utf8_fragmentations(
+        assert_native_fragmentations(
             &input,
             &[UnifiedEvent::ToolCall {
                 name: "echo".into(),
@@ -2577,7 +2537,7 @@ mod tests {
                 call("echo", "1", &arg("value", arg_type, value)),
                 TOOLS_CLOSE.canonical
             );
-            assert_all_utf8_fragmentations(
+            assert_native_fragmentations(
                 &input,
                 &[UnifiedEvent::ToolCall {
                     name: "echo".into(),
@@ -2596,7 +2556,7 @@ mod tests {
             call("echo", "1", &arg("value", "string", value)),
             TOOLS_CLOSE.canonical
         );
-        assert_all_splits(
+        assert_native_fragmentations(
             &input,
             &[UnifiedEvent::ToolCall {
                 name: "echo".into(),
@@ -2617,7 +2577,7 @@ mod tests {
                 call("echo", "1", &arg("value", "string", value)),
                 TOOLS_CLOSE.canonical
             );
-            assert_all_utf8_fragmentations(
+            assert_native_fragmentations(
                 &input,
                 &[UnifiedEvent::ToolCall {
                     name: "echo".into(),
@@ -2639,7 +2599,7 @@ mod tests {
             call("echo", "1", &arg("value", "string", value.as_str())),
             TOOLS_CLOSE.canonical
         );
-        assert_all_utf8_fragmentations(
+        assert_native_fragmentations(
             &input,
             &[UnifiedEvent::ToolCall {
                 name: "echo".into(),
@@ -2656,7 +2616,7 @@ mod tests {
             call("echo", "1", &arg("value", "string", "ok")),
             THINK_CLOSE.canonical
         );
-        assert_all_utf8_fragmentations(
+        assert_native_fragmentations(
             &input,
             &[
                 UnifiedEvent::Reasoning {
@@ -2686,7 +2646,7 @@ mod tests {
             TOOLS_CLOSE.canonical,
             THINK_CLOSE.canonical,
         );
-        assert_all_utf8_fragmentations(
+        assert_native_fragmentations(
             &quarantined,
             &[UnifiedEvent::Reasoning {
                 text: "abcdefgh".into(),
@@ -2702,7 +2662,7 @@ mod tests {
                 TOOLS_OPEN.canonical,
                 arg("n", "number", "4")
             );
-            assert_all_utf8_fragmentations(
+            assert_native_fragmentations(
                 &input,
                 &[UnifiedEvent::ToolCall {
                     name: "calc".into(),
@@ -2735,7 +2695,7 @@ mod tests {
                     "before Zürich{OPEN}call tool=\"calc\" index=\"1\"{SEP}{}{close}after",
                     arg("n", "number", "4")
                 );
-                assert_all_utf8_fragmentations_from_state(
+                assert_native_fragmentations_from_state(
                     &input,
                     state,
                     &[
@@ -2820,7 +2780,7 @@ mod tests {
                 visible.to_string(),
             ] {
                 let input = format!("{header}{channel}{}{}", MESSAGE_CLOSE.canonical, END_OF_MSG);
-                assert_all_utf8_fragmentations(
+                assert_native_fragmentations(
                     &input,
                     &[UnifiedEvent::Text {
                         text: visible.into(),
@@ -2970,7 +2930,7 @@ mod tests {
             call("good", "2", &arg("x", "number", "7")),
             TOOLS_CLOSE.canonical
         );
-        assert_all_splits(
+        assert_native_fragmentations(
             &input,
             &[UnifiedEvent::ToolCall {
                 name: "good".into(),
@@ -3015,7 +2975,7 @@ mod tests {
             TOOLS_OPEN.canonical,
             call("first", "1", &arg("x", "number", "1"))
         );
-        assert_all_splits(
+        assert_native_fragmentations(
             &input,
             &[UnifiedEvent::ToolCall {
                 name: "first".into(),

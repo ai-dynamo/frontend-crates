@@ -14,7 +14,7 @@ use crate::tool_calling::scan::{
     InvokeBoundaryFactory, InvokeEmitter, InvokeLatch, WrappedBlockScanner, WrappedBlockSpec,
 };
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
-use crate::unified::{UnifiedParser, UnifiedParserExt, UnifiedParserInit};
+use crate::unified::{UnifiedParser, UnifiedParserExt};
 
 pub(crate) const BLOCK_START: &str = "<｜DSML｜tool_calls>";
 pub(crate) const BLOCK_END: &str = "</｜DSML｜tool_calls>";
@@ -412,7 +412,6 @@ impl InvokeEmitter for DsmlEmitter {
 /// Compatibility adapter for callers that still need `ToolParseResult`.
 pub struct DeepSeekV4ToolStreamParser {
     parser: Box<dyn UnifiedParser>,
-    initialized: bool,
 }
 
 impl DeepSeekV4ToolStreamParser {
@@ -423,17 +422,7 @@ impl DeepSeekV4ToolStreamParser {
     pub fn new_with_tools(tools: &[Tool]) -> Self {
         Self {
             parser: crate::unified::deepseek_v4::deepseek_v4_unified(tools),
-            initialized: false,
         }
-    }
-
-    fn initialize_native(&mut self) -> anyhow::Result<()> {
-        if !self.initialized {
-            self.parser
-                .initialize_request(UnifiedParserInit::native(&[]))?;
-            self.initialized = true;
-        }
-        Ok(())
     }
 }
 
@@ -456,12 +445,10 @@ impl ToolParser for DeepSeekV4ToolStreamParser {
     }
 
     fn push(&mut self, chunk: &str) -> anyhow::Result<ToolParseResult> {
-        self.initialize_native()?;
         Ok(ToolParseResult::from_deltas(self.parser.push(chunk)?))
     }
 
     fn finish(&mut self) -> anyhow::Result<ToolParseResult> {
-        self.initialize_native()?;
         Ok(ToolParseResult::from_deltas(self.parser.finish()?.events))
     }
 }
@@ -518,6 +505,7 @@ fn parse_parameters(body: &str) -> anyhow::Result<Map<String, Value>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::unified::UnifiedParserInit;
     use crate::unified::{
         InvalidGuidedPayloadPolicy, UnifiedParserStartingState, UnifiedToolOutputMode,
         guided_append_work, reset_guided_append_work,

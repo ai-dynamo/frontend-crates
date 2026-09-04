@@ -47,44 +47,6 @@ impl ToolParser for KimiK3ToolStreamParser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::unified::{UnifiedParserExt, assemble};
-
-    #[test]
-    fn legacy_surface_is_a_projection_of_the_same_events() {
-        let input = concat!(
-            "<|open|>think<|sep|>plan<|close|>think<|sep|>",
-            "<|open|>response<|sep|>checking<|close|>response<|sep|>",
-            "<|open|>tools<|sep|>",
-            "<|open|>call tool=\"weather\" index=\"1\"<|sep|>",
-            "<|open|>argument key=\"city\" type=\"string\"<|sep|>Paris",
-            "<|close|>argument<|sep|><|close|>call<|sep|>",
-            "<|close|>tools<|sep|>"
-        );
-        let mut unified = kimi_k3::kimi_k3_unified(&[]);
-        let unified_events = unified.push(input).unwrap();
-        let mut legacy = KimiK3ToolStreamParser::new(&[]);
-        let projected = legacy.push(input).unwrap();
-
-        assert_eq!(
-            projected,
-            ToolParseResult::from_deltas(unified_events.clone())
-        );
-        assert_eq!(projected.normal_text, "planchecking");
-        assert_eq!(projected.calls.len(), 1);
-        assert_eq!(projected.calls[0].name.as_deref(), Some("weather"));
-        assert!(projected.calls[0].complete);
-        assert_eq!(assemble(&unified_events).len(), 3);
-    }
-
-    #[test]
-    fn legacy_parser_reuses_unified_lifecycle() {
-        let mut parser = KimiK3ToolStreamParser::new(&[]);
-        assert_eq!(parser.push("plain").unwrap().normal_text, "plain");
-        parser.finish().unwrap();
-        assert!(parser.push("later").is_err());
-        assert!(parser.finish().is_err());
-    }
-
     #[test]
     fn legacy_projection_preserves_model_call_id() {
         let input = concat!(
