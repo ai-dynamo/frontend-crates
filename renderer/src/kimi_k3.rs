@@ -177,6 +177,34 @@ fn contains_tool(tools: &Value, name: &str) -> bool {
     })
 }
 
+/// The dynamic tool declaration carried by a `system`/`developer` message.
+///
+/// `Ok(Some(..))` for a non-empty `tools` array; `Ok(None)` when `tools` is
+/// missing, `null`, or an empty array (an empty list declares nothing, so the
+/// message is an ordinary turn); `Err` for any other JSON type.
+fn dynamic_tools_of(message: &Value) -> Result<Option<&Vec<Value>>> {
+    match message.get("tools") {
+        None | Some(Value::Null) => Ok(None),
+        Some(Value::Array(tools)) if tools.is_empty() => Ok(None),
+        Some(Value::Array(tools)) => Ok(Some(tools)),
+        Some(_) => Err(PromptRenderError::invalid_request(
+            "Kimi K3 dynamic tool messages need `tools` to be an array",
+        )
+        .into()),
+    }
+}
+
+/// Whether `content` carries text: missing, `null`, `""`, and `[]` all count
+/// as empty, matching Moonshot's "omit `content`" contract for dynamic tools.
+fn content_is_non_empty(content: Option<&Value>) -> bool {
+    match content {
+        None | Some(Value::Null) => false,
+        Some(Value::String(text)) => !text.is_empty(),
+        Some(Value::Array(parts)) => !parts.is_empty(),
+        Some(_) => true,
+    }
+}
+
 /// Whether a `system`/`developer` message's dynamic `tools` declares `name`.
 fn message_declares_tool(message: &Value, name: &str) -> bool {
     matches!(
@@ -758,25 +786,19 @@ fn build_chat_segments(
         let role = message.get("role").and_then(Value::as_str).ok_or_else(|| {
             PromptRenderError::invalid_request("Kimi K3 messages must contain a string role")
         })?;
+        // Empty `tools` is not a declaration: the message renders as an
+        // ordinary system/developer turn. Non-array `tools` is a request error.
+        let dynamic_tools = dynamic_tools_of(message)?;
         match role {
-            "system" | "developer"
-                if message.get("tools").is_some_and(|tools| !tools.is_null()) =>
-            {
-                let has_content = message
-                    .get("content")
-                    .is_some_and(|content| !content.is_null());
-                let dynamic_tools = message["tools"]
-                    .as_array()
-                    .filter(|tools| !tools.is_empty())
-                    .ok_or_else(|| {
-                        PromptRenderError::invalid_request(
-                            "Kimi K3 dynamic tool messages need `tools` to be a non-empty array",
-                        )
-                    })?;
+            "system" | "developer" if dynamic_tools.is_some() => {
+                let dynamic_tools = dynamic_tools.expect("guarded by the match arm");
+                let has_content = content_is_non_empty(message.get("content"));
                 // Moonshot's contract: a dynamic-tool system message omits
-                // `content`. Rejecting keeps the text from being silently lost.
-                // `developer` is an OpenAI role rendered as system, so it keeps
-                // the ordinary both-fields behavior.
+                // `content` (an empty string counts as omitted; the official
+                // verifier sends `"content": ""`). Rejecting non-empty text
+                // keeps it from being silently lost. `developer` is an OpenAI
+                // role rendered as system, so it keeps the ordinary
+                // both-fields behavior.
                 if role == "system" && has_content {
                     return Err(PromptRenderError::invalid_request(
                         "Kimi K3 system messages carry either `content` or `tools`, not both",
@@ -1395,8 +1417,8 @@ mod tests {
     }
 
     #[test]
-    fn rejects_system_message_tools_that_are_not_a_non_empty_array() {
-        for tools in [json!([]), json!("lookup"), json!({"name": "lookup"})] {
+    fn rejects_system_message_tools_that_are_not_an_array() {
+        for tools in [json!("lookup"), json!({"name": "lookup"}), json!(1)] {
             let request = Request::new(json!([
                 {"role": "system", "tools": tools},
                 {"role": "user", "content": "Go"}
@@ -1405,10 +1427,69 @@ mod tests {
             let error = fmt().render(&request).unwrap_err();
             assert_eq!(
                 invalid_request_message(&error),
-                "Kimi K3 dynamic tool messages need `tools` to be a non-empty array",
+                "Kimi K3 dynamic tool messages need `tools` to be an array",
                 "tools={tools}"
             );
         }
+    }
+
+    /// Moonshot's official dynamic-tools verifier sends `"content": ""`
+    /// alongside `tools` and expects success. Empty content is "omitted".
+    #[test]
+    fn accepts_dynamic_tools_with_empty_string_content() {
+        for empty in [json!(""), json!([]), Value::Null] {
+            let mut request = Request::new(json!([
+                {"role": "user", "content": "Start"},
+                {
+                    "role": "system",
+                    "content": empty,
+                    "tools": [{"type": "function", "function": {"name": "lookup"}}]
+                },
+                {"role": "user", "content": "Go"}
+            ]));
+            request
+                .args
+                .insert("thinking".to_string(), Value::Bool(false));
+
+            let rendered = fmt()
+                .render(&request)
+                .unwrap_or_else(|e| panic!("content={empty}: {e}"));
+            assert!(
+                rendered.contains("## New Tools Available"),
+                "content={empty}"
+            );
+            assert!(
+                !rendered.contains("<|open|>message role=\"system\"<|sep|><|close|>message"),
+                "content={empty}: must not emit an empty system turn"
+            );
+        }
+    }
+
+    /// `tools: []` declares nothing, so the message is an ordinary system turn.
+    #[test]
+    fn empty_tools_list_is_an_ordinary_system_message() {
+        let mut request = Request::new(json!([
+            {"role": "system", "content": "You are helpful", "tools": []},
+            {"role": "user", "content": "Go"}
+        ]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+
+        let rendered = fmt().render(&request).unwrap();
+        assert!(rendered.contains("<|open|>message role=\"system\"<|sep|>You are helpful"));
+        assert!(!rendered.contains("## New Tools Available"));
+
+        // ...and with no content either, it is the usual "nothing here" error.
+        let request = Request::new(json!([
+            {"role": "system", "tools": []},
+            {"role": "user", "content": "Go"}
+        ]));
+        let error = fmt().render(&request).unwrap_err();
+        assert_eq!(
+            invalid_request_message(&error),
+            "Kimi K3 system messages need `content` or `tools`"
+        );
     }
 
     #[test]

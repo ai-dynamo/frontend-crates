@@ -545,11 +545,15 @@ fn normalize_system_messages(messages: &mut serde_json::Value, rules: SystemNorm
 /// `message.tools`, so letting such a message through would render an empty
 /// system turn and silently drop the declared tools. Fail the request instead.
 fn reject_system_message_tools(messages: &serde_json::Value) -> Result<()> {
+    // `tools: []` declares nothing and is fine; anything else non-null is a
+    // declaration this template cannot honor.
     let offending = messages.as_array().into_iter().flatten().find(|message| {
         matches!(
             message.get("role").and_then(serde_json::Value::as_str),
             Some("system" | "developer")
-        ) && message.get("tools").is_some_and(|tools| !tools.is_null())
+        ) && message
+            .get("tools")
+            .is_some_and(|tools| !tools.is_null() && !tools.as_array().is_some_and(Vec::is_empty))
     });
     if offending.is_some() {
         return Err(crate::PromptRenderError::invalid_request(
@@ -773,16 +777,16 @@ mod tests {
                 if message.contains("system-message `tools`")
         ));
 
-        // Ordinary system messages are untouched.
-        let rendered = render_shape(
-            &f,
-            json!([
-                {"role": "system", "content": "You are helpful."},
-                {"role": "user", "content": "hi"}
-            ]),
-        )
-        .unwrap();
-        assert!(rendered.contains("<|im_start|>system\nYou are helpful.<|im_end|>"));
+        // Ordinary system messages are untouched, including one that carries
+        // an empty `tools` list (declares nothing).
+        for message in [
+            json!({"role": "system", "content": "You are helpful."}),
+            json!({"role": "system", "content": "You are helpful.", "tools": []}),
+        ] {
+            let rendered =
+                render_shape(&f, json!([message, {"role": "user", "content": "hi"}])).unwrap();
+            assert!(rendered.contains("<|im_start|>system\nYou are helpful.<|im_end|>"));
+        }
     }
     // Rejects a non-leading system (Qwen3.5 shape); accepts consecutive users.
     const STRICT_LEADING_TMPL: &str = concat!(
