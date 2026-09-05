@@ -876,7 +876,6 @@ def test_touch_outside_a_host_does_not_arm_a_pointerdownless_activation(driver):
 
 @pytest.mark.parametrize("transposed", [False, True], ids=["normal", "transposed"])
 def test_matrix_labels_stay_visible_when_scrolled(driver, rendered_page, transposed):
-    """SCROLL: both matrix axes keep their labels visible and aligned."""
     driver.get(f"file://{rendered_page}?view=details")
     if transposed:
         toggled = driver.execute_script(
