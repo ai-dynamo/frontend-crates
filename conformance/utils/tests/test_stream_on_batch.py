@@ -967,3 +967,15 @@ def test_transpose_feature_is_wired() -> None:
     # CSS shows the mirror in transpose mode and hides the original
     assert "body.transpose-mode" in css and ".transpose-table" in css
     assert "sideways-lr" in css  # rotated bottom-up model headers
+
+
+def test_matrix_axis_labels_are_sticky() -> None:
+    css = (SRC / "assets" / "conformance.css").read_text(encoding="utf-8")
+    view = (SRC / "assets" / "conformance_view.js").read_text(encoding="utf-8")
+    js = (SRC / "assets" / "conformance.js").read_text(encoding="utf-8")
+    assert "matrix-groups" in view and "matrix-labels" in view
+    assert "transpose-sections" in js and "transpose-models" in js
+    assert "--sticky-model-width" in js and "--sticky-case-width" in js
+    assert "position: sticky" in css
+    assert "data-col-control-group=\"model\"" in css
+    assert ".transpose-table > tbody > tr:not(.section) > th.trow-case" in css

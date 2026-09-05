@@ -872,3 +872,62 @@ def test_touch_outside_a_host_does_not_arm_a_pointerdownless_activation(driver):
         "a pointerdown-less activation pinned because an unrelated touch elsewhere left "
         "the provenance armed — pinning must require the gesture to start in this host"
     )
+
+
+@pytest.mark.parametrize("transposed", [False, True], ids=["normal", "transposed"])
+def test_matrix_labels_stay_visible_when_scrolled(driver, rendered_page, transposed):
+    """SCROLL: both matrix axes keep their labels visible and aligned."""
+    driver.get(f"file://{rendered_page}?view=details")
+    if transposed:
+        toggled = driver.execute_script(
+            """
+            const t = document.querySelector('[data-transpose-toggle]');
+            if (!t) return false;
+            t.checked = true;
+            t.dispatchEvent(new Event('change'));
+            return true;
+            """
+        )
+        if not toggled:
+            pytest.skip("no transpose toggle on this page")
+
+    result = driver.execute_script(
+        """
+        const table = document.querySelector(arguments[0]
+          ? '.tab-panel.active table[data-transpose-table]'
+          : '.tab-panel.active table[data-parity-table]');
+        if (!table) return {error: 'active matrix not found'};
+        const header = arguments[0]
+          ? table.querySelector('thead tr.transpose-models th.tcorner-case')
+          : table.querySelector('thead tr.matrix-groups th[data-col-control-group="model"]');
+        const label = arguments[0]
+          ? table.querySelector('tbody tr:not(.section) th.trow-case')
+          : table.querySelector('tbody tr:not(.section) td.model');
+        if (!header || !label) return {error: 'matrix labels not found'};
+        const before = header.getBoundingClientRect();
+        window.scrollTo(500, Math.max(0, table.getBoundingClientRect().top + window.scrollY + 500));
+        const afterHeader = header.getBoundingClientRect();
+        const afterLabel = label.getBoundingClientRect();
+        return {
+          beforeTop: before.top,
+          afterTop: afterHeader.top,
+          afterLeft: afterLabel.left,
+          headerLeft: afterHeader.left,
+          headerPosition: getComputedStyle(header).position,
+          labelPosition: getComputedStyle(label).position,
+          labelWidth: afterLabel.width,
+          headerWidth: afterHeader.width,
+          viewportHeight: window.innerHeight,
+        };
+        """,
+        transposed,
+    )
+    try:
+        assert "error" not in result, result.get("error")
+        assert result["headerPosition"] == "sticky"
+        assert result["labelPosition"] == "sticky"
+        assert 0 <= result["afterTop"] < result["viewportHeight"]
+        assert abs(result["afterLeft"] - result["headerLeft"]) < 2
+        assert result["labelWidth"] > 0 and result["headerWidth"] > 0
+    finally:
+        driver.get(f"file://{rendered_page}")
