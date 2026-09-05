@@ -825,7 +825,12 @@ pub struct ChatCompletionRequestAssistantMessage {
 /// Redefined to use our extended `ChatCompletionRequestAssistantMessage`
 /// (with reasoning_content) and `ChatCompletionRequestUserMessage`
 /// (which references our extended content parts with video/audio).
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+///
+/// Deserialization rejects Kimi-specific fields on roles that cannot carry
+/// them (`tools` off `system`, `partial` off `assistant`) instead of letting
+/// serde's ignore-unknown-fields default drop them silently; Moonshot's
+/// negative tests expect a request error for these shapes.
+#[derive(Debug, Serialize, Clone, PartialEq)]
 #[serde(tag = "role")]
 #[serde(rename_all = "lowercase")]
 pub enum ChatCompletionRequestMessage {
@@ -835,6 +840,57 @@ pub enum ChatCompletionRequestMessage {
     Assistant(ChatCompletionRequestAssistantMessage),
     Tool(ChatCompletionRequestToolMessage),
     Function(ChatCompletionRequestFunctionMessage),
+}
+
+impl<'de> Deserialize<'de> for ChatCompletionRequestMessage {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        use serde::de::Error;
+
+        /// The derived shape; the public enum only adds the role/field check.
+        #[derive(Deserialize)]
+        #[serde(tag = "role")]
+        #[serde(rename_all = "lowercase")]
+        enum Wire {
+            Developer(ChatCompletionRequestDeveloperMessage),
+            System(ChatCompletionRequestSystemMessage),
+            User(ChatCompletionRequestUserMessage),
+            Assistant(ChatCompletionRequestAssistantMessage),
+            Tool(ChatCompletionRequestToolMessage),
+            Function(ChatCompletionRequestFunctionMessage),
+        }
+
+        let value = serde_json::Value::deserialize(deserializer)?;
+        let role = value.get("role").and_then(serde_json::Value::as_str);
+        let carries = |field: &str| value.get(field).is_some_and(|v| !v.is_null());
+        // `developer` is excluded on purpose: it is the upstream type with no
+        // `tools` field, so accepting it here would silently drop the tools.
+        if carries("tools") && role != Some("system") {
+            return Err(D::Error::custom(format!(
+                "`tools` is only accepted on system messages, not on role {}",
+                role.unwrap_or("<missing>")
+            )));
+        }
+        if carries("partial") && role != Some("assistant") {
+            return Err(D::Error::custom(format!(
+                "`partial` is only accepted on assistant messages, not on role {}",
+                role.unwrap_or("<missing>")
+            )));
+        }
+
+        Ok(
+            match serde_json::from_value::<Wire>(value).map_err(D::Error::custom)? {
+                Wire::Developer(message) => Self::Developer(message),
+                Wire::System(message) => Self::System(message),
+                Wire::User(message) => Self::User(message),
+                Wire::Assistant(message) => Self::Assistant(message),
+                Wire::Tool(message) => Self::Tool(message),
+                Wire::Function(message) => Self::Function(message),
+            },
+        )
+    }
 }
 
 /// Backward-compatible name for the service tier reported in responses.
@@ -2161,6 +2217,62 @@ mod tests {
         .unwrap();
         assert!(request.has_effective_tools());
         assert!(request.effective_tool_contains("lookup"));
+    }
+
+    /// Kimi fields on roles that cannot carry them are rejected, not dropped.
+    #[test]
+    fn message_rejects_tools_and_partial_on_wrong_roles() {
+        let tools = serde_json::json!([{"name": "lookup"}]);
+        for (label, message, needle) in [
+            (
+                "tools on user",
+                serde_json::json!({"role": "user", "content": "hi", "tools": tools}),
+                "`tools` is only accepted on system messages, not on role user",
+            ),
+            (
+                "tools on assistant",
+                serde_json::json!({"role": "assistant", "content": "hi", "tools": tools}),
+                "`tools` is only accepted on system messages, not on role assistant",
+            ),
+            (
+                // Upstream type without a `tools` field: accepting would drop them.
+                "tools on developer",
+                serde_json::json!({"role": "developer", "content": "hi", "tools": tools}),
+                "`tools` is only accepted on system messages, not on role developer",
+            ),
+            (
+                "partial on user",
+                serde_json::json!({"role": "user", "content": "hi", "partial": true}),
+                "`partial` is only accepted on assistant messages, not on role user",
+            ),
+            (
+                "partial on system",
+                serde_json::json!({"role": "system", "content": "hi", "partial": false}),
+                "`partial` is only accepted on assistant messages, not on role system",
+            ),
+        ] {
+            let error = serde_json::from_value::<ChatCompletionRequestMessage>(message)
+                .expect_err(label)
+                .to_string();
+            assert!(error.contains(needle), "{label}: {error}");
+        }
+
+        // Explicit `null` is treated as absent, like every other optional field.
+        for message in [
+            serde_json::json!({"role": "user", "content": "hi", "tools": null}),
+            serde_json::json!({"role": "user", "content": "hi", "partial": null}),
+        ] {
+            serde_json::from_value::<ChatCompletionRequestMessage>(message).unwrap();
+        }
+
+        // The right roles still work, and unrelated unknown fields stay ignored.
+        for message in [
+            serde_json::json!({"role": "system", "tools": tools}),
+            serde_json::json!({"role": "assistant", "content": "seed", "partial": true}),
+            serde_json::json!({"role": "user", "content": "hi", "x_vendor": 1}),
+        ] {
+            serde_json::from_value::<ChatCompletionRequestMessage>(message).unwrap();
+        }
     }
 
     #[test]
