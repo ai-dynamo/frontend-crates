@@ -2148,6 +2148,21 @@ mod tests {
         }
     }
 
+    /// Moonshot's official verifier sends `"content": ""` with dynamic tools.
+    #[test]
+    fn system_message_accepts_empty_string_content_with_tools() {
+        let request: CreateChatCompletionRequest = serde_json::from_value(serde_json::json!({
+            "model": "kimi-k3",
+            "messages": [
+                {"role": "system", "content": "", "tools": [{"name": "lookup"}]},
+                {"role": "user", "content": "go"}
+            ]
+        }))
+        .unwrap();
+        assert!(request.has_effective_tools());
+        assert!(request.effective_tool_contains("lookup"));
+    }
+
     #[test]
     fn system_message_guard_keeps_field_level_errors() {
         // A malformed `tools` must still fail on the field, not on the guard.
