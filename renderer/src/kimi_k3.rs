@@ -65,10 +65,15 @@ impl KimiK3Formatter {
         let tool_choice = req.tool_choice().map(json_value).transpose()?;
         let (tool_choice_kind, named_tool) = resolve_tool_choice(tool_choice.as_ref())?;
         let mut tools = req.tools().map(json_value).transpose()?;
+        // A named tool_choice may target a dynamically declared tool (Kimi's
+        // system-message `tools`), which never appears in the top-level list.
         if let Some(named_tool) = named_tool
             && !tools
                 .as_ref()
                 .is_some_and(|tools| contains_tool(tools, named_tool))
+            && !messages
+                .iter()
+                .any(|message| message_declares_tool(message, named_tool))
         {
             return Err(PromptRenderError::invalid_request(format!(
                 "tool named {named_tool:?} in tool_choice is not present in tools"
@@ -170,6 +175,16 @@ fn contains_tool(tools: &Value, name: &str) -> bool {
                 == Some(name)
         })
     })
+}
+
+/// Whether a `system`/`developer` message's dynamic `tools` declares `name`.
+fn message_declares_tool(message: &Value, name: &str) -> bool {
+    matches!(
+        message.get("role").and_then(Value::as_str),
+        Some("system" | "developer")
+    ) && message
+        .get("tools")
+        .is_some_and(|tools| contains_tool(tools, name))
 }
 
 fn resolve_thinking_effort(args: Option<&HashMap<String, Value>>) -> String {
@@ -1574,6 +1589,51 @@ mod tests {
             !rendered.contains("historical hidden reasoning"),
             "named tool choice must also suppress preserved thinking history"
         );
+    }
+
+    #[test]
+    fn named_tool_choice_accepts_a_dynamic_system_tool() {
+        for lookup in [
+            json!({"type": "function", "function": {"name": "lookup", "parameters": {"type": "object"}}}),
+            json!({"name": "lookup", "parameters": {"type": "object"}}),
+        ] {
+            let mut request = Request::new(json!([
+                {"role": "user", "content": "Start"},
+                {"role": "system", "tools": [lookup]},
+                {"role": "user", "content": "Look this up"}
+            ]));
+            request.tool_choice = Some(json!({
+                "type": "function",
+                "function": {"name": "lookup"}
+            }));
+
+            let rendered = fmt().render(&request).unwrap();
+            assert!(rendered.contains("## New Tools Available"));
+            assert!(rendered.contains("MUST call the tool `lookup`"));
+            assert!(
+                request.tools.is_none(),
+                "dynamic tools must not be folded into the top-level list"
+            );
+        }
+    }
+
+    #[test]
+    fn named_tool_choice_still_rejects_a_tool_absent_from_dynamic_tools() {
+        let mut request = Request::new(json!([
+            {"role": "system", "tools": [{"name": "lookup"}]},
+            {"role": "user", "content": "Weather?"}
+        ]));
+        request.tool_choice = Some(json!({
+            "type": "function",
+            "function": {"name": "get_weather"}
+        }));
+
+        let error = fmt().render(&request).unwrap_err();
+        assert!(matches!(
+            error.downcast_ref::<PromptRenderError>(),
+            Some(PromptRenderError::InvalidRequest(message))
+                if message.contains("get_weather") && message.contains("not present in tools")
+        ));
     }
 
     #[test]

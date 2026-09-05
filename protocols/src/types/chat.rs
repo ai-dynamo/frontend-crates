@@ -931,6 +931,71 @@ pub struct CreateChatCompletionRequest {
     pub web_search_options: Option<WebSearchOptions>,
 }
 
+impl CreateChatCompletionRequest {
+    /// Kimi-style dynamic tools declared on `system` messages, in message order.
+    ///
+    /// Kimi defines these as coexisting with the top-level `tools` list: a
+    /// dynamic declaration keeps its position in the message history so the
+    /// prompt prefix (and any KV cache built on it) stays intact. Do not fold
+    /// them into `tools`; reason about the union with
+    /// [`Self::has_effective_tools`] and [`Self::effective_tool_contains`].
+    ///
+    /// Only `system` messages can carry `tools` in the typed schema; the
+    /// `developer` message is the upstream type and has no such field.
+    pub fn dynamic_system_tools(&self) -> impl Iterator<Item = &serde_json::Value> {
+        self.messages
+            .iter()
+            .filter_map(|message| match message {
+                ChatCompletionRequestMessage::System(system) => system.tools.as_deref(),
+                _ => None,
+            })
+            .flatten()
+    }
+
+    /// Whether the request declares any tool, either top-level or through a
+    /// dynamic system-message declaration.
+    ///
+    /// Gates that decide whether model output may be interpreted as tool
+    /// calls must use this rather than `tools` alone, or a call to a
+    /// dynamically declared tool is stripped from the response.
+    pub fn has_effective_tools(&self) -> bool {
+        self.tools.as_ref().is_some_and(|tools| !tools.is_empty())
+            || self.dynamic_system_tools().next().is_some()
+    }
+
+    /// Names of every tool the model can see: top-level `tools` first, then
+    /// dynamic system-message tools in message order.
+    pub fn effective_tool_names(&self) -> impl Iterator<Item = &str> {
+        self.tools
+            .iter()
+            .flatten()
+            .map(|tool| tool.function.name.as_str())
+            .chain(self.dynamic_system_tools().filter_map(dynamic_tool_name))
+    }
+
+    /// Whether `name` is declared anywhere in the effective tool set.
+    ///
+    /// Use this to validate a named `tool_choice` so a forced call to a
+    /// dynamically declared tool is not rejected as "not present in tools".
+    pub fn effective_tool_contains(&self, name: &str) -> bool {
+        self.effective_tool_names().any(|tool| tool == name)
+    }
+}
+
+/// Name of a dynamic system-message tool entry.
+///
+/// Accepts both the OpenAI wrapped form
+/// `{"type": "function", "function": {"name": ...}}` and the bare
+/// function-schema form `{"name": ...}` that some Kimi clients send. Returns
+/// `None` for entries with no string name.
+pub fn dynamic_tool_name(tool: &serde_json::Value) -> Option<&str> {
+    tool.get("function")
+        .and_then(serde_json::Value::as_object)
+        .and_then(|function| function.get("name"))
+        .or_else(|| tool.get("name"))
+        .and_then(serde_json::Value::as_str)
+}
+
 /// Chat choice with extended response message.
 ///
 /// Uses our `ChatCompletionResponseMessage` (multimodal content + reasoning).
@@ -1868,6 +1933,113 @@ mod tests {
     }
 
     // -- Kimi-style system tools / assistant partial tests --
+
+    #[test]
+    fn effective_tool_set_unions_top_level_and_dynamic_system_tools() {
+        let request: CreateChatCompletionRequest = serde_json::from_value(serde_json::json!({
+            "model": "dummy-kimi-model",
+            "tools": [{
+                "type": "function",
+                "function": {"name": "add", "parameters": {"type": "object"}}
+            }],
+            "messages": [
+                {"role": "user", "content": "start"},
+                {
+                    "role": "system",
+                    "tools": [
+                        {
+                            "type": "function",
+                            "function": {"name": "lookup", "parameters": {"type": "object"}}
+                        },
+                        {"name": "search", "parameters": {"type": "object"}},
+                        {"description": "no name, skipped"}
+                    ]
+                },
+                {"role": "user", "content": "continue"}
+            ]
+        }))
+        .unwrap();
+
+        assert!(request.has_effective_tools());
+        assert_eq!(request.dynamic_system_tools().count(), 3);
+        assert_eq!(
+            request.effective_tool_names().collect::<Vec<_>>(),
+            ["add", "lookup", "search"],
+            "top-level first, then dynamic in message order; wrapped and bare shapes both resolve"
+        );
+        for name in ["add", "lookup", "search"] {
+            assert!(
+                request.effective_tool_contains(name),
+                "{name} should be found"
+            );
+        }
+        assert!(!request.effective_tool_contains("missing"));
+        assert!(
+            !request.effective_tool_contains("no name, skipped"),
+            "a description is not a name"
+        );
+    }
+
+    #[test]
+    fn effective_tool_set_is_empty_without_any_declaration() {
+        for payload in [
+            serde_json::json!({
+                "model": "m",
+                "messages": [{"role": "user", "content": "hi"}]
+            }),
+            serde_json::json!({
+                "model": "m",
+                "tools": [],
+                "messages": [{"role": "system", "content": "plain system text"}]
+            }),
+            serde_json::json!({
+                "model": "m",
+                "messages": [{"role": "system", "tools": []}]
+            }),
+        ] {
+            let request: CreateChatCompletionRequest = serde_json::from_value(payload).unwrap();
+            assert!(!request.has_effective_tools());
+            assert_eq!(request.effective_tool_names().count(), 0);
+            assert!(!request.effective_tool_contains("anything"));
+        }
+    }
+
+    #[test]
+    fn dynamic_system_tools_alone_count_as_effective_tools() {
+        let request: CreateChatCompletionRequest = serde_json::from_value(serde_json::json!({
+            "model": "dummy-kimi-model",
+            "messages": [
+                {"role": "system", "tools": [{"name": "lookup"}]},
+                {"role": "user", "content": "go"}
+            ]
+        }))
+        .unwrap();
+
+        assert!(
+            request.tools.is_none(),
+            "nothing was folded into top-level tools"
+        );
+        assert!(request.has_effective_tools());
+        assert!(request.effective_tool_contains("lookup"));
+    }
+
+    #[test]
+    fn dynamic_tool_name_handles_wrapped_bare_and_invalid_shapes() {
+        assert_eq!(
+            dynamic_tool_name(&serde_json::json!({"type": "function", "function": {"name": "a"}})),
+            Some("a")
+        );
+        assert_eq!(
+            dynamic_tool_name(&serde_json::json!({"name": "b"})),
+            Some("b")
+        );
+        assert_eq!(dynamic_tool_name(&serde_json::json!({"name": 7})), None);
+        assert_eq!(
+            dynamic_tool_name(&serde_json::json!({"function": "not-an-object"})),
+            None
+        );
+        assert_eq!(dynamic_tool_name(&serde_json::json!("string")), None);
+    }
 
     #[test]
     fn system_message_accepts_tools_without_content() {
