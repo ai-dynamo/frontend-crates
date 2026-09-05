@@ -29,6 +29,65 @@ th a:hover { background: #ffd; }
 td.model, td.parser { white-space: nowrap; }
 td.parser a { color: inherit; text-decoration: none; }
 td.parser a:hover { background: #ffd; }
+/* Separate borders keep sticky table cells composited reliably in Chromium while zero
+   spacing preserves the existing one-pixel grid appearance. */
+[data-parity-table], .transpose-table { border-collapse: separate; border-spacing: 0; }
+
+/* Keep both axes identifiable while the matrix is scrolled. The left offsets are measured
+   by conformance.js because labels differ by tab and the parser column is optional. */
+[data-parity-table] > thead > tr.matrix-groups > th,
+[data-parity-table] > thead > tr.matrix-labels > th {
+  position: sticky;
+  background: #f5f5f5;
+}
+[data-parity-table] > thead > tr.matrix-groups > th { top: 0; z-index: 10; }
+[data-parity-table] > thead > tr.matrix-labels > th {
+  top: var(--sticky-top-row-height, 0px);
+  z-index: 9;
+}
+[data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="model"],
+[data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="parser"] {
+  z-index: 20;
+}
+[data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="model"],
+[data-parity-table] > tbody > tr:not(.section) > td.model { left: 0; }
+[data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="parser"],
+[data-parity-table] > tbody > tr:not(.section) > td.parser {
+  left: var(--sticky-model-width, 0px);
+}
+[data-parity-table] > tbody > tr:not(.section) > td.model,
+[data-parity-table] > tbody > tr:not(.section) > td.parser {
+  position: sticky;
+  z-index: 3;
+  background: #fff;
+}
+
+/* The transposed matrix has one optional section header row, model names across the top,
+   and case names down the left. Its measured case-column width is shared by the corner and
+   every body row label. */
+.transpose-table > thead > tr.transpose-sections > th,
+.transpose-table > thead > tr.transpose-models > th {
+  position: sticky;
+  background: #f5f5f5;
+}
+.transpose-table > thead > tr.transpose-sections > th { top: 0; z-index: 10; }
+.transpose-table > thead > tr.transpose-models > th {
+  top: var(--sticky-top-row-height, 0px);
+  z-index: 9;
+}
+.transpose-table > thead > tr.transpose-sections > th.tcorner-case,
+.transpose-table > thead > tr.transpose-models > th.tcorner-case {
+  left: 0;
+  z-index: 20;
+}
+.transpose-table > tbody > tr:not(.section) > th.trow-case {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  width: var(--sticky-case-width, auto);
+  min-width: var(--sticky-case-width, auto);
+  background: #fff;
+}
 /* Unified tab: per-family parser-variant badge (vLLM Rust unified vs combined). */
 .arch-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px;
   font-weight: 700; letter-spacing: .02em; border: 1px solid transparent; }
@@ -732,6 +791,11 @@ body.cmp-loading .cmp-loading-note { display: block; position: fixed; top: 8px; 
 :root[data-theme="dark"] body { background: #0f172a; color: #e5e7eb; }
 :root[data-theme="dark"] th, :root[data-theme="dark"] td { border-color: #334155; }
 :root[data-theme="dark"] th { background: #1e293b; color: #cbd5e1; }
+:root[data-theme="dark"] [data-parity-table] > tbody > tr:not(.section) > td.model,
+:root[data-theme="dark"] [data-parity-table] > tbody > tr:not(.section) > td.parser,
+:root[data-theme="dark"] .transpose-table > tbody > tr:not(.section) > th.trow-case {
+  background: #0f172a;
+}
 :root[data-theme="dark"] th.case-group.case-band-0 { background: #1a2436; }
 :root[data-theme="dark"] th.case-group.case-band-1 { background: #0f172a; }
 :root[data-theme="dark"] th.case-sub.case-band-0,
