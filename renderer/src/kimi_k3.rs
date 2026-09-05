@@ -194,6 +194,77 @@ fn dynamic_tools_of(message: &Value) -> Result<Option<&Vec<Value>>> {
     }
 }
 
+/// Name of a dynamic tool entry, validating the entry's shape on the way.
+///
+/// Accepts the OpenAI wrapped form (`{"type": "function", "function": {...}}`)
+/// and the bare function-schema form (`{"name": ..., "parameters": ...}`).
+/// Rejects non-object entries, a `type` other than `"function"`, and a
+/// missing or empty name — Moonshot's verifier expects a request error for
+/// each, and the model would otherwise see an unusable declaration.
+fn dynamic_tool_entry_name(tool: &Value) -> Result<&str> {
+    let object = tool.as_object().ok_or_else(|| {
+        PromptRenderError::invalid_request("Kimi K3 dynamic tool entries must be JSON objects")
+    })?;
+    if let Some(kind) = object.get("type")
+        && kind.as_str() != Some("function")
+    {
+        return Err(PromptRenderError::invalid_request(format!(
+            "Kimi K3 dynamic tool entries must have type=\"function\", got {kind}"
+        ))
+        .into());
+    }
+    object
+        .get("function")
+        .and_then(Value::as_object)
+        .and_then(|function| function.get("name"))
+        .or_else(|| object.get("name"))
+        .and_then(Value::as_str)
+        .filter(|name| !name.is_empty())
+        .ok_or_else(|| {
+            PromptRenderError::invalid_request(
+                "Kimi K3 dynamic tool entries need a non-empty string name",
+            )
+            .into()
+        })
+}
+
+/// Validate every tool the model will see — top-level `tools` plus each
+/// dynamic system/developer declaration in `messages` — as one namespace:
+/// dynamic entries must be well-formed, and no name may be declared twice.
+fn validate_tool_declarations(top_level: Option<&Value>, messages: &[Value]) -> Result<()> {
+    let mut seen = std::collections::HashSet::new();
+    // Top-level tools have already passed the typed schema (or the caller's
+    // own checks); they only contribute names for duplicate detection.
+    for tool in top_level.and_then(Value::as_array).into_iter().flatten() {
+        if let Ok(name) = dynamic_tool_entry_name(tool)
+            && !seen.insert(name)
+        {
+            return Err(PromptRenderError::invalid_request(format!(
+                "tool {name:?} is declared more than once in `tools`"
+            ))
+            .into());
+        }
+    }
+    for message in messages {
+        if !matches!(
+            message.get("role").and_then(Value::as_str),
+            Some("system" | "developer")
+        ) {
+            continue;
+        }
+        for tool in dynamic_tools_of(message)?.into_iter().flatten() {
+            let name = dynamic_tool_entry_name(tool)?;
+            if !seen.insert(name) {
+                return Err(PromptRenderError::invalid_request(format!(
+                    "tool {name:?} is declared more than once across `tools` and dynamic system tools"
+                ))
+                .into());
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Whether `content` carries text: missing, `null`, `""`, and `[]` all count
 /// as empty, matching Moonshot's "omit `content`" contract for dynamic tools.
 fn content_is_non_empty(content: Option<&Value>) -> bool {
@@ -758,6 +829,8 @@ fn build_chat_segments(
         }
         _ => (messages, None),
     };
+
+    validate_tool_declarations(tools, history)?;
     if history.iter().any(is_partial) {
         return Err(PromptRenderError::invalid_request(
             "Kimi K3 `partial` is only supported on the final message",
@@ -1465,6 +1538,83 @@ mod tests {
         }
     }
 
+    /// Malformed dynamic tool entries are request errors (Moonshot negative
+    /// tests), not declarations the model has to make sense of.
+    #[test]
+    fn rejects_malformed_dynamic_tool_entries() {
+        for (entry, needle) in [
+            (json!("lookup"), "must be JSON objects"),
+            (json!(7), "must be JSON objects"),
+            (
+                json!({"parameters": {"type": "object"}}),
+                "non-empty string name",
+            ),
+            (json!({"name": ""}), "non-empty string name"),
+            (json!({"name": 42}), "non-empty string name"),
+            (
+                json!({"type": "function", "function": {}}),
+                "non-empty string name",
+            ),
+            (
+                json!({"type": "custom", "name": "lookup"}),
+                "type=\"function\"",
+            ),
+            (
+                json!({"type": "function", "function": {"name": "lookup"}, "type": "web_search"}),
+                "type=\"function\"",
+            ),
+        ] {
+            let request = Request::new(json!([
+                {"role": "system", "tools": [entry]},
+                {"role": "user", "content": "Go"}
+            ]));
+            let error = fmt().render(&request).unwrap_err();
+            assert!(
+                invalid_request_message(&error).contains(needle),
+                "entry={entry}: {}",
+                invalid_request_message(&error)
+            );
+        }
+    }
+
+    /// Top-level and dynamic tools share one namespace.
+    #[test]
+    fn rejects_duplicate_tool_names_across_declarations() {
+        // Same name in top-level `tools` and a dynamic declaration.
+        let mut request = Request::new(json!([
+            {"role": "system", "tools": [{"name": "lookup"}]},
+            {"role": "user", "content": "Go"}
+        ]));
+        request.tools = Some(json!([{
+            "type": "function",
+            "function": {"name": "lookup", "parameters": {"type": "object"}}
+        }]));
+        let error = fmt().render(&request).unwrap_err();
+        assert!(invalid_request_message(&error).contains("declared more than once"));
+
+        // Same name twice across two dynamic declarations.
+        let request = Request::new(json!([
+            {"role": "system", "tools": [{"name": "lookup"}]},
+            {"role": "user", "content": "one"},
+            {"role": "assistant", "content": "ok"},
+            {"role": "developer", "tools": [{"type": "function", "function": {"name": "lookup"}}]},
+            {"role": "user", "content": "two"}
+        ]));
+        let error = fmt().render(&request).unwrap_err();
+        assert!(invalid_request_message(&error).contains("declared more than once"));
+
+        // Distinct names are fine, wrapped or bare.
+        let mut request = Request::new(json!([
+            {"role": "system", "tools": [{"name": "lookup"}, {"type": "function", "function": {"name": "search"}}]},
+            {"role": "user", "content": "Go"}
+        ]));
+        request.tools = Some(json!([{
+            "type": "function",
+            "function": {"name": "add", "parameters": {"type": "object"}}
+        }]));
+        fmt().render(&request).unwrap();
+    }
+
     /// `tools: []` declares nothing, so the message is an ordinary system turn.
     #[test]
     fn empty_tools_list_is_an_ordinary_system_message() {
@@ -1580,21 +1730,28 @@ mod tests {
     }
 
     #[test]
-    fn typed_request_drops_partial_on_non_assistant_messages() {
-        // `partial` is only a field on the assistant message type, so serde
-        // discards it on user/system messages before the renderer runs. The
-        // raw-JSON guardrail above therefore only protects raw-JSON callers;
-        // through the typed path such a request renders as an ordinary turn.
-        let request = typed(json!({
-            "model": "kimi-k3",
-            "messages": [{"role": "user", "content": "Go", "partial": true}]
-        }));
-
-        let rendered = fmt().render(&request).unwrap();
-        assert!(rendered.contains("<|open|>message role=\"user\"<|sep|>Go"));
-        assert!(
-            rendered.ends_with("<|open|>message role=\"assistant\"<|sep|><|open|>think<|sep|>")
-        );
+    fn typed_request_rejects_partial_and_tools_on_wrong_roles() {
+        // `partial` only exists on the assistant type and `tools` only on the
+        // system type. The protocol layer rejects them on other roles instead
+        // of letting serde drop them, so the request never reaches the
+        // renderer's raw-JSON guardrail through the typed path.
+        for (body, needle) in [
+            (
+                json!({"model": "kimi-k3", "messages": [{"role": "user", "content": "Go", "partial": true}]}),
+                "`partial` is only accepted on assistant messages",
+            ),
+            (
+                json!({"model": "kimi-k3", "messages": [{"role": "user", "content": "Go", "tools": [{"name": "lookup"}]}]}),
+                "`tools` is only accepted on system messages",
+            ),
+        ] {
+            let error = serde_json::from_value::<
+                dynamo_protocols::types::CreateChatCompletionRequest,
+            >(body)
+            .unwrap_err()
+            .to_string();
+            assert!(error.contains(needle), "got: {error}");
+        }
     }
 
     #[test]
