@@ -540,6 +540,27 @@ fn normalize_system_messages(messages: &mut serde_json::Value, rules: SystemNorm
     }
 }
 
+/// Kimi-style dynamic `tools` on a system message are only consumed by native
+/// formatters (`KimiK3Formatter`). No HF jinja chat template reads
+/// `message.tools`, so letting such a message through would render an empty
+/// system turn and silently drop the declared tools. Fail the request instead.
+fn reject_system_message_tools(messages: &serde_json::Value) -> Result<()> {
+    let offending = messages.as_array().into_iter().flatten().find(|message| {
+        matches!(
+            message.get("role").and_then(serde_json::Value::as_str),
+            Some("system" | "developer")
+        ) && message.get("tools").is_some_and(|tools| !tools.is_null())
+    });
+    if offending.is_some() {
+        return Err(crate::PromptRenderError::invalid_request(
+            "system-message `tools` are only supported by native chat formatters (Kimi K3); \
+             this model's chat template would silently drop them",
+        )
+        .into());
+    }
+    Ok(())
+}
+
 impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
     fn supports_add_generation_prompt(&self) -> bool {
         self.supports_add_generation_prompt
@@ -595,6 +616,8 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
         let messages_canonical = req.messages();
         let mut messages_for_template: serde_json::Value =
             serde_json::to_value(&messages_canonical).unwrap();
+
+        reject_system_message_tools(&messages_for_template)?;
 
         if system_normalization.is_required() {
             normalize_system_messages(&mut messages_for_template, system_normalization);
@@ -729,6 +752,38 @@ mod tests {
         "<|im_start|>{{ m.role }}\n{{ m.content }}<|im_end|>\n",
         "{%- endfor -%}"
     );
+
+    /// A Kimi-style tools-only system message sent to a model served by an
+    /// ordinary jinja template must be a request error, not an empty system
+    /// turn with the tools silently dropped.
+    #[test]
+    fn jinja_templates_reject_system_message_tools() {
+        let f = formatter_for(PERMISSIVE_TMPL);
+        let error = render_shape(
+            &f,
+            json!([
+                {"role": "system", "tools": [{"name": "lookup", "parameters": {"type": "object"}}]},
+                {"role": "user", "content": "hi"}
+            ]),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            error.downcast_ref::<crate::PromptRenderError>(),
+            Some(crate::PromptRenderError::InvalidRequest(message))
+                if message.contains("system-message `tools`")
+        ));
+
+        // Ordinary system messages are untouched.
+        let rendered = render_shape(
+            &f,
+            json!([
+                {"role": "system", "content": "You are helpful."},
+                {"role": "user", "content": "hi"}
+            ]),
+        )
+        .unwrap();
+        assert!(rendered.contains("<|im_start|>system\nYou are helpful.<|im_end|>"));
+    }
     // Rejects a non-leading system (Qwen3.5 shape); accepts consecutive users.
     const STRICT_LEADING_TMPL: &str = concat!(
         "{%- for m in messages -%}",

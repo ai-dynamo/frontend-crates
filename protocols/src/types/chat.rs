@@ -692,12 +692,22 @@ pub enum ChatCompletionRequestUserMessageContentPart {
 /// System message with dynamic tool metadata support.
 ///
 /// Extends upstream `ChatCompletionRequestSystemMessage` with:
-/// - `content`: optional, instead of required. Kimi-style chat templates send a
-///   system message carrying only dynamic `tools` metadata, with no system text.
+/// - `content`: optional in the type, but **only** absent on the wire when the
+///   message declares non-empty `tools`. Kimi-style chat templates send a
+///   system message carrying only dynamic `tools` metadata, with no system
+///   text; every other content-less system message is still rejected at
+///   deserialization with upstream's `missing field \`content\`` error, so
+///   spec-conformant clients and non-Kimi models see no behavior change.
+///   Without this guard a bare `{"role": "system"}` would reach ordinary HF
+///   jinja templates with no `content` key and render an empty system turn
+///   (silently dropping any `tools`) instead of failing the request.
 /// - `tools`: passthrough field for model-specific tool metadata rendered by the
 ///   chat template. Dynamo does not interpret this field; it is preserved
 ///   verbatim for downstream chat-template rendering.
-#[derive(Debug, Serialize, Deserialize, Default, Clone, Builder, PartialEq)]
+///
+/// The invariant is enforced on the wire only; `Default` and the builder can
+/// still construct a struct with neither field from Rust.
+#[derive(Debug, Serialize, Default, Clone, Builder, PartialEq)]
 #[builder(name = "ChatCompletionRequestSystemMessageArgs")]
 #[builder(pattern = "mutable")]
 #[builder(setter(into, strip_option), default)]
@@ -731,6 +741,42 @@ pub struct ChatCompletionRequestSystemMessage {
     /// through unchanged as well; this crate takes no position on the shape.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<Vec<serde_json::Value>>,
+}
+
+impl<'de> Deserialize<'de> for ChatCompletionRequestSystemMessage {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        use serde::de::Error;
+
+        /// Wire shape: identical fields, no invariant. Deserialized first so
+        /// field-level errors (bad `content` shape, non-array `tools`) keep
+        /// serde's own messages.
+        #[derive(Deserialize)]
+        struct Wire {
+            content: Option<ChatCompletionRequestSystemMessageContent>,
+            name: Option<String>,
+            tools: Option<Vec<serde_json::Value>>,
+        }
+
+        let Wire {
+            content,
+            name,
+            tools,
+        } = Wire::deserialize(deserializer)?;
+        if content.is_none() && tools.as_ref().is_none_or(Vec::is_empty) {
+            return Err(D::Error::custom(
+                "missing field `content`: a system message needs `content` unless it \
+                 declares non-empty Kimi-style `tools`",
+            ));
+        }
+        Ok(Self {
+            content,
+            name,
+            tools,
+        })
+    }
 }
 
 /// Assistant message with reasoning content support.
@@ -1994,7 +2040,11 @@ mod tests {
             }),
             serde_json::json!({
                 "model": "m",
-                "messages": [{"role": "system", "tools": []}]
+                "tools": [],
+                "messages": [
+                    {"role": "system", "content": "text only"},
+                    {"role": "user", "content": "hi"}
+                ]
             }),
         ] {
             let request: CreateChatCompletionRequest = serde_json::from_value(payload).unwrap();
@@ -2039,6 +2089,77 @@ mod tests {
             None
         );
         assert_eq!(dynamic_tool_name(&serde_json::json!("string")), None);
+    }
+
+    #[test]
+    fn system_message_without_content_is_rejected_unless_it_declares_tools() {
+        // Same leading text as upstream's derived error, so clients and
+        // tests matching on "missing field `content`" keep working.
+        for (label, message) in [
+            ("nothing", serde_json::json!({"role": "system"})),
+            (
+                "name only",
+                serde_json::json!({"role": "system", "name": "ops"}),
+            ),
+            (
+                "empty tools",
+                serde_json::json!({"role": "system", "tools": []}),
+            ),
+            (
+                "explicit null content, empty tools",
+                serde_json::json!({"role": "system", "content": null, "tools": []}),
+            ),
+        ] {
+            let error =
+                serde_json::from_value::<ChatCompletionRequestMessage>(message).expect_err(label);
+            assert!(
+                error.to_string().starts_with("missing field `content`"),
+                "{label}: unexpected error {error}"
+            );
+        }
+    }
+
+    #[test]
+    fn system_message_guard_leaves_valid_shapes_alone() {
+        for (label, message) in [
+            (
+                "content only",
+                serde_json::json!({"role": "system", "content": "hi"}),
+            ),
+            (
+                "content parts",
+                serde_json::json!({"role": "system", "content": [{"type": "text", "text": "hi"}]}),
+            ),
+            (
+                "tools only",
+                serde_json::json!({"role": "system", "tools": [{"name": "lookup"}]}),
+            ),
+            (
+                "content and tools (renderer decides)",
+                serde_json::json!({"role": "system", "content": "hi", "tools": [{"name": "lookup"}]}),
+            ),
+        ] {
+            let parsed: ChatCompletionRequestMessage =
+                serde_json::from_value(message).unwrap_or_else(|e| panic!("{label}: {e}"));
+            assert!(
+                matches!(parsed, ChatCompletionRequestMessage::System(_)),
+                "{label}"
+            );
+        }
+    }
+
+    #[test]
+    fn system_message_guard_keeps_field_level_errors() {
+        // A malformed `tools` must still fail on the field, not on the guard.
+        let error = serde_json::from_value::<ChatCompletionRequestMessage>(serde_json::json!({
+            "role": "system",
+            "tools": "lookup"
+        }))
+        .unwrap_err();
+        assert!(
+            !error.to_string().starts_with("missing field `content`"),
+            "field error expected, got {error}"
+        );
     }
 
     #[test]
