@@ -177,7 +177,10 @@ fn contains_tool(tools: &Value, name: &str) -> bool {
     })
 }
 
-/// The dynamic tool declaration carried by a `system`/`developer` message.
+/// Longest tool name Moonshot's vendor verifier accepts.
+const MAX_TOOL_NAME_LEN: usize = 256;
+
+/// The dynamic tool declaration carried by a `system` message.
 ///
 /// `Ok(Some(..))` for a non-empty `tools` array; `Ok(None)` when `tools` is
 /// missing, `null`, or an empty array (an empty list declares nothing, so the
@@ -196,41 +199,80 @@ fn dynamic_tools_of(message: &Value) -> Result<Option<&Vec<Value>>> {
 
 /// Name of a dynamic tool entry, validating the entry's shape on the way.
 ///
-/// Accepts the OpenAI wrapped form (`{"type": "function", "function": {...}}`)
-/// and the bare function-schema form (`{"name": ..., "parameters": ...}`).
-/// Rejects non-object entries, a `type` other than `"function"`, and a
-/// missing or empty name — Moonshot's verifier expects a request error for
-/// each, and the model would otherwise see an unusable declaration.
+/// Exactly two shapes are accepted, and they may not be mixed:
+/// - OpenAI wrapped: `{"type": "function", "function": {"name": ..}}` —
+///   `type` must be `"function"` and `function` must be an object.
+/// - Bare function schema (issue #159): `{"name": .., "parameters": ..}` —
+///   neither `type` nor `function` may be present.
+///
+/// Half-wrapped entries (`{"function": {..}}` without `type`, or
+/// `{"type": "function", "name": ..}` without `function`) are rejected, as are
+/// non-object entries and names that fail [`validate_tool_name`]. Moonshot's
+/// vendor verifier expects a request error for each, and the model would
+/// otherwise see an unusable declaration.
 fn dynamic_tool_entry_name(tool: &Value) -> Result<&str> {
     let object = tool.as_object().ok_or_else(|| {
         PromptRenderError::invalid_request("Kimi K3 dynamic tool entries must be JSON objects")
     })?;
-    if let Some(kind) = object.get("type")
-        && kind.as_str() != Some("function")
-    {
+    let name = match (object.get("type"), object.get("function")) {
+        (Some(kind), function) => {
+            if kind.as_str() != Some("function") {
+                return Err(PromptRenderError::invalid_request(format!(
+                    "Kimi K3 dynamic tool entries must have type=\"function\", got {kind}"
+                ))
+                .into());
+            }
+            let function = function.and_then(Value::as_object).ok_or_else(|| {
+                PromptRenderError::invalid_request(
+                    "Kimi K3 dynamic tool entries with type=\"function\" need a `function` object",
+                )
+            })?;
+            function.get("name")
+        }
+        (None, Some(_)) => {
+            return Err(PromptRenderError::invalid_request(
+                "Kimi K3 dynamic tool entries with a `function` object need type=\"function\"",
+            )
+            .into());
+        }
+        (None, None) => object.get("name"),
+    };
+    let name = name.and_then(Value::as_str).ok_or_else(|| {
+        PromptRenderError::invalid_request("Kimi K3 dynamic tool entries need a string `name`")
+    })?;
+    validate_tool_name(name)?;
+    Ok(name)
+}
+
+/// Tool names must match `[A-Za-z_][A-Za-z0-9_-]*` and be at most
+/// [`MAX_TOOL_NAME_LEN`] characters (Moonshot vendor verifier rules).
+fn validate_tool_name(name: &str) -> Result<()> {
+    let mut chars = name.chars();
+    let valid_start = chars
+        .next()
+        .is_some_and(|c| c.is_ascii_alphabetic() || c == '_');
+    let valid_rest = chars.all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-');
+    if !valid_start || !valid_rest {
         return Err(PromptRenderError::invalid_request(format!(
-            "Kimi K3 dynamic tool entries must have type=\"function\", got {kind}"
+            "Kimi K3 tool name {name:?} must match [A-Za-z_][A-Za-z0-9_-]*"
         ))
         .into());
     }
-    object
-        .get("function")
-        .and_then(Value::as_object)
-        .and_then(|function| function.get("name"))
-        .or_else(|| object.get("name"))
-        .and_then(Value::as_str)
-        .filter(|name| !name.is_empty())
-        .ok_or_else(|| {
-            PromptRenderError::invalid_request(
-                "Kimi K3 dynamic tool entries need a non-empty string name",
-            )
-            .into()
-        })
+    if name.len() > MAX_TOOL_NAME_LEN {
+        return Err(PromptRenderError::invalid_request(format!(
+            "Kimi K3 tool name is {} characters; the maximum is {MAX_TOOL_NAME_LEN}",
+            name.len()
+        ))
+        .into());
+    }
+    Ok(())
 }
 
 /// Validate every tool the model will see — top-level `tools` plus each
-/// dynamic system/developer declaration in `messages` — as one namespace:
-/// dynamic entries must be well-formed, and no name may be declared twice.
+/// dynamic system declaration in `messages` — as one namespace: dynamic
+/// entries must be well-formed, no name may be declared twice, and `tools`
+/// may only appear on `system` messages. The last rule mirrors the protocol
+/// layer's role check so a raw-JSON caller cannot bypass it.
 fn validate_tool_declarations(top_level: Option<&Value>, messages: &[Value]) -> Result<()> {
     let mut seen = std::collections::HashSet::new();
     // Top-level tools have already passed the typed schema (or the caller's
@@ -246,10 +288,18 @@ fn validate_tool_declarations(top_level: Option<&Value>, messages: &[Value]) -> 
         }
     }
     for message in messages {
-        if !matches!(
-            message.get("role").and_then(Value::as_str),
-            Some("system" | "developer")
-        ) {
+        let role = message.get("role").and_then(Value::as_str);
+        if role != Some("system") {
+            // `developer` is the upstream OpenAI type with no `tools` field, so
+            // the typed path can never deliver them; rejecting here keeps the
+            // raw path from quietly diverging.
+            if message.get("tools").is_some_and(|tools| !tools.is_null()) {
+                return Err(PromptRenderError::invalid_request(format!(
+                    "`tools` is only accepted on system messages, not on role {}",
+                    role.unwrap_or("<missing>")
+                ))
+                .into());
+            }
             continue;
         }
         for tool in dynamic_tools_of(message)?.into_iter().flatten() {
@@ -276,14 +326,12 @@ fn content_is_non_empty(content: Option<&Value>) -> bool {
     }
 }
 
-/// Whether a `system`/`developer` message's dynamic `tools` declares `name`.
+/// Whether a `system` message's dynamic `tools` declares `name`.
 fn message_declares_tool(message: &Value, name: &str) -> bool {
-    matches!(
-        message.get("role").and_then(Value::as_str),
-        Some("system" | "developer")
-    ) && message
-        .get("tools")
-        .is_some_and(|tools| contains_tool(tools, name))
+    message.get("role").and_then(Value::as_str) == Some("system")
+        && message
+            .get("tools")
+            .is_some_and(|tools| contains_tool(tools, name))
 }
 
 fn resolve_thinking_effort(args: Option<&HashMap<String, Value>>) -> String {
@@ -860,19 +908,18 @@ fn build_chat_segments(
             PromptRenderError::invalid_request("Kimi K3 messages must contain a string role")
         })?;
         // Empty `tools` is not a declaration: the message renders as an
-        // ordinary system/developer turn. Non-array `tools` is a request error.
+        // ordinary system turn. Non-array `tools` is a request error, and
+        // `tools` on any other role was already rejected by
+        // `validate_tool_declarations`.
         let dynamic_tools = dynamic_tools_of(message)?;
         match role {
-            "system" | "developer" if dynamic_tools.is_some() => {
+            "system" if dynamic_tools.is_some() => {
                 let dynamic_tools = dynamic_tools.expect("guarded by the match arm");
-                let has_content = content_is_non_empty(message.get("content"));
                 // Moonshot's contract: a dynamic-tool system message omits
                 // `content` (an empty string counts as omitted; the official
                 // verifier sends `"content": ""`). Rejecting non-empty text
-                // keeps it from being silently lost. `developer` is an OpenAI
-                // role rendered as system, so it keeps the ordinary
-                // both-fields behavior.
-                if role == "system" && has_content {
+                // keeps it from being silently lost.
+                if content_is_non_empty(message.get("content")) {
                     return Err(PromptRenderError::invalid_request(
                         "Kimi K3 system messages carry either `content` or `tools`, not both",
                     )
@@ -880,9 +927,6 @@ fn build_chat_segments(
                 }
                 let dynamic_tools = deep_sort(Value::Array(dynamic_tools.clone()));
                 render_tool_declare(&mut segments, &dynamic_tools, true)?;
-                if has_content {
-                    render_role_message(&mut segments, message, "system")?;
-                }
             }
             "system" | "developer"
                 if message
@@ -1219,29 +1263,43 @@ mod tests {
         );
     }
 
+    /// Only `system` messages may carry dynamic `tools`, on the raw path as
+    /// well as the typed one: `developer` is the upstream OpenAI type with no
+    /// `tools` field, and `tools` on user/assistant used to be ignored.
     #[test]
-    fn renders_developer_tools_and_content() {
+    fn rejects_tools_on_non_system_messages() {
+        let tools = json!([{"type": "function", "function": {"name": "lookup"}}]);
+        for (role, extra) in [
+            (
+                "developer",
+                json!({"content": "Use the newly available tool"}),
+            ),
+            ("user", json!({"content": "Look this up"})),
+            ("assistant", json!({"content": "ok"})),
+        ] {
+            let mut message = extra;
+            message["role"] = json!(role);
+            message["tools"] = tools.clone();
+            let request = Request::new(json!([message, {"role": "user", "content": "Go"}]));
+
+            let error = fmt().render(&request).unwrap_err();
+            assert_eq!(
+                invalid_request_message(&error),
+                format!("`tools` is only accepted on system messages, not on role {role}"),
+                "role={role}"
+            );
+        }
+
+        // A developer message without `tools` still renders as system text.
         let mut request = Request::new(json!([
-            {
-                "role": "developer",
-                "content": "Use the newly available tool",
-                "tools": [{
-                    "type": "function",
-                    "function": {"name": "lookup", "parameters": {"type": "object"}}
-                }]
-            },
-            {"role": "user", "content": "Look this up"}
+            {"role": "developer", "content": "Follow the policy"},
+            {"role": "user", "content": "Go"}
         ]));
         request
             .args
             .insert("thinking".to_string(), Value::Bool(false));
-
         let rendered = fmt().render(&request).unwrap();
-
-        assert!(rendered.contains("## New Tools Available"));
-        assert!(
-            rendered.contains("<|open|>message role=\"system\"<|sep|>Use the newly available tool")
-        );
+        assert!(rendered.contains("<|open|>message role=\"system\"<|sep|>Follow the policy"));
     }
 
     #[test]
@@ -1542,26 +1600,52 @@ mod tests {
     /// tests), not declarations the model has to make sense of.
     #[test]
     fn rejects_malformed_dynamic_tool_entries() {
+        let long_name = "a".repeat(257);
         for (entry, needle) in [
             (json!("lookup"), "must be JSON objects"),
             (json!(7), "must be JSON objects"),
+            // Missing / non-string name, both shapes.
             (
                 json!({"parameters": {"type": "object"}}),
-                "non-empty string name",
+                "need a string `name`",
             ),
-            (json!({"name": ""}), "non-empty string name"),
-            (json!({"name": 42}), "non-empty string name"),
+            (json!({"name": 42}), "need a string `name`"),
             (
                 json!({"type": "function", "function": {}}),
-                "non-empty string name",
+                "need a string `name`",
             ),
+            // Wrong type.
             (
                 json!({"type": "custom", "name": "lookup"}),
                 "type=\"function\"",
             ),
             (
-                json!({"type": "function", "function": {"name": "lookup"}, "type": "web_search"}),
+                json!({"type": "web_search", "function": {"name": "lookup"}}),
                 "type=\"function\"",
+            ),
+            // Half-wrapped: one of type/function without the other.
+            (
+                json!({"function": {"name": "lookup"}}),
+                "need type=\"function\"",
+            ),
+            (
+                json!({"type": "function", "name": "lookup"}),
+                "need a `function` object",
+            ),
+            (
+                json!({"type": "function", "function": "lookup"}),
+                "need a `function` object",
+            ),
+            // Names the vendor verifier rejects.
+            (json!({"name": ""}), "must match"),
+            (json!({"name": "1bad_name"}), "must match"),
+            (json!({"name": "bad@name"}), "must match"),
+            (json!({"name": "has space"}), "must match"),
+            (json!({"name": "-leading-dash"}), "must match"),
+            (json!({"name": long_name}), "maximum is 256"),
+            (
+                json!({"type": "function", "function": {"name": "bad.name"}}),
+                "must match",
             ),
         ] {
             let request = Request::new(json!([
@@ -1597,11 +1681,22 @@ mod tests {
             {"role": "system", "tools": [{"name": "lookup"}]},
             {"role": "user", "content": "one"},
             {"role": "assistant", "content": "ok"},
-            {"role": "developer", "tools": [{"type": "function", "function": {"name": "lookup"}}]},
+            {"role": "system", "tools": [{"type": "function", "function": {"name": "lookup"}}]},
             {"role": "user", "content": "two"}
         ]));
         let error = fmt().render(&request).unwrap_err();
         assert!(invalid_request_message(&error).contains("declared more than once"));
+
+        // Valid names at the boundaries: underscore start, dashes, 256 chars.
+        let max_name = "a".repeat(256);
+        let request = Request::new(json!([
+            {"role": "system", "tools": [
+                {"name": "_private-tool_2"},
+                {"type": "function", "function": {"name": max_name}}
+            ]},
+            {"role": "user", "content": "Go"}
+        ]));
+        fmt().render(&request).unwrap();
 
         // Distinct names are fine, wrapped or bare.
         let mut request = Request::new(json!([
