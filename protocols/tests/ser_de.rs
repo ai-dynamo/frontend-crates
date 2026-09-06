@@ -38,8 +38,6 @@ async fn chat_types_serde() {
     assert_eq!(request, deserialized);
 }
 
-/// Kimi Code CLI sends `prompt_cache_key` on every request. It is preserved
-/// verbatim and omitted when absent; nothing acts on it yet.
 #[test]
 fn prompt_cache_key_round_trips_and_is_omitted_when_absent() {
     let body = json!({
@@ -69,8 +67,6 @@ fn prompt_cache_key_round_trips_and_is_omitted_when_absent() {
     );
 }
 
-/// Dynamic tool system messages must carry a list; scalars and objects are
-/// rejected at deserialization rather than reaching a renderer.
 #[test]
 fn system_message_tools_must_be_an_array() {
     for bad in [json!("lookup"), json!({"name": "lookup"}), json!(1)] {

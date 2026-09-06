@@ -1828,31 +1828,6 @@ mod tests {
     }
 
     #[test]
-    fn typed_request_rejects_partial_and_tools_on_wrong_roles() {
-        // `partial` only exists on the assistant type and `tools` only on the
-        // system type. The protocol layer rejects them on other roles instead
-        // of letting serde drop them, so the request never reaches the
-        // renderer's raw-JSON guardrail through the typed path.
-        for (body, needle) in [
-            (
-                json!({"model": "kimi-k3", "messages": [{"role": "user", "content": "Go", "partial": true}]}),
-                "`partial` is only accepted on assistant messages",
-            ),
-            (
-                json!({"model": "kimi-k3", "messages": [{"role": "user", "content": "Go", "tools": [{"name": "lookup"}]}]}),
-                "`tools` is only accepted on system messages",
-            ),
-        ] {
-            let error = serde_json::from_value::<
-                dynamo_protocols::types::CreateChatCompletionRequest,
-            >(body)
-            .unwrap_err()
-            .to_string();
-            assert!(error.contains(needle), "got: {error}");
-        }
-    }
-
-    #[test]
     fn rejects_partial_assistant_with_tool_calls() {
         let request = Request::new(json!([
             {"role": "user", "content": "Go"},

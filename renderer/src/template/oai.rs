@@ -758,9 +758,6 @@ mod tests {
         "{%- endfor -%}"
     );
 
-    /// A Kimi-style tools-only system message sent to a model served by an
-    /// ordinary jinja template must be a request error, not an empty system
-    /// turn with the tools silently dropped.
     #[test]
     fn jinja_templates_reject_system_message_tools() {
         let f = formatter_for(PERMISSIVE_TMPL);
