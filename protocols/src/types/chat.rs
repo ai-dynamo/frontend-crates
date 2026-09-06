@@ -692,40 +692,37 @@ pub enum ChatCompletionRequestUserMessageContentPart {
 /// System message with dynamic tool metadata support.
 ///
 /// Extends upstream `ChatCompletionRequestSystemMessage` with:
-/// - `content`: optional in the type, but **only** absent on the wire when the
-///   message declares non-empty `tools`. Kimi-style chat templates send a
-///   system message carrying only dynamic `tools` metadata, with no system
-///   text; every other content-less system message is still rejected at
-///   deserialization with upstream's `missing field \`content\`` error, so
-///   spec-conformant clients and non-Kimi models see no behavior change.
-///   Without this guard a bare `{"role": "system"}` would reach ordinary HF
-///   jinja templates with no `content` key and render an empty system turn
-///   (silently dropping any `tools`) instead of failing the request.
+/// - `content`: still required in the public Rust type. On the wire only,
+///   Kimi-style messages may omit it (or send `null`) when they declare
+///   non-empty `tools`; deserialization canonicalizes that shape to empty text.
+///   Every other content-less system message is still rejected with upstream's
+///   `missing field \`content\`` error, so spec-conformant clients and non-Kimi
+///   models see no behavior change. Without this guard a bare
+///   `{"role": "system"}` would reach ordinary HF jinja templates and render
+///   an empty system turn instead of failing the request.
 /// - `tools`: passthrough field for model-specific tool metadata rendered by the
 ///   chat template. Dynamo does not interpret this field; it is preserved
 ///   verbatim for downstream chat-template rendering.
 ///
 /// `Default` (and therefore the builder's unset state) uses empty-string
-/// `content`, so a default-constructed message serializes to
-/// `{"content": ""}` and round-trips through the wire guard instead of
-/// producing a value that can be serialized but never deserialized.
-#[derive(Debug, Serialize, Clone, Builder, PartialEq)]
+/// `content`, matching upstream. Keeping `content` non-optional also prevents
+/// programmatic callers from constructing a content-less, tool-less message.
+#[derive(Debug, Serialize, Clone, Builder, PartialEq, Default)]
 #[builder(name = "ChatCompletionRequestSystemMessageArgs")]
 #[builder(pattern = "mutable")]
 #[builder(setter(into, strip_option), default)]
 #[builder(derive(Debug))]
 #[builder(build_fn(error = "OpenAIError"))]
 pub struct ChatCompletionRequestSystemMessage {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub content: Option<ChatCompletionRequestSystemMessageContent>,
+    pub content: ChatCompletionRequestSystemMessageContent,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     /// Kimi-style dynamic tool metadata carried on a system message.
     ///
-    /// Moonshot requires such a message to omit `content`; renderers enforce
-    /// that `content` and `tools` are mutually exclusive and that `tools` is
-    /// non-empty. The list shape is typed here so non-array values are
-    /// rejected at deserialization.
+    /// Moonshot treats omitted, null, and empty `content` as no system text;
+    /// renderers enforce that non-empty `content` and `tools` are mutually
+    /// exclusive and that `tools` is non-empty. The list shape is typed here
+    /// so non-array values are rejected at deserialization.
     ///
     /// Entries stay raw JSON rather than a typed schema on purpose: this crate
     /// only needs to *preserve* them for downstream chat-template rendering,
@@ -745,18 +742,6 @@ pub struct ChatCompletionRequestSystemMessage {
     pub tools: Option<Vec<serde_json::Value>>,
 }
 
-impl Default for ChatCompletionRequestSystemMessage {
-    fn default() -> Self {
-        Self {
-            content: Some(ChatCompletionRequestSystemMessageContent::Text(
-                String::new(),
-            )),
-            name: None,
-            tools: None,
-        }
-    }
-}
-
 impl<'de> Deserialize<'de> for ChatCompletionRequestSystemMessage {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -764,9 +749,9 @@ impl<'de> Deserialize<'de> for ChatCompletionRequestSystemMessage {
     {
         use serde::de::Error;
 
-        /// Wire shape: identical fields, no invariant. Deserialized first so
-        /// field-level errors (bad `content` shape, non-array `tools`) keep
-        /// serde's own messages.
+        /// Wire shape with `content` relaxed solely for recognizing Kimi's
+        /// tools-only form. Deserialized first so field-level errors (bad
+        /// `content` shape, non-array `tools`) keep serde's own messages.
         #[derive(Deserialize)]
         struct Wire {
             content: Option<ChatCompletionRequestSystemMessageContent>,
@@ -779,12 +764,18 @@ impl<'de> Deserialize<'de> for ChatCompletionRequestSystemMessage {
             name,
             tools,
         } = Wire::deserialize(deserializer)?;
-        if content.is_none() && tools.as_ref().is_none_or(Vec::is_empty) {
-            return Err(D::Error::custom(
-                "missing field `content`: a system message needs `content` unless it \
-                 declares non-empty Kimi-style `tools`",
-            ));
-        }
+        let content = match content {
+            Some(content) => content,
+            None if tools.as_ref().is_some_and(|tools| !tools.is_empty()) => {
+                ChatCompletionRequestSystemMessageContent::Text(String::new())
+            }
+            None => {
+                return Err(D::Error::custom(
+                    "missing field `content`: a system message needs `content` unless it \
+                     declares non-empty Kimi-style `tools`",
+                ));
+            }
+        };
         Ok(Self {
             content,
             name,
@@ -2351,8 +2342,8 @@ mod tests {
         assert!(error.contains("duplicate field `content`"), "{error}");
     }
 
-    /// A default-constructed system message must round-trip through the wire
-    /// guard, so `Default` uses empty-string content rather than `None`.
+    /// A default-constructed system message keeps upstream's required,
+    /// empty-string content and round-trips through the wire guard.
     #[test]
     fn default_system_message_round_trips() {
         let message = ChatCompletionRequestSystemMessage::default();
@@ -2386,7 +2377,7 @@ mod tests {
     }
 
     #[test]
-    fn system_message_accepts_tools_without_content() {
+    fn system_message_canonicalizes_missing_content_with_tools() {
         let request: CreateChatCompletionRequest = serde_json::from_value(serde_json::json!({
             "model": "dummy-kimi-model",
             "messages": [
@@ -2420,7 +2411,10 @@ mod tests {
 
         match &request.messages[0] {
             ChatCompletionRequestMessage::System(system) => {
-                assert!(system.content.is_none());
+                assert_eq!(
+                    system.content,
+                    ChatCompletionRequestSystemMessageContent::Text(String::new())
+                );
                 let tools = system.tools.as_ref().expect("tools should be present");
                 assert_eq!(tools.len(), 1);
                 assert_eq!(tools[0]["name"], "lookup");
@@ -2434,13 +2428,36 @@ mod tests {
             }
             other => panic!("expected assistant message, got {other:?}"),
         }
+
+        // Explicit null has the same wire meaning as omission. Both serialize
+        // to the canonical required-content shape.
+        let message: ChatCompletionRequestMessage = serde_json::from_value(serde_json::json!({
+            "role": "system",
+            "content": null,
+            "tools": [{"name": "lookup"}]
+        }))
+        .unwrap();
+        let ChatCompletionRequestMessage::System(system) = &message else {
+            panic!("expected system message");
+        };
+        assert_eq!(
+            system.content,
+            ChatCompletionRequestSystemMessageContent::Text(String::new())
+        );
+        assert_eq!(
+            serde_json::to_value(message).unwrap(),
+            serde_json::json!({
+                "role": "system",
+                "content": "",
+                "tools": [{"name": "lookup"}]
+            })
+        );
     }
 
     #[test]
-    fn kimi_style_request_round_trips_structurally_lossless() {
-        // The point of `tools` entries being raw JSON is fidelity: the JSON
-        // structure the client sent must come back out unchanged, including
-        // keys this crate knows nothing about (`vendor_hint` below).
+    fn kimi_style_request_preserves_tools_and_canonicalizes_content() {
+        // Tool entries remain structurally lossless, including unknown keys;
+        // omitted system content is the one intentional normalization.
         let payload = serde_json::json!({
             "model": "dummy-kimi-model",
             "messages": [
@@ -2474,12 +2491,14 @@ mod tests {
 
         let request: CreateChatCompletionRequest = serde_json::from_value(payload.clone()).unwrap();
         let serialized = serde_json::to_value(request).unwrap();
+        let mut canonical = payload;
+        canonical["messages"][0]["content"] = serde_json::json!("");
 
-        assert_eq!(serialized, payload);
+        assert_eq!(serialized, canonical);
     }
 
     #[test]
-    fn system_message_tools_round_trip_official_wrapped_shape() {
+    fn system_message_tools_preserve_official_wrapped_shape() {
         // Kimi's canonical shape for system-message tools is the same OpenAI
         // wrapped form as the top-level `tools` field (encoding_k3.py renders
         // both through one tool-declare path). Must survive untouched.
@@ -2520,7 +2539,9 @@ mod tests {
             other => panic!("expected system message, got {other:?}"),
         }
 
-        assert_eq!(serde_json::to_value(request).unwrap(), payload);
+        let mut canonical = payload;
+        canonical["messages"][0]["content"] = serde_json::json!("");
+        assert_eq!(serde_json::to_value(request).unwrap(), canonical);
     }
 
     #[test]
@@ -2537,7 +2558,7 @@ mod tests {
         match &request.messages[0] {
             ChatCompletionRequestMessage::System(system) => {
                 assert!(system.tools.is_none());
-                match system.content.as_ref().unwrap() {
+                match &system.content {
                     ChatCompletionRequestSystemMessageContent::Text(text) => {
                         assert_eq!(text, "you are a calculator");
                     }
@@ -2580,7 +2601,7 @@ mod tests {
     }
 
     #[test]
-    fn system_message_from_upstream_wraps_content_and_leaves_tools_none() {
+    fn system_message_from_upstream_preserves_content_and_leaves_tools_none() {
         let upstream = async_openai::types::chat::ChatCompletionRequestSystemMessage {
             content: async_openai::types::chat::ChatCompletionRequestSystemMessageContent::Text(
                 "hi".into(),
@@ -2590,9 +2611,31 @@ mod tests {
 
         let owned: ChatCompletionRequestSystemMessage = upstream.into();
         assert!(owned.tools.is_none());
-        match owned.content.unwrap() {
+        match owned.content {
             ChatCompletionRequestSystemMessageContent::Text(text) => assert_eq!(text, "hi"),
             other => panic!("expected text content, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn system_message_restores_upstream_convenience_conversions() {
+        let from_content = ChatCompletionRequestSystemMessage::from(
+            ChatCompletionRequestSystemMessageContent::Text("from content".into()),
+        );
+        let from_str = ChatCompletionRequestSystemMessage::from("from str");
+        let from_string = ChatCompletionRequestSystemMessage::from(String::from("from string"));
+
+        for (message, expected) in [
+            (from_content, "from content"),
+            (from_str, "from str"),
+            (from_string, "from string"),
+        ] {
+            assert_eq!(
+                message.content,
+                ChatCompletionRequestSystemMessageContent::Text(expected.into())
+            );
+            assert!(message.name.is_none());
+            assert!(message.tools.is_none());
         }
     }
 }

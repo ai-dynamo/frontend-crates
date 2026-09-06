@@ -254,6 +254,26 @@ pub trait OAIPromptFormatter: Send + Sync + 'static {
     }
 }
 
+/// Reject Kimi-style Partial Mode in a formatter that cannot leave the final
+/// assistant turn open for continuation.
+///
+/// `partial: false` and `partial: null` are ordinary message metadata and are
+/// intentionally ignored. Supporting formatters (currently Kimi K3) do not
+/// call this helper and implement the open-turn rendering themselves.
+pub(crate) fn reject_unsupported_partial_assistant(messages: &serde_json::Value) -> Result<()> {
+    let has_partial =
+        messages.as_array().into_iter().flatten().any(|message| {
+            message.get("partial").and_then(serde_json::Value::as_bool) == Some(true)
+        });
+    if has_partial {
+        return Err(PromptRenderError::invalid_request(
+            "assistant `partial: true` is not supported by this model's prompt formatter",
+        )
+        .into());
+    }
+    Ok(())
+}
+
 #[derive(Clone)]
 pub enum PromptFormatter {
     OAI(Arc<dyn OAIPromptFormatter>),
@@ -270,6 +290,8 @@ impl OAIPromptFormatter for NoOpFormatter {
 
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String> {
         let messages = req.messages();
+        let messages_json = serde_json::to_value(&messages)?;
+        reject_unsupported_partial_assistant(&messages_json)?;
 
         let first_message = messages
             .get_item_by_index(0)
@@ -295,7 +317,9 @@ impl PromptFormatter {
 
 #[cfg(test)]
 mod rendered_prompt_tests {
-    use super::{RenderedPrompt, RenderedSegment};
+    use super::{
+        NoOpFormatter, OAIPromptFormatter, PromptRenderError, RenderedPrompt, RenderedSegment,
+    };
 
     #[test]
     fn owned_segments_borrow_into_tokenizer_segments() {
@@ -310,5 +334,25 @@ mod rendered_prompt_tests {
         assert_eq!(segments[1].text, "user text");
         assert!(!segments[1].allow_special);
         assert_eq!(prompt.as_str(), "<|open|>user text");
+    }
+
+    #[test]
+    fn no_op_formatter_rejects_unsupported_partial_assistant() {
+        let request: dynamo_protocols::types::CreateChatCompletionRequest =
+            serde_json::from_value(serde_json::json!({
+                "model": "test",
+                "messages": [
+                    {"role": "user", "content": "Continue"},
+                    {"role": "assistant", "content": "prefix", "partial": true}
+                ]
+            }))
+            .unwrap();
+
+        let error = NoOpFormatter.render(&request).unwrap_err();
+        assert!(matches!(
+            error.downcast_ref::<PromptRenderError>(),
+            Some(PromptRenderError::InvalidRequest(message))
+                if message.contains("`partial: true` is not supported")
+        ));
     }
 }

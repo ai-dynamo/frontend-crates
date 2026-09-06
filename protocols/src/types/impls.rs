@@ -11,7 +11,8 @@ use super::{
     ChatCompletionRequestAssistantMessageContent, ChatCompletionRequestMessage,
     ChatCompletionRequestMessageContentPartAudio, ChatCompletionRequestMessageContentPartAudioUrl,
     ChatCompletionRequestMessageContentPartImage, ChatCompletionRequestMessageContentPartText,
-    ChatCompletionRequestMessageContentPartVideo, ChatCompletionRequestToolMessage,
+    ChatCompletionRequestMessageContentPartVideo, ChatCompletionRequestSystemMessage,
+    ChatCompletionRequestSystemMessageContent, ChatCompletionRequestToolMessage,
     ChatCompletionRequestToolMessageContent, ChatCompletionRequestToolMessageContentPart,
     ChatCompletionRequestUserMessageContentPart, ChatCompletionToolChoiceOption,
     ChatCompletionToolType, FunctionName, ImageUrl, VideoUrl,
@@ -81,12 +82,34 @@ impl From<super::ChatCompletionRequestUserMessage> for ChatCompletionRequestMess
     }
 }
 
+impl From<ChatCompletionRequestSystemMessageContent> for ChatCompletionRequestSystemMessage {
+    fn from(value: ChatCompletionRequestSystemMessageContent) -> Self {
+        Self {
+            content: value,
+            name: None,
+            tools: None,
+        }
+    }
+}
+
+impl From<&str> for ChatCompletionRequestSystemMessage {
+    fn from(value: &str) -> Self {
+        ChatCompletionRequestSystemMessageContent::Text(value.into()).into()
+    }
+}
+
+impl From<String> for ChatCompletionRequestSystemMessage {
+    fn from(value: String) -> Self {
+        value.as_str().into()
+    }
+}
+
 impl From<async_openai::types::chat::ChatCompletionRequestSystemMessage>
-    for super::ChatCompletionRequestSystemMessage
+    for ChatCompletionRequestSystemMessage
 {
     fn from(value: async_openai::types::chat::ChatCompletionRequestSystemMessage) -> Self {
         Self {
-            content: Some(value.content),
+            content: value.content,
             name: value.name,
             tools: None,
         }
@@ -101,8 +124,8 @@ impl From<async_openai::types::chat::ChatCompletionRequestSystemMessage>
     }
 }
 
-impl From<super::ChatCompletionRequestSystemMessage> for ChatCompletionRequestMessage {
-    fn from(value: super::ChatCompletionRequestSystemMessage) -> Self {
+impl From<ChatCompletionRequestSystemMessage> for ChatCompletionRequestMessage {
+    fn from(value: ChatCompletionRequestSystemMessage) -> Self {
         Self::System(value)
     }
 }

@@ -303,6 +303,7 @@ impl crate::OAIPromptFormatter for DeepSeekV32Formatter {
         // Convert minijinja Value to serde_json Value
         let messages_json =
             serde_json::to_value(&messages_value).context("Failed to convert messages to JSON")?;
+        crate::reject_unsupported_partial_assistant(&messages_json)?;
 
         let mut messages_array = messages_json
             .as_array()
@@ -379,6 +380,25 @@ mod tests {
         let result = formatter.render(&request).unwrap();
 
         assert!(result.contains(r#"{"foo": "bar"}"#));
+    }
+
+    #[test]
+    fn test_formatter_rejects_unsupported_partial_assistant() {
+        use crate::OAIPromptFormatter;
+
+        let request = MockRequest::new(json!([
+            {"role": "user", "content": "Continue"},
+            {"role": "assistant", "content": "prefix", "partial": true}
+        ]));
+        let error = DeepSeekV32Formatter::new_thinking()
+            .render(&request)
+            .unwrap_err();
+
+        assert!(matches!(
+            error.downcast_ref::<crate::PromptRenderError>(),
+            Some(crate::PromptRenderError::InvalidRequest(message))
+                if message.contains("`partial: true` is not supported")
+        ));
     }
 
     #[test]

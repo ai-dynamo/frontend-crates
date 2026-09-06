@@ -621,6 +621,7 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
         let mut messages_for_template: serde_json::Value =
             serde_json::to_value(&messages_canonical).unwrap();
 
+        crate::reject_unsupported_partial_assistant(&messages_for_template)?;
         reject_system_message_tools(&messages_for_template)?;
 
         if system_normalization.is_required() {
@@ -786,6 +787,33 @@ mod tests {
             let rendered =
                 render_shape(&f, json!([message, {"role": "user", "content": "hi"}])).unwrap();
             assert!(rendered.contains("<|im_start|>system\nYou are helpful.<|im_end|>"));
+        }
+    }
+
+    #[test]
+    fn jinja_templates_reject_unsupported_partial_assistant() {
+        let f = formatter_for(PERMISSIVE_TMPL);
+        let error = render_shape(
+            &f,
+            json!([
+                {"role": "user", "content": "Continue"},
+                {"role": "assistant", "content": "prefix", "partial": true}
+            ]),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            error.downcast_ref::<crate::PromptRenderError>(),
+            Some(crate::PromptRenderError::InvalidRequest(message))
+                if message.contains("`partial: true` is not supported")
+        ));
+
+        for partial in [json!(false), json!(null)] {
+            let rendered = render_shape(
+                &f,
+                json!([{"role": "assistant", "content": "ordinary", "partial": partial}]),
+            )
+            .unwrap();
+            assert!(rendered.contains("ordinary"));
         }
     }
     // Rejects a non-leading system (Qwen3.5 shape); accepts consecutive users.

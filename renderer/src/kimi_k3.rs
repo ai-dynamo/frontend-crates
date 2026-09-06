@@ -878,7 +878,10 @@ fn build_chat_segments(
         _ => (messages, None),
     };
 
-    validate_tool_declarations(tools, history)?;
+    // Validate the complete raw message list, including a split-off Partial
+    // Mode tail. Otherwise `tools` on the final partial assistant message
+    // bypasses the non-system role check below.
+    validate_tool_declarations(tools, messages)?;
     if history.iter().any(is_partial) {
         return Err(PromptRenderError::invalid_request(
             "Kimi K3 `partial` is only supported on the final message",
@@ -1871,6 +1874,27 @@ mod tests {
             error.downcast_ref::<PromptRenderError>(),
             Some(PromptRenderError::InvalidRequest(message))
                 if message == "Kimi K3 partial assistant messages cannot carry tool_calls"
+        ));
+    }
+
+    #[test]
+    fn rejects_tools_on_final_partial_assistant_raw_path() {
+        let request = Request::new(json!([
+            {"role": "user", "content": "Go"},
+            {
+                "role": "assistant",
+                "content": "prefix",
+                "partial": true,
+                "tools": [{"type": "function", "function": {"name": "lookup"}}]
+            }
+        ]));
+
+        let error = fmt().render(&request).unwrap_err();
+
+        assert!(matches!(
+            error.downcast_ref::<PromptRenderError>(),
+            Some(PromptRenderError::InvalidRequest(message))
+                if message == "`tools` is only accepted on system messages, not on role assistant"
         ));
     }
 
