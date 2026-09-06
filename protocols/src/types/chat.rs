@@ -705,9 +705,11 @@ pub enum ChatCompletionRequestUserMessageContentPart {
 ///   chat template. Dynamo does not interpret this field; it is preserved
 ///   verbatim for downstream chat-template rendering.
 ///
-/// The invariant is enforced on the wire only; `Default` and the builder can
-/// still construct a struct with neither field from Rust.
-#[derive(Debug, Serialize, Default, Clone, Builder, PartialEq)]
+/// `Default` (and therefore the builder's unset state) uses empty-string
+/// `content`, so a default-constructed message serializes to
+/// `{"content": ""}` and round-trips through the wire guard instead of
+/// producing a value that can be serialized but never deserialized.
+#[derive(Debug, Serialize, Clone, Builder, PartialEq)]
 #[builder(name = "ChatCompletionRequestSystemMessageArgs")]
 #[builder(pattern = "mutable")]
 #[builder(setter(into, strip_option), default)]
@@ -741,6 +743,18 @@ pub struct ChatCompletionRequestSystemMessage {
     /// through unchanged as well; this crate takes no position on the shape.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<Vec<serde_json::Value>>,
+}
+
+impl Default for ChatCompletionRequestSystemMessage {
+    fn default() -> Self {
+        Self {
+            content: Some(ChatCompletionRequestSystemMessageContent::Text(
+                String::new(),
+            )),
+            name: None,
+            tools: None,
+        }
+    }
 }
 
 impl<'de> Deserialize<'de> for ChatCompletionRequestSystemMessage {
@@ -862,34 +876,63 @@ impl<'de> Deserialize<'de> for ChatCompletionRequestMessage {
             Function(ChatCompletionRequestFunctionMessage),
         }
 
-        let value = serde_json::Value::deserialize(deserializer)?;
-        let role = value.get("role").and_then(serde_json::Value::as_str);
-        let carries = |field: &str| value.get(field).is_some_and(|v| !v.is_null());
-        // `developer` is excluded on purpose: it is the upstream type with no
-        // `tools` field, so accepting it here would silently drop the tools.
-        if carries("tools") && role != Some("system") {
-            return Err(D::Error::custom(format!(
-                "`tools` is only accepted on system messages, not on role {}",
-                role.unwrap_or("<missing>")
-            )));
-        }
-        if carries("partial") && role != Some("assistant") {
-            return Err(D::Error::custom(format!(
-                "`partial` is only accepted on assistant messages, not on role {}",
-                role.unwrap_or("<missing>")
-            )));
+        /// Collects the top-level object entry by entry so a repeated key
+        /// (`"role"` twice, `"content"` twice) is rejected like the derived
+        /// deserializer would, instead of last-one-wins through
+        /// `serde_json::Value`.
+        struct MessageVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for MessageVisitor {
+            type Value = ChatCompletionRequestMessage;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a chat completion request message object")
+            }
+
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::MapAccess<'de>,
+            {
+                let mut entries = serde_json::Map::new();
+                while let Some(key) = map.next_key::<String>()? {
+                    let value: serde_json::Value = map.next_value()?;
+                    if entries.insert(key.clone(), value).is_some() {
+                        return Err(A::Error::custom(format!("duplicate field `{key}`")));
+                    }
+                }
+
+                let role = entries.get("role").and_then(serde_json::Value::as_str);
+                let carries = |field: &str| entries.get(field).is_some_and(|v| !v.is_null());
+                // `developer` is excluded on purpose: it is the upstream type
+                // with no `tools` field, so accepting it here would silently
+                // drop the tools.
+                if carries("tools") && role != Some("system") {
+                    return Err(A::Error::custom(format!(
+                        "`tools` is only accepted on system messages, not on role {}",
+                        role.unwrap_or("<missing>")
+                    )));
+                }
+                if carries("partial") && role != Some("assistant") {
+                    return Err(A::Error::custom(format!(
+                        "`partial` is only accepted on assistant messages, not on role {}",
+                        role.unwrap_or("<missing>")
+                    )));
+                }
+
+                let wire: Wire = serde_json::from_value(serde_json::Value::Object(entries))
+                    .map_err(A::Error::custom)?;
+                Ok(match wire {
+                    Wire::Developer(message) => ChatCompletionRequestMessage::Developer(message),
+                    Wire::System(message) => ChatCompletionRequestMessage::System(message),
+                    Wire::User(message) => ChatCompletionRequestMessage::User(message),
+                    Wire::Assistant(message) => ChatCompletionRequestMessage::Assistant(message),
+                    Wire::Tool(message) => ChatCompletionRequestMessage::Tool(message),
+                    Wire::Function(message) => ChatCompletionRequestMessage::Function(message),
+                })
+            }
         }
 
-        Ok(
-            match serde_json::from_value::<Wire>(value).map_err(D::Error::custom)? {
-                Wire::Developer(message) => Self::Developer(message),
-                Wire::System(message) => Self::System(message),
-                Wire::User(message) => Self::User(message),
-                Wire::Assistant(message) => Self::Assistant(message),
-                Wire::Tool(message) => Self::Tool(message),
-                Wire::Function(message) => Self::Function(message),
-            },
-        )
+        deserializer.deserialize_map(MessageVisitor)
     }
 }
 
@@ -2273,6 +2316,59 @@ mod tests {
         ] {
             serde_json::from_value::<ChatCompletionRequestMessage>(message).unwrap();
         }
+    }
+
+    /// The hand-written message deserializer must keep rejecting repeated
+    /// top-level keys, which the derived one did and `serde_json::Value`
+    /// (last-one-wins) would silently accept.
+    #[test]
+    fn message_rejects_duplicate_top_level_keys() {
+        for (label, raw) in [
+            (
+                "role twice",
+                r#"{"role":"user","content":"hi","role":"system"}"#,
+            ),
+            (
+                "content twice",
+                r#"{"role":"user","content":"a","content":"b"}"#,
+            ),
+            (
+                "tools twice",
+                r#"{"role":"system","tools":[{"name":"a"}],"tools":[{"name":"b"}]}"#,
+            ),
+        ] {
+            let error = serde_json::from_str::<ChatCompletionRequestMessage>(raw)
+                .expect_err(label)
+                .to_string();
+            assert!(error.contains("duplicate field"), "{label}: {error}");
+        }
+
+        // ...and inside a full request, where the message sits in an array.
+        let raw = r#"{"model":"m","messages":[{"role":"user","content":"a","content":"b"}]}"#;
+        let error = serde_json::from_str::<CreateChatCompletionRequest>(raw)
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("duplicate field `content`"), "{error}");
+    }
+
+    /// A default-constructed system message must round-trip through the wire
+    /// guard, so `Default` uses empty-string content rather than `None`.
+    #[test]
+    fn default_system_message_round_trips() {
+        let message = ChatCompletionRequestSystemMessage::default();
+        let json = serde_json::to_value(&message).unwrap();
+        assert_eq!(json, serde_json::json!({"content": ""}));
+        let back: ChatCompletionRequestSystemMessage = serde_json::from_value(json).unwrap();
+        assert_eq!(back, message);
+
+        // The builder inherits the same default when `content` is unset.
+        let built = ChatCompletionRequestSystemMessageArgs::default()
+            .name("ops")
+            .build()
+            .unwrap();
+        let json = serde_json::to_value(&built).unwrap();
+        assert_eq!(json, serde_json::json!({"content": "", "name": "ops"}));
+        serde_json::from_value::<ChatCompletionRequestSystemMessage>(json).unwrap();
     }
 
     #[test]
