@@ -65,10 +65,15 @@ impl KimiK3Formatter {
         let tool_choice = req.tool_choice().map(json_value).transpose()?;
         let (tool_choice_kind, named_tool) = resolve_tool_choice(tool_choice.as_ref())?;
         let mut tools = req.tools().map(json_value).transpose()?;
+        // A named tool_choice may target a dynamically declared tool (Kimi's
+        // system-message `tools`), which never appears in the top-level list.
         if let Some(named_tool) = named_tool
             && !tools
                 .as_ref()
                 .is_some_and(|tools| contains_tool(tools, named_tool))
+            && !messages
+                .iter()
+                .any(|message| message_declares_tool(message, named_tool))
         {
             return Err(PromptRenderError::invalid_request(format!(
                 "tool named {named_tool:?} in tool_choice is not present in tools"
@@ -170,6 +175,163 @@ fn contains_tool(tools: &Value, name: &str) -> bool {
                 == Some(name)
         })
     })
+}
+
+/// Longest tool name Moonshot's vendor verifier accepts.
+const MAX_TOOL_NAME_LEN: usize = 256;
+
+/// The dynamic tool declaration carried by a `system` message.
+///
+/// `Ok(Some(..))` for a non-empty `tools` array; `Ok(None)` when `tools` is
+/// missing, `null`, or an empty array (an empty list declares nothing, so the
+/// message is an ordinary turn); `Err` for any other JSON type.
+fn dynamic_tools_of(message: &Value) -> Result<Option<&Vec<Value>>> {
+    match message.get("tools") {
+        None | Some(Value::Null) => Ok(None),
+        Some(Value::Array(tools)) if tools.is_empty() => Ok(None),
+        Some(Value::Array(tools)) => Ok(Some(tools)),
+        Some(_) => Err(PromptRenderError::invalid_request(
+            "Kimi K3 dynamic tool messages need `tools` to be an array",
+        )
+        .into()),
+    }
+}
+
+/// Name of a dynamic tool entry, validating the entry's shape on the way.
+///
+/// Exactly two shapes are accepted, and they may not be mixed:
+/// - OpenAI wrapped: `{"type": "function", "function": {"name": ..}}` —
+///   `type` must be `"function"` and `function` must be an object.
+/// - Bare function schema (issue #159): `{"name": .., "parameters": ..}` —
+///   neither `type` nor `function` may be present.
+///
+/// Half-wrapped entries (`{"function": {..}}` without `type`, or
+/// `{"type": "function", "name": ..}` without `function`) are rejected, as are
+/// non-object entries and names that fail [`validate_tool_name`]. Moonshot's
+/// vendor verifier expects a request error for each, and the model would
+/// otherwise see an unusable declaration.
+fn dynamic_tool_entry_name(tool: &Value) -> Result<&str> {
+    let object = tool.as_object().ok_or_else(|| {
+        PromptRenderError::invalid_request("Kimi K3 dynamic tool entries must be JSON objects")
+    })?;
+    let name = match (object.get("type"), object.get("function")) {
+        (Some(kind), function) => {
+            if kind.as_str() != Some("function") {
+                return Err(PromptRenderError::invalid_request(format!(
+                    "Kimi K3 dynamic tool entries must have type=\"function\", got {kind}"
+                ))
+                .into());
+            }
+            let function = function.and_then(Value::as_object).ok_or_else(|| {
+                PromptRenderError::invalid_request(
+                    "Kimi K3 dynamic tool entries with type=\"function\" need a `function` object",
+                )
+            })?;
+            function.get("name")
+        }
+        (None, Some(_)) => {
+            return Err(PromptRenderError::invalid_request(
+                "Kimi K3 dynamic tool entries with a `function` object need type=\"function\"",
+            )
+            .into());
+        }
+        (None, None) => object.get("name"),
+    };
+    let name = name.and_then(Value::as_str).ok_or_else(|| {
+        PromptRenderError::invalid_request("Kimi K3 dynamic tool entries need a string `name`")
+    })?;
+    validate_tool_name(name)?;
+    Ok(name)
+}
+
+/// Tool names must match `[A-Za-z_][A-Za-z0-9_-]*` and be at most
+/// [`MAX_TOOL_NAME_LEN`] characters (Moonshot vendor verifier rules).
+fn validate_tool_name(name: &str) -> Result<()> {
+    let mut chars = name.chars();
+    let valid_start = chars
+        .next()
+        .is_some_and(|c| c.is_ascii_alphabetic() || c == '_');
+    let valid_rest = chars.all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-');
+    if !valid_start || !valid_rest {
+        return Err(PromptRenderError::invalid_request(format!(
+            "Kimi K3 tool name {name:?} must match [A-Za-z_][A-Za-z0-9_-]*"
+        ))
+        .into());
+    }
+    if name.len() > MAX_TOOL_NAME_LEN {
+        return Err(PromptRenderError::invalid_request(format!(
+            "Kimi K3 tool name is {} characters; the maximum is {MAX_TOOL_NAME_LEN}",
+            name.len()
+        ))
+        .into());
+    }
+    Ok(())
+}
+
+/// Validate every tool the model will see — top-level `tools` plus each
+/// dynamic system declaration in `messages` — as one namespace: dynamic
+/// entries must be well-formed, no name may be declared twice, and `tools`
+/// may only appear on `system` messages. The last rule mirrors the protocol
+/// layer's role check so a raw-JSON caller cannot bypass it.
+fn validate_tool_declarations(top_level: Option<&Value>, messages: &[Value]) -> Result<()> {
+    let mut seen = std::collections::HashSet::new();
+    // Top-level tools have already passed the typed schema (or the caller's
+    // own checks); they only contribute names for duplicate detection.
+    for tool in top_level.and_then(Value::as_array).into_iter().flatten() {
+        if let Ok(name) = dynamic_tool_entry_name(tool)
+            && !seen.insert(name)
+        {
+            return Err(PromptRenderError::invalid_request(format!(
+                "tool {name:?} is declared more than once in `tools`"
+            ))
+            .into());
+        }
+    }
+    for message in messages {
+        let role = message.get("role").and_then(Value::as_str);
+        if role != Some("system") {
+            // `developer` is the upstream OpenAI type with no `tools` field, so
+            // the typed path can never deliver them; rejecting here keeps the
+            // raw path from quietly diverging.
+            if message.get("tools").is_some_and(|tools| !tools.is_null()) {
+                return Err(PromptRenderError::invalid_request(format!(
+                    "`tools` is only accepted on system messages, not on role {}",
+                    role.unwrap_or("<missing>")
+                ))
+                .into());
+            }
+            continue;
+        }
+        for tool in dynamic_tools_of(message)?.into_iter().flatten() {
+            let name = dynamic_tool_entry_name(tool)?;
+            if !seen.insert(name) {
+                return Err(PromptRenderError::invalid_request(format!(
+                    "tool {name:?} is declared more than once across `tools` and dynamic system tools"
+                ))
+                .into());
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Whether `content` carries text: missing, `null`, `""`, and `[]` all count
+/// as empty, matching Moonshot's "omit `content`" contract for dynamic tools.
+fn content_is_non_empty(content: Option<&Value>) -> bool {
+    match content {
+        None | Some(Value::Null) => false,
+        Some(Value::String(text)) => !text.is_empty(),
+        Some(Value::Array(parts)) => !parts.is_empty(),
+        Some(_) => true,
+    }
+}
+
+/// Whether a `system` message's dynamic `tools` declares `name`.
+fn message_declares_tool(message: &Value, name: &str) -> bool {
+    message.get("role").and_then(Value::as_str) == Some("system")
+        && message
+            .get("tools")
+            .is_some_and(|tools| contains_tool(tools, name))
 }
 
 fn resolve_thinking_effort(args: Option<&HashMap<String, Value>>) -> String {
@@ -443,11 +605,20 @@ fn normalize_arguments(arguments: Option<&Value>) -> Result<NormalizedArguments>
     }
 }
 
-fn render_assistant_segments(
+/// Renders an assistant message's think channel.
+///
+/// The think channel is structural in the latest K3 model encoding. Every
+/// historical assistant message carries it in thinking mode, even if its body
+/// is empty. Non-thinking mode drops both the channel and preserved reasoning
+/// content.
+fn render_think_channel(
     segments: &mut Vec<RenderedSegment>,
     message: &Value,
     thinking: bool,
 ) -> Result<()> {
+    if !thinking {
+        return Ok(());
+    }
     // Match encoding_k3.py: `reasoning_content` wins when truthy, otherwise
     // fall back to the Responses-style `reasoning` alias.
     let reasoning = message
@@ -464,17 +635,74 @@ fn render_assistant_segments(
         .map(value_as_body_text)
         .transpose()?;
 
-    // The think channel is structural in the latest K3 model encoding. Every
-    // historical assistant message carries it in thinking mode, even if its
-    // body is empty. Non-thinking mode drops both the channel and preserved
-    // reasoning content.
-    if thinking {
-        open_tag(segments, "think", []);
-        if let Some(reasoning) = reasoning.filter(|reasoning| !reasoning.trim().is_empty()) {
-            text(segments, reasoning);
-        }
-        close_tag(segments, "think");
+    open_tag(segments, "think", []);
+    if let Some(reasoning) = reasoning.filter(|reasoning| !reasoning.trim().is_empty()) {
+        text(segments, reasoning);
     }
+    close_tag(segments, "think");
+    Ok(())
+}
+
+fn assistant_message_attrs(message: &Value) -> Vec<(String, String)> {
+    let mut attrs = vec![("role".to_string(), "assistant".to_string())];
+    if let Some(name) = message
+        .get("name")
+        .and_then(Value::as_str)
+        .filter(|name| !name.is_empty())
+    {
+        attrs.push(("name".to_string(), name.to_string()));
+    }
+    attrs
+}
+
+/// Whether a message carries Kimi's Partial Mode flag (`"partial": true`).
+fn is_partial(message: &Value) -> bool {
+    message.get("partial").and_then(Value::as_bool) == Some(true)
+}
+
+/// Renders a Partial Mode assistant message as the *open* generation turn.
+///
+/// Kimi's API defines Partial Mode as: the final message has `role=assistant`
+/// and `partial=true`, and the model continues directly from its `content`
+/// (with `name`, when set, also counting as part of the prefix). The
+/// checkpoint's `encoding_k3.py` has no notion of this — it is a serving-layer
+/// feature — so this mirrors what the hosted API does: emit the assistant
+/// turn's opening structure and prefix text, and leave `response` and
+/// `message` unclosed so generation resumes inside them. This replaces the
+/// ordinary generation prompt rather than following it.
+///
+/// In thinking mode the think channel is closed before the response opens,
+/// carrying any supplied `reasoning_content` (the API requires callers to pass
+/// it along for thinking models); an empty channel is emitted otherwise, the
+/// same policy [`render_think_channel`] applies to historical turns.
+fn render_partial_assistant_segments(
+    segments: &mut Vec<RenderedSegment>,
+    message: &Value,
+    thinking: bool,
+) -> Result<()> {
+    if message
+        .get("tool_calls")
+        .and_then(Value::as_array)
+        .is_some_and(|calls| !calls.is_empty())
+    {
+        return Err(PromptRenderError::invalid_request(
+            "Kimi K3 partial assistant messages cannot carry tool_calls",
+        )
+        .into());
+    }
+    open_tag(segments, "message", assistant_message_attrs(message));
+    render_think_channel(segments, message, thinking)?;
+    open_tag(segments, "response", []);
+    render_content_segments(segments, message.get("content"))?;
+    Ok(())
+}
+
+fn render_assistant_segments(
+    segments: &mut Vec<RenderedSegment>,
+    message: &Value,
+    thinking: bool,
+) -> Result<()> {
+    render_think_channel(segments, message, thinking)?;
 
     open_tag(segments, "response", []);
     render_content_segments(segments, message.get("content"))?;
@@ -633,6 +861,31 @@ fn build_chat_segments(
     let mut previous_tool_calls: Option<&Value> = None;
     let mut tool_index = 0usize;
 
+    // Kimi Partial Mode: only the final message may be partial, and it must be
+    // an assistant turn. Split it off so the history loop renders everything
+    // before it normally and the partial turn takes the generation prompt's
+    // place at the very end (after any internal system messages).
+    let (history, partial_tail) = match messages.split_last() {
+        Some((last, history)) if is_partial(last) => {
+            if last.get("role").and_then(Value::as_str) != Some("assistant") {
+                return Err(PromptRenderError::invalid_request(
+                    "Kimi K3 `partial` is only supported on an assistant message",
+                )
+                .into());
+            }
+            (history, Some(last))
+        }
+        _ => (messages, None),
+    };
+
+    validate_tool_declarations(tools, history)?;
+    if history.iter().any(is_partial) {
+        return Err(PromptRenderError::invalid_request(
+            "Kimi K3 `partial` is only supported on the final message",
+        )
+        .into());
+    }
+
     if let Some(tools) = tools.filter(|tools| !tools.as_array().is_some_and(Vec::is_empty)) {
         render_tool_declare(&mut segments, tools, false)?;
     }
@@ -650,25 +903,40 @@ fn build_chat_segments(
         );
     }
 
-    for message in messages {
+    for message in history {
         let role = message.get("role").and_then(Value::as_str).ok_or_else(|| {
             PromptRenderError::invalid_request("Kimi K3 messages must contain a string role")
         })?;
+        // Empty `tools` is not a declaration: the message renders as an
+        // ordinary system turn. Non-array `tools` is a request error, and
+        // `tools` on any other role was already rejected by
+        // `validate_tool_declarations`.
+        let dynamic_tools = dynamic_tools_of(message)?;
         match role {
-            "system" | "developer"
-                if message.get("tools").is_some_and(|tools| {
-                    !tools.is_null() && !tools.as_array().is_some_and(Vec::is_empty)
-                }) =>
-            {
-                let dynamic_tools = deep_sort(message["tools"].clone());
-                render_tool_declare(&mut segments, &dynamic_tools, true)?;
-                if role == "developer"
-                    && message
-                        .get("content")
-                        .is_some_and(|content| !content.is_null())
-                {
-                    render_role_message(&mut segments, message, "system")?;
+            "system" if dynamic_tools.is_some() => {
+                let dynamic_tools = dynamic_tools.expect("guarded by the match arm");
+                // Moonshot's contract: a dynamic-tool system message omits
+                // `content` (an empty string counts as omitted; the official
+                // verifier sends `"content": ""`). Rejecting non-empty text
+                // keeps it from being silently lost.
+                if content_is_non_empty(message.get("content")) {
+                    return Err(PromptRenderError::invalid_request(
+                        "Kimi K3 system messages carry either `content` or `tools`, not both",
+                    )
+                    .into());
                 }
+                let dynamic_tools = deep_sort(Value::Array(dynamic_tools.clone()));
+                render_tool_declare(&mut segments, &dynamic_tools, true)?;
+            }
+            "system" | "developer"
+                if message
+                    .get("content")
+                    .is_none_or(|content| content.is_null()) =>
+            {
+                return Err(PromptRenderError::invalid_request(format!(
+                    "Kimi K3 {role} messages need `content` or `tools`"
+                ))
+                .into());
             }
             "user" | "system" | "developer" => {
                 let rendered_role = if role == "developer" { "system" } else { role };
@@ -677,15 +945,7 @@ fn build_chat_segments(
             "assistant" => {
                 previous_tool_calls = message.get("tool_calls");
                 tool_index = 0;
-                let mut attrs = vec![("role".to_string(), "assistant".to_string())];
-                if let Some(name) = message
-                    .get("name")
-                    .and_then(Value::as_str)
-                    .filter(|name| !name.is_empty())
-                {
-                    attrs.push(("name".to_string(), name.to_string()));
-                }
-                open_tag(&mut segments, "message", attrs);
+                open_tag(&mut segments, "message", assistant_message_attrs(message));
                 render_assistant_segments(&mut segments, message, thinking)?;
                 close_tag(&mut segments, "message");
                 end_of_msg(&mut segments);
@@ -783,7 +1043,12 @@ fn build_chat_segments(
         }
     }
 
-    if add_generation_prompt {
+    // A partial assistant turn *is* the generation prompt: it is left open so
+    // the model continues from its prefix, so the generic prompt is skipped
+    // regardless of `add_generation_prompt`.
+    if let Some(partial) = partial_tail {
+        render_partial_assistant_segments(&mut segments, partial, thinking)?;
+    } else if add_generation_prompt {
         open_tag(
             &mut segments,
             "message",
@@ -998,29 +1263,43 @@ mod tests {
         );
     }
 
+    /// Only `system` messages may carry dynamic `tools`, on the raw path as
+    /// well as the typed one: `developer` is the upstream OpenAI type with no
+    /// `tools` field, and `tools` on user/assistant used to be ignored.
     #[test]
-    fn renders_developer_tools_and_content() {
+    fn rejects_tools_on_non_system_messages() {
+        let tools = json!([{"type": "function", "function": {"name": "lookup"}}]);
+        for (role, extra) in [
+            (
+                "developer",
+                json!({"content": "Use the newly available tool"}),
+            ),
+            ("user", json!({"content": "Look this up"})),
+            ("assistant", json!({"content": "ok"})),
+        ] {
+            let mut message = extra;
+            message["role"] = json!(role);
+            message["tools"] = tools.clone();
+            let request = Request::new(json!([message, {"role": "user", "content": "Go"}]));
+
+            let error = fmt().render(&request).unwrap_err();
+            assert_eq!(
+                invalid_request_message(&error),
+                format!("`tools` is only accepted on system messages, not on role {role}"),
+                "role={role}"
+            );
+        }
+
+        // A developer message without `tools` still renders as system text.
         let mut request = Request::new(json!([
-            {
-                "role": "developer",
-                "content": "Use the newly available tool",
-                "tools": [{
-                    "type": "function",
-                    "function": {"name": "lookup", "parameters": {"type": "object"}}
-                }]
-            },
-            {"role": "user", "content": "Look this up"}
+            {"role": "developer", "content": "Follow the policy"},
+            {"role": "user", "content": "Go"}
         ]));
         request
             .args
             .insert("thinking".to_string(), Value::Bool(false));
-
         let rendered = fmt().render(&request).unwrap();
-
-        assert!(rendered.contains("## New Tools Available"));
-        assert!(
-            rendered.contains("<|open|>message role=\"system\"<|sep|>Use the newly available tool")
-        );
+        assert!(rendered.contains("<|open|>message role=\"system\"<|sep|>Follow the policy"));
     }
 
     #[test]
@@ -1066,6 +1345,532 @@ mod tests {
             error.downcast_ref::<PromptRenderError>(),
             Some(PromptRenderError::InvalidRequest(message))
                 if message.contains("thinking_effort=\"medium\"")
+        ));
+    }
+
+    // -- Kimi Partial Mode (prefix continuation) --
+
+    #[test]
+    fn partial_assistant_renders_open_turn_in_place_of_generation_prompt() {
+        let mut request = Request::new(json!([
+            {"role": "user", "content": "Greet the customer"},
+            {"role": "assistant", "content": "Dear customer, hello", "partial": true}
+        ]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+
+        let rendered = fmt().render(&request).unwrap();
+
+        assert_eq!(
+            rendered,
+            concat!(
+                "<|open|>message role=\"user\"<|sep|>Greet the customer",
+                "<|close|>message<|sep|><|end_of_msg|>",
+                "<|open|>message role=\"assistant\"<|sep|>",
+                "<|open|>response<|sep|>Dear customer, hello"
+            ),
+            "the partial turn must stay open: no <|close|>response / <|close|>message / <|end_of_msg|>, \
+             and no extra generation prompt after it"
+        );
+    }
+
+    #[test]
+    fn partial_assistant_ignores_add_generation_prompt_flag() {
+        // The partial turn *is* the generation prompt, so the flag is moot.
+        let mut request = Request::new(json!([
+            {"role": "user", "content": "Go"},
+            {"role": "assistant", "content": "prefix", "partial": true}
+        ]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+        request.add_generation_prompt = false;
+
+        let rendered = fmt().render(&request).unwrap();
+
+        assert!(rendered.ends_with("<|open|>response<|sep|>prefix"));
+        assert_eq!(rendered.matches("role=\"assistant\"").count(), 1);
+    }
+
+    #[test]
+    fn partial_assistant_in_thinking_mode_closes_think_then_opens_response() {
+        let mut request = Request::new(json!([
+            {"role": "user", "content": "Go"},
+            {
+                "role": "assistant",
+                "reasoning_content": "carried over reasoning",
+                "content": "prefix",
+                "partial": true
+            }
+        ]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(true));
+
+        let rendered = fmt().render(&request).unwrap();
+
+        assert!(rendered.ends_with(concat!(
+            "<|open|>message role=\"assistant\"<|sep|>",
+            "<|open|>think<|sep|>carried over reasoning<|close|>think<|sep|>",
+            "<|open|>response<|sep|>prefix"
+        )));
+    }
+
+    #[test]
+    fn partial_assistant_keeps_name_as_part_of_the_prefix() {
+        let mut request = Request::new(json!([
+            {"role": "user", "content": "Who are you?"},
+            {"role": "assistant", "name": "Sherlock", "content": "Elementary", "partial": true}
+        ]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+
+        let rendered = fmt().render(&request).unwrap();
+
+        assert!(rendered.ends_with(concat!(
+            "<|open|>message role=\"assistant\" name=\"Sherlock\"<|sep|>",
+            "<|open|>response<|sep|>Elementary"
+        )));
+    }
+
+    #[test]
+    fn partial_assistant_follows_internal_system_messages() {
+        // tool_choice / response_format hints are injected after history and
+        // before the generation turn; a partial turn must not be split by them.
+        // Moonshot advises against mixing Partial Mode with `response_format`,
+        // so the hint exercised here is `tool_choice`.
+        let mut request = Request::new(json!([
+            {"role": "user", "content": "Go"},
+            {"role": "assistant", "content": "prefix", "partial": true}
+        ]));
+        request.tools = Some(json!([{
+            "type": "function",
+            "function": {"name": "lookup", "parameters": {"type": "object"}}
+        }]));
+        request.tool_choice = Some(json!("none"));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+
+        let rendered = fmt().render(&request).unwrap();
+
+        let hint = rendered
+            .find("tool_choice=none")
+            .expect("tool-choice hint rendered");
+        let turn = rendered
+            .rfind("<|open|>message role=\"assistant\"<|sep|>")
+            .expect("partial turn rendered");
+        assert!(
+            hint < turn,
+            "internal system messages must precede the open partial turn"
+        );
+        assert!(rendered.ends_with("<|open|>response<|sep|>prefix"));
+    }
+
+    #[test]
+    fn partial_false_is_an_ordinary_assistant_turn() {
+        let mut request = Request::new(json!([
+            {"role": "user", "content": "Go"},
+            {"role": "assistant", "content": "done", "partial": false}
+        ]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+
+        let rendered = fmt().render(&request).unwrap();
+
+        assert!(rendered.contains(
+            "<|open|>response<|sep|>done<|close|>response<|sep|><|close|>message<|sep|><|end_of_msg|>"
+        ));
+        assert!(
+            rendered.ends_with("<|open|>message role=\"assistant\"<|sep|><|open|>response<|sep|>")
+        );
+    }
+
+    #[test]
+    fn rejects_partial_on_a_non_final_message() {
+        let request = Request::new(json!([
+            {"role": "assistant", "content": "early", "partial": true},
+            {"role": "user", "content": "Go"}
+        ]));
+
+        let error = fmt().render(&request).unwrap_err();
+
+        assert!(matches!(
+            error.downcast_ref::<PromptRenderError>(),
+            Some(PromptRenderError::InvalidRequest(message))
+                if message == "Kimi K3 `partial` is only supported on the final message"
+        ));
+    }
+
+    #[test]
+    fn rejects_partial_on_a_non_assistant_message() {
+        let request = Request::new(json!([
+            {"role": "user", "content": "Go", "partial": true}
+        ]));
+
+        let error = fmt().render(&request).unwrap_err();
+
+        assert!(matches!(
+            error.downcast_ref::<PromptRenderError>(),
+            Some(PromptRenderError::InvalidRequest(message))
+                if message == "Kimi K3 `partial` is only supported on an assistant message"
+        ));
+    }
+
+    // -- Dynamic tool system messages: content XOR tools --
+
+    fn invalid_request_message(error: &anyhow::Error) -> &str {
+        match error.downcast_ref::<PromptRenderError>() {
+            Some(PromptRenderError::InvalidRequest(message)) => message,
+            other => panic!("expected InvalidRequest, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn rejects_system_message_with_both_content_and_tools() {
+        let request = Request::new(json!([
+            {
+                "role": "system",
+                "content": "You are helpful",
+                "tools": [{"type": "function", "function": {"name": "lookup"}}]
+            },
+            {"role": "user", "content": "Go"}
+        ]));
+
+        let error = fmt().render(&request).unwrap_err();
+        assert_eq!(
+            invalid_request_message(&error),
+            "Kimi K3 system messages carry either `content` or `tools`, not both"
+        );
+    }
+
+    #[test]
+    fn rejects_system_message_tools_that_are_not_an_array() {
+        for tools in [json!("lookup"), json!({"name": "lookup"}), json!(1)] {
+            let request = Request::new(json!([
+                {"role": "system", "tools": tools},
+                {"role": "user", "content": "Go"}
+            ]));
+
+            let error = fmt().render(&request).unwrap_err();
+            assert_eq!(
+                invalid_request_message(&error),
+                "Kimi K3 dynamic tool messages need `tools` to be an array",
+                "tools={tools}"
+            );
+        }
+    }
+
+    /// Moonshot's official dynamic-tools verifier sends `"content": ""`
+    /// alongside `tools` and expects success. Empty content is "omitted".
+    #[test]
+    fn accepts_dynamic_tools_with_empty_string_content() {
+        for empty in [json!(""), json!([]), Value::Null] {
+            let mut request = Request::new(json!([
+                {"role": "user", "content": "Start"},
+                {
+                    "role": "system",
+                    "content": empty,
+                    "tools": [{"type": "function", "function": {"name": "lookup"}}]
+                },
+                {"role": "user", "content": "Go"}
+            ]));
+            request
+                .args
+                .insert("thinking".to_string(), Value::Bool(false));
+
+            let rendered = fmt()
+                .render(&request)
+                .unwrap_or_else(|e| panic!("content={empty}: {e}"));
+            assert!(
+                rendered.contains("## New Tools Available"),
+                "content={empty}"
+            );
+            assert!(
+                !rendered.contains("<|open|>message role=\"system\"<|sep|><|close|>message"),
+                "content={empty}: must not emit an empty system turn"
+            );
+        }
+    }
+
+    /// Malformed dynamic tool entries are request errors (Moonshot negative
+    /// tests), not declarations the model has to make sense of.
+    #[test]
+    fn rejects_malformed_dynamic_tool_entries() {
+        let long_name = "a".repeat(257);
+        for (entry, needle) in [
+            (json!("lookup"), "must be JSON objects"),
+            (json!(7), "must be JSON objects"),
+            // Missing / non-string name, both shapes.
+            (
+                json!({"parameters": {"type": "object"}}),
+                "need a string `name`",
+            ),
+            (json!({"name": 42}), "need a string `name`"),
+            (
+                json!({"type": "function", "function": {}}),
+                "need a string `name`",
+            ),
+            // Wrong type.
+            (
+                json!({"type": "custom", "name": "lookup"}),
+                "type=\"function\"",
+            ),
+            (
+                json!({"type": "web_search", "function": {"name": "lookup"}}),
+                "type=\"function\"",
+            ),
+            // Half-wrapped: one of type/function without the other.
+            (
+                json!({"function": {"name": "lookup"}}),
+                "need type=\"function\"",
+            ),
+            (
+                json!({"type": "function", "name": "lookup"}),
+                "need a `function` object",
+            ),
+            (
+                json!({"type": "function", "function": "lookup"}),
+                "need a `function` object",
+            ),
+            // Names the vendor verifier rejects.
+            (json!({"name": ""}), "must match"),
+            (json!({"name": "1bad_name"}), "must match"),
+            (json!({"name": "bad@name"}), "must match"),
+            (json!({"name": "has space"}), "must match"),
+            (json!({"name": "-leading-dash"}), "must match"),
+            (json!({"name": long_name}), "maximum is 256"),
+            (
+                json!({"type": "function", "function": {"name": "bad.name"}}),
+                "must match",
+            ),
+        ] {
+            let request = Request::new(json!([
+                {"role": "system", "tools": [entry]},
+                {"role": "user", "content": "Go"}
+            ]));
+            let error = fmt().render(&request).unwrap_err();
+            assert!(
+                invalid_request_message(&error).contains(needle),
+                "entry={entry}: {}",
+                invalid_request_message(&error)
+            );
+        }
+    }
+
+    /// Top-level and dynamic tools share one namespace.
+    #[test]
+    fn rejects_duplicate_tool_names_across_declarations() {
+        // Same name in top-level `tools` and a dynamic declaration.
+        let mut request = Request::new(json!([
+            {"role": "system", "tools": [{"name": "lookup"}]},
+            {"role": "user", "content": "Go"}
+        ]));
+        request.tools = Some(json!([{
+            "type": "function",
+            "function": {"name": "lookup", "parameters": {"type": "object"}}
+        }]));
+        let error = fmt().render(&request).unwrap_err();
+        assert!(invalid_request_message(&error).contains("declared more than once"));
+
+        // Same name twice across two dynamic declarations.
+        let request = Request::new(json!([
+            {"role": "system", "tools": [{"name": "lookup"}]},
+            {"role": "user", "content": "one"},
+            {"role": "assistant", "content": "ok"},
+            {"role": "system", "tools": [{"type": "function", "function": {"name": "lookup"}}]},
+            {"role": "user", "content": "two"}
+        ]));
+        let error = fmt().render(&request).unwrap_err();
+        assert!(invalid_request_message(&error).contains("declared more than once"));
+
+        // Valid names at the boundaries: underscore start, dashes, 256 chars.
+        let max_name = "a".repeat(256);
+        let request = Request::new(json!([
+            {"role": "system", "tools": [
+                {"name": "_private-tool_2"},
+                {"type": "function", "function": {"name": max_name}}
+            ]},
+            {"role": "user", "content": "Go"}
+        ]));
+        fmt().render(&request).unwrap();
+
+        // Distinct names are fine, wrapped or bare.
+        let mut request = Request::new(json!([
+            {"role": "system", "tools": [{"name": "lookup"}, {"type": "function", "function": {"name": "search"}}]},
+            {"role": "user", "content": "Go"}
+        ]));
+        request.tools = Some(json!([{
+            "type": "function",
+            "function": {"name": "add", "parameters": {"type": "object"}}
+        }]));
+        fmt().render(&request).unwrap();
+    }
+
+    /// `tools: []` declares nothing, so the message is an ordinary system turn.
+    #[test]
+    fn empty_tools_list_is_an_ordinary_system_message() {
+        let mut request = Request::new(json!([
+            {"role": "system", "content": "You are helpful", "tools": []},
+            {"role": "user", "content": "Go"}
+        ]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+
+        let rendered = fmt().render(&request).unwrap();
+        assert!(rendered.contains("<|open|>message role=\"system\"<|sep|>You are helpful"));
+        assert!(!rendered.contains("## New Tools Available"));
+
+        // ...and with no content either, it is the usual "nothing here" error.
+        let request = Request::new(json!([
+            {"role": "system", "tools": []},
+            {"role": "user", "content": "Go"}
+        ]));
+        let error = fmt().render(&request).unwrap_err();
+        assert_eq!(
+            invalid_request_message(&error),
+            "Kimi K3 system messages need `content` or `tools`"
+        );
+    }
+
+    #[test]
+    fn rejects_system_message_with_neither_content_nor_tools() {
+        let request = Request::new(json!([
+            {"role": "system"},
+            {"role": "user", "content": "Go"}
+        ]));
+
+        let error = fmt().render(&request).unwrap_err();
+        assert_eq!(
+            invalid_request_message(&error),
+            "Kimi K3 system messages need `content` or `tools`"
+        );
+    }
+
+    // -- Typed request path: JSON -> CreateChatCompletionRequest -> renderer --
+    //
+    // The raw-JSON `Request` above bypasses protocol deserialization. These
+    // tests go through `dynamo_protocols::types::CreateChatCompletionRequest`
+    // and its default `OAIChatLikeRequest` impl, which is what an HTTP frontend
+    // actually hands to the formatter.
+
+    fn typed(body: Value) -> dynamo_protocols::types::CreateChatCompletionRequest {
+        serde_json::from_value(body).expect("request deserializes")
+    }
+
+    #[test]
+    fn typed_request_renders_dynamic_tools_and_final_partial_end_to_end() {
+        let request = typed(json!({
+            "model": "kimi-k3",
+            "messages": [
+                {"role": "system", "tools": [{
+                    "type": "function",
+                    "function": {"name": "lookup", "parameters": {"type": "object"}}
+                }]},
+                {"role": "user", "content": "Look it up"},
+                {"role": "assistant", "content": "Looking", "partial": true}
+            ]
+        }));
+
+        let rendered = fmt().render(&request).unwrap();
+
+        assert!(rendered.contains("## New Tools Available"));
+        assert!(rendered.contains("\"lookup\""));
+        assert!(
+            rendered.ends_with("<|open|>response<|sep|>Looking"),
+            "partial turn must stay open, got {rendered:?}"
+        );
+    }
+
+    #[test]
+    fn typed_request_rejects_non_final_partial() {
+        let request = typed(json!({
+            "model": "kimi-k3",
+            "messages": [
+                {"role": "assistant", "content": "early", "partial": true},
+                {"role": "user", "content": "Go"}
+            ]
+        }));
+
+        let error = fmt().render(&request).unwrap_err();
+        assert_eq!(
+            invalid_request_message(&error),
+            "Kimi K3 `partial` is only supported on the final message"
+        );
+    }
+
+    #[test]
+    fn typed_request_rejects_system_with_content_and_tools() {
+        let request = typed(json!({
+            "model": "kimi-k3",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are helpful",
+                    "tools": [{"type": "function", "function": {"name": "lookup"}}]
+                },
+                {"role": "user", "content": "Go"}
+            ]
+        }));
+
+        let error = fmt().render(&request).unwrap_err();
+        assert_eq!(
+            invalid_request_message(&error),
+            "Kimi K3 system messages carry either `content` or `tools`, not both"
+        );
+    }
+
+    #[test]
+    fn typed_request_rejects_partial_and_tools_on_wrong_roles() {
+        // `partial` only exists on the assistant type and `tools` only on the
+        // system type. The protocol layer rejects them on other roles instead
+        // of letting serde drop them, so the request never reaches the
+        // renderer's raw-JSON guardrail through the typed path.
+        for (body, needle) in [
+            (
+                json!({"model": "kimi-k3", "messages": [{"role": "user", "content": "Go", "partial": true}]}),
+                "`partial` is only accepted on assistant messages",
+            ),
+            (
+                json!({"model": "kimi-k3", "messages": [{"role": "user", "content": "Go", "tools": [{"name": "lookup"}]}]}),
+                "`tools` is only accepted on system messages",
+            ),
+        ] {
+            let error = serde_json::from_value::<
+                dynamo_protocols::types::CreateChatCompletionRequest,
+            >(body)
+            .unwrap_err()
+            .to_string();
+            assert!(error.contains(needle), "got: {error}");
+        }
+    }
+
+    #[test]
+    fn rejects_partial_assistant_with_tool_calls() {
+        let request = Request::new(json!([
+            {"role": "user", "content": "Go"},
+            {
+                "role": "assistant",
+                "content": "prefix",
+                "partial": true,
+                "tool_calls": [{
+                    "id": "call_1",
+                    "type": "function",
+                    "function": {"name": "lookup", "arguments": "{}"}
+                }]
+            }
+        ]));
+
+        let error = fmt().render(&request).unwrap_err();
+
+        assert!(matches!(
+            error.downcast_ref::<PromptRenderError>(),
+            Some(PromptRenderError::InvalidRequest(message))
+                if message == "Kimi K3 partial assistant messages cannot carry tool_calls"
         ));
     }
 
@@ -1117,6 +1922,51 @@ mod tests {
             !rendered.contains("historical hidden reasoning"),
             "named tool choice must also suppress preserved thinking history"
         );
+    }
+
+    #[test]
+    fn named_tool_choice_accepts_a_dynamic_system_tool() {
+        for lookup in [
+            json!({"type": "function", "function": {"name": "lookup", "parameters": {"type": "object"}}}),
+            json!({"name": "lookup", "parameters": {"type": "object"}}),
+        ] {
+            let mut request = Request::new(json!([
+                {"role": "user", "content": "Start"},
+                {"role": "system", "tools": [lookup]},
+                {"role": "user", "content": "Look this up"}
+            ]));
+            request.tool_choice = Some(json!({
+                "type": "function",
+                "function": {"name": "lookup"}
+            }));
+
+            let rendered = fmt().render(&request).unwrap();
+            assert!(rendered.contains("## New Tools Available"));
+            assert!(rendered.contains("MUST call the tool `lookup`"));
+            assert!(
+                request.tools.is_none(),
+                "dynamic tools must not be folded into the top-level list"
+            );
+        }
+    }
+
+    #[test]
+    fn named_tool_choice_still_rejects_a_tool_absent_from_dynamic_tools() {
+        let mut request = Request::new(json!([
+            {"role": "system", "tools": [{"name": "lookup"}]},
+            {"role": "user", "content": "Weather?"}
+        ]));
+        request.tool_choice = Some(json!({
+            "type": "function",
+            "function": {"name": "get_weather"}
+        }));
+
+        let error = fmt().render(&request).unwrap_err();
+        assert!(matches!(
+            error.downcast_ref::<PromptRenderError>(),
+            Some(PromptRenderError::InvalidRequest(message))
+                if message.contains("get_weather") && message.contains("not present in tools")
+        ));
     }
 
     #[test]
