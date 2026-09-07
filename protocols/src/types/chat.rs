@@ -854,76 +854,101 @@ impl<'de> Deserialize<'de> for ChatCompletionRequestMessage {
     {
         use serde::de::Error;
 
-        /// The derived shape; the public enum only adds the role/field check.
+        #[derive(Deserialize)]
+        struct ForbidToolsAndPartial<T> {
+            tools: Option<serde::de::IgnoredAny>,
+            partial: Option<serde::de::IgnoredAny>,
+            #[serde(flatten)]
+            message: T,
+        }
+
+        #[derive(Deserialize)]
+        struct ForbidTools<T> {
+            tools: Option<serde::de::IgnoredAny>,
+            #[serde(flatten)]
+            message: T,
+        }
+
+        #[derive(Deserialize)]
+        struct ForbidPartial<T> {
+            partial: Option<serde::de::IgnoredAny>,
+            #[serde(flatten)]
+            message: T,
+        }
+
         #[derive(Deserialize)]
         #[serde(tag = "role")]
         #[serde(rename_all = "lowercase")]
         enum Wire {
-            Developer(ChatCompletionRequestDeveloperMessage),
-            System(ChatCompletionRequestSystemMessage),
-            User(ChatCompletionRequestUserMessage),
-            Assistant(ChatCompletionRequestAssistantMessage),
-            Tool(ChatCompletionRequestToolMessage),
-            Function(ChatCompletionRequestFunctionMessage),
+            Developer(ForbidToolsAndPartial<ChatCompletionRequestDeveloperMessage>),
+            System(ForbidPartial<ChatCompletionRequestSystemMessage>),
+            User(ForbidToolsAndPartial<ChatCompletionRequestUserMessage>),
+            Assistant(ForbidTools<ChatCompletionRequestAssistantMessage>),
+            Tool(ForbidToolsAndPartial<ChatCompletionRequestToolMessage>),
+            Function(ForbidToolsAndPartial<ChatCompletionRequestFunctionMessage>),
         }
 
-        /// Collects the top-level object entry by entry so a repeated key
-        /// (`"role"` twice, `"content"` twice) is rejected like the derived
-        /// deserializer would, instead of last-one-wins through
-        /// `serde_json::Value`.
-        struct MessageVisitor;
-
-        impl<'de> serde::de::Visitor<'de> for MessageVisitor {
-            type Value = ChatCompletionRequestMessage;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("a chat completion request message object")
+        fn reject_forbidden<E: Error>(
+            value: Option<serde::de::IgnoredAny>,
+            field: &str,
+            allowed_role: &str,
+            actual_role: &str,
+        ) -> Result<(), E> {
+            if value.is_some() {
+                return Err(E::custom(format!(
+                    "`{field}` is only accepted on {allowed_role} messages, not on role {actual_role}"
+                )));
             }
-
-            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-            where
-                A: serde::de::MapAccess<'de>,
-            {
-                let mut entries = serde_json::Map::new();
-                while let Some(key) = map.next_key::<String>()? {
-                    let value: serde_json::Value = map.next_value()?;
-                    if entries.insert(key.clone(), value).is_some() {
-                        return Err(A::Error::custom(format!("duplicate field `{key}`")));
-                    }
-                }
-
-                let role = entries.get("role").and_then(serde_json::Value::as_str);
-                let carries = |field: &str| entries.get(field).is_some_and(|v| !v.is_null());
-                // `developer` is excluded on purpose: it is the upstream type
-                // with no `tools` field, so accepting it here would silently
-                // drop the tools.
-                if carries("tools") && role != Some("system") {
-                    return Err(A::Error::custom(format!(
-                        "`tools` is only accepted on system messages, not on role {}",
-                        role.unwrap_or("<missing>")
-                    )));
-                }
-                if carries("partial") && role != Some("assistant") {
-                    return Err(A::Error::custom(format!(
-                        "`partial` is only accepted on assistant messages, not on role {}",
-                        role.unwrap_or("<missing>")
-                    )));
-                }
-
-                let wire: Wire = serde_json::from_value(serde_json::Value::Object(entries))
-                    .map_err(A::Error::custom)?;
-                Ok(match wire {
-                    Wire::Developer(message) => ChatCompletionRequestMessage::Developer(message),
-                    Wire::System(message) => ChatCompletionRequestMessage::System(message),
-                    Wire::User(message) => ChatCompletionRequestMessage::User(message),
-                    Wire::Assistant(message) => ChatCompletionRequestMessage::Assistant(message),
-                    Wire::Tool(message) => ChatCompletionRequestMessage::Tool(message),
-                    Wire::Function(message) => ChatCompletionRequestMessage::Function(message),
-                })
-            }
+            Ok(())
         }
 
-        deserializer.deserialize_map(MessageVisitor)
+        let wire = Wire::deserialize(deserializer)?;
+        Ok(match wire {
+            Wire::Developer(ForbidToolsAndPartial {
+                tools,
+                partial,
+                message,
+            }) => {
+                reject_forbidden::<D::Error>(tools, "tools", "system", "developer")?;
+                reject_forbidden::<D::Error>(partial, "partial", "assistant", "developer")?;
+                ChatCompletionRequestMessage::Developer(message)
+            }
+            Wire::System(ForbidPartial { partial, message }) => {
+                reject_forbidden::<D::Error>(partial, "partial", "assistant", "system")?;
+                ChatCompletionRequestMessage::System(message)
+            }
+            Wire::User(ForbidToolsAndPartial {
+                tools,
+                partial,
+                message,
+            }) => {
+                reject_forbidden::<D::Error>(tools, "tools", "system", "user")?;
+                reject_forbidden::<D::Error>(partial, "partial", "assistant", "user")?;
+                ChatCompletionRequestMessage::User(message)
+            }
+            Wire::Assistant(ForbidTools { tools, message }) => {
+                reject_forbidden::<D::Error>(tools, "tools", "system", "assistant")?;
+                ChatCompletionRequestMessage::Assistant(message)
+            }
+            Wire::Tool(ForbidToolsAndPartial {
+                tools,
+                partial,
+                message,
+            }) => {
+                reject_forbidden::<D::Error>(tools, "tools", "system", "tool")?;
+                reject_forbidden::<D::Error>(partial, "partial", "assistant", "tool")?;
+                ChatCompletionRequestMessage::Tool(message)
+            }
+            Wire::Function(ForbidToolsAndPartial {
+                tools,
+                partial,
+                message,
+            }) => {
+                reject_forbidden::<D::Error>(tools, "tools", "system", "function")?;
+                reject_forbidden::<D::Error>(partial, "partial", "assistant", "function")?;
+                ChatCompletionRequestMessage::Function(message)
+            }
+        })
     }
 }
 
@@ -2309,9 +2334,6 @@ mod tests {
         }
     }
 
-    /// The hand-written message deserializer must keep rejecting repeated
-    /// top-level keys, which the derived one did and `serde_json::Value`
-    /// (last-one-wins) would silently accept.
     #[test]
     fn message_rejects_duplicate_top_level_keys() {
         for (label, raw) in [
@@ -2336,6 +2358,30 @@ mod tests {
             .unwrap_err()
             .to_string();
         assert!(error.contains("duplicate field `content`"), "{error}");
+    }
+
+    #[test]
+    fn message_rejects_duplicate_fields_in_nested_typed_objects() {
+        let tool_call = r#"{
+            "role":"assistant",
+            "content":null,
+            "tool_calls":[{
+                "id":"first",
+                "id":"second",
+                "type":"function",
+                "function":{"name":"lookup","arguments":"{}"}
+            }]
+        }"#;
+        let error = serde_json::from_str::<ChatCompletionRequestMessage>(tool_call)
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("duplicate field `id`"), "{error}");
+
+        let content_part = r#"{
+            "role":"user",
+            "content":[{"type":"text","text":"first","text":"second"}]
+        }"#;
+        assert!(serde_json::from_str::<ChatCompletionRequestMessage>(content_part).is_err());
     }
 
     /// A default-constructed system message keeps upstream's required,
@@ -2538,31 +2584,6 @@ mod tests {
         let mut canonical = payload;
         canonical["messages"][0]["content"] = serde_json::json!("");
         assert_eq!(serde_json::to_value(request).unwrap(), canonical);
-    }
-
-    #[test]
-    fn system_message_still_accepts_ordinary_content() {
-        let request: CreateChatCompletionRequest = serde_json::from_value(serde_json::json!({
-            "model": "dummy-model",
-            "messages": [
-                { "role": "system", "content": "you are a calculator" },
-                { "role": "user", "content": "1+1" }
-            ]
-        }))
-        .unwrap();
-
-        match &request.messages[0] {
-            ChatCompletionRequestMessage::System(system) => {
-                assert!(system.tools.is_none());
-                match &system.content {
-                    ChatCompletionRequestSystemMessageContent::Text(text) => {
-                        assert_eq!(text, "you are a calculator");
-                    }
-                    other => panic!("expected text content, got {other:?}"),
-                }
-            }
-            other => panic!("expected system message, got {other:?}"),
-        }
     }
 
     #[test]

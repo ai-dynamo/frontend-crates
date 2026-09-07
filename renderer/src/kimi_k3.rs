@@ -326,7 +326,6 @@ fn content_is_non_empty(content: Option<&Value>) -> bool {
     }
 }
 
-/// Whether a `system` message's dynamic `tools` declares `name`.
 fn message_declares_tool(message: &Value, name: &str) -> bool {
     message.get("role").and_then(Value::as_str) == Some("system")
         && message
@@ -655,7 +654,6 @@ fn assistant_message_attrs(message: &Value) -> Vec<(String, String)> {
     attrs
 }
 
-/// Whether a message carries Kimi's Partial Mode flag (`"partial": true`).
 fn is_partial(message: &Value) -> bool {
     message.get("partial").and_then(Value::as_bool) == Some(true)
 }
