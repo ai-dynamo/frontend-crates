@@ -833,14 +833,12 @@ mod tests {
                 if message.contains("`partial: true` is not supported")
         ));
 
-        for partial in [json!(false), json!(null)] {
-            let rendered = render_shape(
-                &f,
-                json!([{"role": "assistant", "content": "ordinary", "partial": partial}]),
-            )
-            .unwrap();
-            assert!(rendered.contains("ordinary"));
-        }
+        let rendered = render_shape(
+            &f,
+            json!([{"role": "assistant", "content": "ordinary", "partial": false}]),
+        )
+        .unwrap();
+        assert!(rendered.contains("ordinary"));
     }
     // Rejects a non-leading system (Qwen3.5 shape); accepts consecutive users.
     const STRICT_LEADING_TMPL: &str = concat!(

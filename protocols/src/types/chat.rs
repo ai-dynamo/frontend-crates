@@ -2303,7 +2303,6 @@ mod tests {
             assert!(error.contains(needle), "{label}: {error}");
         }
 
-        // Explicit `null` is treated as absent, like every other optional field.
         for message in [
             serde_json::json!({"role": "user", "content": "hi", "tools": null}),
             serde_json::json!({"role": "user", "content": "hi", "partial": null}),
@@ -2311,7 +2310,6 @@ mod tests {
             serde_json::from_value::<ChatCompletionRequestMessage>(message).unwrap();
         }
 
-        // The right roles still work, and unrelated unknown fields stay ignored.
         for message in [
             serde_json::json!({"role": "system", "tools": tools}),
             serde_json::json!({"role": "assistant", "content": "seed", "partial": true}),
