@@ -3,7 +3,7 @@
 
 use std::path::Path;
 
-use tokenizers::tokenizer::{AddedToken, Tokenizer as HfTokenizer};
+use tokenizers::tokenizer::{AddedToken, PostProcessor as _, Tokenizer as HfTokenizer};
 
 use super::{
     Encoding, Error, Result, TokenIdType, TokenizerOptions,
@@ -192,6 +192,31 @@ impl Tokenizer for HuggingFaceTokenizer {
         self.options = options;
         self
     }
+
+    fn vocab_size(&self) -> Option<usize> {
+        Some(self.tokenizer.get_vocab_size(true))
+    }
+
+    fn token_to_id(&self, token: &str) -> Option<TokenIdType> {
+        self.tokenizer.token_to_id(token)
+    }
+
+    fn special_token_ids(&self) -> Vec<TokenIdType> {
+        let mut ids: Vec<TokenIdType> = self
+            .tokenizer
+            .get_added_tokens_decoder()
+            .into_iter()
+            .filter_map(|(id, token)| token.special.then_some(id))
+            .collect();
+        ids.sort_unstable();
+        ids
+    }
+
+    fn num_special_tokens_added(&self) -> usize {
+        self.tokenizer
+            .get_post_processor()
+            .map_or(0, |processor| processor.added_tokens(false))
+    }
 }
 
 impl From<HfTokenizer> for HuggingFaceTokenizer {
@@ -379,5 +404,87 @@ mod tests {
         )
         .unwrap();
         assert_eq!(ids(&wrapper_bos.encode("hello").unwrap()), vec![3, 1]);
+    }
+
+    #[test]
+    fn vocab_introspection_accessors() {
+        // `Encoder`/`Decoder` expose no vocab size, token->id lookup, or
+        // special-token accounting; these narrow accessors let a caller
+        // answer those questions directly against an already-loaded
+        // tokenizer, without backend-specific access to the underlying
+        // library.
+        const TOKENIZER_JSON: &str = r#"{
+            "version": "1.0",
+            "truncation": null,
+            "padding": null,
+            "added_tokens": [
+                {"id": 0, "content": "<unk>", "special": true, "single_word": false, "lstrip": false, "rstrip": false, "normalized": false}
+            ],
+            "normalizer": null,
+            "pre_tokenizer": null,
+            "post_processor": null,
+            "decoder": null,
+            "model": {
+                "type": "WordLevel",
+                "vocab": {"<unk>": 0, "hello": 1, "world": 2},
+                "unk_token": "<unk>"
+            }
+        }"#;
+
+        let dir = TempDir::new().unwrap();
+        fs::write(dir.path().join("tokenizer.json"), TOKENIZER_JSON).unwrap();
+        let path = dir.path().join("tokenizer.json");
+
+        let tokenizer = HuggingFaceTokenizer::from_file(path.to_str().unwrap()).unwrap();
+        assert_eq!(tokenizer.vocab_size(), Some(3));
+        assert_eq!(tokenizer.token_to_id("hello"), Some(1));
+        assert_eq!(tokenizer.special_token_ids(), vec![0]);
+        assert_eq!(tokenizer.num_special_tokens_added(), 0);
+    }
+
+    #[test]
+    fn num_special_tokens_added_reflects_post_processor_additions() {
+        // The `post_processor: null` case above only proves the `None` arm
+        // of `map_or`; this exercises the actual `added_tokens(false)` count
+        // against a TemplateProcessing post-processor that prepends <bos>.
+        const TOKENIZER_JSON: &str = r#"{
+            "version": "1.0",
+            "truncation": null,
+            "padding": null,
+            "added_tokens": [
+                {"id": 0, "content": "<unk>", "special": true, "single_word": false, "lstrip": false, "rstrip": false, "normalized": false},
+                {"id": 3, "content": "<bos>", "special": true, "single_word": false, "lstrip": false, "rstrip": false, "normalized": false}
+            ],
+            "normalizer": null,
+            "pre_tokenizer": null,
+            "post_processor": {
+                "type": "TemplateProcessing",
+                "single": [
+                    {"SpecialToken": {"id": "<bos>", "type_id": 0}},
+                    {"Sequence": {"id": "A", "type_id": 0}}
+                ],
+                "pair": [
+                    {"SpecialToken": {"id": "<bos>", "type_id": 0}},
+                    {"Sequence": {"id": "A", "type_id": 0}},
+                    {"Sequence": {"id": "B", "type_id": 0}}
+                ],
+                "special_tokens": {
+                    "<bos>": {"id": "<bos>", "ids": [3], "tokens": ["<bos>"]}
+                }
+            },
+            "decoder": null,
+            "model": {
+                "type": "WordLevel",
+                "vocab": {"<unk>": 0, "hello": 1, "world": 2, "<bos>": 3},
+                "unk_token": "<unk>"
+            }
+        }"#;
+
+        let dir = TempDir::new().unwrap();
+        fs::write(dir.path().join("tokenizer.json"), TOKENIZER_JSON).unwrap();
+        let path = dir.path().join("tokenizer.json");
+
+        let tokenizer = HuggingFaceTokenizer::from_file(path.to_str().unwrap()).unwrap();
+        assert_eq!(tokenizer.num_special_tokens_added(), 1);
     }
 }

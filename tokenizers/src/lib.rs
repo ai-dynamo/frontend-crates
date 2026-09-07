@@ -202,7 +202,42 @@ pub mod traits {
             let _ = options;
             self
         }
-        // fn get_vocab_size(&self) -> usize;
+        /// Vocabulary cardinality including added tokens, when the backend
+        /// can expose one. `None` for backends without a bounded id space.
+        ///
+        /// No default body: every implementor must state its answer
+        /// explicitly (`None` where genuinely unsupported) rather than risk
+        /// silently inheriting `None` for a backend that could report one.
+        fn vocab_size(&self) -> Option<usize>;
+
+        /// Resolve a token string to its vocabulary id, when the backend
+        /// supports lookup. `None` for backends without one, or when the
+        /// token is not in the vocabulary.
+        ///
+        /// No default body: every implementor must state its answer
+        /// explicitly (`None` where genuinely unsupported) rather than risk
+        /// silently inheriting `None` for a backend that could report one.
+        fn token_to_id(&self, token: &str) -> Option<TokenIdType>;
+
+        /// Ids of added tokens marked special (e.g. BOS/EOS/PAD/control
+        /// tokens), as distinct from ordinary vocabulary tokens. Empty for
+        /// backends that do not distinguish special from ordinary
+        /// vocabulary ids.
+        ///
+        /// No default body: every implementor must state its answer
+        /// explicitly (`Vec::new()` where genuinely unsupported) rather
+        /// than risk silently inheriting an empty set for a backend that
+        /// could report one.
+        fn special_token_ids(&self) -> Vec<TokenIdType>;
+
+        /// Count of special tokens `encode`'s `add_special_tokens: true`
+        /// path would add to a bare encoding (e.g. BOS/EOS), available
+        /// without performing an encode. Zero for backends that add none.
+        ///
+        /// No default body: every implementor must state its answer
+        /// explicitly (`0` where genuinely none are added) rather than risk
+        /// silently inheriting zero for a backend that adds some.
+        fn num_special_tokens_added(&self) -> usize;
         // fn make_unique_clone(&self) -> Box<dyn Tokenizer>;
     }
 }
@@ -552,7 +587,23 @@ mod decode_stream_unicode_tests {
         }
     }
 
-    impl super::traits::Tokenizer for RewritingTokenizer {}
+    impl super::traits::Tokenizer for RewritingTokenizer {
+        fn vocab_size(&self) -> Option<usize> {
+            None
+        }
+
+        fn token_to_id(&self, _token: &str) -> Option<TokenIdType> {
+            None
+        }
+
+        fn special_token_ids(&self) -> Vec<TokenIdType> {
+            Vec::new()
+        }
+
+        fn num_special_tokens_added(&self) -> usize {
+            0
+        }
+    }
 
     #[test]
     fn allows_boundary_recovery_before_generated_text_is_emitted() {

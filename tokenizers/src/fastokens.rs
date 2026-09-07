@@ -76,6 +76,24 @@ impl Tokenizer for FastTokenizer {
     fn validate_prefix_cache(&self) -> Result<()> {
         Ok(())
     }
+
+    // `fast_encoder` and `hf_decoder` are loaded from the same tokenizer.json,
+    // so the HF side's vocabulary introspection applies to both.
+    fn vocab_size(&self) -> Option<usize> {
+        self.hf_decoder.vocab_size()
+    }
+
+    fn token_to_id(&self, token: &str) -> Option<TokenIdType> {
+        self.hf_decoder.token_to_id(token)
+    }
+
+    fn special_token_ids(&self) -> Vec<TokenIdType> {
+        self.hf_decoder.special_token_ids()
+    }
+
+    fn num_special_tokens_added(&self) -> usize {
+        self.hf_decoder.num_special_tokens_added()
+    }
 }
 
 #[cfg(test)]
@@ -227,6 +245,23 @@ mod tests {
         assert_eq!(
             accumulated, expected,
             "streamed chunks must equal context-aware decoded continuation"
+        );
+    }
+
+    #[test]
+    fn vocab_introspection_forwards_to_hf_decoder() {
+        // Guards against the same class of bug CachedTokenizer's
+        // delegating overrides are exposed to: one-line forwarding methods
+        // silently reverting to trait defaults, or delegating to the
+        // wrong field.
+        let fast = FastTokenizer::from_file(TOKENIZER_PATH).unwrap();
+        let hf = HuggingFaceTokenizer::from_file(TOKENIZER_PATH).unwrap();
+        assert_eq!(fast.vocab_size(), hf.vocab_size());
+        assert_eq!(fast.token_to_id("Hello"), hf.token_to_id("Hello"));
+        assert_eq!(fast.special_token_ids(), hf.special_token_ids());
+        assert_eq!(
+            fast.num_special_tokens_added(),
+            hf.num_special_tokens_added()
         );
     }
 }

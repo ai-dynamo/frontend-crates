@@ -271,7 +271,23 @@ impl Decoder for CachedTokenizer {
     }
 }
 
-impl Tokenizer for CachedTokenizer {}
+impl Tokenizer for CachedTokenizer {
+    fn vocab_size(&self) -> Option<usize> {
+        self.inner.vocab_size()
+    }
+
+    fn token_to_id(&self, token: &str) -> Option<TokenIdType> {
+        self.inner.token_to_id(token)
+    }
+
+    fn special_token_ids(&self) -> Vec<TokenIdType> {
+        self.inner.special_token_ids()
+    }
+
+    fn num_special_tokens_added(&self) -> usize {
+        self.inner.num_special_tokens_added()
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -315,6 +331,22 @@ mod tests {
         fn validate_prefix_cache(&self) -> Result<()> {
             Ok(())
         }
+
+        fn vocab_size(&self) -> Option<usize> {
+            None
+        }
+
+        fn token_to_id(&self, _token: &str) -> Option<TokenIdType> {
+            None
+        }
+
+        fn special_token_ids(&self) -> Vec<TokenIdType> {
+            Vec::new()
+        }
+
+        fn num_special_tokens_added(&self) -> usize {
+            0
+        }
     }
 
     impl Encoder for FailingTokenizer {
@@ -340,6 +372,22 @@ mod tests {
     impl Tokenizer for FailingTokenizer {
         fn validate_prefix_cache(&self) -> Result<()> {
             Ok(())
+        }
+
+        fn vocab_size(&self) -> Option<usize> {
+            None
+        }
+
+        fn token_to_id(&self, _token: &str) -> Option<TokenIdType> {
+            None
+        }
+
+        fn special_token_ids(&self) -> Vec<TokenIdType> {
+            Vec::new()
+        }
+
+        fn num_special_tokens_added(&self) -> usize {
+            0
         }
     }
 
@@ -574,5 +622,23 @@ mod tests {
         assert!(events[1..].iter().all(|event| event.cached_tokens > 0));
         // First call populates, second/third hit.
         assert!(cached.cache_stats().hits >= 2, "expected hits on q2 and q3");
+    }
+
+    #[test]
+    fn vocab_introspection_forwards_to_inner() {
+        // CachedTokenizer wraps `inner` behind an opaque cache; without
+        // forwarding, every caller reaching a tokenizer through the cache
+        // wrapper would see None/empty/zero regardless of what `inner`
+        // actually reports.
+        let tok = inner();
+        let cached = CachedTokenizer::new(tok.clone(), specials(), 4096)
+            .expect("TinyLlama must support prefix caching");
+        assert_eq!(cached.vocab_size(), tok.vocab_size());
+        assert_eq!(cached.token_to_id("<s>"), tok.token_to_id("<s>"));
+        assert_eq!(cached.special_token_ids(), tok.special_token_ids());
+        assert_eq!(
+            cached.num_special_tokens_added(),
+            tok.num_special_tokens_added()
+        );
     }
 }
