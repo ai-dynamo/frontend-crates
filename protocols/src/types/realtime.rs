@@ -71,9 +71,6 @@ impl From<RealtimeClientEvent> for DynamoRealtimeClientEvent {
 /// async_openai::traits::EventType;` in here and remove the impls below; call
 /// sites need no changes.
 ///
-/// Implemented for the upstream and Dynamo client event sets. The
-/// `RealtimeServerEvent` impl can be added when a consumer needs it.
-///
 /// [NOTE] Could be replaced with a serde-introspection helper (e.g. the
 /// `serde_variant` crate) that reads the wire tag from `#[serde(rename)]`
 /// at runtime; deferred until as clean up work.
