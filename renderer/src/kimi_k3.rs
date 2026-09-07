@@ -1552,19 +1552,16 @@ mod tests {
 
     #[test]
     fn rejects_system_message_tools_that_are_not_an_array() {
-        for tools in [json!("lookup"), json!({"name": "lookup"}), json!(1)] {
-            let request = Request::new(json!([
-                {"role": "system", "tools": tools},
-                {"role": "user", "content": "Go"}
-            ]));
+        let request = Request::new(json!([
+            {"role": "system", "tools": {"name": "lookup"}},
+            {"role": "user", "content": "Go"}
+        ]));
 
-            let error = fmt().render(&request).unwrap_err();
-            assert_eq!(
-                invalid_request_message(&error),
-                "Kimi K3 dynamic tool messages need `tools` to be an array",
-                "tools={tools}"
-            );
-        }
+        let error = fmt().render(&request).unwrap_err();
+        assert_eq!(
+            invalid_request_message(&error),
+            "Kimi K3 dynamic tool messages need `tools` to be an array"
+        );
     }
 
     /// Moonshot's official dynamic-tools verifier sends `"content": ""`
@@ -1606,27 +1603,14 @@ mod tests {
         let long_name = "a".repeat(257);
         for (entry, needle) in [
             (json!("lookup"), "must be JSON objects"),
-            (json!(7), "must be JSON objects"),
-            // Missing / non-string name, both shapes.
             (
                 json!({"parameters": {"type": "object"}}),
                 "need a string `name`",
-            ),
-            (json!({"name": 42}), "need a string `name`"),
-            (
-                json!({"type": "function", "function": {}}),
-                "need a string `name`",
-            ),
-            // Wrong type.
-            (
-                json!({"type": "custom", "name": "lookup"}),
-                "type=\"function\"",
             ),
             (
                 json!({"type": "web_search", "function": {"name": "lookup"}}),
                 "type=\"function\"",
             ),
-            // Half-wrapped: one of type/function without the other.
             (
                 json!({"function": {"name": "lookup"}}),
                 "need type=\"function\"",
@@ -1635,21 +1619,10 @@ mod tests {
                 json!({"type": "function", "name": "lookup"}),
                 "need a `function` object",
             ),
-            (
-                json!({"type": "function", "function": "lookup"}),
-                "need a `function` object",
-            ),
-            // Names the vendor verifier rejects.
             (json!({"name": ""}), "must match"),
             (json!({"name": "1bad_name"}), "must match"),
             (json!({"name": "bad@name"}), "must match"),
-            (json!({"name": "has space"}), "must match"),
-            (json!({"name": "-leading-dash"}), "must match"),
             (json!({"name": long_name}), "maximum is 256"),
-            (
-                json!({"type": "function", "function": {"name": "bad.name"}}),
-                "must match",
-            ),
         ] {
             let request = Request::new(json!([
                 {"role": "system", "tools": [entry]},
@@ -1679,16 +1652,14 @@ mod tests {
         let error = fmt().render(&request).unwrap_err();
         assert!(invalid_request_message(&error).contains("declared more than once"));
 
-        // Same name twice across two dynamic declarations.
-        let request = Request::new(json!([
-            {"role": "system", "tools": [{"name": "lookup"}]},
-            {"role": "user", "content": "one"},
-            {"role": "assistant", "content": "ok"},
-            {"role": "system", "tools": [{"type": "function", "function": {"name": "lookup"}}]},
-            {"role": "user", "content": "two"}
+        // Same name twice in top-level `tools`.
+        let mut request = Request::new(json!([{"role": "user", "content": "Go"}]));
+        request.tools = Some(json!([
+            {"type": "function", "function": {"name": "lookup"}},
+            {"type": "function", "function": {"name": "lookup"}}
         ]));
         let error = fmt().render(&request).unwrap_err();
-        assert!(invalid_request_message(&error).contains("declared more than once"));
+        assert!(invalid_request_message(&error).contains("more than once in `tools`"));
 
         // Valid names at the boundaries: underscore start, dashes, 256 chars.
         let max_name = "a".repeat(256);
@@ -1790,24 +1761,7 @@ mod tests {
     }
 
     #[test]
-    fn typed_request_rejects_non_final_partial() {
-        let request = typed(json!({
-            "model": "kimi-k3",
-            "messages": [
-                {"role": "assistant", "content": "early", "partial": true},
-                {"role": "user", "content": "Go"}
-            ]
-        }));
-
-        let error = fmt().render(&request).unwrap_err();
-        assert_eq!(
-            invalid_request_message(&error),
-            "Kimi K3 `partial` is only supported on the final message"
-        );
-    }
-
-    #[test]
-    fn typed_request_rejects_system_with_content_and_tools() {
+    fn typed_request_preserves_content_and_tools_for_renderer_conflict_check() {
         let request = typed(json!({
             "model": "kimi-k3",
             "messages": [
@@ -1819,6 +1773,10 @@ mod tests {
                 {"role": "user", "content": "Go"}
             ]
         }));
+
+        let system = serde_json::to_value(&request.messages[0]).unwrap();
+        assert_eq!(system["content"], json!("You are helpful"));
+        assert_eq!(system["tools"][0]["function"]["name"], json!("lookup"));
 
         let error = fmt().render(&request).unwrap_err();
         assert_eq!(

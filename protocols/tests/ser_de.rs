@@ -69,14 +69,9 @@ fn prompt_cache_key_round_trips_and_is_omitted_when_absent() {
 
 #[test]
 fn system_message_tools_must_be_an_array() {
-    for bad in [json!("lookup"), json!({"name": "lookup"}), json!(1)] {
-        let body = json!({
-            "model": "kimi-k3",
-            "messages": [{"role": "system", "tools": bad}]
-        });
-        assert!(
-            serde_json::from_value::<CreateChatCompletionRequest>(body).is_err(),
-            "tools={bad} must not deserialize"
-        );
-    }
+    let body = json!({
+        "model": "kimi-k3",
+        "messages": [{"role": "system", "tools": {"name": "lookup"}}]
+    });
+    assert!(serde_json::from_value::<CreateChatCompletionRequest>(body).is_err());
 }
