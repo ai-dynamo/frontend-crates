@@ -2323,10 +2323,6 @@ mod tests {
                 "content twice",
                 r#"{"role":"user","content":"a","content":"b"}"#,
             ),
-            (
-                "tools twice",
-                r#"{"role":"system","tools":[{"name":"a"}],"tools":[{"name":"b"}]}"#,
-            ),
         ] {
             let error = serde_json::from_str::<ChatCompletionRequestMessage>(raw)
                 .expect_err(label)

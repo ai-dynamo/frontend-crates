@@ -775,8 +775,6 @@ mod tests {
                 if message.contains("system-message `tools`")
         ));
 
-        // Ordinary system messages are untouched, including one that carries
-        // an empty `tools` list (declares nothing).
         for message in [
             json!({"role": "system", "content": "You are helpful."}),
             json!({"role": "system", "content": "You are helpful.", "tools": []}),

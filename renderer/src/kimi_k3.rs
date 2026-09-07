@@ -1637,7 +1637,6 @@ mod tests {
         }
     }
 
-    /// Top-level and dynamic tools share one namespace.
     #[test]
     fn rejects_duplicate_tool_names_across_declarations() {
         // Same name in top-level `tools` and a dynamic declaration.
@@ -1684,7 +1683,6 @@ mod tests {
         fmt().render(&request).unwrap();
     }
 
-    /// `tools: []` declares nothing, so the message is an ordinary system turn.
     #[test]
     fn empty_tools_list_is_an_ordinary_system_message() {
         let mut request = Request::new(json!([
@@ -1699,7 +1697,6 @@ mod tests {
         assert!(rendered.contains("<|open|>message role=\"system\"<|sep|>You are helpful"));
         assert!(!rendered.contains("## New Tools Available"));
 
-        // ...and with no content either, it is the usual "nothing here" error.
         let request = Request::new(json!([
             {"role": "system", "tools": []},
             {"role": "user", "content": "Go"}
