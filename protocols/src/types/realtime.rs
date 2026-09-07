@@ -7,42 +7,49 @@
 pub use async_openai::types::realtime::*;
 use serde::{Deserialize, Serialize};
 
-/// Append UTF-8 text to the current incremental input buffer.
+/// Append UTF-8 text to the current incremental input.
 ///
 /// This is a Dynamo extension for clients that receive text progressively,
-/// such as cascaded ASR -> LLM pipelines. Like `input_audio_buffer.append`, an
-/// append does not finalize a conversation item or request a response.
+/// such as cascaded ASR -> LLM pipelines. The event name follows NVIDIA Speech
+/// NIM's realtime TTS protocol. An append does not finalize a conversation item
+/// or request a response.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct RealtimeClientEventInputTextBufferAppend {
+pub struct RealtimeClientEventInputTextAppend {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub event_id: Option<String>,
     pub text: String,
 }
 
-/// Finalize the current incremental text buffer as a user conversation item.
+/// Finalize the current incremental text as a user conversation item.
 #[derive(Debug, Default, Serialize, Deserialize)]
-pub struct RealtimeClientEventInputTextBufferCommit {
+pub struct RealtimeClientEventInputTextCommit {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub event_id: Option<String>,
 }
 
-/// Discard the current incremental text buffer without creating an item.
+/// Discard the current incremental text without creating an item.
+///
+/// This extends NVIDIA Speech NIM's append/commit lifecycle so clients can
+/// replace revisable ASR hypotheses.
 #[derive(Debug, Default, Serialize, Deserialize)]
-pub struct RealtimeClientEventInputTextBufferClear {
+pub struct RealtimeClientEventInputTextClear {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub event_id: Option<String>,
 }
 
-/// Dynamo-specific extensions to the OpenAI Realtime client event set.
+/// Experimental Dynamo extensions to the OpenAI Realtime client event set.
+///
+/// These events are not part of the OpenAI Realtime API and may change before
+/// stabilization.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum RealtimeClientEventExtension {
-    #[serde(rename = "input_text_buffer.append")]
-    InputTextBufferAppend(RealtimeClientEventInputTextBufferAppend),
-    #[serde(rename = "input_text_buffer.commit")]
-    InputTextBufferCommit(RealtimeClientEventInputTextBufferCommit),
-    #[serde(rename = "input_text_buffer.clear")]
-    InputTextBufferClear(RealtimeClientEventInputTextBufferClear),
+    #[serde(rename = "input_text.append")]
+    InputTextAppend(RealtimeClientEventInputTextAppend),
+    #[serde(rename = "input_text.commit")]
+    InputTextCommit(RealtimeClientEventInputTextCommit),
+    #[serde(rename = "input_text.clear")]
+    InputTextClear(RealtimeClientEventInputTextClear),
 }
 
 /// OpenAI Realtime client events plus inference-serving extensions from Dynamo.
@@ -102,9 +109,9 @@ impl EventType for RealtimeClientEvent {
 impl EventType for RealtimeClientEventExtension {
     fn event_type(&self) -> &'static str {
         match self {
-            RealtimeClientEventExtension::InputTextBufferAppend(_) => "input_text_buffer.append",
-            RealtimeClientEventExtension::InputTextBufferCommit(_) => "input_text_buffer.commit",
-            RealtimeClientEventExtension::InputTextBufferClear(_) => "input_text_buffer.clear",
+            RealtimeClientEventExtension::InputTextAppend(_) => "input_text.append",
+            RealtimeClientEventExtension::InputTextCommit(_) => "input_text.commit",
+            RealtimeClientEventExtension::InputTextClear(_) => "input_text.clear",
         }
     }
 }
@@ -149,29 +156,29 @@ mod tests {
     }
 
     #[test]
-    fn text_buffer_events_round_trip() {
+    fn text_events_round_trip() {
         let values = [
             (
                 serde_json::json!({
-                    "type": "input_text_buffer.append",
+                    "type": "input_text.append",
                     "event_id": "append-1",
                     "text": "hello "
                 }),
-                "input_text_buffer.append",
+                "input_text.append",
             ),
             (
                 serde_json::json!({
-                    "type": "input_text_buffer.commit",
+                    "type": "input_text.commit",
                     "event_id": "commit-1"
                 }),
-                "input_text_buffer.commit",
+                "input_text.commit",
             ),
             (
                 serde_json::json!({
-                    "type": "input_text_buffer.clear",
+                    "type": "input_text.clear",
                     "event_id": "clear-1"
                 }),
-                "input_text_buffer.clear",
+                "input_text.clear",
             ),
         ];
 
@@ -184,10 +191,10 @@ mod tests {
     }
 
     #[test]
-    fn text_buffer_append_requires_non_null_text() {
+    fn text_append_requires_non_null_text() {
         for value in [
-            serde_json::json!({"type": "input_text_buffer.append"}),
-            serde_json::json!({"type": "input_text_buffer.append", "text": null}),
+            serde_json::json!({"type": "input_text.append"}),
+            serde_json::json!({"type": "input_text.append", "text": null}),
         ] {
             assert!(serde_json::from_value::<DynamoRealtimeClientEvent>(value).is_err());
         }
