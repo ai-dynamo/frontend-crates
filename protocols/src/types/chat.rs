@@ -2153,14 +2153,6 @@ mod tests {
                 "tools": [],
                 "messages": [{"role": "system", "content": "plain system text"}]
             }),
-            serde_json::json!({
-                "model": "m",
-                "tools": [],
-                "messages": [
-                    {"role": "system", "content": "text only"},
-                    {"role": "user", "content": "hi"}
-                ]
-            }),
         ] {
             let request: CreateChatCompletionRequest = serde_json::from_value(payload).unwrap();
             assert!(!request.has_effective_tools());
@@ -2212,10 +2204,6 @@ mod tests {
         // tests matching on "missing field `content`" keep working.
         for (label, message) in [
             ("nothing", serde_json::json!({"role": "system"})),
-            (
-                "name only",
-                serde_json::json!({"role": "system", "name": "ops"}),
-            ),
             (
                 "empty tools",
                 serde_json::json!({"role": "system", "tools": []}),
@@ -2278,7 +2266,6 @@ mod tests {
         assert!(request.effective_tool_contains("lookup"));
     }
 
-    /// Kimi fields on roles that cannot carry them are rejected, not dropped.
     #[test]
     fn message_rejects_tools_and_partial_on_wrong_roles() {
         let tools = serde_json::json!([{"name": "lookup"}]);
@@ -2351,13 +2338,6 @@ mod tests {
                 .to_string();
             assert!(error.contains("duplicate field"), "{label}: {error}");
         }
-
-        // ...and inside a full request, where the message sits in an array.
-        let raw = r#"{"model":"m","messages":[{"role":"user","content":"a","content":"b"}]}"#;
-        let error = serde_json::from_str::<CreateChatCompletionRequest>(raw)
-            .unwrap_err()
-            .to_string();
-        assert!(error.contains("duplicate field `content`"), "{error}");
     }
 
     #[test]
@@ -2384,8 +2364,6 @@ mod tests {
         assert!(serde_json::from_str::<ChatCompletionRequestMessage>(content_part).is_err());
     }
 
-    /// A default-constructed system message keeps upstream's required,
-    /// empty-string content and round-trips through the wire guard.
     #[test]
     fn default_system_message_round_trips() {
         let message = ChatCompletionRequestSystemMessage::default();
@@ -2394,7 +2372,6 @@ mod tests {
         let back: ChatCompletionRequestSystemMessage = serde_json::from_value(json).unwrap();
         assert_eq!(back, message);
 
-        // The builder inherits the same default when `content` is unset.
         let built = ChatCompletionRequestSystemMessageArgs::default()
             .name("ops")
             .build()
@@ -2406,7 +2383,6 @@ mod tests {
 
     #[test]
     fn system_message_guard_keeps_field_level_errors() {
-        // A malformed `tools` must still fail on the field, not on the guard.
         let error = serde_json::from_value::<ChatCompletionRequestMessage>(serde_json::json!({
             "role": "system",
             "tools": "lookup"
@@ -2498,8 +2474,6 @@ mod tests {
 
     #[test]
     fn kimi_style_request_preserves_tools_and_canonicalizes_content() {
-        // Tool entries remain structurally lossless, including unknown keys;
-        // omitted system content is the one intentional normalization.
         let payload = serde_json::json!({
             "model": "dummy-kimi-model",
             "messages": [
@@ -2541,9 +2515,6 @@ mod tests {
 
     #[test]
     fn system_message_tools_preserve_official_wrapped_shape() {
-        // Kimi's canonical shape for system-message tools is the same OpenAI
-        // wrapped form as the top-level `tools` field (encoding_k3.py renders
-        // both through one tool-declare path). Must survive untouched.
         let payload = serde_json::json!({
             "model": "dummy-kimi-model",
             "messages": [

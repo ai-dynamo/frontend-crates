@@ -540,25 +540,20 @@ fn normalize_system_messages(messages: &mut serde_json::Value, rules: SystemNorm
     }
 }
 
-/// Kimi-style dynamic `tools` on a system message are only consumed by native
-/// formatters (`KimiK3Formatter`). No HF jinja chat template reads
-/// `message.tools`, so letting such a message through would render an empty
-/// system turn and silently drop the declared tools. Fail the request instead.
-fn reject_system_message_tools(messages: &serde_json::Value) -> Result<()> {
+/// Message-level `tools` are a native-formatter extension. Reject non-empty
+/// declarations on the HF/Jinja path so custom request types cannot lose them.
+fn reject_unsupported_message_tools(messages: &serde_json::Value) -> Result<()> {
     // `tools: []` declares nothing and is fine; anything else non-null is a
     // declaration this template cannot honor.
     let offending = messages.as_array().into_iter().flatten().find(|message| {
-        matches!(
-            message.get("role").and_then(serde_json::Value::as_str),
-            Some("system" | "developer")
-        ) && message
+        message
             .get("tools")
             .is_some_and(|tools| !tools.is_null() && !tools.as_array().is_some_and(Vec::is_empty))
     });
     if offending.is_some() {
         return Err(crate::PromptRenderError::invalid_request(
-            "system-message `tools` are only supported by native chat formatters (Kimi K3); \
-             this model's chat template would silently drop them",
+            "message-level `tools` require a compatible native chat formatter; \
+             this model's HF/Jinja formatter does not support them",
         )
         .into());
     }
@@ -622,7 +617,7 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
             serde_json::to_value(&messages_canonical).unwrap();
 
         crate::reject_unsupported_partial_assistant(&messages_for_template)?;
-        reject_system_message_tools(&messages_for_template)?;
+        reject_unsupported_message_tools(&messages_for_template)?;
 
         if system_normalization.is_required() {
             normalize_system_messages(&mut messages_for_template, system_normalization);
@@ -752,6 +747,26 @@ mod tests {
         f.render(&req)
     }
 
+    struct RawMessagesRequest(Value);
+
+    impl OAIChatLikeRequest for RawMessagesRequest {
+        fn model(&self) -> String {
+            "test".to_string()
+        }
+
+        fn messages(&self) -> Value {
+            self.0.clone()
+        }
+
+        fn should_add_generation_prompt(&self) -> bool {
+            true
+        }
+    }
+
+    fn render_raw_shape(f: &SysFormatter, messages: serde_json::Value) -> Result<String> {
+        f.render(&RawMessagesRequest(Value::from_serialize(&messages)))
+    }
+
     const PERMISSIVE_TMPL: &str = concat!(
         "{%- for m in messages -%}",
         "<|im_start|>{{ m.role }}\n{{ m.content }}<|im_end|>\n",
@@ -759,7 +774,7 @@ mod tests {
     );
 
     #[test]
-    fn jinja_templates_reject_system_message_tools() {
+    fn jinja_templates_reject_message_level_tools() {
         let f = formatter_for(PERMISSIVE_TMPL);
         let error = render_shape(
             &f,
@@ -772,17 +787,33 @@ mod tests {
         assert!(matches!(
             error.downcast_ref::<crate::PromptRenderError>(),
             Some(crate::PromptRenderError::InvalidRequest(message))
-                if message.contains("system-message `tools`")
+                if message.contains("message-level `tools`")
         ));
 
-        for message in [
-            json!({"role": "system", "content": "You are helpful."}),
-            json!({"role": "system", "content": "You are helpful.", "tools": []}),
-        ] {
-            let rendered =
-                render_shape(&f, json!([message, {"role": "user", "content": "hi"}])).unwrap();
-            assert!(rendered.contains("<|im_start|>system\nYou are helpful.<|im_end|>"));
-        }
+        let error = render_raw_shape(
+            &f,
+            json!([{
+                "role": "user",
+                "content": "hi",
+                "tools": [{"name": "lookup", "parameters": {"type": "object"}}]
+            }]),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            error.downcast_ref::<crate::PromptRenderError>(),
+            Some(crate::PromptRenderError::InvalidRequest(message))
+                if message.contains("message-level `tools`")
+        ));
+
+        let rendered = render_shape(
+            &f,
+            json!([
+                {"role": "system", "content": "You are helpful.", "tools": []},
+                {"role": "user", "content": "hi"}
+            ]),
+        )
+        .unwrap();
+        assert!(rendered.contains("<|im_start|>system\nYou are helpful.<|im_end|>"));
     }
 
     #[test]

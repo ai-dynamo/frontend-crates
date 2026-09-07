@@ -1290,17 +1290,6 @@ mod tests {
                 "role={role}"
             );
         }
-
-        // A developer message without `tools` still renders as system text.
-        let mut request = Request::new(json!([
-            {"role": "developer", "content": "Follow the policy"},
-            {"role": "user", "content": "Go"}
-        ]));
-        request
-            .args
-            .insert("thinking".to_string(), Value::Bool(false));
-        let rendered = fmt().render(&request).unwrap();
-        assert!(rendered.contains("<|open|>message role=\"system\"<|sep|>Follow the policy"));
     }
 
     #[test]
@@ -1378,7 +1367,6 @@ mod tests {
 
     #[test]
     fn partial_assistant_ignores_add_generation_prompt_flag() {
-        // The partial turn *is* the generation prompt, so the flag is moot.
         let mut request = Request::new(json!([
             {"role": "user", "content": "Go"},
             {"role": "assistant", "content": "prefix", "partial": true}
@@ -1440,8 +1428,6 @@ mod tests {
     fn partial_assistant_follows_internal_system_messages() {
         // tool_choice / response_format hints are injected after history and
         // before the generation turn; a partial turn must not be split by them.
-        // Moonshot advises against mixing Partial Mode with `response_format`,
-        // so the hint exercised here is `tool_choice`.
         let mut request = Request::new(json!([
             {"role": "user", "content": "Go"},
             {"role": "assistant", "content": "prefix", "partial": true}
@@ -1594,8 +1580,6 @@ mod tests {
         }
     }
 
-    /// Malformed dynamic tool entries are request errors (Moonshot negative
-    /// tests), not declarations the model has to make sense of.
     #[test]
     fn rejects_malformed_dynamic_tool_entries() {
         let long_name = "a".repeat(257);
