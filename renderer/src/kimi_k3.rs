@@ -895,10 +895,7 @@ fn build_chat_segments(
         let role = message.get("role").and_then(Value::as_str).ok_or_else(|| {
             PromptRenderError::invalid_request("Kimi K3 messages must contain a string role")
         })?;
-        // Empty `tools` is not a declaration: the message renders as an
-        // ordinary system turn. Non-array `tools` is a request error, and
-        // `tools` on any other role was already rejected by
-        // `validate_tool_declarations`.
+        // An empty `tools` list is not a dynamic-tool declaration.
         let dynamic_tools = dynamic_tools_of(message)?;
         match role {
             "system" if dynamic_tools.is_some() => {
@@ -1608,7 +1605,6 @@ mod tests {
 
     #[test]
     fn rejects_duplicate_tool_names_across_declarations() {
-        // Same name in top-level `tools` and a dynamic declaration.
         let mut request = Request::new(json!([
             {"role": "system", "tools": [{"name": "lookup"}]},
             {"role": "user", "content": "Go"}
@@ -1620,7 +1616,6 @@ mod tests {
         let error = fmt().render(&request).unwrap_err();
         assert!(invalid_request_message(&error).contains("declared more than once"));
 
-        // Same name twice in top-level `tools`.
         let mut request = Request::new(json!([{"role": "user", "content": "Go"}]));
         request.tools = Some(json!([
             {"type": "function", "function": {"name": "lookup"}},
@@ -1629,7 +1624,6 @@ mod tests {
         let error = fmt().render(&request).unwrap_err();
         assert!(invalid_request_message(&error).contains("more than once in `tools`"));
 
-        // Valid names at the boundaries: underscore start, dashes, 256 chars.
         let max_name = "a".repeat(256);
         let request = Request::new(json!([
             {"role": "system", "tools": [
@@ -1640,7 +1634,6 @@ mod tests {
         ]));
         fmt().render(&request).unwrap();
 
-        // Distinct names are fine, wrapped or bare.
         let mut request = Request::new(json!([
             {"role": "system", "tools": [{"name": "lookup"}, {"type": "function", "function": {"name": "search"}}]},
             {"role": "user", "content": "Go"}

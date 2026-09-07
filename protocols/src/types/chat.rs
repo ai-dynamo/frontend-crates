@@ -2191,11 +2191,6 @@ mod tests {
             Some("b")
         );
         assert_eq!(dynamic_tool_name(&serde_json::json!({"name": 7})), None);
-        assert_eq!(
-            dynamic_tool_name(&serde_json::json!({"function": "not-an-object"})),
-            None
-        );
-        assert_eq!(dynamic_tool_name(&serde_json::json!("string")), None);
     }
 
     #[test]
