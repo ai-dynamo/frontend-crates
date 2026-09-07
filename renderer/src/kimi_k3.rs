@@ -275,12 +275,10 @@ fn validate_tool_name(name: &str) -> Result<()> {
 /// layer's role check so a raw-JSON caller cannot bypass it.
 fn validate_tool_declarations(top_level: Option<&Value>, messages: &[Value]) -> Result<()> {
     let mut seen = std::collections::HashSet::new();
-    // Top-level tools have already passed the typed schema (or the caller's
-    // own checks); they only contribute names for duplicate detection.
+    // The OpenAI schema does not enforce Kimi's tool-name rules.
     for tool in top_level.and_then(Value::as_array).into_iter().flatten() {
-        if let Ok(name) = dynamic_tool_entry_name(tool)
-            && !seen.insert(name)
-        {
+        let name = dynamic_tool_entry_name(tool)?;
+        if !seen.insert(name) {
             return Err(PromptRenderError::invalid_request(format!(
                 "tool {name:?} is declared more than once in `tools`"
             ))
@@ -1713,6 +1711,24 @@ mod tests {
 
     fn typed(body: Value) -> dynamo_protocols::types::CreateChatCompletionRequest {
         serde_json::from_value(body).expect("request deserializes")
+    }
+
+    #[test]
+    fn typed_request_rejects_invalid_top_level_tool_name() {
+        let request = typed(json!({
+            "model": "kimi-k3",
+            "messages": [{"role": "user", "content": "Look it up"}],
+            "tools": [{
+                "type": "function",
+                "function": {"name": "bad@name", "parameters": {"type": "object"}}
+            }]
+        }));
+
+        let error = fmt().render(&request).unwrap_err();
+        assert_eq!(
+            invalid_request_message(&error),
+            "Kimi K3 tool name \"bad@name\" must match [A-Za-z_][A-Za-z0-9_-]*"
+        );
     }
 
     #[test]
