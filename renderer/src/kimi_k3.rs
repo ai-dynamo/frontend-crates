@@ -197,19 +197,8 @@ fn dynamic_tools_of(message: &Value) -> Result<Option<&Vec<Value>>> {
     }
 }
 
-/// Name of a dynamic tool entry, validating the entry's shape on the way.
-///
-/// Exactly two shapes are accepted, and they may not be mixed:
-/// - OpenAI wrapped: `{"type": "function", "function": {"name": ..}}` —
-///   `type` must be `"function"` and `function` must be an object.
-/// - Bare function schema (issue #159): `{"name": .., "parameters": ..}` —
-///   neither `type` nor `function` may be present.
-///
-/// Half-wrapped entries (`{"function": {..}}` without `type`, or
-/// `{"type": "function", "name": ..}` without `function`) are rejected, as are
-/// non-object entries and names that fail [`validate_tool_name`]. Moonshot's
-/// vendor verifier expects a request error for each, and the model would
-/// otherwise see an unusable declaration.
+/// Accepts both OpenAI-wrapped and bare Kimi tool declarations; rejects mixed
+/// shapes so every entry has one unambiguous name.
 fn dynamic_tool_entry_name(tool: &Value) -> Result<&str> {
     let object = tool.as_object().ok_or_else(|| {
         PromptRenderError::invalid_request("Kimi K3 dynamic tool entries must be JSON objects")
