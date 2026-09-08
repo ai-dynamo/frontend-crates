@@ -55,9 +55,11 @@ type PrefixCache = Cache<Blake3Hash, Arc<[TokenIdType]>, PrefixHasher>;
 /// BPE, so a boundary right after one is a safe split point:
 /// `tokenize(prefix) + tokenize(suffix) == tokenize(prefix + suffix)`. A single overlapping
 /// Aho-Corasick pass reports every occurrence of every pattern (matching the per-token scan
-/// it replaces, for the non-self-overlapping special tokens real tokenizers use). Boundaries
-/// at the very end of the text are dropped (no suffix left to tokenize). Match ends land on
-/// char boundaries because the patterns are valid UTF-8 matched against valid UTF-8.
+/// it replaces). That equals the tokenizer's own segmentation only while no two occurrences
+/// can overlap — a precondition enforced at construction by [`first_unsafe_overlap`], which
+/// leaves L1 inert otherwise. Boundaries at the very end of the text are dropped (no suffix
+/// left to tokenize). Match ends land on char boundaries because the patterns are valid
+/// UTF-8 matched against valid UTF-8.
 fn boundaries_with(text: &str, matcher: &AhoCorasick) -> Vec<usize> {
     let mut boundaries: Vec<usize> = matcher
         .find_overlapping_iter(text)
@@ -67,6 +69,73 @@ fn boundaries_with(text: &str, matcher: &AhoCorasick) -> Vec<usize> {
     boundaries.sort_unstable();
     boundaries.dedup();
     boundaries
+}
+
+/// Whether a proper suffix of `token` is also a proper prefix of it, so two of its own
+/// occurrences can overlap (`aba` matches at 0 and 2 in `ababa`).
+fn has_nontrivial_self_overlap(token: &str) -> bool {
+    let bytes = token.as_bytes();
+    (1..bytes.len()).any(|overlap| bytes[bytes.len() - overlap..] == bytes[..overlap])
+}
+
+/// Whether occurrences of `a` and `b` can overlap: either one contains the other, or a
+/// proper suffix of one is a proper prefix of the other.
+///
+/// Both inputs must be non-empty; [`first_unsafe_overlap`] filters empties before calling.
+fn have_ambiguous_overlap(a: &str, b: &str) -> bool {
+    let a = a.as_bytes();
+    let b = b.as_bytes();
+
+    if a.windows(b.len()).any(|window| window == b)
+        || b.windows(a.len()).any(|window| window == a)
+    {
+        return true;
+    }
+
+    let max_overlap = a.len().min(b.len());
+    (1..max_overlap).any(|overlap| {
+        a[a.len() - overlap..] == b[..overlap] || b[b.len() - overlap..] == a[..overlap]
+    })
+}
+
+/// First pair of special tokens whose occurrences can overlap, if any. A token that
+/// overlaps itself is reported as a pair with itself.
+///
+/// [`boundaries_with`] reports the end of *every* occurrence of *every* special token.
+/// That equals the tokenizer's own segmentation only when occurrences cannot overlap;
+/// otherwise a reported boundary can land strictly inside the span the tokenizer actually
+/// consumed, and splitting there breaks the module invariant
+/// `tokenize(prefix) + tokenize(suffix) == tokenize(prefix + suffix)`.
+///
+/// Seen in the wild: poolside/Laguna-S-2.1 registers `〈|` and `|〉` as `special: true`
+/// alongside `〈|EOS|〉`. The bare `〈|` occurrence ends 4 bytes into the 11-byte `〈|EOS|〉`,
+/// so the model's BOS was split into `〈|` + `EOS|〉` and encoded as three tokens instead
+/// of one — silently, on every request.
+///
+/// O(n²) in the number of special tokens, paid once at construction and short-circuited on
+/// the first violation. Mainstream vocabularies sit at n <= ~260 (Llama-3.1's 251 reserved
+/// tokens), a few milliseconds.
+pub(super) fn first_unsafe_overlap(special_tokens: &[String]) -> Option<(&str, &str)> {
+    let tokens: Vec<&str> = special_tokens
+        .iter()
+        .map(String::as_str)
+        .filter(|token| !token.is_empty())
+        .collect();
+
+    for (index, token) in tokens.iter().enumerate() {
+        if has_nontrivial_self_overlap(token) {
+            return Some((*token, *token));
+        }
+        for other in &tokens[index + 1..] {
+            // Duplicate entries produce identical occurrences and so introduce no
+            // ambiguity; only their self-overlap matters, checked above.
+            if token != other && have_ambiguous_overlap(token, other) {
+                return Some((*token, *other));
+            }
+        }
+    }
+
+    None
 }
 
 /// Test-only reference: build a one-off automaton and find boundaries. Production goes
@@ -453,6 +522,80 @@ mod tests {
     #[test]
     fn no_special_tokens_yields_no_boundaries() {
         assert!(find_special_token_boundaries("plain text", &[]).is_empty());
+    }
+
+    /// poolside/Laguna-S-2.1 registers `〈|` and `|〉` as `special: true` alongside the
+    /// `〈|EOS|〉` marker they bracket.
+    const OVERLAPPING_SPECIALS: &[&str] = &["〈|", "〈|EOS|〉", "|〉"];
+
+    #[test]
+    fn overlapping_specials_place_a_boundary_inside_a_longer_token() {
+        // Why `first_unsafe_overlap` exists: the bare `〈|` occurrence ends 4 bytes into
+        // the 11-byte `〈|EOS|〉`, so the scan proposes splitting the model's BOS marker
+        // into `〈|` + `EOS|〉` — three tokens where the tokenizer produces one.
+        let input = "〈|EOS|〉";
+        assert_eq!(input.len(), 11);
+        assert_eq!(
+            find_special_token_boundaries(input, OVERLAPPING_SPECIALS),
+            vec![4]
+        );
+    }
+
+    #[test]
+    fn first_unsafe_overlap_flags_contained_and_overlapping_tokens() {
+        let laguna: Vec<String> = OVERLAPPING_SPECIALS
+            .iter()
+            .map(|token| (*token).to_string())
+            .collect();
+        assert_eq!(first_unsafe_overlap(&laguna), Some(("〈|", "〈|EOS|〉")));
+
+        // Containment, in either argument order.
+        assert!(have_ambiguous_overlap("〈|", "〈|EOS|〉"));
+        assert!(have_ambiguous_overlap("〈|EOS|〉", "〈|"));
+        // A proper suffix of one is a proper prefix of the other.
+        assert!(have_ambiguous_overlap("ab", "bc"));
+        // Self-overlap: `|◊|` matches at 0 and 4 in `|◊|◊|`.
+        assert!(has_nontrivial_self_overlap("|◊|"));
+        assert!(!has_nontrivial_self_overlap("<s>"));
+    }
+
+    #[test]
+    fn first_unsafe_overlap_accepts_mainstream_special_token_sets() {
+        // Regression guard: the check must not disable L1 for shipped models. Covers the
+        // families exercised by `tests/cache_correctness.rs`.
+        let sets: [&[&str]; 4] = [
+            SPECIALS,
+            &[
+                "<|begin_of_text|>",
+                "<|start_header_id|>",
+                "<|end_header_id|>",
+                "<|eot_id|>",
+                "<|end_of_text|>",
+            ],
+            &[
+                "<｜begin▁of▁sentence｜>",
+                "<｜User｜>",
+                "<｜Assistant｜>",
+                "<｜end▁of▁sentence｜>",
+            ],
+            &["<|im_start|>", "<|im_end|>", "<|im_middle|>", "<|endoftext|>"],
+        ];
+
+        for set in sets {
+            let owned: Vec<String> = set.iter().map(|token| (*token).to_string()).collect();
+            assert_eq!(
+                first_unsafe_overlap(&owned),
+                None,
+                "prefix-free set was rejected: {set:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn first_unsafe_overlap_skips_empty_tokens() {
+        // `windows(0)` panics; empties carry no boundary information anyway.
+        let tokens = vec![String::new(), "<s>".to_string(), "</s>".to_string()];
+        assert_eq!(first_unsafe_overlap(&tokens), None);
     }
 
     #[test]
