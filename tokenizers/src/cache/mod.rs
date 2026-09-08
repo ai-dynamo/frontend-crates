@@ -24,6 +24,10 @@
 //! preserves the invariant `tokenize(prefix) + tokenize(suffix) == tokenize(prefix + suffix)`.
 //! No fallback to whitespace or punctuation — better to miss than to corrupt.
 //!
+//! Atomicity alone is insufficient when registered special-token strings can overlap.
+//! [`CachedTokenizer::new`] disables L1 for such sets because the boundary scanner could
+//! otherwise split inside the token selected by the underlying tokenizer.
+//!
 //! # Storage normalization
 //!
 //! When L1 is enabled, **every** `encode` returns [`Encoding::Sp`] (token-ids only) —
@@ -40,7 +44,7 @@
 //!   [`Tokenizer`] trait is intentionally minimal and does not expose them).
 //!   An empty list disables L1: `encode`/`encode_batch` short-circuit straight
 //!   to the inner tokenizer with no lookup, no miss-counter bump, and no
-//!   insert attempt.
+//!   insert attempt. A list whose members can overlap disables L1 identically.
 //! - `encode_segments` always passes through to the inner tokenizer without
 //!   caching. Flattening segments for L1 would discard their special-token
 //!   trust boundaries.
@@ -86,9 +90,7 @@ pub type CacheTokenUsageFn = Arc<dyn Fn(CacheTokenUsage) + Send + Sync>;
 pub struct CachedTokenizer {
     inner: Arc<dyn Tokenizer>,
     l1: L1Cache,
-    /// Whether L1 is active. False when the special-token set is empty (e.g. the tiktoken
-    /// wrapping path): `encode`/`encode_batch` then bypass the cache entirely. The special
-    /// tokens themselves live in the `L1Cache` (its boundary automaton).
+    /// Whether `encode` and `encode_batch` may use L1.
     l1_enabled: bool,
     /// When true, cache the newly-tokenized suffix on a partial hit so the next turn
     /// of a growing conversation hits deeper (see [`L1Cache::extend_after_match`]).
@@ -104,7 +106,8 @@ impl CachedTokenizer {
     /// tokenizer recognizes (typically extracted via the HuggingFace tokenizer's
     /// `get_added_tokens_decoder()` filtering by `special == true`). An empty list
     /// disables L1 — `encode`/`encode_batch` short-circuit to the inner tokenizer
-    /// without touching the cache or its counters.
+    /// without touching the cache or its counters. An overlapping token set also disables
+    /// L1, with a warning, because its boundaries are ambiguous.
     ///
     /// `max_memory_bytes` is the L1 cache byte budget.
     ///
@@ -114,15 +117,37 @@ impl CachedTokenizer {
     /// safely wrapped in the prefix cache.
     pub fn new(
         inner: Arc<dyn Tokenizer>,
-        special_tokens: Vec<String>,
+        mut special_tokens: Vec<String>,
         max_memory_bytes: usize,
     ) -> Result<Self> {
         inner.validate_prefix_cache()?;
+        special_tokens.retain(|token| !token.is_empty());
 
-        let l1_enabled = !special_tokens.is_empty();
+        // Overlapping matches can create a cache boundary inside a token selected by the
+        // inner tokenizer. Preserve correctness by bypassing this optional optimization.
+        let overlapping_specials = match l1::first_unsafe_overlap(&special_tokens) {
+            Some((first, second)) => {
+                tracing::warn!(
+                    target: "tokenizer",
+                    first_token = first,
+                    second_token = second,
+                    special_token_count = special_tokens.len(),
+                    "special tokens can overlap; tokenizer prefix cache disabled"
+                );
+                true
+            }
+            None => false,
+        };
+
+        let l1_enabled = !special_tokens.is_empty() && !overlapping_specials;
+        let cache_tokens = if l1_enabled {
+            special_tokens
+        } else {
+            Vec::new()
+        };
         Ok(Self {
             inner,
-            l1: L1Cache::new(max_memory_bytes, special_tokens),
+            l1: L1Cache::new(max_memory_bytes, cache_tokens),
             l1_enabled,
             extend_on_hit: false,
             token_observer: None,
@@ -278,6 +303,7 @@ mod tests {
     use super::*;
     use crate::HuggingFaceTokenizer;
     use std::sync::{Mutex, atomic::AtomicU64, atomic::Ordering};
+    use tokenizers::Tokenizer as HfTokenizer;
 
     struct FailingTokenizer;
 
@@ -389,13 +415,10 @@ mod tests {
 
     #[test]
     fn empty_specials_passes_through_correctly() {
-        // L1 disabled by empty specials list — encode must produce correct ids
-        // AND short-circuit to the inner tokenizer (no miss-counter bump, no
-        // insert attempt). Otherwise the tiktoken integration would log a
-        // miss per request with zero hits forever.
+        // Empty token strings carry no boundary information and must not make L1 active.
         let tok = inner();
         let (cached, events) = collect_token_usage(
-            CachedTokenizer::new(tok.clone(), Vec::new(), 4096)
+            CachedTokenizer::new(tok.clone(), vec![String::new()], 4096)
                 .expect("TinyLlama must support prefix caching"),
         );
         let s = "<s>hello world</s>";
@@ -409,6 +432,59 @@ mod tests {
         assert!(
             events.lock().unwrap().is_empty(),
             "empty specials must not emit token usage"
+        );
+    }
+
+    #[test]
+    fn laguna_overlapping_specials_bypass_cache() {
+        const TOKENIZER_JSON: &str = r#"{
+            "version": "1.0",
+            "truncation": null,
+            "padding": null,
+            "added_tokens": [
+                {"id": 0, "content": "<unk>", "special": true, "single_word": false, "lstrip": false, "rstrip": false, "normalized": false},
+                {"id": 2, "content": "〈|EOS|〉", "special": true, "single_word": false, "lstrip": false, "rstrip": false, "normalized": false},
+                {"id": 14, "content": "〈|", "special": true, "single_word": false, "lstrip": false, "rstrip": false, "normalized": false},
+                {"id": 15, "content": "|〉", "special": true, "single_word": false, "lstrip": false, "rstrip": false, "normalized": false}
+            ],
+            "normalizer": null,
+            "pre_tokenizer": null,
+            "post_processor": null,
+            "decoder": null,
+            "model": {
+                "type": "WordLevel",
+                "vocab": {"<unk>": 0, "〈|EOS|〉": 2, "〈|": 14, "|〉": 15, "tail": 16},
+                "unk_token": "<unk>"
+            }
+        }"#;
+
+        let hf = HfTokenizer::from_bytes(TOKENIZER_JSON).expect("load test tokenizer");
+        let tok: Arc<dyn Tokenizer> = Arc::new(HuggingFaceTokenizer::from_tokenizer(hf));
+        let overlapping = vec!["〈|EOS|〉".into(), "〈|".into(), "|〉".into()];
+        let (cached, events) = collect_token_usage(
+            CachedTokenizer::new(tok.clone(), overlapping, 4096)
+                .expect("HuggingFace tokenizer must support prefix caching"),
+        );
+
+        for (input, expected_ids) in [("〈|EOS|〉", &[2][..]), ("〈|EOS|〉tail", &[2, 16][..])]
+        {
+            let expected = tok.encode(input).unwrap();
+            assert_eq!(expected.token_ids(), expected_ids);
+            assert_eq!(
+                cached.encode(input).unwrap().token_ids(),
+                expected.token_ids()
+            );
+        }
+        let stats = cached.cache_stats();
+        assert_eq!(stats.entries, 0);
+        assert_eq!(
+            stats.misses, 0,
+            "overlapping specials must not increment misses"
+        );
+        assert_eq!(stats.hits, 0);
+        assert!(
+            events.lock().unwrap().is_empty(),
+            "overlapping specials must not emit token usage"
         );
     }
 

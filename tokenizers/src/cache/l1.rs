@@ -48,16 +48,14 @@ type PrefixHasher = BuildHasherDefault<FxHasher>;
 /// Weighted W-TinyLFU cache mapping a prefix's blake3 digest to its cumulative tokens.
 type PrefixCache = Cache<Blake3Hash, Arc<[TokenIdType]>, PrefixHasher>;
 
-/// All special-token boundaries in `text`: positions immediately after each special-token
-/// occurrence (where prefixes can be cached).
+/// Positions immediately after each special-token occurrence in `text`.
 ///
-/// **ONLY uses special tokens** — these are atomic (`special: true, normalized: false`) in
-/// BPE, so a boundary right after one is a safe split point:
-/// `tokenize(prefix) + tokenize(suffix) == tokenize(prefix + suffix)`. A single overlapping
-/// Aho-Corasick pass reports every occurrence of every pattern (matching the per-token scan
-/// it replaces, for the non-self-overlapping special tokens real tokenizers use). Boundaries
-/// at the very end of the text are dropped (no suffix left to tokenize). Match ends land on
-/// char boundaries because the patterns are valid UTF-8 matched against valid UTF-8.
+/// Callers supply token strings that the inner tokenizer treats as atomic, so a boundary
+/// immediately after a selected occurrence is a safe split point:
+/// `tokenize(prefix) + tokenize(suffix) == tokenize(prefix + suffix)`. The overlapping scan
+/// is safe only when registered special-token occurrences cannot overlap; construction
+/// screens out other sets with [`first_unsafe_overlap`]. A boundary at the end of the input
+/// is omitted because there is no suffix to encode.
 fn boundaries_with(text: &str, matcher: &AhoCorasick) -> Vec<usize> {
     let mut boundaries: Vec<usize> = matcher
         .find_overlapping_iter(text)
@@ -67,6 +65,49 @@ fn boundaries_with(text: &str, matcher: &AhoCorasick) -> Vec<usize> {
     boundaries.sort_unstable();
     boundaries.dedup();
     boundaries
+}
+
+fn has_nontrivial_self_overlap(token: &str) -> bool {
+    let bytes = token.as_bytes();
+    (1..bytes.len()).any(|overlap| bytes[bytes.len() - overlap..] == bytes[..overlap])
+}
+
+fn tokens_can_overlap(a: &str, b: &str) -> bool {
+    if a.contains(b) || b.contains(a) {
+        return true;
+    }
+
+    let a = a.as_bytes();
+    let b = b.as_bytes();
+    let max_overlap = a.len().min(b.len());
+    (1..max_overlap).any(|overlap| {
+        a[a.len() - overlap..] == b[..overlap] || b[b.len() - overlap..] == a[..overlap]
+    })
+}
+
+/// Returns the first pair of special tokens whose occurrences can overlap.
+///
+/// [`boundaries_with`] reports the end of *every* occurrence of *every* special token.
+/// That equals the tokenizer's own segmentation only when occurrences cannot overlap;
+/// otherwise a reported boundary can land strictly inside the span the tokenizer actually
+/// consumed, and splitting there breaks the module invariant
+/// `tokenize(prefix) + tokenize(suffix) == tokenize(prefix + suffix)`.
+pub(super) fn first_unsafe_overlap(special_tokens: &[String]) -> Option<(&str, &str)> {
+    for (index, token) in special_tokens.iter().enumerate() {
+        if token.is_empty() {
+            continue;
+        }
+        if has_nontrivial_self_overlap(token) {
+            return Some((token, token));
+        }
+        for other in &special_tokens[index + 1..] {
+            if !other.is_empty() && token != other && tokens_can_overlap(token, other) {
+                return Some((token, other));
+            }
+        }
+    }
+
+    None
 }
 
 /// Test-only reference: build a one-off automaton and find boundaries. Production goes
@@ -104,7 +145,9 @@ pub struct L1Cache {
 impl L1Cache {
     /// `special_tokens` is the atomic special-token set whose boundaries the cache splits
     /// at; an empty set leaves L1 inert (no boundaries, no entries).
-    pub fn new(max_memory: usize, special_tokens: Vec<String>) -> Self {
+    pub fn new(max_memory: usize, mut special_tokens: Vec<String>) -> Self {
+        special_tokens.retain(|token| !token.is_empty());
+
         // Capacity is the byte budget; each entry weighs its resident token-vector bytes
         // (the prefix text is hashed and discarded, never stored). moka's W-TinyLFU policy
         // admits/evicts to keep the weighted size within budget.
@@ -453,6 +496,42 @@ mod tests {
     #[test]
     fn no_special_tokens_yields_no_boundaries() {
         assert!(find_special_token_boundaries("plain text", &[]).is_empty());
+    }
+
+    #[test]
+    fn unsafe_overlap_detects_containment_crossing_and_self_overlap() {
+        let cases = [
+            (vec!["〈|", "〈|EOS|〉"], Some(("〈|", "〈|EOS|〉"))),
+            (vec!["ab", "bc"], Some(("ab", "bc"))),
+            (vec!["|◊|"], Some(("|◊|", "|◊|"))),
+            (vec!["", "<s>", "</s>"], None),
+            (vec!["<s>", "<s>"], None),
+        ];
+
+        for (tokens, expected) in cases {
+            let tokens: Vec<String> = tokens.into_iter().map(String::from).collect();
+            assert_eq!(first_unsafe_overlap(&tokens), expected);
+        }
+    }
+
+    #[test]
+    fn numbered_special_token_families_do_not_trigger_overlap_guard() {
+        let mut llama: Vec<String> = [
+            "<|begin_of_text|>",
+            "<|end_of_text|>",
+            "<|start_header_id|>",
+            "<|end_header_id|>",
+            "<|eot_id|>",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
+        llama.extend((0..251).map(|id| format!("<|reserved_special_token_{id}|>")));
+
+        let gemma: Vec<String> = (0..100).map(|id| format!("<unused_{id}>")).collect();
+
+        assert_eq!(first_unsafe_overlap(&llama), None);
+        assert_eq!(first_unsafe_overlap(&gemma), None);
     }
 
     #[test]
