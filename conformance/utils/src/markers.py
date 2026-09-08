@@ -174,7 +174,7 @@ _TOOL_CALL_MARKUP_RE = re.compile(
 def _explanation(block: object) -> str | None:
     """The intentional-divergence note on an expected block. `explanation` is the
     current key; `reason` is the legacy spelling still present in older fixtures and
-    Dynamo-synced code. Read both (explanation wins); new fixtures/captures write
+    code. Read both (explanation wins); new fixtures/captures write
     `explanation`."""
     if not isinstance(block, dict):
         return None

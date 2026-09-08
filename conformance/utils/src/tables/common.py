@@ -17,6 +17,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from fixture_snapshot import fixture_snapshot_root
+
 
 # ---------------------------------------------------------------------------
 # Destination-aware link resolution for the conformance generator. The generator
@@ -58,20 +60,15 @@ def _hrefs_for_output(output_path: Path, artifact_root: Path) -> dict[str, str]:
 
 
 # Fixture YAMLs aren't loose in the repo — they're LFS tarballs under
-# conformance/fixtures/, extracted into the local cache
-# (~/.cache/dynamo/conformance-fixtures/, or $CONFORMANCE_FIXTURES_ROOT). The store
+# conformance/fixtures/, extracted into an immutable snapshot selected through
+# $CONFORMANCE_FIXTURES_ROOT or `extract_fixtures.py`. The store
 # holds only the tarballs (no per-file URL), so a
 # per-cell YAML link points at the extracted file in that cache via file://. The
 # rendered `__fixture_path` is the flat resolved-tree path the readers use; remap it to
 # the versioned cache layout (the shared `inputs/` tree carries the model_text /
 # description a viewer wants to see).
 def _fixtures_cache_root() -> str:
-    env = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
-    if env:
-        return env.rstrip("/")
-    xdg = os.environ.get("XDG_CACHE_HOME")
-    base = Path(xdg) if xdg else Path.home() / ".cache"
-    return str(base / "dynamo/conformance-fixtures")
+    return str(fixture_snapshot_root())
 
 
 def _fixture_cache_relpath(rel: str) -> str:

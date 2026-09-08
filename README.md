@@ -26,9 +26,7 @@ frontend-crates/
 ├── renderer/               # dynamo-renderer (deps protocols, tokenizers)
 ├── examples/
 │   └── dynamo-demo-server/ # axum server wiring them together
-├── docs/                   # PARSERS-V2-MIGRATION-PLAN.md
-└── scripts/
-    └── sync-from-dynamo.sh # check / pull protocols/tokenizers/renderer from ai-dynamo/dynamo
+└── docs/                   # PARSERS-V2-MIGRATION-PLAN.md
 ```
 
 ## Building

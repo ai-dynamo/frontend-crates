@@ -32,15 +32,15 @@
 use crate::tool_calling::qwen3_coder::qwen3_scanner;
 use crate::tool_calling::scan::ReasoningSpec;
 use crate::tool_calling::traits::Tool;
-use crate::unified::{ScannerUnified, UnifiedParser};
+use crate::unified::{GuidedRouted, ScannerUnified, UnifiedParser};
 
 const REASONING_START: &str = "<think>";
 const REASONING_END: &str = "</think>";
 
 /// Build the Qwen3 unified parser for one stream.
 pub(crate) fn qwen3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
-    Box::new(ScannerUnified::new(qwen3_scanner(tools).with_reasoning(
-        ReasoningSpec {
+    Box::new(GuidedRouted::new(ScannerUnified::new(
+        qwen3_scanner(tools).with_reasoning(ReasoningSpec {
             start: REASONING_START,
             end: REASONING_END,
             // Qwen3 emits its own `<think>`; the template does not pre-fill one,
@@ -49,7 +49,7 @@ pub(crate) fn qwen3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
             // `<think>` is not a special token for this family; the OR comes from the grammar.
             preserve_special_tokens: false,
             ..Default::default()
-        },
+        }),
     )))
 }
 
@@ -106,6 +106,43 @@ mod tests {
         assemble(&deltas)
     }
 
+    fn configured_events_at_every_split(
+        tools: &[Tool],
+        starting_state: UnifiedParserStartingState,
+        tool_output_mode: UnifiedToolOutputMode,
+        input: &str,
+    ) -> Vec<Vec<UnifiedEvent>> {
+        input
+            .char_indices()
+            .map(|(split, _)| split)
+            .chain(std::iter::once(input.len()))
+            .map(|split| {
+                configured_events(
+                    tools,
+                    starting_state,
+                    tool_output_mode.clone(),
+                    &[&input[..split], &input[split..]],
+                )
+            })
+            .collect()
+    }
+
+    fn configured_events_at_every_split_with_mode(
+        tools: &[Tool],
+        starting_state: UnifiedParserStartingState,
+        named_tool: Option<&str>,
+        input: &str,
+    ) -> Vec<Vec<UnifiedEvent>> {
+        configured_events_at_every_split(
+            tools,
+            starting_state,
+            UnifiedToolOutputMode::GuidedJson {
+                named_tool: named_tool.map(str::to_string),
+            },
+            input,
+        )
+    }
+
     fn recover_init(
         starting_state: UnifiedParserStartingState,
         tool_output_mode: UnifiedToolOutputMode,
@@ -151,6 +188,29 @@ mod tests {
                 reasoning("Now answer."),
                 text("It's 18C."),
             ]
+        );
+    }
+
+    #[test]
+    fn native_string_arguments_stream_before_function_close() {
+        let input = "<tool_call><function=get_weather><parameter=city>Montréal café</parameter>still-open</function></tool_call>";
+        let close = input.find("</function>").unwrap();
+        let mut parser = qwen3_unified(&weather_tools());
+        let mut early = Vec::new();
+        for character in input[..close].chars() {
+            early.extend(parser.push(&character.to_string()).expect("push"));
+        }
+        assert!(early.iter().any(
+            |event| matches!(event, UnifiedParserEvent::ToolCall(call) if call.name.as_deref() == Some("get_weather"))
+        ));
+
+        let mut streamed = early;
+        streamed.extend(parser.push(&input[close..]).expect("close"));
+        streamed.extend(parser.finish().expect("finish").events);
+        assert_eq!(
+            assemble(&streamed),
+            events(&weather_tools(), &[input]),
+            "coalesced unified output must match whole-input parsing"
         );
     }
 
@@ -1093,6 +1153,27 @@ mod tests {
     }
 
     #[test]
+    fn truncated_native_string_call_streams_but_does_not_assemble() {
+        let mut parser = qwen3_unified(&weather_tools());
+        let streamed = parser
+            .push("<tool_call><function=get_weather><parameter=city>Paris")
+            .unwrap();
+        assert!(
+            streamed
+                .iter()
+                .any(|event| matches!(event, UnifiedParserEvent::ToolCall(_))),
+            "native stream must retain provisional progress: {streamed:?}"
+        );
+        let finished = parser.finish().unwrap().events;
+        let mut all = streamed;
+        all.extend(finished);
+        assert!(
+            assemble(&all).is_empty(),
+            "unfinished call must not assemble"
+        );
+    }
+
+    #[test]
     fn empty_arguments_become_an_empty_object() {
         // P3.
         let tools = vec![Tool {
@@ -1258,6 +1339,134 @@ mod tests {
     }
 
     #[test]
+    fn response_prefilled_required_call_marker_is_split_invariant() {
+        let input = r#"answer <tool_call>[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        let want = vec![
+            text("answer "),
+            call("get_weather", serde_json::json!({"city": "Paris"})),
+        ];
+
+        for (split, got) in configured_events_at_every_split_with_mode(
+            &weather_tools(),
+            UnifiedParserStartingState::Response,
+            None,
+            input,
+        )
+        .into_iter()
+        .enumerate()
+        {
+            assert_eq!(got, want, "split {split}");
+        }
+    }
+
+    #[test]
+    fn response_prefilled_required_empty_call_strips_marker_at_every_split() {
+        let input = r#"answer <tool_call> [{"name":"get_weather","arguments":{}}]"#;
+        let want = vec![text("answer "), call("get_weather", serde_json::json!({}))];
+
+        for (split, got) in configured_events_at_every_split_with_mode(
+            &weather_tools(),
+            UnifiedParserStartingState::Response,
+            None,
+            input,
+        )
+        .into_iter()
+        .enumerate()
+        {
+            assert_eq!(got, want, "split {split}");
+            assert!(
+                got.iter().all(|event| !matches!(
+                    event,
+                    UnifiedEvent::Text { text } if text.contains("<tool_call>")
+                )),
+                "split {split} leaked the control marker: {got:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn response_prefilled_required_marker_is_stripped_before_payload_streams() {
+        let input = r#"answer <tool_call>[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        let marker_end = input.find('[').expect("guided payload");
+        let mut parser = qwen3_unified(&weather_tools());
+        parser
+            .initialize_request(recover_init(
+                UnifiedParserStartingState::Response,
+                UnifiedToolOutputMode::GuidedJson { named_tool: None },
+            ))
+            .unwrap();
+
+        assert_eq!(
+            parser.push(&input[..marker_end]).unwrap(),
+            vec![UnifiedParserEvent::Text("answer ".to_string())],
+            "response prose should be emitted while the complete control marker is stripped"
+        );
+        assert!(
+            parser
+                .push(&input[marker_end..])
+                .unwrap()
+                .iter()
+                .any(|event| matches!(event, UnifiedParserEvent::ToolCall(_))),
+            "the payload-closing push should emit the required call"
+        );
+        assert!(parser.finish().unwrap().events.is_empty());
+    }
+
+    #[test]
+    fn response_prefilled_named_call_drops_leading_structural_whitespace() {
+        let input = " \n\t{\"city\":\"Paris\"}";
+        let want = vec![call("get_weather", serde_json::json!({"city": "Paris"}))];
+
+        for (split, got) in configured_events_at_every_split_with_mode(
+            &weather_tools(),
+            UnifiedParserStartingState::Response,
+            Some("get_weather"),
+            input,
+        )
+        .into_iter()
+        .enumerate()
+        {
+            assert_eq!(got, want, "split {split}");
+        }
+    }
+
+    #[test]
+    fn response_prefilled_named_stream_drops_leading_structural_whitespace_from_arguments() {
+        let input = " \n\t{\"city\":\"Paris\"}";
+        for split in input
+            .char_indices()
+            .map(|(at, _)| at)
+            .chain(std::iter::once(input.len()))
+        {
+            let mut parser = qwen3_unified(&weather_tools());
+            parser
+                .initialize_request(UnifiedParserInit {
+                    starting_state: UnifiedParserStartingState::Response,
+                    tool_output_mode: UnifiedToolOutputMode::GuidedJson {
+                        named_tool: Some("get_weather".to_string()),
+                    },
+                    invalid_guided_payload: InvalidGuidedPayloadPolicy::StreamBestEffort,
+                    ..UnifiedParserInit::default()
+                })
+                .unwrap();
+            let mut deltas = parser.push(&input[..split]).unwrap();
+            deltas.extend(parser.push(&input[split..]).unwrap());
+            deltas.extend(parser.finish().unwrap().events);
+            let arguments = deltas
+                .iter()
+                .filter_map(|event| match event {
+                    UnifiedParserEvent::ToolCall(call) => Some(call.arguments.as_str()),
+                    _ => None,
+                })
+                .collect::<String>();
+            assert_eq!(
+                arguments, r#"{"city":"Paris"}"#,
+                "split {split} included structural whitespace in ToolCall.arguments"
+            );
+        }
+    }
+
+    #[test]
     fn required_choice_recovers_the_whole_array_when_any_call_is_invalid() {
         // Invalid = missing `name` (the one required field). A missing ARGUMENT key is
         // not invalid — that is a parameterless call, per `UNIFIED.6.a`.
@@ -1371,7 +1580,7 @@ mod tests {
                 _ => None,
             })
             .collect::<String>();
-        assert_eq!(arguments, input);
+        assert_eq!(arguments, r#"{"city": "Tokyo"}	 "#);
     }
 
     #[test]
@@ -2595,6 +2804,7 @@ mod guided_warning_tests {
                     tool_index: 0,
                     name: Some("get_weather".into()),
                     arguments: format!(r#"{{"api_key":"{ARGUMENT_SECRET}""#),
+                    complete: true,
                 },
             )]);
         });
@@ -2697,6 +2907,43 @@ mod reset_and_payload_tests {
             parameters: serde_json::json!({"type":"object","properties":{"city":{"type":"string"}}}),
             strict: None,
         }]
+    }
+
+    /// The invoke CLOSER behind a guided payload is control markup, not an answer.
+    ///
+    /// A wrapper whose opener is stripped ahead of the payload left `</function>`
+    /// trailing after the call as visible text. This predates the Muse work — the same
+    /// bytes did it on `origin/main` — and is fixed in the shared guided owner, so this
+    /// pin and its Muse counterpart exercise ONE implementation.
+    #[test]
+    fn a_guided_payload_wrapped_in_an_invoke_leaves_no_closer_behind() {
+        let input = r#"<function=get_weather>[{"name":"get_weather","arguments":{"city":"Paris"}}]</function>"#;
+        let want = vec![UnifiedEvent::ToolCall {
+            name: "get_weather".into(),
+            arguments: serde_json::json!({"city": "Paris"}),
+        }];
+        let drive = |chunks: Vec<&str>| {
+            let mut p = qwen3_unified(&tools());
+            p.initialize_request(guided_init(None, InvalidGuidedPayloadPolicy::RecoverAsText))
+                .expect("init");
+            let mut d = Vec::new();
+            for c in chunks {
+                d.extend(p.push(c).expect("push"));
+            }
+            d.extend(p.finish().expect("finish"));
+            assemble(&d)
+        };
+        assert_eq!(drive(vec![input]), want, "whole input");
+        for at in 1..input.len() {
+            if !input.is_char_boundary(at) {
+                continue;
+            }
+            assert_eq!(
+                drive(vec![&input[..at], &input[at..]]),
+                want,
+                "split at byte {at}"
+            );
+        }
     }
 
     fn guided_init(

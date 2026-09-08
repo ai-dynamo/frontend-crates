@@ -76,7 +76,10 @@ use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
-use common::{collect_yaml, ensure_fixtures, version_dirs_ascending};
+use common::{
+    STREAM_DYNAMO_V2_CURRENT_CAPTURE, collect_yaml, ensure_fixtures,
+    version_dirs_ascending_with_current,
+};
 use dynamo_parsers_v2::{
     Tool, ToolCallDelta, ToolParser, ToolParserInput, create_tool_parser_for_family,
 };
@@ -236,6 +239,14 @@ struct FixtureDelta {
     name: Option<String>,
     #[serde(default)]
     arguments: Option<String>,
+    /// Historical captures predate explicit completion and are complete by
+    /// definition; only newly recorded provisional deltas set this to false.
+    #[serde(default = "default_complete")]
+    complete: bool,
+}
+
+fn default_complete() -> bool {
+    true
 }
 
 /// One case's recorded dynamo_v2 output, already folded to the assembled shape
@@ -330,6 +341,7 @@ fn load_recorded(
 fn assemble_recorded(chunks: &[DynChunk]) -> EngineResult {
     let mut names: BTreeMap<u32, String> = BTreeMap::new();
     let mut args: BTreeMap<u32, String> = BTreeMap::new();
+    let mut complete: BTreeMap<u32, bool> = BTreeMap::new();
     let mut order: Vec<u32> = Vec::new();
     let mut normal_text = String::new();
     for chunk in chunks {
@@ -343,6 +355,7 @@ fn assemble_recorded(chunks: &[DynChunk]) -> EngineResult {
             if let Some(a) = &d.arguments {
                 args.entry(d.index).or_default().push_str(a);
             }
+            *complete.entry(d.index).or_default() |= d.complete;
         }
         if let Some(nt) = &chunk.normal_text {
             normal_text.push_str(nt);
@@ -350,11 +363,14 @@ fn assemble_recorded(chunks: &[DynChunk]) -> EngineResult {
     }
     let calls = order
         .into_iter()
-        .map(|i| {
-            (
+        .filter_map(|i| {
+            if complete.get(&i) != Some(&true) {
+                return None;
+            }
+            Some((
                 names.get(&i).cloned().unwrap_or_default(),
                 args.get(&i).cloned().unwrap_or_default(),
-            )
+            ))
         })
         .collect();
     EngineResult {
@@ -395,6 +411,7 @@ struct EngineResult {
 fn assemble(deltas: &[ToolCallDelta], normal_text: String) -> EngineResult {
     let mut names: BTreeMap<usize, String> = BTreeMap::new();
     let mut args: BTreeMap<usize, String> = BTreeMap::new();
+    let mut complete: BTreeMap<usize, bool> = BTreeMap::new();
     let mut order: Vec<usize> = Vec::new();
     for d in deltas {
         if !order.contains(&d.tool_index) {
@@ -404,14 +421,18 @@ fn assemble(deltas: &[ToolCallDelta], normal_text: String) -> EngineResult {
             names.entry(d.tool_index).or_default().push_str(name);
         }
         args.entry(d.tool_index).or_default().push_str(&d.arguments);
+        *complete.entry(d.tool_index).or_default() |= d.complete;
     }
     let calls = order
         .into_iter()
-        .map(|idx| {
-            (
+        .filter_map(|idx| {
+            if complete.get(&idx) != Some(&true) {
+                return None;
+            }
+            Some((
                 names.get(&idx).cloned().unwrap_or_default(),
                 args.get(&idx).cloned().unwrap_or_default(),
-            )
+            ))
         })
         .collect();
     EngineResult {
@@ -419,6 +440,20 @@ fn assemble(deltas: &[ToolCallDelta], normal_text: String) -> EngineResult {
         normal_text,
         emission_profile: Vec::new(),
     }
+}
+
+#[test]
+fn assemble_omits_incomplete_tool_deltas() {
+    let result = assemble(
+        &[ToolCallDelta {
+            tool_index: 0,
+            name: Some("get_weather".into()),
+            arguments: r#"{"city":"Par"#.into(),
+            complete: false,
+        }],
+        String::new(),
+    );
+    assert!(result.calls.is_empty());
 }
 
 // ── ChoiceRouter: one parser instance per choice.index ───────────────────────
@@ -796,7 +831,8 @@ fn toolcalling_stream_interleave_isolation() {
 
     // Capture history for the v2 parser, folded ascending (latest wins per case)
     // via the shared helper the canonical parity test uses.
-    let dyn_dirs = version_dirs_ascending(&sv2, "dynamo_v2-");
+    let dyn_dirs =
+        version_dirs_ascending_with_current(&sv2, "dynamo_v2-", STREAM_DYNAMO_V2_CURRENT_CAPTURE);
     assert!(
         !dyn_dirs.is_empty(),
         "no dynamo_v2-<version> dir under {}",

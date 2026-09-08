@@ -228,14 +228,15 @@ fn stream_result_to_parser_output(r: ToolStreamResult) -> ToolParseResult {
         calls: r
             .tool_call_chunks
             .into_iter()
-            .map(|c| ToolCallDelta {
-                tool_index: c.index as usize,
-                name: c.function.as_ref().and_then(|f| f.name.clone()),
-                arguments: c
-                    .function
-                    .as_ref()
-                    .and_then(|f| f.arguments.clone())
-                    .unwrap_or_default(),
+            .map(|c| {
+                let name = c.function.as_ref().and_then(|f| f.name.clone());
+                let arguments = c.function.as_ref().and_then(|f| f.arguments.clone());
+                ToolCallDelta {
+                    tool_index: c.index as usize,
+                    complete: arguments.is_some(),
+                    name,
+                    arguments: arguments.unwrap_or_default(),
+                }
             })
             .collect(),
     }
@@ -415,6 +416,23 @@ mod tests {
     }
 
     #[test]
+    fn empty_harmony_arguments_are_a_completed_call() {
+        let input = "<|channel|>commentary to=functions.ping <|constrain|>json<|message|><|call|>";
+        let mut parser = HarmonyToolStreamParser::new().expect("new");
+        let mut output = parser.push(input).expect("push");
+        output.append(parser.finish().expect("finish"));
+
+        assert_eq!(output.calls.len(), 2);
+        assert!(!output.calls[0].complete);
+        assert!(output.calls[1].complete);
+        assert_eq!(output.calls[1].arguments, "");
+        let calls = output.coalesce_calls();
+        assert_eq!(calls.calls.len(), 1);
+        assert_eq!(calls.calls[0].name.as_deref(), Some("ping"));
+        assert_eq!(calls.calls[0].arguments, "");
+    }
+
+    #[test]
     fn text_path_tolerates_split_harmony_markers() {
         let chunks = [
             "<|",
@@ -473,9 +491,11 @@ mod tests {
         let name_delta = &all[0];
         assert_eq!(name_delta.name.as_deref(), Some("get_weather"));
         assert_eq!(name_delta.arguments, "");
+        assert!(!name_delta.complete);
         // All subsequent deltas: name absent, arguments non-empty fragments.
         for delta in &all[1..] {
             assert!(delta.name.is_none());
+            assert!(delta.complete);
         }
         // Concatenating all arguments gives the full JSON.
         let full_args_str: String = all.iter().map(|d| d.arguments.as_str()).collect();

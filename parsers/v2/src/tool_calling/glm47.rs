@@ -253,6 +253,7 @@ impl Glm47ToolStreamParser {
             tool_index: self.next_index,
             name: Some(call.function.name),
             arguments,
+            complete: true,
         }))
     }
 }

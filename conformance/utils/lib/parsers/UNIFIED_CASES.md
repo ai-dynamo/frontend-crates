@@ -54,11 +54,11 @@ The parser recovers everything it can and NEVER drops valid text, leaks markup, 
 
 `MATCH` (green) · `ORDER` / `MERGE` / `LOSS` (the unification gap) · `LEAK` (markup in text, `↯`) · `ARG_MISMATCH` / `WHITESPACE` (version drift) · `ERROR` (engine hard-errored where the spec expects graceful output).
 
-The Dynamo column is a per-family MIXTURE: `qwen3` and `muse_glimmer` run the native `UnifiedParser`; `gemma4` and `kimi_k2` still run the v1-reasoning + v2-tool split and carry the gap. Every remaining red Dynamo cell in this tab is a split-path cell.
+The Dynamo column is a per-family mixture. All four current corpus families — `qwen3`, `gemma4`, `kimi_k2`, and `muse_glimmer` — run native `UnifiedParser` implementations. A future family without a native implementation falls back to the v1-reasoning + v2-tool split, and its cells must name that path explicitly.
 
-## Quick reference — numbered taxonomy (`UNIFIED.<group>.<sub>`)
+## Quick reference — numbered taxonomy (`UNIFIED.<group>.<letter>` / `UNIFIED.<group>-<number>`)
 
-Case IDs use short `group.sub` labels (`1.a`, `2.b`, …) like the other suites; the scenario slug (the golden filename key) is shown in parentheses. **Groups 1–9 mirror the tool-calling STREAM taxonomy** (`TOOLCALLING.streamv2.N`) as reasoning-free unified cases — this surface subsumes STREAM. **Group 10** is the reasoning axis (`REASONING.*`). **Group 11 is UNIQUE to unified**: reasoning↔tool ORDER that neither STREAM (no reasoning) nor REASONING (no ordered tool events) can express. **Group 12** is adversarial nesting — a marker of one channel inside another (P7). **Groups 30+ are REQUEST-SCOPED modes** — what the serving layer told the parser about this request, rather than what the model emitted; they use PAIRED TENS, `X0` for a mode's happy path and `X1` for its malformed counterpart, so a recovery case never sorts next to the baseline it contrasts with. 81 scenarios. gemma4, kimi_k2 and qwen3 emit all 81; muse_glimmer emits 44 — it honours prefilled channels but rejects guided tool output, so the 37 guided scenarios are not emitted for it. 287 cases in total. That shortfall is structural rather than unfinished work: the guided machinery is built around a reasoning marker PAIR and muse has none. See `TODO(muse-guided-output)` in `parser_families.yaml`. These counts come from the generator's `CLEAN + EDGE` lists, not from the taxonomy map — the map reserves names the generator does not emit, which is how a stale denominator survived here before.
+Lettered case IDs keep the other suites' `group.sub` form (`1.a`, `2.b`, …). Numeric positions use `group-number` (`31-25`, `31-26`, …) so two adjacent numbers do not read like a decimal. The scenario slug is shown in parentheses. **Groups 1–9 mirror the tool-calling STREAM taxonomy** (`TOOLCALLING.streamv2.N`) as reasoning-free unified cases — this surface subsumes STREAM. **Group 10** is the reasoning axis (`REASONING.*`). **Group 11 is UNIQUE to unified**: reasoning↔tool ORDER that neither STREAM (no reasoning) nor REASONING (no ordered tool events) can express. **Group 12** is adversarial nesting — a marker of one channel inside another (P7). **Groups 30+ are REQUEST-SCOPED modes** — what the serving layer told the parser about this request, rather than what the model emitted; they use PAIRED TENS, `X0` for a mode's happy path and `X1` for its malformed counterpart, so a recovery case never sorts next to the baseline it contrasts with. 86 scenarios are emitted for every family, 344 cases in total. muse_glimmer emitted only 44 of the first 81 until the guided reader stopped assuming a reasoning marker PAIR and muse opens a thought with a dynamic `to=self<|message|>` header instead — so 37 guided scenarios were skipped for it. Having no marker pair is not the same as having no reasoning channel: the reader now asks the family where a thought begins, and muse answers with the same header resolver its native scan uses. These counts come from the generator's `CLEAN + EDGE` lists, not from the taxonomy map — the map reserves names the generator does not emit, which is how a stale denominator survived here before.
 
 ### Group 1 — TC Single call
 - **`1.a`** (`tool_only`) One tool call, no reasoning, no surrounding text. The tool suite's baseline.
@@ -252,22 +252,25 @@ Groups 1–12 vary the model OUTPUT. Groups 30+ vary the request: the resolved `
 - **`30.g`** (`guided_json_marker_inside_argument`) A control marker of the family's OWN grammar inside a guided argument VALUE. Once the payload has opened, a marker is argument DATA and must survive byte-exact (`I7`); re-reading it as a channel token corrupts the call the tool receives while still looking like a successful dispatch. The golden argument is the family's own marker, not a placeholder — a stand-in would pass whatever the parser did.
 
 ### Group 31 — Guided decoding, malformed / recovery
-- **`31.a`** (`guided_json_invalid_call`) Valid JSON that is not a call (no `name`). Surfaces as text under the guided malformed-payload policy; no call dispatched.
-- **`31.b`** (`guided_json_malformed_json`) JSON that does not parse — a truncated object, what a constrained decode looks like when the budget runs out.
-- **`31.c`** (`guided_json_partial_calls`) The array parses but one element is not a call.
-- **`31.d`** (`guided_json_list_with_broken_element`) `[<valid call>, <broken JSON>]` — the array itself does not parse, so per-element recovery never runs.
-- **`31.e`** (`guided_json_tool_open_before_payload`) A native tool OPENER precedes the payload. Guided decoding delivers the call as JSON, so leading markup is stray: strip it, or it enters the payload buffer, breaks the parse and costs the call.
-- **`31.f`** (`guided_json_tool_close_after_payload`) A native tool CLOSER follows the payload. Markers can BRACKET a payload, not only precede it — once the opening brace latches visible-only, every later byte is appended verbatim.
-- **`31.g`** (`guided_json_wrapped_in_tool_markup`) Opener AND closer, the shape a template emits when guided decoding is applied INSIDE a tool block. Handling one end only still loses the call.
-- **`31.h`** (`guided_json_narrated_invoke_in_reasoning`) The model NARRATES a tool opener while thinking, then the real call arrives as JSON. The reasoning channel is unconstrained under guided decoding, so that markup is prose; treating it as structure ends the turn and discards the payload.
-- **`31.i`** (`guided_json_prose_before_reasoning`) Visible prose, then a thought, then the payload. Every other guided case opens its thought at byte 0; with prose first the run can latch the payload buffer and surface the model's private thinking to the user as the answer.
-- **`31.j`** (`guided_json_orphan_reason_close_before_payload`) An orphan reasoning CLOSER with nothing open. The native scanner strips a stray closer wherever it appears before an opener; guided must agree or the same bytes read differently by request mode (`I3`).
-- **`31.k`** (`guided_json_orphan_tool_close_before_payload`) An orphan tool CLOSER. Paired with `31.e`: while the closer was stripped and the opener beside it was not, which marker leaked depended on which one the model happened to emit.
-- **`31.w`** (`guided_json_native_markup_only`) Guided mode receives one complete native tool call instead of bare JSON. The turn is control markup and emits no events; every stream split must match the whole-input result instead of leaking the parameter body as visible text.
+- **`31-1`** (`guided_json_invalid_call`) Valid JSON that is not a call (no `name`). Surfaces as text under the guided malformed-payload policy; no call dispatched.
+- **`31-2`** (`guided_json_malformed_json`) JSON that does not parse — a truncated object, what a constrained decode looks like when the budget runs out.
+- **`31-3`** (`guided_json_partial_calls`) The array parses but one element is not a call.
+- **`31-4`** (`guided_json_list_with_broken_element`) `[<valid call>, <broken JSON>]` — the array itself does not parse, so per-element recovery never runs.
+- **`31-5`** (`guided_json_tool_open_before_payload`) A native tool OPENER precedes the payload. Guided decoding delivers the call as JSON, so leading markup is stray: strip it, or it enters the payload buffer, breaks the parse and costs the call.
+- **`31-6`** (`guided_json_tool_close_after_payload`) A native tool CLOSER follows the payload. Markers can BRACKET a payload, not only precede it — once the opening brace latches visible-only, every later byte is appended verbatim.
+- **`31-7`** (`guided_json_wrapped_in_tool_markup`) Opener AND closer, the shape a template emits when guided decoding is applied INSIDE a tool block. Handling one end only still loses the call.
+- **`31-8`** (`guided_json_narrated_invoke_in_reasoning`) The model NARRATES a tool opener while thinking, then the real call arrives as JSON. The reasoning channel is unconstrained under guided decoding, so that markup is prose; treating it as structure ends the turn and discards the payload.
+- **`31-9`** (`guided_json_prose_before_reasoning`) Visible prose, then a thought, then the payload. Every other guided case opens its thought at byte 0; with prose first the run can latch the payload buffer and surface the model's private thinking to the user as the answer.
+- **`31-10`** (`guided_json_orphan_reason_close_before_payload`) An orphan reasoning CLOSER with nothing open. The native scanner strips a stray closer wherever it appears before an opener; guided must agree or the same bytes read differently by request mode (`I3`).
+- **`31-11`** (`guided_json_orphan_tool_close_before_payload`) An orphan tool CLOSER. Paired with `31-5`: while the closer was stripped and the opener beside it was not, which marker leaked depended on which one the model happened to emit.
+- **`31-23`** (`guided_json_native_markup_only`) Guided mode receives one complete native tool call instead of bare JSON. The turn is control markup and emits no events; every stream split must match the whole-input result instead of leaking the parameter body as visible text.
+- **`31-24`** (`guided_json_unterminated_reasoning_then_wrapped_payload`) A thought whose closer never arrives, running straight into native tool markup wrapping the guided payload. `31-7` pins a wrapper around the payload OUTSIDE reasoning and `41.*` pins an unterminated thought on its own; neither asks what happens when the two meet, and that crossing is where both native families emitted the payload as REASONING and dispatched nothing. The client sees a plausible answer and never learns a call was lost. Contrast with `31-8`, where the same markup has PROSE behind it and is narration — what separates them is whether the guided payload follows, not which marker appeared.
+- **`31-25`** (`guided_json_quoted_bare_header_in_answer`) and **`31-26`** (`guided_json_quoted_bare_tool_header_in_answer`) A response that already has a visible channel open contains a control marker before the guided payload. Muse uses its `to=self` and tool-recipient headers; Gemma, Kimi, and Qwen use their own reasoning envelope. In every family the marker must not reopen a private channel, and the following JSON must still dispatch.
+- **`31-27`** (`guided_json_quoted_bare_header_after_payload`) crosses the same Response boundary after the payload has already dispatched: call, then visible control-markup text. **`31-28`** (`guided_json_bare_tool_header_recovers_inside_a_thought`) starts in Reasoning and routes through a native tool boundary into guided JSON. Both cases are generated for every supported family, with its own marker grammar; neither absence nor an `UNSUPPORTED` cell can hide a missing family input.
 
-`31.c` and `31.d` pin **all-or-nothing**: one bad element voids the whole array and the payload goes out as text, taking the valid call with it. That is deliberate. A tool call is a side effect, so dispatching one extracted from a document that failed validation fails OPEN. Text loses nothing — the raw payload stays visible. `31.a`–`31.d` each also emit `tracing::warn!(why = "unified_guided_json_not_a_tool_call")`: the events alone are indistinguishable from a model that chose to answer in prose, so the log is the only signal the backend's guided decoding failed.
+`31-3` and `31-4` pin **all-or-nothing**: one bad element voids the whole array and the payload goes out as text, taking the valid call with it. That is deliberate. A tool call is a side effect, so dispatching one extracted from a document that failed validation fails OPEN. Text loses nothing — the raw payload stays visible. `31-1` through `31-4` each also emit `tracing::warn!(why = "unified_guided_json_not_a_tool_call")`: the events alone are indistinguishable from a model that chose to answer in prose, so the log is the only signal the backend's guided decoding failed.
 
-`31.a`–`31.d` are malformed PAYLOADS. `31.e`–`31.k` are well-formed payloads in malformed SURROUNDINGS: they recover the markers, the payload then parses, and the call dispatches — so neither the all-or-nothing rule nor that warning applies to them.
+`31-1` through `31-4` are malformed PAYLOADS. `31-5` through `31-11` are well-formed payloads in malformed SURROUNDINGS: they recover the markers, the payload then parses, and the call dispatches — so neither the all-or-nothing rule nor that warning applies to them.
 
 **Peer-engine value here is intentionally limited.** vLLM does not emit guided JSON in the base capture, and the families with no native unified parser cannot honour `init` at all, so those columns are structurally `UNSUPPORTED` rather than a comparison. What these rows do pin: the authored golden contract, the current native parsers' recovery, and the split-family result where 0.1.25 captured it. The `dynamo_v2-0.1.22` column was back-captured through the prior 237-case corpus; cases added later are explicitly missing from that historical capture rather than inferred.
 
@@ -285,11 +288,11 @@ Groups 1–12 vary the model OUTPUT. Groups 30+ vary the request: the resolved `
 - **`50.a`** (`prefilled_response_with_tool`) Leading visible content, then a native call.
 - **`50.b`** (`prefilled_response_with_guided_json`) Guided payload with the response channel already open.
 - **`50.c`** (`prefilled_response_guided_json_two_calls`) Two different tools; enters guided mode visible-only rather than outside-reasoning.
-- **`50.d`** (`prefilled_response_reasoning_markers_literal`) **The only case where `starting_state=Response` is observable.** `<think>literal</think>` must reach the user as TEXT, markers and all, because this stream has no reasoning channel. Every other 50/51 case has no reasoning markers in its input and therefore parses identically under `starting_state=None` — 50.a matches 8.a, 50.b matches 30.b, 50.c matches 30.c, 51.b matches 31.c.
+- **`50.d`** (`prefilled_response_reasoning_markers_literal`) **The only case where `starting_state=Response` is observable.** `<think>literal</think>` must reach the user as TEXT, markers and all, because this stream has no reasoning channel. Every other 50/51 case has no reasoning markers in its input and therefore parses identically under `starting_state=None`: 50.a matches 8.a, 50.b matches 30.b, 50.c matches 30.c, and 51.b matches 31-3.
 
 ### Group 51 — Prefilled response, malformed
 - **`51.a`** (`prefilled_response_truncated`) Budget runs out mid-call; the prose already emitted survives.
-- **`51.b`** (`prefilled_response_guided_json_partial_calls`) All-or-nothing, as `31.c`, with the response channel prefilled.
+- **`51.b`** (`prefilled_response_guided_json_partial_calls`) All-or-nothing, as `31-3`, with the response channel prefilled.
 
 ## Authoring a case: what to check BEFORE adding one
 
@@ -305,9 +308,19 @@ Every rule here exists because a case was added that could not fail for the reas
 
 ## Verifying a change to the table
 
+The affected family's selected current Dynamo Unified column must finish with **zero empty cells and zero red cells**.
+
+1. **Write:** change the parser or capture path.
+2. **Read:** render the table and inspect each affected popup's input, initialization, chunks, GOLDEN events, and current Dynamo events.
+3. **Fix:** treat an empty current cell as missing capture data. Treat a red current cell as a parser defect unless the authored GOLDEN is demonstrably wrong.
+4. **Regenerate:** rebuild the qualified current capture, package its shard and manifest, and rerender from the same worktree.
+5. **Re-read:** inspect the rendered column again and repeat until both counts are zero.
+
+Do not use `reason:`, `unavailable:`, a historical column, stale HTML, or an unsupported GOLDEN edit to make a current empty or red cell appear acceptable.
+
 The model blob and the rendered page are different things. A cell can carry correct JSON and render nothing — the column-header popup shipped with `init` in every column and an empty config list, because the model that feeds `buildGrammarHtml` is assembled separately and dropped the field.
 
-- Check the DOM, not just `conformance-model` JSON.
+- Check the rendered DOM, not only a cell's aggregate `status` or the `conformance-model` JSON. A cell can report `status: ok` while `red_on_diff` and the comparison signatures still make it render red.
 - Headless Chrome reports `(hover: hover) = false`, so hover listeners never attach and a naive hover test "fails" on the baseline too. Emulate with `--blink-settings=primaryHoverType=2,availableHoverTypes=2`.
 - A synthetic `pointerenter` does NOT set CSS `:hover`. Use it to test JS behavior, a real pointer move to test CSS.
 - Never run `render_table_v2.sh` and the pytest suite at the same time: both stage into `conformance/utils/.stage/`, and the collision shows up as ~13 unrelated browser-test errors.

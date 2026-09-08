@@ -47,8 +47,7 @@ fn main() -> anyhow::Result<()> {
         .expect("parsers/v2 is two levels below the repo root")
         .to_path_buf();
 
-    // Stamp the v2 stream overlay only. The v1 conformance corpus stays pristine
-    // (dynamo-synced); the per-chunk token ids live outside the rsync path.
+    // Stamp the v2 stream overlay only. The v1 conformance corpus stays pristine.
     let dirs = [repo_root.join("conformance/toolcalling/fixtures-stream-v2/harmony")];
 
     for root in &dirs {

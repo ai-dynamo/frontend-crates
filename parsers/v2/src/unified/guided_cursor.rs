@@ -520,6 +520,7 @@ impl GuidedJsonCursor {
             tool_index: self.index,
             name: Some(name),
             arguments: String::new(),
+            complete: false,
         });
     }
 
@@ -550,6 +551,7 @@ impl GuidedJsonCursor {
             tool_index: self.index,
             name: None,
             arguments: fragment,
+            complete: false,
         });
     }
 

@@ -17,9 +17,10 @@ crosses the language barrier two ways:
 
 Each case is compared with ``tables.common.canonical``, the same contract
 the dynamo M2 harness and the Rust conformance crate use. Reports the live engine
-version and warns when it differs from the version dynamo pinned (the fixtures'
-``expected.<impl>`` columns were captured against that pin — a mismatch makes
-diffs version drift, not parser bugs). Exits non-zero on any real mismatch.
+version and warns when it differs from the version pinned in
+``pyproject.stub.toml`` (the fixtures' ``expected.<impl>`` columns were captured
+against that pin — a mismatch makes diffs version drift, not parser bugs). Exits
+non-zero on any real mismatch.
 
 Run via ``conformance/utils/check.sh vllm|sglang``; it builds the staged fixtures dir
 and passes --fixtures. Direct use:
@@ -72,7 +73,7 @@ with open(a.out, "w", encoding="utf-8") as f:
 
 
 def pinned_version(impl: str) -> str | None:
-    """The vllm/sglang version dynamo pinned, from the synced stub."""
+    """The frontend-crates-owned vLLM/SGLang peer version from the local stub."""
     if not STUB.exists():
         return None
     m = re.search(rf'"{impl}(?:\[[^\]]*\])?==([0-9][^"]*)"', STUB.read_text())
@@ -144,6 +145,7 @@ def run_container(impl: str, container: str, cases: list[dict]) -> dict[str, dic
     """Ship the adapter + a worker into ``container`` and run all cases there."""
     dest = "/tmp/conformance_validate"
     bundle = {
+        "fixture_snapshot.py": PH / "fixture_snapshot.py",
         "tables/__init__.py": PKG / "__init__.py",
         "tables/common.py": PKG / "common.py",
         "tables/toolcalling/__init__.py": PKG / "toolcalling" / "__init__.py",
