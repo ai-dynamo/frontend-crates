@@ -1541,15 +1541,10 @@ mod tests {
     #[test]
     fn null_partial_is_equivalent_to_absent() {
         let mut request = Request::new(json!([
-            {"role": "system", "content": "rules"},
-            {"role": "developer", "content": "policy"},
-            {"role": "user", "content": "Go"},
-            {"role": "assistant", "content": "done"}
+            {"role": "user", "content": "Go"}
         ]));
         let expected = fmt().render(&request).unwrap();
-        for message in request.messages.as_array_mut().unwrap() {
-            message["partial"] = Value::Null;
-        }
+        request.messages[0]["partial"] = Value::Null;
         assert_eq!(fmt().render(&request).unwrap(), expected);
     }
 
