@@ -846,20 +846,29 @@ fn build_chat_segments(
     let mut previous_tool_calls: Option<&Value> = None;
     let mut tool_index = 0usize;
 
+    for message in messages {
+        let Some(partial) = message.get("partial").filter(|value| !value.is_null()) else {
+            continue;
+        };
+        if message.get("role").and_then(Value::as_str) != Some("assistant") {
+            return Err(PromptRenderError::invalid_request(
+                "Kimi K3 `partial` is only supported on an assistant message",
+            )
+            .into());
+        }
+        if !partial.is_boolean() {
+            return Err(
+                PromptRenderError::invalid_request("Kimi K3 `partial` must be a boolean").into(),
+            );
+        }
+    }
+
     // Kimi Partial Mode: only the final message may be partial, and it must be
     // an assistant turn. Split it off so the history loop renders everything
     // before it normally and the partial turn takes the generation prompt's
     // place at the very end (after any internal system messages).
     let (history, partial_tail) = match messages.split_last() {
-        Some((last, history)) if is_partial(last) => {
-            if last.get("role").and_then(Value::as_str) != Some("assistant") {
-                return Err(PromptRenderError::invalid_request(
-                    "Kimi K3 `partial` is only supported on an assistant message",
-                )
-                .into());
-            }
-            (history, Some(last))
-        }
+        Some((last, history)) if is_partial(last) => (history, Some(last)),
         _ => (messages, None),
     };
 
@@ -1478,17 +1487,62 @@ mod tests {
 
     #[test]
     fn rejects_partial_on_a_non_assistant_message() {
-        let request = Request::new(json!([
-            {"role": "user", "content": "Go", "partial": true}
+        for role in ["system", "developer", "user", "tool"] {
+            for partial in [false, true] {
+                let mut messages = json!([{"role": role, "content": "Go", "partial": partial}]);
+                for in_history in [false, true] {
+                    if in_history {
+                        messages
+                            .as_array_mut()
+                            .unwrap()
+                            .push(json!({"role": "user", "content": "Continue"}));
+                    }
+                    let error = fmt().render(&Request::new(messages.clone())).unwrap_err();
+                    assert_eq!(
+                        invalid_request_message(&error),
+                        "Kimi K3 `partial` is only supported on an assistant message",
+                        "role={role}, partial={partial}, in_history={in_history}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn rejects_non_boolean_partial() {
+        for partial in [json!("true"), json!(1), json!([]), json!({})] {
+            let mut messages =
+                json!([{"role": "assistant", "content": "done", "partial": partial}]);
+            for in_history in [false, true] {
+                if in_history {
+                    messages
+                        .as_array_mut()
+                        .unwrap()
+                        .push(json!({"role": "user", "content": "Continue"}));
+                }
+                let error = fmt().render(&Request::new(messages.clone())).unwrap_err();
+                assert_eq!(
+                    invalid_request_message(&error),
+                    "Kimi K3 `partial` must be a boolean",
+                    "partial={partial}, in_history={in_history}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn null_partial_is_equivalent_to_absent() {
+        let mut request = Request::new(json!([
+            {"role": "system", "content": "rules"},
+            {"role": "developer", "content": "policy"},
+            {"role": "user", "content": "Go"},
+            {"role": "assistant", "content": "done"}
         ]));
-
-        let error = fmt().render(&request).unwrap_err();
-
-        assert!(matches!(
-            error.downcast_ref::<PromptRenderError>(),
-            Some(PromptRenderError::InvalidRequest(message))
-                if message == "Kimi K3 `partial` is only supported on an assistant message"
-        ));
+        let expected = fmt().render(&request).unwrap();
+        for message in request.messages.as_array_mut().unwrap() {
+            message["partial"] = Value::Null;
+        }
+        assert_eq!(fmt().render(&request).unwrap(), expected);
     }
 
     // -- Dynamic tool system messages: content XOR tools --
