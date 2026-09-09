@@ -1007,7 +1007,8 @@
     table.setAttribute('data-case-prefix', tab.case_prefix || '');
     table.setAttribute('data-mode', tab.mode || '');
     var thead = document.createElement('thead');
-    thead.innerHTML = '<tr>' + groupHeadersHtml(tab) + '</tr><tr>' + subHeadersHtml(tab) + '</tr>';
+    thead.innerHTML = '<tr class="matrix-groups">' + groupHeadersHtml(tab)
+      + '</tr><tr class="matrix-labels">' + subHeadersHtml(tab) + '</tr>';
     // The sub-case headers were emitted as a string; key their grammar popups now that
     // they are real nodes. Built lazily like every other tooltip (a grammar table for
     // ~20 families is far too much to render up front for every column).
