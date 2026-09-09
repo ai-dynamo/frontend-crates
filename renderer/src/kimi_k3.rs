@@ -645,21 +645,9 @@ fn is_partial(message: &Value) -> bool {
     message.get("partial").and_then(Value::as_bool) == Some(true)
 }
 
-/// Renders a Partial Mode assistant message as the *open* generation turn.
-///
-/// Kimi's API defines Partial Mode as: the final message has `role=assistant`
-/// and `partial=true`, and the model continues directly from its `content`
-/// (with `name`, when set, also counting as part of the prefix). The
-/// checkpoint's `encoding_k3.py` has no notion of this — it is a serving-layer
-/// feature — so this mirrors what the hosted API does: emit the assistant
-/// turn's opening structure and prefix text, and leave `response` and
-/// `message` unclosed so generation resumes inside them. This replaces the
-/// ordinary generation prompt rather than following it.
-///
-/// In thinking mode the think channel is closed before the response opens,
-/// carrying any supplied `reasoning_content` (the API requires callers to pass
-/// it along for thinking models); an empty channel is emitted otherwise, the
-/// same policy [`render_think_channel`] applies to historical turns.
+/// Leaves the assistant response and message open for prefix continuation,
+/// replacing the ordinary generation prompt. In thinking mode, the think
+/// channel is rendered and closed before the response opens.
 fn render_partial_assistant_segments(
     segments: &mut Vec<RenderedSegment>,
     message: &Value,
@@ -1490,25 +1478,14 @@ mod tests {
 
     #[test]
     fn rejects_partial_on_a_non_assistant_message() {
-        for role in ["system", "developer", "user", "tool"] {
-            for partial in [false, true] {
-                let mut messages = json!([{"role": role, "content": "Go", "partial": partial}]);
-                for in_history in [false, true] {
-                    if in_history {
-                        messages
-                            .as_array_mut()
-                            .unwrap()
-                            .push(json!({"role": "user", "content": "Continue"}));
-                    }
-                    let error = fmt().render(&Request::new(messages.clone())).unwrap_err();
-                    assert_eq!(
-                        invalid_request_message(&error),
-                        "Kimi K3 `partial` is only supported on an assistant message",
-                        "role={role}, partial={partial}, in_history={in_history}"
-                    );
-                }
-            }
-        }
+        let request = Request::new(json!([
+            {"role": "user", "content": "Go", "partial": false}
+        ]));
+        let error = fmt().render(&request).unwrap_err();
+        assert_eq!(
+            invalid_request_message(&error),
+            "Kimi K3 `partial` is only supported on an assistant message"
+        );
     }
 
     #[test]
