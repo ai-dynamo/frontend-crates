@@ -500,7 +500,10 @@ pub struct CreateResponse {
     pub input: InputParam,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub instructions: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Output cap. Also accepts the Chat Completions spelling `max_tokens`
+    /// as an alias so a caller's cap is honored instead of silently dropped;
+    /// serialization always emits `max_output_tokens`.
+    #[serde(alias = "max_tokens", skip_serializing_if = "Option::is_none")]
     pub max_output_tokens: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_tool_calls: Option<u32>,
@@ -1393,6 +1396,33 @@ mod tests {
             }
             other => panic!("expected Item::Message(Output), got {other:?}"),
         }
+    }
+
+    /// The Chat Completions spelling `max_tokens` is honored as the output cap
+    /// rather than silently dropped (#207); the wire echo is `max_output_tokens`.
+    #[test]
+    fn create_response_accepts_max_tokens_as_alias_for_max_output_tokens() {
+        let req: CreateResponse = serde_json::from_value(serde_json::json!({
+            "model": "m", "input": "hi", "max_tokens": 16
+        }))
+        .unwrap();
+        assert_eq!(req.max_output_tokens, Some(16));
+        let back = serde_json::to_value(&req).unwrap();
+        assert_eq!(back["max_output_tokens"], 16);
+        assert!(back.get("max_tokens").is_none());
+
+        let req: CreateResponse = serde_json::from_value(serde_json::json!({
+            "model": "m", "input": "hi", "max_tokens": null
+        }))
+        .unwrap();
+        assert_eq!(req.max_output_tokens, None);
+
+        // Both spellings at once is ambiguous and fails as a duplicate field.
+        let err = serde_json::from_value::<CreateResponse>(serde_json::json!({
+            "model": "m", "input": "hi", "max_tokens": 16, "max_output_tokens": 32
+        }))
+        .unwrap_err();
+        assert!(err.to_string().contains("duplicate field"), "{err}");
     }
 
     #[test]
