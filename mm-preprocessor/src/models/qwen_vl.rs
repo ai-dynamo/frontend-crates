@@ -87,6 +87,11 @@ impl QwenVlProcessor {
                 "qwen_vl spec: image_std values must be finite and positive",
             ));
         }
+        if spec.image_mean.iter().any(|mean| !mean.is_finite()) {
+            return Err(MmError::invalid_input(
+                "qwen_vl spec: image_mean values must be finite",
+            ));
+        }
         Ok(Self { spec })
     }
 
@@ -187,9 +192,22 @@ mod tests {
 
     #[test]
     fn rejects_invalid_image_std() {
-        for invalid_std in [0.0, -1.0, f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+        for invalid_std in [0.0, -1.0, f32::NAN, f32::INFINITY] {
             let mut spec = valid_spec();
             spec.image_std[1] = invalid_std;
+
+            assert!(matches!(
+                QwenVlProcessor::new(spec),
+                Err(MmError::InvalidInput { .. })
+            ));
+        }
+    }
+
+    #[test]
+    fn rejects_non_finite_image_mean() {
+        for invalid_mean in [f32::NAN, f32::INFINITY] {
+            let mut spec = valid_spec();
+            spec.image_mean[1] = invalid_mean;
 
             assert!(matches!(
                 QwenVlProcessor::new(spec),
