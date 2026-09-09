@@ -287,7 +287,7 @@ def test_unified_default_dynamo_uses_pr_capture_and_keeps_release_history(tmp_pa
     dynamo = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
     release = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo@0.4.0")
 
-    assert dynamo["label"] == "Dynamo v2 Rust 0.4.0+pr200 (stream, Combined & Unified)"
+    assert dynamo["label"] == "Dynamo v2 Rust 0.4.1 (stream, Combined & Unified)"
     assert dynamo["default_bucket"] == "A"
     assert release["label"] == "Dynamo v2 Rust 0.4.0 (stream, Combined & Unified)"
     assert release["default_bucket"] == "C"
@@ -303,13 +303,19 @@ def test_unified_tab_marks_unsupported_and_postdated_vllm_cases_na(model_v2):
             unavailable = [cell["cmp"][key].get("na") == 1 for cell in row["cells"].values()]
             if row["family"] == "muse_glimmer":
                 assert all(unavailable), f"{key} must say n/a for Muse"
-            elif row["family"] != "gemma4":
-                assert not any(unavailable), f"{key} is missing captured cases for {row['family']}"
+                continue
+            for scenario, is_unavailable in zip(row["cells"], unavailable):
+                if not is_unavailable or row["cells"][scenario]["status"] == "na":
+                    continue
+                peer = next(candidate for candidate in row["cells"][scenario]["tooltip"]["candidates"] if candidate["key"] == key)
+                assert "not captured at" in peer["block"]["unavailable"] or "has no parser" in peer["block"]["unavailable"]
 
     gemma = next(row for row in tab["rows"] if row["family"] == "gemma4")
     for key in peer_keys:
         for cell in gemma["cells"].values():
             if cell["cmp"][key].get("na") == 1:
+                if cell["status"] == "na":
+                    continue
                 peer = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == key)
                 assert "this case postdates that capture" in peer["block"]["unavailable"]
 

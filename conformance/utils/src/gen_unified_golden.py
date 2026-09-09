@@ -1536,6 +1536,27 @@ def build_cases(fam):
     return cases
 
 
+def scenario_families(scenario):
+    """Return the families for which an authored scenario is applicable.
+
+    A plain per-family map means the scenario is part of the full matrix. An
+    ``OnlyFamilies`` map is the authoring-time declaration that the grammar
+    cannot express the scenario for the omitted families. The table builder
+    uses this same declaration to render explicit n/a cells instead of
+    silently dropping them.
+    """
+    for name, *_rest in CLEAN:
+        if name == scenario:
+            return frozenset(FAMILIES)
+    for edge_case in EDGE:
+        name = edge_case[0]
+        if name != scenario:
+            continue
+        per_fam = edge_case[-1]
+        return frozenset(per_fam) if isinstance(per_fam, OnlyFamilies) else frozenset(FAMILIES)
+    raise KeyError(f"unknown unified scenario {scenario!r}")
+
+
 # --- YAML emitter: `input` as a block literal, everything else as inline JSON
 # (valid YAML, and json.dumps escapes the marker-heavy strings safely). --------
 

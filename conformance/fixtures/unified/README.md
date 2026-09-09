@@ -2,15 +2,15 @@
 
 A third conformance surface that measures the whole assistant output as ONE ordered event stream (`reasoning` / `text` / `tool_call`), alongside the existing tool-only (`conformance/toolcalling/`) and reasoning suites. It exists because those two compare `{normal_text, calls}` / reasoning-only shapes that cannot express the ORDER between reasoning and tool calls — which is exactly where the split parser pipeline breaks.
 
-Status: **U0 spike** (schema + golden corpus + round-trip test). Capture tooling, the parity harness, and the CONFORMANCE_v2.html tab are not built yet — see `DOIT.unifiedparsers_capture.md`.
+Status: the capture tooling, parity harness, and `CONFORMANCE_v2.html` Unified tab are active. The current Dynamo column is validated against the authored GOLDEN corpus.
 
-## Columns (when built)
+## Columns
 
 `GOLDEN | vLLM 0.25.x (Rust) | Dynamo (Rust)` — the golden is the authored oracle; both engines are diffed against it and both can be red.
 
 - **GOLDEN** — authored by `../utils/src/gen_unified_golden.py` from one scenario spec, reasoned from the invariants/policies in `../utils/lib/parsers/UNIFIED_CASES.md`. Never captured from an implementation. Shipped as the versioned `golden.tar.gz` shard here (derived from the build-tree `conformance/unified/golden_spec/<family>.yaml`).
-- **vLLM 0.25.x (Rust)** — gemma4 via the native `Gemma4UnifiedParser`; other families via `CombinedParser(reasoning, tool)`. (U1, not built.)
-- **Dynamo (Rust)** — `parsers/v1` reasoning + `parsers/v2` tool, composed and stitched to how Dynamo serves today. The red comes from the SPLIT, not from the v2 tool parser being wrong. (U2, not built.)
+- **vLLM Rust** — a captured peer implementation, shown by version.
+- **Dynamo Rust** — the native Unified parser where the family has one, otherwise the historical split reasoning-plus-tool path. Current native families must pass the zero-red/zero-empty gate below.
 
 ## Layout
 
@@ -50,6 +50,24 @@ cd /tmp/old-<ver> && \
 Then merge **only files absent from the released tarball** into `conformance/unified/dynamo_v2-<ver>/` — never overwrite a shipped entry, that is the rewrite this file forbids — and run `package_fixtures.py`, `extract_fixtures.py`, `render_table_v2.sh`.
 
 **Done means the whole chain, in every worktree that has the corpus.** A stacked PR and its base are two separate renders, and their `inputs/` can legitimately differ, so each needs its OWN capture — never copy one branch's shards into the other. Verify per worktree: every `dynamo_v2-*` dir has the same case count as `inputs/`, and the rendered HTML greps **0** for `postdates that build`.
+
+## Unified zero-red/zero-empty gate
+
+Unified work is complete only when the affected family's selected current Dynamo column has **zero empty cells and zero red cells**.
+
+- **Empty current cell:** the current capture is missing the case. Repair the capture pipeline and regenerate the qualified current shard.
+- **Red current cell:** current Dynamo output differs from GOLDEN. Reproduce the popup's exact input, initialization, and chunks, then fix the parser unless the authored GOLDEN is demonstrably wrong.
+- **Not a fix:** adding `reason:`, marking the current parser unavailable, selecting a historical column, serving stale HTML, or editing GOLDEN only to match current output.
+
+Follow this sequence until the rendered counts are both zero:
+
+1. Write the parser or capture change.
+2. Read every affected popup: input, initialization, chunks, GOLDEN events, and current Dynamo events.
+3. Fix the owning parser or capture path.
+4. Regenerate the qualified current capture and package the shard with `conformance/fixtures-manifest.json`.
+5. Render `conformance/CONFORMANCE_v2.html` from the same worktree and read the current Unified column again.
+6. Run `conformance/utils/check.sh status --model <family> --tab unified`. This standard gate renders first, prints every empty/red case, and exits nonzero until the selected row is clear. Every render also writes the complete machine-readable report to `conformance/CONFORMANCE_v2.json`.
+7. Run `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --nocapture` and `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- --nocapture`.
 
 ## Golden case file format (authored spec, `conformance/unified/golden_spec/<family>.yaml`)
 

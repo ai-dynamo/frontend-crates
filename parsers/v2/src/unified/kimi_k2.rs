@@ -210,6 +210,7 @@ mod tests {
                     tool_index: 0,
                     name: Some("get_weather".to_string()),
                     arguments,
+                    complete: true,
                 }
             )]
         );
@@ -249,11 +250,13 @@ mod tests {
             tool_index: 0,
             name: Some("get_weather".to_string()),
             arguments: "x\"1".to_string(),
+            complete: true,
         });
         let second = UnifiedParserEvent::ToolCall(crate::tool_calling::traits::ToolCallDelta {
             tool_index: 1,
             name: Some("run".to_string()),
             arguments: "y\"2".to_string(),
+            complete: true,
         });
 
         for split in (0..=input.len()).filter(|&index| input.is_char_boundary(index)) {

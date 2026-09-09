@@ -592,6 +592,7 @@ impl InvokeEmitter for MuseInvokeEmitter {
             tool_index,
             name: Some(normalize_name(name_raw, &self.tools)),
             arguments,
+            complete: true,
         }))
     }
 }

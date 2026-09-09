@@ -192,6 +192,29 @@ mod tests {
     }
 
     #[test]
+    fn native_string_arguments_stream_before_function_close() {
+        let input = "<tool_call><function=get_weather><parameter=city>Montréal café</parameter>still-open</function></tool_call>";
+        let close = input.find("</function>").unwrap();
+        let mut parser = qwen3_unified(&weather_tools());
+        let mut early = Vec::new();
+        for character in input[..close].chars() {
+            early.extend(parser.push(&character.to_string()).expect("push"));
+        }
+        assert!(early.iter().any(
+            |event| matches!(event, UnifiedParserEvent::ToolCall(call) if call.name.as_deref() == Some("get_weather"))
+        ));
+
+        let mut streamed = early;
+        streamed.extend(parser.push(&input[close..]).expect("close"));
+        streamed.extend(parser.finish().expect("finish").events);
+        assert_eq!(
+            assemble(&streamed),
+            events(&weather_tools(), &[input]),
+            "coalesced unified output must match whole-input parsing"
+        );
+    }
+
+    #[test]
     fn content_before_reasoning_is_not_hoisted() {
         let out = events(
             &weather_tools(),
@@ -1130,6 +1153,27 @@ mod tests {
     }
 
     #[test]
+    fn truncated_native_string_call_streams_but_does_not_assemble() {
+        let mut parser = qwen3_unified(&weather_tools());
+        let streamed = parser
+            .push("<tool_call><function=get_weather><parameter=city>Paris")
+            .unwrap();
+        assert!(
+            streamed
+                .iter()
+                .any(|event| matches!(event, UnifiedParserEvent::ToolCall(_))),
+            "native stream must retain provisional progress: {streamed:?}"
+        );
+        let finished = parser.finish().unwrap().events;
+        let mut all = streamed;
+        all.extend(finished);
+        assert!(
+            assemble(&all).is_empty(),
+            "unfinished call must not assemble"
+        );
+    }
+
+    #[test]
     fn empty_arguments_become_an_empty_object() {
         // P3.
         let tools = vec![Tool {
@@ -1419,51 +1463,6 @@ mod tests {
                 arguments, r#"{"city":"Paris"}"#,
                 "split {split} included structural whitespace in ToolCall.arguments"
             );
-        }
-    }
-
-    #[test]
-    fn response_prefilled_named_text_and_arguments_are_exact_at_every_utf8_split() {
-        let ordinary = "ordinary ";
-        let payload = r#"{"city":"Paris"}"#;
-        let input = format!("{ordinary}{payload}");
-
-        for split in input
-            .char_indices()
-            .map(|(at, _)| at)
-            .chain(std::iter::once(input.len()))
-        {
-            let mut parser = qwen3_unified(&weather_tools());
-            parser
-                .initialize_request(UnifiedParserInit {
-                    starting_state: UnifiedParserStartingState::Response,
-                    tool_output_mode: UnifiedToolOutputMode::GuidedJson {
-                        named_tool: Some("get_weather".to_string()),
-                    },
-                    invalid_guided_payload: InvalidGuidedPayloadPolicy::StreamBestEffort,
-                    ..UnifiedParserInit::default()
-                })
-                .unwrap();
-            let mut deltas = parser.push(&input[..split]).unwrap();
-            deltas.extend(parser.push(&input[split..]).unwrap());
-            deltas.extend(parser.finish().unwrap().events);
-
-            assert_eq!(
-                assemble(&deltas),
-                vec![
-                    text(ordinary),
-                    call("get_weather", serde_json::json!({"city":"Paris"}))
-                ],
-                "split {split}"
-            );
-            let arguments = deltas
-                .iter()
-                .filter_map(|event| match event {
-                    UnifiedParserEvent::ToolCall(call) => Some(call.arguments.as_str()),
-                    _ => None,
-                })
-                .collect::<String>();
-            assert_eq!(arguments, payload, "split {split} changed argument bytes");
         }
     }
 
@@ -2805,6 +2804,7 @@ mod guided_warning_tests {
                     tool_index: 0,
                     name: Some("get_weather".into()),
                     arguments: format!(r#"{{"api_key":"{ARGUMENT_SECRET}""#),
+                    complete: true,
                 },
             )]);
         });

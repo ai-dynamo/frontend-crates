@@ -308,9 +308,19 @@ Every rule here exists because a case was added that could not fail for the reas
 
 ## Verifying a change to the table
 
+The affected family's selected current Dynamo Unified column must finish with **zero empty cells and zero red cells**.
+
+1. **Write:** change the parser or capture path.
+2. **Read:** render the table and inspect each affected popup's input, initialization, chunks, GOLDEN events, and current Dynamo events.
+3. **Fix:** treat an empty current cell as missing capture data. Treat a red current cell as a parser defect unless the authored GOLDEN is demonstrably wrong.
+4. **Regenerate:** rebuild the qualified current capture, package its shard and manifest, and rerender from the same worktree.
+5. **Re-read:** inspect the rendered column again and repeat until both counts are zero.
+
+Do not use `reason:`, `unavailable:`, a historical column, stale HTML, or an unsupported GOLDEN edit to make a current empty or red cell appear acceptable.
+
 The model blob and the rendered page are different things. A cell can carry correct JSON and render nothing — the column-header popup shipped with `init` in every column and an empty config list, because the model that feeds `buildGrammarHtml` is assembled separately and dropped the field.
 
-- Check the DOM, not just `conformance-model` JSON.
+- Check the rendered DOM, not only a cell's aggregate `status` or the `conformance-model` JSON. A cell can report `status: ok` while `red_on_diff` and the comparison signatures still make it render red.
 - Headless Chrome reports `(hover: hover) = false`, so hover listeners never attach and a naive hover test "fails" on the baseline too. Emulate with `--blink-settings=primaryHoverType=2,availableHoverTypes=2`.
 - A synthetic `pointerenter` does NOT set CSS `:hover`. Use it to test JS behavior, a real pointer move to test CSS.
 - Never run `render_table_v2.sh` and the pytest suite at the same time: both stage into `conformance/utils/.stage/`, and the collision shows up as ~13 unrelated browser-test errors.

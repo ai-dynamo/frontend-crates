@@ -1,9 +1,9 @@
 {
-  "snapshot": "20260902_030000",
-  "created_pt": "20260902_030000 (stamp override) America/Los_Angeles",
+  "snapshot": "20260902_160053",
+  "created_pt": "2026-09-02 16:00:53 America/Los_Angeles",
   "crates": {
     "dynamo-parsers": "8.2.0",
-    "dynamo-parsers-v2": "0.4.0"
+    "dynamo-parsers-v2": "0.4.1"
   },
   "peers": {
     "vllm": "0.26.0",
@@ -117,13 +117,23 @@
     },
     {
       "path": "toolcalling/fixtures-stream-v2/dynamo_v2-0.3.1.tar.gz",
-      "sha256": "28cad2cedd449b4d82c5f9cfb5d4d5e417211d0793dc3e3c15900849270883bf",
+      "sha256": "362cf0e613327c817bc759b32afc30263967446f5696747f55ab0066edb879d8",
       "size": 6612
     },
     {
+      "path": "toolcalling/fixtures-stream-v2/dynamo_v2-0.3.4+current.tar.gz",
+      "sha256": "7da44962051de7449fee090869a288fd56b4463502e9ebcd5b23f9299cbcf29a",
+      "size": 6811
+    },
+    {
+      "path": "toolcalling/fixtures-stream-v2/dynamo_v2-0.4.0.tar.gz",
+      "sha256": "ad8300b9af05bbf4abcfa6f6ce152388a1215a2034408e80d74b20ddea324317",
+      "size": 6767
+    },
+    {
       "path": "toolcalling/fixtures-stream-v2/inputs.tar.gz",
-      "sha256": "90ec091c899366ea4c668fec3de33c722ba06c35d3aa4556b31e7fbb0b1de218",
-      "size": 40660
+      "sha256": "410bb47c3e90595488feb1b3c76a50e177d969121408642d56654e764a60aa35",
+      "size": 40664
     },
     {
       "path": "toolcalling/fixtures-stream-v2/sglang_python-0.5.12.post1.tar.gz",
@@ -236,14 +246,14 @@
       "size": 13715
     },
     {
-      "path": "unified/dynamo_v2-0.4.0+pr200.tar.gz",
-      "sha256": "022d28655fc13888ee7b748ca439dcc0aef57a4464651dda5d44b6d720658307",
-      "size": 14218
-    },
-    {
       "path": "unified/dynamo_v2-0.4.0.tar.gz",
       "sha256": "c2d0c749ab3439fa9f7b43c5ffe621ce8e207ae6905e1fdee8fc4a2ba4486f17",
       "size": 13751
+    },
+    {
+      "path": "unified/dynamo_v2-0.4.1.tar.gz",
+      "sha256": "a7682809fece4d6b062574dd4d94b9641566347a7f104342d379d462dcbf1d9b",
+      "size": 14316
     },
     {
       "path": "unified/golden.tar.gz",

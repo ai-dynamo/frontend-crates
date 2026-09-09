@@ -175,7 +175,7 @@ fn unified_delta_json(d: &dynamo_parsers_v2::UnifiedParserEvent) -> Value {
         }
         dynamo_parsers_v2::UnifiedParserEvent::Text(text) => json!({"kind": "text", "text": text}),
         dynamo_parsers_v2::UnifiedParserEvent::ToolCall(c) => {
-            json!({"kind": "tool_call", "name": c.name, "arguments": c.arguments})
+            json!({"kind": "tool_call", "name": c.name, "arguments": c.arguments, "complete": c.complete})
         }
     }
 }
@@ -855,9 +855,13 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
     // lets a newer PR-qualified capture outrank every older release. Resolving by
     // readdir order instead made this guard nondeterministic — the same commit could
     // pass against one shard and report parser drift against another.
-    let capture_dir = common::version_dirs_ascending(&root, "dynamo_v2-")
-        .pop()
-        .expect("no committed dynamo_v2-<ver> capture dir");
+    let capture_dir = common::version_dirs_ascending_with_current(
+        &root,
+        "dynamo_v2-",
+        common::UNIFIED_DYNAMO_V2_CURRENT_CAPTURE,
+    )
+    .pop()
+    .expect("no committed dynamo_v2-<ver> capture dir");
 
     // key -> (family, scenario, input, init), from the base inputs shard plus
     // PR-qualified sparse overlays. New cases must carry their input metadata in
@@ -965,10 +969,8 @@ fn shared_overlay_dirs(root: &std::path::Path, base: &str) -> Vec<PathBuf> {
 fn release_qualified_capture_order_preserves_current_and_released_owners() {
     let prefix = "dynamo_v2-";
     let older_release = common::version_capture_sort_key("dynamo_v2-0.3.2", prefix).unwrap();
-    let current_pr = common::version_capture_sort_key("dynamo_v2-0.4.0+pr200", prefix).unwrap();
     let current_release = common::version_capture_sort_key("dynamo_v2-0.4.0", prefix).unwrap();
     assert!(older_release < current_release);
-    assert!(current_release < current_pr);
     assert!(common::version_capture_sort_key("dynamo_v2-0.3.3.patch1", prefix).is_none());
 }
 

@@ -569,6 +569,7 @@ impl InvokeEmitter for K2Emitter {
             tool_index,
             name: Some(parsed.function.name),
             arguments: parsed.function.arguments,
+            complete: true,
         }))
     }
 

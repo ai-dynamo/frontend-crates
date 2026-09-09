@@ -30,8 +30,7 @@ pub struct Tool {
     pub strict: Option<bool>,
 }
 
-// Mirrors vLLM Rust `ToolCallDelta` verbatim; serving layers mint IDs outside the
-// parser core.
+// Aligned with vLLM Rust `ToolCallDelta`; `complete` is Dynamo's lifecycle extension.
 /// One tool-call update emitted while parsing assistant text.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ToolCallDelta {
@@ -41,6 +40,8 @@ pub struct ToolCallDelta {
     pub name: Option<String>,
     /// Arguments text contributed by this update.
     pub arguments: String,
+    /// Whether this delta completes a validated call.
+    pub complete: bool,
 }
 
 // Mirrors vLLM Rust `ToolParseResult` verbatim.
@@ -67,7 +68,7 @@ impl ToolParseResult {
         self.calls.append(&mut other.calls);
     }
 
-    /// Merge multiple deltas for the same tool call into one complete item.
+    /// Merge multiple deltas for the same tool call into one item.
     ///
     /// This is primarily used by test helpers and batch adapters that delegate
     /// through the incremental parser lifecycle.
@@ -87,6 +88,7 @@ impl ToolParseResult {
                         existing.name = call.name;
                     }
                     existing.arguments.push_str(&call.arguments);
+                    existing.complete |= call.complete;
                 }
             }
         }
@@ -94,6 +96,7 @@ impl ToolParseResult {
         self.calls = order
             .into_iter()
             .filter_map(|tool_index| merged.remove(&tool_index))
+            .filter(|call| call.complete)
             .collect();
         self
     }

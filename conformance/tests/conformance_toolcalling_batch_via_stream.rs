@@ -279,23 +279,29 @@ fn parse_stream_result(
 fn assemble_trait_calls(result: ToolParseResult) -> Vec<(String, Value)> {
     let mut names = BTreeMap::<usize, String>::new();
     let mut args = BTreeMap::<usize, String>::new();
+    let mut complete = BTreeMap::<usize, bool>::new();
     for ToolCallDelta {
         tool_index,
         name,
         arguments,
+        complete: call_complete,
     } in result.calls
     {
+        *complete.entry(tool_index).or_default() |= call_complete;
         if let Some(name) = name {
-            names.entry(tool_index).or_default().push_str(&name);
+            names.entry(tool_index).or_insert(name);
         }
         args.entry(tool_index).or_default().push_str(&arguments);
     }
     names
         .into_iter()
-        .map(|(idx, name)| {
+        .filter_map(|(idx, name)| {
             let raw = args.remove(&idx).unwrap_or_default();
+            if complete.get(&idx) != Some(&true) {
+                return None;
+            }
             let value = serde_json::from_str(&raw).unwrap_or(Value::String(raw));
-            (name, value)
+            Some((name, value))
         })
         .collect()
 }

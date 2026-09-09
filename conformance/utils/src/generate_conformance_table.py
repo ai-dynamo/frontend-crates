@@ -117,6 +117,7 @@ from impls import (  # noqa: E402
 # rendering code below and the test suite keep referring to them as module attributes.
 import markers  # noqa: E402  (module handle: structured comparison model, DIS-2434)
 import unified_taxonomy  # noqa: E402  (shared UNIFIED scenario->numbered-id taxonomy)
+import gen_unified_golden  # noqa: E402  (authored Unified scenario scope)
 from markers import (  # noqa: E402,F401
     VLLM_RUST_UNAVAILABLE,
     _BATCH_MODE_MARKER,
@@ -2126,7 +2127,12 @@ def _assemble_stream(chunk_deltas: list) -> list:
             elif k == "tool_call":
                 name, args = dl.get("name"), dl.get("arguments")
                 if name:  # a name delta opens a new call
-                    events.append({"kind": "tool_call", "name": name, "_raw": args or ""})
+                    events.append({
+                        "kind": "tool_call",
+                        "name": name,
+                        "_raw": args or "",
+                        "_complete": dl.get("complete", True),
+                    })
                     cur_tool = len(events) - 1
                 elif cur_tool is not None and args:
                     prev = events[cur_tool].get("_raw", "")
@@ -2137,9 +2143,13 @@ def _assemble_stream(chunk_deltas: list) -> list:
                         # string-concat across mixed types (TypeError). A dict/list arg
                         # supersedes; the finalizer below reads it as the resolved object.
                         events[cur_tool]["_raw"] = args
+                if cur_tool is not None and dl.get("complete", True):
+                    events[cur_tool]["_complete"] = True
+    events = [e for e in events if e.get("kind") != "tool_call" or e.get("_complete", True)]
     for e in events:
         if e["kind"] == "tool_call":
             raw = e.pop("_raw", "")
+            e.pop("_complete", None)
             if isinstance(raw, (dict, list)):
                 e["arguments"] = raw
             elif not (raw or "").strip():
@@ -2292,7 +2302,14 @@ def _load_unified_fixtures(base: Path):
 
     if dynamo_by_ver:
         current_dynamo_ver, current_dynamo_cases = next(reversed(dynamo_by_ver.items()))
-        missing_current_cases = sorted(set(inputs).difference(current_dynamo_cases))
+        missing_current_cases = sorted(
+            (family, key)
+            for (family, key), input_case in inputs.items()
+            if (family, key) not in current_dynamo_cases
+            and family in gen_unified_golden.scenario_families(
+                input_case.get("scenario") or key
+            )
+        )
         if missing_current_cases:
             missing = ", ".join(f"{family}/{case}" for family, case in missing_current_cases)
             raise ValueError(
@@ -2414,6 +2431,17 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     if not cases:
         return None
 
+    authored_scenarios = {
+        spec[0] for spec in (*gen_unified_golden.CLEAN, *gen_unified_golden.EDGE)
+    }
+    loaded_scenarios = {case["scenario"] for case in cases}
+    missing_scenarios = authored_scenarios - loaded_scenarios
+    if missing_scenarios:
+        raise ValueError(
+            "Unified fixture inputs are missing authored scenario(s): "
+            + ", ".join(sorted(missing_scenarios))
+        )
+
     vllm_python_vers = _vers.get("vllm_python_all") or []
     vrust_vers = _vers.get("vllm_rust_all") or []
 
@@ -2534,11 +2562,61 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
              "(owning reasoning+content+tools) fixes this by construction.")
 
     rows = []
+
+    def _unified_na_cell(family: str, scenario: str, group_num: int) -> dict:
+        note = (
+            f"Not applicable to {family}: this scenario is authored only for "
+            f"{', '.join(sorted(gen_unified_golden.scenario_families(scenario)))}. "
+            f"{scn_desc[scenario]}"
+        )
+        unavailable = {"unavailable": note}
+        return {
+            "kind": "cell",
+            "case_id": unified_taxonomy.numbered_id(scenario),
+            "family": family,
+            "sub": scenario,
+            "col_group": f"unified_g{group_num}",
+            "band": _band(group_num),
+            "status": "na",
+            "red_on_diff": False,
+            "cmp": {candidate["key"]: markers.cmp_entry(0, na=1) for candidate in candidates},
+            "facts": [],
+            "tooltip": {
+                "head": f"{unified_taxonomy.numbered_id(scenario)} ({scenario}) — {family}",
+                "description": scn_desc[scenario],
+                "init": scn_init.get(scenario),
+                "finish_reason": None,
+                "input": {"kind": None, "text": None, "chunks": None,
+                           "family": unified_taxonomy.marker_family(family)},
+                "candidates": [
+                    {"key": candidate["key"], "label": candidate["label"],
+                     "impl": candidate["impl"], "version": candidate["version"],
+                     "parse_mode": candidate["parse_mode"], "leak": False,
+                     "block": unavailable}
+                    for candidate in candidates
+                ],
+                "baseline": None,
+                "reasons": [],
+                "dynamo_notes": [],
+                "refs": [],
+                "leak_note": None,
+                "na_note": note,
+            },
+        }
+
     for f in families:
         cells = {}
         for s in scenarios:
             c = by_key.get((f, s))
             if not c:
+                applicable = gen_unified_golden.scenario_families(s)
+                if f in applicable:
+                    raise ValueError(
+                        f"Unified fixture missing applicable case {f}/{s}; "
+                        "author or capture the case instead of rendering n/a"
+                    )
+                g_num, _g_sub = _tax(s)
+                cells[s] = _unified_na_cell(f, s, g_num)
                 continue
             gold = c["golden"]
             # Assemble every engine's FINAL from its STREAMED per-chunk deltas (not its
@@ -2688,9 +2766,11 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                      "parser": None, "cells": cells})
 
     total = sum(len(r["cells"]) for r in rows)
+    na = sum(cell.get("status") == "na" for row in rows for cell in row["cells"].values())
+    missing = sum(cell.get("kind") == "missing" for row in rows for cell in row["cells"].values())
     stats = {"families": len(families), "sub_cases": len(scenarios), "slots": total,
-             "real": total, "parity": 0, "dynamo_only": 0, "documented": 0,
-             "research": 0, "errors": 0, "na": 0, "missing": 0}
+             "real": total - na - missing, "parity": 0, "dynamo_only": 0, "documented": 0,
+             "research": 0, "errors": 0, "na": na, "missing": missing}
     cases_href = str(hrefs.get("reasoning_cases", "#")).replace("REASONING_CASES", "UNIFIED_CASES")
 
     # "Case descriptions" section under the table, grouped by taxonomy — same shape as

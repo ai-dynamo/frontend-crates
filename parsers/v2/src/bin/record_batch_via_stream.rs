@@ -157,26 +157,57 @@ fn parse_result(family: &str, text: &str, tools: &[Tool]) -> anyhow::Result<Case
 fn calls_from_parse_result(result: ToolParseResult) -> Vec<(String, String)> {
     let mut names = BTreeMap::<usize, String>::new();
     let mut args = BTreeMap::<usize, String>::new();
+    let mut complete = BTreeMap::<usize, bool>::new();
     for ToolCallDelta {
         tool_index,
         name,
         arguments,
+        complete: call_complete,
+        ..
     } in result.calls
     {
         if let Some(name) = name {
             names.entry(tool_index).or_default().push_str(&name);
         }
         args.entry(tool_index).or_default().push_str(&arguments);
+        *complete.entry(tool_index).or_default() |= call_complete;
     }
     names
         .into_iter()
-        .map(|(idx, name)| (name, args.remove(&idx).unwrap_or_default()))
+        .filter_map(|(idx, name)| {
+            complete
+                .get(&idx)
+                .copied()
+                .unwrap_or(false)
+                .then(|| (name, args.remove(&idx).unwrap_or_default()))
+        })
         .collect()
 }
 
 fn call_out(name: String, arguments: String) -> CallOut {
     let arguments = serde_json::from_str::<Value>(&arguments).unwrap_or(Value::String(arguments));
     CallOut { name, arguments }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn incomplete_deltas_do_not_become_batch_calls() {
+        assert!(
+            calls_from_parse_result(ToolParseResult {
+                normal_text: String::new(),
+                calls: vec![ToolCallDelta {
+                    tool_index: 0,
+                    name: Some("get_weather".into()),
+                    arguments: r#"{"city":"Par"#.into(),
+                    complete: false,
+                }],
+            })
+            .is_empty()
+        );
+    }
 }
 
 #[derive(Serialize)]

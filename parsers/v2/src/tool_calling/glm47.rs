@@ -253,6 +253,7 @@ impl Glm47ToolStreamParser {
             tool_index: self.next_index,
             name: Some(call.function.name),
             arguments,
+            complete: true,
         }))
     }
 }
@@ -426,6 +427,24 @@ mod tests {
         assert_eq!(merged.calls[0].tool_index, 0);
         assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
         assert_eq!(merged.calls[0].arguments, r#"{"location":"NYC"}"#);
+    }
+
+    #[test]
+    fn accepts_whitespace_between_glm_xml_elements() {
+        let out = parse_chunks(
+            &weather_tools(),
+            &[
+                "<tool_call>get_weather\n",
+                "<arg_key>location</arg_key> \n\t<arg_value>Tokyo</arg_value>\n",
+                "</tool_call>",
+            ],
+        );
+
+        assert_eq!(out.normal_text, "");
+        let merged = out.coalesce_calls();
+        assert_eq!(merged.calls.len(), 1);
+        assert_eq!(merged.calls[0].name.as_deref(), Some("get_weather"));
+        assert_eq!(merged.calls[0].arguments, r#"{"location":"Tokyo"}"#);
     }
 
     #[test]

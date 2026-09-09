@@ -9,7 +9,7 @@
 //! (`conformance/unified/golden_spec/<family>.yaml`, rendered on demand by
 //! gen_unified_golden.py into the gitignored build tree) parses and round-trips
 //! through it. This is the U0 spike gate — it does NOT run any parser;
-//! capture/parity land in later phases (see `DOIT.unifiedparsers_capture.md`).
+//! capture/parity land in later phases (see `DOIT.p1.e4.unifiedparsers-capture.md`).
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;

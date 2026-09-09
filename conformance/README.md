@@ -134,6 +134,20 @@ The four routine loops. All of them end the same way: `package_fixtures.py` rebu
 3. For an intended change: bump the crate version first (workflow 3), re-capture the Dynamo fixtures (`capture.sh dynamo-stream` / `dynamo-batch-on-stream`; v1 batch `expected.dynamo_v1` blocks are updated through the same capture flow), then `package_fixtures.py`.
 4. Commit the parser fix + fixture shards + manifest + `Cargo.toml` bump in the SAME PR. CI is green only when the code and the pinned expectations agree again.
 
+### Unified parser hard gate
+
+Unified work is complete only when the selected current Dynamo column has **zero empty cells and zero red cells** for the affected family. This is a hard gate. `reason:`, `unavailable:`, a historical column, stale HTML, or changing GOLDEN to match broken output does not satisfy it.
+
+Use this loop:
+
+1. **Write:** make the parser or capture change.
+2. **Read:** render `conformance/CONFORMANCE_v2.html`, open the Unified tab, and inspect every empty or red cell's popup. Compare its exact input, request initialization, chunks, GOLDEN events, and current Dynamo events.
+3. **Fix:** repair the owner of the discrepancy. An empty current cell is missing capture data. A red current cell is a parser mismatch unless the authored GOLDEN is demonstrably wrong.
+4. **Regenerate:** rebuild the qualified current capture, package its shard and manifest, and render the HTML again from the same worktree.
+5. **Re-read:** inspect the rendered Unified column again. Repeat until both counts are zero.
+
+`render_table_v2.sh` always writes `conformance/CONFORMANCE_v2.json` beside the HTML and prints the total empty/red count. The standard scoped gate is `conformance/utils/check.sh status --model qwen3 --tab unified`; it renders first, prints every empty or red case, and exits nonzero until the row is clear. Use the lower-level `validate_conformance_status.py` only to inspect an already-rendered file. Then run `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --nocapture` and `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- --nocapture`. Do not report Unified work complete while either rendered count is nonzero.
+
 ### 3. Version rule: fixture dirs carry the crate version that ships them
 
 Capture stamps versions from the crates themselves — version dirs (`dynamo_v1-<ver>/`, `dynamo_v2-<ver>/`) and `captured_with.*` fields are read from `Cargo.toml` at capture time. So when a parser fix changes captured output, bump `parsers/v1/Cargo.toml` or `parsers/v2/Cargo.toml` to the NEXT release version BEFORE capturing. The new fixture dirs then carry exactly the version crates.io publishes when the PR merges (the manual-peg flow in [`../RELEASING.md`](../RELEASING.md#manual-version-peg-fixture-synced-releases)): outputs and release stay on one number by construction. Never rename or delete an old version dir — a re-record ADDS a dir.
