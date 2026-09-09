@@ -73,6 +73,20 @@ impl QwenVlProcessor {
                 "qwen_vl spec: sizes must be positive",
             ));
         }
+        if spec.min_pixels == 0 || spec.min_pixels > spec.max_pixels {
+            return Err(MmError::invalid_input(
+                "qwen_vl spec: min_pixels must be positive and no greater than max_pixels",
+            ));
+        }
+        if spec
+            .image_std
+            .iter()
+            .any(|std| !std.is_finite() || *std <= 0.0)
+        {
+            return Err(MmError::invalid_input(
+                "qwen_vl spec: image_std values must be finite and positive",
+            ));
+        }
         Ok(Self { spec })
     }
 
@@ -137,4 +151,50 @@ pub fn mrope_image_only(
 ) -> Result<(Vec<i64>, i64)> {
     let _ = (input_len, items, merge_size);
     todo!("three-row position fill")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn valid_spec() -> QwenVlSpec {
+        QwenVlSpec {
+            image_token_id: 0,
+            patch_size: 14,
+            merge_size: 2,
+            temporal_patch_size: 2,
+            min_pixels: 56 * 56,
+            max_pixels: 28 * 28 * 1280,
+            image_mean: [0.481_454_66, 0.457_827_5, 0.408_210_73],
+            image_std: [0.268_629_54, 0.261_302_6, 0.275_777_1],
+            resample: Resampler::AtenU8,
+        }
+    }
+
+    #[test]
+    fn rejects_invalid_pixel_bounds() {
+        for (min_pixels, max_pixels) in [(0, 1), (2, 1)] {
+            let mut spec = valid_spec();
+            spec.min_pixels = min_pixels;
+            spec.max_pixels = max_pixels;
+
+            assert!(matches!(
+                QwenVlProcessor::new(spec),
+                Err(MmError::InvalidInput { .. })
+            ));
+        }
+    }
+
+    #[test]
+    fn rejects_invalid_image_std() {
+        for invalid_std in [0.0, -1.0, f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            let mut spec = valid_spec();
+            spec.image_std[1] = invalid_std;
+
+            assert!(matches!(
+                QwenVlProcessor::new(spec),
+                Err(MmError::InvalidInput { .. })
+            ));
+        }
+    }
 }
