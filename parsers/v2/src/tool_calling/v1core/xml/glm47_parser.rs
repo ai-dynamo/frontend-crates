@@ -487,7 +487,7 @@ fn parse_tool_call_block(
     let arg_value_start_escaped = regex::escape(&config.arg_value_start);
     let arg_value_end_escaped = regex::escape(&config.arg_value_end);
 
-    // Pattern: <arg_key>key</arg_key><arg_value>value(</arg_value> | end-of-block)
+    // Pattern: <arg_key>key</arg_key> whitespace* <arg_value>value(</arg_value> | end-of-block)
     // The `</arg_value>` close is treated as OPTIONAL. A final value whose close
     // tag was dropped (mismatched/missing fences — batch case 4.d
     // `<arg_value>NYC</tool_call>`, whose trailing `</tool_call>` is stripped
@@ -500,7 +500,7 @@ fn parse_tool_call_block(
     // (?s) enables dotall mode so (.*?) matches across newlines — required
     // because models often emit multi-line content in arg values.
     let pattern = format!(
-        r"(?s){}([^<]+){}{}(.*?)(?:{}|\z)",
+        r"(?s){}([^<]+){}\s*{}(.*?)(?:{}|\z)",
         arg_key_start_escaped, arg_key_end_escaped, arg_value_start_escaped, arg_value_end_escaped
     );
 

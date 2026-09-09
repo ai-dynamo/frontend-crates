@@ -535,9 +535,47 @@
         el.colSpan = visibleColumnCount;
       });
     });
+    updateStickyOffsets();
     if (shouldUpdateUrl) {
       updateUrl(visible);
     }
+  }
+
+  // Label widths and header heights vary by tab, view, and collapsed column group. Measure
+  // them after each layout change so CSS sticky positioning does not hide either axis.
+  function updateStickyOffsets() {
+    document.querySelectorAll('table[data-parity-table], table[data-transpose-table]')
+      .forEach(function (table) {
+        const topRow = table.querySelector(
+          'thead > tr.matrix-groups, thead > tr.transpose-sections'
+        );
+        table.style.setProperty(
+          '--sticky-top-row-height',
+          topRow ? topRow.getBoundingClientRect().height + 'px' : '0px'
+        );
+        if (table.matches('[data-parity-table]')) {
+          const modelHeader = table.querySelector(
+            'thead th[data-col-control-group="model"]'
+          );
+          const parserHeader = table.querySelector(
+            'thead th[data-col-control-group="parser"]'
+          );
+          const modelWidth = modelHeader && modelHeader.offsetParent !== null
+            ? modelHeader.getBoundingClientRect().width : 0;
+          const parserWidth = parserHeader && parserHeader.offsetParent !== null
+            ? parserHeader.getBoundingClientRect().width : 0;
+          table.style.setProperty('--sticky-model-width', modelWidth + 'px');
+          table.style.setProperty('--sticky-parser-width', parserWidth + 'px');
+        } else {
+          const caseHeaders = Array.from(table.querySelectorAll(
+            'thead th.tcorner-case, tbody th.trow-case'
+          )).filter(function (header) { return header.offsetParent !== null; });
+          const caseWidth = caseHeaders.reduce(function (width, header) {
+            return Math.max(width, header.getBoundingClientRect().width);
+          }, 0);
+          table.style.setProperty('--sticky-case-width', caseWidth + 'px');
+        }
+      });
   }
 
   let visibleColumns = readVisibleColumns();
@@ -598,6 +636,7 @@
     if (shouldUpdateUrl) {
       updateTabUrl(id);
     }
+    updateStickyOffsets();
   }
   activateTab(readActiveTab(), false);
   tabButtons.forEach(function (button) {
@@ -1002,6 +1041,7 @@
     });
     if (sections.some(function (s) { return s.label; })) {
       const r0 = outHead.insertRow();
+      r0.className = 'transpose-sections';
       const corner = document.createElement('th');
       corner.className = 'tcorner-case';
       r0.appendChild(corner);
@@ -1018,6 +1058,7 @@
     // the panel's case prefix (e.g. "Case TOOLCALLING.batch.*"), rotated the same
     // way as the model names.
     const r1 = outHead.insertRow();
+    r1.className = 'transpose-models';
     const cornerCase = document.createElement('th');
     cornerCase.className = 'tcol-model tcorner-case';
     let prefix = (table.dataset.casePrefix || '').trim();
@@ -1152,6 +1193,7 @@
       // Apply the current column-collapse state so a case group hidden in the
       // original table stays hidden (as rows) in the freshly-built mirror.
       applyColumnState(visibleColumns, false);
+      updateStickyOffsets();
     }
   }
 
@@ -1169,6 +1211,8 @@
   }
 
   applyTransposeMode(readTransposeMode(), false);
+  updateStickyOffsets();
+  window.addEventListener('resize', updateStickyOffsets);
   if (transposeToggle) {
     transposeToggle.addEventListener('change', function () {
       applyTransposeMode(transposeToggle.checked, true);
