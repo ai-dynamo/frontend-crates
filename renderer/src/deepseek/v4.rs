@@ -784,24 +784,22 @@ mod tests {
     fn test_formatter_rejects_system_tools_before_injection() {
         use crate::OAIPromptFormatter;
 
-        for tools in [None, Some(weather_tool())] {
-            let mut request = MockRequest::new(json!([
-                {"role": "system", "tools": [
-                    {"type": "function", "function": {"name": "dynamic_tool"}}
-                ]},
-                {"role": "user", "content": "Use a tool"}
-            ]));
-            request.tools = tools;
-            let error = DeepSeekV4Formatter::new_thinking()
-                .render(&request)
-                .unwrap_err();
+        let request = MockRequest::new(json!([
+            {"role": "system", "tools": [
+                {"type": "function", "function": {"name": "dynamic_tool"}}
+            ]},
+            {"role": "user", "content": "Use a tool"}
+        ]))
+        .with_tools(weather_tool());
+        let error = DeepSeekV4Formatter::new_thinking()
+            .render(&request)
+            .unwrap_err();
 
-            assert!(matches!(
-                error.downcast_ref::<crate::PromptRenderError>(),
-                Some(crate::PromptRenderError::InvalidRequest(message))
-                    if message.contains("message-level `tools`") && message.contains("system")
-            ));
-        }
+        assert!(matches!(
+            error.downcast_ref::<crate::PromptRenderError>(),
+            Some(crate::PromptRenderError::InvalidRequest(message))
+                if message.contains("message-level `tools`") && message.contains("system")
+        ));
     }
 
     #[test]

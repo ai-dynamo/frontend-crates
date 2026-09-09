@@ -65,8 +65,8 @@ impl KimiK3Formatter {
         let tool_choice = req.tool_choice().map(json_value).transpose()?;
         let (tool_choice_kind, named_tool) = resolve_tool_choice(tool_choice.as_ref())?;
         let mut tools = req.tools().map(json_value).transpose()?;
-        // A named tool_choice may target a dynamically declared tool (Kimi's
-        // system-message `tools`), which never appears in the top-level list.
+        // A named tool_choice may target a message-level declaration that
+        // never appears in the top-level list.
         if let Some(named_tool) = named_tool
             && !tools
                 .as_ref()
@@ -180,7 +180,7 @@ fn contains_tool(tools: &Value, name: &str) -> bool {
 /// Longest tool name Moonshot's vendor verifier accepts.
 const MAX_TOOL_NAME_LEN: usize = 256;
 
-/// The dynamic tool declaration carried by a `system` message.
+/// The dynamic tool declaration carried by a system or developer message.
 ///
 /// `Ok(Some(..))` for a non-empty `tools` array; `Ok(None)` when `tools` is
 /// missing, `null`, or an empty array (an empty list declares nothing, so the
@@ -257,11 +257,9 @@ fn validate_tool_name(name: &str) -> Result<()> {
     Ok(())
 }
 
-/// Validate every tool the model will see — top-level `tools` plus each
-/// dynamic system declaration in `messages` — as one namespace: dynamic
-/// entries must be well-formed, no name may be declared twice, and `tools`
-/// may only appear on `system` messages. The last rule mirrors the protocol
-/// layer's role check so a raw-JSON caller cannot bypass it.
+/// Validate top-level and message-level tools as one namespace: entries must
+/// be well-formed and names unique. Raw requests retain the renderer's native
+/// developer-tool support alongside Kimi's system-tool declarations.
 fn validate_tool_declarations(top_level: Option<&Value>, messages: &[Value]) -> Result<()> {
     let mut seen = std::collections::HashSet::new();
     // The OpenAI schema does not enforce Kimi's tool-name rules.
@@ -276,13 +274,10 @@ fn validate_tool_declarations(top_level: Option<&Value>, messages: &[Value]) -> 
     }
     for message in messages {
         let role = message.get("role").and_then(Value::as_str);
-        if role != Some("system") {
-            // `developer` is the upstream OpenAI type with no `tools` field, so
-            // the typed path can never deliver them; rejecting here keeps the
-            // raw path from quietly diverging.
+        if !matches!(role, Some("system" | "developer")) {
             if message.get("tools").is_some_and(|tools| !tools.is_null()) {
                 return Err(PromptRenderError::invalid_request(format!(
-                    "`tools` is only accepted on system messages, not on role {}",
+                    "`tools` is only accepted on system or developer messages, not on role {}",
                     role.unwrap_or("<missing>")
                 ))
                 .into());
@@ -293,7 +288,7 @@ fn validate_tool_declarations(top_level: Option<&Value>, messages: &[Value]) -> 
             let name = dynamic_tool_entry_name(tool)?;
             if !seen.insert(name) {
                 return Err(PromptRenderError::invalid_request(format!(
-                    "tool {name:?} is declared more than once across `tools` and dynamic system tools"
+                    "tool {name:?} is declared more than once across `tools` and dynamic message tools"
                 ))
                 .into());
             }
@@ -314,10 +309,12 @@ fn content_is_non_empty(content: Option<&Value>) -> bool {
 }
 
 fn message_declares_tool(message: &Value, name: &str) -> bool {
-    message.get("role").and_then(Value::as_str) == Some("system")
-        && message
-            .get("tools")
-            .is_some_and(|tools| contains_tool(tools, name))
+    matches!(
+        message.get("role").and_then(Value::as_str),
+        Some("system" | "developer")
+    ) && message
+        .get("tools")
+        .is_some_and(|tools| contains_tool(tools, name))
 }
 
 fn resolve_thinking_effort(args: Option<&HashMap<String, Value>>) -> String {
@@ -861,7 +858,7 @@ fn build_chat_segments(
 
     // Validate the complete raw message list, including a split-off Partial
     // Mode tail. Otherwise `tools` on the final partial assistant message
-    // bypasses the non-system role check below.
+    // bypasses the supported-role check below.
     validate_tool_declarations(tools, messages)?;
     if history.iter().any(is_partial) {
         return Err(PromptRenderError::invalid_request(
@@ -894,13 +891,13 @@ fn build_chat_segments(
         // An empty `tools` list is not a dynamic-tool declaration.
         let dynamic_tools = dynamic_tools_of(message)?;
         match role {
-            "system" if dynamic_tools.is_some() => {
+            "system" | "developer" if dynamic_tools.is_some() => {
                 let dynamic_tools = dynamic_tools.expect("guarded by the match arm");
                 // Moonshot's contract: a dynamic-tool system message omits
                 // `content` (an empty string counts as omitted; the official
                 // verifier sends `"content": ""`). Rejecting non-empty text
                 // keeps it from being silently lost.
-                if content_is_non_empty(message.get("content")) {
+                if role == "system" && content_is_non_empty(message.get("content")) {
                     return Err(PromptRenderError::invalid_request(
                         "Kimi K3 system messages carry either `content` or `tools`, not both",
                     )
@@ -908,6 +905,13 @@ fn build_chat_segments(
                 }
                 let dynamic_tools = deep_sort(Value::Array(dynamic_tools.clone()));
                 render_tool_declare(&mut segments, &dynamic_tools, true)?;
+                if role == "developer"
+                    && message
+                        .get("content")
+                        .is_some_and(|content| !content.is_null())
+                {
+                    render_role_message(&mut segments, message, "system")?;
+                }
             }
             "system" | "developer"
                 if message
@@ -1244,17 +1248,49 @@ mod tests {
         );
     }
 
-    /// Only `system` messages may carry dynamic `tools`, on the raw path as
-    /// well as the typed one: `developer` is the upstream OpenAI type with no
-    /// `tools` field, and `tools` on user/assistant used to be ignored.
     #[test]
-    fn rejects_tools_on_non_system_messages() {
+    fn renders_developer_tools_and_content_in_place_with_named_tool_choice() {
+        let mut request = Request::new(json!([
+            {"role": "user", "content": "Start"},
+            {
+                "role": "developer",
+                "name": "policy",
+                "content": "Use the lookup tool",
+                "tools": [{"type": "function", "function": {"name": "lookup"}}]
+            },
+            {"role": "user", "content": "Look this up"}
+        ]));
+        request.tool_choice = Some(json!({
+            "type": "function",
+            "function": {"name": "lookup"}
+        }));
+        let rendered = fmt().render(&request).unwrap();
+        let developer_turn = concat!(
+            "<|open|>message role=\"system\" name=\"policy\"<|sep|>Use the lookup tool",
+            "<|close|>message<|sep|><|end_of_msg|>"
+        );
+        let declaration = rendered.find("## New Tools Available").unwrap();
+        let content = rendered.find(developer_turn).unwrap();
+        assert!(rendered.find("Start").unwrap() < declaration);
+        assert!(declaration < content);
+        assert!(content < rendered.find("Look this up").unwrap());
+        assert!(rendered.contains("\"name\":\"lookup\""));
+        assert!(rendered.contains("MUST call the tool `lookup`"));
+
+        request.messages[1]
+            .as_object_mut()
+            .unwrap()
+            .remove("content");
+        assert_eq!(
+            fmt().render(&request).unwrap(),
+            rendered.replace(developer_turn, "")
+        );
+    }
+
+    #[test]
+    fn rejects_tools_on_unsupported_message_roles() {
         let tools = json!([{"type": "function", "function": {"name": "lookup"}}]);
         for (role, extra) in [
-            (
-                "developer",
-                json!({"content": "Use the newly available tool"}),
-            ),
             ("user", json!({"content": "Look this up"})),
             ("assistant", json!({"content": "ok"})),
         ] {
@@ -1266,7 +1302,9 @@ mod tests {
             let error = fmt().render(&request).unwrap_err();
             assert_eq!(
                 invalid_request_message(&error),
-                format!("`tools` is only accepted on system messages, not on role {role}"),
+                format!(
+                    "`tools` is only accepted on system or developer messages, not on role {role}"
+                ),
                 "role={role}"
             );
         }
@@ -1640,6 +1678,10 @@ mod tests {
         let error = fmt().render(&request).unwrap_err();
         assert!(invalid_request_message(&error).contains("declared more than once"));
 
+        request.messages[0]["role"] = json!("developer");
+        let error = fmt().render(&request).unwrap_err();
+        assert!(invalid_request_message(&error).contains("declared more than once"));
+
         let mut request = Request::new(json!([{"role": "user", "content": "Go"}]));
         request.tools = Some(json!([
             {"type": "function", "function": {"name": "lookup"}},
@@ -1829,7 +1871,7 @@ mod tests {
         assert!(matches!(
             error.downcast_ref::<PromptRenderError>(),
             Some(PromptRenderError::InvalidRequest(message))
-                if message == "`tools` is only accepted on system messages, not on role assistant"
+                if message == "`tools` is only accepted on system or developer messages, not on role assistant"
         ));
     }
 
