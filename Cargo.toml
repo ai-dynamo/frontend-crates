@@ -6,6 +6,7 @@ members = [
     "renderer",
     "tokenizers",
     "conformance",
+    "mm-preprocessor",
     "parsers/v2",
     "parsers/v2-py",
     "examples/dynamo-demo-server",
