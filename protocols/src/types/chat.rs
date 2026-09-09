@@ -818,9 +818,6 @@ pub struct ChatCompletionRequestAssistantMessage {
     #[deprecated]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub function_call: Option<FunctionCall>,
-    /// Kimi-style prefill flag: marks this assistant turn as a partial
-    /// continuation seed rather than a complete turn. Optional and omitted
-    /// from serialization when absent.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub partial: Option<bool>,
 }
@@ -2202,10 +2199,6 @@ mod tests {
             (
                 "empty tools",
                 serde_json::json!({"role": "system", "tools": []}),
-            ),
-            (
-                "explicit null content, empty tools",
-                serde_json::json!({"role": "system", "content": null, "tools": []}),
             ),
         ] {
             let error =

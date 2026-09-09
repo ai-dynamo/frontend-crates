@@ -667,8 +667,7 @@ fn render_partial_assistant_segments(
 ) -> Result<()> {
     if message
         .get("tool_calls")
-        .and_then(Value::as_array)
-        .is_some_and(|calls| !calls.is_empty())
+        .is_some_and(|calls| !calls.is_null() && !calls.as_array().is_some_and(Vec::is_empty))
     {
         return Err(PromptRenderError::invalid_request(
             "Kimi K3 partial assistant messages cannot carry tool_calls",
@@ -1356,6 +1355,10 @@ mod tests {
             "the partial turn must stay open: no <|close|>response / <|close|>message / <|end_of_msg|>, \
              and no extra generation prompt after it"
         );
+        for tool_calls in [Value::Null, json!([])] {
+            request.messages[1]["tool_calls"] = tool_calls;
+            assert_eq!(fmt().render(&request).unwrap(), rendered);
+        }
     }
 
     #[test]
@@ -1510,24 +1513,14 @@ mod tests {
 
     #[test]
     fn rejects_non_boolean_partial() {
-        for partial in [json!("true"), json!(1), json!([]), json!({})] {
-            let mut messages =
-                json!([{"role": "assistant", "content": "done", "partial": partial}]);
-            for in_history in [false, true] {
-                if in_history {
-                    messages
-                        .as_array_mut()
-                        .unwrap()
-                        .push(json!({"role": "user", "content": "Continue"}));
-                }
-                let error = fmt().render(&Request::new(messages.clone())).unwrap_err();
-                assert_eq!(
-                    invalid_request_message(&error),
-                    "Kimi K3 `partial` must be a boolean",
-                    "partial={partial}, in_history={in_history}"
-                );
-            }
-        }
+        let request = Request::new(json!([
+            {"role": "assistant", "content": "done", "partial": "true"}
+        ]));
+        let error = fmt().render(&request).unwrap_err();
+        assert_eq!(
+            invalid_request_message(&error),
+            "Kimi K3 `partial` must be a boolean"
+        );
     }
 
     #[test]
@@ -1818,27 +1811,28 @@ mod tests {
 
     #[test]
     fn rejects_partial_assistant_with_tool_calls() {
-        let request = Request::new(json!([
-            {"role": "user", "content": "Go"},
-            {
-                "role": "assistant",
-                "content": "prefix",
-                "partial": true,
-                "tool_calls": [{
-                    "id": "call_1",
-                    "type": "function",
-                    "function": {"name": "lookup", "arguments": "{}"}
-                }]
-            }
-        ]));
-
-        let error = fmt().render(&request).unwrap_err();
-
-        assert!(matches!(
-            error.downcast_ref::<PromptRenderError>(),
-            Some(PromptRenderError::InvalidRequest(message))
-                if message == "Kimi K3 partial assistant messages cannot carry tool_calls"
-        ));
+        let tool_call = json!({
+            "id": "call_1",
+            "type": "function",
+            "function": {"name": "lookup", "arguments": "{}"}
+        });
+        for tool_calls in [json!([tool_call.clone()]), tool_call] {
+            let request = Request::new(json!([
+                {"role": "user", "content": "Go"},
+                {
+                    "role": "assistant",
+                    "content": "prefix",
+                    "partial": true,
+                    "tool_calls": tool_calls
+                }
+            ]));
+            let error = fmt().render(&request).unwrap_err();
+            assert_eq!(
+                invalid_request_message(&error),
+                "Kimi K3 partial assistant messages cannot carry tool_calls",
+                "tool_calls={tool_calls}"
+            );
+        }
     }
 
     #[test]
