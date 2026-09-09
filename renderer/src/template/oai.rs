@@ -540,26 +540,6 @@ fn normalize_system_messages(messages: &mut serde_json::Value, rules: SystemNorm
     }
 }
 
-/// Message-level `tools` are a native-formatter extension. Reject non-empty
-/// declarations on the HF/Jinja path so custom request types cannot lose them.
-fn reject_unsupported_message_tools(messages: &serde_json::Value) -> Result<()> {
-    // `tools: []` declares nothing and is fine; anything else non-null is a
-    // declaration this template cannot honor.
-    let offending = messages.as_array().into_iter().flatten().find(|message| {
-        message
-            .get("tools")
-            .is_some_and(|tools| !tools.is_null() && !tools.as_array().is_some_and(Vec::is_empty))
-    });
-    if offending.is_some() {
-        return Err(crate::PromptRenderError::invalid_request(
-            "message-level `tools` require a compatible native chat formatter; \
-             this model's HF/Jinja formatter does not support them",
-        )
-        .into());
-    }
-    Ok(())
-}
-
 impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
     fn supports_add_generation_prompt(&self) -> bool {
         self.supports_add_generation_prompt
@@ -617,7 +597,7 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
             serde_json::to_value(&messages_canonical).unwrap();
 
         crate::reject_unsupported_partial_assistant(&messages_for_template)?;
-        reject_unsupported_message_tools(&messages_for_template)?;
+        crate::reject_unsupported_message_tools(&messages_for_template, &[])?;
 
         if system_normalization.is_required() {
             normalize_system_messages(&mut messages_for_template, system_normalization);

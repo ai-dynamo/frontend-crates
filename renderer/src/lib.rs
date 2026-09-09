@@ -274,6 +274,37 @@ pub(crate) fn reject_unsupported_partial_assistant(messages: &serde_json::Value)
     Ok(())
 }
 
+/// Reject non-empty message-level tool declarations on roles where a formatter
+/// does not support that field. `tools: null` and `tools: []` declare nothing.
+pub(crate) fn reject_unsupported_message_tools(
+    messages: &serde_json::Value,
+    supported_tool_roles: &[&str],
+) -> Result<()> {
+    let offending = messages.as_array().into_iter().flatten().find(|message| {
+        let declares_tools = message
+            .get("tools")
+            .is_some_and(|tools| !tools.is_null() && !tools.as_array().is_some_and(Vec::is_empty));
+        let role_is_supported = message
+            .get("role")
+            .and_then(serde_json::Value::as_str)
+            .is_some_and(|role| supported_tool_roles.contains(&role));
+        declares_tools && !role_is_supported
+    });
+
+    if let Some(message) = offending {
+        let role = message
+            .get("role")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("<missing>");
+        return Err(PromptRenderError::invalid_request(format!(
+            "message-level `tools` on role {role:?} are not supported by this model's prompt \
+             formatter"
+        ))
+        .into());
+    }
+    Ok(())
+}
+
 #[derive(Clone)]
 pub enum PromptFormatter {
     OAI(Arc<dyn OAIPromptFormatter>),
@@ -292,6 +323,7 @@ impl OAIPromptFormatter for NoOpFormatter {
         let messages = req.messages();
         let messages_json = serde_json::to_value(&messages)?;
         reject_unsupported_partial_assistant(&messages_json)?;
+        reject_unsupported_message_tools(&messages_json, &[])?;
 
         let first_message = messages
             .get_item_by_index(0)
@@ -353,6 +385,26 @@ mod rendered_prompt_tests {
             error.downcast_ref::<PromptRenderError>(),
             Some(PromptRenderError::InvalidRequest(message))
                 if message.contains("`partial: true` is not supported")
+        ));
+    }
+
+    #[test]
+    fn no_op_formatter_rejects_message_level_tools() {
+        let request: dynamo_protocols::types::CreateChatCompletionRequest =
+            serde_json::from_value(serde_json::json!({
+                "model": "test",
+                "messages": [
+                    {"role": "system", "tools": [{"name": "lookup"}]},
+                    {"role": "user", "content": "Continue"}
+                ]
+            }))
+            .unwrap();
+
+        let error = NoOpFormatter.render(&request).unwrap_err();
+        assert!(matches!(
+            error.downcast_ref::<PromptRenderError>(),
+            Some(PromptRenderError::InvalidRequest(message))
+                if message.contains("message-level `tools`")
         ));
     }
 }
