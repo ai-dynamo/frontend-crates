@@ -6,6 +6,7 @@
 // Reference: https://huggingface.co/zai-org/GLM-4.7/blob/main/chat_template.jinja
 
 use regex::Regex;
+use serde::ser::{Serialize, SerializeMap, Serializer};
 use serde_json::Value;
 use std::collections::HashMap;
 use tracing::warn;
@@ -620,8 +621,9 @@ fn parse_tool_call_block(
         anyhow::bail!("Empty function name in tool call");
     }
 
-    // Parse key-value pairs
-    let mut arguments = HashMap::new();
+    // Parse key-value pairs, keeping the order the model emitted them in.
+    let mut arguments: Vec<(String, ParsedValue)> = Vec::new();
+    let mut argument_indices: HashMap<&str, usize> = HashMap::new();
     let args_section = &content[function_name.len()..];
 
     // Build regex patterns
@@ -652,7 +654,13 @@ fn parse_tool_call_block(
             let schema_type = get_param_schema_type(tools, &function_name, key);
             let json_value = coerce_value(&decoded, schema_type);
 
-            arguments.insert(key.to_string(), json_value);
+            match argument_indices.get(key).copied() {
+                Some(index) => arguments[index].1 = json_value,
+                None => {
+                    argument_indices.insert(key, arguments.len());
+                    arguments.push((key.to_string(), json_value));
+                }
+            }
         }
     }
 
@@ -669,9 +677,24 @@ fn parse_tool_call_block(
         tp: ToolCallType::Function,
         function: CalledFunction {
             name: function_name,
-            arguments: serde_json::to_string(&arguments)?,
+            arguments: serde_json::to_string(&OrderedArguments(&arguments))?,
         },
     })
+}
+
+/// Serializes parsed arguments as a JSON object in source `<arg_key>` order.
+/// A `HashMap` would scramble keys on every call, while clients (and the
+/// engine-side parsers) expect the order the model emitted.
+struct OrderedArguments<'a>(&'a [(String, ParsedValue)]);
+
+impl Serialize for OrderedArguments<'_> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut map = serializer.serialize_map(Some(self.0.len()))?;
+        for (key, value) in self.0 {
+            map.serialize_entry(key, value)?;
+        }
+        map.end()
+    }
 }
 
 #[cfg(test)]
@@ -1067,6 +1090,67 @@ mod tests {
         assert_eq!(raw_args["huge_count"].get(), "100000000000000000000");
         // string stays string
         assert_eq!(args.get("label").unwrap().as_str().unwrap(), "warm");
+    }
+
+    #[test]
+    fn test_arguments_serialized_in_source_order() {
+        let config = get_test_config();
+        let message = concat!(
+            "<tool_call>create_ticket",
+            "<arg_key>title</arg_key><arg_value>Rotate keys</arg_value>",
+            "<arg_key>description</arg_key><arg_value>Keys are 90 days old</arg_value>",
+            "<arg_key>priority</arg_key><arg_value>medium</arg_value>",
+            "<arg_key>labels</arg_key><arg_value>[\"security\", \"ops\"]</arg_value>",
+            "<arg_key>title</arg_key><arg_value>Rotate S3 keys</arg_value>",
+            "</tool_call>"
+        );
+
+        let (calls, _) = try_tool_call_parse_glm47(message, &config, None).unwrap();
+        assert_eq!(calls.len(), 1);
+        let keys: Vec<&str> = regex::Regex::new(r#""([a-z_]+)":"#)
+            .unwrap()
+            .captures_iter(&calls[0].function.arguments)
+            .map(|c| c.get(1).unwrap().as_str())
+            .collect();
+        assert_eq!(keys, ["title", "description", "priority", "labels"]);
+        let args: HashMap<String, Value> =
+            serde_json::from_str(&calls[0].function.arguments).unwrap();
+        assert_eq!(args["title"], Value::String("Rotate S3 keys".to_string()));
+        assert_eq!(args["labels"], serde_json::json!(["security", "ops"]));
+    }
+
+    #[test]
+    fn test_many_arguments_preserve_order_and_replace_duplicates() {
+        const COUNT: usize = 4096;
+        let replacements = [COUNT - 1, COUNT / 2, 0];
+        let mut message = String::from("<tool_call>bulk_update");
+        for i in (0..COUNT).rev() {
+            message.push_str(&format!(
+                "<arg_key>arg_{i}</arg_key><arg_value>initial</arg_value>"
+            ));
+        }
+        for i in replacements {
+            message.push_str(&format!(
+                "<arg_key>arg_{i}</arg_key><arg_value>updated</arg_value>"
+            ));
+        }
+        message.push_str("</tool_call>");
+
+        let (calls, _) = try_tool_call_parse_glm47(&message, &get_test_config(), None).unwrap();
+        assert_eq!(calls.len(), 1);
+        let expected = (0..COUNT)
+            .rev()
+            .map(|i| {
+                let value = if replacements.contains(&i) {
+                    "updated"
+                } else {
+                    "initial"
+                };
+                format!(r#""arg_{i}":"{value}""#)
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        assert_eq!(calls[0].function.arguments, format!("{{{expected}}}"));
     }
 
     #[test]
