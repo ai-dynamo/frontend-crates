@@ -1195,7 +1195,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-protocols"
-version = "5.4.1"
+version = "5.4.3"
 dependencies = [
  "async-openai",
  "derive_builder",
