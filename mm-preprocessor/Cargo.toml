@@ -26,9 +26,10 @@ fetch = []
 # Links rayon; kernels still run inline until `execution::init_pool` arms the
 # crate-owned pool at runtime. Opt out (`default-features = false`) to drop
 # rayon from the dependency graph and force the inline path at compile time.
-# The implementation wires `parallel = ["dep:rayon"]`.
-parallel = []
+parallel = ["dep:rayon"]
 
 [dependencies]
+image.workspace = true
+rayon = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
