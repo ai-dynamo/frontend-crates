@@ -1,9 +1,9 @@
 {
-  "snapshot": "20260902_160053",
-  "created_pt": "2026-09-02 16:00:53 America/Los_Angeles",
+  "snapshot": "20260910_061310",
+  "created_pt": "2026-09-10 06:13:10 America/Los_Angeles",
   "crates": {
-    "dynamo-parsers": "8.2.0",
-    "dynamo-parsers-v2": "0.4.1"
+    "dynamo-parsers": "8.2.2",
+    "dynamo-parsers-v2": "0.5.3"
   },
   "peers": {
     "vllm": "0.26.0",
@@ -256,14 +256,19 @@
       "size": 14316
     },
     {
+      "path": "unified/dynamo_v2-0.5.3.tar.gz",
+      "sha256": "d497dde2eb272522a6bf674a1848ff4078f5d8604bc8b6442bc7453f2c30804f",
+      "size": 15230
+    },
+    {
       "path": "unified/golden.tar.gz",
-      "sha256": "5ff3c90633c3c4a849ee824f2e45e8e6e58d67a5449ce327253c24732600f313",
-      "size": 9982
+      "sha256": "1688e2f1b1e61cbd1aadec11684b8c91e6537dac91ff72c18885e532fec8edf5",
+      "size": 10659
     },
     {
       "path": "unified/inputs.tar.gz",
-      "sha256": "644104ccc823dd3a50477a121be07f70aef514efe15648374c008a46b49bd87b",
-      "size": 53671
+      "sha256": "72d948489aa36f50c35d644871702f17850566bf1ec31da6b57592153174e10b",
+      "size": 56690
     },
     {
       "path": "unified/sglang_python-0.5.14.tar.gz",

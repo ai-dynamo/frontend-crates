@@ -48,6 +48,7 @@
 //! adopted without a translation layer. Where it diverges from the peer shape, the
 //! divergence is stated at the item.
 
+pub mod deepseek_v41;
 pub mod gemma4;
 mod guided_cursor;
 pub mod kimi_k2;
@@ -4270,6 +4271,7 @@ macro_rules! unified_registry {
 }
 
 unified_registry! {
+    "deepseek_v41" => deepseek_v41::deepseek_v41_unified,
     "gemma4" => gemma4::gemma4_unified,
     "qwen3" | "qwen3_coder" => qwen3::qwen3_unified,
     "muse_glimmer" => muse_glimmer::muse_glimmer_unified,

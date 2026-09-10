@@ -79,6 +79,9 @@ families:
 #                                        SINGLETON, which has no closer of its own, so
 #                                        the terminator is named explicitly.
 markers:
+  deepseek_v41:
+    pairs: [["<｜DSML｜ calls>", "</｜DSML｜ calls>"]]
+    leak: ["<｜DSML｜", "</｜DSML｜"]
   deepseek_v3:
     pairs: [["<｜tool▁calls▁begin｜>", "<｜tool▁calls▁end｜>"], ["<｜tool▁call▁begin｜>", "<｜tool▁call▁end｜>"]]
     singletons: ["<｜tool▁sep｜>"]
@@ -186,6 +189,12 @@ markers:
 #                     `<tool_call>` cannot be spotted generically. Families whose markers
 #                     already contain `<|`/`|>` (kimi) need nothing here.
 unified:
+  deepseek_v41:
+    native: true
+    reasoning_parser: deepseek_v41
+    tool_parser: deepseek_v41
+    golden_spec: deepseek_v41.yaml
+    leak_markers: ["<｜DSML｜", "</｜DSML｜"]
   gemma4:
     registry: gemma4
     native: true
