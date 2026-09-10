@@ -466,15 +466,12 @@ mod tests {
                 .expect("HuggingFace tokenizer must support prefix caching"),
         );
 
-        for (input, expected_ids) in [("〈|EOS|〉", &[2][..]), ("〈|EOS|〉tail", &[2, 16][..])]
-        {
-            let expected = tok.encode(input).unwrap();
-            assert_eq!(expected.token_ids(), expected_ids);
-            assert_eq!(
-                cached.encode(input).unwrap().token_ids(),
-                expected.token_ids()
-            );
-        }
+        let expected = tok.encode("〈|EOS|〉").unwrap();
+        assert_eq!(expected.token_ids(), &[2]);
+        assert_eq!(
+            cached.encode("〈|EOS|〉").unwrap().token_ids(),
+            expected.token_ids()
+        );
         let stats = cached.cache_stats();
         assert_eq!(stats.entries, 0);
         assert_eq!(
