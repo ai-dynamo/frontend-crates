@@ -29,9 +29,11 @@ fetch = []
 parallel = ["dep:rayon"]
 
 [dependencies]
+blake3.workspace = true
 gif.workspace = true
 image.workspace = true
 rayon = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 turbojpeg.workspace = true
+xxhash-rust.workspace = true
