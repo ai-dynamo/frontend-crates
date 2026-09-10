@@ -380,6 +380,13 @@ fn decode_xml_entities(s: &str) -> String {
 fn coerce_value(raw: &str, schema_type: Option<&str>) -> ParsedValue {
     let trimmed = raw.trim();
 
+    // A `string` parameter is delivered verbatim: the model's text may
+    // legitimately look like JSON (an object, array, or quoted text), and
+    // parsing it would change its type behind the schema's back.
+    if matches!(schema_type, Some("string")) {
+        return Value::String(raw.to_string()).into();
+    }
+
     // If the value already looks like JSON (object, array, or quoted string), parse it directly
     if (trimmed.starts_with('{') || trimmed.starts_with('[') || trimmed.starts_with('"'))
         && let Ok(v) = serde_json::from_str::<Value>(trimmed)
@@ -441,7 +448,36 @@ fn get_param_schema_type<'a>(
     let schema = tool.parameters.as_ref()?;
     let props = schema.get("properties")?;
     let param = props.get(param_name)?;
+    // Prefer string in unions because JSON-looking text is ambiguous.
+    if schema_has_type(param, "string") {
+        return Some("string");
+    }
     param.get("type")?.as_str()
+}
+
+fn schema_has_type(schema: &Value, expected: &str) -> bool {
+    if let Some(schema_type) = schema.get("type") {
+        if schema_type.as_str() == Some(expected) {
+            return true;
+        }
+        if schema_type
+            .as_array()
+            .is_some_and(|types| types.iter().any(|ty| ty.as_str() == Some(expected)))
+        {
+            return true;
+        }
+    }
+
+    ["anyOf", "oneOf", "allOf"].iter().any(|key| {
+        schema
+            .get(key)
+            .and_then(Value::as_array)
+            .is_some_and(|options| {
+                options
+                    .iter()
+                    .any(|option| schema_has_type(option, expected))
+            })
+    })
 }
 
 /// Parse a single GLM-4.7 tool call block
@@ -549,4 +585,90 @@ fn parse_tool_call_block(
             arguments: serde_json::to_string(&arguments)?,
         },
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn get_test_config() -> Glm47ParserConfig {
+        Glm47ParserConfig::default()
+    }
+
+    #[test]
+    fn test_string_schema_keeps_json_looking_values_verbatim() {
+        for param_schema in [
+            serde_json::json!({"type": "string"}),
+            serde_json::json!({"type": ["string"]}),
+            serde_json::json!({"type": ["string", "null"]}),
+            serde_json::json!({"type": ["null", "string"]}),
+            serde_json::json!({"type": ["object", "array", "string"]}),
+            serde_json::json!({"anyOf": [{"type": "string"}, {"type": "null"}]}),
+            serde_json::json!({"oneOf": [{"type": "null"}, {"type": "string"}]}),
+            serde_json::json!({"allOf": [{"type": "string"}]}),
+            serde_json::json!({"allOf": [{"minLength": 1}, {"type": "string"}]}),
+            serde_json::json!({"allOf": [
+                {"anyOf": [
+                    {"type": "null"},
+                    {"oneOf": [{"type": "array"}, {"type": "string"}]}
+                ]},
+                {"minLength": 1}
+            ]}),
+            serde_json::json!({"oneOf": [
+                {"type": "null"}, {"allOf": [{"type": "string"}, {"minLength": 1}]}
+            ]}),
+            serde_json::json!({"anyOf": [
+                {"type": "object"},
+                {"oneOf": [{"type": "array"}, {"type": ["null", "string"]}]}
+            ]}),
+        ] {
+            let config = get_test_config();
+            let tools = vec![ToolDefinition {
+                name: "save_note".to_string(),
+                parameters: Some(serde_json::json!({
+                    "type": "object",
+                    "properties": {
+                        "object_text": param_schema,
+                        "array_text": param_schema,
+                        "quoted_text": param_schema,
+                        "payload": {"type": "object"},
+                        "composed_payload": {"allOf": [
+                            {"type": "object"},
+                            {"properties": {"key": {"type": "string"}}}
+                        ]},
+                        "untyped": {}
+                    }
+                })),
+            }];
+
+            let message = concat!(
+                "<tool_call>save_note",
+                "<arg_key>object_text</arg_key><arg_value>{\"key\": \"value\"}</arg_value>",
+                "<arg_key>array_text</arg_key><arg_value>[1, 2, 3]</arg_value>",
+                "<arg_key>quoted_text</arg_key><arg_value>\"quoted\"</arg_value>",
+                "<arg_key>payload</arg_key><arg_value>{\"key\": \"value\"}</arg_value>",
+                "<arg_key>composed_payload</arg_key><arg_value>{\"key\": \"value\"}</arg_value>",
+                "<arg_key>untyped</arg_key><arg_value>[1, 2, 3]</arg_value>",
+                "</tool_call>"
+            );
+
+            let (calls, _) = try_tool_call_parse_glm47(message, &config, Some(&tools)).unwrap();
+            assert_eq!(calls.len(), 1);
+            let args: HashMap<String, Value> =
+                serde_json::from_str(&calls[0].function.arguments).unwrap();
+
+            assert_eq!(
+                args["object_text"],
+                Value::String("{\"key\": \"value\"}".to_string())
+            );
+            assert_eq!(args["array_text"], Value::String("[1, 2, 3]".to_string()));
+            assert_eq!(args["quoted_text"], Value::String("\"quoted\"".to_string()));
+            assert_eq!(args["payload"], serde_json::json!({"key": "value"}));
+            assert_eq!(
+                args["composed_payload"],
+                serde_json::json!({"key": "value"})
+            );
+            assert_eq!(args["untyped"], serde_json::json!([1, 2, 3]));
+        }
+    }
 }

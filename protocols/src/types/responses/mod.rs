@@ -37,13 +37,6 @@ use serde::{Deserialize, Serialize, de};
 // shadow their upstream counterparts where no dual-side conflict exists.
 pub use async_openai::types::responses::*;
 
-// Re-export upstream's pre-shadow `InputContent` under an explicit alias.
-// Needed because `FunctionCallOutput::Content` and `EasyInputContent::ContentList`
-// are non-owned upstream types that carry upstream's original `InputContent`
-// inline, so downstream consumers occasionally need to name it alongside the
-// Dynamo-owned shadow defined further down this module.
-pub use async_openai::types::responses::InputContent as UpstreamInputContent;
-
 // Re-export from parent module for backward compat.
 pub use crate::types::ImageDetail;
 pub use crate::types::ReasoningEffort;
@@ -201,6 +194,12 @@ pub struct InputOutputMessage {
     pub status: Option<OutputStatus>,
 }
 
+// Re-export upstream's pre-shadow `InputContent` under an explicit alias. Kept
+// for downstream compatibility: since `FunctionCallOutput` is crate-owned, no
+// type in this module carries upstream's `InputContent` any more, so in-crate
+// code should use the Dynamo `InputContent` shadow defined below.
+pub use async_openai::types::responses::InputContent as UpstreamInputContent;
+
 // ---------------------------------------------------------------------------
 // Input-side image / content / message (shadow upstream, relaxed shapes)
 // ---------------------------------------------------------------------------
@@ -263,6 +262,53 @@ impl Default for EasyInputContent {
     fn default() -> Self {
         Self::Text(String::new())
     }
+}
+
+/// Output of a `function_call_output` item. Shadows upstream `FunctionCallOutput`
+/// so the `Content` arm carries the crate's `InputContent` (and so the relaxed
+/// `InputImageContent`), giving tool outputs the same part semantics as message
+/// content. Upstream's arm carries its own `InputContent`, which accepts an
+/// omitted `detail` since async-openai 0.38 but still rejects an explicit
+/// `"detail": null` that message content accepts.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(untagged)]
+pub enum FunctionCallOutput {
+    /// A JSON string of the output of the function tool call.
+    Text(String),
+    /// Text / image / file parts.
+    Content(Vec<InputContent>),
+}
+
+// Same conversions upstream's `FunctionCallOutput` provides, so `output: "…".into()`
+// and `output: parts.into()` keep compiling.
+impl From<&str> for FunctionCallOutput {
+    fn from(text: &str) -> Self {
+        FunctionCallOutput::Text(text.to_string())
+    }
+}
+
+impl From<String> for FunctionCallOutput {
+    fn from(text: String) -> Self {
+        FunctionCallOutput::Text(text)
+    }
+}
+
+impl From<Vec<InputContent>> for FunctionCallOutput {
+    fn from(content: Vec<InputContent>) -> Self {
+        FunctionCallOutput::Content(content)
+    }
+}
+
+/// `function_call_output` input item. Shadows upstream so `output` routes through
+/// the crate-owned `FunctionCallOutput`; field set identical to upstream.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct FunctionCallOutputItemParam {
+    pub call_id: String,
+    pub output: FunctionCallOutput,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub status: Option<OutputStatus>,
 }
 
 /// A simplified message input — the spec-default shape when a client omits the
@@ -849,14 +895,9 @@ fn measure_item(item: &Item) -> (GroupEffect, usize) {
             TOOL_ROLE_LEN
                 + match &output.output {
                     FunctionCallOutput::Text(text) => text.len(),
-                    FunctionCallOutput::Content(parts) => parts
-                        .iter()
-                        .map(|part| match part {
-                            UpstreamInputContent::InputText(text) => text.text.len(),
-                            UpstreamInputContent::InputImage(_)
-                            | UpstreamInputContent::InputFile(_) => 0,
-                        })
-                        .sum(),
+                    FunctionCallOutput::Content(parts) => {
+                        parts.iter().map(estimate_input_content_len).sum()
+                    }
                 },
         ),
         // Only `summary` is measured, because only `summary` is rendered:
@@ -1207,6 +1248,110 @@ mod tests {
                 assert!(out.status.is_none());
             }
             other => panic!("expected Item::Message(Output), got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn function_call_output_image_part_without_detail_parses() {
+        let json = serde_json::json!({
+            "input": [
+                {"type": "function_call", "call_id": "c1", "name": "screenshot", "arguments": "{}"},
+                {"type": "function_call_output", "call_id": "c1", "output": [
+                    {"type": "input_text", "text": "captured"},
+                    {"type": "input_image", "image_url": "data:image/png;base64,iVBORw0KGgo="}
+                ]}
+            ]
+        });
+        let req: CreateResponse = serde_json::from_value(json).unwrap();
+        let InputParam::Items(items) = req.input else {
+            panic!("expected Items")
+        };
+        match &items[1] {
+            InputItem::Item(Item::FunctionCallOutput(fco)) => {
+                assert_eq!(fco.call_id, "c1");
+                let FunctionCallOutput::Content(parts) = &fco.output else {
+                    panic!("expected Content, got {:?}", fco.output)
+                };
+                assert_eq!(parts.len(), 2);
+                match &parts[1] {
+                    InputContent::InputImage(img) => {
+                        assert_eq!(img.detail, ImageDetail::Auto);
+                        assert_eq!(
+                            img.image_url.as_deref(),
+                            Some("data:image/png;base64,iVBORw0KGgo=")
+                        );
+                    }
+                    other => panic!("expected InputImage, got {other:?}"),
+                }
+            }
+            other => panic!("expected FunctionCallOutput, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn function_call_output_image_part_with_null_detail_matches_message_content() {
+        // `"detail": null` is accepted in message content; a tool output must not
+        // be stricter than the message it answers.
+        let part = serde_json::json!({
+            "type": "input_image", "image_url": "data:image/png;base64,iVBORw0KGgo=", "detail": null
+        });
+        let message: Item = serde_json::from_value(serde_json::json!({
+            "type": "message", "role": "user", "content": [part]
+        }))
+        .unwrap();
+        assert!(matches!(message, Item::Message(_)));
+        let output: Item = serde_json::from_value(serde_json::json!({
+            "type": "function_call_output", "call_id": "c1", "output": [part]
+        }))
+        .unwrap();
+        let Item::FunctionCallOutput(fco) = output else {
+            panic!("expected FunctionCallOutput, got {output:?}")
+        };
+        match &fco.output {
+            FunctionCallOutput::Content(parts) => match &parts[0] {
+                InputContent::InputImage(img) => assert_eq!(img.detail, ImageDetail::Auto),
+                other => panic!("expected InputImage, got {other:?}"),
+            },
+            other => panic!("expected Content, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn function_call_output_from_conversions_match_upstream() {
+        assert_eq!(
+            FunctionCallOutput::from("ok"),
+            FunctionCallOutput::Text("ok".to_string())
+        );
+        assert_eq!(
+            FunctionCallOutput::from(String::from("ok")),
+            FunctionCallOutput::Text("ok".to_string())
+        );
+        let parts = vec![InputContent::InputText(InputTextContent {
+            text: "captured".to_string(),
+        })];
+        let item = FunctionCallOutputItemParam {
+            call_id: "c1".to_string(),
+            output: parts.clone().into(),
+            id: None,
+            status: None,
+        };
+        assert_eq!(item.output, FunctionCallOutput::Content(parts));
+    }
+
+    #[test]
+    fn function_call_output_string_still_parses() {
+        let item: Item = serde_json::from_value(serde_json::json!({
+            "type": "function_call_output", "call_id": "c1", "output": "{\"ok\":true}"
+        }))
+        .unwrap();
+        match item {
+            Item::FunctionCallOutput(fco) => {
+                assert!(
+                    matches!(fco.output, FunctionCallOutput::Text(ref t) if t == "{\"ok\":true}")
+                );
+                assert!(fco.id.is_none() && fco.status.is_none());
+            }
+            other => panic!("expected FunctionCallOutput, got {other:?}"),
         }
     }
 
