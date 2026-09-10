@@ -90,7 +90,6 @@ pub type CacheTokenUsageFn = Arc<dyn Fn(CacheTokenUsage) + Send + Sync>;
 pub struct CachedTokenizer {
     inner: Arc<dyn Tokenizer>,
     l1: L1Cache,
-    /// Whether `encode` and `encode_batch` may use L1.
     l1_enabled: bool,
     /// When true, cache the newly-tokenized suffix on a partial hit so the next turn
     /// of a growing conversation hits deeper (see [`L1Cache::extend_after_match`]).
