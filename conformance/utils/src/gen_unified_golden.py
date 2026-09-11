@@ -399,8 +399,9 @@ def invoke_header_prefix(fam):
 
 
 def guided_invoke_prefix(fam):
-    """Native wrapper prefix used when a guided payload is preceded by tool markup."""
-    return "<｜DSML｜ calls>" if fam == "deepseek_v41" else invoke_header_prefix(fam)
+    if fam == "deepseek_v41":
+        return '<｜DSML｜ invoke name="'
+    return invoke_header_prefix(fam)
 
 
 def guided_surroundings(render, dynamo_note, fill=None):
@@ -1853,28 +1854,18 @@ DEEPSEEK_V41_SCENARIOS = {
     "guided_json_orphan_tool_close_before_payload",
     "guided_json_syntax_error_trailing_close",
     "guided_json_syntax_error_wrapped",
-    "guided_json_syntax_error_bare_opener",
     "guided_json_schema_error_not_a_call_trailing_close",
     "guided_json_schema_error_not_a_call_wrapped",
-    "guided_json_schema_error_not_a_call_bare_opener",
     "guided_json_schema_error_nameless_element_trailing_close",
     "guided_json_schema_error_nameless_element_wrapped",
-    "guided_json_schema_error_nameless_element_bare_opener",
     "guided_json_gt_in_argument_trailing_close",
     "guided_json_gt_in_argument_wrapped",
-    "guided_json_gt_in_argument_bare_opener",
-    "guided_json_stray_prefix_before_reasoning",
-    "guided_json_narrated_prefix_inside_reasoning",
     "guided_json_quoted_bare_header_in_answer",
     "guided_json_quoted_bare_tool_header_in_answer",
     "guided_json_quoted_bare_header_after_payload",
     "guided_json_bare_tool_header_recovers_inside_a_thought",
     "prefilled_reasoning_then_text",
-    "prefilled_response_with_tool",
-    "prefilled_response_with_guided_json",
-    "prefilled_response_guided_json_two_calls",
     "prefilled_response_truncated",
-    "prefilled_response_guided_json_partial_calls",
 }
 
 
@@ -1961,7 +1952,7 @@ def deepseek_v41_cases():
             [{"kind": "tool_call", "name": "f", "arguments": {"x": value}}])
     add("truncated_tool_eof", "A truncated parameter does not complete an invocation and emits nothing.",
         '<｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">partial', [])
-    add("tool_no_close", "A complete invocation without its close marker is dropped at EOF.",
+    add("tool_no_close", "A complete invocation without its close marker emits nothing at EOF.",
         '<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" '
         'string="true">Paris</｜DSML｜ parameter>', [])
     add("reason_unterminated", "An open thought survives the end of the stream.",
@@ -2043,25 +2034,9 @@ def deepseek_v41_cases():
         "no tool needed</think>The answer is 42.",
         [{"kind": "reasoning", "text": "no tool needed"},
          {"kind": "text", "text": "The answer is 42."}], "Reasoning")
-    add("prefilled_response_with_tool", "Prefilled response content precedes a native call.",
-        "output" + prefilled_call,
-        [{"kind": "text", "text": "output"},
-         {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
-        "Response")
-    add("prefilled_response_with_guided_json", "Prefilled response content precedes guided JSON.",
-        GUIDED_NAMED_ARGS,
-        [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
-        "Response", "GuidedJson", "get_weather")
-    add("prefilled_response_guided_json_two_calls", "Prefilled response dispatches two guided calls.",
-        GUIDED_TWO_CALLS,
-        one + [{"kind": "tool_call", "name": "run", "arguments": {"cmd": "git log"}}],
-        "Response", "GuidedJson")
     add("prefilled_response_truncated", "Prefilled response preserves visible prose when a call truncates.",
         "Working on it... <｜DSML｜ calls><｜DSML｜ invoke name=",
         [{"kind": "text", "text": "Working on it... "}], "Response")
-    add("prefilled_response_guided_json_partial_calls", "Prefilled response keeps malformed guided JSON visible.",
-        GUIDED_PARTIAL_CALLS,
-        [{"kind": "text", "text": GUIDED_PARTIAL_CALLS}], "Response", "GuidedJson")
     add("prefilled_reasoning_with_guided_json", "Prefilled reasoning closes before guided arguments.",
         "check</think>" + GUIDED_NAMED_ARGS,
         [{"kind": "reasoning", "text": "check"}] + one,

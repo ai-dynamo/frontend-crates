@@ -275,7 +275,6 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
 
 
 def test_unified_default_dynamo_uses_published_capture_and_keeps_release_history(tmp_path):
-    """The packaged fixtures retain released history and select the published capture."""
     page_path = tmp_path / "CONFORMANCE_v2.html"
     subprocess.run(
         [str(UTILS / "render_table_v2.sh"), "--output", str(page_path)],
