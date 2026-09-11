@@ -448,7 +448,9 @@ def _parser_inheritance_tooltip_html(
     head_parts = [f"ParserConfig::{variant}"]
     if sub_variant:
         head_parts[-1] = f"ParserConfig::{variant}::{sub_variant}"
-    bf_href = html_lib.escape(f"{common.LINKS['toolcalling_src']}{backend_file}")
+    bf_href = html_lib.escape(
+        common.repository_href(f"parsers/v1/src/tool_calling/{backend_file}")
+    )
     bf_link = f'<a href="{bf_href}">{html_lib.escape(backend_file)}</a>'
 
     anchor = alias_of or family
@@ -675,9 +677,11 @@ def _parser_cell_html(
     # useful (factory calls). For families with no inheritance info, fall back
     # to the refs entry (config.rs or parsers.rs).
     if info and info["backend_file"] != "unknown":
-        href = f"{common.LINKS['toolcalling_src']}{info['backend_file']}"
+        href = common.repository_href(
+            f"parsers/v1/src/tool_calling/{info['backend_file']}"
+        )
     elif ref is not None:
-        href = f"{common.LINKS['toolcalling_src']}{ref[0]}"
+        href = common.repository_href(f"parsers/v1/src/tool_calling/{ref[0]}")
     else:
         return (
             f'<td class="parser" data-col-hide-group="parser">'
@@ -698,6 +702,9 @@ def _v2_parser_cell_html(
     fixtures: str,
     note: str,
 ) -> str:
+    source_href = common.repository_href(
+        f"parsers/v2/src/tool_calling/{source_file}"
+    )
     tooltip = (
         '<div class="ttip">'
         f'<div class="ttip-head">`{html_lib.escape(family)}` (v2 stream)</div>'
@@ -706,13 +713,13 @@ def _v2_parser_cell_html(
         f"Tool calling parser row: {html_lib.escape(family)}\n"
         f"Effective parser/backend: {html_lib.escape(backend)}\n"
         f"Dynamo parser v2 implementation: parsers/v2/src/tool_calling/{html_lib.escape(source_file)} -> "
-        f'<a href="{common.LINKS["streaming_src"]}{html_lib.escape(source_file)}">{html_lib.escape(entrypoint)}</a>\n'
+        f'<a href="{source_href}">{html_lib.escape(entrypoint)}</a>\n'
         f"Note: {html_lib.escape(note)}"
         "</pre></div>"
     )
     return (
         f'<td class="parser" data-col-hide-group="parser">'
-        f'<a href="{common.LINKS["streaming_src"]}{html_lib.escape(source_file)}">{row_label}</a>{tooltip}</td>'
+        f'<a href="{source_href}">{row_label}</a>{tooltip}</td>'
     )
 
 
@@ -2815,13 +2822,22 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
 
 def build_combined_model(output_path: Path | None = None,
                          artifact_root: Path | None = None,
-                         *, stamp: str, sha: str | None) -> dict:
+                         *, stamp: str, sha: str | None,
+                         github_repository: str | None = None,
+                         github_revision: str | None = None,
+                         fixture_base_url: str | None = None) -> dict:
     """Assemble the whole-page JSON model (both toolcalling tabs + both reasoning
     tabs). Same loaded data + comparison semantics as render_combined_html."""
     artifact_root = (artifact_root or REPO_ROOT).resolve()
     resolved_output_path = _resolve_output_path(
         output_path, artifact_root, "tests/parity/CONFORMANCE.html")
-    hrefs = common.set_links(resolved_output_path, artifact_root)
+    hrefs = common.set_links(
+        resolved_output_path,
+        artifact_root,
+        github_repository=github_repository,
+        github_revision=github_revision,
+        fixture_base_url=fixture_base_url,
+    )
 
     tabs: list[dict] = []
 
@@ -2848,7 +2864,7 @@ def build_combined_model(output_path: Path | None = None,
             f'plus <strong>v2</strong> streaming on the same batch text '
             f'(<a href="{hrefs["streaming_src"]}">parsers_v2/src/tool_calling/*</a>) · '
             f'Input: <strong>v1</strong> batch fixtures '
-            f'(<a href="{hrefs["toolcalling_fixtures"]}">conformance/toolcalling/fixtures-batch-v1/</a>).'),
+            f'(<a href="{hrefs["toolcalling_fixture_store"]}">conformance/fixtures/toolcalling/fixtures-batch-v1/</a>).'),
         "details_note_html": None,
     })
     tabs.append(batch_tab)
@@ -2873,7 +2889,7 @@ def build_combined_model(output_path: Path | None = None,
             f'Parser: <strong>v2</strong> Dynamo parser v2 token-incremental streaming '
             f'(<a href="{hrefs["streaming_src"]}">parsers_v2/src/tool_calling/*</a>) · '
             f'Input: <strong>v2</strong> stream fixtures '
-            f'(<a href="{hrefs["toolcalling_stream_fixtures"]}">conformance/toolcalling/fixtures-stream-v2/</a>).'),
+            f'(<a href="{hrefs["toolcalling_stream_fixture_store"]}">conformance/fixtures/toolcalling/fixtures-stream-v2/</a>).'),
         "details_note_html": f"<p>{_stream_parity_explainer_html('streamv2')}</p>",
     })
     tabs.append(stream_tab)
@@ -2909,7 +2925,7 @@ def build_combined_model(output_path: Path | None = None,
                 f'Parser: <strong>v1</strong> reasoning parser '
                 f'(<a href="{hrefs["reasoning_src"]}">parsers/v1/src/reasoning/</a>) · '
                 f'Input: <strong>v1</strong> reasoning fixtures '
-                f'(<a href="{hrefs["reasoning_fixtures"]}">conformance/reasoning/fixtures/</a>).'),
+                f'(<a href="{hrefs["reasoning_fixture_store"]}">conformance/fixtures/reasoning/fixtures-v1/</a>).'),
             "details_note_html": None,
         })
         tabs.append(rtab)
@@ -2948,6 +2964,10 @@ def _captured_note(mode: str) -> str:
 def render_combined_html(
     output_path: Path | None = None,
     artifact_root: Path | None = None,
+    *,
+    github_repository: str | None = None,
+    github_revision: str | None = None,
+    fixture_base_url: str | None = None,
 ) -> str:
     artifact_root = (artifact_root or REPO_ROOT).resolve()
     resolved_output_path = _resolve_output_path(
@@ -2955,17 +2975,30 @@ def render_combined_html(
         artifact_root,
         "tests/parity/CONFORMANCE.html",
     )
-    common.set_links(resolved_output_path, artifact_root)
+    common.set_links(
+        resolved_output_path,
+        artifact_root,
+        github_repository=github_repository,
+        github_revision=github_revision,
+        fixture_base_url=fixture_base_url,
+    )
 
     now = datetime.datetime.now(zoneinfo.ZoneInfo("America/Los_Angeles"))
     stamp = now.strftime("%Y-%m-%d %H:%M %Z")
-    sha = _commit_sha()
+    sha = github_revision.lower() if github_revision else _commit_sha()
 
     # DIS-2434: the page is now rendered ENTIRELY by the JS view from this JSON model —
     # the Python HTML emitters (render_html_panel/render_cell_html/tooltip builders) are
     # gone; the template emits a skeleton and the model blob, the view builds the DOM.
     page_model = build_combined_model(
-        output_path=output_path, artifact_root=artifact_root, stamp=stamp, sha=sha)
+        output_path=output_path,
+        artifact_root=artifact_root,
+        stamp=stamp,
+        sha=sha,
+        github_repository=github_repository,
+        github_revision=github_revision,
+        fixture_base_url=fixture_base_url,
+    )
     # Per-family declared markers (pairs/singletons) for the JS colorizer's declared
     # lookup — the same table markup.py's _declared_lookup consults server-side.
     page_model["family_markers"] = declared_markers()
@@ -3022,6 +3055,18 @@ def main(argv: list[str] | None = None) -> None:
         type=Path,
         help="Repo root that output links should target. Defaults to the staged repo root.",
     )
+    stage_parser.add_argument(
+        "--github-repository",
+        help="GitHub OWNER/REPO used for immutable source links (requires the other web-link options).",
+    )
+    stage_parser.add_argument(
+        "--github-revision",
+        help="Full commit SHA used for immutable source links (requires the other web-link options).",
+    )
+    stage_parser.add_argument(
+        "--fixture-base-url",
+        help="HTTPS base URL for published fixture YAMLs (requires the other web-link options).",
+    )
     stage_args = stage_parser.parse_args(rest)
     if not stage_args.html:
         parser.error("stage 'all' currently supports --html only")
@@ -3029,6 +3074,9 @@ def main(argv: list[str] | None = None) -> None:
         render_combined_html(
             output_path=stage_args.output_path,
             artifact_root=stage_args.artifact_root,
+            github_repository=stage_args.github_repository,
+            github_revision=stage_args.github_revision,
+            fixture_base_url=stage_args.fixture_base_url,
         )
     )
 
