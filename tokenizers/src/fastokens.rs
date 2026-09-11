@@ -87,11 +87,11 @@ impl Tokenizer for FastTokenizer {
         self.hf_decoder.token_to_id(token)
     }
 
-    fn special_token_ids(&self) -> Vec<TokenIdType> {
+    fn special_token_ids(&self) -> Result<Vec<TokenIdType>> {
         self.hf_decoder.special_token_ids()
     }
 
-    fn num_special_tokens_added(&self) -> usize {
+    fn num_special_tokens_added(&self) -> Result<usize> {
         self.hf_decoder.num_special_tokens_added()
     }
 }
@@ -261,10 +261,13 @@ mod tests {
             fast.token_to_id("Hello").unwrap(),
             hf.token_to_id("Hello").unwrap()
         );
-        assert_eq!(fast.special_token_ids(), hf.special_token_ids());
         assert_eq!(
-            fast.num_special_tokens_added(),
-            hf.num_special_tokens_added()
+            fast.special_token_ids().unwrap(),
+            hf.special_token_ids().unwrap()
+        );
+        assert_eq!(
+            fast.num_special_tokens_added().unwrap(),
+            hf.num_special_tokens_added().unwrap()
         );
     }
 }

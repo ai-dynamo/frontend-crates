@@ -280,11 +280,11 @@ impl Tokenizer for CachedTokenizer {
         self.inner.token_to_id(token)
     }
 
-    fn special_token_ids(&self) -> Vec<TokenIdType> {
+    fn special_token_ids(&self) -> Result<Vec<TokenIdType>> {
         self.inner.special_token_ids()
     }
 
-    fn num_special_tokens_added(&self) -> usize {
+    fn num_special_tokens_added(&self) -> Result<usize> {
         self.inner.num_special_tokens_added()
     }
 }
@@ -335,14 +335,6 @@ mod tests {
         fn vocab_size(&self) -> Option<usize> {
             None
         }
-
-        fn special_token_ids(&self) -> Vec<TokenIdType> {
-            Vec::new()
-        }
-
-        fn num_special_tokens_added(&self) -> usize {
-            0
-        }
     }
 
     impl Encoder for FailingTokenizer {
@@ -372,14 +364,6 @@ mod tests {
 
         fn vocab_size(&self) -> Option<usize> {
             None
-        }
-
-        fn special_token_ids(&self) -> Vec<TokenIdType> {
-            Vec::new()
-        }
-
-        fn num_special_tokens_added(&self) -> usize {
-            0
         }
     }
 
@@ -630,10 +614,27 @@ mod tests {
             cached.token_to_id("<s>").unwrap(),
             tok.token_to_id("<s>").unwrap()
         );
-        assert_eq!(cached.special_token_ids(), tok.special_token_ids());
         assert_eq!(
-            cached.num_special_tokens_added(),
-            tok.num_special_tokens_added()
+            cached.special_token_ids().unwrap(),
+            tok.special_token_ids().unwrap()
         );
+        assert_eq!(
+            cached.num_special_tokens_added().unwrap(),
+            tok.num_special_tokens_added().unwrap()
+        );
+    }
+
+    #[test]
+    fn unoverridden_vocab_methods_default_to_unsupported() {
+        // SegmentTokenizer only overrides `vocab_size`; `token_to_id`,
+        // `special_token_ids`, and `num_special_tokens_added` are left at
+        // the trait default. Guards against that default silently
+        // regressing to a trivial `Ok`/empty/zero value, which would make
+        // "unsupported" indistinguishable from a genuine miss/empty/zero
+        // answer.
+        let tokenizer = SegmentTokenizer;
+        assert!(tokenizer.token_to_id("anything").is_err());
+        assert!(tokenizer.special_token_ids().is_err());
+        assert!(tokenizer.num_special_tokens_added().is_err());
     }
 }

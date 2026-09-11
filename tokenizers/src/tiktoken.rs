@@ -165,17 +165,17 @@ impl Tokenizer for TikTokenTokenizer {
         None
     }
 
-    fn special_token_ids(&self) -> Vec<TokenIdType> {
+    fn special_token_ids(&self) -> Result<Vec<TokenIdType>> {
         let mut ids: Vec<TokenIdType> = self.special_token_ids.iter().copied().collect();
         ids.sort_unstable();
-        ids
+        Ok(ids)
     }
 
     // tiktoken applies no post-processor: `encode`'s `add_special_tokens`
     // option (handled entirely by this crate, not tiktoken_rs) never adds
     // tokens beyond what the caller passed in.
-    fn num_special_tokens_added(&self) -> usize {
-        0
+    fn num_special_tokens_added(&self) -> Result<usize> {
+        Ok(0)
     }
 }
 
@@ -489,7 +489,25 @@ mod tests {
         let pattern = r"[\w]+|[^\w\s]+|\s+";
         let tokenizer = TikTokenTokenizer::from_file(&file_path, pattern, special_tokens).unwrap();
 
-        assert_eq!(tokenizer.special_token_ids(), vec![21, 22]);
+        assert_eq!(tokenizer.special_token_ids().unwrap(), vec![21, 22]);
+    }
+
+    #[test]
+    fn test_vocab_size_and_token_to_id_are_unsupported() {
+        // `tiktoken_rs::CoreBPE`'s `encoder` field is `pub(crate)`, so
+        // neither method can be implemented; `token_to_id` inherits the
+        // trait default (`Err`) rather than a hand-rolled `None` override.
+        // Guards against that default silently regressing to `Ok(None)`,
+        // which would make "unsupported" indistinguishable from "not
+        // found" again -- the exact bug this default exists to prevent.
+        let dir = tempfile::tempdir().unwrap();
+        let file_path = create_test_tiktoken_file(dir.path());
+        let pattern = r"[\w]+|[^\w\s]+|\s+";
+        let tokenizer =
+            TikTokenTokenizer::from_file(&file_path, pattern, FxHashMap::default()).unwrap();
+
+        assert_eq!(tokenizer.vocab_size(), None);
+        assert!(tokenizer.token_to_id("hello").is_err());
     }
 
     #[test]

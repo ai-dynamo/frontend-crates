@@ -226,24 +226,35 @@ pub mod traits {
         }
 
         /// Ids of added tokens marked special (e.g. BOS/EOS/PAD/control
-        /// tokens), as distinct from ordinary vocabulary tokens. Empty for
-        /// backends that do not distinguish special from ordinary
-        /// vocabulary ids.
+        /// tokens), as distinct from ordinary vocabulary tokens. `Ok(vec![])`
+        /// for backends that genuinely have none, or that do not distinguish
+        /// special from ordinary vocabulary ids. `Err` when the backend
+        /// cannot enumerate added tokens at all — an empty `Vec` alone
+        /// cannot carry that distinction.
         ///
-        /// No default body: every implementor must state its answer
-        /// explicitly (`Vec::new()` where genuinely unsupported) rather
-        /// than risk silently inheriting an empty set for a backend that
-        /// could report one.
-        fn special_token_ids(&self) -> Vec<TokenIdType>;
+        /// Defaults to unsupported, matching `token_to_id`: only backends
+        /// that can enumerate special ids need to override it.
+        fn special_token_ids(&self) -> Result<Vec<TokenIdType>> {
+            Err(Error::msg(
+                "tokenizer backend does not support special token enumeration",
+            ))
+        }
 
         /// Count of special tokens `encode`'s `add_special_tokens: true`
         /// path would add to a bare encoding (e.g. BOS/EOS), available
-        /// without performing an encode. Zero for backends that add none.
+        /// without performing an encode. `Ok(0)` for backends that
+        /// genuinely add none. `Err` when the backend cannot determine this
+        /// at all — a plain `0` alone cannot carry that distinction, and
+        /// this value feeds token-budget accounting where a silent `0`
+        /// would under-count rather than fail loudly.
         ///
-        /// No default body: every implementor must state its answer
-        /// explicitly (`0` where genuinely none are added) rather than risk
-        /// silently inheriting zero for a backend that adds some.
-        fn num_special_tokens_added(&self) -> usize;
+        /// Defaults to unsupported, matching `token_to_id`: only backends
+        /// that can determine this count need to override it.
+        fn num_special_tokens_added(&self) -> Result<usize> {
+            Err(Error::msg(
+                "tokenizer backend does not support special token accounting",
+            ))
+        }
         // fn make_unique_clone(&self) -> Box<dyn Tokenizer>;
     }
 }
@@ -596,14 +607,6 @@ mod decode_stream_unicode_tests {
     impl super::traits::Tokenizer for RewritingTokenizer {
         fn vocab_size(&self) -> Option<usize> {
             None
-        }
-
-        fn special_token_ids(&self) -> Vec<TokenIdType> {
-            Vec::new()
-        }
-
-        fn num_special_tokens_added(&self) -> usize {
-            0
         }
     }
 

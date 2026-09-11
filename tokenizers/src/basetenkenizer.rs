@@ -193,19 +193,19 @@ impl Tokenizer for BasetenTokenizer {
         Ok(self.tokenizer.token_to_id(token))
     }
 
-    fn special_token_ids(&self) -> Vec<TokenIdType> {
+    fn special_token_ids(&self) -> Result<Vec<TokenIdType>> {
         let Some(added_tokens) = self.tokenizer.added_tokens() else {
-            return Vec::new();
+            return Ok(Vec::new());
         };
         let mut ids: Vec<TokenIdType> = added_tokens
             .iter()
             .filter_map(|info| info.special.then_some(info.id))
             .collect();
         ids.sort_unstable();
-        ids
+        Ok(ids)
     }
 
-    fn num_special_tokens_added(&self) -> usize {
+    fn num_special_tokens_added(&self) -> Result<usize> {
         // basetenkenizer exposes no direct count, but post-processing an
         // empty sequence with add_special_tokens=true is content-length
         // independent for every basetenkenizer::PostProcessor variant:
@@ -216,7 +216,7 @@ impl Tokenizer for BasetenTokenizer {
         // content length; Sequence(steps) folds that same guarantee across
         // steps. So this reveals exactly what the post-processor inserts
         // around a bare encoding, for real content of any length.
-        self.tokenizer.post_process(Vec::new(), true).len()
+        Ok(self.tokenizer.post_process(Vec::new(), true).len())
     }
 }
 
@@ -437,10 +437,10 @@ mod tests {
         std::fs::write(&path, serde_json::to_vec(&json).unwrap()).unwrap();
 
         let with_bos = BasetenTokenizer::from_file(path.to_str().unwrap()).unwrap();
-        assert_eq!(with_bos.num_special_tokens_added(), 1);
+        assert_eq!(with_bos.num_special_tokens_added().unwrap(), 1);
 
         let plain = BasetenTokenizer::from_file(TOKENIZER_PATH).unwrap();
-        assert_eq!(plain.num_special_tokens_added(), 0);
+        assert_eq!(plain.num_special_tokens_added().unwrap(), 0);
     }
 
     #[test]
@@ -507,7 +507,7 @@ mod tests {
         std::fs::write(&path, serde_json::to_vec(&json).unwrap()).unwrap();
 
         let tokenizer = BasetenTokenizer::from_file(path.to_str().unwrap()).unwrap();
-        assert_eq!(tokenizer.num_special_tokens_added(), 2);
+        assert_eq!(tokenizer.num_special_tokens_added().unwrap(), 2);
 
         let with_specials = tokenizer.with_options(TokenizerOptions {
             add_special_tokens: true,
@@ -567,7 +567,7 @@ mod tests {
         assert_eq!(plain.vocab_size(), Some(23));
         assert_eq!(plain.token_to_id("hello").unwrap(), None);
         assert_eq!(plain.token_to_id("h").unwrap(), Some(10));
-        assert!(plain.special_token_ids().is_empty());
+        assert!(plain.special_token_ids().unwrap().is_empty());
 
         let temp = tempfile::tempdir().unwrap();
         let path = temp.path().join("tokenizer.json");
@@ -592,7 +592,7 @@ mod tests {
         // double-count it -- 24, not 25.
         assert_eq!(with_added.vocab_size(), Some(24));
         assert_eq!(with_added.token_to_id("<bos>").unwrap(), Some(23));
-        assert_eq!(with_added.special_token_ids(), vec![23]);
+        assert_eq!(with_added.special_token_ids().unwrap(), vec![23]);
 
         // A second fixture where the added token is genuinely absent from
         // the model vocab (as opposed to documenting an existing entry)

@@ -201,7 +201,7 @@ impl Tokenizer for HuggingFaceTokenizer {
         Ok(self.tokenizer.token_to_id(token))
     }
 
-    fn special_token_ids(&self) -> Vec<TokenIdType> {
+    fn special_token_ids(&self) -> Result<Vec<TokenIdType>> {
         let mut ids: Vec<TokenIdType> = self
             .tokenizer
             .get_added_tokens_decoder()
@@ -209,13 +209,14 @@ impl Tokenizer for HuggingFaceTokenizer {
             .filter_map(|(id, token)| token.special.then_some(id))
             .collect();
         ids.sort_unstable();
-        ids
+        Ok(ids)
     }
 
-    fn num_special_tokens_added(&self) -> usize {
-        self.tokenizer
+    fn num_special_tokens_added(&self) -> Result<usize> {
+        Ok(self
+            .tokenizer
             .get_post_processor()
-            .map_or(0, |processor| processor.added_tokens(false))
+            .map_or(0, |processor| processor.added_tokens(false)))
     }
 }
 
@@ -438,8 +439,8 @@ mod tests {
         let tokenizer = HuggingFaceTokenizer::from_file(path.to_str().unwrap()).unwrap();
         assert_eq!(tokenizer.vocab_size(), Some(3));
         assert_eq!(tokenizer.token_to_id("hello").unwrap(), Some(1));
-        assert_eq!(tokenizer.special_token_ids(), vec![0]);
-        assert_eq!(tokenizer.num_special_tokens_added(), 0);
+        assert_eq!(tokenizer.special_token_ids().unwrap(), vec![0]);
+        assert_eq!(tokenizer.num_special_tokens_added().unwrap(), 0);
     }
 
     #[test]
@@ -485,6 +486,6 @@ mod tests {
         let path = dir.path().join("tokenizer.json");
 
         let tokenizer = HuggingFaceTokenizer::from_file(path.to_str().unwrap()).unwrap();
-        assert_eq!(tokenizer.num_special_tokens_added(), 1);
+        assert_eq!(tokenizer.num_special_tokens_added().unwrap(), 1);
     }
 }
