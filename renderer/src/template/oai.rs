@@ -596,6 +596,9 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
         let mut messages_for_template: serde_json::Value =
             serde_json::to_value(&messages_canonical).unwrap();
 
+        crate::reject_unsupported_partial_assistant(&messages_for_template)?;
+        crate::reject_unsupported_message_tools(&messages_for_template, &[])?;
+
         if system_normalization.is_required() {
             normalize_system_messages(&mut messages_for_template, system_normalization);
         }
@@ -724,11 +727,99 @@ mod tests {
         f.render(&req)
     }
 
+    struct RawMessagesRequest(Value);
+
+    impl OAIChatLikeRequest for RawMessagesRequest {
+        fn model(&self) -> String {
+            "test".to_string()
+        }
+
+        fn messages(&self) -> Value {
+            self.0.clone()
+        }
+
+        fn should_add_generation_prompt(&self) -> bool {
+            true
+        }
+    }
+
+    fn render_raw_shape(f: &SysFormatter, messages: serde_json::Value) -> Result<String> {
+        f.render(&RawMessagesRequest(Value::from_serialize(&messages)))
+    }
+
     const PERMISSIVE_TMPL: &str = concat!(
         "{%- for m in messages -%}",
         "<|im_start|>{{ m.role }}\n{{ m.content }}<|im_end|>\n",
         "{%- endfor -%}"
     );
+
+    #[test]
+    fn jinja_templates_reject_message_level_tools() {
+        let f = formatter_for(PERMISSIVE_TMPL);
+        let error = render_shape(
+            &f,
+            json!([
+                {"role": "system", "tools": [{"name": "lookup", "parameters": {"type": "object"}}]},
+                {"role": "user", "content": "hi"}
+            ]),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            error.downcast_ref::<crate::PromptRenderError>(),
+            Some(crate::PromptRenderError::InvalidRequest(message))
+                if message.contains("message-level `tools`")
+        ));
+
+        let error = render_raw_shape(
+            &f,
+            json!([{
+                "role": "user",
+                "content": "hi",
+                "tools": [{"name": "lookup", "parameters": {"type": "object"}}]
+            }]),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            error.downcast_ref::<crate::PromptRenderError>(),
+            Some(crate::PromptRenderError::InvalidRequest(message))
+                if message.contains("message-level `tools`")
+        ));
+
+        let rendered = render_shape(
+            &f,
+            json!([
+                {"role": "system", "content": "You are helpful.", "tools": []},
+                {"role": "user", "content": "hi"}
+            ]),
+        )
+        .unwrap();
+        assert!(rendered.contains("<|im_start|>system\nYou are helpful.<|im_end|>"));
+    }
+
+    #[test]
+    fn jinja_templates_reject_unsupported_partial_assistant() {
+        let f = formatter_for(PERMISSIVE_TMPL);
+        let error = render_shape(
+            &f,
+            json!([
+                {"role": "user", "content": "Continue"},
+                {"role": "assistant", "content": "prefix", "partial": true}
+            ]),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            error.downcast_ref::<crate::PromptRenderError>(),
+            Some(crate::PromptRenderError::InvalidRequest(message))
+                if message.contains("`partial: true` is not supported")
+        ));
+
+        let rendered = render_shape(
+            &f,
+            json!([{"role": "assistant", "content": "ordinary", "partial": false}]),
+        )
+        .unwrap();
+        assert!(rendered.contains("ordinary"));
+    }
     // Rejects a non-leading system (Qwen3.5 shape); accepts consecutive users.
     const STRICT_LEADING_TMPL: &str = concat!(
         "{%- for m in messages -%}",

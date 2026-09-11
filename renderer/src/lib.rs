@@ -254,6 +254,57 @@ pub trait OAIPromptFormatter: Send + Sync + 'static {
     }
 }
 
+/// Reject Kimi-style Partial Mode in a formatter that cannot leave the final
+/// assistant turn open for continuation.
+///
+/// `partial: false` and `partial: null` are ordinary message metadata and are
+/// intentionally ignored. Supporting formatters (currently Kimi K3) do not
+/// call this helper and implement the open-turn rendering themselves.
+pub(crate) fn reject_unsupported_partial_assistant(messages: &serde_json::Value) -> Result<()> {
+    let has_partial =
+        messages.as_array().into_iter().flatten().any(|message| {
+            message.get("partial").and_then(serde_json::Value::as_bool) == Some(true)
+        });
+    if has_partial {
+        return Err(PromptRenderError::invalid_request(
+            "assistant `partial: true` is not supported by this model's prompt formatter",
+        )
+        .into());
+    }
+    Ok(())
+}
+
+/// Reject non-empty message-level tool declarations on roles where a formatter
+/// does not support that field. `tools: null` and `tools: []` declare nothing.
+pub(crate) fn reject_unsupported_message_tools(
+    messages: &serde_json::Value,
+    supported_tool_roles: &[&str],
+) -> Result<()> {
+    let offending = messages.as_array().into_iter().flatten().find(|message| {
+        let declares_tools = message
+            .get("tools")
+            .is_some_and(|tools| !tools.is_null() && !tools.as_array().is_some_and(Vec::is_empty));
+        let role_is_supported = message
+            .get("role")
+            .and_then(serde_json::Value::as_str)
+            .is_some_and(|role| supported_tool_roles.contains(&role));
+        declares_tools && !role_is_supported
+    });
+
+    if let Some(message) = offending {
+        let role = message
+            .get("role")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("<missing>");
+        return Err(PromptRenderError::invalid_request(format!(
+            "message-level `tools` on role {role:?} are not supported by this model's prompt \
+             formatter"
+        ))
+        .into());
+    }
+    Ok(())
+}
+
 #[derive(Clone)]
 pub enum PromptFormatter {
     OAI(Arc<dyn OAIPromptFormatter>),
@@ -270,6 +321,9 @@ impl OAIPromptFormatter for NoOpFormatter {
 
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String> {
         let messages = req.messages();
+        let messages_json = serde_json::to_value(&messages)?;
+        reject_unsupported_partial_assistant(&messages_json)?;
+        reject_unsupported_message_tools(&messages_json, &[])?;
 
         let first_message = messages
             .get_item_by_index(0)
@@ -295,7 +349,9 @@ impl PromptFormatter {
 
 #[cfg(test)]
 mod rendered_prompt_tests {
-    use super::{RenderedPrompt, RenderedSegment};
+    use super::{
+        NoOpFormatter, OAIPromptFormatter, PromptRenderError, RenderedPrompt, RenderedSegment,
+    };
 
     #[test]
     fn owned_segments_borrow_into_tokenizer_segments() {
@@ -310,5 +366,45 @@ mod rendered_prompt_tests {
         assert_eq!(segments[1].text, "user text");
         assert!(!segments[1].allow_special);
         assert_eq!(prompt.as_str(), "<|open|>user text");
+    }
+
+    #[test]
+    fn no_op_formatter_rejects_unsupported_partial_assistant() {
+        let request: dynamo_protocols::types::CreateChatCompletionRequest =
+            serde_json::from_value(serde_json::json!({
+                "model": "test",
+                "messages": [
+                    {"role": "user", "content": "Continue"},
+                    {"role": "assistant", "content": "prefix", "partial": true}
+                ]
+            }))
+            .unwrap();
+
+        let error = NoOpFormatter.render(&request).unwrap_err();
+        assert!(matches!(
+            error.downcast_ref::<PromptRenderError>(),
+            Some(PromptRenderError::InvalidRequest(message))
+                if message.contains("`partial: true` is not supported")
+        ));
+    }
+
+    #[test]
+    fn no_op_formatter_rejects_message_level_tools() {
+        let request: dynamo_protocols::types::CreateChatCompletionRequest =
+            serde_json::from_value(serde_json::json!({
+                "model": "test",
+                "messages": [
+                    {"role": "system", "tools": [{"name": "lookup"}]},
+                    {"role": "user", "content": "Continue"}
+                ]
+            }))
+            .unwrap();
+
+        let error = NoOpFormatter.render(&request).unwrap_err();
+        assert!(matches!(
+            error.downcast_ref::<PromptRenderError>(),
+            Some(PromptRenderError::InvalidRequest(message))
+                if message.contains("message-level `tools`")
+        ));
     }
 }
