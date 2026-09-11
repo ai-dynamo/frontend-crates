@@ -11,9 +11,10 @@
 #                                    case-taxonomy.yaml (defaults to --all families)
 #     status [--model F ...] [--tab T ...]
 #                                    render, then fail on every empty/red selected cell
-#     ci     what the conformance-table CI job runs, and the ONLY thing it runs:
+#     ci [render options]
+#            what the conformance-table CI job runs, and the ONLY thing it runs:
 #            render the conformance chart, structural sanity, coverage lint,
-#            invariant pytest.
+#            invariant pytest. Render options are forwarded to render_table_v2.sh.
 #            Add/change conformance gates in run_ci below — never in .github/workflows.
 #     all    [--container-vllm N --container-sglang M] [--allow-peer-failures]
 #            dynamo(all) + vllm + sglang + coverage. Fails the run on any parser
@@ -68,9 +69,12 @@ run_status() {  # $@ = passthrough (--model F ... --tab T ...)
 }
 
 run_ci() {  # the conformance-table CI gate; fail-fast, also runnable locally
-  if [ "$DRY" = 1 ]; then echo "[dry-run] render v2, sanity greps, coverage lint, invariant pytest"; return; fi
+  if [ "$DRY" = 1 ]; then
+    echo "[dry-run] render v2 $*, sanity greps, coverage lint, invariant pytest"
+    return
+  fi
   set -e
-  "$UTILS/render_table_v2.sh"
+  "$UTILS/render_table_v2.sh" "$@"
   local out="$ROOT/conformance/CONFORMANCE_v2.html"
   local status="$ROOT/conformance/CONFORMANCE_v2.json"
   test -s "$out"
@@ -97,7 +101,7 @@ case "$engine" in
   sglang) run_engine sglang "$@" ;;
   coverage) run_coverage "$@" ;;
   status) run_status "$@" ;;
-  ci)     run_ci ;;
+  ci)     run_ci "$@" ;;
   all)
     cv=""; cs=""; allow_peer=0; rc=0
     while [ $# -gt 0 ]; do case "$1" in

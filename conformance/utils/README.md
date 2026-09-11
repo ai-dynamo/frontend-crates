@@ -178,9 +178,19 @@ conformance/utils/render_table_v2.sh --output index.html
 
 # Prints the render command without writing the table.
 conformance/utils/render_table_v2.sh --dry-run
+
+# Generate immutable GitHub source links and Pages-hosted fixture links.
+conformance/utils/render_table_v2.sh \
+  --github-repository ai-dynamo/frontend-crates \
+  --github-revision "$(git rev-parse HEAD)" \
+  --fixture-base-url https://ai-dynamo.github.io/frontend-crates/fixtures/
 ```
 
 Open the generated HTML file in a browser. The table is generated from extracted fixture directories staged by `render_table_v2.sh`.
+
+The three web-link options must be supplied together. They change only link destinations: source files and directories use immutable GitHub `blob/<sha>` and `tree/<sha>` URLs, while case links use the fixture base URL and the extracted snapshot layout. Local renders without these options retain filesystem-relative source links and `file://` fixture links. `check.sh ci` accepts and forwards the same render options so CI can validate and publish one render.
+
+The CI workflow automatically publishes this report for matching pushes to `main`, and `workflow_dispatch` can republish it when run from `main`. Mirror branches still run the conformance gate but never upload or deploy the Pages artifact. Before the first deployment, configure the repository's Pages source as **GitHub Actions** and restrict the `github-pages` environment's deployment branches to `main`.
 
 Every successful render also writes `conformance/CONFORMANCE_v2.json`, derived from the same inlined model the browser renders, and prints the aggregate empty/red count. The standard compiler-like gate for one or more models and tabs is:
 
