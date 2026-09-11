@@ -158,12 +158,10 @@ impl Tokenizer for TikTokenTokenizer {
     }
 
     // `tiktoken_rs::CoreBPE`'s `encoder` field is `pub(crate)`, so this
-    // crate has no way to enumerate or size the vocab.
+    // crate has no way to enumerate, size, or look up ids in the vocab.
+    // `token_to_id` is left at the trait default (unsupported) for the
+    // same reason.
     fn vocab_size(&self) -> Option<usize> {
-        None
-    }
-
-    fn token_to_id(&self, _token: &str) -> Option<TokenIdType> {
         None
     }
 

@@ -189,8 +189,8 @@ impl Tokenizer for BasetenTokenizer {
         Some(model_size + extra)
     }
 
-    fn token_to_id(&self, token: &str) -> Option<TokenIdType> {
-        self.tokenizer.token_to_id(token)
+    fn token_to_id(&self, token: &str) -> Result<Option<TokenIdType>> {
+        Ok(self.tokenizer.token_to_id(token))
     }
 
     fn special_token_ids(&self) -> Vec<TokenIdType> {
@@ -565,8 +565,8 @@ mod tests {
         // added tokens: vocab_size is the model vocab, and there are no
         // special-token ids to report.
         assert_eq!(plain.vocab_size(), Some(23));
-        assert_eq!(plain.token_to_id("hello"), None);
-        assert_eq!(plain.token_to_id("h"), Some(10));
+        assert_eq!(plain.token_to_id("hello").unwrap(), None);
+        assert_eq!(plain.token_to_id("h").unwrap(), Some(10));
         assert!(plain.special_token_ids().is_empty());
 
         let temp = tempfile::tempdir().unwrap();
@@ -591,7 +591,7 @@ mod tests {
         // tokens: the model vocab already covers it, so vocab_size must not
         // double-count it -- 24, not 25.
         assert_eq!(with_added.vocab_size(), Some(24));
-        assert_eq!(with_added.token_to_id("<bos>"), Some(23));
+        assert_eq!(with_added.token_to_id("<bos>").unwrap(), Some(23));
         assert_eq!(with_added.special_token_ids(), vec![23]);
 
         // A second fixture where the added token is genuinely absent from
@@ -614,6 +614,6 @@ mod tests {
 
         let genuinely_added = BasetenTokenizer::from_file(path2.to_str().unwrap()).unwrap();
         assert_eq!(genuinely_added.vocab_size(), Some(24));
-        assert_eq!(genuinely_added.token_to_id("<extra>"), Some(23));
+        assert_eq!(genuinely_added.token_to_id("<extra>").unwrap(), Some(23));
     }
 }

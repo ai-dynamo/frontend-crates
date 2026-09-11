@@ -83,7 +83,7 @@ impl Tokenizer for FastTokenizer {
         self.hf_decoder.vocab_size()
     }
 
-    fn token_to_id(&self, token: &str) -> Option<TokenIdType> {
+    fn token_to_id(&self, token: &str) -> Result<Option<TokenIdType>> {
         self.hf_decoder.token_to_id(token)
     }
 
@@ -257,7 +257,10 @@ mod tests {
         let fast = FastTokenizer::from_file(TOKENIZER_PATH).unwrap();
         let hf = HuggingFaceTokenizer::from_file(TOKENIZER_PATH).unwrap();
         assert_eq!(fast.vocab_size(), hf.vocab_size());
-        assert_eq!(fast.token_to_id("Hello"), hf.token_to_id("Hello"));
+        assert_eq!(
+            fast.token_to_id("Hello").unwrap(),
+            hf.token_to_id("Hello").unwrap()
+        );
         assert_eq!(fast.special_token_ids(), hf.special_token_ids());
         assert_eq!(
             fast.num_special_tokens_added(),

@@ -276,7 +276,7 @@ impl Tokenizer for CachedTokenizer {
         self.inner.vocab_size()
     }
 
-    fn token_to_id(&self, token: &str) -> Option<TokenIdType> {
+    fn token_to_id(&self, token: &str) -> Result<Option<TokenIdType>> {
         self.inner.token_to_id(token)
     }
 
@@ -336,10 +336,6 @@ mod tests {
             None
         }
 
-        fn token_to_id(&self, _token: &str) -> Option<TokenIdType> {
-            None
-        }
-
         fn special_token_ids(&self) -> Vec<TokenIdType> {
             Vec::new()
         }
@@ -375,10 +371,6 @@ mod tests {
         }
 
         fn vocab_size(&self) -> Option<usize> {
-            None
-        }
-
-        fn token_to_id(&self, _token: &str) -> Option<TokenIdType> {
             None
         }
 
@@ -634,7 +626,10 @@ mod tests {
         let cached = CachedTokenizer::new(tok.clone(), specials(), 4096)
             .expect("TinyLlama must support prefix caching");
         assert_eq!(cached.vocab_size(), tok.vocab_size());
-        assert_eq!(cached.token_to_id("<s>"), tok.token_to_id("<s>"));
+        assert_eq!(
+            cached.token_to_id("<s>").unwrap(),
+            tok.token_to_id("<s>").unwrap()
+        );
         assert_eq!(cached.special_token_ids(), tok.special_token_ids());
         assert_eq!(
             cached.num_special_tokens_added(),

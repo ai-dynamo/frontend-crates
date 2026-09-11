@@ -211,13 +211,19 @@ pub mod traits {
         fn vocab_size(&self) -> Option<usize>;
 
         /// Resolve a token string to its vocabulary id, when the backend
-        /// supports lookup. `None` for backends without one, or when the
-        /// token is not in the vocabulary.
+        /// supports lookup. `Ok(None)` when the token is not in the
+        /// vocabulary. `Err` when this backend cannot do id lookup at all —
+        /// kept distinct from a genuine vocabulary miss so callers can tell
+        /// "unsupported" from "looked up, not found".
         ///
-        /// No default body: every implementor must state its answer
-        /// explicitly (`None` where genuinely unsupported) rather than risk
-        /// silently inheriting `None` for a backend that could report one.
-        fn token_to_id(&self, token: &str) -> Option<TokenIdType>;
+        /// Defaults to unsupported, matching `encode_segments` and
+        /// `validate_prefix_cache`: only backends that can perform lookup
+        /// need to override it.
+        fn token_to_id(&self, _token: &str) -> Result<Option<TokenIdType>> {
+            Err(Error::msg(
+                "tokenizer backend does not support token lookup",
+            ))
+        }
 
         /// Ids of added tokens marked special (e.g. BOS/EOS/PAD/control
         /// tokens), as distinct from ordinary vocabulary tokens. Empty for
@@ -589,10 +595,6 @@ mod decode_stream_unicode_tests {
 
     impl super::traits::Tokenizer for RewritingTokenizer {
         fn vocab_size(&self) -> Option<usize> {
-            None
-        }
-
-        fn token_to_id(&self, _token: &str) -> Option<TokenIdType> {
             None
         }
 

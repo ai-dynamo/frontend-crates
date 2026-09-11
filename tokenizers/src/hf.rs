@@ -197,8 +197,8 @@ impl Tokenizer for HuggingFaceTokenizer {
         Some(self.tokenizer.get_vocab_size(true))
     }
 
-    fn token_to_id(&self, token: &str) -> Option<TokenIdType> {
-        self.tokenizer.token_to_id(token)
+    fn token_to_id(&self, token: &str) -> Result<Option<TokenIdType>> {
+        Ok(self.tokenizer.token_to_id(token))
     }
 
     fn special_token_ids(&self) -> Vec<TokenIdType> {
@@ -437,7 +437,7 @@ mod tests {
 
         let tokenizer = HuggingFaceTokenizer::from_file(path.to_str().unwrap()).unwrap();
         assert_eq!(tokenizer.vocab_size(), Some(3));
-        assert_eq!(tokenizer.token_to_id("hello"), Some(1));
+        assert_eq!(tokenizer.token_to_id("hello").unwrap(), Some(1));
         assert_eq!(tokenizer.special_token_ids(), vec![0]);
         assert_eq!(tokenizer.num_special_tokens_added(), 0);
     }
