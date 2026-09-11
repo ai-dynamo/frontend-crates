@@ -70,6 +70,7 @@ impl NativeUnified for MuseChannelScanner {
             strip_text: guided_strip_text,
             competitors: &GUIDED_COMPETITORS,
             close_markers: &GUIDED_CLOSE_MARKERS,
+            response_literal_markers: &[],
         }))
     }
 
@@ -535,6 +536,52 @@ mod tests {
     }
 
     #[test]
+    fn split_orphan_invoke_closer_after_prose_is_stripped() {
+        let mut parser = muse_glimmer_unified(&tools());
+        let first = parser
+            .push("Sure, here is the plan.</atem:inv")
+            .expect("first push");
+        assert_eq!(assemble(&first), vec![text("Sure, here is the plan.")]);
+        assert!(
+            parser.push("oke>").expect("second push").is_empty(),
+            "the completed orphan closer must be suppressed"
+        );
+        assert!(parser.finish().expect("finish").is_empty());
+    }
+
+    #[test]
+    fn invoke_closer_stripping_is_chunk_invariant() {
+        let orphan = "before </atem:invoke> after";
+        let expected = batch(orphan);
+        for split in orphan
+            .char_indices()
+            .map(|(at, _)| at)
+            .chain(std::iter::once(orphan.len()))
+        {
+            assert_eq!(
+                events(&[&orphan[..split], &orphan[split..]]),
+                expected,
+                "split at {split} changed {orphan:?}"
+            );
+        }
+        assert_eq!(batch(orphan), vec![text("before  after")]);
+    }
+
+    #[test]
+    fn reset_discards_unmatched_prose_invoke_context() {
+        let mut parser = muse_glimmer_unified(&tools());
+        parser
+            .push("quoted <atem:invoke name=\"f\">")
+            .expect("first push");
+        parser.reset();
+        let mut deltas = parser
+            .push("fresh </atem:invoke> text")
+            .expect("second push");
+        deltas.extend(parser.finish().expect("second finish"));
+        assert_eq!(assemble(&deltas), vec![text("fresh  text")]);
+    }
+
+    #[test]
     fn a_special_token_in_a_parameter_value_is_data_only_until_it_ends_the_channel() {
         // `opaque: ["atem:parameter"]` in parser_families.yaml colours a parameter
         // body as argument DATA. That holds for `<|message|>`, which has no
@@ -555,7 +602,7 @@ mod tests {
                  <atem:parameter name=\"x\">a{marker}b</atem:parameter></atem:invoke><|eom|>"
             )
         };
-        let truncated = vec![text("b</atem:parameter></atem:invoke>")];
+        let truncated = vec![text("b</atem:parameter>")];
         for marker in ["<|eom|>", "<|eot|>", "<|start|>"] {
             assert_eq!(events(&[&call_of(marker)]), truncated, "marker {marker}");
         }

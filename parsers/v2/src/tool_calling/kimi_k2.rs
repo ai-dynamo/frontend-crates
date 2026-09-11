@@ -630,6 +630,10 @@ impl ToolParser for KimiK2ToolStreamParser {
     fn finish(&mut self) -> anyhow::Result<ToolParseResult> {
         self.scanner.finish()
     }
+
+    fn tool_call_id(&self, tool_index: usize) -> Option<&str> {
+        self.scanner.tool_call_id(tool_index)
+    }
 }
 
 #[cfg(test)]
@@ -679,6 +683,39 @@ mod tests {
                 SECTION_END_SINGULAR.to_string()
             ],
         );
+    }
+
+    #[test]
+    fn native_tool_call_id_is_delegated_from_the_scanner() {
+        let input = concat!(
+            "<|tool_calls_section_begin|>",
+            "<|tool_call_begin|>functions.get_weather:7",
+            "<|tool_call_argument_begin|>{\"location\":\"NYC\"}",
+            "<|tool_call_end|><|tool_calls_section_end|>"
+        );
+        let mut parser = KimiK2ToolStreamParser::new(&weather_tools());
+        let result = parser.parse_complete(input).expect("parse complete");
+        assert_eq!(result.calls.len(), 1);
+        assert_eq!(result.calls[0].name.as_deref(), Some("get_weather"));
+        assert_eq!(parser.tool_call_id(0), Some("functions.get_weather:7"));
+        assert_eq!(parser.tool_call_id(1), None);
+    }
+
+    #[test]
+    fn native_tool_call_id_state_resets_for_reuse() {
+        let input = concat!(
+            "<|tool_calls_section_begin|>",
+            "<|tool_call_begin|>functions.get_weather:7",
+            "<|tool_call_argument_begin|>{\"location\":\"NYC\"}",
+            "<|tool_call_end|><|tool_calls_section_end|>"
+        );
+        let mut parser = KimiK2ToolStreamParser::new(&weather_tools());
+        parser.parse_complete(input).expect("first parse");
+        assert_eq!(parser.tool_call_id(0), Some("functions.get_weather:7"));
+        parser.scanner.reset();
+        assert_eq!(parser.tool_call_id(0), None);
+        parser.parse_complete(input).expect("second parse");
+        assert_eq!(parser.tool_call_id(0), Some("functions.get_weather:7"));
     }
 
     #[test]

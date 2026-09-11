@@ -223,7 +223,18 @@ def refresh_stream(v2_ver: str) -> None:
                 run_bin("dynamo-parsers-v2", "record_dynamo_stream", [str(fp), *extra])
             )
             cases_out = {}
-            for cid, chunks in rec.items():
+            source_cases = src.get("cases") or {}
+            for cid, case in source_cases.items():
+                unavailable = (case.get("unavailable") or {}).get("dynamo_v2")
+                if unavailable:
+                    cases_out[cid] = {"unavailable": unavailable}
+                    continue
+                if cid not in rec:
+                    raise SystemExit(
+                        f"[stream] {family}: recorder omitted supported case {cid} "
+                        f"from {fp.name}"
+                    )
+                chunks = rec[cid]
                 out_chunks = []
                 for ch in chunks:
                     entry = {"expected": ch.get("deltas") or []}

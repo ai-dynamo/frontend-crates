@@ -307,6 +307,55 @@ def test_selected_current_capture_requires_every_input_or_a_sparse_overlay(tmp_p
     assert {case["scenario"] for case in cases} == {"tool_only", "text_only"}
 
 
+def test_taxonomy_rename_uses_the_overlay_case_key(tmp_path):
+    family = "gemma4"
+    _write_case(
+        tmp_path,
+        "inputs",
+        family,
+        "UNIFIED.31-29",
+        {"scenario": "gemma4_guided_json_visible_call_prose_before_reasoning", "chunks": []},
+        model_label=family,
+    )
+    _write_case(
+        tmp_path,
+        "inputs+pr191.patch2",
+        family,
+        "UNIFIED.g4-1",
+        {"scenario": "gemma4_guided_json_visible_call_prose_before_reasoning", "chunks": []},
+        model_label=family,
+    )
+    _write_case(
+        tmp_path,
+        "golden",
+        family,
+        "UNIFIED.31-29",
+        {"assembled": []},
+        captured_with={"golden": "v1"},
+    )
+    _write_case(
+        tmp_path,
+        "golden+pr191.patch2",
+        family,
+        "UNIFIED.g4-1",
+        {"assembled": []},
+        captured_with={"golden": "v1"},
+    )
+    _write_case(
+        tmp_path,
+        "dynamo_v2-0.5.3+pr213",
+        family,
+        "UNIFIED.g4-1",
+        {"assembled": [], "chunks": []},
+        captured_with={"dynamo_v2": "0.5.3+pr213"},
+    )
+
+    cases, _caps, _versions = table._load_unified_fixtures(tmp_path)
+
+    assert len(cases) == 1
+    assert cases[0]["scenario"] == "gemma4_guided_json_visible_call_prose_before_reasoning"
+
+
 def test_sparse_peer_patch_overrides_base_case_without_changing_release(tmp_path):
     family = "gemma4"
     base_key = "UNIFIED.1.a"

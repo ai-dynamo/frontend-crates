@@ -157,6 +157,8 @@ def main():
         L.append(f"  {cid}:")
         if "description" in case:
             L.append(f"    description: {_q(case['description'])}")
+        if "explanation" in case:
+            L.append(f"    explanation: {_q(case['explanation'])}")
         if "ref" in case:
             L.append(f"    ref: {_q(case['ref'])}")
         # tools (block style)
@@ -165,7 +167,11 @@ def main():
             L.append(_indent(yaml.safe_dump(case["tools"], default_flow_style=False,
                                             allow_unicode=True, sort_keys=False).rstrip(), 4))
         # unavailable block (parser does NOT exist for this family)
-        case_unavail = dict(unavail)
+        case_unavail = {
+            _canonical_impl_key(k): v
+            for k, v in (case.get("unavailable") or {}).items()
+        }
+        case_unavail.update(unavail)
         # Per-case capture errors: the probe emits {"error": ...} for a case the parser
         # RAN on and REJECTED (e.g. garbage/incomplete tool call). That is a thrown
         # parser exception, not a missing parser — record it as a case-level `exception`
