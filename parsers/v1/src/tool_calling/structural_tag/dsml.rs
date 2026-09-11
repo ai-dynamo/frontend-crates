@@ -97,6 +97,7 @@ pub(crate) fn build_dsml_tool_calls(
             tags: vec![block_tag],
             at_least_one: outer_at_least_one,
             stop_after_first: ctx.stop_after_first(),
+            excludes: vec![],
         }),
     }))
 }

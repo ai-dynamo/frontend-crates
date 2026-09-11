@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 use super::TOOL_NAME_PLACEHOLDER;
 use super::builder::{
     StructuralTagBuilder, StructuralTagSchemaMode, ToolCallFormatBuildContext,
-    kimi_uses_declared_tool_schema,
+    uses_declared_tool_schema,
 };
 use super::dsml::DsmlToolCallsConfig;
 use super::format::JsonSchemaStyle;
@@ -244,24 +244,8 @@ fn parallel_true_does_not_stop_after_first() {
 }
 
 #[test]
-fn non_strict_tools_get_unconstrained_schema() {
+fn omitted_strict_uses_declared_schema() {
     let tools = sample_tools();
-    let parsed = build_unwrap(
-        &builder(),
-        &ToolChoice::Required,
-        &tools,
-        None,
-        StructuralTagSchemaMode::Auto,
-    );
-
-    let tags = parsed["format"]["tags"].as_array().unwrap();
-    assert_eq!(tags[0]["content"]["json_schema"], json!(true));
-}
-
-#[test]
-fn strict_tool_uses_own_schema() {
-    let mut tools = sample_tools();
-    tools[0].strict = Some(true);
     let parsed = build_unwrap(
         &builder(),
         &ToolChoice::Required,
@@ -272,12 +256,30 @@ fn strict_tool_uses_own_schema() {
 
     let tags = parsed["format"]["tags"].as_array().unwrap();
     assert!(tags[0]["content"]["json_schema"]["properties"]["a"].is_object());
-    assert_eq!(tags[1]["content"]["json_schema"], json!(true));
+    assert!(tags[1]["content"]["json_schema"]["properties"]["location"].is_object());
+}
+
+#[test]
+fn explicit_strict_false_uses_unconstrained_schema() {
+    let mut tools = sample_tools();
+    tools[0].strict = Some(false);
+    let parsed = build_unwrap(
+        &builder(),
+        &ToolChoice::Required,
+        &tools,
+        None,
+        StructuralTagSchemaMode::Auto,
+    );
+
+    let tags = parsed["format"]["tags"].as_array().unwrap();
+    assert_eq!(tags[0]["content"]["json_schema"], json!(true));
+    assert!(tags[1]["content"]["json_schema"]["properties"]["location"].is_object());
 }
 
 #[test]
 fn strict_schema_mode_uses_real_schema_for_all() {
-    let tools = sample_tools();
+    let mut tools = sample_tools();
+    tools[0].strict = Some(false);
     let parsed = build_unwrap(
         &builder(),
         &ToolChoice::Required,
@@ -292,18 +294,18 @@ fn strict_schema_mode_uses_real_schema_for_all() {
 }
 
 #[test]
-fn kimi_schema_policy_matches_vllm_xgrammar() {
+fn schema_policy_treats_only_explicit_false_as_opt_out() {
     let mut tool = sample_tools().remove(0);
 
     tool.strict = None;
-    assert!(kimi_uses_declared_tool_schema(&tool, false));
+    assert!(uses_declared_tool_schema(&tool, false));
 
     tool.strict = Some(true);
-    assert!(kimi_uses_declared_tool_schema(&tool, false));
+    assert!(uses_declared_tool_schema(&tool, false));
 
     tool.strict = Some(false);
-    assert!(!kimi_uses_declared_tool_schema(&tool, false));
-    assert!(kimi_uses_declared_tool_schema(&tool, true));
+    assert!(!uses_declared_tool_schema(&tool, false));
+    assert!(uses_declared_tool_schema(&tool, true));
 }
 
 #[test]
