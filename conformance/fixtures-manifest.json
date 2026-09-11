@@ -351,39 +351,14 @@
       "size": 21823
     },
     {
-      "path": "unified/dynamo_v2-0.5.3+pr213.tar.gz",
-      "sha256": "d520b2c1e0abacad167e58680411629a035fc48c971d1708470e0c9730984473",
-      "size": 22720
-    },
-    {
-      "path": "unified/golden+pr191.patch2.tar.gz",
-      "sha256": "6acab9881f6bb76c876f8ba1302fd1175074f4b90c800fd203da9ec7e8fa79ea",
-      "size": 5497
-    },
-    {
-      "path": "unified/golden+pr2851.patch1.tar.gz",
-      "sha256": "7e89c270ce97b7c4b0da7d3db23907211ef59b39d5086547afd01a8457a76e4b",
-      "size": 5482
-    },
-    {
       "path": "unified/golden.tar.gz",
-      "sha256": "1688e2f1b1e61cbd1aadec11684b8c91e6537dac91ff72c18885e532fec8edf5",
-      "size": 10659
-    },
-    {
-      "path": "unified/inputs+pr191.patch2.tar.gz",
-      "sha256": "b8bee33ab69b8af98d725db444c7726b8338a1af6335d63c474fd41c40ce43f5",
-      "size": 32939
-    },
-    {
-      "path": "unified/inputs+pr2851.patch1.tar.gz",
-      "sha256": "5ead28d7e9e22572f99c82157cbf0e0be1ca66027367cd06ac4e41e1a3acf8e4",
-      "size": 28965
+      "sha256": "57cddf354a86cd4759162147c7b69b9c724e8355ebea5dcf57e1038c75affde2",
+      "size": 17459
     },
     {
       "path": "unified/inputs.tar.gz",
-      "sha256": "72d948489aa36f50c35d644871702f17850566bf1ec31da6b57592153174e10b",
-      "size": 56690
+      "sha256": "2e439f1bf72f8bf8f16c6f5757a17954fd690055f7251ee0af60c2a86e0444a3",
+      "size": 93786
     },
     {
       "path": "unified/sglang_python-0.5.14.tar.gz",
@@ -424,6 +399,11 @@
       "path": "unified/vllm_rust-0.26.0.tar.gz",
       "sha256": "d34266871fe548c9c90a0b8b4f095fd058c68abaec377e24df8b652a6b530ba2",
       "size": 10961
+    },
+    {
+      "path": "unified/dynamo_v2-0.5.4.tar.gz",
+      "sha256": "d168cf1f684e81bac611d14446f39014b02b328cea08466586839d0d6cb52ad1",
+      "size": 25215
     }
   ]
 }

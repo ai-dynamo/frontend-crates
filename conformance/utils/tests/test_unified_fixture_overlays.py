@@ -343,11 +343,11 @@ def test_taxonomy_rename_uses_the_overlay_case_key(tmp_path):
     )
     _write_case(
         tmp_path,
-        "dynamo_v2-0.5.3+pr213",
+        "dynamo_v2-0.5.4",
         family,
         "UNIFIED.g4-1",
         {"assembled": [], "chunks": []},
-        captured_with={"dynamo_v2": "0.5.3+pr213"},
+        captured_with={"dynamo_v2": "0.5.4"},
     )
 
     cases, _caps, _versions = table._load_unified_fixtures(tmp_path)
