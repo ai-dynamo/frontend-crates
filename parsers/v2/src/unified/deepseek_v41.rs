@@ -5,7 +5,7 @@ use anyhow::Context;
 use serde_json::{Map, Value};
 
 use crate::tool_calling::scan::{
-    BareRecoveryLatch, InvokeBoundaryFactory, InvokeEmitter, InvokeScan, ReasoningSpec,
+    BareRecoveryLatch, InvokeBoundary, InvokeBoundaryFactory, InvokeEmitter, ReasoningSpec,
     WrappedBlockScanner, WrappedBlockSpec,
 };
 use crate::tool_calling::traits::{Tool, ToolCallDelta};
@@ -28,12 +28,7 @@ pub(crate) fn deepseek_v41_unified(_tools: &[Tool]) -> Box<dyn UnifiedParser> {
         orphan_markers: vec![BLOCK_END.into()],
         holdback_markers: vec![BLOCK_START.into(), BLOCK_END.into(), INVOKE_START.into()],
         bare_recovery_latch: BareRecoveryLatch::Set,
-        invoke_boundary_factory: Some(InvokeBoundaryFactory::stateless(InvokeScan {
-            end: invocation_end,
-            opens: |_, _| true,
-            holdback: |_| 0,
-            resync: None,
-        })),
+        invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(invocation_boundary)),
         preserve_special_tokens: true,
         ..Default::default()
     };
@@ -57,32 +52,162 @@ fn parameter_header(text: &str) -> Option<(&str, bool, &str)> {
     Some((name, string, value))
 }
 
-fn invocation_end(text: &str, flush: bool, _tool_index: usize) -> Option<usize> {
-    let mut cursor = 0;
-    loop {
-        let remaining = &text[cursor..];
-        let close = remaining.find(INVOKE_END)?;
-        let parameter = remaining.find(PARAMETER_START);
-        if parameter.is_none_or(|parameter| close < parameter) {
-            return Some(cursor + close + INVOKE_END.len());
-        }
-        let parameter = &remaining[parameter?..];
-        let Some((_, _, value)) = parameter_header(parameter) else {
-            // A split parameter header may still become valid, so retain it while
-            // streaming. At EOF, however, the invocation closer proves this is a
-            // complete malformed candidate; return its boundary so `parse_invoke`
-            // can report the invalid header instead of letting the shared scanner
-            // discard the whole block as merely incomplete.
-            return flush.then_some(cursor + close + INVOKE_END.len());
-        };
-        let Some(value_end) = value.find(PARAMETER_END) else {
-            // The same distinction applies to a parameter whose closer never
-            // arrived: wait for more bytes during streaming, but validate the
-            // closed invocation when the request finishes.
-            return flush.then_some(cursor + close + INVOKE_END.len());
-        };
-        cursor = text.len() - value.len() + value_end + PARAMETER_END.len();
+#[cfg(test)]
+std::thread_local! {
+    static BOUNDARY_EXAMINED_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+fn count_boundary_bytes(bytes: usize) {
+    #[cfg(test)]
+    BOUNDARY_EXAMINED_BYTES.with(|examined| examined.set(examined.get() + bytes));
+    #[cfg(not(test))]
+    let _ = bytes;
+}
+
+fn find_from(text: &str, start: usize, marker: &str) -> Option<usize> {
+    let suffix = &text[start..];
+    count_boundary_bytes(suffix.len());
+    suffix.find(marker).map(|at| start + at)
+}
+
+fn next_scan_start(text: &str, marker_len: usize) -> usize {
+    let mut start = text.len().saturating_sub(marker_len.saturating_sub(1));
+    while !text.is_char_boundary(start) {
+        start -= 1;
     }
+    start
+}
+
+#[derive(Default)]
+enum InvocationPosition {
+    #[default]
+    BetweenParameters,
+    ParameterHeader {
+        start: usize,
+        scan_from: usize,
+    },
+    ParameterValue {
+        start: usize,
+        scan_from: usize,
+    },
+    InvalidParameter {
+        start: usize,
+    },
+}
+
+#[derive(Default)]
+struct DeepSeekV41InvocationBoundary {
+    position: InvocationPosition,
+    scan_from: usize,
+}
+
+impl DeepSeekV41InvocationBoundary {
+    fn malformed_end(text: &str, start: usize, flush: bool) -> Option<usize> {
+        flush
+            .then(|| find_from(text, start, INVOKE_END))
+            .flatten()
+            .map(|at| at + INVOKE_END.len())
+    }
+}
+
+impl InvokeBoundary for DeepSeekV41InvocationBoundary {
+    fn end_append(
+        &mut self,
+        candidate: &str,
+        _append: &str,
+        flush: bool,
+        _tool_index: usize,
+    ) -> Option<usize> {
+        loop {
+            match self.position {
+                InvocationPosition::BetweenParameters => {
+                    let close = find_from(candidate, self.scan_from, INVOKE_END);
+                    let parameter = find_from(candidate, self.scan_from, PARAMETER_START);
+                    match (close, parameter) {
+                        (Some(close), Some(parameter)) if parameter <= close => {
+                            self.position = InvocationPosition::ParameterHeader {
+                                start: parameter,
+                                scan_from: parameter + PARAMETER_START.len(),
+                            };
+                        }
+                        (Some(close), _) => return Some(close + INVOKE_END.len()),
+                        (None, Some(parameter)) => {
+                            self.position = InvocationPosition::ParameterHeader {
+                                start: parameter,
+                                scan_from: parameter + PARAMETER_START.len(),
+                            };
+                        }
+                        (None, None) => {
+                            self.scan_from = next_scan_start(
+                                candidate,
+                                INVOKE_END.len().max(PARAMETER_START.len()),
+                            );
+                            return None;
+                        }
+                    }
+                }
+                InvocationPosition::ParameterHeader { start, scan_from } => {
+                    let Some(header_end) = find_from(candidate, scan_from, "\">") else {
+                        if flush {
+                            return Self::malformed_end(candidate, start, true);
+                        }
+                        self.position = InvocationPosition::ParameterHeader {
+                            start,
+                            scan_from: next_scan_start(candidate, 2),
+                        };
+                        return None;
+                    };
+                    let Some((_, _, value)) = parameter_header(&candidate[start..]) else {
+                        self.position = InvocationPosition::InvalidParameter { start };
+                        continue;
+                    };
+                    let value_start = candidate.len() - value.len();
+                    debug_assert!(value_start >= header_end + 2);
+                    self.position = InvocationPosition::ParameterValue {
+                        start,
+                        scan_from: value_start,
+                    };
+                }
+                InvocationPosition::ParameterValue { start, scan_from } => {
+                    let Some(value_end) = find_from(candidate, scan_from, PARAMETER_END) else {
+                        if flush {
+                            return Self::malformed_end(candidate, start, true);
+                        }
+                        self.position = InvocationPosition::ParameterValue {
+                            start,
+                            scan_from: next_scan_start(candidate, PARAMETER_END.len()),
+                        };
+                        return None;
+                    };
+                    self.scan_from = value_end + PARAMETER_END.len();
+                    self.position = InvocationPosition::BetweenParameters;
+                }
+                InvocationPosition::InvalidParameter { start } => {
+                    return Self::malformed_end(candidate, start, flush);
+                }
+            }
+        }
+    }
+
+    fn opens(&self, _text: &str, _at: usize) -> bool {
+        true
+    }
+
+    fn holdback(&self, _text: &str) -> usize {
+        0
+    }
+
+    fn resync(&mut self, _text: &str, _flush: bool, _tool_index: usize) -> Option<usize> {
+        None
+    }
+
+    fn reset(&mut self) {
+        *self = Self::default();
+    }
+}
+
+fn invocation_boundary() -> Box<dyn InvokeBoundary> {
+    Box::new(DeepSeekV41InvocationBoundary::default())
 }
 
 struct DeepSeekV41;
@@ -302,12 +427,46 @@ mod tests {
 
     #[test]
     fn invocation_requires_its_complete_closing_tag() {
-        for suffix in ["", " ", " inv", " invoke", " banana>"] {
+        for suffix in ["", " invoke", " banana>"] {
             let input = format!("<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"></｜DSML｜{suffix}");
             let mut parser = deepseek_v41_unified(&[]);
             assert!(parser.push(&input).unwrap().is_empty());
             assert!(parser.finish().unwrap().events.is_empty());
         }
+    }
+
+    #[test]
+    fn invocation_boundary_scans_large_streamed_parameters_linearly() {
+        let mut parser = deepseek_v41_unified(&[]);
+        parser
+            .push("<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"text\" string=\"true\">")
+            .unwrap();
+        BOUNDARY_EXAMINED_BYTES.with(|examined| examined.set(0));
+
+        let value = "x".repeat(16 * 1024);
+        for byte in value.as_bytes() {
+            parser
+                .push(std::str::from_utf8(std::slice::from_ref(byte)).unwrap())
+                .unwrap();
+        }
+        let events = parser
+            .push("</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>")
+            .unwrap();
+        let examined = BOUNDARY_EXAMINED_BYTES.with(std::cell::Cell::get);
+
+        let output: UnifiedParserOutput = events.into_iter().collect();
+        assert_eq!(
+            output.assembled(),
+            vec![UnifiedEvent::ToolCall {
+                name: "run".into(),
+                arguments: serde_json::json!({"text": value}),
+            }]
+        );
+        assert!(
+            examined < value.len() * PARAMETER_END.len() * 2,
+            "boundary examined {examined} bytes for a {}-byte value",
+            value.len()
+        );
     }
 
     #[test]

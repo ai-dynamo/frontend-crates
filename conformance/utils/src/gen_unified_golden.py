@@ -1519,11 +1519,11 @@ def deepseek_v41_cases():
     ]:
         add(name, "String parameter bytes survive DSML decoding.", calls(call("f", {"x": value})),
             [{"kind": "tool_call", "name": "f", "arguments": {"x": value}}])
-    add("truncated_tool_eof", "A truncated parameter does not complete an invocation.",
+    add("truncated_tool_eof", "A truncated parameter does not complete an invocation and emits nothing.",
         '<｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">partial', [])
     add("reason_unterminated", "An open thought survives the end of the stream.",
         "still thinking", [{"kind": "reasoning", "text": "still thinking"}], "Reasoning")
-    add("tool_markup_only_emits_nothing", "An empty calls block has no visible output.",
+    add("tool_markup_only_emits_nothing", "An empty calls block emits nothing.",
         calls(""), [])
     one = [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
     add("guided_json_named_tool", "A named choice uses the shared guided decoder.",
