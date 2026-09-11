@@ -57,7 +57,7 @@ fn parameter_header(text: &str) -> Option<(&str, bool, &str)> {
     Some((name, string, value))
 }
 
-fn invocation_end(text: &str, _flush: bool, _tool_index: usize) -> Option<usize> {
+fn invocation_end(text: &str, flush: bool, _tool_index: usize) -> Option<usize> {
     let mut cursor = 0;
     loop {
         let remaining = &text[cursor..];
@@ -67,8 +67,20 @@ fn invocation_end(text: &str, _flush: bool, _tool_index: usize) -> Option<usize>
             return Some(cursor + close + INVOKE_END.len());
         }
         let parameter = &remaining[parameter?..];
-        let (_, _, value) = parameter_header(parameter)?;
-        let value_end = value.find(PARAMETER_END)?;
+        let Some((_, _, value)) = parameter_header(parameter) else {
+            // A split parameter header may still become valid, so retain it while
+            // streaming. At EOF, however, the invocation closer proves this is a
+            // complete malformed candidate; return its boundary so `parse_invoke`
+            // can report the invalid header instead of letting the shared scanner
+            // discard the whole block as merely incomplete.
+            return flush.then_some(cursor + close + INVOKE_END.len());
+        };
+        let Some(value_end) = value.find(PARAMETER_END) else {
+            // The same distinction applies to a parameter whose closer never
+            // arrived: wait for more bytes during streaming, but validate the
+            // closed invocation when the request finishes.
+            return flush.then_some(cursor + close + INVOKE_END.len());
+        };
         cursor = text.len() - value.len() + value_end + PARAMETER_END.len();
     }
 }
@@ -310,6 +322,25 @@ mod tests {
                 let result = parser
                     .parse_into(&input[..split], &mut output)
                     .and_then(|()| parser.parse_into(&input[split..], &mut output));
+                assert!(result.is_err(), "split {split}");
+                assert!(output.events.is_empty(), "split {split}");
+            }
+        }
+    }
+
+    #[test]
+    fn closed_malformed_parameter_is_an_error_at_eof() {
+        for input in [
+            "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"value\" string=\"maybe\">1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
+            "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"value\" string=\"false\">1</｜DSML｜ invoke></｜DSML｜ calls>",
+        ] {
+            for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
+                let mut parser = deepseek_v41_unified(&[]);
+                let mut output = UnifiedParserOutput::default();
+                let result = parser
+                    .parse_into(&input[..split], &mut output)
+                    .and_then(|()| parser.parse_into(&input[split..], &mut output))
+                    .and_then(|()| parser.finish().map(|_| ()));
                 assert!(result.is_err(), "split {split}");
                 assert!(output.events.is_empty(), "split {split}");
             }
