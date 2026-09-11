@@ -29,6 +29,11 @@ pub fn deepseek_formatter_for(
     model_type_lower: &Option<String>,
     display_name_lower: &str,
 ) -> Option<PromptFormatter> {
+    if is_deepseek_v41(model_type_lower, display_name_lower) {
+        return Some(PromptFormatter::OAI(Arc::new(
+            super::deepseek::v41::DeepSeekV41Formatter,
+        )));
+    }
     if is_deepseek_v4(model_type_lower, display_name_lower) {
         tracing::info!(
             model_type = ?model_type_lower,
@@ -226,6 +231,25 @@ struct HfTokenizerConfigJsonFormatter {
 #[derive(Debug, Clone, Default)]
 pub struct ContextMixins {
     context_mixins: HashSet<PromptContextMixin>,
+}
+
+fn is_deepseek_v41(model_type_lower: &Option<String>, display_name_lower: &str) -> bool {
+    match model_type_lower.as_deref() {
+        Some("deepseek_v41") => true,
+        Some(_) => false,
+        None => [
+            "deepseek-v4.1",
+            "deepseek_v4.1",
+            "deepseek.v4.1",
+            "deepseekv4.1",
+        ]
+        .iter()
+        .any(|prefix| {
+            display_name_lower
+                .strip_prefix(prefix)
+                .is_some_and(|suffix| suffix.is_empty() || suffix.starts_with(['-', '_', '.']))
+        }),
+    }
 }
 
 /// Decides whether to activate the DeepSeek-V4 native formatter.

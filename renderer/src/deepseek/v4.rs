@@ -18,13 +18,52 @@ use super::common::{
 };
 pub use super::common::{ReasoningEffort, ThinkingMode, tokens};
 
+#[derive(Clone, Copy)]
+pub(super) enum Encoding {
+    V4(Option<ReasoningEffort>),
+    V41(u8),
+}
+
+impl Encoding {
+    fn is_v41(self) -> bool {
+        matches!(self, Self::V41(_))
+    }
+
+    fn tag(self, v4: &'static str, v41: &'static str) -> &'static str {
+        if self.is_v41() { v41 } else { v4 }
+    }
+
+    fn reasoning_prefix(self) -> String {
+        match self {
+            Self::V4(Some(ReasoningEffort::High)) => REASONING_EFFORT_HIGH.to_string(),
+            Self::V4(Some(ReasoningEffort::Max)) => REASONING_EFFORT_MAX.to_string(),
+            Self::V4(None) => String::new(),
+            Self::V41(effort) => format!(
+                "Reasoning Effort: {effort} (range 1-100, the higher the value, the more thorough the reasoning)\n\n"
+            ),
+        }
+    }
+
+    fn render_tools(self, tools: &[JsonValue]) -> String {
+        let template = if self.is_v41() {
+            TOOLS_TEMPLATE
+                .replace("{dsml_token}tool_calls", "{dsml_token} calls")
+                .replace("{dsml_token}invoke", "{dsml_token} invoke")
+                .replace("{dsml_token}parameter", "{dsml_token} parameter")
+        } else {
+            TOOLS_TEMPLATE.to_string()
+        };
+        render_tools(&template, tools)
+    }
+}
+
 /// Render a single message at the given index.
 fn render_message(
     index: usize,
     messages: &[JsonValue],
     thinking_mode: ThinkingMode,
     drop_thinking: bool,
-    reasoning_effort: Option<ReasoningEffort>,
+    encoding: Encoding,
     last_user_idx: Option<usize>,
 ) -> Result<String> {
     let msg = &messages[index];
@@ -36,14 +75,13 @@ fn render_message(
 
     let mut prompt = String::new();
 
-    // Reasoning effort prefix (only at index 0 in thinking mode). Low is the
-    // reference encoder's no-prefix baseline.
+    if encoding.is_v41()
+        && (role == "system" || (index == 0 && thinking_mode == ThinkingMode::Thinking))
+    {
+        prompt.push_str("<｜System｜>");
+    }
     if index == 0 && thinking_mode == ThinkingMode::Thinking {
-        match reasoning_effort {
-            Some(ReasoningEffort::High) => prompt.push_str(REASONING_EFFORT_HIGH),
-            Some(ReasoningEffort::Max) => prompt.push_str(REASONING_EFFORT_MAX),
-            None => {}
-        }
+        prompt.push_str(&encoding.reasoning_prefix());
     }
 
     match role {
@@ -52,7 +90,7 @@ fn render_message(
             prompt.push_str(content);
             if let Some(tools) = msg.get("tools").and_then(|t| t.as_array()) {
                 prompt.push_str("\n\n");
-                prompt.push_str(&render_tools(TOOLS_TEMPLATE, tools));
+                prompt.push_str(&encoding.render_tools(tools));
             }
             if let Some(response_format) = msg.get("response_format") {
                 prompt.push_str("\n\n");
@@ -74,7 +112,7 @@ fn render_message(
 
             if let Some(tools) = msg.get("tools").and_then(|t| t.as_array()) {
                 content_developer.push_str("\n\n");
-                content_developer.push_str(&render_tools(TOOLS_TEMPLATE, tools));
+                content_developer.push_str(&encoding.render_tools(tools));
             }
             if let Some(response_format) = msg.get("response_format") {
                 content_developer.push_str("\n\n");
@@ -159,7 +197,7 @@ fn render_message(
                 prompt.push_str(&format!(
                     "<{}{}>\n",
                     tokens::DSML_TOKEN,
-                    TOOL_CALLS_BLOCK_NAME
+                    encoding.tag(TOOL_CALLS_BLOCK_NAME, " calls")
                 ));
 
                 let mut invocations = Vec::with_capacity(tool_calls.len());
@@ -171,20 +209,26 @@ fn render_message(
                         .get("name")
                         .and_then(|n| n.as_str())
                         .context("Missing tool call name")?;
-                    let arguments = encode_arguments_to_dsml(fn_obj)?;
+                    let arguments = if encoding.is_v41() {
+                        super::v41::encode_arguments(fn_obj)?
+                    } else {
+                        encode_arguments_to_dsml(fn_obj)?
+                    };
                     invocations.push(format!(
-                        "<{}invoke name=\"{}\">\n{}\n</{}invoke>",
+                        "<{}{} name=\"{}\">\n{}\n</{}{}>",
                         tokens::DSML_TOKEN,
+                        encoding.tag("invoke", " invoke"),
                         name,
                         arguments,
-                        tokens::DSML_TOKEN
+                        tokens::DSML_TOKEN,
+                        encoding.tag("invoke", " invoke")
                     ));
                 }
                 prompt.push_str(&invocations.join("\n"));
                 prompt.push_str(&format!(
                     "\n</{}{}>",
                     tokens::DSML_TOKEN,
-                    TOOL_CALLS_BLOCK_NAME
+                    encoding.tag(TOOL_CALLS_BLOCK_NAME, " calls")
                 ));
             }
 
@@ -219,7 +263,9 @@ fn render_message(
             });
             prompt.push_str(sp);
         }
-    } else if matches!(role, "user" | "developer") {
+    } else if matches!(role, "user" | "developer")
+        || (encoding.is_v41() && role == "system" && index > 0)
+    {
         prompt.push_str(tokens::ASSISTANT_START);
         let seed_thinking = thinking_mode == ThinkingMode::Thinking
             && (!drop_thinking || last_user_idx.is_none_or(|u| index >= u));
@@ -285,6 +331,22 @@ pub fn encode_messages_with_options(
     drop_thinking: bool,
     reasoning_effort: Option<ReasoningEffort>,
 ) -> Result<String> {
+    encode_messages_with_encoding(
+        messages,
+        thinking_mode,
+        add_bos_token,
+        drop_thinking,
+        Encoding::V4(reasoning_effort),
+    )
+}
+
+pub(super) fn encode_messages_with_encoding(
+    messages: &[JsonValue],
+    thinking_mode: ThinkingMode,
+    add_bos_token: bool,
+    drop_thinking: bool,
+    encoding: Encoding,
+) -> Result<String> {
     let merged = merge_tool_messages(messages);
     let mut full = sort_tool_results_by_call_order(merged);
 
@@ -306,17 +368,25 @@ pub fn encode_messages_with_options(
     let effective_drop_thinking = drop_thinking && !has_tools;
 
     if thinking_mode == ThinkingMode::Thinking && effective_drop_thinking {
-        full = drop_thinking_messages(full);
+        full = if encoding.is_v41() {
+            super::v41::drop_thinking_messages(full)
+        } else {
+            drop_thinking_messages(full)
+        };
     }
 
-    let last_user_idx = find_last_user_index(&full);
+    let last_user_idx = if encoding.is_v41() {
+        super::v41::find_last_user_index(&full)
+    } else {
+        find_last_user_index(&full)
+    };
     for idx in 0..full.len() {
         let part = render_message(
             idx,
             &full,
             thinking_mode,
             effective_drop_thinking,
-            reasoning_effort,
+            encoding,
             last_user_idx,
         )?;
         prompt.push_str(&part);

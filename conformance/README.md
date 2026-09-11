@@ -138,6 +138,8 @@ The four routine loops. All of them end the same way: `package_fixtures.py` rebu
 
 Unified work is complete only when the selected current Dynamo column has **zero empty cells and zero red cells** for the affected family. This is a hard gate. `reason:`, `unavailable:`, a historical column, stale HTML, or changing GOLDEN to match broken output does not satisfy it.
 
+For a model-family conversion, collection is mandatory work, not a follow-up. Before capture, bump `parsers/v2/Cargo.toml` to the version that will ship the conversion. Then generate the family’s Unified authored inputs and golden events, run the live Unified parser capture, explode it, package the LFS shards and manifest, extract the pinned snapshot, and render the canonical v2 report. The current `dynamo_v2-<version>.tar.gz` shard must exist before the row can be considered collected. Never generate `CONFORMANCE_unified.html`; `CONFORMANCE_v2.html` is the only HTML report for this workflow.
+
 Use this loop:
 
 1. **Write:** make the parser or capture change.
@@ -147,6 +149,22 @@ Use this loop:
 5. **Re-read:** inspect the rendered Unified column again. Repeat until both counts are zero.
 
 `render_table_v2.sh` always writes `conformance/CONFORMANCE_v2.json` beside the HTML and prints the total empty/red count. The standard scoped gate is `conformance/utils/check.sh status --model qwen3 --tab unified`; it renders first, prints every empty or red case, and exits nonzero until the row is clear. Use the lower-level `validate_conformance_status.py` only to inspect an already-rendered file. Then run `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --nocapture` and `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- --nocapture`. Do not report Unified work complete while either rendered count is nonzero.
+
+The complete current-family collection sequence is:
+
+```bash
+python3 conformance/utils/src/gen_unified_golden.py
+cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --nocapture
+python3 conformance/utils/src/explode_unified_fixtures.py
+python3 conformance/utils/src/package_fixtures.py
+python3 conformance/utils/src/extract_fixtures.py --full-refresh
+conformance/utils/render_table_v2.sh --output conformance/CONFORMANCE_v2.html
+conformance/utils/check.sh status --model <family> --tab unified
+cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- --nocapture
+python3 -m pytest conformance/utils/tests/test_model.py
+```
+
+Do not substitute a loose harness feed for the package step. The v2 table reads the extracted packaged snapshot, so an un-packaged family cannot appear in its Unified tab.
 
 ### 3. Version rule: fixture dirs carry the crate version that ships them
 
@@ -164,7 +182,7 @@ A parser change that alters output fails CI until the fixtures are re-captured a
 
 ### 5. Add a new test case (e.g. a new `TOOLCALLING.streamv2.5.h`)
 
-A "case" is one `<num>.<letter>` sub-case shared across families. Adding one is FOUR edits, in order:
+A "case" is one numeric-suffix sub-case shared across families. New case IDs use `<num>-<num>` or `<letters/num>-<num>`; do not allocate new letter suffixes because a long-running taxonomy can exhaust `a` through `z`. Adding one is FOUR edits, in order:
 
 1. **Input.** Add the case to `toolcalling/fixtures-stream-v2/inputs/<family>/TOOLCALLING.streamv2.<N>.yaml` for each family it applies to — the shared per-chunk `delta_text` (schema in [`toolcalling/fixtures-stream-v2/README.md`](toolcalling/fixtures-stream-v2/README.md#fixture-schema)). Batch cases go under `toolcalling/fixtures-batch-v1/inputs/<family>/` instead.
 2. **Description.** Add a bullet to `utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md` (or the batch/reasoning CASES.md) — the HTML "Case descriptions" section renders it, and the tooltip links to it.

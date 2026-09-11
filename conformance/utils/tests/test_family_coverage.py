@@ -116,10 +116,10 @@ def test_taxonomy_case_entries_well_formed() -> None:
 
 
 def test_markers_declared_for_every_family() -> None:
-    """markers: and families: stay key-aligned — a new family cannot register a
-    parser row without declaring (possibly empty) grammar tokens."""
+    """Tool-only and unified parser families must declare their grammar tokens."""
     registry = _registry()
-    assert set(registry["markers"]) == set(registry["families"])
+    unified = {row.get("registry", family) for family, row in registry["unified"].items()}
+    assert set(registry["markers"]) == set(registry["families"]) | unified
 
 
 def test_leak_regex_superset_of_retired_hardcoded_regex() -> None:
@@ -163,6 +163,41 @@ def test_declared_tokens_render_non_orphan() -> None:
             assert "tt-orphan" not in markup.colorize_markup(f"{open_tok}x{close_tok}", family=fam), (fam, open_tok)
         for tok in decl.get("singletons") or []:
             assert "tt-orphan" not in markup.colorize_markup(str(tok), family=fam), (fam, tok)
+
+
+def test_kimi_k3_composite_markers_render_as_longest_declared_tokens() -> None:
+    cases = [
+        "<|open|>think<|sep|>private<|close|>think<|sep|>",
+        "<|open|> response <|sep|>visible<|close|> response <|sep|>",
+        '<|open|>call tool="get_weather" index="1"<|sep|>'
+        '<|open|>argument key="city" type="string"<|sep|>Paris'
+        "<|close|>argument<|sep|><|close|>call<|sep|>",
+        '<|open|> message role="assistant" <|sep|>visible'
+        "<|close|> message <|sep|>",
+    ]
+    for text in cases:
+        rendered = markup.colorize_markup(text, family="kimi_k3")
+        assert "tt-orphan" not in rendered, text
+        expected_markers = text.count("<|open|>") + text.count("<|close|>")
+        assert rendered.count("<span") == expected_markers
+
+
+def test_kimi_k3_opaque_composite_regions_keep_marker_text_as_data() -> None:
+    typed = (
+        '<|open|> call tool="run" index="1" <|sep|>'
+        '<|open|> argument key="cmd" type="string" <|sep|>'
+        "literal <|close|>call<|sep|> text"
+        "<|close|> argument <|sep|><|close|> call <|sep|>"
+    )
+    raw_json = (
+        '<|open|>json type="object"<|sep|>'
+        '{"cmd":"literal <|close|>json<|sep|> text"}'
+        "<|close|>json<|sep|>"
+    )
+    for text in (typed, raw_json):
+        rendered = markup.colorize_markup(text, family="kimi_k3")
+        assert "tt-orphan" not in rendered
+        assert rendered.count("&lt;|close|&gt;") == text.count("<|close|>")
 
 
 def test_reasoning_only_family_skips_toolcalling_suites() -> None:

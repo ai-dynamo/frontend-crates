@@ -11,6 +11,7 @@
 
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// Recursively collect `*.yaml` fixture files under `dir` into `out`.
 pub fn collect_yaml(dir: &Path, out: &mut Vec<PathBuf>) {
@@ -201,17 +202,30 @@ mod resolve_snap_dir_tests {
 /// scenario spec into the gitignored build tree (`conformance/unified/golden_spec/`)
 /// on demand, mirroring how [`ensure_fixtures`] shells out to `extract_fixtures.py`.
 /// The committed `golden.tar.gz` shard is DERIVED from this via render -> explode
-/// -> package. A `flock` serializes the two unified test binaries so they don't
-/// race writing the same files. Panics with the fix command if generation fails.
+/// -> package. Each test process copies the generated tree to its own immutable
+/// directory while holding the lock, because the generator truncates files before
+/// rewriting them and another test binary may start as soon as the lock is released.
+/// Panics with the fix command if generation fails.
 pub fn ensure_unified_golden() -> PathBuf {
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let script = manifest.join("utils/src/gen_unified_golden.py");
+    let generated = manifest.join("unified/golden_spec");
+    static GOLDEN_COPY_ID: AtomicUsize = AtomicUsize::new(0);
+    let copy_id = GOLDEN_COPY_ID.fetch_add(1, Ordering::Relaxed);
+    let isolated = manifest.join(format!(
+        "unified/golden_spec-{}-{copy_id}",
+        std::process::id()
+    ));
     let status = std::process::Command::new("flock")
         .args([
             "/tmp/dynamo-unified-golden.lock",
-            "python3",
-            script.to_str().expect("non-UTF-8 script path"),
+            "sh",
+            "-c",
+            "python3 \"$GOLDEN_SCRIPT\" && rm -rf \"$GOLDEN_DEST\" && cp -a \"$GOLDEN_SOURCE\" \"$GOLDEN_DEST\"",
         ])
+        .env("GOLDEN_SCRIPT", &script)
+        .env("GOLDEN_SOURCE", &generated)
+        .env("GOLDEN_DEST", &isolated)
         .status()
         .expect("flock/python3 not found — ensure python3 is in PATH");
     if !status.success() {
@@ -221,7 +235,7 @@ pub fn ensure_unified_golden() -> PathBuf {
             script.display()
         );
     }
-    manifest.join("unified/golden_spec")
+    isolated
 }
 
 /// Crate-relative display path for a fixture (for failure messages).
@@ -233,9 +247,9 @@ pub fn fixture_name(path: &Path) -> String {
 }
 
 /// Current parser-version capture used by stream parity and interleave tests.
-pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.4.0";
+pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.5.1";
 
-pub const UNIFIED_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.4.1";
+pub const UNIFIED_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.5.3+pr213";
 
 /// Version-sorted capture dirs for one impl prefix (e.g. `dynamo-` under
 /// fixtures-batch-v1, `dynamo_v2-` under fixtures-stream-v2), ASCENDING by
