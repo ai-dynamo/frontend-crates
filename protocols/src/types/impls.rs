@@ -100,7 +100,7 @@ impl From<&str> for ChatCompletionRequestSystemMessage {
 
 impl From<String> for ChatCompletionRequestSystemMessage {
     fn from(value: String) -> Self {
-        value.as_str().into()
+        ChatCompletionRequestSystemMessageContent::Text(value).into()
     }
 }
 
