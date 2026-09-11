@@ -227,17 +227,19 @@ fn qualified_tool_names_remain_verbatim() {
 #[test]
 fn normalized_effort_uses_the_api_mapping() {
     for (effort, budget) in [("low", 50), ("high", 75), ("max", 100)] {
-        for fields in [
-            json!({"reasoning_effort": effort, "chat_template_args": {"reasoning_effort": effort}}),
-            json!({"chat_template_args": {"reasoning_effort": effort}}),
-        ] {
-            assert!(
-                render(fields)
-                    .unwrap()
-                    .contains(&format!("Reasoning Effort: {budget} "))
-            );
-        }
+        assert!(
+            render(json!({"chat_template_args": {"reasoning_effort": effort}}))
+                .unwrap()
+                .contains(&format!("Reasoning Effort: {budget} "))
+        );
     }
+    let output = render(json!({
+        "reasoning_effort": "low",
+        "chat_template_args": {"reasoning_effort": "max"}
+    }))
+    .unwrap();
+    assert!(output.contains("Reasoning Effort: 50 "));
+    assert!(!output.contains("Reasoning Effort: 100 "));
     let output = render(json!({"reasoning_effort": "none", "chat_template_args": {"reasoning_effort": "none", "thinking": false}})).unwrap();
     assert!(!output.contains("Reasoning Effort:"));
     assert!(output.ends_with("</think>"));
