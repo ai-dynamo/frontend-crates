@@ -1033,9 +1033,8 @@ def _candidate_name_key(label: str) -> str:
     return base.lower()
 
 
-# `+` is part of a version token: change-scoped captures like `0.1.24+pr163` are
-# supported (test_model.py), and excluding `+` made the whole regex fail to match, so
-# such a candidate sorted as version-less — LAST instead of first.
+# The version token may contain a `+` for non-Unified legacy candidates, but
+# Unified capture producers reject change-qualified labels before rendering.
 _CANDIDATE_VERSION_RE = re.compile(r"\s(\d[\w.+]*)\s*(?:\([^)]*\))?\s*$")
 
 
