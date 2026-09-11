@@ -500,11 +500,11 @@ def test_unified_case_counts_match_the_generator():
     denominator survived in the prose before.
     """
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
-    shared = min(per_family.values())
     for fam in FAMILIES:
-        family_specific = 2 if fam == "gemma4" else 8 if fam == "kimi_k3" else 0
-        expected = shared + family_specific
-        assert per_family[fam] == expected, f"{fam} diverged from the expected case count"
+        family_specific = (
+            23 if fam == "deepseek_v41" else 88 if fam == "gemma4" else 94 if fam == "kimi_k3" else 86
+        )
+        assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
     assert sum(per_family.values()) == sum(len(build_cases(f)) for f in FAMILIES)
 
 

@@ -56,8 +56,6 @@ pub(crate) struct DsmlEmitter;
 #[cfg(test)]
 std::thread_local! {
     static BOUNDARY_EXAMINED_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
-    static BOUNDARY_RETAINED_PREFIX_COMPARISONS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
-    static BOUNDARY_COPIED_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
 fn count_boundary_bytes(bytes: usize) {
@@ -70,23 +68,11 @@ fn count_boundary_bytes(bytes: usize) {
 #[cfg(test)]
 pub(crate) fn reset_boundary_examined_bytes() {
     BOUNDARY_EXAMINED_BYTES.with(|examined| examined.set(0));
-    BOUNDARY_RETAINED_PREFIX_COMPARISONS.with(|comparisons| comparisons.set(0));
-    BOUNDARY_COPIED_BYTES.with(|copied| copied.set(0));
 }
 
 #[cfg(test)]
 pub(crate) fn boundary_examined_bytes() -> usize {
     BOUNDARY_EXAMINED_BYTES.with(std::cell::Cell::get)
-}
-
-#[cfg(test)]
-pub(crate) fn boundary_retained_prefix_comparisons() -> usize {
-    BOUNDARY_RETAINED_PREFIX_COMPARISONS.with(std::cell::Cell::get)
-}
-
-#[cfg(test)]
-pub(crate) fn boundary_copied_bytes() -> usize {
-    BOUNDARY_COPIED_BYTES.with(std::cell::Cell::get)
 }
 
 #[derive(Default)]
@@ -510,7 +496,7 @@ mod tests {
         guided_append_work, reset_guided_append_work,
     };
 
-    fn boundary_work_for_parameter_bytes(value_len: usize) -> (usize, usize, usize) {
+    fn boundary_work_for_parameter_bytes(value_len: usize) -> usize {
         reset_boundary_examined_bytes();
         let input = format!(
             "{BLOCK_START}{INVOKE_START_PREFIX}run\">{PARAMETER_PREFIX}\"payload\" string=\"true\">{}{PARAMETER_END}",
@@ -523,11 +509,7 @@ mod tests {
                 .expect("push character");
         }
         scanner.finish_ordered().expect("finish");
-        (
-            boundary_examined_bytes(),
-            boundary_retained_prefix_comparisons(),
-            boundary_copied_bytes(),
-        )
+        boundary_examined_bytes()
     }
 
     #[test]
@@ -551,31 +533,21 @@ mod tests {
         let large_work = boundary_work_for_parameter_bytes(large_len);
         println!("DSML boundary work: {small_len}={small_work:?}, {large_len}={large_work:?}");
 
-        assert!(small_work.0 >= small_len);
-        assert!(large_work.0 >= large_len);
+        assert!(small_work >= small_len);
+        assert!(large_work >= large_len);
         assert_eq!(
-            large_work.0 - small_work.0,
+            large_work - small_work,
             large_len - small_len,
             "each additional parameter byte must be examined exactly once"
         );
         assert!(
-            large_work.0 <= small_work.0 * 2 + 256,
+            large_work <= small_work * 2 + 256,
             "doubling payload size must roughly double scan work: {small_work:?} -> {large_work:?}"
         );
-        assert_eq!(
-            small_work.1, 0,
-            "retained-prefix comparisons: {small_work:?}"
-        );
-        assert_eq!(
-            large_work.1, 0,
-            "retained-prefix comparisons: {large_work:?}"
-        );
-        assert_eq!(small_work.2, 0, "boundary-owned copies: {small_work:?}");
-        assert_eq!(large_work.2, 0, "boundary-owned copies: {large_work:?}");
     }
 
     #[test]
-    fn invoke_boundary_accepts_append_and_candidate_replacement_without_prefix_work() {
+    fn invoke_boundary_accepts_append_and_candidate_replacement() {
         reset_boundary_examined_bytes();
         let mut boundary = DsmlInvokeBoundary::default();
         let first = format!("{INVOKE_START_PREFIX}one\">partial");
@@ -586,13 +558,11 @@ mod tests {
             boundary.end_append(&replacement, &replacement, false, 0),
             Some(replacement.len())
         );
-        assert_eq!(boundary_retained_prefix_comparisons(), 0);
-        assert_eq!(boundary_copied_bytes(), 0);
     }
 
     #[test]
     fn guided_append_tracking_is_constant_work_per_chunk_and_resets_for_reuse() {
-        fn work(value_len: usize) -> (usize, usize, usize) {
+        fn work(value_len: usize) -> usize {
             reset_guided_append_work();
             reset_boundary_examined_bytes();
             let input = format!("{INVOKE_START_PREFIX}{}", "x".repeat(value_len));
@@ -609,17 +579,14 @@ mod tests {
                 parser.push(&ch.to_string()).expect("push character");
             }
             parser.finish().expect("finish partial candidate");
-            let append = guided_append_work();
-            assert_eq!(boundary_retained_prefix_comparisons(), 0);
-            assert_eq!(boundary_copied_bytes(), 0);
-            append
+            guided_append_work()
         }
 
         let small = work(4_096);
         let large = work(8_192);
         println!("guided append work: 4096={small:?}, 8192={large:?}");
-        assert_eq!(small, (0, 0, 0));
-        assert_eq!(large, (0, 0, 0));
+        assert_eq!(small, 0);
+        assert_eq!(large, 0);
 
         let mut parser = crate::unified::deepseek_v4::deepseek_v4_unified(&[]);
         parser

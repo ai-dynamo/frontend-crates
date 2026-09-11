@@ -2250,6 +2250,17 @@ def _load_unified_fixtures(base: Path):
     )
     inputs = _merge_layers(input_layers, "input")
     golden = _merge_layers(golden_layers, "golden")
+    # A taxonomy rename changes the case key while preserving the scenario. Keep the
+    # generated key so an older immutable input record cannot make the current capture
+    # look incomplete beside its replacement in a sparse overlay.
+    inputs = {
+        key: case
+        for key, case in inputs.items()
+        if case.get("scenario") not in unified_taxonomy.UNIFIED_TAX
+        or (key[0], unified_taxonomy.numbered_id(case["scenario"])) not in inputs
+        or key[1] == unified_taxonomy.numbered_id(case["scenario"])
+    }
+    golden = {key: case for key, case in golden.items() if key in inputs}
     # impl -> [(version, dirname)] ascending. Dynamo keeps EVERY capture so the tab can
     # compare one parser build against another; a dict keyed by impl silently dropped
     # all but the last dir, which is why only one Dynamo column could ever render.

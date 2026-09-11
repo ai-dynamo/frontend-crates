@@ -49,6 +49,7 @@
 //! divergence is stated at the item.
 
 pub mod deepseek_v4;
+pub mod deepseek_v41;
 pub mod gemma4;
 mod guided_cursor;
 pub mod kimi_k2;
@@ -1519,8 +1520,6 @@ impl GuidedAppendCursor {
 #[cfg(test)]
 std::thread_local! {
     static GUIDED_APPEND_REPLACEMENTS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
-    static GUIDED_APPEND_RETAINED_PREFIX_COMPARISONS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
-    static GUIDED_APPEND_COPIED_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
 fn count_guided_append_replacement() {
@@ -1531,17 +1530,11 @@ fn count_guided_append_replacement() {
 #[cfg(test)]
 pub(crate) fn reset_guided_append_work() {
     GUIDED_APPEND_REPLACEMENTS.with(|replacements| replacements.set(0));
-    GUIDED_APPEND_RETAINED_PREFIX_COMPARISONS.with(|comparisons| comparisons.set(0));
-    GUIDED_APPEND_COPIED_BYTES.with(|copied| copied.set(0));
 }
 
 #[cfg(test)]
-pub(crate) fn guided_append_work() -> (usize, usize, usize) {
-    (
-        GUIDED_APPEND_REPLACEMENTS.with(std::cell::Cell::get),
-        GUIDED_APPEND_RETAINED_PREFIX_COMPARISONS.with(std::cell::Cell::get),
-        GUIDED_APPEND_COPIED_BYTES.with(std::cell::Cell::get),
-    )
+pub(crate) fn guided_append_work() -> usize {
+    GUIDED_APPEND_REPLACEMENTS.with(std::cell::Cell::get)
 }
 
 /// Tracks complete JSON values in response-prefilled prose without reparsing the
@@ -4483,6 +4476,7 @@ macro_rules! unified_registry {
 
 unified_registry! {
     "deepseek_v4" => deepseek_v4::deepseek_v4_unified,
+    "deepseek_v41" => deepseek_v41::deepseek_v41_unified,
     "gemma4" => gemma4::gemma4_unified,
     "qwen3" | "qwen3_coder" => qwen3::qwen3_unified,
     "muse_glimmer" => muse_glimmer::muse_glimmer_unified,

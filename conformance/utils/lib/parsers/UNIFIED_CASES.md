@@ -54,7 +54,7 @@ The parser recovers everything it can and NEVER drops valid text, leaks markup, 
 
 `MATCH` (green) · `ORDER` / `MERGE` / `LOSS` (the unification gap) · `LEAK` (markup in text, `↯`) · `ARG_MISMATCH` / `WHITESPACE` (version drift) · `ERROR` (engine hard-errored where the spec expects graceful output).
 
-The Dynamo column is a per-family mixture. The current corpus families — `deepseek_v4`, `qwen3`, `gemma4`, `kimi_k2`, `kimi_k3`, and `muse_glimmer` — run native `UnifiedParser` implementations. A future family without a native implementation falls back to the v1-reasoning + v2-tool split, and its cells must name that path explicitly.
+The Dynamo column is a per-family mixture. The current corpus families — `deepseek_v4`, `deepseek_v41`, `qwen3`, `gemma4`, `kimi_k2`, `kimi_k3`, and `muse_glimmer` — run native `UnifiedParser` implementations. A future family without a native implementation falls back to the v1-reasoning + v2-tool split, and its cells must name that path explicitly.
 
 ## Quick reference — numbered taxonomy (`UNIFIED.<num>-<num>` / `UNIFIED.<letters/num>-<num>`)
 

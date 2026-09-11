@@ -833,6 +833,11 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
             let doc: InputDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
                 .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
             for (key, case) in doc.cases {
+                // A sparse overlay can rename a case while preserving its scenario.
+                // The newer key replaces the released key for capture validation.
+                meta.retain(|(family, _), (scenario, _, _)| {
+                    family != &doc.family || scenario != &case.scenario
+                });
                 meta.insert(
                     (doc.family.clone(), key),
                     (case.scenario, case.input, case.init),
