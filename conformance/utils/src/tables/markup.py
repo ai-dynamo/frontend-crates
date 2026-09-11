@@ -124,6 +124,7 @@ def _parser_families_path() -> Path:
     here = Path(__file__).resolve()
     for cand in (
         here.parent / "parser_families.yaml",
+        here.parent.parent / "parser_families.yaml",
         here.parents[2] / "src" / "parser_families.yaml",
     ):
         if cand.is_file():
@@ -135,6 +136,16 @@ _FAMILY_MARKERS: dict[str, dict] = (
     yaml.safe_load(_parser_families_path().read_text()).get("markers") or {}
 )
 _declared_cache: dict[str, dict[str, tuple[str, str]]] = {}
+_tag_re_cache: dict[str, re.Pattern[str]] = {}
+_declared_pattern_cache: dict[str, list[tuple[re.Pattern[str], tuple[str, str]]]] = {}
+
+_COMPOSITE_OPEN = "<|open|>"
+_COMPOSITE_CLOSE = "<|close|>"
+_COMPOSITE_SEP = "<|sep|>"
+_COMPOSITE_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_:-]*$")
+_COMPOSITE_ATTRS_PATTERN = (
+    r'(?:[ \t]+[A-Za-z_][A-Za-z0-9_:-]*[ \t]*=[ \t]*"(?:\\.|[^"\\])*")*'
+)
 
 
 def _declared_lookup(family: str | None) -> dict[str, tuple[str, str]]:
@@ -152,6 +163,111 @@ def _declared_lookup(family: str | None) -> dict[str, tuple[str, str]]:
             table[tok] = ("singleton", tok)
         _declared_cache[family] = table
     return table
+
+
+def _declared_token_pattern(token: str) -> str | None:
+    """Regex for declaration-derived composite spellings.
+
+    A declaration ending at the tag name denotes a parameterized opener; a complete
+    declaration also accepts the protocol's canonical or space-padded spelling.
+    """
+    if token.startswith(_COMPOSITE_OPEN):
+        body = token[len(_COMPOSITE_OPEN) :]
+        if body.endswith(_COMPOSITE_SEP):
+            name = body[: -len(_COMPOSITE_SEP)]
+            attrs = ""
+        else:
+            name = body
+            attrs = _COMPOSITE_ATTRS_PATTERN
+        if _COMPOSITE_NAME_RE.fullmatch(name):
+            return (
+                re.escape(_COMPOSITE_OPEN)
+                + r"[ \t]*"
+                + re.escape(name)
+                + attrs
+                + r"[ \t]*"
+                + re.escape(_COMPOSITE_SEP)
+            )
+    if token.startswith(_COMPOSITE_CLOSE) and token.endswith(_COMPOSITE_SEP):
+        name = token[len(_COMPOSITE_CLOSE) : -len(_COMPOSITE_SEP)]
+        if _COMPOSITE_NAME_RE.fullmatch(name):
+            return (
+                re.escape(_COMPOSITE_CLOSE)
+                + r"[ \t]*"
+                + re.escape(name)
+                + r"[ \t]*"
+                + re.escape(_COMPOSITE_SEP)
+            )
+    return None
+
+
+def _declared_patterns(
+    family: str | None,
+) -> list[tuple[re.Pattern[str], tuple[str, str]]]:
+    if not family:
+        return []
+    patterns = _declared_pattern_cache.get(family)
+    if patterns is None:
+        patterns = []
+        for token, hit in _declared_lookup(family).items():
+            source = _declared_token_pattern(token)
+            if source is not None:
+                patterns.append((re.compile(source), hit))
+        patterns.sort(key=lambda item: len(item[0].pattern), reverse=True)
+        _declared_pattern_cache[family] = patterns
+    return patterns
+
+
+def _declared_hit(token: str, family: str | None) -> tuple[str, str] | None:
+    hit = _declared_lookup(family).get(token)
+    if hit is not None:
+        return hit
+    for pattern, candidate in _declared_patterns(family):
+        if pattern.fullmatch(token):
+            return candidate
+    return None
+
+
+def _matches_declared_token(token: str, declaration: str) -> bool:
+    if token == declaration:
+        return True
+    source = _declared_token_pattern(declaration)
+    return source is not None and re.fullmatch(source, token) is not None
+
+
+def _tag_matches(text: str, family: str | None):
+    if not family:
+        return _TAG_RE.finditer(text)
+    pattern = _tag_re_cache.get(family)
+    if pattern is None:
+        declared = sorted(_declared_lookup(family), key=len, reverse=True)
+        composites = [pattern.pattern for pattern, _ in _declared_patterns(family)]
+        source = "|".join(
+            [*composites, *(re.escape(token) for token in declared), _TAG_RE.pattern]
+        )
+        pattern = re.compile(source)
+        _tag_re_cache[family] = pattern
+    return pattern.finditer(text)
+
+
+def _opaque_span_for(
+    token: str, opaque_spans: dict[str, tuple[str, bool]]
+) -> tuple[str, bool] | None:
+    for declaration, span in opaque_spans.items():
+        if _matches_declared_token(token, declaration):
+            return span
+    return None
+
+
+def _opens_opaque_pair(token: str, pair_id: str, opaque_pairs: set[str]) -> bool:
+    if pair_id in opaque_pairs:
+        return True
+    for prefix in (_COMPOSITE_OPEN, _COMPOSITE_CLOSE):
+        if token.startswith(prefix):
+            tail = token[len(prefix) :].lstrip(" \t")
+            name = re.split(r"[ \t<]", tail, 1)[0]
+            return name in opaque_pairs
+    return False
 
 
 def _declared_opaque(family: str | None) -> tuple[set[str], dict[str, tuple[str, bool]]]:
@@ -309,7 +425,7 @@ def _colorize_xml(text: str, family: str | None = None) -> str:
     pieces: list[str] = []
     stack: list[tuple[str, int]] = []
     last = 0
-    for m in _TAG_RE.finditer(text):
+    for m in _tag_matches(text, family):
         if m.start() > last:
             pieces.append(html_lib.escape(text[last : m.start()]))
         tok = m.group(0)
@@ -317,7 +433,7 @@ def _colorize_xml(text: str, family: str | None = None) -> str:
             pieces.append(f'<span class="{_NS_CLASS}">{html_lib.escape(tok)}</span>')
             last = m.end()
             continue
-        hit = declared.get(tok)
+        hit = _declared_hit(tok, family)
         if hit is not None:
             kind, pair_id, color_override = hit[0], hit[1], None
         else:
@@ -330,7 +446,7 @@ def _colorize_xml(text: str, family: str | None = None) -> str:
             if mode == "pair":
                 ends = kind in ("close", "toggle") and pair_id == want
             else:
-                ends = tok == want and not (
+                ends = _matches_declared_token(tok, want) and not (
                     json_body and _in_json_string(text, region_start, m.start())
                 )
             if ends:
@@ -344,8 +460,9 @@ def _colorize_xml(text: str, family: str | None = None) -> str:
         elif kind == "singleton":
             cls = _singleton_class_for(pair_id)
             pieces.append(f'<span class="{cls}">{esc}</span>')
-            if tok in opaque_spans:
-                end_tok, json_body = opaque_spans[tok]
+            opaque_span = _opaque_span_for(tok, opaque_spans)
+            if opaque_span is not None:
+                end_tok, json_body = opaque_span
                 open_opaque = ("token", end_tok, json_body, m.end())
         elif kind == "toggle":
             # Self-paired delimiter: close the nearest matching open if one is
@@ -369,7 +486,7 @@ def _colorize_xml(text: str, family: str | None = None) -> str:
             else:
                 pieces.append(esc)
                 stack.append((pair_id, len(pieces) - 1))
-                if pair_id in opaque_pairs:
+                if _opens_opaque_pair(tok, pair_id, opaque_pairs):
                     open_opaque = ("pair", pair_id, False, 0)
         elif kind == "close":
             match_at = -1
@@ -398,7 +515,11 @@ def _colorize_xml(text: str, family: str | None = None) -> str:
         else:
             pieces.append(esc)
             stack.append((pair_id, len(pieces) - 1))
-            if pair_id in opaque_pairs:
+            opaque_span = _opaque_span_for(tok, opaque_spans)
+            if opaque_span is not None:
+                end_tok, json_body = opaque_span
+                open_opaque = ("token", end_tok, json_body, m.end())
+            elif _opens_opaque_pair(tok, pair_id, opaque_pairs):
                 open_opaque = ("pair", pair_id, False, 0)
         last = m.end()
     for _, idx in stack:
@@ -414,14 +535,14 @@ def _xml_token_intervals(text: str, family: str | None = None) -> list[dict[str,
     open_opaque: tuple[str, str, bool, int] | None = None
     intervals: list[dict[str, Any]] = []
     stack: list[tuple[str, int]] = []
-    for match in _TAG_RE.finditer(text):
+    for match in _tag_matches(text, family):
         tok = match.group(0)
         if tok == _MINIMAX_NS_TOKEN:
             intervals.append(
                 {"start": match.start(), "end": match.end(), "class": _NS_CLASS}
             )
             continue
-        hit = declared.get(tok)
+        hit = _declared_hit(tok, family)
         if hit is not None:
             kind, pair_id = hit
         else:
@@ -434,7 +555,7 @@ def _xml_token_intervals(text: str, family: str | None = None) -> list[dict[str,
             if mode == "pair":
                 ends = kind in ("close", "toggle") and pair_id == want
             else:
-                ends = tok == want and not (
+                ends = _matches_declared_token(tok, want) and not (
                     json_body and _in_json_string(text, region_start, match.start())
                 )
             if ends:
@@ -447,8 +568,9 @@ def _xml_token_intervals(text: str, family: str | None = None) -> list[dict[str,
             intervals[idx]["class"] = "tt-orphan"
         elif kind == "singleton":
             intervals[idx]["class"] = _singleton_class_for(pair_id)
-            if tok in opaque_spans:
-                end_tok, json_body = opaque_spans[tok]
+            opaque_span = _opaque_span_for(tok, opaque_spans)
+            if opaque_span is not None:
+                end_tok, json_body = opaque_span
                 open_opaque = ("token", end_tok, json_body, match.end())
         elif kind == "toggle":
             match_at = -1
@@ -465,7 +587,7 @@ def _xml_token_intervals(text: str, family: str | None = None) -> list[dict[str,
                 del stack[match_at:]
             else:
                 stack.append((pair_id, idx))
-                if pair_id in opaque_pairs:
+                if _opens_opaque_pair(tok, pair_id, opaque_pairs):
                     open_opaque = ("pair", pair_id, False, 0)
         elif kind == "close":
             match_at = -1
@@ -484,7 +606,11 @@ def _xml_token_intervals(text: str, family: str | None = None) -> list[dict[str,
                 intervals[idx]["class"] = "tt-orphan"
         else:
             stack.append((pair_id, idx))
-            if pair_id in opaque_pairs:
+            opaque_span = _opaque_span_for(tok, opaque_spans)
+            if opaque_span is not None:
+                end_tok, json_body = opaque_span
+                open_opaque = ("token", end_tok, json_body, match.end())
+            elif _opens_opaque_pair(tok, pair_id, opaque_pairs):
                 open_opaque = ("pair", pair_id, False, 0)
     for _, idx in stack:
         intervals[idx]["class"] = "tt-orphan"

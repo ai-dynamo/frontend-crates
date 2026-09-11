@@ -192,6 +192,22 @@ Repeat `--model` or `--tab` to validate more than one. The command always render
 
 Use the generated matrix to inspect vLLM Python vs vLLM Rust behavior. `check.sh vllm` runs the live vLLM Python parser against extracted YAML; it does not run vLLM Rust. vLLM Python vs Rust is a fixture comparison in the `TC stream (v2)` and `TC batch-on-stream (v2)` tabs.
 
+### UnifiedParser conversion collection
+
+When a model family is converted to `UnifiedParser`, collecting its current fixture capture is required in the same change. Set the shipping `parsers/v2` version first, then run:
+
+```bash
+python3 conformance/utils/src/gen_unified_golden.py
+cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --nocapture
+python3 conformance/utils/src/explode_unified_fixtures.py
+python3 conformance/utils/src/package_fixtures.py
+python3 conformance/utils/src/extract_fixtures.py --full-refresh
+conformance/utils/render_table_v2.sh --output conformance/CONFORMANCE_v2.html
+conformance/utils/check.sh status --model <family> --tab unified
+```
+
+This creates the durable `unified/dynamo_v2-<version>.tar.gz` shard, updates the inputs/golden shards and manifest, and renders the only supported HTML report. Do not generate `CONFORMANCE_unified.html`: it is not a published report and is not read by the v2 renderer. A family conversion is unfinished until the scoped status command reports zero red and zero empty current Dynamo cells.
+
 ## Matrix Legend
 
 Each cell compares the parser implementations for one model family and case. The page carries **structured comparison facts** (`markers.comparison_facts()` in `src/markers.py`) — a per-implementation record of `status` (ok / problem / na), whether it `agrees` with the Dynamo baseline, whether a divergence is `intentional` (documented), whether it `leak`s tool-call markup, and its `error_kind`. The JS view (`assets/conformance_view.js`) turns those facts into the glyphs and popups, and labels every parser with its full descriptive name. There is no shorthand code to memorize.

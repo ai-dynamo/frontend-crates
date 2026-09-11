@@ -15,7 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Features
 
 - *(parsers-v2)* Add structural tag support ([#189](https://github.com/ai-dynamo/frontend-crates/pull/189))
-
+- *(parsers)* Convert DeepSeek V4 DSML and reasoning handling to the UnifiedParser, preserving the legacy tool-only API as an event projection.
+- *(parsers)* Add Kimi K3 XTML UnifiedParser support with typed and raw JSON arguments, guided JSON routing, and a legacy tool-only event projection.
 ## [0.5.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.4.1...dynamo-parsers-v2-v0.5.0) - 2026-09-03
 
 ### Bug fixes

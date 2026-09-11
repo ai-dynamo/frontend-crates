@@ -1589,7 +1589,8 @@ def _build_stream_on_batch_cases(batch_cases: dict) -> dict:
         cid = bcase.get("__case_id") or f"TOOLCALLING.batch.{sub}"
         overlay_case = overlay.get((family, cid))
         if overlay_case is None and cid.endswith(".a"):
-            # The generator promotes a bare parent id (e.g. `…13`) to `…13.a`; the
+            # The generator promotes a bare parent id (e.g. `…13`) to its first
+            # numeric sub-case; the
             # overlay may still key it by the bare parent id. Fall back to that.
             overlay_case = overlay.get((family, cid[:-2]))
         if overlay_case is None:
@@ -1613,7 +1614,7 @@ def _build_stream_on_batch_cases(batch_cases: dict) -> dict:
         # parity allowlist): note the v2 block (popup `explanation:`) and flag
         # the case so the cell renders the `≠` known-divergence suffix. The
         # generator promotes a bare parent id to `.a` — fall back like the
-        # overlay lookup above so `…batch.13` matches the promoted `…batch.13.a`.
+        # overlay lookup above so `…batch.13` matches the promoted first sub-case.
         note = _known_divergence_note(family, cid, "stream_vs_batch")
         if note is None and cid.endswith(".a"):
             note = _known_divergence_note(family, cid[:-2], "stream_vs_batch")
@@ -2472,7 +2473,9 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
         return UNIFIED_TAX.get(s, (9, s))
 
     def _band(group_num):
-        return "case-band-0" if group_num % 2 == 1 else "case-band-1"
+        if isinstance(group_num, int):
+            return "case-band-0" if group_num % 2 == 1 else "case-band-1"
+        return "case-band-0"
 
     ordered = sorted(scenarios, key=unified_taxonomy.taxonomy_sort_key)
     columns = []
@@ -2775,12 +2778,12 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
 
     # "Case descriptions" section under the table, grouped by taxonomy — same shape as
     # every other tab's glossary ([{label, rows:[(short_id, description), ...]}]). The
-    # view prepends case_prefix ("UNIFIED."), so short_id is the numbered id (e.g. "1.a").
+    # view prepends case_prefix ("UNIFIED."), so short_id is the numbered id (e.g. "1-1").
     unified_glossary = []
     for grp in column_groups:
-        gnum = int(grp["key"].removeprefix("unified_g"))
+        group_key = grp["key"]
         grp_rows = [(unified_taxonomy.case_label(s), scn_desc.get(s, ""))
-                    for s in ordered if _tax(s)[0] == gnum]
+                    for s in ordered if f"unified_g{_tax(s)[0]}" == group_key]
         unified_glossary.append({"label": grp["label"], "rows": grp_rows})
 
     return {
@@ -2800,8 +2803,8 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
         "toolbar_desc_html": (
             'Reference = <strong>GOLDEN</strong> (authored oracle, best-effort recovery) · '
             'Compare = <strong>Dynamo v2 Rust</strong> (native <strong>UnifiedParser</strong> '
-            'for qwen3, v1 reasoning + v2 tool split otherwise), '
-            + ', and the captured vLLM Python/Rust versions. A parser that does not '
+            'for DeepSeek V4, Gemma 4, Kimi K2, Kimi K3, Muse Glimmer, and Qwen3), '
+            'and the captured vLLM Python/Rust versions. A parser that does not '
               'exist for a family is shown as n/a.'
             + '. GOLDEN is the oracle, so a cell is red when the REF — the starred engine '
             '(default Dynamo) — DIVERGES from golden in any class: leaked markup (↯), '
