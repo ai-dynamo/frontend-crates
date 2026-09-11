@@ -510,7 +510,11 @@
         'aria-label',
         (isVisible ? 'Collapse ' : 'Expand ') + button.dataset.colLabel + ' column'
       );
-      button.title = button.getAttribute('aria-label');
+      // Use the page tooltip instead of the browser's native `title` popup. The native
+      // popup is positioned relative to the button's bottom edge, which makes a column
+      // header tooltip appear detached below the column. `aria-label` remains the
+      // accessible name for keyboard and screen-reader users.
+      button.dataset.tooltip = button.getAttribute('aria-label');
       document.querySelectorAll('[data-col-control-group="' + key + '"]').forEach(function (el) {
         el.classList.toggle('col-collapsed', !isVisible);
         if (el.dataset.expandedColspan) {

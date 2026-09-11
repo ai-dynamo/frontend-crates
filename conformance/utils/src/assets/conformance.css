@@ -353,6 +353,18 @@ body.view-overview.ttip-pin-mode td.cell:hover:not(.ttip-open) { filter: none; }
 .col-toggle[aria-pressed="true"] { background: #e7f0ff; border-color: #6b9bd6; color: #174a86; }
 .col-toggle[aria-pressed="false"] { background: #fff; border-color: #bbb; color: #555; }
 .col-toggle:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+/* Keep the column-control hint anchored to the label instead of using the browser's
+   native `title` popup, which floats from the bottom of the whole header cell. */
+.col-toggle[data-tooltip] { position: relative; }
+.col-toggle[data-tooltip]::after {
+  content: attr(data-tooltip); position: absolute; left: 50%; bottom: calc(100% + 6px);
+  transform: translateX(-50%); visibility: hidden; opacity: 0; pointer-events: none;
+  z-index: 4000; padding: 4px 7px; border-radius: 4px; background: #1f2937; color: #e5e7eb;
+  font: 11px -apple-system, system-ui, sans-serif; line-height: 1.2; white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.28);
+}
+.col-toggle[data-tooltip]:hover::after,
+.col-toggle[data-tooltip]:focus-visible::after { visibility: visible; opacity: 1; }
 .col-placeholder { min-width: 20px; width: 20px; padding: 0; background: #f8fafc; }
 .col-hidden { display: none; }
 table.glossary { margin-top: 0.5em; }

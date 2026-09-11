@@ -244,6 +244,31 @@ def test_hover_shows_tooltip(driver):
     assert visible, "tooltip did not become visible on hover"
 
 
+def test_column_toggle_hint_is_anchored_to_the_button(driver):
+    """Column controls use the page tooltip rather than a detached native title popup."""
+    result = driver.execute_script(
+        """
+        const button = [...document.querySelectorAll('.tab-panel.active [data-col-toggle]')]
+          .find(el => el.dataset.colLabel === 'Tool calling family');
+        if (!button) return null;
+        const style = getComputedStyle(button, '::after');
+        return {
+          title: button.getAttribute('title'),
+          tooltip: button.dataset.tooltip,
+          content: style.content,
+          position: style.position,
+          bottom: style.bottom,
+        };
+        """
+    )
+    assert result, "Tool calling family column control is missing"
+    assert result["title"] is None, result
+    assert result["tooltip"] == "Collapse Tool calling family column", result
+    assert result["content"] == '"Collapse Tool calling family column"', result
+    assert result["position"] == "absolute", result
+    assert result["bottom"] != "auto", result
+
+
 def test_order_divergence_shows_golden_and_candidate_sequences(driver):
     """ORDER/MERGE explanations come from the golden candidate in the model."""
     text = driver.execute_script(
