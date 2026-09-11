@@ -296,13 +296,10 @@ def test_marker_inside_argument_golden_matches_the_input_marker() -> None:
     in the input validates nothing: the case would pass whatever the parser did to
     the argument. The golden argument and the input must carry the same bytes.
     """
-    case = next(
-        c for c in list(CLEAN) + list(EDGE) if c[0] == "guided_json_marker_inside_argument"
-    )
-    per_family = case[-1]
     for fam in FAMILIES:
-        entry = per_family[fam]
-        raw_input, fill = entry[0], entry[-1]
+        case = build_cases(fam)[f"UNIFIED.guided_json_marker_inside_argument.{fam}"]
+        raw_input = case["input"]
+        fill = case["golden"][0]["arguments"]["note"]
         expected = control_tokens(fam)[1]
         assert fill == expected, f"{fam}: golden fill {fill!r} is not the family marker"
         assert expected in raw_input, f"{fam}: input {raw_input!r} lacks {expected!r}"
@@ -484,9 +481,8 @@ def test_unified_case_counts_match_the_generator():
     denominator survived in the prose before.
     """
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
-    shared = min(per_family.values())
     for fam in FAMILIES:
-        expected = shared + (2 if fam == "gemma4" else 0)
+        expected = sum(fam in G.scenario_families(name) for name in UNIFIED_TAX)
         assert per_family[fam] == expected, f"{fam} diverged from the expected case count"
     assert sum(per_family.values()) == sum(len(build_cases(f)) for f in FAMILIES)
 

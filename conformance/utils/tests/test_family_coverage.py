@@ -116,10 +116,10 @@ def test_taxonomy_case_entries_well_formed() -> None:
 
 
 def test_markers_declared_for_every_family() -> None:
-    """markers: and families: stay key-aligned — a new family cannot register a
-    parser row without declaring (possibly empty) grammar tokens."""
+    """Tool-only and unified parser families must declare their grammar tokens."""
     registry = _registry()
-    assert set(registry["markers"]) == set(registry["families"])
+    unified = {row.get("registry", family) for family, row in registry["unified"].items()}
+    assert set(registry["markers"]) == set(registry["families"]) | unified
 
 
 def test_leak_regex_superset_of_retired_hardcoded_regex() -> None:

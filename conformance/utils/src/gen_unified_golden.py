@@ -9,9 +9,10 @@ raw model `input` is grammar-specific, rendered from each family's markers. This
 is the single source of truth so a scenario can't drift between families
 (CLAUDE.md: reuse the shared parent, don't copy-paste divergent cases).
 
-Full matrix: every scenario is emitted for every family (gemma4, qwen3, kimi_k2,
-muse_glimmer) -> conformance/unified/golden_spec/{gemma4,qwen3,kimi,muse_glimmer}.yaml,
-the gitignored build tree. This authored spec is the harness INPUT (unified_render.rs reads it to
+The shared matrix covers grammars that can reopen reasoning and tool channels.
+DeepSeek V4.1 uses the explicit single-turn cases below because its official
+format has one reasoning span followed by content or a calls block. The output is written under
+conformance/unified/golden_spec/, the gitignored build tree. This authored spec is the harness INPUT (unified_render.rs reads it to
 compute the live Dynamo column; unified_schema_roundtrip.rs validates it); it is
 NOT committed. The committed, versioned golden.tar.gz shard is DERIVED from it via
 render -> explode -> package, exactly like every other conformance fixture shard.
@@ -31,6 +32,7 @@ import markers
 # row there rather than editing three lists that had to agree.
 _MANIFEST = yaml.safe_load(markers.parser_families_path().read_text())["unified"]
 FAMILIES = sorted(_MANIFEST)
+SHARED_FAMILIES = [f for f in FAMILIES if f != "deepseek_v41"]
 FAM_FILE = {f: r["golden_spec"] for f, r in _MANIFEST.items()}
 UNIFIED_FAMILIES = {f for f, r in _MANIFEST.items() if r.get("native")}
 # Families whose unified parser accepts GUIDED tool output, declared in the manifest.
@@ -43,6 +45,7 @@ UNIFIED_FAMILIES = {f for f, r in _MANIFEST.items() if r.get("native")}
 GUIDED_FAMILIES = {f for f, r in _MANIFEST.items() if r.get("guided_tool_output", True)}
 
 GRAMMAR_NOTE = {
+    "deepseek_v41": "prompt-prefilled reasoning ends at `</think>`; `<｜DSML｜ calls>` contains V4.1 invoke and parameter tags and ends the turn.",
     "gemma4": "reasoning `<|channel>thought\\n...<channel|>`, tool `<|tool_call>call:NAME{key:<|\"|>value<|\"|>}<tool_call|>` (string values wrapped in `<|\"|>`; an embedded `<tool_call|>` inside a `<|\"|>` string is data, not the end marker).",
     "qwen3": "reasoning `<think>...</think>`, tool `<tool_call><function=NAME><parameter=KEY>VALUE</parameter></function></tool_call>`.",
     "kimi_k2": "reasoning `<think>...</think>`, tool section `<|tool_calls_section_begin|><|tool_call_begin|>functions.NAME:IDX<|tool_call_argument_begin|>{...}<|tool_call_end|><|tool_calls_section_end|>`.",
@@ -95,6 +98,10 @@ def _atem_value(val):
 
 
 def r_tool(fam, name, key, val, idx):
+    if fam == "deepseek_v41":
+        return (f'<｜DSML｜ calls><｜DSML｜ invoke name="{name}">'
+                f'<｜DSML｜ parameter name="{key}" string="true">{val}</｜DSML｜ parameter>'
+                "</｜DSML｜ invoke></｜DSML｜ calls>")
     if fam == "gemma4":
         return f"<|tool_call>call:{name}{{{key}:<|\"|>{val}<|\"|>}}<tool_call|>"
     if fam == "qwen3":
@@ -195,7 +202,7 @@ def every_family(input_text, vllm, dynamo, *rest):
     )
     return {
         fam: (input_text, vllm, dynamo if fam in UNIFIED_FAMILIES else split, *rest)
-        for fam in FAMILIES
+        for fam in SHARED_FAMILIES
     }
 
 
@@ -203,7 +210,7 @@ def every_family(input_text, vllm, dynamo, *rest):
 def by_family(render, vllm, dynamo, *rest):
     """`render(fam) -> input` for the scenarios where only the reasoning envelope
     around an otherwise identical payload is grammar-specific."""
-    return {fam: (render(fam), vllm, dynamo, *rest) for fam in FAMILIES}
+    return {fam: (render(fam), vllm, dynamo, *rest) for fam in SHARED_FAMILIES}
 
 
 # A family whose tool block opener spans more than its first control token, mapped to
@@ -296,7 +303,7 @@ def guided_surroundings(render, dynamo_note, fill=None):
             {"verdict": "match", "note": dynamo_note} if fam in UNIFIED_FAMILIES else split,
             *( (fill(fam),) if fill else () ),
         )
-        for fam in FAMILIES
+        for fam in SHARED_FAMILIES
     }
 
 
@@ -322,7 +329,7 @@ V_MUSE = {
 # falls back on EVERY case and draws the same plain `expected: MATCH` a captured
 # family earns. Carrying the caveat only on the cases that happened to need a
 # per-family verdict published the other 22 as if an engine had produced them.
-VLLM_UNCAPTURABLE = {"muse_glimmer": V_MUSE}
+VLLM_UNCAPTURABLE = {"muse_glimmer": V_MUSE, "deepseek_v41": D("UNSUPPORTED", "No V4.1 peer capture is recorded.")}
 
 
 # --- CLEAN scenarios: same segments for every family, input is templated ------
@@ -1337,7 +1344,7 @@ def _guided_response_markup_cases(recipient, after_payload=False):
             {"verdict": "match", "note": "Response keeps the quoted control marker out of the reasoning channel and the guided payload dispatches"},
             _guided_response_markup(fam, recipient, after_payload)[1],
         )
-        for fam in FAMILIES
+        for fam in SHARED_FAMILIES
     }
 
 for _name, _rcpt, _desc in QUOTED_BARE_HEADER:
@@ -1376,7 +1383,7 @@ EDGE.append((
             {"verdict": "match",
              "note": "a native tool boundary inside prefilled reasoning ends the thought and dispatches the guided payload"},
         )
-        for fam in FAMILIES
+        for fam in SHARED_FAMILIES
     },
 ))
 
@@ -1441,8 +1448,111 @@ def _vllm_entry(spec, fam):
     return caveat if caveat is not None and not entry.get("note") else entry
 
 
+# V4.1 prompts open reasoning before a single content or calls block.
+# The corpus covers that model grammar and the shared guided-output contract.
+DEEPSEEK_V41_SCENARIOS = {
+    "tool_only", "reason_then_tool", "reason_then_content", "interstitial_text",
+    "two_calls", "two_calls_same_name", "text_only", "reason_only",
+    "empty_args", "arg_unicode", "arg_marker_in_string", "truncated_tool_eof",
+    "reason_unterminated", "tool_markup_only_emits_nothing",
+    "prefilled_reasoning_with_guided_json", "guided_json_named_tool",
+    "guided_json_required_tool", "guided_json_two_calls",
+    "guided_json_marker_inside_argument",
+    "guided_json_quoted_bare_header_in_answer",
+    "guided_json_quoted_bare_tool_header_in_answer",
+    "guided_json_quoted_bare_header_after_payload",
+    "guided_json_bare_tool_header_recovers_inside_a_thought",
+}
+
+
+def deepseek_v41_cases():
+    def call(name, arguments):
+        params = "".join(
+            f'<｜DSML｜ parameter name="{key}" string="true">{value}</｜DSML｜ parameter>'
+            for key, value in arguments.items()
+        )
+        return f'<｜DSML｜ invoke name="{name}">{params}</｜DSML｜ invoke>'
+
+    def calls(body):
+        return f"<｜DSML｜ calls>{body}</｜DSML｜ calls>"
+
+    cases = {}
+
+    def add(name, description, text, golden, state="None", mode="Native", named=None):
+        cases[f"UNIFIED.{name}.deepseek_v41"] = {
+            "description": description,
+            "policy": [],
+            "input": text,
+            "golden": golden,
+            "expect": {
+                "vllm": D("UNSUPPORTED", "No V4.1 peer capture is recorded."),
+                "dynamo": M,
+            },
+            "init": {"starting_state": state, "tool_output_mode": mode, "named_tool": named},
+            "finish_reason": "stop",
+        }
+
+    for name, description, _policy, segments, *_ in CLEAN:
+        if name not in DEEPSEEK_V41_SCENARIOS:
+            continue
+        text = ""
+        invocations = ""
+        state = "None"
+        for segment in segments:
+            if segment[0] == "reason":
+                state = "Reasoning"
+                text += segment[1] + "</think>"
+            elif segment[0] == "text":
+                text += segment[1]
+            else:
+                _, tool, key, value = segment
+                invocations += call(tool, {key: value})
+        if invocations:
+            text += calls(invocations)
+        add(name, description, text, golden_of(segments), state)
+
+    add("empty_args", "A complete invocation with no parameters.", calls(call("f", {})),
+        [{"kind": "tool_call", "name": "f", "arguments": {}}])
+    for name, value in [
+        ("arg_unicode", "東京 café 🦀"),
+        ("arg_marker_in_string", ' <think>quoted</think> <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; "x"\\\n '),
+    ]:
+        add(name, "String parameter bytes survive DSML decoding.", calls(call("f", {"x": value})),
+            [{"kind": "tool_call", "name": "f", "arguments": {"x": value}}])
+    add("truncated_tool_eof", "A truncated parameter does not complete an invocation and emits nothing.",
+        '<｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">partial', [])
+    add("reason_unterminated", "An open thought survives the end of the stream.",
+        "still thinking", [{"kind": "reasoning", "text": "still thinking"}], "Reasoning")
+    add("tool_markup_only_emits_nothing", "An empty calls block emits nothing.",
+        calls(""), [])
+    one = [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
+    add("guided_json_named_tool", "A named choice uses the shared guided decoder.",
+        GUIDED_NAMED_ARGS, one, mode="GuidedJson", named="get_weather")
+    add("guided_json_required_tool", "A required choice uses the shared guided decoder.",
+        GUIDED_ONE_CALL, one, mode="GuidedJson")
+    add("guided_json_two_calls", "Guided output preserves two distinct calls.",
+        GUIDED_TWO_CALLS, one + [{"kind": "tool_call", "name": "run", "arguments": {"cmd": "git log"}}],
+        mode="GuidedJson")
+    add("prefilled_reasoning_with_guided_json", "Prefilled reasoning closes before guided arguments.",
+        "check</think>" + GUIDED_NAMED_ARGS,
+        [{"kind": "reasoning", "text": "check"}] + one,
+        "Reasoning", "GuidedJson", "get_weather")
+    shared_guided = build_cases("qwen3")
+    for name in DEEPSEEK_V41_SCENARIOS:
+        key = f"UNIFIED.{name}.deepseek_v41"
+        if key in cases:
+            continue
+        case = shared_guided[f"UNIFIED.{name}.qwen3"]
+        case["input"] = case["input"].replace("<tool_call>", "<｜DSML｜ calls>").replace("</tool_call>", "</｜DSML｜ calls>")
+        case["expect"]["vllm"] = VLLM_UNCAPTURABLE["deepseek_v41"]
+        cases[key] = case
+    return cases
+
+
 def build_cases(fam):
     """Every CLEAN + EDGE scenario for one family, keyed by case id."""
+    if fam == "deepseek_v41":
+        return deepseek_v41_cases()
     cases = {}
     for name, desc, policy, segs, vllm, dynamo in CLEAN:
         cid = f"UNIFIED.{name}.{fam}"
@@ -1547,13 +1657,13 @@ def scenario_families(scenario):
     """
     for name, *_rest in CLEAN:
         if name == scenario:
-            return frozenset(FAMILIES)
+            return frozenset(FAMILIES if scenario in DEEPSEEK_V41_SCENARIOS else SHARED_FAMILIES)
     for edge_case in EDGE:
         name = edge_case[0]
         if name != scenario:
             continue
         per_fam = edge_case[-1]
-        return frozenset(per_fam) if isinstance(per_fam, OnlyFamilies) else frozenset(FAMILIES)
+        return frozenset(per_fam) if isinstance(per_fam, OnlyFamilies) else frozenset(FAMILIES if scenario in DEEPSEEK_V41_SCENARIOS else SHARED_FAMILIES)
     raise KeyError(f"unknown unified scenario {scenario!r}")
 
 
