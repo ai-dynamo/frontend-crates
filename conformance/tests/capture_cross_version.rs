@@ -354,10 +354,6 @@ fn capture_this_build_against_the_current_corpus() {
     };
     let out_root = PathBuf::from(std::env::var("XVER_OUT").expect("XVER_OUT"));
     let label = std::env::var("XVER_LABEL").expect("XVER_LABEL");
-    assert!(
-        !label.contains('+'),
-        "XVER_LABEL must be a published release version, not a qualified capture label: {label}"
-    );
     assert_eq!(
         label,
         published_parser_version(),
