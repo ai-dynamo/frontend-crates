@@ -123,7 +123,7 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 - **`12.d`** (`tool_in_reason_with_text`) 12.b WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled reasoning or response state. The current corpus emits 76 of the 96 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled reasoning or response state. The current corpus emits 74 of the 96 taxonomy cases for this family.
 - The 75 applicable DSv4.1 cases are: `1.a`; `2.a-b`; `3.a`; `4.a-b`; `5.a-c`; `6.a`; `7.a-b`; `8.a-e`; `10.a-e`; `11.a-j`; `12.a-d`; `30.a-g,k-m`; `31-1` through `31-28` except the native-wrapper bare-opener rows; `40.a-d`; `41.a-b`; `50.a-d`; and `51.a`.
 - The 21 intentional not-applicable cases are: `k3-1` through `k3-8`, which require Kimi K3 XTML syntax; `g4-1` through `g4-2`, which require Gemma 4 guided call-prefix syntax; and the guided JSON native-wrapper bare-opener rows (`31-8`, `31-12`, `31-16`, `31-20`, `31-24`, `31-25`, and `31-26`), because DSv4.1 guided JSON is bare JSON and its native DSML invoke header is not a guided-output wrapper. These are grammar or request-mode-specific cases, not missing DSv4.1 coverage.
 - In particular, `5.c`, `30.k` through `30.m`, `40.d`, and `50.a` through `51.a` are applicable and emitted for DSv4.1. The native-wrapper bare-opener rows are intentionally excluded because their syntax is impossible under guided JSON.

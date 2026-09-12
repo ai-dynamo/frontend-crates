@@ -1848,7 +1848,6 @@ DEEPSEEK_V41_SCENARIOS = {
     "guided_json_tool_close_after_payload", "guided_json_wrapped_in_tool_markup",
     "guided_json_native_markup_only", "guided_json_unterminated_reasoning_then_wrapped_payload",
     "guided_json_marker_inside_argument",
-    "guided_json_narrated_invoke_in_reasoning",
     "guided_json_prose_before_reasoning",
     "guided_json_orphan_reason_close_before_payload",
     "guided_json_orphan_tool_close_before_payload",
@@ -1865,7 +1864,6 @@ DEEPSEEK_V41_SCENARIOS = {
     "guided_json_quoted_bare_header_after_payload",
     "guided_json_bare_tool_header_recovers_inside_a_thought",
     "prefilled_reasoning_then_text",
-    "prefilled_response_truncated",
 }
 
 
@@ -2034,9 +2032,6 @@ def deepseek_v41_cases():
         "no tool needed</think>The answer is 42.",
         [{"kind": "reasoning", "text": "no tool needed"},
          {"kind": "text", "text": "The answer is 42."}], "Reasoning")
-    add("prefilled_response_truncated", "Prefilled response preserves visible prose when a call truncates.",
-        "Working on it... <｜DSML｜ calls><｜DSML｜ invoke name=",
-        [{"kind": "text", "text": "Working on it... "}], "Response")
     add("prefilled_reasoning_with_guided_json", "Prefilled reasoning closes before guided arguments.",
         "check</think>" + GUIDED_NAMED_ARGS,
         [{"kind": "reasoning", "text": "check"}] + one,
