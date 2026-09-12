@@ -2807,8 +2807,8 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     return {
         "id": "tab-unified", "kind": "unified", "active": False, "mode": "unified",
         "no_parser_col": True,  # parser variant is already encoded in each engine's name
-        "label": "Unified (reasoning + tools)",
-        "label_html": 'Unified <span class="tab-sub">(reasoning + tools)</span>',
+        "label": "Unified v2 (reasoning + tools)",
+        "label_html": 'Unified v2 <span class="tab-sub">(reasoning + tools)</span>',
         "tab_title": ("Unified: one ordered event stream (reasoning + content + tool calls) "
                       "measured against the GOLDEN oracle"),
         "columns": columns, "column_groups": column_groups,
@@ -2861,8 +2861,8 @@ def build_combined_model(output_path: Path | None = None,
     batch_tab = _toolcalling_tab_model(batch_spec, batch_href, parser_stream_context="batch")
     batch_tab.update({
         "id": "tab-toolcalling-batch",
-        "label": "Tool Calling (batch data)",
-        "label_html": ('Tool Calling <span class="tab-sub">'
+        "label": "Tool Calling v1 (batch data)",
+        "label_html": ('Tool Calling v1 <span class="tab-sub">'
                        '(<span class="w-batch">batch</span> data)</span>'),
         "tab_title": ("Tool Calling (batch data): v1 batch parsers plus v2 stream "
                       "parsers on the same v1 batch fixtures"),
@@ -2889,8 +2889,8 @@ def build_combined_model(output_path: Path | None = None,
     stream_tab = _toolcalling_tab_model(stream_spec, stream_href, parser_stream_context="streamv2")
     stream_tab.update({
         "id": "tab-toolcalling-streamv2",
-        "label": "Tool Calling (stream data)",
-        "label_html": ('Tool Calling <span class="tab-sub">'
+        "label": "Tool Calling v2 (stream data)",
+        "label_html": ('Tool Calling v2 <span class="tab-sub">'
                        '(<span class="w-stream">stream</span> data)</span>'),
         "tab_title": "Tool Calling (stream data): Dynamo parser v2 on v2 stream fixtures",
         "case_prefix": "TOOLCALLING.streamv2.",

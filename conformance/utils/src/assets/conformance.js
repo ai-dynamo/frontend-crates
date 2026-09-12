@@ -754,6 +754,25 @@
     ttip.style.opacity = '';
   }
 
+  let placeScheduled = false;
+  const portalledTooltips = new Set();
+  function repositionPortalledTooltips() {
+    if (placeScheduled) return;
+    placeScheduled = true;
+    window.requestAnimationFrame(function () {
+      placeScheduled = false;
+      portalledTooltips.forEach(function (ttip) {
+        if (ttip.classList.contains('ttip-visible') && ttip._ttipOwner) {
+          place(ttip._ttipOwner);
+        } else {
+          portalledTooltips.delete(ttip);
+        }
+      });
+    });
+  }
+  window.addEventListener('scroll', repositionPortalledTooltips, true);
+  window.addEventListener('resize', repositionPortalledTooltips);
+
   // Touch devices have no hover, so the tooltip is opened by TAP and pinned open
   // (with an ✕ to close) rather than shown on pointerenter. Where hover EXISTS, hover is
   // the only affordance — clicking never pins, because pinning is modal and one stray
@@ -843,12 +862,14 @@
       if (portalParent) return;
       portalParent = ttip.parentNode;
       document.body.appendChild(ttip);
+      portalledTooltips.add(ttip);
     }
 
     function restoreTooltip() {
       if (!portalParent) return;
       portalParent.appendChild(ttip);
       portalParent = null;
+      portalledTooltips.delete(ttip);
     }
 
     // ✕ close button (shown only while pinned) — inserted once per tooltip.

@@ -123,6 +123,16 @@ def test_v2_schema_and_meta(model_v2):
 
 # ---- schema-2 compaction (model.py _compact_page <-> hydrate_page) --------------
 
+def test_missing_cell_explains_the_unclassified_gap():
+    cell = model_mod.missing_cell("REASONING.batch.2.b", "qwen3")
+
+    assert cell["kind"] == "missing"
+    assert cell["tooltip"]["na_note"] == (
+        "qwen3 has no authored fixture for REASONING.batch.2.b. "
+        "The corpus also has no explicit N/A rationale, so this is an "
+        "unclassified coverage gap rather than evidence that the case does not apply."
+    )
+
 def test_compaction_roundtrip_is_identity():
     # compact -> hydrate must reproduce the original page exactly (modulo the added
     # compaction keys), or the JS view would render different VALUES than Python
@@ -198,6 +208,16 @@ def test_v2_all_tabs_present(model_v2):
         "tab-toolcalling-batch", "tab-toolcalling-streamv2",
         "tab-reasoning-batch", "tab-reasoning-stream", "tab-unified",
     ], ids
+
+
+def test_v2_tab_labels_show_parser_generation(model_v2):
+    labels = {tab["id"]: tab["label"] for tab in model_v2["tabs"]}
+
+    assert labels["tab-toolcalling-batch"].startswith("Tool Calling v1")
+    assert labels["tab-toolcalling-streamv2"].startswith("Tool Calling v2")
+    assert labels["tab-reasoning-batch"].startswith("Reasoning v1")
+    assert labels["tab-reasoning-stream"].startswith("Reasoning v1")
+    assert labels["tab-unified"].startswith("Unified v2")
 
 
 def test_unified_numeric_case_ids_use_dash_everywhere(model_v2):
