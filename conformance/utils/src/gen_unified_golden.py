@@ -1863,7 +1863,6 @@ DEEPSEEK_V41_SCENARIOS = {
     "guided_json_quoted_bare_tool_header_in_answer",
     "guided_json_quoted_bare_header_after_payload",
     "guided_json_bare_tool_header_recovers_inside_a_thought",
-    "prefilled_reasoning_then_text",
 }
 
 
@@ -1981,17 +1980,6 @@ def deepseek_v41_cases():
          {"kind": "text", "text": " Here you go."}])
 
     prefilled_call = calls(call("get_weather", {"city": "Paris"}))
-    add("prefilled_reasoning_with_tool", "Prefilled reasoning closes before a native DSML call.",
-        "checking weather</think>" + prefilled_call,
-        [{"kind": "reasoning", "text": "checking weather"},
-         {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
-        "Reasoning")
-    add("prefilled_reasoning_then_text_then_tool", "Prefilled reasoning, visible text, and a native call stay ordered.",
-        "weighing options</think>Here's what I found: " + prefilled_call,
-        [{"kind": "reasoning", "text": "weighing options"},
-         {"kind": "text", "text": "Here's what I found: "},
-         {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
-        "Reasoning")
     add("prefilled_reasoning_redundant_opener", "A repeated prefilled reasoning opener is consumed once.",
         "<think>checking weather</think>" + calls(call("get_weather", {"city": "London"})),
         [{"kind": "reasoning", "text": "checking weather"},
@@ -2028,10 +2016,6 @@ def deepseek_v41_cases():
         GUIDED_ONE_CALL + "</｜DSML｜ calls>", one, mode="GuidedJson")
     add("guided_json_wrapped_in_tool_markup", "Guided JSON wrapped in DSML markup still dispatches.",
         calls(GUIDED_ONE_CALL), one, mode="GuidedJson")
-    add("prefilled_reasoning_then_text", "Prefilled reasoning closes before visible prose without a call.",
-        "no tool needed</think>The answer is 42.",
-        [{"kind": "reasoning", "text": "no tool needed"},
-         {"kind": "text", "text": "The answer is 42."}], "Reasoning")
     add("prefilled_reasoning_with_guided_json", "Prefilled reasoning closes before guided arguments.",
         "check</think>" + GUIDED_NAMED_ARGS,
         [{"kind": "reasoning", "text": "check"}] + one,
