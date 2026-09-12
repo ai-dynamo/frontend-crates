@@ -274,8 +274,7 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
     assert native["block"]["unavailable"] == "vLLM Rust 0.26.0 (stream, Combined & Unified) has no parser for muse_glimmer"
 
 
-def test_unified_default_dynamo_uses_pr_capture_and_keeps_release_history(tmp_path):
-    """The packaged fixtures retain released history and select the PR capture."""
+def test_unified_default_dynamo_uses_published_capture_and_keeps_release_history(tmp_path):
     page_path = tmp_path / "CONFORMANCE_v2.html"
     subprocess.run(
         [str(UTILS / "render_table_v2.sh"), "--output", str(page_path)],
@@ -287,7 +286,7 @@ def test_unified_default_dynamo_uses_pr_capture_and_keeps_release_history(tmp_pa
     dynamo = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
     release = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo@0.4.0")
 
-    assert dynamo["label"] == "Dynamo v2 Rust 0.5.3+pr213 (stream, Combined & Unified)"
+    assert dynamo["label"] == "Dynamo v2 Rust 0.6.0 (stream, Combined & Unified)"
     assert dynamo["default_bucket"] == "A"
     assert release["label"] == "Dynamo v2 Rust 0.4.0 (stream, Combined & Unified)"
     assert release["default_bucket"] == "C"

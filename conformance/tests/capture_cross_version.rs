@@ -16,14 +16,14 @@
 //! cp conformance/tests/capture_cross_version.rs /tmp/old/conformance/tests/
 //! cd /tmp/old && \
 //!   XVER_INPUTS=<repo>/conformance/unified/inputs \
-//!   XVER_OUT=<repo>/conformance/unified/dynamo_v2-<label> \
-//!   XVER_LABEL=<label> \
+//!   XVER_OUT=<repo>/conformance/unified/dynamo_v2-<version> \
+//!   XVER_LABEL=<version> \
 //!   cargo test -p dynamo-conformance-fixtures-v2 --test capture_cross_version -- --nocapture
 //! ```
 //!
-//! Pick `<label>` as `<version>+<tag>` (e.g. `0.1.24+pre163`). The table sorts a `+tag`
-//! capture BEFORE the plain release it qualifies, so the released build stays the
-//! reference and the tagged one is the historical column.
+//! Pick `<version>` as the checked-out build's published crate version (for example,
+//! `0.6.0`). Cross-version captures must not use branch, pull-request, or commit-qualified
+//! labels because the rendered column would claim unreleased provenance.
 //!
 //! It deliberately uses only `push`/`finish` — the smallest surface every build of the
 //! trait has had — so it compiles against old trees whose parser has no `initialize` or
@@ -41,6 +41,22 @@ use dynamo_parsers_v2::{
     create_unified_parser_for_family,
 };
 use serde_json::{Value, json};
+
+fn published_parser_version() -> String {
+    let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("../parsers/v2/Cargo.toml");
+    let text = std::fs::read_to_string(&manifest)
+        .unwrap_or_else(|e| panic!("read {}: {e}", manifest.display()));
+    let package = text
+        .split_once("[package]")
+        .and_then(|(_, rest)| rest.split_once("\n["))
+        .map(|(package, _)| package)
+        .unwrap_or_else(|| panic!("{} has no package section", manifest.display()));
+    package
+        .lines()
+        .find_map(|line| line.strip_prefix("version = \"")?.strip_suffix('"'))
+        .unwrap_or_else(|| panic!("{} has no package version", manifest.display()))
+        .to_string()
+}
 
 /// Corpus family -> (v1 reasoning parser, v2 tool parser) for the SPLIT path, read from
 /// the `unified:` block of `parser_families.yaml`.
@@ -338,6 +354,11 @@ fn capture_this_build_against_the_current_corpus() {
     };
     let out_root = PathBuf::from(std::env::var("XVER_OUT").expect("XVER_OUT"));
     let label = std::env::var("XVER_LABEL").expect("XVER_LABEL");
+    assert_eq!(
+        label,
+        published_parser_version(),
+        "XVER_LABEL must match the checked-out dynamo-parsers-v2 version"
+    );
 
     let mut families: Vec<PathBuf> = std::fs::read_dir(Path::new(&inputs_root))
         .expect("inputs dir")

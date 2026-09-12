@@ -339,8 +339,8 @@ def main() -> int:
     ap.add_argument(
         "--label", default=None,
         help="file the Dynamo v2 capture under this label instead of the crate "
-             "version (e.g. 0.1.24+pr163). Writes an ADDITIONAL version dir; it "
-             "never replaces an existing one.",
+              "version. Change-qualified +tag labels are forbidden; captures are "
+              "filed only under the published crate version.",
     )
     args = ap.parse_args()
     modes = args.modes or ["batch", "stream", "batch-on-stream"]
