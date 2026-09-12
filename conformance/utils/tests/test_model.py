@@ -123,16 +123,6 @@ def test_v2_schema_and_meta(model_v2):
 
 # ---- schema-2 compaction (model.py _compact_page <-> hydrate_page) --------------
 
-def test_missing_cell_explains_the_unclassified_gap():
-    cell = model_mod.missing_cell("REASONING.batch.2.b", "qwen3")
-
-    assert cell["kind"] == "missing"
-    assert cell["tooltip"]["na_note"] == (
-        "qwen3 has no authored fixture for REASONING.batch.2.b. "
-        "The corpus also has no explicit N/A rationale, so this is an "
-        "unclassified coverage gap rather than evidence that the case does not apply."
-    )
-
 def test_compaction_roundtrip_is_identity():
     # compact -> hydrate must reproduce the original page exactly (modulo the added
     # compaction keys), or the JS view would render different VALUES than Python

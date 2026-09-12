@@ -1198,9 +1198,11 @@
       inner.appendChild(label);
       th.appendChild(inner);
       // Same hover tooltip as the original parser cell.
-      const srcTip = m.parserTd && m.parserTd.querySelector('.ttip');
+      const srcTip = m.parserTd && (m.parserTd._ttip || m.parserTd.querySelector('.ttip'));
       if (srcTip) {
         const tipClone = srcTip.cloneNode(true);
+        tipClone.removeAttribute('data-ttip-wired');
+        delete tipClone.dataset.ttipWired;
         th.appendChild(tipClone);
         attachTooltip(th);
       }
@@ -1248,7 +1250,11 @@
       models.forEach(function (m) {
         const src = m.cells[idx];
         if (src) {
+          const sourceTip = src._ttip || src.querySelector('.ttip');
           const clone = src.cloneNode(true);
+          const cloneTip = sourceTip && sourceTip.cloneNode(true);
+          const embeddedTip = clone.querySelector('.ttip');
+          if (cloneTip && !embeddedTip) clone.appendChild(cloneTip);
           clone.classList.remove('col-hidden');
           clone.removeAttribute('data-col-hide-group');
           // cloneNode copies the "already wired" flag; clear it so the clone
