@@ -16,14 +16,14 @@
 //! cp conformance/tests/capture_cross_version.rs /tmp/old/conformance/tests/
 //! cd /tmp/old && \
 //!   XVER_INPUTS=<repo>/conformance/unified/inputs \
-//!   XVER_OUT=<repo>/conformance/unified/dynamo_v2-<label> \
-//!   XVER_LABEL=<label> \
+//!   XVER_OUT=<repo>/conformance/unified/dynamo_v2-<version> \
+//!   XVER_LABEL=<version> \
 //!   cargo test -p dynamo-conformance-fixtures-v2 --test capture_cross_version -- --nocapture
 //! ```
 //!
-//! Pick `<label>` as `<version>+<tag>` (e.g. `0.1.24+pre163`). The table sorts a `+tag`
-//! capture BEFORE the plain release it qualifies, so the released build stays the
-//! reference and the tagged one is the historical column.
+//! Pick `<version>` as the checked-out build's published crate version (for example,
+//! `0.6.0`). Cross-version captures must not use branch, pull-request, or commit-qualified
+//! labels because the rendered column would claim unreleased provenance.
 //!
 //! It deliberately uses only `push`/`finish` — the smallest surface every build of the
 //! trait has had — so it compiles against old trees whose parser has no `initialize` or
@@ -338,6 +338,10 @@ fn capture_this_build_against_the_current_corpus() {
     };
     let out_root = PathBuf::from(std::env::var("XVER_OUT").expect("XVER_OUT"));
     let label = std::env::var("XVER_LABEL").expect("XVER_LABEL");
+    assert!(
+        !label.contains('+'),
+        "XVER_LABEL must be a published release version, not a qualified capture label: {label}"
+    );
 
     let mut families: Vec<PathBuf> = std::fs::read_dir(Path::new(&inputs_root))
         .expect("inputs dir")
