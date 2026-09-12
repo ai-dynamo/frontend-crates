@@ -42,6 +42,22 @@ use dynamo_parsers_v2::{
 };
 use serde_json::{Value, json};
 
+fn published_parser_version() -> String {
+    let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("../parsers/v2/Cargo.toml");
+    let text = std::fs::read_to_string(&manifest)
+        .unwrap_or_else(|e| panic!("read {}: {e}", manifest.display()));
+    let package = text
+        .split_once("[package]")
+        .and_then(|(_, rest)| rest.split_once("\n["))
+        .map(|(package, _)| package)
+        .unwrap_or_else(|| panic!("{} has no package section", manifest.display()));
+    package
+        .lines()
+        .find_map(|line| line.strip_prefix("version = \"")?.strip_suffix('"'))
+        .unwrap_or_else(|| panic!("{} has no package version", manifest.display()))
+        .to_string()
+}
+
 /// Corpus family -> (v1 reasoning parser, v2 tool parser) for the SPLIT path, read from
 /// the `unified:` block of `parser_families.yaml`.
 ///
@@ -341,6 +357,11 @@ fn capture_this_build_against_the_current_corpus() {
     assert!(
         !label.contains('+'),
         "XVER_LABEL must be a published release version, not a qualified capture label: {label}"
+    );
+    assert_eq!(
+        label,
+        published_parser_version(),
+        "XVER_LABEL must match the checked-out dynamo-parsers-v2 version"
     );
 
     let mut families: Vec<PathBuf> = std::fs::read_dir(Path::new(&inputs_root))
