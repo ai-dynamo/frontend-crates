@@ -32,6 +32,11 @@ num-traits.workspace = true
 # streaming parsers, so it needs the OpenAI chat stream protocol types plus the
 # async-stream/futures combinators. dynamo-protocols has no dependencies, so
 # dynamo-parsers -> dynamo-protocols stays acyclic.
+#
+# Requires dynamo-protocols 6.x (workspace-inherited). The jail's public API
+# hands out protocol-owned types (e.g. `ChatChoiceStream`), so a protocols
+# major bump is a breaking change for this crate as well and must ship as a
+# new dynamo-parsers major.
 dynamo-protocols = { workspace = true }
 async-stream.workspace = true
 futures.workspace = true
