@@ -75,6 +75,20 @@ impl MmError {
             source: Some(Box::new(source)),
         }
     }
+
+    pub fn unsupported(message: impl Into<String>) -> Self {
+        Self::Unsupported {
+            message: message.into(),
+            source: None,
+        }
+    }
+
+    pub fn internal(message: impl Into<String>) -> Self {
+        Self::Internal {
+            message: message.into(),
+            source: None,
+        }
+    }
 }
 
 impl std::fmt::Display for MmError {
@@ -104,8 +118,8 @@ pub type Result<T> = std::result::Result<T, MmError>;
 
 /// BLAKE3 over encoded media bytes, truncated to a big-endian `u64`.
 pub fn content_hash_bytes(data: &[u8]) -> u64 {
-    let _ = data;
-    todo!("sglang rust native blake3, first 8 bytes BE")
+    let digest = blake3::hash(data);
+    u64::from_be_bytes(digest.as_bytes()[..8].try_into().unwrap())
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -120,6 +134,46 @@ pub enum MediaDtype {
 /// modalities have separate identity contracts; in particular, Dynamo's
 /// video identity also covers decoded metadata.
 pub fn content_hash_canonical_image(shape: &[usize], dtype: MediaDtype, data: &[u8]) -> u64 {
-    let _ = (shape, dtype, data);
-    todo!("dynamo canonical decoded-image hash")
+    let mut hasher = xxhash_rust::xxh3::Xxh3::new();
+    // Rank and dimensions are fixed-width so distinct shapes cannot alias
+    // after concatenation.
+    hasher.update(&(shape.len() as u64).to_le_bytes());
+    for &dim in shape {
+        hasher.update(&(dim as u64).to_le_bytes());
+    }
+    let dtype_byte: u8 = match dtype {
+        MediaDtype::U8 => 0,
+    };
+    hasher.update(&[dtype_byte]);
+    hasher.update(data);
+    hasher.digest()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Both identities are cross-process contracts — a router hashes and an
+    /// engine looks the key up — so they are pinned to the values the mirrored
+    /// implementations produce, not merely to being stable here.
+    #[test]
+    fn identities_match_the_mirrored_implementations() {
+        // Dynamo's `canonical_content_hash` (lib/llm preprocessor::media::rdma).
+        assert_eq!(
+            content_hash_canonical_image(&[1, 2, 3], MediaDtype::U8, &[0, 1, 2, 3, 4, 5]),
+            0x7a9b_bcb1_1a89_8630
+        );
+        // SGLang's fallback: BLAKE3 of b"abc", first 8 bytes big-endian.
+        assert_eq!(content_hash_bytes(b"abc"), 0x6437_b3ac_3846_5133);
+    }
+
+    /// Shape and dtype are hashed alongside the pixels, so two buffers that
+    /// differ only in geometry cannot collide into one cache entry.
+    #[test]
+    fn canonical_image_identity_covers_geometry() {
+        let data = [0u8, 1, 2, 3, 4, 5];
+        let hash = |shape: &[usize]| content_hash_canonical_image(shape, MediaDtype::U8, &data);
+        assert_ne!(hash(&[1, 2, 3]), hash(&[3, 2, 1]));
+        assert_ne!(hash(&[1, 2, 3]), hash(&[2, 3]));
+    }
 }
