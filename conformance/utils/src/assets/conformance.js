@@ -513,11 +513,17 @@
       // Preserve the accessible name while exposing the same text in the page tooltip.
       button.dataset.tooltip = button.getAttribute('aria-label');
       button.dataset.ttipText = button.dataset.tooltip;
-      if (!button.querySelector('.ttip')) {
-        const ttip = document.createElement('span');
+      let ttip = button._ttip || button.querySelector('.ttip');
+      if (!ttip) {
+        ttip = document.createElement('span');
         ttip.className = 'ttip column-control-tooltip';
-        ttip.textContent = button.dataset.ttipText;
+        const label = document.createElement('span');
+        label.className = 'column-control-tooltip-text';
+        label.textContent = button.dataset.ttipText;
+        ttip.appendChild(label);
         button.appendChild(ttip);
+      } else {
+        ttip.querySelector('.column-control-tooltip-text').textContent = button.dataset.ttipText;
       }
       attachTooltip(button);
       document.querySelectorAll('[data-col-control-group="' + key + '"]').forEach(function (el) {
@@ -731,10 +737,10 @@
     const absLeft = cellRect.left + shiftX;
     if (absLeft < margin) shiftX += (margin - absLeft);
     if (isPortalled) {
-      ttip.style.left = (cellRect.left + shiftX) + 'px';
-      ttip.style.top = cellRect.bottom + 'px';
+      ttip.style.left = (cellRect.left + window.scrollX + shiftX) + 'px';
+      ttip.style.top = (cellRect.bottom + window.scrollY) + 'px';
       if (cellRect.bottom + tipRect.height > vh - margin && cellRect.top - tipRect.height > margin) {
-        ttip.style.top = (cellRect.top - tipRect.height) + 'px';
+        ttip.style.top = (cellRect.top + window.scrollY - tipRect.height) + 'px';
       }
     } else {
       ttip.style.left = shiftX + 'px';
@@ -940,6 +946,11 @@
       isVisible = true;
     }
 
+    function keepTooltipOpen() {
+      isActive = true;
+      clearTimers();
+    }
+
     // TOUCH ONLY. Tap toggles a pinned tooltip; taps INSIDE the tooltip (its links, the ✕)
     // behave normally. Touch has no hover, so a tap on the cell must open the tooltip
     // instead of following the cell's own parser-source link — preventDefault blocks that
@@ -1001,6 +1012,10 @@
     cell.addEventListener('focusout', function () {
       if (!ttip.classList.contains('ttip-pinned')) { scheduleHide(); }
     });
+    ttip.addEventListener('pointerenter', keepTooltipOpen);
+    ttip.addEventListener('mouseenter', keepTooltipOpen);
+    ttip.addEventListener('pointerleave', onLeave);
+    ttip.addEventListener('mouseleave', onLeave);
 
     // Column controls contain their tooltip as a child. Moving the pointer from the
     // button into that child fires a leave event, so show it immediately and keep it

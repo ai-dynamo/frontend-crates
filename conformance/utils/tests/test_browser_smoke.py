@@ -18,6 +18,8 @@ import pytest
 
 selenium = pytest.importorskip("selenium")
 from selenium import webdriver  # noqa: E402
+from selenium.webdriver.common.action_chains import ActionChains  # noqa: E402
+from selenium.webdriver.common.by import By  # noqa: E402
 from selenium.webdriver.chrome.options import Options  # noqa: E402
 
 pytestmark = pytest.mark.skipif(
@@ -283,41 +285,72 @@ def test_column_toggle_hover_opens_its_tooltip(driver):
     assert result == {"visible": True, "visibility": "visible"}
 
 
-def test_sticky_columns_stay_below_popups(driver):
+def test_portalled_tooltip_tracks_the_document_scroll(driver):
+    cell = driver.find_element(By.CSS_SELECTOR, ".tab-panel.active tbody tr:last-child td.cell")
+    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", cell)
+    assert driver.execute_script("return window.scrollY > 0")
+    ActionChains(driver).move_to_element(cell).perform()
+    time.sleep(1)
     result = driver.execute_script(
         """
-        const table = document.querySelector('.tab-panel.active [data-parity-table]');
-        const stickyHeader = table.querySelector('th[data-col-control-group="parser"]');
-        const stickyBody = table.querySelector('td.parser');
-        const popup = document.querySelector('.ttip');
+        const cell = arguments[0];
+        const tooltip = cell._ttip;
+        const cellRect = cell.getBoundingClientRect();
+        const tooltipRect = tooltip.getBoundingClientRect();
         return {
-          stickyHeader: Number(getComputedStyle(stickyHeader).zIndex),
-          stickyBody: Number(getComputedStyle(stickyBody).zIndex),
-          popup: Number(getComputedStyle(popup).zIndex),
+          portalled: tooltip.parentElement === document.body,
+          topDelta: tooltipRect.top - cellRect.bottom,
+          leftDelta: tooltipRect.left - cellRect.left,
         };
-        """
+        """,
+        cell,
     )
 
-    assert result["stickyBody"] < result["popup"], result
+    assert result["portalled"], result
+    assert abs(result["topDelta"]) < 2, result
+    assert result["leftDelta"] <= 0, result
 
 
-def test_tool_calling_header_stays_below_the_portalled_popup(driver):
+def test_portalled_tooltip_stays_open_while_hovered(driver):
+    result = driver.execute_script(
+        """
+        const cell = document.querySelector('.tab-panel.active td.cell');
+        cell.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false, view: window}));
+        const tooltip = cell._ttip;
+        cell.dispatchEvent(new MouseEvent('mouseleave', {bubbles: false, view: window}));
+        tooltip.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false, view: window}));
+        return { tooltip };
+        """
+    )
+    time.sleep(1)
+    visible = driver.execute_script(
+        "return arguments[0].classList.contains('ttip-visible');", result["tooltip"]
+    )
+
+    assert visible
+
+
+def test_column_toggle_reuses_its_portalled_tooltip(driver):
     result = driver.execute_script(
         """
         const button = [...document.querySelectorAll('.tab-panel.active [data-col-toggle]')]
           .find(el => el.dataset.colLabel === 'Tool calling family');
-        const header = button.closest('th');
         const tooltip = button._ttip;
         document.body.appendChild(tooltip);
-        tooltip.classList.add('ttip-visible');
-        const openZIndex = Number(getComputedStyle(header).zIndex);
-        tooltip.classList.remove('ttip-visible');
-        button.appendChild(tooltip);
-        return { openZIndex, closedZIndex: Number(getComputedStyle(header).zIndex) };
+        button.click();
+        return {
+          count: button._ttip === tooltip ? 1 : 0,
+          owned: button._ttip === tooltip,
+          text: tooltip.querySelector('.column-control-tooltip-text').textContent,
+        };
         """
     )
 
-    assert result == {"openZIndex": 8, "closedZIndex": 8}
+    assert result == {
+        "count": 1,
+        "owned": True,
+        "text": "Expand Tool calling family column",
+    }
 
 
 def test_order_divergence_shows_golden_and_candidate_sequences(driver):

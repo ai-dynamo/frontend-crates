@@ -50,12 +50,6 @@ td.parser a:hover { background: #ffd; }
 [data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="parser"] {
   z-index: 8;
 }
-/* A popup remains inside its trigger's stacking context. Lift only the header that
-   owns a visible popup, so frozen sibling columns stay below the popup rather than
-   painting over it while horizontal scrolling is active. */
-[data-parity-table] > thead > tr.matrix-groups > th:has(.ttip-visible) {
-  z-index: 3001;
-}
 [data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="model"],
 [data-parity-table] > tbody > tr:not(.section) > td.model { left: 0; }
 [data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="parser"],
@@ -87,7 +81,6 @@ td.parser a:hover { background: #ffd; }
   left: 0;
   z-index: 8;
 }
-.transpose-table > thead > tr > th:has(.ttip-visible) { z-index: 3001; }
 .transpose-table > tbody > tr:not(.section) > th.trow-case {
   position: sticky;
   left: 0;
@@ -373,10 +366,6 @@ body.view-overview.ttip-pin-mode td.cell:hover:not(.ttip-open) { filter: none; }
 }
 .col-toggle[data-tooltip]:hover::after,
 .col-toggle[data-tooltip]:focus-visible::after { visibility: visible; opacity: 1; }
-/* Sticky model/parser columns use a higher z-index than ordinary header cells so they
-   stay readable while the matrix scrolls. The parser header shares that layer, so an
-   in-cell pseudo-element cannot escape above the sticky model column. Keep the hint in
-   the page-level tooltip layer instead of trying to out-rank sibling sticky cells. */
 .col-toggle[data-tooltip]::after { content: none; }
 .column-control-tooltip { white-space: nowrap; min-width: 0; width: max-content; }
 .col-placeholder { min-width: 20px; width: 20px; padding: 0; background: #f8fafc; }
