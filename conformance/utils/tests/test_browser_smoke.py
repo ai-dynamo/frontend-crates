@@ -251,22 +251,73 @@ def test_column_toggle_hint_is_anchored_to_the_button(driver):
         const button = [...document.querySelectorAll('.tab-panel.active [data-col-toggle]')]
           .find(el => el.dataset.colLabel === 'Tool calling family');
         if (!button) return null;
-        const style = getComputedStyle(button, '::after');
         return {
           title: button.getAttribute('title'),
           tooltip: button.dataset.tooltip,
-          content: style.content,
-          position: style.position,
-          bottom: style.bottom,
+          tooltipText: button.dataset.ttipText,
+          wired: button.dataset.ttipWired,
         };
         """
     )
     assert result, "Tool calling family column control is missing"
     assert result["title"] is None, result
     assert result["tooltip"] == "Collapse Tool calling family column", result
-    assert result["content"] == '"Collapse Tool calling family column"', result
-    assert result["position"] == "absolute", result
-    assert result["bottom"] != "auto", result
+    assert result["tooltipText"] == "Collapse Tool calling family column", result
+    assert result["wired"] == "1", result
+
+
+def test_column_toggle_hover_opens_its_tooltip(driver):
+    result = driver.execute_script(
+        """
+        const button = [...document.querySelectorAll('.tab-panel.active [data-col-toggle]')]
+          .find(el => el.dataset.colLabel === 'Tool calling family');
+        button.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false, view: window}));
+        const tooltip = button._ttip;
+        return {
+          visible: tooltip.classList.contains('ttip-visible'),
+          visibility: getComputedStyle(tooltip).visibility,
+        };
+        """
+    )
+
+    assert result == {"visible": True, "visibility": "visible"}
+
+
+def test_sticky_columns_stay_below_popups(driver):
+    result = driver.execute_script(
+        """
+        const table = document.querySelector('.tab-panel.active [data-parity-table]');
+        const stickyHeader = table.querySelector('th[data-col-control-group="parser"]');
+        const stickyBody = table.querySelector('td.parser');
+        const popup = document.querySelector('.ttip');
+        return {
+          stickyHeader: Number(getComputedStyle(stickyHeader).zIndex),
+          stickyBody: Number(getComputedStyle(stickyBody).zIndex),
+          popup: Number(getComputedStyle(popup).zIndex),
+        };
+        """
+    )
+
+    assert result["stickyBody"] < result["popup"], result
+
+
+def test_tool_calling_header_stays_below_the_portalled_popup(driver):
+    result = driver.execute_script(
+        """
+        const button = [...document.querySelectorAll('.tab-panel.active [data-col-toggle]')]
+          .find(el => el.dataset.colLabel === 'Tool calling family');
+        const header = button.closest('th');
+        const tooltip = button._ttip;
+        document.body.appendChild(tooltip);
+        tooltip.classList.add('ttip-visible');
+        const openZIndex = Number(getComputedStyle(header).zIndex);
+        tooltip.classList.remove('ttip-visible');
+        button.appendChild(tooltip);
+        return { openZIndex, closedZIndex: Number(getComputedStyle(header).zIndex) };
+        """
+    )
+
+    assert result == {"openZIndex": 8, "closedZIndex": 8}
 
 
 def test_order_divergence_shows_golden_and_candidate_sequences(driver):
@@ -719,7 +770,7 @@ def test_every_wired_element_stays_pinned(touch_driver, transposed):
         pinned = False
         while time.time() < deadline:
             pinned = touch_driver.execute_script(
-                "return !!document.querySelector('[data-ttip-wired] .ttip.ttip-pinned');"
+                "return !!document.querySelector('.ttip.ttip-pinned');"
             )
             if pinned:
                 break

@@ -510,11 +510,16 @@
         'aria-label',
         (isVisible ? 'Collapse ' : 'Expand ') + button.dataset.colLabel + ' column'
       );
-      // Use the page tooltip instead of the browser's native `title` popup. The native
-      // popup is positioned relative to the button's bottom edge, which makes a column
-      // header tooltip appear detached below the column. `aria-label` remains the
-      // accessible name for keyboard and screen-reader users.
+      // Preserve the accessible name while exposing the same text in the page tooltip.
       button.dataset.tooltip = button.getAttribute('aria-label');
+      button.dataset.ttipText = button.dataset.tooltip;
+      if (!button.querySelector('.ttip')) {
+        const ttip = document.createElement('span');
+        ttip.className = 'ttip column-control-tooltip';
+        ttip.textContent = button.dataset.ttipText;
+        button.appendChild(ttip);
+      }
+      attachTooltip(button);
       document.querySelectorAll('[data-col-control-group="' + key + '"]').forEach(function (el) {
         el.classList.toggle('col-collapsed', !isVisible);
         if (el.dataset.expandedColspan) {
@@ -699,14 +704,15 @@
   }
 
   function place(cell) {
-    const ttip = cell.querySelector('.ttip');
+    const ttip = cell._ttip || cell.querySelector('.ttip');
     if (!ttip) return;
     equalizeColumns(ttip);
     ttip.style.visibility = 'hidden';
     ttip.style.opacity = '0';
     ttip.classList.add('ttip-visible');
+    const isPortalled = ttip.parentNode === document.body;
     ttip.style.left = '0px';
-    ttip.style.top = '100%';
+    ttip.style.top = isPortalled ? '0px' : '100%';
     ttip.style.right = 'auto';
     ttip.style.bottom = 'auto';
     // Cap the width at the viewport MINUS both gutters — that is the most a popup may
@@ -724,8 +730,16 @@
     if (overflowRight > 0) shiftX = -overflowRight;
     const absLeft = cellRect.left + shiftX;
     if (absLeft < margin) shiftX += (margin - absLeft);
-    ttip.style.left = shiftX + 'px';
-    if (cellRect.bottom + tipRect.height > vh - margin
+    if (isPortalled) {
+      ttip.style.left = (cellRect.left + shiftX) + 'px';
+      ttip.style.top = cellRect.bottom + 'px';
+      if (cellRect.bottom + tipRect.height > vh - margin && cellRect.top - tipRect.height > margin) {
+        ttip.style.top = (cellRect.top - tipRect.height) + 'px';
+      }
+    } else {
+      ttip.style.left = shiftX + 'px';
+    }
+    if (!isPortalled && cellRect.bottom + tipRect.height > vh - margin
         && cellRect.top - tipRect.height > margin) {
       ttip.style.top = 'auto';
       ttip.style.bottom = '100%';
@@ -800,12 +814,14 @@
   const WIRED = '[data-ttip-wired]';
   document.addEventListener('click', function (e) {
     // A click anywhere outside a pinnable element (and not on a pinned tooltip) closes the pin.
-    if (pinnedCell && !e.target.closest(WIRED)) { unpinCell(pinnedCell); }
+    if (pinnedCell && !e.target.closest(WIRED) && !e.target.closest('.ttip')) { unpinCell(pinnedCell); }
   });
 
   function attachTooltip(cell) {
     const ttip = cell.querySelector('.ttip');
     if (!ttip) return;
+    cell._ttip = ttip;
+    ttip._ttipOwner = cell;
     // cloneNode copies the wired flag; guard so re-wiring a clone is a no-op and
     // originals aren't double-wired.
     if (cell.dataset.ttipWired === '1') return;
@@ -815,6 +831,19 @@
     let hideTimer = null;
     let isActive = false;
     let isVisible = false;
+    let portalParent = null;
+
+    function portalTooltip() {
+      if (portalParent) return;
+      portalParent = ttip.parentNode;
+      document.body.appendChild(ttip);
+    }
+
+    function restoreTooltip() {
+      if (!portalParent) return;
+      portalParent.appendChild(ttip);
+      portalParent = null;
+    }
 
     // ✕ close button (shown only while pinned) — inserted once per tooltip.
     if (!ttip.querySelector('.ttip-close')) {
@@ -830,6 +859,7 @@
     function pin() {
       if (pinnedCell && pinnedCell !== cell) { unpinCell(pinnedCell); }
       clearTimers();
+      portalTooltip();
       place(cell);
       ttip.classList.add('ttip-visible', 'ttip-pinned');
       isVisible = true;
@@ -843,6 +873,7 @@
     }
     function unpin() {
       ttip.classList.remove('ttip-visible', 'ttip-pinned');
+      restoreTooltip();
       isVisible = false;
       isActive = false;
       cell.classList.remove('ttip-open');
@@ -870,6 +901,7 @@
       showTimer = window.setTimeout(function () {
         showTimer = null;
         if (!isActive) return;
+        portalTooltip();
         place(cell);
         ttip.classList.add('ttip-visible');
         isVisible = true;
@@ -884,6 +916,7 @@
       }
       if (!isVisible) {
         ttip.classList.remove('ttip-visible');
+        restoreTooltip();
         return;
       }
       if (hideTimer !== null) {
@@ -893,8 +926,18 @@
         hideTimer = null;
         if (isActive) return;
         ttip.classList.remove('ttip-visible');
+        restoreTooltip();
         isVisible = false;
       }, hideDelayMs);
+    }
+
+    function keepButtonTooltipOpen() {
+      isActive = true;
+      clearTimers();
+      portalTooltip();
+      place(cell);
+      ttip.classList.add('ttip-visible');
+      isVisible = true;
     }
 
     // TOUCH ONLY. Tap toggles a pinned tooltip; taps INSIDE the tooltip (its links, the ✕)
@@ -958,6 +1001,14 @@
     cell.addEventListener('focusout', function () {
       if (!ttip.classList.contains('ttip-pinned')) { scheduleHide(); }
     });
+
+    // Column controls contain their tooltip as a child. Moving the pointer from the
+    // button into that child fires a leave event, so show it immediately and keep it
+    // open until the pointer leaves the entire control.
+    if (cell.classList.contains('col-toggle')) {
+      cell.addEventListener('mouseenter', keepButtonTooltipOpen);
+      cell.addEventListener('pointerenter', keepButtonTooltipOpen);
+    }
   }
   // The elements present at load. `th.case-sub` carries the per-column grammar popup (the
   // same case in every family's grammar); it uses the identical hover/pin machinery as a
