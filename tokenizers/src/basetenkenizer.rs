@@ -170,6 +170,54 @@ impl Tokenizer for BasetenTokenizer {
         self.options = options;
         self
     }
+
+    fn vocab_size(&self) -> Option<usize> {
+        // `basetenkenizer::Tokenizer::vocab_size` sums the model vocab size
+        // and the added-tokens count with no dedup, but real tokenizer.json
+        // files (this crate's own TinyLlama_v1.1 fixture included) list
+        // `added_tokens` entries whose ids already exist in `model.vocab` --
+        // metadata for special tokens, not additional vocabulary. Count only
+        // added tokens whose content isn't already in the model vocab.
+        let model = self.tokenizer.model();
+        let model_size = model.vocab_size();
+        let extra = self.tokenizer.added_tokens().map_or(0, |added| {
+            added
+                .iter()
+                .filter(|info| model.token_to_id(info.content).is_none())
+                .count()
+        });
+        Some(model_size + extra)
+    }
+
+    fn token_to_id(&self, token: &str) -> Result<Option<TokenIdType>> {
+        Ok(self.tokenizer.token_to_id(token))
+    }
+
+    fn special_token_ids(&self) -> Result<Vec<TokenIdType>> {
+        let Some(added_tokens) = self.tokenizer.added_tokens() else {
+            return Ok(Vec::new());
+        };
+        let mut ids: Vec<TokenIdType> = added_tokens
+            .iter()
+            .filter_map(|info| info.special.then_some(info.id))
+            .collect();
+        ids.sort_unstable();
+        Ok(ids)
+    }
+
+    fn num_special_tokens_added(&self) -> Result<usize> {
+        // basetenkenizer exposes no direct count, but post-processing an
+        // empty sequence with add_special_tokens=true is content-length
+        // independent for every basetenkenizer::PostProcessor variant:
+        // ByteLevel is identity (adds 0); TemplateProcessing::apply_single
+        // walks a fixed template where SpecialToken pieces insert a
+        // fixed-length id vector and Sequence pieces are replaced 1:1 by
+        // whatever content came in, so the *added* length never depends on
+        // content length; Sequence(steps) folds that same guarantee across
+        // steps. So this reveals exactly what the post-processor inserts
+        // around a bare encoding, for real content of any length.
+        Ok(self.tokenizer.post_process(Vec::new(), true).len())
+    }
 }
 
 #[cfg(test)]
@@ -352,6 +400,135 @@ mod tests {
     }
 
     #[test]
+    fn num_special_tokens_added_reflects_bos_post_processor() {
+        // Same TemplateProcessing-prepends-<bos> fixture as
+        // segments_honor_add_special_tokens_option, which already proves
+        // encode()/add_special_tokens=true inserts one BOS id (23); this
+        // exercises num_special_tokens_added() against that same real path.
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("tokenizer.json");
+        let mut json: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(TOKENIZER_PATH).unwrap()).unwrap();
+        json["model"]["vocab"]["<bos>"] = serde_json::json!(23);
+        json["added_tokens"] = serde_json::json!([{
+            "id": 23,
+            "content": "<bos>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+        }]);
+        json["post_processor"] = serde_json::json!({
+            "type": "TemplateProcessing",
+            "single": [
+                {"SpecialToken": {"id": "<bos>", "type_id": 0}},
+                {"Sequence": {"id": "A", "type_id": 0}}
+            ],
+            "pair": [
+                {"SpecialToken": {"id": "<bos>", "type_id": 0}},
+                {"Sequence": {"id": "A", "type_id": 0}},
+                {"Sequence": {"id": "B", "type_id": 0}}
+            ],
+            "special_tokens": {
+                "<bos>": {"id": "<bos>", "ids": [23], "tokens": ["<bos>"]}
+            }
+        });
+        std::fs::write(&path, serde_json::to_vec(&json).unwrap()).unwrap();
+
+        let with_bos = BasetenTokenizer::from_file(path.to_str().unwrap()).unwrap();
+        assert_eq!(with_bos.num_special_tokens_added().unwrap(), 1);
+
+        let plain = BasetenTokenizer::from_file(TOKENIZER_PATH).unwrap();
+        assert_eq!(plain.num_special_tokens_added().unwrap(), 0);
+    }
+
+    #[test]
+    fn num_special_tokens_added_is_length_independent_under_sequence_post_processor() {
+        // Proves the invariant num_special_tokens_added's doc comment
+        // relies on: a Sequence post-processor chaining two
+        // TemplateProcessing steps (one prepending <bos>, one appending
+        // <eos>) adds a fixed 2 tokens regardless of how many content
+        // tokens flow through it, so post_process(Vec::new(), true).len()
+        // is a safe stand-in for the real-content addition count.
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("tokenizer.json");
+        let mut json: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(TOKENIZER_PATH).unwrap()).unwrap();
+        json["model"]["vocab"]["<bos>"] = serde_json::json!(23);
+        json["model"]["vocab"]["<eos>"] = serde_json::json!(24);
+        json["added_tokens"] = serde_json::json!([
+            {
+                "id": 23,
+                "content": "<bos>",
+                "single_word": false,
+                "lstrip": false,
+                "rstrip": false,
+                "normalized": false,
+                "special": true
+            },
+            {
+                "id": 24,
+                "content": "<eos>",
+                "single_word": false,
+                "lstrip": false,
+                "rstrip": false,
+                "normalized": false,
+                "special": true
+            }
+        ]);
+        json["post_processor"] = serde_json::json!({
+            "type": "Sequence",
+            "processors": [
+                {
+                    "type": "TemplateProcessing",
+                    "single": [
+                        {"SpecialToken": {"id": "<bos>", "type_id": 0}},
+                        {"Sequence": {"id": "A", "type_id": 0}}
+                    ],
+                    "pair": [],
+                    "special_tokens": {
+                        "<bos>": {"id": "<bos>", "ids": [23], "tokens": ["<bos>"]}
+                    }
+                },
+                {
+                    "type": "TemplateProcessing",
+                    "single": [
+                        {"Sequence": {"id": "A", "type_id": 0}},
+                        {"SpecialToken": {"id": "<eos>", "type_id": 0}}
+                    ],
+                    "pair": [],
+                    "special_tokens": {
+                        "<eos>": {"id": "<eos>", "ids": [24], "tokens": ["<eos>"]}
+                    }
+                }
+            ]
+        });
+        std::fs::write(&path, serde_json::to_vec(&json).unwrap()).unwrap();
+
+        let tokenizer = BasetenTokenizer::from_file(path.to_str().unwrap()).unwrap();
+        assert_eq!(tokenizer.num_special_tokens_added().unwrap(), 2);
+
+        let with_specials = tokenizer.with_options(TokenizerOptions {
+            add_special_tokens: true,
+        });
+        let plain = BasetenTokenizer::from_file(path.to_str().unwrap()).unwrap();
+
+        // Two inputs of different real content length must each grow by
+        // exactly num_special_tokens_added() (2), not by some
+        // content-dependent amount.
+        for text in ["h", "hello there world"] {
+            let without = plain.encode(text).unwrap().token_ids().len();
+            let with = with_specials.encode(text).unwrap().token_ids().len();
+            assert_eq!(
+                with - without,
+                2,
+                "'{text}' should grow by exactly num_special_tokens_added()"
+            );
+        }
+    }
+
+    #[test]
     fn merges_config_only_special_tokens() {
         let temp = tempfile::tempdir().unwrap();
         let tokenizer_path = temp.path().join("tokenizer.json");
@@ -379,5 +556,64 @@ mod tests {
         assert_eq!(encoding.token_ids(), &[23]);
         assert_eq!(tokenizer.decode(&[23], false).unwrap().as_str(), "<ctl>");
         assert_eq!(tokenizer.decode(&[23], true).unwrap().as_str(), "");
+    }
+
+    #[test]
+    fn vocab_introspection_accessors() {
+        let plain = BasetenTokenizer::from_file(TOKENIZER_PATH).unwrap();
+        // `minimal-bpe/tokenizer.json` has 23 model-vocab entries and no
+        // added tokens: vocab_size is the model vocab, and there are no
+        // special-token ids to report.
+        assert_eq!(plain.vocab_size(), Some(23));
+        assert_eq!(plain.token_to_id("hello").unwrap(), None);
+        assert_eq!(plain.token_to_id("h").unwrap(), Some(10));
+        assert!(plain.special_token_ids().unwrap().is_empty());
+
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("tokenizer.json");
+        let mut json: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(TOKENIZER_PATH).unwrap()).unwrap();
+        json["model"]["vocab"]["<bos>"] = serde_json::json!(23);
+        json["added_tokens"] = serde_json::json!([{
+            "id": 23,
+            "content": "<bos>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+        }]);
+        std::fs::write(&path, serde_json::to_vec(&json).unwrap()).unwrap();
+
+        let with_added = BasetenTokenizer::from_file(path.to_str().unwrap()).unwrap();
+        // "<bos>" (id 23) is listed in both `model.vocab` and `added_tokens`,
+        // which is the layout real tokenizer.json files use for special
+        // tokens: the model vocab already covers it, so vocab_size must not
+        // double-count it -- 24, not 25.
+        assert_eq!(with_added.vocab_size(), Some(24));
+        assert_eq!(with_added.token_to_id("<bos>").unwrap(), Some(23));
+        assert_eq!(with_added.special_token_ids().unwrap(), vec![23]);
+
+        // A second fixture where the added token is genuinely absent from
+        // the model vocab (as opposed to documenting an existing entry)
+        // confirms vocab_size still counts real additions, not just always
+        // falling back to the model size.
+        let path2 = temp.path().join("tokenizer2.json");
+        let mut json2: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(TOKENIZER_PATH).unwrap()).unwrap();
+        json2["added_tokens"] = serde_json::json!([{
+            "id": 23,
+            "content": "<extra>",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+        }]);
+        std::fs::write(&path2, serde_json::to_vec(&json2).unwrap()).unwrap();
+
+        let genuinely_added = BasetenTokenizer::from_file(path2.to_str().unwrap()).unwrap();
+        assert_eq!(genuinely_added.vocab_size(), Some(24));
+        assert_eq!(genuinely_added.token_to_id("<extra>").unwrap(), Some(23));
     }
 }

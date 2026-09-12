@@ -295,7 +295,23 @@ impl Decoder for CachedTokenizer {
     }
 }
 
-impl Tokenizer for CachedTokenizer {}
+impl Tokenizer for CachedTokenizer {
+    fn vocab_size(&self) -> Option<usize> {
+        self.inner.vocab_size()
+    }
+
+    fn token_to_id(&self, token: &str) -> Result<Option<TokenIdType>> {
+        self.inner.token_to_id(token)
+    }
+
+    fn special_token_ids(&self) -> Result<Vec<TokenIdType>> {
+        self.inner.special_token_ids()
+    }
+
+    fn num_special_tokens_added(&self) -> Result<usize> {
+        self.inner.num_special_tokens_added()
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -340,6 +356,10 @@ mod tests {
         fn validate_prefix_cache(&self) -> Result<()> {
             Ok(())
         }
+
+        fn vocab_size(&self) -> Option<usize> {
+            None
+        }
     }
 
     impl Encoder for FailingTokenizer {
@@ -365,6 +385,10 @@ mod tests {
     impl Tokenizer for FailingTokenizer {
         fn validate_prefix_cache(&self) -> Result<()> {
             Ok(())
+        }
+
+        fn vocab_size(&self) -> Option<usize> {
+            None
         }
     }
 
@@ -646,5 +670,43 @@ mod tests {
         assert!(events[1..].iter().all(|event| event.cached_tokens > 0));
         // First call populates, second/third hit.
         assert!(cached.cache_stats().hits >= 2, "expected hits on q2 and q3");
+    }
+
+    #[test]
+    fn vocab_introspection_forwards_to_inner() {
+        // CachedTokenizer wraps `inner` behind an opaque cache; without
+        // forwarding, every caller reaching a tokenizer through the cache
+        // wrapper would see None/empty/zero regardless of what `inner`
+        // actually reports.
+        let tok = inner();
+        let cached = CachedTokenizer::new(tok.clone(), specials(), 4096)
+            .expect("TinyLlama must support prefix caching");
+        assert_eq!(cached.vocab_size(), tok.vocab_size());
+        assert_eq!(
+            cached.token_to_id("<s>").unwrap(),
+            tok.token_to_id("<s>").unwrap()
+        );
+        assert_eq!(
+            cached.special_token_ids().unwrap(),
+            tok.special_token_ids().unwrap()
+        );
+        assert_eq!(
+            cached.num_special_tokens_added().unwrap(),
+            tok.num_special_tokens_added().unwrap()
+        );
+    }
+
+    #[test]
+    fn unoverridden_vocab_methods_default_to_unsupported() {
+        // SegmentTokenizer only overrides `vocab_size`; `token_to_id`,
+        // `special_token_ids`, and `num_special_tokens_added` are left at
+        // the trait default. Guards against that default silently
+        // regressing to a trivial `Ok`/empty/zero value, which would make
+        // "unsupported" indistinguishable from a genuine miss/empty/zero
+        // answer.
+        let tokenizer = SegmentTokenizer;
+        assert!(tokenizer.token_to_id("anything").is_err());
+        assert!(tokenizer.special_token_ids().is_err());
+        assert!(tokenizer.num_special_tokens_added().is_err());
     }
 }
