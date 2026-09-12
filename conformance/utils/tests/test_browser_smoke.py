@@ -247,7 +247,6 @@ def test_hover_shows_tooltip(driver):
 
 
 def test_column_toggle_hint_is_anchored_to_the_button(driver):
-    """Column controls use the page tooltip rather than a detached native title popup."""
     result = driver.execute_script(
         """
         const button = [...document.querySelectorAll('.tab-panel.active [data-col-toggle]')]

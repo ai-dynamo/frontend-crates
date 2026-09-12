@@ -1017,9 +1017,6 @@
     ttip.addEventListener('pointerleave', onLeave);
     ttip.addEventListener('mouseleave', onLeave);
 
-    // Column controls contain their tooltip as a child. Moving the pointer from the
-    // button into that child fires a leave event, so show it immediately and keep it
-    // open until the pointer leaves the entire control.
     if (cell.classList.contains('col-toggle')) {
       cell.addEventListener('mouseenter', keepButtonTooltipOpen);
       cell.addEventListener('pointerenter', keepButtonTooltipOpen);
