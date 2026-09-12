@@ -42,22 +42,25 @@ def crate_version(cargo_toml: Path) -> str:
 def dynamo_v2_label(repo_root: Path, override: str | None = None) -> str:
     """Label to file this Dynamo v2 capture under.
 
-    Precedence: explicit `override` (a `--label` flag) > `$CONFORMANCE_DYNAMO_V2_LABEL`
-    > the live parsers/v2 crate version.
+    The explicit and environment overrides are accepted only when they match the live
+    parsers/v2 crate version, so a capture cannot misattribute one build as another.
     """
     # An explicitly-supplied-but-blank override is an error, not a request for the
     # default: `--label ""` / `CONFORMANCE_DYNAMO_V2_LABEL=` means the caller meant
     # to name this capture and the name got lost. Falling back would silently file
     # it under the released version and overwrite that comparison point.
+    version = crate_version(repo_root / "parsers" / "v2" / "Cargo.toml").strip()
     for supplied in (override, os.environ.get(ENV_OVERRIDE)):
         if supplied is None:
             continue
         if not supplied.strip():
             raise ValueError("empty Dynamo v2 capture label; omit the override to use the crate version")
         label = supplied.strip()
+        if label != version:
+            raise ValueError(f"capture label {label!r} does not match crate version {version!r}")
         break
     else:
-        label = crate_version(repo_root / "parsers" / "v2" / "Cargo.toml").strip()
+        label = version
     if not _LABEL_RE.match(label):
         raise ValueError(
             f"bad Dynamo v2 capture label {label!r}: expected a published crate version, "
