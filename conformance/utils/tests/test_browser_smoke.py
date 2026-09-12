@@ -311,15 +311,19 @@ def test_portalled_tooltip_tracks_the_document_scroll(driver):
 
 
 def test_portalled_tooltip_stays_open_while_hovered(driver):
+    cell = driver.find_element(By.CSS_SELECTOR, ".tab-panel.active td.cell")
     result = driver.execute_script(
         """
-        const cell = document.querySelector('.tab-panel.active td.cell');
+        const cell = arguments[0];
         cell.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false, view: window}));
-        const tooltip = cell._ttip;
-        cell.dispatchEvent(new MouseEvent('mouseleave', {bubbles: false, view: window}));
-        tooltip.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false, view: window}));
-        return { tooltip };
-        """
+        return new Promise(resolve => setTimeout(() => {
+          const tooltip = cell._ttip;
+          cell.dispatchEvent(new MouseEvent('mouseleave', {bubbles: false, view: window}));
+          tooltip.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false, view: window}));
+          resolve({tooltip});
+        }, 850));
+        """,
+        cell,
     )
     time.sleep(1)
     visible = driver.execute_script(
@@ -327,6 +331,51 @@ def test_portalled_tooltip_stays_open_while_hovered(driver):
     )
 
     assert visible
+
+
+def test_transpose_keeps_one_open_tooltip(driver):
+    driver.execute_script(
+        """
+        document.querySelectorAll('.ttip.ttip-visible').forEach(t => t.classList.remove('ttip-visible', 'ttip-pinned'));
+        document.body.classList.remove('ttip-pin-mode', 'transpose-mode');
+        const toggle = document.querySelector('[data-transpose-toggle]');
+        if (toggle.checked) toggle.click();
+        """
+    )
+    cell = driver.find_element(By.CSS_SELECTOR, ".tab-panel.active td.cell")
+    result = driver.execute_script(
+        """
+        const cell = arguments[0];
+        cell.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false, view: window}));
+        return new Promise(resolve => setTimeout(() => {
+          const toggle = document.querySelector('[data-transpose-toggle]');
+          const before = document.querySelectorAll('.ttip.ttip-visible').length;
+          toggle.click();
+          const after = document.querySelectorAll('.ttip.ttip-visible').length;
+          resolve({before, after, portalled: [...document.querySelectorAll('.ttip.ttip-visible')]
+            .filter(t => t.parentElement === document.body).length});
+        }, 850));
+        """,
+        cell,
+    )
+
+    assert result == {"before": 1, "after": 1, "portalled": 1}, result
+
+
+def test_focus_tooltip_stays_in_tab_order(driver):
+    cell = driver.find_element(By.CSS_SELECTOR, ".tab-panel.active td.cell")
+    result = driver.execute_script(
+        """
+        const cell = arguments[0];
+        cell.dispatchEvent(new FocusEvent('focusin', {bubbles: true}));
+        return new Promise(resolve => setTimeout(() => {
+          const tooltip = cell._ttip;
+          resolve({parent: tooltip.parentElement === cell, visible: tooltip.classList.contains('ttip-visible')});
+        }, 850));
+        """,
+        cell,
+    )
+    assert result == {"parent": True, "visible": True}
 
 
 def test_column_toggle_reuses_its_portalled_tooltip(driver):

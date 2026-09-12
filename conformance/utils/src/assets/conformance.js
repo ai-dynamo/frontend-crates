@@ -852,6 +852,11 @@
     if (cell.dataset.ttipWired === '1') return;
     cell.dataset.ttipWired = '1';
 
+    function showFocusedTooltip() {
+      cell._focusTooltip = true;
+      if (window.__buildTooltip) window.__buildTooltip(cell);
+    }
+
     let showTimer = null;
     let hideTimer = null;
     let isActive = false;
@@ -860,6 +865,7 @@
 
     function portalTooltip() {
       if (portalParent) return;
+      if (cell._focusTooltip || (document.activeElement && cell.contains(document.activeElement))) return;
       portalParent = ttip.parentNode;
       document.body.appendChild(ttip);
       portalledTooltips.add(ttip);
@@ -928,6 +934,7 @@
       showTimer = window.setTimeout(function () {
         showTimer = null;
         if (!isActive) return;
+        if (cell._focusTooltip && window.__buildTooltip) window.__buildTooltip(cell);
         portalTooltip();
         place(cell);
         ttip.classList.add('ttip-visible');
@@ -1028,10 +1035,15 @@
     cell.addEventListener('mouseenter', onEnter);
     cell.addEventListener('mouseleave', onLeave);
     cell.addEventListener('focusin', function () {
-      if (hoverAllowed()) { scheduleShow(); }
+      if (hoverAllowed()) {
+        restoreTooltip();
+        showFocusedTooltip();
+        scheduleShow();
+      }
     });
     cell.addEventListener('focusout', function () {
       if (!ttip.classList.contains('ttip-pinned')) { scheduleHide(); }
+      cell._focusTooltip = false;
     });
     ttip.addEventListener('pointerenter', keepTooltipOpen);
     ttip.addEventListener('mouseenter', keepTooltipOpen);
@@ -1254,7 +1266,11 @@
           const clone = src.cloneNode(true);
           const cloneTip = sourceTip && sourceTip.cloneNode(true);
           const embeddedTip = clone.querySelector('.ttip');
-          if (cloneTip && !embeddedTip) clone.appendChild(cloneTip);
+          if (cloneTip) {
+            if (embeddedTip) embeddedTip.remove();
+            cloneTip.classList.remove('ttip-visible', 'ttip-pinned');
+            clone.appendChild(cloneTip);
+          }
           clone.classList.remove('col-hidden');
           clone.removeAttribute('data-col-hide-group');
           // cloneNode copies the "already wired" flag; clear it so the clone
