@@ -45,10 +45,13 @@ td.parser a:hover { background: #ffd; }
   top: var(--sticky-top-row-height, 0px);
   z-index: 9;
 }
+/* The frozen first columns stay above scrolling data but below every popup. */
 [data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="model"],
 [data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="parser"] {
-  z-index: 20;
+  z-index: 8;
 }
+[data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="model"]:focus-within,
+[data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="parser"]:focus-within { z-index: 11; }
 [data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="model"],
 [data-parity-table] > tbody > tr:not(.section) > td.model { left: 0; }
 [data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="parser"],
@@ -58,7 +61,7 @@ td.parser a:hover { background: #ffd; }
 [data-parity-table] > tbody > tr:not(.section) > td.model,
 [data-parity-table] > tbody > tr:not(.section) > td.parser {
   position: sticky;
-  z-index: 3;
+  z-index: 1;
   background: #fff;
 }
 
@@ -78,12 +81,12 @@ td.parser a:hover { background: #ffd; }
 .transpose-table > thead > tr.transpose-sections > th.tcorner-case,
 .transpose-table > thead > tr.transpose-models > th.tcorner-case {
   left: 0;
-  z-index: 20;
+  z-index: 8;
 }
 .transpose-table > tbody > tr:not(.section) > th.trow-case {
   position: sticky;
   left: 0;
-  z-index: 3;
+  z-index: 1;
   width: var(--sticky-case-width, auto);
   min-width: var(--sticky-case-width, auto);
   background: #fff;
@@ -353,6 +356,20 @@ body.view-overview.ttip-pin-mode td.cell:hover:not(.ttip-open) { filter: none; }
 .col-toggle[aria-pressed="true"] { background: #e7f0ff; border-color: #6b9bd6; color: #174a86; }
 .col-toggle[aria-pressed="false"] { background: #fff; border-color: #bbb; color: #555; }
 .col-toggle:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+/* Keep the column-control hint anchored to the label instead of using the browser's
+   native `title` popup, which floats from the bottom of the whole header cell. */
+.col-toggle[data-tooltip] { position: relative; }
+.col-toggle[data-tooltip]::after {
+  content: attr(data-tooltip); position: absolute; left: 50%; bottom: calc(100% + 6px);
+  transform: translateX(-50%); visibility: hidden; opacity: 0; pointer-events: none;
+  z-index: 4000; padding: 4px 7px; border-radius: 4px; background: #1f2937; color: #e5e7eb;
+  font: 11px -apple-system, system-ui, sans-serif; line-height: 1.2; white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.28);
+}
+.col-toggle[data-tooltip]:hover::after,
+.col-toggle[data-tooltip]:focus-visible::after { visibility: visible; opacity: 1; }
+.col-toggle[data-tooltip]::after { content: none; }
+.column-control-tooltip { white-space: nowrap; min-width: 0; width: max-content; }
 .col-placeholder { min-width: 20px; width: 20px; padding: 0; background: #f8fafc; }
 .col-hidden { display: none; }
 table.glossary { margin-top: 0.5em; }
@@ -459,8 +476,8 @@ td.cell, td.parser { cursor: pointer; }
 }
 .ttip-close:hover { background: rgba(255,255,255,0.30); }
 .ttip-pinned .ttip-close { display: block; }
-td.cell .ttip a, td.parser .ttip a { color: #bfdbfe; text-decoration: none; border-bottom: 1.5px solid currentColor; padding-bottom: 1px; display: inline; }
-td.cell .ttip a:hover, td.parser .ttip a:hover { color: #dbeafe; background: transparent; }
+.ttip a { color: #bfdbfe; text-decoration: none; border-bottom: 1.5px solid currentColor; padding-bottom: 1px; display: inline; }
+.ttip a:hover { color: #dbeafe; background: transparent; }
 .ttip-head { font-weight: bold; margin-bottom: 4px; color: #fbbf24; }
 /* Inline description after the popup id: prose, so sans-serif (mono is for the code/id),
    normal weight, and the normal tooltip text color — not the loud section blue. */
