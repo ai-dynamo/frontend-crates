@@ -359,7 +359,10 @@ def test_transpose_keeps_one_open_tooltip(driver):
         cell,
     )
 
-    assert result == {"before": 1, "after": 1, "portalled": 1}, result
+    assert result["before"] == 1, result
+    assert result["after"] == 1, result
+    assert result["portalled"] == 1, result
+    assert driver.execute_script("return document.querySelector('.transpose-table .ttip') !== null")
 
 
 def test_focus_tooltip_stays_in_tab_order(driver):

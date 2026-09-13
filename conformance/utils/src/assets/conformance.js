@@ -637,6 +637,13 @@
 
   function activateTab(id, shouldUpdateUrl) {
     if (!id) return;
+    if (pinnedCell) unpinCell(pinnedCell);
+    portalledTooltips.forEach(function (ttip) {
+      const owner = ttip._ttipOwner;
+      if (owner && owner.closest('.tab-panel')?.id !== id) {
+        owner._ttipUnpin ? owner._ttipUnpin() : ttip.classList.remove('ttip-visible');
+      }
+    });
     tabButtons.forEach(function (button) {
       const selected = button.dataset.tabTarget === id;
       button.classList.toggle('active', selected);
@@ -653,13 +660,6 @@
     }
     updateStickyOffsets();
   }
-  activateTab(readActiveTab(), false);
-  tabButtons.forEach(function (button) {
-    button.addEventListener('click', function () {
-      activateTab(button.dataset.tabTarget, true);
-    });
-  });
-
   // Equal columns, sized to what the WIDEST column actually needs.
   //
   // Pure CSS gives one or the other, not both: `table-layout: fixed; width: 100%`
@@ -879,14 +879,18 @@
     }
 
     // ✕ close button (shown only while pinned) — inserted once per tooltip.
-    if (!ttip.querySelector('.ttip-close')) {
-      const x = document.createElement('button');
-      x.type = 'button';
-      x.className = 'ttip-close';
-      x.setAttribute('aria-label', 'Close');
-      x.textContent = '✕';
-      x.addEventListener('click', function (e) { e.stopPropagation(); unpin(); });
-      ttip.insertBefore(x, ttip.firstChild);
+    let closeButton = ttip.querySelector('.ttip-close');
+    if (!closeButton) {
+      closeButton = document.createElement('button');
+      closeButton.type = 'button';
+      closeButton.className = 'ttip-close';
+      closeButton.setAttribute('aria-label', 'Close');
+      closeButton.textContent = '✕';
+      ttip.insertBefore(closeButton, ttip.firstChild);
+    }
+    if (!closeButton.dataset.ttipCloseWired) {
+      closeButton.addEventListener('click', function (e) { e.stopPropagation(); unpin(); });
+      closeButton.dataset.ttipCloseWired = '1';
     }
 
     function pin() {
@@ -1061,6 +1065,13 @@
   // the starting set, never the definition of "pinnable" (that is `WIRED` above).
   const WIRE_ON_LOAD = 'td.cell, td.parser, th.case-sub';
   document.querySelectorAll(WIRE_ON_LOAD).forEach(attachTooltip);
+
+  activateTab(readActiveTab(), false);
+  tabButtons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      activateTab(button.dataset.tabTarget, true);
+    });
+  });
 
   // ---- Transpose view (DIS-2280) ----
   // Build a transposed mirror of each panel's table on demand: models become
@@ -1269,6 +1280,10 @@
           if (cloneTip) {
             if (embeddedTip) embeddedTip.remove();
             cloneTip.classList.remove('ttip-visible', 'ttip-pinned');
+            cloneTip.querySelectorAll('.ttip-close').forEach(function (button) {
+              button.removeAttribute('data-ttip-close-wired');
+              delete button.dataset.ttipCloseWired;
+            });
             clone.appendChild(cloneTip);
           }
           clone.classList.remove('col-hidden');

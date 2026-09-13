@@ -50,6 +50,8 @@ td.parser a:hover { background: #ffd; }
 [data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="parser"] {
   z-index: 8;
 }
+[data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="model"]:focus-within,
+[data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="parser"]:focus-within { z-index: 11; }
 [data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="model"],
 [data-parity-table] > tbody > tr:not(.section) > td.model { left: 0; }
 [data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="parser"],
