@@ -50,7 +50,9 @@
   function implOf(key) { return key ? key.replace(/-[sb](-.*)?$/, '') : key; }
   function toggleCands(cell, active, base) {
     let baseSec = null;
-    cell.querySelectorAll('.ttip .cand').forEach(function (sec) {
+    const tip = cell._ttip || cell.querySelector('.ttip');
+    if (!tip) return;
+    tip.querySelectorAll('.cand').forEach(function (sec) {
       const cls = Array.from(sec.classList).find(function (c) { return c.indexOf('cand-') === 0; });
       const key = cls ? cls.slice(5) : null;
       sec.classList.toggle('cand-on', key !== null && active.has(key));
@@ -66,7 +68,7 @@
       if (first && first !== baseSec) { baseSec.parentNode.insertBefore(baseSec, first); }
     }
     // Per-chunk grid: show only the columns in the Reference + Compare-with selection.
-    const grid = cell.querySelector('.ttip-chunks');
+    const grid = tip.querySelector('.ttip-chunks');
     if (grid) {
       const cands = grid.querySelectorAll('[data-cand]');
       if (cands.length) {
@@ -114,11 +116,11 @@
   // Show/clear a JS-driven "why n/a" line at the top of a cell's tooltip. Built in JS
   // (not the server-rendered tooltip) so the reason can change with the Reference.
   function setWhy(cell, text) {
-    let el = cell.querySelector('.cmp-why');
+    const tip = cell._ttip || cell.querySelector('.ttip');
+    if (!tip) return;
+    let el = tip.querySelector('.cmp-why');
     if (!text) { if (el) { el.remove(); } return; }
     if (!el) {
-      const tip = cell.querySelector('.ttip');
-      if (!tip) { return; }
       el = document.createElement('div');
       el.className = 'cmp-why';
       tip.insertBefore(el, tip.firstChild);
