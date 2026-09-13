@@ -349,11 +349,20 @@ def test_transpose_keeps_one_open_tooltip(driver):
         cell.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false, view: window}));
         return new Promise(resolve => setTimeout(() => {
           const toggle = document.querySelector('[data-transpose-toggle]');
+          const sourceId = cell.getAttribute('data-ttip-id');
           const before = document.querySelectorAll('.ttip.ttip-visible').length;
           toggle.click();
           const after = document.querySelectorAll('.ttip.ttip-visible').length;
-          resolve({before, after, portalled: [...document.querySelectorAll('.ttip.ttip-visible')]
-            .filter(t => t.parentElement === document.body).length});
+          const clone = document.querySelector(
+            '.transpose-table td.cell[data-ttip-id="' + sourceId + '"]'
+          );
+          resolve({
+            before,
+            after,
+            portalled: [...document.querySelectorAll('.ttip.ttip-visible')]
+              .filter(t => t.parentElement === document.body).length,
+            cloneHasTooltip: Boolean(clone && clone._ttip),
+          });
         }, 850));
         """,
         cell,
@@ -362,7 +371,7 @@ def test_transpose_keeps_one_open_tooltip(driver):
     assert result["before"] == 1, result
     assert result["after"] == 1, result
     assert result["portalled"] == 1, result
-    assert driver.execute_script("return document.querySelector('.transpose-table .ttip') !== null")
+    assert result["cloneHasTooltip"], result
 
 
 def test_focus_tooltip_stays_in_tab_order(driver):
