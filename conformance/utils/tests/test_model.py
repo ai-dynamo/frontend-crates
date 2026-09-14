@@ -204,7 +204,7 @@ def test_v2_tab_labels_show_parser_generation(model_v2):
     labels = {tab["id"]: tab["label"] for tab in model_v2["tabs"]}
 
     assert labels["tab-toolcalling-batch"].startswith("Tool Calling v1")
-    assert labels["tab-toolcalling-streamv2"].startswith("Tool Calling v2")
+    assert labels["tab-toolcalling-streamv2"].startswith("Tool Calling v1")
     assert labels["tab-unified"].startswith("Unified v2")
 
 

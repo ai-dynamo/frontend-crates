@@ -2889,8 +2889,8 @@ def build_combined_model(output_path: Path | None = None,
     stream_tab = _toolcalling_tab_model(stream_spec, stream_href, parser_stream_context="streamv2")
     stream_tab.update({
         "id": "tab-toolcalling-streamv2",
-        "label": "Tool Calling v2 (stream data)",
-        "label_html": ('Tool Calling v2 <span class="tab-sub">'
+        "label": "Tool Calling v1 (stream data)",
+        "label_html": ('Tool Calling v1 <span class="tab-sub">'
                        '(<span class="w-stream">stream</span> data)</span>'),
         "tab_title": "Tool Calling (stream data): Dynamo parser v2 on v2 stream fixtures",
         "case_prefix": "TOOLCALLING.streamv2.",
