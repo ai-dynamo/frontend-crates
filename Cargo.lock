@@ -1143,6 +1143,8 @@ dependencies = [
 name = "dynamo-mm-preprocessor"
 version = "0.1.0"
 dependencies = [
+ "image",
+ "rayon",
  "serde",
  "serde_json",
 ]
