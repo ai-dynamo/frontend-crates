@@ -1143,8 +1143,12 @@ dependencies = [
 name = "dynamo-mm-preprocessor"
 version = "0.1.0"
 dependencies = [
+ "blake3",
+ "image",
+ "rayon",
  "serde",
  "serde_json",
+ "xxhash-rust",
 ]
 
 [[package]]
@@ -5848,6 +5852,12 @@ dependencies = [
  "whoami",
  "winapi",
 ]
+
+[[package]]
+name = "xxhash-rust"
+version = "0.8.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aee1b19627c7c60102ab80d3a9cbe18de90bfe03bfa6c3715447681f0e8c8af6"
 
 [[package]]
 name = "y4m"
