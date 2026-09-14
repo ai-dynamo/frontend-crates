@@ -88,6 +88,8 @@ pub struct TriggeredTagsFormat {
     pub tags: Vec<TagFormat>,
     pub at_least_one: bool,
     pub stop_after_first: bool,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub excludes: Vec<String>,
 }
 
 /// `tags_with_separator`: a tag sequence with fixed separators and no free text.
@@ -227,6 +229,7 @@ mod tests {
             tags: vec![],
             at_least_one: false,
             stop_after_first: false,
+            excludes: vec![],
         };
 
         let value = serde_json::to_value(&format).unwrap();
@@ -240,6 +243,7 @@ mod tests {
             tags: vec![],
             at_least_one: true,
             stop_after_first: false,
+            excludes: vec![],
         };
 
         let value = serde_json::to_value(&format).unwrap();
