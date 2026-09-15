@@ -8,12 +8,12 @@ use std::collections::HashMap;
 
 use num_traits::ToPrimitive;
 use regex::Regex;
-use serde::ser::{Serialize, SerializeMap, Serializer};
 use serde_json::Value;
 use uuid::Uuid;
 
 use super::super::ToolDefinition;
 use super::super::config::XmlParserConfig;
+use super::OrderedArguments;
 use super::parsed_value::{ParsedValue, is_integer_literal, raw_number_literal};
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 
@@ -431,18 +431,6 @@ fn parse_tool_call_block(
     Ok(results)
 }
 
-/// Serialize parsed parameters as a JSON object in the order emitted by the model.
-struct OrderedArguments<'a>(&'a [(String, ParsedValue)]);
-
-impl Serialize for OrderedArguments<'_> {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut map = serializer.serialize_map(Some(self.0.len()))?;
-        for (key, value) in self.0 {
-            map.serialize_entry(key, value)?;
-        }
-        map.end()
-    }
-}
 /// Extract argument configuration for a function from the tool definitions.
 /// Returns a HashMap of parameter names to their schema definitions.
 fn get_arguments_config(
