@@ -921,9 +921,6 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         None
     }
 
-    /// Block-is-invoke grammars must inspect byte zero after consuming their
-    /// wrapper; other grammars locate an inner invoke or family-specific bare
-    /// recovery candidate in the remaining buffer.
     fn active_invoke_start(&self) -> Option<usize> {
         if self.block_is_invoke() {
             Some(0)

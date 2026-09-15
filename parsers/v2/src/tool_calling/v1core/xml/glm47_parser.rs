@@ -497,7 +497,6 @@ fn parse_tool_call_block(
     parse_glm47_invoke(invoke, config, tools)
 }
 
-// The scanner owns the outer boundary; this helper only types the resolved body.
 pub fn parse_glm47_invoke(
     invoke: &str,
     config: &Glm47ParserConfig,
