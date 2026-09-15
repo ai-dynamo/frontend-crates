@@ -368,6 +368,44 @@ mod tests {
     }
 
     #[test]
+    fn truncated_framed_answer_header_is_dropped_at_finish() {
+        let out = events(&[
+            " to=self<|message|>Look it up.<|eom|>",
+            "<|start|>assistant to=user",
+        ]);
+        assert_eq!(out, vec![reasoning("Look it up.")]);
+    }
+
+    #[test]
+    fn every_truncated_framed_header_prefix_is_dropped_at_finish() {
+        for header in [
+            "<|start|>assistant to=self<|message|>",
+            "<|start|>assistant to=user<|message|>",
+            "<|start|>assistant to=get_weather<|message|>",
+        ] {
+            for at in "<|start|>".len()..header.len() {
+                assert!(header.is_char_boundary(at));
+                assert_eq!(
+                    events(&[&header[..at]]),
+                    Vec::<UnifiedEvent>::new(),
+                    "header {header:?} cut at byte {at}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn unframed_header_like_prose_is_kept_at_finish() {
+        for (input, expected) in [
+            ("to=user", "to=user"),
+            ("assistant to=user", "assistant to=user"),
+            ("<|start|>assistant says hello", "assistant says hello"),
+        ] {
+            assert_eq!(events(&[input]), vec![text(expected)], "input {input:?}");
+        }
+    }
+
+    #[test]
     fn ambiguous_angle_prefix_is_kept_at_finish() {
         // `<` / `<|` are ordinary prose as often as framing.
         let out = events(&[" to=user<|message|>a < b and a <| b"]);
