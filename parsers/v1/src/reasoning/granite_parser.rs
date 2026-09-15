@@ -212,6 +212,10 @@ impl GraniteReasoningParser {
 }
 
 impl ReasoningParser for GraniteReasoningParser {
+    fn in_reasoning(&self) -> Option<bool> {
+        Some(self.in_reasoning)
+    }
+
     fn detect_and_parse_reasoning(&mut self, text: &str, _: &[u32]) -> ParserResult {
         let result = self.parse_single_span(text);
         // If a marker survived in normal_text, the input has multiple spans or
