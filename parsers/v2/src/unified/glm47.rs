@@ -8,7 +8,7 @@ use crate::tool_calling::scan::ReasoningSpec;
 use crate::tool_calling::traits::Tool;
 use crate::unified::{GuidedRouted, ScannerUnified, UnifiedParser};
 
-/// Build GLM's one-state-machine parser for XML tool calls and `<think>`.
+/// Keep native and guided GLM parsing on the scanner shared with the legacy projection.
 pub(crate) fn glm47_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
     Box::new(GuidedRouted::new(ScannerUnified::new(
         glm47_scanner(tools).with_reasoning(ReasoningSpec {
@@ -185,8 +185,9 @@ mod tests {
             ),
             (
                 "unknown_tool</tool_call>",
-                vec![UnifiedEvent::Text {
-                    text: "unknown_tool".into(),
+                vec![UnifiedEvent::ToolCall {
+                    name: "unknown_tool".into(),
+                    arguments: serde_json::json!({}),
                 }],
             ),
             (

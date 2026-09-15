@@ -180,7 +180,6 @@ def r_tool(fam, name, key, val, idx):
 
 
 def qwen3_input_as_glm47(input_text):
-    """Translate the shared Qwen3 XML spelling into GLM's XML spelling."""
     function = re.compile(r"<function=([^>]+)>(.*?)</function>", re.DOTALL)
     parameter = re.compile(r"<parameter=([^>]+)>(.*?)</parameter>", re.DOTALL)
 

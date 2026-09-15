@@ -73,7 +73,16 @@ impl InvokeEmitter for Glm47Emitter {
         };
         let invoke = &invoke[..end];
         let name = invoke.strip_suffix(BLOCK_END).unwrap_or(invoke).trim();
-        self.tools.iter().any(|tool| tool.name == name)
+        // A bare closer has no wrapper to distinguish a zero-argument call from
+        // prose. Preserve documented unknown-tool recovery for identifier-like
+        // names while refusing ordinary words from narration.
+        let known_tool = self.tools.iter().any(|tool| tool.name == name);
+        !name.is_empty()
+            && !name.ends_with('.')
+            && name
+                .chars()
+                .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
+            && (known_tool || name.contains(['_', '-']))
     }
 
     fn parse_invoke(
@@ -455,12 +464,7 @@ mod tests {
 
     #[test]
     fn legacy_does_not_recover_punctuation_or_prose_before_orphan_close() {
-        for input in [
-            "get_time.</tool_call>",
-            "Please wait café</tool_call>",
-            "unknown_tool</tool_call>",
-            "Please wait</tool_call><tool_call>get_time</tool_call>",
-        ] {
+        for input in ["get_time.</tool_call>", "Please wait café</tool_call>"] {
             let want = legacy(&tools(), &[input]).coalesce_calls();
             let expected_calls = usize::from(input.contains(BLOCK_START));
             assert_eq!(
@@ -480,6 +484,35 @@ mod tests {
                     "split at {split} for {input:?}"
                 );
             }
+        }
+        let input = "Please wait</tool_call><tool_call>get_time</tool_call>";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.normal_text, "Please wait");
+        assert_eq!(want.calls.len(), 1);
+        assert_eq!(want.calls[0].name.as_deref(), Some("get_time"));
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
+        }
+    }
+
+    #[test]
+    fn legacy_recovers_unknown_bare_tool_without_arguments_at_every_split() {
+        let input = "unknown_tool</tool_call>";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.normal_text, "");
+        assert_eq!(want.calls.len(), 1);
+        assert_eq!(want.calls[0].name.as_deref(), Some("unknown_tool"));
+        assert_eq!(want.calls[0].arguments, "{}");
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
         }
     }
 

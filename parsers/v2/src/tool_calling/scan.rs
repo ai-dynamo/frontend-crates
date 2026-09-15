@@ -921,9 +921,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         None
     }
 
-    /// The active invoke begins at the current buffer front when the block is
-    /// itself the invoke. Outside a block, `find_invoke_start` still owns bare
-    /// recovery and returns the family-specific candidate.
+    /// Block-is-invoke grammars must inspect byte zero after consuming their
+    /// wrapper; other grammars locate an inner invoke or family-specific bare
+    /// recovery candidate in the remaining buffer.
     fn active_invoke_start(&self) -> Option<usize> {
         if self.block_is_invoke() {
             Some(0)
