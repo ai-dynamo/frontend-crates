@@ -42,6 +42,8 @@ use dynamo_parsers_v2::{
 };
 use serde_json::{Value, json};
 
+mod common;
+
 /// Corpus family -> (v1 reasoning parser, v2 tool parser) for the SPLIT path, read from
 /// the `unified:` block of `parser_families.yaml`.
 ///
