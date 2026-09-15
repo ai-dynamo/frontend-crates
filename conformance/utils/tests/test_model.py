@@ -295,7 +295,7 @@ def test_unified_default_dynamo_uses_pr_capture_and_keeps_release_history(tmp_pa
     dynamo = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
     release = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo@0.4.0")
 
-    assert dynamo["label"] == "Dynamo v2 Rust 0.5.3+pr213 (stream, Combined & Unified)"
+    assert dynamo["label"] == "Dynamo v2 Rust 0.6.0 (stream, Combined & Unified)"
     assert dynamo["default_bucket"] == "A"
     assert release["label"] == "Dynamo v2 Rust 0.4.0 (stream, Combined & Unified)"
     assert release["default_bucket"] == "C"
@@ -525,20 +525,24 @@ def test_v2_parser_ni_matches_stream_v2_families(model_v2):
 
 
 def test_v2_stream_parser_only_covers_implemented_families(model_v2):
-    # The v2 stream candidate is n/a (uncovered) on more families than it covers — a
-    # structural coverage guard (was regex over data-cmp na counts).
+    # The v2 stream candidate must be n/a for families absent from the latest capture.
+    # Do not use a corpus-size ratio here: adding valid cases to an implemented family
+    # can legitimately make present cells outnumber n/a cells.
     tab = _tab(model_v2, "tab-toolcalling-streamv2")
     v2 = next(c["key"] for c in tab["candidates"] if c["key"].startswith("dynamo_v2"))
-    na = present = 0
-    for cell in _iter_cells(tab):
-        entry = (cell.get("cmp") or {}).get(v2)
-        if entry is None:
+    implemented = set()
+    for info in model_v2["parser_ni"].values():
+        implemented.update(info.get("families", []))
+    for row in tab["rows"]:
+        family = row.get("family")
+        if not family:
             continue
-        if entry["na"]:
-            na += 1
-        else:
-            present += 1
-    assert na >= present, f"v2 stream covers too much: na={na} present={present}"
+        for cell in (row.get("cells") or {}).values():
+            entry = (cell.get("cmp") or {}).get(v2)
+            if entry is None:
+                continue
+            if family not in implemented:
+                assert entry["na"], f"unimplemented family {family} rendered as present"
 
 
 # ---- reasoning tabs -----------------------------------------------------------

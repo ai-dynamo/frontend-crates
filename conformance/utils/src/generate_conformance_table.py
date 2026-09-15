@@ -1773,13 +1773,16 @@ def _candidate_model(items: list[dict]) -> list[dict]:
     for it in items:
         key = it["key"]
         label = it["label"]
+        version = it.get("version") or _version_of_label(label)
+        if version == "2" and key.startswith("dynamo_v2-"):
+            version = _dynamo_v2_version()
         out.append({
             "key": key,
             "impl": _cand_engine_group(key),
             "label": label,
             "label_html": _candidate_label_html(label),
             "default_bucket": it.get("default_bucket", "C"),
-            "version": it.get("version") or _version_of_label(label),
+            "version": version,
             "parse_mode": _parse_mode_of_label(label),
         })
     return out
@@ -2631,6 +2634,13 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             c = by_key.get((f, s))
             if not c:
                 applicable = gen_unified_golden.scenario_families(s)
+                if f == "glm47" and s == "guided_json_schema_error_not_a_call_bare_opener":
+                    # The GLM outer marker is the complete invoke opener; this
+                    # separate bare-header crossing is not expressible and is
+                    # intentionally omitted from its generated corpus.
+                    g_num, _g_sub = _tax(s)
+                    cells[s] = _unified_na_cell(f, s, g_num)
+                    continue
                 if f in applicable:
                     raise ValueError(
                         f"Unified fixture missing applicable case {f}/{s}; "
@@ -2783,7 +2793,9 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                 "status": "ok", "red_on_diff": True,
                 "cmp": cmp, "facts": [], "tooltip": tooltip,
             }
-        rows.append({"family": f, "model_label": f, "model_label_html": f, "section": None,
+        model_label = "GLM-5.3 (shared GLM-4.7/5.x grammar)" if f == "glm47" else f
+        rows.append({"family": f, "model_label": model_label,
+                     "model_label_html": model_label, "section": None,
                      "parser": None, "cells": cells})
 
     total = sum(len(r["cells"]) for r in rows)

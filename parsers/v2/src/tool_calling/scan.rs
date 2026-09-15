@@ -402,6 +402,8 @@ pub(crate) struct WrappedBlockSpec {
     /// Block closers, matched earliest-first.
     pub block_ends: Vec<String>,
     /// Invoke opener (prefix form is fine — it only anchors scanning).
+    /// Inner invoke opener. For grammars where the block itself is the invoke,
+    /// this is set to the block opener and the scanner derives the block-is-invoke shape.
     pub invoke_start: String,
     /// Invoke closer; an invoke is parsed only once this has streamed.
     pub invoke_end: String,
@@ -419,6 +421,12 @@ pub(crate) struct WrappedBlockSpec {
     /// Optional family-owned boundary capability. `None` preserves the
     /// marker-only path with no boundary allocation.
     pub invoke_boundary_factory: Option<InvokeBoundaryFactory>,
+    /// Locate a bare invoke whose name precedes its first structural marker.
+    /// This is needed by GLM, whose bare recovery form has no opener token.
+    pub bare_invoke_start: Option<fn(&str) -> Option<usize>>,
+    /// Additional holdback for a bare invoke whose name is still waiting for
+    /// its first structural marker.
+    pub bare_invoke_holdback: Option<fn(&str) -> usize>,
     /// Whether a decoder must keep tokenizer special tokens so this grammar's
     /// markers survive to the parser.
     ///
@@ -874,24 +882,53 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.invoke_boundary_len = 0;
     }
 
+    fn block_is_invoke(&self) -> bool {
+        self.spec.block_starts.len() == 1
+            && self.spec.block_ends.len() == 1
+            && self.spec.invoke_start == self.spec.block_starts[0]
+            && self.spec.invoke_end == self.spec.block_ends[0]
+    }
+
     /// Find the next real invoke opener, applying the family hook when present.
     fn find_invoke_start(&self, text: &str) -> Option<usize> {
+        if self.block_is_invoke() && self.in_block {
+            return Some(0);
+        }
+        if self.block_is_invoke() {
+            return self.spec.bare_invoke_start.and_then(|find| find(text));
+        }
+        let invoke_start = &self.spec.invoke_start;
         let Some(boundary) = self.invoke_boundary.as_ref() else {
-            return text.find(self.spec.invoke_start.as_str());
+            return text.find(invoke_start.as_str());
         };
         let mut cursor = 0;
-        while let Some(relative) = text[cursor..].find(self.spec.invoke_start.as_str()) {
+        while let Some(relative) = text[cursor..].find(invoke_start.as_str()) {
             let at = cursor + relative;
             if boundary.opens(text, at) {
                 return Some(at);
             }
-            cursor = at + self.spec.invoke_start.len();
+            cursor = at + invoke_start.len();
         }
         None
     }
 
+    /// The active invoke begins at the current buffer front when the block is
+    /// itself the invoke. Outside a block, `find_invoke_start` still owns bare
+    /// recovery and returns the family-specific candidate.
+    fn active_invoke_start(&self) -> Option<usize> {
+        if self.block_is_invoke() {
+            Some(0)
+        } else {
+            self.find_invoke_start(&self.buffer)
+        }
+    }
+
     /// Offset just past the closer of the invoke beginning at byte zero.
     fn invoke_end_at(&mut self, flush: bool) -> Option<usize> {
+        if self.block_is_invoke() {
+            return find_first(&self.buffer, &self.spec.block_ends)
+                .map(|(position, length)| position + length);
+        }
         match self.invoke_boundary.as_mut() {
             Some(boundary) => {
                 let append = &self.buffer[self.invoke_boundary_len..];
@@ -973,10 +1010,16 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             .as_ref()
             .map(|boundary| boundary.holdback(&self.buffer))
             .unwrap_or_default();
+        let bare = self
+            .spec
+            .bare_invoke_holdback
+            .map(|holdback| holdback(&self.buffer))
+            .unwrap_or_default();
         regular
             .max(reasoning)
             .max(self.pending_label_len())
             .max(invoke)
+            .max(bare)
     }
 
     /// Retain a complete reasoning opener while its optional role label is only
@@ -1106,10 +1149,13 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             }
 
             if self.in_block {
-                let invoke_start = self.find_invoke_start(&self.buffer);
+                let invoke_start = self.active_invoke_start();
 
                 // Close the block once no more complete invokes precede its end.
-                if let Some((end_pos, end_len)) = find_first(&self.buffer, &self.spec.block_ends) {
+                if !self.block_is_invoke()
+                    && let Some((end_pos, end_len)) =
+                        find_first(&self.buffer, &self.spec.block_ends)
+                {
                     let invoke_before_end = invoke_start.is_some_and(|start| start < end_pos);
                     if !invoke_before_end {
                         // Complete block fully closed: drop its markup and resume
@@ -1456,6 +1502,8 @@ pub(crate) mod test_support {
                 invoke_latch: InvokeLatch::IfEmitted,
                 drop_invoke_crossing_block_end: false,
                 invoke_boundary_factory: None,
+                bare_invoke_start: None,
+                bare_invoke_holdback: None,
                 preserve_special_tokens: true,
             },
             FailOnBoom,
