@@ -398,6 +398,12 @@ def invoke_header_prefix(fam):
     return rendered[len(outer):rendered.index("NAMEX", len(outer))].lstrip()
 
 
+def guided_invoke_prefix(fam):
+    if fam == "deepseek_v41":
+        return '<｜DSML｜ invoke name="'
+    return invoke_header_prefix(fam)
+
+
 def guided_surroundings(render, dynamo_note, fill=None):
     """A guided case whose SURROUNDINGS carry native grammar, so the input has to be
     per family — `every_family` is only right when the bytes are grammar-independent.
@@ -429,7 +435,9 @@ def guided_surroundings(render, dynamo_note, fill=None):
 GUIDED_NAMED_ARGS = '{"city": "Paris"}'
 GUIDED_ONE_CALL = '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
 GUIDED_TWO_CALLS = ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, '
-                    '{"name": "run", "arguments": {"cmd": "git log"}}]')
+                     '{"name": "run", "arguments": {"cmd": "git log"}}]')
+GUIDED_PARTIAL_CALLS = ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, '
+                        '{"arguments": {"city": "Tokyo"}}]')
 GUIDED_UNSUPPORTED = D("UNSUPPORTED",
                        "vLLM base case doesn't emit guided JSON; conformance captures native XML only")
 # vLLM's Muse Glimmer parsers exist only in unmerged PR #51655, so no released
@@ -680,10 +688,11 @@ EDGE = [
                     VLLM_UNCAPTURABLE["kimi_k3"],
                     {"verdict": "match", "note": "orphan K3 call closer stripped after prose"}),
         # `<|eot|>` already ended the turn, so the trailing `<|eom|>` closes nothing.
-        "muse_glimmer": ("<|start|>assistant to=user<|message|>I will check that. <|eot|><|eom|>",
-                         V_MUSE,
-                         {"verdict": "match", "note": "an orphan terminator outside any routed message is stripped, never emitted as content"}),
-     }),
+         "muse_glimmer": ("<|start|>assistant to=user<|message|>I will check that. <|eot|><|eom|>",
+                          V_MUSE,
+                          {"verdict": "match", "note": "an orphan terminator outside any routed message is stripped, never emitted as content"}),
+         "deepseek_v41": ("I will check that. </｜DSML｜ calls>", M, M),
+      }),
 
     ("empty_args",
      "A tool call with an empty argument object {}. Policy P3 — empty args serialize to {}. This is also covered in: TOOLCALLING.streamv2.6.a.",
@@ -1505,7 +1514,7 @@ GUIDED_SURROUNDS = {
                        "a stray tool CLOSE after the payload", True),
     "wrapped": (lambda pay, fam: f"{control_tokens(fam)[2]}{pay}{control_tokens(fam)[3]}",
                 "the payload wrapped in native tool markup", True),
-    "bare_opener": (lambda pay, fam: f"{invoke_header_prefix(fam)}{pay}",
+    "bare_opener": (lambda pay, fam: f"{guided_invoke_prefix(fam)}{pay}",
                     "a bare invoke HEADER before the payload, never terminated", False),
 }
 
@@ -1688,19 +1697,44 @@ def _guided_response_markup_cases(recipient, after_payload=False):
         for fam in FAMILIES
     }
 
+
+def _deepseek_guided_response_markup_case(name, recipient, after_payload=False):
+    markup, text = _guided_response_markup("deepseek_v41", recipient, after_payload)
+    if after_payload:
+        golden = [
+            {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+            {"kind": "text", "text": text},
+        ]
+    else:
+        golden = [
+            {"kind": "text", "text": text},
+            {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+        ]
+    return (
+        markup,
+        GUIDED_UNSUPPORTED,
+        {"verdict": "match", "note": "Response keeps the quoted reasoning marker in visible text and dispatches the guided payload"},
+        golden,
+    )
+
 for _name, _rcpt, _desc in QUOTED_BARE_HEADER:
     EDGE.append((
         _name,
         _desc,
         ["I3"],
-        ([{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
-          {"kind": "text", "text": None}]
-         if _name.endswith("after_payload") else
-         [{"kind": "text", "text": None},
-          {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]),
+         ([{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+           {"kind": "text", "text": None}]
+          if _name.endswith("after_payload") else
+          [{"kind": "text", "text": None},
+           {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]),
         {"starting_state": "Response", "tool_output_mode": "GuidedJson", "named_tool": None},
-        {"finish_reason": "tool_calls"},
-        _guided_response_markup_cases(_rcpt, _name.endswith("after_payload")),
+         {"finish_reason": "tool_calls"},
+         {
+             **_guided_response_markup_cases(_rcpt, _name.endswith("after_payload")),
+             "deepseek_v41": _deepseek_guided_response_markup_case(
+                 _name, _rcpt, _name.endswith("after_payload")
+             ),
+         },
     ))
 
 EDGE.append((
@@ -1747,7 +1781,7 @@ EDGE += [
      {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
      {"finish_reason": "stop"},
      guided_surroundings(
-         lambda fam: f"{invoke_header_prefix(fam)}{r_reason(fam, 'secret')}{GUIDED_ONE_CALL}",
+          lambda fam: f"{guided_invoke_prefix(fam)}{r_reason(fam, 'secret')}{GUIDED_ONE_CALL}",
          "a bare invoke header before a thought must not borrow the thought's terminator")),
 
     ("guided_json_narrated_prefix_inside_reasoning",
@@ -1761,7 +1795,7 @@ EDGE += [
      {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
      {"finish_reason": "stop"},
      guided_surroundings(
-         lambda fam: f"{r_reason(fam, 'I' + chr(39) + 'll call ' + invoke_header_prefix(fam) + 'get_weather')}{GUIDED_ONE_CALL}",
+          lambda fam: f"{r_reason(fam, 'I' + chr(39) + 'll call ' + guided_invoke_prefix(fam) + 'get_weather')}{GUIDED_ONE_CALL}",
          "a narrated invoke header inside a thought is stripped, closer and thought intact")),
 ]
 
@@ -1795,10 +1829,36 @@ DEEPSEEK_V41_SCENARIOS = {
     "tool_only", "reason_then_tool", "reason_then_content", "interstitial_text",
     "two_calls", "two_calls_same_name", "text_only", "reason_only",
     "empty_args", "arg_unicode", "arg_marker_in_string", "truncated_tool_eof",
-    "reason_unterminated", "tool_markup_only_emits_nothing",
+    "reason_unterminated", "tool_block_never_closed_then_text",
+    "tool_markup_only_emits_nothing",
+    "orphan_close_after_prose",
+    "reason_after_tool", "content_then_reason", "content_then_reason_then_tool",
+    "reason_interleaved", "reason_tool_text_reason_tool", "trailing_text_after_tool",
+    "text_before_tool", "text_sandwich", "text_between_calls", "narrated_calls",
+    "two_reason_spans", "reason_tool_reason_tool_reason", "reason_between_calls",
+    "text_reason_tool_text_reason_tool", "two_adjacent_reason_spans", "tool_no_close",
+    "reason_markup_in_arg", "reason_markup_in_arg_with_text", "tool_in_reason",
+    "tool_in_reason_with_text",
     "prefilled_reasoning_with_guided_json", "guided_json_named_tool",
     "guided_json_required_tool", "guided_json_two_calls",
+    "guided_json_escaped_string_args", "guided_json_array_argument",
+    "guided_json_after_reasoning", "guided_json_invalid_call",
+    "guided_json_malformed_json", "guided_json_partial_calls",
+    "guided_json_list_with_broken_element", "guided_json_tool_open_before_payload",
+    "guided_json_tool_close_after_payload", "guided_json_wrapped_in_tool_markup",
+    "guided_json_native_markup_only", "guided_json_unterminated_reasoning_then_wrapped_payload",
     "guided_json_marker_inside_argument",
+    "guided_json_prose_before_reasoning",
+    "guided_json_orphan_reason_close_before_payload",
+    "guided_json_orphan_tool_close_before_payload",
+    "guided_json_syntax_error_trailing_close",
+    "guided_json_syntax_error_wrapped",
+    "guided_json_schema_error_not_a_call_trailing_close",
+    "guided_json_schema_error_not_a_call_wrapped",
+    "guided_json_schema_error_nameless_element_trailing_close",
+    "guided_json_schema_error_nameless_element_wrapped",
+    "guided_json_gt_in_argument_trailing_close",
+    "guided_json_gt_in_argument_wrapped",
     "guided_json_quoted_bare_header_in_answer",
     "guided_json_quoted_bare_tool_header_in_answer",
     "guided_json_quoted_bare_header_after_payload",
@@ -1837,20 +1897,47 @@ def deepseek_v41_cases():
         if name not in DEEPSEEK_V41_SCENARIOS:
             continue
         text = ""
-        invocations = ""
-        state = "None"
+        reasoning_open = False
+        starting_state = "None"
+        emitted_output = False
+        tool_block_open = False
         for segment in segments:
             if segment[0] == "reason":
-                state = "Reasoning"
-                text += segment[1] + "</think>"
-            elif segment[0] == "text":
+                if tool_block_open:
+                    text += "</｜DSML｜ calls>"
+                    tool_block_open = False
+                if not reasoning_open:
+                    if not emitted_output:
+                        starting_state = "Reasoning"
+                    else:
+                        text += "<think>"
+                    reasoning_open = True
                 text += segment[1]
+                emitted_output = True
+            elif segment[0] == "text":
+                if tool_block_open:
+                    text += "</｜DSML｜ calls>"
+                    tool_block_open = False
+                if reasoning_open:
+                    text += "</think>"
+                    reasoning_open = False
+                text += segment[1]
+                emitted_output = True
             else:
                 _, tool, key, value = segment
-                invocations += call(tool, {key: value})
-        if invocations:
-            text += calls(invocations)
-        add(name, description, text, golden_of(segments), state)
+                if reasoning_open:
+                    text += "</think>"
+                    reasoning_open = False
+                if not tool_block_open:
+                    text += "<｜DSML｜ calls>"
+                    tool_block_open = True
+                text += call(tool, {key: value})
+                emitted_output = True
+        if reasoning_open:
+            text += "</think>"
+        if tool_block_open:
+            text += "</｜DSML｜ calls>"
+        add(name, description, text, golden_of(segments), starting_state)
 
     add("empty_args", "A complete invocation with no parameters.", calls(call("f", {})),
         [{"kind": "tool_call", "name": "f", "arguments": {}}])
@@ -1862,9 +1949,52 @@ def deepseek_v41_cases():
             [{"kind": "tool_call", "name": "f", "arguments": {"x": value}}])
     add("truncated_tool_eof", "A truncated parameter does not complete an invocation and emits nothing.",
         '<｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">partial', [])
+    add("tool_no_close", "A complete invocation without its close marker emits nothing at EOF.",
+        '<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" '
+        'string="true">Paris</｜DSML｜ parameter>', [])
     add("reason_unterminated", "An open thought survives the end of the stream.",
         "still thinking", [{"kind": "reasoning", "text": "still thinking"}], "Reasoning")
-    add("tool_markup_only_emits_nothing", "An empty calls block emits nothing.", calls(""), [])
+    add("tool_block_never_closed_then_text",
+        "An unterminated calls block discards the prose that follows it at EOF.",
+        "<｜DSML｜ calls>still thinking about it", [])
+    add("reason_markup_in_arg", "Reasoning markers inside a DSML string parameter remain data.",
+        calls(call("log", {"note": "<think>reconsider</think>"})),
+        [{"kind": "tool_call", "name": "log", "arguments": {"note": "<think>reconsider</think>"}}])
+    add("reason_markup_in_arg_with_text", "Reasoning markers in an argument do not affect surrounding text.",
+        "Logging now: " + calls(call("log", {"note": "<think>reconsider</think>"})) + " done.",
+        [{"kind": "text", "text": "Logging now: "},
+         {"kind": "tool_call", "name": "log", "arguments": {"note": "<think>reconsider</think>"}},
+         {"kind": "text", "text": " done."}])
+    native_call = calls(call("get_weather", {"city": "Paris"}))
+    add("tool_in_reason", "A complete DSML call inside reasoning breaks out and reasoning resumes.",
+        "<think>I should check. " + native_call + " now answer</think>",
+        [{"kind": "reasoning", "text": "I should check. "},
+         {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+         {"kind": "reasoning", "text": " now answer"}])
+    add("tool_in_reason_with_text", "A tool inside reasoning preserves text on both sides.",
+        "Sure. <think>I should check. " + native_call + " now answer</think> Here you go.",
+        [{"kind": "text", "text": "Sure. "},
+         {"kind": "reasoning", "text": "I should check. "},
+         {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+         {"kind": "reasoning", "text": " now answer"},
+         {"kind": "text", "text": " Here you go."}])
+
+    prefilled_call = calls(call("get_weather", {"city": "Paris"}))
+    add("prefilled_reasoning_redundant_opener", "A repeated prefilled reasoning opener is consumed once.",
+        "<think>checking weather</think>" + calls(call("get_weather", {"city": "London"})),
+        [{"kind": "reasoning", "text": "checking weather"},
+         {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "London"}}],
+        "Reasoning")
+    add("prefilled_reasoning_truncated", "Prefilled reasoning survives an incomplete trailing DSML call.",
+        "analyzing data</think><｜DSML｜ calls><｜DSML｜ invoke name="
+        '"get_weather"><｜DSML｜ parameter name="city" string="true">Par',
+        [{"kind": "reasoning", "text": "analyzing data"}], "Reasoning")
+    add("prefilled_response_reasoning_markers_literal",
+        "Reasoning markers are visible text when the response channel is prefilled.",
+        "<think>literal</think> then a call" + prefilled_call,
+        [{"kind": "text", "text": "<think>literal</think> then a call"},
+         {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+        "Response")
     one = [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
     add("guided_json_named_tool", "A named choice uses the shared guided decoder.",
         GUIDED_NAMED_ARGS, one, mode="GuidedJson", named="get_weather")
@@ -1873,17 +2003,57 @@ def deepseek_v41_cases():
     add("guided_json_two_calls", "Guided output preserves two distinct calls.",
         GUIDED_TWO_CALLS, one + [{"kind": "tool_call", "name": "run", "arguments": {"cmd": "git log"}}],
         mode="GuidedJson")
+    add("guided_json_native_markup_only", "Native DSML markup alone emits no guided events.",
+        native_call, [], mode="GuidedJson")
+    add("guided_json_unterminated_reasoning_then_wrapped_payload",
+        "An unterminated thought still yields a wrapped guided call.",
+        "<think>thinking" + calls(GUIDED_ONE_CALL),
+        [{"kind": "reasoning", "text": "thinking"}] + one,
+        mode="GuidedJson")
+    add("guided_json_tool_open_before_payload", "A DSML opener before guided JSON is recovered.",
+        "<｜DSML｜ calls>" + GUIDED_ONE_CALL, one, mode="GuidedJson")
+    add("guided_json_tool_close_after_payload", "A DSML closer after guided JSON is stripped.",
+        GUIDED_ONE_CALL + "</｜DSML｜ calls>", one, mode="GuidedJson")
+    add("guided_json_wrapped_in_tool_markup", "Guided JSON wrapped in DSML markup still dispatches.",
+        calls(GUIDED_ONE_CALL), one, mode="GuidedJson")
     add("prefilled_reasoning_with_guided_json", "Prefilled reasoning closes before guided arguments.",
         "check</think>" + GUIDED_NAMED_ARGS,
         [{"kind": "reasoning", "text": "check"}] + one,
         "Reasoning", "GuidedJson", "get_weather")
     shared_guided = build_cases("qwen3")
+    edge_by_name = {edge_case[0]: edge_case for edge_case in EDGE}
     for name in DEEPSEEK_V41_SCENARIOS:
         key = f"UNIFIED.{name}.deepseek_v41"
-        if key in cases:
+        edge_case = edge_by_name.get(name)
+        family_case = None
+        if edge_case is not None:
+            per_family = edge_case[6] if len(edge_case) == 7 else edge_case[5]
+            if isinstance(per_family, dict):
+                family_case = per_family.get("deepseek_v41")
+        if key in cases and family_case is None:
             continue
-        case = shared_guided[f"UNIFIED.{name}.qwen3"]
-        case["input"] = case["input"].replace("<tool_call>", "<｜DSML｜ calls>").replace("</tool_call>", "</｜DSML｜ calls>")
+        case = json.loads(json.dumps(shared_guided[f"UNIFIED.{name}.qwen3"]))
+        if family_case is not None:
+            case["input"] = family_case[0]
+            if len(family_case) > 3:
+                family_golden = family_case[3]
+                if isinstance(family_golden, list):
+                    case["golden"] = json.loads(json.dumps(family_golden))
+                else:
+                    for event in case["golden"]:
+                        if event.get("text") is None:
+                            event["text"] = family_golden
+                            break
+        if name == "guided_json_marker_inside_argument":
+            for event in case["golden"]:
+                event.pop("text", None)
+        elif family_case is None:
+            case["input"] = (
+                case["input"]
+                .replace("<tool_call>", "<｜DSML｜ calls>")
+                .replace("</tool_call>", "</｜DSML｜ calls>")
+                .replace("<function=", "<｜DSML｜ calls>")
+            )
         case["expect"]["vllm"] = VLLM_UNCAPTURABLE["deepseek_v41"]
         cases[key] = case
     return cases

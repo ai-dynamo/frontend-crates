@@ -207,6 +207,8 @@ How `.patchN` is treated: **HTML** folds it into its base `<ver>` display column
 
 `conformance/case-taxonomy.yaml` is the machine-readable definition of complete coverage — every batch/stream/reasoning case group and sub-case, with per-case requiredness and applicability rules. It replaces the old implicit standard (the union of `description:` fields across ~20 families that reviewers had to reverse-engineer per PR).
 
+For Unified corpus changes, regeneration is part of the edit, not a final cleanup step. After every change to a generator, taxonomy, golden specification, fixture manifest, capture label, or coverage documentation, immediately run the generator, explode/package the fixture archives, update the manifest, render `CONFORMANCE_v2.json` and `CONFORMANCE_v2.html`, and run the consuming Rust/Python tests. Repeat that complete chain after the final edit. Before reporting or pushing, assert that `inputs.tar.gz`, `golden.tar.gz`, and every Dynamo release archive contain exactly the same case-ID set as the generator; source tests against stale archives or stale HTML do not validate the change.
+
 ```bash
 # The authoring loop for a new family: the FAIL list is the fixture TODO list.
 conformance/utils/check.sh coverage --family <family>

@@ -6,6 +6,10 @@ The golden corpus is authored by `conformance/utils/src/gen_unified_golden.py` (
 
 ## The oracle: GOLDEN is authored, not captured
 
+## Capture version policy
+
+The Unified table uses published `dynamo-parsers-v2` release versions only. Capture directories, `captured_with.dynamo_v2`, fixture-manifest paths, and rendered labels must be plain release versions such as `0.5.2`, `0.5.3`, or `0.5.4`. Never use a change-qualified label such as `0.5.3+pr213`, `0.5.3+g06bc1f2`, or any other `+<tag>` form for a Dynamo Unified capture. A branch or pull-request capture is not a release and must not be renamed into an older release, because it can contain parser families or behavior that the older published crate did not contain. Publish the parser first, then capture under its actual release version; for an older release, back-capture that tagged source and preserve unavailable or not-applicable results.
+
 The truth column (`golden:`) is what a **correct** UnifiedParser MUST emit, reasoned from the invariants and policies below — NOT captured from vLLM, Dynamo, or any implementation. Both engines are measured against it and both can diverge (vLLM has documented spec violations: truncated-tool hard-error, streamed-arg truncation, trailing-text suppression). Never regenerate `golden:` from an engine; it is versioned like code.
 
 ## Event schema
@@ -70,6 +74,10 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 ### Group 3 — TC No call (TOOLCALLING.streamv2.3)
 - **`3.a`** (`text_only`) Plain content, zero tool structure. No spurious call. This is also covered in: TOOLCALLING.streamv2.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.
 
+### Group 4 — TC Malformed envelope
+- **`4.a`** (`tool_block_never_closed_then_text`) The calls opener arrives without its closing marker and prose follows. The prose remains inside the unterminated tool envelope and is discarded at EOF; it is not visible answer text. This is applicable to DSv4.1 because its native grammar has an explicit calls envelope.
+- **`4.b`** (`tool_markup_only_emits_nothing`) A calls envelope contains no invocation. Both markers are control syntax and the parser emits no event.
+
 ### Group 5 — TC Truncation / recovery (TOOLCALLING.streamv2.5)
 - **`5.a`** (`truncated_tool_eof`) EOF mid-call. Golden drops the partial, keeps preceding output (P2); vLLM Rust hard-errors (`ParsingFailed`). Class ERROR.
 - **`5.b`** (`tool_no_close`) Complete call body but the close marker never arrives. Golden recovers the call at finish; vLLM Rust hard-errors. Class ERROR. This is also covered in: TOOLCALLING.streamv2.5.a.
@@ -113,6 +121,12 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 - **`12.b`** (`tool_in_reason`) "Reasoning contains tool call" — a well-formed tool-call envelope nested inside a reasoning span. OPPOSITE of 12.a: a reasoning span is opaque text (not a quoted data region), so a real tool-call marker inside it IS structural. Golden breaks out (reason → call → reason). Engines leak the tool markup into `reasoning_content` and drop the call. Class LEAK.
 - **`12.c`** (`reason_markup_in_arg_with_text`) 12.a WITH visible narration before and after — all three channels at once (text / tool-call-with-markup-arg / text). Golden keeps text as text, the call clean, the markup byte-exact in the arg. Class ARG_MISMATCH / MERGE.
 - **`12.d`** (`tool_in_reason_with_text`) 12.b WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
+
+### DeepSeek V4.1 applicability
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and observable prefilled states. The current corpus emits 71 of the 96 taxonomy cases for this family.
+- The 71 applicable DSv4.1 cases are: `1.a`; `2.a-b`; `3.a`; `4.a-b`; `5.a-c`; `6.a`; `7.a-b`; `8.a-e`; `10.a-e`; `11.a-j`; `12.a-d`; `30.a-g,k-l`; `31-1` through `31-7`, `31-9` through `31-13`, `31-15` through `31-16`, `31-18` through `31-19`, and `31-23` through `31-28`; `40.b`; `41.a-b`; and `50.d`.
+- The 25 intentional not-applicable cases are: `k3-1` through `k3-8`, which require Kimi K3 XTML syntax; `g4-1` through `g4-2`, which require Gemma 4 guided call-prefix syntax; `30.m` and the guided JSON native-wrapper bare-opener rows (`31-8`, `31-14`, `31-17`, `31-20` through `31-22`), because DSv4.1 guided JSON is bare JSON and its native DSML invoke header is not a guided-output wrapper; and prefilled rows that vary only literal text or an unobservable state (`40.a`, `40.c-d`, `50.a-c`, and `51.a-b`). These are grammar or request-mode-specific cases, not missing DSv4.1 coverage.
+- In particular, `5.c`, `30.k-l`, `40.b`, and `50.d` are applicable and emitted for DSv4.1. The native-wrapper bare-opener rows are intentionally excluded because their syntax is impossible under guided JSON, and no-marker prefilled rows are excluded because they parse identically under `starting_state=None`.
 
 ## End-to-end test cases (`End-to-end:` tags)
 
