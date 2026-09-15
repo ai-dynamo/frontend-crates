@@ -273,6 +273,8 @@ python3 conformance/utils/src/extract_fixtures.py --info
 
 ### Update existing fixtures (re-capture after a parser version bump)
 
+For Unified corpus edits, regenerate after every source change: run the generator, explode/package the archives, update the manifest, render the JSON/HTML matrix, and run the consuming tests before making the next review claim. Repeat the chain after the final edit. A passing test against stale archives or stale HTML is incomplete; verify that all generated archives contain the same case-ID set as the current generator.
+
 After re-capturing YAML locally with `capture.sh`, rebuild the store and commit it together with the manifest:
 
 ```bash
