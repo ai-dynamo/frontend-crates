@@ -9,17 +9,19 @@
 //! supplies the grammar and value emitter.
 
 use crate::tool_calling::scan::{
-    BareRecoveryLatch, InvokeEmitter, InvokeLatch, WrappedBlockScanner, WrappedBlockSpec,
-    reorder_arguments,
+    BareRecoveryLatch, GuidedInvokePrefix, GuidedInvokePrefixContext, InvokeBoundary,
+    InvokeBoundaryFactory, InvokeEmitter, InvokeLatch, WrappedBlockScanner, WrappedBlockSpec,
+    marker_prefix_suffix_len, reorder_arguments,
 };
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
-use crate::tool_calling::v1core::{Glm47ParserConfig, ToolDefinition, try_tool_call_parse_glm47};
+use crate::tool_calling::v1core::{Glm47ParserConfig, ToolDefinition, parse_glm47_invoke};
 
 pub(crate) const BLOCK_START: &str = "<tool_call>";
 pub(crate) const BLOCK_END: &str = "</tool_call>";
 const ARG_KEY_START: &str = "<arg_key>";
 const ARG_KEY_END: &str = "</arg_key>";
 const ARG_VALUE_START: &str = "<arg_value>";
+const ARG_VALUE_END: &str = "</arg_value>";
 
 const ORPHAN_ANCHORS: [&str; 4] = [BLOCK_END, ARG_KEY_START, ARG_KEY_END, ARG_VALUE_START];
 
@@ -48,6 +50,7 @@ fn spec() -> WrappedBlockSpec {
         .collect(),
         bare_recovery_latch: BareRecoveryLatch::Clear,
         invoke_latch: InvokeLatch::IfEmitted,
+        invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(glm47_boundary)),
         bare_invoke_start: Some(find_bare_invoke_start),
         bare_invoke_holdback: Some(trailing_holdback_len),
         preserve_special_tokens: true,
@@ -61,18 +64,34 @@ pub(crate) struct Glm47Emitter {
 }
 
 impl InvokeEmitter for Glm47Emitter {
+    fn accepts_bare_invoke(&self, invoke: &str) -> bool {
+        if invoke.contains(ARG_KEY_START) {
+            return true;
+        }
+        let Some(end) = Glm47BoundaryProgress::default().end(invoke, false) else {
+            return false;
+        };
+        let invoke = &invoke[..end];
+        let name = invoke.strip_suffix(BLOCK_END).unwrap_or(invoke).trim();
+        self.tools.iter().any(|tool| tool.name == name)
+    }
+
     fn parse_invoke(
         &mut self,
         invoke: &str,
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>> {
-        // The scanner has already found the invoke boundary. Re-wrap only for
-        // the v1 value typer; it must not rediscover a boundary in the payload.
-        let wrapped = format!("{BLOCK_START}{invoke}");
-        let (calls, _content) =
-            try_tool_call_parse_glm47(&wrapped, &self.config, Some(&self.tools))?;
-        let Some(call) = calls.into_iter().next() else {
-            return Ok(None);
+        let call = match parse_glm47_invoke(invoke, &self.config, Some(&self.tools)) {
+            Ok(call) => call,
+            Err(error) => {
+                tracing::warn!(
+                    why = "glm47_unparseable_invoke",
+                    tool_index,
+                    error = %error,
+                    "GLM stream dropped a delimited invoke that failed value typing"
+                );
+                return Ok(None);
+            }
         };
         Ok(Some(ToolCallDelta {
             tool_index,
@@ -81,6 +100,127 @@ impl InvokeEmitter for Glm47Emitter {
             complete: true,
         }))
     }
+}
+
+#[derive(Default)]
+struct Glm47BoundaryProgress {
+    cursor: usize,
+    in_arg_value: bool,
+    possible_outer_end: Option<usize>,
+}
+
+impl Glm47BoundaryProgress {
+    fn end(&mut self, text: &str, flush: bool) -> Option<usize> {
+        while self.cursor < text.len() {
+            let rest = &text[self.cursor..];
+            if self.in_arg_value {
+                if rest.starts_with(ARG_VALUE_END) {
+                    self.in_arg_value = false;
+                    self.possible_outer_end = None;
+                    self.cursor += ARG_VALUE_END.len();
+                    continue;
+                }
+                if rest.len() < ARG_VALUE_END.len() && ARG_VALUE_END.starts_with(rest) {
+                    return None;
+                }
+                if rest.starts_with(BLOCK_END) {
+                    self.possible_outer_end
+                        .get_or_insert(self.cursor + BLOCK_END.len());
+                    self.cursor += BLOCK_END.len();
+                    continue;
+                }
+                if rest.len() < BLOCK_END.len() && BLOCK_END.starts_with(rest) {
+                    return None;
+                }
+            } else {
+                if rest.starts_with(ARG_VALUE_START) {
+                    self.in_arg_value = true;
+                    self.cursor += ARG_VALUE_START.len();
+                    continue;
+                }
+                if rest.starts_with(BLOCK_END) {
+                    return Some(self.cursor + BLOCK_END.len());
+                }
+                if (rest.len() < ARG_VALUE_START.len() && ARG_VALUE_START.starts_with(rest))
+                    || (rest.len() < BLOCK_END.len() && BLOCK_END.starts_with(rest))
+                {
+                    return None;
+                }
+            }
+            let ch = rest.chars().next().expect("cursor is before text end");
+            self.cursor += ch.len_utf8();
+        }
+        flush.then_some(self.possible_outer_end).flatten()
+    }
+}
+
+#[derive(Default)]
+struct Glm47Boundary {
+    native: Glm47BoundaryProgress,
+    guided: Glm47BoundaryProgress,
+}
+
+impl InvokeBoundary for Glm47Boundary {
+    fn owns_guided_prefix(&self) -> bool {
+        true
+    }
+
+    fn guided_invoke_at(&self, text: &str) -> Option<(usize, usize)> {
+        text.find(BLOCK_START).map(|at| (at, BLOCK_START.len()))
+    }
+
+    fn is_guided_invoke_marker(&self, marker: &str) -> bool {
+        marker == BLOCK_START
+    }
+
+    fn guided_prefix_append(
+        &mut self,
+        candidate: &str,
+        _append: &str,
+        context: GuidedInvokePrefixContext,
+    ) -> Option<GuidedInvokePrefix> {
+        let body = candidate.strip_prefix(BLOCK_START)?;
+        if body.trim_start().starts_with(['{', '[']) {
+            return Some(GuidedInvokePrefix::Match(BLOCK_START.len()));
+        }
+        if !context.outside_reasoning || !context.payload_is_empty {
+            return Some(GuidedInvokePrefix::Strip(BLOCK_START.len()));
+        }
+        self.guided
+            .end(body, false)
+            .map(|end| GuidedInvokePrefix::Strip(BLOCK_START.len() + end))
+            .or(Some(GuidedInvokePrefix::Pending))
+    }
+
+    fn end_append(
+        &mut self,
+        candidate: &str,
+        _append: &str,
+        flush: bool,
+        _tool_index: usize,
+    ) -> Option<usize> {
+        self.native.end(candidate, flush)
+    }
+
+    fn opens(&self, _text: &str, _at: usize) -> bool {
+        true
+    }
+
+    fn holdback(&self, text: &str) -> usize {
+        marker_prefix_suffix_len(text, [BLOCK_END, ARG_VALUE_START, ARG_VALUE_END])
+    }
+
+    fn resync(&mut self, _text: &str, _flush: bool, _tool_index: usize) -> Option<usize> {
+        None
+    }
+
+    fn reset(&mut self) {
+        *self = Self::default();
+    }
+}
+
+fn glm47_boundary() -> Box<dyn InvokeBoundary> {
+    Box::new(Glm47Boundary::default())
 }
 
 /// The one GLM scanner construction site shared by native UnifiedParser and
@@ -132,7 +272,6 @@ impl ToolParser for Glm47ToolStreamParser {
 fn find_bare_invoke_start(text: &str) -> Option<usize> {
     let marker_idx = ORPHAN_ANCHORS
         .iter()
-        .filter(|marker| **marker != BLOCK_END)
         .filter_map(|marker| text.find(marker))
         .min()?;
     if text
@@ -215,15 +354,32 @@ mod tests {
     use crate::unified::UnifiedParserExt;
 
     fn tools() -> Vec<Tool> {
-        vec![Tool {
-            name: "get_weather".into(),
-            description: None,
-            parameters: serde_json::json!({
-                "type": "object",
-                "properties": { "city": { "type": "string" } }
-            }),
-            strict: None,
-        }]
+        vec![
+            Tool {
+                name: "get_weather".into(),
+                description: None,
+                parameters: serde_json::json!({
+                    "type": "object",
+                    "properties": { "city": { "type": "string" } }
+                }),
+                strict: None,
+            },
+            Tool {
+                name: "get_time".into(),
+                description: None,
+                parameters: serde_json::json!({"type": "object", "properties": {}}),
+                strict: None,
+            },
+            Tool {
+                name: "run".into(),
+                description: None,
+                parameters: serde_json::json!({
+                    "type": "object",
+                    "properties": { "cmd": { "type": "string" } }
+                }),
+                strict: None,
+            },
+        ]
     }
 
     fn legacy(tools: &[Tool], chunks: &[&str]) -> ToolParseResult {
@@ -258,6 +414,176 @@ mod tests {
             let split_output =
                 legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls();
             assert_eq!(split_output, whole, "split at {split}");
+        }
+    }
+
+    #[test]
+    fn legacy_recovers_known_no_argument_bare_call_at_every_valid_split() {
+        let input = "get_time</tool_call>";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.normal_text, "");
+        assert_eq!(want.calls.len(), 1);
+        assert_eq!(want.calls[0].name.as_deref(), Some("get_time"));
+        assert_eq!(want.calls[0].arguments, "{}");
+
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
+        }
+    }
+
+    #[test]
+    fn legacy_recovers_bare_call_with_arguments_at_every_valid_split() {
+        let input = "run<arg_key>cmd</arg_key><arg_value>git status</arg_value></tool_call>";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.normal_text, "");
+        assert_eq!(want.calls.len(), 1);
+        assert_eq!(want.calls[0].name.as_deref(), Some("run"));
+        assert_eq!(want.calls[0].arguments, r#"{"cmd":"git status"}"#);
+
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
+        }
+    }
+
+    #[test]
+    fn legacy_does_not_recover_punctuation_or_prose_before_orphan_close() {
+        for input in [
+            "get_time.</tool_call>",
+            "Please wait café</tool_call>",
+            "unknown_tool</tool_call>",
+            "Please wait</tool_call><tool_call>get_time</tool_call>",
+        ] {
+            let want = legacy(&tools(), &[input]).coalesce_calls();
+            let expected_calls = usize::from(input.contains(BLOCK_START));
+            assert_eq!(
+                want.calls.len(),
+                expected_calls,
+                "unexpected calls for {input:?}"
+            );
+            let expected_text = input
+                .split_once(BLOCK_END)
+                .map(|(prefix, _)| prefix)
+                .unwrap_or(input);
+            assert_eq!(want.normal_text, expected_text);
+            for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                assert_eq!(
+                    legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                    want,
+                    "split at {split} for {input:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn legacy_preserves_embedded_close_and_finds_the_following_call_at_every_split() {
+        let input = "<tool_call>run<arg_key>cmd</arg_key><arg_value>git log </tool_call> --oneline</arg_value></tool_call> café <tool_call>get_time</tool_call>";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.normal_text, " café ");
+        assert_eq!(want.calls.len(), 2);
+        assert_eq!(want.calls[0].name.as_deref(), Some("run"));
+        assert_eq!(
+            want.calls[0].arguments,
+            r#"{"cmd":"git log </tool_call> --oneline"}"#
+        );
+        assert_eq!(want.calls[1].name.as_deref(), Some("get_time"));
+
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
+        }
+    }
+
+    #[test]
+    fn legacy_recovers_at_possible_outer_close_when_argument_value_never_closes() {
+        let input = "<tool_call>run<arg_key>cmd</arg_key><arg_value>git log </tool_call> --oneline";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.normal_text, " --oneline");
+        assert_eq!(want.calls.len(), 1);
+        assert_eq!(want.calls[0].arguments, r#"{"cmd":"git log "}"#);
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
+        }
+    }
+
+    #[test]
+    fn legacy_preserves_close_and_open_markers_inside_an_argument() {
+        let input = "<tool_call>run<arg_key>cmd</arg_key><arg_value>before </tool_call><tool_call> after</arg_value></tool_call><tool_call>get_time</tool_call>";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.calls.len(), 2);
+        assert_eq!(
+            want.calls[0].arguments,
+            r#"{"cmd":"before </tool_call><tool_call> after"}"#
+        );
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
+        }
+    }
+
+    #[test]
+    fn legacy_unclosed_argument_recovers_before_a_following_call() {
+        let input = "<tool_call>run<arg_key>cmd</arg_key><arg_value>first</tool_call><tool_call>get_time</tool_call>";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.calls.len(), 2);
+        assert_eq!(want.calls[0].arguments, r#"{"cmd":"first"}"#);
+        assert_eq!(want.calls[1].name.as_deref(), Some("get_time"));
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
+        }
+    }
+
+    #[test]
+    fn legacy_recovers_missing_argument_value_close_at_terminal_outer_close() {
+        let input = "<tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</tool_call>";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.normal_text, "");
+        assert_eq!(want.calls.len(), 1);
+        assert_eq!(want.calls[0].arguments, r#"{"city":"Paris"}"#);
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
+        }
+    }
+
+    #[test]
+    fn legacy_drops_malformed_block_and_keeps_following_call_at_every_split() {
+        let input = "<tool_call></tool_call><tool_call>get_time</tool_call>";
+        let want = legacy(&tools(), &[input]).coalesce_calls();
+        assert_eq!(want.normal_text, "");
+        assert_eq!(want.calls.len(), 1);
+        assert_eq!(want.calls[0].name.as_deref(), Some("get_time"));
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(
+                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                want,
+                "split at {split}"
+            );
         }
     }
 

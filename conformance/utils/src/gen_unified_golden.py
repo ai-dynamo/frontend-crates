@@ -725,7 +725,18 @@ EDGE = [
                     VLLM_UNCAPTURABLE["kimi_k3"], M),
         "muse_glimmer": ("<|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n</atem:invoke>\n</atem:function_calls><|eom|>",
                          V_MUSE, M),
-     }),
+      }),
+
+    ("bare_parameterless_call",
+     "A complete parameterless call emitted without the outer opener. Only GLM has this bare name-plus-close form; the offered tool name distinguishes it from prose before an orphan closer.",
+     ["P2", "I6"],
+     [{"kind": "tool_call", "name": "get_time", "arguments": {}}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({
+         "glm47": ("get_time</tool_call>",
+                   D("UNSUPPORTED", "the released peer capture does not expose this GLM recovery form"),
+                   {"verdict": "match", "note": "the offered parameterless tool is recovered without leaking the orphan close"}),
+     })),
 
     ("tool_no_close",
      "A single tool call whose body is complete but the close marker never arrives before EOF. Most grammars recover the complete call at finish; DSML requires the invoke close, so its malformed turn emits nothing. This is also covered in: TOOLCALLING.streamv2.5.a.",
@@ -1997,18 +2008,11 @@ def build_cases(fam):
                     ev["text"] = rest[0]
                     break
         if fam == "glm47":
-            # GLM's legacy grammar closes a block at the first outer closer and
-            # does not recover a missing outer closer by default. Its guided
-            # control normalizer also strips the native XML tags without
-            # dispatching a call. Keep these three grammar-specific outcomes
-            # explicit instead of inheriting Qwen3's different XML semantics.
-            if name == "arg_marker_in_string":
-                g = [{"kind": "tool_call", "name": "run", "arguments": {"cmd": "git log "}},
-                     {"kind": "text", "text": " --oneline</arg_value>"}]
-            elif name == "tool_no_close":
+            # GLM's legacy grammar does not recover a missing outer closer by
+            # default. Keep this grammar-specific outcome explicit instead of
+            # inheriting Qwen3's different XML semantics.
+            if name == "tool_no_close":
                 g = []
-            elif name == "guided_json_native_markup_only":
-                g = [{"kind": "text", "text": "get_weathercityParis</arg_value>"}]
         # ENFORCED HERE, not at each authoring site. `every_family()` and
         # `guided_surroundings()` already substitute UNSUPPORTED for a family with
         # no native unified parser, but a scenario hand-written as an explicit

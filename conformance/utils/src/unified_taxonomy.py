@@ -38,7 +38,7 @@ UNIFIED_TAX = {
     "truncated_tool_eof": (5, "a"), "tool_no_close": (5, "b"),
     "orphan_close_after_prose": (5, "c"),
     # Group 6 — Empty body (streamv2.6)
-    "empty_args": (6, "a"),
+    "empty_args": (6, "a"), "bare_parameterless_call": (6, "b"),
     # Group 7 — Argument fidelity (streamv2.7)
     "arg_unicode": (7, "a"), "arg_marker_in_string": (7, "b"),
     # Group 8 — Content / narration position (streamv2.8)

@@ -36,13 +36,26 @@ FAMILY_PARSERS = {
 }
 
 # Tool schemas the seed cases reference (string params), so arg typing matches.
+def _tool(name, properties):
+    return {"type": "function", "function": {"name": name, "parameters": {
+        "type": "object", "properties": properties}}}
+
+
 TOOLS = [
-    {"type": "function", "function": {"name": n, "parameters": {
-        "type": "object", "properties": {k: {"type": "string"}}}}}
-    # Must match `tools()` in conformance/tests/unified_parity.rs, or the `log`
-    # cases (UNIFIED.12.a / 12.c) capture a harness-induced dropped call.
-    for n, k in (("get_weather", "city"), ("f", "x"), ("g", "y"), ("run", "cmd"),
-                 ("log", "note"))
+    _tool("get_weather", {"city": {"type": "string"}}),
+    _tool("get_time", {}),
+    _tool("f", {"x": {"type": "string"}}),
+    _tool("g", {"y": {"type": "string"}}),
+    _tool("run", {
+        "cmd": {"type": "string"},
+        "count": {"type": "integer"},
+        "force": {"type": "boolean"},
+        "options": {"type": "object"},
+        "tags": {"type": "array"},
+        "note": {"type": ["string", "null"]},
+    }),
+    _tool("log", {"note": {"type": "string"}}),
+    _tool("sum_values", {"values": {"type": "array", "items": {"type": "integer"}}}),
 ]
 
 

@@ -471,6 +471,11 @@ pub(crate) struct ReasoningSpec {
 /// owned field is the ordinary way to do that — no `RefCell` needed, since
 /// parsing and the later lookup never run at the same time.
 pub(crate) trait InvokeEmitter {
+    /// Whether a syntactically located bare invoke is safe to recover.
+    fn accepts_bare_invoke(&self, _invoke: &str) -> bool {
+        true
+    }
+
     /// Emit an append-safe update while an invoke is still open. Families that
     /// cannot prove a fragment will survive their final typing leave this as a
     /// no-op and continue to emit only at the invoke close.
@@ -895,7 +900,11 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             return Some(0);
         }
         if self.block_is_invoke() {
-            return self.spec.bare_invoke_start.and_then(|find| find(text));
+            return self
+                .spec
+                .bare_invoke_start
+                .and_then(|find| find(text))
+                .filter(|&start| self.emitter.accepts_bare_invoke(&text[start..]));
         }
         let invoke_start = &self.spec.invoke_start;
         let Some(boundary) = self.invoke_boundary.as_ref() else {
@@ -925,10 +934,6 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
     /// Offset just past the closer of the invoke beginning at byte zero.
     fn invoke_end_at(&mut self, flush: bool) -> Option<usize> {
-        if self.block_is_invoke() {
-            return find_first(&self.buffer, &self.spec.block_ends)
-                .map(|(position, length)| position + length);
-        }
         match self.invoke_boundary.as_mut() {
             Some(boundary) => {
                 let append = &self.buffer[self.invoke_boundary_len..];

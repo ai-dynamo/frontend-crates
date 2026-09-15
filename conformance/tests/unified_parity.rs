@@ -50,20 +50,7 @@ struct GoldenCase {
 /// `1` stays the string `"1"` exactly as the golden records it). Mirrors
 /// `tools()` in `unified_render.rs`.
 fn tools() -> Vec<Tool> {
-    let mk = |name: &str, key: &str| Tool {
-        name: name.to_string(),
-        description: None,
-        parameters: json!({"type":"object","properties":{key:{"type":"string"}}}),
-        strict: None,
-    };
-    vec![
-        mk("get_weather", "city"),
-        mk("f", "x"),
-        mk("g", "y"),
-        mk("run", "cmd"),
-        mk("sum_values", "values"),
-        mk("log", "note"),
-    ]
+    common::unified_tools()
 }
 
 fn load_golden() -> Vec<GoldenFile> {

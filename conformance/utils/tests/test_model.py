@@ -295,7 +295,7 @@ def test_unified_default_dynamo_uses_pr_capture_and_keeps_release_history(tmp_pa
     dynamo = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
     release = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo@0.4.0")
 
-    assert dynamo["label"] == "Dynamo v2 Rust 0.6.0 (stream, Combined & Unified)"
+    assert dynamo["label"] == "Dynamo v2 Rust 0.6.0+pr234 (stream, Combined & Unified)"
     assert dynamo["default_bucket"] == "A"
     assert release["label"] == "Dynamo v2 Rust 0.4.0 (stream, Combined & Unified)"
     assert release["default_bucket"] == "C"
@@ -305,7 +305,13 @@ def test_unified_tab_marks_unsupported_and_postdated_vllm_cases_na(model_v2):
     """n/a distinguishes an unsupported family from a case absent from an old capture."""
     tab = _tab(model_v2, "tab-unified")
     peer_keys = {candidate["key"] for candidate in tab["candidates"] if candidate["impl"] == "vllm"}
-    assert peer_keys == {"vllm", "vllm_python@0.26.0", "vllm_rust", "vllm_rust@0.26.0"}
+    assert peer_keys == {
+        "vllm",
+        "vllm_python@0.26.0",
+        "vllm_python@0.27.1",
+        "vllm_rust",
+        "vllm_rust@0.26.0",
+    }
     for row in tab["rows"]:
         for key in peer_keys:
             unavailable = [cell["cmp"][key].get("na") == 1 for cell in row["cells"].values()]
@@ -331,7 +337,7 @@ def test_unified_tab_marks_unsupported_and_postdated_vllm_cases_na(model_v2):
         "gemma4_guided_json_visible_call_prose_before_reasoning",
         "gemma4_guided_json_malformed_call_prefix_before_reasoning",
     ):
-        for key in peer_keys:
+        for key in peer_keys - {"vllm_python@0.27.1"}:
             cell = gemma["cells"][scenario]
             assert cell["cmp"][key].get("na") == 1
             peer = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == key)
