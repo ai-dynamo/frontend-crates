@@ -80,6 +80,11 @@ def test_taxonomy_has_no_entry_without_a_corpus_case() -> None:
 def test_invoke_header_prefix_is_inner_and_unterminated() -> None:
     for family in FAMILIES:
         prefix = invoke_header_prefix(family)
+        if family == "glm47":
+            # GLM's outer `<tool_call>` marker is itself the invoke; there is no
+            # separate inner header to place before a guided payload.
+            assert prefix == ""
+            continue
         assert prefix
         assert prefix == prefix.lstrip()
         assert not prefix.startswith(control_tokens(family)[2])
@@ -502,7 +507,8 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = (
-            23 if fam == "deepseek_v41" else 88 if fam == "gemma4" else 94 if fam == "kimi_k3" else 86
+            23 if fam == "deepseek_v41" else 88 if fam == "gemma4" else 94
+            if fam == "kimi_k3" else 86
         )
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
     assert sum(per_family.values()) == sum(len(build_cases(f)) for f in FAMILIES)

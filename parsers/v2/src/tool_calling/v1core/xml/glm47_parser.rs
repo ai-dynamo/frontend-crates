@@ -489,16 +489,22 @@ fn parse_tool_call_block(
 ) -> anyhow::Result<ToolCallResponse> {
     // Remove the outer <tool_call> tags
     let start_token = &config.tool_call_start;
-    let end_token = &config.tool_call_end;
-
     // Strip the outer start token. The end token is optional so we can
     // recover from max_tokens / EOS truncation that drops `</tool_call>`.
-    let after_start = block
+    let invoke = block
         .strip_prefix(start_token.as_str())
         .ok_or_else(|| anyhow::anyhow!("Invalid tool call block format"))?;
-    let content = after_start
-        .strip_suffix(end_token.as_str())
-        .unwrap_or(after_start);
+    parse_glm47_invoke(invoke, config, tools)
+}
+
+pub fn parse_glm47_invoke(
+    invoke: &str,
+    config: &Glm47ParserConfig,
+    tools: Option<&[ToolDefinition]>,
+) -> anyhow::Result<ToolCallResponse> {
+    let content = invoke
+        .strip_suffix(config.tool_call_end.as_str())
+        .unwrap_or(invoke);
 
     // Extract function name (everything before first <arg_key> or end)
     let arg_key_start = &config.arg_key_start;

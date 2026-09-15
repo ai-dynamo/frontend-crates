@@ -42,6 +42,8 @@ use dynamo_parsers_v2::{
 };
 use serde_json::{Value, json};
 
+mod common;
+
 /// Corpus family -> (v1 reasoning parser, v2 tool parser) for the SPLIT path, read from
 /// the `unified:` block of `parser_families.yaml`.
 ///
@@ -162,18 +164,7 @@ fn chunk_input(input: &str) -> Vec<String> {
 /// into the emitter at construction — so a different list here would read as a version
 /// difference.
 fn tools() -> Vec<Tool> {
-    let mk = |name: &str, key: &str| Tool {
-        name: name.to_string(),
-        description: None,
-        parameters: serde_json::json!({"type":"object","properties":{key:{"type":"string"}}}),
-        strict: None,
-    };
-    vec![
-        mk("get_weather", "city"),
-        mk("f", "x"),
-        mk("g", "y"),
-        mk("run", "cmd"),
-    ]
+    common::unified_tools()
 }
 
 fn ev_to_yaml(ev: &UnifiedEvent) -> serde_yaml::Value {

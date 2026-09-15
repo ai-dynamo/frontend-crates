@@ -13,6 +13,50 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use dynamo_parsers_v2::Tool;
+use serde_json::json;
+
+/// Tool schemas shared by every Rust Unified capture and parity harness.
+pub fn unified_tools() -> Vec<Tool> {
+    let string_tool = |name: &str, key: &str| Tool {
+        name: name.to_string(),
+        description: None,
+        parameters: json!({"type":"object","properties":{key:{"type":"string"}}}),
+        strict: None,
+    };
+    vec![
+        string_tool("get_weather", "city"),
+        Tool {
+            name: "get_time".to_string(),
+            description: None,
+            parameters: json!({"type":"object","properties":{}}),
+            strict: None,
+        },
+        string_tool("f", "x"),
+        string_tool("g", "y"),
+        Tool {
+            name: "run".to_string(),
+            description: None,
+            parameters: json!({"type":"object","properties":{
+                "cmd":{"type":"string"},
+                "count":{"type":"integer"},
+                "force":{"type":"boolean"},
+                "options":{"type":"object"},
+                "tags":{"type":"array"},
+                "note":{"type":["string","null"]}
+            }}),
+            strict: None,
+        },
+        string_tool("log", "note"),
+        Tool {
+            name: "sum_values".to_string(),
+            description: None,
+            parameters: json!({"type":"object","properties":{"values":{"type":"array","items":{"type":"integer"}}}}),
+            strict: None,
+        },
+    ]
+}
+
 /// Recursively collect `*.yaml` fixture files under `dir` into `out`.
 pub fn collect_yaml(dir: &Path, out: &mut Vec<PathBuf>) {
     let Ok(rd) = std::fs::read_dir(dir) else {
@@ -247,9 +291,9 @@ pub fn fixture_name(path: &Path) -> String {
 }
 
 /// Current parser-version capture used by stream parity and interleave tests.
-pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.5.1";
+pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.6.0+mod2";
 
-pub const UNIFIED_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.5.3+pr213";
+pub const UNIFIED_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.6.0+pr234";
 
 /// Version-sorted capture dirs for one impl prefix (e.g. `dynamo-` under
 /// fixtures-batch-v1, `dynamo_v2-` under fixtures-stream-v2), ASCENDING by

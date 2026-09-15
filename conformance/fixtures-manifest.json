@@ -1,9 +1,9 @@
 {
-  "snapshot": "20260904_120000",
-  "created_pt": "20260904_120000 (stamp override) America/Los_Angeles",
+  "snapshot": "20260915_114227",
+  "created_pt": "2026-09-15 11:42:27 America/Los_Angeles",
   "crates": {
-    "dynamo-parsers": "8.2.0",
-    "dynamo-parsers-v2": "0.5.1"
+    "dynamo-parsers": "9.0.0",
+    "dynamo-parsers-v2": "0.6.0"
   },
   "peers": {
     "vllm": "0.26.0",
@@ -27,8 +27,8 @@
     },
     {
       "path": "toolcalling/fixtures-batch-on-stream-v2.tar.gz",
-      "sha256": "3f58c8adfb8e332b1326ef890ddea3aa254bd5dc291aef27417a491b503f2f11",
-      "size": 16514
+      "sha256": "89527d46a584ea105ca41792558a51a40900ad75979709bb8691313c97585dfa",
+      "size": 16540
     },
     {
       "path": "toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz",
@@ -141,9 +141,14 @@
       "size": 8263
     },
     {
+      "path": "toolcalling/fixtures-stream-v2/dynamo_v2-0.6.0+mod2.tar.gz",
+      "sha256": "b78c38ee2c799705f74609182003714b1daaaee099f8a06c04a7669e4b95ecfd",
+      "size": 8347
+    },
+    {
       "path": "toolcalling/fixtures-stream-v2/inputs.tar.gz",
-      "sha256": "08eed2b25c1aba4cfb143e1b225f85f2f930ba6d8bc9bba3ca57ae0becd3f9ff",
-      "size": 47236
+      "sha256": "74a9b9f8c948342974fb9d6ec5d180eae329ed00f912707c6030888dfa69f3b3",
+      "size": 48458
     },
     {
       "path": "toolcalling/fixtures-stream-v2/sglang_python-0.5.12.post1.tar.gz",
@@ -356,6 +361,11 @@
       "size": 22720
     },
     {
+      "path": "unified/dynamo_v2-0.6.0+pr234.tar.gz",
+      "sha256": "6e23ee47257743f651e07f200d12c942a22405b8df9f25dcf299b2f1b8602e59",
+      "size": 26256
+    },
+    {
       "path": "unified/golden+pr191.patch2.tar.gz",
       "sha256": "6acab9881f6bb76c876f8ba1302fd1175074f4b90c800fd203da9ec7e8fa79ea",
       "size": 5497
@@ -367,8 +377,8 @@
     },
     {
       "path": "unified/golden.tar.gz",
-      "sha256": "1688e2f1b1e61cbd1aadec11684b8c91e6537dac91ff72c18885e532fec8edf5",
-      "size": 10659
+      "sha256": "ece37a19a97bc3405176ae63dacc39a9d19801f3889af264d94470fa97f62ab5",
+      "size": 18049
     },
     {
       "path": "unified/inputs+pr191.patch2.tar.gz",
@@ -382,8 +392,8 @@
     },
     {
       "path": "unified/inputs.tar.gz",
-      "sha256": "72d948489aa36f50c35d644871702f17850566bf1ec31da6b57592153174e10b",
-      "size": 56690
+      "sha256": "8415d13bd4fdb6b8c398b8b030a394ad2db134e04cb0e4cf530a5e36ba4f9255",
+      "size": 98270
     },
     {
       "path": "unified/sglang_python-0.5.14.tar.gz",
@@ -392,8 +402,8 @@
     },
     {
       "path": "unified/sglang_python-0.5.16.tar.gz",
-      "sha256": "68b20e272da148503f2626342fbe7977ac259a0a391c5fc4b902ce59c9584d35",
-      "size": 8409
+      "sha256": "18cebb1f6e16b30e63da7cbdf03b6deb290d98a72f62f48cf683ac763aa3996d",
+      "size": 13262
     },
     {
       "path": "unified/vllm_python-0.25.1.patch1.tar.gz",
@@ -409,6 +419,11 @@
       "path": "unified/vllm_python-0.26.0.tar.gz",
       "sha256": "2955bb6b931511ac052d673b1166649efe7e4da52ae35dd7361ec8a5923090dc",
       "size": 9714
+    },
+    {
+      "path": "unified/vllm_python-0.27.1.tar.gz",
+      "sha256": "bb9b56618dd806723eff4c38b74f8d8e647edc693b025e9e50771c20b6af8403",
+      "size": 13042
     },
     {
       "path": "unified/vllm_rust-0.25.1.patch1.tar.gz",

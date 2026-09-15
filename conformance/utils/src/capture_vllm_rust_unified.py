@@ -77,19 +77,43 @@ struct CaseOut {
 }
 
 fn tools() -> Vec<Tool> {
-    let mk = |name: &str, key: &str| Tool {
+    let string_tool = |name: &str, key: &str| Tool {
         name: name.to_string(),
         description: None,
         parameters: json!({"type":"object","properties":{key:{"type":"string"}}}),
         strict: None,
     };
     vec![
-        mk("get_weather", "city"),
-        mk("f", "x"),
-        mk("g", "y"),
-        mk("run", "cmd"),
+        string_tool("get_weather", "city"),
+        Tool {
+            name: "get_time".to_string(),
+            description: None,
+            parameters: json!({"type":"object","properties":{}}),
+            strict: None,
+        },
+        string_tool("f", "x"),
+        string_tool("g", "y"),
+        Tool {
+            name: "run".to_string(),
+            description: None,
+            parameters: json!({"type":"object","properties":{
+                "cmd":{"type":"string"},
+                "count":{"type":"integer"},
+                "force":{"type":"boolean"},
+                "options":{"type":"object"},
+                "tags":{"type":"array"},
+                "note":{"type":["string","null"]}
+            }}),
+            strict: None,
+        },
         // Keep in step with `tools()` in conformance/tests/unified_parity.rs.
-        mk("log", "note"),
+        string_tool("log", "note"),
+        Tool {
+            name: "sum_values".to_string(),
+            description: None,
+            parameters: json!({"type":"object","properties":{"values":{"type":"array","items":{"type":"integer"}}}}),
+            strict: None,
+        },
     ]
 }
 

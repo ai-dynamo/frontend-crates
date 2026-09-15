@@ -48,6 +48,7 @@ GRAMMAR_NOTE = {
     "deepseek_v4": "reasoning `<think>...</think>`, tool `<｜DSML｜tool_calls><｜DSML｜invoke name=\"NAME\"><｜DSML｜parameter name=\"KEY\" string=\"true\">VALUE</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>`.",
     "gemma4": "reasoning `<|channel>thought\\n...<channel|>`, tool `<|tool_call>call:NAME{key:<|\"|>value<|\"|>}<tool_call|>` (string values wrapped in `<|\"|>`; an embedded `<tool_call|>` inside a `<|\"|>` string is data, not the end marker).",
     "qwen3": "reasoning `<think>...</think>`, tool `<tool_call><function=NAME><parameter=KEY>VALUE</parameter></function></tool_call>`.",
+    "glm47": "reasoning `<think>...</think>`, tool `<tool_call>NAME<arg_key>KEY</arg_key><arg_value>VALUE</arg_value></tool_call>`.",
     "kimi_k2": "reasoning `<think>...</think>`, tool section `<|tool_calls_section_begin|><|tool_call_begin|>functions.NAME:IDX<|tool_call_argument_begin|>{...}<|tool_call_end|><|tool_calls_section_end|>`.",
     "kimi_k3": "reasoning `<|open|>think<|sep|>...<|close|>think<|sep|>`, tool `<|open|>tools<|sep|><|open|>call tool=\"NAME\" index=\"IDX\"<|sep|><|open|>argument key=\"KEY\" type=\"string\"<|sep|>VALUE<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>`.",
     "muse_glimmer": "recipient-routed messages `<|start|>assistant to=RCPT<|message|>...<|eom|>`: `self` is reasoning, `user` is visible content, any other recipient opens a tool channel whose body is ATEM XML `<atem:function_calls><atem:invoke name=\"NAME\"><atem:parameter name=\"KEY\">VALUE</atem:parameter></atem:invoke></atem:function_calls>`. `<|eom|>` closes a message with more to follow, `<|eot|>` ends the turn. Spec: https://huggingface.co/meta-models/Muse-Glimmer-30B.",
@@ -163,6 +164,9 @@ def r_tool(fam, name, key, val, idx):
     if fam == "qwen3":
         return (f"<tool_call>\n<function={name}>\n<parameter={key}>\n"
                 f"{val}\n</parameter>\n</function>\n</tool_call>")
+    if fam == "glm47":
+        return (f"<tool_call>{name}<arg_key>{key}</arg_key>"
+                f"<arg_value>{val}</arg_value></tool_call>")
     if fam == "muse_glimmer":
         return (f"<|start|>assistant to={name}<|message|><atem:function_calls>\n"
                 f"<atem:invoke name=\"{name}\">\n"
@@ -173,6 +177,26 @@ def r_tool(fam, name, key, val, idx):
     args = json.dumps({key: val}, ensure_ascii=False)
     return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
             f"<|tool_call_argument_begin|>{args}<|tool_call_end|><|tool_calls_section_end|>")
+
+
+def qwen3_input_as_glm47(input_text):
+    function = re.compile(r"<function=([^>]+)>(.*?)</function>", re.DOTALL)
+    parameter = re.compile(r"<parameter=([^>]+)>(.*?)</parameter>", re.DOTALL)
+
+    def convert_function(match):
+        name, body = match.groups()
+        rendered = parameter.sub(
+            lambda parameter_match: (
+                f"<arg_key>{parameter_match.group(1).strip()}</arg_key>"
+                f"<arg_value>{parameter_match.group(2).strip()}</arg_value>"
+            ),
+            body,
+        )
+        return f"{name}{rendered.strip()}"
+
+    converted = function.sub(convert_function, input_text)
+    converted = converted.replace("<tool_call>\n", "<tool_call>")
+    return converted.replace("\n</tool_call>", "</tool_call>")
 
 
 def kimi_input_as_dsml(input_text):
@@ -388,6 +412,8 @@ def invoke_header_prefix(fam):
     """Inner invoke header through the tool name, without its terminator."""
     if fam == "kimi_k3":
         return '<|open|>call tool="'
+    if fam == "glm47":
+        return ""
     rendered = r_tool(fam, "NAMEX", "KEYX", "VALX", 0)
     outer = control_tokens(fam)[2]
     # Search for the name AFTER the opener. A family whose opener already carries the
@@ -698,7 +724,18 @@ EDGE = [
                     VLLM_UNCAPTURABLE["kimi_k3"], M),
         "muse_glimmer": ("<|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n</atem:invoke>\n</atem:function_calls><|eom|>",
                          V_MUSE, M),
-     }),
+      }),
+
+    ("bare_parameterless_call",
+     "A complete parameterless call emitted without the outer opener. Only GLM has this bare name-plus-close form; the offered tool name distinguishes it from prose before an orphan closer.",
+     ["P2", "I6"],
+     [{"kind": "tool_call", "name": "get_time", "arguments": {}}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({
+         "glm47": ("get_time</tool_call>",
+                   D("UNSUPPORTED", "the released peer capture does not expose this GLM recovery form"),
+                   {"verdict": "match", "note": "the offered parameterless tool is recovered without leaking the orphan close"}),
+     })),
 
     ("tool_no_close",
      "A single tool call whose body is complete but the close marker never arrives before EOF. Most grammars recover the complete call at finish; DSML requires the invoke close, so its malformed turn emits nothing. This is also covered in: TOOLCALLING.streamv2.5.a.",
@@ -1769,7 +1806,7 @@ EDGE += [
 def _entry(spec, fam):
     """Resolve a vllm/dynamo verdict spec (single or per-family) for `fam`."""
     if isinstance(spec, dict) and set(spec) <= set(FAMILIES) and "verdict" not in spec:
-        if fam == "deepseek_v4" and fam not in spec:
+        if fam in {"deepseek_v4", "glm47"} and fam not in spec:
             return spec["qwen3"]
         return spec[fam]
     return spec
@@ -1920,6 +1957,12 @@ def build_cases(fam):
         if (init or {}).get("tool_output_mode", "Native") != "Native" and fam not in GUIDED_FAMILIES:
             continue
 
+        # GLM's outer tool marker is also its complete invoke opener. It has no
+        # separate bare inner header, so this crossing is the same bare JSON
+        # behavior already covered by `guided_json_invalid_call`.
+        if fam == "glm47" and name == "guided_json_schema_error_not_a_call_bare_opener":
+            continue
+
         # A scenario may DECLARE a narrow scope when a family's grammar cannot express
         # it (`OnlyFamilies`). Absence from a plain map is still a hard failure — an
         # accidentally omitted family must break generation rather than quietly read as
@@ -1934,6 +1977,10 @@ def build_cases(fam):
                 kimi_input, *rest = per_fam["kimi_k2"]
                 per_fam = dict(per_fam)
                 per_fam[fam] = (kimi_input_as_dsml(kimi_input), *rest)
+            elif fam == "glm47" and "qwen3" in per_fam:
+                qwen_input, *rest = per_fam["qwen3"]
+                per_fam = dict(per_fam)
+                per_fam[fam] = (qwen3_input_as_glm47(qwen_input), *rest)
             else:
                 raise KeyError(
                     f"{name}: no input authored for family {fam!r}. Add one, or wrap the map "
@@ -1944,7 +1991,7 @@ def build_cases(fam):
         g = json.loads(json.dumps(golden))  # deep copy
         if rest and isinstance(rest[0], list):
             g = json.loads(json.dumps(rest[0]))
-        elif rest:
+        elif rest and rest[0] is not None:
             # Fill the ONE `None` placeholder in the golden with this family's
             # value. It may be an argument value (a marker-looking string that has
             # to survive byte-exact, 12.a) or a whole text payload (the family's
@@ -1959,6 +2006,12 @@ def build_cases(fam):
                 if ev.get("kind") in ("text", "reasoning") and ev.get("text") is None:
                     ev["text"] = rest[0]
                     break
+        if fam == "glm47":
+            # GLM's legacy grammar does not recover a missing outer closer by
+            # default. Keep this grammar-specific outcome explicit instead of
+            # inheriting Qwen3's different XML semantics.
+            if name == "tool_no_close":
+                g = []
         # ENFORCED HERE, not at each authoring site. `every_family()` and
         # `guided_surroundings()` already substitute UNSUPPORTED for a family with
         # no native unified parser, but a scenario hand-written as an explicit

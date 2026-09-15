@@ -244,6 +244,7 @@ suites:
         title: Own-grammar delimiters inside a string argument (single call)
         applies_if_real_in: toolcalling.batch
         cases:
+          "": {desc: Group-level n/a placeholder for grammars without string-argument delimiters, required: false}
           a: {desc: Call/body separator characters inside one argument string value, required: false}
           b: {desc: Structural delimiters inside one argument string value, required: false}
           c: {desc: The family's own tool-call marker text inside one argument string value, required: false}
@@ -251,6 +252,7 @@ suites:
         title: Own-grammar delimiters inside a string argument (multi-call)
         applies_if_real_in: toolcalling.batch
         cases:
+          "": {desc: Group-level n/a placeholder for grammars without string-argument delimiters, required: false}
           a: {desc: Multi-call response with a call separator inside the first argument string, required: false}
           b: {desc: Multi-call response with structural delimiters inside one argument string value, required: false}
       "50":

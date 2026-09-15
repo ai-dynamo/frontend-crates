@@ -99,20 +99,7 @@ fn parsers_for(family: &str) -> (String, String) {
 
 /// Tool schemas used by the seed cases (string params, matching the golden).
 fn tools() -> Vec<Tool> {
-    let mk = |name: &str, key: &str| Tool {
-        name: name.to_string(),
-        description: None,
-        parameters: json!({"type":"object","properties":{key:{"type":"string"}}}),
-        strict: None,
-    };
-    vec![
-        mk("get_weather", "city"),
-        mk("f", "x"),
-        mk("g", "y"),
-        mk("run", "cmd"),
-        mk("log", "note"),
-        mk("sum_values", "values"),
-    ]
+    common::unified_tools()
 }
 
 /// Fold one tool-parser result into the event list, preserving text/call order
