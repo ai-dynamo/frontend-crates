@@ -1,6 +1,6 @@
 {
-  "snapshot": "20260914_232318",
-  "created_pt": "2026-09-14 23:23:18 America/Los_Angeles",
+  "snapshot": "20260915_114227",
+  "created_pt": "2026-09-15 11:42:27 America/Los_Angeles",
   "crates": {
     "dynamo-parsers": "9.0.0",
     "dynamo-parsers-v2": "0.6.0"
@@ -142,8 +142,8 @@
     },
     {
       "path": "toolcalling/fixtures-stream-v2/dynamo_v2-0.6.0+mod2.tar.gz",
-      "sha256": "635bfecf236d29f40784ebf64a5fa8ee400e3f8f678f325141d0f55007937f6d",
-      "size": 8345
+      "sha256": "b78c38ee2c799705f74609182003714b1daaaee099f8a06c04a7669e4b95ecfd",
+      "size": 8347
     },
     {
       "path": "toolcalling/fixtures-stream-v2/inputs.tar.gz",
