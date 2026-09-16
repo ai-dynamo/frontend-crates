@@ -247,6 +247,13 @@ pub trait OAIChatLikeRequest {
 
 pub trait OAIPromptFormatter: Send + Sync + 'static {
     fn supports_add_generation_prompt(&self) -> bool;
+    /// Whether rendering wraps string message content into text-part arrays.
+    /// Consumers forwarding rendered tokens can use this to exclude requests
+    /// whose downstream engine may apply different content-format conversion.
+    fn requires_content_arrays(&self) -> bool {
+        false
+    }
+
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String>;
 
     fn render_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<RenderedPrompt> {
