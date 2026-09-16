@@ -72,6 +72,12 @@ fn find_from(text: &str, start: usize, marker: &str) -> Option<usize> {
     suffix.find(marker).map(|at| start + at)
 }
 
+fn find_payload_from(text: &str, start: usize) -> Option<usize> {
+    let suffix = &text[start..];
+    count_boundary_bytes(suffix.len());
+    suffix.find(['{', '[']).map(|at| start + at)
+}
+
 fn next_scan_start(text: &str, marker_len: usize) -> usize {
     let mut start = text.len().saturating_sub(marker_len.saturating_sub(1));
     while !text.is_char_boundary(start) {
@@ -101,6 +107,9 @@ enum InvocationPosition {
 struct DeepSeekV41InvocationBoundary {
     position: InvocationPosition,
     scan_from: usize,
+    guided_prefix_scan_from: usize,
+    guided_prefix_payload_at: Option<usize>,
+    guided_prefix_header_end: Option<usize>,
 }
 
 impl DeepSeekV41InvocationBoundary {
@@ -120,21 +129,33 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
     fn guided_prefix_append(
         &mut self,
         candidate: &str,
-        _append: &str,
+        append: &str,
         context: GuidedInvokePrefixContext,
     ) -> Option<GuidedInvokePrefix> {
         let header = candidate.strip_prefix(INVOKE_START)?;
         if !context.outside_reasoning || context.followed_by_competing_marker {
             return Some(GuidedInvokePrefix::Strip(INVOKE_START.len()));
         }
-        let payload_at = header.find(['{', '[']);
-        if header
-            .find('>')
-            .is_some_and(|header_end| payload_at.is_none_or(|payload| header_end < payload))
-        {
+
+        let append_start = candidate.len() - append.len();
+        let scan_from = self
+            .guided_prefix_scan_from
+            .max(append_start.saturating_sub(INVOKE_START.len()));
+        if self.guided_prefix_payload_at.is_none() {
+            self.guided_prefix_payload_at = find_payload_from(header, scan_from);
+        }
+        if self.guided_prefix_header_end.is_none() {
+            self.guided_prefix_header_end = find_from(header, scan_from, ">");
+        }
+        self.guided_prefix_scan_from = header.len();
+
+        if self.guided_prefix_header_end.is_some_and(|header_end| {
+            self.guided_prefix_payload_at
+                .is_none_or(|payload| header_end < payload)
+        }) {
             return Some(GuidedInvokePrefix::NoMatch);
         }
-        if let Some(payload_at) = payload_at {
+        if let Some(payload_at) = self.guided_prefix_payload_at {
             // A bare DSML header has no closing quote or `>` before guided JSON.
             // Stop at the payload opener: the first quote in a JSON key is payload
             // data, not the header terminator.
@@ -504,6 +525,38 @@ mod tests {
             examined < value.len() * PARAMETER_END.len() * 2,
             "boundary examined {examined} bytes for a {}-byte value",
             value.len()
+        );
+    }
+
+    #[test]
+    fn guided_bare_header_scans_streamed_name_linearly() {
+        let mut boundary = DeepSeekV41InvocationBoundary::default();
+        let context = GuidedInvokePrefixContext {
+            outside_reasoning: true,
+            payload_is_empty: true,
+            followed_by_competing_marker: false,
+        };
+        let mut candidate = INVOKE_START.to_string();
+        assert_eq!(
+            boundary.guided_prefix_append(&candidate, INVOKE_START, context),
+            Some(GuidedInvokePrefix::Pending)
+        );
+        BOUNDARY_EXAMINED_BYTES.with(|examined| examined.set(0));
+
+        let name = "x".repeat(16 * 1024);
+        for byte in name.bytes() {
+            let append = std::str::from_utf8(std::slice::from_ref(&byte)).unwrap();
+            candidate.push_str(append);
+            assert_eq!(
+                boundary.guided_prefix_append(&candidate, append, context),
+                Some(GuidedInvokePrefix::Pending)
+            );
+        }
+        let examined = BOUNDARY_EXAMINED_BYTES.with(std::cell::Cell::get);
+        assert!(
+            examined < name.len() * 4,
+            "guided prefix examined {examined} bytes for a {}-byte name",
+            name.len()
         );
     }
 
