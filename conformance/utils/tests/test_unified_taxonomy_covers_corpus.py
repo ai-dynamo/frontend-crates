@@ -403,37 +403,23 @@ def test_deepseek_v41_guided_narration_uses_an_unfinished_dsml_invoke() -> None:
     assert "<think>I'll use <｜DSML｜ calls>" not in case["input"]
 
 
-def test_response_state_init_coverage_is_deliberate() -> None:
-    # These rows intentionally share output with their default-state peers: the
-    # serialized Response init is independently applied by the conformance harness.
-    scenarios = {
-        "prefilled_response_with_tool",
-        "prefilled_response_with_guided_json",
-        "prefilled_response_guided_json_two_calls",
+def test_response_state_uses_only_control_marker_contracts() -> None:
+    response_scenarios = {
         "prefilled_response_reasoning_markers_literal",
-        "prefilled_response_truncated",
-        "prefilled_response_guided_json_partial_calls",
+        "guided_json_quoted_bare_header_in_answer",
+        "guided_json_quoted_bare_tool_header_in_answer",
+        "guided_json_quoted_bare_header_after_payload",
     }
-    state_only_pairs = {
-        "prefilled_response_with_guided_json": "guided_json_required_tool",
-        "prefilled_response_guided_json_two_calls": "guided_json_two_calls",
-        "prefilled_response_guided_json_partial_calls": "guided_json_partial_calls",
-    }
-
     for family in FAMILIES:
         cases = build_cases(family)
-        for scenario in scenarios:
-            case = cases[f"UNIFIED.{scenario}.{family}"]
-            assert case["init"]["starting_state"] == "Response"
-
-        for response_scenario, default_scenario in state_only_pairs.items():
-            response = cases[f"UNIFIED.{response_scenario}.{family}"]
-            default = cases[f"UNIFIED.{default_scenario}.{family}"]
-            response_init = {**response["init"], "starting_state": "*"}
-            default_init = {**default["init"], "starting_state": "*"}
-            assert (response["input"], response_init, response["golden"], response["finish_reason"]) == (
-                default["input"], default_init, default["golden"], default["finish_reason"]
-            )
+        response_cases = {
+            case_id.split(".", 2)[1]: case
+            for case_id, case in cases.items()
+            if case["init"]["starting_state"] == "Response"
+        }
+        assert set(response_cases) == response_scenarios
+        marker = "<|message|>" if family == "muse_glimmer" else control_tokens(family)[0]
+        assert all(marker in case["input"] for case in response_cases.values())
 
 
 # --- scenario scope must be DECLARED, never inferred from a gap -----------------
@@ -561,13 +547,13 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
-            "deepseek_v4": 86,
-            "deepseek_v41": 83,
-            "gemma4": 88,
-            "kimi_k2": 86,
-            "kimi_k3": 94,
-            "muse_glimmer": 86,
-            "qwen3": 86,
+            "deepseek_v4": 81,
+            "deepseek_v41": 78,
+            "gemma4": 83,
+            "kimi_k2": 81,
+            "kimi_k3": 89,
+            "muse_glimmer": 81,
+            "qwen3": 81,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
     assert sum(per_family.values()) == sum(len(build_cases(f)) for f in FAMILIES)

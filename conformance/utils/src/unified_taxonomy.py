@@ -128,13 +128,8 @@ UNIFIED_TAX = {
     "prefilled_reasoning_then_text_then_tool": (40, "c"), "prefilled_reasoning_then_text": (40, "d"),
     # Group 41 — Prefilled reasoning, weird / malformed
     "prefilled_reasoning_redundant_opener": (41, "a"), "prefilled_reasoning_truncated": (41, "b"),
-    # Group 50 — Prefilled response, happy
-    "prefilled_response_with_tool": (50, "a"), "prefilled_response_with_guided_json": (50, "b"),
-    "prefilled_response_guided_json_two_calls": (50, "c"),
+    # Group 50 — Prefilled response
     "prefilled_response_reasoning_markers_literal": (50, "d"),
-    # Group 51 — Prefilled response, weird / malformed
-    "prefilled_response_truncated": (51, "a"),
-    "prefilled_response_guided_json_partial_calls": (51, "b"),
 }
 
 # Axis prefix makes each group's channel explicit: "TC" = tool-calling only (groups

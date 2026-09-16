@@ -1166,16 +1166,6 @@ EDGE = [
                     VLLM_UNCAPTURABLE["kimi_k3"], M),
      }),
 
-    ("prefilled_response_with_guided_json",
-     "Response channel is pre-filled (the prompt opened visible content), so the stream skips reasoning entirely and emits only tool calls as guided JSON. Same payload as 30.b under a different starting state; identical output, since Response only changes how reasoning markers are read and there are none.",
-     ["P5"],
-     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
-     {"starting_state": "Response", "tool_output_mode": "GuidedJson", "named_tool": None},
-     {"finish_reason": "stop"},
-     every_family(GUIDED_ONE_CALL,
-                  D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state or use guided JSON"),
-                  {"verdict": "match", "note": "Dynamo v2 unified parser with starting_state=Response and tool_output_mode=GuidedJson{named_tool=None}"})),
-
     ("prefilled_reasoning_with_guided_json",
      "Reasoning channel is pre-filled (policy P5), stream begins inside <think> with no opener, and the model emits tool calls as guided JSON.",
      ["P5"],
@@ -1186,32 +1176,6 @@ EDGE = [
      guided_surroundings(
          lambda fam: f"checking weather{control_tokens(fam)[1]}{GUIDED_ONE_CALL}",
          "Dynamo v2 unified parser with starting_state=Reasoning and tool_output_mode=GuidedJson{named_tool=None}")),
-
-    ("prefilled_response_with_tool",
-     "Response channel is pre-filled (the prompt opened visible content), so the stream skips reasoning entirely: the leading `output` is visible CONTENT with no opening marker, then a native-XML tool call. The leading text is generated output and must surface as a text event — routing it to reasoning is the regression, and it is what a reasoning-first split does when nothing told it the response channel was already open. Parses identically under starting_state=None (compare 8.a `text_before_tool`) — no reasoning markers here, so Response has nothing to suppress; 50.d is the case that isolates it.",
-     ["P5"],
-     [{"kind": "text", "text": "output"},
-      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
-     {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None},
-     {"finish_reason": "stop"},
-     {
-        "qwen3": ("output<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
-                  D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state; conformance captures default generation only"),
-                  {"verdict": "match", "note": "Dynamo v2 unified parser with starting_state=Response and tool_output_mode=Native"}),
-        "muse_glimmer": ("output<|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"city\">Paris</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|>",
-                         V_MUSE,
-                         {"verdict": "match", "note": "starting_state=Response opens the scanner in the to=user channel"}),
-        "gemma4": ("output<|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|>", M, M),
-        "kimi_k2": ("output<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>",
-                    M,
-                    D("MERGE", "the split path has no starting-state signal, so the leading visible `output` is swept into reasoning_content instead of surfacing as text")),
-        "kimi_k3": ("output" + k3_close("response")
-                    + r_tool("kimi_k3", "get_weather", "city", "Paris", 0),
-                    VLLM_UNCAPTURABLE["kimi_k3"], M),
-     }),
-
-
-
 
     ("prefilled_reasoning_redundant_opener",
      "Reasoning is pre-filled, and the backend ALSO re-emits the `<think>` opener the prompt already wrote. Exactly one such echo is consumed rather than leaked into reasoning_content; a second would be stray markup and stripped (I3). This is the only case where a prefilled stream legitimately carries an opener.",
@@ -1265,29 +1229,8 @@ EDGE = [
 
 
 
-    ("prefilled_response_guided_json_two_calls",
-     "Guided decoding with a required choice returns an ARRAY, so the multi-call shape is the array's normal case, not an edge one. Both calls must surface as separate ordered events with distinct indices — collapsing them, or emitting only the first, silently drops work the model asked for. Same array as 30.c under a different starting state; see 50.d for the case where Response actually changes the parse.",
-     ["P5"],
-     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
-      {"kind": "tool_call", "name": "run", "arguments": {"cmd": "git log"}}],
-     {"starting_state": "Response", "tool_output_mode": "GuidedJson", "named_tool": None},
-     {"finish_reason": "stop"},
-     every_family(GUIDED_TWO_CALLS,
-                  D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state or use guided JSON"),
-                  {"verdict": "match", "note": "two DIFFERENT tools in one array, ordered"})),
-
-    ("prefilled_response_guided_json_partial_calls",
-     "A guided array where ONE element is not a call (no `name`). The whole payload surfaces as text and NO call is dispatched — deliberately all-or-nothing, not best-effort per element. A tool call is a side effect, so extracting one from a document that failed validation is failing OPEN: the client would execute a call the parser could not fully verify. Text loses nothing, since the raw payload stays visible.",
-     ["P2"],
-     [{"kind": "text", "text": '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'}],
-     {"starting_state": "Response", "tool_output_mode": "GuidedJson", "named_tool": None},
-     {"finish_reason": "stop"},
-     every_family('[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]',
-                  D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state or use guided JSON"),
-                  {"verdict": "match", "note": "one invalid element voids the whole array; payload surfaces as text"})),
-
     ("prefilled_response_reasoning_markers_literal",
-     "The ONLY case where starting_state=Response is observable. Response says the prompt already opened VISIBLE content, so this stream has no reasoning channel at all and `<think>`/`</think>` are ordinary characters the model happened to write — they must reach the user as text, markers and all. Every other 50/51 case has no reasoning markers in its input and therefore parses identically under starting_state=None: 50.a matches 8.a, 50.b matches 30.b, 50.c matches 30.c, and 51.b matches 31-3. This one does not.",
+     "A prefilled-Response case where starting_state=Response is observable. Response says the prompt already opened visible content, so this stream has no reasoning channel at all and `<think>`/`</think>` are ordinary characters the model happened to write — they must reach the user as text, markers and all. Marker-free prefilled-Response variants parse identically under starting_state=None and are deliberately omitted. This one does not.",
      ["P5"],
      # The literal text is the family's OWN reasoning markers, so the golden is
      # filled per family (below) rather than hardcoding one grammar's.
@@ -1324,33 +1267,6 @@ EDGE = [
                     k3_channel("think", "literal") + " then a call"),
      }),
 
-    ("prefilled_response_truncated",
-     "The response channel is pre-filled and the token budget runs out mid tool call. Policy P2: the visible prose already emitted survives, the incomplete call is dropped, nothing leaks as text.",
-     ["P2"],
-     [{"kind": "text", "text": "Working on it... "}],
-     {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None},
-     {"finish_reason": "length"},
-     {
-        "gemma4": ("Working on it... <|tool_call>call:get_weather{city:<|\"|>Par",
-                   D("ERROR", "native Gemma4UnifiedParser finish() returns a hard Err on a partial call rather than recovering"),
-                   {"verdict": "match", "note": "P2: keep the leading visible prose, drop the partial call"}),
-        "muse_glimmer": ("Working on it... <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"city\">Par",
-                         V_MUSE,
-                         {"verdict": "match", "note": "P2: the leading visible prose survives, the partial call is dropped"}),
-        "qwen3": ("Working on it... <tool_call>\n<function=get_weather>\n<parameter=city>\nPar",
-                  {"verdict": "match", "note": "P2: keep leading prose and drop the unterminated call"},
-                  {"verdict": "match", "note": "P2: v2 keeps the leading prose and drops the partial call"}),
-        "kimi_k2": ("Working on it... <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Par",
-                    {"verdict": "match", "note": "P2: keep leading prose and drop the unterminated call"},
-                    {"verdict": "match", "note": "P2: v2 keeps the leading prose and drops the partial call"}),
-        "kimi_k3": ("Working on it... " + k3_close("response") + k3_tools(
-                        k3_call("get_weather", 1, k3_open(
-                            "argument", [("key", "city"), ("type", "string")]
-                        ) + "Par", close=False),
-                        close=False),
-                    VLLM_UNCAPTURABLE["kimi_k3"],
-                    {"verdict": "match", "note": "P2: keep visible K3 response prose and drop the partial call"}),
-     }),
 ]
 
 
@@ -1998,26 +1914,6 @@ def deepseek_v41_cases():
         [{"kind": "text", "text": "<think>literal</think> then a call"},
          {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
         "Response")
-    add("prefilled_response_with_tool", "Prefilled response preserves text before a DSML invocation.",
-        "output" + prefilled_call,
-        [{"kind": "text", "text": "output"}] + one,
-        "Response")
-    add("prefilled_response_with_guided_json", "Prefilled response accepts required guided JSON.",
-        GUIDED_ONE_CALL, one, "Response", "GuidedJson")
-    add("prefilled_response_guided_json_two_calls",
-        "Prefilled response preserves two required guided calls.",
-        GUIDED_TWO_CALLS,
-        one + [{"kind": "tool_call", "name": "run", "arguments": {"cmd": "git log"}}],
-        "Response", "GuidedJson")
-    add("prefilled_response_truncated", "Prefilled response keeps text before an incomplete DSML invocation.",
-        "Working on it... <｜DSML｜ calls><｜DSML｜ invoke name=\"get_weather\">"
-        "<｜DSML｜ parameter name=\"city\" string=\"true\">Par",
-        [{"kind": "text", "text": "Working on it... "}], "Response")
-    add("prefilled_response_guided_json_partial_calls",
-        "An invalid guided array remains visible text in a prefilled response.",
-        '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]',
-        [{"kind": "text", "text": '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'}],
-        "Response", "GuidedJson")
     add("guided_json_named_tool", "A named choice uses the shared guided decoder.",
         GUIDED_NAMED_ARGS, one, mode="GuidedJson", named="get_weather")
     add("guided_json_required_tool", "A required choice uses the shared guided decoder.",

@@ -123,10 +123,10 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 - **`12.d`** (`tool_in_reason_with_text`) 12.b WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 83 of the 96 taxonomy cases for this family.
-- Every taxonomy scenario declared for DeepSeek V4.1 is generated, except `40.a`, `40.c`, and `40.d`: each repeats an existing native Reasoning-to-call/text boundary with only different literal prose. The remaining 83 cases include `30.m`; `31-1` through `31-28`; all Response rows `50.a-d` and `51.a-b`; and `40.b` plus `41.a-b`.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 78 of the 91 taxonomy cases for this family.
+- Every taxonomy scenario declared for DeepSeek V4.1 is generated, except `40.a`, `40.c`, and `40.d`: each repeats an existing native Reasoning-to-call/text boundary with only different literal prose. The remaining 78 cases include `30.m`; `31-1` through `31-28`; the marker-discriminating Response row `50.d`; and `40.b` plus `41.a-b`.
 - The 13 intentional not-applicable cases are `k3-1` through `k3-8`, which require Kimi K3 XTML syntax; `g4-1` through `g4-2`, which require Gemma 4 guided call-prefix syntax; and the three redundant DeepSeek V4.1 rows above. These are grammar-specific cases or literal-only duplicates, not missing coverage.
-- In particular, `30.m` uses a valid DSML tool name followed by an intentionally missing header terminator; the later `>` in its JSON string argument must remain payload data. `31-8` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener. The no-marker Response rows remain: they exercise Response initialization across native and guided valid, multi-call, truncated, and malformed inputs, while `50.d` directly proves that Response treats reasoning markers as visible text.
+- In particular, `30.m` uses a valid DSML tool name followed by an intentionally missing header terminator; the later `>` in its JSON string argument must remain payload data. `31-8` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener. Marker-free prefilled-Response rows are omitted because their default-state siblings already cover native and guided valid, multi-call, truncated, and malformed inputs; `50.d` proves that Response treats reasoning markers as visible text.
 
 ## End-to-end test cases (`End-to-end:` tags)
 
@@ -298,15 +298,10 @@ Groups 1–12 vary the model OUTPUT. Groups 30+ vary the request: the resolved `
 - **`41.a`** (`prefilled_reasoning_redundant_opener`) The backend re-emits the `<think>` the prompt already wrote. Exactly one echo is consumed, not leaked; a second would be stray markup and stripped (I3). The only case where a prefilled stream legitimately carries an opener.
 - **`41.b`** (`prefilled_reasoning_truncated`) Budget runs out mid-call. Keep the completed reasoning, drop the partial call (P2).
 
-### Group 50 — Prefilled response, happy
-- **`50.a`** (`prefilled_response_with_tool`) Leading visible content, then a native call.
-- **`50.b`** (`prefilled_response_with_guided_json`) Guided payload with the response channel already open.
-- **`50.c`** (`prefilled_response_guided_json_two_calls`) Two different tools; enters guided mode visible-only rather than outside-reasoning.
-- **`50.d`** (`prefilled_response_reasoning_markers_literal`) `<think>literal</think>` must reach the user as TEXT, markers and all, because this stream has no reasoning channel. It is the direct visible-marker regression; `50.a-c` and `51.a-b` separately exercise Response initialization across native and guided request modes.
+### Group 50 — Prefilled response
+- **`50.d`** (`prefilled_response_reasoning_markers_literal`) `<think>literal</think>` must reach the user as TEXT, markers and all, because this stream has no reasoning channel. It is the direct visible-marker regression.
 
-### Group 51 — Prefilled response, malformed
-- **`51.a`** (`prefilled_response_truncated`) Budget runs out mid-call; the prose already emitted survives.
-- **`51.b`** (`prefilled_response_guided_json_partial_calls`) All-or-nothing, as `31-3`, with the response channel prefilled.
+The marker-free prefilled-Response variants were removed because they emitted the same observable result as their default-state peers. `50.d` is the prefilled-Response boundary; the native, guided, multi-call, and malformed payload contracts remain covered by groups 8, 30, and 31.
 
 ## Authoring a case: what to check BEFORE adding one
 
@@ -316,7 +311,7 @@ Every rule here exists because a case was added that could not fail for the reas
 2. **Can it fail for the stated reason?** Write down what would have to break for the case to go red, then confirm the parser can even SEE that input. `finish_reason` cannot: `finish()` takes no argument, in Dynamo and in vLLM alike, so a case that varies only the finish reason varies nothing. If the axis is invisible to the parser, express it as an input shape instead — `length` becomes a TRUNCATED input, which is observable.
 3. **Does the field already exist under another name?** A per-case `input_mode` was added that was a 1:1 alias of `init.starting_state` across every row, and could not diverge, because "where the stream starts" IS what the starting state encodes. Grep the case dict before adding a key.
 4. **Measure the behavior, do not predict it.** Author the case, run the harness, read what the parser actually emitted, and THEN write the golden and the description around it. The all-or-nothing array semantics were found this way; predicting them would have produced a wrong golden that looked authoritative.
-5. **A near-duplicate that survives must say what it duplicates.** If a case is kept because it exercises a different code path despite the same shape, name the sibling in its description (`50.b` says it matches `30.b`), so the next reader does not re-derive the question.
+5. **A near-duplicate that survives must name its distinguishing stimulus.** If a case keeps a different request state or mode, say which input bytes make that configuration change the parser's decision, and name the default-state sibling it contrasts with. A serialized `init` value that the input cannot exercise is not a retained contract.
 6. **The input must be a shape the declared `init` can actually produce.** Six guided-decoding scenarios rendered NATIVE model markup for gemma4 and kimi_k2 while declaring `tool_output_mode=GuidedJson` — a mode that constrains the model to bare JSON, so that markup is the one input it can never emit. They rendered green for a year because neither family had a unified parser to run them; the moment gemma4 got one, all six failed. Guided payloads are grammar-independent and are now written ONCE for every family (`every_family` in `gen_unified_golden.py`); only the reasoning envelope around them is per family.
 7. **A per-family golden needs a per-family fill, not one family's bytes.** `50.d` asserts that the model's own reasoning markers reach the user as literal TEXT, and its golden hardcoded qwen3's `<think>literal</think>` for all three families. Use the `None`-placeholder fill (as `12.a` does for an argument value) so the scenario stays shared and only the grammar-specific bytes differ.
 
