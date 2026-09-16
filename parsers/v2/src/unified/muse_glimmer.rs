@@ -57,10 +57,7 @@ fn guided_invoke_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
             GuidedPrefix::NoMatch
         };
     };
-    if context.followed_by_competing_marker
-        || !context.outside_reasoning
-        || !context.payload_is_empty
-    {
+    if context.followed_by_competing_marker || !context.outside_reasoning {
         return GuidedPrefix::Strip(INVOKE_START.len());
     }
     if after_prefix.starts_with(['{', '[']) {
@@ -99,10 +96,7 @@ impl GuidedPrefixScanner for MuseGuidedPrefix {
         let Some(after_prefix) = candidate.strip_prefix(INVOKE_START) else {
             return guided_invoke_prefix(context);
         };
-        if context.followed_by_competing_marker
-            || !context.outside_reasoning
-            || !context.payload_is_empty
-        {
+        if context.followed_by_competing_marker || !context.outside_reasoning {
             return GuidedPrefix::Strip(INVOKE_START.len());
         }
         if after_prefix.starts_with(['{', '[']) {
@@ -296,6 +290,35 @@ mod tests {
                  </atem:invoke>\n</atem:function_calls>"
             ),
         )
+    }
+
+    #[test]
+    fn malformed_guided_invoke_header_recovers_as_text_at_every_split() {
+        let input = concat!(
+            "Hello <atem:invoke name=\"get_weather\"",
+            r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#,
+        );
+        let want = vec![
+            text("Hello "),
+            call("get_weather", serde_json::json!({"city": "Paris"})),
+        ];
+        for split in 0..=input.len() {
+            if !input.is_char_boundary(split) {
+                continue;
+            }
+            let mut parser = muse_glimmer_unified(&tools());
+            parser
+                .initialize_request(UnifiedParserInit {
+                    tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                    invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                    ..UnifiedParserInit::default()
+                })
+                .expect("initialize");
+            let mut events = parser.push(&input[..split]).expect("push prefix");
+            events.extend(parser.push(&input[split..]).expect("push suffix"));
+            events.extend(parser.finish().expect("finish").events);
+            assert_eq!(assemble(&events), want, "split at byte {split}");
+        }
     }
 
     // ── Ported from the v1 reasoning parser ───────────────────────────────────

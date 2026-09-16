@@ -83,6 +83,7 @@ struct DsmlInvokeBoundary {
     unterminated_parameter_block_end: Option<usize>,
     guided_prefix_scanned: usize,
     guided_prefix_name_closed: bool,
+    guided_prefix_rejected: bool,
 }
 
 enum DsmlLexMode {
@@ -122,6 +123,9 @@ impl InvokeBoundary for DsmlInvokeBoundary {
         _append: &str,
         context: GuidedInvokePrefixContext,
     ) -> Option<GuidedInvokePrefix> {
+        if self.guided_prefix_rejected {
+            return Some(GuidedInvokePrefix::NoMatch);
+        }
         if self.guided_prefix_scanned == 0 {
             if !candidate.starts_with(INVOKE_START_PREFIX) {
                 return Some(GuidedInvokePrefix::NoMatch);
@@ -134,7 +138,7 @@ impl InvokeBoundary for DsmlInvokeBoundary {
             count_boundary_bytes(ch.len_utf8());
             if !self.guided_prefix_name_closed {
                 if matches!(ch, '{' | '[') {
-                    return Some(if context.outside_reasoning && context.payload_is_empty {
+                    return Some(if context.outside_reasoning {
                         GuidedInvokePrefix::Match(INVOKE_START_PREFIX.len())
                     } else {
                         GuidedInvokePrefix::Strip(INVOKE_START_PREFIX.len())
@@ -149,13 +153,14 @@ impl InvokeBoundary for DsmlInvokeBoundary {
             }
             if matches!(ch, '{' | '[') {
                 let prefix_len = self.guided_prefix_scanned;
-                return Some(if context.outside_reasoning && context.payload_is_empty {
+                return Some(if context.outside_reasoning {
                     GuidedInvokePrefix::Match(prefix_len)
                 } else {
                     GuidedInvokePrefix::Strip(prefix_len)
                 });
             }
             if ch == '>' {
+                self.guided_prefix_rejected = true;
                 return Some(GuidedInvokePrefix::NoMatch);
             }
             if context.followed_by_competing_marker || ch == '<' {

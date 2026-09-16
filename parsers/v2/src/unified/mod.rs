@@ -2823,6 +2823,15 @@ impl GuidedState {
         self.invoke_prefix_candidate.reset();
     }
 
+    /// A drained prose prefix can leave an invocation candidate at the start of
+    /// `input`. Its append state still describes those retained bytes, so clear it
+    /// only after the candidate itself was consumed.
+    fn reset_invoke_candidate_if_input_empty(&mut self) {
+        if self.input.is_empty() {
+            self.reset_invoke_candidate();
+        }
+    }
+
     fn reset_guided_prefix_candidate(&mut self) {
         if let Some(prefix) = self.guided_prefix.as_mut() {
             prefix.reset();
@@ -2893,12 +2902,12 @@ impl GuidedState {
         flush: bool,
     ) -> Option<(usize, usize)> {
         let guided_prefix_at_payload_boundary =
-            self.mode == GuidedMode::OutsideReasoning && self.json.trim().is_empty();
+            self.mode == GuidedMode::OutsideReasoning && !json_payload_started(&self.json);
         if !self.invoke_prefix_candidate.is_empty() {
             let after_start = haystack.get(self.grammar.invoke_start.len()..);
             let context = GuidedInvokePrefixContext {
                 outside_reasoning: self.mode == GuidedMode::OutsideReasoning,
-                payload_is_empty: self.json.trim().is_empty(),
+                payload_is_empty: !json_payload_started(&self.json),
                 followed_by_competing_marker: after_start.is_some_and(|after_start| {
                     competing
                         .iter()
@@ -3002,7 +3011,11 @@ impl GuidedState {
                         .map(|policy| policy(prefix_context))
                 });
             if boundary_prefix == Some(GuidedInvokePrefix::NoMatch) {
-                self.reset_invoke_candidate();
+                // A completed native header is not a guided prefix, but its
+                // append-aware native scan can still be waiting for a terminator.
+                // Resetting the shared boundary here made that decision disappear
+                // on the next chunk and let malformed DSML header bytes leak.
+                self.invoke_prefix_candidate.reset();
             } else if stateful_prefix == Some(GuidedPrefix::NoMatch) {
                 self.reset_guided_prefix_candidate();
             }
@@ -3641,7 +3654,7 @@ impl GuidedState {
                             self.json.push_str(&self.input[..visible_len]);
                         }
                         self.input.drain(..visible_len);
-                        self.reset_invoke_candidate();
+                        self.reset_invoke_candidate_if_input_empty();
                         // Latch onto the payload only once it actually LOOKS like
                         // one. Guided decoding constrains the call to bare JSON, so a
                         // run that has not opened a value is prose, and a thought may
@@ -3750,6 +3763,17 @@ impl GuidedState {
                         flush,
                     );
                     self.input = input;
+                    // A native envelope that is still waiting for its own end owns
+                    // any repeated reasoning opener inside it. Treating that opener
+                    // as a stray reset the envelope between chunks, so the next
+                    // append released its raw header as reasoning instead of taking
+                    // the same EOF recovery path as a whole input. The native scan is
+                    // advanced above, so decide this only after it has seen the chunk.
+                    let reopen = if self.invoke_candidate.is_empty() {
+                        reopen
+                    } else {
+                        None
+                    };
                     let interrupt = marker
                         .into_iter()
                         .chain(
@@ -3878,7 +3902,7 @@ impl GuidedState {
                     if reasoning_len > 0 {
                         push_run(&mut output, Kind::Reasoning, &self.input[..reasoning_len]);
                         self.input.drain(..reasoning_len);
-                        self.reset_invoke_candidate();
+                        self.reset_invoke_candidate_if_input_empty();
                     }
                     break;
                 }

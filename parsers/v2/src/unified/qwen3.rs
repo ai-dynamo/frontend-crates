@@ -67,11 +67,24 @@ fn guided_function_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
         .map(|end| "<function=".len() + end + "</function>".len())
         .or(header_len)
         .unwrap_or("<function=".len());
-    if context.followed_by_competing_marker
-        || !context.outside_reasoning
-        || !context.payload_is_empty
-    {
+    if context.followed_by_competing_marker {
         return GuidedPrefix::Strip(strip_len);
+    }
+    if header_len.is_some_and(|header_len| {
+        let after_header = &suffix[header_len..];
+        !after_header.is_empty() && "</function>".starts_with(after_header)
+    }) {
+        return GuidedPrefix::Pending;
+    }
+    if !context.outside_reasoning {
+        return header_len
+            .or_else(|| {
+                after_prefix
+                    .find("</function>")
+                    .map(|end| "<function=".len() + end + "</function>".len())
+            })
+            .map(GuidedPrefix::Strip)
+            .unwrap_or(GuidedPrefix::Pending);
     }
     if after_prefix.starts_with('>') {
         return GuidedPrefix::Strip(header_len.expect("empty Qwen function header"));
@@ -173,11 +186,23 @@ impl GuidedPrefixScanner for QwenGuidedPrefix {
             .map(|end| PREFIX.len() + end + CLOSE.len())
             .or(header_len)
             .unwrap_or(PREFIX.len());
-        if context.followed_by_competing_marker
-            || !context.outside_reasoning
-            || !context.payload_is_empty
-        {
+        if context.followed_by_competing_marker {
             return GuidedPrefix::Strip(strip_len);
+        }
+        if !context.outside_reasoning {
+            if self.header_end.is_some_and(|header_end| {
+                let after_header = &after_prefix[header_end + 1..];
+                !after_header.is_empty() && CLOSE.starts_with(after_header)
+            }) {
+                return GuidedPrefix::Pending;
+            }
+            return self
+                .close_at
+                .filter(|end| self.payload_at.is_none_or(|payload| *end < payload))
+                .map(|end| PREFIX.len() + end + CLOSE.len())
+                .or(header_len)
+                .map(GuidedPrefix::Strip)
+                .unwrap_or(GuidedPrefix::Pending);
         }
         if after_prefix.starts_with('>') {
             return GuidedPrefix::Strip(header_len.expect("empty Qwen function header"));
@@ -326,6 +351,29 @@ mod tests {
         UnifiedEvent::ToolCall {
             name: name.into(),
             arguments,
+        }
+    }
+
+    #[test]
+    fn guided_reasoning_with_an_empty_native_function_header_is_split_invariant() {
+        let input = concat!(
+            "<think>x <function=get_weather></function>",
+            r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]</think>"#,
+        );
+        let want = vec![
+            reasoning("x "),
+            call("get_weather", serde_json::json!({"city": "Paris"})),
+        ];
+        for (split, got) in configured_events_at_every_split_with_mode(
+            &weather_tools(),
+            UnifiedParserStartingState::None,
+            None,
+            input,
+        )
+        .into_iter()
+        .enumerate()
+        {
+            assert_eq!(got, want, "split at byte {split}");
         }
     }
 
