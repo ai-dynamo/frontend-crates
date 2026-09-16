@@ -127,7 +127,14 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
         if !context.outside_reasoning || context.followed_by_competing_marker {
             return Some(GuidedInvokePrefix::Strip(INVOKE_START.len()));
         }
-        if let Some(payload_at) = header.find(['{', '[']) {
+        let payload_at = header.find(['{', '[']);
+        if header
+            .find('>')
+            .is_some_and(|header_end| payload_at.is_none_or(|payload| header_end < payload))
+        {
+            return Some(GuidedInvokePrefix::NoMatch);
+        }
+        if let Some(payload_at) = payload_at {
             // A bare DSML header has no closing quote or `>` before guided JSON.
             // Stop at the payload opener: the first quote in a JSON key is payload
             // data, not the header terminator.
@@ -136,9 +143,6 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
             } else {
                 GuidedInvokePrefix::Strip(INVOKE_START.len() + payload_at)
             });
-        }
-        if header.contains('>') {
-            return Some(GuidedInvokePrefix::NoMatch);
         }
         Some(GuidedInvokePrefix::Pending)
     }
@@ -596,6 +600,7 @@ mod tests {
                 }],
             );
         }
+        assert_every_split_with_init(&format!("{INVOKE_START}>{payload}"), init.clone(), vec![]);
         assert_every_split_with_init(
             &format!("{INVOKE_START}<think>secret</think>{payload}"),
             init.clone(),
