@@ -405,7 +405,6 @@ def guided_invoke_prefix(fam):
 
 
 def guided_named_invoke_prefix(fam):
-    """A valid tool name before the intentionally missing header terminator."""
     return {
         "deepseek_v4": '<｜DSML｜invoke name="get_weather"',
         "deepseek_v41": '<｜DSML｜ invoke name="get_weather"',
@@ -1859,8 +1858,6 @@ DEEPSEEK_V41_REDUNDANT_SCENARIOS = {
     "prefilled_reasoning_then_text": "reason_then_content",
 }
 
-# DeepSeek V4.1 follows the corpus's declared family scopes. Its only additional
-# exclusions are rows that repeat an existing boundary with the same request mode.
 DEEPSEEK_V41_SCENARIOS = {
     spec[0]
     for spec in (*CLEAN, *EDGE)

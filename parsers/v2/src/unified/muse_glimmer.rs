@@ -45,7 +45,6 @@ use crate::unified::{
     UnifiedParserStartingState,
 };
 
-/// The full bare invoke header that guided recovery strips as framing.
 const INVOKE_START: &str = "<atem:invoke name=\"";
 const INVOKE_END: &str = "</atem:invoke>";
 

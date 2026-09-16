@@ -403,7 +403,9 @@ def test_deepseek_v41_guided_narration_uses_an_unfinished_dsml_invoke() -> None:
     assert "<think>I'll use <｜DSML｜ calls>" not in case["input"]
 
 
-def test_response_state_cross_product_is_deliberate() -> None:
+def test_response_state_init_coverage_is_deliberate() -> None:
+    # These rows intentionally share output with their default-state peers: the
+    # serialized Response init is independently applied by the conformance harness.
     scenarios = {
         "prefilled_response_with_tool",
         "prefilled_response_with_guided_json",
