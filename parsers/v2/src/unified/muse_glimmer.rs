@@ -40,9 +40,9 @@ use crate::tool_calling::muse_glimmer::{
 };
 use crate::tool_calling::traits::{Result, Tool};
 use crate::unified::{
-    GuidedChannel, GuidedGrammar, GuidedPrefix, GuidedPrefixContext, GuidedReasoning, GuidedRouted,
-    NativeUnified, UnifiedParser, UnifiedParserEvent, UnifiedParserOutput,
-    UnifiedParserStartingState,
+    GuidedChannel, GuidedGrammar, GuidedPrefix, GuidedPrefixContext, GuidedPrefixFactory,
+    GuidedPrefixScanner, GuidedReasoning, GuidedRouted, NativeUnified, UnifiedParser,
+    UnifiedParserEvent, UnifiedParserOutput, UnifiedParserStartingState, count_guided_prefix_bytes,
 };
 
 const INVOKE_START: &str = "<atem:invoke name=\"";
@@ -76,6 +76,61 @@ fn guided_invoke_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
         None => GuidedPrefix::Pending,
         Some(b'{') | Some(b'[') => GuidedPrefix::Match,
         Some(_) => GuidedPrefix::NoMatch,
+    }
+}
+
+#[derive(Default)]
+struct MuseGuidedPrefix {
+    scan_from: usize,
+    name_end: Option<usize>,
+}
+
+fn muse_guided_prefix() -> Box<dyn GuidedPrefixScanner> {
+    Box::new(MuseGuidedPrefix::default())
+}
+
+impl GuidedPrefixScanner for MuseGuidedPrefix {
+    fn append(
+        &mut self,
+        candidate: &str,
+        append: &str,
+        context: GuidedPrefixContext<'_>,
+    ) -> GuidedPrefix {
+        let Some(after_prefix) = candidate.strip_prefix(INVOKE_START) else {
+            return guided_invoke_prefix(context);
+        };
+        if context.followed_by_competing_marker
+            || !context.outside_reasoning
+            || !context.payload_is_empty
+        {
+            return GuidedPrefix::Strip(INVOKE_START.len());
+        }
+        if after_prefix.starts_with(['{', '[']) {
+            return GuidedPrefix::Match;
+        }
+        if self.name_end.is_none() {
+            let append_start = candidate.len() - append.len();
+            let scan_from = self
+                .scan_from
+                .max(append_start.saturating_sub(INVOKE_START.len()));
+            let scanned = &after_prefix[scan_from..];
+            count_guided_prefix_bytes(scanned.len());
+            self.name_end = scanned.find('"').map(|at| scan_from + at);
+            self.scan_from = after_prefix.len();
+        }
+        match self.name_end {
+            None => GuidedPrefix::Pending,
+            Some(0) => GuidedPrefix::NoMatch,
+            Some(at) => match after_prefix.as_bytes()[at + 1..].first() {
+                None => GuidedPrefix::Pending,
+                Some(b'{') | Some(b'[') => GuidedPrefix::Match,
+                Some(_) => GuidedPrefix::NoMatch,
+            },
+        }
+    }
+
+    fn reset(&mut self) {
+        *self = Self::default();
     }
 }
 
@@ -118,6 +173,7 @@ impl NativeUnified for MuseChannelScanner {
             // kind gemma4's value wrapping needs.
             invoke_boundary_factory: None,
             guided_prefix_policy: Some(guided_invoke_prefix),
+            guided_prefix_factory: Some(muse_guided_prefix as GuidedPrefixFactory),
         }
     }
 
@@ -178,7 +234,8 @@ mod tests {
     use super::*;
     use crate::unified::{
         InvalidGuidedPayloadPolicy, UnifiedEvent, UnifiedParserExt, UnifiedParserInit,
-        UnifiedToolOutputMode, assemble,
+        UnifiedToolOutputMode, assemble, guided_prefix_examined_bytes,
+        reset_guided_prefix_examined_bytes,
     };
 
     /// The conformance harness vocabulary, so a unit test and a golden case can
@@ -266,6 +323,37 @@ mod tests {
             "<|start|>assistant to=user<|message|>done<|eot|>",
         ]);
         assert_eq!(out, vec![reasoning("first\nsecond"), text("done")]);
+    }
+
+    /// A conformance event cannot expose retained-scan work, so this drives the production path byte by byte.
+    #[test]
+    fn guided_bare_invoke_header_scans_each_name_byte_once() {
+        let input = format!("{INVOKE_START}{}", "a".repeat(4096));
+        let mut parser = muse_glimmer_unified(&tools());
+        parser
+            .initialize_request(UnifiedParserInit {
+                prompt_token_ids: Vec::new(),
+                starting_state: UnifiedParserStartingState::None,
+                tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+            })
+            .expect("initialize");
+        reset_guided_prefix_examined_bytes();
+        for byte in input.bytes() {
+            parser
+                .push(std::str::from_utf8(std::slice::from_ref(&byte)).expect("ASCII input"))
+                .expect("push");
+        }
+        let examined = guided_prefix_examined_bytes();
+        assert!(
+            examined > input.len() / 2,
+            "the guided prefix was not exercised"
+        );
+        assert!(
+            examined <= input.len() * 2,
+            "guided prefix examined {examined} bytes for a {}-byte one-byte stream",
+            input.len()
+        );
     }
 
     #[test]

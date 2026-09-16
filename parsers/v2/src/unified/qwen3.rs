@@ -33,7 +33,8 @@ use crate::tool_calling::qwen3_coder::qwen3_scanner;
 use crate::tool_calling::scan::ReasoningSpec;
 use crate::tool_calling::traits::Tool;
 use crate::unified::{
-    GuidedPrefix, GuidedPrefixContext, GuidedRouted, ScannerUnified, UnifiedParser,
+    GuidedPrefix, GuidedPrefixContext, GuidedPrefixScanner, GuidedRouted, ScannerUnified,
+    UnifiedParser, count_guided_prefix_bytes,
 };
 
 const REASONING_START: &str = "<think>";
@@ -87,6 +88,114 @@ fn guided_function_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
     }
 }
 
+struct QwenGuidedPrefix {
+    scan_from: usize,
+    name_end: Option<usize>,
+    payload_at: Option<usize>,
+    header_end: Option<usize>,
+    header_name_valid: bool,
+    close_at: Option<usize>,
+    close_scan_from: usize,
+}
+
+impl Default for QwenGuidedPrefix {
+    fn default() -> Self {
+        Self {
+            scan_from: 0,
+            name_end: None,
+            payload_at: None,
+            header_end: None,
+            header_name_valid: true,
+            close_at: None,
+            close_scan_from: 0,
+        }
+    }
+}
+
+fn qwen_guided_prefix() -> Box<dyn GuidedPrefixScanner> {
+    Box::new(QwenGuidedPrefix::default())
+}
+
+impl GuidedPrefixScanner for QwenGuidedPrefix {
+    fn append(
+        &mut self,
+        candidate: &str,
+        append: &str,
+        context: GuidedPrefixContext<'_>,
+    ) -> GuidedPrefix {
+        const PREFIX: &str = "<function=";
+        const CLOSE: &str = "</function>";
+        let Some(after_prefix) = candidate.strip_prefix(PREFIX) else {
+            return guided_function_prefix(context);
+        };
+        let append_start = candidate.len() - append.len();
+        let append_after_prefix = append_start.saturating_sub(PREFIX.len());
+        if self.close_at.is_none() {
+            let scan_from = self
+                .close_scan_from
+                .max(append_after_prefix.saturating_sub(CLOSE.len() - 1));
+            let scanned = &after_prefix[scan_from..];
+            count_guided_prefix_bytes(scanned.len());
+            self.close_at = scanned.find(CLOSE).map(|at| scan_from + at);
+            self.close_scan_from = after_prefix.len().saturating_sub(CLOSE.len() - 1);
+        }
+        if self.header_end.is_none() || self.name_end.is_none() || self.payload_at.is_none() {
+            let scan_from = self.scan_from.max(append_after_prefix);
+            let scanned = &after_prefix[scan_from..];
+            count_guided_prefix_bytes(scanned.len());
+            for (relative, ch) in scanned.char_indices() {
+                let at = scan_from + relative;
+                if self.payload_at.is_none() && matches!(ch, '{' | '[') {
+                    self.payload_at = Some(at);
+                }
+                if self.name_end.is_none()
+                    && (!ch.is_ascii_alphanumeric() && !matches!(ch, '_' | '-'))
+                {
+                    self.name_end = Some(at);
+                }
+                if self.header_end.is_none() {
+                    if ch == '>' {
+                        self.header_end = Some(at);
+                    } else if !ch.is_ascii_alphanumeric() && !matches!(ch, '_' | '-') {
+                        self.header_name_valid = false;
+                    }
+                }
+            }
+            self.scan_from = after_prefix.len();
+        }
+        let header_len = self
+            .header_end
+            .filter(|_| self.header_name_valid)
+            .map(|at| PREFIX.len() + at + 1);
+        let strip_len = self
+            .close_at
+            .filter(|end| self.payload_at.is_none_or(|payload| *end < payload))
+            .map(|end| PREFIX.len() + end + CLOSE.len())
+            .or(header_len)
+            .unwrap_or(PREFIX.len());
+        if context.followed_by_competing_marker
+            || !context.outside_reasoning
+            || !context.payload_is_empty
+        {
+            return GuidedPrefix::Strip(strip_len);
+        }
+        if after_prefix.starts_with('>') {
+            return GuidedPrefix::Strip(header_len.expect("empty Qwen function header"));
+        }
+        match self.name_end {
+            None => GuidedPrefix::Pending,
+            Some(at) if at > 0 && matches!(after_prefix.as_bytes()[at], b'{' | b'[') => {
+                GuidedPrefix::Match
+            }
+            Some(_) => GuidedPrefix::NoMatch,
+        }
+    }
+
+    fn reset(&mut self) {
+        *self = Self::default();
+    }
+}
+
 /// Build the Qwen3 unified parser for one stream.
 pub(crate) fn qwen3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
     Box::new(GuidedRouted::new(
@@ -100,7 +209,7 @@ pub(crate) fn qwen3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
             preserve_special_tokens: false,
             ..Default::default()
         }))
-        .with_guided_prefix_policy(guided_function_prefix),
+        .with_guided_prefix_policy(guided_function_prefix, qwen_guided_prefix),
     ))
 }
 
@@ -110,6 +219,7 @@ mod tests {
     use crate::unified::{
         InvalidGuidedPayloadPolicy, UnifiedEvent, UnifiedParserEvent, UnifiedParserExt,
         UnifiedParserInit, UnifiedParserStartingState, UnifiedToolOutputMode, assemble,
+        guided_prefix_examined_bytes, reset_guided_prefix_examined_bytes,
     };
 
     fn weather_tools() -> Vec<Tool> {
@@ -1744,6 +1854,36 @@ mod tests {
             got,
             vec![call("get_weather", serde_json::json!({"city": "Paris"}))],
             "bare opener swallowed the payload: {got:?}"
+        );
+    }
+
+    /// A conformance event cannot expose retained-scan work, so this drives the production path byte by byte.
+    #[test]
+    fn guided_bare_function_header_scans_each_name_byte_once() {
+        let input = format!("<function={}", "a".repeat(4096));
+        let mut parser = qwen3_unified(&weather_tools());
+        parser
+            .initialize_request(UnifiedParserInit {
+                tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                ..UnifiedParserInit::default()
+            })
+            .expect("initialize");
+        reset_guided_prefix_examined_bytes();
+        for byte in input.bytes() {
+            parser
+                .push(std::str::from_utf8(std::slice::from_ref(&byte)).expect("ASCII input"))
+                .expect("push");
+        }
+        let examined = guided_prefix_examined_bytes();
+        assert!(
+            examined > input.len() / 2,
+            "the guided prefix was not exercised"
+        );
+        assert!(
+            examined <= input.len() * 13,
+            "guided prefix examined {examined} bytes for a {}-byte one-byte stream",
+            input.len()
         );
     }
 

@@ -44,7 +44,8 @@ use crate::tool_calling::gemma4::{gemma4_scanner, is_gemma_call_prefix_boundary}
 use crate::tool_calling::scan::ReasoningSpec;
 use crate::tool_calling::traits::Tool;
 use crate::unified::{
-    GuidedPrefix, GuidedPrefixContext, GuidedRouted, ScannerUnified, UnifiedParser,
+    GuidedPrefix, GuidedPrefixContext, GuidedPrefixScanner, GuidedRouted, ScannerUnified,
+    UnifiedParser, count_guided_prefix_bytes,
 };
 
 const REASONING_START: &str = "<|channel>";
@@ -101,6 +102,74 @@ fn guided_call_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
     }
 }
 
+#[derive(Default)]
+struct GemmaGuidedPrefix {
+    scan_from: usize,
+    name_end: Option<usize>,
+}
+
+fn gemma_guided_prefix() -> Box<dyn GuidedPrefixScanner> {
+    Box::new(GemmaGuidedPrefix::default())
+}
+
+impl GuidedPrefixScanner for GemmaGuidedPrefix {
+    fn append(
+        &mut self,
+        candidate: &str,
+        append: &str,
+        context: GuidedPrefixContext<'_>,
+    ) -> GuidedPrefix {
+        if !is_gemma_call_prefix_boundary(context.text, context.at) {
+            return GuidedPrefix::NoMatch;
+        }
+        let Some(after_prefix) = candidate.strip_prefix("call:") else {
+            return guided_call_prefix(context);
+        };
+        if context.followed_by_competing_marker {
+            return GuidedPrefix::Strip("call:".len());
+        }
+        if !context.outside_reasoning
+            && after_prefix
+                .chars()
+                .next()
+                .is_some_and(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
+        {
+            return GuidedPrefix::Strip("call:".len());
+        }
+        if !context.outside_reasoning
+            || !context.payload_is_empty
+            || !context.text[..context.at].trim().is_empty()
+        {
+            return GuidedPrefix::NoMatch;
+        }
+        if after_prefix.starts_with(['{', '[']) {
+            return GuidedPrefix::Match;
+        }
+        if self.name_end.is_none() {
+            let append_start = candidate.len() - append.len();
+            let scan_from = self
+                .scan_from
+                .max(append_start.saturating_sub("call:".len()));
+            let scanned = &after_prefix[scan_from..];
+            count_guided_prefix_bytes(scanned.len());
+            self.name_end = scanned.char_indices().find_map(|(at, ch)| {
+                (!ch.is_ascii_alphanumeric() && !matches!(ch, '_' | '-' | '.'))
+                    .then_some(scan_from + at)
+            });
+            self.scan_from = after_prefix.len();
+        }
+        match self.name_end {
+            None => GuidedPrefix::Pending,
+            Some(at) if at > 0 && after_prefix.as_bytes()[at] == b'[' => GuidedPrefix::Match,
+            Some(_) => GuidedPrefix::NoMatch,
+        }
+    }
+
+    fn reset(&mut self) {
+        *self = Self::default();
+    }
+}
+
 /// Build the Gemma 4 unified parser for one stream.
 pub(crate) fn gemma4_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
     // `preserve_special_tokens` must match the TOOL-ONLY parser for this same
@@ -117,7 +186,7 @@ pub(crate) fn gemma4_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
             forced_start: false,
             preserve_special_tokens: true,
         }))
-        .with_guided_prefix_policy(guided_call_prefix),
+        .with_guided_prefix_policy(guided_call_prefix, gemma_guided_prefix),
     ))
 }
 
@@ -130,7 +199,8 @@ mod tests {
     use crate::tool_calling::traits::ToolParser;
     use crate::unified::{
         InvalidGuidedPayloadPolicy, UnifiedEvent, UnifiedParserExt, UnifiedParserInit,
-        UnifiedParserStartingState, UnifiedToolOutputMode, assemble,
+        UnifiedParserStartingState, UnifiedToolOutputMode, assemble, guided_prefix_examined_bytes,
+        reset_guided_prefix_examined_bytes,
     };
 
     fn weather_tools() -> Vec<Tool> {
@@ -258,6 +328,36 @@ mod tests {
                 input.len()
             );
         }
+    }
+
+    /// A conformance event cannot expose retained-scan work, so this drives the production path byte by byte.
+    #[test]
+    fn guided_bare_call_header_scans_each_name_byte_once() {
+        let input = format!("<|tool_call>call:{}[", "a".repeat(4096));
+        let mut parser = gemma4_unified(&weather_tools());
+        parser
+            .initialize_request(UnifiedParserInit {
+                tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                ..UnifiedParserInit::default()
+            })
+            .expect("initialize");
+        reset_guided_prefix_examined_bytes();
+        for byte in input.bytes() {
+            parser
+                .push(std::str::from_utf8(std::slice::from_ref(&byte)).expect("ASCII input"))
+                .expect("push");
+        }
+        let examined = guided_prefix_examined_bytes();
+        assert!(
+            examined > input.len() / 2,
+            "the guided prefix was not exercised"
+        );
+        assert!(
+            examined <= input.len() * 2,
+            "guided prefix examined {examined} bytes for a {}-byte one-byte stream",
+            input.len()
+        );
     }
 
     #[test]

@@ -715,6 +715,7 @@ impl ToolParseResult {
 pub(crate) struct ScannerUnified<E: InvokeEmitter> {
     pub(crate) scanner: WrappedBlockScanner<E>,
     guided_prefix_policy: Option<GuidedPrefixPolicy>,
+    guided_prefix_factory: Option<GuidedPrefixFactory>,
 }
 
 impl<E: InvokeEmitter> ScannerUnified<E> {
@@ -722,11 +723,17 @@ impl<E: InvokeEmitter> ScannerUnified<E> {
         Self {
             scanner,
             guided_prefix_policy: None,
+            guided_prefix_factory: None,
         }
     }
 
-    pub(crate) fn with_guided_prefix_policy(mut self, policy: GuidedPrefixPolicy) -> Self {
+    pub(crate) fn with_guided_prefix_policy(
+        mut self,
+        policy: GuidedPrefixPolicy,
+        factory: GuidedPrefixFactory,
+    ) -> Self {
         self.guided_prefix_policy = Some(policy);
+        self.guided_prefix_factory = Some(factory);
         self
     }
 }
@@ -753,6 +760,7 @@ impl<E: InvokeEmitter + Send> NativeUnified for ScannerUnified<E> {
             invoke_end: self.scanner.invoke_end().to_string(),
             invoke_boundary_factory: self.scanner.invoke_boundary_factory(),
             guided_prefix_policy: self.guided_prefix_policy,
+            guided_prefix_factory: self.guided_prefix_factory,
         }
     }
 
@@ -1392,12 +1400,27 @@ pub(crate) struct GuidedGrammar {
     pub(crate) invoke_end: String,
     pub(crate) invoke_boundary_factory: Option<InvokeBoundaryFactory>,
     pub(crate) guided_prefix_policy: Option<GuidedPrefixPolicy>,
+    pub(crate) guided_prefix_factory: Option<GuidedPrefixFactory>,
 }
 
 /// Family-owned recognition of syntax immediately before a guided JSON payload.
 /// Native invocation scanning stays independent because this policy only affects
 /// guided output framing.
 pub(crate) type GuidedPrefixPolicy = fn(GuidedPrefixContext<'_>) -> GuidedPrefix;
+
+/// Request-scoped, append-aware recognition of a family-specific guided prefix.
+pub(crate) trait GuidedPrefixScanner: Send {
+    fn append(
+        &mut self,
+        candidate: &str,
+        append: &str,
+        context: GuidedPrefixContext<'_>,
+    ) -> GuidedPrefix;
+
+    fn reset(&mut self) {}
+}
+
+pub(crate) type GuidedPrefixFactory = fn() -> Box<dyn GuidedPrefixScanner>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum GuidedPrefix {
@@ -1447,11 +1470,13 @@ struct GuidedState {
     grammar: GuidedGrammar,
     /// Guided decoding owns a separate request-local boundary from native parsing.
     invoke_boundary: Option<Box<dyn InvokeBoundary>>,
+    guided_prefix: Option<Box<dyn GuidedPrefixScanner>>,
     /// Append cursors for the native-envelope and prefix views of the current
     /// retained candidate. The bytes already belong to `input`; retaining only
     /// their length avoids copying or comparing the growing prefix on every push.
     invoke_candidate: GuidedAppendCursor,
     invoke_prefix_candidate: GuidedAppendCursor,
+    guided_prefix_candidate: GuidedAppendCursor,
     named_tool: Option<String>,
     invalid_payload: InvalidGuidedPayloadPolicy,
     /// Response starting_state disables reasoning markers, but tool control markers
@@ -1520,6 +1545,7 @@ impl GuidedAppendCursor {
 #[cfg(test)]
 std::thread_local! {
     static GUIDED_APPEND_REPLACEMENTS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    static GUIDED_PREFIX_EXAMINED_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
 fn count_guided_append_replacement() {
@@ -1530,6 +1556,23 @@ fn count_guided_append_replacement() {
 #[cfg(test)]
 pub(crate) fn reset_guided_append_work() {
     GUIDED_APPEND_REPLACEMENTS.with(|replacements| replacements.set(0));
+}
+
+pub(crate) fn count_guided_prefix_bytes(bytes: usize) {
+    #[cfg(test)]
+    GUIDED_PREFIX_EXAMINED_BYTES.with(|examined| examined.set(examined.get() + bytes));
+    #[cfg(not(test))]
+    let _ = bytes;
+}
+
+#[cfg(test)]
+pub(crate) fn reset_guided_prefix_examined_bytes() {
+    GUIDED_PREFIX_EXAMINED_BYTES.with(|examined| examined.set(0));
+}
+
+#[cfg(test)]
+pub(crate) fn guided_prefix_examined_bytes() -> usize {
+    GUIDED_PREFIX_EXAMINED_BYTES.with(std::cell::Cell::get)
 }
 
 #[cfg(test)]
@@ -2391,13 +2434,16 @@ impl GuidedState {
         let invoke_boundary = grammar
             .invoke_boundary_factory
             .map(InvokeBoundaryFactory::create);
+        let guided_prefix = grammar.guided_prefix_factory.map(|factory| factory());
         Self {
             stripped_markup: false,
             reasoning,
             grammar,
             invoke_boundary,
+            guided_prefix,
             invoke_candidate: GuidedAppendCursor::default(),
             invoke_prefix_candidate: GuidedAppendCursor::default(),
+            guided_prefix_candidate: GuidedAppendCursor::default(),
             named_tool,
             invalid_payload,
             reasoning_enabled: starting_state != UnifiedParserStartingState::Response,
@@ -2749,12 +2795,39 @@ impl GuidedState {
         boundary.guided_prefix_append(candidate, append, context)
     }
 
+    fn guided_prefix_append(
+        &mut self,
+        candidate: &str,
+        context: GuidedPrefixContext<'_>,
+    ) -> Option<GuidedPrefix> {
+        let append = self
+            .guided_prefix_candidate
+            .append(candidate)
+            .unwrap_or_else(|| {
+                if let Some(prefix) = self.guided_prefix.as_mut() {
+                    prefix.reset();
+                }
+                self.guided_prefix_candidate.replace(candidate)
+            });
+        self.guided_prefix
+            .as_mut()
+            .map(|prefix| prefix.append(candidate, append, context))
+    }
+
     fn reset_invoke_candidate(&mut self) {
         if let Some(boundary) = self.invoke_boundary.as_mut() {
             boundary.reset();
         }
+        self.reset_guided_prefix_candidate();
         self.invoke_candidate.reset();
         self.invoke_prefix_candidate.reset();
+    }
+
+    fn reset_guided_prefix_candidate(&mut self) {
+        if let Some(prefix) = self.guided_prefix.as_mut() {
+            prefix.reset();
+        }
+        self.guided_prefix_candidate.reset();
     }
 
     /// Return the bytes owned by the append-aware native-envelope candidate.
@@ -2767,7 +2840,10 @@ impl GuidedState {
             .map(|boundary| boundary.holdback(&self.input))
             .unwrap_or(0);
         let candidate = self.invoke_candidate.len;
-        native.max(candidate).max(self.invoke_prefix_candidate.len)
+        native
+            .max(candidate)
+            .max(self.invoke_prefix_candidate.len)
+            .max(self.guided_prefix_candidate.len)
     }
 
     /// Whether the bytes at `from` reach the guided payload through nothing but
@@ -2901,6 +2977,10 @@ impl GuidedState {
                     followed_by_competing_marker: prefix_context.followed_by_competing_marker,
                 },
             );
+            let stateful_prefix = boundary_prefix
+                .is_none()
+                .then(|| self.guided_prefix_append(suffix, prefix_context))
+                .flatten();
             if let Some(GuidedInvokePrefix::Match(len) | GuidedInvokePrefix::Strip(len)) =
                 boundary_prefix
             {
@@ -2915,6 +2995,7 @@ impl GuidedState {
                     GuidedInvokePrefix::Pending => GuidedPrefix::Pending,
                     GuidedInvokePrefix::Match(_) | GuidedInvokePrefix::Strip(_) => unreachable!(),
                 })
+                .or(stateful_prefix)
                 .or_else(|| {
                     self.grammar
                         .guided_prefix_policy
@@ -2922,6 +3003,8 @@ impl GuidedState {
                 });
             if boundary_prefix == Some(GuidedInvokePrefix::NoMatch) {
                 self.reset_invoke_candidate();
+            } else if stateful_prefix == Some(GuidedPrefix::NoMatch) {
+                self.reset_guided_prefix_candidate();
             }
             match prefix {
                 Some(GuidedPrefix::Match) => {
@@ -4981,6 +5064,7 @@ mod tests {
                 invoke_end: "</function>".into(),
                 invoke_boundary_factory: None,
                 guided_prefix_policy: None,
+                guided_prefix_factory: None,
             },
             None,
             UnifiedParserStartingState::None,

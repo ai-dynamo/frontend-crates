@@ -1368,6 +1368,7 @@ impl NativeUnified for KimiK3Native {
             invoke_end: CALL_CLOSE.canonical.to_string(),
             invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(kimi_k3_call_boundary)),
             guided_prefix_policy: None,
+            guided_prefix_factory: None,
         }
     }
 
