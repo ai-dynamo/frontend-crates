@@ -128,7 +128,6 @@ UNIFIED_TAX = {
     "prefilled_reasoning_then_text_then_tool": (40, "c"), "prefilled_reasoning_then_text": (40, "d"),
     # Group 41 — Prefilled reasoning, weird / malformed
     "prefilled_reasoning_redundant_opener": (41, "a"), "prefilled_reasoning_truncated": (41, "b"),
-    # Group 50 — Prefilled response
     "prefilled_response_reasoning_markers_literal": (50, "d"),
 }
 
