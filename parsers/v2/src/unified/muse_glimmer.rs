@@ -321,6 +321,48 @@ mod tests {
         }
     }
 
+    #[test]
+    fn reset_restarts_muse_guided_prefix_scanning() {
+        fn state() -> crate::unified::GuidedState {
+            let scanner = muse_scanner(&tools());
+            crate::unified::GuidedState::new(
+                scanner.guided_reasoning().expect("Muse guided reasoning"),
+                scanner.guided_grammar(),
+                None,
+                UnifiedParserStartingState::None,
+                InvalidGuidedPayloadPolicy::RecoverAsText,
+            )
+        }
+
+        fn context(text: &str) -> GuidedPrefixContext<'_> {
+            GuidedPrefixContext {
+                text,
+                at: 0,
+                outside_reasoning: true,
+                payload_is_empty: true,
+                followed_by_competing_marker: false,
+            }
+        }
+
+        let partial = format!("{INVOKE_START}abcde");
+        let fresh_candidate = format!(
+            "{INVOKE_START}a\"{}",
+            r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#
+        );
+        let mut reused = state();
+        assert_eq!(
+            reused.guided_prefix_append(&partial, context(&partial)),
+            Some(GuidedPrefix::Pending)
+        );
+        reused.reset(UnifiedParserStartingState::None);
+
+        let mut fresh = state();
+        assert_eq!(
+            reused.guided_prefix_append(&fresh_candidate, context(&fresh_candidate)),
+            fresh.guided_prefix_append(&fresh_candidate, context(&fresh_candidate))
+        );
+    }
+
     // ── Ported from the v1 reasoning parser ───────────────────────────────────
 
     #[test]

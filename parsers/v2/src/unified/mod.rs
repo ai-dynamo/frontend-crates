@@ -1408,7 +1408,7 @@ pub(crate) struct GuidedGrammar {
 /// guided output framing.
 pub(crate) type GuidedPrefixPolicy = fn(GuidedPrefixContext<'_>) -> GuidedPrefix;
 
-/// Request-scoped, append-aware recognition of a family-specific guided prefix.
+/// Request-local scanner state persists across chunks and must reset before reuse.
 pub(crate) trait GuidedPrefixScanner: Send {
     fn append(
         &mut self,
@@ -2577,6 +2577,7 @@ impl GuidedState {
         }
         self.invoke_candidate.reset();
         self.invoke_prefix_candidate.reset();
+        self.reset_guided_prefix_candidate();
         self.response_prefill_probe.reset();
         self.response_prefill_text_emitted = false;
         self.response_prefill_after_marker = false;
