@@ -2319,7 +2319,7 @@ def _load_unified_fixtures(base: Path):
             dynamo_by_ver[display_ver] = captured_cases
 
     if dynamo_by_ver:
-        current_dynamo_ver, current_dynamo_cases = next(reversed(dynamo_by_ver.items()))
+        _current_dynamo_ver, current_dynamo_cases = next(reversed(dynamo_by_ver.items()))
         missing_current_cases = sorted(
             (family, key)
             for (family, key), input_case in inputs.items()
@@ -2328,13 +2328,10 @@ def _load_unified_fixtures(base: Path):
                 input_case.get("scenario") or key
             )
         )
-        if missing_current_cases:
-            missing = ", ".join(f"{family}/{case}" for family, case in missing_current_cases)
-            raise ValueError(
-                f"selected Dynamo v2 capture {current_dynamo_ver} lacks input case(s): {missing}; "
-                "add an applicable append-only .patchN overlay"
-            )
+        missing_current_case_keys = set(missing_current_cases)
         engine_cases["dynamo_v2"] = current_dynamo_cases
+    else:
+        missing_current_case_keys = set()
 
     cases = []
     caps = {"vllm_python": {}, "vllm_rust": {}, "sglang_python": {}}
@@ -2359,6 +2356,7 @@ def _load_unified_fixtures(base: Path):
             "input": inp.get("input", ""),
             "golden": gdoc.get("assembled") or [],
             "dynamo": ddoc.get("assembled") or [],
+            "dynamo_missing": (fam, key) in missing_current_case_keys,
             # Per-capture payloads, latest included. A version that never recorded this
             # case is ABSENT here rather than empty: an older capture predating the case
             # has no opinion about it, and scoring [] against golden would invent a
@@ -2628,13 +2626,58 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
         cells = {}
         for s in scenarios:
             c = by_key.get((f, s))
-            if not c:
+            if not c or c.get("dynamo_missing"):
                 applicable = gen_unified_golden.scenario_families(s)
                 if f in applicable:
-                    raise ValueError(
-                        f"Unified fixture missing applicable case {f}/{s}; "
-                        "author or capture the case instead of rendering n/a"
+                    g_num, _g_sub = _tax(s)
+                    reason = (
+                        f"Missing Unified capture for applicable case {f}/{s}. "
+                        "Regenerate the current Dynamo capture before publishing this report."
                     )
+                    authored = gen_unified_golden.build_cases(f).get(f"UNIFIED.{s}.{f}", {})
+                    golden_events = authored.get("golden") or (c.get("golden") if c else [])
+                    golden_sig = _sig(golden_events)
+                    cells[s] = {
+                        "kind": "cell",
+                        "case_id": unified_taxonomy.numbered_id(s),
+                        "family": f,
+                        "sub": s,
+                        "col_group": f"unified_g{g_num}",
+                        "band": _band(g_num),
+                        "status": "problem",
+                        "red_on_diff": True,
+                        "cmp": {
+                            "golden": markers.cmp_entry(golden_sig),
+                            # The missing result is represented as a synthetic mismatch so
+                            # the default Dynamo reference is red even though GOLDEN is a
+                            # fixed, non-selectable baseline in the compare bar.
+                            "dynamo": markers.cmp_entry(golden_sig ^ 1),
+                        },
+                        "facts": [],
+                        "tooltip": {
+                            "head": f"{unified_taxonomy.numbered_id(s)} ({s}) - {f}",
+                            "description": authored.get("description", scn_desc[s]),
+                            "init": authored.get("init", scn_init.get(s)),
+                            "finish_reason": None,
+                            "input": {"kind": "text", "text": authored.get("input"), "chunks": None,
+                                      "family": unified_taxonomy.marker_family(f)},
+                            "candidates": [
+                                {"key": "dynamo", "label": dynamo_label, "impl": "dynamo",
+                                 "version": None, "parse_mode": "unified", "leak": False,
+                                 "block": {"error": reason}},
+                            {"key": "golden", "label": "GOLDEN (oracle)", "impl": "golden",
+                                 "version": None, "parse_mode": "unified", "leak": False,
+                                 "pin_first": True, "block": {"events": golden_events}},
+                            ],
+                            "baseline": None,
+                            "reasons": [],
+                            "dynamo_notes": [],
+                            "refs": [],
+                            "leak_note": None,
+                            "na_note": None,
+                        },
+                    }
+                    continue
                 g_num, _g_sub = _tax(s)
                 cells[s] = _unified_na_cell(f, s, g_num)
                 continue

@@ -1537,6 +1537,7 @@ enum GuidedBareCallPrefixStage {
     Quote,
     Header {
         first: bool,
+        name_closed: bool,
     },
 }
 
@@ -1595,9 +1596,12 @@ impl GuidedBareCallPrefix {
                     }
                     self.scanned += 1;
                     self.consumed = self.scanned;
-                    self.stage = GuidedBareCallPrefixStage::Header { first: true };
+                    self.stage = GuidedBareCallPrefixStage::Header {
+                        first: true,
+                        name_closed: false,
+                    };
                 }
-                GuidedBareCallPrefixStage::Header { first } => {
+                GuidedBareCallPrefixStage::Header { first, name_closed } => {
                     if let Some(at) = self.pending_marker {
                         let rest = &text[at..];
                         if ALL_MARKERS.iter().any(|marker| {
@@ -1615,12 +1619,18 @@ impl GuidedBareCallPrefix {
                     }
                     let ch = text[self.scanned..].chars().next().expect("header body");
                     count_guided_prefix_bytes(ch.len_utf8());
-                    if *first && matches!(ch, '{' | '[') {
+                    if (*first || *name_closed) && matches!(ch, '{' | '[') {
                         self.result = Some(BareCallPrefix::Complete(self.consumed));
                         break;
                     }
                     *first = false;
-                    if ch == '"' {
+                    if ch == '"' && !*name_closed {
+                        *name_closed = true;
+                        self.scanned += ch.len_utf8();
+                        self.consumed = self.scanned;
+                        continue;
+                    }
+                    if *name_closed {
                         self.result = Some(BareCallPrefix::NoMatch);
                         break;
                     }

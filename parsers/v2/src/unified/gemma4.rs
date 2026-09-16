@@ -69,7 +69,7 @@ fn guided_call_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
         return GuidedPrefix::NoMatch;
     };
     if context.followed_by_competing_marker {
-        return GuidedPrefix::Strip;
+        return GuidedPrefix::Strip("call:".len());
     }
     if !context.outside_reasoning
         && after_prefix
@@ -77,7 +77,7 @@ fn guided_call_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
             .next()
             .is_some_and(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
     {
-        return GuidedPrefix::Strip;
+        return GuidedPrefix::Strip("call:".len());
     }
     if !context.outside_reasoning
         || !context.payload_is_empty
@@ -88,7 +88,16 @@ fn guided_call_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
     match after_prefix.as_bytes().first() {
         None => GuidedPrefix::Pending,
         Some(b'{') | Some(b'[') => GuidedPrefix::Match,
-        Some(_) => GuidedPrefix::NoMatch,
+        Some(_) => {
+            let name_len = after_prefix.char_indices().find_map(|(at, ch)| {
+                (!ch.is_ascii_alphanumeric() && !matches!(ch, '_' | '-' | '.')).then_some(at)
+            });
+            match name_len {
+                None => GuidedPrefix::Pending,
+                Some(at) if at > 0 && after_prefix.as_bytes()[at] == b'[' => GuidedPrefix::Match,
+                Some(_) => GuidedPrefix::NoMatch,
+            }
+        }
     }
 }
 

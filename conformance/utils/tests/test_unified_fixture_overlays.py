@@ -289,8 +289,11 @@ def test_selected_current_capture_requires_every_input_or_a_sparse_overlay(tmp_p
         captured_with={"dynamo_v2": "0.3.4+pr166"},
     )
 
-    with pytest.raises(ValueError, match=r"0\.3\.4\+pr166 lacks input case\(s\): gemma4/UNIFIED\.1\.b"):
-        table._load_unified_fixtures(tmp_path)
+    cases, _caps, versions = table._load_unified_fixtures(tmp_path)
+
+    missing = next(case for case in cases if case["scenario"] == "text_only")
+    assert missing["dynamo_missing"] is True
+    assert versions["dynamo_v2"] == "0.3.4+pr166"
 
     _write_case(
         tmp_path,
@@ -305,6 +308,7 @@ def test_selected_current_capture_requires_every_input_or_a_sparse_overlay(tmp_p
 
     assert versions["dynamo_v2"] == "0.3.4+pr166"
     assert {case["scenario"] for case in cases} == {"tool_only", "text_only"}
+    assert next(case for case in cases if case["scenario"] == "text_only")["dynamo_missing"] is False
 
 
 def test_taxonomy_rename_uses_the_overlay_case_key(tmp_path):

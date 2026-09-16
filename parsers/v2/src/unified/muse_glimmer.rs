@@ -40,13 +40,45 @@ use crate::tool_calling::muse_glimmer::{
 };
 use crate::tool_calling::traits::{Result, Tool};
 use crate::unified::{
-    GuidedChannel, GuidedGrammar, GuidedReasoning, GuidedRouted, NativeUnified, UnifiedParser,
-    UnifiedParserEvent, UnifiedParserOutput, UnifiedParserStartingState,
+    GuidedChannel, GuidedGrammar, GuidedPrefix, GuidedPrefixContext, GuidedReasoning, GuidedRouted,
+    NativeUnified, UnifiedParser, UnifiedParserEvent, UnifiedParserOutput,
+    UnifiedParserStartingState,
 };
 
-/// The invoke opener, in the prefix form the guided reader anchors on.
-const INVOKE_START: &str = "<atem:invoke";
+/// The full bare invoke header that guided recovery strips as framing.
+const INVOKE_START: &str = "<atem:invoke name=\"";
 const INVOKE_END: &str = "</atem:invoke>";
+
+fn guided_invoke_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
+    let suffix = &context.text[context.at..];
+    let Some(after_prefix) = suffix.strip_prefix("<atem:invoke name=\"") else {
+        return if "<atem:invoke name=\"".starts_with(suffix) {
+            GuidedPrefix::Pending
+        } else {
+            GuidedPrefix::NoMatch
+        };
+    };
+    if context.followed_by_competing_marker
+        || !context.outside_reasoning
+        || !context.payload_is_empty
+    {
+        return GuidedPrefix::Strip(INVOKE_START.len());
+    }
+    if after_prefix.starts_with(['{', '[']) {
+        return GuidedPrefix::Match;
+    }
+    let Some(name_end) = after_prefix.find('"') else {
+        return GuidedPrefix::Pending;
+    };
+    if name_end == 0 {
+        return GuidedPrefix::NoMatch;
+    }
+    match after_prefix.as_bytes()[name_end + 1..].first() {
+        None => GuidedPrefix::Pending,
+        Some(b'{') | Some(b'[') => GuidedPrefix::Match,
+        Some(_) => GuidedPrefix::NoMatch,
+    }
+}
 
 impl NativeUnified for MuseChannelScanner {
     fn preserve_special_tokens(&self) -> bool {
@@ -86,7 +118,7 @@ impl NativeUnified for MuseChannelScanner {
             // literal opener and closer, with no grammar-aware location rule of the
             // kind gemma4's value wrapping needs.
             invoke_boundary_factory: None,
-            guided_prefix_policy: None,
+            guided_prefix_policy: Some(guided_invoke_prefix),
         }
     }
 
@@ -1452,6 +1484,7 @@ mod tests {
             arguments: serde_json::json!({"city": "Paris"}),
         };
         let reasoning = |text: &str| UnifiedEvent::Reasoning { text: text.into() };
+        let text = |text: &str| UnifiedEvent::Text { text: text.into() };
 
         for (label, input, want) in [
             (
@@ -1483,6 +1516,25 @@ mod tests {
                      <|start|>assistant to=get_weather<|message|> soon<|eom|>{call}"
                 ),
                 vec![reasoning("I will call  soon"), weather()],
+            ),
+            (
+                "a bare invoke header cannot consume a later reasoning opener",
+                format!(
+                    "<atem:invoke name=\"<|start|>assistant to=self<|message|>secret<|eom|>{call}"
+                ),
+                vec![reasoning("secret"), weather()],
+            ),
+            (
+                "a bare invoke header inside reasoning preserves its narrated name",
+                format!(
+                    "<|start|>assistant to=self<|message|>I'll call <atem:invoke name=\"get_weather<|eom|>{call}"
+                ),
+                vec![reasoning("I'll call get_weather"), weather()],
+            ),
+            (
+                "a malformed bare invoke header strips before rejected JSON",
+                "<atem:invoke name=\"{\"unexpected\": \"shape\"}".to_string(),
+                vec![text("{\"unexpected\": \"shape\"}")],
             ),
         ] {
             let drive = |chunks: Vec<&str>| {

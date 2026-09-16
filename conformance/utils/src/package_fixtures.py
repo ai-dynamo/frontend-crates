@@ -170,7 +170,7 @@ def build_shards(tmpdir, blobs_dir, prune=False):
             # golden_spec/ is the AUTHORED unified oracle source (gen_unified_golden.py
             # output, the harness input) — it is not itself a shard; golden.tar.gz is
             # DERIVED from it via render -> explode. Skip it silently.
-            if subdir.name == "golden_spec":
+            if subdir.name == "golden_spec" or subdir.name.startswith("golden_spec-"):
                 continue
             # Only the documented layout becomes a shard: inputs/ or
             # <impl>-<version>/. Anything else (a stray family dir, an
@@ -264,6 +264,8 @@ def merge_shards(built, prune):
     if manifest_path.exists():
         prior = json.loads(manifest_path.read_text()).get("shards", [])
         for s in prior:
+            if s["path"].startswith("unified/golden_spec-"):
+                continue
             fp = FIXTURES_DIR / s["path"]
             if s["path"] not in built_paths and fp.exists():
                 # RECOMPUTE the sha/size from the on-disk file — never trust the prior

@@ -502,9 +502,15 @@ def test_unified_case_counts_match_the_generator():
     """
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
-        family_specific = (
-            71 if fam == "deepseek_v41" else 88 if fam == "gemma4" else 94 if fam == "kimi_k3" else 86
-        )
+        family_specific = {
+            "deepseek_v4": 86,
+            "deepseek_v41": 86,
+            "gemma4": 88,
+            "kimi_k2": 86,
+            "kimi_k3": 94,
+            "muse_glimmer": 86,
+            "qwen3": 86,
+        }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
     assert sum(per_family.values()) == sum(len(build_cases(f)) for f in FAMILIES)
 

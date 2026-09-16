@@ -82,8 +82,7 @@ struct DsmlInvokeBoundary {
     mode: DsmlLexMode,
     unterminated_parameter_block_end: Option<usize>,
     guided_prefix_scanned: usize,
-    guided_prefix_starts_payload: bool,
-    guided_prefix_has_terminator: bool,
+    guided_prefix_name_closed: bool,
 }
 
 enum DsmlLexMode {
@@ -123,12 +122,6 @@ impl InvokeBoundary for DsmlInvokeBoundary {
         _append: &str,
         context: GuidedInvokePrefixContext,
     ) -> Option<GuidedInvokePrefix> {
-        if context.followed_by_competing_marker
-            || !context.outside_reasoning
-            || !context.payload_is_empty
-        {
-            return Some(GuidedInvokePrefix::Strip(INVOKE_START_PREFIX.len()));
-        }
         if self.guided_prefix_scanned == 0 {
             if !candidate.starts_with(INVOKE_START_PREFIX) {
                 return Some(GuidedInvokePrefix::NoMatch);
@@ -139,21 +132,38 @@ impl InvokeBoundary for DsmlInvokeBoundary {
         while self.guided_prefix_scanned < candidate.len() {
             let ch = candidate[self.guided_prefix_scanned..].chars().next()?;
             count_boundary_bytes(ch.len_utf8());
-            if self.guided_prefix_scanned == INVOKE_START_PREFIX.len() && matches!(ch, '{' | '[') {
-                self.guided_prefix_starts_payload = true;
+            if !self.guided_prefix_name_closed {
+                if matches!(ch, '{' | '[') {
+                    return Some(if context.outside_reasoning && context.payload_is_empty {
+                        GuidedInvokePrefix::Match(INVOKE_START_PREFIX.len())
+                    } else {
+                        GuidedInvokePrefix::Strip(INVOKE_START_PREFIX.len())
+                    });
+                }
+                if context.followed_by_competing_marker || ch == '<' {
+                    return Some(GuidedInvokePrefix::Strip(INVOKE_START_PREFIX.len()));
+                }
+                self.guided_prefix_name_closed = ch == '"';
+                self.guided_prefix_scanned += ch.len_utf8();
+                continue;
+            }
+            if matches!(ch, '{' | '[') {
+                let prefix_len = self.guided_prefix_scanned;
+                return Some(if context.outside_reasoning && context.payload_is_empty {
+                    GuidedInvokePrefix::Match(prefix_len)
+                } else {
+                    GuidedInvokePrefix::Strip(prefix_len)
+                });
             }
             if ch == '>' {
-                self.guided_prefix_has_terminator = true;
+                return Some(GuidedInvokePrefix::NoMatch);
+            }
+            if context.followed_by_competing_marker || ch == '<' {
+                return Some(GuidedInvokePrefix::Strip(INVOKE_START_PREFIX.len()));
             }
             self.guided_prefix_scanned += ch.len_utf8();
         }
-        Some(if self.guided_prefix_starts_payload {
-            GuidedInvokePrefix::Match(INVOKE_START_PREFIX.len())
-        } else if self.guided_prefix_has_terminator {
-            GuidedInvokePrefix::NoMatch
-        } else {
-            GuidedInvokePrefix::Pending
-        })
+        Some(GuidedInvokePrefix::Pending)
     }
 
     fn end_append(

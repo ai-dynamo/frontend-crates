@@ -9,7 +9,9 @@ use crate::tool_calling::scan::{
     WrappedBlockScanner, WrappedBlockSpec,
 };
 use crate::tool_calling::traits::{Tool, ToolCallDelta};
-use crate::unified::{GuidedRouted, ScannerUnified, UnifiedParser};
+use crate::unified::{
+    GuidedInvokePrefix, GuidedInvokePrefixContext, GuidedRouted, ScannerUnified, UnifiedParser,
+};
 
 const BLOCK_START: &str = "<｜DSML｜ calls>";
 const BLOCK_END: &str = "</｜DSML｜ calls>";
@@ -111,6 +113,36 @@ impl DeepSeekV41InvocationBoundary {
 }
 
 impl InvokeBoundary for DeepSeekV41InvocationBoundary {
+    fn owns_guided_prefix(&self) -> bool {
+        true
+    }
+
+    fn guided_prefix_append(
+        &mut self,
+        candidate: &str,
+        _append: &str,
+        context: GuidedInvokePrefixContext,
+    ) -> Option<GuidedInvokePrefix> {
+        let header = candidate.strip_prefix(INVOKE_START)?;
+        if !context.outside_reasoning || context.followed_by_competing_marker {
+            return Some(GuidedInvokePrefix::Strip(INVOKE_START.len()));
+        }
+        if let Some(payload_at) = header.find(['{', '[']) {
+            // A bare DSML header has no closing quote or `>` before guided JSON.
+            // Stop at the payload opener: the first quote in a JSON key is payload
+            // data, not the header terminator.
+            return Some(if context.payload_is_empty {
+                GuidedInvokePrefix::Match(INVOKE_START.len() + payload_at)
+            } else {
+                GuidedInvokePrefix::Strip(INVOKE_START.len() + payload_at)
+            });
+        }
+        if header.contains('>') {
+            return Some(GuidedInvokePrefix::NoMatch);
+        }
+        Some(GuidedInvokePrefix::Pending)
+    }
+
     fn end_append(
         &mut self,
         candidate: &str,
@@ -257,23 +289,15 @@ impl InvokeEmitter for DeepSeekV41 {
 mod tests {
     use super::*;
     use crate::unified::{
-        UnifiedEvent, UnifiedParserExt, UnifiedParserInit, UnifiedParserOutput,
-        UnifiedParserStartingState, UnifiedToolOutputMode, create_unified_parser_for_family,
+        InvalidGuidedPayloadPolicy, UnifiedEvent, UnifiedParserExt, UnifiedParserInit,
+        UnifiedParserOutput, UnifiedParserStartingState, UnifiedToolOutputMode,
+        create_unified_parser_for_family,
     };
 
-    fn parse_chunks(
-        input: &str,
-        split: usize,
-        state: UnifiedParserStartingState,
-    ) -> UnifiedParserOutput {
+    fn parse_chunks(input: &str, split: usize, init: UnifiedParserInit) -> UnifiedParserOutput {
         let mut parser = create_unified_parser_for_family("deepseek_v41", &[]).unwrap();
         assert!(parser.preserve_special_tokens());
-        parser
-            .initialize_request(UnifiedParserInit {
-                starting_state: state,
-                ..Default::default()
-            })
-            .unwrap();
+        parser.initialize_request(init).unwrap();
         let mut output = UnifiedParserOutput::default();
         parser.parse_into(&input[..split], &mut output).unwrap();
         parser.parse_into(&input[split..], &mut output).unwrap();
@@ -281,25 +305,20 @@ mod tests {
         output
     }
 
-    fn assert_every_split(
+    fn assert_every_split_with_init(
         input: &str,
-        state: UnifiedParserStartingState,
+        init: UnifiedParserInit,
         expected: Vec<UnifiedEvent>,
     ) {
         for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
             assert_eq!(
-                parse_chunks(input, split, state).assembled(),
+                parse_chunks(input, split, init.clone()).assembled(),
                 expected,
                 "split {split}"
             );
         }
         let mut parser = deepseek_v41_unified(&[]);
-        parser
-            .initialize_request(UnifiedParserInit {
-                starting_state: state,
-                ..Default::default()
-            })
-            .unwrap();
+        parser.initialize_request(init).unwrap();
         let mut output = UnifiedParserOutput::default();
         for ch in input.chars() {
             parser
@@ -308,6 +327,21 @@ mod tests {
         }
         output.append(&mut parser.finish().unwrap());
         assert_eq!(output.assembled(), expected, "one character at a time");
+    }
+
+    fn assert_every_split(
+        input: &str,
+        state: UnifiedParserStartingState,
+        expected: Vec<UnifiedEvent>,
+    ) {
+        assert_every_split_with_init(
+            input,
+            UnifiedParserInit {
+                starting_state: state,
+                ..Default::default()
+            },
+            expected,
+        );
     }
 
     #[test]
@@ -531,6 +565,75 @@ mod tests {
                     arguments: serde_json::json!({"city":"Paris"})
                 },
             ]
+        );
+    }
+
+    #[test]
+    fn guided_bare_headers_do_not_consume_json_or_reasoning() {
+        let payload = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        let invalid_payloads = [
+            (
+                r#"[{"name":"get_weather","arguments":{"city": "#,
+                r#"[{"name":"get_weather","arguments":{"city": "#,
+            ),
+            (r#"{"unexpected":"shape"}"#, r#"{"unexpected":"shape"}"#),
+            (
+                r#"[{"name":"get_weather","arguments":{"city":"Paris"}},{"arguments":{}}]"#,
+                r#"[{"name":"get_weather","arguments":{"city":"Paris"}},{"arguments":{}}]"#,
+            ),
+        ];
+        let init = UnifiedParserInit {
+            tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+            invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+            ..Default::default()
+        };
+        for (input, expected) in invalid_payloads {
+            assert_every_split_with_init(
+                &format!("{INVOKE_START}{input}"),
+                init.clone(),
+                vec![UnifiedEvent::Text {
+                    text: expected.into(),
+                }],
+            );
+        }
+        assert_every_split_with_init(
+            &format!("{INVOKE_START}<think>secret</think>{payload}"),
+            init.clone(),
+            vec![
+                UnifiedEvent::Reasoning {
+                    text: "secret".into(),
+                },
+                UnifiedEvent::ToolCall {
+                    name: "get_weather".into(),
+                    arguments: serde_json::json!({"city":"Paris"}),
+                },
+            ],
+        );
+        assert_every_split_with_init(
+            &format!("<think>I'll use {INVOKE_START} next</think>{payload}"),
+            init.clone(),
+            vec![
+                UnifiedEvent::Reasoning {
+                    text: "I'll use  next".into(),
+                },
+                UnifiedEvent::ToolCall {
+                    name: "get_weather".into(),
+                    arguments: serde_json::json!({"city":"Paris"}),
+                },
+            ],
+        );
+        assert_every_split_with_init(
+            &format!("<think>I'll call {INVOKE_START}get_weather</think>{payload}"),
+            init,
+            vec![
+                UnifiedEvent::Reasoning {
+                    text: "I'll call get_weather".into(),
+                },
+                UnifiedEvent::ToolCall {
+                    name: "get_weather".into(),
+                    arguments: serde_json::json!({"city":"Paris"}),
+                },
+            ],
         );
     }
 

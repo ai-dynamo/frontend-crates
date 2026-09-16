@@ -32,15 +32,65 @@
 use crate::tool_calling::qwen3_coder::qwen3_scanner;
 use crate::tool_calling::scan::ReasoningSpec;
 use crate::tool_calling::traits::Tool;
-use crate::unified::{GuidedRouted, ScannerUnified, UnifiedParser};
+use crate::unified::{
+    GuidedPrefix, GuidedPrefixContext, GuidedRouted, ScannerUnified, UnifiedParser,
+};
 
 const REASONING_START: &str = "<think>";
 const REASONING_END: &str = "</think>";
 
+fn guided_function_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
+    let suffix = &context.text[context.at..];
+    let Some(after_prefix) = suffix.strip_prefix("<function=") else {
+        return if "<function=".starts_with(suffix) {
+            GuidedPrefix::Pending
+        } else {
+            GuidedPrefix::NoMatch
+        };
+    };
+    let header_len = after_prefix.char_indices().find_map(|(at, ch)| {
+        if ch != '>' {
+            return None;
+        }
+        let name = &after_prefix[..at];
+        (name.is_empty()
+            || name
+                .chars()
+                .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-')))
+        .then_some("<function=".len() + at + 1)
+    });
+    let payload_at = after_prefix.find(['{', '[']);
+    let strip_len = after_prefix
+        .find("</function>")
+        .filter(|end| payload_at.is_none_or(|payload| *end < payload))
+        .map(|end| "<function=".len() + end + "</function>".len())
+        .or(header_len)
+        .unwrap_or("<function=".len());
+    if context.followed_by_competing_marker
+        || !context.outside_reasoning
+        || !context.payload_is_empty
+    {
+        return GuidedPrefix::Strip(strip_len);
+    }
+    if after_prefix.starts_with('>') {
+        return GuidedPrefix::Strip(header_len.expect("empty Qwen function header"));
+    }
+    let name_len = after_prefix.char_indices().find_map(|(at, ch)| {
+        (!ch.is_ascii_alphanumeric() && !matches!(ch, '_' | '-')).then_some(at)
+    });
+    match name_len {
+        None => GuidedPrefix::Pending,
+        Some(at) if at > 0 && matches!(after_prefix.as_bytes()[at], b'{' | b'[') => {
+            GuidedPrefix::Match
+        }
+        Some(_) => GuidedPrefix::NoMatch,
+    }
+}
+
 /// Build the Qwen3 unified parser for one stream.
 pub(crate) fn qwen3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
-    Box::new(GuidedRouted::new(ScannerUnified::new(
-        qwen3_scanner(tools).with_reasoning(ReasoningSpec {
+    Box::new(GuidedRouted::new(
+        ScannerUnified::new(qwen3_scanner(tools).with_reasoning(ReasoningSpec {
             start: REASONING_START,
             end: REASONING_END,
             // Qwen3 emits its own `<think>`; the template does not pre-fill one,
@@ -49,8 +99,9 @@ pub(crate) fn qwen3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
             // `<think>` is not a special token for this family; the OR comes from the grammar.
             preserve_special_tokens: false,
             ..Default::default()
-        }),
-    )))
+        }))
+        .with_guided_prefix_policy(guided_function_prefix),
+    ))
 }
 
 #[cfg(test)]

@@ -399,9 +399,23 @@ def invoke_header_prefix(fam):
 
 
 def guided_invoke_prefix(fam):
+    """Native invoke prefix before the payload's owning delimiter."""
     if fam == "deepseek_v41":
         return '<｜DSML｜ invoke name="'
     return invoke_header_prefix(fam)
+
+
+def guided_named_invoke_prefix(fam):
+    """A valid tool name before the intentionally missing header terminator."""
+    return {
+        "deepseek_v4": '<｜DSML｜invoke name="get_weather"',
+        "deepseek_v41": '<｜DSML｜ invoke name="get_weather"',
+        "gemma4": "call:get_weather",
+        "kimi_k2": "<|tool_call_begin|>functions.get_weather:0",
+        "kimi_k3": '<|open|>call tool="get_weather"',
+        "muse_glimmer": '<atem:invoke name="get_weather"',
+        "qwen3": "<function=get_weather",
+    }[fam]
 
 
 def guided_surroundings(render, dynamo_note, fill=None):
@@ -1518,6 +1532,10 @@ GUIDED_SURROUNDS = {
                     "a bare invoke HEADER before the payload, never terminated", False),
 }
 
+# Every native Unified family recovers a valid tool name followed by an unfinished
+# header delimiter without letting `>` inside the guided JSON payload claim the header.
+GUIDED_BARE_INVOKE_FAMILIES = set(UNIFIED_FAMILIES)
+
 
 def _guided_product():
     """Every (payload x surrounding) crossing that says something distinct.
@@ -1548,6 +1566,22 @@ def _guided_product():
                        if dispatches else
                        "no call is recoverable, and the recovery TEXT carries none "
                        "of the markup the parse stripped"))
+            if sur_name == "bare_opener" and pay_name == "gt_in_argument":
+                family_inputs = OnlyFamilies({
+                    family: (
+                        f"{guided_named_invoke_prefix(family)}{payload}",
+                        GUIDED_UNSUPPORTED,
+                        {"verdict": "match", "note": note},
+                    )
+                    for family in GUIDED_BARE_INVOKE_FAMILIES
+                })
+            else:
+                family_inputs = guided_surroundings(
+                    lambda fam, w=wrap, pl=payload: w(pl, fam),
+                    note,
+                    fill=(None if dispatches else
+                          (lambda fam, pl=payload, st=strips_tail: pl.rstrip() if st else pl)),
+                )
             out.append((
                 scenario,
                 f"Guided JSON, payload is {pay_name}, surrounded by {sur_desc}. "
@@ -1562,12 +1596,7 @@ def _guided_product():
                 golden,
                 {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
                 {"finish_reason": "stop"},
-                guided_surroundings(
-                    lambda fam, w=wrap, pl=payload: w(pl, fam),
-                    note,
-                    fill=(None if dispatches else
-                          (lambda fam, pl=payload, st=strips_tail: pl.rstrip() if st else pl)),
-                ),
+                family_inputs,
             ))
     return out
 
@@ -1839,7 +1868,13 @@ DEEPSEEK_V41_SCENARIOS = {
     "text_reason_tool_text_reason_tool", "two_adjacent_reason_spans", "tool_no_close",
     "reason_markup_in_arg", "reason_markup_in_arg_with_text", "tool_in_reason",
     "tool_in_reason_with_text",
-    "prefilled_reasoning_with_guided_json", "guided_json_named_tool",
+    "prefilled_reasoning_with_tool", "prefilled_reasoning_with_guided_json",
+    "prefilled_reasoning_then_text_then_tool", "prefilled_reasoning_then_text",
+    "prefilled_response_with_tool", "prefilled_response_with_guided_json",
+    "prefilled_response_guided_json_two_calls",
+    "prefilled_response_reasoning_markers_literal", "prefilled_response_truncated",
+    "prefilled_response_guided_json_partial_calls",
+    "guided_json_named_tool",
     "guided_json_required_tool", "guided_json_two_calls",
     "guided_json_escaped_string_args", "guided_json_array_argument",
     "guided_json_after_reasoning", "guided_json_invalid_call",
@@ -1853,16 +1888,23 @@ DEEPSEEK_V41_SCENARIOS = {
     "guided_json_orphan_tool_close_before_payload",
     "guided_json_syntax_error_trailing_close",
     "guided_json_syntax_error_wrapped",
+    "guided_json_syntax_error_bare_opener",
     "guided_json_schema_error_not_a_call_trailing_close",
     "guided_json_schema_error_not_a_call_wrapped",
+    "guided_json_schema_error_not_a_call_bare_opener",
     "guided_json_schema_error_nameless_element_trailing_close",
     "guided_json_schema_error_nameless_element_wrapped",
+    "guided_json_schema_error_nameless_element_bare_opener",
     "guided_json_gt_in_argument_trailing_close",
     "guided_json_gt_in_argument_wrapped",
+    "guided_json_gt_in_argument_bare_opener",
     "guided_json_quoted_bare_header_in_answer",
     "guided_json_quoted_bare_tool_header_in_answer",
     "guided_json_quoted_bare_header_after_payload",
     "guided_json_bare_tool_header_recovers_inside_a_thought",
+    "guided_json_narrated_invoke_in_reasoning",
+    "guided_json_stray_prefix_before_reasoning",
+    "guided_json_narrated_prefix_inside_reasoning",
 }
 
 
@@ -1955,7 +1997,7 @@ def deepseek_v41_cases():
     add("reason_unterminated", "An open thought survives the end of the stream.",
         "still thinking", [{"kind": "reasoning", "text": "still thinking"}], "Reasoning")
     add("tool_block_never_closed_then_text",
-        "An unterminated calls block discards the prose that follows it at EOF.",
+        "An unterminated calls block emits nothing and discards the prose that follows it at EOF.",
         "<｜DSML｜ calls>still thinking about it", [])
     add("reason_markup_in_arg", "Reasoning markers inside a DSML string parameter remain data.",
         calls(call("log", {"note": "<think>reconsider</think>"})),
@@ -1979,7 +2021,23 @@ def deepseek_v41_cases():
          {"kind": "reasoning", "text": " now answer"},
          {"kind": "text", "text": " Here you go."}])
 
+    one = [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
     prefilled_call = calls(call("get_weather", {"city": "Paris"}))
+    add("prefilled_reasoning_with_tool", "Prefilled reasoning closes before a DSML invocation.",
+        "checking weather</think>" + prefilled_call,
+        [{"kind": "reasoning", "text": "checking weather"}] + one,
+        "Reasoning")
+    add("prefilled_reasoning_then_text_then_tool",
+        "Closing prefilled reasoning returns to visible text before a DSML invocation.",
+        "weighing options</think>Here's what I found: " + prefilled_call,
+        [{"kind": "reasoning", "text": "weighing options"},
+         {"kind": "text", "text": "Here's what I found: "}] + one,
+        "Reasoning")
+    add("prefilled_reasoning_then_text", "Closing prefilled reasoning returns to visible text.",
+        "no tool needed</think>The answer is 42.",
+        [{"kind": "reasoning", "text": "no tool needed"},
+         {"kind": "text", "text": "The answer is 42."}],
+        "Reasoning")
     add("prefilled_reasoning_redundant_opener", "A repeated prefilled reasoning opener is consumed once.",
         "<think>checking weather</think>" + calls(call("get_weather", {"city": "London"})),
         [{"kind": "reasoning", "text": "checking weather"},
@@ -1995,7 +2053,26 @@ def deepseek_v41_cases():
         [{"kind": "text", "text": "<think>literal</think> then a call"},
          {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
         "Response")
-    one = [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
+    add("prefilled_response_with_tool", "Prefilled response preserves text before a DSML invocation.",
+        "output" + prefilled_call,
+        [{"kind": "text", "text": "output"}] + one,
+        "Response")
+    add("prefilled_response_with_guided_json", "Prefilled response accepts required guided JSON.",
+        GUIDED_ONE_CALL, one, "Response", "GuidedJson")
+    add("prefilled_response_guided_json_two_calls",
+        "Prefilled response preserves two required guided calls.",
+        GUIDED_TWO_CALLS,
+        one + [{"kind": "tool_call", "name": "run", "arguments": {"cmd": "git log"}}],
+        "Response", "GuidedJson")
+    add("prefilled_response_truncated", "Prefilled response keeps text before an incomplete DSML invocation.",
+        "Working on it... <｜DSML｜ calls><｜DSML｜ invoke name=\"get_weather\">"
+        "<｜DSML｜ parameter name=\"city\" string=\"true\">Par",
+        [{"kind": "text", "text": "Working on it... "}], "Response")
+    add("prefilled_response_guided_json_partial_calls",
+        "An invalid guided array remains visible text in a prefilled response.",
+        '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]',
+        [{"kind": "text", "text": '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'}],
+        "Response", "GuidedJson")
     add("guided_json_named_tool", "A named choice uses the shared guided decoder.",
         GUIDED_NAMED_ARGS, one, mode="GuidedJson", named="get_weather")
     add("guided_json_required_tool", "A required choice uses the shared guided decoder.",
@@ -2003,7 +2080,7 @@ def deepseek_v41_cases():
     add("guided_json_two_calls", "Guided output preserves two distinct calls.",
         GUIDED_TWO_CALLS, one + [{"kind": "tool_call", "name": "run", "arguments": {"cmd": "git log"}}],
         mode="GuidedJson")
-    add("guided_json_native_markup_only", "Native DSML markup alone emits no guided events.",
+    add("guided_json_native_markup_only", "Native DSML markup alone emits nothing in GuidedJson mode.",
         native_call, [], mode="GuidedJson")
     add("guided_json_unterminated_reasoning_then_wrapped_payload",
         "An unterminated thought still yields a wrapped guided call.",
@@ -2016,7 +2093,35 @@ def deepseek_v41_cases():
         GUIDED_ONE_CALL + "</｜DSML｜ calls>", one, mode="GuidedJson")
     add("guided_json_wrapped_in_tool_markup", "Guided JSON wrapped in DSML markup still dispatches.",
         calls(GUIDED_ONE_CALL), one, mode="GuidedJson")
-    add("prefilled_reasoning_with_guided_json", "Prefilled reasoning closes before guided arguments.",
+    bare_invoke = guided_invoke_prefix("deepseek_v41")
+    add("guided_json_narrated_invoke_in_reasoning",
+        "A narrated incomplete DSML invoke inside reasoning is stripped before guided JSON.",
+        "<think>I'll use " + bare_invoke + " next</think>" + GUIDED_ONE_CALL,
+        [{"kind": "reasoning", "text": "I'll use  next"}] + one,
+        mode="GuidedJson")
+    for name, payload in [
+        ("guided_json_syntax_error_bare_opener", GUIDED_PAYLOADS["syntax_error"][0]),
+        ("guided_json_schema_error_not_a_call_bare_opener", GUIDED_PAYLOADS["schema_error_not_a_call"][0]),
+        ("guided_json_schema_error_nameless_element_bare_opener", GUIDED_PAYLOADS["schema_error_nameless_element"][0]),
+    ]:
+        add(name, "An incomplete DSML invoke header is stripped before an invalid guided payload.",
+            bare_invoke + payload, [{"kind": "text", "text": payload}], mode="GuidedJson")
+    add("guided_json_stray_prefix_before_reasoning",
+        "An incomplete DSML invoke header cannot consume a later reasoning opener.",
+        bare_invoke + "<think>secret</think>" + GUIDED_ONE_CALL,
+        [{"kind": "reasoning", "text": "secret"}] + one,
+        mode="GuidedJson")
+    add("guided_json_narrated_prefix_inside_reasoning",
+        "An incomplete DSML invoke header inside reasoning is stripped without consuming its closer.",
+        "<think>I'll call " + bare_invoke + "get_weather</think>" + GUIDED_ONE_CALL,
+        [{"kind": "reasoning", "text": "I'll call get_weather"}] + one,
+        mode="GuidedJson")
+    add("guided_json_gt_in_argument_bare_opener",
+        "An unterminated DSML invoke header before guided JSON does not borrow the `>` from an argument.",
+        guided_named_invoke_prefix("deepseek_v41") + GUIDED_PAYLOADS["gt_in_argument"][0],
+        [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "a > b"}}],
+        mode="GuidedJson")
+    add("prefilled_reasoning_with_guided_json", "Prefilled reasoning closes before a named guided call.",
         "check</think>" + GUIDED_NAMED_ARGS,
         [{"kind": "reasoning", "text": "check"}] + one,
         "Reasoning", "GuidedJson", "get_weather")
@@ -2031,6 +2136,8 @@ def deepseek_v41_cases():
             if isinstance(per_family, dict):
                 family_case = per_family.get("deepseek_v41")
         if key in cases and family_case is None:
+            continue
+        if key in cases:
             continue
         case = json.loads(json.dumps(shared_guided[f"UNIFIED.{name}.qwen3"]))
         if family_case is not None:

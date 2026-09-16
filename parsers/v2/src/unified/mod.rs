@@ -1404,7 +1404,7 @@ pub(crate) enum GuidedPrefix {
     NoMatch,
     Pending,
     Match,
-    Strip,
+    Strip(usize),
 }
 
 /// Context supplied to a family policy without exposing guided parser state.
@@ -2255,12 +2255,15 @@ fn guided_holdback_len(
                         marker_prefix_suffix_len(tail, reasoning_markers.iter().copied());
                     (marker_tail == tail.len()
                         && marker_tail > 0
-                        && policy(GuidedPrefixContext {
-                            at,
-                            followed_by_competing_marker: true,
-                            ..context
-                        }) == GuidedPrefix::Strip)
-                        .then_some(input.len() - at)
+                        && matches!(
+                            policy(GuidedPrefixContext {
+                                at,
+                                followed_by_competing_marker: true,
+                                ..context
+                            }),
+                            GuidedPrefix::Strip(_)
+                        ))
+                    .then_some(input.len() - at)
                 })
                 .max()
                 .unwrap_or(0)
@@ -2861,7 +2864,7 @@ impl GuidedState {
             flush,
             None,
         );
-        if self.invoke_boundary.is_none() {
+        if self.invoke_boundary.is_none() && self.grammar.guided_prefix_policy.is_none() {
             return regular;
         }
 
@@ -2926,9 +2929,16 @@ impl GuidedState {
                         cursor = at + invoke_len;
                         continue;
                     }
+                    // A family policy may recognize a complete tool name before an
+                    // intentionally missing native header terminator. Remove every
+                    // byte before the JSON payload, not just the marker literal.
+                    let prefix_len = suffix
+                        .find(['{', '['])
+                        .filter(|payload_at| *payload_at >= invoke_len)
+                        .unwrap_or(invoke_len);
                     return regular
                         .filter(|(regular_at, _)| *regular_at < at)
-                        .or(Some((at, invoke_len)));
+                        .or(Some((at, prefix_len)));
                 }
                 Some(GuidedPrefix::Pending) if !flush => {
                     if !guided_prefix_at_payload_boundary {
@@ -2937,10 +2947,10 @@ impl GuidedState {
                     }
                     return regular.filter(|(regular_at, _)| *regular_at < at);
                 }
-                Some(GuidedPrefix::Strip) => {
+                Some(GuidedPrefix::Strip(len)) => {
                     return regular
                         .filter(|(regular_at, _)| *regular_at < at)
-                        .or(Some((at, invoke_len)));
+                        .or(Some((at, len)));
                 }
                 Some(GuidedPrefix::Pending | GuidedPrefix::NoMatch) | None => {}
             }
