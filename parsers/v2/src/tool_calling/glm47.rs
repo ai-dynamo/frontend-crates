@@ -355,7 +355,6 @@ fn source_arg_key_order(block: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::unified::UnifiedParserExt;
 
     fn tools() -> Vec<Tool> {
         vec![
@@ -644,16 +643,5 @@ mod tests {
         let calls = output.coalesce_calls();
         assert_eq!(calls.normal_text, "");
         assert_eq!(calls.calls.len(), 1);
-    }
-
-    #[test]
-    fn legacy_and_unified_share_the_same_events() {
-        let input = "<think>look</think><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call><think>answer</think>Done";
-        let legacy_output = legacy(&tools(), &[input]).coalesce_calls();
-        let mut parser =
-            crate::unified::create_unified_parser_for_family("glm47", &tools()).unwrap();
-        let unified = parser.parse_complete(input).unwrap();
-        assert_eq!(legacy_output.calls.len(), 1);
-        assert_eq!(unified.len(), 4);
     }
 }

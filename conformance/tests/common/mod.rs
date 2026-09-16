@@ -16,7 +16,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use dynamo_parsers_v2::Tool;
 use serde_json::json;
 
-/// Tool schemas shared by every Rust Unified capture and parity harness.
+/// Canonical schemas keep capture, render, parity, and schema-roundtrip harnesses aligned.
 pub fn unified_tools() -> Vec<Tool> {
     let string_tool = |name: &str, key: &str| Tool {
         name: name.to_string(),

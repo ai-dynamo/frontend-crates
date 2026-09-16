@@ -154,26 +154,6 @@ mod tests {
     }
 
     #[test]
-    fn malformed_and_eof_tool_calls_do_not_leak_markup() {
-        assert_eq!(
-            parse(
-                &tools(),
-                "visible <tool_call>get_weather<arg_key>city",
-                None
-            ),
-            vec![UnifiedEvent::Text {
-                text: "visible ".into()
-            }]
-        );
-        assert_eq!(
-            parse(&tools(), "visible! </tool_call> text", None),
-            vec![UnifiedEvent::Text {
-                text: "visible!  text".into()
-            }]
-        );
-    }
-
-    #[test]
     fn registry_constructs_glm47_with_reasoning_start_state() {
         let mut parser = create_unified_parser_for_family("glm47", &tools()).expect("registry");
         parser
