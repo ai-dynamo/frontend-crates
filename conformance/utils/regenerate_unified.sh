@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Regenerate every Unified artifact from the checked-out parser before review or push.
 set -euo pipefail
 
 ROOT=$(git rev-parse --show-toplevel)
@@ -17,7 +16,6 @@ render_report() {
 
 run python3 conformance/utils/src/gen_unified_golden.py
 
-# This compiles the current parser and writes the live Dynamo capture feed.
 if ! run cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --nocapture; then
   render_report || true
   exit 1
@@ -46,7 +44,6 @@ run python3 -m pytest -q \
   conformance/utils/tests/test_unified_taxonomy_covers_corpus.py \
   conformance/utils/tests/test_unified_fixture_overlays.py || status=1
 
-# The display must consume the same family/case set as the current generator.
 run python3 - <<'PY' || status=1
 import json
 import tarfile
