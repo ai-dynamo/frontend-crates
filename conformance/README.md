@@ -164,6 +164,8 @@ cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- -
 python3 -m pytest conformance/utils/tests/test_model.py
 ```
 
+Use `bash conformance/utils/regenerate_unified.sh` to run this sequence as one gate. It compiles and captures the live Unified parser, rebuilds and re-extracts the archives, renders the JSON/HTML report, runs the consuming tests, and fails when the generator, current archives, or rendered Unified cells disagree. The script renders JSON and HTML even when a later validation stage fails, so humans can inspect the current red or empty cells; a failed exit code means the report is diagnostic, not ready to publish.
+
 Do not substitute a loose harness feed for the package step. The v2 table reads the extracted packaged snapshot, so an un-packaged family cannot appear in its Unified tab.
 
 ### 3. Version rule: fixture dirs carry the crate version that ships them

@@ -123,10 +123,10 @@ New case IDs always use a numeric suffix: `<num>-<num>` for numeric groups or `<
 - **`12.d`** (`tool_in_reason_with_text`) 12.b WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and observable prefilled states. The current corpus emits 71 of the 96 taxonomy cases for this family.
-- The 71 applicable DSv4.1 cases are: `1.a`; `2.a-b`; `3.a`; `4.a-b`; `5.a-c`; `6.a`; `7.a-b`; `8.a-e`; `10.a-e`; `11.a-j`; `12.a-d`; `30.a-g,k-l`; `31-1` through `31-7`, `31-9` through `31-13`, `31-15` through `31-16`, `31-18` through `31-19`, and `31-23` through `31-28`; `40.b`; `41.a-b`; and `50.d`.
-- The 25 intentional not-applicable cases are: `k3-1` through `k3-8`, which require Kimi K3 XTML syntax; `g4-1` through `g4-2`, which require Gemma 4 guided call-prefix syntax; `30.m` and the guided JSON native-wrapper bare-opener rows (`31-8`, `31-14`, `31-17`, `31-20` through `31-22`), because DSv4.1 guided JSON is bare JSON and its native DSML invoke header is not a guided-output wrapper; and prefilled rows that vary only literal text or an unobservable state (`40.a`, `40.c-d`, `50.a-c`, and `51.a-b`). These are grammar or request-mode-specific cases, not missing DSv4.1 coverage.
-- In particular, `5.c`, `30.k-l`, `40.b`, and `50.d` are applicable and emitted for DSv4.1. The native-wrapper bare-opener rows are intentionally excluded because their syntax is impossible under guided JSON, and no-marker prefilled rows are excluded because they parse identically under `starting_state=None`.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 83 of the 96 taxonomy cases for this family.
+- Every taxonomy scenario declared for DeepSeek V4.1 is generated, except `40.a`, `40.c`, and `40.d`: each repeats an existing native Reasoning-to-call/text boundary with only different literal prose. The remaining 83 cases include `30.m`; `31-1` through `31-28`; all Response rows `50.a-d` and `51.a-b`; and `40.b` plus `41.a-b`.
+- The 13 intentional not-applicable cases are `k3-1` through `k3-8`, which require Kimi K3 XTML syntax; `g4-1` through `g4-2`, which require Gemma 4 guided call-prefix syntax; and the three redundant DeepSeek V4.1 rows above. These are grammar-specific cases or literal-only duplicates, not missing coverage.
+- In particular, `30.m` uses a valid DSML tool name followed by an intentionally missing header terminator; the later `>` in its JSON string argument must remain payload data. `31-8` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener. The no-marker Response rows remain: they exercise Response initialization across native and guided valid, multi-call, truncated, and malformed inputs, while `50.d` directly proves that Response treats reasoning markers as visible text.
 
 ## End-to-end test cases (`End-to-end:` tags)
 
@@ -302,7 +302,7 @@ Groups 1–12 vary the model OUTPUT. Groups 30+ vary the request: the resolved `
 - **`50.a`** (`prefilled_response_with_tool`) Leading visible content, then a native call.
 - **`50.b`** (`prefilled_response_with_guided_json`) Guided payload with the response channel already open.
 - **`50.c`** (`prefilled_response_guided_json_two_calls`) Two different tools; enters guided mode visible-only rather than outside-reasoning.
-- **`50.d`** (`prefilled_response_reasoning_markers_literal`) **The only case where `starting_state=Response` is observable.** `<think>literal</think>` must reach the user as TEXT, markers and all, because this stream has no reasoning channel. Every other 50/51 case has no reasoning markers in its input and therefore parses identically under `starting_state=None`: 50.a matches 8.a, 50.b matches 30.b, 50.c matches 30.c, and 51.b matches 31-3.
+- **`50.d`** (`prefilled_response_reasoning_markers_literal`) `<think>literal</think>` must reach the user as TEXT, markers and all, because this stream has no reasoning channel. It is the direct visible-marker regression; `50.a-c` and `51.a-b` separately exercise Response initialization across native and guided request modes.
 
 ### Group 51 — Prefilled response, malformed
 - **`51.a`** (`prefilled_response_truncated`) Budget runs out mid-call; the prose already emitted survives.

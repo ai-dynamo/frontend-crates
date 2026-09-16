@@ -399,7 +399,6 @@ def invoke_header_prefix(fam):
 
 
 def guided_invoke_prefix(fam):
-    """Native invoke prefix before the payload's owning delimiter."""
     if fam == "deepseek_v41":
         return '<｜DSML｜ invoke name="'
     return invoke_header_prefix(fam)
@@ -1854,58 +1853,19 @@ def _vllm_entry(spec, fam):
     return caveat if caveat is not None and not entry.get("note") else entry
 
 
-DEEPSEEK_V41_SCENARIOS = {
-    "tool_only", "reason_then_tool", "reason_then_content", "interstitial_text",
-    "two_calls", "two_calls_same_name", "text_only", "reason_only",
-    "empty_args", "arg_unicode", "arg_marker_in_string", "truncated_tool_eof",
-    "reason_unterminated", "tool_block_never_closed_then_text",
-    "tool_markup_only_emits_nothing",
-    "orphan_close_after_prose",
-    "reason_after_tool", "content_then_reason", "content_then_reason_then_tool",
-    "reason_interleaved", "reason_tool_text_reason_tool", "trailing_text_after_tool",
-    "text_before_tool", "text_sandwich", "text_between_calls", "narrated_calls",
-    "two_reason_spans", "reason_tool_reason_tool_reason", "reason_between_calls",
-    "text_reason_tool_text_reason_tool", "two_adjacent_reason_spans", "tool_no_close",
-    "reason_markup_in_arg", "reason_markup_in_arg_with_text", "tool_in_reason",
-    "tool_in_reason_with_text",
-    "prefilled_reasoning_with_tool", "prefilled_reasoning_with_guided_json",
-    "prefilled_reasoning_then_text_then_tool", "prefilled_reasoning_then_text",
-    "prefilled_response_with_tool", "prefilled_response_with_guided_json",
-    "prefilled_response_guided_json_two_calls",
-    "prefilled_response_reasoning_markers_literal", "prefilled_response_truncated",
-    "prefilled_response_guided_json_partial_calls",
-    "guided_json_named_tool",
-    "guided_json_required_tool", "guided_json_two_calls",
-    "guided_json_escaped_string_args", "guided_json_array_argument",
-    "guided_json_after_reasoning", "guided_json_invalid_call",
-    "guided_json_malformed_json", "guided_json_partial_calls",
-    "guided_json_list_with_broken_element", "guided_json_tool_open_before_payload",
-    "guided_json_tool_close_after_payload", "guided_json_wrapped_in_tool_markup",
-    "guided_json_native_markup_only", "guided_json_unterminated_reasoning_then_wrapped_payload",
-    "guided_json_marker_inside_argument",
-    "guided_json_prose_before_reasoning",
-    "guided_json_orphan_reason_close_before_payload",
-    "guided_json_orphan_tool_close_before_payload",
-    "guided_json_syntax_error_trailing_close",
-    "guided_json_syntax_error_wrapped",
-    "guided_json_syntax_error_bare_opener",
-    "guided_json_schema_error_not_a_call_trailing_close",
-    "guided_json_schema_error_not_a_call_wrapped",
-    "guided_json_schema_error_not_a_call_bare_opener",
-    "guided_json_schema_error_nameless_element_trailing_close",
-    "guided_json_schema_error_nameless_element_wrapped",
-    "guided_json_schema_error_nameless_element_bare_opener",
-    "guided_json_gt_in_argument_trailing_close",
-    "guided_json_gt_in_argument_wrapped",
-    "guided_json_gt_in_argument_bare_opener",
-    "guided_json_quoted_bare_header_in_answer",
-    "guided_json_quoted_bare_tool_header_in_answer",
-    "guided_json_quoted_bare_header_after_payload",
-    "guided_json_bare_tool_header_recovers_inside_a_thought",
-    "guided_json_narrated_invoke_in_reasoning",
-    "guided_json_stray_prefix_before_reasoning",
-    "guided_json_narrated_prefix_inside_reasoning",
+DEEPSEEK_V41_REDUNDANT_SCENARIOS = {
+    "prefilled_reasoning_with_tool": "reason_then_tool",
+    "prefilled_reasoning_then_text_then_tool": "interstitial_text",
+    "prefilled_reasoning_then_text": "reason_then_content",
 }
+
+# DeepSeek V4.1 follows the corpus's declared family scopes. Its only additional
+# exclusions are rows that repeat an existing boundary with the same request mode.
+DEEPSEEK_V41_SCENARIOS = {
+    spec[0]
+    for spec in (*CLEAN, *EDGE)
+    if not isinstance(spec[-1], OnlyFamilies) or "deepseek_v41" in spec[-1]
+} - set(DEEPSEEK_V41_REDUNDANT_SCENARIOS)
 
 
 def deepseek_v41_cases():
@@ -2026,21 +1986,6 @@ def deepseek_v41_cases():
 
     one = [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
     prefilled_call = calls(call("get_weather", {"city": "Paris"}))
-    add("prefilled_reasoning_with_tool", "Prefilled reasoning closes before a DSML invocation.",
-        "checking weather</think>" + prefilled_call,
-        [{"kind": "reasoning", "text": "checking weather"}] + one,
-        "Reasoning")
-    add("prefilled_reasoning_then_text_then_tool",
-        "Closing prefilled reasoning returns to visible text before a DSML invocation.",
-        "weighing options</think>Here's what I found: " + prefilled_call,
-        [{"kind": "reasoning", "text": "weighing options"},
-         {"kind": "text", "text": "Here's what I found: "}] + one,
-        "Reasoning")
-    add("prefilled_reasoning_then_text", "Closing prefilled reasoning returns to visible text.",
-        "no tool needed</think>The answer is 42.",
-        [{"kind": "reasoning", "text": "no tool needed"},
-         {"kind": "text", "text": "The answer is 42."}],
-        "Reasoning")
     add("prefilled_reasoning_redundant_opener", "A repeated prefilled reasoning opener is consumed once.",
         "<think>checking weather</think>" + calls(call("get_weather", {"city": "London"})),
         [{"kind": "reasoning", "text": "checking weather"},

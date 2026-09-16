@@ -32,6 +32,7 @@ import yaml  # noqa: E402
 import gen_unified_golden as G  # noqa: E402
 from gen_unified_golden import (  # noqa: E402
     CLEAN,
+    DEEPSEEK_V41_REDUNDANT_SCENARIOS,
     OnlyFamilies,
     EDGE,
     FAMILIES,
@@ -378,6 +379,61 @@ def test_no_two_scenarios_have_identical_behaviour() -> None:
         assert not dupes, f"{fam}: scenarios with identical behaviour: {list(dupes.values())}"
 
 
+def test_deepseek_v41_follows_declared_scope_without_literal_duplicates() -> None:
+    declared = {
+        spec[0]
+        for spec in (*CLEAN, *EDGE)
+        if not isinstance(spec[-1], OnlyFamilies) or "deepseek_v41" in spec[-1]
+    }
+    actual = {case_id.split(".", 2)[1] for case_id in build_cases("deepseek_v41")}
+    assert actual == declared - set(DEEPSEEK_V41_REDUNDANT_SCENARIOS)
+    assert DEEPSEEK_V41_REDUNDANT_SCENARIOS == {
+        "prefilled_reasoning_with_tool": "reason_then_tool",
+        "prefilled_reasoning_then_text_then_tool": "interstitial_text",
+        "prefilled_reasoning_then_text": "reason_then_content",
+    }
+    assert set(DEEPSEEK_V41_REDUNDANT_SCENARIOS.values()) <= actual
+
+
+def test_deepseek_v41_guided_narration_uses_an_unfinished_dsml_invoke() -> None:
+    case = build_cases("deepseek_v41")[
+        "UNIFIED.guided_json_narrated_invoke_in_reasoning.deepseek_v41"
+    ]
+    assert '<think>I\'ll use <｜DSML｜ invoke name=" next</think>' in case["input"]
+    assert "<think>I'll use <｜DSML｜ calls>" not in case["input"]
+
+
+def test_response_state_cross_product_is_deliberate() -> None:
+    scenarios = {
+        "prefilled_response_with_tool",
+        "prefilled_response_with_guided_json",
+        "prefilled_response_guided_json_two_calls",
+        "prefilled_response_reasoning_markers_literal",
+        "prefilled_response_truncated",
+        "prefilled_response_guided_json_partial_calls",
+    }
+    state_only_pairs = {
+        "prefilled_response_with_guided_json": "guided_json_required_tool",
+        "prefilled_response_guided_json_two_calls": "guided_json_two_calls",
+        "prefilled_response_guided_json_partial_calls": "guided_json_partial_calls",
+    }
+
+    for family in FAMILIES:
+        cases = build_cases(family)
+        for scenario in scenarios:
+            case = cases[f"UNIFIED.{scenario}.{family}"]
+            assert case["init"]["starting_state"] == "Response"
+
+        for response_scenario, default_scenario in state_only_pairs.items():
+            response = cases[f"UNIFIED.{response_scenario}.{family}"]
+            default = cases[f"UNIFIED.{default_scenario}.{family}"]
+            response_init = {**response["init"], "starting_state": "*"}
+            default_init = {**default["init"], "starting_state": "*"}
+            assert (response["input"], response_init, response["golden"], response["finish_reason"]) == (
+                default["input"], default_init, default["golden"], default["finish_reason"]
+            )
+
+
 # --- scenario scope must be DECLARED, never inferred from a gap -----------------
 
 def test_an_undeclared_missing_family_fails_generation():
@@ -504,7 +560,7 @@ def test_unified_case_counts_match_the_generator():
     for fam in FAMILIES:
         family_specific = {
             "deepseek_v4": 86,
-            "deepseek_v41": 86,
+            "deepseek_v41": 83,
             "gemma4": 88,
             "kimi_k2": 86,
             "kimi_k3": 94,
