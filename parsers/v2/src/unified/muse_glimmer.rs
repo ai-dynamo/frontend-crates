@@ -264,8 +264,12 @@ mod tests {
 
     #[test]
     fn recipient_less_header_is_content() {
-        let out = events(&["<|start|>assistant<|message|>untagged content<|eot|>"]);
-        assert_eq!(out, vec![text("untagged content")]);
+        for input in [
+            "<|start|><|message|>untagged content<|eot|>",
+            "<|start|>assistant<|message|>untagged content<|eot|>",
+        ] {
+            assert_eq!(events(&[input]), vec![text("untagged content")]);
+        }
     }
 
     #[test]
@@ -368,17 +372,10 @@ mod tests {
     }
 
     #[test]
-    fn truncated_framed_answer_header_is_dropped_at_finish() {
-        let out = events(&[
-            " to=self<|message|>Look it up.<|eom|>",
-            "<|start|>assistant to=user",
-        ]);
-        assert_eq!(out, vec![reasoning("Look it up.")]);
-    }
-
-    #[test]
     fn every_truncated_framed_header_prefix_is_dropped_at_finish() {
         for header in [
+            "<|start|><|message|>",
+            "<|start|>assistant<|message|>",
             "<|start|>assistant to=self<|message|>",
             "<|start|>assistant to=user<|message|>",
             "<|start|>assistant to=get_weather<|message|>",

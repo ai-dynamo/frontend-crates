@@ -268,6 +268,9 @@ fn is_incomplete_framed_header(buffered: &str) -> bool {
         rest = after_role.trim_start_matches(|c: char| c.is_whitespace());
     }
 
+    if rest.len() < MESSAGE.len() && MESSAGE.starts_with(rest) {
+        return true;
+    }
     if "to=".starts_with(rest) {
         return true;
     }
