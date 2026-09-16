@@ -554,11 +554,11 @@ mod tests {
             .unwrap();
         assert_eq!(
             parser
-                .parse_complete("check</think>{\"city\":\"Paris\"}")
+                .parse_complete("checking weather</think>{\"city\":\"Paris\"}")
                 .unwrap(),
             vec![
                 UnifiedEvent::Reasoning {
-                    text: "check".into()
+                    text: "checking weather".into()
                 },
                 UnifiedEvent::ToolCall {
                     name: "weather".into(),

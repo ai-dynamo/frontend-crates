@@ -1981,21 +1981,24 @@ def deepseek_v41_cases():
             text += "</｜DSML｜ calls>"
         add(name, description, text, golden_of(segments), starting_state)
 
-    add("empty_args", "A complete invocation with no parameters.", calls(call("f", {})),
-        [{"kind": "tool_call", "name": "f", "arguments": {}}])
-    for name, value in [
-        ("arg_unicode", "東京 café 🦀"),
-        ("arg_marker_in_string", ' <think>quoted</think> <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; "x"\\\n '),
+    add("empty_args", "A complete invocation with no parameters.", calls(call("get_weather", {})),
+        [{"kind": "tool_call", "name": "get_weather", "arguments": {}}])
+    for name, tool, key, value in [
+        ("arg_unicode", "get_weather", "city", "São Paulo 東京"),
+        ("arg_marker_in_string", "f", "x",
+         ' <think>quoted</think> <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; "x"\\\n '),
     ]:
-        add(name, "String parameter bytes survive DSML decoding.", calls(call("f", {"x": value})),
-            [{"kind": "tool_call", "name": "f", "arguments": {"x": value}}])
-    add("truncated_tool_eof", "A truncated parameter does not complete an invocation and emits nothing.",
-        '<｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">partial', [])
+        add(name, "String parameter bytes survive DSML decoding.", calls(call(tool, {key: value})),
+            [{"kind": "tool_call", "name": tool, "arguments": {key: value}}])
+    add("truncated_tool_eof",
+        "A truncated parameter drops the incomplete invocation but keeps preceding reasoning.",
+        '<think>ok</think><｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Par',
+        [{"kind": "reasoning", "text": "ok"}])
     add("tool_no_close", "A complete invocation without its close marker emits nothing at EOF.",
         '<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" '
         'string="true">Paris</｜DSML｜ parameter>', [])
     add("reason_unterminated", "An open thought survives the end of the stream.",
-        "still thinking", [{"kind": "reasoning", "text": "still thinking"}], "Reasoning")
+        "thinking but stream ends", [{"kind": "reasoning", "text": "thinking but stream ends"}], "Reasoning")
     add("tool_block_never_closed_then_text",
         "An unterminated calls block emits nothing and discards the prose that follows it at EOF.",
         "<｜DSML｜ calls>still thinking about it", [])
@@ -2122,8 +2125,8 @@ def deepseek_v41_cases():
         [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "a > b"}}],
         mode="GuidedJson")
     add("prefilled_reasoning_with_guided_json", "Prefilled reasoning closes before a named guided call.",
-        "check</think>" + GUIDED_NAMED_ARGS,
-        [{"kind": "reasoning", "text": "check"}] + one,
+        "checking weather</think>" + GUIDED_NAMED_ARGS,
+        [{"kind": "reasoning", "text": "checking weather"}] + one,
         "Reasoning", "GuidedJson", "get_weather")
     shared_guided = build_cases("qwen3")
     edge_by_name = {edge_case[0]: edge_case for edge_case in EDGE}
