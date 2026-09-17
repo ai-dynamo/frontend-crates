@@ -23,10 +23,11 @@ import yaml
 
 import markers
 
+# WIP #241 follows PR #232 and restores its 15 deferred IDs without renumbering.
 UNIFIED_TAX = {
     # Group 1 — Single call
     "tool_only": (1, "a"),
-    # TODO: restore 1-2 in the follow-up to PR #232 (deferred-cases).
+    "kimi_k2_optional_prefix_name_overlap": (1, "2"),
     # Group 2 — Multiple calls (streamv2.2)
     "two_calls": (2, "a"), "two_calls_same_name": (2, "b"),
     # Group 3 — No call (streamv2.3)
@@ -42,7 +43,7 @@ UNIFIED_TAX = {
     "empty_args": (6, "a"),
     # Group 7 — Argument fidelity (streamv2.7)
     "arg_unicode": (7, "a"), "arg_marker_in_string": (7, "b"),
-    # TODO: restore 7-3 in the follow-up to PR #232 (deferred-cases).
+    "deepseek_v41_mixed_control_text_in_string": (7, "3"),
     # Group 8 — Content / narration position (streamv2.8)
     "text_before_tool": (8, "a"), "trailing_text_after_tool": (8, "b"),
     "text_sandwich": (8, "c"), "text_between_calls": (8, "d"),
@@ -110,7 +111,7 @@ UNIFIED_TAX = {
     "guided_json_gt_in_argument_trailing_close": (30, "k"),
     "guided_json_gt_in_argument_wrapped": (30, "l"),
     "guided_json_gt_in_argument_bare_opener": (30, "m"),
-    # TODO: restore 30-14 in the follow-up to PR #232 (deferred-cases).
+    "guided_json_gt_in_argument_named_bare_opener": (30, "14"),
 
     # Marker OWNERSHIP: which control marker owns a `>` when two compete. The
     # corpus had no such case, and the gap leaked private reasoning as text.
@@ -123,7 +124,16 @@ UNIFIED_TAX = {
     "guided_json_quoted_bare_header_after_payload": (31, "27"),
     "guided_json_bare_tool_header_recovers_inside_a_thought": (31, "28"),
     # 31-29 and 31-30 remain reserved for the historical Gemma-only cases.
-    # TODO: restore 31-31 through 31-40 in the follow-up to PR #232 (deferred-cases).
+    "qwen3_guided_non_ascii_header_in_truncated_reasoning": (31, "31"),
+    "qwen3_guided_non_ascii_header_in_closed_reasoning": (31, "32"),
+    "guided_json_native_parameter_body_inside_reasoning": (31, "33"),
+    "guided_json_native_parameter_object_before_payload": (31, "34"),
+    "guided_json_native_parameter_array_before_payload": (31, "35"),
+    "qwen3_guided_reasoning_opener_inside_native_header": (31, "36"),
+    "muse_glimmer_guided_message_end_inside_native_header": (31, "37"),
+    "deepseek_v4_guided_reasoning_opener_inside_native_body": (31, "38"),
+    "gemma4_guided_reasoning_opener_after_call_prefix": (31, "39"),
+    "guided_json_reasoning_markers_inside_native_parameter": (31, "40"),
     # Group g4 — Gemma 4 guided call-prefix boundaries
     "gemma4_guided_json_visible_call_prose_before_reasoning": ("g4", "1"),
     "gemma4_guided_json_malformed_call_prefix_before_reasoning": ("g4", "2"),
@@ -134,7 +144,8 @@ UNIFIED_TAX = {
     # Group 41 — Prefilled reasoning, weird / malformed
     "prefilled_reasoning_redundant_opener": (41, "a"), "prefilled_reasoning_truncated": (41, "b"),
     "prefilled_response_reasoning_markers_literal": (50, "d"),
-    # TODO: restore 50-1 and 50-2 in the follow-up to PR #232 (deferred-cases).
+    "prefilled_response_guided_pending_invoke_header": (50, "1"),
+    "prefilled_response_guided_closer_inside_invoke_quote": (50, "2"),
 }
 
 # Axis prefix makes each group's channel explicit: "TC" = tool-calling only (groups
