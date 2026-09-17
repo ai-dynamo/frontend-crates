@@ -207,13 +207,22 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
             .map(serde_json::to_value)
             .transpose()?;
         if tools.is_some() || response_format.is_some() {
-            if !matches!(
-                messages
-                    .first()
-                    .and_then(|m| m.get("role"))
-                    .and_then(Value::as_str),
-                Some("system" | "developer")
-            ) {
+            let developer_tools_would_be_overwritten = tools.is_some()
+                && messages.first().is_some_and(|message| {
+                    message.get("role").and_then(Value::as_str) == Some("developer")
+                        && message.get("tools").is_some_and(|tools| {
+                            !tools.is_null() && !tools.as_array().is_some_and(Vec::is_empty)
+                        })
+                });
+            if developer_tools_would_be_overwritten
+                || !matches!(
+                    messages
+                        .first()
+                        .and_then(|m| m.get("role"))
+                        .and_then(Value::as_str),
+                    Some("system" | "developer")
+                )
+            {
                 messages.insert(0, serde_json::json!({"role": "system", "content": ""}));
             }
             if let Some(tools) = tools {

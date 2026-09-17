@@ -9,6 +9,11 @@ struct Request {
     args: Option<std::collections::HashMap<String, Value>>,
 }
 
+struct RawRequest {
+    messages: Value,
+    tools: Option<Value>,
+}
+
 impl dynamo_renderer::OAIChatLikeRequest for Request {
     fn model(&self) -> String {
         self.request.model()
@@ -33,6 +38,21 @@ impl dynamo_renderer::OAIChatLikeRequest for Request {
     }
     fn chat_template_args(&self) -> Option<&std::collections::HashMap<String, Value>> {
         self.args.as_ref()
+    }
+}
+
+impl dynamo_renderer::OAIChatLikeRequest for RawRequest {
+    fn model(&self) -> String {
+        "deepseek-v4.1".into()
+    }
+    fn messages(&self) -> minijinja::Value {
+        minijinja::Value::from_serialize(&self.messages)
+    }
+    fn tools(&self) -> Option<minijinja::Value> {
+        self.tools.as_ref().map(minijinja::Value::from_serialize)
+    }
+    fn should_add_generation_prompt(&self) -> bool {
+        true
     }
 }
 
@@ -148,6 +168,25 @@ fn formatter_rejects_system_tools_before_top_level_injection() {
         Some(dynamo_renderer::PromptRenderError::InvalidRequest(message))
             if message.contains("message-level `tools`") && message.contains("system")
     ));
+}
+
+#[test]
+fn formatter_preserves_developer_tools_with_top_level_tools() {
+    let request = RawRequest {
+        messages: json!([{
+            "role": "developer",
+            "content": "Use a tool",
+            "tools": [{"type": "function", "function": {"name": "developer_tool"}}]
+        }]),
+        tools: Some(json!([
+            {"type": "function", "function": {"name": "top_level_tool"}}
+        ])),
+    };
+
+    let output = DeepSeekV41Formatter.render(&request).unwrap();
+
+    assert!(output.contains("developer_tool"));
+    assert!(output.contains("top_level_tool"));
 }
 
 #[test]
