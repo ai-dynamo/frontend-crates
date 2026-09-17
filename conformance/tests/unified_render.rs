@@ -310,30 +310,25 @@ fn tool_deltas(res: &dynamo_parsers_v2::ToolParseResult, out: &mut Vec<Value>) {
 /// Stream `input` through Dynamo's split pipeline CHUNK BY CHUNK, recording the
 /// real per-chunk emitted deltas (v1 reasoning streaming incremental -> v2 tool
 /// streaming push on the leftover content).
-fn dynamo_chunks(family: &str, input: &str, init: &Init) -> Vec<ChunkRow> {
+fn dynamo_chunks(family: &str, input: &str, init: &Init) -> anyhow::Result<Vec<ChunkRow>> {
     // Unified families: ONE parser, so a chunk's deltas are simply what it emitted.
     if let Ok(mut parser) = create_unified_parser_for_family(family, &tools()) {
         init.apply(&mut parser, family);
 
         let mut rows = Vec::new();
         for chunk in chunk_input(input) {
-            let deltas = parser.push(&chunk).unwrap_or_default();
+            let deltas = parser.push(&chunk)?;
             rows.push(ChunkRow {
                 delta_text: chunk,
                 deltas: deltas.iter().map(unified_delta_json).collect(),
             });
         }
-        let tail: Vec<Value> = parser
-            .finish()
-            .unwrap_or_default()
-            .iter()
-            .map(unified_delta_json)
-            .collect();
+        let tail: Vec<Value> = parser.finish()?.iter().map(unified_delta_json).collect();
         rows.push(ChunkRow {
             delta_text: "‹finish›".to_string(),
             deltas: tail,
         });
-        return rows;
+        return Ok(rows);
     }
 
     let (reasoning_name, tool_family) = parsers_for(family);
@@ -349,7 +344,7 @@ fn dynamo_chunks(family: &str, input: &str, init: &Init) -> Vec<ChunkRow> {
             deltas.push(json!({"kind": "reasoning", "text": rr.reasoning_text}));
         }
         if !rr.normal_text.is_empty() {
-            let tr = tp.push(&rr.normal_text).unwrap_or_default();
+            let tr = tp.push(&rr.normal_text)?;
             tool_deltas(&tr, &mut deltas);
         }
         rows.push(ChunkRow {
@@ -364,20 +359,21 @@ fn dynamo_chunks(family: &str, input: &str, init: &Init) -> Vec<ChunkRow> {
         tail.push(json!({"kind": "reasoning", "text": rf.reasoning_text}));
     }
     if !rf.normal_text.is_empty() {
-        let tr = tp.push(&rf.normal_text).unwrap_or_default();
+        let tr = tp.push(&rf.normal_text)?;
         tool_deltas(&tr, &mut tail);
     }
-    tool_deltas(&tp.finish().unwrap_or_default(), &mut tail);
+    tool_deltas(&tp.finish()?, &mut tail);
     rows.push(ChunkRow {
         delta_text: "‹finish›".to_string(),
         deltas: tail,
     });
-    rows
+    Ok(rows)
 }
 
 #[test]
 fn finish_is_part_of_the_stream_schedule_even_when_it_emits_nothing() {
-    let rows = dynamo_chunks("qwen3", "plain response", &Init::default());
+    let rows =
+        dynamo_chunks("qwen3", "plain response", &Init::default()).expect("Dynamo chunk capture");
     let finish = rows.last().expect("finish row");
     assert_eq!(finish.delta_text, "‹finish›");
     assert!(
@@ -536,6 +532,7 @@ fn render_unified_conformance_html() {
                 got.iter().map(Ev::render).collect::<Vec<_>>().join("  |  ")
             );
             let chunk_feed: Vec<Value> = dynamo_chunks(&file.family, &case.input, &case.init)
+                .expect("Dynamo chunk capture")
                 .into_iter()
                 .map(|r| json!({"delta_text": r.delta_text, "dynamo": r.deltas}))
                 .collect();
@@ -894,6 +891,7 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
             // The page assembles the Dynamo column from these per-chunk deltas, so
             // they have to be current too — not just the assembled list.
             let live_chunks: Vec<Vec<Value>> = dynamo_chunks(&doc.family, input, init)
+                .expect("Dynamo chunk capture")
                 .into_iter()
                 .map(|r| r.deltas)
                 .collect();
