@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::path::Path;
+use std::{collections::HashSet, path::Path};
 
 use tokenizers::tokenizer::{AddedToken, PostProcessor as _, Tokenizer as HfTokenizer};
 
@@ -12,6 +12,8 @@ use super::{
 
 pub struct HuggingFaceTokenizer {
     tokenizer: HfTokenizer,
+    byte_fallback_ids: HashSet<u32>,
+    special_ids: HashSet<u32>,
     /// Construction-time options; see [`TokenizerOptions`]. Defaults preserve
     /// the historical behavior (e.g. `add_special_tokens: false`). Set via
     /// [`Tokenizer::with_options`].
@@ -35,8 +37,42 @@ impl HuggingFaceTokenizer {
     }
 
     pub fn from_tokenizer(tokenizer: HfTokenizer) -> Self {
+        // ByteFallback decodes a contiguous run atomically: one invalid byte
+        // replaces the entire run, including previously valid ASCII/UTF-8.
+        // Discover the at-most-256 byte IDs once, not on the request hot path.
+        let has_byte_fallback = tokenizer.get_decoder().is_some_and(|decoder| {
+            fn contains(value: &serde_json::Value) -> bool {
+                value["type"] == "ByteFallback"
+                    || value["decoders"]
+                        .as_array()
+                        .is_some_and(|items| items.iter().any(contains))
+            }
+            serde_json::to_value(decoder).is_ok_and(|value| contains(&value))
+        });
+        let byte_fallback_ids = if has_byte_fallback {
+            tokenizer
+                .get_vocab(true)
+                .into_iter()
+                .filter_map(|(token, id)| {
+                    (token.len() == 6
+                        && token.starts_with("<0x")
+                        && token.ends_with('>')
+                        && u8::from_str_radix(&token[3..5], 16).is_ok())
+                    .then_some(id)
+                })
+                .collect()
+        } else {
+            HashSet::new()
+        };
+        let special_ids = tokenizer
+            .get_added_tokens_decoder()
+            .into_iter()
+            .filter_map(|(id, token)| token.special.then_some(id))
+            .collect();
         HuggingFaceTokenizer {
             tokenizer,
+            byte_fallback_ids,
+            special_ids,
             options: TokenizerOptions::default(),
         }
     }
@@ -165,6 +201,14 @@ impl Encoder for HuggingFaceTokenizer {
 }
 
 impl Decoder for HuggingFaceTokenizer {
+    fn has_unstable_suffix(&self, token_ids: &[TokenIdType], skip_special_tokens: bool) -> bool {
+        token_ids
+            .iter()
+            .rev()
+            .find(|id| !skip_special_tokens || !self.special_ids.contains(id))
+            .is_some_and(|id| self.byte_fallback_ids.contains(id))
+    }
+
     fn decode(&self, token_ids: &[TokenIdType], skip_special_tokens: bool) -> Result<DecodeResult> {
         // This calls into the library
         let text = self
@@ -223,6 +267,68 @@ impl Tokenizer for HuggingFaceTokenizer {
 impl From<HfTokenizer> for HuggingFaceTokenizer {
     fn from(tokenizer: HfTokenizer) -> Self {
         Self::from_tokenizer(tokenizer)
+    }
+}
+
+#[cfg(test)]
+mod byte_fallback_stream_tests {
+    use super::*;
+
+    fn tokenizer() -> super::super::Tokenizer {
+        let hf: HfTokenizer = serde_json::from_value(serde_json::json!({
+            "version": "1.0", "truncation": null, "padding": null,
+            "added_tokens": [{"id": 6, "content": "<eos>", "special": true,
+                "single_word": false, "lstrip": false, "rstrip": false, "normalized": false}],
+            "normalizer": null, "pre_tokenizer": null, "post_processor": null,
+            "decoder": {"type": "Sequence", "decoders": [
+                {"type": "ByteFallback"}, {"type": "Fuse"}]},
+            "model": {"type": "BPE", "vocab": {
+                "<0x61>": 0, "<0xF5>": 1, "<0xC3>": 2, "<0xA9>": 3,
+                " hello": 4, "!": 5, "<eos>": 6}, "merges": [], "byte_fallback": true}
+        }))
+        .unwrap();
+        std::sync::Arc::new(HuggingFaceTokenizer::from_tokenizer(hf)).into()
+    }
+
+    #[test]
+    fn byte_runs_match_full_decode() {
+        let tokenizer = tokenizer();
+        // Invalid tails rewrite the whole byte run, even previously valid ASCII
+        // or a complete multibyte character. Valid, incomplete and literal
+        // replacement output must all survive a terminal flush unchanged.
+        for ids in [
+            vec![0, 1, 4],
+            vec![2, 3, 1, 4],
+            vec![2, 3, 5],
+            vec![0],
+            vec![2, 3],
+            vec![2],
+            vec![0, 1],
+            vec![0, 6, 1, 4],
+        ] {
+            for skip in [false, true] {
+                let expected: String = tokenizer.decode(&ids, skip).unwrap().into();
+                let mut stream = tokenizer.decode_stream(&[], skip);
+                let mut actual = String::new();
+                for id in &ids {
+                    actual.push_str(&stream.step(*id).unwrap().unwrap_or_default());
+                }
+                actual.push_str(&stream.finish().unwrap().unwrap_or_default());
+                assert_eq!(actual, expected, "ids={ids:?}, skip={skip}");
+                assert_eq!(stream.finish().unwrap(), None);
+            }
+        }
+    }
+
+    #[test]
+    fn only_byte_suffix_is_delayed_and_prompt_is_not_emitted() {
+        let tokenizer = tokenizer();
+        let mut stream = tokenizer.decode_stream(&[4], true);
+        assert_eq!(stream.step(5).unwrap().as_deref(), Some("!"));
+        assert_eq!(stream.step(0).unwrap(), None);
+        assert_eq!(stream.step(1).unwrap(), None);
+        assert_eq!(stream.step(4).unwrap().as_deref(), Some("�� hello"));
+        assert_eq!(stream.finish().unwrap(), None);
     }
 }
 
