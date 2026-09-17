@@ -170,6 +170,28 @@ def test_tagless_shallow_clone_selects_only_source_verified_release(release_repo
     assert identity.select_capture_label(clone, {"0.6.0": [recorded]}) == identity.dynamo_v2_label(clone)
 
 
+@pytest.mark.parametrize("job", ["rust", "conformance-table"])
+@pytest.mark.parametrize("kind", ["release", "unpublished"])
+def test_ci_checkout_retains_earlier_capture_anchor(release_repo, tmp_path_factory, job, kind):
+    if kind == "unpublished":
+        (release_repo / "parsers/v2/src/lib.rs").write_text("pub fn changed_parser() {}\n")
+    recorded = identity.dynamo_v2_provenance(release_repo)
+    (release_repo / "capture.json").write_text(json.dumps(recorded))
+    git(release_repo, "add", ".")
+    commit = git(release_repo, "-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+                 "commit-tree", git(release_repo, "write-tree"), "-p", "HEAD", input="capture\n")
+    git(release_repo, "update-ref", "HEAD", commit)
+    workflow = yaml.safe_load((Path(__file__).resolve().parents[3] / ".github/workflows/ci.yml").read_text())
+    checkout = next(step for step in workflow["jobs"][job]["steps"]
+                    if step.get("uses", "").startswith("actions/checkout@"))
+    depth = checkout["with"].get("fetch-depth", 1)
+    clone = tmp_path_factory.mktemp("ci-capture") / "repo"
+    git(release_repo, "clone", *([f"--depth={depth}"] if depth else []),
+        "--no-tags", release_repo.as_uri(), str(clone))
+    assert identity.source_fingerprint(clone) == recorded["source_sha256"]
+    assert identity.select_capture_label(clone, {recorded["label"]: [recorded]}) == recorded["label"]
+
+
 def test_missing_capture_anchor_has_descriptive_chained_error(release_repo):
     recorded = identity.dynamo_v2_provenance(release_repo, "current")
     recorded["git_commit"] = "0" * 40
