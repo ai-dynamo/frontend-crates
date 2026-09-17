@@ -55,6 +55,12 @@ Then merge **only files absent from the released tarball** into `conformance/uni
 
 Unified work is complete only when the affected family's selected current Dynamo column has **zero empty cells and zero red cells**.
 
+## Required conversion collection
+
+For every family converted to `UnifiedParser`, collect the current release in the same change. The collection is: generate the authored Unified golden inputs, run `unified_render` to capture live Dynamo output, run `explode_unified_fixtures.py`, run `package_fixtures.py`, run `extract_fixtures.py --full-refresh`, then render `conformance/CONFORMANCE_v2.html`. The durable current `dynamo_v2-<version>.tar.gz`, `inputs.tar.gz`, `golden.tar.gz`, and `conformance/fixtures-manifest.json` are the evidence that the family is collected; files under the gitignored `conformance/unified/` build tree are not.
+
+Use only `conformance/utils/render_table_v2.sh --output conformance/CONFORMANCE_v2.html` for the report. Do not generate `CONFORMANCE_unified.html`. The required final gate is `conformance/utils/check.sh status --model <family> --tab unified`, which must show zero current Dynamo red cells and zero current Dynamo empty cells.
+
 - **Empty current cell:** the current capture is missing the case. Repair the capture pipeline and regenerate the qualified current shard.
 - **Red current cell:** current Dynamo output differs from GOLDEN. Reproduce the popup's exact input, initialization, and chunks, then fix the parser unless the authored GOLDEN is demonstrably wrong.
 - **Not a fix:** adding `reason:`, marking the current parser unavailable, selecting a historical column, serving stale HTML, or editing GOLDEN only to match current output.

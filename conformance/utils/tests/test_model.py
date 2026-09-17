@@ -200,6 +200,14 @@ def test_v2_all_tabs_present(model_v2):
     ], ids
 
 
+def test_v2_tab_labels_show_parser_generation(model_v2):
+    labels = {tab["id"]: tab["label"] for tab in model_v2["tabs"]}
+
+    assert labels["tab-toolcalling-batch"].startswith("Tool Calling v1")
+    assert labels["tab-toolcalling-streamv2"].startswith("Tool Calling v1")
+    assert labels["tab-unified"].startswith("Unified v2")
+
+
 def test_unified_numeric_case_ids_use_dash_everywhere(model_v2):
     """Fixture IDs, headers, columns, and glossary rows share one numeric format."""
     tab = _tab(model_v2, "tab-unified")
@@ -275,7 +283,7 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
 
 
 def test_unified_default_dynamo_uses_pr_capture_and_keeps_release_history(tmp_path):
-    """The actual packaged 0.3.4 fixtures retain the release and select the PR capture."""
+    """The packaged fixtures retain released history and select the PR capture."""
     page_path = tmp_path / "CONFORMANCE_v2.html"
     subprocess.run(
         [str(UTILS / "render_table_v2.sh"), "--output", str(page_path)],
@@ -287,7 +295,7 @@ def test_unified_default_dynamo_uses_pr_capture_and_keeps_release_history(tmp_pa
     dynamo = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
     release = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo@0.4.0")
 
-    assert dynamo["label"] == "Dynamo v2 Rust 0.4.1 (stream, Combined & Unified)"
+    assert dynamo["label"] == "Dynamo v2 Rust 0.5.3+pr213 (stream, Combined & Unified)"
     assert dynamo["default_bucket"] == "A"
     assert release["label"] == "Dynamo v2 Rust 0.4.0 (stream, Combined & Unified)"
     assert release["default_bucket"] == "C"

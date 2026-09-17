@@ -178,9 +178,19 @@ conformance/utils/render_table_v2.sh --output index.html
 
 # Prints the render command without writing the table.
 conformance/utils/render_table_v2.sh --dry-run
+
+# Generate immutable GitHub source links and Pages-hosted fixture links.
+conformance/utils/render_table_v2.sh \
+  --github-repository ai-dynamo/frontend-crates \
+  --github-revision "$(git rev-parse HEAD)" \
+  --fixture-base-url https://ai-dynamo.github.io/frontend-crates/fixtures/
 ```
 
 Open the generated HTML file in a browser. The table is generated from extracted fixture directories staged by `render_table_v2.sh`.
+
+The three web-link options must be supplied together. They change only link destinations: source files and directories use immutable GitHub `blob/<sha>` and `tree/<sha>` URLs, while case links use the fixture base URL and the extracted snapshot layout. Local renders without these options retain filesystem-relative source links and `file://` fixture links. `check.sh ci` accepts and forwards the same render options so CI can validate and publish one render.
+
+The CI workflow automatically publishes this report for matching pushes to `main`, and `workflow_dispatch` can republish it when run from `main`. Mirror branches still run the conformance gate but never upload or deploy the Pages artifact. Before the first deployment, configure the repository's Pages source as **GitHub Actions** and restrict the `github-pages` environment's deployment branches to `main`.
 
 Every successful render also writes `conformance/CONFORMANCE_v2.json`, derived from the same inlined model the browser renders, and prints the aggregate empty/red count. The standard compiler-like gate for one or more models and tabs is:
 
@@ -191,6 +201,22 @@ conformance/utils/check.sh status --model qwen3 --tab unified
 Repeat `--model` or `--tab` to validate more than one. The command always renders first, prints each empty or red model/case pair, and exits `1` when any requested cell is not green. `validate_conformance_status.py` is the lower-level reader for checking an existing HTML file without rerendering.
 
 Use the generated matrix to inspect vLLM Python vs vLLM Rust behavior. `check.sh vllm` runs the live vLLM Python parser against extracted YAML; it does not run vLLM Rust. vLLM Python vs Rust is a fixture comparison in the `TC stream (v2)` and `TC batch-on-stream (v2)` tabs.
+
+### UnifiedParser conversion collection
+
+When a model family is converted to `UnifiedParser`, collecting its current fixture capture is required in the same change. Set the shipping `parsers/v2` version first, then run:
+
+```bash
+python3 conformance/utils/src/gen_unified_golden.py
+cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --nocapture
+python3 conformance/utils/src/explode_unified_fixtures.py
+python3 conformance/utils/src/package_fixtures.py
+python3 conformance/utils/src/extract_fixtures.py --full-refresh
+conformance/utils/render_table_v2.sh --output conformance/CONFORMANCE_v2.html
+conformance/utils/check.sh status --model <family> --tab unified
+```
+
+This creates the durable `unified/dynamo_v2-<version>.tar.gz` shard, updates the inputs/golden shards and manifest, and renders the only supported HTML report. Do not generate `CONFORMANCE_unified.html`: it is not a published report and is not read by the v2 renderer. A family conversion is unfinished until the scoped status command reports zero red and zero empty current Dynamo cells.
 
 ## Matrix Legend
 

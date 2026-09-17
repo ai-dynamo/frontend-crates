@@ -322,7 +322,10 @@ fn delta_to_yaml(d: &dynamo_parsers_v2::UnifiedParserEvent) -> serde_yaml::Value
             serde_json::json!({"kind": "text", "text": text})
         }
         dynamo_parsers_v2::UnifiedParserEvent::ToolCall(c) => {
-            serde_json::json!({"kind": "tool_call", "name": c.name, "arguments": c.arguments, "complete": c.complete})
+            // Keep this serializer on the ToolCallDelta fields available in
+            // every UnifiedParser release. `complete` is current-only metadata;
+            // older binaries still back-capture their actual name/argument bytes.
+            serde_json::json!({"kind": "tool_call", "name": c.name, "arguments": c.arguments})
         }
     };
     serde_yaml::to_value(v).expect("delta serializes")

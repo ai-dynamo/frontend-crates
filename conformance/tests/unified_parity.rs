@@ -30,6 +30,7 @@ use serde_json::json;
 
 #[derive(Deserialize)]
 struct GoldenFile {
+    #[serde(default)]
     family: String,
     cases: BTreeMap<String, GoldenCase>,
 }
@@ -349,10 +350,17 @@ fn manifest_and_parser_registry_agree_on_native_families() {
     let declared: std::collections::BTreeSet<String> = common::unified_families()
         .iter()
         .filter(|(_, row)| row.native)
-        .flat_map(|(family, row)| [family.clone(), row.registry_key(family).to_string()])
+        .flat_map(|(family, row)| {
+            [family.as_str(), row.registry_key(family)]
+                .into_iter()
+                .filter_map(dynamo_parsers_v2::canonical_unified_family)
+                .map(str::to_string)
+        })
         .collect();
     for registered in REGISTERED_UNIFIED_FAMILIES {
-        if !declared.contains(*registered) {
+        let canonical =
+            dynamo_parsers_v2::canonical_unified_family(registered).unwrap_or(registered);
+        if !declared.contains(canonical) {
             wrong.push(format!(
                 "{registered}: in `unified_registry!` but no native `unified:` row declares it \
                  — add one in conformance/utils/src/parser_families.yaml, or it gets no \

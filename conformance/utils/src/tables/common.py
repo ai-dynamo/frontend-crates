@@ -16,6 +16,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote, urlsplit
 
 from fixture_snapshot import fixture_snapshot_root
 
@@ -28,44 +29,136 @@ from fixture_snapshot import fixture_snapshot_root
 # ---------------------------------------------------------------------------
 
 
-def _href_from_output(output_path: Path, artifact_root: Path, repo_relative: str) -> str:
+@dataclass(frozen=True)
+class _LinkContext:
+    output_path: Path
+    artifact_root: Path
+    github_repository: str | None = None
+    github_revision: str | None = None
+    fixture_base_url: str | None = None
+
+
+_LINK_CONTEXT: _LinkContext | None = None
+
+
+def _href_from_output(
+    output_path: Path, artifact_root: Path, repo_relative: str
+) -> str:
     trailing_slash = repo_relative.endswith("/")
     target = artifact_root / repo_relative.rstrip("/")
     href = Path(os.path.relpath(target, output_path.parent)).as_posix()
     return f"{href}/" if trailing_slash else href
 
 
-def _hrefs_for_output(output_path: Path, artifact_root: Path) -> dict[str, str]:
-    def h(rel: str) -> str:
-        return _href_from_output(output_path, artifact_root, rel)
+def _url_join(base: str, relative: str) -> str:
+    return base.rstrip("/") + "/" + quote(relative.lstrip("/"), safe="/._-~")
 
-    return {
-        "toolcalling_fixtures": h("conformance/toolcalling/fixtures-v1/"),
-        "toolcalling_stream_fixtures": h("conformance/toolcalling/fixtures-stream-v2/"),
-        "toolcalling_batch_on_stream_fixtures": h(
-            "conformance/toolcalling/fixtures-batch-on-stream-v2/"
+
+def repository_href(repo_relative: str) -> str:
+    """Resolve a repository file/directory for the active render destination."""
+    if _LINK_CONTEXT is None:
+        raise RuntimeError("link context is not configured")
+    if _LINK_CONTEXT.github_repository and _LINK_CONTEXT.github_revision:
+        trailing_slash = repo_relative.endswith("/")
+        kind = "tree" if trailing_slash else "blob"
+        href = (
+            f"https://github.com/{_LINK_CONTEXT.github_repository}/{kind}/"
+            f"{_LINK_CONTEXT.github_revision}/"
+            f"{quote(repo_relative.rstrip('/'), safe='/._-~')}"
+        )
+        return f"{href}/" if trailing_slash else href
+    return _href_from_output(
+        _LINK_CONTEXT.output_path,
+        _LINK_CONTEXT.artifact_root,
+        repo_relative,
+    )
+
+
+def _hrefs_for_context() -> dict[str, str]:
+    if _LINK_CONTEXT is None:
+        raise RuntimeError("link context is not configured")
+
+    if _LINK_CONTEXT.fixture_base_url:
+        fixture_roots = {
+            "toolcalling_fixtures": _url_join(
+                _LINK_CONTEXT.fixture_base_url,
+                "toolcalling/fixtures-batch-v1/inputs/",
+            ),
+            "toolcalling_stream_fixtures": _url_join(
+                _LINK_CONTEXT.fixture_base_url,
+                "toolcalling/fixtures-stream-v2/inputs/",
+            ),
+            # Batch-on-stream reuses the v1 batch inputs.
+            "toolcalling_batch_on_stream_fixtures": _url_join(
+                _LINK_CONTEXT.fixture_base_url,
+                "toolcalling/fixtures-batch-v1/inputs/",
+            ),
+            "reasoning_fixtures": _url_join(
+                _LINK_CONTEXT.fixture_base_url,
+                "reasoning/fixtures-v1/inputs/",
+            ),
+        }
+        fixture_stores = {
+            "toolcalling_fixture_store": repository_href(
+                "conformance/fixtures/toolcalling/fixtures-batch-v1/"
+            ),
+            "toolcalling_stream_fixture_store": repository_href(
+                "conformance/fixtures/toolcalling/fixtures-stream-v2/"
+            ),
+            "reasoning_fixture_store": repository_href(
+                "conformance/fixtures/reasoning/fixtures-v1/"
+            ),
+        }
+    else:
+        fixture_roots = {
+            "toolcalling_fixtures": repository_href(
+                "conformance/toolcalling/fixtures-v1/"
+            ),
+            "toolcalling_stream_fixtures": repository_href(
+                "conformance/toolcalling/fixtures-stream-v2/"
+            ),
+            "toolcalling_batch_on_stream_fixtures": repository_href(
+                "conformance/toolcalling/fixtures-batch-on-stream-v2/"
+            ),
+            "reasoning_fixtures": repository_href("conformance/reasoning/fixtures/"),
+        }
+        fixture_stores = {
+            "toolcalling_fixture_store": fixture_roots["toolcalling_fixtures"],
+            "toolcalling_stream_fixture_store": fixture_roots[
+                "toolcalling_stream_fixtures"
+            ],
+            "reasoning_fixture_store": fixture_roots["reasoning_fixtures"],
+        }
+
+    return fixture_roots | fixture_stores | {
+        "toolcalling_cases": repository_href(
+            "conformance/utils/lib/parsers/TOOLCALLING_CASES.md"
         ),
-        "reasoning_fixtures": h("conformance/reasoning/fixtures/"),
-        "toolcalling_cases": h("conformance/utils/lib/parsers/TOOLCALLING_CASES.md"),
-        "toolcalling_streaming_cases": h(
+        "toolcalling_streaming_cases": repository_href(
             "conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"
         ),
-        "reasoning_cases": h("conformance/utils/lib/parsers/REASONING_CASES.md"),
-        "toolcalling_src": h("parsers/v1/src/tool_calling/"),
-        "reasoning_src": h("parsers/v1/src/reasoning/"),
-        "streaming_src": h("parsers/v2/src/tool_calling/"),
-        "streaming_harmony_src": h("parsers/v2/src/tool_calling/harmony.rs"),
-        "pyproject_stub": h("conformance/utils/src/pyproject.stub.toml"),
+        "reasoning_cases": repository_href(
+            "conformance/utils/lib/parsers/REASONING_CASES.md"
+        ),
+        "toolcalling_src": repository_href("parsers/v1/src/tool_calling/"),
+        "reasoning_src": repository_href("parsers/v1/src/reasoning/"),
+        "streaming_src": repository_href("parsers/v2/src/tool_calling/"),
+        "streaming_harmony_src": repository_href(
+            "parsers/v2/src/tool_calling/harmony.rs"
+        ),
+        "pyproject_stub": repository_href(
+            "conformance/utils/src/pyproject.stub.toml"
+        ),
     }
 
 
 # Fixture YAMLs aren't loose in the repo — they're LFS tarballs under
 # conformance/fixtures/, extracted into an immutable snapshot selected through
 # $CONFORMANCE_FIXTURES_ROOT or `extract_fixtures.py`. The store
-# holds only the tarballs (no per-file URL), so a
-# per-cell YAML link points at the extracted file in that cache via file://. The
+# holds only the tarballs (no per-file URL), so a per-cell YAML link points at the
+# extracted file in that cache for local renders or its bundled copy for Pages. The
 # rendered `__fixture_path` is the flat resolved-tree path the readers use; remap it to
-# the versioned cache layout (the shared `inputs/` tree carries the model_text /
+# the versioned snapshot layout (the shared `inputs/` tree carries the model_text /
 # description a viewer wants to see).
 def _fixtures_cache_root() -> str:
     return str(fixture_snapshot_root())
@@ -82,7 +175,8 @@ def _fixture_cache_relpath(rel: str) -> str:
         corpus = "reasoning/fixtures-v1/inputs"
     elif fname.startswith("TOOLCALLING.streamv2"):
         corpus = "toolcalling/fixtures-stream-v2/inputs"
-    elif fname.startswith("TOOLCALLING."):  # batch + v1 stream both live in the v1 corpus
+    # Batch + v1 stream both live in the v1 corpus.
+    elif fname.startswith("TOOLCALLING."):
         corpus = "toolcalling/fixtures-batch-v1/inputs"
     else:
         return rel.lstrip("./")
@@ -90,10 +184,14 @@ def _fixture_cache_relpath(rel: str) -> str:
 
 
 def fixture_href(rel: str) -> str:
-    """Map a rendered fixture path to a file:// link into the local fixture cache.
-    Leaves absolute URLs and empty strings untouched."""
+    """Map a rendered fixture path to its configured local or published root.
+
+    Leaves absolute URLs and empty strings untouched.
+    """
     if not rel or "://" in rel:
         return rel
+    if _LINK_CONTEXT and _LINK_CONTEXT.fixture_base_url:
+        return _url_join(_LINK_CONTEXT.fixture_base_url, _fixture_cache_relpath(rel))
     return "file://" + _fixtures_cache_root() + "/" + _fixture_cache_relpath(rel)
 
 
@@ -102,11 +200,49 @@ def fixture_href(rel: str) -> str:
 LINKS: dict[str, str] = {}
 
 
-def set_links(output_path: Path, artifact_root: Path) -> dict[str, str]:
+def set_links(
+    output_path: Path,
+    artifact_root: Path,
+    *,
+    github_repository: str | None = None,
+    github_revision: str | None = None,
+    fixture_base_url: str | None = None,
+) -> dict[str, str]:
     """Resolve all link bases for `output_path`, install them as the active
     render context, and return them for callers that also want the dict."""
-    global LINKS
-    LINKS = _hrefs_for_output(output_path, artifact_root)
+    configured = (github_repository, github_revision, fixture_base_url)
+    if any(configured) and not all(configured):
+        raise ValueError(
+            "github_repository, github_revision, and fixture_base_url must be set together"
+        )
+    if github_repository and not re.fullmatch(
+        r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", github_repository
+    ):
+        raise ValueError(f"invalid GitHub repository: {github_repository!r}")
+    if github_revision and not re.fullmatch(r"[0-9a-fA-F]{40}", github_revision):
+        raise ValueError("GitHub revision must be a full 40-character commit SHA")
+    if fixture_base_url:
+        parsed = urlsplit(fixture_base_url)
+        if (
+            parsed.scheme != "https"
+            or not parsed.netloc
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError(
+                "fixture base URL must be an HTTPS URL without query or fragment"
+            )
+        fixture_base_url = fixture_base_url.rstrip("/") + "/"
+
+    global LINKS, _LINK_CONTEXT
+    _LINK_CONTEXT = _LinkContext(
+        output_path=output_path,
+        artifact_root=artifact_root,
+        github_repository=github_repository,
+        github_revision=github_revision.lower() if github_revision else None,
+        fixture_base_url=fixture_base_url,
+    )
+    LINKS = _hrefs_for_context()
     return LINKS
 
 

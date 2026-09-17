@@ -50,7 +50,9 @@
   function implOf(key) { return key ? key.replace(/-[sb](-.*)?$/, '') : key; }
   function toggleCands(cell, active, base) {
     let baseSec = null;
-    cell.querySelectorAll('.ttip .cand').forEach(function (sec) {
+    const tip = cell._ttip || cell.querySelector('.ttip');
+    if (!tip) return;
+    tip.querySelectorAll('.cand').forEach(function (sec) {
       const cls = Array.from(sec.classList).find(function (c) { return c.indexOf('cand-') === 0; });
       const key = cls ? cls.slice(5) : null;
       sec.classList.toggle('cand-on', key !== null && active.has(key));
@@ -66,7 +68,7 @@
       if (first && first !== baseSec) { baseSec.parentNode.insertBefore(baseSec, first); }
     }
     // Per-chunk grid: show only the columns in the Reference + Compare-with selection.
-    const grid = cell.querySelector('.ttip-chunks');
+    const grid = tip.querySelector('.ttip-chunks');
     if (grid) {
       const cands = grid.querySelectorAll('[data-cand]');
       if (cands.length) {
@@ -114,11 +116,11 @@
   // Show/clear a JS-driven "why n/a" line at the top of a cell's tooltip. Built in JS
   // (not the server-rendered tooltip) so the reason can change with the Reference.
   function setWhy(cell, text) {
-    let el = cell.querySelector('.cmp-why');
+    const tip = cell._ttip || cell.querySelector('.ttip');
+    if (!tip) return;
+    let el = tip.querySelector('.cmp-why');
     if (!text) { if (el) { el.remove(); } return; }
     if (!el) {
-      const tip = cell.querySelector('.ttip');
-      if (!tip) { return; }
       el = document.createElement('div');
       el.className = 'cmp-why';
       tip.insertBefore(el, tip.firstChild);
@@ -510,7 +512,22 @@
         'aria-label',
         (isVisible ? 'Collapse ' : 'Expand ') + button.dataset.colLabel + ' column'
       );
-      button.title = button.getAttribute('aria-label');
+      // Preserve the accessible name while exposing the same text in the page tooltip.
+      button.dataset.tooltip = button.getAttribute('aria-label');
+      button.dataset.ttipText = button.dataset.tooltip;
+      let ttip = button._ttip || button.querySelector('.ttip');
+      if (!ttip) {
+        ttip = document.createElement('span');
+        ttip.className = 'ttip column-control-tooltip';
+        const label = document.createElement('span');
+        label.className = 'column-control-tooltip-text';
+        label.textContent = button.dataset.ttipText;
+        ttip.appendChild(label);
+        button.appendChild(ttip);
+      } else {
+        ttip.querySelector('.column-control-tooltip-text').textContent = button.dataset.ttipText;
+      }
+      attachTooltip(button);
       document.querySelectorAll('[data-col-control-group="' + key + '"]').forEach(function (el) {
         el.classList.toggle('col-collapsed', !isVisible);
         if (el.dataset.expandedColspan) {
@@ -535,9 +552,47 @@
         el.colSpan = visibleColumnCount;
       });
     });
+    updateStickyOffsets();
     if (shouldUpdateUrl) {
       updateUrl(visible);
     }
+  }
+
+  // Label widths and header heights vary by tab, view, and collapsed column group. Measure
+  // them after each layout change so CSS sticky positioning does not hide either axis.
+  function updateStickyOffsets() {
+    document.querySelectorAll('table[data-parity-table], table[data-transpose-table]')
+      .forEach(function (table) {
+        const topRow = table.querySelector(
+          'thead > tr.matrix-groups, thead > tr.transpose-sections'
+        );
+        table.style.setProperty(
+          '--sticky-top-row-height',
+          topRow ? topRow.getBoundingClientRect().height + 'px' : '0px'
+        );
+        if (table.matches('[data-parity-table]')) {
+          const modelHeader = table.querySelector(
+            'thead th[data-col-control-group="model"]'
+          );
+          const parserHeader = table.querySelector(
+            'thead th[data-col-control-group="parser"]'
+          );
+          const modelWidth = modelHeader && modelHeader.offsetParent !== null
+            ? modelHeader.getBoundingClientRect().width : 0;
+          const parserWidth = parserHeader && parserHeader.offsetParent !== null
+            ? parserHeader.getBoundingClientRect().width : 0;
+          table.style.setProperty('--sticky-model-width', modelWidth + 'px');
+          table.style.setProperty('--sticky-parser-width', parserWidth + 'px');
+        } else {
+          const caseHeaders = Array.from(table.querySelectorAll(
+            'thead th.tcorner-case, tbody th.trow-case'
+          )).filter(function (header) { return header.offsetParent !== null; });
+          const caseWidth = caseHeaders.reduce(function (width, header) {
+            return Math.max(width, header.getBoundingClientRect().width);
+          }, 0);
+          table.style.setProperty('--sticky-case-width', caseWidth + 'px');
+        }
+      });
   }
 
   let visibleColumns = readVisibleColumns();
@@ -584,6 +639,13 @@
 
   function activateTab(id, shouldUpdateUrl) {
     if (!id) return;
+    if (pinnedCell) unpinCell(pinnedCell);
+    portalledTooltips.forEach(function (ttip) {
+      const owner = ttip._ttipOwner;
+      if (owner && owner.closest('.tab-panel')?.id !== id) {
+        owner._ttipUnpin ? owner._ttipUnpin() : ttip.classList.remove('ttip-visible');
+      }
+    });
     tabButtons.forEach(function (button) {
       const selected = button.dataset.tabTarget === id;
       button.classList.toggle('active', selected);
@@ -598,14 +660,8 @@
     if (shouldUpdateUrl) {
       updateTabUrl(id);
     }
+    updateStickyOffsets();
   }
-  activateTab(readActiveTab(), false);
-  tabButtons.forEach(function (button) {
-    button.addEventListener('click', function () {
-      activateTab(button.dataset.tabTarget, true);
-    });
-  });
-
   // Equal columns, sized to what the WIDEST column actually needs.
   //
   // Pure CSS gives one or the other, not both: `table-layout: fixed; width: 100%`
@@ -656,14 +712,15 @@
   }
 
   function place(cell) {
-    const ttip = cell.querySelector('.ttip');
+    const ttip = cell._ttip || cell.querySelector('.ttip');
     if (!ttip) return;
     equalizeColumns(ttip);
     ttip.style.visibility = 'hidden';
     ttip.style.opacity = '0';
     ttip.classList.add('ttip-visible');
+    const isPortalled = ttip.parentNode === document.body;
     ttip.style.left = '0px';
-    ttip.style.top = '100%';
+    ttip.style.top = isPortalled ? '0px' : '100%';
     ttip.style.right = 'auto';
     ttip.style.bottom = 'auto';
     // Cap the width at the viewport MINUS both gutters — that is the most a popup may
@@ -681,8 +738,16 @@
     if (overflowRight > 0) shiftX = -overflowRight;
     const absLeft = cellRect.left + shiftX;
     if (absLeft < margin) shiftX += (margin - absLeft);
-    ttip.style.left = shiftX + 'px';
-    if (cellRect.bottom + tipRect.height > vh - margin
+    if (isPortalled) {
+      ttip.style.left = (cellRect.left + window.scrollX + shiftX) + 'px';
+      ttip.style.top = (cellRect.bottom + window.scrollY) + 'px';
+      if (cellRect.bottom + tipRect.height > vh - margin && cellRect.top - tipRect.height > margin) {
+        ttip.style.top = (cellRect.top + window.scrollY - tipRect.height) + 'px';
+      }
+    } else {
+      ttip.style.left = shiftX + 'px';
+    }
+    if (!isPortalled && cellRect.bottom + tipRect.height > vh - margin
         && cellRect.top - tipRect.height > margin) {
       ttip.style.top = 'auto';
       ttip.style.bottom = '100%';
@@ -690,6 +755,25 @@
     ttip.style.visibility = '';
     ttip.style.opacity = '';
   }
+
+  let placeScheduled = false;
+  const portalledTooltips = new Set();
+  function repositionPortalledTooltips() {
+    if (placeScheduled) return;
+    placeScheduled = true;
+    window.requestAnimationFrame(function () {
+      placeScheduled = false;
+      portalledTooltips.forEach(function (ttip) {
+        if (ttip.classList.contains('ttip-visible') && ttip._ttipOwner) {
+          place(ttip._ttipOwner);
+        } else {
+          portalledTooltips.delete(ttip);
+        }
+      });
+    });
+  }
+  window.addEventListener('scroll', repositionPortalledTooltips, true);
+  window.addEventListener('resize', repositionPortalledTooltips);
 
   // Touch devices have no hover, so the tooltip is opened by TAP and pinned open
   // (with an ✕ to close) rather than shown on pointerenter. Where hover EXISTS, hover is
@@ -757,36 +841,64 @@
   const WIRED = '[data-ttip-wired]';
   document.addEventListener('click', function (e) {
     // A click anywhere outside a pinnable element (and not on a pinned tooltip) closes the pin.
-    if (pinnedCell && !e.target.closest(WIRED)) { unpinCell(pinnedCell); }
+    if (pinnedCell && !e.target.closest(WIRED) && !e.target.closest('.ttip')) { unpinCell(pinnedCell); }
   });
 
   function attachTooltip(cell) {
     const ttip = cell.querySelector('.ttip');
     if (!ttip) return;
+    cell._ttip = ttip;
+    ttip._ttipOwner = cell;
     // cloneNode copies the wired flag; guard so re-wiring a clone is a no-op and
     // originals aren't double-wired.
     if (cell.dataset.ttipWired === '1') return;
     cell.dataset.ttipWired = '1';
 
+    function showFocusedTooltip() {
+      cell._focusTooltip = true;
+      if (window.__buildTooltip) window.__buildTooltip(cell);
+    }
+
     let showTimer = null;
     let hideTimer = null;
     let isActive = false;
     let isVisible = false;
+    let portalParent = null;
+
+    function portalTooltip() {
+      if (portalParent) return;
+      if (cell._focusTooltip || (document.activeElement && cell.contains(document.activeElement))) return;
+      portalParent = ttip.parentNode;
+      document.body.appendChild(ttip);
+      portalledTooltips.add(ttip);
+    }
+
+    function restoreTooltip() {
+      if (!portalParent) return;
+      portalParent.appendChild(ttip);
+      portalParent = null;
+      portalledTooltips.delete(ttip);
+    }
 
     // ✕ close button (shown only while pinned) — inserted once per tooltip.
-    if (!ttip.querySelector('.ttip-close')) {
-      const x = document.createElement('button');
-      x.type = 'button';
-      x.className = 'ttip-close';
-      x.setAttribute('aria-label', 'Close');
-      x.textContent = '✕';
-      x.addEventListener('click', function (e) { e.stopPropagation(); unpin(); });
-      ttip.insertBefore(x, ttip.firstChild);
+    let closeButton = ttip.querySelector('.ttip-close');
+    if (!closeButton) {
+      closeButton = document.createElement('button');
+      closeButton.type = 'button';
+      closeButton.className = 'ttip-close';
+      closeButton.setAttribute('aria-label', 'Close');
+      closeButton.textContent = '✕';
+      ttip.insertBefore(closeButton, ttip.firstChild);
+    }
+    if (!closeButton.dataset.ttipCloseWired) {
+      closeButton.addEventListener('click', function (e) { e.stopPropagation(); unpin(); });
+      closeButton.dataset.ttipCloseWired = '1';
     }
 
     function pin() {
       if (pinnedCell && pinnedCell !== cell) { unpinCell(pinnedCell); }
       clearTimers();
+      portalTooltip();
       place(cell);
       ttip.classList.add('ttip-visible', 'ttip-pinned');
       isVisible = true;
@@ -800,6 +912,7 @@
     }
     function unpin() {
       ttip.classList.remove('ttip-visible', 'ttip-pinned');
+      restoreTooltip();
       isVisible = false;
       isActive = false;
       cell.classList.remove('ttip-open');
@@ -827,6 +940,8 @@
       showTimer = window.setTimeout(function () {
         showTimer = null;
         if (!isActive) return;
+        if (cell._focusTooltip && window.__buildTooltip) window.__buildTooltip(cell);
+        portalTooltip();
         place(cell);
         ttip.classList.add('ttip-visible');
         isVisible = true;
@@ -841,6 +956,7 @@
       }
       if (!isVisible) {
         ttip.classList.remove('ttip-visible');
+        restoreTooltip();
         return;
       }
       if (hideTimer !== null) {
@@ -850,8 +966,23 @@
         hideTimer = null;
         if (isActive) return;
         ttip.classList.remove('ttip-visible');
+        restoreTooltip();
         isVisible = false;
       }, hideDelayMs);
+    }
+
+    function keepButtonTooltipOpen() {
+      isActive = true;
+      clearTimers();
+      portalTooltip();
+      place(cell);
+      ttip.classList.add('ttip-visible');
+      isVisible = true;
+    }
+
+    function keepTooltipOpen() {
+      isActive = true;
+      clearTimers();
     }
 
     // TOUCH ONLY. Tap toggles a pinned tooltip; taps INSIDE the tooltip (its links, the ✕)
@@ -910,11 +1041,25 @@
     cell.addEventListener('mouseenter', onEnter);
     cell.addEventListener('mouseleave', onLeave);
     cell.addEventListener('focusin', function () {
-      if (hoverAllowed()) { scheduleShow(); }
+      if (hoverAllowed()) {
+        restoreTooltip();
+        showFocusedTooltip();
+        scheduleShow();
+      }
     });
     cell.addEventListener('focusout', function () {
       if (!ttip.classList.contains('ttip-pinned')) { scheduleHide(); }
+      cell._focusTooltip = false;
     });
+    ttip.addEventListener('pointerenter', keepTooltipOpen);
+    ttip.addEventListener('mouseenter', keepTooltipOpen);
+    ttip.addEventListener('pointerleave', onLeave);
+    ttip.addEventListener('mouseleave', onLeave);
+
+    if (cell.classList.contains('col-toggle')) {
+      cell.addEventListener('mouseenter', keepButtonTooltipOpen);
+      cell.addEventListener('pointerenter', keepButtonTooltipOpen);
+    }
   }
   // The elements present at load. `th.case-sub` carries the per-column grammar popup (the
   // same case in every family's grammar); it uses the identical hover/pin machinery as a
@@ -922,6 +1067,13 @@
   // the starting set, never the definition of "pinnable" (that is `WIRED` above).
   const WIRE_ON_LOAD = 'td.cell, td.parser, th.case-sub';
   document.querySelectorAll(WIRE_ON_LOAD).forEach(attachTooltip);
+
+  activateTab(readActiveTab(), false);
+  tabButtons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      activateTab(button.dataset.tabTarget, true);
+    });
+  });
 
   // ---- Transpose view (DIS-2280) ----
   // Build a transposed mirror of each panel's table on demand: models become
@@ -1002,6 +1154,7 @@
     });
     if (sections.some(function (s) { return s.label; })) {
       const r0 = outHead.insertRow();
+      r0.className = 'transpose-sections';
       const corner = document.createElement('th');
       corner.className = 'tcorner-case';
       r0.appendChild(corner);
@@ -1018,6 +1171,7 @@
     // the panel's case prefix (e.g. "Case TOOLCALLING.batch.*"), rotated the same
     // way as the model names.
     const r1 = outHead.insertRow();
+    r1.className = 'transpose-models';
     const cornerCase = document.createElement('th');
     cornerCase.className = 'tcol-model tcorner-case';
     let prefix = (table.dataset.casePrefix || '').trim();
@@ -1069,9 +1223,11 @@
       inner.appendChild(label);
       th.appendChild(inner);
       // Same hover tooltip as the original parser cell.
-      const srcTip = m.parserTd && m.parserTd.querySelector('.ttip');
+      const srcTip = m.parserTd && (m.parserTd._ttip || m.parserTd.querySelector('.ttip'));
       if (srcTip) {
         const tipClone = srcTip.cloneNode(true);
+        tipClone.removeAttribute('data-ttip-wired');
+        delete tipClone.dataset.ttipWired;
         th.appendChild(tipClone);
         attachTooltip(th);
       }
@@ -1119,7 +1275,19 @@
       models.forEach(function (m) {
         const src = m.cells[idx];
         if (src) {
+          const sourceTip = src._ttip || src.querySelector('.ttip');
           const clone = src.cloneNode(true);
+          const cloneTip = sourceTip && sourceTip.cloneNode(true);
+          const embeddedTip = clone.querySelector('.ttip');
+          if (cloneTip) {
+            if (embeddedTip) embeddedTip.remove();
+            cloneTip.classList.remove('ttip-visible', 'ttip-pinned');
+            cloneTip.querySelectorAll('.ttip-close').forEach(function (button) {
+              button.removeAttribute('data-ttip-close-wired');
+              delete button.dataset.ttipCloseWired;
+            });
+            clone.appendChild(cloneTip);
+          }
           clone.classList.remove('col-hidden');
           clone.removeAttribute('data-col-hide-group');
           // cloneNode copies the "already wired" flag; clear it so the clone
@@ -1152,6 +1320,7 @@
       // Apply the current column-collapse state so a case group hidden in the
       // original table stays hidden (as rows) in the freshly-built mirror.
       applyColumnState(visibleColumns, false);
+      updateStickyOffsets();
     }
   }
 
@@ -1169,6 +1338,8 @@
   }
 
   applyTransposeMode(readTransposeMode(), false);
+  updateStickyOffsets();
+  window.addEventListener('resize', updateStickyOffsets);
   if (transposeToggle) {
     transposeToggle.addEventListener('change', function () {
       applyTransposeMode(transposeToggle.checked, true);

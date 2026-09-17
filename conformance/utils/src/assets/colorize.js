@@ -40,7 +40,62 @@
   var NS_CLASS = 'tt-ns';
   // MiniMax ns token | `<...>` | Mistral-style `[NAME]`/`[/NAME]` (ALL-CAPS only, so
   // JSON arrays like `[{...}]` are not false-matched).
-  function tagRe() { return /\]<\]minimax\[>\[|<[^<>]+>|\[\/?[A-Z][A-Z0-9_]*\]/g; }
+  var GENERIC_TAG_PATTERN = '\\]<\\]minimax\\[>\\[|<[^<>]+>|\\[\\/?[A-Z][A-Z0-9_]*\\]';
+  var COMPOSITE_OPEN = '<|open|>';
+  var COMPOSITE_CLOSE = '<|close|>';
+  var COMPOSITE_SEP = '<|sep|>';
+  var COMPOSITE_NAME_RE = /^[A-Za-z_][A-Za-z0-9_:-]*$/;
+  var COMPOSITE_ATTRS_PATTERN = '(?:[ \\t]+[A-Za-z_][A-Za-z0-9_:-]*[ \\t]*=[ \\t]*"(?:\\\\.|[^"\\\\])*")*';
+
+  function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+  function declaredTokenPattern(token) {
+    var body, name, attrs;
+    if (token.indexOf(COMPOSITE_OPEN) === 0) {
+      body = token.slice(COMPOSITE_OPEN.length);
+      if (body.slice(-COMPOSITE_SEP.length) === COMPOSITE_SEP) {
+        name = body.slice(0, -COMPOSITE_SEP.length);
+        attrs = '';
+      } else {
+        name = body;
+        attrs = COMPOSITE_ATTRS_PATTERN;
+      }
+      if (COMPOSITE_NAME_RE.test(name)) {
+        return escapeRegex(COMPOSITE_OPEN) + '[ \\t]*' + escapeRegex(name)
+          + attrs + '[ \\t]*' + escapeRegex(COMPOSITE_SEP);
+      }
+    }
+    if (token.indexOf(COMPOSITE_CLOSE) === 0
+        && token.slice(-COMPOSITE_SEP.length) === COMPOSITE_SEP) {
+      name = token.slice(COMPOSITE_CLOSE.length, -COMPOSITE_SEP.length);
+      if (COMPOSITE_NAME_RE.test(name)) {
+        return escapeRegex(COMPOSITE_CLOSE) + '[ \\t]*' + escapeRegex(name)
+          + '[ \\t]*' + escapeRegex(COMPOSITE_SEP);
+      }
+    }
+    return null;
+  }
+
+  function declaredPatterns(family, markersMap) {
+    var lookup = declaredLookup(family, markersMap);
+    var patterns = [];
+    Object.keys(lookup).forEach(function (token) {
+      var source = declaredTokenPattern(token);
+      if (source) { patterns.push([new RegExp('^(?:' + source + ')$'), lookup[token], source]); }
+    });
+    patterns.sort(function (a, b) { return b[2].length - a[2].length; });
+    return patterns;
+  }
+
+  function tagRe(family, markersMap) {
+    var lookup = declaredLookup(family, markersMap);
+    var sources = declaredPatterns(family, markersMap).map(function (entry) { return entry[2]; });
+    Object.keys(lookup).sort(function (a, b) { return b.length - a.length; }).forEach(function (token) {
+      sources.push(escapeRegex(token));
+    });
+    sources.push(GENERIC_TAG_PATTERN);
+    return new RegExp(sources.join('|'), 'g');
+  }
 
   var PIPES = ['|', '｜'];  // ASCII and FULLWIDTH VERTICAL LINE
   var BEGIN_SUFFIXES = ['_begin', '▁begin'];  // ASCII underscore, LOWER ONE EIGHTH BLOCK
@@ -96,6 +151,22 @@
       table[tok] = ['singleton', tok];
     });
     return table;
+  }
+
+  function declaredHit(token, family, markersMap) {
+    var lookup = declaredLookup(family, markersMap);
+    if (lookup[token] != null) { return lookup[token]; }
+    var patterns = declaredPatterns(family, markersMap);
+    for (var i = 0; i < patterns.length; i++) {
+      if (patterns[i][0].test(token)) { return patterns[i][1]; }
+    }
+    return null;
+  }
+
+  function matchesDeclaredToken(token, declaration) {
+    if (token === declaration) { return true; }
+    var source = declaredTokenPattern(declaration);
+    return source !== null && new RegExp('^(?:' + source + ')$').test(token);
   }
 
   function stripSuffix(s, suffixes) {
@@ -203,6 +274,26 @@
     return out;
   }
 
+  function opaqueSpanFor(token, spans) {
+    var declarations = Object.keys(spans);
+    for (var i = 0; i < declarations.length; i++) {
+      if (matchesDeclaredToken(token, declarations[i])) { return spans[declarations[i]]; }
+    }
+    return null;
+  }
+
+  function opensOpaquePair(token, pairId, pairs) {
+    if (pairs[pairId]) { return true; }
+    var prefixes = [COMPOSITE_OPEN, COMPOSITE_CLOSE];
+    for (var i = 0; i < prefixes.length; i++) {
+      if (token.indexOf(prefixes[i]) !== 0) { continue; }
+      var tail = token.slice(prefixes[i].length).replace(/^[ \t]+/, '');
+      var name = tail.split(/[ \t<]/, 1)[0];
+      return !!pairs[name];
+    }
+    return false;
+  }
+
   // Is `pos` inside a JSON string literal of the object starting at `start`?
   // Mirrors markup.py::_in_json_string.
   function inJsonString(text, start, pos) {
@@ -225,7 +316,7 @@
     var pieces = [];
     var stack = [];  // [pairId, pieceIndex]
     var last = 0;
-    var re = tagRe();
+    var re = tagRe(family, markersMap);
     var m;
     while ((m = re.exec(text)) !== null) {
       if (m.index > last) { pieces.push(escapeHtml(text.slice(last, m.index))); }
@@ -236,7 +327,7 @@
         continue;
       }
       var kind, pairId, colorOverride;
-      var hit = declared[tok];
+      var hit = declaredHit(tok, family, markersMap);
       if (hit != null) {
         kind = hit[0]; pairId = hit[1]; colorOverride = null;
       } else {
@@ -251,7 +342,7 @@
         if (openOpaque[0] === 'pair') {
           ends = (kind === 'close' || kind === 'toggle') && pairId === openOpaque[1];
         } else {
-          ends = tok === openOpaque[1]
+          ends = matchesDeclaredToken(tok, openOpaque[1])
             && !(openOpaque[2] && inJsonString(text, openOpaque[3], m.index));
         }
         if (ends) {
@@ -266,8 +357,9 @@
         pieces.push('<span class="tt-orphan">' + esc + '</span>');
       } else if (kind === 'singleton') {
         pieces.push('<span class="' + st.singletonClassFor(pairId) + '">' + esc + '</span>');
-        if (opaque.spans[tok]) {
-          openOpaque = ['token', opaque.spans[tok][0], opaque.spans[tok][1], re.lastIndex];
+        var singletonSpan = opaqueSpanFor(tok, opaque.spans);
+        if (singletonSpan) {
+          openOpaque = ['token', singletonSpan[0], singletonSpan[1], re.lastIndex];
         }
       } else if (kind === 'toggle') {
         // Self-paired delimiter: close nearest matching open, else treat as open.
@@ -282,7 +374,7 @@
         } else {
           pieces.push(esc);
           stack.push([pairId, pieces.length - 1]);
-          if (opaque.pairs[pairId]) { openOpaque = ['pair', pairId, false, 0]; }
+          if (opensOpaquePair(tok, pairId, opaque.pairs)) { openOpaque = ['pair', pairId, false, 0]; }
         }
       } else if (kind === 'close') {
         var matchAt = findFromTop(stack, pairId);
@@ -301,7 +393,12 @@
       } else {  // open
         pieces.push(esc);
         stack.push([pairId, pieces.length - 1]);
-        if (opaque.pairs[pairId]) { openOpaque = ['pair', pairId, false, 0]; }
+        var openSpan = opaqueSpanFor(tok, opaque.spans);
+        if (openSpan) {
+          openOpaque = ['token', openSpan[0], openSpan[1], re.lastIndex];
+        } else if (opensOpaquePair(tok, pairId, opaque.pairs)) {
+          openOpaque = ['pair', pairId, false, 0];
+        }
       }
       last = re.lastIndex;
     }
@@ -344,7 +441,7 @@
     var st = new State();
     var intervals = [];
     var stack = [];
-    var re = tagRe();
+    var re = tagRe(family, markersMap);
     var m;
     while ((m = re.exec(text)) !== null) {
       var tok = m[0];
@@ -353,7 +450,7 @@
         continue;
       }
       var kind, pairId;
-      var hit = declared[tok];
+      var hit = declaredHit(tok, family, markersMap);
       if (hit != null) {
         kind = hit[0]; pairId = hit[1];
       } else {
@@ -368,7 +465,7 @@
         if (openOpaque[0] === 'pair') {
           endsI = (kind === 'close' || kind === 'toggle') && pairId === openOpaque[1];
         } else {
-          endsI = tok === openOpaque[1]
+          endsI = matchesDeclaredToken(tok, openOpaque[1])
             && !(openOpaque[2] && inJsonString(text, openOpaque[3], m.index));
         }
         if (endsI) { openOpaque = null; } else { continue; }
@@ -379,8 +476,9 @@
         intervals[idx].cls = 'tt-orphan';
       } else if (kind === 'singleton') {
         intervals[idx].cls = st.singletonClassFor(pairId);
-        if (opaque.spans[tok]) {
-          openOpaque = ['token', opaque.spans[tok][0], opaque.spans[tok][1], re.lastIndex];
+        var singletonSpan = opaqueSpanFor(tok, opaque.spans);
+        if (singletonSpan) {
+          openOpaque = ['token', singletonSpan[0], singletonSpan[1], re.lastIndex];
         }
       } else if (kind === 'toggle') {
         var matchAtT = findFromTop(stack, pairId);
@@ -392,7 +490,7 @@
           stack.length = matchAtT;
         } else {
           stack.push([pairId, idx]);
-          if (opaque.pairs[pairId]) { openOpaque = ['pair', pairId, false, 0]; }
+          if (opensOpaquePair(tok, pairId, opaque.pairs)) { openOpaque = ['pair', pairId, false, 0]; }
         }
       } else if (kind === 'close') {
         var matchAt = findFromTop(stack, pairId);
@@ -407,7 +505,12 @@
         }
       } else {  // open
         stack.push([pairId, idx]);
-        if (opaque.pairs[pairId]) { openOpaque = ['pair', pairId, false, 0]; }
+        var openSpan = opaqueSpanFor(tok, opaque.spans);
+        if (openSpan) {
+          openOpaque = ['token', openSpan[0], openSpan[1], re.lastIndex];
+        } else if (opensOpaquePair(tok, pairId, opaque.pairs)) {
+          openOpaque = ['pair', pairId, false, 0];
+        }
       }
     }
     for (var i = 0; i < stack.length; i++) {

@@ -89,7 +89,7 @@ src/
 - `ToolParseResult`
 - `ToolParser`
 
-Keep these names and field meanings aligned with vLLM Rust unless Dynamo explicitly needs a small extension. Current Dynamo extension: a parser may accept decoded text chunks or token-id chunks through `ToolParserInput`, `push_tokens`, and `push_input`.
+Keep these names and field meanings aligned with vLLM Rust unless Dynamo explicitly needs a small extension. Dynamo extensions are token-id input through `ToolParserInput`, `push_tokens`, and `push_input`, plus `ToolCallDelta::complete` so adapters can suppress provisional calls that never become valid.
 
 ```rust
 // Mirrors vLLM Rust `Tool` verbatim.
@@ -100,11 +100,12 @@ pub struct Tool {
     pub strict: Option<bool>,
 }
 
-// Mirrors vLLM Rust `ToolCallDelta` verbatim.
+// Dynamo extension: `complete` records whether this update commits the call.
 pub struct ToolCallDelta {
     pub tool_index: usize,
     pub name: Option<String>,
     pub arguments: String,
+    pub complete: bool,
 }
 
 // Mirrors vLLM Rust `ToolParseResult` verbatim.
@@ -141,17 +142,19 @@ Rules:
 - Keep parser recovery from leaking tool markers into `normal_text` when the grammar can recover or safely suppress malformed tool syntax.
 - Text and token input should not be mixed for one parser run. Use all text chunks or all token chunks for a fixture capture.
 
-**Do not drift from vLLM Rust here.** These four types intentionally mirror the vLLM Rust `ToolParser` contract, not vLLM Python wire deltas — vLLM Rust may later depend on this frontend crate, so Dynamo keeps a small duplicated contract that stays shaped like vLLM Rust. The one allowed Dynamo-only extension is token input (`push_tokens` / `push_input` / `prefers_tokens`), which token-native parsers like Harmony need; everything else should match vLLM Rust field-for-field.
+**Do not drift from vLLM Rust here without an explicit contract reason.** These types follow the vLLM Rust `ToolParser` shape, not vLLM Python wire deltas. Dynamo currently adds token input (`push_tokens` / `push_input` / `prefers_tokens`) and `ToolCallDelta::complete`; keep other fields aligned.
 
 ## Fixture Files To Add
 
 For a new streaming parser family, add or update these files:
 
 - `parsers/v2/src/tool_calling/<family>.rs` for the parser implementation.
-- `parsers/v2/src/tool_calling/mod.rs` for the family registry entry.
+- `parsers/v2/src/tool_calling/registry.rs` for the family registry entry.
 - `conformance/toolcalling/fixtures-stream-v2/<family>/TOOLCALLING.streamv2.*.yaml` for per-chunk stream captures.
 - `conformance/toolcalling/fixtures-batch-on-stream-v2/<family>/TOOLCALLING.batch*.yaml` for complete batch text fed through streaming parsers.
 - `conformance/toolcalling/fixtures-batch-v1/<family>/TOOLCALLING.batch*.yaml` only when the family or taxonomy cases do not already exist in the v1 batch corpus.
+
+New conformance sub-case IDs use numeric suffixes: `<num>-<num>` or `<letters/num>-<num>`. Do not create new letter-suffix IDs; existing lettered IDs remain historical identifiers.
 - `conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md` when adding a new stream-only case or changing stream case descriptions.
 - `conformance/toolcalling/fixtures-stream-v2/README.md` only if the fixture schema or capture convention changes.
 
@@ -200,7 +203,7 @@ In order:
 3. Inspect vLLM **Python** and **SGLang** for behavior and coverage — they are the peer references the matrix compares against.
 4. Decide the parser family id and peer parser names; add a row to `conformance/utils/src/parser_families.yaml` (`vllm_python` / `vllm_rust` / `sglang_python` / `dynamo_v2` / `preferred_input`), AND declare the family's grammar tokens in the `markers:` section of the same file (`pairs` / `singletons` / `leak`; explicit `{}` for markup-less grammars). The `↯` leak detector and the popup token coloring are derived from that declaration — skipping it makes leaks render as clean cells and every token render as a red orphan, and `check.sh coverage` fails on it.
 5. Implement `parsers/v2/src/tool_calling/<family>.rs`, returning `ToolParseResult` from every chunk; start from `harmony.rs` (token/channel grammar) or `dsml.rs` (text incremental state machine).
-6. Register the family in `create_tool_parser_for_family` in `parsers/v2/src/tool_calling/mod.rs`; override `prefers_tokens()` if the parser is token-native.
+6. Register the family in `create_tool_parser_for_family` in `parsers/v2/src/tool_calling/registry.rs`; override `prefers_tokens()` if the parser is token-native.
 7. Add Rust unit tests for: one call, multiple calls, partial chunks, malformed recovery, `normal_text`, and EOF.
 8. Add or update fixture files (see "Which Fixture Do I Edit?"). What "complete" means is machine-readable: `conformance/case-taxonomy.yaml` lists every case group and sub-case with requiredness. Run `conformance/utils/check.sh coverage --family <family>` — its FAIL list IS your fixture TODO list; a case your grammar cannot express gets a placeholder entry with an `explanation:` instead of silence.
 9. Capture one case (`conformance/utils/capture.sh dynamo-stream --fixture … --output …`), inspect, fix the parser, then capture all peer behavior (`capture.sh stream` / `capture.sh batch-on-stream`, optionally `--family <family>`).
