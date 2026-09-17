@@ -25,6 +25,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 UTILS = Path(__file__).resolve().parents[1]
 REPO = UTILS.parents[1]
@@ -32,7 +33,10 @@ if str(UTILS / "src") not in sys.path:
     sys.path.insert(0, str(UTILS / "src"))
 
 from fixture_snapshot import fixture_snapshot_root  # noqa: E402
+from capture_stimulus import capture_input  # noqa: E402
 import model as model_mod  # noqa: E402
+import generate_conformance_table as table  # noqa: E402
+from dynamo_version import dynamo_v2_label, select_capture_label  # noqa: E402
 
 
 def _resolve_cache_root() -> Path:
@@ -274,26 +278,191 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
     assert native["block"]["unavailable"] == "vLLM Rust 0.26.0 (stream, Combined & Unified) has no parser for muse_glimmer"
 
 
-def test_unified_default_dynamo_uses_published_capture_and_keeps_release_history(tmp_path):
+def test_unified_default_dynamo_uses_exact_source_and_keeps_release_history(tmp_path):
     page_path = tmp_path / "CONFORMANCE_v2.html"
-    subprocess.run(
+    result = subprocess.run(
         [str(UTILS / "render_table_v2.sh"), "--output", str(page_path)],
-        check=True,
         capture_output=True,
+        text=True,
         cwd=REPO,
     )
+    assert result.returncode == 0, result.stderr
     tab = _tab(_read_model(page_path, "render_table_v2.sh"), "tab-unified")
     dynamo = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
     release = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo@0.4.0")
 
-    assert dynamo["label"] == "Dynamo v2 Rust 0.6.0 (stream, Combined & Unified)"
+    captures = {}
+    for path in table._unified_base(REPO).glob("dynamo_v2-*/*/*.yaml"):
+        version = path.parent.parent.name.removeprefix("dynamo_v2-")
+        doc = yaml.safe_load(path.read_text())
+        layer = captures.setdefault(version, {
+            "complete_snapshot": (path.parent.parent / "capture-snapshot.json").is_file(),
+            "records": {},
+        })
+        layer["records"].update({
+            f"{path.parent.name}/{key}": doc.get("capture_provenance") for key in doc["cases"]
+        })
+    expected = select_capture_label(REPO, captures)
+    assert dynamo["label"] == f"Dynamo v2 Rust {expected} (stream, Combined & Unified)"
     assert dynamo["default_bucket"] == "A"
     assert release["label"] == "Dynamo v2 Rust 0.4.0 (stream, Combined & Unified)"
     assert release["default_bucket"] == "C"
 
 
-def test_unified_tab_marks_unsupported_and_postdated_vllm_cases_na(model_v2):
-    """n/a distinguishes an unsupported family from a case absent from an old capture."""
+@pytest.mark.parametrize("changed_field,value,missing_family", [
+    (None, None, None), ("starting_state", "Reasoning", None),
+    ("tool_output_mode", "GuidedJson", None), ("named_tool", "get_weather", None),
+    ("starting_state", "Reasoning", "deepseek_v4"),
+    ("starting_state", "Reasoning", "deepseek_v41"),
+])
+def test_unified_grammar_header_preserves_each_family_config(tmp_path, monkeypatch, changed_field, value, missing_family):
+    scenario = "reason_only"
+    generator = table.gen_unified_golden
+    authored = {family: generator.build_cases(family) for family in ("deepseek_v4", "deepseek_v41")}
+    monkeypatch.setattr(generator, "build_cases", authored.__getitem__)
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda _captures: "0.6.0")
+    monkeypatch.setattr(table, "_unified_base", lambda _root: tmp_path)
+    scenarios = {scenario, "text_only"} if missing_family else {scenario}
+    monkeypatch.setattr(generator, "CLEAN", [case for case in generator.CLEAN if case[0] in scenarios])
+    monkeypatch.setattr(generator, "EDGE", [])
+    configurations = {}
+    for family in ("deepseek_v4", "deepseek_v41"):
+        init = {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+        if family == "deepseek_v41" and changed_field:
+            init[changed_field] = value
+        configurations[family] = init
+        if family == missing_family:
+            fallback = generator.build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+            assert fallback["init"] == init
+            key = table.unified_taxonomy.numbered_id("text_only")
+            path = tmp_path / "inputs" / family / f"{key}.yaml"
+            path.parent.mkdir(parents=True)
+            path.write_text(yaml.safe_dump({"family": family, "cases": {key: {
+                "scenario": "text_only", "description": "Visible text", "input": "answer",
+                "init": init, "chunks": [{"delta_text": "answer"}],
+            }}}))
+            continue
+        key = table.unified_taxonomy.numbered_id(scenario)
+        records = {
+            "inputs": {"scenario": scenario, "description": "Reasoning", "input": "thought",
+                       "init": init, "chunks": [{"delta_text": "thought"}]},
+            "golden": {"assembled": [{"kind": "reasoning", "text": "thought"}]},
+        }
+        for dirname, record in records.items():
+            path = tmp_path / dirname / family / f"{key}.yaml"
+            path.parent.mkdir(parents=True)
+            path.write_text(yaml.safe_dump({"family": family, "cases": {key: record}}))
+    tab = table._unified_tab_model(tmp_path, {})
+    default = next(candidate for candidate in tab["candidates"] if candidate["default_bucket"] == "A")
+    assert default["key"] == "dynamo"
+    assert "Default Reference = <strong>Dynamo v2 Rust</strong>" in tab["toolbar_desc_html"]
+    assert "Oracle = <strong>GOLDEN</strong>" in tab["toolbar_desc_html"]
+    column = next(col for col in tab["columns"] if col["sub"] == scenario)
+    assert column["init"] == (None if changed_field else configurations["deepseek_v4"])
+    script = r"""
+const fs = require('fs');
+const vm = require('vm');
+const context = {window: {}, document: {cookie: '', documentElement: {setAttribute() {}},
+  querySelectorAll() {return [];}, addEventListener() {}, getElementById() {return null;}}};
+vm.createContext(context);
+const source = fs.readFileSync(process.argv[1], 'utf8');
+vm.runInContext(source.replace('// --- Entry point',
+  'window.audit = {columnGrammarModel, buildGrammarHtml, hydratePage};\n// --- Entry point'), context);
+const page = JSON.parse(fs.readFileSync(0, 'utf8'));
+context.window.audit.hydratePage(page);
+const tab = page.tabs[0];
+const column = tab.columns.find(col => col.sub === 'reason_only');
+const model = context.window.audit.columnGrammarModel(tab, column);
+process.stdout.write(JSON.stringify({model, html: context.window.audit.buildGrammarHtml(model)}));
+"""
+    result = subprocess.run(
+        ["node", "-e", script, str(UTILS / "src/assets/conformance_view.js")],
+        input=json.dumps(model_mod.build_page({}, [tab])), text=True, capture_output=True, check=True,
+    )
+    rendered = json.loads(result.stdout)
+    for row in rendered["model"]["grammar"]:
+        assert row["init"] == configurations[row["family"]]
+        html_row = next(part for part in rendered["html"].split("<tr") if row["family"] in part)
+        for field, setting in row["init"].items():
+            label = f"{field}={'null' if setting is None else setting}"
+            assert label in (html_row if changed_field else rendered["html"].split("<table")[0])
+    assert rendered["html"].count('class="ttip-config"') == (2 if changed_field else 1)
+
+
+def test_unified_selector_uses_source_checkout_with_or_without_staging(tmp_path, monkeypatch):
+    monkeypatch.delenv("CONFORMANCE_DYNAMO_V2_LABEL", raising=False)
+    monkeypatch.delenv("FRONTEND_CRATES_ROOT", raising=False)
+    expected = dynamo_v2_label(REPO)
+    assert table._unified_dynamo_label({}) == expected
+    monkeypatch.setenv("FRONTEND_CRATES_ROOT", str(REPO))
+    monkeypatch.setattr(table, "__file__", str(tmp_path / "tests/parity/generate_conformance_table.py"))
+    assert table._unified_dynamo_label({}) == expected
+
+
+@pytest.mark.parametrize("current_present", [False, True])
+@pytest.mark.parametrize("selected_digit", ["0", "f"])
+@pytest.mark.parametrize("capture_failure", [None, "error", "unavailable"])
+def test_unified_source_selection_is_exact_not_digest_order(tmp_path, monkeypatch, current_present, selected_digit, capture_failure):
+    selected = "0.6.0+source." + selected_digit * 64
+    other = "0.6.0+source." + ("f" if selected_digit == "0" else "0") * 64
+    scenario, family = "text_only", "gemma4"
+    generator = table.gen_unified_golden
+    authored = generator.build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    key = table.unified_taxonomy.numbered_id(scenario)
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda _captures: selected)
+    monkeypatch.setattr(table, "_unified_base", lambda _root: tmp_path)
+    monkeypatch.setattr(generator, "CLEAN", [case for case in generator.CLEAN if case[0] == scenario])
+    monkeypatch.setattr(generator, "EDGE", [])
+
+    records = {
+        "inputs": {"scenario": scenario, "description": authored["description"],
+                   "input": authored["input"], "init": authored["init"], "tools": [],
+                   "chunks": [{"delta_text": authored["input"]}]},
+        "golden": {"assembled": authored["golden"]},
+    }
+    for version in ["0.6.0", other] + ([selected] if current_present else []):
+        events = [{"kind": "text", "text": version}]
+        records[f"dynamo_v2-{version}"] = (
+            {capture_failure: "capture could not run"} if capture_failure and version != "0.6.0" else
+            {"assembled": events, "chunks": [{"expected": events}]}
+        )
+        records[f"dynamo_v2-{version}"]["capture_input"] = capture_input(records["inputs"])
+    for dirname, record in records.items():
+        path = tmp_path / dirname / family / f"{key}.yaml"
+        path.parent.mkdir(parents=True)
+        path.write_text(yaml.safe_dump({"family": family, "cases": {key: record}}))
+
+    cases, _caps, versions = table._load_unified_fixtures(tmp_path)
+    case = next(case for case in cases if case["family"] == family)
+    assert versions["dynamo_v2"] == selected
+    assert set(versions["dynamo_v2_all"]) == {"0.6.0", other} | ({selected} if current_present else set())
+    assert case["dynamo_missing"] is (not current_present)
+    assert case["dynamo"] == ([{"kind": "text", "text": selected}] if current_present and not capture_failure else [])
+
+    tab = table._unified_tab_model(tmp_path, {})
+    candidates = {candidate["key"]: candidate for candidate in tab["candidates"]}
+    assert candidates["dynamo"]["label"] == f"Dynamo v2 Rust {selected} (stream, Combined & Unified)"
+    assert {key for key in candidates if key.startswith("dynamo@")} == {"dynamo@0.6.0", f"dynamo@{other}"}
+    cell = next(row for row in tab["rows"] if row["family"] == family)["cells"][scenario]
+    current = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == "dynamo")
+    if current_present and capture_failure:
+        assert current["block"] == {capture_failure: "capture could not run"}
+        assert cell["status"] == "problem"
+        assert cell["cmp"]["dynamo"]["err"] == 1
+    elif current_present:
+        assert current["block"]["events"] == [{"kind": "text", "text": selected}]
+    else:
+        assert cell["status"] == "problem"
+        assert cell["cmp"]["dynamo"]["err"] == 1
+        assert "Missing Unified capture" in current["block"]["error"]
+    if capture_failure:
+        historical = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == f"dynamo@{other}")
+        assert historical["block"] == {capture_failure: "capture could not run"}
+        assert cell["cmp"][f"dynamo@{other}"]["err" if capture_failure == "error" else "na"] == 1
+
+
+def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
+    """Historical output without its original request cannot establish parity."""
     tab = _tab(model_v2, "tab-unified")
     peer_keys = {candidate["key"] for candidate in tab["candidates"] if candidate["impl"] == "vllm"}
     assert peer_keys == {"vllm", "vllm_python@0.26.0", "vllm_rust", "vllm_rust@0.26.0"}
@@ -307,17 +476,17 @@ def test_unified_tab_marks_unsupported_and_postdated_vllm_cases_na(model_v2):
                 if not is_unavailable or row["cells"][scenario]["status"] == "na":
                     continue
                 peer = next(candidate for candidate in row["cells"][scenario]["tooltip"]["candidates"] if candidate["key"] == key)
-                assert "not captured at" in peer["block"]["unavailable"] or "has no parser" in peer["block"]["unavailable"]
+                reason = peer["block"]["unavailable"]
+                assert (
+                    "not captured at" in reason
+                    or "has no parser" in reason
+                    or reason.startswith(("Capture stimulus unavailable:", "Capture stimulus mismatch ("))
+                ), reason
+                assert "events" not in peer["block"]
+                comparison = row["cells"][scenario]["cmp"][key]
+                assert comparison == {"sig": 0, "leak": 0, "na": 1, "err": 0}
 
     gemma = next(row for row in tab["rows"] if row["family"] == "gemma4")
-    for key in peer_keys:
-        for cell in gemma["cells"].values():
-            if cell["cmp"][key].get("na") == 1:
-                if cell["status"] == "na":
-                    continue
-                peer = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == key)
-                assert "this case postdates that capture" in peer["block"]["unavailable"]
-
     for scenario in (
         "gemma4_guided_json_visible_call_prose_before_reasoning",
         "gemma4_guided_json_malformed_call_prefix_before_reasoning",

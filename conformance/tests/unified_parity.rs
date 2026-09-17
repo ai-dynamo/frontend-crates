@@ -17,16 +17,15 @@
 
 mod common;
 
-use common::Init;
+use common::{Init, unified_tools as tools};
 
 use std::collections::BTreeMap;
 
 use dynamo_parsers_v2::{
-    REGISTERED_UNIFIED_FAMILIES, Tool, UnifiedEvent, UnifiedParserExt, assemble,
+    REGISTERED_UNIFIED_FAMILIES, UnifiedEvent, UnifiedParserExt, assemble,
     create_unified_parser_for_family,
 };
 use serde::Deserialize;
-use serde_json::json;
 
 #[derive(Deserialize)]
 struct GoldenFile {
@@ -44,26 +43,6 @@ struct GoldenCase {
     /// identically; see that type for why it is declared and not inferred.
     #[serde(default)]
     init: Init,
-}
-
-/// Tool schemas the corpus is written against (string params, so a value like
-/// `1` stays the string `"1"` exactly as the golden records it). Mirrors
-/// `tools()` in `unified_render.rs`.
-fn tools() -> Vec<Tool> {
-    let mk = |name: &str, key: &str| Tool {
-        name: name.to_string(),
-        description: None,
-        parameters: json!({"type":"object","properties":{key:{"type":"string"}}}),
-        strict: None,
-    };
-    vec![
-        mk("get_weather", "city"),
-        mk("f", "x"),
-        mk("g", "y"),
-        mk("run", "cmd"),
-        mk("sum_values", "values"),
-        mk("log", "note"),
-    ]
 }
 
 fn load_golden() -> Vec<GoldenFile> {

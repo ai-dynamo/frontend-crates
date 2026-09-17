@@ -8,10 +8,23 @@
 //! `mod common;` so this compiles into it; a binary that uses only a subset is
 //! fine (hence the allow).
 #![allow(dead_code)]
+// The copied historical harness supplies this cfg without editing old manifests.
+#![allow(unexpected_cfgs)]
 
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
+
+/// Copy the schema file with historical harnesses: tool registration and argument
+/// typing are request inputs, not parser-version differences.
+pub fn unified_tools() -> Vec<dynamo_parsers_v2::Tool> {
+    serde_json::from_value(unified_tool_schemas()).expect("Unified corpus tool schemas")
+}
+
+pub fn unified_tool_schemas() -> serde_json::Value {
+    serde_json::from_str(include_str!("../../utils/src/unified_tools.json"))
+        .expect("Unified corpus tool schemas")
+}
 
 /// Recursively collect `*.yaml` fixture files under `dir` into `out`.
 pub fn collect_yaml(dir: &Path, out: &mut Vec<PathBuf>) {
@@ -246,10 +259,37 @@ pub fn fixture_name(path: &Path) -> String {
         .to_string()
 }
 
-/// Current parser-version capture used by stream parity and interleave tests.
+/// Historical stream baseline, not the current source identity. The legacy CURRENT
+/// name is retained for stream parity callers; Unified resolves its source separately.
 pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.5.1";
 
-pub const UNIFIED_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.6.0";
+// Consumers may reuse verified archives in tagless clones; producers still require tags.
+pub const UNIFIED_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-current";
+
+fn dynamo_identity_command() -> std::process::Command {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+    // Historical worktrees need the current checker, not their version-only helper.
+    let script = std::env::var_os("CONFORMANCE_DYNAMO_PROVENANCE_SCRIPT")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| repo.join("conformance/utils/src/dynamo_version.py"));
+    let mut command = std::process::Command::new("python3");
+    command.arg(script).arg("--repo-root").arg(repo);
+    command
+}
+
+pub fn dynamo_capture_provenance(label: Option<&str>) -> serde_json::Value {
+    let mut command = dynamo_identity_command();
+    if let Some(label) = label {
+        command.arg("--label").arg(label);
+    }
+    let output = command.output().expect("run Dynamo capture identity check");
+    assert!(
+        output.status.success(),
+        "Dynamo capture identity check failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    serde_json::from_slice(&output.stdout).expect("Dynamo capture provenance JSON")
+}
 
 /// Version-sorted capture dirs for one impl prefix (e.g. `dynamo-` under
 /// fixtures-batch-v1, `dynamo_v2-` under fixtures-stream-v2), ASCENDING by
@@ -283,7 +323,128 @@ pub fn version_dirs_ascending_with_current(
     prefix: &str,
     current_dir: &str,
 ) -> Vec<PathBuf> {
+    version_dirs_with_identity_command(root, prefix, current_dir, dynamo_identity_command())
+}
+
+fn capture_provenance_inventory(
+    root: &Path,
+    prefix: &str,
+) -> serde_json::Map<String, serde_json::Value> {
+    let mut captures = serde_json::Map::new();
+    for entry in std::fs::read_dir(root).expect("read capture root") {
+        let path = entry.expect("read capture entry").path();
+        if !path.is_dir() {
+            continue;
+        }
+        let name = path
+            .file_name()
+            .unwrap()
+            .to_str()
+            .expect("capture directory name");
+        let Some(version) = name.strip_prefix(prefix) else {
+            continue;
+        };
+        if !version.as_bytes().first().is_some_and(u8::is_ascii_digit) {
+            continue;
+        }
+        for family in std::fs::read_dir(&path).expect("read capture families") {
+            let family = family.expect("read capture family").path();
+            if !family.is_dir() {
+                continue;
+            }
+            let family_name = family.file_name().unwrap().to_str().unwrap();
+            for file in std::fs::read_dir(&family).expect("read capture cases") {
+                let file = file.expect("read capture case").path();
+                if file.extension().is_none_or(|extension| extension != "yaml") {
+                    continue;
+                }
+                let doc: serde_yaml::Value =
+                    serde_yaml::from_slice(&std::fs::read(&file).expect("read capture YAML"))
+                        .unwrap_or_else(|error| panic!("{}: {error}", file.display()));
+                let provenance = serde_json::to_value(&doc["capture_provenance"])
+                    .expect("capture provenance JSON");
+                let layer = captures.entry(version.to_string()).or_insert_with(|| {
+                    serde_json::json!({
+                        "complete_snapshot": path.join("capture-snapshot.json").is_file(),
+                        "records": {},
+                    })
+                });
+                let records = layer["records"].as_object_mut().unwrap();
+                for key in doc["cases"]
+                    .as_mapping()
+                    .expect("capture cases mapping")
+                    .keys()
+                {
+                    let key = format!("{family_name}/{}", key.as_str().expect("capture case key"));
+                    if let Some(previous) = records.insert(key.clone(), provenance.clone()) {
+                        assert_eq!(
+                            previous, provenance,
+                            "conflicting capture provenance: {key}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+    captures
+}
+
+fn version_dirs_with_identity_command(
+    root: &Path,
+    prefix: &str,
+    current_dir: &str,
+    mut command: std::process::Command,
+) -> Vec<PathBuf> {
+    let resolved;
+    let current_dir = if current_dir == UNIFIED_DYNAMO_V2_CURRENT_CAPTURE {
+        let captures = capture_provenance_inventory(root, prefix);
+        let mut child = command
+            .args(["--select-capture", "--format", "label"])
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .expect("run Dynamo capture selector");
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(&serde_json::to_vec(&captures).unwrap())
+            .expect("write capture provenance to selector");
+        let output = child
+            .wait_with_output()
+            .expect("wait for Dynamo capture selector");
+        assert!(
+            output.status.success(),
+            "Dynamo capture selection failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let label = String::from_utf8(output.stdout).expect("capture label UTF-8");
+        resolved = format!("{prefix}{}", label.trim());
+        &resolved
+    } else {
+        current_dir
+    };
     let current = root.join(current_dir);
+    let current = if current_dir.contains("+source.") {
+        let output = capture_stimulus_command()
+            .arg("--select-source-snapshot")
+            .arg(&current)
+            .output()
+            .expect("select complete current source snapshot");
+        assert!(
+            output.status.success(),
+            "source snapshot selection failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        PathBuf::from(
+            String::from_utf8(output.stdout)
+                .expect("snapshot path UTF-8")
+                .trim(),
+        )
+    } else {
+        current
+    };
     assert!(
         current.is_dir(),
         "expected current capture directory {}",
@@ -295,6 +456,186 @@ pub fn version_dirs_ascending_with_current(
         .collect::<Vec<_>>();
     dirs.push(current);
     dirs
+}
+
+/// Use the same snapshot and request-binding validator as the Python renderer.
+pub fn capture_stimulus_command() -> std::process::Command {
+    let mut command = std::process::Command::new("python3");
+    command.arg(Path::new(env!("CARGO_MANIFEST_DIR")).join("utils/src/capture_stimulus.py"));
+    command
+}
+
+#[cfg(test)]
+mod capture_selector_tests {
+    use super::*;
+
+    fn git(root: &Path, args: &[&str]) -> String {
+        let output = std::process::Command::new("git")
+            .arg("-C")
+            .arg(root)
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        String::from_utf8(output.stdout).unwrap().trim().to_string()
+    }
+
+    fn checker(repo: &Path) -> std::process::Command {
+        let mut command = dynamo_identity_command();
+        command
+            .arg("--repo-root")
+            .arg(repo)
+            .env_remove("CONFORMANCE_DYNAMO_V2_LABEL");
+        command
+    }
+
+    fn select(root: &Path, repo: &Path, label: Option<&str>) -> Vec<PathBuf> {
+        let mut command = checker(repo);
+        if let Some(label) = label {
+            command.env("CONFORMANCE_DYNAMO_V2_LABEL", label);
+        }
+        version_dirs_with_identity_command(
+            root,
+            "dynamo_v2-",
+            UNIFIED_DYNAMO_V2_CURRENT_CAPTURE,
+            command,
+        )
+    }
+
+    fn write_capture(dir: &Path, provenance: &serde_json::Value) {
+        std::fs::create_dir_all(dir.join("gemma4")).unwrap();
+        std::fs::write(
+            dir.join("gemma4/probe.yaml"),
+            serde_json::to_string(
+                &serde_json::json!({"capture_provenance": provenance, "cases": {"probe": {}}}),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn tagless_rust_consumer_reuses_verified_release() {
+        let scratch =
+            std::env::temp_dir().join(format!("dynamo-tagless-selector-{}", std::process::id()));
+        let repo = scratch.join("release");
+        std::fs::create_dir_all(repo.join("parsers/v2/src")).unwrap();
+        std::fs::write(
+            repo.join("parsers/v2/Cargo.toml"),
+            "[package]\nname='dynamo-parsers-v2'\nversion='0.6.0'\n",
+        )
+        .unwrap();
+        std::fs::write(repo.join("parsers/v2/src/lib.rs"), "pub fn parser() {}\n").unwrap();
+        git(&repo, &["init", "-q"]);
+        git(&repo, &["add", "."]);
+        let tree = git(&repo, &["write-tree"]);
+        let commit = git(
+            &repo,
+            &[
+                "-c",
+                "user.name=Test",
+                "-c",
+                "user.email=test@example.invalid",
+                "commit-tree",
+                &tree,
+                "-m",
+                "fixture",
+            ],
+        );
+        git(&repo, &["update-ref", "HEAD", &commit]);
+        git(
+            &repo,
+            &["update-ref", "refs/tags/dynamo-parsers-v2-v0.6.0", &commit],
+        );
+        let output = checker(&repo).output().unwrap();
+        assert!(output.status.success());
+        let recorded: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(recorded["label"], "0.6.0");
+        let clone = scratch.join("shallow");
+        git(
+            &repo,
+            &[
+                "clone",
+                "--depth=1",
+                "--no-tags",
+                &format!("file://{}", repo.display()),
+                clone.to_str().unwrap(),
+            ],
+        );
+        assert_eq!(
+            git(&clone, &["rev-parse", "--is-shallow-repository"]),
+            "true"
+        );
+        assert_eq!(git(&clone, &["tag", "--list"]), "");
+        let captures = scratch.join("unified");
+        let release = captures.join("dynamo_v2-0.6.0");
+        write_capture(&release, &recorded);
+        let selected = select(&captures, &clone, None);
+        assert_eq!(selected.last(), Some(&release));
+        assert!(
+            !checker(&clone)
+                .args(["--label", "0.6.0"])
+                .output()
+                .unwrap()
+                .status
+                .success()
+        );
+        for override_label in ["current", "0.6.0"] {
+            assert!(
+                std::panic::catch_unwind(|| select(&captures, &clone, Some(override_label)))
+                    .is_err()
+            );
+        }
+        write_capture(&release, &serde_json::Value::Null);
+        assert!(std::panic::catch_unwind(|| select(&captures, &clone, None)).is_err());
+        write_capture(&release, &recorded);
+        let patch = captures.join("dynamo_v2-0.6.0.patch1");
+        let mut wrong = recorded.clone();
+        wrong["source_id"] = serde_json::json!("wrong source");
+        write_capture(&patch, &wrong);
+        assert!(std::panic::catch_unwind(|| select(&captures, &clone, None)).is_err());
+        write_capture(&patch, &recorded);
+        assert_eq!(select(&captures, &clone, None).last(), Some(&release));
+
+        let output = checker(&clone).output().unwrap();
+        let current: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+        let qualified = captures.join(format!("dynamo_v2-{}", current["label"].as_str().unwrap()));
+        write_capture(&qualified, &current);
+        assert_eq!(select(&captures, &clone, None).last(), Some(&qualified));
+        assert_eq!(
+            select(&captures, &clone, Some("current")).last(),
+            Some(&qualified)
+        );
+        assert!(select(&captures, &clone, None).contains(&release));
+
+        let source_patch = qualified.with_file_name(format!(
+            "{}.patch10",
+            qualified.file_name().unwrap().to_str().unwrap()
+        ));
+        write_capture(&source_patch, &current);
+        std::fs::write(
+            source_patch.join("capture-snapshot.json"),
+            r#"{"schema_version":1,"records":["gemma4/probe.yaml"]}"#,
+        )
+        .unwrap();
+        assert_eq!(select(&captures, &clone, None).last(), Some(&source_patch));
+
+        let stream = captures.join(STREAM_DYNAMO_V2_CURRENT_CAPTURE);
+        std::fs::create_dir_all(&stream).unwrap();
+        let stream_dirs = version_dirs_with_identity_command(
+            &captures,
+            "dynamo_v2-",
+            STREAM_DYNAMO_V2_CURRENT_CAPTURE,
+            std::process::Command::new("this-command-must-not-run"),
+        );
+        assert_eq!(stream_dirs.last(), Some(&stream));
+        std::fs::write(clone.join("parsers/v2/src/lib.rs"), "pub fn changed() {}\n").unwrap();
+        assert!(std::panic::catch_unwind(|| select(&captures, &clone, None)).is_err());
+    }
 }
 
 /// Sort a PR-qualified capture after its matching release. The PR capture represents
@@ -399,6 +740,7 @@ pub struct Init {
     pub named_tool: Option<String>,
 }
 
+#[cfg(not(any(conformance_legacy_init, conformance_split_only)))]
 impl Init {
     /// An unknown value is a spec bug, not something to paper over with a default:
     /// silently falling back to `None`/`Native` is exactly the failure this replaced.
@@ -425,15 +767,21 @@ impl Init {
 
     /// Apply this configuration to a freshly created parser.
     pub fn apply(&self, parser: &mut Box<dyn dynamo_parsers_v2::UnifiedParser>, what: &str) {
-        use dynamo_parsers_v2::{InvalidGuidedPayloadPolicy, UnifiedParserInit};
-        parser
-            .initialize_request(UnifiedParserInit {
-                starting_state: self.starting_state(),
-                tool_output_mode: self.output_mode(),
-                invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
-                ..UnifiedParserInit::default()
-            })
+        self.try_apply(parser)
             .unwrap_or_else(|e| panic!("{what}: initialize_request {self:?}: {e}"));
+    }
+
+    pub fn try_apply(
+        &self,
+        parser: &mut Box<dyn dynamo_parsers_v2::UnifiedParser>,
+    ) -> anyhow::Result<()> {
+        use dynamo_parsers_v2::{InvalidGuidedPayloadPolicy, UnifiedParserInit};
+        parser.initialize_request(UnifiedParserInit {
+            starting_state: self.starting_state(),
+            tool_output_mode: self.output_mode(),
+            invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+            ..UnifiedParserInit::default()
+        })
     }
 
     /// The config as APPLIED, not as written — an omitted field is reported as the

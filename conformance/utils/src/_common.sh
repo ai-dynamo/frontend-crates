@@ -81,6 +81,8 @@ _build_stage_base() {
   \cp -f "$TOOLS/impls.py" "$STAGE/tests/parity/impls.py"
   \cp -f "$TOOLS/markers.py" "$STAGE/tests/parity/markers.py"
   \cp -f "$TOOLS/unified_taxonomy.py" "$STAGE/tests/parity/unified_taxonomy.py"
+  \cp -f "$TOOLS/unified_tools.py" "$STAGE/tests/parity/unified_tools.py"
+  \cp -f "$TOOLS/unified_tools.json" "$STAGE/tests/parity/unified_tools.json"
   \cp -f "$TOOLS/gen_unified_golden.py" "$STAGE/tests/parity/gen_unified_golden.py"
   [ -f "$TOOLS/assets/conformance_view.js" ] && \
     \cp -f "$TOOLS/assets/conformance_view.js" "$STAGE/tests/parity/assets/conformance_view.js" || true
@@ -178,6 +180,8 @@ build_stage_conformance() {
   # impls.py + markers.py are staged in _build_stage_base.
   \cp -f "$TOOLS/fixtures.py" "$STAGE/tests/parity/fixtures.py"
   \cp -f "$TOOLS/fixture_snapshot.py" "$STAGE/tests/parity/fixture_snapshot.py"
+  \cp -f "$TOOLS/fixture_disposition.py" "$STAGE/tests/parity/fixture_disposition.py"
+  \cp -f "$TOOLS/capture_stimulus.py" "$STAGE/tests/parity/capture_stimulus.py"
   \cp -f "$TOOLS/conformance_table.html.j2" "$STAGE/tests/parity/conformance_table.html.j2"
   # Shared CSS/JS assets are staged in _build_stage_base.
   _copy_toolcalling_v2_fixtures

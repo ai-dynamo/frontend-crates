@@ -144,9 +144,10 @@ impl GuidedPrefixScanner for QwenGuidedPrefix {
         let append_start = candidate.len() - append.len();
         let append_after_prefix = append_start.saturating_sub(PREFIX.len());
         if self.close_at.is_none() {
-            let scan_from = self
-                .close_scan_from
-                .max(append_after_prefix.saturating_sub(CLOSE.len() - 1));
+            let scan_from = after_prefix.floor_char_boundary(
+                self.close_scan_from
+                    .max(append_after_prefix.saturating_sub(CLOSE.len() - 1)),
+            );
             let scanned = &after_prefix[scan_from..];
             count_guided_prefix_bytes(scanned.len());
             self.close_at = scanned.find(CLOSE).map(|at| scan_from + at);
@@ -1304,8 +1305,20 @@ mod tests {
             let native = events(&weather_tools(), &[&format!("{thought}tail")]);
             let guided = guided_reasoning(&format!("{thought}{GUIDED_CALL}"));
             if equal_payload.contains(thought) {
+                let reasoning_payloads = |events: &[UnifiedEvent]| {
+                    events
+                        .iter()
+                        .filter_map(|event| match event {
+                            UnifiedEvent::Reasoning { text } => Some(text.clone()),
+                            _ => None,
+                        })
+                        .collect::<Vec<_>>()
+                };
+                let native_reasoning = reasoning_payloads(&native);
+                assert!(!native_reasoning.is_empty(), "no reasoning for {thought:?}");
                 assert_eq!(
-                    native[0], guided[0],
+                    native_reasoning,
+                    reasoning_payloads(&guided),
                     "request mode changed the reasoning payload for {thought:?}"
                 );
             }
@@ -1903,6 +1916,37 @@ mod tests {
             vec![call("get_weather", serde_json::json!({"city": "Paris"}))],
             "bare opener swallowed the payload: {got:?}"
         );
+    }
+
+    #[test]
+    fn guided_header_lookbehind_preserves_utf8_boundaries_at_every_split() {
+        for character in ['a', 'é', '猫', '🦀'] {
+            for padding in 0..=12 {
+                for suffix in ["x", "x</function></think>"] {
+                    let input = format!(
+                        "<think><function={character}{}{suffix}",
+                        "a".repeat(padding)
+                    );
+                    for named_tool in [None, Some("get_weather".to_string())] {
+                        let mode = UnifiedToolOutputMode::GuidedJson { named_tool };
+                        let want = configured_events(
+                            &weather_tools(),
+                            UnifiedParserStartingState::None,
+                            mode.clone(),
+                            &[&input],
+                        );
+                        for got in configured_events_at_every_split(
+                            &weather_tools(),
+                            UnifiedParserStartingState::None,
+                            mode,
+                            &input,
+                        ) {
+                            assert_eq!(got, want, "input={input:?}");
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /// A conformance event cannot expose retained-scan work, so this drives the production path byte by byte.
@@ -2591,8 +2635,7 @@ mod tests {
         );
     }
 
-    /// Whole-input and every valid split must assemble identically, and the split
-    /// runs must show intermediate progress rather than one terminal burst.
+    /// Whole-input and every valid split must preserve names and argument bytes.
     #[test]
     fn required_guided_streaming_is_split_invariant() {
         let whole = streamed(GUIDED_CALL, &[GUIDED_CALL]).0;

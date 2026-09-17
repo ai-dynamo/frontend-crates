@@ -896,9 +896,9 @@
     return segs;
   }
 
-  // One matched string, split so its WHITESPACE is visible: word characters take the
-  // hue as a foreground color, the whitespace between/around them takes the same hue as
-  // a background. Same hue index either way — it is one string, shown as one color.
+  // With markWhitespace=true, input whitespace takes the string's hue as a background.
+  // Parsed output values use foreground color instead: their spaces are payload data,
+  // not input whitespace to highlight. Both paths retain the same string hue.
   function hueSpans(sub, hue, markWhitespace) {
     var out = '';
     var re = /\s+|\S+/g;

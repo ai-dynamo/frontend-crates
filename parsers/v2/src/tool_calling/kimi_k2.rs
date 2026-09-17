@@ -219,9 +219,10 @@ fn kimi_invoke_end(text: &str, flush: bool, tool_index: usize) -> Option<usize> 
         // delimiters that will never come left the whole header + payload
         // leaking as visible text.
         //
-        // Bound the invoke to the STRUCTURAL part only: the literal
-        // `functions.` prefix, plus a complete `NAME:IDX` id when one
-        // actually follows it. A bare name with no index
+        // The batch grammar makes `functions.` optional: it can also be
+        // the entire name in `functions.:17`. Scan the full identifier
+        // before falling back to stripping only that structural prefix.
+        // A bare name with no index
         // (`functions.get_weather` narrated inside a thought,
         // `guided_json_narrated_prefix_inside_reasoning`) is prose the model
         // wrote, not a real id -- swallowing it as control markup drops it
@@ -229,24 +230,13 @@ fn kimi_invoke_end(text: &str, flush: bool, tool_index: usize) -> Option<usize> 
         // in. Whatever isn't consumed here -- JSON, `<think>`, a bare name,
         // or nothing -- is scanned fresh on its own terms.
         let after_start = &text[CALL_START.len()..];
-        let Some(after_prefix) = after_start.strip_prefix(FUNCTIONS_PREFIX) else {
-            // Not (yet) the literal `functions.` prefix. If what's buffered
-            // is a proper prefix of it, more input could still complete the
-            // match -- wait rather than deciding early.
-            if !flush
-                && after_start.len() < FUNCTIONS_PREFIX.len()
-                && FUNCTIONS_PREFIX.starts_with(after_start)
-            {
-                return None;
-            }
-            // Genuinely not the expected shape: nothing here is header
-            // markup, so bound the invoke to the bare opener marker itself.
-            return Some(CALL_START.len());
-        };
-        let end = match native_id_len(after_prefix, flush) {
-            NativeId::Complete(id_len) => CALL_START.len() + FUNCTIONS_PREFIX.len() + id_len,
+        let end = match native_id_len(after_start, flush) {
+            NativeId::Complete(id_len) => CALL_START.len() + id_len,
             NativeId::Pending => return None,
-            NativeId::None => CALL_START.len() + FUNCTIONS_PREFIX.len(),
+            NativeId::None if after_start.starts_with(FUNCTIONS_PREFIX) => {
+                CALL_START.len() + FUNCTIONS_PREFIX.len()
+            }
+            NativeId::None => CALL_START.len(),
         };
         // The byte right after `end` may be the start of a real
         // `argument_begin` or `call_end` that just hasn't finished
@@ -660,6 +650,104 @@ mod tests {
         }
         out.append(parser.finish().expect("finish"));
         out
+    }
+
+    fn assert_native_header_schedules(header: &str, expected_name: Option<&str>) {
+        let input = format!(
+            "<|tool_calls_section_begin|>{CALL_START}{header}{ARGUMENT_BEGIN}{{}}{CALL_END}{SECTION_END_PLURAL}"
+        );
+        let (batch, _) =
+            try_tool_call_parse_kimi_k2(&input, &KimiK2ParserConfig::default(), None).unwrap();
+        assert_eq!(
+            batch.len(),
+            usize::from(expected_name.is_some()),
+            "{header:?}"
+        );
+        if let Some(name) = expected_name {
+            assert_eq!(batch[0].function.name, name, "{header:?}");
+            assert_eq!(batch[0].function.arguments, "{}");
+        }
+        let whole = parse_chunks(&[], &[&input]);
+        let mut schedules: Vec<Vec<&str>> = input
+            .char_indices()
+            .map(|(at, _)| vec![&input[..at], &input[at..]])
+            .collect();
+        schedules.push(vec![&input]);
+        schedules.push(
+            input
+                .char_indices()
+                .map(|(at, ch)| &input[at..at + ch.len_utf8()])
+                .collect(),
+        );
+        for chunks in schedules {
+            let mut parser = KimiK2ToolStreamParser::new(&[]);
+            for _ in 0..2 {
+                let mut output = ToolParseResult::default();
+                for chunk in &chunks {
+                    output.append(parser.push(chunk).unwrap());
+                }
+                // These inputs have a real closing marker: completion must not wait for EOF.
+                assert_eq!(output.calls.len(), batch.len(), "{header:?}, {chunks:?}");
+                for (index, (call, expected)) in output.calls.iter().zip(&batch).enumerate() {
+                    assert_eq!(call.name.as_deref(), Some(expected.function.name.as_str()));
+                    assert_eq!(call.arguments, expected.function.arguments);
+                    assert!(call.complete);
+                    assert_eq!(call.tool_index, index);
+                    assert_eq!(parser.tool_call_id(index), Some(expected.id.as_str()));
+                }
+                output.append(parser.finish().unwrap());
+                assert_eq!(output, whole, "{header:?}, {chunks:?}");
+                parser.scanner.reset();
+                assert_eq!(parser.tool_call_id(0), None);
+            }
+        }
+    }
+
+    #[test]
+    fn native_header_empty_suffix_keeps_full_identifier_at_every_split() {
+        assert_native_header_schedules("functions.:17", Some("functions."));
+    }
+
+    #[test]
+    fn native_header_optional_prefix_and_index_match_batch_at_every_split() {
+        for prefix in ["", FUNCTIONS_PREFIX] {
+            for name in ["f", "_", "-", ".", "f_g", "f-g", "f.g", "é"] {
+                for index in ["0", "17", "0017"] {
+                    for whitespace in ["", " ", "\n\t"] {
+                        assert_native_header_schedules(
+                            &format!("{prefix}{name}:{index}{whitespace}"),
+                            Some(name),
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn native_header_malformed_colon_and_index_remain_rejected() {
+        for header in [
+            "",
+            ":17",
+            "functions.",
+            "functions.:",
+            "functions.::17",
+            "functions.f",
+            "functions.f:",
+            "functions.f:x",
+            "functions.f:-1",
+            "functions.f:17x",
+            "functions.f: 17",
+            "functions.f::17",
+            "f:",
+            "f:x",
+            "f:-1",
+            "f:17x",
+            "f: 17",
+            "f::17",
+        ] {
+            assert_native_header_schedules(header, None);
+        }
     }
 
     #[test]

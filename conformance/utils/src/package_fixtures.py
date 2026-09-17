@@ -35,6 +35,7 @@ import tempfile
 from pathlib import Path
 
 import extract_fixtures  # sibling script, same dir on sys.path (matches capture_driver's import pattern)
+import fixture_disposition
 
 # conformance/utils/src/ -> repo root: 4 .parent calls (strip filename, then 3 dirs)
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -148,19 +149,63 @@ def _extracted_snapshot_dir():
         return None
     manifest = json.loads(manifest_path.read_text())
     snap = manifest.get("snapshot")
-    shards = manifest.get("shards", [])
+    shards = fixture_disposition.active_shards(manifest)
     if not snap or not shards:
         return None
     cache_root = extract_fixtures.get_cache_root()
-    fid = extract_fixtures.fixtures_identity(shards)
+    inactive = manifest.get("inactive_shards", [])
+    fid = extract_fixtures.fixtures_identity(shards, inactive)
     pinned_shards = extract_fixtures.shard_hash_map(shards)
-    d, _generation = extract_fixtures.resolve_current_generation(cache_root, snap, fid, pinned_shards)
+    d, _generation = extract_fixtures.resolve_current_generation(cache_root, snap, fid, pinned_shards, inactive)
     return d
+
+
+def _source_capture_shards(subdir, tree_rel, blobs_dir):
+    relative = f"{tree_rel}/{subdir.name}"
+    layers = fixture_disposition.capture_archive_layers(FIXTURES_DIR, relative)
+    previous = {}
+    shards = []
+    inactive = preserved_evidence()
+    for path in layers:
+        shard_path = str(path.relative_to(FIXTURES_DIR))
+        if shard_path in inactive:
+            raise ValueError(f"source capture layer is inactive: {shard_path}")
+        files = fixture_disposition.capture_archive_files(path, shard_path.removesuffix(".tar.gz"))
+        snapshot = fixture_disposition.capture_snapshot_members(files.get(fixture_disposition.CAPTURE_SNAPSHOT), files)
+        if snapshot is not None:
+            previous = files
+        else:
+            previous.update(files)
+        destination = blobs_dir / shard_path
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, destination)
+        shards.append({"path": shard_path, "sha256": sha256_file(path), "size": path.stat().st_size})
+    current = {str(path.relative_to(subdir)): path.read_bytes() for path in subdir.rglob("*") if path.is_file()}
+    # Complete source snapshots replace the active case set, not the retained
+    # archive bytes. Sparse release backfills do not carry this declaration.
+    current[fixture_disposition.CAPTURE_SNAPSHOT] = (json.dumps({
+        "schema_version": 1, "records": sorted(key for key in current if key.endswith(".yaml"))
+    }, sort_keys=True) + "\n").encode()
+    (subdir / fixture_disposition.CAPTURE_SNAPSHOT).write_bytes(current[fixture_disposition.CAPTURE_SNAPSHOT])
+    if layers and previous == current:
+        return shards
+    if layers:
+        # Parser identity excludes corpus contents. Preserve that identity and append
+        # the new capture snapshot instead of replacing its earlier request history.
+        names = [path.name.removesuffix(".tar.gz") for path in layers]
+        names.extend(path.name for path in subdir.parent.glob(subdir.name + ".patch*") if path.is_dir())
+        patch = max(fixture_disposition.capture_layer_sort_key(name)[1] for name in names) + 1
+        relative += f".patch{patch}"
+    shard_path = relative + ".tar.gz"
+    sha, size = _tar_dir(subdir, relative, blobs_dir / shard_path)
+    shards.append({"path": shard_path, "sha256": sha, "size": size})
+    return shards
 
 
 def build_shards(tmpdir, blobs_dir, prune=False):
     """Build per-version shard tarballs and whole-tree shards. Returns list of shard dicts."""
     shards = []
+    inactive = preserved_evidence()
 
     for tree_rel in PER_SUBDIR_TREES:
         tree_abs = tmpdir / tree_rel
@@ -186,6 +231,12 @@ def build_shards(tmpdir, blobs_dir, prune=False):
                 continue
             rel = f"{tree_rel}/{subdir.name}"
             shard_path = rel + ".tar.gz"
+            if shard_path in inactive:
+                print(f"  preserving inactive evidence {shard_path}; not rebuilding")
+                continue
+            if tree_rel == "unified" and fixture_disposition.is_source_capture(subdir.name):
+                shards.extend(_source_capture_shards(subdir, tree_rel, blobs_dir))
+                continue
             out = blobs_dir / shard_path
             sha, size = _tar_dir(tmpdir / rel, rel, out)
             shards.append({"path": shard_path, "sha256": sha, "size": size})
@@ -215,7 +266,21 @@ def build_shards(tmpdir, blobs_dir, prune=False):
         shards.append({"path": shard_path, "sha256": sha, "size": size})
         print(f"  {shard_path:<60s} {size:>9,} B  {sha[:12]}…")
 
-    return shards
+    unique = {}
+    for shard in shards:
+        if shard["path"] in unique and unique[shard["path"]] != shard:
+            raise ValueError(f"conflicting staged capture layer: {shard['path']}")
+        unique[shard["path"]] = shard
+    return list(unique.values())
+
+
+def preserved_evidence():
+    manifest_path = ROOT / MANIFEST_REL
+    if not manifest_path.exists():
+        return {}
+    manifest = json.loads(manifest_path.read_text())
+    fixture_disposition.active_shards(manifest)
+    return fixture_disposition.verify_inactive_shards(manifest, FIXTURES_DIR)
 
 
 def sync_store(blobs_dir, shards, dry_run, prune):
@@ -228,10 +293,20 @@ def sync_store(blobs_dir, shards, dry_run, prune):
     its shard joins the set; pruning is only for deliberately retired trees.
     """
     new_paths = {s["path"] for s in shards}
+    inactive = preserved_evidence()
+    if new_paths & inactive.keys():
+        raise ValueError(f"cannot overwrite inactive evidence: {sorted(new_paths & inactive.keys())}")
+    # A changed capture needs a new patch shard, including when a stale loose tree
+    # would otherwise overwrite restored history during an unrelated package run.
+    for shard in shards:
+        destination = FIXTURES_DIR / shard["path"]
+        if re.match(r"^[a-z0-9_]+-\d", destination.name) and destination.exists():
+            if sha256_file(destination) != shard["sha256"]:
+                raise ValueError(f"versioned capture is immutable; use a new patch shard: {shard['path']}")
     stale = [
         p
         for p in FIXTURES_DIR.rglob("*.tar.gz")
-        if str(p.relative_to(FIXTURES_DIR)) not in new_paths
+        if str(p.relative_to(FIXTURES_DIR)) not in new_paths | inactive.keys()
     ]
     if dry_run:
         print(f"  [dry-run] would write {len(shards)} shard(s) to {FIXTURES_DIR}")
@@ -256,13 +331,16 @@ def merge_shards(built, prune):
     """Final manifest shard set: built shards, plus prior-manifest entries whose
     store file was kept (partial capture trees update only their own shards).
     With --prune the built set stands alone."""
+    inactive = preserved_evidence()
+    if any(shard["path"] in inactive for shard in built):
+        raise ValueError("cannot activate inactive evidence")
     if prune:
         return built
     built_paths = {s["path"] for s in built}
     merged = list(built)
     manifest_path = ROOT / MANIFEST_REL
     if manifest_path.exists():
-        prior = json.loads(manifest_path.read_text()).get("shards", [])
+        prior = fixture_disposition.active_shards(json.loads(manifest_path.read_text()))
         for s in prior:
             if s["path"].startswith("unified/golden_spec-"):
                 continue
@@ -338,6 +416,7 @@ def main():
             "crates": crates,
             "peers": peers,
             "shards": merge_shards(shards, args.prune),
+            "inactive_shards": list(preserved_evidence().values()),
         }
 
         manifest_path = ROOT / MANIFEST_REL

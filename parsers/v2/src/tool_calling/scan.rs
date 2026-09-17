@@ -325,6 +325,9 @@ impl InvokeBoundaryFactory {
 /// Family-owned request-local invoke-boundary contract.
 ///
 pub(crate) trait InvokeBoundary: Send {
+    /// Restore request/channel context after a retained candidate is rebased.
+    fn set_guided_context(&mut self, _context: GuidedInvokePrefixContext) {}
+
     fn owns_guided_prefix(&self) -> bool {
         false
     }

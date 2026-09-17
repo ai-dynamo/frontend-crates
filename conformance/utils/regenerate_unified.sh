@@ -4,6 +4,10 @@ set -euo pipefail
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
 
+# Freeze the label before generation; later consumers reject any source drift.
+CONFORMANCE_DYNAMO_V2_LABEL=$(python3 conformance/utils/src/dynamo_version.py --format label)
+export CONFORMANCE_DYNAMO_V2_LABEL
+
 run() {
   printf '\n==> %s\n' "$*"
   "$@"
@@ -16,7 +20,7 @@ render_report() {
 
 run python3 conformance/utils/src/gen_unified_golden.py
 
-if ! run cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --nocapture; then
+if ! run cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --exact render_unified_conformance_html --nocapture; then
   render_report || true
   exit 1
 fi
@@ -53,6 +57,8 @@ import sys
 
 sys.path.insert(0, "conformance/utils/src")
 import gen_unified_golden as golden
+from dynamo_version import dynamo_v2_label
+from fixture_disposition import CAPTURE_SNAPSHOT, capture_archive_files, capture_archive_layers, capture_snapshot_members
 from unified_taxonomy import numbered_id
 
 root = Path("conformance/fixtures/unified")
@@ -65,27 +71,29 @@ expected = {
     for family in golden.FAMILIES
 }
 
-current_label = next(
-    line.split('"')[1]
-    for line in Path("conformance/tests/common/mod.rs").read_text().splitlines()
-    if "UNIFIED_DYNAMO_V2_CURRENT_CAPTURE" in line
-)
-archives = [root / "inputs.tar.gz", root / "golden.tar.gz", root / f"{current_label}.tar.gz"]
-for archive in archives:
-    if not archive.exists():
-        raise SystemExit(f"missing generated Unified archive: {archive}")
-    with tarfile.open(archive) as tar:
-        actual = {family: set() for family in golden.FAMILIES}
-        for member in tar.getnames():
+current_label = f"dynamo_v2-{dynamo_v2_label(Path.cwd())}"
+archive_groups = [[root / "inputs.tar.gz"], [root / "golden.tar.gz"],
+                  capture_archive_layers(root, current_label)]
+for archives in archive_groups:
+    if not archives:
+        raise SystemExit(f"missing generated Unified capture: {current_label}")
+    actual = {family: set() for family in golden.FAMILIES}
+    for archive in archives:
+        if not archive.exists():
+            raise SystemExit(f"missing generated Unified archive: {archive}")
+        files = capture_archive_files(archive, "unified/" + archive.name.removesuffix(".tar.gz"))
+        if capture_snapshot_members(files.get(CAPTURE_SNAPSHOT), files) is not None:
+            actual = {family: set() for family in golden.FAMILIES}
+        for member in files:
             parts = member.split("/")
-            if len(parts) == 4 and parts[2] in actual and member.endswith(".yaml"):
-                actual[parts[2]].add(parts[3][:-5])
+            if len(parts) == 2 and parts[0] in actual and member.endswith(".yaml"):
+                actual[parts[0]].add(parts[1][:-5])
     for family, case_ids in expected.items():
         missing = sorted(case_ids - actual[family])
         extra = sorted(actual[family] - case_ids)
         if missing or extra:
             raise SystemExit(
-                f"{archive}: {family} differs from generator; missing={missing} extra={extra}"
+                f"{archives}: {family} differs from generator; missing={missing} extra={extra}"
             )
 
 for report in current["reports"]:

@@ -64,6 +64,8 @@ from typing import Any
 
 import yaml
 import yaml_fast  # noqa: F401 — routes safe_load/safe_dump through libyaml
+import fixture_disposition
+import capture_stimulus
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from tables import common
@@ -2206,6 +2208,20 @@ def _load_sglang_capture(artifact_root: Path) -> tuple[dict, str | None]:
     return _load_capture(artifact_root, "sglang_capture.yaml", "sglang_version")
 
 
+def _unified_dynamo_label(captures: dict) -> str:
+    # The renderer is copied into /tmp; the checker must inspect the source checkout.
+    source_root = Path(os.environ.get("FRONTEND_CRATES_ROOT", Path(__file__).resolve().parents[3]))
+    return subprocess.run(
+        [sys.executable, str(source_root / "conformance/utils/src/dynamo_version.py"),
+         "--repo-root", str(source_root), "--format", "label", "--select-capture"],
+        input=json.dumps(captures), check=True, capture_output=True, text=True,
+    ).stdout.strip()
+
+
+def _unified_capture_failure(record: dict) -> dict:
+    return {key: record[key] for key in ("error", "unavailable") if record.get(key)}
+
+
 def _load_unified_fixtures(base: Path):
     """Read the exploded per-case / per-family / per-version unified fixtures (same
     layout as toolcalling/fixtures-stream-v2: inputs/ + golden/ + <impl>-<version>/)
@@ -2214,12 +2230,50 @@ def _load_unified_fixtures(base: Path):
     if not (base / "inputs").is_dir():
         return None
 
+    capture_provenance = {}
+    inactive_dirs = fixture_disposition.inactive_fixture_dirs(base)
+    input_bindings = {}
+    complete_snapshots = set()
+
     def _read_dir(name, include_bytes=False):
         out = {}  # (family, case_key) -> case_doc
+        if name in inactive_dirs:
+            return out
+        is_capture = re.match(r"^[a-z0-9_]+-\d", name) is not None
+        if is_capture and name not in input_bindings:
+            input_bindings[name] = capture_stimulus.read_bindings(base / name)
+        snapshot_path = base / name / fixture_disposition.CAPTURE_SNAPSHOT
+        if is_capture and snapshot_path.is_file():
+            if not name.startswith("dynamo_v2-") or "+source." not in name:
+                raise ValueError(f"complete capture snapshot requires a source-qualified Dynamo capture: {name}")
+            available = [str(path.relative_to(base / name)) for path in (base / name).glob("*/*.yaml")]
+            fixture_disposition.capture_snapshot_members(snapshot_path.read_bytes(), available)
+            complete_snapshots.add(name)
         for fp in sorted((base / name).glob("*/*.yaml")):
             raw = fp.read_bytes()
             doc = yaml.safe_load(raw) or {}
             for k, cd in (doc.get("cases") or {}).items():
+                if name.startswith("dynamo_v2-"):
+                    layer = capture_provenance.setdefault(name.removeprefix("dynamo_v2-"), {
+                        "complete_snapshot": snapshot_path.is_file(), "records": {},
+                    })
+                    ident = f"{fp.parent.name}/{k}"
+                    provenance = doc.get("capture_provenance")
+                    if ident in layer["records"] and layer["records"][ident] != provenance:
+                        raise ValueError(f"conflicting capture provenance: {name}/{ident}")
+                    layer["records"][ident] = provenance
+                if is_capture:
+                    k = fixture_disposition.historical_unified_case_key(fp.parent.name, k)
+                    current = inputs.get((fp.parent.name, k))
+                    if current is not None:
+                        reason = capture_stimulus.comparison_failure(
+                            cd, current, raw, str(fp.relative_to(base / name)), input_bindings[name],
+                        )
+                        if reason:
+                            cd = {**cd, "unavailable": reason}
+                            cd.pop("error", None)
+                    if (fp.parent.name, k) in out and out[(fp.parent.name, k)] != cd:
+                        raise ValueError(f"conflicting historical aliases in {name}: {fp.parent.name}/{k}")
                 out[(fp.parent.name, k)] = (cd, raw) if include_bytes else cd
         return out
 
@@ -2273,18 +2327,16 @@ def _load_unified_fixtures(base: Path):
     # `sorted()` alone is lexicographic (0.1.9 > 0.1.10), so sort on the version key.
     engine_versions: dict[str, list[tuple[str, str]]] = {}
     for d in sorted(base.iterdir()):
-        if not d.is_dir() or _overlay_base(d.name) in ("inputs", "golden"):
+        if not d.is_dir() or d.name in inactive_dirs or _overlay_base(d.name) in ("inputs", "golden"):
             continue
         m = re.match(r"^([a-z0-9_]+)-(\d.*)$", d.name)
         if m:
             engine_versions.setdefault(m.group(1), []).append((m.group(2), d.name))
     for impl in engine_versions:
-        # `_version_sort_key` reads only the leading digits, so `0.1.24+pre163` ties with
-        # `0.1.24`. A qualified capture is a newer branch state than the release, matching
-        # Rust's `version_capture_sort_key`: keep it after the release so it is selected
-        # as the current capture while the release remains a historical comparison.
+        # This order is only for history; source digests have no chronological order.
         engine_versions[impl].sort(
-            key=lambda vd: (fixtures._version_sort_key(vd[0]), "+" in vd[0])
+            key=lambda vd: (fixtures._version_sort_key(vd[0]), "+" in vd[0],
+                            fixture_disposition.capture_layer_sort_key(vd[0]))
         )
     # The Unified tab compares every captured vLLM version. Keep each peer version
     # separate instead of silently replacing 0.25.1 with the newest 0.26.x shard.
@@ -2313,25 +2365,23 @@ def _load_unified_fixtures(base: Path):
         # a distinct branch capture and must remain selectable beside that release.
         display_ver = ver if "+" in ver and not _PATCH_SUFFIX_RE.search(ver) else _base_stream_version(ver)
         captured_cases = _read_dir(dirname)
-        if _PATCH_SUFFIX_RE.search(ver):
+        if _PATCH_SUFFIX_RE.search(ver) and dirname not in complete_snapshots:
             dynamo_by_ver.setdefault(display_ver, {}).update(captured_cases)
         else:
             dynamo_by_ver[display_ver] = captured_cases
 
-    if dynamo_by_ver:
-        _current_dynamo_ver, current_dynamo_cases = next(reversed(dynamo_by_ver.items()))
-        missing_current_cases = sorted(
-            (family, key)
-            for (family, key), input_case in inputs.items()
-            if (family, key) not in current_dynamo_cases
-            and family in gen_unified_golden.scenario_families(
-                input_case.get("scenario") or key
-            )
+    current_dynamo_ver = _unified_dynamo_label(capture_provenance)
+    current_dynamo_cases = dynamo_by_ver.get(current_dynamo_ver, {})
+    missing_current_case_keys = {
+        (family, key)
+        for (family, key), input_case in inputs.items()
+        if (family, key) not in current_dynamo_cases
+        and (
+            (input_case.get("scenario") or key) not in unified_taxonomy.UNIFIED_TAX
+            or family in gen_unified_golden.scenario_families(input_case.get("scenario") or key)
         )
-        missing_current_case_keys = set(missing_current_cases)
-        engine_cases["dynamo_v2"] = current_dynamo_cases
-    else:
-        missing_current_case_keys = set()
+    }
+    engine_cases["dynamo_v2"] = current_dynamo_cases
 
     cases = []
     caps = {"vllm_python": {}, "vllm_rust": {}, "sglang_python": {}}
@@ -2356,6 +2406,7 @@ def _load_unified_fixtures(base: Path):
             "input": inp.get("input", ""),
             "golden": gdoc.get("assembled") or [],
             "dynamo": ddoc.get("assembled") or [],
+            "dynamo_failure": _unified_capture_failure(ddoc),
             "dynamo_missing": (fam, key) in missing_current_case_keys,
             # Per-capture payloads, latest included. A version that never recorded this
             # case is ABSENT here rather than empty: an older capture predating the case
@@ -2363,6 +2414,7 @@ def _load_unified_fixtures(base: Path):
             # divergence the parser never produced.
             "dynamo_by_ver": {
                 ver: {
+                    **_unified_capture_failure(vdoc),
                     "assembled": (vdoc.get("assembled") or []),
                     "chunks": [c.get("expected") or [] for c in (vdoc.get("chunks") or [])],
                 }
@@ -2382,7 +2434,7 @@ def _load_unified_fixtures(base: Path):
             "dynamo_verdict": None, "vllm_verdict": None, "vllm_note": None,
             "peer_by_ver": {
                 impl: {
-                    ver: ({"error": doc["error"]} if doc.get("error") else {
+                    ver: (_unified_capture_failure(doc) or {
                         "assembled": doc.get("assembled") or [],
                         "chunks": [chunk.get("expected") or [] for chunk in (doc.get("chunks") or [])],
                     })
@@ -2411,8 +2463,8 @@ def _load_unified_fixtures(base: Path):
             edoc = engine_cases.get(impl, {}).get((fam, key))
             if edoc is None:
                 continue
-            if edoc.get("error"):
-                caps[impl][cid] = {"error": edoc["error"]}
+            if _unified_capture_failure(edoc):
+                caps[impl][cid] = _unified_capture_failure(edoc)
             else:
                 caps[impl][cid] = {
                     "assembled": edoc.get("assembled") or [],
@@ -2420,11 +2472,10 @@ def _load_unified_fixtures(base: Path):
                     "parser": edoc.get("parser"),
                 }
     versions = {impl: v for impl, (_d, v) in engine_dirs.items()}
-    if dynamo_by_ver:
-        versions["dynamo_v2"] = next(reversed(dynamo_by_ver))
+    versions["dynamo_v2"] = current_dynamo_ver
     for impl, captures in peer_by_ver.items():
         versions[impl] = max(captures, key=fixtures._version_sort_key)
-    # Ascending; the tab makes the last one the reference and the rest compare-on.
+    # Captured history stays separate from the selected source, which may be missing.
     versions["dynamo_v2_all"] = list(dynamo_by_ver)
     for impl in ("vllm_python", "vllm_rust", "sglang_python"):
         versions[f"{impl}_all"] = sorted(
@@ -2434,11 +2485,6 @@ def _load_unified_fixtures(base: Path):
 
 
 def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
-    """Build the Unified (reasoning + tools) tab from the versioned fixture shards
-    (conformance/fixtures/unified/: inputs + golden + one <impl>-<version> shard per
-    engine, same convention as every other tab). Reference = the authored GOLDEN
-    oracle; Compare = Dynamo (LIVE) + vLLM/SGLang. A cell is red only when a shown
-    parser LEAKED markup; ordering/content divergences show NΔ but stay green."""
     import hashlib
     loaded = _load_unified_fixtures(_unified_base(artifact_root))
     if loaded is None:
@@ -2467,14 +2513,12 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     scenarios: list[str] = []
     families: list[str] = []
     scn_desc: dict[str, str] = {}
-    scn_init: dict[str, dict] = {}
     by_key: dict[tuple[str, str], dict] = {}
     for c in cases:
         s, f = c["scenario"], c["family"]
         if s not in scenarios:
             scenarios.append(s)
             scn_desc[s] = c["description"]
-            scn_init[s] = c.get("init")
         if f not in families:
             families.append(f)
         by_key[(f, s)] = c
@@ -2498,9 +2542,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
         g, sub = _tax(s)
         columns.append({"sub": s, "group_key": f"unified_g{g}", "band": _band(g),
                         "label": unified_taxonomy.case_label(s), "desc": scn_desc.get(s, ""),
-                        # The parser knobs are declared per SCENARIO, so a column
-                        # header can show exactly what its cells ran under.
-                        "init": scn_init.get(s)})
+                        "init": None})
     column_groups = []
     seen_groups = []
     for s in ordered:
@@ -2524,7 +2566,8 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     # release cadence — so the column was labelled with a version that did not produce
     # these rows (0.1.23 on 0.1.24 data).
     dynamo_all_vers = _vers.get("dynamo_v2_all") or []
-    dynamo_ver_label = (dynamo_all_vers[-1] if dynamo_all_vers else None) or "0.1.x"
+    dynamo_ver_label = _vers["dynamo_v2"]
+    dynamo_history_vers = [version for version in dynamo_all_vers if version != dynamo_ver_label]
     dynamo_label = f"Dynamo v2 Rust {dynamo_ver_label} (stream, Combined & Unified)"
     peer_specs = []
     for ver in reversed(vllm_python_vers):
@@ -2563,7 +2606,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     # so pressing Detailed does not switch on every historical build at once. The point
     # is that the version is THERE to click, not that it is compared by default.
     # impl="dynamo" groups them under the one Dynamo engine block of the compare bar.
-    for v in reversed(dynamo_all_vers[:-1]):
+    for v in reversed(dynamo_history_vers):
         pc = _cand(f"dynamo@{v}", f"Dynamo v2 Rust {v} (stream, Combined & Unified)", "C")
         pc["impl"] = "dynamo"
         pc["version"] = v
@@ -2602,7 +2645,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             "tooltip": {
                 "head": f"{unified_taxonomy.numbered_id(scenario)} ({scenario}) — {family}",
                 "description": scn_desc[scenario],
-                "init": scn_init.get(scenario),
+                "init": None,
                 "finish_reason": None,
                 "input": {"kind": None, "text": None, "chunks": None,
                            "family": unified_taxonomy.marker_family(family)},
@@ -2626,78 +2669,48 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
         cells = {}
         for s in scenarios:
             c = by_key.get((f, s))
-            if not c or c.get("dynamo_missing"):
+            if not c:
                 applicable = gen_unified_golden.scenario_families(s)
-                if f in applicable:
+                if f not in applicable:
                     g_num, _g_sub = _tax(s)
-                    reason = (
-                        f"Missing Unified capture for applicable case {f}/{s}. "
-                        "Regenerate the current Dynamo capture before publishing this report."
-                    )
-                    authored = gen_unified_golden.build_cases(f).get(f"UNIFIED.{s}.{f}", {})
-                    golden_events = authored.get("golden") or (c.get("golden") if c else [])
-                    golden_sig = _sig(golden_events)
-                    cells[s] = {
-                        "kind": "cell",
-                        "case_id": unified_taxonomy.numbered_id(s),
-                        "family": f,
-                        "sub": s,
-                        "col_group": f"unified_g{g_num}",
-                        "band": _band(g_num),
-                        "status": "problem",
-                        "red_on_diff": True,
-                        "cmp": {
-                            "golden": markers.cmp_entry(golden_sig),
-                            # The missing result is represented as a synthetic mismatch so
-                            # the default Dynamo reference is red even though GOLDEN is a
-                            # fixed, non-selectable baseline in the compare bar.
-                            "dynamo": markers.cmp_entry(golden_sig ^ 1),
-                        },
-                        "facts": [],
-                        "tooltip": {
-                            "head": f"{unified_taxonomy.numbered_id(s)} ({s}) - {f}",
-                            "description": authored.get("description", scn_desc[s]),
-                            "init": authored.get("init", scn_init.get(s)),
-                            "finish_reason": None,
-                            "input": {"kind": "text", "text": authored.get("input"), "chunks": None,
-                                      "family": unified_taxonomy.marker_family(f)},
-                            "candidates": [
-                                {"key": "dynamo", "label": dynamo_label, "impl": "dynamo",
-                                 "version": None, "parse_mode": "unified", "leak": False,
-                                 "block": {"error": reason}},
-                            {"key": "golden", "label": "GOLDEN (oracle)", "impl": "golden",
-                                 "version": None, "parse_mode": "unified", "leak": False,
-                                 "pin_first": True, "block": {"events": golden_events}},
-                            ],
-                            "baseline": None,
-                            "reasons": [],
-                            "dynamo_notes": [],
-                            "refs": [],
-                            "leak_note": None,
-                            "na_note": None,
-                        },
-                    }
+                    cells[s] = _unified_na_cell(f, s, g_num)
                     continue
-                g_num, _g_sub = _tax(s)
-                cells[s] = _unified_na_cell(f, s, g_num)
-                continue
+                authored = gen_unified_golden.build_cases(f)[f"UNIFIED.{s}.{f}"]
+                c = {
+                    **authored,
+                    "dynamo_missing": True,
+                    "peer_family_vers": {spec["source"]: [] for spec in peer_specs},
+                }
+            missing_reason = (
+                f"Missing Unified capture for applicable case {f}/{s}. "
+                "Regenerate the current Dynamo capture before publishing this report."
+                if c.get("dynamo_missing") else None
+            )
+            dynamo_failure = ({"error": missing_reason} if missing_reason else c.get("dynamo_failure") or {})
             gold = c["golden"]
             # Assemble every engine's FINAL from its STREAMED per-chunk deltas (not its
             # batch final message). For Dynamo this is decisive: streaming preserves the
             # reasoning<->tool order that the batch assembly (detect_and_parse_reasoning)
             # collapses. Verdict is recomputed against GOLDEN on the streamed assembly.
             dyn_chunk_deltas = [ch.get("dynamo") or [] for ch in (c.get("chunks") or [])]
+            if dynamo_failure:
+                dyn_chunk_deltas = []
             dyn = _assemble_stream(dyn_chunk_deltas)
             gsig, dsig = _sig(gold), _sig(dyn)
             dverd = _unified_classify(f, gold, dyn)
+            if dynamo_failure:
+                # Missing evidence must stay red even when the oracle expects no events.
+                dsig = gsig ^ 1
+                dverd = "ERROR"
             # Score every captured vLLM version. Missing family coverage and a case that
             # postdates a capture are both n/a, never an assumed match.
             peer_results = {}
             for spec in peer_specs:
                 cap = (c.get("peer_by_ver", {}).get(spec["source"], {})
                        .get(spec["version"]))
-                chunks = (cap.get("chunks") if cap else None) or []
-                events = (None if cap is None else
+                failure = _unified_capture_failure(cap) if cap else {}
+                chunks = [] if failure else (cap.get("chunks") if cap else None) or []
+                events = (None if cap is None or failure else
                           (_assemble_stream(chunks) if spec["stream"] else
                            cap.get("assembled")))
                 err = cap.get("error") if cap else None
@@ -2706,14 +2719,19 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                 peer_results[spec["key"]] = {
                     "cap": cap, "chunks": chunks, "events": events,
                     "error": err, "verdict": verdict,
+                    "failure": failure,
                 }
             cmp = {
                 "golden": markers.cmp_entry(gsig),
-                "dynamo": markers.cmp_entry(dsig, leak=1 if dverd == "LEAK" else 0),
+                "dynamo": markers.cmp_entry(
+                    dsig, leak=1 if dverd == "LEAK" else 0, err=1 if dynamo_failure else 0,
+                ),
             }
             for spec in peer_specs:
                 result = peer_results[spec["key"]]
-                if result["events"] is None:
+                if result["error"]:
+                    cmp[spec["key"]] = markers.cmp_entry(gsig ^ 1, err=1)
+                elif result["events"] is None:
                     cmp[spec["key"]] = markers.cmp_entry(0, na=1)
                 else:
                     sig = _sig(result["events"])
@@ -2728,7 +2746,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             prev_by_ver = c.get("dynamo_by_ver") or {}
             prev_family_vers = set(c.get("dynamo_family_vers") or [])
             prev_chunks_by_ver = {}
-            for pv in dynamo_all_vers[:-1]:
+            for pv in dynamo_history_vers:
                 pdoc = prev_by_ver.get(pv)
                 if pdoc is None:
                     # Capture predates this case: n/a, not a divergence.
@@ -2736,6 +2754,14 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                     prev_chunks_by_ver[pv] = []
                     continue
                 pchunks = pdoc.get("chunks") or []
+                failure = _unified_capture_failure(pdoc)
+                if failure:
+                    cmp[f"dynamo@{pv}"] = markers.cmp_entry(
+                        gsig ^ 1, err=1 if "error" in failure else 0,
+                        na=1 if "unavailable" in failure else 0,
+                    )
+                    prev_chunks_by_ver[pv] = []
+                    continue
                 pevents = _assemble_stream(pchunks)
                 pverd = _unified_classify(f, gold, pevents)
                 cmp[f"dynamo@{pv}"] = markers.cmp_entry(
@@ -2747,7 +2773,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                 desc = f"{desc}  [policy: {', '.join(c['policy_tags'])}]"
             chunk_rows = []
             for i, ch in enumerate(c.get("chunks") or []):
-                expected = {"dynamo": ch.get("dynamo") or []}
+                expected = {"dynamo": [] if dynamo_failure else ch.get("dynamo") or []}
                 for spec in peer_specs:
                     chunks = peer_results[spec["key"]]["chunks"]
                     expected[spec["key"]] = chunks[i] if i < len(chunks) else []
@@ -2772,13 +2798,14 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                 "finish_reason": c.get("finish_reason"),
                 # `family` here selects the GRAMMAR the colorizer types markup with,
                 # so it must be the marker-registry family, not the corpus one.
-                "input": {"kind": "chunks", "text": c["input"], "chunks": chunk_rows,
+                "input": {"kind": "chunks" if chunk_rows else "text", "text": c["input"], "chunks": chunk_rows,
                           "family": unified_taxonomy.marker_family(f)},
                 "candidates": [
                     {"key": "dynamo", "label": dynamo_label, "impl": "dynamo",
                      "version": None, "parse_mode": "unified", "leak": dverd == "LEAK",
-                     "block": {"events": dyn, "verdict": dverd,
-                               "todo": _TODO if dverd != "MATCH" else None}},
+                     "block": (dynamo_failure if dynamo_failure else
+                               {"events": dyn, "verdict": dverd,
+                                "todo": _TODO if dverd != "MATCH" else None})},
                     {"key": "golden", "label": "GOLDEN (oracle)", "impl": "golden",
                      "version": None, "parse_mode": "unified", "leak": False,
                      "pin_first": True,  # oracle is always the leftmost popup column
@@ -2787,7 +2814,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                     {"key": spec["key"], "label": spec["label"], "impl": spec["impl"],
                      "version": spec["version"], "parse_mode": "unified",
                      "leak": peer_results[spec["key"]]["verdict"] == "LEAK",
-                     "block": ({"unavailable": (
+                     "block": (peer_results[spec["key"]]["failure"] or {"unavailable": (
                                     f"not captured at {spec['version']}; this case postdates that capture"
                                     if spec["version"] in c["peer_family_vers"][spec["source"]]
                                     else f"{spec['label']} has no parser for {f}")}
@@ -2810,11 +2837,11 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                                     if pv not in prev_family_vers
                                     else f"not captured at {pv} — this case postdates that build")}
                                if (prev_by_ver.get(pv) is None)
-                               else {"events": _assemble_stream(prev_chunks_by_ver.get(pv) or []),
+                               else (_unified_capture_failure(prev_by_ver[pv]) or {"events": _assemble_stream(prev_chunks_by_ver.get(pv) or []),
                                      "verdict": _unified_classify(
                                          f, gold,
-                                         _assemble_stream(prev_chunks_by_ver.get(pv) or []))})}
-                    for pv in reversed(dynamo_all_vers[:-1])
+                                         _assemble_stream(prev_chunks_by_ver.get(pv) or []))}))}
+                    for pv in reversed(dynamo_history_vers)
                 ],
                 "baseline": None, "reasons": reasons, "dynamo_notes": [], "refs": [],
                 "leak_note": None, "na_note": None,
@@ -2822,11 +2849,18 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             cells[s] = {
                 "kind": "cell", "case_id": unified_taxonomy.numbered_id(s), "family": f, "sub": s,
                 "col_group": f"unified_g{g_num}", "band": _band(g_num),
-                "status": "ok", "red_on_diff": True,
+                "status": "problem" if dynamo_failure else "ok", "red_on_diff": True,
                 "cmp": cmp, "facts": [], "tooltip": tooltip,
             }
         rows.append({"family": f, "model_label": f, "model_label_html": f, "section": None,
                      "parser": None, "cells": cells})
+
+    for column in columns:
+        # Include reconstructed missing captures; their native prefills can differ.
+        configs = [row["cells"][column["sub"]]["tooltip"]["init"] for row in rows
+                   if row["cells"][column["sub"]]["status"] != "na"]
+        if configs and all(config == configs[0] for config in configs):
+            column["init"] = configs[0]
 
     total = sum(len(r["cells"]) for r in rows)
     na = sum(cell.get("status") == "na" for row in rows for cell in row["cells"].values())
@@ -2861,12 +2895,11 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                           "parser version. vLLM Rust 0.26.0 uses the native "
                           "UnifiedParser for Gemma4 and CombinedParser for Qwen3/Kimi K2."),
         "toolbar_desc_html": (
-            'Reference = <strong>GOLDEN</strong> (authored oracle, best-effort recovery) · '
-            'Compare = <strong>Dynamo v2 Rust</strong> (native <strong>UnifiedParser</strong> '
-            'for DeepSeek V4, Gemma 4, Kimi K2, Kimi K3, Muse Glimmer, and Qwen3), '
-            'and the captured vLLM Python/Rust versions. A parser that does not '
-              'exist for a family is shown as n/a.'
-            + '. GOLDEN is the oracle, so a cell is red when the REF — the starred engine '
+            'Oracle = <strong>GOLDEN</strong> (authored, best-effort recovery) · '
+            'Default Reference = <strong>Dynamo v2 Rust</strong>. '
+            'Compare with historical Dynamo and captured peer versions. '
+            'A parser that does not exist for a family is shown as n/a. '
+            'A cell is red when the REF — the starred engine '
             '(default Dynamo) — DIVERGES from golden in any class: leaked markup (↯), '
             'merged/reordered events, or dropped content (✗). A green cell means the REF '
             'matches golden exactly; the NΔ count is how many Compare-with engines diverge '
