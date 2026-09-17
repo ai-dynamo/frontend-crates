@@ -38,13 +38,19 @@ pub fn init_pool(threads: usize) -> crate::Result<()> {
     } else {
         threads
     };
-    let pool = POOL.get_or_init(|| {
-        rayon::ThreadPoolBuilder::new()
-            .num_threads(threads)
-            .thread_name(|i| format!("dyn-mm-{i}"))
-            .build()
-            .expect("failed to build rayon pool")
-    });
+    let pool = match POOL.get() {
+        Some(pool) => pool,
+        None => {
+            let built = rayon::ThreadPoolBuilder::new()
+                .num_threads(threads)
+                .thread_name(|i| format!("dyn-mm-{i}"))
+                .build()
+                .map_err(|error| {
+                    crate::MmError::internal_with_source("cannot build mm pool", error)
+                })?;
+            POOL.get_or_init(|| built)
+        }
+    };
     if pool.current_num_threads() != threads {
         return Err(crate::MmError::invalid_input(format!(
             "mm pool already initialized with {} thread(s), requested {threads}",
@@ -59,9 +65,11 @@ fn armed() -> Option<&'static rayon::ThreadPool> {
     POOL.get()
 }
 
-/// Map `items`, short-circuiting on the first error. Output order matches input
-/// order. CPU-bound work: decode, resize, patchify (engines may also reuse
-/// this seam for their own per-item fan-out, e.g. hashing).
+/// Map `items`, stopping at the first error observed; when the pool is armed
+/// that is the first to *finish*, not the lowest index, and other items may
+/// already have run. Output order matches input order. CPU-bound work:
+/// decode, resize, patchify (engines may also reuse this seam for their own
+/// per-item fan-out, e.g. hashing).
 pub fn try_map<'a, T, R, E>(
     items: &'a [T],
     f: impl Fn(&'a T) -> Result<R, E> + Send + Sync,

@@ -100,7 +100,6 @@ mod tests {
 
     #[test]
     fn pad_to_grid_rounds_up_and_keeps_the_original_corner() {
-        // 1x2 single-channel image padded to a 2x2 grid.
         let (out, h, w) = pad_to_grid(&[1.0, 2.0], 1, 2, 1, 2, 2, &[-1.0]);
         assert_eq!((h, w), (2, 2));
         assert_eq!(out, vec![1.0, 2.0, -1.0, -1.0]);
@@ -108,7 +107,6 @@ mod tests {
 
     #[test]
     fn patches_are_extracted_row_major_within_each_patch() {
-        // 2x4 single-channel image into 2x2 patches: two patches, side by side.
         let data: Vec<f32> = (0..8).map(|v| v as f32).collect();
         assert_eq!(
             extract_patches_hwc(&data, 2, 4, 1, 2, 2),

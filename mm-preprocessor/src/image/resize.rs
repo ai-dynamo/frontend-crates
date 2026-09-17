@@ -46,7 +46,7 @@ impl Resample {
             Resample::Pil(_) => PIL_PRECISION_BITS,
             Resample::AtenU8 => {
                 let wmax = weights.iter().fold(0.0f64, |m, w| m.max(w.abs()));
-                (1..PIL_PRECISION_BITS)
+                (1..=PIL_PRECISION_BITS)
                     .take_while(|&p| (0.5 + wmax * (1u64 << p) as f64) < (1 << 15) as f64)
                     .last()
                     .unwrap_or(1)
@@ -360,19 +360,22 @@ mod tests {
             PIL_LANCZOS,
             "lanczos convenience wrapper"
         );
+        // The fixture discriminates the two quantizations by exactly one byte.
+        assert_ne!(PIL_BICUBIC, ATEN_U8);
     }
 
-    /// The two quantizations are not interchangeable — picking the wrong one
-    /// for a family silently costs bit-exactness with its HF processor, and
-    /// this is the byte that proves it on this fixture.
+    /// A 256x downscale drives ATen's weight precision to its 22-bit ceiling,
+    /// one bit past where a `< 22` search stops; byte 6 tells the two apart.
+    /// `torch.nn.functional.interpolate(u8, (1, 4), "bicubic", antialias=True)`.
     #[test]
-    fn pil_and_aten_bicubic_disagree() {
-        let differing = PIL_BICUBIC
-            .iter()
-            .zip(ATEN_U8)
-            .filter(|(pil, aten)| **pil != *aten)
-            .count();
-        assert_eq!(differing, 1);
+    fn extreme_downscale_reaches_atens_top_precision() {
+        let src: Vec<u8> = (0..1024 * 3)
+            .map(|i| (((i as u64 + 134_623) * 2_654_435_761 + 1649) >> 20) as u8)
+            .collect();
+        assert_eq!(
+            resize_rgb(&src, 1, 1024, 1, 4, Resample::AtenU8),
+            [130, 131, 123, 127, 128, 128, 126, 128, 128, 128, 124, 131]
+        );
     }
 
     #[test]

@@ -149,7 +149,7 @@ decoded media or a passthrough URL.
 | --- | --- | --- |
 | boot, per worker pool | `registry::build_processor` | spec pre-resolved by the engine's gate or config dir → `Box<dyn MmFamilyProcessor>` |
 | per image without a supplied hash | `content_hash_bytes` | encoded bytes → SGLang's fallback `u64` identity |
-| per image | `image::decode::decode_rgb` | bytes → `(rgb, h, w)` (8-bit only, PIL-matching); the engine wraps it as `DecodedMedia::Image` |
+| per image | `image::decode::decode_rgb` | bytes + `DecodeLimits` → `(rgb, h, w)` (8-bit only, PIL-matching, header-checked caps); the engine wraps it as `DecodedMedia::Image` |
 | per image | `MmFamilyProcessor::process_item` | `DecodedMedia` → `ProcessedItem` (preserves modality, feature-token count, tensors, and optional geometry) |
 | per request | `MmFamilyProcessor::layout` | input_ids + processed items → `TokenLayout` (a description, not yet applied) |
 | per request | `token_layout::apply_layout` | ids + `TokenLayout` + per-item feature-token counts → expanded ids, per-item offsets, and feature ranges (where feature embeddings go); validates the layout (source covered exactly once, each item placed once, feature ranges match the produced embeddings) |
@@ -178,7 +178,7 @@ for (bytes, supplied_hash) in images {                  // fetched + capped by t
         None => content_hash_bytes(&bytes),
     };
     hashes.push(hash);
-    let (rgb, height, width) = image::decode::decode_rgb(&bytes)?;
+    let (rgb, height, width) = image::decode::decode_rgb(&bytes, &limits)?;
     items.push(family.process_item(&DecodedMedia::Image { rgb, height, width })?);
 }
 let input_ids: Vec<i32> = match request_ids { Some(ids) => ids, None => tokenizer.encode(&text)? };

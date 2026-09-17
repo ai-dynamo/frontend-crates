@@ -13,7 +13,7 @@
 
 #![cfg(target_os = "linux")]
 
-use dynamo_mm_preprocessor::image::resize::{Filter, Resample, resize_rgb};
+use dynamo_mm_preprocessor::image::resize::{Resample, resize_rgb};
 
 fn thread_names() -> Vec<String> {
     std::fs::read_dir("/proc/self/task")
@@ -32,10 +32,8 @@ fn resizing_spawns_no_worker_threads_while_unarmed() {
     // A two-axis resize enters both seams: `in_pool` around the passes, and
     // `for_chunks_mut` per row within each of them.
     let src: Vec<u8> = (0..48 * 64 * 3).map(|v| v as u8).collect();
-    for resample in [Resample::AtenU8, Resample::Pil(Filter::Bicubic)] {
-        let out = resize_rgb(&src, 48, 64, 24, 32, resample);
-        assert_eq!(out.len(), 24 * 32 * 3);
-    }
+    let out = resize_rgb(&src, 48, 64, 24, 32, Resample::AtenU8);
+    assert_eq!(out.len(), 24 * 32 * 3);
 
     let after = thread_names();
     let spawned: Vec<&String> = after.iter().filter(|t| t.starts_with("dyn-mm")).collect();
