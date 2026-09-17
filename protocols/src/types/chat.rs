@@ -985,16 +985,24 @@ pub struct ChatCompletionResponseMessage {
     pub reasoning_content: Option<String>,
 }
 
+fn deserialize_null_as_false<'de, D>(deserializer: D) -> Result<bool, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Option::<bool>::deserialize(deserializer).map(Option::unwrap_or_default)
+}
+
 /// Stream options with per-chunk usage reporting.
 ///
 /// Extends upstream `ChatCompletionStreamOptions` with:
 /// - `continuous_usage_stats`: emit usage in every chunk, not just the final one
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub struct ChatCompletionStreamOptions {
+    #[serde(default, deserialize_with = "deserialize_null_as_false")]
     pub include_usage: bool,
     /// When true, usage statistics are included in every streaming chunk.
     /// Backends like vLLM/SGLang support this for real-time token counting.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_null_as_false")]
     pub continuous_usage_stats: bool,
 }
 
@@ -1340,6 +1348,58 @@ pub struct CreateChatCompletionStreamResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn stream_options_default_missing_and_null_flags_to_false() {
+        for (payload, expected) in [
+            (serde_json::json!({}), (false, false)),
+            (
+                serde_json::json!({
+                    "include_usage": null,
+                    "continuous_usage_stats": true,
+                }),
+                (false, true),
+            ),
+            (
+                serde_json::json!({
+                    "include_usage": true,
+                    "continuous_usage_stats": null,
+                }),
+                (true, false),
+            ),
+        ] {
+            let options: ChatCompletionStreamOptions = serde_json::from_value(payload).unwrap();
+            assert_eq!(
+                (options.include_usage, options.continuous_usage_stats),
+                expected
+            );
+        }
+    }
+
+    #[test]
+    fn stream_options_preserve_boolean_wire_shape_and_reject_other_types() {
+        let options: ChatCompletionStreamOptions = serde_json::from_value(serde_json::json!({
+            "include_usage": true,
+            "continuous_usage_stats": false,
+        }))
+        .unwrap();
+        assert!(options.include_usage);
+        assert!(!options.continuous_usage_stats);
+        assert_eq!(
+            serde_json::to_value(options).unwrap(),
+            serde_json::json!({
+                "include_usage": true,
+                "continuous_usage_stats": false,
+            })
+        );
+
+        for payload in [
+            serde_json::json!({"include_usage": "true"}),
+            serde_json::json!({"continuous_usage_stats": 1}),
+        ] {
+            serde_json::from_value::<ChatCompletionStreamOptions>(payload).unwrap_err();
+        }
+    }
 
     #[test]
     fn stop_accepts_token_id_array() {
