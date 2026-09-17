@@ -24,15 +24,14 @@ use std::path::PathBuf;
 
 use dynamo_parsers::{ReasoningParser, ReasoningParserType};
 use dynamo_parsers_v2::{
-    Tool, UnifiedParserExt, assemble, create_tool_parser_for_family,
-    create_unified_parser_for_family,
+    UnifiedParserExt, assemble, create_tool_parser_for_family, create_unified_parser_for_family,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
 
 mod common;
 
-use common::Init;
+use common::{Init, unified_tools as tools};
 
 #[derive(Deserialize)]
 struct GoldenFile {
@@ -95,24 +94,6 @@ impl Ev {
 fn parsers_for(family: &str) -> (String, String) {
     let f = common::unified_family(family);
     (f.reasoning_parser, f.tool_parser)
-}
-
-/// Tool schemas used by the seed cases (string params, matching the golden).
-fn tools() -> Vec<Tool> {
-    let mk = |name: &str, key: &str| Tool {
-        name: name.to_string(),
-        description: None,
-        parameters: json!({"type":"object","properties":{key:{"type":"string"}}}),
-        strict: None,
-    };
-    vec![
-        mk("get_weather", "city"),
-        mk("f", "x"),
-        mk("g", "y"),
-        mk("run", "cmd"),
-        mk("log", "note"),
-        mk("sum_values", "values"),
-    ]
 }
 
 /// Fold one tool-parser result into the event list, preserving text/call order
@@ -307,7 +288,7 @@ fn dynamo_chunks(family: &str, input: &str, init: &Init) -> Vec<ChunkRow> {
 
         let mut rows = Vec::new();
         for chunk in chunk_input(input) {
-            let deltas = parser.push(&chunk).unwrap_or_default();
+            let deltas = parser.push(&chunk).expect("native capture push failed");
             rows.push(ChunkRow {
                 delta_text: chunk,
                 deltas: deltas.iter().map(unified_delta_json).collect(),
@@ -315,7 +296,7 @@ fn dynamo_chunks(family: &str, input: &str, init: &Init) -> Vec<ChunkRow> {
         }
         let tail: Vec<Value> = parser
             .finish()
-            .unwrap_or_default()
+            .expect("native capture finish failed")
             .iter()
             .map(unified_delta_json)
             .collect();
@@ -339,7 +320,7 @@ fn dynamo_chunks(family: &str, input: &str, init: &Init) -> Vec<ChunkRow> {
             deltas.push(json!({"kind": "reasoning", "text": rr.reasoning_text}));
         }
         if !rr.normal_text.is_empty() {
-            let tr = tp.push(&rr.normal_text).unwrap_or_default();
+            let tr = tp.push(&rr.normal_text).expect("split capture push failed");
             tool_deltas(&tr, &mut deltas);
         }
         rows.push(ChunkRow {
@@ -354,10 +335,15 @@ fn dynamo_chunks(family: &str, input: &str, init: &Init) -> Vec<ChunkRow> {
         tail.push(json!({"kind": "reasoning", "text": rf.reasoning_text}));
     }
     if !rf.normal_text.is_empty() {
-        let tr = tp.push(&rf.normal_text).unwrap_or_default();
+        let tr = tp
+            .push(&rf.normal_text)
+            .expect("split capture tail push failed");
         tool_deltas(&tr, &mut tail);
     }
-    tool_deltas(&tp.finish().unwrap_or_default(), &mut tail);
+    tool_deltas(
+        &tp.finish().expect("split capture finish failed"),
+        &mut tail,
+    );
     rows.push(ChunkRow {
         delta_text: "‹finish›".to_string(),
         deltas: tail,
@@ -513,6 +499,7 @@ fn cell(
 
 #[test]
 fn render_unified_conformance_html() {
+    let capture_provenance = common::dynamo_capture_provenance(None);
     // The vLLM column is LIVE, not an expectation. `capture_vllm_rust_unified.py`
     // records the `vllm-parser` crate against this same corpus; reading it here is
     // what makes the column evidence instead of a claim.
@@ -608,6 +595,7 @@ fn render_unified_conformance_html() {
                 "init": case.init.applied(),
                 "finish_reason": case.finish_reason.clone().unwrap_or_else(|| "stop".to_string()),
                 "input": case.input,
+                "tools": common::unified_tool_schemas(),
                 "golden": case.golden,
                 "dynamo": got,
                 "dynamo_verdict": dclass,
@@ -722,9 +710,15 @@ fn render_unified_conformance_html() {
     // is the gitignored build tree — create it (a fresh checkout won't have it; the
     // committed data is the per-version LFS shards under conformance/fixtures/unified/).
     let yaml_out = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("unified/unified_results.yaml");
+    assert_eq!(
+        common::dynamo_capture_provenance(Some(capture_provenance["label"].as_str().unwrap())),
+        capture_provenance,
+        "capture source changed during the run"
+    );
     std::fs::create_dir_all(yaml_out.parent().unwrap()).unwrap();
     let feed = serde_json::json!({
         "schema": "unified-results/v1",
+        "capture_provenance": capture_provenance,
         "note": "GOLDEN = authored oracle. dynamo = LIVE native UnifiedParser output. vllm = documented expectation when a live capture is unavailable.",
         "cases": json_cases,
     });
@@ -804,31 +798,52 @@ struct InputCase {
 #[test]
 fn committed_dynamo_capture_matches_the_live_parsers() {
     let root = common::ensure_fixtures().join("unified");
+    validate_committed_dynamo_capture(&root);
+}
+
+fn validate_committed_dynamo_capture(root: &std::path::Path) {
     if !root.join("inputs").is_dir() {
         panic!(
             "no committed unified fixtures under {} — extract them first",
             root.display()
         );
     }
-    // THIS build's capture: the newest version dir, via the shared helper so the
-    // "which capture is current" rule lives in ONE place. The helper drops `.patchN`
-    // overlays, orders a `+tag` immediately before its matching plain release, and still
-    // lets a newer PR-qualified capture outrank every older release. Resolving by
-    // readdir order instead made this guard nondeterministic — the same commit could
-    // pass against one shard and report parser drift against another.
+    // Select the parser identity before resolving its effective per-case owners.
+    // A release's sparse patches and a source's complete snapshot differ here.
     let capture_dir = common::version_dirs_ascending_with_current(
-        &root,
+        root,
         "dynamo_v2-",
         common::UNIFIED_DYNAMO_V2_CURRENT_CAPTURE,
     )
     .pop()
     .expect("no committed dynamo_v2-<ver> capture dir");
 
+    validate_selected_dynamo_capture(root, &capture_dir);
+}
+
+fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::path::Path) {
+    let input_dirs = shared_overlay_dirs(root, "inputs");
+    let validation = common::capture_stimulus_command()
+        .arg("--validate-current")
+        .arg(capture_dir)
+        .args(["--format", "json"])
+        .arg("--inputs")
+        .args(&input_dirs)
+        .output()
+        .expect("validate current capture stimulus");
+    assert!(
+        validation.status.success(),
+        "current capture stimulus validation failed: {}",
+        String::from_utf8_lossy(&validation.stderr)
+    );
+    let captures: Vec<CaptureDoc> =
+        serde_json::from_slice(&validation.stdout).expect("validated effective capture records");
+
     // key -> (family, scenario, input, init), from the base inputs shard plus
     // PR-qualified sparse overlays. New cases must carry their input metadata in
     // the same overlay as the capture, rather than making the released shard mutable.
     let mut meta: BTreeMap<(String, String), (String, String, Init)> = BTreeMap::new();
-    for input_dir in shared_overlay_dirs(&root, "inputs") {
+    for input_dir in input_dirs {
         for entry in glob_yaml(&input_dir) {
             let doc: InputDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
                 .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
@@ -848,15 +863,12 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
 
     let mut stale: Vec<String> = Vec::new();
     let mut checked = 0usize;
-    let capture_keys: std::collections::BTreeSet<(String, String)> = glob_yaml(&capture_dir)
-        .into_iter()
-        .flat_map(|entry| {
-            let doc: CaptureDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
-                .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
+    let capture_keys: std::collections::BTreeSet<(String, String)> = captures
+        .iter()
+        .flat_map(|doc| {
             doc.cases
-                .into_keys()
-                .map(|key| (doc.family.clone(), key))
-                .collect::<Vec<_>>()
+                .keys()
+                .map(|key| (doc.family.clone(), key.clone()))
         })
         .collect();
     for key in meta.keys() {
@@ -867,9 +879,7 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
             ));
         }
     }
-    for entry in glob_yaml(&capture_dir) {
-        let doc: CaptureDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
-            .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
+    for doc in captures {
         for (key, committed) in doc.cases {
             let Some((scenario, input, init)) = meta.get(&(doc.family.clone(), key.clone())) else {
                 stale.push(format!(
@@ -924,6 +934,189 @@ fn committed_dynamo_capture_matches_the_live_parsers() {
         stale.len(),
         stale.join("\n\n"),
     );
+}
+
+#[test]
+fn release_overlay_records_reach_live_guard() {
+    let root = std::env::temp_dir().join(format!("dynamo-release-overlay-{}", std::process::id()));
+    let base = root.join("dynamo_v2-0.6.0");
+    let patch = root.join("dynamo_v2-0.6.0.patch10");
+    let write = |directory: &std::path::Path, key: &str, doc: &Value| {
+        std::fs::create_dir_all(directory.join("gemma4")).unwrap();
+        std::fs::write(
+            directory.join(format!("gemma4/{key}.yaml")),
+            serde_json::to_vec(doc).unwrap(),
+        )
+        .unwrap();
+    };
+    let mut captures = BTreeMap::new();
+    for key in ["old", "retained", "added"] {
+        let chunks = dynamo_chunks("gemma4", key, &Init::default());
+        let input_chunks: Vec<Value> = chunks
+            .iter()
+            .map(|row| json!({"delta_text":row.delta_text}))
+            .collect();
+        let stimulus = json!({"input":key,
+            "init":{"starting_state":"None","tool_output_mode":"Native","named_tool":null},
+            "finish_reason":"stop","tools":common::unified_tool_schemas(),"chunks":input_chunks});
+        let mut input = stimulus.clone();
+        input["scenario"] = json!(key);
+        write(
+            &root.join("inputs"),
+            key,
+            &json!({"family":"gemma4","cases":{key:input}}),
+        );
+        let output_chunks: Vec<Value> = chunks
+            .into_iter()
+            .map(|row| json!({"expected":row.deltas}))
+            .collect();
+        captures.insert(key, json!({"family":"gemma4","cases":{key:{
+            "capture_input":stimulus,"assembled":[{"kind":"text","text":key}],"chunks":output_chunks}}}));
+    }
+    let invalid = json!({"family":"gemma4","cases":{"old":{"error":"obsolete"}}});
+    write(&base, "old", &invalid);
+    write(&base, "retained", &captures["retained"]);
+    write(&patch, "old", &captures["old"]);
+    write(&patch, "added", &captures["added"]);
+    validate_selected_dynamo_capture(&root, &base);
+
+    // The same invalid base record becomes authoritative if its patch is absent.
+    std::fs::remove_file(patch.join("gemma4/old.yaml")).unwrap();
+    assert!(std::panic::catch_unwind(|| validate_selected_dynamo_capture(&root, &base)).is_err());
+    write(&patch, "old", &captures["old"]);
+    let mut wrong = captures["added"].clone();
+    wrong["cases"]["added"]["assembled"] = json!([{"kind":"text","text":"wrong"}]);
+    write(&patch, "added", &wrong);
+    let failure = std::panic::catch_unwind(|| validate_selected_dynamo_capture(&root, &base))
+        .expect_err("the live comparison must read the patch-only record");
+    assert!(
+        failure
+            .downcast_ref::<String>()
+            .unwrap()
+            .contains("assembled")
+    );
+    std::fs::remove_dir_all(&root).unwrap();
+}
+
+#[test]
+fn current_source_snapshot_reaches_live_guard_and_binds_tools() {
+    if std::env::var_os("DYNAMO_SOURCE_SNAPSHOT_TEST_CHILD").is_none() {
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "current_source_snapshot_reaches_live_guard_and_binds_tools",
+                "--nocapture",
+            ])
+            .env("DYNAMO_SOURCE_SNAPSHOT_TEST_CHILD", "1")
+            .env("CONFORMANCE_DYNAMO_V2_LABEL", "current")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+    let root = std::env::temp_dir().join(format!("dynamo-source-snapshot-{}", std::process::id()));
+    std::fs::create_dir_all(&root).unwrap();
+    let provenance = common::dynamo_capture_provenance(Some("current"));
+    assert!(provenance["label"].as_str().unwrap().contains("+source."));
+    let base = root.join(format!(
+        "dynamo_v2-{}",
+        provenance["label"].as_str().unwrap()
+    ));
+    let patch = root.join(format!(
+        "{}.patch1",
+        base.file_name().unwrap().to_str().unwrap()
+    ));
+    let make = |key: &str, text: &str, assembled: Value| {
+        let init = Init::default();
+        let chunks = dynamo_chunks("gemma4", text, &init);
+        let input_chunks: Vec<Value> = chunks
+            .iter()
+            .map(|row| json!({"delta_text": row.delta_text}))
+            .collect();
+        let stimulus = json!({"input": text, "init": {"starting_state":"None", "tool_output_mode":"Native", "named_tool":null},
+            "finish_reason":"stop", "tools":common::unified_tool_schemas(), "chunks":input_chunks});
+        let input = json!({"family":"gemma4", "cases":{key: {
+            "scenario":key, "input":text, "init":stimulus["init"], "tools":stimulus["tools"],
+            "finish_reason":"stop", "chunks":stimulus["chunks"]}}});
+        let output_chunks: Vec<Value> = chunks
+            .into_iter()
+            .map(|row| json!({"expected":row.deltas}))
+            .collect();
+        let capture = json!({"family":"gemma4", "capture_provenance":provenance, "cases":{key:{
+            "capture_input":stimulus, "assembled":assembled, "chunks":output_chunks}}});
+        (input, capture)
+    };
+    let write = |directory: &std::path::Path, key: &str, doc: &Value| {
+        std::fs::create_dir_all(directory.join("gemma4")).unwrap();
+        std::fs::write(
+            directory.join(format!("gemma4/{key}.yaml")),
+            serde_json::to_vec(doc).unwrap(),
+        )
+        .unwrap();
+    };
+    let (old_input, old_capture) = make(
+        "old",
+        "old text",
+        json!([{"kind":"text","text":"old text"}]),
+    );
+    write(&root.join("inputs"), "old", &old_input);
+    write(&base, "old", &old_capture);
+    validate_committed_dynamo_capture(&root);
+    let (new_input, new_capture) = make(
+        "added",
+        "<|tool_call>call:f{x:<|\"|>1<|\"|>}<tool_call|>",
+        json!([{"kind":"tool_call","name":"f","arguments":{"x":"1"}}]),
+    );
+    write(&root.join("inputs"), "added", &new_input);
+    write(&patch, "old", &old_capture);
+    write(&patch, "added", &new_capture);
+    std::fs::write(
+        patch.join("capture-snapshot.json"),
+        r#"{"schema_version":1,"records":["gemma4/old.yaml","gemma4/added.yaml"]}"#,
+    )
+    .unwrap();
+    validate_committed_dynamo_capture(&root);
+    std::fs::remove_file(root.join("inputs/gemma4/old.yaml")).unwrap();
+    std::fs::remove_file(patch.join("gemma4/old.yaml")).unwrap();
+    std::fs::write(
+        patch.join("capture-snapshot.json"),
+        r#"{"schema_version":1,"records":["gemma4/added.yaml"]}"#,
+    )
+    .unwrap();
+    validate_committed_dynamo_capture(&root);
+    let mut wrong = new_capture.clone();
+    let terminal = wrong["cases"]["added"]["chunks"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .flat_map(|chunk| chunk["expected"].as_array_mut().unwrap())
+        .find(|delta| delta["complete"] == true)
+        .expect("the captured call must contain a completion delta");
+    terminal["complete"] = json!(false);
+    write(&patch, "added", &wrong);
+    let failure = std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root))
+        .expect_err("changing only completion must fail the per-chunk comparison");
+    assert!(
+        failure
+            .downcast_ref::<String>()
+            .unwrap()
+            .contains("per-chunk deltas differ")
+    );
+    let mut wrong = new_capture.clone();
+    wrong["cases"]["added"]["capture_input"]["tools"] = json!([]);
+    write(&patch, "added", &wrong);
+    assert!(std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root)).is_err());
+    write(&patch, "added", &new_capture);
+    let mut wrong_input = new_input;
+    wrong_input["cases"]["added"]["tools"] = json!([]);
+    write(&root.join("inputs"), "added", &wrong_input);
+    assert!(std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root)).is_err());
+    std::fs::remove_dir_all(&root).unwrap();
 }
 
 /// Return the released shared shard followed by its PR-qualified sparse overlays.

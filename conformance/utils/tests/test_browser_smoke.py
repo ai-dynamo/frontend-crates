@@ -588,6 +588,48 @@ def test_compare_url_restores_legacy_reference_without_self_compare(driver):
     assert "base_tab-toolcalling" not in state["url"]
 
 
+@pytest.mark.parametrize("query,expected_base", [
+    ("base_tab-unified=dynamo%400.6.0%2Bsource." + "a" * 64, "dynamo"),
+    ("base_tab-unified=removed-parser", "dynamo"),
+    ("cmp_tab-unified=vllm_rust", "dynamo"),
+    ("base_tab-unified=", None),
+    ("base_tab-unified=dynamo%400.6.0", "dynamo@0.6.0"),
+])
+def test_compare_url_distinguishes_removed_and_empty_reference(driver, query, expected_base):
+    page = driver.current_url.split("?", 1)[0]
+    try:
+        driver.get(page + "?tab=tab-unified&" + query)
+        state = driver.execute_script(
+            "const c=document.querySelector('#tab-unified .cmpctl');"
+            "return {base:c.querySelector('input.cmp-ref:checked')?.value || null,"
+            "enabled:c.querySelectorAll('input.cmp-on:not(:disabled)').length};"
+        )
+        assert state["base"] == expected_base
+        assert (state["enabled"] > 0) is (expected_base is not None)
+    finally:
+        driver.get(page)
+
+
+def test_unified_working_build_labels_preserve_release_selection(driver):
+    page = driver.current_url.split("?", 1)[0]
+    try:
+        driver.get(page + "?tab=tab-unified")
+        labels = driver.execute_script(
+            "return [...document.querySelectorAll('#tab-unified .cmprow')]"
+            ".map(row=>row.innerText);"
+        )
+        assert all("+source." not in label for label in labels)
+        assert sum("working build" in label for label in labels) <= 1
+        driver.execute_script(
+            "document.querySelector('#tab-unified input.cmp-ref[value=\"dynamo@0.6.0\"]').click();"
+        )
+        assert driver.execute_script(
+            "return document.querySelector('#tab-unified input.cmp-ref:checked').value;"
+        ) == "dynamo@0.6.0"
+    finally:
+        driver.get(page)
+
+
 def _click_tab(driver, panel_id):
     driver.execute_script(
         "document.querySelector(arguments[0]).click();",

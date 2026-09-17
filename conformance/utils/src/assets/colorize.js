@@ -759,7 +759,9 @@
     if (!sub) { return ''; }
     if (!ctx) { return escapeHtml(sub); }
     if (!ctx.sealed) { registerTokens(sub, ctx); return escapeHtml(sub); }
-    return renderSegments(sub, matchSegments(sub, ctx), 0, sub.length, false);
+    // Parsed output is data, not model grammar. A space inside a quoted argument such
+    // as `"a > b"` keeps the value's foreground color instead of looking structural.
+    return renderSegments(sub, matchSegments(sub, ctx), 0, sub.length, false, false);
   }
   // interval class (tt-c3 / tt-orphan / tt-ns / tt-h-start...) -> marker background class.
   // tt-orphan (unmatched / error) -> the bright-red bg class.
@@ -894,15 +896,15 @@
     return segs;
   }
 
-  // One matched string, split so its WHITESPACE is visible: word characters take the
-  // hue as a foreground color, the whitespace between/around them takes the same hue as
-  // a background. Same hue index either way — it is one string, shown as one color.
-  function hueSpans(sub, hue) {
+  // With markWhitespace=true, input whitespace takes the string's hue as a background.
+  // Parsed output values use foreground color instead: their spaces are payload data,
+  // not input whitespace to highlight. Both paths retain the same string hue.
+  function hueSpans(sub, hue, markWhitespace) {
     var out = '';
     var re = /\s+|\S+/g;
     var m;
     while ((m = re.exec(sub)) !== null) {
-      var cls = /\s/.test(m[0]) ? ('tt-ws tt-ws' + hue) : ('tt-fg tt-fg' + hue);
+      var cls = markWhitespace && /\s/.test(m[0]) ? ('tt-ws tt-ws' + hue) : ('tt-fg tt-fg' + hue);
       out += '<span class="' + cls + '">' + escapeHtml(m[0]) + '</span>';
     }
     return out;
@@ -927,7 +929,7 @@
 
   // `markWs` is on for model INPUT text (where spacing is part of the grammar) and off
   // for the emitted `calls=`/deltas JSON, where every separator space would be noise.
-  function renderSegments(text, segs, start, end, markWs) {
+  function renderSegments(text, segs, start, end, markWs, markMatchedWs) {
     var out = '';
     var cursor = start;
     for (var i = 0; i < segs.length; i++) {
@@ -940,7 +942,7 @@
       if (s.cls) {
         out += '<span class="' + s.cls + '">' + escapeHtml(text.slice(a, b)) + '</span>';
       } else {
-        out += hueSpans(text.slice(a, b), s.hue);
+        out += hueSpans(text.slice(a, b), s.hue, markMatchedWs);
       }
       cursor = b;
     }
@@ -952,7 +954,7 @@
     text = text == null ? '' : String(text);
     var intervals = linkedTokenize(text, family, markersMap);
     if (ctx && !ctx.sealed) { registerContent(text, intervals, ctx); return escapeHtml(text); }
-    return renderSegments(text, segmentText(text, intervals, ctx), 0, text.length, true);
+    return renderSegments(text, segmentText(text, intervals, ctx), 0, text.length, true, true);
   }
 
   // Stream analogue: markers AND words are resolved over the JOINED text, then sliced
@@ -972,7 +974,7 @@
     var cursor = 0;
     for (var i = 0; i < deltas.length; i++) {
       var end = cursor + deltas[i].length;
-      rendered.push(renderSegments(text, segs, cursor, end, true));
+      rendered.push(renderSegments(text, segs, cursor, end, true, true));
       cursor = end;
     }
     return rendered;

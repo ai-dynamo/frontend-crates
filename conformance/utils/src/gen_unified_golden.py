@@ -2,16 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 """Render the unified golden corpus for ALL families from ONE scenario spec.
 
-The GOLDEN event list is the authored, spec-derived oracle (best-effort error
-recovery, see UNIFIED_CASES.md). It is grammar-INDEPENDENT: a scenario means the
-same thing for every family, so its golden events are written once here. Only the
-raw model `input` is grammar-specific, rendered from each family's markers. This
-is the single source of truth so a scenario can't drift between families
-(CLAUDE.md: reuse the shared parent, don't copy-paste divergent cases).
+The GOLDEN event list is the authored oracle (best-effort error recovery, see
+UNIFIED_CASES.md). Scenario meaning is shared; family-specific marker values and
+the DSML missing-invoke-close contract are explicit exceptions. Native inputs use
+each family's grammar, while request modes and payloads keep the same contract.
 
-Full matrix: every scenario is emitted for every family (gemma4, qwen3, kimi_k2,
-muse_glimmer) -> conformance/unified/golden_spec/{gemma4,qwen3,kimi,muse_glimmer}.yaml,
-the gitignored build tree. This authored spec is the harness INPUT (unified_render.rs reads it to
+The family registry supplies the seven golden-spec paths under the gitignored
+conformance/unified/golden_spec/ tree. Explicit scenario scopes and the redundant
+DeepSeek V4.1 prefill rows determine applicability. This spec is the harness INPUT (unified_render.rs reads it to
 compute the live Dynamo column; unified_schema_roundtrip.rs validates it); it is
 NOT committed. The committed, versioned golden.tar.gz shard is DERIVED from it via
 render -> explode -> package, exactly like every other conformance fixture shard.
@@ -278,9 +276,9 @@ class OnlyFamilies(dict):
     corpus exists to measure. So the narrow scope is a statement the scenario makes
     about itself, carried by its own type, rather than something inferred from a gap.
 
-    Use only when a family's GRAMMAR cannot express the scenario, and say why at the
-    authoring site and in UNIFIED_CASES.md. "We have not written it yet" is a gap, not
-    a scope.
+    Use for grammar-specific scenarios or explicitly scoped regression reproductions,
+    and state the scope at the authoring site and in UNIFIED_CASES.md. An undeclared
+    omission is a coverage gap, not a scope.
     """
 
     def __init__(self, mapping):
@@ -317,7 +315,6 @@ def every_family(input_text, vllm, dynamo, *rest):
         fam: (input_text, vllm, dynamo if fam in UNIFIED_FAMILIES else split, *rest)
         for fam in FAMILIES
     }
-
 
 
 def by_family(render, vllm, dynamo, *rest):
@@ -398,6 +395,12 @@ def invoke_header_prefix(fam):
     return rendered[len(outer):rendered.index("NAMEX", len(outer))].lstrip()
 
 
+def guided_invoke_prefix(fam):
+    if fam == "deepseek_v41":
+        return '<｜DSML｜ invoke name="'
+    return invoke_header_prefix(fam)
+
+
 def guided_surroundings(render, dynamo_note, fill=None):
     """A guided case whose SURROUNDINGS carry native grammar, so the input has to be
     per family — `every_family` is only right when the bytes are grammar-independent.
@@ -429,7 +432,9 @@ def guided_surroundings(render, dynamo_note, fill=None):
 GUIDED_NAMED_ARGS = '{"city": "Paris"}'
 GUIDED_ONE_CALL = '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
 GUIDED_TWO_CALLS = ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, '
-                    '{"name": "run", "arguments": {"cmd": "git log"}}]')
+                     '{"name": "run", "arguments": {"cmd": "git log"}}]')
+GUIDED_PARTIAL_CALLS = ('[{"name": "get_weather", "arguments": {"city": "Paris"}}, '
+                        '{"arguments": {"city": "Tokyo"}}]')
 GUIDED_UNSUPPORTED = D("UNSUPPORTED",
                        "vLLM base case doesn't emit guided JSON; conformance captures native XML only")
 # vLLM's Muse Glimmer parsers exist only in unmerged PR #51655, so no released
@@ -586,6 +591,8 @@ EDGE = [
      [{"kind": "reasoning", "text": "ok"}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "deepseek_v41": ('<think>ok</think><｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Par', M, M),
+        "deepseek_v4": ('<think>ok</think><｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Par', M, M),
         "gemma4": ("<|channel>thought\nok<channel|><|tool_call>call:get_weather{city:<|\"|>Par",
                    D("ERROR", "native Gemma4UnifiedParser finish() returns a hard Err -> erroring is the opposite of best-effort recovery"),
                    {"verdict": "match", "note": "P2: drop the partial trailing call, keep the preceding reasoning, never error/leak (TOOLCALLING.batch.5.e)"}),
@@ -617,6 +624,7 @@ EDGE = [
                    M, {"verdict": "match", "note": "verify against v1 gemma4 reasoning finish() at capture time"}),
         "qwen3": ("<think>thinking but stream ends",
                   M, {"verdict": "match", "note": "verify against v1 qwen3 reasoning finish() at capture time"}),
+        "deepseek_v41": ("<think>thinking but stream ends", M, M),
         "kimi_k2": ("<think>thinking but stream ends",
                     M, {"verdict": "match", "note": "verify against v1 kimi reasoning finish() at capture time"}),
         "kimi_k3": (k3_open("think") + "thinking but stream ends",
@@ -633,6 +641,8 @@ EDGE = [
      [{"kind": "tool_call", "name": "run", "arguments": {"cmd": None}}],  # cmd filled per family below
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "deepseek_v41": (r_tool("deepseek_v41", "run", "cmd", "git log </｜DSML｜ invoke> --oneline", 0),
+                         M, M, "git log </｜DSML｜ invoke> --oneline"),
         "gemma4": ("<|tool_call>call:run{cmd:<|\"|>git log }<tool_call|> --oneline<|\"|>}<tool_call|>",
                    D("ARG_MISMATCH", "char-by-char streamed-arg coercion truncates args at the marker-looking boundary (regression class #48702/#47977)"),
                    {"verdict": "match", "note": "emit-on-close typing sees the whole balanced value; find_tool_call_end_position_gemma4 ignores <tool_call|> inside <|\"|> strings"},
@@ -680,10 +690,11 @@ EDGE = [
                     VLLM_UNCAPTURABLE["kimi_k3"],
                     {"verdict": "match", "note": "orphan K3 call closer stripped after prose"}),
         # `<|eot|>` already ended the turn, so the trailing `<|eom|>` closes nothing.
-        "muse_glimmer": ("<|start|>assistant to=user<|message|>I will check that. <|eot|><|eom|>",
-                         V_MUSE,
-                         {"verdict": "match", "note": "an orphan terminator outside any routed message is stripped, never emitted as content"}),
-     }),
+         "muse_glimmer": ("<|start|>assistant to=user<|message|>I will check that. <|eot|><|eom|>",
+                          V_MUSE,
+                          {"verdict": "match", "note": "an orphan terminator outside any routed message is stripped, never emitted as content"}),
+         "deepseek_v41": ("I will check that. </｜DSML｜ calls>", M, M),
+      }),
 
     ("empty_args",
      "A tool call with an empty argument object {}. Policy P3 — empty args serialize to {}. This is also covered in: TOOLCALLING.streamv2.6.a.",
@@ -691,6 +702,7 @@ EDGE = [
      [{"kind": "tool_call", "name": "get_weather", "arguments": {}}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "deepseek_v41": ('<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"></｜DSML｜ invoke></｜DSML｜ calls>', M, M),
         "gemma4": ("<|tool_call>call:get_weather{}<tool_call|>", M, M),
         "qwen3": ("<tool_call>\n<function=get_weather>\n</function>\n</tool_call>", M, M),
         "kimi_k2": ("<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>", M, M),
@@ -706,7 +718,8 @@ EDGE = [
      [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
-        "deepseek_v4": ("<｜DSML｜tool_calls><｜DSML｜invoke name=\"get_weather\">{\"city\": \"Paris\"}",
+        "deepseek_v41": ('<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter>', M, M, []),
+        "deepseek_v4": ('<｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter>',
                         {"verdict": "match", "note": "the missing invoke close makes this DSML call malformed, so it is dropped"},
                         {"verdict": "match", "note": "the missing invoke close makes this DSML call malformed, so it is dropped"},
                         []),
@@ -736,6 +749,7 @@ EDGE = [
      [{"kind": "tool_call", "name": "log", "arguments": {"note": None}}],  # note filled per family
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "deepseek_v41": (r_tool("deepseek_v41", "log", "note", "<think>reconsider</think>", 0), M, M, "<think>reconsider</think>"),
         "gemma4": ("<|tool_call>call:log{note:<|\"|><|channel>thought\nreconsider<channel|><|\"|>}<tool_call|>",
                    D("ARG_MISMATCH", "the reasoning extractor lifts the `<|channel>...<channel|>` out of the arg value before tool parsing, so the logged note no longer matches golden"),
                    D("MERGE", "v1 reasoning runs first over the whole stream and pulls the arg's embedded `<|channel>...<channel|>` into a leading reasoning event, corrupting the tool arg"),
@@ -769,6 +783,7 @@ EDGE = [
       {"kind": "reasoning", "text": " now answer"}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "deepseek_v41": ("<think>I should check. " + r_tool("deepseek_v41", "get_weather", "city", "Paris", 0) + " now answer</think>", M, M),
         "gemma4": ("<|channel>thought\nI should check. <|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|> now answer<channel|>",
                    D("LEAK", "the reasoning extractor consumes to `<channel|>`, so the nested `<|tool_call>...<tool_call|>` leaks into reasoning_content and the call is dropped; break-out recovery not implemented"),
                    D("LEAK", "v1 reasoning runs to `<channel|>`, swallowing the nested tool markup into one reasoning event; the call is lost")),
@@ -799,6 +814,7 @@ EDGE = [
       {"kind": "text", "text": " done."}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "deepseek_v41": ("Logging now: " + r_tool("deepseek_v41", "log", "note", "<think>reconsider</think>", 0) + " done.", M, M, "<think>reconsider</think>"),
         "gemma4": ("Logging now: <|tool_call>call:log{note:<|\"|><|channel>thought\nreconsider<channel|><|\"|>}<tool_call|> done.",
                    D("ARG_MISMATCH", "the reasoning extractor lifts the `<|channel>...<channel|>` out of the arg before tool parsing; the note no longer matches and the surrounding text can shift"),
                    D("MERGE", "v1 reasoning hoists the arg's embedded `<|channel>...<channel|>` ahead of the visible text and corrupts the tool arg"),
@@ -834,6 +850,7 @@ EDGE = [
       {"kind": "text", "text": " Here you go."}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "deepseek_v41": ("Sure. <think>I should check. " + r_tool("deepseek_v41", "get_weather", "city", "Paris", 0) + " now answer</think> Here you go.", M, M),
         "gemma4": ("Sure. <|channel>thought\nI should check. <|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|> now answer<channel|> Here you go.",
                    D("LEAK", "the reasoning extractor consumes to `<channel|>`, leaking the nested tool markup into reasoning_content and dropping the call; the visible text survives on both sides"),
                    D("LEAK", "v1 reasoning runs to `<channel|>`, swallowing the nested tool markup; the call is lost")),
@@ -859,6 +876,7 @@ EDGE = [
      [{"kind": "reasoning", "text": "first\nsecond"}, {"kind": "text", "text": "done"}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        "deepseek_v41": ("<think>first</think><think>\nsecond</think>done", M, M),
         "gemma4": ("<|channel>thought\nfirst<channel|><|channel>thought\n\nsecond<channel|>done", M,
                    {"verdict": "match", "note": "the split path merges both spans into one reasoning event, which is what this scenario expects"}),
         "qwen3": ("<think>first</think><think>\nsecond</think>done", M,
@@ -913,7 +931,7 @@ EDGE = [
                   {"verdict": "match", "note": "list-valued argument stays a list through GuidedJson{named_tool=None}"})),
 
     ("guided_json_two_calls",
-     "A required choice returns an ARRAY, so multiple calls are that mode's ordinary shape. Both must surface as separate ordered events with distinct indices. Same array as 50.c but with NOTHING pre-filled, so guided mode starts outside reasoning rather than in visible-only — a different entry into the same payload.",
+     "A required choice returns an array containing two calls. With no channel prefilled, both must surface as separate ordered events with distinct indices.",
      [],
      [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
       {"kind": "tool_call", "name": "run", "arguments": {"cmd": "git log"}}],
@@ -922,7 +940,7 @@ EDGE = [
                   {"verdict": "match", "note": "two DIFFERENT tools in one array, ordered"})),
 
     ("guided_json_partial_calls",
-     "A guided array where one element is not a call (no `name`), with nothing pre-filled. All-or-nothing, as in 51.b: the whole payload surfaces as text and no call is dispatched, because extracting a call from a document that failed validation would fail OPEN on a side-effecting action.",
+     "A guided array where one element is not a call (no `name`), with nothing pre-filled. The whole payload surfaces as text and no call is dispatched, because extracting a call from a document that failed validation would fail OPEN on a side-effecting action.",
      ["P2"],
      [{"kind": "text", "text": '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'}],
      {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
@@ -948,7 +966,7 @@ EDGE = [
     # are pinned by unit tests; without these cases the corpus reads green through
     # all of them.
     ("guided_json_after_reasoning",
-     "The guided BASELINE that was missing: a normal thought, then the constrained payload. Every other guided case starts at the payload, so nothing pinned the ordinary shape where the model reasons first and the backend constrains only the call. This is the case the surroundings group contrasts with.",
+     "A normal thought precedes the guided payload. The reasoning closes before the constrained call begins; both must survive in their original order.",
      [],
      [{"kind": "reasoning", "text": "checking"},
       {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
@@ -959,7 +977,7 @@ EDGE = [
 
     ("guided_json_marker_inside_argument",
      "A control marker of the family's OWN grammar inside a guided argument VALUE. Once the payload has opened, a marker is argument DATA and must survive byte-exact (`I7`) — re-reading it as a channel token corrupts the call the tool receives while looking like a successful dispatch.",
-     ["P3"],
+     ["I7"],
      [{"kind": "tool_call", "name": "log", "arguments": {"note": None}}],  # filled per family
      {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
      guided_surroundings(
@@ -1002,7 +1020,7 @@ EDGE = [
       {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
      {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
      guided_surroundings(
-         lambda fam: f"{control_tokens(fam)[0]}I'll use {control_tokens(fam)[2]} next{control_tokens(fam)[1]}{GUIDED_ONE_CALL}",
+         lambda fam: f"{control_tokens(fam)[0]}I'll use {guided_invoke_prefix(fam) if fam == 'deepseek_v41' else control_tokens(fam)[2]} next{control_tokens(fam)[1]}{GUIDED_ONE_CALL}",
          "narrated markup stripped, thought preserved, payload survives")),
 
     ("gemma4_guided_json_visible_call_prose_before_reasoning",
@@ -1036,7 +1054,7 @@ EDGE = [
      })),
 
     ("guided_json_prose_before_reasoning",
-     "Visible prose, THEN a thought, then the payload. Every other guided case opens its thought at byte 0; when prose came first the run latched the payload buffer and the model's private thinking was surfaced to the user as the answer.",
+     "Visible prose precedes a thought and the guided payload. The leading prose must not latch the payload buffer and cause later private reasoning to appear in the visible answer.",
      ["P2"],
      [{"kind": "text", "text": "Sure. "},
       {"kind": "reasoning", "text": "checking"},
@@ -1088,6 +1106,7 @@ EDGE = [
      {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
      {"finish_reason": "stop"},
      {
+        "deepseek_v41": ("checking weather</think>" + r_tool("deepseek_v41", "get_weather", "city", "Paris", 0), M, M),
         "qwen3": ("checking weather</think><tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
                   D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state; conformance captures default generation only"),
                   {"verdict": "match", "note": "Dynamo v2 unified parser with starting_state=Reasoning"}),
@@ -1111,6 +1130,7 @@ EDGE = [
       {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
      {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
      {
+        "deepseek_v41": ("weighing options</think>Here's what I found: " + r_tool("deepseek_v41", "get_weather", "city", "Paris", 0), M, M),
         "qwen3": ("weighing options</think>Here's what I found: <tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
                   D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state; conformance captures default generation only"),
                   {"verdict": "match", "note": "reasoning -> text -> call, all three ordered in one prefilled stream"}),
@@ -1132,6 +1152,7 @@ EDGE = [
       {"kind": "text", "text": "The answer is 42."}],
      {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
      {
+        "deepseek_v41": ("no tool needed</think>The answer is 42.", M, M),
         "qwen3": ("no tool needed</think>The answer is 42.",
                   D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state; conformance captures default generation only"),
                   {"verdict": "match", "note": "closing a prefilled thought returns to visible content"}),
@@ -1145,16 +1166,6 @@ EDGE = [
                     VLLM_UNCAPTURABLE["kimi_k3"], M),
      }),
 
-    ("prefilled_response_with_guided_json",
-     "Response channel is pre-filled (the prompt opened visible content), so the stream skips reasoning entirely and emits only tool calls as guided JSON. Same payload as 30.b under a different starting state; identical output, since Response only changes how reasoning markers are read and there are none.",
-     ["P5"],
-     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
-     {"starting_state": "Response", "tool_output_mode": "GuidedJson", "named_tool": None},
-     {"finish_reason": "stop"},
-     every_family(GUIDED_ONE_CALL,
-                  D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state or use guided JSON"),
-                  {"verdict": "match", "note": "Dynamo v2 unified parser with starting_state=Response and tool_output_mode=GuidedJson{named_tool=None}"})),
-
     ("prefilled_reasoning_with_guided_json",
      "Reasoning channel is pre-filled (policy P5), stream begins inside <think> with no opener, and the model emits tool calls as guided JSON.",
      ["P5"],
@@ -1166,32 +1177,6 @@ EDGE = [
          lambda fam: f"checking weather{control_tokens(fam)[1]}{GUIDED_ONE_CALL}",
          "Dynamo v2 unified parser with starting_state=Reasoning and tool_output_mode=GuidedJson{named_tool=None}")),
 
-    ("prefilled_response_with_tool",
-     "Response channel is pre-filled (the prompt opened visible content), so the stream skips reasoning entirely: the leading `output` is visible CONTENT with no opening marker, then a native-XML tool call. The leading text is generated output and must surface as a text event — routing it to reasoning is the regression, and it is what a reasoning-first split does when nothing told it the response channel was already open. Parses identically under starting_state=None (compare 8.a `text_before_tool`) — no reasoning markers here, so Response has nothing to suppress; 50.d is the case that isolates it.",
-     ["P5"],
-     [{"kind": "text", "text": "output"},
-      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
-     {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None},
-     {"finish_reason": "stop"},
-     {
-        "qwen3": ("output<tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
-                  D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state; conformance captures default generation only"),
-                  {"verdict": "match", "note": "Dynamo v2 unified parser with starting_state=Response and tool_output_mode=Native"}),
-        "muse_glimmer": ("output<|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"city\">Paris</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|>",
-                         V_MUSE,
-                         {"verdict": "match", "note": "starting_state=Response opens the scanner in the to=user channel"}),
-        "gemma4": ("output<|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|>", M, M),
-        "kimi_k2": ("output<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>",
-                    M,
-                    D("MERGE", "the split path has no starting-state signal, so the leading visible `output` is swept into reasoning_content instead of surfacing as text")),
-        "kimi_k3": ("output" + k3_close("response")
-                    + r_tool("kimi_k3", "get_weather", "city", "Paris", 0),
-                    VLLM_UNCAPTURABLE["kimi_k3"], M),
-     }),
-
-
-
-
     ("prefilled_reasoning_redundant_opener",
      "Reasoning is pre-filled, and the backend ALSO re-emits the `<think>` opener the prompt already wrote. Exactly one such echo is consumed rather than leaked into reasoning_content; a second would be stray markup and stripped (I3). This is the only case where a prefilled stream legitimately carries an opener.",
      [],
@@ -1199,6 +1184,7 @@ EDGE = [
      {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
      {"finish_reason": "stop"},
      {
+        "deepseek_v41": ("<think>checking weather</think>" + r_tool("deepseek_v41", "get_weather", "city", "London", 0), M, M),
         "gemma4": ("<|channel>thought\nchecking weather<channel|><|tool_call>call:get_weather{city:<|\"|>London<|\"|>}<tool_call|>", M, M),
         # Muse's opener is the routed header itself. Re-emitting it cuts a ZERO-length
         # body, which must neither emit an event nor arm the adjacency newline.
@@ -1213,7 +1199,6 @@ EDGE = [
      }),
 
 
-
     ("prefilled_reasoning_truncated",
      "Reasoning is pre-filled and the token budget runs out mid tool call — the input is truncated, which is what finish_reason=length MEANS on the wire. Policy P2: keep the completed reasoning, drop the incomplete call, no error and no leaked markup.",
      ["P2"],
@@ -1221,6 +1206,8 @@ EDGE = [
      {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
      {"finish_reason": "length"},
      {
+        "deepseek_v41": ('analyzing data</think><｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Par', M, M),
+        "deepseek_v4": ('analyzing data</think><｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Par', M, M),
         "gemma4": ("analyzing data<channel|><|tool_call>call:get_weather{city:<|\"|>Par",
                    D("ERROR", "native Gemma4UnifiedParser finish() returns a hard Err on a partial call rather than recovering"),
                    {"verdict": "match", "note": "P2: drop the partial trailing call, keep the prefilled reasoning"}),
@@ -1243,30 +1230,8 @@ EDGE = [
      }),
 
 
-
-    ("prefilled_response_guided_json_two_calls",
-     "Guided decoding with a required choice returns an ARRAY, so the multi-call shape is the array's normal case, not an edge one. Both calls must surface as separate ordered events with distinct indices — collapsing them, or emitting only the first, silently drops work the model asked for. Same array as 30.c under a different starting state; see 50.d for the case where Response actually changes the parse.",
-     ["P5"],
-     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
-      {"kind": "tool_call", "name": "run", "arguments": {"cmd": "git log"}}],
-     {"starting_state": "Response", "tool_output_mode": "GuidedJson", "named_tool": None},
-     {"finish_reason": "stop"},
-     every_family(GUIDED_TWO_CALLS,
-                  D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state or use guided JSON"),
-                  {"verdict": "match", "note": "two DIFFERENT tools in one array, ordered"})),
-
-    ("prefilled_response_guided_json_partial_calls",
-     "A guided array where ONE element is not a call (no `name`). The whole payload surfaces as text and NO call is dispatched — deliberately all-or-nothing, not best-effort per element. A tool call is a side effect, so extracting one from a document that failed validation is failing OPEN: the client would execute a call the parser could not fully verify. Text loses nothing, since the raw payload stays visible.",
-     ["P2"],
-     [{"kind": "text", "text": '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'}],
-     {"starting_state": "Response", "tool_output_mode": "GuidedJson", "named_tool": None},
-     {"finish_reason": "stop"},
-     every_family('[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]',
-                  D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state or use guided JSON"),
-                  {"verdict": "match", "note": "one invalid element voids the whole array; payload surfaces as text"})),
-
     ("prefilled_response_reasoning_markers_literal",
-     "The ONLY case where starting_state=Response is observable. Response says the prompt already opened VISIBLE content, so this stream has no reasoning channel at all and `<think>`/`</think>` are ordinary characters the model happened to write — they must reach the user as text, markers and all. Every other 50/51 case has no reasoning markers in its input and therefore parses identically under starting_state=None: 50.a matches 8.a, 50.b matches 30.b, 50.c matches 30.c, and 51.b matches 31-3. This one does not.",
+     "A prefilled-Response case where starting_state=Response is observable. Response says the prompt already opened visible content, so this stream has no reasoning channel at all and `<think>`/`</think>` are ordinary characters the model happened to write — they must reach the user as text, markers and all. Marker-free prefilled-Response variants parse identically under starting_state=None and are deliberately omitted. This one does not.",
      ["P5"],
      # The literal text is the family's OWN reasoning markers, so the golden is
      # filled per family (below) rather than hardcoding one grammar's.
@@ -1275,6 +1240,8 @@ EDGE = [
      {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None},
      {"finish_reason": "stop"},
      {
+        "deepseek_v41": ("<think>literal</think> then a call" + r_tool("deepseek_v41", "get_weather", "city", "Paris", 0),
+                         M, M, "<think>literal</think> then a call"),
         # Muse answers this scenario DIFFERENTLY from the marker-pair families, and the
         # difference is the point. Response turns the turn-start latch off, so the bare
         # `to=self<|message|>` is prose rather than a live header — the routing is
@@ -1303,33 +1270,6 @@ EDGE = [
                     k3_channel("think", "literal") + " then a call"),
      }),
 
-    ("prefilled_response_truncated",
-     "The response channel is pre-filled and the token budget runs out mid tool call. Policy P2: the visible prose already emitted survives, the incomplete call is dropped, nothing leaks as text.",
-     ["P2"],
-     [{"kind": "text", "text": "Working on it... "}],
-     {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None},
-     {"finish_reason": "length"},
-     {
-        "gemma4": ("Working on it... <|tool_call>call:get_weather{city:<|\"|>Par",
-                   D("ERROR", "native Gemma4UnifiedParser finish() returns a hard Err on a partial call rather than recovering"),
-                   {"verdict": "match", "note": "P2: keep the leading visible prose, drop the partial call"}),
-        "muse_glimmer": ("Working on it... <|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"city\">Par",
-                         V_MUSE,
-                         {"verdict": "match", "note": "P2: the leading visible prose survives, the partial call is dropped"}),
-        "qwen3": ("Working on it... <tool_call>\n<function=get_weather>\n<parameter=city>\nPar",
-                  {"verdict": "match", "note": "P2: keep leading prose and drop the unterminated call"},
-                  {"verdict": "match", "note": "P2: v2 keeps the leading prose and drops the partial call"}),
-        "kimi_k2": ("Working on it... <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{\"city\": \"Par",
-                    {"verdict": "match", "note": "P2: keep leading prose and drop the unterminated call"},
-                    {"verdict": "match", "note": "P2: v2 keeps the leading prose and drops the partial call"}),
-        "kimi_k3": ("Working on it... " + k3_close("response") + k3_tools(
-                        k3_call("get_weather", 1, k3_open(
-                            "argument", [("key", "city"), ("type", "string")]
-                        ) + "Par", close=False),
-                        close=False),
-                    VLLM_UNCAPTURABLE["kimi_k3"],
-                    {"verdict": "match", "note": "P2: keep visible K3 response prose and drop the partial call"}),
-     }),
 ]
 
 
@@ -1416,13 +1356,13 @@ EDGE += [
     ("kimi_k3_malformed_call_then_valid",
      "A malformed Kimi K3 call body followed by a complete call resynchronizes at the later call. The malformed prefix neither leaks as text nor costs the valid call.",
      ["P2"],
-     [{"kind": "tool_call", "name": "g", "arguments": {"y": 2}}],
+     [{"kind": "tool_call", "name": "g", "arguments": {"y": "2"}}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      OnlyFamilies({
          "kimi_k3": (
              k3_open("tools")
              + k3_open("call", [("tool", "bad"), ("index", "1")]) + "not-an-argument"
-             + k3_call("g", 2, k3_argument("y", "number", "2"))
+             + k3_call("g", 2, k3_argument("y", "string", "2"))
              + k3_close("tools"),
              VLLM_UNCAPTURABLE["kimi_k3"], M,
          ),
@@ -1505,7 +1445,7 @@ GUIDED_SURROUNDS = {
                        "a stray tool CLOSE after the payload", True),
     "wrapped": (lambda pay, fam: f"{control_tokens(fam)[2]}{pay}{control_tokens(fam)[3]}",
                 "the payload wrapped in native tool markup", True),
-    "bare_opener": (lambda pay, fam: f"{invoke_header_prefix(fam)}{pay}",
+    "bare_opener": (lambda pay, fam: f"{guided_invoke_prefix(fam)}{pay}",
                     "a bare invoke HEADER before the payload, never terminated", False),
 }
 
@@ -1539,6 +1479,12 @@ def _guided_product():
                        if dispatches else
                        "no call is recoverable, and the recovery TEXT carries none "
                        "of the markup the parse stripped"))
+            family_inputs = guided_surroundings(
+                lambda fam, w=wrap, pl=payload: w(pl, fam),
+                note,
+                fill=(None if dispatches else
+                      (lambda fam, pl=payload, st=strips_tail: pl.rstrip() if st else pl)),
+            )
             out.append((
                 scenario,
                 f"Guided JSON, payload is {pay_name}, surrounded by {sur_desc}. "
@@ -1553,35 +1499,29 @@ def _guided_product():
                 golden,
                 {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
                 {"finish_reason": "stop"},
-                guided_surroundings(
-                    lambda fam, w=wrap, pl=payload: w(pl, fam),
-                    note,
-                    fill=(None if dispatches else
-                          (lambda fam, pl=payload, st=strips_tail: pl.rstrip() if st else pl)),
-                ),
+                family_inputs,
             ))
     return out
 
 
 EDGE += _guided_product()
 
-
 # Group 4 (TC Malformed envelope) was a LABELLED group with zero cases, and the
 # degenerate shape below had none either: no row anywhere pinned that control
 # markup ALONE emits nothing. Both are native, so the input is per family.
 EDGE += [
     ("tool_markup_only_emits_nothing",
-     "The whole generated output is control markup and nothing else — a stray close with no "
-     "block ever opened. Everything is stripped, so the parser emits NO events at all. Until "
+     "The whole generated output is control markup and nothing else — an empty DSML calls envelope for DeepSeek V4.1, or a stray close for the other families. "
+     "Everything is stripped, so the parser emits NO events at all. Until "
      "this case there was no row with an empty golden: every case asserted something was "
      "produced, so 'markup alone leaks nothing' (`I3`) was never actually pinned.",
      ["P2"],
      [],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {"finish_reason": "stop"},
-     by_family(lambda fam: control_tokens(fam)[3],
+     by_family(lambda fam: (control_tokens(fam)[2] if fam == "deepseek_v41" else "") + control_tokens(fam)[3],
                D("UNSUPPORTED", "vLLM base case does not capture a markup-only turn"),
-               {"verdict": "match", "note": "orphan close stripped; nothing to emit"})),
+               {"verdict": "match", "note": "control markup emits nothing"})),
 
     ("tool_block_never_closed_then_text",
      "A tool block opens and the model never closes it, then keeps writing prose. Nothing is "
@@ -1640,7 +1580,7 @@ QUOTED_BARE_HEADER = [
     ("guided_json_quoted_bare_header_in_answer", "self",
      "A `to=self` header QUOTED inside the visible answer, after the turn has already been routed to the user. The words are the model's prose and only the marker is structural, so the answer stays one run. Promoting the quote opened a real THOUGHT and split the answer in two, which reaches the client as an answer plus chain-of-thought the model never meant to expose."),
     ("guided_json_quoted_bare_tool_header_in_answer", "get_weather",
-     "The same quote naming a TOOL recipient. Paired with the case above because the failure differs: promoting a quoted tool recipient DELETED the `to=…` words from the answer instead of splitting it, so the client silently received different prose than the model wrote."),
+     "Muse's quoted TOOL-recipient header remains visible answer text. Promoting it deletes the `to=…` words instead of splitting the answer. Only Muse has this recipient boundary; changing a word inside another family's reasoning envelope duplicates `31-25`."),
 ]
 
 # The scope siblings: turn position and open channel are independent axes, and the
@@ -1678,29 +1618,32 @@ def _guided_response_markup(fam, recipient, after_payload=False):
 
 
 def _guided_response_markup_cases(recipient, after_payload=False):
-    return {
+    families = ("muse_glimmer",) if recipient != "self" else FAMILIES
+    cases = {
         fam: (
             _guided_response_markup(fam, recipient, after_payload)[0],
             GUIDED_UNSUPPORTED,
             {"verdict": "match", "note": "Response keeps the quoted control marker out of the reasoning channel and the guided payload dispatches"},
             _guided_response_markup(fam, recipient, after_payload)[1],
         )
-        for fam in FAMILIES
+        for fam in families
     }
+    return OnlyFamilies(cases) if recipient != "self" else cases
+
 
 for _name, _rcpt, _desc in QUOTED_BARE_HEADER:
     EDGE.append((
         _name,
         _desc,
         ["I3"],
-        ([{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
-          {"kind": "text", "text": None}]
-         if _name.endswith("after_payload") else
-         [{"kind": "text", "text": None},
-          {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]),
+         ([{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+           {"kind": "text", "text": None}]
+          if _name.endswith("after_payload") else
+          [{"kind": "text", "text": None},
+           {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]),
         {"starting_state": "Response", "tool_output_mode": "GuidedJson", "named_tool": None},
-        {"finish_reason": "tool_calls"},
-        _guided_response_markup_cases(_rcpt, _name.endswith("after_payload")),
+         {"finish_reason": "tool_calls"},
+         _guided_response_markup_cases(_rcpt, _name.endswith("after_payload")),
     ))
 
 EDGE.append((
@@ -1747,7 +1690,7 @@ EDGE += [
      {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
      {"finish_reason": "stop"},
      guided_surroundings(
-         lambda fam: f"{invoke_header_prefix(fam)}{r_reason(fam, 'secret')}{GUIDED_ONE_CALL}",
+          lambda fam: f"{guided_invoke_prefix(fam)}{r_reason(fam, 'secret')}{GUIDED_ONE_CALL}",
          "a bare invoke header before a thought must not borrow the thought's terminator")),
 
     ("guided_json_narrated_prefix_inside_reasoning",
@@ -1761,7 +1704,7 @@ EDGE += [
      {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
      {"finish_reason": "stop"},
      guided_surroundings(
-         lambda fam: f"{r_reason(fam, 'I' + chr(39) + 'll call ' + invoke_header_prefix(fam) + 'get_weather')}{GUIDED_ONE_CALL}",
+          lambda fam: f"{r_reason(fam, 'I' + chr(39) + 'll call ' + guided_invoke_prefix(fam) + 'get_weather')}{GUIDED_ONE_CALL}",
          "a narrated invoke header inside a thought is stripped, closer and thought intact")),
 ]
 
@@ -1792,120 +1735,87 @@ def _vllm_entry(spec, fam):
 
 
 DEEPSEEK_V41_SCENARIOS = {
-    "tool_only", "reason_then_tool", "reason_then_content", "interstitial_text",
-    "two_calls", "two_calls_same_name", "text_only", "reason_only",
-    "empty_args", "arg_unicode", "arg_marker_in_string", "truncated_tool_eof",
-    "reason_unterminated", "tool_markup_only_emits_nothing",
-    "prefilled_reasoning_with_guided_json", "guided_json_named_tool",
-    "guided_json_required_tool", "guided_json_two_calls",
-    "guided_json_marker_inside_argument",
-    "guided_json_quoted_bare_header_in_answer",
-    "guided_json_quoted_bare_tool_header_in_answer",
-    "guided_json_quoted_bare_header_after_payload",
-    "guided_json_bare_tool_header_recovers_inside_a_thought",
+    spec[0]
+    for spec in (*CLEAN, *EDGE)
+    if not isinstance(spec[-1], OnlyFamilies) or "deepseek_v41" in spec[-1]
 }
 
 
-def deepseek_v41_cases():
-    def call(name, arguments):
-        params = "".join(
-            f'<｜DSML｜ parameter name="{key}" string="true">{value}</｜DSML｜ parameter>'
-            for key, value in arguments.items()
-        )
-        return f'<｜DSML｜ invoke name="{name}">{params}</｜DSML｜ invoke>'
-
-    def calls(body):
-        return f"<｜DSML｜ calls>{body}</｜DSML｜ calls>"
-
-    cases = {}
-
-    def add(name, description, text, golden, state="None", mode="Native", named=None):
-        cases[f"UNIFIED.{name}.deepseek_v41"] = {
-            "description": description,
-            "policy": [],
-            "input": text,
-            "golden": golden,
-            "expect": {
-                "vllm": VLLM_UNCAPTURABLE["deepseek_v41"],
-                "dynamo": M,
-            },
-            "init": {"starting_state": state, "tool_output_mode": mode, "named_tool": named},
-            "finish_reason": "stop",
-        }
-
-    for name, description, _policy, segments, *_ in CLEAN:
-        if name not in DEEPSEEK_V41_SCENARIOS:
-            continue
-        text = ""
-        invocations = ""
-        state = "None"
-        for segment in segments:
-            if segment[0] == "reason":
-                state = "Reasoning"
-                text += segment[1] + "</think>"
-            elif segment[0] == "text":
-                text += segment[1]
-            else:
-                _, tool, key, value = segment
-                invocations += call(tool, {key: value})
-        if invocations:
-            text += calls(invocations)
-        add(name, description, text, golden_of(segments), state)
-
-    add("empty_args", "A complete invocation with no parameters.", calls(call("f", {})),
-        [{"kind": "tool_call", "name": "f", "arguments": {}}])
-    for name, value in [
-        ("arg_unicode", "東京 café 🦀"),
-        ("arg_marker_in_string", ' <think>quoted</think> <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; "x"\\\n '),
-    ]:
-        add(name, "String parameter bytes survive DSML decoding.", calls(call("f", {"x": value})),
-            [{"kind": "tool_call", "name": "f", "arguments": {"x": value}}])
-    add("truncated_tool_eof", "A truncated parameter does not complete an invocation and emits nothing.",
-        '<｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">partial', [])
-    add("reason_unterminated", "An open thought survives the end of the stream.",
-        "still thinking", [{"kind": "reasoning", "text": "still thinking"}], "Reasoning")
-    add("tool_markup_only_emits_nothing", "An empty calls block emits nothing.", calls(""), [])
-    one = [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
-    add("guided_json_named_tool", "A named choice uses the shared guided decoder.",
-        GUIDED_NAMED_ARGS, one, mode="GuidedJson", named="get_weather")
-    add("guided_json_required_tool", "A required choice uses the shared guided decoder.",
-        GUIDED_ONE_CALL, one, mode="GuidedJson")
-    add("guided_json_two_calls", "Guided output preserves two distinct calls.",
-        GUIDED_TWO_CALLS, one + [{"kind": "tool_call", "name": "run", "arguments": {"cmd": "git log"}}],
-        mode="GuidedJson")
-    add("prefilled_reasoning_with_guided_json", "Prefilled reasoning closes before guided arguments.",
-        "check</think>" + GUIDED_NAMED_ARGS,
-        [{"kind": "reasoning", "text": "check"}] + one,
-        "Reasoning", "GuidedJson", "get_weather")
-    shared_guided = build_cases("qwen3")
-    for name in DEEPSEEK_V41_SCENARIOS:
-        key = f"UNIFIED.{name}.deepseek_v41"
-        if key in cases:
-            continue
-        case = shared_guided[f"UNIFIED.{name}.qwen3"]
-        case["input"] = case["input"].replace("<tool_call>", "<｜DSML｜ calls>").replace("</tool_call>", "</｜DSML｜ calls>")
-        case["expect"]["vllm"] = VLLM_UNCAPTURABLE["deepseek_v41"]
-        cases[key] = case
-    return cases
+def _deepseek_v41_input(segments):
+    # V4.1 groups adjacent invokes inside one calls envelope and starts initial
+    # reasoning in the prompt; neither changes the scenario's events or tools.
+    text = ""
+    reasoning_open = False
+    starting_state = "None"
+    emitted_output = False
+    tool_block_open = False
+    for segment in segments:
+        if segment[0] == "reason":
+            if tool_block_open:
+                text += "</｜DSML｜ calls>"
+                tool_block_open = False
+            if not reasoning_open:
+                if not emitted_output:
+                    starting_state = "Reasoning"
+                else:
+                    text += "<think>"
+                reasoning_open = True
+            text += segment[1]
+            emitted_output = True
+        elif segment[0] == "text":
+            if tool_block_open:
+                text += "</｜DSML｜ calls>"
+                tool_block_open = False
+            if reasoning_open:
+                text += "</think>"
+                reasoning_open = False
+            text += segment[1]
+            emitted_output = True
+        else:
+            _, tool, key, value = segment
+            if reasoning_open:
+                text += "</think>"
+                reasoning_open = False
+            if not tool_block_open:
+                text += "<｜DSML｜ calls>"
+                tool_block_open = True
+            text += r_tool("deepseek_v41", tool, key, value, 0).removeprefix("<｜DSML｜ calls>").removesuffix("</｜DSML｜ calls>")
+            emitted_output = True
+    if reasoning_open:
+        text += "</think>"
+    if tool_block_open:
+        text += "</｜DSML｜ calls>"
+    return text, starting_state
 
 
 def build_cases(fam):
     """Every CLEAN + EDGE scenario for one family, keyed by case id."""
-    if fam == "deepseek_v41":
-        return deepseek_v41_cases()
     cases = {}
     for name, desc, policy, segs, vllm, dynamo in CLEAN:
+        inp, state = (_deepseek_v41_input(segs) if fam == "deepseek_v41"
+                      else (render_input(fam, segs), "None"))
         cid = f"UNIFIED.{name}.{fam}"
         cases[cid] = {
             "description": desc,
             "policy": policy,
-            "input": render_input(fam, segs),
+            "input": inp,
             "golden": golden_of(segs),
-            "expect": {"vllm": _vllm_entry(vllm, fam), "dynamo": _entry(dynamo, fam)},
-            "init": {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+            "expect": ({"vllm": VLLM_UNCAPTURABLE[fam], "dynamo": M} if fam == "deepseek_v41"
+                       else {"vllm": _vllm_entry(vllm, fam), "dynamo": _entry(dynamo, fam)}),
+            "init": {"starting_state": state, "tool_output_mode": "Native", "named_tool": None},
             "finish_reason": "stop",
         }
-    for edge_case in EDGE:
+    cases.update(_build_edge_cases(fam, EDGE))
+    if fam == "deepseek_v41":
+        case = cases[f"UNIFIED.reason_unterminated.{fam}"]
+        case["input"] = case["input"].removeprefix("<think>")
+        case["init"] = {**case["init"], "starting_state": "Reasoning"}
+    return cases
+
+
+def _build_edge_cases(fam, specs):
+    cases = {}
+    for edge_case in specs:
         # Support both 6-tuple (legacy) and 7-tuple (stream_config) formats
         if len(edge_case) == 6:
             name, desc, policy, golden, init, per_fam = edge_case
@@ -1920,8 +1830,8 @@ def build_cases(fam):
         if (init or {}).get("tool_output_mode", "Native") != "Native" and fam not in GUIDED_FAMILIES:
             continue
 
-        # A scenario may DECLARE a narrow scope when a family's grammar cannot express
-        # it (`OnlyFamilies`). Absence from a plain map is still a hard failure — an
+        # A scenario may DECLARE a grammar- or regression-specific scope with
+        # OnlyFamilies. Absence from a plain map is still a hard failure — an
         # accidentally omitted family must break generation rather than quietly read as
         # "not applicable", which would hide missing coverage behind the same cell the
         # corpus uses for a real structural gap.
@@ -1937,8 +1847,8 @@ def build_cases(fam):
             else:
                 raise KeyError(
                     f"{name}: no input authored for family {fam!r}. Add one, or wrap the map "
-                    f"in OnlyFamilies({{...}}) if this family's grammar cannot express the "
-                    f"scenario (and say why at the authoring site and in UNIFIED_CASES.md)."
+                    f"in OnlyFamilies({{...}}) for an explicit grammar- or regression-specific "
+                    f"scope (and say why at the authoring site and in UNIFIED_CASES.md)."
                 )
         inp, vllm, dynamo, *rest = per_fam[fam]
         g = json.loads(json.dumps(golden))  # deep copy
@@ -1997,8 +1907,8 @@ def scenario_families(scenario):
     """Return the families for which an authored scenario is applicable.
 
     A plain per-family map means the scenario is part of the full matrix. An
-    ``OnlyFamilies`` map is the authoring-time declaration that the grammar
-    cannot express the scenario for the omitted families. The table builder
+    ``OnlyFamilies`` map declares a grammar-specific or regression-specific scope;
+    absence does not assert that the omitted families lack the capability. The table builder
     uses this same declaration to render explicit n/a cells instead of
     silently dropping them.
     """

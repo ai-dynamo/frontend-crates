@@ -439,9 +439,9 @@ def test_refresh_publish_retries_past_a_colliding_generation_name(cache_root, tm
     real_write_state = extract_fixtures.write_state
     call_count = {"n": 0}
 
-    def _resolve_then_inject_competitor_after_the_second_call(cache_root_, pin_, fid_, pinned_shards_):
+    def _resolve_then_inject_competitor_after_the_second_call(cache_root_, pin_, fid_, pinned_shards_, inactive=()):
         call_count["n"] += 1
-        result = real_resolve(cache_root_, pin_, fid_, pinned_shards_)
+        result = real_resolve(cache_root_, pin_, fid_, pinned_shards_, inactive)
         if call_count["n"] == 2:
             # Call #1 selects the current generation for the publication
             # transition. Call #2 computes the refresh candidate, so an
@@ -484,9 +484,9 @@ def test_refresh_publish_collision_retry_negative_control(cache_root, tmp_path, 
     real_write_state = extract_fixtures.write_state
     call_count = {"n": 0}
 
-    def _resolve_then_inject_competitor_and_disable_retry_handling(cache_root_, pin_, fid_, pinned_shards_):
+    def _resolve_then_inject_competitor_and_disable_retry_handling(cache_root_, pin_, fid_, pinned_shards_, inactive=()):
         call_count["n"] += 1
-        result = real_resolve(cache_root_, pin_, fid_, pinned_shards_)
+        result = real_resolve(cache_root_, pin_, fid_, pinned_shards_, inactive)
         if call_count["n"] == 2:
             competitor = cache_root_ / f"{pin_}-{fid_}.refresh1"
             competitor.mkdir(parents=True)
@@ -520,15 +520,15 @@ def test_concurrent_double_publish_of_one_identity_is_a_safe_noop(cache_root, tm
 
     real_write_state = extract_fixtures.write_state
 
-    def _write_state_then_let_a_competitor_publish_first(snap_dir, snapshot, shards_):
-        real_write_state(snap_dir, snapshot, shards_)
+    def _write_state_then_let_a_competitor_publish_first(snap_dir, snapshot, shards_, inactive=()):
+        real_write_state(snap_dir, snapshot, shards_, inactive)
         # `snap_dir` here is THIS process's own tmp_dir, about to be renamed.
         # Publish the "other process's" identical-identity result at the real
         # published name right now, simulating it winning the race.
         published.mkdir(parents=True)
         (published / "toolcalling").mkdir()
         (published / "toolcalling" / "marker.txt").write_text("sentinel-from-the-other-publisher")
-        real_write_state(published, snapshot, shards_)
+        real_write_state(published, snapshot, shards_, inactive)
 
     monkeypatch.setattr(extract_fixtures, "write_state", _write_state_then_let_a_competitor_publish_first)
 

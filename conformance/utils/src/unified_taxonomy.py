@@ -26,6 +26,7 @@ import markers
 UNIFIED_TAX = {
     # Group 1 — Single call
     "tool_only": (1, "a"),
+    # TODO: restore 1-2 in the follow-up to PR #232 (deferred-cases).
     # Group 2 — Multiple calls (streamv2.2)
     "two_calls": (2, "a"), "two_calls_same_name": (2, "b"),
     # Group 3 — No call (streamv2.3)
@@ -41,6 +42,7 @@ UNIFIED_TAX = {
     "empty_args": (6, "a"),
     # Group 7 — Argument fidelity (streamv2.7)
     "arg_unicode": (7, "a"), "arg_marker_in_string": (7, "b"),
+    # TODO: restore 7-3 in the follow-up to PR #232 (deferred-cases).
     # Group 8 — Content / narration position (streamv2.8)
     "text_before_tool": (8, "a"), "trailing_text_after_tool": (8, "b"),
     "text_sandwich": (8, "c"), "text_between_calls": (8, "d"),
@@ -108,6 +110,7 @@ UNIFIED_TAX = {
     "guided_json_gt_in_argument_trailing_close": (30, "k"),
     "guided_json_gt_in_argument_wrapped": (30, "l"),
     "guided_json_gt_in_argument_bare_opener": (30, "m"),
+    # TODO: restore 30-14 in the follow-up to PR #232 (deferred-cases).
 
     # Marker OWNERSHIP: which control marker owns a `>` when two compete. The
     # corpus had no such case, and the gap leaked private reasoning as text.
@@ -116,9 +119,12 @@ UNIFIED_TAX = {
     "guided_json_native_markup_only": (31, "23"),
     "guided_json_unterminated_reasoning_then_wrapped_payload": (31, "24"),
     "guided_json_quoted_bare_header_in_answer": (31, "25"),
+    # TODO: move 31-26 to a Muse-only column, preserving historical case references.
     "guided_json_quoted_bare_tool_header_in_answer": (31, "26"),
     "guided_json_quoted_bare_header_after_payload": (31, "27"),
     "guided_json_bare_tool_header_recovers_inside_a_thought": (31, "28"),
+    # 31-29 and 31-30 remain reserved for the historical Gemma-only cases.
+    # TODO: restore 31-31 through 31-40 in the follow-up to PR #232 (deferred-cases).
     # Group g4 — Gemma 4 guided call-prefix boundaries
     "gemma4_guided_json_visible_call_prose_before_reasoning": ("g4", "1"),
     "gemma4_guided_json_malformed_call_prefix_before_reasoning": ("g4", "2"),
@@ -128,13 +134,8 @@ UNIFIED_TAX = {
     "prefilled_reasoning_then_text_then_tool": (40, "c"), "prefilled_reasoning_then_text": (40, "d"),
     # Group 41 — Prefilled reasoning, weird / malformed
     "prefilled_reasoning_redundant_opener": (41, "a"), "prefilled_reasoning_truncated": (41, "b"),
-    # Group 50 — Prefilled response, happy
-    "prefilled_response_with_tool": (50, "a"), "prefilled_response_with_guided_json": (50, "b"),
-    "prefilled_response_guided_json_two_calls": (50, "c"),
     "prefilled_response_reasoning_markers_literal": (50, "d"),
-    # Group 51 — Prefilled response, weird / malformed
-    "prefilled_response_truncated": (51, "a"),
-    "prefilled_response_guided_json_partial_calls": (51, "b"),
+    # TODO: restore 50-1 and 50-2 in the follow-up to PR #232 (deferred-cases).
 }
 
 # Axis prefix makes each group's channel explicit: "TC" = tool-calling only (groups

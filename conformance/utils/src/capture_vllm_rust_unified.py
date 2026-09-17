@@ -32,6 +32,9 @@ import sys
 import tempfile
 from pathlib import Path
 
+from capture_stimulus import capture_peer_results
+from unified_tools import SCHEMA_PATH
+
 # Family parser wiring for the released 0.25.1 capture.
 FAMILY_PARSERS = {
     "gemma4": ("unified", None, None),
@@ -65,6 +68,8 @@ struct Case {
     input: String,
     #[serde(default)]
     chunks: Vec<String>,
+    #[serde(default)]
+    terminal_step: bool,
 }
 
 #[derive(Serialize)]
@@ -77,20 +82,8 @@ struct CaseOut {
 }
 
 fn tools() -> Vec<Tool> {
-    let mk = |name: &str, key: &str| Tool {
-        name: name.to_string(),
-        description: None,
-        parameters: json!({"type":"object","properties":{key:{"type":"string"}}}),
-        strict: None,
-    };
-    vec![
-        mk("get_weather", "city"),
-        mk("f", "x"),
-        mk("g", "y"),
-        mk("run", "cmd"),
-        // Keep in step with `tools()` in conformance/tests/unified_parity.rs.
-        mk("log", "note"),
-    ]
+    serde_json::from_str(include_str!("unified_tools.json"))
+        .expect("Unified corpus tool schemas")
 }
 
 fn make_parser(family: &str) -> (Box<dyn UnifiedParser>, String) {
@@ -214,13 +207,27 @@ fn main() {
         let mut chunk_rows: Vec<Vec<Value>> = Vec::new();
         for (i, ch) in case.chunks.iter().enumerate() {
             let mut co = UnifiedParserOutput::default();
-            let _ = ps.parse_into(ch, &mut co);
-            if i == case.chunks.len() - 1 {
-                if let Ok(fin) = ps.finish() {
-                    co.events.extend(fin.events);
+            if let Err(e) = ps.parse_into(ch, &mut co) {
+                error.get_or_insert_with(|| format!("UnifiedParserError::{e:?}"));
+            }
+            if !case.terminal_step && i == case.chunks.len() - 1 {
+                match ps.finish() {
+                    Ok(fin) => co.events.extend(fin.events),
+                    Err(e) => {
+                        error.get_or_insert_with(|| format!("UnifiedParserError::{e:?}"));
+                    }
                 }
             }
             chunk_rows.push(deltas_to_json(&co.events));
+        }
+        if case.terminal_step {
+            match ps.finish() {
+                Ok(fin) => chunk_rows.push(deltas_to_json(&fin.events)),
+                Err(e) => {
+                    error.get_or_insert_with(|| format!("UnifiedParserError::{e:?}"));
+                    chunk_rows.push(Vec::new());
+                }
+            }
         }
 
         results.insert(
@@ -273,6 +280,7 @@ def build_and_run(vllm_rust_source: Path, job_json: str) -> str:
     with tempfile.TemporaryDirectory(prefix="vllm-rust-uni-") as td:
         crate = Path(td)
         (crate / "src").mkdir()
+        (crate / "src/unified_tools.json").write_bytes(SCHEMA_PATH.read_bytes())
         (crate / "Cargo.toml").write_text(f'''[package]
 name = "vllm-rust-unified-capture"
 version = "0.0.0"
@@ -303,14 +311,30 @@ serde_json = "1"
         return run.stdout
 
 
+def capture_job(vllm_rust_source, job):
+    feed = {}
+    schema_bytes = SCHEMA_PATH.read_bytes()
+
+    def capture(cases):
+        feed.update(json.loads(build_and_run(vllm_rust_source, json.dumps({"cases": cases}))))
+        return feed["results"]
+
+    results = capture_peer_results(job.get("cases", []), FAMILY_PARSERS, capture,
+                                   tools=json.loads(schema_bytes), supports_finish=True)
+    if SCHEMA_PATH.read_bytes() != schema_bytes:
+        raise ValueError("tool schema changed during peer capture")
+    if not feed:
+        feed["vllm_rust_version"] = _vllm_rust_version(vllm_rust_source, vllm_rust_source / "src/parser")
+    return {**feed, "results": results}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--vllm-rust-source", required=True, type=Path)
     ap.add_argument("--job", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path)
     args = ap.parse_args()
-    out = build_and_run(args.vllm_rust_source, args.job.read_text())
-    data = json.loads(out)
+    data = capture_job(args.vllm_rust_source, json.loads(args.job.read_text()))
     args.out.write_text(yaml.dump(data, default_flow_style=False, sort_keys=False,
                                   allow_unicode=True, width=4096))
     print(f"wrote {args.out} "

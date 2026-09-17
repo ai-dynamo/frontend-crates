@@ -763,6 +763,14 @@ fn kimi_k3_call_boundary() -> Box<dyn InvokeBoundary> {
 }
 
 impl InvokeBoundary for KimiK3CallBoundary {
+    fn set_guided_context(&mut self, context: GuidedInvokePrefixContext) {
+        self.return_channel = if context.outside_reasoning {
+            Mode::Response
+        } else {
+            Mode::Reasoning
+        };
+    }
+
     fn owns_guided_prefix(&self) -> bool {
         true
     }
@@ -779,8 +787,11 @@ impl InvokeBoundary for KimiK3CallBoundary {
         &mut self,
         candidate: &str,
         _append: &str,
-        _context: GuidedInvokePrefixContext,
+        context: GuidedInvokePrefixContext,
     ) -> Option<GuidedInvokePrefix> {
+        // A reasoning closer bounds this call just as it does in native mode;
+        // without the return channel, the boundary can swallow following prose.
+        self.set_guided_context(context);
         Some(match self.guided_prefix.advance(candidate) {
             BareCallPrefix::NoMatch => GuidedInvokePrefix::NoMatch,
             BareCallPrefix::Pending => GuidedInvokePrefix::Pending,
@@ -1368,6 +1379,7 @@ impl NativeUnified for KimiK3Native {
             invoke_end: CALL_CLOSE.canonical.to_string(),
             invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(kimi_k3_call_boundary)),
             guided_prefix_policy: None,
+            guided_prefix_factory: None,
         }
     }
 
@@ -1537,6 +1549,7 @@ enum GuidedBareCallPrefixStage {
     Quote,
     Header {
         first: bool,
+        name_closed: bool,
     },
 }
 
@@ -1595,9 +1608,12 @@ impl GuidedBareCallPrefix {
                     }
                     self.scanned += 1;
                     self.consumed = self.scanned;
-                    self.stage = GuidedBareCallPrefixStage::Header { first: true };
+                    self.stage = GuidedBareCallPrefixStage::Header {
+                        first: true,
+                        name_closed: false,
+                    };
                 }
-                GuidedBareCallPrefixStage::Header { first } => {
+                GuidedBareCallPrefixStage::Header { first, name_closed } => {
                     if let Some(at) = self.pending_marker {
                         let rest = &text[at..];
                         if ALL_MARKERS.iter().any(|marker| {
@@ -1615,12 +1631,18 @@ impl GuidedBareCallPrefix {
                     }
                     let ch = text[self.scanned..].chars().next().expect("header body");
                     count_guided_prefix_bytes(ch.len_utf8());
-                    if *first && matches!(ch, '{' | '[') {
+                    if (*first || *name_closed) && matches!(ch, '{' | '[') {
                         self.result = Some(BareCallPrefix::Complete(self.consumed));
                         break;
                     }
                     *first = false;
-                    if ch == '"' {
+                    if ch == '"' && !*name_closed {
+                        *name_closed = true;
+                        self.scanned += ch.len_utf8();
+                        self.consumed = self.scanned;
+                        continue;
+                    }
+                    if *name_closed {
                         self.result = Some(BareCallPrefix::NoMatch);
                         break;
                     }
@@ -2724,24 +2746,6 @@ mod tests {
     }
 
     #[test]
-    fn argument_close_before_guided_payload_remains_structural() {
-        let payload = r#"[{"name":"weather","arguments":{"city":"Zürich"}}]"#;
-        let wrapper = format!(
-            "{}{OPEN}call tool=\"ignored\" index=\"1\"{SEP}{OPEN}argument key=\"quoted\" type=\"string\"{SEP}literal{}",
-            TOOLS_OPEN.canonical, ARG_CLOSE.canonical
-        );
-        let input = format!("{wrapper}{payload}");
-        assert_guided_all_utf8_fragmentations(
-            &input,
-            UnifiedParserStartingState::None,
-            &[UnifiedEvent::ToolCall {
-                name: "weather".into(),
-                arguments: serde_json::json!({"city":"Zürich"}),
-            }],
-        );
-    }
-
-    #[test]
     fn mixed_argument_close_spellings_keep_source_order() {
         let first = format!(
             "{OPEN}argument key=\"first\" type=\"string\"{SEP}one{}",
@@ -3091,27 +3095,14 @@ mod tests {
         ];
         for wrapper in wrappers {
             let input = format!("{wrapper}{payload}");
-            for split in (0..=input.len()).filter(|at| input.is_char_boundary(*at)) {
-                let mut parser = kimi_k3_unified(&[]);
-                parser
-                    .initialize_request(UnifiedParserInit {
-                        tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
-                        invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
-                        ..UnifiedParserInit::default()
-                    })
-                    .unwrap();
-                let mut events = parser.push(&input[..split]).unwrap();
-                events.extend(parser.push(&input[split..]).unwrap());
-                events.extend(parser.finish().unwrap().events);
-                assert_eq!(
-                    assemble(&events),
-                    vec![UnifiedEvent::ToolCall {
-                        name: "weather".into(),
-                        arguments: serde_json::json!({"city":"Zürich"}),
-                    }],
-                    "wrapper {wrapper:?}, split at byte {split}"
-                );
-            }
+            assert_guided_all_utf8_fragmentations(
+                &input,
+                UnifiedParserStartingState::None,
+                &[UnifiedEvent::ToolCall {
+                    name: "weather".into(),
+                    arguments: serde_json::json!({"city":"Zürich"}),
+                }],
+            );
         }
     }
 

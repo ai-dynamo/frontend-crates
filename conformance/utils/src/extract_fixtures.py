@@ -39,6 +39,8 @@ import tarfile
 from contextlib import contextmanager
 from pathlib import Path
 
+import fixture_disposition
+
 # The only errnos `Path.rename()` onto an existing directory is expected to
 # raise for "the destination is already occupied" -- confirmed ENOTEMPTY on
 # ext4; EEXIST kept for portability to other POSIX filesystems/kernels. Any
@@ -96,9 +98,8 @@ def shard_hash_map(shards):
     return {s["path"]: s["sha256"] for s in shards}
 
 
-def fixtures_identity(shards):
-    """Content identity for a shard set: sha256 of the canonical (sorted)
-    shard-hash map, truncated to 16 hex chars.
+def fixtures_identity(shards, inactive=()):
+    """Hash active shard bytes and canonical inactive dispositions into one identity.
 
     NOT the same thing as `snapshot`/`pin`: `pin` is a human-readable stamp
     that can stay fixed while the shards under it are re-pinned in place
@@ -113,7 +114,8 @@ def fixtures_identity(shards):
     share a path, so nothing is ever deleted out from under a live reader.
     """
     pinned = sorted(shard_hash_map(shards).items())
-    return hashlib.sha256(json.dumps(pinned).encode()).hexdigest()[:16]
+    identity = {"shards": pinned, "inactive_shards": fixture_disposition.canonical_inactive_shards(inactive)}
+    return hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()[:16]
 
 
 def read_state(snap_dir):
@@ -126,7 +128,12 @@ def read_state(snap_dir):
     return {}
 
 
-def resolve_current_generation(cache_root, pin, fid, pinned_shards):
+def _state_matches(state, pinned_shards, inactive):
+    return (state.get("shards") == pinned_shards
+            and state.get("inactive_shards", []) == fixture_disposition.canonical_inactive_shards(inactive))
+
+
+def resolve_current_generation(cache_root, pin, fid, pinned_shards, inactive=()):
     """The one owner of "which published directory is current for this
     identity" -- generation 0 is the bare `{pin}-{fid}`, and `--full-refresh`
     publishes later generations at `{pin}-{fid}.refresh{N}` (N >= 1) without
@@ -139,7 +146,7 @@ def resolve_current_generation(cache_root, pin, fid, pinned_shards):
     both route through this one function for exactly that reason.
 
     Returns `(path, generation)` for the highest-generation directory whose
-    recorded state still matches `pinned_shards`, or `(None, -1)` if none
+    recorded state still matches `pinned_shards` and `inactive`, or `(None, -1)` if none
     does.
     """
     if not cache_root.exists():
@@ -160,13 +167,13 @@ def resolve_current_generation(cache_root, pin, fid, pinned_shards):
             continue
         if n <= best_n:
             continue
-        if read_state(d).get("shards") != pinned_shards:
+        if not _state_matches(read_state(d), pinned_shards, inactive):
             continue
         best_dir, best_n = d, n
     return best_dir, best_n
 
 
-def publish_refresh_generation(tmp_dir, cache_root, pin, fid, pinned_shards):
+def publish_refresh_generation(tmp_dir, cache_root, pin, fid, pinned_shards, inactive=()):
     """Publish ``tmp_dir`` at the next immutable refresh generation.
 
     A forced rebuild never renames or deletes a previously published path:
@@ -175,7 +182,7 @@ def publish_refresh_generation(tmp_dir, cache_root, pin, fid, pinned_shards):
     advance to the next number so concurrent refreshers cannot overwrite one
     another.
     """
-    _, current_n = resolve_current_generation(cache_root, pin, fid, pinned_shards)
+    _, current_n = resolve_current_generation(cache_root, pin, fid, pinned_shards, inactive)
     refresh_n = max(current_n, 0) + 1
     for _attempt in range(REFRESH_RENAME_RETRY_LIMIT):
         candidate = cache_root / f"{pin}-{fid}.refresh{refresh_n}"
@@ -200,16 +207,16 @@ def publish_refresh_generation(tmp_dir, cache_root, pin, fid, pinned_shards):
 
 
 def publish_extracted_snapshot(
-    tmp_dir, cache_root, pin, fid, pinned_shards, full_refresh, verbose=False
+    tmp_dir, cache_root, pin, fid, pinned_shards, full_refresh, verbose=False, inactive=()
 ):
     """Publish one completed build and point readers at the newest generation."""
     base_dir = cache_root / f"{pin}-{fid}"
     with cache_publish_lock(cache_root):
         current_dir, _current_n = resolve_current_generation(
-            cache_root, pin, fid, pinned_shards
+            cache_root, pin, fid, pinned_shards, inactive
         )
         if full_refresh and current_dir is not None:
-            publish_refresh_generation(tmp_dir, cache_root, pin, fid, pinned_shards)
+            publish_refresh_generation(tmp_dir, cache_root, pin, fid, pinned_shards, inactive)
         elif current_dir is not None:
             print(
                 f"  identity {fid} already published by a concurrent extraction, "
@@ -226,7 +233,7 @@ def publish_extracted_snapshot(
                 if exc.errno not in RENAME_DEST_EXISTS_ERRNOS:
                     raise
                 published = read_state(base_dir)
-                if not (base_dir.is_dir() and published.get("shards") == pinned_shards):
+                if not (base_dir.is_dir() and _state_matches(published, pinned_shards, inactive)):
                     raise OSError(
                         exc.errno,
                         f"{base_dir} is occupied but is not a valid published extraction "
@@ -234,7 +241,7 @@ def publish_extracted_snapshot(
                         "authoritative or overwrite it",
                     ) from exc
                 if full_refresh:
-                    publish_refresh_generation(tmp_dir, cache_root, pin, fid, pinned_shards)
+                    publish_refresh_generation(tmp_dir, cache_root, pin, fid, pinned_shards, inactive)
                 else:
                     print(
                         f"  identity {fid} already published by a concurrent extraction, "
@@ -248,7 +255,7 @@ def publish_extracted_snapshot(
         # use the immutable path returned below, because an older checkout
         # that does not know this lock can still overwrite those links later.
         newest_dir, _newest_n = resolve_current_generation(
-            cache_root, pin, fid, pinned_shards
+            cache_root, pin, fid, pinned_shards, inactive
         )
         if newest_dir is None:
             raise OSError(f"published fixture identity {fid} has no valid generation")
@@ -256,10 +263,11 @@ def publish_extracted_snapshot(
         return newest_dir
 
 
-def write_state(snap_dir, snapshot, shards):
+def write_state(snap_dir, snapshot, shards, inactive=()):
     state = {
         "snapshot": snapshot,
         "shards": shard_hash_map(shards),
+        "inactive_shards": fixture_disposition.canonical_inactive_shards(inactive),
     }
     tmp = snap_dir / ".fixtures-state.json.tmp"
     tmp.write_text(json.dumps(state, indent=2) + "\n")
@@ -352,15 +360,16 @@ def show_info(manifest, cache_root):
         print(f"Crates:   {', '.join(f'{k}={v}' for k, v in manifest['crates'].items())}")
     if manifest.get("peers"):
         print(f"Peers:    {', '.join(f'{k}={v}' for k, v in manifest['peers'].items())}")
-    shards = manifest.get("shards", [])
+    shards = fixture_disposition.active_shards(manifest)
     total_shard_bytes = sum(s.get("size", 0) for s in shards)
     print(f"Shards:   {len(shards)}  ({total_shard_bytes:,} B total)")
 
     cached = list_cached_snapshots(cache_root)
     if cached:
-        fid = fixtures_identity(shards)
+        inactive = manifest.get("inactive_shards", [])
+        fid = fixtures_identity(shards, inactive)
         pinned_shards = shard_hash_map(shards)
-        current_dir, _ = resolve_current_generation(cache_root, pin, fid, pinned_shards)
+        current_dir, _ = resolve_current_generation(cache_root, pin, fid, pinned_shards, inactive)
         print(f"\nCached snapshots in {cache_root}:")
         for d in cached:
             # Cached dirs are named `{pin}-{fid}` or `{pin}-{fid}.refreshN`
@@ -399,7 +408,8 @@ def main():
 
     manifest = json.loads(MANIFEST_PATH.read_text())
     pin = manifest["snapshot"]
-    shards = manifest.get("shards", [])
+    shards = fixture_disposition.active_shards(manifest)
+    inactive = fixture_disposition.verify_inactive_shards(manifest, FIXTURES_DIR)
 
     cache_root = get_cache_root()
 
@@ -408,7 +418,7 @@ def main():
         return
 
     pinned_shards = shard_hash_map(shards)
-    fid = fixtures_identity(shards)
+    fid = fixtures_identity(shards, inactive.values())
     # `{pin}-{fid}`, not bare `pin`: two different shard-hash sets under the
     # SAME pin (a re-pin in place) must never share a directory name -- see
     # `fixtures_identity`'s docstring for the race this closes. This is only
@@ -421,7 +431,7 @@ def main():
     if not args.full_refresh:
         with cache_publish_lock(cache_root):
             current_dir, _current_n = resolve_current_generation(
-                cache_root, pin, fid, pinned_shards
+                cache_root, pin, fid, pinned_shards, inactive.values()
             )
             if current_dir:
                 # Retarget while holding the same lock as publishers: a cache
@@ -466,7 +476,7 @@ def main():
     print(f"Extracting {len(shards)} shard(s) into {tmp_dir}", file=sys.stderr)
     for s in shards:
         extract_tarball(shard_file(s), tmp_dir, verbose=args.verbose)
-    write_state(tmp_dir, pin, shards)
+    write_state(tmp_dir, pin, shards, inactive.values())
 
     snap_dir = publish_extracted_snapshot(
         tmp_dir,
@@ -476,6 +486,7 @@ def main():
         pinned_shards,
         full_refresh=args.full_refresh,
         verbose=args.verbose,
+        inactive=inactive.values(),
     )
 
     print(snap_dir)

@@ -206,3 +206,18 @@ def test_kimi_k3_linked_renderer_has_no_orphan_composite_markers():
     )
     assert "tt-mbg-orphan" not in rendered
     assert rendered.count('<span class="tt-mbg ') == 8
+
+
+def test_output_string_whitespace_is_not_rendered_as_input_grammar_whitespace():
+    [input_html, output_html] = _node(
+        "const ctx = mc.newLinkCtx();"
+        "const input = '<｜DSML｜invoke name=\"get_weather\"[{\"name\":\"get_weather\",\"arguments\":{\"city\":\"a > b\"}}]';"
+        "mc.colorizeLinked(input, 'deepseek_v4', inp.markers, ctx);"
+        "mc.sealLinkCtx(ctx);"
+        "const out = [mc.colorizeLinked(input, 'deepseek_v4', inp.markers, ctx),"
+        "mc.colorizeWords('{\"city\":\"a > b\"}', ctx)];",
+        {"markers": MARKERS},
+    )
+    assert "tt-ws" in input_html
+    assert "tt-ws" not in output_html
+    assert "tt-fg" in output_html

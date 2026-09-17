@@ -37,7 +37,7 @@ toolcalling/fixtures-batch-on-stream-v2/<family>/ # v2 complete-text-through-str
 reasoning/fixtures-v1/inputs/<family>/            # v1 reasoning cases
 ```
 
-**Capture version dirs are append-only — NEVER delete or overwrite an existing `<impl>-<version>/` dir when re-recording.** Every version dir (`dynamo_v1-3.0.0` AND `dynamo_v2-0.1.11` AND `dynamo_v2-0.1.22`, `vllm_python-0.23.0` AND `vllm_python-0.24.0` AND `vllm_python-0.25.1`, …) is capture history: the chart renders each one as a comparison candidate, and readers fold them ascending WITHIN an impl so the latest capture wins per case (`dynamo_v1` and `dynamo_v2` are separate impls and never fold together). Re-recording after a parser change writes the CURRENT crate version's dir alongside the old ones (`refresh_dynamo_captures.py` / `capture_dynamo_jail_stream.py` do this); re-recording at the same version replaces that one dir only. Deleting an old version dir silently destroys the chart's version-comparison columns — it happened once (version dirs were wiped by a refresh and had to be restored) and the tooling has since been made additive. If a dir looks obsolete, it still is not yours to delete: the git-lfs store keeps it, and the manifest-pinned snapshot is what the chart shows.
+**Capture history is append-only.** Preserve existing published version directories and archives. Parser changes use a new verified release or source-qualified identity; corrections and added cases for an existing release use a new `.patchN` overlay captured from that release's source. Readers fold overlays within one implementation and version, and retain the other versions as comparison candidates. `dynamo_v1` and `dynamo_v2` have separate version histories and never fold together. Deleting an old capture removes its comparison column; the manifest-pinned snapshot, not whichever loose directories happen to exist locally, determines what the chart shows.
 
 ## End-to-end test cases (a separate surface, kept elsewhere)
 
@@ -131,14 +131,14 @@ The four routine loops. All of them end the same way: `package_fixtures.py` rebu
 
 1. Fix the code under `parsers/v1/` or `parsers/v2/`.
 2. `cargo test --workspace` — if the fix changes output, the parity tests FAIL. That is the regression gate working: decide whether the diff is a bug in your fix or an intended behavior change.
-3. For an intended change: bump the crate version first (workflow 3), re-capture the Dynamo fixtures (`capture.sh dynamo-stream` / `dynamo-batch-on-stream`; v1 batch `expected.dynamo_v1` blocks are updated through the same capture flow), then `package_fixtures.py`.
-4. Commit the parser fix + fixture shards + manifest + `Cargo.toml` bump in the SAME PR. CI is green only when the code and the pinned expectations agree again.
+3. For an intended v2 change, capture under a source-qualified unpublished identity (workflow 3), then run `package_fixtures.py`. A release capture must be produced from its tagged source, not a branch with the same crate version.
+4. Commit the parser fix, fixture shards, and manifest together. CI is green only when the code and the pinned expectations agree again; release publication is a separate workflow.
 
 ### Unified parser hard gate
 
 Unified work is complete only when the selected current Dynamo column has **zero empty cells and zero red cells** for the affected family. This is a hard gate. `reason:`, `unavailable:`, a historical column, stale HTML, or changing GOLDEN to match broken output does not satisfy it.
 
-For a model-family conversion, collection is mandatory work, not a follow-up. Before capture, bump `parsers/v2/Cargo.toml` to the version that will ship the conversion. Then generate the family’s Unified authored inputs and golden events, run the live Unified parser capture, explode it, package the LFS shards and manifest, extract the pinned snapshot, and render the canonical v2 report. The current `dynamo_v2-<version>.tar.gz` shard must exist before the row can be considered collected. Never generate `CONFORMANCE_unified.html`; `CONFORMANCE_v2.html` is the only HTML report for this workflow.
+For a model-family conversion, collection is mandatory work, not a follow-up. Generate the family’s Unified authored inputs and golden events, run the live Unified parser capture with its verified source identity, explode it, package the LFS shards and manifest, extract the pinned snapshot, and render the canonical v2 report. The current `dynamo_v2-<identity>.tar.gz` shard must exist before the row can be considered collected. Never generate `CONFORMANCE_unified.html`; `CONFORMANCE_v2.html` is the only HTML report for this workflow.
 
 Use this loop:
 
@@ -164,11 +164,13 @@ cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- -
 python3 -m pytest conformance/utils/tests/test_model.py
 ```
 
+Use `bash conformance/utils/regenerate_unified.sh` to run this sequence as one gate. It compiles and captures the live Unified parser, rebuilds and re-extracts the archives, renders the JSON/HTML report, runs the consuming tests, and fails when the generator, current archives, or rendered Unified cells disagree. The script renders JSON and HTML even when a later validation stage fails, so humans can inspect the current red or empty cells; a failed exit code means the report is diagnostic, not ready to publish.
+
 Do not substitute a loose harness feed for the package step. The v2 table reads the extracted packaged snapshot, so an un-packaged family cannot appear in its Unified tab.
 
-### 3. Version rule: fixture dirs carry the crate version that ships them
+### 3. Version rule: fixture labels identify the source actually captured
 
-Capture stamps versions from the crates themselves — version dirs (`dynamo_v1-<ver>/`, `dynamo_v2-<ver>/`) and `captured_with.*` fields are read from `Cargo.toml` at capture time. So when a parser fix changes captured output, bump `parsers/v1/Cargo.toml` or `parsers/v2/Cargo.toml` to the NEXT release version BEFORE capturing. The new fixture dirs then carry exactly the version crates.io publishes when the PR merges (the manual-peg flow in [`../RELEASING.md`](../RELEASING.md#manual-version-peg-fixture-synced-releases)): outputs and release stay on one number by construction. Never rename or delete an old version dir — a re-record ADDS a dir.
+For v2 captures, `dynamo_version.py` verifies the parser sources and build inputs against the release tag before accepting a plain version. Unpublished source uses `<crate-version>+source.<sha256>` instead. The digest covers source content independently of generated fixtures, so packaging does not change the producer identity. Capture producers and current-column selectors share this helper; an explicit release label or source digest that does not match the checkout fails. Keep published shards unchanged and add new source-qualified shards or historical backfill overlays. Crate publication and version bumps follow [`../RELEASING.md`](../RELEASING.md#manual-version-peg-fixture-synced-releases); changing `Cargo.toml` alone does not establish released provenance.
 
 ### 4. What CI actually checks (the regression gate)
 
@@ -206,6 +208,8 @@ How `.patchN` is treated: **HTML** folds it into its base `<ver>` display column
 ### 8. Coverage taxonomy: what "complete fixtures for a family" means (DIS-2442)
 
 `conformance/case-taxonomy.yaml` is the machine-readable definition of complete coverage — every batch/stream/reasoning case group and sub-case, with per-case requiredness and applicability rules. It replaces the old implicit standard (the union of `description:` fields across ~20 families that reviewers had to reverse-engineer per PR).
+
+For Unified corpus changes, regeneration is part of the edit, not a final cleanup step. After every change to a generator, taxonomy, golden specification, fixture manifest, capture label, or coverage documentation, immediately run the generator, explode/package the fixture archives, update the manifest, render `CONFORMANCE_v2.json` and `CONFORMANCE_v2.html`, and run the consuming Rust/Python tests. Repeat that complete chain after the final edit. Before reporting or pushing, assert that `inputs.tar.gz`, `golden.tar.gz`, and each Dynamo release after folding its active overlays cover exactly the generator's case-ID set. Preserve the original sparse archives; do not rewrite them to satisfy the folded coverage check. Source tests against stale archives or stale HTML do not validate the change.
 
 ```bash
 # The authoring loop for a new family: the FAIL list is the fixture TODO list.

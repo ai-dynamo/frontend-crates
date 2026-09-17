@@ -52,6 +52,8 @@ jobs:
           # Fixture shards live in-repo under conformance/fixtures/ via git-lfs;
           # cargo test extracts them locally (extract_fixtures.py, stdlib-only).
           lfs: true
+          # Release identity compares parser source with the release tag.
+          fetch-depth: 0
 
       - name: Install Rust
         run: rustup toolchain install
@@ -119,6 +121,8 @@ jobs:
           # Fixture shards live in-repo under conformance/fixtures/ via git-lfs;
           # the render + guard steps extract them locally on first use.
           lfs: true
+          # The renderer needs release tags to distinguish releases from changed source.
+          fetch-depth: 0
 
       - name: Configure GitHub Pages
         if: ${{ github.ref == 'refs/heads/main' }}

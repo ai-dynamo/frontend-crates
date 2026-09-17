@@ -218,6 +218,8 @@ conformance/utils/check.sh status --model <family> --tab unified
 
 This creates the durable `unified/dynamo_v2-<version>.tar.gz` shard, updates the inputs/golden shards and manifest, and renders the only supported HTML report. Do not generate `CONFORMANCE_unified.html`: it is not a published report and is not read by the v2 renderer. A family conversion is unfinished until the scoped status command reports zero red and zero empty current Dynamo cells.
 
+Run `bash conformance/utils/regenerate_unified.sh` when changing Unified parser code or corpus inputs. It performs the live capture, package, extraction, render, case-ID equality checks, and consuming tests in the required order. It always renders the JSON/HTML report before returning a failed gate status, so the resulting page can be used to inspect red or empty cells; do not treat that diagnostic render as publishable until the gate exits 0.
+
 ## Matrix Legend
 
 Each cell compares the parser implementations for one model family and case. The page carries **structured comparison facts** (`markers.comparison_facts()` in `src/markers.py`) — a per-implementation record of `status` (ok / problem / na), whether it `agrees` with the Dynamo baseline, whether a divergence is `intentional` (documented), whether it `leak`s tool-call markup, and its `error_kind`. The JS view (`assets/conformance_view.js`) turns those facts into the glyphs and popups, and labels every parser with its full descriptive name. There is no shorthand code to memorize.
@@ -272,6 +274,8 @@ python3 conformance/utils/src/extract_fixtures.py --info
 ```
 
 ### Update existing fixtures (re-capture after a parser version bump)
+
+For Unified corpus edits, regenerate after every source change: run the generator, explode/package the archives, update the manifest, render the JSON/HTML matrix, and run the consuming tests before making the next review claim. Repeat the chain after the final edit. A passing test against stale archives or stale HTML is incomplete; verify that all generated archives contain the same case-ID set as the current generator.
 
 After re-capturing YAML locally with `capture.sh`, rebuild the store and commit it together with the manifest:
 
