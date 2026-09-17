@@ -1408,7 +1408,6 @@ pub(crate) struct GuidedGrammar {
 /// guided output framing.
 pub(crate) type GuidedPrefixPolicy = fn(GuidedPrefixContext<'_>) -> GuidedPrefix;
 
-/// Request-local scanner state persists across chunks and must reset before reuse.
 pub(crate) trait GuidedPrefixScanner: Send {
     fn append(
         &mut self,
