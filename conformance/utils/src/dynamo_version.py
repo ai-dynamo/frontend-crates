@@ -173,10 +173,9 @@ def select_capture_label(repo_root: Path, captures: dict) -> str:
     label = current["label"]
     if label in captures:
         # One source fingerprint per selection, not per corpus case. Validate each
-        # distinct record/anchor once, without ignoring a surviving legacy record.
-        anchors = {}
+        # distinct record once, without ignoring a surviving legacy record.
         for recorded in _unique_provenance(captures[label]):
-            _validate_provenance_identity(repo_root, recorded, current, anchors)
+            _validate_provenance_identity(recorded, current)
         return label
     if current["kind"] == "release" or ENV_OVERRIDE in os.environ:
         return label
@@ -195,7 +194,6 @@ def select_capture_label(repo_root: Path, captures: dict) -> str:
     }
     expected.update(label=version, kind="release", release_tag=tag)
     verified_commits = set()
-    anchors = {}
     for recorded in _unique_provenance(records):
         if not isinstance(recorded, dict) or any(recorded.get(k) != v for k, v in expected.items()):
             return label
@@ -203,7 +201,7 @@ def select_capture_label(repo_root: Path, captures: dict) -> str:
         if not isinstance(commit, str) or not re.fullmatch(r"[0-9a-f]{40,64}", commit):
             return label
         try:
-            _validate_provenance_identity(repo_root, recorded, {**current, **expected, "release_commit": commit}, anchors)
+            _validate_provenance_identity(recorded, {**current, **expected, "release_commit": commit})
         except ValueError:
             return label
         if commit in verified_commits:
@@ -226,17 +224,19 @@ def validate_capture_provenance(repo_root: Path, recorded: dict) -> dict:
     if not isinstance(recorded, dict) or not isinstance(recorded.get("label"), str):
         raise ValueError("capture feed has no producer source identity; recapture it")
     current = dynamo_v2_provenance(repo_root, recorded["label"])
-    _validate_provenance_identity(repo_root, recorded, current, {})
+    _validate_provenance_identity(recorded, current)
+    _validate_provenance_origin(repo_root, recorded)
     supplied = os.environ.get(ENV_OVERRIDE)
     if supplied is not None and dynamo_v2_label(repo_root, supplied) != recorded["label"]:
         raise ValueError("capture feed label differs from the requested capture label")
     return recorded
 
 
-def _validate_provenance_identity(repo_root: Path, recorded: dict, current: dict, verified_anchors: dict) -> None:
+def _validate_provenance_identity(recorded: dict, current: dict) -> None:
     if not isinstance(recorded, dict):
         raise ValueError("capture feed has no producer source identity; recapture it")
-    # Commit/tree anchor the capture's origin; source identity survives unrelated commits.
+    # Squash merges can discard PR origin objects without changing captured source.
+    # Consumers bind source identity; only producers require the origin objects.
     anchors = {"git_commit", "git_head_tree"}
     if {key: value for key, value in recorded.items() if key not in anchors} != {
         key: value for key, value in current.items() if key not in anchors
@@ -247,12 +247,15 @@ def _validate_provenance_identity(repo_root: Path, recorded: dict, current: dict
     if (not isinstance(commit, str) or not isinstance(tree, str)
             or not re.fullmatch(r"[0-9a-f]{40,64}", commit) or not re.fullmatch(r"[0-9a-f]{40,64}", tree)):
         raise ValueError("capture feed source identity differs: invalid Git anchor")
+
+
+def _validate_provenance_origin(repo_root: Path, recorded: dict) -> None:
+    commit = recorded["git_commit"]
     try:
-        if commit not in verified_anchors:
-            verified_anchors[commit] = _git(repo_root, "rev-parse", f"{commit}^{{tree}}").decode().strip()
+        tree = _git(repo_root, "rev-parse", f"{commit}^{{tree}}").decode().strip()
     except subprocess.CalledProcessError as exc:
         raise ValueError(f"capture feed source identity cannot be verified: Git anchor {commit} is unavailable") from exc
-    if verified_anchors[commit] != tree:
+    if tree != recorded["git_head_tree"]:
         raise ValueError("capture feed source identity differs: Git commit/tree mismatch")
 
 

@@ -171,10 +171,7 @@ def test_tagless_shallow_clone_selects_only_source_verified_release(release_repo
 
 
 @pytest.mark.parametrize("job", ["rust", "conformance-table"])
-@pytest.mark.parametrize("kind", ["release", "unpublished"])
-def test_ci_checkout_retains_earlier_capture_anchor(release_repo, tmp_path_factory, job, kind):
-    if kind == "unpublished":
-        (release_repo / "parsers/v2/src/lib.rs").write_text("pub fn changed_parser() {}\n")
+def test_ci_checkout_retains_release_source_identity(release_repo, tmp_path_factory, job):
     recorded = identity.dynamo_v2_provenance(release_repo)
     (release_repo / "capture.json").write_text(json.dumps(recorded))
     git(release_repo, "add", ".")
@@ -192,12 +189,73 @@ def test_ci_checkout_retains_earlier_capture_anchor(release_repo, tmp_path_facto
     assert identity.select_capture_label(clone, {recorded["label"]: [recorded]}) == recorded["label"]
 
 
+@pytest.mark.parametrize("distribution", ["squash", "shallow"])
+@pytest.mark.parametrize("kind", ["unpublished", "release", "tagless_release"])
+def test_consumer_identity_survives_unavailable_pr_origin(release_repo, tmp_path_factory, distribution, kind):
+    base = git(release_repo, "rev-parse", "HEAD")
+    git(release_repo, "checkout", "-b", "capture-work")
+    if kind == "unpublished":
+        (release_repo / "parsers/v2/src/lib.rs").write_text("pub fn changed_parser() {}\n")
+    (release_repo / "request.json").write_text("{}\n")
+
+    def commit(parent, message):
+        git(release_repo, "add", ".")
+        return git(release_repo, "-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+                   "commit-tree", git(release_repo, "write-tree"), "-p", parent, input=message + "\n")
+
+    anchor = commit(base, "pre-capture PR commit")
+    git(release_repo, "update-ref", "HEAD", anchor)
+    recorded = identity.dynamo_v2_provenance(release_repo)
+    assert identity.validate_capture_provenance(release_repo, recorded) == recorded
+    (release_repo / "capture.json").write_text(json.dumps(recorded))
+    published = commit(base if distribution == "squash" else anchor, "published capture")
+    git(release_repo, "checkout", "-b", "merged", published)
+    git(release_repo, "update-ref", "-d", "refs/heads/capture-work")
+    clone = tmp_path_factory.mktemp("distributed-capture") / "repo"
+    git(release_repo, "clone", *(["--depth=1"] if distribution == "shallow" else []),
+        "--no-tags", "--branch", "merged", release_repo.as_uri(), str(clone))
+    assert git(clone, "rev-parse", "--is-shallow-repository") == str(distribution == "shallow").lower()
+    if kind != "unpublished":
+        git(clone, "fetch", "origin", "tag", recorded["release_tag"])
+    missing = subprocess.run(["git", "-C", str(clone), "cat-file", "-e", anchor], capture_output=True)
+    assert missing.returncode != 0
+    assert identity.source_fingerprint(clone) == recorded["source_sha256"]
+    with pytest.raises(ValueError, match="Git anchor .* is unavailable"):
+        identity.validate_capture_provenance(clone, recorded)
+    if kind == "tagless_release":
+        git(clone, "tag", "-d", recorded["release_tag"])
+    captures = {recorded["label"]: [recorded]}
+    assert identity.select_capture_label(clone, captures) == recorded["label"]
+    result = subprocess.run(
+        [sys.executable, identity.__file__, "--repo-root", str(clone), "--format", "label", "--select-capture"],
+        input=json.dumps(captures), text=True, check=True, capture_output=True,
+    )
+    assert result.stdout.strip() == recorded["label"]
+    for field, wrong in [("git_commit", "malformed"), ("git_head_tree", None),
+                         ("source_sha256", "0" * 64), ("source_id", "sha256:wrong"),
+                         ("source_paths", []), ("label", "other"), ("release_tag", "other")]:
+        corrupted = {recorded["label"]: [recorded, {**recorded, field: wrong}]}
+        if kind == "tagless_release":
+            assert identity.select_capture_label(clone, corrupted) == identity.dynamo_v2_label(clone)
+        else:
+            with pytest.raises(ValueError, match="source identity"):
+                identity.select_capture_label(clone, corrupted)
+
+
 def test_missing_capture_anchor_has_descriptive_chained_error(release_repo):
     recorded = identity.dynamo_v2_provenance(release_repo, "current")
     recorded["git_commit"] = "0" * 40
     with pytest.raises(ValueError, match="Git anchor .* is unavailable") as error:
         identity.validate_capture_provenance(release_repo, recorded)
     assert isinstance(error.value.__cause__, subprocess.CalledProcessError)
+
+
+def test_origin_tree_is_producer_proof_not_consumer_source_identity(release_repo):
+    recorded = identity.dynamo_v2_provenance(release_repo)
+    recorded["git_head_tree"] = "0" * 40
+    with pytest.raises(ValueError, match="Git commit/tree mismatch"):
+        identity.validate_capture_provenance(release_repo, recorded)
+    assert identity.select_capture_label(release_repo, {recorded["label"]: [recorded]}) == recorded["label"]
 
 
 @pytest.mark.parametrize("override", [None, "current"])
