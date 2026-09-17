@@ -152,7 +152,7 @@ decoded media or a passthrough URL.
 | per image | `image::decode::decode_rgb` | bytes → `(rgb, h, w)` (8-bit only, PIL-matching); the engine wraps it as `DecodedMedia::Image` |
 | per image | `MmFamilyProcessor::process_item` | `DecodedMedia` → `ProcessedItem` (preserves modality, feature-token count, tensors, and optional geometry) |
 | per request | `MmFamilyProcessor::layout` | input_ids + processed items → `TokenLayout` (a description, not yet applied) |
-| per request | `token_layout::apply_layout` | ids + `TokenLayout` + per-item feature-token counts → expanded ids, per-item offsets, and feature ranges (where feature embeddings go); validates the layout (source covered exactly once, each item placed once, feature ranges match the produced embeddings) |
+| per request | `token_layout::apply_layout` | ids + `TokenLayout` + per-item feature-token counts → expanded ids, per-item offsets, and feature ranges (where feature embeddings go); validates the layout (source covered exactly once, each item placed once and in prompt order, feature ranges match the produced embeddings) |
 | per request, if needed | `MmFamilyProcessor::positions` | expanded length + offsets + processed items → `PositionOutput` (e.g. M-RoPE) |
 
 Example:

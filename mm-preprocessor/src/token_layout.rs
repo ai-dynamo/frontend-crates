@@ -37,12 +37,9 @@ pub fn apply_layout(
     layout: &TokenLayout,
     feature_token_counts: &[usize],
 ) -> Result<ExpandedPrompt> {
-    let n_items = feature_token_counts.len();
     let mut out = Vec::new();
-    let mut offsets: Vec<Option<(u32, u32)>> = vec![None; n_items];
-    let mut feature_ranges: Vec<Vec<std::ops::Range<u32>>> = vec![Vec::new(); n_items];
-    // Source tokens consumed so far: `Text` copies a range, `Media` replaces
-    // its `src` range.
+    let mut offsets = Vec::with_capacity(feature_token_counts.len());
+    let mut feature_ranges = Vec::with_capacity(feature_token_counts.len());
     let mut consumed = 0usize;
     for segment in &layout.segments {
         match segment {
@@ -63,6 +60,15 @@ pub fn apply_layout(
                 src: replaced,
                 expansion,
             } => {
+                if *item != offsets.len() {
+                    return Err(MmError::internal(format!(
+                        "layout: media item {item} out of prompt order, expected {}",
+                        offsets.len()
+                    )));
+                }
+                let expected = *feature_token_counts.get(*item).ok_or_else(|| {
+                    MmError::internal(format!("layout: media item {item} out of range"))
+                })?;
                 if replaced.start != consumed || replaced.end < replaced.start {
                     return Err(MmError::internal(format!(
                         "layout: media item {item} src range {replaced:?} does not resume at \
@@ -98,21 +104,14 @@ pub fn apply_layout(
                         "layout: media item {item} expands to zero tokens"
                     )));
                 }
-                let expected = *feature_token_counts.get(*item).ok_or_else(|| {
-                    MmError::internal(format!("layout: media item {item} out of range"))
-                })?;
                 if features != expected {
                     return Err(MmError::internal(format!(
                         "layout: media item {item} expands to {features} feature token(s), \
                          expected {expected}"
                     )));
                 }
-                if offsets[*item].replace((start, start + n - 1)).is_some() {
-                    return Err(MmError::internal(format!(
-                        "layout: media item {item} placed twice"
-                    )));
-                }
-                feature_ranges[*item] = ranges;
+                offsets.push((start, start + n - 1));
+                feature_ranges.push(ranges);
             }
         }
     }
@@ -122,13 +121,13 @@ pub fn apply_layout(
             src.len()
         )));
     }
-    let offsets = offsets
-        .into_iter()
-        .enumerate()
-        .map(|(i, slot)| {
-            slot.ok_or_else(|| MmError::internal(format!("layout: media item {i} not placed")))
-        })
-        .collect::<Result<Vec<_>>>()?;
+    if offsets.len() != feature_token_counts.len() {
+        return Err(MmError::internal(format!(
+            "layout: places {} of {} media item(s)",
+            offsets.len(),
+            feature_token_counts.len()
+        )));
+    }
     Ok(ExpandedPrompt {
         input_ids: out,
         offsets,
@@ -265,6 +264,21 @@ mod tests {
             segments: vec![Segment::Text(0..4)],
         };
         assert!(apply_layout(&[7, 1, 9], &out_of_bounds, &[]).is_err());
+    }
+
+    /// `offsets` and `feature_ranges` are indexed by item and read as prompt
+    /// order downstream, so a layout placing item 1 before item 0 is rejected.
+    #[test]
+    fn items_out_of_prompt_order_err() {
+        let media = |item, src: std::ops::Range<usize>| Segment::Media {
+            item,
+            src,
+            expansion: vec![ExpansionPart::Feature { id: 5, n: 1 }],
+        };
+        let swapped = TokenLayout {
+            segments: vec![media(1, 0..1), Segment::Text(1..2), media(0, 2..3)],
+        };
+        assert!(apply_layout(&[1, 7, 1], &swapped, &[1, 1]).is_err());
     }
 
     /// A family that skips, repeats, or reorders source tokens would silently
