@@ -61,12 +61,11 @@ fn guided_function_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
         .then_some("<function=".len() + at + 1)
     });
     let payload_at = after_prefix.find(['{', '[']);
-    let strip_len = after_prefix
+    let close_len = after_prefix
         .find("</function>")
         .filter(|end| payload_at.is_none_or(|payload| *end < payload))
-        .map(|end| "<function=".len() + end + "</function>".len())
-        .or(header_len)
-        .unwrap_or("<function=".len());
+        .map(|end| "<function=".len() + end + "</function>".len());
+    let strip_len = close_len.or(header_len).unwrap_or("<function=".len());
     if context.followed_by_competing_marker {
         return GuidedPrefix::Strip(strip_len);
     }
@@ -77,12 +76,8 @@ fn guided_function_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
         return GuidedPrefix::Pending;
     }
     if !context.outside_reasoning {
-        return header_len
-            .or_else(|| {
-                after_prefix
-                    .find("</function>")
-                    .map(|end| "<function=".len() + end + "</function>".len())
-            })
+        return close_len
+            .or(header_len.filter(|_| payload_at.is_some()))
             .map(GuidedPrefix::Strip)
             .unwrap_or(GuidedPrefix::Pending);
     }
@@ -144,9 +139,12 @@ impl GuidedPrefixScanner for QwenGuidedPrefix {
         let append_start = candidate.len() - append.len();
         let append_after_prefix = append_start.saturating_sub(PREFIX.len());
         if self.close_at.is_none() {
-            let scan_from = self
+            let mut scan_from = self
                 .close_scan_from
                 .max(append_after_prefix.saturating_sub(CLOSE.len() - 1));
+            while !after_prefix.is_char_boundary(scan_from) {
+                scan_from -= 1;
+            }
             let scanned = &after_prefix[scan_from..];
             count_guided_prefix_bytes(scanned.len());
             self.close_at = scanned.find(CLOSE).map(|at| scan_from + at);
@@ -190,17 +188,13 @@ impl GuidedPrefixScanner for QwenGuidedPrefix {
             return GuidedPrefix::Strip(strip_len);
         }
         if !context.outside_reasoning {
-            if self.header_end.is_some_and(|header_end| {
-                let after_header = &after_prefix[header_end + 1..];
-                !after_header.is_empty() && CLOSE.starts_with(after_header)
-            }) {
-                return GuidedPrefix::Pending;
-            }
+            // A complete header can still grow a native body. Keep it attached
+            // until its closer or a JSON payload establishes what to strip.
             return self
                 .close_at
                 .filter(|end| self.payload_at.is_none_or(|payload| *end < payload))
                 .map(|end| PREFIX.len() + end + CLOSE.len())
-                .or(header_len)
+                .or(header_len.filter(|_| self.payload_at.is_some()))
                 .map(GuidedPrefix::Strip)
                 .unwrap_or(GuidedPrefix::Pending);
         }
@@ -355,25 +349,40 @@ mod tests {
     }
 
     #[test]
-    fn guided_reasoning_with_an_empty_native_function_header_is_split_invariant() {
-        let input = concat!(
-            "<think>x <function=get_weather></function>",
-            r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]</think>"#,
-        );
+    fn guided_reasoning_with_a_native_function_body_is_split_invariant() {
         let want = vec![
             reasoning("x "),
             call("get_weather", serde_json::json!({"city": "Paris"})),
         ];
-        for (split, got) in configured_events_at_every_split_with_mode(
+        for body in ["", "abc"] {
+            let input = format!(
+                "<think>x <function=get_weather>{body}</function>{}</think>",
+                r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#,
+            );
+            for (split, got) in configured_events_at_every_split_with_mode(
+                &weather_tools(),
+                UnifiedParserStartingState::None,
+                None,
+                &input,
+            )
+            .into_iter()
+            .enumerate()
+            {
+                assert_eq!(got, want, "body {body:?}, split at byte {split}");
+            }
+        }
+    }
+
+    #[test]
+    fn guided_reasoning_with_a_unicode_function_prefix_is_split_invariant() {
+        let input = "<think><function=東京東京東京";
+        for got in configured_events_at_every_split_with_mode(
             &weather_tools(),
             UnifiedParserStartingState::None,
             None,
             input,
-        )
-        .into_iter()
-        .enumerate()
-        {
-            assert_eq!(got, want, "split at byte {split}");
+        ) {
+            assert_eq!(got, vec![reasoning("東京東京東京")]);
         }
     }
 
