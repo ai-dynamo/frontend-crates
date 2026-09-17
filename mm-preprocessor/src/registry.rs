@@ -60,9 +60,9 @@ pub fn spec_from_hf_configs(
         MmError::invalid_input_with_source("invalid preprocessor_config.json", error)
     })?;
     match config["model_type"].as_str() {
-        Some("qwen2_vl" | "qwen2_5_vl" | "qwen3_vl" | "qwen3_vl_moe") => {
-            Ok(ProcessorSpec::QwenVl(resolve_qwen_vl(&config, &pre)?))
-        }
+        Some(
+            "qwen2_vl" | "qwen2_5_vl" | "qwen3_vl" | "qwen3_vl_moe" | "qwen3_5" | "qwen3_5_moe",
+        ) => Ok(ProcessorSpec::QwenVl(resolve_qwen_vl(&config, &pre)?)),
         Some(other) => Err(MmError::unsupported(format!(
             "no native processor for model_type {other:?}"
         ))),
@@ -173,10 +173,17 @@ fn resolve_qwen_vl(config: &Value, pre: &Value) -> Result<QwenVlSpec> {
     };
     // Qwen2/2.5 carry the pixel bounds at the top level; Qwen3 as
     // `size.{shortest,longest}_edge` (pixel counts despite the names).
+    let size = set("size")
+        .map(|value| {
+            value
+                .as_object()
+                .ok_or_else(|| MmError::invalid_input("preprocessor knob size must be an object"))
+        })
+        .transpose()?;
     let pixels = |knob: &str, edge: &str| {
         set(knob)
-            .or_else(|| pre["size"].get(edge).filter(|value| !value.is_null()))
-            .or_else(|| pre["size"].get(knob).filter(|value| !value.is_null()))
+            .or_else(|| size?.get(edge).or_else(|| size?.get(knob)))
+            .filter(|value| !value.is_null())
             .and_then(Value::as_u64)
             .map(|value| value as usize)
             .ok_or_else(|| MmError::invalid_input(format!("preprocessor {knob} is missing")))
@@ -238,6 +245,20 @@ mod tests {
         "image_processor_type": "Qwen2VLImageProcessorFast"
     }"#;
 
+    // Trimmed from Qwen/Qwen3.5-27B: Qwen3-VL's processor under a new model_type.
+    const QWEN35_CONFIG: &str = r#"{
+        "architectures": ["Qwen3_5ForConditionalGeneration"],
+        "image_token_id": 248056, "model_type": "qwen3_5",
+        "text_config": {"model_type": "qwen3_5_text"}
+    }"#;
+    const QWEN35_PREPROCESSOR: &str = r#"{
+        "size": {"longest_edge": 16777216, "shortest_edge": 65536},
+        "patch_size": 16, "temporal_patch_size": 2, "merge_size": 2,
+        "image_mean": [0.5, 0.5, 0.5], "image_std": [0.5, 0.5, 0.5],
+        "processor_class": "Qwen3VLProcessor",
+        "image_processor_type": "Qwen2VLImageProcessorFast"
+    }"#;
+
     fn qwen_spec(config: &str, pre: &str) -> Result<QwenVlSpec> {
         spec_from_hf_configs(config, pre).map(|ProcessorSpec::QwenVl(spec)| spec)
     }
@@ -261,6 +282,26 @@ mod tests {
         let spec = qwen_spec(QWEN3_CONFIG, QWEN3_PREPROCESSOR).unwrap();
         assert_eq!((spec.min_pixels, spec.max_pixels), (65536, 16777216));
         assert_eq!(spec.patch_size, 16);
+    }
+
+    #[test]
+    fn resolves_qwen35() {
+        let spec = qwen_spec(QWEN35_CONFIG, QWEN35_PREPROCESSOR).unwrap();
+        assert_eq!(spec.image_token_id, 248056);
+        assert_eq!((spec.min_pixels, spec.max_pixels), (65536, 16777216));
+        let moe = QWEN35_CONFIG.replace("qwen3_5", "qwen3_5_moe");
+        assert!(qwen_spec(&moe, QWEN35_PREPROCESSOR).is_ok());
+    }
+
+    /// `size` is type-checked even when the top-level pixel bounds make it
+    /// redundant, as HF does.
+    #[test]
+    fn malformed_size_is_invalid() {
+        let pre = QWEN25_PREPROCESSOR.replacen('{', r#"{"size": "invalid","#, 1);
+        assert!(matches!(
+            qwen_spec(QWEN25_CONFIG, &pre),
+            Err(MmError::InvalidInput { .. })
+        ));
     }
 
     #[test]
