@@ -31,7 +31,6 @@ fn init_pool_arms_fanout_and_pins_the_thread_count() {
         "expected the armed pool's threads: {named:?}"
     );
 
-    // Repeating the resolved count is idempotent; changing it is refused.
     execution::init_pool(2).unwrap();
     assert!(matches!(
         execution::init_pool(3),
