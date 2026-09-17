@@ -219,9 +219,6 @@ fn resample_vertical(src: &[u8], w: usize, out_h: usize, c: &Coeffs) -> Vec<u8> 
 }
 
 /// Separable resize of a flat HWC RGB buffer, bit-exact against `resample`.
-///
-/// Enters the fan-out pool once for both passes; the per-row `for_chunks_mut`
-/// calls inside then reuse that entry rather than injecting a job per pass.
 pub fn resize_rgb(
     src: &[u8],
     h: usize,
