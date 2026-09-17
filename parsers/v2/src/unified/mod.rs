@@ -2864,7 +2864,12 @@ impl GuidedState {
     /// `None` -- nothing has arrived yet and neither reading is safe; the caller must
     /// hold the bytes instead of committing to one, or the same input parses
     /// differently depending on where the chunk boundaries fell (`I6`).
-    fn leads_into_payload(&mut self, from: usize, flush: bool) -> Option<bool> {
+    fn leads_into_payload(
+        &mut self,
+        from: usize,
+        flush: bool,
+        close_markers: &[&str],
+    ) -> Option<bool> {
         let input = std::mem::take(&mut self.input);
         let mut at = from;
         let result = loop {
@@ -2878,7 +2883,7 @@ impl GuidedState {
             // Step over further control markup sitting between the recovery point and
             // the payload -- a block opener wrapping the payload is exactly this shape.
             let skip = self
-                .control_marker_at(rest, rest.find(['{', '[']), &[], flush)
+                .control_marker_at(rest, rest.find(['{', '[']), close_markers, flush)
                 .filter(|(pos, _)| *pos == 0)
                 .or_else(|| {
                     self.reasoning
@@ -3792,7 +3797,13 @@ impl GuidedState {
                     // One rule in the shared owner, so no family carries its own copy.
                     let recovers = interrupt
                         .filter(|hit| Some(*hit) != reopen)
-                        .map(|(at, len)| (at, len, self.leads_into_payload(at + len, flush)));
+                        .map(|(at, len)| {
+                            (
+                                at,
+                                len,
+                                self.leads_into_payload(at + len, flush, &close_markers),
+                            )
+                        });
                     // Where an UNDECIDED interrupt begins. Everything from here on has
                     // to stay buffered: the marker is complete, so no split-marker rule
                     // retains it, and releasing it as reasoning is the very reading the

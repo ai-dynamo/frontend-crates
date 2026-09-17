@@ -64,6 +64,7 @@ fn guided_function_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
     let close_len = after_prefix
         .find("</function>")
         .filter(|end| payload_at.is_none_or(|payload| *end < payload))
+        .filter(|end| context.outside_reasoning || !after_prefix[..*end].contains(REASONING_END))
         .map(|end| "<function=".len() + end + "</function>".len());
     let strip_len = close_len.or(header_len).unwrap_or("<function=".len());
     if context.followed_by_competing_marker {
@@ -103,6 +104,7 @@ struct QwenGuidedPrefix {
     header_end: Option<usize>,
     header_name_valid: bool,
     close_at: Option<usize>,
+    has_reasoning_end_before_close: bool,
     close_scan_from: usize,
 }
 
@@ -115,6 +117,7 @@ impl Default for QwenGuidedPrefix {
             header_end: None,
             header_name_valid: true,
             close_at: None,
+            has_reasoning_end_before_close: false,
             close_scan_from: 0,
         }
     }
@@ -148,6 +151,12 @@ impl GuidedPrefixScanner for QwenGuidedPrefix {
             let scanned = &after_prefix[scan_from..];
             count_guided_prefix_bytes(scanned.len());
             self.close_at = scanned.find(CLOSE).map(|at| scan_from + at);
+            if let Some(close_at) = self.close_at {
+                // Check the completed envelope once, not on every append.
+                count_guided_prefix_bytes(close_at);
+                self.has_reasoning_end_before_close =
+                    after_prefix[..close_at].contains(REASONING_END);
+            }
             self.close_scan_from = after_prefix.len().saturating_sub(CLOSE.len() - 1);
         }
         if self.header_end.is_none() || self.name_end.is_none() || self.payload_at.is_none() {
@@ -178,22 +187,19 @@ impl GuidedPrefixScanner for QwenGuidedPrefix {
             .header_end
             .filter(|_| self.header_name_valid)
             .map(|at| PREFIX.len() + at + 1);
-        let strip_len = self
+        let close_len = self
             .close_at
             .filter(|end| self.payload_at.is_none_or(|payload| *end < payload))
-            .map(|end| PREFIX.len() + end + CLOSE.len())
-            .or(header_len)
-            .unwrap_or(PREFIX.len());
+            .filter(|_| context.outside_reasoning || !self.has_reasoning_end_before_close)
+            .map(|end| PREFIX.len() + end + CLOSE.len());
+        let strip_len = close_len.or(header_len).unwrap_or(PREFIX.len());
         if context.followed_by_competing_marker {
             return GuidedPrefix::Strip(strip_len);
         }
         if !context.outside_reasoning {
             // A complete header can still grow a native body. Keep it attached
             // until its closer or a JSON payload establishes what to strip.
-            return self
-                .close_at
-                .filter(|end| self.payload_at.is_none_or(|payload| *end < payload))
-                .map(|end| PREFIX.len() + end + CLOSE.len())
+            return close_len
                 .or(header_len.filter(|_| self.payload_at.is_some()))
                 .map(GuidedPrefix::Strip)
                 .unwrap_or(GuidedPrefix::Pending);
@@ -369,6 +375,26 @@ mod tests {
             .enumerate()
             {
                 assert_eq!(got, want, "body {body:?}, split at byte {split}");
+            }
+        }
+    }
+
+    #[test]
+    fn guided_function_closer_cannot_cross_the_reasoning_end() {
+        let payload = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
+        let want = vec![reasoning("x"), text(&format!("</function>{payload}"))];
+        for wrapper in ["", "<tool_call>"] {
+            let input = format!("<think>{wrapper}<function=f>x</think></function>{payload}");
+            for (split, got) in configured_events_at_every_split_with_mode(
+                &weather_tools(),
+                UnifiedParserStartingState::None,
+                None,
+                &input,
+            )
+            .into_iter()
+            .enumerate()
+            {
+                assert_eq!(got, want, "wrapper {wrapper:?}, split at byte {split}");
             }
         }
     }
