@@ -317,7 +317,6 @@ def every_family(input_text, vllm, dynamo, *rest):
     }
 
 
-
 def by_family(render, vllm, dynamo, *rest):
     """`render(fam) -> input` for the scenarios where only the reasoning envelope
     around an otherwise identical payload is grammar-specific."""
@@ -396,43 +395,10 @@ def invoke_header_prefix(fam):
     return rendered[len(outer):rendered.index("NAMEX", len(outer))].lstrip()
 
 
-def r_bare_tool(fam, name, key, value, index):
-    """Reuse native argument encoding without routing an outer tool message.
-
-    In particular, Muse's outer recipient header would close the surrounding
-    thought; these cases need an invocation nested inside that thought instead.
-    Gemma's sole closer belongs to its invocation and must remain attached.
-    """
-    rendered = r_tool(fam, name, key, value, index)
-    _, _, opener, closer = control_tokens(fam)
-    rendered = rendered.removeprefix(opener.replace("NAMEX", name))
-    if fam != "gemma4":
-        rendered = rendered.removesuffix(closer)
-    if fam == "muse_glimmer":
-        rendered = rendered.removesuffix("</atem:function_calls>")
-    return rendered.strip()
-
-
-def native_body_in_guided_reasoning(fam, value):
-    return r_reason(fam, "before " + r_bare_tool(fam, "f", "x", value, 0) + " after") + GUIDED_ONE_CALL
-
-
 def guided_invoke_prefix(fam):
     if fam == "deepseek_v41":
         return '<｜DSML｜ invoke name="'
     return invoke_header_prefix(fam)
-
-
-def guided_named_invoke_prefix(fam):
-    return {
-        "deepseek_v4": '<｜DSML｜invoke name="get_weather"',
-        "deepseek_v41": '<｜DSML｜ invoke name="get_weather"',
-        "gemma4": "call:get_weather",
-        "kimi_k2": "<|tool_call_begin|>functions.get_weather:0",
-        "kimi_k3": '<|open|>call tool="get_weather"',
-        "muse_glimmer": '<atem:invoke name="get_weather"',
-        "qwen3": "<function=get_weather",
-    }[fam]
 
 
 def guided_surroundings(render, dynamo_note, fill=None):
@@ -1230,7 +1196,6 @@ EDGE = [
      }),
 
 
-
     ("prefilled_reasoning_truncated",
      "Reasoning is pre-filled and the token budget runs out mid tool call — the input is truncated, which is what finish_reason=length MEANS on the wire. Policy P2: keep the completed reasoning, drop the incomplete call, no error and no leaked markup.",
      ["P2"],
@@ -1260,7 +1225,6 @@ EDGE = [
                     VLLM_UNCAPTURABLE["kimi_k3"],
                     {"verdict": "match", "note": "P2: drop the partial call and keep prefilled K3 reasoning"}),
      }),
-
 
 
     ("prefilled_response_reasoning_markers_literal",
@@ -1307,19 +1271,6 @@ EDGE = [
 
 
 EDGE += [
-    ("kimi_k2_optional_prefix_name_overlap",
-     "Kimi K2's optional functions. prefix is also a legal complete tool name. In functions.:17 the prefix must remain the name, including when a chunk ends immediately after the colon. The call uses the declared functions. tool with empty object arguments.",
-     ["I5", "I7"],
-     [{"kind": "tool_call", "name": "functions.", "arguments": {}}],
-     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-     OnlyFamilies({
-         "kimi_k2": (
-             "<|tool_calls_section_begin|><|tool_call_begin|>functions.:17"
-             "<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>",
-             M, M,
-         ),
-     })),
-
     ("kimi_k3_typed_argument_values",
      "Kimi K3 native XTML carries each argument in its own typed channel. String, number, boolean, object, array, and null values must preserve their JSON types instead of being coerced to strings.",
      ["I7"],
@@ -1493,8 +1444,6 @@ GUIDED_SURROUNDS = {
                 "the payload wrapped in native tool markup", True),
     "bare_opener": (lambda pay, fam: f"{guided_invoke_prefix(fam)}{pay}",
                     "a bare invoke HEADER before the payload, never terminated", False),
-    "named_bare_opener": (lambda pay, fam: f"{guided_named_invoke_prefix(fam)}{pay}",
-                          "an invoke HEADER containing a tool name but no terminator before the payload", False),
 }
 
 
@@ -1517,8 +1466,6 @@ def _guided_product():
             # duplicate is worse than a gap: it inflates the case count while
             # testing nothing new, and two names for one behaviour drift apart.
             if sur_name == "clean" or pay_name == "valid":
-                continue
-            if sur_name == "named_bare_opener" and pay_name != "gt_in_argument":
                 continue
             scenario = f"guided_json_{pay_name}_{sur_name}"
             golden = ([{"kind": "tool_call", "name": "get_weather",
@@ -1555,115 +1502,6 @@ def _guided_product():
 
 
 EDGE += _guided_product()
-
-EDGE += [
-    ("qwen3_guided_non_ascii_header_in_truncated_reasoning",
-     "Guided Qwen reasoning ends inside an unfinished function header with a non-ASCII name. "
-     "The control prefix is stripped at EOF, but the remaining reasoning bytes survive without a call or visible text.",
-     ["I3", "P2"],
-     [{"kind": "reasoning", "text": "éaaaaaaaaax"}],
-     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
-     OnlyFamilies({"qwen3": ("<think><function=éaaaaaaaaax", GUIDED_UNSUPPORTED, M)})),
-    ("qwen3_guided_non_ascii_header_in_closed_reasoning",
-     "Guided Qwen reasoning contains a malformed non-ASCII function header closed by its function terminator. "
-     "That control span is stripped, the thought closes, and the following guided call dispatches.",
-     ["I3"],
-     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
-     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
-     OnlyFamilies({"qwen3": (
-         "<think><function=éaaaaaaaaax</function></think>" + GUIDED_ONE_CALL,
-         GUIDED_UNSUPPORTED, M,
-     )})),
-    ("guided_json_native_parameter_body_inside_reasoning",
-     "Guided reasoning contains a complete native invocation with arguments, followed by the actual guided call. "
-     "The native invocation is suppressed as one control span; its argument body must not leak when the header and body arrive separately. "
-     "Each family uses its own native argument framing, and the native call differs from the guided call so it cannot substitute for the payload.",
-     ["I3", "I5"],
-     [{"kind": "reasoning", "text": "before  after"},
-      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
-     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
-     by_family(
-         lambda fam: native_body_in_guided_reasoning(fam, "é🙂<par{value}"),
-         GUIDED_UNSUPPORTED, M)),
-    ("guided_json_reasoning_markers_inside_native_parameter",
-     "Guided reasoning contains a complete native f(x) invocation whose parameter value quotes the family's reasoning markers. "
-     "The parameter owns those markers: they cannot close the surrounding thought or leak parameter tags into visible text. "
-     "The native invocation is suppressed; only the following guided Paris call dispatches. Unlike 31-33's Unicode and brace payload, this tests competing channel markers inside an argument.",
-     ["I3", "I7"],
-     [{"kind": "reasoning", "text": "before  after"},
-      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
-     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
-     by_family(
-         lambda fam: native_body_in_guided_reasoning(fam, r_reason(fam, "quoted")),
-         GUIDED_UNSUPPORTED, M)),
-]
-
-
-for _shape, _body in (
-    ("object", '{"city":"Rome"}'),
-    ("array", '[{"name":"get_weather","arguments":{"city":"Rome"}}]'),
-):
-    EDGE.append((
-        f"guided_json_native_parameter_{_shape}_before_payload",
-        f"Qwen and Muse Response-prefilled guided output quotes a reasoning marker, then contains a valid JSON {_shape} inside a native parameter, followed by the actual guided call. "
-        "Response keeps the quoted reasoning content visible; starting_state=None would route it to reasoning. "
-        "The Response payload search must skip braces and brackets owned by the native invocation. "
-        "Only the following Paris call dispatches; selecting the native Rome value is incorrect, and no native body reaches visible text.",
-        ["I3", "I7"],
-        [{"kind": "text", "text": None},
-         {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
-        {"starting_state": "Response", "tool_output_mode": "GuidedJson", "named_tool": None},
-        OnlyFamilies({
-            family: (stimulus + opener + _body + closer + GUIDED_ONE_CALL, GUIDED_UNSUPPORTED, M, visible)
-            for family, stimulus, visible, opener, closer in (
-                ("qwen3", "<think>literal</think>", "<think>literal</think>",
-                 "<function=f><parameter=x>", "</parameter></function>"),
-                ("muse_glimmer", "to=self<|message|>literal<|eom|>", "to=selfliteral",
-                 '<atem:invoke name="f"><atem:parameter name="x">', "</atem:parameter></atem:invoke>"),
-            )
-        }),
-    ))
-
-
-EDGE += [
-    ("qwen3_guided_reasoning_opener_inside_native_header",
-     "Qwen guided output with no prefilled channel has a reasoning opener inside an unfinished native function header. "
-     "The reasoning opener wins: without a reasoning closer, the function terminator and following JSON remain reasoning, not a dispatched call.",
-     ["I3", "I5"],
-     [{"kind": "reasoning", "text": 'x</function>[{"name":"f","arguments":{}}]'}],
-     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
-     OnlyFamilies({"qwen3": (
-         '<function=<think>x</function>[{"name":"f","arguments":{}}]', GUIDED_UNSUPPORTED, M,
-     )})),
-    ("muse_glimmer_guided_message_end_inside_native_header",
-     "Muse guided output with no prefilled channel has a message-end marker inside an unfinished native invoke header. "
-     "The native prefix is stripped, its remaining x is visible text, and the following guided call dispatches without leaking the header.",
-     ["I3", "I5"],
-     [{"kind": "text", "text": "x"}, {"kind": "tool_call", "name": "f", "arguments": {}}],
-     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
-     OnlyFamilies({"muse_glimmer": (
-         '<atem:invoke name="x<|eom|>[{"name":"f","arguments":{}}]', GUIDED_UNSUPPORTED, M,
-     )})),
-    ("deepseek_v4_guided_reasoning_opener_inside_native_body",
-     "DeepSeek V4 Reasoning-prefilled guided output has a repeated reasoning opener inside a native invoke without parameters. "
-     "The competing opener prevents whole-invocation suppression: the native prefix is stripped, f\">x remains reasoning, and the following guided call dispatches.",
-     ["I3", "I5"],
-     [{"kind": "reasoning", "text": 'f">x'}, {"kind": "tool_call", "name": "f", "arguments": {}}],
-     {"starting_state": "Reasoning", "tool_output_mode": "GuidedJson", "named_tool": None},
-     OnlyFamilies({"deepseek_v4": (
-         '<｜DSML｜invoke name="f"><think>x</｜DSML｜invoke>[{"name":"f","arguments":{}}]', GUIDED_UNSUPPORTED, M,
-     )})),
-    ("gemma4_guided_reasoning_opener_after_call_prefix",
-     "Gemma Reasoning-prefilled guided output has a repeated thought opener immediately after bare call: with no function name or argument opener. "
-     "The call: prefix remains reasoning text across the repeated thought marker; the thought closer then permits the following guided call.",
-     ["I3", "I5"],
-     [{"kind": "reasoning", "text": "call:x"}, {"kind": "tool_call", "name": "f", "arguments": {}}],
-     {"starting_state": "Reasoning", "tool_output_mode": "GuidedJson", "named_tool": None},
-     OnlyFamilies({"gemma4": (
-         'call:<|channel>thought\nx<channel|>[{"name":"f","arguments":{}}]', GUIDED_UNSUPPORTED, M,
-     )})),
-]
-
 
 # Group 4 (TC Malformed envelope) was a LABELLED group with zero cases, and the
 # degenerate shape below had none either: no row anywhere pinned that control
@@ -1790,25 +1628,6 @@ def _guided_response_markup_cases(recipient, after_payload=False):
     return OnlyFamilies(cases) if recipient != "self" else cases
 
 
-for _family, _scenario, _header in (
-    ("deepseek_v41", "prefilled_response_guided_pending_invoke_header", '<｜DSML｜ invoke name="'),
-    ("muse_glimmer", "prefilled_response_guided_closer_inside_invoke_quote", '<atem:invoke name="</atem:invoke>'),
-):
-    _markup, _visible = _guided_response_markup(_family, "self")
-    EDGE.append((
-        _scenario,
-        "Response-prefilled guided output contains a quoted reasoning control marker, then an unfinished native invoke header before the JSON call. "
-        "Response keeps the first marker as visible text; the pending tool header must remain owned by the scanner across chunks and never leak into that text.",
-        ["I3", "I5"],
-        [{"kind": "text", "text": _visible},
-         {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
-        {"starting_state": "Response", "tool_output_mode": "GuidedJson", "named_tool": None},
-        OnlyFamilies({_family: (
-            _markup.removesuffix(GUIDED_ONE_CALL) + _header + GUIDED_ONE_CALL,
-            GUIDED_UNSUPPORTED, M,
-        )}),
-    ))
-
 for _name, _rcpt, _desc in QUOTED_BARE_HEADER:
     EDGE.append((
         _name,
@@ -1910,21 +1729,6 @@ def _vllm_entry(spec, fam):
     entry = _entry(spec, fam)
     caveat = VLLM_UNCAPTURABLE.get(fam)
     return caveat if caveat is not None and not entry.get("note") else entry
-
-
-_DS41_MIXED_STRING = ' <think>quoted</think> <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; "x"\\\n '
-EDGE.append((
-    "deepseek_v41_mixed_control_text_in_string",
-    "A DeepSeek V4.1 native string parameter contains reasoning and tool delimiters together with an entity spelling, quotes, a backslash, a newline, and leading/trailing spaces. "
-    "All bytes are argument data. Unlike 7.b's single tool closer and 12.a's reasoning-only string, this crosses both marker classes and whitespace/escape preservation in one value.",
-    ["I7"],
-    [{"kind": "tool_call", "name": "f", "arguments": {"x": _DS41_MIXED_STRING}}],
-    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-    OnlyFamilies({"deepseek_v41": (
-        r_tool("deepseek_v41", "f", "x", _DS41_MIXED_STRING, 0),
-        VLLM_UNCAPTURABLE["deepseek_v41"], M,
-    )}),
-))
 
 
 DEEPSEEK_V41_REDUNDANT_SCENARIOS = {

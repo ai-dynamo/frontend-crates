@@ -303,7 +303,10 @@ def test_unified_default_dynamo_uses_exact_source_and_keeps_release_history(tmp_
             f"{path.parent.name}/{key}": doc.get("capture_provenance") for key in doc["cases"]
         })
     expected = select_capture_label(REPO, captures)
-    assert dynamo["label"] == f"Dynamo v2 Rust {expected} (stream, Combined & Unified)"
+    assert dynamo["label"] == table._full_label("dynamo_v2", expected, "stream, Combined & Unified")
+    assert dynamo["version"] == expected
+    assert all("+source." not in candidate["label"] for candidate in tab["candidates"])
+    assert all("+source." not in candidate["key"] for candidate in tab["candidates"])
     assert dynamo["default_bucket"] == "A"
     assert release["label"] == "Dynamo v2 Rust 0.4.0 (stream, Combined & Unified)"
     assert release["default_bucket"] == "C"
@@ -441,10 +444,17 @@ def test_unified_source_selection_is_exact_not_digest_order(tmp_path, monkeypatc
 
     tab = table._unified_tab_model(tmp_path, {})
     candidates = {candidate["key"]: candidate for candidate in tab["candidates"]}
-    assert candidates["dynamo"]["label"] == f"Dynamo v2 Rust {selected} (stream, Combined & Unified)"
-    assert {key for key in candidates if key.startswith("dynamo@")} == {"dynamo@0.6.0", f"dynamo@{other}"}
+    assert candidates["dynamo"]["label"] == "Dynamo v2 Rust 0.6.0 (working build; stream, Combined & Unified)"
+    assert candidates["dynamo"]["version"] == selected
+    assert {key for key in candidates if key.startswith("dynamo@")} == {"dynamo@0.6.0"}
+    assert candidates["dynamo@0.6.0"]["label"] == "Dynamo v2 Rust 0.6.0 (stream, Combined & Unified)"
     cell = next(row for row in tab["rows"] if row["family"] == family)["cells"][scenario]
     current = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == "dynamo")
+    assert current["label"] == candidates["dynamo"]["label"]
+    assert current["version"] == selected
+    assert {candidate["key"] for candidate in cell["tooltip"]["candidates"]} == set(candidates)
+    assert set(cell["cmp"]) == set(candidates)
+    assert (tmp_path / f"dynamo_v2-{other}" / family / f"{key}.yaml").is_file()
     if current_present and capture_failure:
         assert current["block"] == {capture_failure: "capture could not run"}
         assert cell["status"] == "problem"
@@ -456,9 +466,18 @@ def test_unified_source_selection_is_exact_not_digest_order(tmp_path, monkeypatc
         assert cell["cmp"]["dynamo"]["err"] == 1
         assert "Missing Unified capture" in current["block"]["error"]
     if capture_failure:
-        historical = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == f"dynamo@{other}")
-        assert historical["block"] == {capture_failure: "capture could not run"}
-        assert cell["cmp"][f"dynamo@{other}"]["err" if capture_failure == "error" else "na"] == 1
+        assert case["dynamo_by_ver"][other][capture_failure] == "capture could not run"
+
+
+@pytest.mark.parametrize("impl,version,mode,want", [
+    ("dynamo_v2", "0.6.0+source." + "a" * 64, "stream",
+     "Dynamo v2 Rust 0.6.0 (working build; stream)"),
+    ("dynamo_v2", "0.6.1", "stream", "Dynamo v2 Rust 0.6.1 (stream)"),
+    ("dynamo_v1", "8.2.2", "stream", "Dynamo v1 Rust 8.2.2 (jail+batch)"),
+    ("vllm_python", "0.26.0", "batch", "vLLM Python 0.26.0 (batch)"),
+])
+def test_candidate_label_keeps_capture_identity_out_of_display(impl, version, mode, want):
+    assert table._full_label(impl, version, mode) == want
 
 
 def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):

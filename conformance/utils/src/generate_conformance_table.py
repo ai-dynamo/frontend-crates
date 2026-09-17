@@ -982,6 +982,9 @@ def _full_label(impl: str, version: object, mode: str) -> str:
     # the stream tab its mode reads "(jail+batch)".
     if impl == BASELINE_BATCH_IMPL and mode == "stream":
         mode = "jail+batch"
+    if impl == "dynamo_v2" and isinstance(version, str) and "+source." in version:
+        version = version.split("+source.", 1)[0]
+        mode = f"working build; {mode}"
     ver = f" {version}" if version else ""
     return f"{base}{ver} ({mode})"
 
@@ -2554,9 +2557,9 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                                   "band": _band(g),
                                   "span": sum(1 for x in ordered if _tax(x)[0] == g)})
 
-    def _cand(key, label, bucket):
+    def _cand(key, label, bucket, version=None):
         return {"key": key, "impl": key, "label": label, "label_html": label,
-                "default_bucket": bucket, "version": None, "parse_mode": "unified"}
+                "default_bucket": bucket, "version": version, "parse_mode": "unified"}
     # Alphabetical by label so non-Reference popup columns sort alphabetically
     # (the selected Reference is pulled to the left by the view). Unified keeps the
     # released Combined captures beside newer native UnifiedParser captures so the
@@ -2567,8 +2570,12 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     # these rows (0.1.23 on 0.1.24 data).
     dynamo_all_vers = _vers.get("dynamo_v2_all") or []
     dynamo_ver_label = _vers["dynamo_v2"]
-    dynamo_history_vers = [version for version in dynamo_all_vers if version != dynamo_ver_label]
-    dynamo_label = f"Dynamo v2 Rust {dynamo_ver_label} (stream, Combined & Unified)"
+    # Keep intermediate working captures in storage, not in the release selector.
+    dynamo_history_vers = [
+        version for version in dynamo_all_vers
+        if version != dynamo_ver_label and "+source." not in version
+    ]
+    dynamo_label = _full_label("dynamo_v2", dynamo_ver_label, "stream, Combined & Unified")
     peer_specs = []
     for ver in reversed(vllm_python_vers):
         peer_specs.append({
@@ -2596,7 +2603,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
         # the base — a golden REF never diverges from itself, so it would color every cell
         # green. See conformance_view.compareBarHtml (golden's hidden ref radio is dropped
         # when an engine is the default REF).
-        _cand("dynamo", dynamo_label, "A"),  # Reference (default, starred)
+        _cand("dynamo", dynamo_label, "A", dynamo_ver_label),  # Reference (default, starred)
         # Only the Reference is on by default — same rule as the stream and batch tabs.
         # Reset reloads at these defaults, so anything B here comes back checked every
         # time the reader clears the board, which reads as the page re-selecting itself.
@@ -2607,14 +2614,12 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     # is that the version is THERE to click, not that it is compared by default.
     # impl="dynamo" groups them under the one Dynamo engine block of the compare bar.
     for v in reversed(dynamo_history_vers):
-        pc = _cand(f"dynamo@{v}", f"Dynamo v2 Rust {v} (stream, Combined & Unified)", "C")
+        pc = _cand(f"dynamo@{v}", _full_label("dynamo_v2", v, "stream, Combined & Unified"), "C", v)
         pc["impl"] = "dynamo"
-        pc["version"] = v
         candidates.append(pc)
     for spec in peer_specs:
-        pc = _cand(spec["key"], spec["label"], "C")
+        pc = _cand(spec["key"], spec["label"], "C", spec["version"])
         pc["impl"] = spec["impl"]
-        pc["version"] = spec["version"]
         candidates.append(pc)
     _TODO = ("TODO: adopt a unified parser for this family (Dynamo v2 is moving to a "
              "per-family mixture — native unified where available, split elsewhere). "
@@ -2802,7 +2807,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                           "family": unified_taxonomy.marker_family(f)},
                 "candidates": [
                     {"key": "dynamo", "label": dynamo_label, "impl": "dynamo",
-                     "version": None, "parse_mode": "unified", "leak": dverd == "LEAK",
+                     "version": dynamo_ver_label, "parse_mode": "unified", "leak": dverd == "LEAK",
                      "block": (dynamo_failure if dynamo_failure else
                                {"events": dyn, "verdict": dverd,
                                 "todo": _TODO if dverd != "MATCH" else None})},
@@ -2829,7 +2834,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                     # that never recorded this case says so instead of showing an empty
                     # event list that reads like the parser produced nothing.
                     {"key": f"dynamo@{pv}",
-                     "label": f"Dynamo v2 Rust {pv} (stream, Combined & Unified)",
+                     "label": _full_label("dynamo_v2", pv, "stream, Combined & Unified"),
                      "impl": "dynamo", "version": pv, "parse_mode": "unified",
                      "leak": bool(cmp.get(f"dynamo@{pv}", {}).get("leak")),
                      "block": ({"unavailable": (
