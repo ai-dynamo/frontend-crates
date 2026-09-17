@@ -109,6 +109,48 @@ fn text_only_boundary_rejects_media() {
 }
 
 #[test]
+fn formatter_rejects_unsupported_partial_assistant() {
+    let error = render(json!({"messages":[
+        {"role":"user","content":"Continue"},
+        {"role":"assistant","content":"The answer is","partial":true}
+    ]}))
+    .unwrap_err();
+
+    assert!(matches!(
+        error.downcast_ref::<dynamo_renderer::PromptRenderError>(),
+        Some(dynamo_renderer::PromptRenderError::InvalidRequest(message))
+            if message.contains("`partial: true` is not supported")
+    ));
+}
+
+#[test]
+fn formatter_rejects_system_tools_before_top_level_injection() {
+    let error = render(json!({
+        "messages":[
+            {"role":"system","tools":[{
+                "name":"dynamic_tool",
+                "parameters":{"type":"object"}
+            }]},
+            {"role":"user","content":"Use a tool"}
+        ],
+        "tools":[{
+            "type":"function",
+            "function":{
+                "name":"top_level_tool",
+                "parameters":{"type":"object"}
+            }
+        }]
+    }))
+    .unwrap_err();
+
+    assert!(matches!(
+        error.downcast_ref::<dynamo_renderer::PromptRenderError>(),
+        Some(dynamo_renderer::PromptRenderError::InvalidRequest(message))
+            if message.contains("message-level `tools`") && message.contains("system")
+    ));
+}
+
+#[test]
 fn mid_system_preserves_generation_header_and_reasoning_cutoff() {
     let output = render(json!({"messages":[
         {"role":"user","content":"First"},
