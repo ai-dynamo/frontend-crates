@@ -104,13 +104,16 @@ const PINNED: &[(&str, Predicate)] = &[
     ("do_rescale", |v| v.as_bool() == Some(true)),
     ("do_normalize", |v| v.as_bool() == Some(true)),
     ("do_convert_rgb", |v| v.as_bool() == Some(true)),
-    ("do_center_crop", |v| v.as_bool() == Some(false)),
-    ("do_pad", |v| v.as_bool() == Some(false)),
+    // HF treats null as disabled for these optional stages.
+    ("do_center_crop", |v| {
+        v.is_null() || v.as_bool() == Some(false)
+    }),
+    ("do_pad", |v| v.is_null() || v.as_bool() == Some(false)),
     ("resample", |v| v.as_i64() == Some(3)),
     ("rescale_factor", |v| v.as_f64() == Some(1.0 / 255.0)),
     ("data_format", |v| v.as_str() == Some("channels_first")),
     ("input_data_format", |v| {
-        v.as_str() == Some("channels_first")
+        v.is_null() || v.as_str() == Some("channels_first")
     }),
     ("image_processor_type", |v| {
         matches!(
@@ -137,7 +140,7 @@ fn resolve_qwen_vl(config: &Value, pre: &Value) -> Result<QwenVlSpec> {
     let set = |knob: &str| knobs.get(knob).filter(|value| !value.is_null());
     for (knob, value) in knobs {
         let knob = knob.as_str();
-        if value.is_null() || CONSUMED.contains(&knob) || INERT.contains(&knob) {
+        if CONSUMED.contains(&knob) || INERT.contains(&knob) {
             continue;
         }
         match PINNED.iter().find(|(name, _)| *name == knob) {
@@ -147,6 +150,7 @@ fn resolve_qwen_vl(config: &Value, pre: &Value) -> Result<QwenVlSpec> {
                     "preprocessor knob {knob} = {value} cannot be honored bit-exactly"
                 )));
             }
+            None if value.is_null() => {}
             None => {
                 return Err(MmError::unsupported(format!(
                     "unrecognized preprocessor knob {knob}"
@@ -162,27 +166,32 @@ fn resolve_qwen_vl(config: &Value, pre: &Value) -> Result<QwenVlSpec> {
             .ok_or_else(|| MmError::invalid_input(format!("preprocessor knob {knob} is missing")))
     };
     let rgb_knob = |knob: &str| -> Result<[f32; 3]> {
-        let values = set(knob)
-            .and_then(Value::as_array)
-            .map(|values| values.iter().filter_map(Value::as_f64).collect::<Vec<_>>())
-            .filter(|values| values.len() == 3)
+        set(knob)
+            .and_then(|value| serde_json::from_value::<[f32; 3]>(value.clone()).ok())
             .ok_or_else(|| {
                 MmError::invalid_input(format!("preprocessor knob {knob} must be 3 numbers"))
-            })?;
-        Ok([values[0] as f32, values[1] as f32, values[2] as f32])
+            })
     };
     // Qwen2/2.5 carry the pixel bounds at the top level; Qwen3 as
     // `size.{shortest,longest}_edge` (pixel counts despite the names).
     let size = set("size")
         .map(|value| {
-            value
-                .as_object()
-                .ok_or_else(|| MmError::invalid_input("preprocessor knob size must be an object"))
+            let size = value.as_object().ok_or_else(|| {
+                MmError::invalid_input("preprocessor knob size must be an object")
+            })?;
+            for key in size.keys() {
+                if !matches!(key.as_str(), "shortest_edge" | "longest_edge") {
+                    return Err(MmError::unsupported(format!(
+                        "unrecognized preprocessor size key {key}"
+                    )));
+                }
+            }
+            Ok(size)
         })
         .transpose()?;
     let pixels = |knob: &str, edge: &str| {
         set(knob)
-            .or_else(|| size?.get(edge).or_else(|| size?.get(knob)))
+            .or_else(|| size?.get(edge))
             .filter(|value| !value.is_null())
             .and_then(Value::as_u64)
             .map(|value| value as usize)
@@ -302,6 +311,92 @@ mod tests {
             qwen_spec(QWEN25_CONFIG, &pre),
             Err(MmError::InvalidInput { .. })
         ));
+    }
+
+    #[test]
+    fn null_required_settings_are_unsupported() {
+        for knob in [
+            "do_resize",
+            "do_rescale",
+            "do_normalize",
+            "do_convert_rgb",
+            "resample",
+            "rescale_factor",
+            "data_format",
+            "image_processor_type",
+        ] {
+            let mut pre: Value = serde_json::from_str(QWEN25_PREPROCESSOR).unwrap();
+            pre[knob] = Value::Null;
+            assert!(
+                matches!(
+                    qwen_spec(QWEN25_CONFIG, &pre.to_string()),
+                    Err(MmError::Unsupported { .. })
+                ),
+                "{knob}: null must not select a pipeline with different behavior"
+            );
+        }
+    }
+
+    #[test]
+    fn null_optional_settings_preserve_the_spec() {
+        let mut pre: Value = serde_json::from_str(QWEN25_PREPROCESSOR).unwrap();
+        for knob in ["do_center_crop", "do_pad", "input_data_format", "device"] {
+            pre[knob] = Value::Null;
+        }
+        let spec = qwen_spec(QWEN25_CONFIG, &pre.to_string()).unwrap();
+        assert_eq!(spec.resample, Resampler::AtenU8);
+        assert_eq!((spec.min_pixels, spec.max_pixels), (3136, 12845056));
+        assert!(build_processor(ProcessorSpec::QwenVl(spec)).is_ok());
+    }
+
+    #[test]
+    fn normalization_requires_exactly_three_numeric_entries() {
+        for knob in ["image_mean", "image_std"] {
+            for values in [
+                serde_json::json!([0.48, null, 0.45, 0.40]),
+                serde_json::json!([0.48, "invalid", 0.45, 0.40]),
+                serde_json::json!([0.48, false, 0.45, 0.40]),
+                serde_json::json!([0.48, null, 0.40]),
+                serde_json::json!([0.48, 0.45]),
+                serde_json::json!([0.48, 0.45, 0.40, 0.50]),
+            ] {
+                let mut pre: Value = serde_json::from_str(QWEN25_PREPROCESSOR).unwrap();
+                pre[knob] = values;
+                assert!(
+                    matches!(
+                        qwen_spec(QWEN25_CONFIG, &pre.to_string()),
+                        Err(MmError::InvalidInput { .. })
+                    ),
+                    "{knob} = {} must be rejected",
+                    pre[knob]
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn unsupported_size_keys_are_rejected_even_with_top_level_bounds() {
+        for (config, original) in [
+            (QWEN25_CONFIG, QWEN25_PREPROCESSOR),
+            (QWEN3_CONFIG, QWEN3_PREPROCESSOR),
+        ] {
+            for key in ["alien", "height", "width", "min_pixels", "max_pixels"] {
+                for value in [serde_json::json!(512), Value::Null] {
+                    let mut pre: Value = serde_json::from_str(original).unwrap();
+                    pre["size"] = serde_json::json!({
+                        "shortest_edge": 65536, "longest_edge": 16777216
+                    });
+                    pre["size"][key] = value;
+                    assert!(
+                        matches!(
+                            qwen_spec(config, &pre.to_string()),
+                            Err(MmError::Unsupported { .. })
+                        ),
+                        "size with unsupported key {key} must be rejected"
+                    );
+                }
+            }
+        }
     }
 
     #[test]

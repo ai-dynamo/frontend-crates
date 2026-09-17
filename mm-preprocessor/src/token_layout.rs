@@ -29,7 +29,7 @@ pub struct ExpandedPrompt {
 /// i. The function validates while expanding:
 /// * the `Text` and `Media::src` ranges cover the original ids exactly once,
 ///   in order — nothing dropped, nothing duplicated;
-/// * each media item appears exactly once;
+/// * each media item appears exactly once, in prompt order;
 /// * each item's `Feature` parts contain exactly its expected number of
 ///   feature tokens.
 pub fn apply_layout(
