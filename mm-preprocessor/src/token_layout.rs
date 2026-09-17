@@ -37,7 +37,40 @@ pub fn apply_layout(
     layout: &TokenLayout,
     feature_token_counts: &[usize],
 ) -> Result<ExpandedPrompt> {
+    let length_error = || MmError::internal("layout: expanded prompt exceeds u32 token limit");
+    let position = |len: usize| u32::try_from(len).map_err(|_| length_error());
+    // Check the entire layout before allocation: a later part may overflow
+    // after an earlier part has already requested billions of tokens.
+    let mut output_len = 0u32;
+    let mut add_tokens = |n: usize| -> Result<()> {
+        output_len = output_len
+            .checked_add(position(n)?)
+            .ok_or_else(length_error)?;
+        Ok(())
+    };
+    for segment in &layout.segments {
+        match segment {
+            Segment::Text(range) => {
+                let text = src.get(range.clone()).ok_or_else(|| {
+                    MmError::internal(format!("layout: text range {range:?} out of bounds"))
+                })?;
+                add_tokens(text.len())?;
+            }
+            Segment::Media { expansion, .. } => {
+                for part in expansion {
+                    add_tokens(match part {
+                        ExpansionPart::Feature { n, .. } => *n,
+                        ExpansionPart::Literal(ids) => ids.len(),
+                    })?;
+                }
+            }
+        }
+    }
     let mut out = Vec::new();
+    out.try_reserve_exact(output_len as usize)
+        .map_err(|error| {
+            MmError::internal(format!("layout: cannot allocate expanded prompt: {error}"))
+        })?;
     let mut offsets = Vec::with_capacity(feature_token_counts.len());
     let mut feature_ranges = Vec::with_capacity(feature_token_counts.len());
     let mut consumed = 0usize;
@@ -82,24 +115,27 @@ pub fn apply_layout(
                 }
                 consumed = replaced.end;
 
-                let start = out.len() as u32;
+                let start = position(out.len())?;
                 let mut features = 0usize;
                 let mut ranges = Vec::new();
                 for part in expansion {
                     match part {
                         ExpansionPart::Feature { id, n } => {
-                            let part_start = out.len() as u32;
-                            out.resize(out.len() + n, *id);
+                            let part_start = position(out.len())?;
+                            let part_end = part_start
+                                .checked_add(position(*n)?)
+                                .ok_or_else(length_error)?;
+                            out.resize(part_end as usize, *id);
                             features += n;
                             if *n > 0 {
-                                ranges.push(part_start..out.len() as u32);
+                                ranges.push(part_start..part_end);
                             }
                         }
                         ExpansionPart::Literal(ids) => out.extend_from_slice(ids),
                     }
                 }
-                let n = out.len() as u32 - start;
-                if n == 0 {
+                let end = position(out.len())?;
+                if end == start {
                     return Err(MmError::internal(format!(
                         "layout: media item {item} expands to zero tokens"
                     )));
@@ -110,7 +146,7 @@ pub fn apply_layout(
                          expected {expected}"
                     )));
                 }
-                offsets.push((start, start + n - 1));
+                offsets.push((start, end - 1));
                 feature_ranges.push(ranges);
             }
         }
@@ -191,11 +227,9 @@ mod tests {
 
     #[test]
     fn expands_in_order_with_inclusive_offsets() {
-        // [7, PAD, 8, PAD, 9] with counts [2, 3]
         let e = expand(&[7, 1, 8, 1, 9], 1, &[2, 3]).unwrap();
         assert_eq!(e.input_ids, vec![7, 1, 1, 8, 1, 1, 1, 9]);
         assert_eq!(e.offsets, vec![(1, 2), (4, 6)]);
-        // Feature-only expansions: the feature range is the whole expansion.
         assert_eq!(e.feature_ranges, vec![vec![1..3], vec![4..7]]);
     }
 
@@ -211,15 +245,46 @@ mod tests {
     }
 
     #[test]
+    fn overflowing_expansion_returns_error() {
+        assert!(matches!(
+            expand(&[7, 1], 1, &[usize::MAX]),
+            Err(MmError::Internal { .. })
+        ));
+    }
+
+    #[test]
+    fn cumulative_expansion_must_fit_u32_before_allocation() {
+        let layout = TokenLayout {
+            segments: vec![Segment::Media {
+                item: 0,
+                src: 0..1,
+                expansion: vec![
+                    ExpansionPart::Feature {
+                        id: 1,
+                        n: u32::MAX as usize,
+                    },
+                    ExpansionPart::Literal(vec![90]),
+                ],
+            }],
+        };
+        assert!(matches!(
+            apply_layout(&[1], &layout, &[u32::MAX as usize]),
+            Err(MmError::Internal { .. })
+        ));
+        let layout = layout_by_placeholder(&[1, 7], 1, &[u32::MAX as usize]).unwrap();
+        assert!(matches!(
+            apply_layout(&[1, 7], &layout, &[u32::MAX as usize]),
+            Err(MmError::Internal { .. })
+        ));
+    }
+
+    #[test]
     fn no_placeholders_no_items_ok() {
         let e = expand(&[7, 8], 1, &[]).unwrap();
         assert_eq!(e.input_ids, vec![7, 8]);
         assert!(e.offsets.is_empty());
     }
 
-    /// A structured expansion mixing `Literal` markers with `Feature` tokens:
-    /// the offsets cover the whole expansion, the feature ranges only the
-    /// `Feature` parts.
     #[test]
     fn literal_parts_are_skipped_by_feature_ranges() {
         let layout = TokenLayout {
@@ -250,12 +315,10 @@ mod tests {
             src: 1..2,
             expansion: vec![ExpansionPart::Feature { id: 5, n }],
         };
-        // The family's expansion must produce exactly the item's feature count.
         let wrong = TokenLayout {
             segments: vec![Segment::Text(0..1), media(3), Segment::Text(2..3)],
         };
         assert!(apply_layout(&[7, 1, 9], &wrong, &[2]).is_err());
-        // Every item must be placed; ranges must be in bounds.
         let missing = TokenLayout {
             segments: vec![Segment::Text(0..3)],
         };
