@@ -58,6 +58,9 @@ pub(super) struct DebugToolParser {
 
 impl DebugToolParser {
     pub(super) fn wrap(family: &str, inner: Box<dyn ToolParser>) -> Box<dyn ToolParser> {
+        if !debug_enabled() {
+            return inner;
+        }
         emit(format_args!("family={family} created"));
         Box::new(Self {
             family: family.to_string(),

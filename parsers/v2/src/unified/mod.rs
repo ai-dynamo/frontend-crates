@@ -5071,6 +5071,9 @@ struct DebugUnifiedParser {
 
 impl DebugUnifiedParser {
     fn wrap(family: impl Into<String>, inner: Box<dyn UnifiedParser>) -> Box<dyn UnifiedParser> {
+        if !crate::tool_calling::debug::debug_enabled() {
+            return inner;
+        }
         let family = family.into();
         crate::tool_calling::debug::emit(format_args!("UNIFIED family={family} created"));
         Box::new(Self { family, inner })
@@ -5487,13 +5490,14 @@ mod tests {
                             .collect(),
                     );
                     let mut plain = create_unified_parser_for_family(family, &[]).unwrap();
-                    let mut debug = DebugUnifiedParser::wrap(
-                        family,
-                        create_unified_parser_for_family(family, &[]).unwrap(),
-                    );
+                    let mut debug = crate::tool_calling::debug::debug_enabled().then(|| {
+                        DebugUnifiedParser::wrap(
+                            family,
+                            create_unified_parser_for_family(family, &[]).unwrap(),
+                        )
+                    });
                     for chunks in schedules {
-                        let mut plain_events = Vec::new();
-                        for (wrapped, parser) in [(false, &mut plain), (true, &mut debug)] {
+                        let run = |parser: &mut Box<dyn UnifiedParser>| {
                             parser.reset();
                             parser.initialize_request(init.clone()).unwrap();
                             let mut out = UnifiedParserOutput::default();
@@ -5512,11 +5516,11 @@ mod tests {
                                 "{family} {policy:?} named={named} chunks={chunks:?}"
                             );
                             assert_eq!(out.events.iter().filter(|e| matches!(e, UnifiedParserEvent::ToolCall(delta) if delta.complete)).count(), usize::from(has_call));
-                            if wrapped {
-                                assert_eq!(out.events, plain_events);
-                            } else {
-                                plain_events = out.events;
-                            }
+                            out.events
+                        };
+                        let plain_events = run(&mut plain);
+                        if let Some(debug) = debug.as_mut() {
+                            assert_eq!(run(debug), plain_events);
                         }
                     }
                 }
@@ -5573,13 +5577,14 @@ mod tests {
                         .collect(),
                 );
                 let mut plain = create_unified_parser_for_family(family, &tools).unwrap();
-                let mut debug = DebugUnifiedParser::wrap(
-                    family,
-                    create_unified_parser_for_family(family, &tools).unwrap(),
-                );
+                let mut debug = crate::tool_calling::debug::debug_enabled().then(|| {
+                    DebugUnifiedParser::wrap(
+                        family,
+                        create_unified_parser_for_family(family, &tools).unwrap(),
+                    )
+                });
                 for (schedule, chunks) in schedules.iter().enumerate() {
-                    let mut plain_events = Vec::new();
-                    for (wrapped, parser) in [(false, &mut plain), (true, &mut debug)] {
+                    let run = |parser: &mut Box<dyn UnifiedParser>| {
                         parser.reset();
                         parser.initialize_request(init.clone()).unwrap();
                         let mut out = UnifiedParserOutput::default();
@@ -5591,7 +5596,7 @@ mod tests {
                         assert_eq!(
                             out.assembled(),
                             want,
-                            "{family} {state:?} {policy:?} named={named} wrapped={wrapped} schedule={schedule}"
+                            "{family} {state:?} {policy:?} named={named} schedule={schedule}"
                         );
                         assert_eq!(out.events.iter().filter(|event| matches!(event, UnifiedParserEvent::ToolCall(delta) if delta.complete)).count(), 1);
                         assert!(
@@ -5604,11 +5609,11 @@ mod tests {
                                 .parse_into("", &mut UnifiedParserOutput::default())
                                 .is_err()
                         );
-                        if wrapped {
-                            assert_eq!(out.events, plain_events, "debug wrapper changed deltas");
-                        } else {
-                            plain_events = out.events;
-                        }
+                        out.events
+                    };
+                    let plain_events = run(&mut plain);
+                    if let Some(debug) = debug.as_mut() {
+                        assert_eq!(run(debug), plain_events, "debug wrapper changed deltas");
                     }
                 }
             }
@@ -5905,7 +5910,9 @@ mod tests {
                     tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
                     ..Default::default()
                 };
-                for wrapped in [false, true] {
+                let wrapped_modes = std::iter::once(false)
+                    .chain(crate::tool_calling::debug::debug_enabled().then_some(true));
+                for wrapped in wrapped_modes {
                     let mut parser = create_unified_parser_for_family(family, &[]).unwrap();
                     if wrapped {
                         parser = DebugUnifiedParser::wrap(family, parser);
@@ -5973,7 +5980,9 @@ mod tests {
                 .map(|(at, ch)| &input[at..at + ch.len_utf8()])
                 .collect(),
         );
-        for wrapped in [false, true] {
+        let wrapped_modes = std::iter::once(false)
+            .chain(crate::tool_calling::debug::debug_enabled().then_some(true));
+        for wrapped in wrapped_modes {
             let mut parser = create_unified_parser_for_family("kimi_k3", &[]).unwrap();
             if wrapped {
                 parser = DebugUnifiedParser::wrap("kimi_k3", parser);
