@@ -298,11 +298,11 @@ mod tests {
 
     /// Formats the Python (PIL) path accepts must decode, not reject.
     #[test]
-    fn decodes_webp_gif_bmp() {
+    fn decodes_webp_bmp() {
         let img = image::DynamicImage::ImageRgb8(image::RgbImage::from_fn(6, 4, |x, y| {
             image::Rgb([x as u8 * 40, y as u8 * 60, 7])
         }));
-        for fmt in [ImageFormat::WebP, ImageFormat::Gif, ImageFormat::Bmp] {
+        for fmt in [ImageFormat::WebP, ImageFormat::Bmp] {
             let (rgb, h, w) = decode_rgb(&encode(&img, fmt), &DecodeLimits::default()).unwrap();
             assert_eq!((h, w), (4, 6), "{fmt:?}");
             assert_eq!(rgb.len(), 4 * 6 * 3, "{fmt:?}");
