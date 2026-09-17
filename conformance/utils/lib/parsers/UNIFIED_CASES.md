@@ -4,7 +4,7 @@ Reference taxonomy for the **unified** conformance surface: one parser owns the 
 
 The golden corpus is authored by `conformance/utils/src/gen_unified_golden.py` (one scenario spec -> `conformance/unified/golden_spec/<family>.yaml` in the gitignored build tree); the committed, versioned `conformance/fixtures/unified/golden.tar.gz` shard is derived from it.
 
-WIP follow-up to PR #232: `1-2`, `7-3`, `30-14`, `31-31` through `31-40`, and `50-1/2` retain their original IDs. Cross-model coverage for these deferred cases must be completed or justified before this follow-up is ready. Parser fixes and Rust regression tests remain in PR #232.
+WIP follow-up [#241](https://github.com/ai-dynamo/frontend-crates/pull/241) to PR #232: `1-2`, `7-3`, `30-14`, `31-31` through `31-40`, and `50-1/2` retain their original IDs. Cross-model coverage for these deferred cases must be completed or justified before this follow-up is ready. Parser fixes and Rust regression tests remain in PR #232.
 
 ## The oracle: GOLDEN is authored, not captured
 

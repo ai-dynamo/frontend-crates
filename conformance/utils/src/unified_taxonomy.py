@@ -23,7 +23,7 @@ import yaml
 
 import markers
 
-# WIP follow-up to PR #232: restore its 15 deferred IDs without renumbering.
+# WIP #241 follows PR #232 and restores its 15 deferred IDs without renumbering.
 UNIFIED_TAX = {
     # Group 1 — Single call
     "tool_only": (1, "a"),
