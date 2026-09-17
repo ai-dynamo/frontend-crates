@@ -495,6 +495,9 @@ fn spec(config: &KimiK2ParserConfig) -> WrappedBlockSpec {
         // Every wrapped family's markers are special tokens today.
         preserve_special_tokens: true,
         invoke_boundary_factory: Some(InvokeBoundaryFactory::stateless(KIMI_INVOKE_SCAN)),
+        bare_invoke_start: None,
+        bare_invoke_holdback: None,
+        bare_invoke_uses_eof_boundary: false,
     }
 }
 

@@ -115,9 +115,9 @@ mkdir -p "$(dirname "$OUT")"
 # truncates its target for the WHOLE render (~2 min), so anything reading $OUT during
 # that window (CI, a live viewer, a verify script) sees a 0-byte / partial file. Writing
 # to CONFORMANCE_v2.working.html and mv-ing on success means readers only ever see the
-# previous complete file or the new complete one. --output-path stays $OUT so link
-# resolution targets the final location (the working file is in the same dir, so hrefs
-# are identical); on failure the real file is left untouched.
+# previous complete file or the new complete one. Pass the final path to the generator
+# so links and provenance name the published file; stdout still goes to the working
+# file, and on failure the real file is left untouched.
 case "$OUT" in
   *.html) WORK="${OUT%.html}.working.html" ;;
   *)      WORK="$OUT.working" ;;

@@ -13,6 +13,170 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use dynamo_parsers_v2::Tool;
+use serde_json::{Value, json};
+
+pub fn unified_tools() -> Vec<Tool> {
+    let string_tool = |name: &str, key: &str| Tool {
+        name: name.to_string(),
+        description: None,
+        parameters: json!({"type":"object","properties":{key:{"type":"string"}}}),
+        strict: None,
+    };
+    vec![
+        string_tool("get_weather", "city"),
+        Tool {
+            name: "get_time".to_string(),
+            description: None,
+            parameters: json!({"type":"object","properties":{}}),
+            strict: None,
+        },
+        string_tool("f", "x"),
+        string_tool("g", "y"),
+        Tool {
+            name: "run".to_string(),
+            description: None,
+            parameters: json!({"type":"object","properties":{
+                "cmd":{"type":"string"},
+                "count":{"type":"integer"},
+                "force":{"type":"boolean"},
+                "options":{"type":"object"},
+                "tags":{"type":"array"},
+                "note":{"type":["string","null"]}
+            }}),
+            strict: None,
+        },
+        string_tool("log", "note"),
+        Tool {
+            name: "sum_values".to_string(),
+            description: None,
+            parameters: json!({"type":"object","properties":{"values":{"type":"array","items":{"type":"integer"}}}}),
+            strict: None,
+        },
+    ]
+}
+
+pub trait UnifiedEventView: PartialEq {
+    fn reasoning_text(&self) -> Option<&str>;
+    fn visible_text(&self) -> Option<&str>;
+    fn tool_call(&self) -> Option<(&str, &Value)>;
+}
+
+pub fn classify_unified_events<E: UnifiedEventView>(
+    family: &str,
+    golden: &[E],
+    got: &[E],
+) -> &'static str {
+    if golden == got {
+        return "MATCH";
+    }
+    const MARKERS: &[&str] = &[
+        "<|",
+        "|>",
+        "<think>",
+        "</think>",
+        "◁",
+        "<channel",
+        "channel|>",
+    ];
+    let family_leak = unified_family(family).leak_markers;
+    let leaks = got.iter().any(|event| {
+        event
+            .visible_text()
+            .or_else(|| event.reasoning_text())
+            .is_some_and(|text| {
+                MARKERS
+                    .iter()
+                    .copied()
+                    .chain(family_leak.iter().map(String::as_str))
+                    .any(|marker| text.contains(marker))
+            })
+    });
+    if leaks {
+        return "LEAK";
+    }
+    if got.iter().filter_map(E::reasoning_text).count()
+        < golden.iter().filter_map(E::reasoning_text).count()
+    {
+        return "MERGE";
+    }
+    let calls = |events: &[E]| -> Vec<(String, Value)> {
+        events
+            .iter()
+            .filter_map(|event| {
+                event
+                    .tool_call()
+                    .map(|(name, arguments)| (name.to_string(), arguments.clone()))
+            })
+            .collect()
+    };
+    let (golden_calls, got_calls) = (calls(golden), calls(got));
+    if golden_calls.len() == got_calls.len()
+        && golden_calls
+            .iter()
+            .zip(&got_calls)
+            .all(|(golden_call, got_call)| golden_call.0 == got_call.0)
+        && golden_calls
+            .iter()
+            .zip(&got_calls)
+            .any(|(golden_call, got_call)| golden_call.1 != got_call.1)
+    {
+        return "ARG_MISMATCH";
+    }
+    let concatenate = |events: &[E], reasoning: bool| -> String {
+        events
+            .iter()
+            .filter_map(|event| {
+                if reasoning {
+                    event.reasoning_text()
+                } else {
+                    event.visible_text()
+                }
+            })
+            .collect()
+    };
+    if golden_calls == got_calls
+        && concatenate(golden, true) == concatenate(got, true)
+        && concatenate(golden, false) == concatenate(got, false)
+    {
+        return "ORDER";
+    }
+    "LOSS"
+}
+
+pub fn validate_current_dynamo_expectation(
+    verdict: Option<&str>,
+    expected_class: Option<&str>,
+    note: Option<&str>,
+    actual_class: &str,
+) -> Result<(), String> {
+    match (verdict, actual_class) {
+        (None, "MATCH") => Ok(()),
+        (None, actual_class) => Err(format!(
+            "unexplained current-native divergence {actual_class}; add expect.dynamo_current with the exact class and a note"
+        )),
+        (Some("diverge"), "MATCH") => Err(
+            "documented current-native divergence now matches; remove the stale exception".into(),
+        ),
+        (Some("diverge"), actual_class) => {
+            let expected_class = expected_class
+                .filter(|class| !class.trim().is_empty())
+                .ok_or_else(|| "documented current-native divergence has no class".to_string())?;
+            note.filter(|note| !note.trim().is_empty())
+                .ok_or_else(|| "documented current-native divergence has no note".to_string())?;
+            if actual_class != expected_class {
+                return Err(format!(
+                    "documented current-native {expected_class} but observed {actual_class}"
+                ));
+            }
+            Ok(())
+        }
+        (Some(other), _) => Err(format!(
+            "expect.dynamo_current must document a divergence, found verdict {other:?}"
+        )),
+    }
+}
+
 /// Recursively collect `*.yaml` fixture files under `dir` into `out`.
 pub fn collect_yaml(dir: &Path, out: &mut Vec<PathBuf>) {
     let Ok(rd) = std::fs::read_dir(dir) else {
@@ -247,9 +411,9 @@ pub fn fixture_name(path: &Path) -> String {
 }
 
 /// Current parser-version capture used by stream parity and interleave tests.
-pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.5.1";
+pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.6.0+mod2";
 
-pub const UNIFIED_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.5.3+pr213";
+pub const UNIFIED_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.6.0+pr234.r4.gc8bf6f7f1d2";
 
 /// Version-sorted capture dirs for one impl prefix (e.g. `dynamo-` under
 /// fixtures-batch-v1, `dynamo_v2-` under fixtures-stream-v2), ASCENDING by

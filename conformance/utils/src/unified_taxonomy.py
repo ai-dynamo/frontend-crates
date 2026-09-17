@@ -37,8 +37,10 @@ UNIFIED_TAX = {
     # Group 5 — Truncation / recovery (streamv2.5)
     "truncated_tool_eof": (5, "a"), "tool_no_close": (5, "b"),
     "orphan_close_after_prose": (5, "c"),
+    "wrapped_saved_closer_partial_marker": (5, "d"),
+    "bare_saved_closer": (5, "e"),
     # Group 6 — Empty body (streamv2.6)
-    "empty_args": (6, "a"),
+    "empty_args": (6, "a"), "bare_parameterless_call": (6, "b"),
     # Group 7 — Argument fidelity (streamv2.7)
     "arg_unicode": (7, "a"), "arg_marker_in_string": (7, "b"),
     # Group 8 — Content / narration position (streamv2.8)
@@ -119,6 +121,7 @@ UNIFIED_TAX = {
     "guided_json_quoted_bare_tool_header_in_answer": (31, "26"),
     "guided_json_quoted_bare_header_after_payload": (31, "27"),
     "guided_json_bare_tool_header_recovers_inside_a_thought": (31, "28"),
+    "guided_json_native_envelope_after_prose": (31, "29"),
     # Group g4 — Gemma 4 guided call-prefix boundaries
     "gemma4_guided_json_visible_call_prose_before_reasoning": ("g4", "1"),
     "gemma4_guided_json_malformed_call_prefix_before_reasoning": ("g4", "2"),

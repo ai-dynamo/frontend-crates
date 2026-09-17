@@ -1521,6 +1521,32 @@ mod tests {
         }
     }
 
+    #[test]
+    fn guided_native_parameter_envelope_after_content_is_stripped_at_every_split() {
+        let input = r#"<|start|>assistant to=user<|message|>hello <|eom|><|start|>assistant to=run<|message|><atem:function_calls>
+<atem:invoke name="run">
+<atem:parameter name="cmd">"[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"</atem:parameter>
+</atem:invoke>
+</atem:function_calls><|eom|>"#;
+        let expected = vec![text("hello ")];
+
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            let mut parser = muse_glimmer_unified(&tools());
+            parser
+                .initialize_request(UnifiedParserInit {
+                    starting_state: UnifiedParserStartingState::None,
+                    tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                    invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                    ..UnifiedParserInit::default()
+                })
+                .expect("guided init");
+            let mut deltas = parser.push(&input[..split]).expect("prefix");
+            deltas.extend(parser.push(&input[split..]).expect("suffix"));
+            deltas.extend(parser.finish().expect("finish").events);
+            assert_eq!(assemble(&deltas), expected, "split at {split}");
+        }
+    }
+
     /// Guided mode must read the same bytes the same way the native path does.
     ///
     /// Three defects an independent review found in the first version of the guided

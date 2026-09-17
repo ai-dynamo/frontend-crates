@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! The acceptance gate for the unified parser: every `UNIFIED.*` case of every
-//! family that has a unified parser must assemble EXACTLY to the authored golden
-//! event list.
+//! The acceptance gate for the unified parser: every `UNIFIED.*` case must either
+//! match the authored golden exactly or match one explicitly documented divergence
+//! class. Chunk invariance and stream/batch parity remain strict for every case.
 //!
 //! `unified_schema_roundtrip` proves the corpus is well-formed and
 //! `unified_render` draws it; this file is what fails CI when a parser is wrong.
@@ -26,7 +26,7 @@ use dynamo_parsers_v2::{
     create_unified_parser_for_family,
 };
 use serde::Deserialize;
-use serde_json::json;
+use serde_json::Value;
 
 #[derive(Deserialize)]
 struct GoldenFile {
@@ -39,6 +39,7 @@ struct GoldenFile {
 struct GoldenCase {
     input: String,
     golden: Vec<UnifiedEvent>,
+    expect: BTreeMap<String, Expect>,
     /// Request-scoped parser configuration, declared by the case. Shared with
     /// `unified_render` via `common::Init` so both harnesses configure a case
     /// identically; see that type for why it is declared and not inferred.
@@ -46,24 +47,43 @@ struct GoldenCase {
     init: Init,
 }
 
+#[derive(Deserialize)]
+struct Expect {
+    verdict: String,
+    #[serde(default)]
+    class: Option<String>,
+    #[serde(default)]
+    note: Option<String>,
+}
+
+impl common::UnifiedEventView for UnifiedEvent {
+    fn reasoning_text(&self) -> Option<&str> {
+        match self {
+            UnifiedEvent::Reasoning { text } => Some(text),
+            _ => None,
+        }
+    }
+
+    fn visible_text(&self) -> Option<&str> {
+        match self {
+            UnifiedEvent::Text { text } => Some(text),
+            _ => None,
+        }
+    }
+
+    fn tool_call(&self) -> Option<(&str, &Value)> {
+        match self {
+            UnifiedEvent::ToolCall { name, arguments } => Some((name, arguments)),
+            _ => None,
+        }
+    }
+}
+
 /// Tool schemas the corpus is written against (string params, so a value like
 /// `1` stays the string `"1"` exactly as the golden records it). Mirrors
 /// `tools()` in `unified_render.rs`.
 fn tools() -> Vec<Tool> {
-    let mk = |name: &str, key: &str| Tool {
-        name: name.to_string(),
-        description: None,
-        parameters: json!({"type":"object","properties":{key:{"type":"string"}}}),
-        strict: None,
-    };
-    vec![
-        mk("get_weather", "city"),
-        mk("f", "x"),
-        mk("g", "y"),
-        mk("run", "cmd"),
-        mk("sum_values", "values"),
-        mk("log", "note"),
-    ]
+    common::unified_tools()
 }
 
 fn load_golden() -> Vec<GoldenFile> {
@@ -179,9 +199,16 @@ fn unified_parser_matches_the_golden_oracle() {
         for (id, case) in &file.cases {
             checked += 1;
             let got = events(&file.family, &chunk_markers(&case.input), &case.init);
-            if got != case.golden {
+            let actual_class = common::classify_unified_events(&file.family, &case.golden, &got);
+            let current_expected = case.expect.get("dynamo_current");
+            if let Err(reason) = common::validate_current_dynamo_expectation(
+                current_expected.map(|expected| expected.verdict.as_str()),
+                current_expected.and_then(|expected| expected.class.as_deref()),
+                current_expected.and_then(|expected| expected.note.as_deref()),
+                actual_class,
+            ) {
                 failures.push(format!(
-                    "{id}\n     input: {:?}\n    golden: {}\n   unified: {}",
+                    "{id}: {reason}\n     input: {:?}\n    golden: {}\n   unified: {}",
                     case.input,
                     render(&case.golden),
                     render(&got),

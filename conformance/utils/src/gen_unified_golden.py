@@ -18,6 +18,7 @@ render -> explode -> package, exactly like every other conformance fixture shard
 
 Run:  python3 conformance/utils/src/gen_unified_golden.py
 """
+from copy import deepcopy
 import json
 import os
 import re
@@ -48,6 +49,7 @@ GRAMMAR_NOTE = {
     "deepseek_v4": "reasoning `<think>...</think>`, tool `<｜DSML｜tool_calls><｜DSML｜invoke name=\"NAME\"><｜DSML｜parameter name=\"KEY\" string=\"true\">VALUE</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>`.",
     "gemma4": "reasoning `<|channel>thought\\n...<channel|>`, tool `<|tool_call>call:NAME{key:<|\"|>value<|\"|>}<tool_call|>` (string values wrapped in `<|\"|>`; an embedded `<tool_call|>` inside a `<|\"|>` string is data, not the end marker).",
     "qwen3": "reasoning `<think>...</think>`, tool `<tool_call><function=NAME><parameter=KEY>VALUE</parameter></function></tool_call>`.",
+    "glm47": "reasoning `<think>...</think>`, tool `<tool_call>NAME<arg_key>KEY</arg_key><arg_value>VALUE</arg_value></tool_call>`.",
     "kimi_k2": "reasoning `<think>...</think>`, tool section `<|tool_calls_section_begin|><|tool_call_begin|>functions.NAME:IDX<|tool_call_argument_begin|>{...}<|tool_call_end|><|tool_calls_section_end|>`.",
     "kimi_k3": "reasoning `<|open|>think<|sep|>...<|close|>think<|sep|>`, tool `<|open|>tools<|sep|><|open|>call tool=\"NAME\" index=\"IDX\"<|sep|><|open|>argument key=\"KEY\" type=\"string\"<|sep|>VALUE<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>`.",
     "muse_glimmer": "recipient-routed messages `<|start|>assistant to=RCPT<|message|>...<|eom|>`: `self` is reasoning, `user` is visible content, any other recipient opens a tool channel whose body is ATEM XML `<atem:function_calls><atem:invoke name=\"NAME\"><atem:parameter name=\"KEY\">VALUE</atem:parameter></atem:invoke></atem:function_calls>`. `<|eom|>` closes a message with more to follow, `<|eot|>` ends the turn. Spec: https://huggingface.co/meta-models/Muse-Glimmer-30B.",
@@ -163,6 +165,9 @@ def r_tool(fam, name, key, val, idx):
     if fam == "qwen3":
         return (f"<tool_call>\n<function={name}>\n<parameter={key}>\n"
                 f"{val}\n</parameter>\n</function>\n</tool_call>")
+    if fam == "glm47":
+        return (f"<tool_call>{name}<arg_key>{key}</arg_key>"
+                f"<arg_value>{val}</arg_value></tool_call>")
     if fam == "muse_glimmer":
         return (f"<|start|>assistant to={name}<|message|><atem:function_calls>\n"
                 f"<atem:invoke name=\"{name}\">\n"
@@ -173,6 +178,55 @@ def r_tool(fam, name, key, val, idx):
     args = json.dumps({key: val}, ensure_ascii=False)
     return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
             f"<|tool_call_argument_begin|>{args}<|tool_call_end|><|tool_calls_section_end|>")
+
+
+def r_parameterless_tool(fam, name, idx):
+    """Render a complete native call whose argument object is empty."""
+    if fam == "deepseek_v41":
+        return (f'<｜DSML｜ calls><｜DSML｜ invoke name="{name}">'
+                f'</｜DSML｜ invoke></｜DSML｜ calls>')
+    if fam == "deepseek_v4":
+        return (f'<｜DSML｜tool_calls><｜DSML｜invoke name="{name}">'
+                f'</｜DSML｜invoke></｜DSML｜tool_calls>')
+    if fam == "gemma4":
+        return f"<|tool_call>call:{name}{{}}<tool_call|>"
+    if fam == "qwen3":
+        return f"<tool_call>\n<function={name}>\n</function>\n</tool_call>"
+    if fam == "glm47":
+        return f"<tool_call>{name}</tool_call>"
+    if fam == "muse_glimmer":
+        return (f"<|start|>assistant to={name}<|message|><atem:function_calls>\n"
+                f"<atem:invoke name=\"{name}\">\n</atem:invoke>\n"
+                f"</atem:function_calls><|eom|>")
+    if fam == "kimi_k3":
+        return k3_tools(k3_call(name, idx + 1, ""))
+    return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
+            f"<|tool_call_argument_begin|>{{}}<|tool_call_end|>"
+            f"<|tool_calls_section_end|>")
+
+
+def qwen3_input_as_glm47(input_text):
+    function = re.compile(r"<function=([^>]+)>(.*?)</function>", re.DOTALL)
+    parameter = re.compile(r"<parameter=([^>]+)>(.*?)</parameter>", re.DOTALL)
+
+    def convert_function(match):
+        name, body = match.groups()
+        rendered = parameter.sub(
+            lambda parameter_match: (
+                f"<arg_key>{parameter_match.group(1).strip()}</arg_key>"
+                f"<arg_value>{parameter_match.group(2).strip()}</arg_value>"
+            ),
+            body,
+        )
+        return f"{name}{rendered.strip()}"
+
+    converted = function.sub(convert_function, input_text)
+    converted = converted.replace("<tool_call>\n", "<tool_call>")
+    converted = re.sub(r"<function=([^>]+)>\n?", r"\1", converted)
+    converted = re.sub(r"<parameter=([^>]+)>\n?", r"<arg_key>\1</arg_key><arg_value>", converted)
+    converted = converted.replace("\n</parameter>", "</arg_value>")
+    converted = converted.replace("\n</function>", "")
+    return converted.replace("\n</tool_call>", "</tool_call>")
 
 
 def kimi_input_as_dsml(input_text):
@@ -268,6 +322,55 @@ def D(cls, note):
     return {"verdict": "diverge", "class": cls, "note": note}
 
 
+def family_dynamo_expectations(match_note, divergences):
+    unknown = sorted(set(divergences) - set(FAMILIES))
+    if unknown:
+        raise ValueError(f"Dynamo expectations name unknown families: {unknown}")
+    return {
+        fam: D(*divergences[fam]) if fam in divergences
+        else {"verdict": "match", "note": match_note}
+        for fam in FAMILIES
+    }
+
+
+SCENARIO_DYNAMO_EXPECTATIONS = {
+    "wrapped_saved_closer_partial_marker": family_dynamo_expectations(
+        "the real outer close recovers the unclosed argument and preserves the trailing marker prefix",
+        {
+            "deepseek_v41": ("LOSS", "drops the recoverable call and its argument"),
+            "deepseek_v4": ("LOSS", "drops the recoverable call and its argument"),
+            "gemma4": ("LOSS", "drops the recoverable call and its argument"),
+            "kimi_k2": ("LOSS", "drops the recoverable call and its argument"),
+            "kimi_k3": ("LOSS", "drops the recoverable call and its argument"),
+            "muse_glimmer": ("LOSS", "preserves only the trailing marker prefix and drops the recoverable call"),
+            "qwen3": ("LOSS", "drops the recoverable call and its argument"),
+        },
+    ),
+    "bare_saved_closer": family_dynamo_expectations(
+        "the real outer close enables opener-less recovery; a missing real closer remains unrecoverable",
+        {
+            "deepseek_v41": ("LOSS", "drops the opener-less recoverable call"),
+            "deepseek_v4": ("LOSS", "drops the opener-less recoverable call"),
+            "gemma4": ("LOSS", "drops the opener-less recoverable call"),
+            "kimi_k2": ("LOSS", "drops the opener-less recoverable call"),
+            "kimi_k3": ("LOSS", "drops the opener-less recoverable call"),
+            "muse_glimmer": ("LEAK", "emits the incomplete native invocation as visible text"),
+            "qwen3": ("LOSS", "drops the opener-less recoverable call"),
+        },
+    ),
+    "bare_parameterless_call": family_dynamo_expectations(
+        "the offered parameterless tool is recovered without leaking its outer closer",
+        {
+            "muse_glimmer": ("LEAK", "emits the opener-less native invocation as visible text"),
+        },
+    ),
+    "guided_json_native_envelope_after_prose": family_dynamo_expectations(
+        "the complete native envelope is stripped after visible prose and cannot become a guided call",
+        {},
+    ),
+}
+
+
 # --- per-family input helpers for EDGE scenarios ------------------------------
 
 class OnlyFamilies(dict):
@@ -290,6 +393,15 @@ class OnlyFamilies(dict):
         unknown = sorted(set(self) - set(FAMILIES))
         if unknown:
             raise ValueError(f"OnlyFamilies() names families that do not exist: {unknown}")
+
+
+def _entry(spec, fam):
+    """Resolve a vllm/dynamo verdict spec (single or per-family) for `fam`."""
+    if isinstance(spec, dict) and set(spec) <= set(FAMILIES) and "verdict" not in spec:
+        if fam in {"deepseek_v4", "glm47"} and fam not in spec:
+            return spec["qwen3"]
+        return spec[fam]
+    return spec
 
 
 def every_family(input_text, vllm, dynamo, *rest):
@@ -323,7 +435,7 @@ def every_family(input_text, vllm, dynamo, *rest):
 def by_family(render, vllm, dynamo, *rest):
     """`render(fam) -> input` for the scenarios where only the reasoning envelope
     around an otherwise identical payload is grammar-specific."""
-    return {fam: (render(fam), vllm, dynamo, *rest) for fam in FAMILIES}
+    return {fam: (render(fam), vllm, _entry(dynamo, fam), *rest) for fam in FAMILIES}
 
 
 # A family whose tool block opener spans more than its first control token, mapped to
@@ -384,10 +496,34 @@ def control_tokens(fam):
     return reason_open, reason_close, tool_open, tokens[-1]
 
 
+def strip_outer_tool_opener(fam, rendered):
+    """Remove only the family-native outer opener from a rendered call."""
+    if fam == "muse_glimmer":
+        through = _TOOL_OPEN_THROUGH[fam]
+        end = rendered.index(through) + len(through)
+    else:
+        opener = control_tokens(fam)[2]
+        if not rendered.startswith(opener):
+            raise ValueError(f"{fam}: rendered call does not start with {opener!r}")
+        end = len(opener)
+    return rendered[end:].lstrip("\n")
+
+
+def outer_close_after_unclosed_value(fam, *, bare=False, suffix=""):
+    """Render an outer close while the call's nested argument value is still open."""
+    value = "first"
+    rendered = r_tool(fam, "run", "cmd", value, 0)
+    value_end = rendered.index(value) + len(value)
+    malformed = rendered[:value_end] + control_tokens(fam)[3] + suffix
+    return strip_outer_tool_opener(fam, malformed) if bare else malformed
+
+
 def invoke_header_prefix(fam):
     """Inner invoke header through the tool name, without its terminator."""
     if fam == "kimi_k3":
         return '<|open|>call tool="'
+    if fam == "glm47":
+        return ""
     rendered = r_tool(fam, "NAMEX", "KEYX", "VALX", 0)
     outer = control_tokens(fam)[2]
     # Search for the name AFTER the opener. A family whose opener already carries the
@@ -398,7 +534,7 @@ def invoke_header_prefix(fam):
     return rendered[len(outer):rendered.index("NAMEX", len(outer))].lstrip()
 
 
-def guided_surroundings(render, dynamo_note, fill=None):
+def guided_surroundings(render, dynamo_note, fill=None, dynamo=None):
     """A guided case whose SURROUNDINGS carry native grammar, so the input has to be
     per family — `every_family` is only right when the bytes are grammar-independent.
 
@@ -417,7 +553,9 @@ def guided_surroundings(render, dynamo_note, fill=None):
         fam: (
             render(fam),
             GUIDED_UNSUPPORTED,
-            {"verdict": "match", "note": dynamo_note} if fam in UNIFIED_FAMILIES else split,
+            (_entry(dynamo, fam) if dynamo is not None else
+             {"verdict": "match", "note": dynamo_note})
+            if fam in UNIFIED_FAMILIES else split,
             *( (fill(fam),) if fill else () ),
         )
         for fam in FAMILIES
@@ -691,14 +829,25 @@ EDGE = [
      [{"kind": "tool_call", "name": "get_weather", "arguments": {}}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
-        "gemma4": ("<|tool_call>call:get_weather{}<tool_call|>", M, M),
-        "qwen3": ("<tool_call>\n<function=get_weather>\n</function>\n</tool_call>", M, M),
-        "kimi_k2": ("<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>", M, M),
-        "kimi_k3": (k3_tools(k3_call("get_weather", 1, "")),
+        "gemma4": (r_parameterless_tool("gemma4", "get_weather", 0), M, M),
+        "qwen3": (r_parameterless_tool("qwen3", "get_weather", 0), M, M),
+        "kimi_k2": (r_parameterless_tool("kimi_k2", "get_weather", 0), M, M),
+        "kimi_k3": (r_parameterless_tool("kimi_k3", "get_weather", 0),
                     VLLM_UNCAPTURABLE["kimi_k3"], M),
-        "muse_glimmer": ("<|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n</atem:invoke>\n</atem:function_calls><|eom|>",
+        "muse_glimmer": (r_parameterless_tool("muse_glimmer", "get_weather", 0),
                          V_MUSE, M),
-     }),
+      }),
+
+    ("bare_parameterless_call",
+     "A complete parameterless call emitted without the family-native outer opener. The offered tool name and real outer closer bound the malformed call; each parser may recover it or record a divergence, but every grammar can express the shape.",
+     ["P2", "I6"],
+     [{"kind": "tool_call", "name": "get_time", "arguments": {}}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     by_family(
+         lambda fam: strip_outer_tool_opener(
+             fam, r_parameterless_tool(fam, "get_time", 0)),
+         D("DROP", "the peer may reject this malformed opener-less call; use the captured output"),
+         SCENARIO_DYNAMO_EXPECTATIONS["bare_parameterless_call"])),
 
     ("tool_no_close",
      "A single tool call whose body is complete but the close marker never arrives before EOF. Most grammars recover the complete call at finish; DSML requires the invoke close, so its malformed turn emits nothing. This is also covered in: TOOLCALLING.streamv2.5.a.",
@@ -1600,6 +1749,40 @@ EDGE += [
 
 
 EDGE += [
+    ("guided_json_native_envelope_after_prose",
+     "Visible prose is followed by a complete family-native tool envelope during a GuidedJson request. The envelope is stray control markup, not a second guided payload, so the result is only the preceding prose for every chunk boundary.",
+     ["I3", "I5"],
+     [{"kind": "text", "text": "hello "}],
+     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
+     {"finish_reason": "stop"},
+     guided_surroundings(
+         lambda fam: r_text(fam, "hello ") + r_tool(fam, "run", "cmd", GUIDED_ONE_CALL, 0),
+         "the complete native envelope is stripped after visible prose and cannot become a guided call",
+         dynamo=SCENARIO_DYNAMO_EXPECTATIONS["guided_json_native_envelope_after_prose"])),
+
+    ("wrapped_saved_closer_partial_marker",
+     "The family-native outer close arrives while an argument value is unclosed, then EOF ends on a partial control marker. Recover the delimiter-terminated value and call, and preserve the partial suffix as visible text.",
+     ["P2", "I5"],
+     [{"kind": "tool_call", "name": "run", "arguments": {"cmd": "first"}},
+      {"kind": "text", "text": "<"}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     {"finish_reason": "length"},
+     by_family(
+         lambda fam: outer_close_after_unclosed_value(fam, suffix="<"),
+         D("DROP", "the peer may reject this malformed nested value; use the captured output"),
+         SCENARIO_DYNAMO_EXPECTATIONS["wrapped_saved_closer_partial_marker"])),
+
+    ("bare_saved_closer",
+     "A real family-native outer close follows an opener-less call whose argument value never closed. The offered tool name plus real closer bound the malformed call, so the delimiter-terminated value and call are recoverable.",
+     ["P2", "I5"],
+     [{"kind": "tool_call", "name": "run", "arguments": {"cmd": "first"}}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     {"finish_reason": "length"},
+     by_family(
+         lambda fam: outer_close_after_unclosed_value(fam, bare=True),
+         D("DROP", "the peer may reject this malformed opener-less nested value; use the captured output"),
+         SCENARIO_DYNAMO_EXPECTATIONS["bare_saved_closer"])),
+
     ("guided_json_native_markup_only",
      "Guided decoding receives one complete native tool call instead of bare JSON. The whole turn is control markup, so it emits no events. Every stream split must match the whole-input result; consuming the invoke header before its terminator leaks the parameter body as user-visible text (`I6`).",
      ["I3", "I6"],
@@ -1766,15 +1949,6 @@ EDGE += [
 ]
 
 
-def _entry(spec, fam):
-    """Resolve a vllm/dynamo verdict spec (single or per-family) for `fam`."""
-    if isinstance(spec, dict) and set(spec) <= set(FAMILIES) and "verdict" not in spec:
-        if fam == "deepseek_v4" and fam not in spec:
-            return spec["qwen3"]
-        return spec[fam]
-    return spec
-
-
 def _init_is_request_scoped(init):
     """True when a case declares a request mode a pre-unified build cannot see."""
     init = init or {}
@@ -1803,6 +1977,10 @@ DEEPSEEK_V41_SCENARIOS = {
     "guided_json_quoted_bare_tool_header_in_answer",
     "guided_json_quoted_bare_header_after_payload",
     "guided_json_bare_tool_header_recovers_inside_a_thought",
+    "wrapped_saved_closer_partial_marker",
+    "bare_saved_closer",
+    "bare_parameterless_call",
+    "guided_json_native_envelope_after_prose",
 }
 
 
@@ -1882,9 +2060,34 @@ def deepseek_v41_cases():
         key = f"UNIFIED.{name}.deepseek_v41"
         if key in cases:
             continue
-        case = shared_guided[f"UNIFIED.{name}.qwen3"]
-        case["input"] = case["input"].replace("<tool_call>", "<｜DSML｜ calls>").replace("</tool_call>", "</｜DSML｜ calls>")
+        case = deepcopy(shared_guided[f"UNIFIED.{name}.qwen3"])
+        family_inputs = {
+            "wrapped_saved_closer_partial_marker": outer_close_after_unclosed_value(
+                "deepseek_v41", suffix="<"),
+            "bare_saved_closer": outer_close_after_unclosed_value(
+                "deepseek_v41", bare=True),
+            "bare_parameterless_call": strip_outer_tool_opener(
+                "deepseek_v41", r_parameterless_tool("deepseek_v41", "get_time", 0)),
+            "guided_json_native_envelope_after_prose": (
+                r_text("deepseek_v41", "hello ")
+                + r_tool("deepseek_v41", "run", "cmd", GUIDED_ONE_CALL, 0)
+            ),
+        }
+        if name in family_inputs:
+            case["input"] = family_inputs[name]
+        else:
+            case["input"] = case["input"].replace(
+                "<tool_call>", "<｜DSML｜ calls>"
+            ).replace("</tool_call>", "</｜DSML｜ calls>")
         case["expect"]["vllm"] = VLLM_UNCAPTURABLE["deepseek_v41"]
+        if name in SCENARIO_DYNAMO_EXPECTATIONS:
+            current_expectation = _entry(
+                SCENARIO_DYNAMO_EXPECTATIONS[name], "deepseek_v41"
+            )
+            case["expect"]["dynamo"] = current_expectation
+            case["expect"].pop("dynamo_current", None)
+            if current_expectation["verdict"] == "diverge":
+                case["expect"]["dynamo_current"] = current_expectation
         cases[key] = case
     return cases
 
@@ -1920,6 +2123,12 @@ def build_cases(fam):
         if (init or {}).get("tool_output_mode", "Native") != "Native" and fam not in GUIDED_FAMILIES:
             continue
 
+        # GLM's outer tool marker is also its complete invoke opener. It has no
+        # separate bare inner header, so this crossing is the same bare JSON
+        # behavior already covered by `guided_json_invalid_call`.
+        if fam == "glm47" and name == "guided_json_schema_error_not_a_call_bare_opener":
+            continue
+
         # A scenario may DECLARE a narrow scope when a family's grammar cannot express
         # it (`OnlyFamilies`). Absence from a plain map is still a hard failure — an
         # accidentally omitted family must break generation rather than quietly read as
@@ -1934,6 +2143,10 @@ def build_cases(fam):
                 kimi_input, *rest = per_fam["kimi_k2"]
                 per_fam = dict(per_fam)
                 per_fam[fam] = (kimi_input_as_dsml(kimi_input), *rest)
+            elif fam == "glm47" and "qwen3" in per_fam:
+                qwen_input, *rest = per_fam["qwen3"]
+                per_fam = dict(per_fam)
+                per_fam[fam] = (qwen3_input_as_glm47(qwen_input), *rest)
             else:
                 raise KeyError(
                     f"{name}: no input authored for family {fam!r}. Add one, or wrap the map "
@@ -1944,7 +2157,7 @@ def build_cases(fam):
         g = json.loads(json.dumps(golden))  # deep copy
         if rest and isinstance(rest[0], list):
             g = json.loads(json.dumps(rest[0]))
-        elif rest:
+        elif rest and rest[0] is not None:
             # Fill the ONE `None` placeholder in the golden with this family's
             # value. It may be an argument value (a marker-looking string that has
             # to survive byte-exact, 12.a) or a whole text payload (the family's
@@ -1959,6 +2172,12 @@ def build_cases(fam):
                 if ev.get("kind") in ("text", "reasoning") and ev.get("text") is None:
                     ev["text"] = rest[0]
                     break
+        if fam == "glm47":
+            # GLM's legacy grammar does not recover a missing outer closer by
+            # default. Keep this grammar-specific outcome explicit instead of
+            # inheriting Qwen3's different XML semantics.
+            if name == "tool_no_close":
+                g = []
         # ENFORCED HERE, not at each authoring site. `every_family()` and
         # `guided_surroundings()` already substitute UNSUPPORTED for a family with
         # no native unified parser, but a scenario hand-written as an explicit
@@ -1981,12 +2200,17 @@ def build_cases(fam):
                 "vLLM base case does not set a starting channel state; conformance "
                 "captures default generation only",
             )
+        expect = {"vllm": _vllm_entry(vllm, fam), "dynamo": dynamo}
+        if name in SCENARIO_DYNAMO_EXPECTATIONS:
+            current_expectation = _entry(SCENARIO_DYNAMO_EXPECTATIONS[name], fam)
+            if current_expectation["verdict"] == "diverge":
+                expect["dynamo_current"] = current_expectation
         cases[cid] = {
             "description": desc,
             "policy": policy,
             "input": inp,
             "golden": g,
-            "expect": {"vllm": _vllm_entry(vllm, fam), "dynamo": dynamo},
+            "expect": expect,
             "init": init,
             "finish_reason": stream_config.get("finish_reason", "stop"),
         }

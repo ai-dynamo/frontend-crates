@@ -51,6 +51,7 @@
 pub mod deepseek_v4;
 pub mod deepseek_v41;
 pub mod gemma4;
+pub mod glm47;
 mod guided_cursor;
 pub mod kimi_k2;
 pub mod kimi_k3;
@@ -2060,6 +2061,42 @@ fn is_prefix_form(marker: &str) -> bool {
     marker.ends_with('=') || marker.ends_with("=\"")
 }
 
+/// Whether a native invoke's parameter element encloses the guided JSON value.
+///
+/// A direct native wrapper around `[ ... ]` is also valid guided framing: strip
+/// the wrapper and let the JSON cursor consume the value. A parameter element
+/// around that value is different. It is a complete native invoke, so the whole
+/// invoke is stray markup and must be consumed together. Recognising the
+/// parameter tag from its matching close keeps this rule shared across the XML
+/// families without teaching the guided scanner each family's tag spelling.
+fn native_parameter_wraps_payload(body: &str) -> bool {
+    let Some(payload_at) = body.find(['{', '[']) else {
+        return false;
+    };
+    let Some(name) = native_parameter_name(&body[..payload_at]) else {
+        return false;
+    };
+    let close = format!("</{name}>");
+    body[payload_at..].contains(&close)
+}
+
+/// Return the name of a native parameter tag before the guided JSON root.
+fn native_parameter_name(before_payload: &str) -> Option<&str> {
+    let open_at = before_payload.rfind('<')?;
+    let open = &before_payload[open_at + 1..];
+    let name_end = open.find([' ', '\t', '\r', '\n', '=', '>'])?;
+    let name = &open[..name_end];
+    (name == "parameter" || name.ends_with(":parameter")).then_some(name)
+}
+
+/// Whether a native parameter opener has arrived before the guided root.
+fn native_parameter_opens_before_payload(body: &str) -> bool {
+    let before_payload = body
+        .find(['{', '['])
+        .map_or(body, |payload_at| &body[..payload_at]);
+    native_parameter_name(before_payload).is_some()
+}
+
 /// Length of `marker` when it owns syntax at the exact byte `at`.
 /// All guided syntax consumers use this owner so prefix-form completeness and
 /// its bounded terminator rule cannot differ between leading, reasoning, and
@@ -2096,7 +2133,8 @@ fn control_marker_len_at(
             // with a brace, and there the pair owns everything between its ends.
             // Both start with the same two bytes after the header, so the test has to
             // be on what follows the header, not on whether a brace exists at all.
-            && !json_payload_started(&haystack[at + gt + 1..at + end])
+            && (!json_payload_started(&haystack[at + gt + 1..at + end])
+                || native_parameter_wraps_payload(&haystack[at + gt + 1..at + end]))
         {
             return Some(end + invoke_end.len());
         }
@@ -2114,6 +2152,17 @@ fn control_marker_len_at(
             // terminator elsewhere stays text, as it is natively.
             Some(rel) => match haystack[at..bound].find(invoke_end) {
                 Some(end) => Some(end + invoke_end.len()),
+                None if native_parameter_opens_before_payload(&haystack[at + rel + 1..bound]) => {
+                    // A parameter wrapper makes this a native invoke, not a direct
+                    // wrapper around guided JSON. Keep the header and parameter
+                    // opener together until the native closer arrives; consuming
+                    // just the header would release the parameter body as text.
+                    if flush {
+                        Some(haystack.len() - at)
+                    } else {
+                        None
+                    }
+                }
                 // A complete prefix header is not necessarily a complete native
                 // invoke. Keep it with the streamed body until the terminator
                 // arrives; consuming only the header made a split immediately
@@ -2188,7 +2237,8 @@ fn guided_holdback_len(
         reasoning_markers
             .iter()
             .copied()
-            .chain(control.iter().map(String::as_str)),
+            .chain(control.iter().map(String::as_str))
+            .chain((!boundary_owned).then_some(invoke_start)),
     );
     // A prefix-form marker counts as COMPLETE only when its `>` arrives before the
     // payload does — the same rule `control_marker_at` uses, and it has to be the
@@ -2199,15 +2249,23 @@ fn guided_holdback_len(
     // the payload buffer, the JSON failed to parse, and the user got the call as
     // raw text with `<function=` still attached.
     let payload_at = input.find(['{', '[']);
+    let mut control_markers: Vec<&str> = control.iter().map(String::as_str).collect();
+    if !boundary_owned
+        && !control_markers
+            .iter()
+            .any(|marker| marker.starts_with(invoke_start))
+    {
+        control_markers.push(invoke_start);
+    }
     let competitors: Vec<&str> = reasoning_markers
         .iter()
         .copied()
-        .chain(control.iter().map(String::as_str))
+        .chain(control_markers.iter().copied())
         .collect();
-    let pending_prefix_form = control
+    let pending_prefix_form = control_markers
         .iter()
-        .filter(|m| is_prefix_form(m) && !(boundary_owned && m.as_str() == invoke_start))
-        .filter_map(|m| input.rfind(m.as_str()).map(|at| (at, m.as_str())))
+        .filter(|m| is_prefix_form(m) && !(boundary_owned && **m == invoke_start))
+        .filter_map(|m| input.rfind(m).map(|at| (at, *m)))
         .filter(|(at, marker)| {
             // SAME owner as `control_marker_at`: retain both an incomplete header
             // and a complete header whose native invoke terminator has not arrived.
@@ -2223,6 +2281,24 @@ fn guided_holdback_len(
             .is_none()
         })
         .map(|(at, _)| input.len() - at)
+        .max()
+        .unwrap_or(0);
+    let native_parameter_holdback = control_markers
+        .iter()
+        .filter(|marker| is_prefix_form(marker))
+        .filter_map(|marker| input.rfind(marker).map(|at| (at, *marker)))
+        .filter_map(|(at, _marker)| {
+            let suffix = &input[at..];
+            let header_end = suffix.find('>')?;
+            suffix[header_end + 1..]
+                .find(invoke_end)
+                .is_none()
+                .then(|| {
+                    native_parameter_opens_before_payload(&suffix[header_end + 1..])
+                        .then_some(input.len() - at)
+                })
+                .flatten()
+        })
         .max()
         .unwrap_or(0);
     let pending_label = start_label
@@ -2268,6 +2344,7 @@ fn guided_holdback_len(
         .unwrap_or(0);
     split
         .max(pending_prefix_form)
+        .max(native_parameter_holdback)
         .max(pending_label)
         .max(guided)
         .max(before_reasoning_marker)
@@ -2852,9 +2929,17 @@ impl GuidedState {
         if let Some(boundary) = self.invoke_boundary.as_ref() {
             controls.retain(|marker| !boundary.is_guided_invoke_marker(marker));
         }
+        let mut markers = controls;
+        if self.invoke_boundary.is_none()
+            && !markers
+                .iter()
+                .any(|marker| marker.starts_with(&self.grammar.invoke_start))
+        {
+            markers.push(self.grammar.invoke_start.clone());
+        }
         let regular = control_marker_at(
             haystack,
-            &controls,
+            &markers,
             &self.grammar.invoke_end,
             limit,
             competing,
@@ -3398,6 +3483,8 @@ impl GuidedState {
                         if pending.trim().is_empty() {
                             if !self.payload_emitted && !self.content_routed {
                                 self.json = pending;
+                            } else if self.content_routed {
+                                self.push_visible_text(&mut output, &pending);
                             }
                         } else {
                             self.push_visible_text(&mut output, &pending);
@@ -3425,6 +3512,8 @@ impl GuidedState {
                         if pending.trim().is_empty() {
                             if !self.payload_emitted && !self.content_routed {
                                 self.json = pending;
+                            } else if self.content_routed {
+                                self.push_visible_text(&mut output, &pending);
                             }
                         } else {
                             self.push_visible_text(&mut output, &pending);
@@ -4478,6 +4567,7 @@ unified_registry! {
     "deepseek_v4" => deepseek_v4::deepseek_v4_unified,
     "deepseek_v41" => deepseek_v41::deepseek_v41_unified,
     "gemma4" => gemma4::gemma4_unified,
+    "glm47" => glm47::glm47_unified,
     "qwen3" | "qwen3_coder" => qwen3::qwen3_unified,
     "muse_glimmer" => muse_glimmer::muse_glimmer_unified,
     "kimi_k2"               => kimi_k2::kimi_k2_unified,
@@ -5297,6 +5387,35 @@ mod tests {
 #[cfg(test)]
 mod append_seam_tests {
     use super::*;
+
+    #[test]
+    fn guided_marker_consumes_a_native_parameter_wrapper_as_one_span() {
+        for (input, marker, close) in [
+            (
+                r#"<function=run><parameter=cmd>[{"name":"get_weather"}]</parameter></function>"#,
+                "<function=",
+                "</function>",
+            ),
+            (
+                r#"<atem:invoke name="run"><atem:parameter name="cmd">"[{"name":"get_weather"}]"</atem:parameter></atem:invoke>"#,
+                "<atem:invoke name=\"",
+                "</atem:invoke>",
+            ),
+        ] {
+            assert_eq!(
+                control_marker_at(
+                    input,
+                    &[marker.to_string()],
+                    close,
+                    Some(input.find('[').expect("payload")),
+                    &[],
+                    false,
+                    None,
+                ),
+                Some((0, input.len()))
+            );
+        }
+    }
 
     /// The peer's regression: joining two buffers must yield the same events as
     /// accumulating straight through, so the same bytes cannot describe a different

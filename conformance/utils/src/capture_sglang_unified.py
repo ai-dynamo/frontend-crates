@@ -26,6 +26,7 @@ from sglang.srt.parser.reasoning_parser import ReasoningParser
 FAMILY_PARSERS = {
     "gemma4": ("gemma4", "gemma4"),
     "qwen3": ("qwen3", "qwen3_coder"),
+    "glm47": ("glm45", "glm47"),
     "kimi_k2": ("kimi_k2", "kimi_k2"),
     # SGLang names both Muse Glimmer detectors `muse` (PR #34262). vLLM has no
     # released muse parser, so `capture_vllm_unified.py` gets no entry — an entry
@@ -33,14 +34,26 @@ FAMILY_PARSERS = {
     "muse_glimmer": ("muse", "muse"),
 }
 
+def _tool(name, properties):
+    return Tool(type="function", function=Function(
+        name=name, parameters={"type": "object", "properties": properties}))
+
+
 TOOLS = [
-    Tool(type="function", function=Function(
-        name=n, parameters={"type": "object", "properties": {k: {"type": "string"}}}))
-    # Must match `tools()` in conformance/tests/unified_parity.rs: an engine that
-    # drops calls to unregistered functions would otherwise record a
-    # harness-induced divergence for the `log` cases (UNIFIED.12.a / 12.c).
-    for n, k in (("get_weather", "city"), ("f", "x"), ("g", "y"), ("run", "cmd"),
-                 ("log", "note"))
+    _tool("get_weather", {"city": {"type": "string"}}),
+    _tool("get_time", {}),
+    _tool("f", {"x": {"type": "string"}}),
+    _tool("g", {"y": {"type": "string"}}),
+    _tool("run", {
+        "cmd": {"type": "string"},
+        "count": {"type": "integer"},
+        "force": {"type": "boolean"},
+        "options": {"type": "object"},
+        "tags": {"type": "array"},
+        "note": {"type": ["string", "null"]},
+    }),
+    _tool("log", {"note": {"type": "string"}}),
+    _tool("sum_values", {"values": {"type": "array", "items": {"type": "integer"}}}),
 ]
 
 
