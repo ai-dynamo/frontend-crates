@@ -1106,6 +1106,7 @@ EDGE = [
      {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
      {"finish_reason": "stop"},
      {
+        "deepseek_v41": ("checking weather</think>" + r_tool("deepseek_v41", "get_weather", "city", "Paris", 0), M, M),
         "qwen3": ("checking weather</think><tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
                   D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state; conformance captures default generation only"),
                   {"verdict": "match", "note": "Dynamo v2 unified parser with starting_state=Reasoning"}),
@@ -1129,6 +1130,7 @@ EDGE = [
       {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
      {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
      {
+        "deepseek_v41": ("weighing options</think>Here's what I found: " + r_tool("deepseek_v41", "get_weather", "city", "Paris", 0), M, M),
         "qwen3": ("weighing options</think>Here's what I found: <tool_call>\n<function=get_weather>\n<parameter=city>\nParis\n</parameter>\n</function>\n</tool_call>",
                   D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state; conformance captures default generation only"),
                   {"verdict": "match", "note": "reasoning -> text -> call, all three ordered in one prefilled stream"}),
@@ -1150,6 +1152,7 @@ EDGE = [
       {"kind": "text", "text": "The answer is 42."}],
      {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
      {
+        "deepseek_v41": ("no tool needed</think>The answer is 42.", M, M),
         "qwen3": ("no tool needed</think>The answer is 42.",
                   D("UNSUPPORTED", "vLLM base case doesn't set a starting channel state; conformance captures default generation only"),
                   {"verdict": "match", "note": "closing a prefilled thought returns to visible content"}),
@@ -1731,17 +1734,11 @@ def _vllm_entry(spec, fam):
     return caveat if caveat is not None and not entry.get("note") else entry
 
 
-DEEPSEEK_V41_REDUNDANT_SCENARIOS = {
-    "prefilled_reasoning_with_tool": "reason_then_tool",
-    "prefilled_reasoning_then_text_then_tool": "interstitial_text",
-    "prefilled_reasoning_then_text": "reason_then_content",
-}
-
 DEEPSEEK_V41_SCENARIOS = {
     spec[0]
     for spec in (*CLEAN, *EDGE)
     if not isinstance(spec[-1], OnlyFamilies) or "deepseek_v41" in spec[-1]
-} - set(DEEPSEEK_V41_REDUNDANT_SCENARIOS)
+}
 
 
 def _deepseek_v41_input(segments):
@@ -1819,8 +1816,6 @@ def build_cases(fam):
 def _build_edge_cases(fam, specs):
     cases = {}
     for edge_case in specs:
-        if fam == "deepseek_v41" and edge_case[0] in DEEPSEEK_V41_REDUNDANT_SCENARIOS:
-            continue
         # Support both 6-tuple (legacy) and 7-tuple (stream_config) formats
         if len(edge_case) == 6:
             name, desc, policy, golden, init, per_fam = edge_case

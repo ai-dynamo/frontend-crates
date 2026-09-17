@@ -2635,6 +2635,12 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             f"{', '.join(sorted(gen_unified_golden.scenario_families(scenario)))}. "
             f"{scn_desc[scenario]}"
         )
+        if scenario == "guided_json_quoted_bare_tool_header_in_answer":
+            note = (
+                "This is a duplication of UNIFIED.31-25 for this family: the existing "
+                "variant changes only the literal text inside its reasoning markers. "
+                "Muse's to=get_weather header exercises a separate recipient boundary."
+            )
         unavailable = {"unavailable": note}
         return {
             "kind": "cell",
@@ -2649,7 +2655,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             "facts": [],
             "tooltip": {
                 "head": f"{unified_taxonomy.numbered_id(scenario)} ({scenario}) — {family}",
-                "description": scn_desc[scenario],
+                "description": note,
                 "init": None,
                 "finish_reason": None,
                 "input": {"kind": None, "text": None, "chunks": None,

@@ -230,6 +230,23 @@ def test_unified_numeric_case_ids_use_dash_everywhere(model_v2):
         assert cells[scenario]["tooltip"]["head"].startswith(f"{full_id} (")
 
 
+def test_unified_duplicate_notes_and_deepseek_prefilled_captures(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    for row in tab["rows"]:
+        if row["family"] != "muse_glimmer":
+            cell = row["cells"]["guided_json_quoted_bare_tool_header_in_answer"]
+            assert cell["status"] == "na"
+            for field in ("description", "na_note"):
+                assert cell["tooltip"][field].startswith("This is a duplication of UNIFIED.31-25")
+        if row["family"] == "deepseek_v41":
+            for scenario in ("prefilled_reasoning_with_tool", "prefilled_reasoning_then_text_then_tool", "prefilled_reasoning_then_text"):
+                cell = row["cells"][scenario]
+                assert cell["status"] != "na"
+                assert cell["tooltip"]["init"]["starting_state"] == "Reasoning"
+                assert cell["cmp"]["dynamo"].get("na", 0) == 0
+                assert cell["cmp"]["dynamo"]["sig"] == cell["cmp"]["golden"]["sig"]
+
+
 def test_v2_exactly_one_active_tab(model_v2):
     assert sum(1 for t in model_v2["tabs"] if t.get("active")) == 1
     assert model_v2["tabs"][0]["active"] is True

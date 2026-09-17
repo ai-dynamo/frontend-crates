@@ -34,7 +34,6 @@ import gen_unified_golden as G  # noqa: E402
 from generate_conformance_table import _base_stream_version  # noqa: E402
 from gen_unified_golden import (  # noqa: E402
     CLEAN,
-    DEEPSEEK_V41_REDUNDANT_SCENARIOS,
     OnlyFamilies,
     EDGE,
     FAMILIES,
@@ -381,20 +380,14 @@ def test_no_two_scenarios_have_identical_behaviour() -> None:
         assert not dupes, f"{fam}: scenarios with identical behaviour: {list(dupes.values())}"
 
 
-def test_deepseek_v41_follows_declared_scope_without_literal_duplicates() -> None:
+def test_deepseek_v41_follows_declared_scope_including_prefilled_cases() -> None:
     declared = {
         spec[0]
         for spec in (*CLEAN, *EDGE)
         if not isinstance(spec[-1], OnlyFamilies) or "deepseek_v41" in spec[-1]
     }
     actual = {case_id.split(".", 2)[1] for case_id in build_cases("deepseek_v41")}
-    assert actual == declared - set(DEEPSEEK_V41_REDUNDANT_SCENARIOS)
-    assert DEEPSEEK_V41_REDUNDANT_SCENARIOS == {
-        "prefilled_reasoning_with_tool": "reason_then_tool",
-        "prefilled_reasoning_then_text_then_tool": "interstitial_text",
-        "prefilled_reasoning_then_text": "reason_then_content",
-    }
-    assert set(DEEPSEEK_V41_REDUNDANT_SCENARIOS.values()) <= actual
+    assert actual == declared
 
 
 def test_deepseek_v41_guided_narration_uses_an_unfinished_dsml_invoke() -> None:
@@ -583,7 +576,7 @@ def test_unified_case_counts_match_the_generator():
     for fam in FAMILIES:
         family_specific = {
             "deepseek_v4": 80,
-            "deepseek_v41": 77,
+            "deepseek_v41": 80,
             "gemma4": 82,
             "kimi_k2": 80,
             "kimi_k3": 88,
@@ -591,7 +584,7 @@ def test_unified_case_counts_match_the_generator():
             "qwen3": 80,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 568
+    assert sum(per_family.values()) == 571
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
@@ -606,7 +599,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
 
 def _assert_documented_deepseek_counts(text):
     counts = re.search(r"current corpus emits (\d+) of the (\d+) taxonomy cases", text)
-    exclusions = re.search(r"The (\d+) intentional not-applicable cases", text)
+    exclusions = re.search(r"The (\d+) omitted cases", text)
     assert counts and exclusions, "DeepSeek V4.1 applicability counts are missing"
     applicable = len(build_cases("deepseek_v41"))
     assert tuple(map(int, counts.groups())) == (applicable, len(UNIFIED_TAX))
@@ -618,7 +611,7 @@ def test_documented_deepseek_counts_match_generated_applicability():
     _assert_documented_deepseek_counts(text)
 
 
-@pytest.mark.parametrize("pattern", [r"current corpus emits \d+", r"The \d+ intentional not-applicable"])
+@pytest.mark.parametrize("pattern", [r"current corpus emits \d+", r"The \d+ omitted cases"])
 def test_documented_deepseek_counts_reject_stale_prose(pattern):
     text = (UTILS / "lib/parsers/UNIFIED_CASES.md").read_text()
     _assert_documented_deepseek_counts(text)

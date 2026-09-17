@@ -119,6 +119,7 @@ UNIFIED_TAX = {
     "guided_json_native_markup_only": (31, "23"),
     "guided_json_unterminated_reasoning_then_wrapped_payload": (31, "24"),
     "guided_json_quoted_bare_header_in_answer": (31, "25"),
+    # TODO: move 31-26 to a Muse-only column, preserving historical case references.
     "guided_json_quoted_bare_tool_header_in_answer": (31, "26"),
     "guided_json_quoted_bare_header_after_payload": (31, "27"),
     "guided_json_bare_tool_header_recovers_inside_a_thought": (31, "28"),
