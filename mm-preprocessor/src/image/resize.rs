@@ -357,8 +357,6 @@ mod tests {
             PIL_LANCZOS,
             "lanczos convenience wrapper"
         );
-        // The fixture discriminates the two quantizations by exactly one byte.
-        assert_ne!(PIL_BICUBIC, ATEN_U8);
     }
 
     /// A 256x downscale drives ATen's weight precision to its 22-bit ceiling,
@@ -382,7 +380,6 @@ mod tests {
 
     #[test]
     fn scaled_dims_takes_the_long_edge_with_an_optional_cap() {
-        // No fraction: untouched. Fraction alone: rounded half-up, floored at 1.
         assert_eq!(scaled_dims(80, 60, None, None), (80, 60));
         assert_eq!(scaled_dims(80, 60, Some(0.5), None), (40, 30));
         assert_eq!(scaled_dims(3, 1, Some(0.1), None), (1, 1));

@@ -14,7 +14,7 @@
 //! "Inline" means *on the caller*, not a one-thread pool: `install` on a
 //! 1-sized pool would serialize every concurrent request in the process.
 //!
-//! Results are identical either way — the fan-outs are order-preserving maps
+//! Successful results are identical either way — the fan-outs are order-preserving maps
 //! and disjoint-slice writes, never reductions.
 //!
 //! The `parallel` cargo feature (default on) only controls whether rayon is
@@ -65,9 +65,9 @@ fn armed() -> Option<&'static rayon::ThreadPool> {
     POOL.get()
 }
 
-/// Map `items`, stopping at the first error observed; when the pool is armed
-/// that is the first to *finish*, not the lowest index, and other items may
-/// already have run. Output order matches input order. CPU-bound work:
+/// Map `items`, stopping when an error is observed. With the pool armed,
+/// which error is returned is unspecified, and other items may already have
+/// run. Successful output order matches input order. CPU-bound work:
 /// decode, resize, patchify (engines may also reuse this seam for their own
 /// per-item fan-out, e.g. hashing).
 pub fn try_map<'a, T, R, E>(
