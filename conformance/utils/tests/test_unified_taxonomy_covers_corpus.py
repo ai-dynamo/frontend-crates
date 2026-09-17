@@ -117,8 +117,8 @@ def test_every_used_group_has_a_label() -> None:
     )
 
 
-def test_case_labels_keep_gemma_specific_cases_out_of_the_generic_guided_series() -> None:
-    """Gemma-only call-prefix cases use their own named numeric group."""
+def test_case_labels_keep_family_specific_cases_out_of_the_generic_guided_series() -> None:
+    """Family-specific cases stay scoped while generic guided IDs remain contiguous."""
     assert tax("guided_json_quoted_bare_header_in_answer") == (31, "25")
     assert tax("guided_json_quoted_bare_tool_header_in_answer") == (31, "26")
     assert tax("guided_json_quoted_bare_header_after_payload") == (31, "27")
@@ -137,7 +137,10 @@ def test_case_labels_keep_gemma_specific_cases_out_of_the_generic_guided_series(
     assert numbered_id("guided_json_invalid_call") == "UNIFIED.31-1"
     guided = [sub for group, sub in UNIFIED_TAX.values() if group == 31]
     assert all(sub.isdecimal() for sub in guided)
-    assert sorted(map(int, guided)) == list(range(1, 29))
+    assert tax("guided_json_native_envelope_after_prose") == (31, "29")
+    assert case_label("guided_json_native_envelope_after_prose") == "31-29"
+    assert numbered_id("guided_json_native_envelope_after_prose") == "UNIFIED.31-29"
+    assert sorted(map(int, guided)) == list(range(1, 30))
 
     ordered = sorted(
         (
@@ -441,6 +444,13 @@ def test_scenario_families_matches_declared_scope():
     for scenario, families in scoped.items():
         expected = families if scenario.startswith("gemma4_") else set(FAMILIES)
         assert G.scenario_families(scenario) == expected
+    for scenario in {
+        "wrapped_saved_closer_partial_marker",
+        "bare_saved_closer",
+        "bare_parameterless_call",
+        "guided_json_native_envelope_after_prose",
+    }:
+        assert G.scenario_families(scenario) == set(FAMILIES)
     assert G.scenario_families("tool_only") == set(FAMILIES)
 
 
@@ -507,8 +517,8 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = (
-            23 if fam == "deepseek_v41" else 88 if fam == "gemma4" else 94
-            if fam == "kimi_k3" else 86
+            27 if fam == "deepseek_v41" else 92 if fam == "gemma4" else 98
+            if fam == "kimi_k3" else 89 if fam == "glm47" else 90
         )
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
     assert sum(per_family.values()) == sum(len(build_cases(f)) for f in FAMILIES)
@@ -522,6 +532,15 @@ def test_kimi_k3_corpus_uses_xtml_not_kimi_k2_wire_syntax():
     for case_id, case in cases.items():
         leaked = [marker for marker in forbidden if marker in case["input"]]
         assert not leaked, f"{case_id} copied Kimi K2 wire syntax: {leaked}"
+
+
+def test_glm47_corpus_uses_glm_wire_syntax():
+    forbidden = ("<function=", "<parameter=", "</parameter>", "</function>")
+    cases = build_cases("glm47")
+    assert cases
+    for case_id, case in cases.items():
+        leaked = [marker for marker in forbidden if marker in case["input"]]
+        assert not leaked, f"{case_id} copied Qwen wire syntax: {leaked}"
 
 
 def test_kimi_k3_manifest_is_canonical_and_alias_free():

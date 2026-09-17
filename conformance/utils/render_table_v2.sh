@@ -124,7 +124,7 @@ case "$OUT" in
 esac
 RENDER_ARGS=(
   all --html
-  --output-path "$OUT"
+  --output-path "$WORK"
   --artifact-root "$ROOT"
 )
 if [ -n "$GITHUB_REPOSITORY" ]; then

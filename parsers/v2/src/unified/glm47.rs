@@ -134,6 +134,18 @@ mod tests {
     }
 
     #[test]
+    fn guided_native_envelope_after_visible_prose_is_split_invariant() {
+        let input = "hello <tool_call>run<arg_key>cmd</arg_key><arg_value>{\"name\":\"get_time\",\"arguments\":{}}</arg_value></tool_call>";
+        let want = vec![UnifiedEvent::Text {
+            text: "hello ".into(),
+        }];
+        assert_eq!(parse_guided(input, None), want);
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert_eq!(parse_guided(input, Some(split)), want, "split at {split}");
+        }
+    }
+
+    #[test]
     fn tool_call_inside_reasoning_splits_the_reasoning_channel() {
         let input = "<think>before <tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call> after</think>done";
         assert_eq!(

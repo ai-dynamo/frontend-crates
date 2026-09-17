@@ -53,6 +53,7 @@ fn spec() -> WrappedBlockSpec {
         invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(glm47_boundary)),
         bare_invoke_start: Some(find_bare_invoke_start),
         bare_invoke_holdback: Some(trailing_holdback_len),
+        bare_invoke_uses_eof_boundary: true,
         preserve_special_tokens: true,
         ..Default::default()
     }
@@ -118,6 +119,32 @@ impl Glm47BoundaryProgress {
         while self.cursor < text.len() {
             let rest = &text[self.cursor..];
             if self.in_arg_value {
+                if rest.starts_with(BLOCK_START) && self.possible_outer_end.is_some() {
+                    let body = &rest[BLOCK_START.len()..];
+                    let next_marker = [ARG_KEY_START, BLOCK_END]
+                        .into_iter()
+                        .filter_map(|marker| body.find(marker).map(|at| (at, marker)))
+                        .min_by_key(|(at, _)| *at);
+                    match next_marker {
+                        Some((at, _))
+                            if !body[..at].is_empty()
+                                && body[..at].chars().all(|ch| {
+                                    ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.')
+                                }) =>
+                        {
+                            return self.possible_outer_end;
+                        }
+                        None if !flush => return None,
+                        _ => {}
+                    }
+                }
+                if !flush
+                    && self.possible_outer_end.is_some()
+                    && rest.len() < BLOCK_START.len()
+                    && BLOCK_START.starts_with(rest)
+                {
+                    return None;
+                }
                 if rest.starts_with(ARG_VALUE_END) {
                     self.in_arg_value = false;
                     self.possible_outer_end = None;
@@ -125,7 +152,7 @@ impl Glm47BoundaryProgress {
                     continue;
                 }
                 if rest.len() < ARG_VALUE_END.len() && ARG_VALUE_END.starts_with(rest) {
-                    return None;
+                    return flush.then_some(self.possible_outer_end).flatten();
                 }
                 if rest.starts_with(BLOCK_END) {
                     self.possible_outer_end
@@ -134,7 +161,7 @@ impl Glm47BoundaryProgress {
                     continue;
                 }
                 if rest.len() < BLOCK_END.len() && BLOCK_END.starts_with(rest) {
-                    return None;
+                    return flush.then_some(self.possible_outer_end).flatten();
                 }
             } else {
                 if rest.starts_with(ARG_VALUE_START) {
@@ -187,7 +214,7 @@ impl InvokeBoundary for Glm47Boundary {
         if body.trim_start().starts_with(['{', '[']) {
             return Some(GuidedInvokePrefix::Match(BLOCK_START.len()));
         }
-        if !context.outside_reasoning || !context.payload_is_empty {
+        if !context.outside_reasoning {
             return Some(GuidedInvokePrefix::Strip(BLOCK_START.len()));
         }
         self.guided
@@ -573,17 +600,22 @@ mod tests {
 
     #[test]
     fn legacy_unclosed_argument_recovers_before_a_following_call() {
-        let input = "<tool_call>run<arg_key>cmd</arg_key><arg_value>first</tool_call><tool_call>get_time</tool_call>";
-        let want = legacy(&tools(), &[input]).coalesce_calls();
-        assert_eq!(want.calls.len(), 2);
-        assert_eq!(want.calls[0].arguments, r#"{"cmd":"first"}"#);
-        assert_eq!(want.calls[1].name.as_deref(), Some("get_time"));
-        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
-            assert_eq!(
-                legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
-                want,
-                "split at {split}"
-            );
+        for input in [
+            "<tool_call>run<arg_key>cmd</arg_key><arg_value>first</tool_call><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>",
+            "run<arg_key>cmd</arg_key><arg_value>first</tool_call><tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>",
+        ] {
+            let want = legacy(&tools(), &[input]).coalesce_calls();
+            assert_eq!(want.calls.len(), 2, "input {input:?}");
+            assert_eq!(want.calls[0].arguments, r#"{"cmd":"first"}"#);
+            assert_eq!(want.calls[1].name.as_deref(), Some("get_weather"));
+            assert_eq!(want.calls[1].arguments, r#"{"city":"Paris"}"#);
+            for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                assert_eq!(
+                    legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                    want,
+                    "split at {split} for {input:?}"
+                );
+            }
         }
     }
 
@@ -599,6 +631,57 @@ mod tests {
                 legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
                 want,
                 "split at {split}"
+            );
+        }
+    }
+
+    #[test]
+    fn saved_outer_closer_recovers_wrapped_and_bare_calls_at_every_split() {
+        let wrapped = "<tool_call>run<arg_key>cmd</arg_key><arg_value>first</tool_call>";
+        let bare = "run<arg_key>cmd</arg_key><arg_value>first</tool_call>";
+        for input in [wrapped, bare] {
+            let want = legacy(&tools(), &[input]).coalesce_calls();
+            assert_eq!(want.normal_text, "");
+            assert_eq!(want.calls.len(), 1);
+            assert_eq!(want.calls[0].name.as_deref(), Some("run"));
+            assert_eq!(want.calls[0].arguments, r#"{"cmd":"first"}"#);
+            for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                assert_eq!(
+                    legacy(&tools(), &[&input[..split], &input[split..]]).coalesce_calls(),
+                    want,
+                    "split at {split} for {input:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn saved_outer_closer_survives_partial_marker_eof_without_recovering_missing_closers() {
+        let wrapped = "<tool_call>run<arg_key>cmd</arg_key><arg_value>first</tool_call>";
+        for marker in [ARG_VALUE_END, BLOCK_END] {
+            for (at, _) in marker.char_indices().skip(1) {
+                let input = format!("{wrapped}{}", &marker[..at]);
+                let got = legacy(&tools(), &[&input]).coalesce_calls();
+                assert_eq!(got.calls.len(), 1, "partial {marker:?} at {at}");
+                assert_eq!(got.calls[0].arguments, r#"{"cmd":"first"}"#);
+                assert_eq!(got.normal_text, &marker[..at]);
+            }
+        }
+
+        for tail in ["", "</not_tool_call>"] {
+            let input = format!("{wrapped}{tail}");
+            let got = legacy(&tools(), &[&input]).coalesce_calls();
+            assert_eq!(got.calls.len(), 1, "tail {tail:?}");
+            assert_eq!(got.calls[0].arguments, r#"{"cmd":"first"}"#);
+        }
+
+        for input in [
+            "<tool_call>run<arg_key>cmd</arg_key><arg_value>first<",
+            "run<arg_key>cmd</arg_key><arg_value>first<",
+        ] {
+            assert!(
+                legacy(&tools(), &[input]).coalesce_calls().calls.is_empty(),
+                "missing real closer must not recover: {input:?}"
             );
         }
     }

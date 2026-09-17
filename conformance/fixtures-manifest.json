@@ -1,6 +1,6 @@
 {
-  "snapshot": "20260915_114227",
-  "created_pt": "2026-09-15 11:42:27 America/Los_Angeles",
+  "snapshot": "20260916_185144",
+  "created_pt": "2026-09-16 18:51:44 America/Los_Angeles",
   "crates": {
     "dynamo-parsers": "9.0.0",
     "dynamo-parsers-v2": "0.6.0"
@@ -361,6 +361,11 @@
       "size": 22720
     },
     {
+      "path": "unified/dynamo_v2-0.6.0+pr234.r3.gc4b7ffb04fa.tar.gz",
+      "sha256": "4206ca465748431af21efc422ad170e631bdd19b61b941c969bb3139a29e89c3",
+      "size": 27510
+    },
+    {
       "path": "unified/dynamo_v2-0.6.0+pr234.tar.gz",
       "sha256": "6e23ee47257743f651e07f200d12c942a22405b8df9f25dcf299b2f1b8602e59",
       "size": 26256
@@ -377,8 +382,8 @@
     },
     {
       "path": "unified/golden.tar.gz",
-      "sha256": "ece37a19a97bc3405176ae63dacc39a9d19801f3889af264d94470fa97f62ab5",
-      "size": 18049
+      "sha256": "735775bf45e5432cde3cec818b75f51653579d036458cd716ce470fcc2ac941b",
+      "size": 18815
     },
     {
       "path": "unified/inputs+pr191.patch2.tar.gz",
@@ -392,8 +397,8 @@
     },
     {
       "path": "unified/inputs.tar.gz",
-      "sha256": "8415d13bd4fdb6b8c398b8b030a394ad2db134e04cb0e4cf530a5e36ba4f9255",
-      "size": 98270
+      "sha256": "d9fcae09508ad3f2a84c638a5301585591739bce566a870a49b2bc291d6c49ad",
+      "size": 102767
     },
     {
       "path": "unified/sglang_python-0.5.14.tar.gz",
@@ -402,8 +407,8 @@
     },
     {
       "path": "unified/sglang_python-0.5.16.tar.gz",
-      "sha256": "18cebb1f6e16b30e63da7cbdf03b6deb290d98a72f62f48cf683ac763aa3996d",
-      "size": 13262
+      "sha256": "39601bd7db04b6112a408b3431a004124b3798a0a66123fd6fa0ed436b70f598",
+      "size": 13987
     },
     {
       "path": "unified/vllm_python-0.25.1.patch1.tar.gz",
@@ -422,8 +427,8 @@
     },
     {
       "path": "unified/vllm_python-0.27.1.tar.gz",
-      "sha256": "bb9b56618dd806723eff4c38b74f8d8e647edc693b025e9e50771c20b6af8403",
-      "size": 13042
+      "sha256": "bcdb79178f1276e6f0b89b5d996d137acbef6e7d906739b941bc56343e25b669",
+      "size": 13889
     },
     {
       "path": "unified/vllm_rust-0.25.1.patch1.tar.gz",

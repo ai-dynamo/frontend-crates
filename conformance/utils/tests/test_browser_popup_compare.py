@@ -55,7 +55,7 @@ def _dynamo_key(impl: str) -> str:
     )
     if latest is None:
         pytest.skip("dynamo stream fixture dirs not cached", allow_module_level=True)
-    return latest.name.replace(".", "-")
+    return latest.name.replace(".", "-").replace("+", "-")
 
 
 V2_KEY = _dynamo_key("dynamo_v2")

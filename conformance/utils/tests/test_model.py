@@ -295,7 +295,7 @@ def test_unified_default_dynamo_uses_pr_capture_and_keeps_release_history(tmp_pa
     dynamo = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
     release = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo@0.4.0")
 
-    assert dynamo["label"] == "Dynamo v2 Rust 0.6.0+pr234 (stream, Combined & Unified)"
+    assert dynamo["label"] == "Dynamo v2 Rust 0.6.0+pr234.r3.gc4b7ffb04fa (stream, Combined & Unified)"
     assert dynamo["default_bucket"] == "A"
     assert release["label"] == "Dynamo v2 Rust 0.4.0 (stream, Combined & Unified)"
     assert release["default_bucket"] == "C"

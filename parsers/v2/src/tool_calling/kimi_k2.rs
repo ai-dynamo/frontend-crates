@@ -497,6 +497,7 @@ fn spec(config: &KimiK2ParserConfig) -> WrappedBlockSpec {
         invoke_boundary_factory: Some(InvokeBoundaryFactory::stateless(KIMI_INVOKE_SCAN)),
         bare_invoke_start: None,
         bare_invoke_holdback: None,
+        bare_invoke_uses_eof_boundary: false,
     }
 }
 

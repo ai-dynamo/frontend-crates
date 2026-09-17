@@ -427,6 +427,10 @@ pub(crate) struct WrappedBlockSpec {
     /// Additional holdback for a bare invoke whose name is still waiting for
     /// its first structural marker.
     pub bare_invoke_holdback: Option<fn(&str) -> usize>,
+    /// Whether a bare invoke may use a family boundary's saved real closer at
+    /// EOF. Most grammars must keep their existing strict bare-recovery rule;
+    /// GLM alone records an outer closer that arrived inside an unclosed value.
+    pub bare_invoke_uses_eof_boundary: bool,
     /// Whether a decoder must keep tokenizer special tokens so this grammar's
     /// markers survive to the parser.
     ///
@@ -1412,7 +1416,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     // only after a real closer arrives. Passing `flush` here used
                     // to combine missing-start and missing-end recovery and turn
                     // narrated syntax into a dispatched call.
-                    let Some(end) = self.invoke_end_at(false) else {
+                    let Some(end) =
+                        self.invoke_end_at(flush && self.spec.bare_invoke_uses_eof_boundary)
+                    else {
                         if !flush
                             && let Some(delta) = self
                                 .emitter
@@ -1506,6 +1512,7 @@ pub(crate) mod test_support {
                 invoke_boundary_factory: None,
                 bare_invoke_start: None,
                 bare_invoke_holdback: None,
+                bare_invoke_uses_eof_boundary: false,
                 preserve_special_tokens: true,
             },
             FailOnBoom,
