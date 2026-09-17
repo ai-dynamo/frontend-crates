@@ -3763,17 +3763,11 @@ impl GuidedState {
                         flush,
                     );
                     self.input = input;
-                    // A native envelope that is still waiting for its own end owns
-                    // any repeated reasoning opener inside it. Treating that opener
-                    // as a stray reset the envelope between chunks, so the next
-                    // append released its raw header as reasoning instead of taking
-                    // the same EOF recovery path as a whole input. The native scan is
-                    // advanced above, so decide this only after it has seen the chunk.
-                    let reopen = if self.invoke_candidate.is_empty() {
-                        reopen
-                    } else {
-                        None
-                    };
+                    // A buffered invocation or guided prefix owns repeated reasoning
+                    // openers inside it, but not those preceding the candidate.
+                    let candidate_start =
+                        self.input.len().saturating_sub(self.invoke_holdback_len());
+                    let reopen = reopen.filter(|(at, _)| *at < candidate_start);
                     let interrupt = marker
                         .into_iter()
                         .chain(

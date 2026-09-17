@@ -374,6 +374,29 @@ mod tests {
     }
 
     #[test]
+    fn guided_function_prefix_retains_repeated_reasoning_markers() {
+        let input = concat!(
+            "<think>a<think>b<function=f><think>x</think>",
+            r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#,
+        );
+        let want = vec![
+            reasoning("abx"),
+            call("get_weather", serde_json::json!({"city": "Paris"})),
+        ];
+        for (split, got) in configured_events_at_every_split_with_mode(
+            &weather_tools(),
+            UnifiedParserStartingState::None,
+            None,
+            input,
+        )
+        .into_iter()
+        .enumerate()
+        {
+            assert_eq!(got, want, "split at byte {split}");
+        }
+    }
+
+    #[test]
     fn guided_reasoning_with_a_unicode_function_prefix_is_split_invariant() {
         let input = "<think><function=東京東京東京";
         for got in configured_events_at_every_split_with_mode(
