@@ -29,6 +29,7 @@ fetch = []
 parallel = ["dep:rayon"]
 
 [dependencies]
+gif.workspace = true
 image.workspace = true
 rayon = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"] }

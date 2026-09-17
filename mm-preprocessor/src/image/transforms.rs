@@ -19,10 +19,11 @@ pub fn normalize_rgb_f32(
 ) {
     debug_assert_eq!(rgb.len(), h * w * 3);
     debug_assert_eq!(out.len(), h * w * 3);
-    let inv255 = 1.0f32 / 255.0;
+    let inv255 = 1.0f64 / 255.0;
     for i in 0..h * w {
         for c in 0..3 {
-            let raw = rgb[i * 3 + c] as f32 * inv255;
+            // HF rescales in f64, then rounds to f32 before normalization.
+            let raw = (rgb[i * 3 + c] as f64 * inv255) as f32;
             out[i * 3 + c] = (raw - mean[c]) / std[c];
         }
     }
@@ -96,6 +97,24 @@ mod tests {
         normalize_rgb_f32(&rgb, 1, 2, &[0.5; 3], &[0.5; 3], &mut out);
         let expect = |v: u8| (v as f32 / 255.0 - 0.5) / 0.5;
         assert_eq!(out, rgb.map(expect));
+    }
+
+    #[test]
+    fn normalize_matches_hf_for_every_byte_value() {
+        let rgb: Vec<u8> = (0..=255).flat_map(|v| [v; 3]).collect();
+        let mut out = vec![0.0; rgb.len()];
+        normalize_rgb_f32(&rgb, 1, 256, &[0.5, 0.4, 0.3], &[0.5, 0.25, 0.75], &mut out);
+        let expected = include_bytes!("../../tests/fixtures/transforms/hf_normalized_u8.f32le");
+        assert_eq!(expected.len(), out.len() * 4);
+        for (i, (actual, bytes)) in out.iter().zip(expected.chunks_exact(4)).enumerate() {
+            assert_eq!(
+                actual.to_bits(),
+                u32::from_le_bytes(bytes.try_into().unwrap()),
+                "pixel {}, channel {}",
+                i / 3,
+                i % 3
+            );
+        }
     }
 
     #[test]

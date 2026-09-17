@@ -4,9 +4,7 @@
 use crate::{MmError, Result};
 use image::ImageFormat;
 
-/// Caps checked against the encoded header before any pixel is decoded, so an
-/// oversized input costs a header parse rather than an allocation. `None`
-/// leaves that axis unbounded.
+/// Header-checked limits enforced before pixel decoding. `None` means unbounded.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct DecodeLimits {
     pub max_width: Option<usize>,
@@ -41,11 +39,8 @@ pub fn decode_rgb(data: &[u8], limits: &DecodeLimits) -> Result<(Vec<u8>, usize,
     let (h, w) = dimensions(data)?;
     limits.check(h, w)?;
     let rgb = match format(data)? {
-        ImageFormat::Jpeg => {
-            turbojpeg::decompress(data, turbojpeg::PixelFormat::RGB)
-                .map_err(invalid("jpeg decode failed"))?
-                .pixels
-        }
+        ImageFormat::Jpeg => decode_jpeg(data)?,
+        ImageFormat::Gif => GifImage::new(data)?.decode_rgb()?,
         fmt => {
             use image::ColorType;
             let img = image::load_from_memory_with_format(data, fmt)
@@ -65,6 +60,104 @@ pub fn decode_rgb(data: &[u8], limits: &DecodeLimits) -> Result<(Vec<u8>, usize,
     Ok((rgb, h, w))
 }
 
+fn decode_jpeg(data: &[u8]) -> Result<Vec<u8>> {
+    use turbojpeg::{Colorspace, PixelFormat};
+    let header = turbojpeg::read_header(data).map_err(invalid("jpeg probe failed"))?;
+    let cmyk = matches!(header.colorspace, Colorspace::CMYK | Colorspace::YCCK);
+    let pixels = turbojpeg::decompress(
+        data,
+        if cmyk {
+            PixelFormat::CMYK
+        } else {
+            PixelFormat::RGB
+        },
+    )
+    .map_err(invalid("jpeg decode failed"))?
+    .pixels;
+    if !cmyk {
+        return Ok(pixels);
+    }
+
+    // Pillow reads JPEG CMYK as inverted ("CMYK;I"), then applies its rounded
+    // CMYK-to-RGB conversion. With inverted samples this is round(C * K / 255).
+    let mut rgb = Vec::with_capacity(pixels.len() / 4 * 3);
+    for pixel in pixels.chunks_exact(4) {
+        for &component in &pixel[..3] {
+            rgb.push(((u32::from(component) * u32::from(pixel[3]) + 127) / 255) as u8);
+        }
+    }
+    Ok(rgb)
+}
+
+struct GifImage<'a> {
+    decoder: gif::Decoder<&'a [u8]>,
+    frame: gif::Frame<'static>,
+}
+
+impl<'a> GifImage<'a> {
+    fn new(data: &'a [u8]) -> Result<Self> {
+        let mut options = gif::DecodeOptions::new();
+        options.set_color_output(gif::ColorOutput::Indexed);
+        let mut decoder = options
+            .read_info(data)
+            .map_err(invalid("gif probe failed"))?;
+        let frame = decoder
+            .next_frame_info()
+            .map_err(invalid("gif probe failed"))?
+            .ok_or_else(|| MmError::invalid_input("gif has no image frame"))?
+            .clone();
+        if frame.width == 0 || frame.height == 0 {
+            return Err(MmError::invalid_input("gif has an empty image frame"));
+        }
+        Ok(Self { decoder, frame })
+    }
+
+    fn dimensions(&self) -> (usize, usize) {
+        // Pillow expands the canvas when the first frame extends past it.
+        (
+            usize::from(self.decoder.height())
+                .max(usize::from(self.frame.top) + usize::from(self.frame.height)),
+            usize::from(self.decoder.width())
+                .max(usize::from(self.frame.left) + usize::from(self.frame.width)),
+        )
+    }
+
+    fn decode_rgb(mut self) -> Result<Vec<u8>> {
+        let (h, w) = self.dimensions();
+        let mut indices = vec![0; usize::from(self.frame.width) * usize::from(self.frame.height)];
+        self.decoder
+            .read_into_buffer(&mut indices)
+            .map_err(invalid("gif decode failed"))?;
+        let palette = self
+            .decoder
+            .palette()
+            .map_err(invalid("gif palette missing"))?;
+        let color = |index: u8| {
+            let start = usize::from(index) * 3;
+            palette
+                .get(start..start + 3)
+                .ok_or_else(|| MmError::invalid_input("gif palette index out of bounds"))
+        };
+        // Pillow fills the first canvas with the transparent index or zero,
+        // ignoring the declared background. RGB conversion preserves its color.
+        let background = color(self.frame.transparent.unwrap_or(0))?;
+        let mut rgb = background.repeat(h * w);
+        for (y, row) in indices
+            .chunks_exact(usize::from(self.frame.width))
+            .enumerate()
+        {
+            let start = ((y + usize::from(self.frame.top)) * w + usize::from(self.frame.left)) * 3;
+            for (pixel, &index) in rgb[start..start + row.len() * 3]
+                .chunks_exact_mut(3)
+                .zip(row)
+            {
+                pixel.copy_from_slice(color(index)?);
+            }
+        }
+        Ok(rgb)
+    }
+}
+
 /// `(height, width)` from the encoded header alone — no pixel decode (PIL's
 /// lazy `Image.open(...).size`). Supplies
 /// [`MediaMetadata::Image`](crate::processor::MediaMetadata::Image)
@@ -74,6 +167,10 @@ pub fn dimensions(data: &[u8]) -> Result<(usize, usize)> {
         ImageFormat::Jpeg => {
             let header = turbojpeg::read_header(data).map_err(invalid("jpeg probe failed"))?;
             (header.width, header.height)
+        }
+        ImageFormat::Gif => {
+            let (h, w) = GifImage::new(data)?.dimensions();
+            (w, h)
         }
         fmt => {
             let mut reader = image::ImageReader::new(std::io::Cursor::new(data));
@@ -118,6 +215,85 @@ mod tests {
         assert_eq!((h, w), (9, 13));
         assert_eq!(rgb, PILLOW_RGB);
         assert_eq!(dimensions(JPEG).unwrap(), (9, 13));
+    }
+
+    #[test]
+    fn cmyk_and_ycck_jpeg_match_pillow() {
+        for (jpeg, expected) in [
+            (
+                include_bytes!("../../tests/fixtures/decode/pillow_cmyk_13x9.jpg").as_slice(),
+                include_bytes!("../../tests/fixtures/decode/pillow_cmyk_13x9.rgb").as_slice(),
+            ),
+            (
+                include_bytes!("../../tests/fixtures/decode/turbojpeg_ycck_13x9.jpg").as_slice(),
+                include_bytes!("../../tests/fixtures/decode/turbojpeg_ycck_13x9.rgb").as_slice(),
+            ),
+        ] {
+            let (rgb, h, w) = decode_rgb(jpeg, &DecodeLimits::default()).unwrap();
+            assert_eq!((h, w), (9, 13));
+            assert_eq!(rgb, expected);
+        }
+    }
+
+    #[test]
+    fn gif_first_frame_canvas_matches_pillow() {
+        for (gif, expected) in [
+            (
+                include_bytes!("../../tests/fixtures/decode/pillow_offset_8x8.gif").as_slice(),
+                include_bytes!("../../tests/fixtures/decode/pillow_offset_8x8.rgb").as_slice(),
+            ),
+            (
+                include_bytes!("../../tests/fixtures/decode/pillow_transparent_offset_8x8.gif")
+                    .as_slice(),
+                include_bytes!("../../tests/fixtures/decode/pillow_transparent_offset_8x8.rgb")
+                    .as_slice(),
+            ),
+            (
+                include_bytes!("../../tests/fixtures/decode/pillow_local_offset_8x8.gif")
+                    .as_slice(),
+                include_bytes!("../../tests/fixtures/decode/pillow_local_offset_8x8.rgb")
+                    .as_slice(),
+            ),
+        ] {
+            let (rgb, h, w) = decode_rgb(gif, &DecodeLimits::default()).unwrap();
+            assert_eq!((h, w), (8, 8));
+            assert_eq!(dimensions(gif).unwrap(), (h, w));
+            assert_eq!(rgb, expected);
+        }
+    }
+
+    #[test]
+    fn gif_limits_include_the_first_frame_extent_before_decoding() {
+        let gif = include_bytes!("../../tests/fixtures/decode/pillow_expanded_6x6.gif");
+        let expected = include_bytes!("../../tests/fixtures/decode/pillow_expanded_6x6.rgb");
+        assert_eq!(dimensions(gif).unwrap(), (6, 6));
+        let (rgb, h, w) = decode_rgb(gif, &DecodeLimits::default()).unwrap();
+        assert_eq!((h, w), (6, 6));
+        assert_eq!(rgb, expected);
+
+        // Keep the logical screen, global palette, first frame descriptor and
+        // LZW code size and first block length, but omit all compressed pixels.
+        let header = &gif[..13 + 256 * 3 + 10 + 2];
+        assert_eq!(dimensions(header).unwrap(), (6, 6));
+        for limits in [
+            DecodeLimits {
+                max_width: Some(5),
+                ..DecodeLimits::default()
+            },
+            DecodeLimits {
+                max_height: Some(5),
+                ..DecodeLimits::default()
+            },
+            DecodeLimits {
+                max_pixels: Some(35),
+                ..DecodeLimits::default()
+            },
+        ] {
+            assert!(matches!(
+                decode_rgb(header, &limits),
+                Err(MmError::LimitExceeded { .. })
+            ));
+        }
     }
 
     /// Formats the Python (PIL) path accepts must decode, not reject.

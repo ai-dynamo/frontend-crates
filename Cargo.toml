@@ -43,6 +43,7 @@ dynamo-tokenizers = { path = "tokenizers", version = "1.8.1" }
 either = { version = "1.13", features = ["serde"] }
 fastokens = "0.3.1"
 futures = "0.3"
+gif = "0.14"
 hf-hub = { version = "1.0", default-features = false, features = ["rustls-tls"] }
 # The image formats the Python (PIL) path commonly accepts. JPEG goes through
 # libjpeg-turbo (Pillow's own backend) so decoded pixels match it byte for byte.
