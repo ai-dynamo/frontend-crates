@@ -87,12 +87,6 @@ def original_capture_input(record: dict, raw: bytes, relative: str, bindings: di
     return original
 
 
-def has_comparable_stimulus(record: dict, raw: bytes, relative: str, bindings: dict) -> bool:
-    original = original_capture_input(record, raw, relative, bindings)
-    expected_keys = capture_input({}).keys()
-    return isinstance(original, dict) and original.keys() == expected_keys and original["tools"] is not None
-
-
 def comparison_failure(record: dict, current: dict, raw: bytes, relative: str, bindings: dict) -> str | None:
     original = original_capture_input(record, raw, relative, bindings)
     if original is None:
@@ -193,21 +187,11 @@ def validate_current_capture(directory: Path, input_dirs: list[Path]) -> int:
     return sum(len(doc["cases"]) for doc in validated_current_capture_docs(directory, input_dirs))
 
 
-def capture_is_scoreable(directory: Path) -> bool:
-    """Whether the effective capture has any successful record for default selection."""
-    return any(
-        "unavailable" not in record and "error" not in record
-        and has_comparable_stimulus(record, raw, relative, bindings)
-        for record, raw, relative, bindings in _effective_capture_records(directory, {}).values()
-    )
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--select-source-snapshot", type=Path)
     mode.add_argument("--validate-current", type=Path)
-    mode.add_argument("--scoreable", type=Path)
     parser.add_argument("--inputs", type=Path, nargs="+")
     parser.add_argument("--format", choices=("count", "json"), default="count")
     args = parser.parse_args()
@@ -215,10 +199,6 @@ def main():
         if args.format != "count":
             parser.error("--format json requires --validate-current")
         print(current_source_snapshot(args.select_source_snapshot))
-    elif args.scoreable is not None:
-        if args.inputs or args.format != "count":
-            parser.error("--scoreable does not accept --inputs or --format json")
-        print(int(capture_is_scoreable(args.scoreable)))
     else:
         if not args.inputs:
             parser.error("--validate-current requires --inputs")

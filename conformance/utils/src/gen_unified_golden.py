@@ -1461,7 +1461,7 @@ def _guided_product():
     for pay_name, (payload, want_args) in GUIDED_PAYLOADS.items():
         dispatches = want_args is not None
         for sur_name, (wrap, sur_desc, strips_tail) in GUIDED_SURROUNDS.items():
-        # `clean` is already authored as 30-1/30-2 and 31-1 through 31-4. The
+            # `clean` is already authored as 30-1/30-2 and 31-1 through 31-4. The
             # `valid` payload crossings are also already authored by hand
             # (guided_json_tool_open_before_payload / _tool_close_after_payload /
             # _wrapped_in_tool_markup) — generating them produced 3 scenarios x 3
@@ -1857,7 +1857,7 @@ def _build_edge_cases(fam, specs):
         elif rest:
             # Fill the ONE `None` placeholder in the golden with this family's
             # value. It may be an argument value (a marker-looking string that has
-            # to survive byte-exact, 12.a) or a whole text payload (the family's
+            # to survive byte-exact, 12-1) or a whole text payload (the family's
             # own markers reaching the user as literal text, 50.d) — either way
             # the scenario is shared and only the grammar-specific bytes differ.
             for ev in g:

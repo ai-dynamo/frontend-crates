@@ -112,9 +112,9 @@ def test_fresh_peer_capture_binds_actual_input_and_remains_comparable(producer, 
     events = [{"kind": "text", "text": "hi"}]
     version = "0.5.16" if engine == "sglang_python" else "0.25.1"
     for directory, value in [("inputs", current), ("golden", {"assembled": events}), (f"{engine}-{version}", record)]:
-        path = tmp_path / directory / "gemma4/UNIFIED.3.a.yaml"
+        path = tmp_path / directory / "gemma4/UNIFIED.3-1.yaml"
         path.parent.mkdir(parents=True)
-        path.write_text(yaml.safe_dump({"family": "gemma4", "cases": {"UNIFIED.3.a": value}}))
+        path.write_text(yaml.safe_dump({"family": "gemma4", "cases": {"UNIFIED.3-1": value}}))
     monkeypatch.setattr(table, "_unified_base", lambda _root: tmp_path)
     monkeypatch.setattr(table, "_unified_dynamo_label", lambda _captures: "missing-source")
     monkeypatch.setattr(generator, "CLEAN", [row for row in generator.CLEAN if row[0] == "text_only"])

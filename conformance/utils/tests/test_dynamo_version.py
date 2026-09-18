@@ -292,7 +292,7 @@ def test_renderer_rejects_wrong_selected_source_after_folding(release_repo, monk
     provenance = identity.dynamo_v2_provenance(release_repo)
     label = provenance["label"]
     base = release_repo / "fixtures"
-    key = "UNIFIED.1.a"
+    key = "UNIFIED.1-1"
     stimulus = {"scenario": "text_only", "input": "hello", "tools": [],
                 "chunks": [{"delta_text": "hello"}]}
     captured = {"capture_input": capture_input(stimulus),

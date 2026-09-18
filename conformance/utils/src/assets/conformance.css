@@ -101,7 +101,7 @@ td.parser a:hover { background: #ffd; }
 /* Cell content is a 1-3 char marker and is absolutely positioned, so the column
    width is pure padding — and across the widest tabs 44px each made the table
    thousands of pixels wide for markers that need a fraction of it.
-   26px still clears the widest marker; the header labels are short ids (`31.n`),
+   26px still clears the widest marker; the header labels are short ids (`31-14`),
    not scenario names, so they fit too. */
 td.cell { position: relative; text-align: center; width: 26px; min-width: 26px; max-width: 26px; font-weight: 400; }
 /* One color = one meaning, whether or not the cell has compare data. A cell without

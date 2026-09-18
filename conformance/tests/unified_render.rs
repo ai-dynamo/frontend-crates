@@ -766,7 +766,7 @@ struct CaptureChunk {
 }
 
 /// The scenario slug for each committed case key, read from the `inputs/` shard
-/// (the numbered `UNIFIED.<group>.<sub>` key lives only in the Python taxonomy).
+/// (the numbered `UNIFIED.<group>-<sub>` key lives only in the Python taxonomy).
 #[derive(Deserialize)]
 struct InputDoc {
     family: String,

@@ -2393,31 +2393,8 @@ def _load_unified_fixtures(base: Path):
         else:
             dynamo_by_ver[display_ver] = captured_cases
 
-    requested_dynamo_ver = _unified_dynamo_label(capture_provenance)
-    current_dynamo_ver = requested_dynamo_ver
+    current_dynamo_ver = _unified_dynamo_label(capture_provenance)
     current_dynamo_cases = dynamo_by_ver.get(current_dynamo_ver, {})
-    # A released checkout can legitimately be newer than the most recent Unified
-    # capture. Do not render that uncaptured release as the default reference: every
-    # cell would be unavailable despite a verified, scoreable source capture being
-    # present. The default is the newest capture with at least one comparable result;
-    # its source-qualified identity stays in fixture provenance, while the reader-facing
-    # label uses the release version.
-    if not any(not _unified_capture_failure(case) for case in current_dynamo_cases.values()):
-        scoreable_versions = [
-            version
-            for version, captured_cases in dynamo_by_ver.items()
-            if any(not _unified_capture_failure(case) for case in captured_cases.values())
-        ]
-        if scoreable_versions:
-            current_dynamo_ver = max(
-                scoreable_versions,
-                key=lambda version: (
-                    fixtures._version_sort_key(version),
-                    "+source." in version,
-                    fixture_disposition.capture_layer_sort_key(version),
-                ),
-            )
-            current_dynamo_cases = dynamo_by_ver[current_dynamo_ver]
     missing_current_case_keys = {
         (family, key)
         for (family, key), input_case in inputs.items()
