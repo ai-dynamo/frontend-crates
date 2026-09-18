@@ -610,7 +610,7 @@ def test_compare_url_distinguishes_removed_and_empty_reference(driver, query, ex
         driver.get(page)
 
 
-def test_unified_working_build_labels_preserve_release_selection(driver):
+def test_unified_release_labels_hide_capture_identity(driver):
     page = driver.current_url.split("?", 1)[0]
     try:
         driver.get(page + "?tab=tab-unified")
@@ -619,7 +619,7 @@ def test_unified_working_build_labels_preserve_release_selection(driver):
             ".map(row=>row.innerText);"
         )
         assert all("+source." not in label for label in labels)
-        assert sum("working build" in label for label in labels) <= 1
+        assert all("working build" not in label for label in labels)
         driver.execute_script(
             "document.querySelector('#tab-unified input.cmp-ref[value=\"dynamo@0.6.0\"]').click();"
         )

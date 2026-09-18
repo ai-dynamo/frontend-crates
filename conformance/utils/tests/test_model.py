@@ -303,7 +303,7 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
     assert native["block"]["unavailable"] == "vLLM Rust 0.26.0 (stream, Combined & Unified) has no parser for muse_glimmer"
 
 
-def test_unified_default_dynamo_uses_scoreable_source_and_keeps_release_history(tmp_path):
+def test_unified_default_dynamo_keeps_capture_identity_internal_and_release_history_visible(tmp_path):
     page_path = tmp_path / "CONFORMANCE_v2.html"
     result = subprocess.run(
         [str(UTILS / "render_table_v2.sh"), "--output", str(page_path)],
@@ -330,10 +330,8 @@ def test_unified_default_dynamo_uses_scoreable_source_and_keeps_release_history(
     requested = select_capture_label(REPO, captures)
     assert requested == "0.6.1"
     assert dynamo["version"].startswith("0.6.0+source.")
-    assert dynamo["label"] == table._full_label(
-        "dynamo_v2", dynamo["version"], "stream, Combined & Unified"
-    )
-    assert "+source." in dynamo["label"]
+    assert dynamo["label"] == "Dynamo v2 Rust 0.6.0 (stream, Combined & Unified)"
+    assert "+source." not in dynamo["label"]
     assert all("+source." not in candidate["key"] for candidate in tab["candidates"])
     assert dynamo["default_bucket"] == "A"
     assert release["label"] == "Dynamo v2 Rust 0.4.0 (stream, Combined & Unified)"
@@ -475,10 +473,11 @@ def test_unified_source_selection_is_exact_not_digest_order(tmp_path, monkeypatc
 
     tab = table._unified_tab_model(tmp_path, {})
     candidates = {candidate["key"]: candidate for candidate in tab["candidates"]}
-    assert candidates["dynamo"]["label"] == (
-        f"Dynamo v2 Rust {expected_current} (stream, Combined & Unified)"
-    )
+    expected_display = expected_current.split("+source.", 1)[0]
     assert candidates["dynamo"]["version"] == expected_current
+    assert candidates["dynamo"]["label"] == (
+        f"Dynamo v2 Rust {expected_display} (stream, Combined & Unified)"
+    )
     history = {key for key in candidates if key.startswith("dynamo@")}
     assert history == ({"dynamo@0.6.0"} if expected_current != "0.6.0" else set())
     if expected_current != "0.6.0":
@@ -503,7 +502,7 @@ def test_unified_source_selection_is_exact_not_digest_order(tmp_path, monkeypatc
 
 @pytest.mark.parametrize("impl,version,mode,want", [
     ("dynamo_v2", "0.6.0+source." + "a" * 64, "stream",
-     "Dynamo v2 Rust 0.6.0+source." + "a" * 64 + " (stream)"),
+     "Dynamo v2 Rust 0.6.0 (stream)"),
     ("dynamo_v2", "0.6.1", "stream", "Dynamo v2 Rust 0.6.1 (stream)"),
     ("dynamo_v1", "8.2.2", "stream", "Dynamo v1 Rust 8.2.2 (jail+batch)"),
     ("vllm_python", "0.26.0", "batch", "vLLM Python 0.26.0 (batch)"),

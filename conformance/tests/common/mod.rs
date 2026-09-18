@@ -443,8 +443,7 @@ fn version_dirs_with_identity_command(
     } else {
         version_dirs_ascending(root, prefix)
             .into_iter()
-            .filter(|path| scoreable_unified_capture(path))
-            .last()
+            .rfind(|path| scoreable_unified_capture(path))
             .unwrap_or(current)
     };
     let current = if current

@@ -982,6 +982,10 @@ def _full_label(impl: str, version: object, mode: str) -> str:
     # the stream tab its mode reads "(jail+batch)".
     if impl == BASELINE_BATCH_IMPL and mode == "stream":
         mode = "jail+batch"
+    # A source-qualified version is the immutable capture identity. Keep its digest
+    # internal; the reader-facing reference remains the release version.
+    if impl == "dynamo_v2" and isinstance(version, str) and "+source." in version:
+        version = version.split("+source.", 1)[0]
     ver = f" {version}" if version else ""
     return f"{base}{ver} ({mode})"
 
@@ -2396,7 +2400,8 @@ def _load_unified_fixtures(base: Path):
     # capture. Do not render that uncaptured release as the default reference: every
     # cell would be unavailable despite a verified, scoreable source capture being
     # present. The default is the newest capture with at least one comparable result;
-    # its full source-qualified label makes the older source explicit to the reader.
+    # its source-qualified identity stays in fixture provenance, while the reader-facing
+    # label uses the release version.
     if not any(not _unified_capture_failure(case) for case in current_dynamo_cases.values()):
         scoreable_versions = [
             version
