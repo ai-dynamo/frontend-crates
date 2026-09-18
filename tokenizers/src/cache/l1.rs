@@ -48,6 +48,15 @@ type PrefixHasher = BuildHasherDefault<FxHasher>;
 /// Weighted W-TinyLFU cache mapping a prefix's blake3 digest to its cumulative tokens.
 type PrefixCache = Cache<Blake3Hash, Arc<[TokenIdType]>, PrefixHasher>;
 
+/// Request-local lookup result. The deepest digest can differ from the matched key.
+pub(super) struct PrefixMatch {
+    pub(super) tokens: Arc<[TokenIdType]>,
+    pub(super) prefix_len: usize,
+    deepest_boundary: usize,
+    // Absent only for callers of the existing public extension method.
+    deepest_hash: Option<Blake3Hash>,
+}
+
 /// Positions immediately after each special-token occurrence in `text`.
 ///
 /// Callers supply token strings that the inner tokenizer treats as atomic, so a boundary
@@ -197,6 +206,11 @@ impl L1Cache {
     /// `deepest_boundary` is the deepest special-token boundary in `input` (end-exclusive),
     /// handed back so [`extend_after_match`] need not rescan the input for it.
     pub fn longest_prefix_match(&self, input: &str) -> Option<(Arc<[TokenIdType]>, usize, usize)> {
+        self.longest_prefix_match_with_hash(input)
+            .map(|matched| (matched.tokens, matched.prefix_len, matched.deepest_boundary))
+    }
+
+    pub(super) fn longest_prefix_match_with_hash(&self, input: &str) -> Option<PrefixMatch> {
         let boundaries = self.boundaries(input);
 
         if boundaries.is_empty() {
@@ -223,6 +237,10 @@ impl L1Cache {
             last_pos = boundary_pos;
         }
 
+        // Reuse this digest if extension later inserts at the deepest boundary. It is
+        // not necessarily the digest of the shallower entry that satisfies the lookup.
+        let deepest_hash = prefix_hashes.last().expect("prefix hashes is non-empty").1;
+
         // Search from the longest boundary down — return first hit. moka updates recency
         // and frequency on `get`, so no manual timestamp bookkeeping is needed.
         for (boundary_pos, hash_bytes) in prefix_hashes.into_iter().rev() {
@@ -234,7 +252,12 @@ impl L1Cache {
                 // Return the shared `Arc` directly — the caller decides whether to
                 // materialize a `Vec` (and reserves exact capacity when it does),
                 // avoiding a clone of the (large) cached prefix on every hit.
-                return Some((tokens, boundary_pos, deepest_boundary));
+                return Some(PrefixMatch {
+                    tokens,
+                    prefix_len: boundary_pos,
+                    deepest_boundary,
+                    deepest_hash: Some(deepest_hash),
+                });
             }
         }
 
@@ -355,6 +378,30 @@ impl L1Cache {
         deepest_boundary: usize,
         tokenizer: &E,
     ) -> anyhow::Result<Vec<TokenIdType>> {
+        self.extend_after_match_with_hash(
+            input,
+            PrefixMatch {
+                tokens: prefix_tokens,
+                prefix_len,
+                deepest_boundary,
+                deepest_hash: None,
+            },
+            tokenizer,
+        )
+    }
+
+    pub(super) fn extend_after_match_with_hash<E: Encoder + ?Sized>(
+        &self,
+        input: &str,
+        matched: PrefixMatch,
+        tokenizer: &E,
+    ) -> anyhow::Result<Vec<TokenIdType>> {
+        let PrefixMatch {
+            tokens: prefix_tokens,
+            prefix_len,
+            deepest_boundary,
+            deepest_hash,
+        } = matched;
         // `deepest_boundary` (from `longest_prefix_match`) is the deepest special-token
         // boundary in `input`; split there only if it lies strictly past the matched
         // prefix. Strict `>` avoids re-inserting the entry we just matched. Boundaries
@@ -387,12 +434,13 @@ impl L1Cache {
         cumulative.extend_from_slice(&prefix_tokens);
         cumulative.extend_from_slice(seg_a.token_ids());
 
-        // Key is blake3 of input[0..deepest]. Built with the same streaming idiom as
-        // `longest_prefix_match`/`insert_at_boundaries` so the digest is byte-for-byte
-        // identical to the incremental one a future lookup computes for this prefix.
-        let mut hasher = blake3::Hasher::new();
-        hasher.update(&input.as_bytes()[..deepest]);
-        let hash_bytes: Blake3Hash = *hasher.finalize().as_bytes();
+        // CachedTokenizer already computed this key during lookup. Preserve the
+        // existing public extension method for callers that do not supply a digest.
+        let hash_bytes = deepest_hash.unwrap_or_else(|| {
+            let mut hasher = blake3::Hasher::new();
+            hasher.update(&input.as_bytes()[..deepest]);
+            *hasher.finalize().as_bytes()
+        });
 
         // Snapshot prefix+seg_a (`as_slice().into()` copies only the populated len, not the
         // reserved capacity) and cache it.
@@ -769,10 +817,9 @@ mod tests {
             let turns_c = turns.clone();
             handles.push(thread::spawn(move || {
                 for t in &turns_c[1..] {
-                    if let Some((prefix_tokens, offset, deepest)) = cache_c.longest_prefix_match(t)
-                    {
+                    if let Some(matched) = cache_c.longest_prefix_match_with_hash(t) {
                         let merged = cache_c
-                            .extend_after_match(t, prefix_tokens, offset, deepest, tok_c.as_ref())
+                            .extend_after_match_with_hash(t, matched, tok_c.as_ref())
                             .unwrap();
                         let plain = tok_c.encode(t).unwrap();
                         assert_eq!(
@@ -798,24 +845,32 @@ mod tests {
         // reuses a correct prefix. Also proves the deepest-only invariant: extend
         // persists exactly one new entry.
         let tok = load_tokenizer();
-        let turns = growing_chat_turns(3);
+        let turns: Vec<_> = growing_chat_turns(3)
+            .into_iter()
+            .map(|t| t.replace("system", "system 世界 🦀"))
+            .collect();
 
         let cache = test_cache(8 * 1024 * 1024);
         cache.insert_at_boundaries(&turns[0], tok.as_ref()).unwrap();
 
-        let (prefix_tokens, prefix_len, deepest_boundary) = cache
-            .longest_prefix_match(&turns[1])
+        let matched = cache
+            .longest_prefix_match_with_hash(&turns[1])
             .expect("partial hit on turns[1]");
+        let prefix_len = matched.prefix_len;
+        let deepest_boundary = matched.deepest_boundary;
+        assert!(deepest_boundary > prefix_len);
+        assert_eq!(
+            matched.deepest_hash,
+            Some(*blake3::hash(&turns[1].as_bytes()[..deepest_boundary]).as_bytes())
+        );
+        assert_ne!(
+            matched.deepest_hash,
+            Some(*blake3::hash(&turns[1].as_bytes()[..prefix_len]).as_bytes())
+        );
         let entries_before = cache.stats().entries;
 
         let _merged = cache
-            .extend_after_match(
-                &turns[1],
-                prefix_tokens,
-                prefix_len,
-                deepest_boundary,
-                tok.as_ref(),
-            )
+            .extend_after_match_with_hash(&turns[1], matched, tok.as_ref())
             .unwrap();
 
         assert_eq!(
@@ -851,6 +906,62 @@ mod tests {
             expected.token_ids(),
             "persisted entry tokens must equal the uncached encode of the cached prefix"
         );
+    }
+
+    #[test]
+    fn hash_reuse_without_deeper_boundary_does_not_insert() {
+        let tok = load_tokenizer();
+        let cache = test_cache(8 * 1024 * 1024);
+        cache.insert_at_boundaries("<s>seed", tok.as_ref()).unwrap();
+        for input in ["<s>世界", "<s>世界</s>"] {
+            let matched = cache.longest_prefix_match_with_hash(input).unwrap();
+            assert_eq!(matched.prefix_len, matched.deepest_boundary);
+            let entries = cache.len();
+            let merged = cache
+                .extend_after_match_with_hash(input, matched, tok.as_ref())
+                .unwrap();
+            assert_eq!(merged, tok.encode(input).unwrap().token_ids());
+            assert_eq!(cache.len(), entries);
+        }
+    }
+
+    #[test]
+    fn hash_reuse_does_not_insert_when_either_suffix_encode_fails() {
+        struct FailAt {
+            call: std::sync::atomic::AtomicUsize,
+            fail_at: usize,
+        }
+        impl Encoder for FailAt {
+            fn encode(&self, _: &str) -> crate::Result<crate::Encoding> {
+                if self.call.fetch_add(1, Ordering::Relaxed) == self.fail_at {
+                    anyhow::bail!("suffix failed");
+                }
+                Ok(crate::Encoding::Sp(vec![1]))
+            }
+            fn encode_batch(&self, inputs: &[&str]) -> crate::Result<Vec<crate::Encoding>> {
+                inputs.iter().map(|s| self.encode(s)).collect()
+            }
+        }
+        let tok = load_tokenizer();
+        let cache = test_cache(8 * 1024 * 1024);
+        cache.insert_at_boundaries("<s>seed", tok.as_ref()).unwrap();
+        let input = "<s>世界</s><s>tail";
+        for fail_at in [0, 1] {
+            let matched = cache.longest_prefix_match_with_hash(input).unwrap();
+            let entries = cache.len();
+            let error = cache
+                .extend_after_match_with_hash(
+                    input,
+                    matched,
+                    &FailAt {
+                        call: 0.into(),
+                        fail_at,
+                    },
+                )
+                .unwrap_err();
+            assert_eq!(error.to_string(), "suffix failed");
+            assert_eq!(cache.len(), entries);
+        }
     }
 
     #[test]
