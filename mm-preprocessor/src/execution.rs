@@ -67,9 +67,7 @@ fn armed() -> Option<&'static rayon::ThreadPool> {
 
 /// Map `items`, stopping when an error is observed. With the pool armed,
 /// which error is returned is unspecified, and other items may already have
-/// run. Successful output order matches input order. CPU-bound work:
-/// decode, resize, patchify (engines may also reuse this seam for their own
-/// per-item fan-out, e.g. hashing).
+/// run. Successful output order matches input order.
 pub fn try_map<'a, T, R, E>(
     items: &'a [T],
     f: impl Fn(&'a T) -> Result<R, E> + Send + Sync,
