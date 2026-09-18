@@ -161,6 +161,20 @@ pub trait ReasoningParser: Send + std::fmt::Debug {
     fn set_in_reasoning(&mut self, _in_reasoning: bool) {
         // Default no-op for parsers that don't support per-request overrides.
     }
+
+    /// Report whether the parser is inside a reasoning span right now.
+    ///
+    /// Read this *before* you feed a chunk. Marker text is buffered and is
+    /// absent from both outputs, and the call that completes an end marker
+    /// clears the state while it flushes the reasoning that preceded it, so
+    /// neither the returned text nor the state afterwards attributes that
+    /// chunk correctly.
+    ///
+    /// `None` means this parser does not track the state. Callers must not
+    /// read that as "not reasoning".
+    fn in_reasoning(&self) -> Option<bool> {
+        None
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -227,6 +241,10 @@ impl ReasoningParser for ReasoningParserWrapper {
 
     fn set_in_reasoning(&mut self, in_reasoning: bool) {
         self.parser.set_in_reasoning(in_reasoning)
+    }
+
+    fn in_reasoning(&self) -> Option<bool> {
+        self.parser.in_reasoning()
     }
 }
 
