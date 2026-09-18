@@ -453,5 +453,781 @@
     "effort": 75,
     "drop_thinking": true,
     "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 75 (range 1-100, the higher the value, the more thorough the reasoning)\n\n\n\n## Response Format:\n\nYou MUST strictly adhere to the following schema to reply:\n{\"type\": \"json_object\"}<｜User｜>Return JSON<｜Assistant｜><think>"
+  },
+  {
+    "name": "image-only-chat",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          }
+        ]
+      }
+    ],
+    "thinking": false,
+    "effort": 75,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜User｜><｜deepseek_image｜><｜Assistant｜></think>"
+  },
+  {
+    "name": "image-only-low",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          }
+        ]
+      }
+    ],
+    "thinking": true,
+    "effort": 50,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 50 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜><｜deepseek_image｜><｜Assistant｜><think>"
+  },
+  {
+    "name": "image-only-high",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          }
+        ]
+      }
+    ],
+    "thinking": true,
+    "effort": 75,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 75 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜><｜deepseek_image｜><｜Assistant｜><think>"
+  },
+  {
+    "name": "image-only-max",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          }
+        ]
+      }
+    ],
+    "thinking": true,
+    "effort": 100,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 100 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜><｜deepseek_image｜><｜Assistant｜><think>"
+  },
+  {
+    "name": "image-between-text-chat",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Before"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          },
+          {
+            "type": "text",
+            "text": "After"
+          }
+        ]
+      }
+    ],
+    "thinking": false,
+    "effort": 75,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜User｜>Before\n\n<｜deepseek_image｜>\n\nAfter<｜Assistant｜></think>"
+  },
+  {
+    "name": "image-between-text-low",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Before"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          },
+          {
+            "type": "text",
+            "text": "After"
+          }
+        ]
+      }
+    ],
+    "thinking": true,
+    "effort": 50,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 50 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>Before\n\n<｜deepseek_image｜>\n\nAfter<｜Assistant｜><think>"
+  },
+  {
+    "name": "image-between-text-high",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Before"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          },
+          {
+            "type": "text",
+            "text": "After"
+          }
+        ]
+      }
+    ],
+    "thinking": true,
+    "effort": 75,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 75 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>Before\n\n<｜deepseek_image｜>\n\nAfter<｜Assistant｜><think>"
+  },
+  {
+    "name": "image-between-text-max",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Before"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          },
+          {
+            "type": "text",
+            "text": "After"
+          }
+        ]
+      }
+    ],
+    "thinking": true,
+    "effort": 100,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 100 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>Before\n\n<｜deepseek_image｜>\n\nAfter<｜Assistant｜><think>"
+  },
+  {
+    "name": "image-two-images-chat",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          },
+          {
+            "type": "text",
+            "text": "Compare"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "data:image/png;base64,aW1hZ2U="
+            }
+          }
+        ]
+      }
+    ],
+    "thinking": false,
+    "effort": 75,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜User｜><｜deepseek_image｜>\n\nCompare\n\n<｜deepseek_image｜><｜Assistant｜></think>"
+  },
+  {
+    "name": "image-two-images-low",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          },
+          {
+            "type": "text",
+            "text": "Compare"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "data:image/png;base64,aW1hZ2U="
+            }
+          }
+        ]
+      }
+    ],
+    "thinking": true,
+    "effort": 50,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 50 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜><｜deepseek_image｜>\n\nCompare\n\n<｜deepseek_image｜><｜Assistant｜><think>"
+  },
+  {
+    "name": "image-two-images-high",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          },
+          {
+            "type": "text",
+            "text": "Compare"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "data:image/png;base64,aW1hZ2U="
+            }
+          }
+        ]
+      }
+    ],
+    "thinking": true,
+    "effort": 75,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 75 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜><｜deepseek_image｜>\n\nCompare\n\n<｜deepseek_image｜><｜Assistant｜><think>"
+  },
+  {
+    "name": "image-two-images-max",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          },
+          {
+            "type": "text",
+            "text": "Compare"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "data:image/png;base64,aW1hZ2U="
+            }
+          }
+        ]
+      }
+    ],
+    "thinking": true,
+    "effort": 100,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 100 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜><｜deepseek_image｜>\n\nCompare\n\n<｜deepseek_image｜><｜Assistant｜><think>"
+  },
+  {
+    "name": "image-system-and-image-chat",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Describe the evidence."
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "What is shown?"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          }
+        ]
+      }
+    ],
+    "thinking": false,
+    "effort": 75,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Describe the evidence.<｜User｜>What is shown?\n\n<｜deepseek_image｜><｜Assistant｜></think>"
+  },
+  {
+    "name": "image-system-and-image-low",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Describe the evidence."
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "What is shown?"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          }
+        ]
+      }
+    ],
+    "thinking": true,
+    "effort": 50,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 50 (range 1-100, the higher the value, the more thorough the reasoning)\n\nDescribe the evidence.<｜User｜>What is shown?\n\n<｜deepseek_image｜><｜Assistant｜><think>"
+  },
+  {
+    "name": "image-system-and-image-high",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Describe the evidence."
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "What is shown?"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          }
+        ]
+      }
+    ],
+    "thinking": true,
+    "effort": 75,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 75 (range 1-100, the higher the value, the more thorough the reasoning)\n\nDescribe the evidence.<｜User｜>What is shown?\n\n<｜deepseek_image｜><｜Assistant｜><think>"
+  },
+  {
+    "name": "image-system-and-image-max",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Describe the evidence."
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "What is shown?"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          }
+        ]
+      }
+    ],
+    "thinking": true,
+    "effort": 100,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 100 (range 1-100, the higher the value, the more thorough the reasoning)\n\nDescribe the evidence.<｜User｜>What is shown?\n\n<｜deepseek_image｜><｜Assistant｜><think>"
+  },
+  {
+    "name": "image-multi-turn-chat",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "reasoning_content": "A bird.",
+        "content": "A macaw."
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "And here?"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "data:image/png;base64,aW1hZ2U="
+            }
+          }
+        ]
+      }
+    ],
+    "thinking": false,
+    "effort": 75,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜User｜><｜deepseek_image｜><｜Assistant｜></think>A macaw.<｜end▁of▁sentence｜><｜User｜>And here?\n\n<｜deepseek_image｜><｜Assistant｜></think>"
+  },
+  {
+    "name": "image-multi-turn-low",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "reasoning_content": "A bird.",
+        "content": "A macaw."
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "And here?"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "data:image/png;base64,aW1hZ2U="
+            }
+          }
+        ]
+      }
+    ],
+    "thinking": true,
+    "effort": 50,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 50 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜><｜deepseek_image｜><｜Assistant｜></think>A macaw.<｜end▁of▁sentence｜><｜User｜>And here?\n\n<｜deepseek_image｜><｜Assistant｜><think>"
+  },
+  {
+    "name": "image-multi-turn-high",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "reasoning_content": "A bird.",
+        "content": "A macaw."
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "And here?"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "data:image/png;base64,aW1hZ2U="
+            }
+          }
+        ]
+      }
+    ],
+    "thinking": true,
+    "effort": 75,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 75 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜><｜deepseek_image｜><｜Assistant｜></think>A macaw.<｜end▁of▁sentence｜><｜User｜>And here?\n\n<｜deepseek_image｜><｜Assistant｜><think>"
+  },
+  {
+    "name": "image-multi-turn-max",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "reasoning_content": "A bird.",
+        "content": "A macaw."
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "And here?"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "data:image/png;base64,aW1hZ2U="
+            }
+          }
+        ]
+      }
+    ],
+    "thinking": true,
+    "effort": 100,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 100 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜><｜deepseek_image｜><｜Assistant｜></think>A macaw.<｜end▁of▁sentence｜><｜User｜>And here?\n\n<｜deepseek_image｜><｜Assistant｜><think>"
+  },
+  {
+    "name": "image-tool-image-chat",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Inspect the screenshot."
+      },
+      {
+        "role": "assistant",
+        "reasoning_content": "Use the tool.",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call1",
+            "type": "function",
+            "function": {
+              "name": "screenshot",
+              "arguments": "{}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call1",
+        "content": [
+          {
+            "type": "text",
+            "text": "Result"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          },
+          {
+            "type": "text",
+            "text": "End"
+          }
+        ]
+      }
+    ],
+    "thinking": false,
+    "effort": 75,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜User｜>Inspect the screenshot.<｜Assistant｜></think>\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"screenshot\">\n\n</｜DSML｜ invoke>\n</｜DSML｜ calls><｜end▁of▁sentence｜><｜User｜><tool_result>Result\n\n<｜deepseek_image｜>\n\nEnd</tool_result><｜Assistant｜></think>"
+  },
+  {
+    "name": "image-tool-image-low",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Inspect the screenshot."
+      },
+      {
+        "role": "assistant",
+        "reasoning_content": "Use the tool.",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call1",
+            "type": "function",
+            "function": {
+              "name": "screenshot",
+              "arguments": "{}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call1",
+        "content": [
+          {
+            "type": "text",
+            "text": "Result"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          },
+          {
+            "type": "text",
+            "text": "End"
+          }
+        ]
+      }
+    ],
+    "thinking": true,
+    "effort": 50,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 50 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>Inspect the screenshot.<｜Assistant｜></think>\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"screenshot\">\n\n</｜DSML｜ invoke>\n</｜DSML｜ calls><｜end▁of▁sentence｜><｜User｜><tool_result>Result\n\n<｜deepseek_image｜>\n\nEnd</tool_result><｜Assistant｜><think>"
+  },
+  {
+    "name": "image-tool-image-high",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Inspect the screenshot."
+      },
+      {
+        "role": "assistant",
+        "reasoning_content": "Use the tool.",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call1",
+            "type": "function",
+            "function": {
+              "name": "screenshot",
+              "arguments": "{}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call1",
+        "content": [
+          {
+            "type": "text",
+            "text": "Result"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          },
+          {
+            "type": "text",
+            "text": "End"
+          }
+        ]
+      }
+    ],
+    "thinking": true,
+    "effort": 75,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 75 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>Inspect the screenshot.<｜Assistant｜></think>\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"screenshot\">\n\n</｜DSML｜ invoke>\n</｜DSML｜ calls><｜end▁of▁sentence｜><｜User｜><tool_result>Result\n\n<｜deepseek_image｜>\n\nEnd</tool_result><｜Assistant｜><think>"
+  },
+  {
+    "name": "image-tool-image-max",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Inspect the screenshot."
+      },
+      {
+        "role": "assistant",
+        "reasoning_content": "Use the tool.",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call1",
+            "type": "function",
+            "function": {
+              "name": "screenshot",
+              "arguments": "{}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call1",
+        "content": [
+          {
+            "type": "text",
+            "text": "Result"
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "https://example.com/a.png"
+            }
+          },
+          {
+            "type": "text",
+            "text": "End"
+          }
+        ]
+      }
+    ],
+    "thinking": true,
+    "effort": 100,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 100 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>Inspect the screenshot.<｜Assistant｜></think>\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"screenshot\">\n\n</｜DSML｜ invoke>\n</｜DSML｜ calls><｜end▁of▁sentence｜><｜User｜><tool_result>Result\n\n<｜deepseek_image｜>\n\nEnd</tool_result><｜Assistant｜><think>"
   }
 ]
