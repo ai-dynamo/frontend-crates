@@ -94,6 +94,14 @@ def test_missing_stimulus_is_not_a_parser_failure():
     assert "stimulus unavailable" in reason and "cannot be compared" in reason
 
 
+def test_scoreable_capture_requires_a_complete_stimulus(tmp_path):
+    base = "dynamo_v2-0.6.0"
+    _write(tmp_path, base, {"assembled": []})
+    assert not capture_stimulus.capture_is_scoreable(tmp_path / base)
+    _write(tmp_path, base + ".patch1", {"assembled": [], "capture_input": capture_stimulus.capture_input(_input("same"))})
+    assert capture_stimulus.capture_is_scoreable(tmp_path / base)
+
+
 def test_old_binding_without_tools_is_unverified_not_retroactively_current():
     original = _input("same")
     del original["tools"]
@@ -175,6 +183,7 @@ def test_current_release_overlays_replace_invalid_records_and_add_cases(tmp_path
     _write(tmp_path, base + ".patch2", {"error": "also obsolete"}, "UNIFIED.31-1")
     _write(tmp_path, base + ".patch10", record, "UNIFIED.31-1")
     _write(tmp_path, base + ".patch10", record, "added")
+    assert capture_stimulus.capture_is_scoreable(tmp_path / base)
     assert capture_stimulus.validate_current_capture(tmp_path / base, [tmp_path / "inputs"]) == 3
     docs = capture_stimulus.validated_current_capture_docs(tmp_path / base, [tmp_path / "inputs"])
     assert len(docs) == 1

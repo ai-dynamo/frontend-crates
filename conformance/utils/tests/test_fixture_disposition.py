@@ -49,8 +49,8 @@ def _case(base, directory, key, record):
 
 def test_package_preserves_quarantined_bytes_even_with_prune(evidence, tmp_path, monkeypatch):
     conf, store, manifest, manifest_path = evidence
-    _case(conf / "unified", "dynamo_v2-0.6.0", "UNIFIED.g4-1", {"assembled": []})
-    _case(conf / "unified", "dynamo_v2-0.6.0.patch3", "UNIFIED.g4-1", {"assembled": []})
+    _case(conf / "unified", "dynamo_v2-0.6.0", "UNIFIED.gemma-1", {"assembled": []})
+    _case(conf / "unified", "dynamo_v2-0.6.0.patch3", "UNIFIED.gemma-1", {"assembled": []})
     monkeypatch.setattr(package_fixtures, "read_versions", lambda: ({}, {}))
     monkeypatch.setattr(sys, "argv", ["package_fixtures.py", "--prune"])
     package_fixtures.main()
@@ -63,7 +63,7 @@ def test_package_preserves_quarantined_bytes_even_with_prune(evidence, tmp_path,
 def test_extract_excludes_false_release_but_retains_real_patch(evidence, tmp_path, monkeypatch, capsys):
     conf, store, manifest, manifest_path = evidence
     staging = tmp_path / "staging"
-    _case(staging / "unified", "dynamo_v2-0.6.0.patch3", "UNIFIED.g4-1", {"assembled": []})
+    _case(staging / "unified", "dynamo_v2-0.6.0.patch3", "UNIFIED.gemma-1", {"assembled": []})
     rel = "unified/dynamo_v2-0.6.0.patch3"
     sha, size = package_fixtures._tar_dir(staging / rel, rel, store / f"{rel}.tar.gz")
     manifest["shards"] = [{"path": f"{rel}.tar.gz", "sha256": sha, "size": size}]
@@ -72,7 +72,7 @@ def test_extract_excludes_false_release_but_retains_real_patch(evidence, tmp_pat
     extract_fixtures.main()
     snapshot = Path(capsys.readouterr().out.strip().splitlines()[-1])
     assert not (snapshot / "unified/dynamo_v2-0.6.0").exists()
-    assert (snapshot / rel / "gemma4/UNIFIED.g4-1.yaml").is_file()
+    assert (snapshot / rel / "gemma4/UNIFIED.gemma-1.yaml").is_file()
     assert fixture_disposition.inactive_fixture_dirs(snapshot / "unified") == {"dynamo_v2-0.6.0"}
     # A warm cache must still reject loss or replacement of the inactive evidence.
     (store / manifest["inactive_shards"][0]["path"]).write_bytes(b"replacement")
@@ -94,7 +94,7 @@ def test_quarantined_evidence_cannot_be_reactivated_or_rebuilt(evidence, tmp_pat
 def test_inactive_only_change_publishes_new_immutable_generation(evidence, tmp_path, monkeypatch, capsys):
     _conf, store, manifest, manifest_path = evidence
     staging = tmp_path / "staging"
-    _case(staging / "unified", "inputs", "UNIFIED.g4-1", {"input": "text"})
+    _case(staging / "unified", "inputs", "UNIFIED.gemma-1", {"input": "text"})
     sha, size = package_fixtures._tar_dir(staging / "unified/inputs", "unified/inputs", store / "unified/inputs.tar.gz")
     manifest["shards"] = [{"path": "unified/inputs.tar.gz", "sha256": sha, "size": size}]
     manifest_path.write_text(json.dumps(manifest))
@@ -169,16 +169,16 @@ def test_source_capture_corpus_change_appends_overlay(evidence, monkeypatch, cap
             "assembled": [{"kind": "text", "text": text}],
         })
 
-    write_case("UNIFIED.1.a", "old")
+    write_case("UNIFIED.1-1", "old")
     if change == "removed_case":
-        write_case("UNIFIED.1.b", "retired")
+        write_case("UNIFIED.1-2", "retired")
     package_fixtures.main()
     original_path = store / "unified" / f"{directory}.tar.gz"
     original_bytes = original_path.read_bytes()
-    key = "UNIFIED.1.b" if change == "added_case" else "UNIFIED.1.a"
+    key = "UNIFIED.1-2" if change == "added_case" else "UNIFIED.1-1"
     if change == "removed_case":
         for tree in ("inputs", directory):
-            (conf / "unified" / tree / "gemma4/UNIFIED.1.b.yaml").unlink()
+                (conf / "unified" / tree / "gemma4/UNIFIED.1-2.yaml").unlink()
     else:
         write_case(key, "new")
     package_fixtures.main()
@@ -203,7 +203,7 @@ def test_source_capture_corpus_change_appends_overlay(evidence, monkeypatch, cap
     assert all(not case["dynamo_failure"] for case in cases)
     if change == "removed_case":
         # Retain the old input as a control: it must not resurrect the base capture.
-        _case(snapshot / "unified", "inputs", "UNIFIED.1.b", {
+        _case(snapshot / "unified", "inputs", "UNIFIED.1-2", {
             "input": "retired", "tools": [], "chunks": [{"delta_text": "retired"}],
         })
         cases, _caps, _versions = table._load_unified_fixtures(snapshot / "unified")
@@ -226,10 +226,10 @@ def test_source_capture_patch_order_is_numeric_in_archives_and_renderer(evidence
     label = "0.6.0+source." + "b" * 64
     base = f"dynamo_v2-{label}"
     stimulus = {"input": "latest", "tools": [], "chunks": [{"delta_text": "latest"}]}
-    _case(conf / "unified", "inputs", "UNIFIED.1.a", stimulus)
+    _case(conf / "unified", "inputs", "UNIFIED.1-1", stimulus)
     names = [base, base + ".patch1", base + ".patch2", base + ".patch10"]
     for name in names:
-        _case(conf / "unified", name, "UNIFIED.1.a", {
+        _case(conf / "unified", name, "UNIFIED.1-1", {
             "capture_input": capture_stimulus.capture_input(stimulus),
             "assembled": [{"kind": "text", "text": name}],
         })
@@ -243,7 +243,7 @@ def test_source_capture_patch_order_is_numeric_in_archives_and_renderer(evidence
 def test_loose_reader_excludes_only_quarantined_shard_and_preserves_pr_history(evidence, monkeypatch):
     conf, _store, _manifest, _path = evidence
     base = conf / "unified"
-    key = "UNIFIED.g4-1"
+    key = "UNIFIED.gemma-1"
     _case(base, "inputs", key, {"scenario": "gemma4_guided_json_visible_call_prose_before_reasoning", "chunks": []})
     _case(base, "golden", key, {"assembled": []})
     for directory, text, cid in [
@@ -270,12 +270,14 @@ def test_loose_reader_excludes_only_quarantined_shard_and_preserves_pr_history(e
 
 
 @pytest.mark.parametrize(("family", "old", "new"), [
-    ("gemma4", "UNIFIED.31-29", "UNIFIED.g4-1"),
-    ("gemma4", "UNIFIED.31-30", "UNIFIED.g4-2"),
+    ("gemma4", "UNIFIED.31-29", "UNIFIED.gemma-1"),
+    ("gemma4", "UNIFIED.31-30", "UNIFIED.gemma-2"),
     ("qwen3", "UNIFIED.31.a", "UNIFIED.31-1"),
-    ("gemma4", "UNIFIED.31.x", "UNIFIED.31-24"),
+    ("gemma4", "UNIFIED.31.x", "UNIFIED.34-6"),
     ("qwen3", "UNIFIED.31-29", "UNIFIED.31-29"),
-    ("qwen3", "UNIFIED.30.m", "UNIFIED.30.m"),
+    ("qwen3", "UNIFIED.30.m", "UNIFIED.30-13"),
+    ("qwen3", "UNIFIED.1.a", "UNIFIED.1-1"),
+    ("muse_glimmer", "UNIFIED.31-26", "UNIFIED.muse-1"),
     ("gemma4", "UNIFIED.31.y", "UNIFIED.31.y"),
 ])
 def test_historical_aliases_do_not_reassign_other_ids(family, old, new):
@@ -283,7 +285,7 @@ def test_historical_aliases_do_not_reassign_other_ids(family, old, new):
 
 
 def test_conflicting_capture_aliases_fail_without_touching_files(tmp_path, monkeypatch):
-    _case(tmp_path, "inputs", "UNIFIED.g4-1", {"scenario": "alias", "chunks": []})
+    _case(tmp_path, "inputs", "UNIFIED.gemma-1", {"scenario": "alias", "chunks": []})
     _case(tmp_path, "dynamo_v2-0.3.4.patch2", "UNIFIED.31-29", {"assembled": []})
     _case(tmp_path, "dynamo_v2-0.3.4.patch2", "UNIFIED.g4-1", {"assembled": [{"kind": "text", "text": "conflict"}]})
     before = {p: p.read_bytes() for p in tmp_path.rglob("*.yaml")}

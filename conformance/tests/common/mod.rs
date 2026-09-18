@@ -323,7 +323,13 @@ pub fn version_dirs_ascending_with_current(
     prefix: &str,
     current_dir: &str,
 ) -> Vec<PathBuf> {
-    version_dirs_with_identity_command(root, prefix, current_dir, dynamo_identity_command())
+    version_dirs_with_identity_command(
+        root,
+        prefix,
+        current_dir,
+        std::env::var_os("CONFORMANCE_DYNAMO_V2_LABEL").is_none(),
+        dynamo_identity_command(),
+    )
 }
 
 fn capture_provenance_inventory(
@@ -393,9 +399,11 @@ fn version_dirs_with_identity_command(
     root: &Path,
     prefix: &str,
     current_dir: &str,
+    allow_scoreable_fallback: bool,
     mut command: std::process::Command,
 ) -> Vec<PathBuf> {
     let resolved;
+    let is_unified_current = current_dir == UNIFIED_DYNAMO_V2_CURRENT_CAPTURE;
     let current_dir = if current_dir == UNIFIED_DYNAMO_V2_CURRENT_CAPTURE {
         let captures = capture_provenance_inventory(root, prefix);
         let mut child = command
@@ -426,7 +434,24 @@ fn version_dirs_with_identity_command(
         current_dir
     };
     let current = root.join(current_dir);
-    let current = if current_dir.contains("+source.") {
+    let current = if current.is_dir()
+        || !is_unified_current
+        || !allow_scoreable_fallback
+        || current_dir.contains("+source.")
+    {
+        current
+    } else {
+        version_dirs_ascending(root, prefix)
+            .into_iter()
+            .filter(|path| scoreable_unified_capture(path))
+            .last()
+            .unwrap_or(current)
+    };
+    let current = if current
+        .file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name.contains("+source."))
+    {
         let output = capture_stimulus_command()
             .arg("--select-source-snapshot")
             .arg(&current)
@@ -456,6 +481,17 @@ fn version_dirs_with_identity_command(
         .collect::<Vec<_>>();
     dirs.push(current);
     dirs
+}
+
+fn scoreable_unified_capture(path: &Path) -> bool {
+    let Ok(output) = capture_stimulus_command()
+        .arg("--scoreable")
+        .arg(path)
+        .output()
+    else {
+        return false;
+    };
+    output.status.success() && output.stdout.trim_ascii() == b"1"
 }
 
 /// Use the same snapshot and request-binding validator as the Python renderer.
@@ -502,6 +538,7 @@ mod capture_selector_tests {
             root,
             "dynamo_v2-",
             UNIFIED_DYNAMO_V2_CURRENT_CAPTURE,
+            label.is_none(),
             command,
         )
     }
@@ -630,6 +667,7 @@ mod capture_selector_tests {
             &captures,
             "dynamo_v2-",
             STREAM_DYNAMO_V2_CURRENT_CAPTURE,
+            false,
             std::process::Command::new("this-command-must-not-run"),
         );
         assert_eq!(stream_dirs.last(), Some(&stream));

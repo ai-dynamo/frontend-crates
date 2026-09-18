@@ -982,9 +982,6 @@ def _full_label(impl: str, version: object, mode: str) -> str:
     # the stream tab its mode reads "(jail+batch)".
     if impl == BASELINE_BATCH_IMPL and mode == "stream":
         mode = "jail+batch"
-    if impl == "dynamo_v2" and isinstance(version, str) and "+source." in version:
-        version = version.split("+source.", 1)[0]
-        mode = f"working build; {mode}"
     ver = f" {version}" if version else ""
     return f"{base}{ver} ({mode})"
 
@@ -2236,6 +2233,7 @@ def _load_unified_fixtures(base: Path):
     capture_provenance = {}
     inactive_dirs = fixture_disposition.inactive_fixture_dirs(base)
     input_bindings = {}
+    input_aliases = {}
     complete_snapshots = set()
 
     def _read_dir(name, include_bytes=False):
@@ -2266,7 +2264,10 @@ def _load_unified_fixtures(base: Path):
                         raise ValueError(f"conflicting capture provenance: {name}/{ident}")
                     layer["records"][ident] = provenance
                 if is_capture:
-                    k = fixture_disposition.historical_unified_case_key(fp.parent.name, k)
+                    family = fp.parent.name
+                    _family, k = fixture_disposition.canonical_unified_record_key(
+                        family, k, input_aliases,
+                    )
                     current = inputs.get((fp.parent.name, k))
                     if current is not None:
                         reason = capture_stimulus.comparison_failure(
@@ -2313,6 +2314,21 @@ def _load_unified_fixtures(base: Path):
     )
     inputs = _merge_layers(input_layers, "input")
     golden = _merge_layers(golden_layers, "golden")
+
+    # Shared inputs own scenario identity. Canonicalize any legacy overlay key through
+    # that scenario, then use the resulting input aliases to put its golden record in
+    # the same slot. Historical capture shards use the read-side aliases above; this
+    # is the equivalent bridge for immutable shared input/golden overlays.
+    inputs, input_aliases = fixture_disposition.canonicalize_unified_inputs(inputs)
+
+    canonical_golden = {}
+    for key, case in golden.items():
+        canonical = fixture_disposition.canonical_unified_record_key(*key, input_aliases)
+        prior = canonical_golden.get(canonical)
+        if prior is not None and prior != case:
+            raise ValueError(f"conflicting shared golden aliases for {canonical[0]}/{canonical[1]}")
+        canonical_golden[canonical] = case
+    golden = canonical_golden
     # A taxonomy rename changes the case key while preserving the scenario. Keep the
     # generated key so an older immutable input record cannot make the current capture
     # look incomplete beside its replacement in a sparse overlay.
@@ -2373,8 +2389,30 @@ def _load_unified_fixtures(base: Path):
         else:
             dynamo_by_ver[display_ver] = captured_cases
 
-    current_dynamo_ver = _unified_dynamo_label(capture_provenance)
+    requested_dynamo_ver = _unified_dynamo_label(capture_provenance)
+    current_dynamo_ver = requested_dynamo_ver
     current_dynamo_cases = dynamo_by_ver.get(current_dynamo_ver, {})
+    # A released checkout can legitimately be newer than the most recent Unified
+    # capture. Do not render that uncaptured release as the default reference: every
+    # cell would be unavailable despite a verified, scoreable source capture being
+    # present. The default is the newest capture with at least one comparable result;
+    # its full source-qualified label makes the older source explicit to the reader.
+    if not any(not _unified_capture_failure(case) for case in current_dynamo_cases.values()):
+        scoreable_versions = [
+            version
+            for version, captured_cases in dynamo_by_ver.items()
+            if any(not _unified_capture_failure(case) for case in captured_cases.values())
+        ]
+        if scoreable_versions:
+            current_dynamo_ver = max(
+                scoreable_versions,
+                key=lambda version: (
+                    fixtures._version_sort_key(version),
+                    "+source." in version,
+                    fixture_disposition.capture_layer_sort_key(version),
+                ),
+            )
+            current_dynamo_cases = dynamo_by_ver[current_dynamo_ver]
     missing_current_case_keys = {
         (family, key)
         for (family, key), input_case in inputs.items()
@@ -2637,7 +2675,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
         )
         if scenario == "guided_json_quoted_bare_tool_header_in_answer":
             note = (
-                "This is a duplication of UNIFIED.31-25 for this family: the existing "
+                "This is a duplication of UNIFIED.35-1 for this family: the existing "
                 "variant changes only the literal text inside its reasoning markers. "
                 "Muse's to=get_weather header exercises a separate recipient boundary."
             )

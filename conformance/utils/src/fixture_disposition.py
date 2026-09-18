@@ -8,6 +8,9 @@ import re
 import tarfile
 from pathlib import Path, PurePosixPath
 
+import unified_taxonomy
+from unified_taxonomy import historical_case_label
+
 CAPTURE_SNAPSHOT = "capture-snapshot.json"
 DYNAMO_VERSION_RE = re.compile(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?")
 
@@ -38,13 +41,51 @@ def capture_layer_sort_key(label: str) -> tuple[str, int]:
 
 
 def historical_unified_case_key(family: str, key: str) -> str:
-    # Only these taxonomy renames preserve the stimulus; 30.m is not a number.
-    match = re.fullmatch(r"UNIFIED\.31\.([a-x])", key)
-    if match:
-        key = f"UNIFIED.31-{ord(match[1]) - ord('a') + 1}"
+    """Read historical archive IDs through the scenario-owned taxonomy aliases."""
+    label = key.removeprefix("UNIFIED.")
     if family == "gemma4":
-        key = {"UNIFIED.31-29": "UNIFIED.g4-1", "UNIFIED.31-30": "UNIFIED.g4-2"}.get(key, key)
-    return key
+        label = {"31-29": "g4-1", "31-30": "g4-2"}.get(label, label)
+    return f"UNIFIED.{historical_case_label(label)}"
+
+
+def canonical_unified_case_key(family: str, key: str, scenario: str | None = None) -> str:
+    """Return the shared key for new and historical Unified fixture records."""
+    if scenario in unified_taxonomy.UNIFIED_TAX:
+        return unified_taxonomy.numbered_id(scenario)
+    return historical_unified_case_key(family, key)
+
+
+def canonicalize_unified_inputs(records: dict[tuple[str, str], dict]) -> tuple[dict, dict]:
+    """Apply scenario-owned input IDs once, retaining aliases for immutable captures."""
+    canonical = {}
+    aliases = {}
+    scenario_keys = {}
+    for (family, key), record in records.items():
+        scenario = record.get("scenario")
+        ident = (family, canonical_unified_case_key(family, key, scenario))
+        if scenario:
+            previous = scenario_keys.get((family, scenario))
+            if previous is not None and previous != ident:
+                canonical.pop(previous, None)
+            scenario_keys[(family, scenario)] = ident
+        canonical[ident] = record
+        historical = historical_unified_case_key(family, key)
+        aliases[(family, key)] = ident
+        aliases[(family, historical)] = ident
+        if key.startswith("UNIFIED."):
+            aliases[(family, key.removeprefix("UNIFIED."))] = ident
+        else:
+            aliases[(family, f"UNIFIED.{key}")] = ident
+    return canonical, aliases
+
+
+def canonical_unified_record_key(family: str, key: str, input_aliases: dict) -> tuple[str, str]:
+    """Resolve capture and golden records through the shared input ownership map."""
+    historical = historical_unified_case_key(family, key)
+    return input_aliases.get(
+        (family, key),
+        input_aliases.get((family, historical), (family, historical)),
+    )
 
 
 def capture_archive_layers(store: Path, relative: str) -> list[Path]:

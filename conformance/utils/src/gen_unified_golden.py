@@ -1039,7 +1039,7 @@ EDGE = [
      })),
 
     ("gemma4_guided_json_malformed_call_prefix_before_reasoning",
-     "Gemma 4 only: an incomplete native-looking `call:get_weather` prefix sits immediately before a thought and guided JSON. It lacks the `{` that makes a Gemma invoke body, so it remains visible text rather than being silently suppressed; the following thought and guided payload still route normally. The contrast with `g4-1` fixes the boundary between ordinary `call:` prose and a malformed-but-still-visible Gemma candidate.",
+     "Gemma 4 only: an incomplete native-looking `call:get_weather` prefix sits immediately before a thought and guided JSON. It lacks the `{` that makes a Gemma invoke body, so it remains visible text rather than being silently suppressed; the following thought and guided payload still route normally. The contrast with `gemma-1` fixes the boundary between ordinary `call:` prose and a malformed-but-still-visible Gemma candidate.",
      ["P2"],
      [{"kind": "text", "text": "call:get_weather"},
       {"kind": "reasoning", "text": "secret"},
@@ -1453,7 +1453,7 @@ GUIDED_SURROUNDS = {
 def _guided_product():
     """Every (payload x surrounding) crossing that says something distinct.
 
-    `clean` x `valid` is `30.a`/`30.b` and `clean` x the malformed payloads is
+    `clean` x `valid` is `30-1`/`30-2` and `clean` x the malformed payloads is
     `31-1` through `31-4`; those already exist, so the predicate drops them rather than
     emitting a duplicate under a second name.
     """
@@ -1461,7 +1461,7 @@ def _guided_product():
     for pay_name, (payload, want_args) in GUIDED_PAYLOADS.items():
         dispatches = want_args is not None
         for sur_name, (wrap, sur_desc, strips_tail) in GUIDED_SURROUNDS.items():
-            # `clean` is already authored as 30.a/30.b and 31-1 through 31-4. The
+        # `clean` is already authored as 30-1/30-2 and 31-1 through 31-4. The
             # `valid` payload crossings are also already authored by hand
             # (guided_json_tool_open_before_payload / _tool_close_after_payload /
             # _wrapped_in_tool_markup) — generating them produced 3 scenarios x 3
@@ -1580,7 +1580,7 @@ QUOTED_BARE_HEADER = [
     ("guided_json_quoted_bare_header_in_answer", "self",
      "A `to=self` header QUOTED inside the visible answer, after the turn has already been routed to the user. The words are the model's prose and only the marker is structural, so the answer stays one run. Promoting the quote opened a real THOUGHT and split the answer in two, which reaches the client as an answer plus chain-of-thought the model never meant to expose."),
     ("guided_json_quoted_bare_tool_header_in_answer", "get_weather",
-     "Muse's quoted TOOL-recipient header remains visible answer text. Promoting it deletes the `to=…` words instead of splitting the answer. Only Muse has this recipient boundary; changing a word inside another family's reasoning envelope duplicates `31-25`."),
+     "Muse's quoted TOOL-recipient header remains visible answer text. Promoting it deletes the `to=…` words instead of splitting the answer. Only Muse has this recipient boundary; changing a word inside another family's reasoning envelope duplicates `35-1`."),
 ]
 
 # The scope siblings: turn position and open channel are independent axes, and the
@@ -1951,7 +1951,7 @@ def emit_yaml(fam):
         # EXPLICIT indentation indicator. A bare `|-` lets YAML infer the block's
         # indentation from its first non-empty line, so an input that legitimately
         # BEGINS with a space loses that byte on reload — the reader cannot tell
-        # content-space from indent-space. `31-28` is authored with a leading space
+        # content-space from indent-space. `34-7` is authored with a leading space
         # (the bare-header form) and was emitted 110 bytes, reloaded 109: the corpus
         # was measuring a different input than the one authored. `2` is the content
         # indentation relative to this mapping node, and the trailing `-` keeps the
