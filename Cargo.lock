@@ -1363,7 +1363,6 @@ checksum = "35ff8cf975d8f772e7d4c3be439659b0b23b1ae1086ebee7204573807053ff7f"
 dependencies = [
  "daachorse",
  "fancy-regex 0.17.0",
- "hf-hub 0.4.3",
  "icu_normalizer",
  "libc",
  "memchr",
@@ -1374,7 +1373,6 @@ dependencies = [
  "serde_json",
  "strum",
  "thiserror",
- "ureq",
 ]
 
 [[package]]
