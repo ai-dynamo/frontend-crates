@@ -19,7 +19,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0001-chinese_arithmetic__non-stream-budget_capped.json",
@@ -32,7 +32,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0002-chinese_arithmetic__stream-budget_capped.json",
@@ -45,7 +45,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0003-compare_fractions__non-stream-budget_capped.json",
@@ -58,7 +58,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0004-compare_fractions__stream-budget_capped.json",
@@ -71,7 +71,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0013-history_not_preserved__non-stream-budget_capped.json",
@@ -84,7 +84,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0014-history_not_preserved__stream-budget_capped.json",
@@ -97,7 +97,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0015-history_preserved_addition__non-stream-budget_capped.json",
@@ -110,7 +110,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0016-history_preserved_addition__stream-budget_capped.json",
@@ -123,7 +123,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0017-history_preserved_codeword__non-stream-budget_capped.json",
@@ -136,7 +136,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0018-history_preserved_codeword__stream-budget_capped.json",
@@ -149,7 +149,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0019-history_unicode__non-stream-budget_capped.json",
@@ -162,7 +162,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0020-history_unicode__stream-budget_capped.json",
@@ -175,8 +175,8 @@
       "mode": "stream",
       "steps": 2,
       "unified": [
-        "10.b",
-        "30.b"
+        "10-2",
+        "30-2"
       ],
       "artifacts": [
         "case-0145-lifecycle_chained_calculation__stream-budget_capped.json",
@@ -189,8 +189,8 @@
       "mode": "stream",
       "steps": 2,
       "unified": [
-        "10.b",
-        "30.b"
+        "10-2",
+        "30-2"
       ],
       "artifacts": [
         "case-0129-lifecycle_single_result__stream-budget_capped.json",
@@ -203,7 +203,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0021-logic_syllogism__non-stream-budget_capped.json",
@@ -216,7 +216,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0022-logic_syllogism__stream-budget_capped.json",
@@ -229,7 +229,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0023-long_context_retrieval__non-stream-budget_capped.json",
@@ -242,7 +242,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0024-long_context_retrieval__stream-budget_capped.json",
@@ -255,7 +255,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0025-minutes_to_seconds__non-stream-budget_capped.json",
@@ -268,7 +268,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0026-minutes_to_seconds__stream-budget_capped.json",
@@ -281,7 +281,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0027-multiline_checksum__non-stream-budget_capped.json",
@@ -294,7 +294,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0028-multiline_checksum__stream-budget_capped.json",
@@ -307,7 +307,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0029-multiply_17_19__non-stream-budget_capped.json",
@@ -320,7 +320,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0030-multiply_17_19__stream-budget_capped.json",
@@ -333,7 +333,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0031-parity_expression__non-stream-budget_capped.json",
@@ -346,7 +346,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0032-parity_expression__stream-budget_capped.json",
@@ -359,7 +359,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0033-python_loop_trace__non-stream-budget_capped.json",
@@ -372,7 +372,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0034-python_loop_trace__stream-budget_capped.json",
@@ -385,7 +385,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "30.e"
+        "30-5"
       ],
       "artifacts": [
         "case-0108-schema_array__stream-budget_capped.json",
@@ -398,7 +398,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "30.d"
+        "30-4"
       ],
       "artifacts": [
         "case-0105-schema_escaped_unicode_string__non-stream-budget_capped.json",
@@ -411,7 +411,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0035-sequence_next__non-stream-budget_capped.json",
@@ -424,7 +424,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0036-sequence_next__stream-budget_capped.json",
@@ -437,7 +437,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0037-set_intersection__non-stream-budget_capped.json",
@@ -450,7 +450,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0038-set_intersection__stream-budget_capped.json",
@@ -463,7 +463,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0039-sort_integers__non-stream-budget_capped.json",
@@ -476,7 +476,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0040-sort_integers__stream-budget_capped.json",
@@ -489,7 +489,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0041-spanish_logic__non-stream-budget_capped.json",
@@ -502,7 +502,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0042-spanish_logic__stream-budget_capped.json",
@@ -515,7 +515,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0043-structured_json__non-stream-budget_capped.json",
@@ -528,7 +528,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0044-structured_json__stream-budget_capped.json",
@@ -541,7 +541,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0045-system_instruction__non-stream-budget_capped.json",
@@ -554,7 +554,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0046-system_instruction__stream-budget_capped.json",
@@ -567,7 +567,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "30.a"
+        "30-1"
       ],
       "artifacts": [
         "case-0047-tool_add_named__non-stream-budget_capped.json",
@@ -580,7 +580,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "30.a"
+        "30-1"
       ],
       "artifacts": [
         "case-0048-tool_add_named__stream-budget_capped.json",
@@ -593,7 +593,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0051-tool_none_arithmetic__non-stream-budget_capped.json",
@@ -606,7 +606,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0052-tool_none_arithmetic__stream-budget_capped.json",
@@ -619,7 +619,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "30.a"
+        "30-1"
       ],
       "artifacts": [
         "case-0054-tool_translate_named__stream-budget_capped.json",
@@ -632,7 +632,7 @@
       "mode": "non-stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0067-unicode_symbol_math__non-stream-budget_capped.json",
@@ -645,7 +645,7 @@
       "mode": "stream",
       "steps": 1,
       "unified": [
-        "10.b"
+        "10-2"
       ],
       "artifacts": [
         "case-0068-unicode_symbol_math__stream-budget_capped.json",

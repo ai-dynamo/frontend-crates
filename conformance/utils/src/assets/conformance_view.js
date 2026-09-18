@@ -714,7 +714,7 @@
 
   function columnGrammarModel(tab, col) {
     var rows = [];
-    var caseId = null;   // numbered id (e.g. "UNIFIED.7.b") — the cells' own id, not the slug
+    var caseId = null;   // numbered id (e.g. "UNIFIED.7-2") — the cells' own id, not the slug
     var colDefs = null;  // shared output-candidate columns [{key,label,pin}], first row wins
     (tab.rows || []).forEach(function (row) {
       if (!row || row.section) { return; }              // section banners are not families

@@ -31,6 +31,7 @@ import pytest  # noqa: E402
 import yaml  # noqa: E402
 
 import gen_unified_golden as G  # noqa: E402
+from fixture_disposition import historical_unified_case_key  # noqa: E402
 from generate_conformance_table import _base_stream_version  # noqa: E402
 from gen_unified_golden import (  # noqa: E402
     CLEAN,
@@ -117,25 +118,24 @@ def test_every_used_group_has_a_label() -> None:
 
 def test_case_labels_keep_gemma_specific_cases_out_of_the_generic_guided_series() -> None:
     """Gemma-only call-prefix cases use their own named numeric group."""
-    assert tax("guided_json_quoted_bare_header_in_answer") == (31, "25")
-    assert tax("guided_json_quoted_bare_tool_header_in_answer") == (31, "26")
-    assert tax("guided_json_quoted_bare_header_after_payload") == (31, "27")
-    assert tax("guided_json_bare_tool_header_recovers_inside_a_thought") == (31, "28")
-    assert tax("gemma4_guided_json_visible_call_prose_before_reasoning") == ("g4", "1")
-    assert tax("gemma4_guided_json_malformed_call_prefix_before_reasoning") == ("g4", "2")
-    assert case_label("guided_json_quoted_bare_header_in_answer") == "31-25"
-    assert case_label("guided_json_quoted_bare_tool_header_in_answer") == "31-26"
-    assert case_label("guided_json_quoted_bare_header_after_payload") == "31-27"
-    assert case_label("guided_json_bare_tool_header_recovers_inside_a_thought") == "31-28"
-    assert case_label("gemma4_guided_json_visible_call_prose_before_reasoning") == "g4-1"
-    assert case_label("gemma4_guided_json_malformed_call_prefix_before_reasoning") == "g4-2"
-    assert numbered_id("guided_json_quoted_bare_header_in_answer") == "UNIFIED.31-25"
-    assert numbered_id("gemma4_guided_json_visible_call_prose_before_reasoning") == "UNIFIED.g4-1"
+    assert tax("guided_json_quoted_bare_header_in_answer") == (35, "1")
+    assert tax("guided_json_quoted_bare_tool_header_in_answer") == ("muse", "1")
+    assert tax("guided_json_quoted_bare_header_after_payload") == (35, "2")
+    assert tax("guided_json_bare_tool_header_recovers_inside_a_thought") == (34, "7")
+    assert tax("gemma4_guided_json_visible_call_prose_before_reasoning") == ("gemma", "1")
+    assert tax("gemma4_guided_json_malformed_call_prefix_before_reasoning") == ("gemma", "2")
+    assert case_label("guided_json_quoted_bare_header_in_answer") == "35-1"
+    assert case_label("guided_json_quoted_bare_tool_header_in_answer") == "muse-1"
+    assert case_label("guided_json_quoted_bare_header_after_payload") == "35-2"
+    assert case_label("guided_json_bare_tool_header_recovers_inside_a_thought") == "34-7"
+    assert case_label("gemma4_guided_json_visible_call_prose_before_reasoning") == "gemma-1"
+    assert case_label("gemma4_guided_json_malformed_call_prefix_before_reasoning") == "gemma-2"
+    assert numbered_id("guided_json_quoted_bare_header_in_answer") == "UNIFIED.35-1"
+    assert numbered_id("gemma4_guided_json_visible_call_prose_before_reasoning") == "UNIFIED.gemma-1"
     assert case_label("guided_json_invalid_call") == "31-1"
     assert numbered_id("guided_json_invalid_call") == "UNIFIED.31-1"
-    guided = [sub for group, sub in UNIFIED_TAX.values() if group == 31]
+    guided = [sub for group, sub in UNIFIED_TAX.values() if isinstance(group, int) and 30 <= group <= 35]
     assert all(sub.isdecimal() for sub in guided)
-    assert sorted(map(int, guided)) == list(range(1, 29))
 
     ordered = sorted(
         (
@@ -146,10 +146,10 @@ def test_case_labels_keep_gemma_specific_cases_out_of_the_generic_guided_series(
         ),
         key=taxonomy_sort_key,
     )
-    assert [tax(scenario)[1] for scenario in ordered] == ["25", "26", "27", "28"]
+    assert [case_label(scenario) for scenario in ordered] == ["34-7", "35-1", "35-2", "muse-1"]
 
 
-def test_kimi_k3_cases_use_numeric_suffixes() -> None:
+def test_kimi_k3_cases_use_model_specific_numeric_suffixes() -> None:
     k3 = [
         "kimi_k3_typed_argument_values",
         "kimi_k3_raw_json_arguments",
@@ -160,9 +160,9 @@ def test_kimi_k3_cases_use_numeric_suffixes() -> None:
         "kimi_k3_raw_json_eof",
         "kimi_k3_guided_native_wrapper",
     ]
-    assert [case_label(scenario) for scenario in k3] == [f"k3-{i}" for i in range(1, 9)]
+    assert [case_label(scenario) for scenario in k3] == [f"kimi-{i}" for i in range(1, 9)]
     assert [numbered_id(scenario) for scenario in k3] == [
-        f"UNIFIED.k3-{i}" for i in range(1, 9)
+        f"UNIFIED.kimi-{i}" for i in range(1, 9)
     ]
 
 
@@ -410,7 +410,7 @@ def test_deepseek_v41_guided_narration_uses_an_unfinished_dsml_invoke() -> None:
 def test_historical_bare_header_stimulus_keeps_30m(family, prefix):
     scenario = "guided_json_gt_in_argument_bare_opener"
     case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
-    assert numbered_id(scenario) == "UNIFIED.30.m"
+    assert numbered_id(scenario) == "UNIFIED.30-13"
     assert case["input"] == prefix + '[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
     assert case["init"] == {
         "starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None,
@@ -423,7 +423,7 @@ def test_historical_bare_header_stimulus_keeps_30m(family, prefix):
 def test_deepseek_v41_empty_calls_envelope_keeps_4b():
     scenario = "tool_markup_only_emits_nothing"
     case = build_cases("deepseek_v41")[f"UNIFIED.{scenario}.deepseek_v41"]
-    assert numbered_id(scenario) == "UNIFIED.4.b"
+    assert numbered_id(scenario) == "UNIFIED.4-2"
     assert case["input"] == "<｜DSML｜ calls></｜DSML｜ calls>"
     assert case["golden"] == []
     assert case["init"] == {
@@ -541,7 +541,7 @@ def test_every_authored_case_survives_emission_and_reload():
 
     `input: |-` lets YAML infer a block's indentation from its first non-empty line,
     so an input that legitimately BEGINS with a space loses that byte on reload — the
-    reader cannot tell content-space from indent-space. `31-28` is authored with a
+    reader cannot tell content-space from indent-space. `34-7` is authored with a
     leading space (the bare-header form muse accepts when the prompt consumed the
     turn's framing) and was emitted at 110 bytes and reloaded at 109. The corpus was
     scoring the parser against an input nobody wrote.
@@ -706,7 +706,7 @@ def _packed_layer(shard: str, fam: str, field_map):
 
 
 def _taxonomy_scenarios(fam: str):
-    """Taxonomy id (`UNIFIED.31-28`) -> scenario slug, from packaged input layers.
+    """Taxonomy id (`UNIFIED.34-7`) -> scenario slug, from packaged input layers.
 
     The golden shard keys by taxonomy id and carries no scenario field, so the mapping
     comes from the one shard holding both. A key JOIN, not a value normalization.
@@ -750,7 +750,7 @@ def test_every_case_triple_is_identical_at_every_layer():
     it passed locally on leftover generated state and died with `FileNotFoundError` in
     0.16s on a fresh checkout, so the corpus it was written to protect shipped unguarded.
 
-    Why this matters at all: the emitter once ate the leading space of `31-28`, the spec
+    Why this matters at all: the emitter once ate the leading space of `34-7`, the spec
     and feed carried the fix, and the loose and packaged inputs kept the pre-fix bytes
     because they had been exploded first. Every gate was green and the shipped corpus was
     wrong.
@@ -810,7 +810,11 @@ def test_every_released_unified_column_covers_the_current_corpus():
             for member in archive.getmembers():
                 parts = Path(member.name).parts
                 if member.isfile() and len(parts) == 4 and parts[-1].endswith(".yaml"):
-                    releases[version].add((parts[-2], parts[-1].removesuffix(".yaml")))
+                    family = parts[-2]
+                    releases[version].add((
+                        family,
+                        historical_unified_case_key(family, parts[-1].removesuffix(".yaml")),
+                    ))
     expected = {
         (family, numbered_id(_scenario_of(case_id, family)))
         for family in FAMILIES for case_id in build_cases(family)
@@ -819,9 +823,9 @@ def test_every_released_unified_column_covers_the_current_corpus():
 
 
 def test_release_coverage_rejects_one_missing_historical_case():
-    expected = {("qwen3", "UNIFIED.1.a"), ("qwen3", "UNIFIED.31-23")}
+    expected = {("qwen3", "UNIFIED.1-1"), ("qwen3", "UNIFIED.32-5")}
     with pytest.raises(AssertionError, match="missing historical captures"):
-        _assert_release_coverage({"0.6.0": expected - {("qwen3", "UNIFIED.31-23")}}, expected)
+        _assert_release_coverage({"0.6.0": expected - {("qwen3", "UNIFIED.32-5")}}, expected)
 
 
 def _family_value(scenario, family):

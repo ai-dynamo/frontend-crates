@@ -36,8 +36,8 @@ def _write_case(root, dirname, family, key, body, **metadata):
 
 def test_sparse_unified_patch_merges_with_base_and_overrides_in_order(tmp_path):
     family = "gemma4"
-    base_key = "UNIFIED.1.a"
-    patch_key = "UNIFIED.1.b"
+    base_key = "UNIFIED.1-1"
+    patch_key = "UNIFIED.1-2"
     for key, scenario in (
         (base_key, "base_case"),
         (patch_key, "patch_case"),
@@ -94,8 +94,8 @@ def test_sparse_unified_patch_merges_with_base_and_overrides_in_order(tmp_path):
 
 def test_pr_overlay_merges_shared_inputs_and_golden_without_rewriting_releases(tmp_path):
     family = "gemma4"
-    base_key = "UNIFIED.1.a"
-    pr_key = "UNIFIED.1.b"
+    base_key = "UNIFIED.1-1"
+    pr_key = "UNIFIED.1-2"
     for dirname, key, body, metadata in (
         ("inputs", base_key, {"scenario": "released", "chunks": [{"delta_text": "base"}]}, {"model_label": family}),
         ("golden", base_key, {"assembled": [{"kind": "text", "text": "base"}]}, {"captured_with": {"golden": "v1"}}),
@@ -140,7 +140,7 @@ def test_shared_overlay_rejects_conflicting_duplicate_records(
     tmp_path, dirname, base_body, overlay_body, kind
 ):
     family = "gemma4"
-    key = "UNIFIED.1.a"
+    key = "UNIFIED.1-1"
     if dirname == "golden":
         _write_case(
             tmp_path,
@@ -163,7 +163,7 @@ def test_shared_overlay_rejects_conflicting_duplicate_records(
     _write_case(tmp_path, dirname, family, key, base_body, **metadata)
     _write_case(tmp_path, f"{dirname}+pr166.patch1", family, key, overlay_body, **metadata)
 
-    with pytest.raises(ValueError, match=rf"conflicting shared {kind} record gemma4/UNIFIED\.1\.a"):
+    with pytest.raises(ValueError, match=rf"conflicting shared {kind} record gemma4/UNIFIED\.1-1"):
         table._load_unified_fixtures(tmp_path)
 
 
@@ -173,7 +173,7 @@ def test_shared_overlay_rejects_conflicting_duplicate_records(
 ])
 def test_shared_overlay_accepts_byte_identical_duplicate_records(tmp_path, dirname, body):
     family = "gemma4"
-    key = "UNIFIED.1.a"
+    key = "UNIFIED.1-1"
     if dirname == "golden":
         _write_case(
             tmp_path,
@@ -211,7 +211,7 @@ def test_shared_overlay_accepts_byte_identical_duplicate_records(tmp_path, dirna
 
 def test_shared_overlay_rejects_semantically_equal_but_byte_different_record(tmp_path):
     family = "gemma4"
-    key = "UNIFIED.1.a"
+    key = "UNIFIED.1-1"
     _write_case(
         tmp_path,
         "inputs",
@@ -224,17 +224,17 @@ def test_shared_overlay_rejects_semantically_equal_but_byte_different_record(tmp
     overlay.parent.mkdir(parents=True)
     overlay.write_text(
         "family: gemma4\nmode: unified\nmodel_label: gemma4\ncases:\n"
-        "  UNIFIED.1.a: {chunks: [{delta_text: same}], scenario: same}\n"
+        "  UNIFIED.1-1: {chunks: [{delta_text: same}], scenario: same}\n"
     )
 
-    with pytest.raises(ValueError, match=r"conflicting shared input record gemma4/UNIFIED\.1\.a"):
+    with pytest.raises(ValueError, match=r"conflicting shared input record gemma4/UNIFIED\.1-1"):
         table._load_unified_fixtures(tmp_path)
 
 
 def test_selected_qualified_capture_keeps_the_release(tmp_path, monkeypatch):
     monkeypatch.setattr(table, "_unified_dynamo_label", lambda captures: "0.3.4+pr166")
     family = "gemma4"
-    key = "UNIFIED.1.a"
+    key = "UNIFIED.1-1"
     _write_case(
         tmp_path,
         "inputs",
@@ -272,8 +272,8 @@ def test_selected_qualified_capture_keeps_the_release(tmp_path, monkeypatch):
 def test_selected_current_capture_requires_every_input_or_a_sparse_overlay(tmp_path, monkeypatch):
     monkeypatch.setattr(table, "_unified_dynamo_label", lambda captures: "0.3.4+pr166")
     family = "gemma4"
-    captured_key = "UNIFIED.1.a"
-    missing_key = "UNIFIED.1.b"
+    captured_key = "UNIFIED.1-1"
+    missing_key = "UNIFIED.1-2"
     for key in (captured_key, missing_key):
         _write_case(
             tmp_path,
@@ -355,7 +355,7 @@ def test_missing_current_capture_preserves_other_candidates(tmp_path, monkeypatc
     })
     # Another case establishes each version without claiming a result for this one.
     for dirname in ("dynamo_v2-0.3.4", "vllm_rust-0.25.1", "dynamo_v2-0.6.0"):
-        _write_case(tmp_path, dirname, family, "UNIFIED.1.a", {"assembled": [], "chunks": []})
+        _write_case(tmp_path, dirname, family, "UNIFIED.1-1", {"assembled": [], "chunks": []})
     if current_present:
         _write_case(tmp_path, "dynamo_v2-0.6.0", family, key, {
             "assembled": golden, "chunks": [{"expected": golden}],
@@ -476,8 +476,8 @@ def test_taxonomy_rename_uses_the_overlay_case_key(tmp_path):
 
 def test_sparse_peer_patch_overrides_base_case_without_changing_release(tmp_path):
     family = "gemma4"
-    base_key = "UNIFIED.1.a"
-    patch_key = "UNIFIED.1.b"
+    base_key = "UNIFIED.1-1"
+    patch_key = "UNIFIED.1-2"
     for key, scenario in ((base_key, "base_case"), (patch_key, "patch_case")):
         _write_case(
             tmp_path,

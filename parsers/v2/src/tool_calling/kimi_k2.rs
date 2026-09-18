@@ -123,12 +123,12 @@ fn native_id_len(text: &str, flush: bool) -> NativeId {
 ///
 /// Two things follow from that ordering:
 /// - A `call_end`-looking byte sequence embedded INSIDE the JSON string
-///   argument is data, not the real closer (`UNIFIED.7.b`,
+///   argument is data, not the real closer (`UNIFIED.7-2`,
 ///   `arg_marker_in_string`) — the naive whole-buffer search matched the
 ///   embedded copy first and truncated the argument there.
 /// - At true EOF (`flush`), a body whose JSON is syntactically complete but
 ///   whose `call_end` never streamed (max_tokens / EOS) is recoverable
-///   (`UNIFIED.5.b`, `tool_no_close`, the same best-effort-recovery contract
+///   (`UNIFIED.5-2`, `tool_no_close`, the same best-effort-recovery contract
 ///   as policy P2) instead of being dropped as if it were genuinely
 ///   truncated. `K2Emitter` synthesizes the missing closer before typing it.
 ///   BUT only for `tool_index == 0`: the captured batch contract
@@ -313,7 +313,7 @@ fn kimi_invoke_end(text: &str, flush: bool, tool_index: usize) -> Option<usize> 
         // `json_value_end` returning `None` does NOT mean "malformed" --
         // most of the time it means "not balanced YET", e.g. a chunk split
         // lands mid-string with a `call_end`-looking byte sequence sitting
-        // inside the still-open quote (`UNIFIED.7.b`, `arg_marker_in_string`).
+        // inside the still-open quote (`UNIFIED.7-2`, `arg_marker_in_string`).
         // Falling back to a raw `call_end` search there re-matches that
         // EMBEDDED fake closer and truncates the argument -- exactly the I7
         // corruption this whole JSON-boundary approach exists to prevent.
@@ -402,7 +402,7 @@ fn kimi_invoke_end(text: &str, flush: bool, tool_index: usize) -> Option<usize> 
             return Some(json_end + rel + CALL_END.len());
         }
     }
-    // Best-effort recovery (`UNIFIED.5.b`, policy P2 sibling): the argument
+    // Best-effort recovery (`UNIFIED.5-2`, policy P2 sibling): the argument
     // body is syntactically complete but the model stopped before emitting
     // the closer. Only at true EOF -- otherwise wait for more input.
     //
@@ -527,7 +527,7 @@ impl InvokeEmitter for K2Emitter {
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>> {
         // `kimi_invoke_end` may hand back a call recovered at EOF whose JSON
-        // body is complete but whose `call_end` never streamed (`UNIFIED.5.b`).
+        // body is complete but whose `call_end` never streamed (`UNIFIED.5-2`).
         // Normalize it here: the regex-based v1 parser requires the literal
         // closer to delimit the arguments capture, so synthesize it rather
         // than re-feeding the raw, still-unclosed bytes.
@@ -1096,7 +1096,7 @@ mod tests {
 
     /// Sibling positive control: the SAME shape but with genuinely valid
     /// JSON still recovers normally -- this fix must not regress the
-    /// existing `UNIFIED.5.b`/`tool_no_close` best-effort recovery contract.
+    /// existing `UNIFIED.5-2`/`tool_no_close` best-effort recovery contract.
     #[test]
     fn eof_recovery_still_recovers_genuinely_valid_json_with_no_call_end() {
         let text =

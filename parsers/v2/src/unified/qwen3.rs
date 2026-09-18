@@ -1691,7 +1691,7 @@ mod tests {
     #[test]
     fn required_choice_recovers_the_whole_array_when_any_call_is_invalid() {
         // Invalid = missing `name` (the one required field). A missing ARGUMENT key is
-        // not invalid — that is a parameterless call, per `UNIFIED.6.a`.
+        // not invalid — that is a parameterless call, per `UNIFIED.6-1`.
         let input = r#"[{"name":"get_weather","parameters":{"city":"Paris"}},{"parameters":{"city":"Tokyo"}}]"#;
         let out = configured_events(
             &weather_tools(),
@@ -3353,7 +3353,7 @@ mod reset_and_payload_tests {
         }
     }
 
-    /// Guided must agree with native on `UNIFIED.6.a`: a call with no argument key
+    /// Guided must agree with native on `UNIFIED.6-1`: a call with no argument key
     /// is a parameterless call, not a malformed one — and inside an array it must not
     /// take its siblings down with it.
     #[test]

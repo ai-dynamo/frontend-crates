@@ -11,7 +11,8 @@ import yaml
 
 from fixture_disposition import (
     CAPTURE_SNAPSHOT, capture_layer_sort_key, capture_snapshot_members,
-    historical_unified_case_key, inactive_fixture_dirs, is_source_capture,
+    canonical_unified_record_key, canonicalize_unified_inputs, inactive_fixture_dirs,
+    is_source_capture,
 )
 from unified_tools import unified_tools
 
@@ -76,13 +77,18 @@ def read_bindings(directory: Path) -> dict:
     return doc["records"]
 
 
-def comparison_failure(record: dict, current: dict, raw: bytes, relative: str, bindings: dict) -> str | None:
+def original_capture_input(record: dict, raw: bytes, relative: str, bindings: dict) -> dict | None:
     original = record.get("capture_input")
     if original is None and relative in bindings:
         binding = bindings[relative]
         if binding["capture_sha256"] != hashlib.sha256(raw).hexdigest():
             raise ValueError(f"capture input binding does not match capture bytes: {relative}")
         original = binding["capture_input"]
+    return original
+
+
+def comparison_failure(record: dict, current: dict, raw: bytes, relative: str, bindings: dict) -> str | None:
+    original = original_capture_input(record, raw, relative, bindings)
     if original is None:
         return "Capture stimulus unavailable: original input, initialization, and chunk schedule were not retained; this output cannot be compared to the displayed request."
     expected = capture_input(current)
@@ -114,7 +120,7 @@ def current_source_snapshot(directory: Path) -> Path:
     return selected
 
 
-def _effective_capture_records(directory: Path) -> dict:
+def _effective_capture_records(directory: Path, input_aliases: dict) -> dict:
     base_name, _patch = capture_layer_sort_key(directory.name)
     base = directory.with_name(base_name)
     inactive = inactive_fixture_dirs(directory.parent)
@@ -136,7 +142,7 @@ def _effective_capture_records(directory: Path) -> dict:
             if doc["family"] != path.parent.name:
                 raise ValueError(f"capture family differs from its directory: {path}")
             for key, record in doc["cases"].items():
-                ident = (doc["family"], historical_unified_case_key(doc["family"], key))
+                ident = canonical_unified_record_key(doc["family"], key, input_aliases)
                 if ident in records and records[ident][0] != record:
                     raise ValueError(f"conflicting current capture aliases: {ident}")
                 records[ident] = (record, raw, str(path.relative_to(layer)), bindings)
@@ -146,17 +152,19 @@ def _effective_capture_records(directory: Path) -> dict:
 
 def validated_current_capture_docs(directory: Path, input_dirs: list[Path]) -> list[dict]:
     """Return the effective records checked here so Rust cannot reread a different layer."""
-    inputs = {}
+    raw_inputs = {}
     for input_dir in input_dirs:
         for path in sorted(input_dir.glob("*/*.yaml")):
             doc = yaml.safe_load(path.read_bytes())
             for key, record in doc["cases"].items():
-                scenario = record.get("scenario")
-                if scenario:
-                    inputs = {ident: value for ident, value in inputs.items()
-                              if ident[0] != doc["family"] or value.get("scenario") != scenario}
-                inputs[(doc["family"], key)] = record
-    captures = _effective_capture_records(directory)
+                raw_inputs[(doc["family"], key)] = record
+    inputs, input_aliases = canonicalize_unified_inputs(raw_inputs)
+    input_keys = {}
+    for (family, key), record in raw_inputs.items():
+        ident = canonical_unified_record_key(family, key, input_aliases)
+        if inputs.get(ident) == record:
+            input_keys[ident] = key
+    captures = _effective_capture_records(directory, input_aliases)
     if not inputs or inputs.keys() != captures.keys():
         raise ValueError(f"current capture/input sets differ: missing={sorted(inputs.keys() - captures.keys())}, extra={sorted(captures.keys() - inputs.keys())}")
     tools = unified_tools()
@@ -171,7 +179,7 @@ def validated_current_capture_docs(directory: Path, input_dirs: list[Path]) -> l
             raise ValueError(f"current capture did not succeed: {ident}")
     families = {}
     for (family, key), (record, _raw, _relative, _bindings) in sorted(captures.items()):
-        families.setdefault(family, {})[key] = record
+        families.setdefault(family, {})[input_keys[(family, key)]] = record
     return [{"family": family, "cases": records} for family, records in families.items()]
 
 

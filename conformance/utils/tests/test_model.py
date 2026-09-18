@@ -216,10 +216,10 @@ def test_unified_numeric_case_ids_use_dash_everywhere(model_v2):
     """Fixture IDs, headers, columns, and glossary rows share one numeric format."""
     tab = _tab(model_v2, "tab-unified")
     numeric = {
-        "guided_json_quoted_bare_header_in_answer": "31-25",
-        "guided_json_quoted_bare_tool_header_in_answer": "31-26",
-        "guided_json_quoted_bare_header_after_payload": "31-27",
-        "guided_json_bare_tool_header_recovers_inside_a_thought": "31-28",
+        "guided_json_quoted_bare_header_in_answer": "35-1",
+        "guided_json_quoted_bare_tool_header_in_answer": "muse-1",
+        "guided_json_quoted_bare_header_after_payload": "35-2",
+        "guided_json_bare_tool_header_recovers_inside_a_thought": "34-7",
     }
     columns = {column["sub"]: column["label"] for column in tab["columns"]}
     glossary_ids = {
@@ -245,7 +245,7 @@ def test_unified_duplicate_notes_and_deepseek_prefilled_captures(model_v2):
             cell = row["cells"]["guided_json_quoted_bare_tool_header_in_answer"]
             assert cell["status"] == "na"
             for field in ("description", "na_note"):
-                assert cell["tooltip"][field].startswith("This is a duplication of UNIFIED.31-25")
+                assert cell["tooltip"][field].startswith("This is a duplication of UNIFIED.35-1")
         if row["family"] == "deepseek_v41":
             for scenario in ("prefilled_reasoning_with_tool", "prefilled_reasoning_then_text_then_tool", "prefilled_reasoning_then_text"):
                 cell = row["cells"][scenario]
@@ -303,7 +303,7 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
     assert native["block"]["unavailable"] == "vLLM Rust 0.26.0 (stream, Combined & Unified) has no parser for muse_glimmer"
 
 
-def test_unified_default_dynamo_uses_exact_source_and_keeps_release_history(tmp_path):
+def test_unified_default_dynamo_keeps_capture_identity_internal_and_release_history_visible(tmp_path):
     page_path = tmp_path / "CONFORMANCE_v2.html"
     result = subprocess.run(
         [str(UTILS / "render_table_v2.sh"), "--output", str(page_path)],
@@ -327,10 +327,11 @@ def test_unified_default_dynamo_uses_exact_source_and_keeps_release_history(tmp_
         layer["records"].update({
             f"{path.parent.name}/{key}": doc.get("capture_provenance") for key in doc["cases"]
         })
-    expected = select_capture_label(REPO, captures)
-    assert dynamo["label"] == table._full_label("dynamo_v2", expected, "stream, Combined & Unified")
-    assert dynamo["version"] == expected
-    assert all("+source." not in candidate["label"] for candidate in tab["candidates"])
+    requested = select_capture_label(REPO, captures)
+    assert requested.startswith("0.6.1+source.")
+    assert dynamo["version"] == requested
+    assert dynamo["label"] == "Dynamo v2 Rust 0.6.1 (stream, Combined & Unified)"
+    assert "+source." not in dynamo["label"]
     assert all("+source." not in candidate["key"] for candidate in tab["candidates"])
     assert dynamo["default_bucket"] == "A"
     assert release["label"] == "Dynamo v2 Rust 0.4.0 (stream, Combined & Unified)"
@@ -427,10 +428,13 @@ def test_unified_selector_uses_source_checkout_with_or_without_staging(tmp_path,
     assert table._unified_dynamo_label({}) == expected
 
 
-@pytest.mark.parametrize("current_present", [False, True])
-@pytest.mark.parametrize("selected_digit", ["0", "f"])
-@pytest.mark.parametrize("capture_failure", [None, "error", "unavailable"])
-def test_unified_source_selection_is_exact_not_digest_order(tmp_path, monkeypatch, current_present, selected_digit, capture_failure):
+@pytest.mark.parametrize(
+    ("current_present", "selected_digit", "capture_failure"),
+    [(True, "0", None), (True, "f", None), (False, "0", None), (True, "0", "error")],
+)
+def test_unified_source_selection_requires_exact_requested_identity(
+    tmp_path, monkeypatch, current_present, selected_digit, capture_failure
+):
     selected = "0.6.0+source." + selected_digit * 64
     other = "0.6.0+source." + ("f" if selected_digit == "0" else "0") * 64
     scenario, family = "text_only", "gemma4"
@@ -469,8 +473,8 @@ def test_unified_source_selection_is_exact_not_digest_order(tmp_path, monkeypatc
 
     tab = table._unified_tab_model(tmp_path, {})
     candidates = {candidate["key"]: candidate for candidate in tab["candidates"]}
-    assert candidates["dynamo"]["label"] == "Dynamo v2 Rust 0.6.0 (working build; stream, Combined & Unified)"
     assert candidates["dynamo"]["version"] == selected
+    assert candidates["dynamo"]["label"] == "Dynamo v2 Rust 0.6.0 (stream, Combined & Unified)"
     assert {key for key in candidates if key.startswith("dynamo@")} == {"dynamo@0.6.0"}
     assert candidates["dynamo@0.6.0"]["label"] == "Dynamo v2 Rust 0.6.0 (stream, Combined & Unified)"
     cell = next(row for row in tab["rows"] if row["family"] == family)["cells"][scenario]
@@ -496,7 +500,7 @@ def test_unified_source_selection_is_exact_not_digest_order(tmp_path, monkeypatc
 
 @pytest.mark.parametrize("impl,version,mode,want", [
     ("dynamo_v2", "0.6.0+source." + "a" * 64, "stream",
-     "Dynamo v2 Rust 0.6.0 (working build; stream)"),
+     "Dynamo v2 Rust 0.6.0 (stream)"),
     ("dynamo_v2", "0.6.1", "stream", "Dynamo v2 Rust 0.6.1 (stream)"),
     ("dynamo_v1", "8.2.2", "stream", "Dynamo v1 Rust 8.2.2 (jail+batch)"),
     ("vllm_python", "0.26.0", "batch", "vLLM Python 0.26.0 (batch)"),

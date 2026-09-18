@@ -426,7 +426,33 @@ fn version_dirs_with_identity_command(
         current_dir
     };
     let current = root.join(current_dir);
-    let current = if current_dir.contains("+source.") {
+    let current = if current.is_dir() || current_dir.contains("+source.") {
+        current
+    } else {
+        let patch_prefix = format!("{current_dir}.patch");
+        std::fs::read_dir(root)
+            .into_iter()
+            .flatten()
+            .flatten()
+            .map(|entry| entry.path())
+            .filter(|path| path.is_dir())
+            .filter_map(|path| {
+                let patch = path
+                    .file_name()?
+                    .to_str()?
+                    .strip_prefix(&patch_prefix)?
+                    .parse::<u64>()
+                    .ok()?;
+                Some((patch, path))
+            })
+            .max_by_key(|(patch, _)| *patch)
+            .map_or(current, |(_, path)| path)
+    };
+    let current = if current
+        .file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name.contains("+source."))
+    {
         let output = capture_stimulus_command()
             .arg("--select-source-snapshot")
             .arg(&current)
@@ -506,16 +532,26 @@ mod capture_selector_tests {
         )
     }
 
-    fn write_capture(dir: &Path, provenance: &serde_json::Value) {
+    fn write_capture_with_record(
+        dir: &Path,
+        provenance: &serde_json::Value,
+        record: serde_json::Value,
+    ) {
         std::fs::create_dir_all(dir.join("gemma4")).unwrap();
         std::fs::write(
             dir.join("gemma4/probe.yaml"),
-            serde_json::to_string(
-                &serde_json::json!({"capture_provenance": provenance, "cases": {"probe": {}}}),
-            )
+            serde_json::to_string(&serde_json::json!({
+                "family": "gemma4",
+                "capture_provenance": provenance,
+                "cases": {"probe": record}
+            }))
             .unwrap(),
         )
         .unwrap();
+    }
+
+    fn write_capture(dir: &Path, provenance: &serde_json::Value) {
+        write_capture_with_record(dir, provenance, serde_json::json!({}));
     }
 
     #[test]
@@ -571,6 +607,40 @@ mod capture_selector_tests {
             "true"
         );
         assert_eq!(git(&clone, &["tag", "--list"]), "");
+        let patch_only = scratch.join("patch-only");
+        let historical = patch_only.join("dynamo_v2-0.5.3");
+        write_capture_with_record(
+            &historical,
+            &recorded,
+            serde_json::json!({
+                "assembled": [],
+                "capture_input": {
+                    "input": "probe",
+                    "init": {
+                        "starting_state": "None",
+                        "tool_output_mode": "Native",
+                        "named_tool": null
+                    },
+                    "finish_reason": "stop",
+                    "tools": [],
+                    "chunks": [{"delta_text": "probe"}, {"delta_text": "‹finish›"}]
+                }
+            }),
+        );
+        assert!(std::panic::catch_unwind(|| select(&patch_only, &repo, None)).is_err());
+        assert!(std::panic::catch_unwind(|| select(&patch_only, &clone, None)).is_err());
+        let release_patch2 = patch_only.join("dynamo_v2-0.6.0.patch2");
+        let release_patch10 = patch_only.join("dynamo_v2-0.6.0.patch10");
+        write_capture(&release_patch2, &recorded);
+        write_capture(&release_patch10, &recorded);
+        assert_eq!(
+            select(&patch_only, &repo, None).last(),
+            Some(&release_patch10)
+        );
+        assert_eq!(
+            select(&patch_only, &clone, None).last(),
+            Some(&release_patch10)
+        );
         let captures = scratch.join("unified");
         let release = captures.join("dynamo_v2-0.6.0");
         write_capture(&release, &recorded);

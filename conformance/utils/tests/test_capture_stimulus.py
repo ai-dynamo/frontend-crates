@@ -25,7 +25,7 @@ def _input(text):
             "finish_reason": "stop", "tools": [], "chunks": [{"delta_text": text}, {"delta_text": "‹finish›"}]}
 
 
-def _write(base, directory, record, key="UNIFIED.7.b"):
+def _write(base, directory, record, key="UNIFIED.7-2"):
     path = base / directory / f"deepseek_v41/{key}.yaml"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.safe_dump({"family": "deepseek_v41", "cases": {key: record}}))
@@ -164,7 +164,7 @@ def test_current_release_overlays_replace_invalid_records_and_add_cases(tmp_path
         _write(tmp_path, "inputs", current, key)
     # The renamed base record is both unbound and unsuccessful. Only its effective
     # replacement may be validated; the other base case still needs its own sidecar.
-    _write(tmp_path, base, {"error": "obsolete output"}, "UNIFIED.31.a")
+    _write(tmp_path, base, {"error": "obsolete output"}, "UNIFIED.31-1")
     retained = _write(tmp_path, base, {"assembled": record["assembled"], "chunks": []}, "retained")
     (tmp_path / base / "capture-inputs.json").write_text(json.dumps({
         "schema_version": 1, "records": {"deepseek_v41/retained.yaml": {
@@ -217,12 +217,12 @@ def test_current_source_uses_only_complete_snapshot_records(tmp_path, selected_p
     _write(tmp_path, base, {"error": "old source snapshot"}, "obsolete")
     _write(tmp_path, base + ".patch2", {"error": "old source snapshot"}, "obsolete")
     _write(tmp_path, base + ".patch10", record)
-    for suffix, key in ((".patch2", "obsolete"), (".patch10", "UNIFIED.7.b")):
+    for suffix, key in ((".patch2", "obsolete"), (".patch10", "UNIFIED.7-2")):
         (tmp_path / (base + suffix) / "capture-snapshot.json").write_text(json.dumps({
             "schema_version": 1, "records": [f"deepseek_v41/{key}.yaml"],
         }))
     selected = tmp_path / (base + ".patch10" if selected_patch else base)
     assert capture_stimulus.validate_current_capture(selected, [tmp_path / "inputs"]) == 1
     assert capture_stimulus.validated_current_capture_docs(selected, [tmp_path / "inputs"]) == [
-        {"family": "deepseek_v41", "cases": {"UNIFIED.7.b": record}},
+        {"family": "deepseek_v41", "cases": {"UNIFIED.7-2": record}},
     ]

@@ -1,9 +1,9 @@
 {
-  "snapshot": "20260917_121529",
-  "created_pt": "2026-09-17 12:15:29 America/Los_Angeles",
+  "snapshot": "20260917_223441",
+  "created_pt": "2026-09-17 22:34:41 America/Los_Angeles",
   "crates": {
-    "dynamo-parsers": "8.2.2",
-    "dynamo-parsers-v2": "0.6.0"
+    "dynamo-parsers": "9.0.0",
+    "dynamo-parsers-v2": "0.6.1"
   },
   "peers": {
     "vllm": "0.26.0",
@@ -196,36 +196,6 @@
       "size": 4308
     },
     {
-      "path": "unified/dynamo_v2-0.1.22.patch2.tar.gz",
-      "sha256": "41bf62b626b106cc577f1b9e6967780c438eee3a0993730af0aaf9886772cb95",
-      "size": 2464
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.22.patch3.tar.gz",
-      "sha256": "72cdb663057c447dc99b4a1cfa100542a2fdda18ee6e8b5a3ecbc507d4834dec",
-      "size": 67488
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.22.patch4.tar.gz",
-      "sha256": "cd1bedb653c7c6c091a4aafd9e887381ab831b37db5580c4eefcf4fd94985e10",
-      "size": 45204
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.22.patch5.tar.gz",
-      "sha256": "73a563ca8666a8b7d6a61c7da2a18eb0af22d8ac583b3bbd8a44ea2d84826dab",
-      "size": 46031
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.22.patch6.tar.gz",
-      "sha256": "7d85bf71272260ea5776e8e87fe98c4122879b5509800ef6a8d9554c1be8cfb3",
-      "size": 1185
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.22.tar.gz",
-      "sha256": "a7e7f1d161719e8f6caaa1f3fb07f169718308cc13f6a687916975c0ab144de3",
-      "size": 10008
-    },
-    {
       "path": "unified/dynamo_v2-0.1.23.patch2.tar.gz",
       "sha256": "eef07b345f0b7cbcdf12352cbb119d0d022ebfad0e14e69c9114a176e05f47fd",
       "size": 2468
@@ -254,191 +224,6 @@
       "path": "unified/dynamo_v2-0.1.23.tar.gz",
       "sha256": "69dd3be5a0f3a108e513c34a8b3669b405b521061872bfab5b1fb9885ac76880",
       "size": 10164
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.25.patch2.tar.gz",
-      "sha256": "d1cf3ad10b97016ea6c4046c83a05d4797f640a34a108f8322e024e433a82470",
-      "size": 6296
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.25.patch3.tar.gz",
-      "sha256": "f715011d8278be0cdc376418fd8248ef2c80444cc0ddb4193e9ff4eca1bfc2e7",
-      "size": 67385
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.25.patch4.tar.gz",
-      "sha256": "ce14f5f404d49e71ec1e0c57595d9819078e8ba87ed7e07b806d045b9077d20a",
-      "size": 45127
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.25.patch5.tar.gz",
-      "sha256": "93bac211b238a75bbcb5b47d26022caafae67312865b034e4bce83af96381a52",
-      "size": 45952
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.25.patch6.tar.gz",
-      "sha256": "bfe4805784e844f561683c479a2526f480390f70f4a3c40dfa9499d466858bfe",
-      "size": 1181
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.25.tar.gz",
-      "sha256": "c3113143c757e206d719538092213268cdfbae1f6df0954ac73a72b6da55a5a1",
-      "size": 9660
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.27.patch2.tar.gz",
-      "sha256": "46b0ee4854af71e2db2a629d648aecabf91e8bd6b610bc4ff00ef271bbbadb74",
-      "size": 6299
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.27.patch3.tar.gz",
-      "sha256": "1e78115f068a0d325b5d53011a8c4f7516fb865aecb605ae7d4a4f72979d4a4b",
-      "size": 67307
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.27.patch4.tar.gz",
-      "sha256": "a96c38d9d9a9fa06776eb6160624cd00d18a11bb562b3f1868b35c48a49cae04",
-      "size": 45119
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.27.patch5.tar.gz",
-      "sha256": "ebad2562f48a5a02eabcfbc2646fa18c55c16c646507d38610b0611f5e364788",
-      "size": 45967
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.27.patch6.tar.gz",
-      "sha256": "9efcf8f92b284db071667bcc448913c0f1655a1936c2ba1bf90e6cbbf54e8030",
-      "size": 1186
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.27.tar.gz",
-      "sha256": "64c76851f11dae7c3aeda35f746f64355e535b6c81c77b60f70c214f367dfa8c",
-      "size": 9785
-    },
-    {
-      "path": "unified/dynamo_v2-0.2.0.patch2.tar.gz",
-      "sha256": "6d64667a72f16535d11f177171016ecb047f6408d6efeca43a1b2cae07b0580b",
-      "size": 6285
-    },
-    {
-      "path": "unified/dynamo_v2-0.2.0.patch3.tar.gz",
-      "sha256": "54cd211bdeb7a66d9c1c6b36b3ca5680edde0637d759ec39527844160c85169d",
-      "size": 67056
-    },
-    {
-      "path": "unified/dynamo_v2-0.2.0.patch4.tar.gz",
-      "sha256": "9a7fb289e8ef2ef337af132a2f066aa19aa5ea222470440523dcfa863d7e0bde",
-      "size": 45080
-    },
-    {
-      "path": "unified/dynamo_v2-0.2.0.patch5.tar.gz",
-      "sha256": "dd06de55ab32cc3d7887915370fe88a40c673bd3bbbc025dde5c38cdf4fe2ceb",
-      "size": 45954
-    },
-    {
-      "path": "unified/dynamo_v2-0.2.0.patch6.tar.gz",
-      "sha256": "00cfabe4d43f71ea6b35a5481c47ec7b0b59999e007b839b76c0521416d7445b",
-      "size": 1182
-    },
-    {
-      "path": "unified/dynamo_v2-0.2.0.tar.gz",
-      "sha256": "3e0f153218785fc1a4285d90f19a7a54cc69066462848ba5eda61e25a522772e",
-      "size": 10039
-    },
-    {
-      "path": "unified/dynamo_v2-0.2.1.patch1.tar.gz",
-      "sha256": "df96d32937bac1a127fecfe240e9a64536499c39a0fa96dfa137b7ef83777dd8",
-      "size": 3058
-    },
-    {
-      "path": "unified/dynamo_v2-0.2.1.patch2.tar.gz",
-      "sha256": "1d367f2fed0536293ed57bb034946f2fc9e0c49ac234d9993894999d37c1e5d5",
-      "size": 7658
-    },
-    {
-      "path": "unified/dynamo_v2-0.2.1.patch3.tar.gz",
-      "sha256": "127cbe1796ea562aacb3aab2d1965997d37fef06e72eb29628ebac7c32acdd09",
-      "size": 68339
-    },
-    {
-      "path": "unified/dynamo_v2-0.2.1.patch4.tar.gz",
-      "sha256": "0d64feb0d9e670d26653962113f174063ff1874a526a21a524f69ac54406e1a7",
-      "size": 45914
-    },
-    {
-      "path": "unified/dynamo_v2-0.2.1.patch5.tar.gz",
-      "sha256": "214904a34afbab75cdd114d585e7e371de361c442181e847c36545b2036d2fc2",
-      "size": 46736
-    },
-    {
-      "path": "unified/dynamo_v2-0.2.1.patch6.tar.gz",
-      "sha256": "7288ad89f555521ba5b130819853c00bde672ebcb11ee3d14e44cd26d20d5e3a",
-      "size": 1181
-    },
-    {
-      "path": "unified/dynamo_v2-0.2.1.tar.gz",
-      "sha256": "c4744205651226a62e1595f13d2a889adbca8b6dfe06838b306300e2bc5d78e5",
-      "size": 9999
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.0.patch2.tar.gz",
-      "sha256": "cc95666c042579b167f64358fa9c9b22ad7f8d0cbbbff4aacae10ba07fd9e210",
-      "size": 13684
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.0.patch3.tar.gz",
-      "sha256": "bd30f15f94d0e86f58828121c3b37caee0627ec73f5881ee047207ca80ed067b",
-      "size": 68363
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.0.patch4.tar.gz",
-      "sha256": "1f0d6a97e7c1f5956399dca073aab9f3357cdf2905110d084c4d7656f25eeaa9",
-      "size": 45919
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.0.patch5.tar.gz",
-      "sha256": "648f87b725f58b753ee94694465c285d970c0c6c1d336e0669630df248314d26",
-      "size": 46734
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.0.patch6.tar.gz",
-      "sha256": "a1fffe13a6e49e429e5876ad22eb56971af3a5aab8a3c1713843ce256fd66431",
-      "size": 1181
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.1.patch1.tar.gz",
-      "sha256": "3cfcd3d99395e3ddc258e715ce09a265b3c80ab48c8907db8dd00b332e818ddb",
-      "size": 13900
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.1.patch2.tar.gz",
-      "sha256": "cee48cc9dc31a31acaa401363631608058f4f79882f620634657c6548cf2b4c9",
-      "size": 6848
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.1.patch3.tar.gz",
-      "sha256": "9cedb8731111c6b7be6babb992bada5200ff0dca7dffd77ac5f74ce34d4007a3",
-      "size": 70492
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.1.patch4.tar.gz",
-      "sha256": "4859706f5473cb512ffbd72cb5333eca24882df40e71bdd8abd875b08716162f",
-      "size": 47269
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.1.patch5.tar.gz",
-      "sha256": "3375eefd256435a1d779ec29cfd8b1582d6d3a217a56e204a0d38ede1ba4cb94",
-      "size": 48077
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.1.patch6.tar.gz",
-      "sha256": "9cb922e43345000de1d7b72e296c52c7b6f892f730e838236b4f81c154c8e6d8",
-      "size": 1183
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.1.tar.gz",
-      "sha256": "2d146a67e5da2d74a7726d0c53e2d8c23389a3941c6df140b6141980439800c1",
-      "size": 12317
     },
     {
       "path": "unified/dynamo_v2-0.3.2.patch1.tar.gz",
@@ -476,11 +261,6 @@
       "size": 12234
     },
     {
-      "path": "unified/dynamo_v2-0.3.3+pr166.tar.gz",
-      "sha256": "bb080ce2244ec6708bbe5c94171777066dd58de234511c7f540adf82906a1e0f",
-      "size": 12375
-    },
-    {
       "path": "unified/dynamo_v2-0.3.3.patch2.tar.gz",
       "sha256": "cac44636229a93f908560a87a14a640d998411e8f5aa43d8789a6d5d8e89d79c",
       "size": 6675
@@ -509,21 +289,6 @@
       "path": "unified/dynamo_v2-0.3.3.tar.gz",
       "sha256": "ab6021d70826d91174a05a6bf143d7661502991440aace22983ba014b9475f4d",
       "size": 13798
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.4+pr166.patch1.tar.gz",
-      "sha256": "0ef7bbd599d848112002c934105386c58e53ba19d8692bc85e9033c639f63f56",
-      "size": 486
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.4+pr166.tar.gz",
-      "sha256": "8d8971bcedb291930255359886cecb7e1cc73624385d8c574d0e239fc7f5835d",
-      "size": 13624
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.4+pr200.tar.gz",
-      "sha256": "d231be95864e01590d5cf55ce22f9c288d5de18bfe0b19e9632538a2d67be890",
-      "size": 17451
     },
     {
       "path": "unified/dynamo_v2-0.3.4.patch2.tar.gz",
@@ -586,96 +351,6 @@
       "size": 13751
     },
     {
-      "path": "unified/dynamo_v2-0.4.1.patch2.tar.gz",
-      "sha256": "d5790e66ebc95433dddc5129759df08d7b7c234860e2547e02a0e4a5d17475e9",
-      "size": 3686
-    },
-    {
-      "path": "unified/dynamo_v2-0.4.1.patch3.tar.gz",
-      "sha256": "203e86a5719f710b2b27069438355b5c3023f07c7a514e5687d9ae7bd46b3d2e",
-      "size": 73209
-    },
-    {
-      "path": "unified/dynamo_v2-0.4.1.patch4.tar.gz",
-      "sha256": "4ec18ecb06c52b815f5e6488daa607b7420ed2913244b827ca30762e7b07b787",
-      "size": 49407
-    },
-    {
-      "path": "unified/dynamo_v2-0.4.1.patch5.tar.gz",
-      "sha256": "ffd5addd2543765a41ce84a8a2b5071b8e9e28ac0dd34196f6600d8012b398ed",
-      "size": 50247
-    },
-    {
-      "path": "unified/dynamo_v2-0.4.1.patch6.tar.gz",
-      "sha256": "188305a0047bec2e1d15d630d97c49b131ed02a2d83fb01c14f1dd8b6e329f4d",
-      "size": 1181
-    },
-    {
-      "path": "unified/dynamo_v2-0.4.1.tar.gz",
-      "sha256": "a7682809fece4d6b062574dd4d94b9641566347a7f104342d379d462dcbf1d9b",
-      "size": 14316
-    },
-    {
-      "path": "unified/dynamo_v2-0.5.0.patch2.tar.gz",
-      "sha256": "c377c756492f1400a8a46613a77c4e3091d1ed5e614933e21798066263354a27",
-      "size": 3686
-    },
-    {
-      "path": "unified/dynamo_v2-0.5.0.patch3.tar.gz",
-      "sha256": "dd05a1395796ab2b573109d762df46eb04adb8dde7dc9bb5034566f63708c057",
-      "size": 72978
-    },
-    {
-      "path": "unified/dynamo_v2-0.5.0.patch4.tar.gz",
-      "sha256": "adbc253ea72161c25d35d761d877fc36b65b89fffbfa8e93051cc96d171766cd",
-      "size": 48999
-    },
-    {
-      "path": "unified/dynamo_v2-0.5.0.patch5.tar.gz",
-      "sha256": "42e68c9ac3c84f8c416d34d7b8afc343b4056504a7b1704219bc0b90ee3b1ef3",
-      "size": 49854
-    },
-    {
-      "path": "unified/dynamo_v2-0.5.0.patch6.tar.gz",
-      "sha256": "9ee47b35feb0b8cface87471178c9c69539547a9cf086241c2cfaa00cd9e5c00",
-      "size": 1181
-    },
-    {
-      "path": "unified/dynamo_v2-0.5.0.tar.gz",
-      "sha256": "d798ac9b8f8e584afe7ad38ca77763f1ef2427d68a1b06fab2a1be7f5b01def3",
-      "size": 14240
-    },
-    {
-      "path": "unified/dynamo_v2-0.5.1.patch3.tar.gz",
-      "sha256": "fdb597ccf64d9706633c5bae42d394b730f910a32e01bc7abc11994b00d483d5",
-      "size": 73030
-    },
-    {
-      "path": "unified/dynamo_v2-0.5.1.patch4.tar.gz",
-      "sha256": "4b4d47a094fb4037b8e8e7b754a0350bc174c9ee98567c3344a1e9a8271aff33",
-      "size": 49008
-    },
-    {
-      "path": "unified/dynamo_v2-0.5.1.patch5.tar.gz",
-      "sha256": "dae147b50749901706b4031e0f32f9413643491f16f24245e0f63e853fb93726",
-      "size": 49855
-    },
-    {
-      "path": "unified/dynamo_v2-0.5.1.patch6.tar.gz",
-      "sha256": "1321b01a30272d851b1add99204d0852e4a449d321fe81064b8a39fbed68b0e6",
-      "size": 1178
-    },
-    {
-      "path": "unified/dynamo_v2-0.5.1.tar.gz",
-      "sha256": "4e6188fe723c3f492983a8f7e25ffaf504b4bd7ea79f336e6af6ead170fe7c74",
-      "size": 21823
-    },
-    {
-      "path": "unified/dynamo_v2-0.5.3+pr213.tar.gz",
-      "sha256": "d520b2c1e0abacad167e58680411629a035fc48c971d1708470e0c9730984473",
-      "size": 22720
-    },
-    {
       "path": "unified/dynamo_v2-0.5.3.patch3.tar.gz",
       "sha256": "4d2cb166cda1ae17797d198909d4ddbd1b2faf0af0e98c6d104b0eb1762dc884",
       "size": 75148
@@ -711,16 +386,6 @@
       "size": 61233
     },
     {
-      "path": "unified/dynamo_v2-0.6.0+source.91c3112d21c1fa5dea5445ff42e1f3d91884421e7e8362b54e0c6328e8b58988.tar.gz",
-      "sha256": "08de29e1f54d5076fa1231e9003cd873cd51fe155c7018641f2377524c532ef4",
-      "size": 57736
-    },
-    {
-      "path": "unified/dynamo_v2-0.6.0+source.dfaf28f3ac56762dd6457f9ad670636e10ee8d9edc838067e4a692eb57e2fc05.tar.gz",
-      "sha256": "c8411de9376a23390bb1e388e2d348dc8d31b8663ea4b7161a7d8fad213083a2",
-      "size": 60313
-    },
-    {
       "path": "unified/dynamo_v2-0.6.0.patch3.tar.gz",
       "sha256": "f5944611872777a9ad9039aadfa0ff3e8287593241e406d5803c692f88b1af20",
       "size": 78679
@@ -741,14 +406,19 @@
       "size": 1295
     },
     {
+      "path": "unified/dynamo_v2-0.6.1+source.65b6e028637ed1b7dbd47d4ff52b989be343ba94d44becca626d5292de62078d.tar.gz",
+      "sha256": "d3726267a34ec59585a02b69a5b51ac28ae843629ce5a72ecd52dd48e7a63859",
+      "size": 57523
+    },
+    {
       "path": "unified/golden.tar.gz",
-      "sha256": "930ad6d7346ac0d5d05ec7d3d3e847bb1ab3c813122eff15cd82368c2fd2e558",
-      "size": 16553
+      "sha256": "21570759dbcc707eb7595d18e1572a4029e93a55d642020169d7841b2e7631d6",
+      "size": 16404
     },
     {
       "path": "unified/inputs.tar.gz",
-      "sha256": "edae67d49715c706cb4219cc36ea22df4da4e97f24af51756edd0155404c53fa",
-      "size": 94144
+      "sha256": "c004870a1e6efec8c22dc703ed698d2296abf6131195316ccfef0a4ca5d07aaf",
+      "size": 95027
     },
     {
       "path": "unified/sglang_python-0.5.14.tar.gz",
@@ -792,6 +462,503 @@
     }
   ],
   "inactive_shards": [
+    {
+      "path": "unified/dynamo_v2-0.1.22.patch1.tar.gz",
+      "sha256": "ff5007b5057fb9d4cd8294d5cb38dbde1d247ef113df5367f0e4789bb0b5abf1",
+      "size": 10320,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified overlay retained byte-for-byte; it was already absent from the active manifest and is now hash-pinned explicitly as inactive evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.22.patch2.tar.gz",
+      "sha256": "41bf62b626b106cc577f1b9e6967780c438eee3a0993730af0aaf9886772cb95",
+      "size": 2464,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.22.patch3.tar.gz",
+      "sha256": "72cdb663057c447dc99b4a1cfa100542a2fdda18ee6e8b5a3ecbc507d4834dec",
+      "size": 67488,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.22.patch4.tar.gz",
+      "sha256": "cd1bedb653c7c6c091a4aafd9e887381ab831b37db5580c4eefcf4fd94985e10",
+      "size": 45204,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.22.patch5.tar.gz",
+      "sha256": "73a563ca8666a8b7d6a61c7da2a18eb0af22d8ac583b3bbd8a44ea2d84826dab",
+      "size": 46031,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.22.patch6.tar.gz",
+      "sha256": "7d85bf71272260ea5776e8e87fe98c4122879b5509800ef6a8d9554c1be8cfb3",
+      "size": 1185,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.22.tar.gz",
+      "sha256": "a7e7f1d161719e8f6caaa1f3fb07f169718308cc13f6a687916975c0ab144de3",
+      "size": 10008,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.25.patch1.tar.gz",
+      "sha256": "7a8bf9328bd5b0c7f5ba3ba9f680d359c0f5f55d5100532119dc2871949bf03f",
+      "size": 10028,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified overlay retained byte-for-byte; it was already absent from the active manifest and is now hash-pinned explicitly as inactive evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.25.patch2.tar.gz",
+      "sha256": "d1cf3ad10b97016ea6c4046c83a05d4797f640a34a108f8322e024e433a82470",
+      "size": 6296,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.25.patch3.tar.gz",
+      "sha256": "f715011d8278be0cdc376418fd8248ef2c80444cc0ddb4193e9ff4eca1bfc2e7",
+      "size": 67385,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.25.patch4.tar.gz",
+      "sha256": "ce14f5f404d49e71ec1e0c57595d9819078e8ba87ed7e07b806d045b9077d20a",
+      "size": 45127,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.25.patch5.tar.gz",
+      "sha256": "93bac211b238a75bbcb5b47d26022caafae67312865b034e4bce83af96381a52",
+      "size": 45952,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.25.patch6.tar.gz",
+      "sha256": "bfe4805784e844f561683c479a2526f480390f70f4a3c40dfa9499d466858bfe",
+      "size": 1181,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.25.tar.gz",
+      "sha256": "c3113143c757e206d719538092213268cdfbae1f6df0954ac73a72b6da55a5a1",
+      "size": 9660,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.27.patch1.tar.gz",
+      "sha256": "9c3115050c9c6a7334b22571e55acdd1d35fc941899b4fc13481cff68dfa5a80",
+      "size": 10148,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified overlay retained byte-for-byte; it was already absent from the active manifest and is now hash-pinned explicitly as inactive evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.27.patch2.tar.gz",
+      "sha256": "46b0ee4854af71e2db2a629d648aecabf91e8bd6b610bc4ff00ef271bbbadb74",
+      "size": 6299,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.27.patch3.tar.gz",
+      "sha256": "1e78115f068a0d325b5d53011a8c4f7516fb865aecb605ae7d4a4f72979d4a4b",
+      "size": 67307,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.27.patch4.tar.gz",
+      "sha256": "a96c38d9d9a9fa06776eb6160624cd00d18a11bb562b3f1868b35c48a49cae04",
+      "size": 45119,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.27.patch5.tar.gz",
+      "sha256": "ebad2562f48a5a02eabcfbc2646fa18c55c16c646507d38610b0611f5e364788",
+      "size": 45967,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.27.patch6.tar.gz",
+      "sha256": "9efcf8f92b284db071667bcc448913c0f1655a1936c2ba1bf90e6cbbf54e8030",
+      "size": 1186,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.27.tar.gz",
+      "sha256": "64c76851f11dae7c3aeda35f746f64355e535b6c81c77b60f70c214f367dfa8c",
+      "size": 9785,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.2.0.patch1.tar.gz",
+      "sha256": "0359f5b8b417616bbcf3d77649fa9875b919aa14d768dfb1ae2bdaa440003781",
+      "size": 10298,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified overlay retained byte-for-byte; it was already absent from the active manifest and is now hash-pinned explicitly as inactive evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.2.0.patch2.tar.gz",
+      "sha256": "6d64667a72f16535d11f177171016ecb047f6408d6efeca43a1b2cae07b0580b",
+      "size": 6285,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.2.0.patch3.tar.gz",
+      "sha256": "54cd211bdeb7a66d9c1c6b36b3ca5680edde0637d759ec39527844160c85169d",
+      "size": 67056,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.2.0.patch4.tar.gz",
+      "sha256": "9a7fb289e8ef2ef337af132a2f066aa19aa5ea222470440523dcfa863d7e0bde",
+      "size": 45080,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.2.0.patch5.tar.gz",
+      "sha256": "dd06de55ab32cc3d7887915370fe88a40c673bd3bbbc025dde5c38cdf4fe2ceb",
+      "size": 45954,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.2.0.patch6.tar.gz",
+      "sha256": "00cfabe4d43f71ea6b35a5481c47ec7b0b59999e007b839b76c0521416d7445b",
+      "size": 1182,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.2.0.tar.gz",
+      "sha256": "3e0f153218785fc1a4285d90f19a7a54cc69066462848ba5eda61e25a522772e",
+      "size": 10039,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.2.1.patch1.tar.gz",
+      "sha256": "df96d32937bac1a127fecfe240e9a64536499c39a0fa96dfa137b7ef83777dd8",
+      "size": 3058,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.2.1.patch2.tar.gz",
+      "sha256": "1d367f2fed0536293ed57bb034946f2fc9e0c49ac234d9993894999d37c1e5d5",
+      "size": 7658,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.2.1.patch3.tar.gz",
+      "sha256": "127cbe1796ea562aacb3aab2d1965997d37fef06e72eb29628ebac7c32acdd09",
+      "size": 68339,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.2.1.patch4.tar.gz",
+      "sha256": "0d64feb0d9e670d26653962113f174063ff1874a526a21a524f69ac54406e1a7",
+      "size": 45914,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.2.1.patch5.tar.gz",
+      "sha256": "214904a34afbab75cdd114d585e7e371de361c442181e847c36545b2036d2fc2",
+      "size": 46736,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.2.1.patch6.tar.gz",
+      "sha256": "7288ad89f555521ba5b130819853c00bde672ebcb11ee3d14e44cd26d20d5e3a",
+      "size": 1181,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.2.1.tar.gz",
+      "sha256": "c4744205651226a62e1595f13d2a889adbca8b6dfe06838b306300e2bc5d78e5",
+      "size": 9999,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.0.patch2.tar.gz",
+      "sha256": "cc95666c042579b167f64358fa9c9b22ad7f8d0cbbbff4aacae10ba07fd9e210",
+      "size": 13684,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.0.patch3.tar.gz",
+      "sha256": "bd30f15f94d0e86f58828121c3b37caee0627ec73f5881ee047207ca80ed067b",
+      "size": 68363,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.0.patch4.tar.gz",
+      "sha256": "1f0d6a97e7c1f5956399dca073aab9f3357cdf2905110d084c4d7656f25eeaa9",
+      "size": 45919,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.0.patch5.tar.gz",
+      "sha256": "648f87b725f58b753ee94694465c285d970c0c6c1d336e0669630df248314d26",
+      "size": 46734,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.0.patch6.tar.gz",
+      "sha256": "a1fffe13a6e49e429e5876ad22eb56971af3a5aab8a3c1713843ce256fd66431",
+      "size": 1181,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.1.patch1.tar.gz",
+      "sha256": "3cfcd3d99395e3ddc258e715ce09a265b3c80ab48c8907db8dd00b332e818ddb",
+      "size": 13900,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.1.patch2.tar.gz",
+      "sha256": "cee48cc9dc31a31acaa401363631608058f4f79882f620634657c6548cf2b4c9",
+      "size": 6848,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.1.patch3.tar.gz",
+      "sha256": "9cedb8731111c6b7be6babb992bada5200ff0dca7dffd77ac5f74ce34d4007a3",
+      "size": 70492,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.1.patch4.tar.gz",
+      "sha256": "4859706f5473cb512ffbd72cb5333eca24882df40e71bdd8abd875b08716162f",
+      "size": 47269,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.1.patch5.tar.gz",
+      "sha256": "3375eefd256435a1d779ec29cfd8b1582d6d3a217a56e204a0d38ede1ba4cb94",
+      "size": 48077,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.1.patch6.tar.gz",
+      "sha256": "9cb922e43345000de1d7b72e296c52c7b6f892f730e838236b4f81c154c8e6d8",
+      "size": 1183,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.1.tar.gz",
+      "sha256": "2d146a67e5da2d74a7726d0c53e2d8c23389a3941c6df140b6141980439800c1",
+      "size": 12317,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.3+pr166.tar.gz",
+      "sha256": "bb080ce2244ec6708bbe5c94171777066dd58de234511c7f540adf82906a1e0f",
+      "size": 12375,
+      "disposition": "superseded",
+      "reason": "Superseded change-scoped Unified capture retained byte-for-byte; excluded from the active comparison table because it is not a published release and contributes no distinct scoreable outcome after request-bound canonicalization."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.4+pr166.patch1.tar.gz",
+      "sha256": "0ef7bbd599d848112002c934105386c58e53ba19d8692bc85e9033c639f63f56",
+      "size": 486,
+      "disposition": "superseded",
+      "reason": "Superseded change-scoped Unified capture retained byte-for-byte; excluded from the active comparison table because it is not a published release and contributes no distinct scoreable outcome after request-bound canonicalization."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.4+pr166.tar.gz",
+      "sha256": "8d8971bcedb291930255359886cecb7e1cc73624385d8c574d0e239fc7f5835d",
+      "size": 13624,
+      "disposition": "superseded",
+      "reason": "Superseded change-scoped Unified capture retained byte-for-byte; excluded from the active comparison table because it is not a published release and contributes no distinct scoreable outcome after request-bound canonicalization."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.4+pr200.tar.gz",
+      "sha256": "d231be95864e01590d5cf55ce22f9c288d5de18bfe0b19e9632538a2d67be890",
+      "size": 17451,
+      "disposition": "superseded",
+      "reason": "Superseded change-scoped Unified capture retained byte-for-byte; excluded from the active comparison table because it is not a published release and contributes no distinct scoreable outcome after request-bound canonicalization."
+    },
+    {
+      "path": "unified/dynamo_v2-0.4.1.patch2.tar.gz",
+      "sha256": "d5790e66ebc95433dddc5129759df08d7b7c234860e2547e02a0e4a5d17475e9",
+      "size": 3686,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.4.1.patch3.tar.gz",
+      "sha256": "203e86a5719f710b2b27069438355b5c3023f07c7a514e5687d9ae7bd46b3d2e",
+      "size": 73209,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.4.1.patch4.tar.gz",
+      "sha256": "4ec18ecb06c52b815f5e6488daa607b7420ed2913244b827ca30762e7b07b787",
+      "size": 49407,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.4.1.patch5.tar.gz",
+      "sha256": "ffd5addd2543765a41ce84a8a2b5071b8e9e28ac0dd34196f6600d8012b398ed",
+      "size": 50247,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.4.1.patch6.tar.gz",
+      "sha256": "188305a0047bec2e1d15d630d97c49b131ed02a2d83fb01c14f1dd8b6e329f4d",
+      "size": 1181,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.4.1.tar.gz",
+      "sha256": "a7682809fece4d6b062574dd4d94b9641566347a7f104342d379d462dcbf1d9b",
+      "size": 14316,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.5.0.patch2.tar.gz",
+      "sha256": "c377c756492f1400a8a46613a77c4e3091d1ed5e614933e21798066263354a27",
+      "size": 3686,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.5.0.patch3.tar.gz",
+      "sha256": "dd05a1395796ab2b573109d762df46eb04adb8dde7dc9bb5034566f63708c057",
+      "size": 72978,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.5.0.patch4.tar.gz",
+      "sha256": "adbc253ea72161c25d35d761d877fc36b65b89fffbfa8e93051cc96d171766cd",
+      "size": 48999,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.5.0.patch5.tar.gz",
+      "sha256": "42e68c9ac3c84f8c416d34d7b8afc343b4056504a7b1704219bc0b90ee3b1ef3",
+      "size": 49854,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.5.0.patch6.tar.gz",
+      "sha256": "9ee47b35feb0b8cface87471178c9c69539547a9cf086241c2cfaa00cd9e5c00",
+      "size": 1181,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.5.0.tar.gz",
+      "sha256": "d798ac9b8f8e584afe7ad38ca77763f1ef2427d68a1b06fab2a1be7f5b01def3",
+      "size": 14240,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.5.1.patch3.tar.gz",
+      "sha256": "fdb597ccf64d9706633c5bae42d394b730f910a32e01bc7abc11994b00d483d5",
+      "size": 73030,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.5.1.patch4.tar.gz",
+      "sha256": "4b4d47a094fb4037b8e8e7b754a0350bc174c9ee98567c3344a1e9a8271aff33",
+      "size": 49008,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.5.1.patch5.tar.gz",
+      "sha256": "dae147b50749901706b4031e0f32f9413643491f16f24245e0f63e853fb93726",
+      "size": 49855,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.5.1.patch6.tar.gz",
+      "sha256": "1321b01a30272d851b1add99204d0852e4a449d321fe81064b8a39fbed68b0e6",
+      "size": 1178,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.5.1.tar.gz",
+      "sha256": "4e6188fe723c3f492983a8f7e25ffaf504b4bd7ea79f336e6af6ead170fe7c74",
+      "size": 21823,
+      "disposition": "superseded",
+      "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.5.3+pr213.tar.gz",
+      "sha256": "d520b2c1e0abacad167e58680411629a035fc48c971d1708470e0c9730984473",
+      "size": 22720,
+      "disposition": "superseded",
+      "reason": "Superseded change-scoped Unified capture retained byte-for-byte; excluded from the active comparison table because it is not a published release and contributes no distinct scoreable outcome after request-bound canonicalization."
+    },
+    {
+      "path": "unified/dynamo_v2-0.6.0+source.91c3112d21c1fa5dea5445ff42e1f3d91884421e7e8362b54e0c6328e8b58988.tar.gz",
+      "sha256": "08de29e1f54d5076fa1231e9003cd873cd51fe155c7018641f2377524c532ef4",
+      "size": 57736,
+      "disposition": "superseded",
+      "reason": "Superseded change-scoped Unified capture retained byte-for-byte; excluded from the active comparison table because it is not a published release and contributes no distinct scoreable outcome after request-bound canonicalization."
+    },
+    {
+      "path": "unified/dynamo_v2-0.6.0+source.dfaf28f3ac56762dd6457f9ad670636e10ee8d9edc838067e4a692eb57e2fc05.tar.gz",
+      "sha256": "c8411de9376a23390bb1e388e2d348dc8d31b8663ea4b7161a7d8fad213083a2",
+      "size": 60313,
+      "disposition": "superseded",
+      "reason": "Superseded change-scoped Unified capture retained byte-for-byte; excluded from the active comparison table because it is not a published release and contributes no distinct scoreable outcome after request-bound canonicalization."
+    },
     {
       "path": "unified/dynamo_v2-0.6.0.tar.gz",
       "sha256": "c0ffe5946e1fc4758f5031b13f04f2ee9cd9bdf1a5014ff51272f36cc24b5b7c",
