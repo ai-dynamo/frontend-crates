@@ -83,6 +83,13 @@ impl MmError {
         }
     }
 
+    pub fn limit_exceeded(message: impl Into<String>) -> Self {
+        Self::LimitExceeded {
+            message: message.into(),
+            source: None,
+        }
+    }
+
     pub fn internal(message: impl Into<String>) -> Self {
         Self::Internal {
             message: message.into(),
