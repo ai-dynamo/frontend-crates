@@ -91,15 +91,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn normalize_applies_rescale_then_mean_and_std() {
-        let rgb = [0u8, 128, 255, 255, 0, 128];
-        let mut out = [0.0f32; 6];
-        normalize_rgb_f32(&rgb, 1, 2, &[0.5; 3], &[0.5; 3], &mut out);
-        let expect = |v: u8| (v as f32 / 255.0 - 0.5) / 0.5;
-        assert_eq!(out, rgb.map(expect));
-    }
-
-    #[test]
     fn normalize_matches_hf_for_every_byte_value() {
         let rgb: Vec<u8> = (0..=255).flat_map(|v| [v; 3]).collect();
         let mut out = vec![0.0; rgb.len()];

@@ -238,7 +238,6 @@ fn resize_passes(
     out_w: usize,
     resample: Resample,
 ) -> Vec<u8> {
-    // Per-axis coefficients — and, under `AtenU8`, a per-axis precision.
     let coeffs = |in_size, out_size| precompute_coeffs(in_size, out_size, resample);
     match (out_w != w, out_h != h) {
         (true, true) => {
