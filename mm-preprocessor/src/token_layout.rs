@@ -26,54 +26,74 @@ pub struct ExpandedPrompt {
 
 /// Apply a family's [`TokenLayout`] to the original prompt. The i-th entry in
 /// `feature_token_counts` is the number of embeddings produced by media item
-/// i. The function validates while expanding:
+/// i. The layout is validated in full before anything is allocated:
 /// * the `Text` and `Media::src` ranges cover the original ids exactly once,
 ///   in order — nothing dropped, nothing duplicated;
 /// * each media item appears exactly once, in prompt order;
 /// * each item's `Feature` parts contain exactly its expected number of
-///   feature tokens.
+///   feature tokens;
+/// * the expanded prompt holds at most `max_tokens` tokens
+///   ([`MmError::LimitExceeded`] otherwise) and fits `u32` positions.
 pub fn apply_layout(
     src: &[i32],
     layout: &TokenLayout,
     feature_token_counts: &[usize],
+    max_tokens: usize,
 ) -> Result<ExpandedPrompt> {
-    let length_error = || MmError::internal("layout: expanded prompt exceeds u32 token limit");
-    let position = |len: usize| u32::try_from(len).map_err(|_| length_error());
-    // Check the entire layout before allocation: a later part may overflow
-    // after an earlier part has already requested billions of tokens.
-    let mut output_len = 0u32;
-    let mut add_tokens = |n: usize| -> Result<()> {
-        output_len = output_len
-            .checked_add(position(n)?)
-            .ok_or_else(length_error)?;
-        Ok(())
-    };
+    let output_len = validate_layout(src, layout, feature_token_counts, max_tokens)?;
+    let mut out = Vec::new();
+    out.try_reserve_exact(output_len).map_err(|error| {
+        MmError::internal(format!("layout: cannot allocate expanded prompt: {error}"))
+    })?;
+    let mut offsets = Vec::with_capacity(feature_token_counts.len());
+    let mut feature_ranges = Vec::with_capacity(feature_token_counts.len());
     for segment in &layout.segments {
         match segment {
-            Segment::Text(range) => {
-                let text = src.get(range.clone()).ok_or_else(|| {
-                    MmError::internal(format!("layout: text range {range:?} out of bounds"))
-                })?;
-                add_tokens(text.len())?;
-            }
+            Segment::Text(range) => out.extend_from_slice(&src[range.clone()]),
             Segment::Media { expansion, .. } => {
+                let start = out.len() as u32;
+                let mut ranges = Vec::new();
                 for part in expansion {
-                    add_tokens(match part {
-                        ExpansionPart::Feature { n, .. } => *n,
-                        ExpansionPart::Literal(ids) => ids.len(),
-                    })?;
+                    match part {
+                        ExpansionPart::Feature { id, n } => {
+                            let part_start = out.len() as u32;
+                            out.resize(out.len() + n, *id);
+                            if *n > 0 {
+                                ranges.push(part_start..out.len() as u32);
+                            }
+                        }
+                        ExpansionPart::Literal(ids) => out.extend_from_slice(ids),
+                    }
                 }
+                offsets.push((start, out.len() as u32 - 1));
+                feature_ranges.push(ranges);
             }
         }
     }
-    let mut out = Vec::new();
-    out.try_reserve_exact(output_len as usize)
-        .map_err(|error| {
-            MmError::internal(format!("layout: cannot allocate expanded prompt: {error}"))
-        })?;
-    let mut offsets = Vec::with_capacity(feature_token_counts.len());
-    let mut feature_ranges = Vec::with_capacity(feature_token_counts.len());
+    Ok(ExpandedPrompt {
+        input_ids: out,
+        offsets,
+        feature_ranges,
+    })
+}
+
+/// Check every [`apply_layout`] invariant without allocating and return the
+/// expanded length. A hostile or buggy layout is rejected here, before a
+/// `Feature { n: u32::MAX }` could reserve gigabytes.
+fn validate_layout(
+    src: &[i32],
+    layout: &TokenLayout,
+    feature_token_counts: &[usize],
+    max_tokens: usize,
+) -> Result<usize> {
+    let length_error = || MmError::internal("layout: expanded prompt exceeds u32 token limit");
+    let mut output_len = 0usize;
+    let mut add_tokens = |n: usize| -> Result<()> {
+        output_len = output_len.checked_add(n).ok_or_else(length_error)?;
+        Ok(())
+    };
     let mut consumed = 0usize;
+    let mut placed = 0usize;
     for segment in &layout.segments {
         match segment {
             Segment::Text(range) => {
@@ -86,17 +106,16 @@ pub fn apply_layout(
                     )));
                 }
                 consumed = range.end;
-                out.extend_from_slice(text);
+                add_tokens(text.len())?;
             }
             Segment::Media {
                 item,
                 src: replaced,
                 expansion,
             } => {
-                if *item != offsets.len() {
+                if *item != placed {
                     return Err(MmError::internal(format!(
-                        "layout: media item {item} out of prompt order, expected {}",
-                        offsets.len()
+                        "layout: media item {item} out of prompt order, expected {placed}"
                     )));
                 }
                 let expected = *feature_token_counts.get(*item).ok_or_else(|| {
@@ -114,28 +133,21 @@ pub fn apply_layout(
                     )));
                 }
                 consumed = replaced.end;
+                placed += 1;
 
-                let start = position(out.len())?;
                 let mut features = 0usize;
-                let mut ranges = Vec::new();
+                let mut tokens = 0usize;
                 for part in expansion {
-                    match part {
-                        ExpansionPart::Feature { id, n } => {
-                            let part_start = position(out.len())?;
-                            let part_end = part_start
-                                .checked_add(position(*n)?)
-                                .ok_or_else(length_error)?;
-                            out.resize(part_end as usize, *id);
-                            features += n;
-                            if *n > 0 {
-                                ranges.push(part_start..part_end);
-                            }
+                    let n = match part {
+                        ExpansionPart::Feature { n, .. } => {
+                            features = features.checked_add(*n).ok_or_else(length_error)?;
+                            *n
                         }
-                        ExpansionPart::Literal(ids) => out.extend_from_slice(ids),
-                    }
+                        ExpansionPart::Literal(ids) => ids.len(),
+                    };
+                    tokens = tokens.checked_add(n).ok_or_else(length_error)?;
                 }
-                let end = position(out.len())?;
-                if end == start {
+                if tokens == 0 {
                     return Err(MmError::internal(format!(
                         "layout: media item {item} expands to zero tokens"
                     )));
@@ -146,8 +158,7 @@ pub fn apply_layout(
                          expected {expected}"
                     )));
                 }
-                offsets.push((start, end - 1));
-                feature_ranges.push(ranges);
+                add_tokens(tokens)?;
             }
         }
     }
@@ -157,18 +168,19 @@ pub fn apply_layout(
             src.len()
         )));
     }
-    if offsets.len() != feature_token_counts.len() {
+    if placed != feature_token_counts.len() {
         return Err(MmError::internal(format!(
-            "layout: places {} of {} media item(s)",
-            offsets.len(),
+            "layout: places {placed} of {} media item(s)",
             feature_token_counts.len()
         )));
     }
-    Ok(ExpandedPrompt {
-        input_ids: out,
-        offsets,
-        feature_ranges,
-    })
+    if output_len > max_tokens {
+        return Err(MmError::limit_exceeded(format!(
+            "expanded prompt has {output_len} tokens, limit {max_tokens}"
+        )));
+    }
+    u32::try_from(output_len).map_err(|_| length_error())?;
+    Ok(output_len)
 }
 
 /// Build the simplest layout: the i-th occurrence of `placeholder_id` in
@@ -222,6 +234,7 @@ mod tests {
             ids,
             &layout_by_placeholder(ids, placeholder, counts)?,
             counts,
+            usize::MAX,
         )
     }
 
@@ -268,12 +281,12 @@ mod tests {
             }],
         };
         assert!(matches!(
-            apply_layout(&[1], &layout, &[u32::MAX as usize]),
+            apply_layout(&[1], &layout, &[u32::MAX as usize], usize::MAX),
             Err(MmError::Internal { .. })
         ));
         let layout = layout_by_placeholder(&[1, 7], 1, &[u32::MAX as usize]).unwrap();
         assert!(matches!(
-            apply_layout(&[1, 7], &layout, &[u32::MAX as usize]),
+            apply_layout(&[1, 7], &layout, &[u32::MAX as usize], usize::MAX),
             Err(MmError::Internal { .. })
         ));
     }
@@ -302,7 +315,7 @@ mod tests {
                 Segment::Text(2..3),
             ],
         };
-        let e = apply_layout(&[7, 1, 9], &layout, &[2]).unwrap();
+        let e = apply_layout(&[7, 1, 9], &layout, &[2], usize::MAX).unwrap();
         assert_eq!(e.input_ids, vec![7, 90, 5, 5, 91, 9]);
         assert_eq!(e.offsets, vec![(1, 4)]);
         assert_eq!(e.feature_ranges, vec![vec![2..4]]);
@@ -318,15 +331,47 @@ mod tests {
         let wrong = TokenLayout {
             segments: vec![Segment::Text(0..1), media(3), Segment::Text(2..3)],
         };
-        assert!(apply_layout(&[7, 1, 9], &wrong, &[2]).is_err());
+        assert!(apply_layout(&[7, 1, 9], &wrong, &[2], usize::MAX).is_err());
         let missing = TokenLayout {
             segments: vec![Segment::Text(0..3)],
         };
-        assert!(apply_layout(&[7, 1, 9], &missing, &[2]).is_err());
+        assert!(apply_layout(&[7, 1, 9], &missing, &[2], usize::MAX).is_err());
         let out_of_bounds = TokenLayout {
             segments: vec![Segment::Text(0..4)],
         };
-        assert!(apply_layout(&[7, 1, 9], &out_of_bounds, &[]).is_err());
+        assert!(apply_layout(&[7, 1, 9], &out_of_bounds, &[], usize::MAX).is_err());
+    }
+
+    /// The count mismatch is caught in the prepass, so a hostile expansion
+    /// never reserves memory: a `u32::MAX` feature run errs instantly.
+    #[test]
+    fn oversized_expansion_is_rejected_before_allocation() {
+        let huge = TokenLayout {
+            segments: vec![
+                Segment::Text(0..1),
+                Segment::Media {
+                    item: 0,
+                    src: 1..2,
+                    expansion: vec![ExpansionPart::Feature {
+                        id: 5,
+                        n: u32::MAX as usize,
+                    }],
+                },
+                Segment::Text(2..3),
+            ],
+        };
+        assert!(apply_layout(&[7, 1, 9], &huge, &[1], usize::MAX).is_err());
+    }
+
+    #[test]
+    fn expansion_over_max_tokens_is_a_limit_error() {
+        let ids = [7, 1, 9];
+        let layout = layout_by_placeholder(&ids, 1, &[4]).unwrap();
+        assert!(apply_layout(&ids, &layout, &[4], 6).is_ok());
+        assert!(matches!(
+            apply_layout(&ids, &layout, &[4], 5),
+            Err(MmError::LimitExceeded { .. })
+        ));
     }
 
     /// `offsets` and `feature_ranges` are indexed by item and read as prompt
@@ -341,7 +386,7 @@ mod tests {
         let swapped = TokenLayout {
             segments: vec![media(1, 0..1), Segment::Text(1..2), media(0, 2..3)],
         };
-        assert!(apply_layout(&[1, 7, 1], &swapped, &[1, 1]).is_err());
+        assert!(apply_layout(&[1, 7, 1], &swapped, &[1, 1], usize::MAX).is_err());
     }
 
     /// A family that skips, repeats, or reorders source tokens would silently
@@ -373,7 +418,7 @@ mod tests {
         for (i, segments) in cases.into_iter().enumerate() {
             let layout = TokenLayout { segments };
             assert!(
-                apply_layout(&[7, 1, 9], &layout, &[2]).is_err(),
+                apply_layout(&[7, 1, 9], &layout, &[2], usize::MAX).is_err(),
                 "case {i} should be rejected"
             );
         }

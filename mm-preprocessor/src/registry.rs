@@ -82,8 +82,6 @@ pub fn spec_from_model_dir(dir: &std::path::Path) -> Result<ProcessorSpec> {
     spec_from_hf_configs(&read("config.json")?, &read("preprocessor_config.json")?)
 }
 
-/// Knobs the qwen resolution reads: patch geometry, pixel bounds,
-/// normalization.
 const CONSUMED: &[&str] = &[
     "patch_size",
     "merge_size",
@@ -159,12 +157,17 @@ fn resolve_qwen_vl(config: &Value, pre: &Value) -> Result<QwenVlSpec> {
         }
     }
 
-    let usize_knob = |knob: &str| {
-        set(knob)
-            .and_then(Value::as_u64)
-            .map(|value| value as usize)
-            .ok_or_else(|| MmError::invalid_input(format!("preprocessor knob {knob} is missing")))
+    let to_usize = |knob: &str, value: Option<&Value>| {
+        let value = value.and_then(Value::as_u64).ok_or_else(|| {
+            MmError::invalid_input(format!("preprocessor knob {knob} is missing"))
+        })?;
+        usize::try_from(value).map_err(|_| {
+            MmError::invalid_input(format!(
+                "preprocessor knob {knob} = {value} does not fit usize"
+            ))
+        })
     };
+    let usize_knob = |knob: &str| to_usize(knob, set(knob));
     let rgb_knob = |knob: &str| -> Result<[f32; 3]> {
         set(knob)
             .and_then(|value| serde_json::from_value::<[f32; 3]>(value.clone()).ok())
@@ -190,12 +193,10 @@ fn resolve_qwen_vl(config: &Value, pre: &Value) -> Result<QwenVlSpec> {
         })
         .transpose()?;
     let pixels = |knob: &str, edge: &str| {
-        set(knob)
+        let value = set(knob)
             .or_else(|| size?.get(edge))
-            .filter(|value| !value.is_null())
-            .and_then(Value::as_u64)
-            .map(|value| value as usize)
-            .ok_or_else(|| MmError::invalid_input(format!("preprocessor {knob} is missing")))
+            .filter(|value| !value.is_null());
+        to_usize(knob, value)
     };
 
     Ok(QwenVlSpec {
