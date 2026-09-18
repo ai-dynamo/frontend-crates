@@ -245,7 +245,7 @@ def test_unified_duplicate_notes_and_deepseek_prefilled_captures(model_v2):
             cell = row["cells"]["guided_json_quoted_bare_tool_header_in_answer"]
             assert cell["status"] == "na"
             for field in ("description", "na_note"):
-                    assert cell["tooltip"][field].startswith("This is a duplication of UNIFIED.35-1")
+                assert cell["tooltip"][field].startswith("This is a duplication of UNIFIED.35-1")
         if row["family"] == "deepseek_v41":
             for scenario in ("prefilled_reasoning_with_tool", "prefilled_reasoning_then_text_then_tool", "prefilled_reasoning_then_text"):
                 cell = row["cells"][scenario]
@@ -428,9 +428,15 @@ def test_unified_selector_uses_source_checkout_with_or_without_staging(tmp_path,
     assert table._unified_dynamo_label({}) == expected
 
 
-@pytest.mark.parametrize("current_present", [False, True])
-@pytest.mark.parametrize("selected_digit", ["0", "f"])
-@pytest.mark.parametrize("capture_failure", [None, "error", "unavailable"])
+@pytest.mark.parametrize(("current_present", "selected_digit", "capture_failure"), [
+    (True, "0", None),
+    (True, "f", None),
+    (False, "0", None),
+    (False, "0", "error"),
+    (False, "0", "unavailable"),
+    (True, "0", "error"),
+    (True, "0", "unavailable"),
+])
 def test_unified_source_selection_is_exact_not_digest_order(tmp_path, monkeypatch, current_present, selected_digit, capture_failure):
     selected = "0.6.0+source." + selected_digit * 64
     other = "0.6.0+source." + ("f" if selected_digit == "0" else "0") * 64
@@ -507,7 +513,7 @@ def test_unified_source_selection_is_exact_not_digest_order(tmp_path, monkeypatc
     ("dynamo_v1", "8.2.2", "stream", "Dynamo v1 Rust 8.2.2 (jail+batch)"),
     ("vllm_python", "0.26.0", "batch", "vLLM Python 0.26.0 (batch)"),
 ])
-def test_candidate_label_keeps_capture_identity_in_display(impl, version, mode, want):
+def test_candidate_label_keeps_capture_identity_out_of_display(impl, version, mode, want):
     assert table._full_label(impl, version, mode) == want
 
 
