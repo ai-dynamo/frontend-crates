@@ -220,22 +220,18 @@ impl Encoder for CachedTokenizer {
             return self.inner.encode(input);
         }
 
-        if let Some((prefix_tokens, prefix_len, deepest_boundary)) =
-            self.l1.longest_prefix_match(input)
-        {
-            let cached_tokens = prefix_tokens.len();
-            let suffix = &input[prefix_len..];
+        if let Some(matched) = self.l1.longest_prefix_match_with_hash(input) {
+            let cached_tokens = matched.tokens.len();
+            let suffix = &input[matched.prefix_len..];
             let encoding = if suffix.is_empty() {
-                Encoding::Sp(prefix_tokens.to_vec())
+                Encoding::Sp(matched.tokens.to_vec())
             } else if self.extend_on_hit {
                 // Cache the new suffix at its deepest boundary so the next turn hits
-                // deeper, then return the full merged tokens. The deepest boundary was
-                // already found by `longest_prefix_match`, so no rescan is needed here.
-                Encoding::Sp(self.l1.extend_after_match(
+                // deeper, then return the full merged tokens. Reuse both the deepest
+                // boundary and its digest from lookup, avoiding another prefix scan.
+                Encoding::Sp(self.l1.extend_after_match_with_hash(
                     input,
-                    prefix_tokens,
-                    prefix_len,
-                    deepest_boundary,
+                    matched,
                     self.inner.as_ref(),
                 )?)
             } else {
@@ -243,8 +239,8 @@ impl Encoder for CachedTokenizer {
                 // Reserve exact capacity so appending the suffix doesn't grow-realloc and
                 // re-copy the (large) cached prefix.
                 let mut merged: Vec<TokenIdType> =
-                    Vec::with_capacity(prefix_tokens.len() + suffix_enc.token_ids().len());
-                merged.extend_from_slice(&prefix_tokens);
+                    Vec::with_capacity(matched.tokens.len() + suffix_enc.token_ids().len());
+                merged.extend_from_slice(&matched.tokens);
                 merged.extend_from_slice(suffix_enc.token_ids());
                 Encoding::Sp(merged)
             };
