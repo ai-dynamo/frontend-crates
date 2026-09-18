@@ -61,7 +61,6 @@ UNIFIED_TAX = {
     # Group 12 — Adversarial nesting (a marker of one channel inside another)
     "reason_markup_in_arg": (12, "1"), "tool_in_reason": (12, "2"),
     "reason_markup_in_arg_with_text": (12, "3"), "tool_in_reason_with_text": (12, "4"),
-    # Group k3 — Kimi K3 XTML grammar-specific forms
     "kimi_k3_typed_argument_values": ("kimi", "1"),
     "kimi_k3_raw_json_arguments": ("kimi", "2"),
     "kimi_k3_spaced_xtml_markers": ("kimi", "3"),
@@ -120,11 +119,9 @@ UNIFIED_TAX = {
     # Group 35 — Guided decoding: markers in visible answers.
     "guided_json_quoted_bare_header_in_answer": (35, "1"),
     "guided_json_quoted_bare_header_after_payload": (35, "2"),
-    # Muse-only: a tool-recipient header inside visible answer text.
     "guided_json_quoted_bare_tool_header_in_answer": ("muse", "1"),
     # 31-29 and 31-30 remain reserved for the historical Gemma-only cases.
     # TODO: restore 31-31 through 31-40 in the follow-up to PR #232 (deferred-cases).
-    # Gemma 4 guided call-prefix boundaries.
     "gemma4_guided_json_visible_call_prose_before_reasoning": ("gemma", "1"),
     "gemma4_guided_json_malformed_call_prefix_before_reasoning": ("gemma", "2"),
 
