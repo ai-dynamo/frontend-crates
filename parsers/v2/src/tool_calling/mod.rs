@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod debug;
+pub mod deepseek_v41;
 pub mod dsml;
 pub mod gemma4;
 pub mod glm47;
