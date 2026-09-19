@@ -55,6 +55,8 @@ Reasoning families:
 
 Streaming (v2) implementations exist today for `harmony`, `deepseek_v4` (DSML), `qwen3_coder`, `gemma4`, and `muse_glimmer` (ATEM); the remaining families run on the v1 batch parser until their streaming port lands.
 
+The `deepseek_v4` tool-only selector accepts both V4 DSML (`<｜DSML｜tool_calls>` / `<｜DSML｜invoke ...>`) and V4.1 DSML (`<｜DSML｜ calls>` / `<｜DSML｜ invoke ...>`). One scanner delegates each invocation to its existing dialect boundary and decoder, including bare invocations; argument text is never normalized to switch dialects. Reasoning delimiters remain in `normal_text` so the caller can extract reasoning. The explicit unified-parser selectors retain their existing dialect and reasoning behavior. V4.1 JSON-body support remains owned by its unified decoder.
+
 ## Why It Mimics vLLM Rust
 
 The important DIS-2218 comparison is vLLM Rust vs Dynamo Rust. vLLM Python is still useful coverage and behavioral evidence, but it is not the API target.

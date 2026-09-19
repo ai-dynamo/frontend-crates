@@ -14,12 +14,12 @@ use crate::unified::{
     UnifiedParser,
 };
 
-const BLOCK_START: &str = "<｜DSML｜ calls>";
-const BLOCK_END: &str = "</｜DSML｜ calls>";
-const INVOKE_START: &str = "<｜DSML｜ invoke name=\"";
-const INVOKE_END: &str = "</｜DSML｜ invoke>";
-const PARAMETER_START: &str = "<｜DSML｜ parameter name=\"";
-const PARAMETER_END: &str = "</｜DSML｜ parameter>";
+pub(crate) const BLOCK_START: &str = "<｜DSML｜ calls>";
+pub(crate) const BLOCK_END: &str = "</｜DSML｜ calls>";
+pub(crate) const INVOKE_START: &str = "<｜DSML｜ invoke name=\"";
+pub(crate) const INVOKE_END: &str = "</｜DSML｜ invoke>";
+pub(crate) const PARAMETER_START: &str = "<｜DSML｜ parameter name=\"";
+pub(crate) const PARAMETER_END: &str = "</｜DSML｜ parameter>";
 
 pub(crate) fn deepseek_v41_unified(_tools: &[Tool]) -> Box<dyn UnifiedParser> {
     let spec = WrappedBlockSpec {
@@ -309,11 +309,11 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
     }
 }
 
-fn invocation_boundary() -> Box<dyn InvokeBoundary> {
+pub(crate) fn invocation_boundary() -> Box<dyn InvokeBoundary> {
     Box::new(DeepSeekV41InvocationBoundary::default())
 }
 
-struct DeepSeekV41;
+pub(crate) struct DeepSeekV41;
 
 impl InvokeEmitter for DeepSeekV41 {
     fn parse_invoke(
