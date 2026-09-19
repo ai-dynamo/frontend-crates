@@ -464,13 +464,16 @@ fn get_param_schema_type<'a>(
     ) {
         return None;
     }
-    let value: Value = serde_json::from_str(raw).ok()?;
-    let candidates: &[&str] = match value {
-        Value::Null => &["null"],
-        Value::Bool(_) => &["boolean"],
-        Value::Number(_) if coerce_integer_literal(raw).is_some() => &["integer", "number"],
-        Value::Number(_) => &["number"],
-        _ => &[],
+    // Preserve the integer coercer's arbitrary-length path before Value's numeric limit.
+    let candidates: &[&str] = if super::parsed_value::is_integer_literal(raw) {
+        &["integer", "number"]
+    } else {
+        match serde_json::from_str::<Value>(raw).ok()? {
+            Value::Null => &["null"],
+            Value::Bool(_) => &["boolean"],
+            Value::Number(_) => &["number"],
+            _ => &[],
+        }
     };
     candidates
         .iter()
