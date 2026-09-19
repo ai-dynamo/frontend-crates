@@ -6,6 +6,7 @@
 use crate::structural_tag::StructuralTagBuilder;
 
 use super::debug::{self, DebugToolParser};
+use super::deepseek_v41::DeepSeekV41ToolStreamParser;
 use super::dsml::DeepSeekV4ToolStreamParser;
 use super::gemma4::Gemma4ToolStreamParser;
 use super::glm47::Glm47ToolStreamParser;
@@ -48,6 +49,7 @@ family_registry! {
         DeepSeekV4ToolStreamParser::create,
         Some(&crate::structural_tag::builders::DEEPSEEK_DSML)
     ),
+    "deepseek_v41" => (DeepSeekV41ToolStreamParser::create, None),
     "qwen3_coder"  => (
         Qwen3CoderToolStreamParser::create,
         Some(&crate::structural_tag::builders::QWEN3_CODER)
