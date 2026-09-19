@@ -184,9 +184,10 @@ impl InvokeEmitter for Qwen3Emitter {
                 .and_then(|tool| tool.parameters.as_ref())
                 .and_then(|schema| schema.get("properties"))
                 .and_then(|properties| properties.get(parameter))
-                .and_then(|schema| schema.get("type"))
-                .and_then(serde_json::Value::as_str)
-                == Some("string");
+                .is_some_and(|schema| {
+                    schema.get("type").and_then(serde_json::Value::as_str) == Some("string")
+                        && schema.get("nullable").and_then(serde_json::Value::as_bool) != Some(true)
+                });
             if !streamable {
                 let Some(_) = closed else {
                     break;
@@ -519,6 +520,47 @@ mod tests {
         assert_eq!(out.calls[0].name.as_deref(), Some("get_weather"));
         // Value is schema-typed (string) and trimmed, matching the v1 batch parser.
         assert_eq!(out.calls[0].arguments, r#"{"location":"NYC"}"#);
+    }
+
+    #[test]
+    fn null_text_completes_with_the_schema_selected_type() {
+        let input = "<tool_call><function=get_weather><parameter=location>null</parameter></function></tool_call>";
+        for (schema, expected) in [
+            (
+                serde_json::json!({"type": "string"}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"anyOf": [{"type": "string"}, {"type": "integer"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"type": ["string", "null"]}),
+                serde_json::Value::Null,
+            ),
+            (
+                serde_json::json!({"type": "string", "nullable": true}),
+                serde_json::Value::Null,
+            ),
+        ] {
+            let mut tools = weather_tools();
+            tools[0].parameters["properties"]["location"] = schema;
+            for width in [1, input.len()] {
+                let chunks: Vec<_> = input
+                    .as_bytes()
+                    .chunks(width)
+                    .map(|chunk| std::str::from_utf8(chunk).unwrap())
+                    .collect();
+                let output = parse_chunks(&tools, &chunks).coalesce_calls();
+                assert_eq!(output.calls.len(), 1, "width {width}");
+                assert!(output.calls[0].complete, "width {width}");
+                assert_eq!(
+                    serde_json::from_str::<serde_json::Value>(&output.calls[0].arguments).unwrap(),
+                    serde_json::json!({"location": expected}),
+                    "width {width}"
+                );
+            }
+        }
     }
 
     #[test]
