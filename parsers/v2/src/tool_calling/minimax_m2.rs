@@ -79,7 +79,6 @@ fn spec() -> WrappedBlockSpec {
     }
 }
 
-/// Type one complete `<invoke ...>...</invoke>` and restore source argument order.
 struct M2Emitter {
     config: XmlParserConfig,
     tools: Vec<ToolDefinition>,
