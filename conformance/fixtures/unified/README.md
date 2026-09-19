@@ -17,7 +17,7 @@ Status: the capture tooling, parity harness, and `CONFORMANCE_v2.html` Unified t
 Unified uses one canonical YAML per family plus one sparse history YAML per populated family/implementation:
 
 - `conformance/fixtures-unified-v2/families/<family>.yaml` — immutable case identity, current display ID, historical aliases, exact request, and authored golden.
-- `conformance/fixtures-unified-v2/history/<family>/<implementation>.yaml` — explicit capture nodes, provenance, parent links, changed observations, and tombstones.
+- `conformance/fixtures-unified-v2/capture_history/<family>/<implementation>.yaml` — explicit capture nodes, provenance, parent links, changed observations, and tombstones.
 - `../utils/lib/parsers/UNIFIED_CASES.md` — schema, invariants, policies, divergence classes, case taxonomy.
 - `../tests/unified_schema_roundtrip.rs` — proves every authored golden case parses and round-trips through the event schema.
 

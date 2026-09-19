@@ -21,6 +21,17 @@ import package_fixtures
 import unified_history
 
 
+def test_checked_in_manifest_pins_unified_history_store():
+    repo_root = SRC.parents[2]
+    manifest = json.loads((repo_root / "conformance/fixtures-manifest.json").read_text())
+    pinned = next(shard for shard in manifest["shards"] if shard.get("format") == "unified-history")
+
+    digest, size = unified_history.store_digest(repo_root / "conformance/fixtures-unified-v2")
+
+    assert pinned["sha256"] == digest
+    assert pinned["size"] == size
+
+
 @pytest.fixture
 def evidence(tmp_path, monkeypatch):
     conf = tmp_path / "conformance"
@@ -88,9 +99,9 @@ def test_package_pins_unified_history_without_writing_an_archive(evidence, tmp_p
         },
     }
     (history_root / "families").mkdir(parents=True)
-    (history_root / "history/gemma4").mkdir(parents=True)
+    (history_root / "capture_history/gemma4").mkdir(parents=True)
     (history_root / "families/gemma4.yaml").write_text(unified_history.dump_yaml(family))
-    (history_root / "history/gemma4/dynamo_v2.yaml").write_text(unified_history.dump_yaml(capture))
+    (history_root / "capture_history/gemma4/dynamo_v2.yaml").write_text(unified_history.dump_yaml(capture))
     monkeypatch.setattr(package_fixtures, "UNIFIED_HISTORY_DIR", history_root)
     monkeypatch.setattr(package_fixtures, "PER_SUBDIR_TREES", ("unified",))
 
@@ -107,12 +118,12 @@ def test_package_dry_run_does_not_update_unified_history(evidence, tmp_path, mon
     _conf, _store, _manifest, _manifest_path = evidence
     history_root = tmp_path / "fixtures-unified-v2"
     (history_root / "families").mkdir(parents=True)
-    (history_root / "history").mkdir()
+    (history_root / "capture_history").mkdir()
     monkeypatch.setattr(package_fixtures, "UNIFIED_HISTORY_DIR", history_root)
     monkeypatch.setattr(package_fixtures, "PER_SUBDIR_TREES", ("unified",))
 
     def mutate_history(store_root, _capture_root):
-        path = store_root / "history/gemma4/dynamo_v2.yaml"
+        path = store_root / "capture_history/gemma4/dynamo_v2.yaml"
         path.parent.mkdir(parents=True)
         path.write_text("dry run must not write here")
         return [path]
@@ -125,7 +136,7 @@ def test_package_dry_run_does_not_update_unified_history(evidence, tmp_path, mon
     blobs.mkdir()
     package_fixtures.build_shards(tmp_path / "stage", blobs, dry_run=True)
 
-    assert not (history_root / "history/gemma4/dynamo_v2.yaml").exists()
+    assert not (history_root / "capture_history/gemma4/dynamo_v2.yaml").exists()
 
 
 def test_extract_excludes_false_release_but_retains_real_patch(evidence, tmp_path, monkeypatch, capsys):
@@ -278,3 +289,15 @@ def test_conflicting_capture_aliases_fail_without_touching_files(tmp_path, monke
     with pytest.raises(ValueError, match="conflicting historical aliases"):
         table._load_unified_fixtures(tmp_path)
     assert {p: p.read_bytes() for p in tmp_path.rglob("*.yaml")} == before
+
+
+def test_identical_capture_aliases_are_accepted_with_cached_records(tmp_path, monkeypatch):
+    _case(tmp_path, "inputs", "UNIFIED.gemma-1", {"scenario": "alias", "chunks": []})
+    record = {"assembled": [{"kind": "text", "text": "same"}]}
+    _case(tmp_path, "dynamo_v2-0.3.4.patch2", "UNIFIED.31-29", record)
+    _case(tmp_path, "dynamo_v2-0.3.4.patch2", "UNIFIED.g4-1", record)
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda captures: "0.3.4")
+
+    cases, _captures, _versions = table._load_unified_fixtures(tmp_path)
+
+    assert cases[0]["dynamo"][0]["text"] == "same"

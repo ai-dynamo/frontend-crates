@@ -412,7 +412,7 @@ def load_store(root: Path) -> Store:
             raise ValueError(f"duplicate family: {family.name}")
         families[family.name] = family
     histories = {}
-    for path in sorted((root / "history").glob("*/*.yaml")):
+    for path in sorted((root / "capture_history").glob("*/*.yaml")):
         history = _validate_history(path, load_yaml(path), families)
         key = (history.family.name, history.implementation)
         if key in histories:
@@ -426,7 +426,7 @@ def load_store(root: Path) -> Store:
 def store_inventory(root: Path) -> list[dict]:
     store = load_store(root)
     inventory = []
-    paths = [*store.root.glob("families/*.yaml"), *store.root.glob("history/*/*.yaml")]
+    paths = [*store.root.glob("families/*.yaml"), *store.root.glob("capture_history/*/*.yaml")]
     for path in sorted(paths):
         data = path.read_bytes()
         inventory.append(
@@ -705,6 +705,43 @@ def _document_provenance(document: dict) -> dict:
     }
 
 
+def _provenance_identity(document: dict) -> dict:
+    """Return the immutable identity for one captured document.
+
+    Unpublished captures are named from the parser-source digest. A later checkout
+    can have a different commit and full-tree hash without changing that parser
+    source, so those audit fields must not turn the same capture into a different
+    identity. Released and legacy captures retain their complete provenance shape.
+    """
+    provenance = _document_provenance(document)
+    record = provenance.get("capture_provenance")
+    if not isinstance(record, dict) or record.get("kind") != "unpublished":
+        return provenance
+    source_id = record.get("source_id")
+    source_sha256 = record.get("source_sha256")
+    source_paths = record.get("source_paths")
+    if not isinstance(source_id, str) or not isinstance(source_sha256, str) or not isinstance(source_paths, list):
+        return provenance
+    return {
+        "capture_provenance": {
+            "kind": "unpublished",
+            "crate_version": record.get("crate_version"),
+            "source_id": source_id,
+            "source_sha256": source_sha256,
+            "source_paths": source_paths,
+        }
+    }
+
+
+def _document_metadata_for_update(document: dict) -> dict:
+    """Return mutable metadata without provenance, which has its own identity check."""
+    return {
+        key: value
+        for key, value in _document_metadata(document).items()
+        if key not in DOCUMENT_PROVENANCE_KEYS
+    }
+
+
 def _semantic_stimulus(value: dict) -> dict:
     return {key: item for key, item in value.items() if key != "semantic_sha256"}
 
@@ -865,6 +902,11 @@ def _validate_addition_provenance(capture: dict, records: dict[str, dict], addit
     expected_captured_with = provenance.get("captured_with")
     if (expected_record is None) == (expected_captured_with is None):
         raise ValueError("capture has no unambiguous provenance identity")
+    expected_identity = (
+        _provenance_identity({"capture_provenance": expected_record})
+        if expected_record is not None
+        else None
+    )
     for case_id in additions:
         document = records[case_id]["document"]
         has_record = "capture_provenance" in document
@@ -873,7 +915,7 @@ def _validate_addition_provenance(capture: dict, records: dict[str, dict], addit
             valid = (
                 has_record
                 and not has_captured_with
-                and document["capture_provenance"] == expected_record
+                and _canonical_json(_provenance_identity(document)) == _canonical_json(expected_identity)
             )
         else:
             valid = (
@@ -965,8 +1007,8 @@ def update_from_loose(store_root: Path, loose_root: Path) -> list[Path]:
                 provenance_conflicts = [
                     case_id
                     for case_id in sorted(set(resolved) & set(records))
-                    if _canonical_json(_document_provenance(resolved[case_id]["document"]))
-                    != _canonical_json(_document_provenance(records[case_id]["document"]))
+                    if _canonical_json(_provenance_identity(resolved[case_id]["document"]))
+                    != _canonical_json(_provenance_identity(records[case_id]["document"]))
                 ]
                 if provenance_conflicts:
                     raise ValueError(
@@ -981,10 +1023,10 @@ def update_from_loose(store_root: Path, loose_root: Path) -> list[Path]:
                     != _canonical_json(records[case_id]["document"].get("record_metadata", {}))
                 }
                 document_metadata_changes = {
-                    case_id: _document_metadata(records[case_id]["document"])
+                    case_id: _document_metadata_for_update(records[case_id]["document"])
                     for case_id in sorted(set(resolved) & set(records))
-                    if _canonical_json(_document_metadata(resolved[case_id]["document"]))
-                    != _canonical_json(_document_metadata(records[case_id]["document"]))
+                    if _canonical_json(_document_metadata_for_update(resolved[case_id]["document"]))
+                    != _canonical_json(_document_metadata_for_update(records[case_id]["document"]))
                 }
                 if not additions and not metadata_changes and not document_metadata_changes:
                     continue
@@ -1372,7 +1414,7 @@ def import_archives(repo_root: Path, destination: Path) -> dict:
     if destination.exists():
         shutil.rmtree(destination)
     (destination / "families").mkdir(parents=True)
-    (destination / "history").mkdir(parents=True)
+    (destination / "capture_history").mkdir(parents=True)
     for family, cases in sorted(cases_by_family.items()):
         document = {
             "schema_version": SCHEMA_VERSION,
@@ -1385,7 +1427,7 @@ def import_archives(repo_root: Path, destination: Path) -> dict:
             dump_yaml(document), encoding="utf-8", newline="\n"
         )
     for (family, implementation), captures in sorted(histories.items()):
-        path = destination / "history" / family / f"{implementation}.yaml"
+        path = destination / "capture_history" / family / f"{implementation}.yaml"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
             dump_yaml(

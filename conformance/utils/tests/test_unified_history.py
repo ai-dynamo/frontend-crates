@@ -39,7 +39,7 @@ def _write_family(root: Path, family: str, cases: dict) -> None:
 
 
 def _write_history(root: Path, family: str, implementation: str, captures: dict) -> None:
-    path = root / "history" / family / f"{implementation}.yaml"
+    path = root / "capture_history" / family / f"{implementation}.yaml"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         unified_history.dump_yaml(
@@ -277,7 +277,7 @@ def test_rejects_path_bearing_display_id(tmp_path, display_id):
 )
 def test_rejects_invalid_observation_state(tmp_path, observation):
     root = _store(tmp_path)
-    history_path = root / "history/gemma4/dynamo_v2.yaml"
+    history_path = root / "capture_history/gemma4/dynamo_v2.yaml"
     history = yaml.safe_load(history_path.read_text())
     history["captures"]["dynamo_v2-0.1.0"]["changes"]["text_only"]["observation"] = observation
     history_path.write_text(unified_history.dump_yaml(history))
@@ -311,7 +311,7 @@ def test_writer_and_materializer_are_byte_deterministic(tmp_path):
 
 def test_materializer_preserves_capture_provenance_from_document_history(tmp_path):
     source = _store(tmp_path / "source")
-    history_path = source / "history/gemma4/dynamo_v2.yaml"
+    history_path = source / "capture_history/gemma4/dynamo_v2.yaml"
     history = yaml.safe_load(history_path.read_text())
     history["captures"]["dynamo_v2-0.1.0"]["provenance"] = {
         "status": "verified",
@@ -333,7 +333,7 @@ def test_materializer_preserves_capture_provenance_from_document_history(tmp_pat
 
 def test_materializer_does_not_inject_capture_provenance_into_inherited_document(tmp_path):
     source = _store(tmp_path / "source")
-    history_path = source / "history/gemma4/dynamo_v2.yaml"
+    history_path = source / "capture_history/gemma4/dynamo_v2.yaml"
     history = yaml.safe_load(history_path.read_text())
     capture = history["captures"]["dynamo_v2-0.2.0"]
     capture["provenance"] = {"status": "captured", "record": {"label": "0.2.0"}}
@@ -363,7 +363,7 @@ def test_materializer_does_not_replace_inherited_captured_with(tmp_path):
 
 def test_materializer_applies_document_metadata_delta(tmp_path):
     source = _store(tmp_path / "source")
-    history_path = source / "history/gemma4/dynamo_v2.yaml"
+    history_path = source / "capture_history/gemma4/dynamo_v2.yaml"
     history = yaml.safe_load(history_path.read_text())
     history["captures"]["dynamo_v2-0.2.0"]["document_metadata_changes"] = {
         "text_only": {"mode": "changed-mode"}
@@ -383,7 +383,7 @@ def test_materializer_applies_document_metadata_delta(tmp_path):
 
 def test_current_reference_requires_exact_canonical_request(tmp_path):
     root = _store(tmp_path)
-    path = root / "history/gemma4/dynamo_v2.yaml"
+    path = root / "capture_history/gemma4/dynamo_v2.yaml"
     history = yaml.safe_load(path.read_text())
     history["captures"]["dynamo_v2-0.1.0"]["changes"]["text_only"]["stimulus"] = {
         "ref": "current",
@@ -423,7 +423,7 @@ def test_update_from_loose_adds_only_the_affected_history(tmp_path):
 
     changed = unified_history.update_from_loose(root, loose)
 
-    history_path = root / "history/gemma4/dynamo_v2.yaml"
+    history_path = root / "capture_history/gemma4/dynamo_v2.yaml"
     assert changed == [history_path]
     assert unified_history.load_store(root).histories[("gemma4", "dynamo_v2")].resolve(
         "dynamo_v2-0.4.0"
@@ -502,7 +502,7 @@ def test_update_from_loose_appends_new_case_to_existing_source_identity(tmp_path
 
     changed = unified_history.update_from_loose(root, loose)
 
-    history_path = root / "history/gemma4/dynamo_v2.yaml"
+    history_path = root / "capture_history/gemma4/dynamo_v2.yaml"
     assert changed == [history_path]
     resolved = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")].resolve(
         "dynamo_v2-0.3.0"
@@ -533,7 +533,7 @@ def test_update_from_loose_preserves_document_metadata_change(tmp_path):
 
     changed = unified_history.update_from_loose(root, loose.parents[1])
 
-    assert changed == [root / "history/gemma4/dynamo_v2.yaml"]
+    assert changed == [root / "capture_history/gemma4/dynamo_v2.yaml"]
     destination = tmp_path / "materialized"
     unified_history.materialize_store(root, destination)
     document = yaml.safe_load(
@@ -551,6 +551,111 @@ def test_update_from_loose_rejects_existing_case_provenance_rewrite(tmp_path):
             {
                 "family": "gemma4",
                 "captured_with": {"dynamo_v2": "different-producer"},
+                "cases": {
+                    "UNIFIED.1-1": {
+                        "capture_input": _request("different request"),
+                        "assembled": [{"kind": "text", "text": "changed"}],
+                        "chunks": [],
+                    }
+                },
+            }
+        )
+    )
+
+    with pytest.raises(ValueError, match="provenance is immutable"):
+        unified_history.update_from_loose(root, loose.parents[1])
+
+
+def test_update_from_loose_keeps_first_checkout_provenance_for_same_source_identity(tmp_path):
+    root = _store(tmp_path / "store")
+    history_path = root / "capture_history/gemma4/dynamo_v2.yaml"
+    family_path = root / "families/gemma4.yaml"
+    family = yaml.safe_load(family_path.read_text())
+    family["cases"]["same_source_new_case"] = _case("UNIFIED.1-2", "same_source_new_case", "new")
+    family_path.write_text(unified_history.dump_yaml(family))
+    history = yaml.safe_load(history_path.read_text())
+    original = {
+        "kind": "unpublished",
+        "crate_version": "0.1.0",
+        "source_id": "sha256:" + "a" * 64,
+        "source_sha256": "a" * 64,
+        "source_paths": ["parsers/v2/src"],
+        "git_commit": "old-commit",
+        "git_head_tree": "old-tree",
+    }
+    rerun = {**original, "git_commit": "new-commit", "git_head_tree": "new-tree"}
+    capture = history["captures"]["dynamo_v2-0.3.0"]
+    capture["provenance"] = {"status": "captured", "record": original}
+    capture["changes"]["text_only"]["document"] = {"capture_provenance": original}
+    history_path.write_text(unified_history.dump_yaml(history))
+
+    loose = tmp_path / "loose/dynamo_v2-0.3.0/gemma4"
+    loose.mkdir(parents=True)
+    (loose / "UNIFIED.1-1.yaml").write_text(
+        unified_history.dump_yaml(
+            {
+                "family": "gemma4",
+                "capture_provenance": rerun,
+                "cases": {
+                    "UNIFIED.1-1": {
+                        "capture_input": _request("different request"),
+                        "assembled": [{"kind": "text", "text": "changed"}],
+                        "chunks": [],
+                    }
+                },
+            }
+        )
+    )
+    (loose / "UNIFIED.1-2.yaml").write_text(
+        unified_history.dump_yaml(
+            {
+                "family": "gemma4",
+                "capture_provenance": rerun,
+                "cases": {
+                    "UNIFIED.1-2": {
+                        "capture_input": _request("new"),
+                        "assembled": [{"kind": "text", "text": "new"}],
+                        "chunks": [],
+                    }
+                },
+            }
+        )
+    )
+
+    assert unified_history.update_from_loose(root, loose.parents[1]) == [history_path]
+    stored = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")]
+    assert stored.captures["dynamo_v2-0.3.0"]["provenance"]["record"] == original
+    assert "same_source_new_case" in stored.resolve("dynamo_v2-0.3.0")
+
+
+def test_update_from_loose_rejects_changed_source_identity_for_unpublished_capture(tmp_path):
+    root = _store(tmp_path / "store")
+    history_path = root / "capture_history/gemma4/dynamo_v2.yaml"
+    history = yaml.safe_load(history_path.read_text())
+    original = {
+        "kind": "unpublished",
+        "crate_version": "0.1.0",
+        "source_id": "sha256:" + "a" * 64,
+        "source_sha256": "a" * 64,
+        "source_paths": ["parsers/v2/src"],
+    }
+    changed_source = {
+        **original,
+        "source_id": "sha256:" + "b" * 64,
+        "source_sha256": "b" * 64,
+    }
+    capture = history["captures"]["dynamo_v2-0.3.0"]
+    capture["provenance"] = {"status": "captured", "record": original}
+    capture["changes"]["text_only"]["document"] = {"capture_provenance": original}
+    history_path.write_text(unified_history.dump_yaml(history))
+
+    loose = tmp_path / "loose/dynamo_v2-0.3.0/gemma4"
+    loose.mkdir(parents=True)
+    (loose / "UNIFIED.1-1.yaml").write_text(
+        unified_history.dump_yaml(
+            {
+                "family": "gemma4",
+                "capture_provenance": changed_source,
                 "cases": {
                     "UNIFIED.1-1": {
                         "capture_input": _request("different request"),
