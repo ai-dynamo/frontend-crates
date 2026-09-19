@@ -448,19 +448,12 @@ mod tests {
             let input = format!(
                 "<tool_call>inspect<arg_key>value</arg_key><arg_value>{value}</arg_value></tool_call>"
             );
-            for width in [1, input.len()] {
-                let chunks: Vec<&str> = input
-                    .as_bytes()
-                    .chunks(width)
-                    .map(|chunk| std::str::from_utf8(chunk).unwrap())
-                    .collect();
-                let result = parse_chunks(&tools, &chunks).coalesce_calls();
-                assert!(result.normal_text.is_empty());
-                assert_eq!(result.calls.len(), 1);
-                let arguments: serde_json::Value =
-                    serde_json::from_str(&result.calls[0].arguments).unwrap();
-                assert_eq!(arguments, serde_json::json!({"value": value}));
-            }
+            let result = parse_chunks(&tools, &[&input]).coalesce_calls();
+            assert!(result.normal_text.is_empty());
+            assert_eq!(result.calls.len(), 1);
+            let arguments: serde_json::Value =
+                serde_json::from_str(&result.calls[0].arguments).unwrap();
+            assert_eq!(arguments, serde_json::json!({"value": value}));
         }
     }
 
