@@ -475,8 +475,8 @@ fn get_arguments_config(
 ///
 /// **Special cases:**
 /// ```text
-/// Input:  param_value="null", param_type=<any>
-/// Output: Value::Null  // Handled before type checking
+/// Input:  param_value="null", param_type="null"
+/// Output: Value::Null
 ///
 /// Input:  param_value="&lt;tag&gt;", param_type="string"
 /// Output: Value::String("<tag>")  // HTML entities are unescaped
@@ -510,8 +510,13 @@ fn convert_param_value(
     // HTML unescape and trim
     let param_value = html_unescape(param_value.trim());
 
-    // Handle null
-    if param_value.to_lowercase() == "null" {
+    if param_value.eq_ignore_ascii_case("null") {
+        if param_config.get(param_name).is_some_and(|schema| {
+            let allowed = collect_allowed_types(schema);
+            allowed.contains(&SchemaType::String) && !allowed.contains(&SchemaType::Null)
+        }) {
+            return Value::String(param_value).into();
+        }
         return Value::Null.into();
     }
 

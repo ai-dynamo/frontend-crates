@@ -522,6 +522,43 @@ mod tests {
     }
 
     #[test]
+    fn string_null_remains_a_complete_string_call() {
+        let input = "<tool_call><function=get_weather><parameter=location>null</parameter></function></tool_call>";
+        for (schema, expected) in [
+            (
+                serde_json::json!({"type": "string"}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"anyOf": [{"type": "string"}, {"type": "integer"}]}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"type": ["string", "null"]}),
+                serde_json::Value::Null,
+            ),
+        ] {
+            let mut tools = weather_tools();
+            tools[0].parameters["properties"]["location"] = schema;
+            for width in [1, input.len()] {
+                let chunks: Vec<_> = input
+                    .as_bytes()
+                    .chunks(width)
+                    .map(|chunk| std::str::from_utf8(chunk).unwrap())
+                    .collect();
+                let output = parse_chunks(&tools, &chunks).coalesce_calls();
+                assert_eq!(output.calls.len(), 1, "width {width}");
+                assert!(output.calls[0].complete, "width {width}");
+                assert_eq!(
+                    serde_json::from_str::<serde_json::Value>(&output.calls[0].arguments).unwrap(),
+                    serde_json::json!({"location": expected}),
+                    "width {width}"
+                );
+            }
+        }
+    }
+
+    #[test]
     fn preserves_prefix_text_before_block() {
         let out = parse_chunks(
             &weather_tools(),
