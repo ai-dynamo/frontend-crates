@@ -463,6 +463,39 @@ mod tests {
     }
 
     #[test]
+    fn literal_entities_remain_argument_data() {
+        let tools = vec![Tool {
+            name: "inspect".into(),
+            description: None,
+            parameters: serde_json::json!({
+                "type": "object", "properties": {
+                    "text": {"type": "string"}, "payload": {"type": "object"}
+                }
+            }),
+            strict: None,
+        }];
+        let input = concat!(
+            "<tool_call>inspect<arg_key>text</arg_key><arg_value>",
+            "&lt;tag&gt; &amp; &quot;x&quot; &apos;y&apos; &#65; &amp;lt;",
+            "</arg_value><arg_key>payload</arg_key><arg_value>",
+            r#"{"text":"&quot; &amp;"}"#,
+            "</arg_value></tool_call>"
+        );
+        let result = legacy(&tools, &[input]).coalesce_calls();
+        assert!(result.normal_text.is_empty());
+        assert_eq!(result.calls.len(), 1);
+        let arguments: serde_json::Value =
+            serde_json::from_str(&result.calls[0].arguments).unwrap();
+        assert_eq!(
+            arguments,
+            serde_json::json!({
+                "text": "&lt;tag&gt; &amp; &quot;x&quot; &apos;y&apos; &#65; &amp;lt;",
+                "payload": {"text": "&quot; &amp;"}
+            })
+        );
+    }
+
+    #[test]
     fn composed_nonstring_arguments_keep_json_types() {
         for (schema, value) in [
             (
