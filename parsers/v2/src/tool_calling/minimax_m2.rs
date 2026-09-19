@@ -11,9 +11,8 @@
 //! The streaming concern (buffering, chunk-split marker safety, normal_text
 //! suppression) is owned by the shared [`scan::WrappedBlockScanner`]. The
 //! per-block value typing is delegated to the v1 batch XML parser
-//! `try_tool_call_parse_xml` driven by the same MiniMax config `dynamo_parsers`
-//! uses for batch parsing, so a streamed call matches exactly what the batch
-//! parser produces. Arguments are re-serialized in source
+//! `parse_tool_call_block` driven by the same MiniMax config `dynamo_parsers`
+//! uses for batch value conversion. Arguments are re-serialized in source
 //! `<parameter name="...">` order because the v1 parser builds them from a
 //! `HashMap` whose key order is non-deterministic; the fixtures store the
 //! arguments as an exact JSON string, so order is pinned to the model-emitted
@@ -28,7 +27,7 @@ use crate::tool_calling::scan::{
     BareRecoveryLatch, InvokeEmitter, InvokeLatch, WrappedBlockScanner, WrappedBlockSpec,
     reorder_arguments,
 };
-use crate::tool_calling::v1core::{ToolDefinition, XmlParserConfig, try_tool_call_parse_xml};
+use crate::tool_calling::v1core::{ToolDefinition, XmlParserConfig, parse_tool_call_block};
 
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
 
@@ -80,9 +79,7 @@ fn spec() -> WrappedBlockSpec {
     }
 }
 
-/// Value-typing hook: wraps one complete `<invoke ...>...</invoke>` in the
-/// block markers so the v1 parser takes its normal wrapped path, then re-orders
-/// the arguments to source order.
+/// Type one complete `<invoke ...>...</invoke>` and restore source argument order.
 struct M2Emitter {
     config: XmlParserConfig,
     tools: Vec<ToolDefinition>,
@@ -94,8 +91,9 @@ impl InvokeEmitter for M2Emitter {
         invoke: &str,
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>> {
-        let wrapped = format!("{BLOCK_START}{invoke}{BLOCK_END}");
-        let (calls, _content) = try_tool_call_parse_xml(&wrapped, &self.config, Some(&self.tools))?;
+        // The scanner already delimited this invoke. Re-discovering the wrapper
+        // would truncate it at a literal </minimax:tool_call> in a parameter value.
+        let calls = parse_tool_call_block(invoke, &self.config, Some(&self.tools))?;
         let Some(call) = calls.into_iter().next() else {
             return Ok(None);
         };
@@ -197,6 +195,22 @@ mod tests {
         }
         out.append(parser.finish().expect("finish"));
         out
+    }
+
+    #[test]
+    fn preserves_wrapper_close_inside_parameter_value() {
+        let input = "<minimax:tool_call><invoke name=\"get_weather\"><parameter name=\"location\">Montréal </minimax:tool_call> café</parameter></invoke></minimax:tool_call>";
+        for split in (0..=input.len()).filter(|&index| input.is_char_boundary(index)) {
+            let out = parse_chunks(&weather_tools(), &[&input[..split], &input[split..]]);
+            assert_eq!(out.normal_text, "", "split {split}");
+            let calls = out.coalesce_calls().calls;
+            assert_eq!(calls.len(), 1, "split {split}");
+            assert_eq!(calls[0].name.as_deref(), Some("get_weather"));
+            assert_eq!(
+                calls[0].arguments, r#"{"location":"Montréal </minimax:tool_call> café"}"#,
+                "split {split}"
+            );
+        }
     }
 
     #[test]

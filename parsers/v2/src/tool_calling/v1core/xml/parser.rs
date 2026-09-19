@@ -50,7 +50,8 @@ fn strip_quotes(s: &str) -> &str {
 /// Try to parse Qwen3Coder formatted tool calls from a message.
 /// Format: `<tool_call><function=name><parameter=key>value</parameter></function></tool_call>`
 /// Returns (parsed_tool_calls, normal_text_content)
-pub fn try_tool_call_parse_xml(
+#[cfg(test)]
+fn try_tool_call_parse_xml(
     message: &str,
     config: &XmlParserConfig,
     tools: Option<&[ToolDefinition]>,
@@ -110,6 +111,7 @@ pub fn try_tool_call_parse_xml(
 }
 
 /// Extract tool calls and normal text from message.
+#[cfg(test)]
 fn extract_tool_calls(
     text: &str,
     config: &XmlParserConfig,
@@ -208,6 +210,7 @@ fn extract_tool_calls(
     Ok((normal_text, calls))
 }
 
+#[cfg(test)]
 fn prefix_before_orphan_xml_marker(text: &str, config: &XmlParserConfig) -> Option<String> {
     [
         config.tool_call_end_token.as_str(),
@@ -222,6 +225,7 @@ fn prefix_before_orphan_xml_marker(text: &str, config: &XmlParserConfig) -> Opti
     .map(|idx| text[..idx].trim().to_string())
 }
 
+#[cfg(test)]
 fn recover_bare_xml_calls_in_span(
     span: &str,
     config: &XmlParserConfig,
@@ -265,6 +269,7 @@ fn recover_bare_xml_calls_in_span(
 /// after the last recovered close marker (`</function>` or `</tool_call>`).
 /// Both bare-call recovery paths would otherwise treat everything from the first
 /// function marker onward as consumed and drop trailing text.
+#[cfg(test)]
 fn bare_recovery_surrounding_text(
     span: &str,
     marker_idx: usize,

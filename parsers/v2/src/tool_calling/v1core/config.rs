@@ -79,6 +79,7 @@ impl XmlParserConfig {
     /// act as the tool-call boundary for both start detection and end-position
     /// search, mirroring the wrapped path's behavior so streaming and batch
     /// agree on what counts as a tool call.
+    #[cfg(test)]
     pub fn is_bare_function_mode(&self, chunk: &str) -> bool {
         self.backoff_when_no_wrapper
             && !chunk.contains(self.tool_call_start_token.as_str())
