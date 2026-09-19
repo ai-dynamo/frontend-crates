@@ -36,15 +36,16 @@ from pathlib import Path
 
 import extract_fixtures  # sibling script, same dir on sys.path (matches capture_driver's import pattern)
 import fixture_disposition
+import unified_history
 
 # conformance/utils/src/ -> repo root: 4 .parent calls (strip filename, then 3 dirs)
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
 MANIFEST_REL = Path("conformance") / "fixtures-manifest.json"
 FIXTURES_DIR = ROOT / "conformance" / "fixtures"
+UNIFIED_HISTORY_DIR = ROOT / "conformance" / "fixtures-unified-v2"
 
-# Fixture trees that get one shard tarball per immediate subdir. Unified follows the
-# same convention: inputs/ + golden/ + <impl>-<version>/ each become a versioned shard
-# (unified/inputs.tar.gz, unified/golden.tar.gz, unified/vllm_python-0.25.1.tar.gz, ...).
+# Fixture trees that get one archive per immediate subdirectory. Unified is listed so
+# its loose capture tree is staged, then is written to the separate YAML history store.
 PER_SUBDIR_TREES = [
     "toolcalling/fixtures-batch-v1",
     "toolcalling/fixtures-stream-v2",
@@ -202,19 +203,47 @@ def _source_capture_shards(subdir, tree_rel, blobs_dir):
     return shards
 
 
-def build_shards(tmpdir, blobs_dir, prune=False):
+def build_shards(tmpdir, blobs_dir, prune=False, dry_run=False):
     """Build per-version shard tarballs and whole-tree shards. Returns list of shard dicts."""
     shards = []
     inactive = preserved_evidence()
 
     for tree_rel in PER_SUBDIR_TREES:
         tree_abs = tmpdir / tree_rel
+        if tree_rel == "unified":
+            history_root = UNIFIED_HISTORY_DIR
+            if not history_root.is_dir():
+                raise ValueError(f"Unified YAML history is missing: {UNIFIED_HISTORY_DIR}")
+            if dry_run:
+                history_root = tmpdir / "_unified-history"
+                shutil.copytree(UNIFIED_HISTORY_DIR, history_root)
+            capture_root = tmpdir / tree_rel
+            changed = unified_history.sync_current_corpus(history_root, capture_root)
+            changed.extend(unified_history.update_from_loose(history_root, capture_root))
+            for path in changed:
+                display_path = (
+                    path.relative_to(ROOT)
+                    if path.is_relative_to(ROOT)
+                    else Path(fixture_disposition.UNIFIED_HISTORY_PATH)
+                    / path.relative_to(history_root)
+                )
+                print(f"  updated {display_path}")
+            source_root = history_root
+            digest, size = unified_history.store_digest(source_root)
+            shards.append(
+                {
+                    "path": fixture_disposition.UNIFIED_HISTORY_PATH,
+                    "format": "unified-history",
+                    "sha256": digest,
+                    "size": size,
+                }
+            )
+            print(f"  {fixture_disposition.UNIFIED_HISTORY_PATH:<60s} {size:>9,} B  {digest[:12]}…")
+            continue
         if not tree_abs.exists():
             continue
         for subdir in sorted(d for d in tree_abs.iterdir() if d.is_dir()):
-            # golden_spec/ is the AUTHORED unified oracle source (gen_unified_golden.py
-            # output, the harness input) — it is not itself a shard; golden.tar.gz is
-            # DERIVED from it via render -> explode. Skip it silently.
+            # golden_spec/ is an authored Unified oracle build tree, not a v1 shard.
             if subdir.name == "golden_spec" or subdir.name.startswith("golden_spec-"):
                 continue
             # Only the documented layout becomes a shard: inputs/ or
@@ -299,6 +328,8 @@ def sync_store(blobs_dir, shards, dry_run, prune):
     # A changed capture needs a new patch shard, including when a stale loose tree
     # would otherwise overwrite restored history during an unrelated package run.
     for shard in shards:
+        if shard.get("format") == "unified-history":
+            continue
         destination = FIXTURES_DIR / shard["path"]
         if re.match(r"^[a-z0-9_]+-\d", destination.name) and destination.exists():
             if sha256_file(destination) != shard["sha256"]:
@@ -307,14 +338,21 @@ def sync_store(blobs_dir, shards, dry_run, prune):
         p
         for p in FIXTURES_DIR.rglob("*.tar.gz")
         if str(p.relative_to(FIXTURES_DIR)) not in new_paths | inactive.keys()
+        and not str(p.relative_to(FIXTURES_DIR)).startswith("unified/")
     ]
     if dry_run:
-        print(f"  [dry-run] would write {len(shards)} shard(s) to {FIXTURES_DIR}")
+        archive_shards = [shard for shard in shards if shard.get("format") != "unified-history"]
+        print(
+            f"  [dry-run] would write {len(archive_shards)} archive shard(s) to {FIXTURES_DIR} "
+            f"and update {len(shards) - len(archive_shards)} history pin(s)"
+        )
         for p in stale:
             verb = "remove stale" if prune else "keep (not in this package run)"
             print(f"  [dry-run] would {verb} {p.relative_to(FIXTURES_DIR)}")
         return
     for s in shards:
+        if s.get("format") == "unified-history":
+            continue
         src = blobs_dir / s["path"]
         dst = FIXTURES_DIR / s["path"]
         dst.parent.mkdir(parents=True, exist_ok=True)
@@ -345,6 +383,11 @@ def merge_shards(built, prune):
             if s["path"].startswith("unified/golden_spec-"):
                 continue
             fp = FIXTURES_DIR / s["path"]
+            if s.get("format") == "unified-history":
+                if s["path"] not in built_paths:
+                    digest, size = unified_history.store_digest(ROOT / "conformance" / "fixtures-unified-v2")
+                    merged.append({**s, "sha256": digest, "size": size})
+                continue
             if s["path"] not in built_paths and fp.exists():
                 # RECOMPUTE the sha/size from the on-disk file — never trust the prior
                 # manifest's value. A kept shard's store file can change between runs
@@ -405,7 +448,7 @@ def main():
         stage_fixtures(conformance_root, tmpdir)
 
         print("\nBuilding shards…")
-        shards = build_shards(tmpdir, blobs_dir, args.prune)
+        shards = build_shards(tmpdir, blobs_dir, args.prune, args.dry_run)
 
         print(f"\nSyncing store: {FIXTURES_DIR}")
         sync_store(blobs_dir, shards, args.dry_run, args.prune)
@@ -418,6 +461,16 @@ def main():
             "shards": merge_shards(shards, args.prune),
             "inactive_shards": list(preserved_evidence().values()),
         }
+
+        unified = next(
+            (shard for shard in manifest["shards"] if shard.get("format") == "unified-history"),
+            None,
+        )
+        if unified is not None:
+            digest, size = unified_history.store_digest(
+                ROOT / "conformance" / "fixtures-unified-v2"
+            )
+            unified.update({"sha256": digest, "size": size})
 
         manifest_path = ROOT / MANIFEST_REL
         if args.dry_run:

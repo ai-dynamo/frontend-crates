@@ -32,6 +32,12 @@ if ! run python3 conformance/utils/src/package_fixtures.py; then
   render_report || true
   exit 1
 fi
+materialized_history=$(mktemp -d /tmp/dynamo-unified-history.XXXXXX)
+trap '\rm -rf "$materialized_history"' EXIT
+if ! run python3 conformance/utils/src/unified_history.py --materialize --store conformance/fixtures-unified-v2 --output "$materialized_history"; then
+  render_report || true
+  exit 1
+fi
 if ! run python3 conformance/utils/src/extract_fixtures.py --full-refresh; then
   render_report || true
   exit 1
@@ -50,7 +56,6 @@ run python3 -m pytest -q \
 
 run python3 - <<'PY' || status=1
 import json
-import tarfile
 from pathlib import Path
 
 import sys
@@ -58,10 +63,10 @@ import sys
 sys.path.insert(0, "conformance/utils/src")
 import gen_unified_golden as golden
 from dynamo_version import dynamo_v2_label
-from fixture_disposition import CAPTURE_SNAPSHOT, capture_archive_files, capture_archive_layers, capture_snapshot_members
+from unified_history import load_store
 from unified_taxonomy import numbered_id
 
-root = Path("conformance/fixtures/unified")
+root = Path("conformance/fixtures-unified-v2")
 current = json.loads(Path("conformance/CONFORMANCE_v2.json").read_text())
 expected = {
     family: {
@@ -72,28 +77,28 @@ expected = {
 }
 
 current_label = f"dynamo_v2-{dynamo_v2_label(Path.cwd())}"
-archive_groups = [[root / "inputs.tar.gz"], [root / "golden.tar.gz"],
-                  capture_archive_layers(root, current_label)]
-for archives in archive_groups:
-    if not archives:
-        raise SystemExit(f"missing generated Unified capture: {current_label}")
-    actual = {family: set() for family in golden.FAMILIES}
-    for archive in archives:
-        if not archive.exists():
-            raise SystemExit(f"missing generated Unified archive: {archive}")
-        files = capture_archive_files(archive, "unified/" + archive.name.removesuffix(".tar.gz"))
-        if capture_snapshot_members(files.get(CAPTURE_SNAPSHOT), files) is not None:
-            actual = {family: set() for family in golden.FAMILIES}
-        for member in files:
-            parts = member.split("/")
-            if len(parts) == 2 and parts[0] in actual and member.endswith(".yaml"):
-                actual[parts[0]].add(parts[1][:-5])
-    for family, case_ids in expected.items():
-        missing = sorted(case_ids - actual[family])
-        extra = sorted(actual[family] - case_ids)
+store = load_store(root)
+for family, case_ids in expected.items():
+    canonical = {
+        case["display_id"]
+        for case in store.families[family].cases.values()
+        if case["lifecycle"] == "active"
+    }
+    history = store.histories[(family, "dynamo_v2")]
+    if current_label not in history.captures:
+        raise SystemExit(f"missing generated Unified capture: {current_label}/{family}")
+    captured = {
+        history.family.cases[case_id]["display_id"]
+        for case_id in history.resolve(current_label)
+        if history.family.cases[case_id]["lifecycle"] == "active"
+    }
+    for kind, actual in (("inputs/golden", canonical), ("capture", captured)):
+        missing = sorted(case_ids - actual)
+        extra = sorted(actual - case_ids)
         if missing or extra:
             raise SystemExit(
-                f"{archives}: {family} differs from generator; missing={missing} extra={extra}"
+                f"{kind} {current_label}/{family} differs from generator; "
+                f"missing={missing} extra={extra}"
             )
 
 for report in current["reports"]:
@@ -103,7 +108,7 @@ for report in current["reports"]:
             f"empty={report['empty']} red={report['red']}"
         )
 
-print("Unified regeneration gate passed: generated archives and rendered JSON are current.")
+print("Unified regeneration gate passed: generated YAML history and rendered JSON are current.")
 PY
 
 exit "$status"

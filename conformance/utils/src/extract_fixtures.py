@@ -4,10 +4,9 @@
 """
 Extract conformance fixtures from the in-repo LFS shard store into the local cache.
 
-Shard tarballs live in git at conformance/fixtures/ (tracked via git-lfs; see
-.gitattributes). The manifest (conformance/fixtures-manifest.json) pins the
-active snapshot and the sha256 of every shard. No network access: extraction
-reads the checked-out shard files directly.
+Archived v1 fixtures live at conformance/fixtures/. Unified fixtures live as YAML
+under conformance/fixtures-unified-v2/. The manifest pins both sources. Extraction
+materializes them into one compatibility tree without network access.
 
 Cache location (fixed, same contract as the old HF downloader):
   ${XDG_CACHE_HOME:-~/.cache}/dynamo/conformance-fixtures/
@@ -40,6 +39,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import fixture_disposition
+import unified_history
 
 # The only errnos `Path.rename()` onto an existing directory is expected to
 # raise for "the destination is already occupied" -- confirmed ENOTEMPTY on
@@ -292,6 +292,18 @@ def shard_file(shard):
     failure: the file exists but holds ~130 bytes of pointer text, not the
     tarball.
     """
+    if shard.get("format") == "unified-history":
+        path = ROOT / "conformance" / "fixtures-unified-v2"
+        if not path.is_dir():
+            sys.exit(f"Unified history missing: {path}")
+        actual, size = unified_history.store_digest(path)
+        if actual != shard["sha256"] or size != shard["size"]:
+            sys.exit(
+                f"Unified history differs from the manifest pin: expected "
+                f"{shard['sha256'][:12]}…/{shard['size']} B, got "
+                f"{actual[:12]}…/{size} B\nRun package_fixtures.py to refresh the pin."
+            )
+        return path
     path = FIXTURES_DIR / shard["path"]
     if not path.exists():
         sys.exit(
@@ -349,6 +361,15 @@ def extract_tarball(tarball_path, dest_dir, verbose=False):
         # outside the destination, and device entries — shard tarballs come
         # from PR-controlled files, so never trust member paths.
         tf.extractall(str(dest_dir), filter="data")
+
+
+def materialize_shard(shard, source, dest_dir, verbose=False):
+    if shard.get("format") == "unified-history":
+        if verbose:
+            print(f"  [materialize] {source.name} -> {dest_dir / 'unified'}", file=sys.stderr)
+        unified_history.materialize_store(source, dest_dir / "unified")
+    else:
+        extract_tarball(source, dest_dir, verbose=verbose)
 
 
 def show_info(manifest, cache_root):
@@ -475,7 +496,7 @@ def main():
         shutil.rmtree(str(tmp_dir))
     print(f"Extracting {len(shards)} shard(s) into {tmp_dir}", file=sys.stderr)
     for s in shards:
-        extract_tarball(shard_file(s), tmp_dir, verbose=args.verbose)
+        materialize_shard(s, shard_file(s), tmp_dir, verbose=args.verbose)
     write_state(tmp_dir, pin, shards, inactive.values())
 
     snap_dir = publish_extracted_snapshot(

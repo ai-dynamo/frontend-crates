@@ -18,6 +18,7 @@ import capture_stimulus
 import fixture_disposition
 import generate_conformance_table as table
 import package_fixtures
+import unified_history
 
 
 @pytest.fixture
@@ -47,17 +48,84 @@ def _case(base, directory, key, record):
     path.write_text(yaml.safe_dump({"family": "gemma4", "mode": "unified", "cases": {key: record}}))
 
 
-def test_package_preserves_quarantined_bytes_even_with_prune(evidence, tmp_path, monkeypatch):
-    conf, store, manifest, manifest_path = evidence
-    _case(conf / "unified", "dynamo_v2-0.6.0", "UNIFIED.gemma-1", {"assembled": []})
-    _case(conf / "unified", "dynamo_v2-0.6.0.patch3", "UNIFIED.gemma-1", {"assembled": []})
-    monkeypatch.setattr(package_fixtures, "read_versions", lambda: ({}, {}))
-    monkeypatch.setattr(sys, "argv", ["package_fixtures.py", "--prune"])
-    package_fixtures.main()
-    after = json.loads(manifest_path.read_text())
-    assert after["inactive_shards"] == manifest["inactive_shards"]
-    assert [s["path"] for s in after["shards"]] == ["unified/dynamo_v2-0.6.0.patch3.tar.gz"]
-    fixture_disposition.verify_inactive_shards(after, store)
+def test_package_pins_unified_history_without_writing_an_archive(evidence, tmp_path, monkeypatch):
+    _conf, _store, _manifest, _manifest_path = evidence
+    history_root = tmp_path / "fixtures-unified-v2"
+    family = {
+        "schema_version": 1,
+        "family": "gemma4",
+        "cases": {
+            "text_only": {
+                "lifecycle": "active",
+                "scenario": "text_only",
+                "display_id": "UNIFIED.1-1",
+                "historical_ids": [],
+                "request": {
+                    "input": "hello",
+                    "init": {},
+                    "finish_reason": "stop",
+                    "tools": [],
+                    "chunks": [],
+                },
+                "golden": {"assembled": []},
+            }
+        },
+    }
+    capture = {
+        "schema_version": 1,
+        "family": "gemma4",
+        "implementation": "dynamo_v2",
+        "captures": {
+            "dynamo_v2-0.1.0": {
+                "parent": None,
+                "runtime_version": "0.1.0",
+                "provenance": {},
+                "completeness": "snapshot",
+                "import_lineage": [],
+                "changes": {},
+                "metadata_changes": {},
+            }
+        },
+    }
+    (history_root / "families").mkdir(parents=True)
+    (history_root / "history/gemma4").mkdir(parents=True)
+    (history_root / "families/gemma4.yaml").write_text(unified_history.dump_yaml(family))
+    (history_root / "history/gemma4/dynamo_v2.yaml").write_text(unified_history.dump_yaml(capture))
+    monkeypatch.setattr(package_fixtures, "UNIFIED_HISTORY_DIR", history_root)
+    monkeypatch.setattr(package_fixtures, "PER_SUBDIR_TREES", ("unified",))
+
+    blobs = tmp_path / "blobs"
+    blobs.mkdir()
+    shards = package_fixtures.build_shards(tmp_path / "stage", blobs)
+
+    digest, size = unified_history.store_digest(history_root)
+    assert shards == [{"path": "unified-history", "format": "unified-history", "sha256": digest, "size": size}]
+    assert not list(blobs.rglob("*.tar.gz"))
+
+
+def test_package_dry_run_does_not_update_unified_history(evidence, tmp_path, monkeypatch):
+    _conf, _store, _manifest, _manifest_path = evidence
+    history_root = tmp_path / "fixtures-unified-v2"
+    (history_root / "families").mkdir(parents=True)
+    (history_root / "history").mkdir()
+    monkeypatch.setattr(package_fixtures, "UNIFIED_HISTORY_DIR", history_root)
+    monkeypatch.setattr(package_fixtures, "PER_SUBDIR_TREES", ("unified",))
+
+    def mutate_history(store_root, _capture_root):
+        path = store_root / "history/gemma4/dynamo_v2.yaml"
+        path.parent.mkdir(parents=True)
+        path.write_text("dry run must not write here")
+        return [path]
+
+    monkeypatch.setattr(unified_history, "sync_current_corpus", mutate_history)
+    monkeypatch.setattr(unified_history, "update_from_loose", lambda _store, _loose: [])
+    monkeypatch.setattr(unified_history, "store_digest", lambda _root: ("digest", 1))
+
+    blobs = tmp_path / "blobs"
+    blobs.mkdir()
+    package_fixtures.build_shards(tmp_path / "stage", blobs, dry_run=True)
+
+    assert not (history_root / "history/gemma4/dynamo_v2.yaml").exists()
 
 
 def test_extract_excludes_false_release_but_retains_real_patch(evidence, tmp_path, monkeypatch, capsys):
@@ -89,27 +157,6 @@ def test_quarantined_evidence_cannot_be_reactivated_or_rebuilt(evidence, tmp_pat
         package_fixtures.merge_shards([shard], prune=True)
     with pytest.raises(ValueError, match="cannot overwrite"):
         package_fixtures.sync_store(tmp_path, [shard], dry_run=False, prune=False)
-
-
-def test_inactive_only_change_publishes_new_immutable_generation(evidence, tmp_path, monkeypatch, capsys):
-    _conf, store, manifest, manifest_path = evidence
-    staging = tmp_path / "staging"
-    _case(staging / "unified", "inputs", "UNIFIED.gemma-1", {"input": "text"})
-    sha, size = package_fixtures._tar_dir(staging / "unified/inputs", "unified/inputs", store / "unified/inputs.tar.gz")
-    manifest["shards"] = [{"path": "unified/inputs.tar.gz", "sha256": sha, "size": size}]
-    manifest_path.write_text(json.dumps(manifest))
-    monkeypatch.setattr(sys, "argv", ["extract_fixtures.py"])
-    extract_fixtures.main()
-    original = Path(capsys.readouterr().out.strip().splitlines()[-1])
-    before = (original / ".fixtures-state.json").read_bytes()
-    manifest["inactive_shards"][0]["reason"] = "updated evidence assessment"
-    manifest_path.write_text(json.dumps(manifest))
-    extract_fixtures.main()
-    revised = Path(capsys.readouterr().out.strip().splitlines()[-1])
-    assert revised != original
-    assert (original / ".fixtures-state.json").read_bytes() == before
-    assert json.loads((revised / ".fixtures-state.json").read_text())["inactive_shards"] == manifest["inactive_shards"]
-    assert package_fixtures._extracted_snapshot_dir() == revised
 
 
 @pytest.mark.parametrize("change", [
@@ -149,68 +196,6 @@ def test_existing_versioned_archive_cannot_be_overwritten(evidence, tmp_path):
     with pytest.raises(ValueError, match="immutable"):
         package_fixtures.sync_store(tmp_path, [shard], dry_run=False, prune=False)
     assert path.read_bytes() == b"historical bytes"
-
-
-@pytest.mark.parametrize("change", ["added_case", "changed_stimulus", "removed_case"])
-@pytest.mark.parametrize("prune", [False, True])
-@pytest.mark.parametrize("version", ["0.6.0", "0.7.0-rc.1"])
-def test_source_capture_corpus_change_appends_overlay(evidence, monkeypatch, capsys, change, prune, version):
-    conf, store, _manifest, manifest_path = evidence
-    label = version + "+source." + "a" * 64
-    directory = f"dynamo_v2-{label}"
-    monkeypatch.setattr(package_fixtures, "read_versions", lambda: ({}, {}))
-    monkeypatch.setattr(sys, "argv", ["package_fixtures.py"] + (["--prune"] if prune else []))
-
-    def write_case(key, text):
-        stimulus = {"input": text, "tools": [], "chunks": [{"delta_text": text}]}
-        _case(conf / "unified", "inputs", key, stimulus)
-        _case(conf / "unified", directory, key, {
-            "capture_input": capture_stimulus.capture_input(stimulus),
-            "assembled": [{"kind": "text", "text": text}],
-        })
-
-    write_case("UNIFIED.1-1", "old")
-    if change == "removed_case":
-        write_case("UNIFIED.1-2", "retired")
-    package_fixtures.main()
-    original_path = store / "unified" / f"{directory}.tar.gz"
-    original_bytes = original_path.read_bytes()
-    key = "UNIFIED.1-2" if change == "added_case" else "UNIFIED.1-1"
-    if change == "removed_case":
-        for tree in ("inputs", directory):
-                (conf / "unified" / tree / "gemma4/UNIFIED.1-2.yaml").unlink()
-    else:
-        write_case(key, "new")
-    package_fixtures.main()
-    assert original_path.read_bytes() == original_bytes
-    patch_path = store / "unified" / f"{directory}.patch1.tar.gz"
-    assert patch_path.is_file()
-    manifest_after = json.loads(manifest_path.read_text())
-    capture_paths = {s["path"] for s in manifest_after["shards"] if directory in s["path"]}
-    assert capture_paths == {f"unified/{directory}.tar.gz", f"unified/{directory}.patch1.tar.gz"}
-    package_fixtures.main()
-    assert not (store / "unified" / f"{directory}.patch2.tar.gz").exists()
-    assert original_path.read_bytes() == original_bytes
-    capsys.readouterr()
-    monkeypatch.setattr(sys, "argv", ["extract_fixtures.py"])
-    extract_fixtures.main()
-    snapshot = Path(capsys.readouterr().out.strip().splitlines()[-1])
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda _captures: label)
-    cases, _caps, versions = table._load_unified_fixtures(snapshot / "unified")
-    assert versions["dynamo_v2_all"] == [label]
-    expected = {"old", "new"} if change == "added_case" else {"old"} if change == "removed_case" else {"new"}
-    assert {case["dynamo"][0]["text"] for case in cases} == expected
-    assert all(not case["dynamo_failure"] for case in cases)
-    if change == "removed_case":
-        # Retain the old input as a control: it must not resurrect the base capture.
-        _case(snapshot / "unified", "inputs", "UNIFIED.1-2", {
-            "input": "retired", "tools": [], "chunks": [{"delta_text": "retired"}],
-        })
-        cases, _caps, _versions = table._load_unified_fixtures(snapshot / "unified")
-        retired = next(case for case in cases if case["input"] == "retired")
-        assert not retired["dynamo"]
-        assert retired["dynamo_missing"]
-        assert label not in retired["dynamo_by_ver"]
 
 
 @pytest.mark.parametrize("records", [["missing.yaml"], [], ["a.yaml", "a.yaml"], [1]])

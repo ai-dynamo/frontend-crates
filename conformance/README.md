@@ -138,7 +138,7 @@ The four routine loops. All of them end the same way: `package_fixtures.py` rebu
 
 Unified work is complete only when the selected current Dynamo column has **zero empty cells and zero red cells** for the affected family. This is a hard gate. `reason:`, `unavailable:`, a historical column, stale HTML, or changing GOLDEN to match broken output does not satisfy it.
 
-For a model-family conversion, collection is mandatory work, not a follow-up. Generate the family’s Unified authored inputs and golden events, run the live Unified parser capture with its verified source identity, explode it, package the LFS shards and manifest, extract the pinned snapshot, and render the canonical v2 report. The current `dynamo_v2-<identity>.tar.gz` shard must exist before the row can be considered collected. Never generate `CONFORMANCE_unified.html`; `CONFORMANCE_v2.html` is the only HTML report for this workflow.
+For a model-family conversion, collection is mandatory work, not a follow-up. Generate the family's Unified authored inputs and golden events, run the live Unified parser capture with its verified source identity, explode it, update the YAML history and manifest pin, extract the pinned snapshot, and render the canonical v2 report. The current capture node must exist in each affected family history before the row can be considered collected. Never generate `CONFORMANCE_unified.html`; `CONFORMANCE_v2.html` is the only HTML report for this workflow.
 
 Use this loop:
 
@@ -164,7 +164,7 @@ cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- -
 python3 -m pytest conformance/utils/tests/test_model.py
 ```
 
-Use `bash conformance/utils/regenerate_unified.sh` to run this sequence as one gate. It compiles and captures the live Unified parser, rebuilds and re-extracts the archives, renders the JSON/HTML report, runs the consuming tests, and fails when the generator, current archives, or rendered Unified cells disagree. The script renders JSON and HTML even when a later validation stage fails, so humans can inspect the current red or empty cells; a failed exit code means the report is diagnostic, not ready to publish.
+Use `bash conformance/utils/regenerate_unified.sh` to run this sequence as one gate. It compiles and captures the live Unified parser, updates and re-extracts the YAML history, renders the JSON/HTML report, runs the consuming tests, and fails when the generator, current history, or rendered Unified cells disagree. The script renders JSON and HTML even when a later validation stage fails, so humans can inspect the current red or empty cells; a failed exit code means the report is diagnostic, not ready to publish.
 
 Do not substitute a loose harness feed for the package step. The v2 table reads the extracted packaged snapshot, so an un-packaged family cannot appear in its Unified tab.
 
@@ -209,7 +209,7 @@ How `.patchN` is treated: **HTML** folds it into its base `<ver>` display column
 
 `conformance/case-taxonomy.yaml` is the machine-readable definition of complete coverage — every batch/stream/reasoning case group and sub-case, with per-case requiredness and applicability rules. It replaces the old implicit standard (the union of `description:` fields across ~20 families that reviewers had to reverse-engineer per PR).
 
-For Unified corpus changes, regeneration is part of the edit, not a final cleanup step. After every change to a generator, taxonomy, golden specification, fixture manifest, capture label, or coverage documentation, immediately run the generator, explode/package the fixture archives, update the manifest, render `CONFORMANCE_v2.json` and `CONFORMANCE_v2.html`, and run the consuming Rust/Python tests. Repeat that complete chain after the final edit. Before reporting or pushing, assert that `inputs.tar.gz`, `golden.tar.gz`, and each Dynamo release after folding its active overlays cover exactly the generator's case-ID set. Preserve the original sparse archives; do not rewrite them to satisfy the folded coverage check. Source tests against stale archives or stale HTML do not validate the change.
+For Unified corpus changes, regeneration is part of the edit, not a final cleanup step. After every change to a generator, taxonomy, golden specification, fixture manifest, capture label, or coverage documentation, immediately run the generator, explode the loose captures, update `conformance/fixtures-unified-v2/`, refresh the manifest pin, render `CONFORMANCE_v2.json` and `CONFORMANCE_v2.html`, and run the consuming Rust/Python tests. Repeat that complete chain after the final edit. Before reporting or pushing, assert that the seven canonical family YAML files and each Dynamo history after resolving its explicit parents cover exactly the generator's case-ID set. Source tests against stale YAML or stale HTML do not validate the change.
 
 ```bash
 # The authoring loop for a new family: the FAIL list is the fixture TODO list.

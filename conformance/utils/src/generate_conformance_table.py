@@ -2178,7 +2178,7 @@ def _assemble_stream(chunk_deltas: list) -> list:
 def _unified_base(artifact_root: Path) -> Path:
     """Where the unified capture YAMLs live. In a packaged render they come from the
     extracted fixture snapshot (CONFORMANCE_FIXTURES_ROOT/unified — the
-    conformance/fixtures/unified/captures.tar.gz shard); locally after a harness run
+    conformance/fixtures-unified-v2 history); locally after a harness run
     they sit in the loose build tree conformance/unified/."""
     snap = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
     if snap and (Path(snap) / "unified").is_dir():
