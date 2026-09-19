@@ -14,9 +14,7 @@ use crate::tool_calling::scan::{
     InvokeBoundaryFactory, InvokeEmitter, InvokeLatch, WrappedBlockScanner, WrappedBlockSpec,
 };
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
-use crate::unified::{
-    UnifiedParser, UnifiedParserExt, UnifiedParserInit, UnifiedParserStartingState, deepseek_v41,
-};
+use crate::unified::{UnifiedParser, UnifiedParserExt, deepseek_v41};
 
 pub(crate) const BLOCK_START: &str = "<｜DSML｜tool_calls>";
 pub(crate) const BLOCK_END: &str = "</｜DSML｜tool_calls>";
@@ -25,16 +23,7 @@ pub(crate) const INVOKE_END: &str = "</｜DSML｜invoke>";
 pub(crate) const PARAMETER_PREFIX: &str = "<｜DSML｜parameter name=";
 pub(crate) const PARAMETER_END: &str = "</｜DSML｜parameter>";
 
-pub(crate) fn deepseek_v4_scanner(_tools: &[Tool]) -> WrappedBlockScanner<DsmlEmitter> {
-    dsml_scanner(false)
-}
-
-/// Tool-only compatibility accepts both native DSML dialects through one scanner.
-pub(crate) fn deepseek_tool_scanner() -> WrappedBlockScanner<DsmlEmitter> {
-    dsml_scanner(true)
-}
-
-fn dsml_scanner(both_dialects: bool) -> WrappedBlockScanner<DsmlEmitter> {
+pub(crate) fn deepseek_v4_scanner(both_dialects: bool) -> WrappedBlockScanner<DsmlEmitter> {
     let mut spec = WrappedBlockSpec {
         family: "deepseek_v4",
         block_starts: vec![BLOCK_START.to_string()],
@@ -451,7 +440,6 @@ impl InvokeEmitter for DsmlEmitter {
 }
 
 /// Compatibility adapter for V4 and V4.1 DSML through the `deepseek_v4` selector.
-/// Reasoning delimiters remain in normal text for callers to process.
 pub struct DeepSeekV4ToolStreamParser {
     parser: Box<dyn UnifiedParser>,
 }
@@ -461,16 +449,10 @@ impl DeepSeekV4ToolStreamParser {
         Self::new_with_tools(&[])
     }
 
-    pub fn new_with_tools(tools: &[Tool]) -> Self {
-        let mut parser = crate::unified::deepseek_v4::deepseek_tool_unified(tools);
-        // Tool-only callers own reasoning extraction and need its delimiters intact.
-        parser
-            .initialize_request(UnifiedParserInit {
-                starting_state: UnifiedParserStartingState::Response,
-                ..Default::default()
-            })
-            .expect("native response-mode initialization is valid");
-        Self { parser }
+    pub fn new_with_tools(_tools: &[Tool]) -> Self {
+        Self {
+            parser: crate::unified::deepseek_v4::deepseek_dsml_unified(true),
+        }
     }
 }
 
@@ -566,7 +548,7 @@ mod tests {
             "{BLOCK_START}{INVOKE_START_PREFIX}run\">{PARAMETER_PREFIX}\"payload\" string=\"true\">{}{PARAMETER_END}",
             "x".repeat(value_len)
         );
-        let mut scanner = deepseek_v4_scanner(&[]);
+        let mut scanner = deepseek_v4_scanner(false);
         for ch in input.chars() {
             scanner
                 .push_ordered(&ch.to_string())
@@ -574,6 +556,54 @@ mod tests {
         }
         scanner.finish_ordered().expect("finish");
         boundary_examined_bytes()
+    }
+
+    #[test]
+    fn tool_selector_accepts_both_dialects_without_rewriting_arguments() {
+        let value = "café 杭州 </｜DSML｜invoke> </｜DSML｜ invoke> &amp; <think>literal</think>";
+        let invokes = ["", " "].map(|gap| format!(
+            "<｜DSML｜{gap}invoke name=\"inspect\"><｜DSML｜{gap}parameter name=\"value\" string=\"true\">{value}</｜DSML｜{gap}parameter></｜DSML｜{gap}invoke>"
+        ));
+        let blocks = ["tool_calls", " calls"]
+            .into_iter()
+            .zip(&invokes)
+            .map(|(tag, invoke)| format!("<｜DSML｜{tag}>{invoke}</｜DSML｜{tag}>"))
+            .collect::<Vec<_>>();
+        for input in [
+            blocks.concat(),
+            format!("{}{}", blocks[1], blocks[0]),
+            invokes.concat(),
+        ] {
+            let boundaries: Vec<_> = input
+                .char_indices()
+                .map(|(i, _)| i)
+                .chain([input.len()])
+                .collect();
+            let chars: Vec<_> = boundaries.windows(2).map(|w| &input[w[0]..w[1]]).collect();
+            for chunks in boundaries
+                .iter()
+                .map(|&split| vec![&input[..split], "", &input[split..]])
+                .chain(std::iter::once(chars))
+            {
+                let mut parser = crate::create_tool_parser_for_family("deepseek_v4", &[]).unwrap();
+                let mut result = ToolParseResult::default();
+                for chunk in chunks {
+                    result.append(parser.push(chunk).unwrap());
+                }
+                result.append(parser.finish().unwrap());
+                let result = result.coalesce_calls();
+                assert!(result.normal_text.is_empty());
+                assert_eq!(result.calls.len(), 2);
+                for (index, call) in result.calls.iter().enumerate() {
+                    assert_eq!(call.tool_index, index);
+                    assert_eq!(call.name.as_deref(), Some("inspect"));
+                    assert_eq!(
+                        serde_json::from_str::<Value>(&call.arguments).unwrap(),
+                        serde_json::json!({"value": value})
+                    );
+                }
+            }
+        }
     }
 
     #[test]
@@ -670,28 +700,23 @@ mod tests {
     }
 
     #[test]
-    fn tool_parser_preserves_reasoning_markers_for_the_caller() {
-        for prefix in ["before<think>reason</think>", "reason</think>\n\n"] {
-            let input = format!(
-                "{prefix}<｜DSML｜tool_calls><｜DSML｜invoke name=\"get_weather\"><｜DSML｜parameter name=\"city\" string=\"true\">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>after"
-            );
-            for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
-                let mut parser = DeepSeekV4ToolStreamParser::default();
-                let mut result = parser.push(&input[..split]).expect("prefix");
-                result.append(parser.push(&input[split..]).expect("suffix"));
-                result.append(parser.finish().expect("finish"));
-                let result = result.coalesce_calls();
-                assert_eq!(
-                    result.normal_text,
-                    format!("{prefix}after"),
-                    "split {split}"
-                );
-                assert_eq!(result.calls.len(), 1);
-                assert_eq!(result.calls[0].name.as_deref(), Some("get_weather"));
-                assert_eq!(result.calls[0].arguments, r#"{"city":"Paris"}"#);
-                assert!(result.calls[0].complete);
-            }
-        }
+    fn legacy_parser_projects_the_unified_dsml_events() {
+        let input = "before<think>reason</think><｜DSML｜tool_calls><｜DSML｜invoke name=\"get_weather\"><｜DSML｜parameter name=\"city\" string=\"true\">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>after";
+        let split = input.find("<｜DSML｜tool_calls>").expect("DSML block");
+        let mut legacy = DeepSeekV4ToolStreamParser::default();
+        let mut legacy_result = legacy.push(&input[..split]).expect("legacy prefix");
+        legacy_result.append(legacy.push(&input[split..]).expect("legacy suffix"));
+        legacy_result.append(legacy.finish().expect("legacy finish"));
+
+        let mut unified = crate::unified::deepseek_v4::deepseek_v4_unified(&[]);
+        unified
+            .initialize_request(UnifiedParserInit::native(&[]))
+            .expect("initialize unified");
+        let mut unified_events = unified.push(&input[..split]).expect("unified prefix");
+        unified_events.extend(unified.push(&input[split..]).expect("unified suffix"));
+        unified_events.extend(unified.finish().expect("unified finish").events);
+
+        assert_eq!(ToolParseResult::from_deltas(unified_events), legacy_result);
     }
 
     #[test]
