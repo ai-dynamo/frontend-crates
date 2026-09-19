@@ -758,14 +758,14 @@ fn categorize_type(name: &str) -> Option<SchemaType> {
 }
 
 /// Collect the set of types a (possibly union) schema allows, walking
-/// `type` (string or array), `anyOf`/`oneOf` branches, and OpenAPI `nullable`.
+/// `type`, `anyOf`/`oneOf` branches, and OpenAPI `nullable`.
 fn collect_allowed_types(schema: &Value) -> HashSet<SchemaType> {
-    let mut out = HashSet::new();
-    collect_allowed_types_into(schema, &mut out);
-    out
+    collect_type_constraints(schema).unwrap_or_default()
 }
 
-fn collect_allowed_types_into(schema: &Value, out: &mut HashSet<SchemaType>) {
+// None is an absent type constraint, not an empty intersection.
+fn collect_type_constraints(schema: &Value) -> Option<HashSet<SchemaType>> {
+    let mut out = HashSet::new();
     if let Some(ty) = schema.get("type") {
         if let Some(name) = ty.as_str() {
             if let Some(cat) = categorize_type(name) {
@@ -779,16 +779,28 @@ fn collect_allowed_types_into(schema: &Value, out: &mut HashSet<SchemaType>) {
             }
         }
     }
-    for key in ["anyOf", "oneOf"] {
-        if let Some(options) = schema.get(key).and_then(Value::as_array) {
-            for option in options {
-                collect_allowed_types_into(option, out);
-            }
-        }
+    if out.contains(&SchemaType::Number) {
+        out.insert(SchemaType::Integer);
     }
     if schema.get("nullable").and_then(Value::as_bool) == Some(true) {
         out.insert(SchemaType::Null);
     }
+    let mut constraints = Vec::new();
+    if !out.is_empty() {
+        constraints.push(out);
+    }
+    for key in ["anyOf", "oneOf"] {
+        if let Some(options) = schema.get(key).and_then(Value::as_array) {
+            let branches = options.iter().map(collect_type_constraints);
+            if let Some(alternatives) = branches.collect::<Option<Vec<_>>>() {
+                constraints.push(alternatives.into_iter().flatten().collect());
+            }
+        }
+    }
+    constraints.into_iter().reduce(|mut left, right| {
+        left.retain(|ty| right.contains(ty));
+        left
+    })
 }
 
 /// The category a parsed JSON value belongs to (integers report as `Integer`).
@@ -1071,6 +1083,16 @@ mod coderabbit_fix_tests {
     // Finding 3: union schemas coerce only to an allowed alternative.
     #[test]
     fn union_schema_coerces_to_allowed_type_only() {
+        let cfg = one_param(
+            "x",
+            json!({"type": ["number", "null"], "anyOf": [{"type": "integer"}]}),
+        );
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "42");
+        assert_eq!(
+            ser(&convert_param_value("1.25", "x", &cfg, "f")),
+            "\"1.25\""
+        );
+
         // anyOf [string, null] + "42": stays a string (was the JSON number 42).
         let cfg = one_param(
             "x",

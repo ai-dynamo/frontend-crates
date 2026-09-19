@@ -542,6 +542,24 @@ mod tests {
                 serde_json::json!({"type": "string", "nullable": true}),
                 serde_json::Value::Null,
             ),
+            (
+                serde_json::json!({"type": "string", "anyOf": [
+                    {"type": "string"}, {"type": "null"}
+                ]}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"type": ["string", "null"], "oneOf": [
+                    {"type": "string"}, {"type": "integer"}
+                ]}),
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"type": "string", "anyOf": [
+                    {"minLength": 1}, {"type": "null"}
+                ]}),
+                serde_json::json!("null"),
+            ),
         ] {
             let mut tools = weather_tools();
             tools[0].parameters["properties"]["location"] = schema;
