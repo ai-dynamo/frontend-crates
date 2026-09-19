@@ -184,9 +184,10 @@ impl InvokeEmitter for Qwen3Emitter {
                 .and_then(|tool| tool.parameters.as_ref())
                 .and_then(|schema| schema.get("properties"))
                 .and_then(|properties| properties.get(parameter))
-                .and_then(|schema| schema.get("type"))
-                .and_then(serde_json::Value::as_str)
-                == Some("string");
+                .is_some_and(|schema| {
+                    schema.get("type").and_then(serde_json::Value::as_str) == Some("string")
+                        && schema.get("nullable").and_then(serde_json::Value::as_bool) != Some(true)
+                });
             if !streamable {
                 let Some(_) = closed else {
                     break;
@@ -522,7 +523,7 @@ mod tests {
     }
 
     #[test]
-    fn string_null_remains_a_complete_string_call() {
+    fn null_text_completes_with_the_schema_selected_type() {
         let input = "<tool_call><function=get_weather><parameter=location>null</parameter></function></tool_call>";
         for (schema, expected) in [
             (
@@ -535,6 +536,10 @@ mod tests {
             ),
             (
                 serde_json::json!({"type": ["string", "null"]}),
+                serde_json::Value::Null,
+            ),
+            (
+                serde_json::json!({"type": "string", "nullable": true}),
                 serde_json::Value::Null,
             ),
         ] {
