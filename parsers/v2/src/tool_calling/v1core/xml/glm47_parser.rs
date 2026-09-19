@@ -443,6 +443,7 @@ fn get_param_schema_type<'a>(
     tools: Option<&'a [ToolDefinition]>,
     function_name: &str,
     param_name: &str,
+    raw: &str,
 ) -> Option<&'a str> {
     let tool = tools?.iter().find(|t| t.name == function_name)?;
     let schema = tool.parameters.as_ref()?;
@@ -452,7 +453,31 @@ fn get_param_schema_type<'a>(
     if schema_has_type(param, "string") {
         return Some("string");
     }
-    param.get("type")?.as_str()
+    if let Some(schema_type) = param.get("type").and_then(Value::as_str) {
+        return Some(schema_type);
+    }
+    // Select a scalar hint from a union using the JSON value, not branch order.
+    // String-admitting schemas retain the verbatim policy above.
+    let raw = raw.trim();
+    // Objects, arrays and quoted strings already use the generic JSON path.
+    if !matches!(
+        raw.as_bytes().first(),
+        Some(b'n' | b't' | b'f' | b'-' | b'0'..=b'9')
+    ) {
+        return None;
+    }
+    let value: Value = serde_json::from_str(raw).ok()?;
+    let candidates: &[&str] = match value {
+        Value::Null => &["null"],
+        Value::Bool(_) => &["boolean"],
+        Value::Number(_) if coerce_integer_literal(raw).is_some() => &["integer", "number"],
+        Value::Number(_) => &["number"],
+        _ => &[],
+    };
+    candidates
+        .iter()
+        .copied()
+        .find(|candidate| schema_has_type(param, candidate))
 }
 
 fn schema_has_type(schema: &Value, expected: &str) -> bool {
@@ -551,7 +576,7 @@ fn parse_tool_call_block(
             let decoded = decode_xml_entities(raw_value);
 
             // Look up the expected type from the tool's parameter schema
-            let schema_type = get_param_schema_type(tools, &function_name, key);
+            let schema_type = get_param_schema_type(tools, &function_name, key, &decoded);
             let json_value = coerce_value(&decoded, schema_type);
 
             arguments.insert(key.to_string(), json_value);
