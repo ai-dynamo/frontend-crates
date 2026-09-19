@@ -457,7 +457,6 @@ fn get_param_schema_type<'a>(
         return Some(schema_type);
     }
     // Select a scalar hint from a union using the JSON value, not branch order.
-    // String-admitting schemas retain the verbatim policy above.
     let raw = raw.trim();
     // Objects, arrays and quoted strings already use the generic JSON path.
     if !matches!(

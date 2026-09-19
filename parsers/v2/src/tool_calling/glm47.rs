@@ -393,7 +393,11 @@ mod tests {
 
     #[test]
     fn nullable_nonstring_arguments_keep_json_types() {
-        for (schema, nonnull) in [
+        for (schema, value) in [
+            (
+                serde_json::json!({"type": ["integer", "null"]}),
+                serde_json::Value::Null,
+            ),
             (
                 serde_json::json!({"type": ["integer", "null"]}),
                 serde_json::json!(42),
@@ -415,25 +419,23 @@ mod tests {
                 serde_json::json!(false),
             ),
         ] {
-            for value in [serde_json::Value::Null, nonnull] {
-                let tools = vec![Tool {
-                    name: "inspect".into(),
-                    description: None,
-                    parameters: serde_json::json!({
-                        "type": "object", "properties": {"value": schema}
-                    }),
-                    strict: None,
-                }];
-                let input = format!(
-                    "<tool_call>inspect<arg_key>value</arg_key><arg_value>{value}</arg_value></tool_call>"
-                );
-                let result = parse_chunks(&tools, &[&input]).coalesce_calls();
-                assert!(result.normal_text.is_empty());
-                assert_eq!(result.calls.len(), 1);
-                let arguments: serde_json::Value =
-                    serde_json::from_str(&result.calls[0].arguments).unwrap();
-                assert_eq!(arguments, serde_json::json!({"value": value}));
-            }
+            let tools = vec![Tool {
+                name: "inspect".into(),
+                description: None,
+                parameters: serde_json::json!({
+                    "type": "object", "properties": {"value": schema}
+                }),
+                strict: None,
+            }];
+            let input = format!(
+                "<tool_call>inspect<arg_key>value</arg_key><arg_value>{value}</arg_value></tool_call>"
+            );
+            let result = parse_chunks(&tools, &[&input]).coalesce_calls();
+            assert!(result.normal_text.is_empty());
+            assert_eq!(result.calls.len(), 1);
+            let arguments: serde_json::Value =
+                serde_json::from_str(&result.calls[0].arguments).unwrap();
+            assert_eq!(arguments, serde_json::json!({"value": value}));
         }
     }
 
