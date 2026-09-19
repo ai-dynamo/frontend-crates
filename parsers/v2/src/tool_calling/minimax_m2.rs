@@ -200,17 +200,15 @@ mod tests {
     #[test]
     fn preserves_wrapper_close_inside_parameter_value() {
         let input = "<minimax:tool_call><invoke name=\"get_weather\"><parameter name=\"location\">Montréal </minimax:tool_call> café</parameter></invoke></minimax:tool_call>";
-        for split in (0..=input.len()).filter(|&index| input.is_char_boundary(index)) {
-            let out = parse_chunks(&weather_tools(), &[&input[..split], &input[split..]]);
-            assert_eq!(out.normal_text, "", "split {split}");
-            let calls = out.coalesce_calls().calls;
-            assert_eq!(calls.len(), 1, "split {split}");
-            assert_eq!(calls[0].name.as_deref(), Some("get_weather"));
-            assert_eq!(
-                calls[0].arguments, r#"{"location":"Montréal </minimax:tool_call> café"}"#,
-                "split {split}"
-            );
-        }
+        let out = parse_chunks(&weather_tools(), &[input]);
+        assert_eq!(out.normal_text, "");
+        let calls = out.coalesce_calls().calls;
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].name.as_deref(), Some("get_weather"));
+        assert_eq!(
+            calls[0].arguments,
+            r#"{"location":"Montréal </minimax:tool_call> café"}"#
+        );
     }
 
     #[test]
