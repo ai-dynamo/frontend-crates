@@ -392,7 +392,7 @@ mod tests {
     }
 
     #[test]
-    fn nullable_nonstring_arguments_keep_json_types() {
+    fn composed_nonstring_arguments_keep_json_types() {
         for (schema, value) in [
             (
                 serde_json::json!({"type": ["integer", "null"]}),
@@ -418,6 +418,24 @@ mod tests {
                 serde_json::json!({"type": ["boolean", "null"]}),
                 serde_json::json!(false),
             ),
+            (
+                serde_json::json!({"allOf": [
+                    {"type": ["integer", "string"]}, {"type": "integer"}
+                ]}),
+                serde_json::json!(7),
+            ),
+            (
+                serde_json::json!({"allOf": [
+                    {"minimum": 0}, {"type": "integer"}, {"type": ["string", "number"]}
+                ]}),
+                serde_json::json!(7),
+            ),
+            (
+                serde_json::json!({"type": ["integer", "string"], "allOf": [
+                    {"anyOf": [{"type": "integer"}, {"type": "null"}]}
+                ]}),
+                serde_json::json!(7),
+            ),
         ] {
             let tools = vec![Tool {
                 name: "inspect".into(),
@@ -430,12 +448,19 @@ mod tests {
             let input = format!(
                 "<tool_call>inspect<arg_key>value</arg_key><arg_value>{value}</arg_value></tool_call>"
             );
-            let result = parse_chunks(&tools, &[&input]).coalesce_calls();
-            assert!(result.normal_text.is_empty());
-            assert_eq!(result.calls.len(), 1);
-            let arguments: serde_json::Value =
-                serde_json::from_str(&result.calls[0].arguments).unwrap();
-            assert_eq!(arguments, serde_json::json!({"value": value}));
+            for width in [1, input.len()] {
+                let chunks: Vec<&str> = input
+                    .as_bytes()
+                    .chunks(width)
+                    .map(|chunk| std::str::from_utf8(chunk).unwrap())
+                    .collect();
+                let result = parse_chunks(&tools, &chunks).coalesce_calls();
+                assert!(result.normal_text.is_empty());
+                assert_eq!(result.calls.len(), 1);
+                let arguments: serde_json::Value =
+                    serde_json::from_str(&result.calls[0].arguments).unwrap();
+                assert_eq!(arguments, serde_json::json!({"value": value}));
+            }
         }
     }
 

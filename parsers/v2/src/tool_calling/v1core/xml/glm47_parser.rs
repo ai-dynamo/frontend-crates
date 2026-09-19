@@ -479,28 +479,42 @@ fn get_param_schema_type<'a>(
 }
 
 fn schema_has_type(schema: &Value, expected: &str) -> bool {
-    if let Some(schema_type) = schema.get("type") {
-        if schema_type.as_str() == Some(expected) {
-            return true;
-        }
-        if schema_type
-            .as_array()
-            .is_some_and(|types| types.iter().any(|ty| ty.as_str() == Some(expected)))
-        {
-            return true;
-        }
-    }
+    schema_type_match(schema, expected) == Some(true)
+}
 
-    ["anyOf", "oneOf", "allOf"].iter().any(|key| {
-        schema
-            .get(key)
-            .and_then(Value::as_array)
-            .is_some_and(|options| {
-                options
-                    .iter()
-                    .any(|option| schema_has_type(option, expected))
-            })
-    })
+// None means no type hint: e.g. minLength alone must not exclude an allOf sibling's type.
+fn schema_type_match(schema: &Value, expected: &str) -> Option<bool> {
+    let matches = |ty: &Value| {
+        ty.as_str() == Some(expected) || (expected == "integer" && ty.as_str() == Some("number"))
+    };
+    let mut hint = schema.get("type").map(|ty| {
+        ty.as_array()
+            .map_or_else(|| matches(ty), |types| types.iter().any(matches))
+    });
+    for keyword in ["anyOf", "oneOf", "allOf"] {
+        let Some(options) = schema.get(keyword).and_then(Value::as_array) else {
+            continue;
+        };
+        let branches = options
+            .iter()
+            .map(|option| schema_type_match(option, expected));
+        let branch_hint = if keyword == "allOf" {
+            branches.flatten().reduce(|left, right| left && right)
+        } else {
+            branches
+                .reduce(|left, right| match (left, right) {
+                    (Some(true), _) | (_, Some(true)) => Some(true),
+                    (Some(false), Some(false)) => Some(false),
+                    _ => None,
+                })
+                .flatten()
+        };
+        hint = match (hint, branch_hint) {
+            (Some(left), Some(right)) => Some(left && right),
+            (left, right) => left.or(right),
+        };
+    }
+    hint
 }
 
 /// Parse a single GLM-4.7 tool call block
