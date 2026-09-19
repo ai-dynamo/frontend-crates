@@ -8,17 +8,16 @@ Status: the capture tooling, parity harness, and `CONFORMANCE_v2.html` Unified t
 
 `GOLDEN | vLLM 0.25.x (Rust) | Dynamo (Rust)` — the golden is the authored oracle; both engines are diffed against it and both can be red.
 
-- **GOLDEN** — authored by `../utils/src/gen_unified_golden.py` from one scenario spec, reasoned from the invariants/policies in `../utils/lib/parsers/UNIFIED_CASES.md`. Never captured from an implementation. Shipped as the versioned `golden.tar.gz` shard here (derived from the build-tree `conformance/unified/golden_spec/<family>.yaml`).
+- **GOLDEN** — authored by `../utils/src/gen_unified_golden.py` from one scenario spec, reasoned from the invariants/policies in `../utils/lib/parsers/UNIFIED_CASES.md`. Never captured from an implementation. Stored in the canonical family YAML under `conformance/fixtures-unified-v2/families/`.
 - **vLLM Rust** — a captured peer implementation, shown by version.
 - **Dynamo Rust** — the native Unified parser where the family has one, otherwise the historical split reasoning-plus-tool path. Current native families must pass the zero-red/zero-empty gate below.
 
 ## Layout
 
-Every fixture ships as a per-version LFS shard here, same convention as the toolcalling/reasoning trees (no loose YAML):
+Unified uses one canonical YAML per family plus one sparse history YAML per populated family/implementation:
 
-- `inputs.tar.gz` — the shared raw streamed model text per case/family.
-- `golden.tar.gz` — the authored oracle (spec-derived event list), derived from `gen_unified_golden.py`.
-- `<impl>-<version>.tar.gz` — one shard per engine version (`dynamo_v2-*`, `vllm_python-*`, `vllm_rust-*`, `sglang_python-*`).
+- `conformance/fixtures-unified-v2/families/<family>.yaml` — immutable case identity, current display ID, historical aliases, exact request, and authored golden.
+- `conformance/fixtures-unified-v2/capture_history/<family>/<implementation>.yaml` — explicit capture nodes, provenance, parent links, changed observations, and tombstones.
 - `../utils/lib/parsers/UNIFIED_CASES.md` — schema, invariants, policies, divergence classes, case taxonomy.
 - `../tests/unified_schema_roundtrip.rs` — proves every authored golden case parses and round-trips through the event schema.
 
@@ -50,11 +49,11 @@ cd /tmp/old-<ver> && \
   cargo test -p dynamo-conformance-fixtures-v2 --test capture_cross_version -- --nocapture
 ```
 
-Write new cases and corrections into a new `dynamo_v2-<ver>.patchN/` overlay; keep existing release and overlay shards byte-identical. The source-identity checker must verify the historical checkout against its tag before accepting `<ver>`. Corrections must be recaptured from that source with the current input, initialization, tool schemas, and chunk schedule, never copied from the current parser. Then run `package_fixtures.py`, `extract_fixtures.py`, and `render_table_v2.sh`.
+Write new cases and corrections into a new loose capture directory. The source-identity checker must verify the historical checkout against its tag before accepting `<ver>`. Corrections must be recaptured from that source with the current input, initialization, tool schemas, and chunk schedule, never copied from the current parser. Then run `package_fixtures.py`, which adds a sparse node to the affected history YAML, followed by `extract_fixtures.py` and `render_table_v2.sh`.
 
 Rust and peer capture harnesses read the same tool declarations from `conformance/utils/src/unified_tools.json`. Each new capture binds its output to the request it executed. Historical records with missing or different request metadata remain preserved but are unavailable for comparison with the displayed request; matching case IDs alone do not establish matching inputs.
 
-Retained historical archives stay byte-for-byte. Manifest `inactive_shards` entries retain superseded shared corpora, historical captures removed from the active table, and the mislabeled `0.6.0` capture as hash-pinned evidence excluded from active extraction and rendering. A capture without request bindings cannot prove that its output belongs to the displayed request, so it moves from active `shards` to `inactive_shards` rather than rendering as an empty result. A history whose scoreable outcomes are exactly covered by a later capture moves there too. Each disposition names the exact archive, hash, and reason.
+Historical capture identities and import lineage remain recorded in the history YAML. A capture without request bindings cannot prove that its output belongs to the displayed request, so its stimulus is explicitly unavailable rather than silently rebound to the current request.
 
 **Done means the whole chain, in every worktree that has the corpus.** A stacked PR and its base are two separate renders, and their `inputs/` can legitimately differ, so each needs its OWN capture — never copy one branch's shards into the other. Verify per worktree that each Dynamo release, after folding its append-only overlays, covers every current input and has no rendered `postdates that build` cells. Original sparse archives remain unchanged; peer-engine captures have separate coverage and are not evidence of a Dynamo backfill.
 
@@ -64,7 +63,7 @@ Unified work is complete only when the affected family's selected current Dynamo
 
 ## Required conversion collection
 
-For every family converted to `UnifiedParser`, collect the current source in the same change. Unpublished source uses `<crate-version>+source.<sha256>`; a plain version requires source equality with its release tag. The collection is: generate the authored Unified golden inputs, run `unified_render` to capture live Dynamo output, run `explode_unified_fixtures.py`, run `package_fixtures.py`, run `extract_fixtures.py --full-refresh`, then render `conformance/CONFORMANCE_v2.html`. The durable current `dynamo_v2-<identity>.tar.gz`, `inputs.tar.gz`, `golden.tar.gz`, and `conformance/fixtures-manifest.json` are the evidence that the family is collected; files under the gitignored `conformance/unified/` build tree are not.
+For every family converted to `UnifiedParser`, collect the current source in the same change. Unpublished source uses `<crate-version>+source.<sha256>`; a plain version requires source equality with its release tag. The collection is: generate the authored Unified golden inputs, run `unified_render` to capture live Dynamo output, run `explode_unified_fixtures.py`, run `package_fixtures.py`, run `extract_fixtures.py --full-refresh`, then render `conformance/CONFORMANCE_v2.html`. The durable current history YAML, canonical family YAML, and `conformance/fixtures-manifest.json` pin are the evidence that the family is collected; files under the gitignored `conformance/unified/` build tree are not.
 
 Use only `conformance/utils/render_table_v2.sh --output conformance/CONFORMANCE_v2.html` for the report. Do not generate `CONFORMANCE_unified.html`. The required final gate is `conformance/utils/check.sh status --model <family> --tab unified`, which must show zero current Dynamo red cells and zero current Dynamo empty cells.
 

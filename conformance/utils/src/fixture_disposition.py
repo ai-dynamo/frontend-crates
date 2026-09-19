@@ -13,6 +13,7 @@ from unified_taxonomy import historical_case_label
 
 CAPTURE_SNAPSHOT = "capture-snapshot.json"
 DYNAMO_VERSION_RE = re.compile(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?")
+UNIFIED_HISTORY_PATH = "unified-history"
 
 
 def is_source_capture(name: str) -> bool:
@@ -139,7 +140,10 @@ def active_shards(manifest: dict) -> list[dict]:
     inactive = inactive_shards(manifest)
     shards = manifest.get("shards", [])
     for shard in shards:
-        if shard["path"] in inactive:
+        if shard.get("format") == "unified-history":
+            if shard.get("path") != UNIFIED_HISTORY_PATH:
+                raise ValueError(f"invalid Unified history path: {shard.get('path')}")
+        elif shard["path"] in inactive:
             raise ValueError(f"inactive shard is also active: {shard['path']}")
     return shards
 

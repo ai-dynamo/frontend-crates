@@ -1,0 +1,6104 @@
+schema_version: 1
+family: kimi_k2
+input_document:
+  family: kimi_k2
+  mode: unified
+  model_label: kimi_k2
+golden_document:
+  family: kimi_k2
+  mode: unified
+  captured_with:
+    golden: v1
+cases:
+  tool_only:
+    lifecycle: active
+    scenario: tool_only
+    display_id: UNIFIED.1-1
+    historical_ids:
+    - UNIFIED.1.a
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  retired__1_2:
+    lifecycle: retired
+    scenario: null
+    display_id: null
+    historical_ids:
+    - UNIFIED.1-2
+    request:
+      input: <|tool_calls_section_begin|><|tool_call_begin|>functions.:17<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.:17
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden: null
+  reason_only:
+    lifecycle: active
+    scenario: reason_only
+    display_id: UNIFIED.10-1
+    historical_ids:
+    - UNIFIED.10.a
+    request:
+      input: <think>just thinking, no answer</think>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: just thinking, no answer
+      - delta_text: </think>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: just thinking, no answer
+  reason_then_content:
+    lifecycle: active
+    scenario: reason_then_content
+    display_id: UNIFIED.10-2
+    historical_ids:
+    - UNIFIED.10.b
+    request:
+      input: <think>let me think</think>The answer is 42.
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: let me think
+      - delta_text: </think>
+      - delta_text: The answer is 42.
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: let me think
+      - kind: text
+        text: The answer is 42.
+  two_reason_spans:
+    lifecycle: active
+    scenario: two_reason_spans
+    display_id: UNIFIED.10-3
+    historical_ids:
+    - UNIFIED.10.c
+    request:
+      input: <think>first thought</think>interlude <think>second thought</think>done
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: first thought
+      - delta_text: </think>
+      - delta_text: 'interlude '
+      - delta_text: <think>
+      - delta_text: second thought
+      - delta_text: </think>
+      - delta_text: done
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: first thought
+      - kind: text
+        text: 'interlude '
+      - kind: reasoning
+        text: second thought
+      - kind: text
+        text: done
+  reason_unterminated:
+    lifecycle: active
+    scenario: reason_unterminated
+    display_id: UNIFIED.10-4
+    historical_ids:
+    - UNIFIED.10.d
+    request:
+      input: <think>thinking but stream ends
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: thinking but stream ends
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: thinking but stream ends
+  two_adjacent_reason_spans:
+    lifecycle: active
+    scenario: two_adjacent_reason_spans
+    display_id: UNIFIED.10-5
+    historical_ids:
+    - UNIFIED.10.e
+    request:
+      input: '<think>first</think><think>
+
+        second</think>done'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: first
+      - delta_text: </think>
+      - delta_text: <think>
+      - delta_text: '
+
+          second'
+      - delta_text: </think>
+      - delta_text: done
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: 'first
+
+          second'
+      - kind: text
+        text: done
+  reason_then_tool:
+    lifecycle: active
+    scenario: reason_then_tool
+    display_id: UNIFIED.11-1
+    historical_ids:
+    - UNIFIED.11.a
+    request:
+      input: '<think>Check weather.</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: Check weather.
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: Check weather.
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  text_reason_tool_text_reason_tool:
+    lifecycle: active
+    scenario: text_reason_tool_text_reason_tool
+    display_id: UNIFIED.11-10
+    historical_ids:
+    - UNIFIED.11.j
+    request:
+      input: 'Sure. <think>check A</think><|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "1"}<|tool_call_end|><|tool_calls_section_end|> and <think>check B</think><|tool_calls_section_begin|><|tool_call_begin|>functions.g:1<|tool_call_argument_begin|>{"y": "2"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'Sure. '
+      - delta_text: <think>
+      - delta_text: check A
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.f:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"x": "1"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ' and '
+      - delta_text: <think>
+      - delta_text: check B
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.g:1
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"y": "2"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'Sure. '
+      - kind: reasoning
+        text: check A
+      - kind: tool_call
+        name: f
+        arguments:
+          x: '1'
+      - kind: text
+        text: ' and '
+      - kind: reasoning
+        text: check B
+      - kind: tool_call
+        name: g
+        arguments:
+          y: '2'
+  reason_after_tool:
+    lifecycle: active
+    scenario: reason_after_tool
+    display_id: UNIFIED.11-2
+    historical_ids:
+    - UNIFIED.11.b
+    request:
+      input: '<think>Look it up.</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|><think>Now answer.</think>It''s 18C.'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: Look it up.
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: <think>
+      - delta_text: Now answer.
+      - delta_text: </think>
+      - delta_text: It's 18C.
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: Look it up.
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: reasoning
+        text: Now answer.
+      - kind: text
+        text: It's 18C.
+  reason_interleaved:
+    lifecycle: active
+    scenario: reason_interleaved
+    display_id: UNIFIED.11-3
+    historical_ids:
+    - UNIFIED.11.c
+    request:
+      input: '<think>A</think><|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "1"}<|tool_call_end|><|tool_calls_section_end|><think>B</think><|tool_calls_section_begin|><|tool_call_begin|>functions.g:1<|tool_call_argument_begin|>{"y": "2"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: A
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.f:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"x": "1"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: <think>
+      - delta_text: B
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.g:1
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"y": "2"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: A
+      - kind: tool_call
+        name: f
+        arguments:
+          x: '1'
+      - kind: reasoning
+        text: B
+      - kind: tool_call
+        name: g
+        arguments:
+          y: '2'
+  reason_tool_text_reason_tool:
+    lifecycle: active
+    scenario: reason_tool_text_reason_tool
+    display_id: UNIFIED.11-4
+    historical_ids:
+    - UNIFIED.11.d
+    request:
+      input: '<think>A</think><|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "1"}<|tool_call_end|><|tool_calls_section_end|>working on it<think>B</think><|tool_calls_section_begin|><|tool_call_begin|>functions.g:1<|tool_call_argument_begin|>{"y": "2"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: A
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.f:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"x": "1"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: working on it
+      - delta_text: <think>
+      - delta_text: B
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.g:1
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"y": "2"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: A
+      - kind: tool_call
+        name: f
+        arguments:
+          x: '1'
+      - kind: text
+        text: working on it
+      - kind: reasoning
+        text: B
+      - kind: tool_call
+        name: g
+        arguments:
+          y: '2'
+  interstitial_text:
+    lifecycle: active
+    scenario: interstitial_text
+    display_id: UNIFIED.11-5
+    historical_ids:
+    - UNIFIED.11.e
+    request:
+      input: '<think>a</think>Here you go: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: a
+      - delta_text: </think>
+      - delta_text: 'Here you go: '
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: a
+      - kind: text
+        text: 'Here you go: '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  content_then_reason_then_tool:
+    lifecycle: active
+    scenario: content_then_reason_then_tool
+    display_id: UNIFIED.11-6
+    historical_ids:
+    - UNIFIED.11.f
+    request:
+      input: 'Sure, one sec. <think>checking the forecast</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'Sure, one sec. '
+      - delta_text: <think>
+      - delta_text: checking the forecast
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'Sure, one sec. '
+      - kind: reasoning
+        text: checking the forecast
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  content_then_reason:
+    lifecycle: active
+    scenario: content_then_reason
+    display_id: UNIFIED.11-7
+    historical_ids:
+    - UNIFIED.11.g
+    request:
+      input: Hello there. <think>let me recall</think>The capital is Paris.
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'Hello there. '
+      - delta_text: <think>
+      - delta_text: let me recall
+      - delta_text: </think>
+      - delta_text: The capital is Paris.
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'Hello there. '
+      - kind: reasoning
+        text: let me recall
+      - kind: text
+        text: The capital is Paris.
+  reason_tool_reason_tool_reason:
+    lifecycle: active
+    scenario: reason_tool_reason_tool_reason
+    display_id: UNIFIED.11-8
+    historical_ids:
+    - UNIFIED.11.h
+    request:
+      input: '<think>A</think><|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "1"}<|tool_call_end|><|tool_calls_section_end|><think>B</think><|tool_calls_section_begin|><|tool_call_begin|>functions.g:1<|tool_call_argument_begin|>{"y": "2"}<|tool_call_end|><|tool_calls_section_end|><think>C</think>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: A
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.f:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"x": "1"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: <think>
+      - delta_text: B
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.g:1
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"y": "2"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: <think>
+      - delta_text: C
+      - delta_text: </think>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: A
+      - kind: tool_call
+        name: f
+        arguments:
+          x: '1'
+      - kind: reasoning
+        text: B
+      - kind: tool_call
+        name: g
+        arguments:
+          y: '2'
+      - kind: reasoning
+        text: C
+  reason_between_calls:
+    lifecycle: active
+    scenario: reason_between_calls
+    display_id: UNIFIED.11-9
+    historical_ids:
+    - UNIFIED.11.i
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "1"}<|tool_call_end|><|tool_calls_section_end|><think>mid</think><|tool_calls_section_begin|><|tool_call_begin|>functions.g:1<|tool_call_argument_begin|>{"y": "2"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.f:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"x": "1"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: <think>
+      - delta_text: mid
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.g:1
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"y": "2"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments:
+          x: '1'
+      - kind: reasoning
+        text: mid
+      - kind: tool_call
+        name: g
+        arguments:
+          y: '2'
+  reason_markup_in_arg:
+    lifecycle: active
+    scenario: reason_markup_in_arg
+    display_id: UNIFIED.12-1
+    historical_ids:
+    - UNIFIED.12.a
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.log:0<|tool_call_argument_begin|>{"note": "<think>reconsider</think>"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.log:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"note": "'
+      - delta_text: <think>
+      - delta_text: reconsider
+      - delta_text: </think>
+      - delta_text: '"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: log
+        arguments:
+          note: <think>reconsider</think>
+  tool_in_reason:
+    lifecycle: active
+    scenario: tool_in_reason
+    display_id: UNIFIED.12-2
+    historical_ids:
+    - UNIFIED.12.b
+    request:
+      input: '<think>I should check. <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|> now answer</think>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: 'I should check. '
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ' now answer'
+      - delta_text: </think>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: 'I should check. '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: reasoning
+        text: ' now answer'
+  reason_markup_in_arg_with_text:
+    lifecycle: active
+    scenario: reason_markup_in_arg_with_text
+    display_id: UNIFIED.12-3
+    historical_ids:
+    - UNIFIED.12.c
+    request:
+      input: 'Logging now: <|tool_calls_section_begin|><|tool_call_begin|>functions.log:0<|tool_call_argument_begin|>{"note": "<think>reconsider</think>"}<|tool_call_end|><|tool_calls_section_end|> done.'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'Logging now: '
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.log:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"note": "'
+      - delta_text: <think>
+      - delta_text: reconsider
+      - delta_text: </think>
+      - delta_text: '"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ' done.'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'Logging now: '
+      - kind: tool_call
+        name: log
+        arguments:
+          note: <think>reconsider</think>
+      - kind: text
+        text: ' done.'
+  tool_in_reason_with_text:
+    lifecycle: active
+    scenario: tool_in_reason_with_text
+    display_id: UNIFIED.12-4
+    historical_ids:
+    - UNIFIED.12.d
+    request:
+      input: 'Sure. <think>I should check. <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|> now answer</think> Here you go.'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'Sure. '
+      - delta_text: <think>
+      - delta_text: 'I should check. '
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ' now answer'
+      - delta_text: </think>
+      - delta_text: ' Here you go.'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'Sure. '
+      - kind: reasoning
+        text: 'I should check. '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: reasoning
+        text: ' now answer'
+      - kind: text
+        text: ' Here you go.'
+  two_calls:
+    lifecycle: active
+    scenario: two_calls
+    display_id: UNIFIED.2-1
+    historical_ids:
+    - UNIFIED.2.a
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "1"}<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.g:1<|tool_call_argument_begin|>{"y": "2"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.f:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"x": "1"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.g:1
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"y": "2"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments:
+          x: '1'
+      - kind: tool_call
+        name: g
+        arguments:
+          y: '2'
+  two_calls_same_name:
+    lifecycle: active
+    scenario: two_calls_same_name
+    display_id: UNIFIED.2-2
+    historical_ids:
+    - UNIFIED.2.b
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{"city": "Tokyo"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:1
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Tokyo"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Tokyo
+  text_only:
+    lifecycle: active
+    scenario: text_only
+    display_id: UNIFIED.3-1
+    historical_ids:
+    - UNIFIED.3.a
+    request:
+      input: The answer is 42, no tools needed.
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: The answer is 42, no tools needed.
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: The answer is 42, no tools needed.
+  guided_json_named_tool:
+    lifecycle: active
+    scenario: guided_json_named_tool
+    display_id: UNIFIED.30-1
+    historical_ids:
+    - UNIFIED.30.a
+    request:
+      input: '{"city": "Paris"}'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: get_weather
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_gt_in_argument_trailing_close:
+    lifecycle: active
+    scenario: guided_json_gt_in_argument_trailing_close
+    display_id: UNIFIED.30-11
+    historical_ids:
+    - UNIFIED.30.k
+    request:
+      input: '[{"name": "get_weather", "arguments": {"city": "a > b"}}]<|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: a > b
+  guided_json_gt_in_argument_wrapped:
+    lifecycle: active
+    scenario: guided_json_gt_in_argument_wrapped
+    display_id: UNIFIED.30-12
+    historical_ids:
+    - UNIFIED.30.l
+    request:
+      input: '<|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": "a > b"}}]<|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: a > b
+  guided_json_gt_in_argument_bare_opener:
+    lifecycle: active
+    scenario: guided_json_gt_in_argument_bare_opener
+    display_id: UNIFIED.30-13
+    historical_ids:
+    - UNIFIED.30.m
+    request:
+      input: '<|tool_call_begin|>functions.[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_call_begin|>
+      - delta_text: 'functions.[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: a > b
+  retired__30_14:
+    lifecycle: retired
+    scenario: null
+    display_id: null
+    historical_ids:
+    - UNIFIED.30-14
+    request:
+      input: '<|tool_call_begin|>functions.get_weather:0[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_call_begin|>
+      - delta_text: 'functions.get_weather:0[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+      - delta_text: ‹finish›
+    golden: null
+  guided_json_required_tool:
+    lifecycle: active
+    scenario: guided_json_required_tool
+    display_id: UNIFIED.30-2
+    historical_ids:
+    - UNIFIED.30.b
+    request:
+      input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_two_calls:
+    lifecycle: active
+    scenario: guided_json_two_calls
+    display_id: UNIFIED.30-3
+    historical_ids:
+    - UNIFIED.30.c
+    request:
+      input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: tool_call
+        name: run
+        arguments:
+          cmd: git log
+  guided_json_escaped_string_args:
+    lifecycle: active
+    scenario: guided_json_escaped_string_args
+    display_id: UNIFIED.30-4
+    historical_ids:
+    - UNIFIED.30.d
+    request:
+      input: '{"cmd": "echo \"雪\" > C:\\tmp\\a.txt"}'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: run
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '{"cmd": "echo \"雪\" > C:\\tmp\\a.txt"}'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments:
+          cmd: echo "雪" > C:\tmp\a.txt
+  guided_json_array_argument:
+    lifecycle: active
+    scenario: guided_json_array_argument
+    display_id: UNIFIED.30-5
+    historical_ids:
+    - UNIFIED.30.e
+    request:
+      input: '[{"name": "sum_values", "arguments": {"values": [2, 3, 5]}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '[{"name": "sum_values", "arguments": {"values": [2, 3, 5]}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: sum_values
+        arguments:
+          values:
+          - 2
+          - 3
+          - 5
+  guided_json_after_reasoning:
+    lifecycle: active
+    scenario: guided_json_after_reasoning
+    display_id: UNIFIED.30-6
+    historical_ids:
+    - UNIFIED.30.f
+    request:
+      input: '<think>checking</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: checking
+      - delta_text: </think>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: checking
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_marker_inside_argument:
+    lifecycle: active
+    scenario: guided_json_marker_inside_argument
+    display_id: UNIFIED.30-7
+    historical_ids:
+    - UNIFIED.30.g
+    request:
+      input: '[{"name": "log", "arguments": {"note": "</think>"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '[{"name": "log", "arguments": {"note": "'
+      - delta_text: </think>
+      - delta_text: '"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: log
+        arguments:
+          note: </think>
+  guided_json_invalid_call:
+    lifecycle: active
+    scenario: guided_json_invalid_call
+    display_id: UNIFIED.31-1
+    historical_ids:
+    - UNIFIED.31.a
+    request:
+      input: '{"unexpected": "shape"}'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '{"unexpected": "shape"}'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '{"unexpected": "shape"}'
+  guided_json_malformed_json:
+    lifecycle: active
+    scenario: guided_json_malformed_json
+    display_id: UNIFIED.31-2
+    historical_ids:
+    - UNIFIED.31.b
+    request:
+      input: '{"name": "get_weather", "arguments": {"city": "Par'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '{"name": "get_weather", "arguments": {"city": "Par'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '{"name": "get_weather", "arguments": {"city": "Par'
+  guided_json_partial_calls:
+    lifecycle: active
+    scenario: guided_json_partial_calls
+    display_id: UNIFIED.31-3
+    historical_ids:
+    - UNIFIED.31.c
+    request:
+      input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+  retired__31_33:
+    lifecycle: retired
+    scenario: null
+    display_id: null
+    historical_ids:
+    - UNIFIED.31-33
+    request:
+      input: '<think>before <|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "é🙂<par{value}"}<|tool_call_end|> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: 'before '
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.f:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"x": "é🙂'
+      - delta_text: <par{value}"}<|tool_call_end|>
+      - delta_text: ' after'
+      - delta_text: </think>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden: null
+  guided_json_list_with_broken_element:
+    lifecycle: active
+    scenario: guided_json_list_with_broken_element
+    display_id: UNIFIED.31-4
+    historical_ids:
+    - UNIFIED.31.d
+    request:
+      input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
+  retired__31_40:
+    lifecycle: retired
+    scenario: null
+    display_id: null
+    historical_ids:
+    - UNIFIED.31-40
+    request:
+      input: '<think>before <|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "<think>quoted</think>"}<|tool_call_end|> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: 'before '
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.f:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"x": "'
+      - delta_text: <think>
+      - delta_text: quoted
+      - delta_text: </think>
+      - delta_text: '"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: ' after'
+      - delta_text: </think>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden: null
+  guided_json_tool_open_before_payload:
+    lifecycle: active
+    scenario: guided_json_tool_open_before_payload
+    display_id: UNIFIED.32-1
+    historical_ids:
+    - UNIFIED.31-5
+    - UNIFIED.31.e
+    request:
+      input: '<|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_tool_close_after_payload:
+    lifecycle: active
+    scenario: guided_json_tool_close_after_payload
+    display_id: UNIFIED.32-2
+    historical_ids:
+    - UNIFIED.31-6
+    - UNIFIED.31.f
+    request:
+      input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]<|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_wrapped_in_tool_markup:
+    lifecycle: active
+    scenario: guided_json_wrapped_in_tool_markup
+    display_id: UNIFIED.32-3
+    historical_ids:
+    - UNIFIED.31-7
+    - UNIFIED.31.g
+    request:
+      input: '<|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]<|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_orphan_tool_close_before_payload:
+    lifecycle: active
+    scenario: guided_json_orphan_tool_close_before_payload
+    display_id: UNIFIED.32-4
+    historical_ids:
+    - UNIFIED.31-11
+    - UNIFIED.31.k
+    request:
+      input: '<|tool_calls_section_end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_native_markup_only:
+    lifecycle: active
+    scenario: guided_json_native_markup_only
+    display_id: UNIFIED.32-5
+    historical_ids:
+    - UNIFIED.31-23
+    - UNIFIED.31.w
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled: []
+  guided_json_syntax_error_trailing_close:
+    lifecycle: active
+    scenario: guided_json_syntax_error_trailing_close
+    display_id: UNIFIED.33-1
+    historical_ids:
+    - UNIFIED.31-12
+    - UNIFIED.31.l
+    request:
+      input: '[{"name": "get_weather", "arguments": {"city": <|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": '
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '[{"name": "get_weather", "arguments": {"city":'
+  guided_json_syntax_error_wrapped:
+    lifecycle: active
+    scenario: guided_json_syntax_error_wrapped
+    display_id: UNIFIED.33-2
+    historical_ids:
+    - UNIFIED.31-13
+    - UNIFIED.31.m
+    request:
+      input: '<|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": <|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": '
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '[{"name": "get_weather", "arguments": {"city":'
+  guided_json_syntax_error_bare_opener:
+    lifecycle: active
+    scenario: guided_json_syntax_error_bare_opener
+    display_id: UNIFIED.33-3
+    historical_ids:
+    - UNIFIED.31-14
+    - UNIFIED.31.n
+    request:
+      input: '<|tool_call_begin|>functions.[{"name": "get_weather", "arguments": {"city": '
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_call_begin|>
+      - delta_text: 'functions.[{"name": "get_weather", "arguments": {"city": '
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '[{"name": "get_weather", "arguments": {"city": '
+  guided_json_schema_error_not_a_call_trailing_close:
+    lifecycle: active
+    scenario: guided_json_schema_error_not_a_call_trailing_close
+    display_id: UNIFIED.33-4
+    historical_ids:
+    - UNIFIED.31-15
+    - UNIFIED.31.o
+    request:
+      input: '{"unexpected": "shape"}<|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '{"unexpected": "shape"}'
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '{"unexpected": "shape"}'
+  guided_json_schema_error_not_a_call_wrapped:
+    lifecycle: active
+    scenario: guided_json_schema_error_not_a_call_wrapped
+    display_id: UNIFIED.33-5
+    historical_ids:
+    - UNIFIED.31-16
+    - UNIFIED.31.p
+    request:
+      input: '<|tool_calls_section_begin|>{"unexpected": "shape"}<|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: '{"unexpected": "shape"}'
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '{"unexpected": "shape"}'
+  guided_json_schema_error_not_a_call_bare_opener:
+    lifecycle: active
+    scenario: guided_json_schema_error_not_a_call_bare_opener
+    display_id: UNIFIED.33-6
+    historical_ids:
+    - UNIFIED.31-17
+    - UNIFIED.31.q
+    request:
+      input: '<|tool_call_begin|>functions.{"unexpected": "shape"}'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_call_begin|>
+      - delta_text: 'functions.{"unexpected": "shape"}'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '{"unexpected": "shape"}'
+  guided_json_schema_error_nameless_element_trailing_close:
+    lifecycle: active
+    scenario: guided_json_schema_error_nameless_element_trailing_close
+    display_id: UNIFIED.33-7
+    historical_ids:
+    - UNIFIED.31-18
+    - UNIFIED.31.r
+    request:
+      input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]<|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+  guided_json_schema_error_nameless_element_wrapped:
+    lifecycle: active
+    scenario: guided_json_schema_error_nameless_element_wrapped
+    display_id: UNIFIED.33-8
+    historical_ids:
+    - UNIFIED.31-19
+    - UNIFIED.31.s
+    request:
+      input: '<|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]<|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+  guided_json_schema_error_nameless_element_bare_opener:
+    lifecycle: active
+    scenario: guided_json_schema_error_nameless_element_bare_opener
+    display_id: UNIFIED.33-9
+    historical_ids:
+    - UNIFIED.31-20
+    - UNIFIED.31.t
+    request:
+      input: '<|tool_call_begin|>functions.[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_call_begin|>
+      - delta_text: 'functions.[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+  guided_json_narrated_invoke_in_reasoning:
+    lifecycle: active
+    scenario: guided_json_narrated_invoke_in_reasoning
+    display_id: UNIFIED.34-1
+    historical_ids:
+    - UNIFIED.31-8
+    - UNIFIED.31.h
+    request:
+      input: '<think>I''ll use <|tool_calls_section_begin|> next</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: 'I''ll use '
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: ' next'
+      - delta_text: </think>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: I'll use  next
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_prose_before_reasoning:
+    lifecycle: active
+    scenario: guided_json_prose_before_reasoning
+    display_id: UNIFIED.34-2
+    historical_ids:
+    - UNIFIED.31-9
+    - UNIFIED.31.i
+    request:
+      input: 'Sure. <think>checking</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'Sure. '
+      - delta_text: <think>
+      - delta_text: checking
+      - delta_text: </think>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'Sure. '
+      - kind: reasoning
+        text: checking
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_orphan_reason_close_before_payload:
+    lifecycle: active
+    scenario: guided_json_orphan_reason_close_before_payload
+    display_id: UNIFIED.34-3
+    historical_ids:
+    - UNIFIED.31-10
+    - UNIFIED.31.j
+    request:
+      input: '</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: </think>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_stray_prefix_before_reasoning:
+    lifecycle: active
+    scenario: guided_json_stray_prefix_before_reasoning
+    display_id: UNIFIED.34-4
+    historical_ids:
+    - UNIFIED.31-21
+    - UNIFIED.31.u
+    request:
+      input: '<|tool_call_begin|>functions.<think>secret</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.
+      - delta_text: <think>
+      - delta_text: secret
+      - delta_text: </think>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: secret
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_narrated_prefix_inside_reasoning:
+    lifecycle: active
+    scenario: guided_json_narrated_prefix_inside_reasoning
+    display_id: UNIFIED.34-5
+    historical_ids:
+    - UNIFIED.31-22
+    - UNIFIED.31.v
+    request:
+      input: '<think>I''ll call <|tool_call_begin|>functions.get_weather</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: 'I''ll call '
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather
+      - delta_text: </think>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: I'll call get_weather
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_unterminated_reasoning_then_wrapped_payload:
+    lifecycle: active
+    scenario: guided_json_unterminated_reasoning_then_wrapped_payload
+    display_id: UNIFIED.34-6
+    historical_ids:
+    - UNIFIED.31-24
+    - UNIFIED.31.x
+    request:
+      input: '<think>thinking<|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]<|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: tool_calls
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: thinking
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: thinking
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_bare_tool_header_recovers_inside_a_thought:
+    lifecycle: active
+    scenario: guided_json_bare_tool_header_recovers_inside_a_thought
+    display_id: UNIFIED.34-7
+    historical_ids:
+    - UNIFIED.31-28
+    request:
+      input: 'thinking <|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]<|tool_calls_section_end|>'
+      init:
+        starting_state: Reasoning
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: tool_calls
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'thinking '
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: 'thinking '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_quoted_bare_header_in_answer:
+    lifecycle: active
+    scenario: guided_json_quoted_bare_header_in_answer
+    display_id: UNIFIED.35-1
+    historical_ids:
+    - UNIFIED.31-25
+    request:
+      input: 'I mean <think>self literal</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: tool_calls
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'I mean '
+      - delta_text: <think>
+      - delta_text: self literal
+      - delta_text: </think>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: I mean <think>self literal</think>
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_quoted_bare_header_after_payload:
+    lifecycle: active
+    scenario: guided_json_quoted_bare_header_after_payload
+    display_id: UNIFIED.35-2
+    historical_ids:
+    - UNIFIED.31-27
+    request:
+      input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]I mean <think>self literal</think>'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: tool_calls
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]I mean '
+      - delta_text: <think>
+      - delta_text: self literal
+      - delta_text: </think>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: I mean <think>self literal</think>
+  tool_block_never_closed_then_text:
+    lifecycle: active
+    scenario: tool_block_never_closed_then_text
+    display_id: UNIFIED.4-1
+    historical_ids:
+    - UNIFIED.4.a
+    request:
+      input: <|tool_calls_section_begin|>still thinking about it
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: still thinking about it
+      - delta_text: ‹finish›
+    golden:
+      assembled: []
+  tool_markup_only_emits_nothing:
+    lifecycle: active
+    scenario: tool_markup_only_emits_nothing
+    display_id: UNIFIED.4-2
+    historical_ids:
+    - UNIFIED.4.b
+    request:
+      input: <|tool_calls_section_end|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled: []
+  prefilled_reasoning_with_tool:
+    lifecycle: active
+    scenario: prefilled_reasoning_with_tool
+    display_id: UNIFIED.40-1
+    historical_ids:
+    - UNIFIED.40.a
+    request:
+      input: 'checking weather</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: Reasoning
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: checking weather
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: checking weather
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  prefilled_reasoning_with_guided_json:
+    lifecycle: active
+    scenario: prefilled_reasoning_with_guided_json
+    display_id: UNIFIED.40-2
+    historical_ids:
+    - UNIFIED.40.b
+    request:
+      input: 'checking weather</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: Reasoning
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: checking weather
+      - delta_text: </think>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: checking weather
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  prefilled_reasoning_then_text_then_tool:
+    lifecycle: active
+    scenario: prefilled_reasoning_then_text_then_tool
+    display_id: UNIFIED.40-3
+    historical_ids:
+    - UNIFIED.40.c
+    request:
+      input: 'weighing options</think>Here''s what I found: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: Reasoning
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: weighing options
+      - delta_text: </think>
+      - delta_text: 'Here''s what I found: '
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: weighing options
+      - kind: text
+        text: 'Here''s what I found: '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  prefilled_reasoning_then_text:
+    lifecycle: active
+    scenario: prefilled_reasoning_then_text
+    display_id: UNIFIED.40-4
+    historical_ids:
+    - UNIFIED.40.d
+    request:
+      input: no tool needed</think>The answer is 42.
+      init:
+        starting_state: Reasoning
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: no tool needed
+      - delta_text: </think>
+      - delta_text: The answer is 42.
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: no tool needed
+      - kind: text
+        text: The answer is 42.
+  prefilled_reasoning_redundant_opener:
+    lifecycle: active
+    scenario: prefilled_reasoning_redundant_opener
+    display_id: UNIFIED.41-1
+    historical_ids:
+    - UNIFIED.41.a
+    request:
+      input: '<think>checking weather</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "London"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: Reasoning
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: checking weather
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "London"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: checking weather
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: London
+  prefilled_reasoning_truncated:
+    lifecycle: active
+    scenario: prefilled_reasoning_truncated
+    display_id: UNIFIED.41-2
+    historical_ids:
+    - UNIFIED.41.b
+    request:
+      input: 'analyzing data</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Par'
+      init:
+        starting_state: Reasoning
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: length
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: analyzing data
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Par'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: analyzing data
+  truncated_tool_eof:
+    lifecycle: active
+    scenario: truncated_tool_eof
+    display_id: UNIFIED.5-1
+    historical_ids:
+    - UNIFIED.5.a
+    request:
+      input: '<think>ok</think><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Par'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: ok
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Par'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: ok
+  tool_no_close:
+    lifecycle: active
+    scenario: tool_no_close
+    display_id: UNIFIED.5-2
+    historical_ids:
+    - UNIFIED.5.b
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  orphan_close_after_prose:
+    lifecycle: active
+    scenario: orphan_close_after_prose
+    display_id: UNIFIED.5-3
+    historical_ids:
+    - UNIFIED.5.c
+    request:
+      input: I will check that. <|tool_call_end|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'I will check that. '
+      - delta_text: <|tool_call_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'I will check that. '
+  prefilled_response_reasoning_markers_literal:
+    lifecycle: active
+    scenario: prefilled_response_reasoning_markers_literal
+    display_id: UNIFIED.50-4
+    historical_ids:
+    - UNIFIED.50.d
+    request:
+      input: '<think>literal</think> then a call<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: Response
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <think>
+      - delta_text: literal
+      - delta_text: </think>
+      - delta_text: ' then a call'
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: <think>literal</think> then a call
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  retired__50_a:
+    lifecycle: retired
+    scenario: null
+    display_id: null
+    historical_ids:
+    - UNIFIED.50.a
+    request: null
+    golden: null
+  retired__50_b:
+    lifecycle: retired
+    scenario: null
+    display_id: null
+    historical_ids:
+    - UNIFIED.50.b
+    request: null
+    golden: null
+  retired__50_c:
+    lifecycle: retired
+    scenario: null
+    display_id: null
+    historical_ids:
+    - UNIFIED.50.c
+    request: null
+    golden: null
+  retired__51_a:
+    lifecycle: retired
+    scenario: null
+    display_id: null
+    historical_ids:
+    - UNIFIED.51.a
+    request: null
+    golden: null
+  retired__51_b:
+    lifecycle: retired
+    scenario: null
+    display_id: null
+    historical_ids:
+    - UNIFIED.51.b
+    request: null
+    golden: null
+  empty_args:
+    lifecycle: active
+    scenario: empty_args
+    display_id: UNIFIED.6-1
+    historical_ids:
+    - UNIFIED.6.a
+    request:
+      input: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: {}
+  arg_unicode:
+    lifecycle: active
+    scenario: arg_unicode
+    display_id: UNIFIED.7-1
+    historical_ids:
+    - UNIFIED.7.a
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "São Paulo 東京"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "São Paulo 東京"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: São Paulo 東京
+  arg_marker_in_string:
+    lifecycle: active
+    scenario: arg_marker_in_string
+    display_id: UNIFIED.7-2
+    historical_ids:
+    - UNIFIED.7.b
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.run:0<|tool_call_argument_begin|>{"cmd": "git log <|tool_call_end|> --oneline"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.run:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"cmd": "git log '
+      - delta_text: <|tool_call_end|>
+      - delta_text: ' --oneline"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments:
+          cmd: git log <|tool_call_end|> --oneline
+  text_before_tool:
+    lifecycle: active
+    scenario: text_before_tool
+    display_id: UNIFIED.8-1
+    historical_ids:
+    - UNIFIED.8.a
+    request:
+      input: 'On it: <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'On it: '
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'On it: '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  trailing_text_after_tool:
+    lifecycle: active
+    scenario: trailing_text_after_tool
+    display_id: UNIFIED.8-2
+    historical_ids:
+    - UNIFIED.8.b
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>The forecast shows clear skies for the rest of the week.'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: The forecast shows clear skies for the rest of the week.
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: The forecast shows clear skies for the rest of the week.
+  text_sandwich:
+    lifecycle: active
+    scenario: text_sandwich
+    display_id: UNIFIED.8-3
+    historical_ids:
+    - UNIFIED.8.c
+    request:
+      input: 'Before. <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|> After.'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'Before. '
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ' After.'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'Before. '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: ' After.'
+  text_between_calls:
+    lifecycle: active
+    scenario: text_between_calls
+    display_id: UNIFIED.8-4
+    historical_ids:
+    - UNIFIED.8.d
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "1"}<|tool_call_end|><|tool_calls_section_end|> then <|tool_calls_section_begin|><|tool_call_begin|>functions.g:1<|tool_call_argument_begin|>{"y": "2"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.f:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"x": "1"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ' then '
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.g:1
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"y": "2"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments:
+          x: '1'
+      - kind: text
+        text: ' then '
+      - kind: tool_call
+        name: g
+        arguments:
+          y: '2'
+  narrated_calls:
+    lifecycle: active
+    scenario: narrated_calls
+    display_id: UNIFIED.8-5
+    historical_ids:
+    - UNIFIED.8.e
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|> then I''ll run <|tool_calls_section_begin|><|tool_call_begin|>functions.f:1<|tool_call_argument_begin|>{"x": "1"}<|tool_call_end|><|tool_calls_section_end|> and <|tool_calls_section_begin|><|tool_call_begin|>functions.g:2<|tool_call_argument_begin|>{"y": "2"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ' then I''ll run '
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.f:1
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"x": "1"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ' and '
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.g:2
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"y": "2"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: ' then I''ll run '
+      - kind: tool_call
+        name: f
+        arguments:
+          x: '1'
+      - kind: text
+        text: ' and '
+      - kind: tool_call
+        name: g
+        arguments:
+          y: '2'
+  retired__muse_1:
+    lifecycle: retired
+    scenario: null
+    display_id: null
+    historical_ids:
+    - UNIFIED.31-26
+    - UNIFIED.muse-1
+    request: null
+    golden: null
