@@ -458,7 +458,6 @@ fn get_param_schema_type<'a>(
     }
     // Select a scalar hint from a union using the JSON value, not branch order.
     let raw = raw.trim();
-    // Objects, arrays and quoted strings already use the generic JSON path.
     if !matches!(
         raw.as_bytes().first(),
         Some(b'n' | b't' | b'f' | b'-' | b'0'..=b'9')
