@@ -19,7 +19,7 @@ from capture_stimulus import capture_input
 def git(repo, *args, input=None):
     return subprocess.run(
         ["git", "-C", str(repo), *args], input=input,
-        check=True, capture_output=True, text=True,
+        check=True, capture_output=True, env=identity.git_subprocess_env(), text=True,
     ).stdout.strip()
 
 
@@ -151,6 +151,7 @@ def test_tagless_shallow_clone_selects_only_source_verified_release(release_repo
     result = subprocess.run(
         [sys.executable, identity.__file__, "--repo-root", str(clone), "--format", "label", "--select-capture"],
         input=json.dumps({"0.6.0": [recorded]}), text=True, check=True, capture_output=True,
+        env=identity.git_subprocess_env(),
     )
     assert result.stdout.strip() == "0.6.0"
     current = identity.dynamo_v2_provenance(clone)
@@ -217,7 +218,11 @@ def test_consumer_identity_survives_unavailable_pr_origin(release_repo, tmp_path
     assert git(clone, "rev-parse", "--is-shallow-repository") == str(distribution == "shallow").lower()
     if kind != "unpublished":
         git(clone, "fetch", "origin", "tag", recorded["release_tag"])
-    missing = subprocess.run(["git", "-C", str(clone), "cat-file", "-e", anchor], capture_output=True)
+    missing = subprocess.run(
+        ["git", "-C", str(clone), "cat-file", "-e", anchor],
+        capture_output=True,
+        env=identity.git_subprocess_env(),
+    )
     assert missing.returncode != 0
     assert identity.source_fingerprint(clone) == recorded["source_sha256"]
     with pytest.raises(ValueError, match="Git anchor .* is unavailable"):
@@ -229,6 +234,7 @@ def test_consumer_identity_survives_unavailable_pr_origin(release_repo, tmp_path
     result = subprocess.run(
         [sys.executable, identity.__file__, "--repo-root", str(clone), "--format", "label", "--select-capture"],
         input=json.dumps(captures), text=True, check=True, capture_output=True,
+        env=identity.git_subprocess_env(),
     )
     assert result.stdout.strip() == recorded["label"]
     for field, wrong in [("git_commit", "malformed"), ("git_head_tree", None),
@@ -347,6 +353,7 @@ def test_raw_shards_and_effective_case_inventory_select_identically(release_repo
         result = subprocess.run(
             [sys.executable, identity.__file__, "--repo-root", str(release_repo), "--format", "label", "--select-capture"],
             input=json.dumps(rust), text=True, check=True, capture_output=True,
+            env=identity.git_subprocess_env(),
         )
         assert result.stdout.strip() == expected
 
@@ -385,6 +392,7 @@ def test_tagless_release_selection_is_source_identity_not_branch_ancestry(releas
     ancestry = subprocess.run(
         ["git", "-C", str(release_repo), "merge-base", "--is-ancestor", recorded["release_commit"], "HEAD"],
         capture_output=True,
+        env=identity.git_subprocess_env(),
     )
     assert ancestry.returncode == 1
     assert identity.source_fingerprint(release_repo, unrelated) == recorded["source_sha256"]
@@ -405,8 +413,22 @@ def test_environment_override_and_explicit_precedence(release_repo, monkeypatch)
 
 def test_cli_and_python_consumers_share_identity(release_repo):
     command = [sys.executable, identity.__file__, "--repo-root", str(release_repo), "--label", "current"]
-    result = subprocess.run(command, check=True, capture_output=True, text=True)
+    result = subprocess.run(
+        command,
+        check=True,
+        capture_output=True,
+        env=identity.git_subprocess_env(),
+        text=True,
+    )
     assert json.loads(result.stdout) == identity.dynamo_v2_provenance(release_repo, "current")
+
+
+def test_explicit_repo_ignores_caller_git_index(release_repo, tmp_path, monkeypatch):
+    external_index = tmp_path / "external-index"
+    monkeypatch.setenv("GIT_INDEX_FILE", str(external_index))
+
+    assert identity.dynamo_v2_label(release_repo) == "0.6.0"
+    assert not external_index.exists()
 
 
 def test_manifest_version_is_package_scoped(release_repo):
