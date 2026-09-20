@@ -68,7 +68,15 @@ def test_schema_guard_rejects_old_numeric_string_successor():
 
 def test_string_arguments_and_open_additional_properties_are_preserved():
     schemas = {tool["name"]: tool["parameters"] for tool in unified_tools()}
-    assert set(schemas) == {"get_weather", "f", "g", "run", "log", "sum_values", "functions."}
+    assert set(schemas) == {
+        "get_weather",
+        "f",
+        "g",
+        "run",
+        "log",
+        "sum_values",
+        "functions.",
+    }
     for name, key in (("get_weather", "city"), ("f", "x"), ("g", "y"), ("run", "cmd"), ("log", "note")):
         assert schemas[name] == {"type": "object", "properties": {key: {"type": "string"}}}
     assert schemas["sum_values"]["properties"]["values"] == {"type": "array", "items": {"type": "number"}}

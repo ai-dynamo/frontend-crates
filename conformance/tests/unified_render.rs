@@ -89,6 +89,29 @@ impl Ev {
     }
 }
 
+impl common::UnifiedEventView for Ev {
+    fn reasoning_text(&self) -> Option<&str> {
+        match self {
+            Ev::Reasoning { text } => Some(text),
+            _ => None,
+        }
+    }
+
+    fn visible_text(&self) -> Option<&str> {
+        match self {
+            Ev::Text { text } => Some(text),
+            _ => None,
+        }
+    }
+
+    fn tool_call(&self) -> Option<(&str, &Value)> {
+        match self {
+            Ev::ToolCall { name, arguments } => Some((name, arguments)),
+            _ => None,
+        }
+    }
+}
+
 /// Map a corpus family to (v1 reasoning parser, v2 tool parser) for the SPLIT path.
 /// Declared once in `parser_families.yaml` under `unified:`; see `common::unified_family`.
 fn parsers_for(family: &str) -> (String, String) {
@@ -362,81 +385,6 @@ fn finish_is_part_of_the_stream_schedule_even_when_it_emits_nothing() {
     );
 }
 
-/// Classify a Dynamo divergence from the golden.
-fn classify(family: &str, golden: &[Ev], got: &[Ev]) -> &'static str {
-    if golden == got {
-        return "MATCH";
-    }
-    // Control markup that leaked into a visible payload.
-    const MARKERS: &[&str] = &[
-        "<|",
-        "|>",
-        "<think>",
-        "</think>",
-        "◁",
-        "<channel",
-        "channel|>",
-    ];
-    // Per-family markup that leaks invisibly to MARKERS above. gemma4's channel opener
-    // leaves `thought\n`. qwen3's tool envelope has NO `<|...|>` sentinels, so a
-    // `<tool_call>...</tool_call>` leaking into reasoning_content is invisible to the
-    // shared list — enumerate it (kimi's tool/section markers already contain `<|`/`|>`).
-    // Declared per family in `parser_families.yaml` (`unified:` -> `leak_markers`),
-    // because this markup is invisible to the shared MARKERS list above.
-    let family_leak: Vec<String> = common::unified_family(family).leak_markers;
-    let leaks = got.iter().any(|e| match e {
-        Ev::Text { text } | Ev::Reasoning { text } => MARKERS
-            .iter()
-            .copied()
-            .chain(family_leak.iter().map(String::as_str))
-            .any(|m| text.contains(m)),
-        Ev::ToolCall { .. } => false,
-    });
-    if leaks {
-        return "LEAK";
-    }
-    let reasoning = |evs: &[Ev]| {
-        evs.iter()
-            .filter(|e| matches!(e, Ev::Reasoning { .. }))
-            .count()
-    };
-    if reasoning(got) < reasoning(golden) {
-        return "MERGE";
-    }
-    // Tool calls line up by name but an argument value differs (e.g. a string arg
-    // truncated at a marker-looking substring) -> ARG_MISMATCH.
-    let calls = |evs: &[Ev]| -> Vec<(String, Value)> {
-        evs.iter()
-            .filter_map(|e| match e {
-                Ev::ToolCall { name, arguments } => Some((name.clone(), arguments.clone())),
-                _ => None,
-            })
-            .collect()
-    };
-    let (gc, tc) = (calls(golden), calls(got));
-    if gc.len() == tc.len()
-        && gc.iter().zip(&tc).all(|(a, b)| a.0 == b.0)
-        && gc.iter().zip(&tc).any(|(a, b)| a.1 != b.1)
-    {
-        return "ARG_MISMATCH";
-    }
-    // Same content (concatenated per kind), different order/boundaries -> ORDER;
-    // content actually missing -> LOSS.
-    let cat = |evs: &[Ev], want_reasoning: bool| -> String {
-        evs.iter()
-            .filter_map(|e| match e {
-                Ev::Reasoning { text } if want_reasoning => Some(text.as_str()),
-                Ev::Text { text } if !want_reasoning => Some(text.as_str()),
-                _ => None,
-            })
-            .collect()
-    };
-    if gc == tc && cat(golden, true) == cat(got, true) && cat(golden, false) == cat(got, false) {
-        return "ORDER";
-    }
-    "LOSS"
-}
-
 fn todo_for(class: &str) -> &'static str {
     match class {
         "MERGE" | "ORDER" => {
@@ -554,6 +502,8 @@ fn render_unified_conformance_html() {
 
     let mut rows = String::new();
     let mut dynamo_red = 0usize;
+    let mut glm47_red = 0usize;
+    let mut dynamo_expectation_errors = Vec::new();
     let mut vllm_red = 0usize;
     let mut total = 0usize;
     // Machine-readable feed for the CONFORMANCE_v2.html generator (Python reads this).
@@ -571,7 +521,16 @@ fn render_unified_conformance_html() {
 
             // Dynamo: live.
             let got = dynamo_events(&file.family, &case.input, &case.init);
-            let dclass = classify(&file.family, &case.golden, &got);
+            let dclass = common::classify_unified_events(&file.family, &case.golden, &got);
+            let current_expected = case.expect.get("dynamo_current");
+            if let Err(reason) = common::validate_current_dynamo_expectation(
+                current_expected.map(|expected| expected.verdict.as_str()),
+                current_expected.and_then(|expected| expected.class.as_deref()),
+                current_expected.and_then(|expected| expected.note.as_deref()),
+                dclass,
+            ) {
+                dynamo_expectation_errors.push(format!("{id}: {reason}"));
+            }
             eprintln!(
                 "{id:44} dynamo={dclass:6} :: {}",
                 got.iter().map(Ev::render).collect::<Vec<_>>().join("  |  ")
@@ -613,8 +572,15 @@ fn render_unified_conformance_html() {
                 String::new()
             } else {
                 dynamo_red += 1;
+                if file.family == "glm47" {
+                    glm47_red += 1;
+                }
                 format!("<hr><div class=todo>{}</div>", esc(todo_for(dclass)))
             };
+            let dnote = current_expected
+                .and_then(|expected| expected.note.as_ref())
+                .map(|note| format!("<hr><div class=note>{}</div>", esc(note)))
+                .unwrap_or_default();
             let dcell = cell(
                 "Dynamo today (native unified, LIVE)",
                 &case.input,
@@ -626,7 +592,7 @@ fn render_unified_conformance_html() {
                     "diverge"
                 },
                 dclass,
-                &format!("{policy}{dtodo}"),
+                &format!("{policy}{dnote}{dtodo}"),
             );
 
             // vLLM: expected (from golden expect.vllm).
@@ -733,15 +699,54 @@ fn render_unified_conformance_html() {
     // and asserted elsewhere via the rendered legend), so this only needs to
     // pin Dynamo's own invariant.
     assert!(total >= 14, "expected the seed corpus");
-    // Every family in the current golden corpus has a native UnifiedParser
-    // (see the module doc), so Dynamo must match GOLDEN on every case — the
-    // split's interleaving-order loss no longer applies to anything here. A
-    // regression back to >0 means either a native parser broke, or a new
-    // split-only family entered the corpus without a native parser of its own.
-    assert_eq!(
-        dynamo_red, 0,
-        "expected every case to match golden now that every family is native (got {dynamo_red} red)"
+    assert!(
+        dynamo_expectation_errors.is_empty(),
+        "Dynamo results disagree with their documented expectations:\n{}",
+        dynamo_expectation_errors.join("\n")
     );
+    assert_eq!(glm47_red, 0, "GLM must have zero red rows");
+}
+
+#[test]
+fn documented_current_dynamo_divergence_requires_exact_class_and_note() {
+    assert!(
+        common::validate_current_dynamo_expectation(
+            Some("diverge"),
+            Some("LOSS"),
+            Some("drops call"),
+            "LOSS"
+        )
+        .is_ok()
+    );
+    assert!(
+        common::validate_current_dynamo_expectation(
+            Some("diverge"),
+            Some("LOSS"),
+            Some("drops call"),
+            "LEAK"
+        )
+        .is_err()
+    );
+    assert!(
+        common::validate_current_dynamo_expectation(
+            Some("diverge"),
+            Some("LOSS"),
+            Some(""),
+            "LOSS"
+        )
+        .is_err()
+    );
+    assert!(
+        common::validate_current_dynamo_expectation(
+            Some("diverge"),
+            Some("LOSS"),
+            Some("drops call"),
+            "MATCH"
+        )
+        .is_err()
+    );
+    assert!(common::validate_current_dynamo_expectation(None, None, None, "MATCH").is_ok());
+    assert!(common::validate_current_dynamo_expectation(None, None, None, "LOSS").is_err());
 }
 
 /// One committed `dynamo_v2-<ver>/<family>/<key>.yaml` capture.

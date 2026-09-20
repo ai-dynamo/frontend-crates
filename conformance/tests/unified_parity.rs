@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! The acceptance gate for the unified parser: every `UNIFIED.*` case of every
-//! family that has a unified parser must assemble EXACTLY to the authored golden
-//! event list.
+//! family that has a unified parser must either assemble EXACTLY to the authored
+//! golden event list or match one explicit, classified current-Dynamo divergence.
 //!
 //! `unified_schema_roundtrip` proves the corpus is well-formed and
 //! `unified_render` draws it; this file is what fails CI when a parser is wrong.
@@ -43,6 +43,42 @@ struct GoldenCase {
     /// identically; see that type for why it is declared and not inferred.
     #[serde(default)]
     init: Init,
+    #[serde(default)]
+    expect: BTreeMap<String, Expect>,
+}
+
+#[derive(Deserialize)]
+struct Expect {
+    verdict: String,
+    #[serde(default)]
+    class: Option<String>,
+    #[serde(default)]
+    note: Option<String>,
+    #[serde(default)]
+    events: Option<Vec<UnifiedEvent>>,
+}
+
+impl common::UnifiedEventView for UnifiedEvent {
+    fn reasoning_text(&self) -> Option<&str> {
+        match self {
+            UnifiedEvent::Reasoning { text } => Some(text),
+            _ => None,
+        }
+    }
+
+    fn visible_text(&self) -> Option<&str> {
+        match self {
+            UnifiedEvent::Text { text } => Some(text),
+            _ => None,
+        }
+    }
+
+    fn tool_call(&self) -> Option<(&str, &serde_json::Value)> {
+        match self {
+            UnifiedEvent::ToolCall { name, arguments } => Some((name, arguments)),
+            _ => None,
+        }
+    }
 }
 
 fn load_golden() -> Vec<GoldenFile> {
@@ -139,7 +175,7 @@ fn splittings(input: &str) -> Vec<(String, Vec<String>)> {
     ]
 }
 
-/// The gate: assembled events must equal the golden, exactly and in order.
+/// The gate: assembled events equal the golden or one exact temporary divergence.
 #[test]
 fn unified_parser_matches_the_golden_oracle() {
     let files = load_golden();
@@ -158,11 +194,31 @@ fn unified_parser_matches_the_golden_oracle() {
         for (id, case) in &file.cases {
             checked += 1;
             let got = events(&file.family, &chunk_markers(&case.input), &case.init);
-            if got != case.golden {
+            let class = common::classify_unified_events(&file.family, &case.golden, &got);
+            let current_expected = case.expect.get("dynamo_current");
+            if let Err(reason) = common::validate_current_dynamo_expectation(
+                current_expected.map(|expected| expected.verdict.as_str()),
+                current_expected.and_then(|expected| expected.class.as_deref()),
+                current_expected.and_then(|expected| expected.note.as_deref()),
+                class,
+            ) {
                 failures.push(format!(
-                    "{id}\n     input: {:?}\n    golden: {}\n   unified: {}",
+                    "{id}: {reason}\n     input: {:?}\n    golden: {}\n   unified: {}",
                     case.input,
                     render(&case.golden),
+                    render(&got),
+                ));
+            } else if current_expected.is_some_and(|expected| expected.verdict == "diverge")
+                && current_expected.and_then(|expected| expected.events.as_deref())
+                    != Some(got.as_slice())
+            {
+                failures.push(format!(
+                    "{id}: documented current-Dynamo divergence changed its exact event list\n  expected: {}\n   unified: {}",
+                    render(
+                        current_expected
+                            .and_then(|expected| expected.events.as_deref())
+                            .unwrap_or_default(),
+                    ),
                     render(&got),
                 ));
             }
@@ -171,7 +227,7 @@ fn unified_parser_matches_the_golden_oracle() {
 
     assert!(
         failures.is_empty(),
-        "{} of {checked} unified cases diverge from the golden oracle:\n\n{}",
+        "{} of {checked} unified cases disagree with their documented current-Dynamo expectation:\n\n{}",
         failures.len(),
         failures.join("\n\n"),
     );

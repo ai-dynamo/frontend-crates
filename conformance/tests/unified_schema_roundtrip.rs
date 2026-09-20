@@ -93,6 +93,65 @@ fn load_golden_files() -> Vec<(String, GoldenFile)> {
 }
 
 #[test]
+fn shared_tool_inventory_covers_every_golden_call_with_compatible_types() {
+    let tools: BTreeMap<_, _> = common::unified_tools()
+        .into_iter()
+        .map(|tool| (tool.name, tool.parameters))
+        .collect();
+
+    for (path, file) in load_golden_files() {
+        for (id, case) in file.cases {
+            for event in case.golden {
+                let UnifiedEvent::ToolCall { name, arguments } = event else {
+                    continue;
+                };
+                let schema = tools.get(&name).unwrap_or_else(|| {
+                    panic!("{path}: `{id}` references undeclared tool `{name}`")
+                });
+                let properties = schema
+                    .get("properties")
+                    .and_then(serde_json::Value::as_object)
+                    .expect("shared tool schema has object properties");
+                for (key, value) in arguments.as_object().into_iter().flatten() {
+                    let declared = properties
+                        .get(key)
+                        .unwrap_or_else(|| panic!("{path}: `{id}` uses undeclared `{name}.{key}`"));
+                    let compatible_type = |expected: &str| match expected {
+                        "string" => value.is_string(),
+                        "integer" => value
+                            .as_number()
+                            .is_some_and(|number| number.is_i64() || number.is_u64()),
+                        "array" => value.is_array(),
+                        "object" => value.is_object(),
+                        "boolean" => value.is_boolean(),
+                        "null" => value.is_null(),
+                        _ => false,
+                    };
+                    let compatible = declared
+                        .get("type")
+                        .and_then(serde_json::Value::as_str)
+                        .is_some_and(compatible_type)
+                        || declared
+                            .get("type")
+                            .and_then(serde_json::Value::as_array)
+                            .is_some_and(|types| {
+                                types
+                                    .iter()
+                                    .filter_map(serde_json::Value::as_str)
+                                    .any(compatible_type)
+                            });
+                    assert!(
+                        compatible,
+                        "{path}: `{id}` uses `{name}.{key}` as {value}, but the shared schema declares {}",
+                        declared["type"]
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
 fn every_golden_file_round_trips_through_the_schema() {
     let files = load_golden_files();
     assert!(
@@ -204,7 +263,7 @@ fn seed_corpus_covers_every_verdict_category() {
         total_cases >= 10,
         "seed corpus too small: {total_cases} cases"
     );
-    for fam in ["gemma4", "qwen3", "kimi_k2", "muse_glimmer"] {
+    for fam in ["gemma4", "glm47", "qwen3", "kimi_k2", "muse_glimmer"] {
         assert!(
             families.contains(fam),
             "missing family `{fam}` in seed corpus"
