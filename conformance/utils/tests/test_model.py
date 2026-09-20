@@ -486,6 +486,12 @@ def test_candidate_label_keeps_capture_identity_out_of_display(impl, version, mo
     assert table._full_label(impl, version, mode) == want
 
 
+@pytest.mark.parametrize("version", ["0.6.1", "0.6.1+source.e8edaa1", "0.6.1.patch2"])
+def test_legacy_stream_candidate_version_matches_its_label(version):
+    candidate = {"key": "dynamo-stream", "label": f"Dynamo v2 Rust {version} (stream)"}
+    assert table._candidate_model([candidate])[0]["version"] == version
+
+
 def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
     """Historical output without its original request cannot establish parity."""
     tab = _tab(model_v2, "tab-unified")

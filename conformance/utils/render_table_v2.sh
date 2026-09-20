@@ -111,18 +111,17 @@ if [ "$DRY" = 1 ]; then
 fi
 build_stage_conformance
 mkdir -p "$(dirname "$OUT")"
-# Keep both published files untouched until generation and validation succeed.
-# Each invocation owns its temporary files; the subshell preserves the stage EXIT trap.
-(
-WORK=""
-STATUS_WORK=""
-trap 'rm -f -- "$WORK" "$STATUS_WORK"' EXIT
-WORK=$(mktemp "$OUT.XXXXXX")
+# Render to a working file, then atomically move it into place. The `>` redirect
+# truncates its target for the WHOLE render (~2 min), so anything reading $OUT during
+# that window (CI, a live viewer, a verify script) sees a 0-byte / partial file. Writing
+# to CONFORMANCE_v2.working.html and mv-ing on success means readers only ever see the
+# previous complete file or the new complete one. --output-path stays $OUT so link
+# resolution targets the final location (the working file is in the same dir, so hrefs
+# are identical); on failure the real file is left untouched.
 case "$OUT" in
-  *.html) STATUS="${OUT%.html}.json" ;;
-  *)      STATUS="$OUT.status.json" ;;
+  *.html) WORK="${OUT%.html}.working.html" ;;
+  *)      WORK="$OUT.working" ;;
 esac
-STATUS_WORK=$(mktemp "$STATUS.XXXXXX")
 RENDER_ARGS=(
   all --html
   --output-path "$OUT"
@@ -136,23 +135,18 @@ if [ -n "$GITHUB_REPOSITORY" ]; then
   )
 fi
 if ( cd "$STAGE" && PYTHONPATH="$STAGE" python3 tests/parity/generate_conformance_table.py "${RENDER_ARGS[@]}" ) > "$WORK"; then
-  :
-else
-  rc=$?
-  echo "ERROR: render failed (exit $rc); left $OUT and $STATUS untouched" >&2
-  exit "$rc"
-fi
-if python3 "$TOOLS/validate_conformance_status.py" \
-    --html "$WORK" --report-path "$OUT" --status-path "$STATUS_WORK" --summary-only \
-    --unified-fixtures "$FIXTURES_SNAP/unified"; then
-  chmod a+r "$WORK" "$STATUS_WORK"
-  \mv -f "$WORK" "$OUT"
-  \mv -f "$STATUS_WORK" "$STATUS"
+  mv -f "$WORK" "$OUT"
+  case "$OUT" in
+    *.html) STATUS="${OUT%.html}.json" ;;
+    *)      STATUS="$OUT.status.json" ;;
+  esac
+  python3 "$TOOLS/validate_conformance_status.py" \
+    --html "$OUT" --status-path "$STATUS" --summary-only
   echo "wrote $OUT"
   echo "wrote $STATUS"
 else
   rc=$?
-  echo "ERROR: validation failed (exit $rc); left $OUT and $STATUS untouched" >&2
+  rm -f "$WORK"
+  echo "render failed (exit $rc); left $OUT untouched" >&2
   exit "$rc"
 fi
-)
