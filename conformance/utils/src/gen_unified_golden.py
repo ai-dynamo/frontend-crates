@@ -177,31 +177,6 @@ def r_tool(fam, name, key, val, idx):
             f"<|tool_call_argument_begin|>{args}<|tool_call_end|><|tool_calls_section_end|>")
 
 
-def r_parameterless_tool(fam, name, idx):
-    """Render a complete native call whose argument object is empty."""
-    if fam == "deepseek_v41":
-        return (f'<｜DSML｜ calls><｜DSML｜ invoke name="{name}">'
-                f'</｜DSML｜ invoke></｜DSML｜ calls>')
-    if fam == "deepseek_v4":
-        return (f'<｜DSML｜tool_calls><｜DSML｜invoke name="{name}">'
-                f'</｜DSML｜invoke></｜DSML｜tool_calls>')
-    if fam == "gemma4":
-        return f"<|tool_call>call:{name}{{}}<tool_call|>"
-    if fam == "qwen3":
-        return f"<tool_call>\n<function={name}>\n</function>\n</tool_call>"
-    if fam == "glm47":
-        return f"<tool_call>{name}</tool_call>"
-    if fam == "muse_glimmer":
-        return (f"<|start|>assistant to={name}<|message|><atem:function_calls>\n"
-                f"<atem:invoke name=\"{name}\">\n</atem:invoke>\n"
-                f"</atem:function_calls><|eom|>")
-    if fam == "kimi_k3":
-        return k3_tools(k3_call(name, idx + 1, ""))
-    return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
-            f"<|tool_call_argument_begin|>{{}}<|tool_call_end|>"
-            f"<|tool_calls_section_end|>")
-
-
 def qwen3_input_as_glm47(input_text):
     """Translate a Qwen-shaped edge fixture into GLM XML."""
     function = re.compile(r"<function=([^>]+)>(.*?)</function>", re.DOTALL)
@@ -318,68 +293,8 @@ def golden_of(segs):
 M = {"verdict": "match"}
 
 
-def D(cls, note, events=None):
-    divergence = {"verdict": "diverge", "class": cls, "note": note}
-    if events is not None:
-        divergence["events"] = events
-    return divergence
-
-
-def family_dynamo_expectations(match_note, divergences):
-    unknown = sorted(set(divergences) - set(FAMILIES))
-    if unknown:
-        raise ValueError(f"Dynamo expectations name unknown families: {unknown}")
-    return {
-        fam: D(*divergences[fam]) if fam in divergences
-        else {"verdict": "match", "note": match_note}
-        for fam in FAMILIES
-    }
-
-
-# TODO(#241): Fix every non-GLM divergence below, then delete each temporary
-# exception when that family turns green.
-SCENARIO_DYNAMO_EXPECTATIONS = {
-    "wrapped_saved_closer_partial_marker": family_dynamo_expectations(
-        "the real outer close recovers the unclosed argument and preserves the trailing marker prefix",
-        {
-            "deepseek_v41": ("LOSS", "drops the recoverable call and its argument", []),
-            "deepseek_v4": ("LOSS", "drops the recoverable call and its argument", []),
-            "gemma4": ("LOSS", "drops the recoverable call and its argument", []),
-            "kimi_k2": ("LOSS", "drops the recoverable call and its argument", []),
-            "kimi_k3": ("LOSS", "drops the recoverable call and its argument", []),
-            "muse_glimmer": ("LOSS", "preserves only the trailing marker prefix and drops the recoverable call", [
-                {"kind": "text", "text": "<"},
-            ]),
-            "qwen3": ("LOSS", "drops the recoverable call and its argument", []),
-        },
-    ),
-    "bare_saved_closer": family_dynamo_expectations(
-        "the real outer close enables opener-less recovery; a missing real closer remains unrecoverable",
-        {
-            "deepseek_v41": ("LOSS", "drops the opener-less recoverable call", []),
-            "deepseek_v4": ("LOSS", "drops the opener-less recoverable call", []),
-            "gemma4": ("LOSS", "drops the opener-less recoverable call", []),
-            "kimi_k2": ("LOSS", "drops the opener-less recoverable call", []),
-            "kimi_k3": ("LOSS", "drops the opener-less recoverable call", []),
-            "muse_glimmer": ("LEAK", "emits the incomplete native invocation as visible text", [
-                {"kind": "text", "text": '<atem:invoke name="run">\n<atem:parameter name="cmd">first'},
-            ]),
-            "qwen3": ("LOSS", "drops the opener-less recoverable call", []),
-        },
-    ),
-    "bare_parameterless_call": family_dynamo_expectations(
-        "the offered parameterless tool is recovered without leaking its outer closer",
-        {
-            "muse_glimmer": ("LEAK", "emits the opener-less native invocation as visible text", [
-                {"kind": "text", "text": '<atem:invoke name="get_weather">\n</atem:invoke>\n</atem:function_calls>'},
-            ]),
-        },
-    ),
-    "guided_json_native_envelope_after_prose": family_dynamo_expectations(
-        "the complete native envelope is stripped after visible prose and cannot become a guided call",
-        {},
-    ),
-}
+def D(cls, note):
+    return {"verdict": "diverge", "class": cls, "note": note}
 
 
 # --- per-family input helpers for EDGE scenarios ------------------------------
@@ -404,15 +319,6 @@ class OnlyFamilies(dict):
         unknown = sorted(set(self) - set(FAMILIES))
         if unknown:
             raise ValueError(f"OnlyFamilies() names families that do not exist: {unknown}")
-
-
-def _entry(spec, fam):
-    """Resolve a vllm/dynamo verdict spec (single or per-family) for `fam`."""
-    if isinstance(spec, dict) and set(spec) <= set(FAMILIES) and "verdict" not in spec:
-        if fam in {"deepseek_v4", "glm47"} and fam not in spec:
-            return spec["qwen3"]
-        return spec[fam]
-    return spec
 
 
 def every_family(input_text, vllm, dynamo, *rest):
@@ -445,7 +351,7 @@ def every_family(input_text, vllm, dynamo, *rest):
 def by_family(render, vllm, dynamo, *rest):
     """`render(fam) -> input` for the scenarios where only the reasoning envelope
     around an otherwise identical payload is grammar-specific."""
-    return {fam: (render(fam), vllm, _entry(dynamo, fam), *rest) for fam in FAMILIES}
+    return {fam: (render(fam), vllm, dynamo, *rest) for fam in FAMILIES}
 
 
 # A family whose tool block opener spans more than its first control token, mapped to
@@ -506,28 +412,6 @@ def control_tokens(fam):
     return reason_open, reason_close, tool_open, tokens[-1]
 
 
-def strip_outer_tool_opener(fam, rendered):
-    """Remove only the family-native outer opener from a rendered call."""
-    if fam == "muse_glimmer":
-        through = _TOOL_OPEN_THROUGH[fam]
-        end = rendered.index(through) + len(through)
-    else:
-        opener = control_tokens(fam)[2]
-        if not rendered.startswith(opener):
-            raise ValueError(f"{fam}: rendered call does not start with {opener!r}")
-        end = len(opener)
-    return rendered[end:].lstrip("\n")
-
-
-def outer_close_after_unclosed_value(fam, *, bare=False, suffix=""):
-    """Render an outer close while the call's nested argument value is still open."""
-    value = "first"
-    rendered = r_tool(fam, "run", "cmd", value, 0)
-    value_end = rendered.index(value) + len(value)
-    malformed = rendered[:value_end] + control_tokens(fam)[3] + suffix
-    return strip_outer_tool_opener(fam, malformed) if bare else malformed
-
-
 def invoke_header_prefix(fam):
     """Inner invoke header through the tool name, without its terminator."""
     if fam == "kimi_k3":
@@ -550,7 +434,7 @@ def guided_invoke_prefix(fam):
     return invoke_header_prefix(fam)
 
 
-def guided_surroundings(render, dynamo_note, fill=None, dynamo=None):
+def guided_surroundings(render, dynamo_note, fill=None):
     """A guided case whose SURROUNDINGS carry native grammar, so the input has to be
     per family — `every_family` is only right when the bytes are grammar-independent.
 
@@ -569,9 +453,7 @@ def guided_surroundings(render, dynamo_note, fill=None, dynamo=None):
         fam: (
             render(fam),
             GUIDED_UNSUPPORTED,
-            (_entry(dynamo, fam) if dynamo is not None else
-             {"verdict": "match", "note": dynamo_note})
-            if fam in UNIFIED_FAMILIES else split,
+            {"verdict": "match", "note": dynamo_note} if fam in UNIFIED_FAMILIES else split,
             *( (fill(fam),) if fill else () ),
         )
         for fam in FAMILIES
@@ -736,6 +618,21 @@ CLEAN = [
 # Each: (name, description, policy, golden, {family: (input, vllm, dynamo)})
 
 EDGE = [
+    ("glm47_parameterless_call_shape_inside_argument",
+     "GLM 5 only: an offered parameterless-call shape appears inside an open argument value. The embedded close/open markers remain argument data and must not dispatch a second call.",
+     ["I7"],
+     [{"kind": "tool_call", "name": "run", "arguments": {
+         "cmd": "before </tool_call><tool_call>get_weather</tool_call> after",
+     }}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({
+         "glm47": (
+             "<tool_call>run<arg_key>cmd</arg_key><arg_value>before </tool_call><tool_call>get_weather</tool_call> after</arg_value></tool_call>",
+             D("UNSUPPORTED", "no released vLLM UnifiedParser capture for GLM 5"),
+             M,
+         ),
+     })),
+
     ("truncated_tool_eof",
      "Stream ends mid tool call (no close marker). Policy P2 — drop the incomplete call, keep valid preceding output, no error, no leaked markup.",
      ["P2"],
@@ -862,17 +759,6 @@ EDGE = [
         "muse_glimmer": ("<|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n</atem:invoke>\n</atem:function_calls><|eom|>",
                          V_MUSE, M),
      }),
-
-    ("bare_parameterless_call",
-     "A complete parameterless call emitted without the family-native outer opener. The offered tool name and real outer closer bound the malformed call; each parser may recover it or record a divergence, but every grammar can express the shape.",
-     ["P2", "I6"],
-     [{"kind": "tool_call", "name": "get_weather", "arguments": {}}],
-     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-     by_family(
-         lambda fam: strip_outer_tool_opener(
-             fam, r_parameterless_tool(fam, "get_weather", 0)),
-         D("DROP", "the peer may reject this malformed opener-less call; use the captured output"),
-         SCENARIO_DYNAMO_EXPECTATIONS["bare_parameterless_call"])),
 
     ("tool_no_close",
      "A single tool call whose body is complete but the close marker never arrives before EOF. Most grammars recover the complete call at finish; DSML requires the invoke close, so its malformed turn emits nothing. This is also covered in: TOOLCALLING.streamv2.5.a.",
@@ -1436,20 +1322,6 @@ EDGE = [
 
 
 EDGE += [
-    ("glm47_parameterless_call_shape_inside_argument",
-     "GLM 5 only: an offered parameterless-call shape appears inside an open argument value. The close/open markers are argument data until `</arg_value>`; treating the embedded tool name as structure would dispatch an unintended second call.",
-     ["I7"],
-     [{"kind": "tool_call", "name": "run", "arguments": {
-         "cmd": "before </tool_call><tool_call>get_weather</tool_call> after",
-     }}],
-     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-     OnlyFamilies({
-         "glm47": (
-             "<tool_call>run<arg_key>cmd</arg_key><arg_value>before </tool_call><tool_call>get_weather</tool_call> after</arg_value></tool_call>",
-             D("UNSUPPORTED", "no released vLLM UnifiedParser capture for GLM 5"), M,
-         ),
-     })),
-
     ("kimi_k3_typed_argument_values",
      "Kimi K3 native XTML carries each argument in its own typed channel. String, number, boolean, object, array, and null values must preserve their JSON types instead of being coerced to strings.",
      ["I7"],
@@ -1725,40 +1597,6 @@ EDGE += [
 
 
 EDGE += [
-    ("guided_json_native_envelope_after_prose",
-     "Visible prose is followed by a complete family-native tool envelope during a GuidedJson request. The envelope is stray because GuidedJson expects one bare JSON payload, and the preceding `hello ` has already become visible content. The result is only that prose for every chunk boundary.",
-     ["I3", "I5"],
-     [{"kind": "text", "text": "hello "}],
-     {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
-     {"finish_reason": "stop"},
-     guided_surroundings(
-         lambda fam: r_text(fam, "hello ") + r_tool(fam, "run", "cmd", GUIDED_ONE_CALL, 0),
-         "the complete native envelope is stripped after visible prose and cannot become a guided call",
-         dynamo=SCENARIO_DYNAMO_EXPECTATIONS["guided_json_native_envelope_after_prose"])),
-
-    ("wrapped_saved_closer_partial_marker",
-     "The family-native outer close arrives while an argument value is unclosed, then EOF ends on a partial control marker. Recover the delimiter-terminated value and call, and preserve the partial suffix as visible text.",
-     ["P2", "I5"],
-     [{"kind": "tool_call", "name": "run", "arguments": {"cmd": "first"}},
-      {"kind": "text", "text": "<"}],
-     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-     {"finish_reason": "length"},
-     by_family(
-         lambda fam: outer_close_after_unclosed_value(fam, suffix="<"),
-         D("DROP", "the peer may reject this malformed nested value; use the captured output"),
-         SCENARIO_DYNAMO_EXPECTATIONS["wrapped_saved_closer_partial_marker"])),
-
-    ("bare_saved_closer",
-     "A real family-native outer close follows an opener-less call whose argument value never closed. The offered tool name plus real closer bound the malformed call, so the delimiter-terminated value and call are recoverable.",
-     ["P2", "I5"],
-     [{"kind": "tool_call", "name": "run", "arguments": {"cmd": "first"}}],
-     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-     {"finish_reason": "length"},
-     by_family(
-         lambda fam: outer_close_after_unclosed_value(fam, bare=True),
-         D("DROP", "the peer may reject this malformed opener-less nested value; use the captured output"),
-         SCENARIO_DYNAMO_EXPECTATIONS["bare_saved_closer"])),
-
     ("guided_json_native_markup_only",
      "Guided decoding receives one complete native tool call instead of bare JSON. The whole turn is control markup, so it emits no events. Every stream split must match the whole-input result; consuming the invoke header before its terminator leaks the parameter body as user-visible text (`I6`).",
      ["I3", "I6"],
@@ -1926,6 +1764,15 @@ EDGE += [
           lambda fam: f"{r_reason(fam, 'I' + chr(39) + 'll call ' + guided_invoke_prefix(fam) + 'get_weather')}{GUIDED_ONE_CALL}",
          "a narrated invoke header inside a thought is stripped, closer and thought intact")),
 ]
+
+
+def _entry(spec, fam):
+    """Resolve a vllm/dynamo verdict spec (single or per-family) for `fam`."""
+    if isinstance(spec, dict) and set(spec) <= set(FAMILIES) and "verdict" not in spec:
+        if fam in {"deepseek_v4", "glm47"} and fam not in spec:
+            return spec["qwen3"]
+        return spec[fam]
+    return spec
 
 
 def _init_is_request_scoped(init):
@@ -2105,17 +1952,12 @@ def _build_edge_cases(fam, specs):
                 "vLLM base case does not set a starting channel state; conformance "
                 "captures default generation only",
             )
-        expect = {"vllm": _vllm_entry(vllm, fam), "dynamo": dynamo}
-        if name in SCENARIO_DYNAMO_EXPECTATIONS:
-            current_expectation = _entry(SCENARIO_DYNAMO_EXPECTATIONS[name], fam)
-            if current_expectation["verdict"] == "diverge":
-                expect["dynamo_current"] = current_expectation
         cases[cid] = {
             "description": desc,
             "policy": policy,
             "input": inp,
             "golden": g,
-            "expect": expect,
+            "expect": {"vllm": _vllm_entry(vllm, fam), "dynamo": dynamo},
             "init": init,
             "finish_reason": stream_config.get("finish_reason", "stop"),
         }

@@ -1,0 +1,45 @@
+provenance:
+  status: legacy
+  captured_with:
+    dynamo_v2: 0.6.0
+document:
+  mode: unified
+changes:
+  glm47_parameterless_call_shape_inside_argument:
+    stimulus:
+      ref: current
+      semantic_sha256: df259a37fa01485d58e1f5509e33107a2fd40c601d3c01c76473df1e2f1cb384
+    case_key: UNIFIED.glm5-1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: before </tool_call><tool_call>get_weather</tool_call> after
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd":"before </tool_call><tool_call>get_weather</tool_call> after"}'
+            complete: true
+metadata_changes:
+  glm47_parameterless_call_shape_inside_argument:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+document_overrides: {}

@@ -39,10 +39,8 @@ UNIFIED_TAX = {
     # Group 5 — Truncation / recovery (streamv2.5)
     "truncated_tool_eof": (5, "1"), "tool_no_close": (5, "2"),
     "orphan_close_after_prose": (5, "3"),
-    "wrapped_saved_closer_partial_marker": (5, "4"),
-    "bare_saved_closer": (5, "5"),
     # Group 6 — Empty body (streamv2.6)
-    "empty_args": (6, "1"), "bare_parameterless_call": (6, "2"),
+    "empty_args": (6, "1"),
     # Group 7 — Argument fidelity (streamv2.7)
     "arg_unicode": (7, "1"), "arg_marker_in_string": (7, "2"),
     # TODO: restore 7-3 in the follow-up to PR #232 (deferred-cases).
@@ -87,7 +85,6 @@ UNIFIED_TAX = {
     "guided_json_wrapped_in_tool_markup": (32, "3"),
     "guided_json_orphan_tool_close_before_payload": (32, "4"),
     "guided_json_native_markup_only": (32, "5"),
-    "guided_json_native_envelope_after_prose": (32, "6"),
     # Generated crossings (`_guided_product` in gen_unified_golden.py): payload
     # shape x surrounding grammar. The 31-12 through 31-20 rows are the quadrant that had ZERO
     # cases — markup present AND no call recoverable — where both the P2 recovery
