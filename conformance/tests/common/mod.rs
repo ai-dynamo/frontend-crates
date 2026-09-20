@@ -214,7 +214,7 @@ mod resolve_snap_dir_tests {
 /// `*.tar.gz` shards). Instead `gen_unified_golden.py` renders it from one
 /// scenario spec into the gitignored build tree (`conformance/unified/golden_spec/`)
 /// on demand, mirroring how [`ensure_fixtures`] shells out to `extract_fixtures.py`.
-/// The committed `golden.tar.gz` shard is DERIVED from this via render -> explode
+/// The committed canonical family YAML is DERIVED from this via render -> explode
 /// -> package. Each test process copies the generated tree to its own immutable
 /// directory while holding the lock, because the generator truncates files before
 /// rewriting them and another test binary may start as soon as the lock is released.

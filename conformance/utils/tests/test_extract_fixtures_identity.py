@@ -57,7 +57,13 @@ def cache_root(tmp_path, monkeypatch):
     root = tmp_path / "cache"
     monkeypatch.setattr(extract_fixtures, "get_cache_root", lambda: root)
     monkeypatch.setattr(extract_fixtures, "shard_file", lambda s: Path(f"/fake/{s['path']}"))
-    monkeypatch.setattr(extract_fixtures, "extract_tarball", _fake_extract_tarball)
+    monkeypatch.setattr(
+        extract_fixtures,
+        "materialize_shard",
+        lambda _shard, source, destination, verbose=False: _fake_extract_tarball(
+            source, destination, verbose
+        ),
+    )
     return root
 
 
@@ -261,7 +267,13 @@ def test_interrupted_build_never_appears_at_the_published_name(cache_root, tmp_p
         dest_dir.mkdir(parents=True, exist_ok=True)
         raise RuntimeError("simulated crash mid-extraction")
 
-    monkeypatch.setattr(extract_fixtures, "extract_tarball", _boom)
+    monkeypatch.setattr(
+        extract_fixtures,
+        "materialize_shard",
+        lambda _shard, source, destination, verbose=False: _boom(
+            source, destination, verbose
+        ),
+    )
     manifest = {"snapshot": "20260101_000000", "shards": [_shard("toolcalling/a.tar.gz", "hash1")]}
     fid = extract_fixtures.fixtures_identity(manifest["shards"])
     published = cache_root / f"20260101_000000-{fid}"
@@ -284,7 +296,7 @@ def test_identical_identity_is_a_cache_hit_not_a_rebuild(cache_root, tmp_path, m
     def _fail_if_called(*a, **k):
         raise AssertionError("extract_tarball must not be called on a cache hit")
 
-    monkeypatch.setattr(extract_fixtures, "extract_tarball", _fail_if_called)
+    monkeypatch.setattr(extract_fixtures, "materialize_shard", _fail_if_called)
     _run_main(tmp_path, monkeypatch, manifest)
     out = capsys.readouterr()
     assert "Cache hit" in out.err
@@ -313,7 +325,13 @@ def test_full_refresh_builds_a_new_generation_without_touching_the_old_one(cache
         dest_dir.mkdir(parents=True, exist_ok=True)
         (dest_dir / "marker.txt").write_text(f"build #{call_count['n']}")
 
-    monkeypatch.setattr(extract_fixtures, "extract_tarball", _counting_extract_tarball)
+    monkeypatch.setattr(
+        extract_fixtures,
+        "materialize_shard",
+        lambda _shard, source, destination, verbose=False: _counting_extract_tarball(
+            source, destination, verbose
+        ),
+    )
     manifest = {"snapshot": "20260101_000000", "shards": [_shard("toolcalling/a.tar.gz", "hash1")]}
     _run_main(tmp_path, monkeypatch, manifest)
     out_v1 = capsys.readouterr().out.strip()
