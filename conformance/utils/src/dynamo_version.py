@@ -29,6 +29,21 @@ SOURCE_PATHS = (
     "Cargo.toml", "Cargo.lock",
     "rust-toolchain", "rust-toolchain.toml", ".cargo",
 )
+_EXTERNAL_GIT_ENV = (
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+    "GIT_COMMON_DIR",
+    "GIT_DIR",
+    "GIT_INDEX_FILE",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_WORK_TREE",
+)
+
+
+def git_subprocess_env() -> dict[str, str]:
+    env = os.environ.copy()
+    for name in _EXTERNAL_GIT_ENV:
+        env.pop(name, None)
+    return env
 
 
 def crate_version(cargo_toml: Path) -> str:
@@ -41,7 +56,10 @@ def crate_version(cargo_toml: Path) -> str:
 
 def _git(repo_root: Path, *args: str) -> bytes:
     return subprocess.run(
-        ["git", "-C", str(repo_root), *args], check=True, capture_output=True,
+        ["git", "-C", str(repo_root), *args],
+        check=True,
+        capture_output=True,
+        env=git_subprocess_env(),
     ).stdout
 
 
@@ -54,7 +72,10 @@ def source_fingerprint(repo_root: Path, revision: str | None = None) -> str:
         objects = b"".join(meta.split()[2] + b"\n" for meta, _ in records)
         blobs = subprocess.run(
             ["git", "-C", str(repo_root), "cat-file", "--batch"],
-            input=objects, check=True, capture_output=True,
+            input=objects,
+            check=True,
+            capture_output=True,
+            env=git_subprocess_env(),
         ).stdout
         stream = io.BytesIO(blobs)
         for meta, name in records:

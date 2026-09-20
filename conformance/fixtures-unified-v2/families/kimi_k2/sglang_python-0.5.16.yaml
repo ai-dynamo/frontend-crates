@@ -1,0 +1,1653 @@
+schema_version: 2
+family: kimi_k2
+implementation: sglang_python
+parent: sglang_python-0.5.14
+runtime_version: 0.5.16
+provenance:
+  status: captured
+  captured_with:
+    sglang_python: 0.5.16
+completeness: delta
+import_lineage:
+- archive: sglang_python-0.5.16.tar.gz
+  sha256: 68b20e272da148503f2626342fbe7977ac259a0a391c5fc4b902ce59c9584d35
+  mode: overlay
+document:
+  mode: unified
+document_overrides: {}
+changes:
+  arg_marker_in_string:
+    case_key: UNIFIED.7.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"cmd": "git log '
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' --oneline"}'
+        - expected: []
+        - expected: []
+  arg_unicode:
+    case_key: UNIFIED.7.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "São Paulo 東京"}'
+        - expected: []
+        - expected: []
+  content_then_reason_then_tool:
+    case_key: UNIFIED.11.f
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Sure, one sec. '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking the forecast
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+  empty_args:
+    case_key: UNIFIED.6.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{}'
+        - expected: []
+        - expected: []
+  guided_json_after_reasoning:
+    case_key: UNIFIED.30.f
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+  guided_json_array_argument:
+    case_key: UNIFIED.30.e
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "sum_values", "arguments": {"values": [2, 3, 5]}}]'
+  guided_json_escaped_string_args:
+    case_key: UNIFIED.30.d
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: '{"cmd": "echo \"雪\" > C:\\tmp\\a.txt"}'
+  guided_json_gt_in_argument_bare_opener:
+    case_key: UNIFIED.30.m
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_gt_in_argument_trailing_close:
+    case_key: UNIFIED.30.k
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+        - expected: []
+  guided_json_gt_in_argument_wrapped:
+    case_key: UNIFIED.30.l
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+        - expected: []
+  guided_json_invalid_call:
+    case_key: UNIFIED.31.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: '{"unexpected": "shape"}'
+  guided_json_list_with_broken_element:
+    case_key: UNIFIED.31.d
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
+  guided_json_malformed_json:
+    case_key: UNIFIED.31.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: '{"name": "get_weather", "arguments": {"city": "Par'
+  guided_json_marker_inside_argument:
+    case_key: UNIFIED.30.g
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "log", "arguments": {"note": "'
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: '"}}]'
+  guided_json_named_tool:
+    case_key: UNIFIED.30.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: '{"city": "Paris"}'
+  guided_json_narrated_invoke_in_reasoning:
+    case_key: UNIFIED.31.h
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I''ll use '
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' next'
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+  guided_json_narrated_prefix_inside_reasoning:
+    case_key: UNIFIED.31.v
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I''ll call '
+        - expected:
+          - kind: reasoning
+            text: <|tool_call_begin|>
+        - expected:
+          - kind: reasoning
+            text: functions.get_weather
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected:
+          - kind: text
+            text: ‹finish›
+  guided_json_orphan_reason_close_before_payload:
+    case_key: UNIFIED.31.j
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+  guided_json_orphan_tool_close_before_payload:
+    case_key: UNIFIED.31.k
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+  guided_json_partial_calls:
+    case_key: UNIFIED.31.c
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+  guided_json_prose_before_reasoning:
+    case_key: UNIFIED.31.i
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Sure. '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+  guided_json_required_tool:
+    case_key: UNIFIED.30.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+  guided_json_schema_error_nameless_element_bare_opener:
+    case_key: UNIFIED.31.t
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_schema_error_nameless_element_trailing_close:
+    case_key: UNIFIED.31.r
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        - expected: []
+  guided_json_schema_error_nameless_element_wrapped:
+    case_key: UNIFIED.31.s
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        - expected: []
+  guided_json_schema_error_not_a_call_bare_opener:
+    case_key: UNIFIED.31.q
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_schema_error_not_a_call_trailing_close:
+    case_key: UNIFIED.31.o
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: '{"unexpected": "shape"}'
+        - expected: []
+  guided_json_schema_error_not_a_call_wrapped:
+    case_key: UNIFIED.31.p
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{"unexpected": "shape"}'
+        - expected: []
+  guided_json_stray_prefix_before_reasoning:
+    case_key: UNIFIED.31.u
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: secret
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_syntax_error_bare_opener:
+    case_key: UNIFIED.31.n
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_syntax_error_trailing_close:
+    case_key: UNIFIED.31.l
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": '
+        - expected: []
+  guided_json_syntax_error_wrapped:
+    case_key: UNIFIED.31.m
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": '
+        - expected: []
+  guided_json_tool_close_after_payload:
+    case_key: UNIFIED.31.f
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  guided_json_tool_open_before_payload:
+    case_key: UNIFIED.31.e
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+  guided_json_two_calls:
+    case_key: UNIFIED.30.c
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
+  guided_json_wrapped_in_tool_markup:
+    case_key: UNIFIED.31.g
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  interstitial_text:
+    case_key: UNIFIED.11.e
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: a
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Here you go: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+  narrated_calls:
+    case_key: UNIFIED.8.e
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' then I''ll run '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"x": "1"}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' and '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"y": "2"}'
+        - expected: []
+        - expected: []
+  prefilled_reasoning_redundant_opener:
+    case_key: UNIFIED.41.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking weather
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "London"}'
+        - expected: []
+        - expected: []
+  prefilled_reasoning_then_text:
+    case_key: UNIFIED.40.d
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: no tool needed
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: The answer is 42.
+  prefilled_reasoning_then_text_then_tool:
+    case_key: UNIFIED.40.c
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: weighing options
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: 'Here''s what I found: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+  prefilled_reasoning_truncated:
+    case_key: UNIFIED.41.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: analyzing data
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Par'
+  prefilled_reasoning_with_guided_json:
+    case_key: UNIFIED.40.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: checking weather
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+  prefilled_reasoning_with_tool:
+    case_key: UNIFIED.40.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: checking weather
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+  prefilled_response_reasoning_markers_literal:
+    case_key: UNIFIED.50.d
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: literal
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' then a call'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+  reason_after_tool:
+    case_key: UNIFIED.11.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: Look it up.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: Now answer.
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: It's 18C.
+  reason_between_calls:
+    case_key: UNIFIED.11.i
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"x": "1"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: mid
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"y": "2"}'
+        - expected: []
+        - expected: []
+  reason_interleaved:
+    case_key: UNIFIED.11.c
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"x": "1"}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: B
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"y": "2"}'
+        - expected: []
+        - expected: []
+  reason_markup_in_arg:
+    case_key: UNIFIED.12.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: log
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"note": "'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: reconsider
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+  reason_markup_in_arg_with_text:
+    case_key: UNIFIED.12.c
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Logging now: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: log
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"note": "'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: reconsider
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' done.'
+  reason_then_tool:
+    case_key: UNIFIED.11.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: Check weather.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+  reason_tool_reason_tool_reason:
+    case_key: UNIFIED.11.h
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"x": "1"}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: B
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"y": "2"}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: C
+        - expected:
+          - kind: text
+            text: </think>
+  reason_tool_text_reason_tool:
+    case_key: UNIFIED.11.d
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"x": "1"}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: working on it
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: B
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"y": "2"}'
+        - expected: []
+        - expected: []
+  retired__50_a:
+    case_key: UNIFIED.50.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: output
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+  retired__50_b:
+    case_key: UNIFIED.50.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+  retired__50_c:
+    case_key: UNIFIED.50.c
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
+  retired__51_a:
+    case_key: UNIFIED.51.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Working on it... '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Par'
+  retired__51_b:
+    case_key: UNIFIED.51.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+  text_before_tool:
+    case_key: UNIFIED.8.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: 'On it: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+  text_between_calls:
+    case_key: UNIFIED.8.d
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"x": "1"}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' then '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"y": "2"}'
+        - expected: []
+        - expected: []
+  text_reason_tool_text_reason_tool:
+    case_key: UNIFIED.11.j
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Sure. '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: check A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"x": "1"}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' and '
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: check B
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"y": "2"}'
+        - expected: []
+        - expected: []
+  text_sandwich:
+    case_key: UNIFIED.8.c
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Before. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' After.'
+  tool_block_never_closed_then_text:
+    case_key: UNIFIED.4.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: still thinking about it
+  tool_in_reason:
+    case_key: UNIFIED.12.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I should check. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' now answer'
+        - expected:
+          - kind: text
+            text: </think>
+  tool_in_reason_with_text:
+    case_key: UNIFIED.12.d
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Sure. '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I should check. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' now answer'
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: ' Here you go.'
+  tool_markup_only_emits_nothing:
+    case_key: UNIFIED.4.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+  tool_no_close:
+    case_key: UNIFIED.5.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+  tool_only:
+    case_key: UNIFIED.1.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+  trailing_text_after_tool:
+    case_key: UNIFIED.8.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: The forecast shows clear skies for the rest of the week.
+  truncated_tool_eof:
+    case_key: UNIFIED.5.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: ok
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Par'
+  two_calls:
+    case_key: UNIFIED.2.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"x": "1"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"y": "2"}'
+        - expected: []
+        - expected: []
+  two_calls_same_name:
+    case_key: UNIFIED.2.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Tokyo"}'
+        - expected: []
+        - expected: []
+metadata_changes: {}

@@ -28,7 +28,7 @@ For tool-calling, the important fields are:
 
 Fixture locations:
 
-All fixture YAMLs live in the repo as git-lfs tarball shards under `conformance/fixtures/` and are extracted automatically on first use via `extract_fixtures.py`. Do NOT commit loose fixture YAMLs — rebuild the shard store via `package_fixtures.py` instead (see "Fixture Store" below). `conformance/utils/src/parser_families.yaml` is a parser config file, not a fixture — it stays loose in the repo.
+Tool-calling and reasoning fixture YAMLs live in git-lfs tarball shards under `conformance/fixtures/`. Unified fixtures live as reviewable YAML under `conformance/fixtures-unified-v2/`. `extract_fixtures.py` materializes both stores into one compatibility tree, so existing report and Rust consumers read the same paths. `conformance/utils/src/parser_families.yaml` is parser configuration, not a fixture.
 
 | Store path (inside snapshot) | Used By |
 |---|---|
@@ -216,7 +216,7 @@ conformance/utils/render_table_v2.sh --output conformance/CONFORMANCE_v2.html
 conformance/utils/check.sh status --model <family> --tab unified
 ```
 
-This creates the durable `unified/dynamo_v2-<version>.tar.gz` shard, updates the inputs/golden shards and manifest, and renders the only supported HTML report. Do not generate `CONFORMANCE_unified.html`: it is not a published report and is not read by the v2 renderer. A family conversion is unfinished until the scoped status command reports zero red and zero empty current Dynamo cells.
+This updates the affected family input/golden document and sparse implementation-version capture YAML files under `conformance/fixtures-unified-v2/families/<family>/`, refreshes the manifest pin, and renders the only supported HTML report. Do not generate `CONFORMANCE_unified.html`: it is not a published report and is not read by the v2 renderer. A family conversion is unfinished until the scoped status command reports zero red and zero empty current Dynamo cells.
 
 Run `bash conformance/utils/regenerate_unified.sh` when changing Unified parser code or corpus inputs. It performs the live capture, package, extraction, render, case-ID equality checks, and consuming tests in the required order. It always renders the JSON/HTML report before returning a failed gate status, so the resulting page can be used to inspect red or empty cells; do not treat that diagnostic render as publishable until the gate exits 0.
 
@@ -275,7 +275,7 @@ python3 conformance/utils/src/extract_fixtures.py --info
 
 ### Update existing fixtures (re-capture after a parser version bump)
 
-For Unified corpus edits, regenerate after every source change: run the generator, explode/package the archives, update the manifest, render the JSON/HTML matrix, and run the consuming tests before making the next review claim. Repeat the chain after the final edit. A passing test against stale archives or stale HTML is incomplete; verify that all generated archives contain the same case-ID set as the current generator.
+For Unified corpus edits, regenerate after every source change: run the generator, explode the loose capture, update the family input/golden and capture YAML files, refresh the manifest pin, render the JSON/HTML matrix, and run the consuming tests before making the next review claim. Repeat the chain after the final edit. A passing test against stale YAML or stale HTML is incomplete; verify that every resolved current capture contains the same case-ID set as the current generator.
 
 After re-capturing YAML locally with `capture.sh`, rebuild the store and commit it together with the manifest:
 
@@ -285,12 +285,12 @@ After re-capturing YAML locally with `capture.sh`, rebuild the store and commit 
 # 2. Rebuild the shard store + manifest
 python3 conformance/utils/src/package_fixtures.py
 
-# 3. Commit the store + manifest pin (shards are LFS-tracked)
-git add conformance/fixtures conformance/fixtures-manifest.json
+# 3. Commit both stores + manifest pin
+git add conformance/fixtures conformance/fixtures-unified-v2 conformance/fixtures-manifest.json
 git commit -s -m "fixtures: snapshot <stamp printed by the script>"
 ```
 
-The script builds deterministic per-version shard tarballs (mtime/uid normalized, so unchanged trees produce byte-identical shards and no git churn), removes stale shards no longer in the set, and writes the new manifest.
+The script builds deterministic per-version tarball shards for tool-calling and reasoning fixtures, updates the reviewable Unified YAML store, preserves hash-pinned inactive evidence, and writes the manifest that pins both stores.
 
 ### Add new fixtures (new SGLang / vLLM / Dynamo family)
 

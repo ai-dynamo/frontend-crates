@@ -303,18 +303,10 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
     assert native["block"]["unavailable"] == "vLLM Rust 0.26.0 (stream, Combined & Unified) has no parser for muse_glimmer"
 
 
-def test_unified_default_dynamo_keeps_capture_identity_internal_and_release_history_visible(tmp_path):
-    page_path = tmp_path / "CONFORMANCE_v2.html"
-    result = subprocess.run(
-        [str(UTILS / "render_table_v2.sh"), "--output", str(page_path)],
-        capture_output=True,
-        text=True,
-        cwd=REPO,
-    )
-    assert result.returncode == 0, result.stderr
-    tab = _tab(_read_model(page_path, "render_table_v2.sh"), "tab-unified")
+def test_unified_default_dynamo_keeps_capture_identity_internal_and_release_history_visible(model_v2):
+    tab = _tab(model_v2, "tab-unified")
     dynamo = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
-    release = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo@0.4.0")
+    release = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo@0.6.0")
 
     captures = {}
     for path in table._unified_base(REPO).glob("dynamo_v2-*/*/*.yaml"):
@@ -334,7 +326,7 @@ def test_unified_default_dynamo_keeps_capture_identity_internal_and_release_hist
     assert "+source." not in dynamo["label"]
     assert all("+source." not in candidate["key"] for candidate in tab["candidates"])
     assert dynamo["default_bucket"] == "A"
-    assert release["label"] == "Dynamo v2 Rust 0.4.0 (stream, Combined & Unified)"
+    assert release["label"] == "Dynamo v2 Rust 0.6.0 (stream, Combined & Unified)"
     assert release["default_bucket"] == "C"
 
 

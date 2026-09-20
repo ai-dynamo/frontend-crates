@@ -13,6 +13,7 @@ from unified_taxonomy import historical_case_label
 
 CAPTURE_SNAPSHOT = "capture-snapshot.json"
 DYNAMO_VERSION_RE = re.compile(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?")
+UNIFIED_HISTORY_PATH = "unified-history"
 
 
 def is_source_capture(name: str) -> bool:
@@ -65,9 +66,17 @@ def canonicalize_unified_inputs(records: dict[tuple[str, str], dict]) -> tuple[d
         ident = (family, canonical_unified_case_key(family, key, scenario))
         if scenario:
             previous = scenario_keys.get((family, scenario))
-            if previous is not None and previous != ident:
-                canonical.pop(previous, None)
-            scenario_keys[(family, scenario)] = ident
+            if (
+                previous is not None
+                and previous != key
+                and historical_unified_case_key(family, previous)
+                != historical_unified_case_key(family, key)
+            ):
+                raise ValueError(
+                    f"duplicate Unified scenario ownership for {family}/{scenario}: "
+                    f"{previous}, {key}"
+                )
+            scenario_keys[(family, scenario)] = key
         canonical[ident] = record
         historical = historical_unified_case_key(family, key)
         aliases[(family, key)] = ident
@@ -139,7 +148,10 @@ def active_shards(manifest: dict) -> list[dict]:
     inactive = inactive_shards(manifest)
     shards = manifest.get("shards", [])
     for shard in shards:
-        if shard["path"] in inactive:
+        if shard.get("format") == "unified-history":
+            if shard.get("path") != UNIFIED_HISTORY_PATH:
+                raise ValueError(f"invalid Unified history path: {shard.get('path')}")
+        elif shard["path"] in inactive:
             raise ValueError(f"inactive shard is also active: {shard['path']}")
     return shards
 
@@ -163,11 +175,18 @@ def inactive_fixture_dirs(base: Path) -> set[str]:
     manifest_path = base.parent / "fixtures-manifest.json"
     if manifest_path.is_file():
         manifest = json.loads(manifest_path.read_text())
-        active_shards(manifest)
+        active = active_shards(manifest)
+        unified_history_active = any(
+            shard.get("format") == "unified-history" for shard in active
+        )
         inactive = verify_inactive_shards(manifest, base.parent / "fixtures")
     else:
         state = base.parent / ".fixtures-state.json"
-        inactive = inactive_shards(json.loads(state.read_text())) if state.is_file() else {}
+        document = json.loads(state.read_text()) if state.is_file() else {}
+        unified_history_active = UNIFIED_HISTORY_PATH in document.get("shards", {})
+        inactive = inactive_shards(document)
+    if base.name == "unified" and unified_history_active:
+        return set()
     prefix = f"{base.name}/"
     return {path[len(prefix):-len('.tar.gz')] for path in inactive
             if path.startswith(prefix) and "/" not in path[len(prefix):]}

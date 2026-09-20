@@ -2178,7 +2178,7 @@ def _assemble_stream(chunk_deltas: list) -> list:
 def _unified_base(artifact_root: Path) -> Path:
     """Where the unified capture YAMLs live. In a packaged render they come from the
     extracted fixture snapshot (CONFORMANCE_FIXTURES_ROOT/unified — the
-    conformance/fixtures/unified/captures.tar.gz shard); locally after a harness run
+    conformance/fixtures-unified-v2 history); locally after a harness run
     they sit in the loose build tree conformance/unified/."""
     snap = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
     if snap and (Path(snap) / "unified").is_dir():
@@ -2239,9 +2239,16 @@ def _load_unified_fixtures(base: Path):
     input_bindings = {}
     input_aliases = {}
     complete_snapshots = set()
+    directory_cache = {}
 
     def _read_dir(name, include_bytes=False):
-        out = {}  # (family, case_key) -> case_doc
+        cached = directory_cache.get(name)
+        if cached is not None:
+            if include_bytes:
+                return cached
+            return {key: document for key, (document, _raw) in cached.items()}
+
+        out = {}  # (family, case_key) -> (case_doc, raw_bytes)
         if name in inactive_dirs:
             return out
         is_capture = re.match(r"^[a-z0-9_]+-\d", name) is not None
@@ -2280,10 +2287,13 @@ def _load_unified_fixtures(base: Path):
                         if reason:
                             cd = {**cd, "unavailable": reason}
                             cd.pop("error", None)
-                    if (fp.parent.name, k) in out and out[(fp.parent.name, k)] != cd:
+                    if (fp.parent.name, k) in out and out[(fp.parent.name, k)][0] != cd:
                         raise ValueError(f"conflicting historical aliases in {name}: {fp.parent.name}/{k}")
-                out[(fp.parent.name, k)] = (cd, raw) if include_bytes else cd
-        return out
+                out[(fp.parent.name, k)] = (cd, raw)
+        directory_cache[name] = out
+        if include_bytes:
+            return out
+        return {key: document for key, (document, _raw) in out.items()}
 
     def _overlay_base(name):
         return re.sub(r"\+pr\d+(?:\.patch\d+)?$", "", name)
@@ -2378,7 +2388,7 @@ def _load_unified_fixtures(base: Path):
             # identity and makes the patch's listed entries authoritative.
             target.update(_read_dir(dirname))
     engine_dirs = {impl: (vs[-1][1], vs[-1][0]) for impl, vs in engine_versions.items()}
-    engine_cases = {impl: _read_dir(dirname) for impl, (dirname, _v) in engine_dirs.items()}
+    engine_cases = {}
     for impl, captures in peer_by_ver.items():
         latest = max(captures, key=fixtures._version_sort_key)
         engine_cases[impl] = captures[latest]

@@ -37,7 +37,7 @@ toolcalling/fixtures-batch-on-stream-v2/<family>/ # v2 complete-text-through-str
 reasoning/fixtures-v1/inputs/<family>/            # v1 reasoning cases
 ```
 
-**Capture history is append-only.** Preserve existing published version directories and archives. Parser changes use a new verified release or source-qualified identity; corrections and added cases for an existing release use a new `.patchN` overlay captured from that release's source. Readers fold overlays within one implementation and version, and retain the other versions as comparison candidates. `dynamo_v1` and `dynamo_v2` have separate version histories and never fold together. Deleting an old capture removes its comparison column; the manifest-pinned snapshot, not whichever loose directories happen to exist locally, determines what the chart shows.
+**Unified capture history is append-only.** Every captured version has its own YAML node under the family directory; unchanged versions are empty deltas that inherit the prior output, so tested versions remain visible without duplicating records. Historical nodes are not silently pruned or rebased; corrections and added cases for an existing release use a new `.patchN` overlay captured from that release's source. Readers fold overlays within one implementation and version. `dynamo_v1` and `dynamo_v2` have separate version histories and never fold together. The manifest-pinned snapshot, not whichever loose directories happen to exist locally, determines what the chart shows.
 
 ## End-to-end test cases (a separate surface, kept elsewhere)
 
@@ -90,13 +90,13 @@ Parser fixture sync from Dynamo is retired. Update v1 fixtures through normal fr
 
 ## Adding Streaming Parser V2 Fixtures
 
-Use [`../parsers_v2/README.md`](../parsers_v2/README.md#fixture-files-to-add) for the parser-side checklist. In conformance, a new streaming family normally needs YAML files under `toolcalling/fixtures-stream-v2/<family>/` and `toolcalling/fixtures-batch-on-stream-v2/<family>/`; add `toolcalling/fixtures-batch-v1/<family>/` entries only when the v1 batch corpus does not already contain that family or taxonomy case. Capture locally with `capture.sh`, then run `package_fixtures.py` to rebuild the LFS shard store + manifest, and commit both — do not commit loose fixture YAMLs to the repo.
+Use [`../parsers_v2/README.md`](../parsers_v2/README.md#fixture-files-to-add) for the parser-side checklist. In conformance, a new streaming family normally needs YAML files under `toolcalling/fixtures-stream-v2/<family>/` and `toolcalling/fixtures-batch-on-stream-v2/<family>/`; add `toolcalling/fixtures-batch-v1/<family>/` entries only when the v1 batch corpus does not already contain that family or taxonomy case. Capture locally with `capture.sh`, then run `package_fixtures.py` and commit the three published paths: `conformance/fixtures/`, `conformance/fixtures-unified-v2/`, and `conformance/fixtures-manifest.json`. Do not commit loose fixture YAMLs to the repo.
 
 The v2 stream fixture schema is documented in [`toolcalling/fixtures-stream-v2/README.md`](toolcalling/fixtures-stream-v2/README.md). Capture and render commands are documented in [`utils/README.md`](utils/README.md).
 
 ## Fixture Workflows
 
-The four routine loops. All of them end the same way: `package_fixtures.py` rebuilds the LFS shard store + manifest, and you commit `conformance/fixtures/` + `conformance/fixtures-manifest.json` together (see [`utils/README.md`](utils/README.md#fixture-store-git-lfs)).
+The four routine loops. All of them end the same way: `package_fixtures.py` publishes one generation across `conformance/fixtures/`, `conformance/fixtures-unified-v2/`, and `conformance/fixtures-manifest.json`; commit all three paths together (see [`utils/README.md`](utils/README.md#fixture-store-git-lfs)).
 
 **Title fixture/table-only PRs `chore(conformance):`, never `feat:`.** The repo is squash-merge only and GitHub is set to `squash_merge_commit_title: PR_TITLE` with a BLANK body, so the PR TITLE becomes the entire commit message on `main` — it is the only Conventional Commit that release-plz ever reads. The branch's own commit types are discarded, so retitling the PR is both necessary and sufficient. `feat:` proposes a MINOR version bump on every crate whose packaged contents changed ([`../RELEASING.md`](../RELEASING.md#bump-policy) has the full bump table); re-capturing fixtures or re-rendering the table is not a library feature and must not move a published version. Use `feat:` only when parser CODE under `parsers/` changed behaviour. Fixture-only work is outside every crate's packaged contents, so it proposes no bump.
 
@@ -124,7 +124,7 @@ The four routine loops. All of them end the same way: `package_fixtures.py` rebu
    | `Reasoning` | `capture_peer_versions.py --corpus reasoning --impl vllm_python` | — | `capture_peer_versions.py --corpus reasoning --impl sglang_python` |
 
    ‡ vLLM Rust is source-only: set `VLLM_RUST_SOURCE=<vllm checkout at the tag>` (or pass `--vllm-rust-source`) first. In vLLM ≥ 0.25 the crate is `vllm-parser` at `rust/src/parser` (was `vllm-tool-parser` at `rust/src/tool-parser`), and `ToolParserOutput` is an ordered events list. A parser that moved to the native `unified::` interface between releases is marked unavailable via the `tool::` probe — expected, not a failure.
-4. **Package:** `package_fixtures.py` → new `<impl>-<newver>.tar.gz` shards appear; existing shards rebuild byte-identical (deterministic tars, mtime=0). Commit `conformance/fixtures/` + `conformance/fixtures-manifest.json` together.
+4. **Package:** `package_fixtures.py` → new `<impl>-<newver>.tar.gz` shards appear; existing shards rebuild byte-identical (deterministic tars, mtime=0). Commit all three published paths named above together.
 5. **Verify the new version shows on ALL tabs.** The generator discovers each `<impl>-<newver>/` dir as its own candidate. Run `render_table_v2.sh` and confirm the new version is a Reference/Compare candidate on all four tabs (grep the rendered HTML), then `python3 -m pytest conformance/utils/tests/` and `check.sh dynamo all`. `test_model.py::test_v2_reasoning_uses_current_peers` specifically guards that the Reasoning tab surfaces every peer version dir — if it fails after you add a version, the tab lost multi-version rendering.
 
 ### 2. Fix a Dynamo parser and refresh its expected outputs
@@ -132,13 +132,13 @@ The four routine loops. All of them end the same way: `package_fixtures.py` rebu
 1. Fix the code under `parsers/v1/` or `parsers/v2/`.
 2. `cargo test --workspace` — if the fix changes output, the parity tests FAIL. That is the regression gate working: decide whether the diff is a bug in your fix or an intended behavior change.
 3. For an intended v2 change, capture under a source-qualified unpublished identity (workflow 3), then run `package_fixtures.py`. A release capture must be produced from its tagged source, not a branch with the same crate version.
-4. Commit the parser fix, fixture shards, and manifest together. CI is green only when the code and the pinned expectations agree again; release publication is a separate workflow.
+4. Commit the parser fix and all three published fixture paths together. CI is green only when the code and the pinned expectations agree again; release publication is a separate workflow.
 
 ### Unified parser hard gate
 
 Unified work is complete only when the selected current Dynamo column has **zero empty cells and zero red cells** for the affected family. This is a hard gate. `reason:`, `unavailable:`, a historical column, stale HTML, or changing GOLDEN to match broken output does not satisfy it.
 
-For a model-family conversion, collection is mandatory work, not a follow-up. Generate the family’s Unified authored inputs and golden events, run the live Unified parser capture with its verified source identity, explode it, package the LFS shards and manifest, extract the pinned snapshot, and render the canonical v2 report. The current `dynamo_v2-<identity>.tar.gz` shard must exist before the row can be considered collected. Never generate `CONFORMANCE_unified.html`; `CONFORMANCE_v2.html` is the only HTML report for this workflow.
+For a model-family conversion, collection is mandatory work, not a follow-up. Generate the family's Unified authored inputs and golden events, run the live Unified parser capture with its verified source identity, explode it, update the YAML history and manifest pin, extract the pinned snapshot, and render the canonical v2 report. The current capture node must exist in each affected family history before the row can be considered collected. Never generate `CONFORMANCE_unified.html`; `CONFORMANCE_v2.html` is the only HTML report for this workflow.
 
 Use this loop:
 
@@ -164,7 +164,7 @@ cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- -
 python3 -m pytest conformance/utils/tests/test_model.py
 ```
 
-Use `bash conformance/utils/regenerate_unified.sh` to run this sequence as one gate. It compiles and captures the live Unified parser, rebuilds and re-extracts the archives, renders the JSON/HTML report, runs the consuming tests, and fails when the generator, current archives, or rendered Unified cells disagree. The script renders JSON and HTML even when a later validation stage fails, so humans can inspect the current red or empty cells; a failed exit code means the report is diagnostic, not ready to publish.
+Use `bash conformance/utils/regenerate_unified.sh` to run this sequence as one gate. It compiles and captures the live Unified parser, updates and re-extracts the YAML history, renders the JSON/HTML report, runs the consuming tests, and fails when the generator, current history, or rendered Unified cells disagree. The script renders JSON and HTML even when a later validation stage fails, so humans can inspect the current red or empty cells; a failed exit code means the report is diagnostic, not ready to publish.
 
 Do not substitute a loose harness feed for the package step. The v2 table reads the extracted packaged snapshot, so an un-packaged family cannot appear in its Unified tab.
 
@@ -189,7 +189,7 @@ A "case" is one numeric-suffix sub-case shared across families. New case IDs use
 1. **Input.** Add the case to `toolcalling/fixtures-stream-v2/inputs/<family>/TOOLCALLING.streamv2.<N>.yaml` for each family it applies to — the shared per-chunk `delta_text` (schema in [`toolcalling/fixtures-stream-v2/README.md`](toolcalling/fixtures-stream-v2/README.md#fixture-schema)). Batch cases go under `toolcalling/fixtures-batch-v1/inputs/<family>/` instead.
 2. **Description.** Add a bullet to `utils/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md` (or the batch/reasoning CASES.md) — the HTML "Case descriptions" section renders it, and the tooltip links to it.
 3. **Grouping (easy to miss).** Add the case id to its band in **`utils/src/fixtures.py`** `BATCH_SUB_CASE_GROUPS` (the streamv2 tab reuses the batch taxonomy). If you skip this, the column still renders but sorts to the FAR RIGHT as an "unknown" case instead of beside its `<num>.*` siblings. That list now lives in exactly one place, so a case is one edit. A new `<num>.<letter>` should ideally key on its parent `<num>`, not enumerate every letter.
-4. **Capture + package.** `refresh_dynamo_captures.py stream` (records the Dynamo v2 output for the new case), then `package_fixtures.py`, then commit store + manifest. Peer engines (vLLM/SGLang) only cover the new case once re-captured against containers (workflow 1); until then the peer cells read `(no expectation)`.
+4. **Capture + package.** `refresh_dynamo_captures.py stream` (records the Dynamo v2 output for the new case), then `package_fixtures.py`, then commit all three published fixture paths. Peer engines (vLLM/SGLang) only cover the new case once re-captured against containers (workflow 1); until then the peer cells read `(no expectation)`.
 
 ### 6. Backfill an OLD parser version onto a new case (`.patchN` overlays)
 
@@ -197,7 +197,7 @@ To show what an already-released parser version would have produced on a case th
 
 1. Build the old binary: `git worktree add <path> <release-commit>` (find it via `git log -S'version = "0.1.11"' -- '**/Cargo.toml'`), then `cargo build -p dynamo-parsers-v2 --bin record_dynamo_stream` there.
 2. Run that binary on the new-case input, and write the result into a NEW dir named `dynamo_v2-<ver>.patchN/` (`captured_with: <ver>.patchN`) — a full copy of the base `<ver>` capture plus the backfilled case. The pristine `dynamo_v2-<ver>/` shard stays byte-identical.
-3. `package_fixtures.py` → a `dynamo_v2-<ver>.patchN.tar.gz` shard. Commit.
+3. `package_fixtures.py` → the new history node and manifest pin. Commit all three published fixture paths.
 
 How `.patchN` is treated: **HTML** folds it into its base `<ver>` display column (it's the same binary, just re-run — `_base_stream_version` / `_impl_version_families` in `generate_conformance_table.py`), so it is NOT a separate candidate. **Parity tests** EXCLUDE `.patchN` dirs entirely (`version_dirs_ascending` in `tests/common/mod.rs`) — they validate the CURRENT parser, and a `.patchN` is an old binary that must never shadow the latest capture.
 
@@ -209,7 +209,7 @@ How `.patchN` is treated: **HTML** folds it into its base `<ver>` display column
 
 `conformance/case-taxonomy.yaml` is the machine-readable definition of complete coverage — every batch/stream/reasoning case group and sub-case, with per-case requiredness and applicability rules. It replaces the old implicit standard (the union of `description:` fields across ~20 families that reviewers had to reverse-engineer per PR).
 
-For Unified corpus changes, regeneration is part of the edit, not a final cleanup step. After every change to a generator, taxonomy, golden specification, fixture manifest, capture label, or coverage documentation, immediately run the generator, explode/package the fixture archives, update the manifest, render `CONFORMANCE_v2.json` and `CONFORMANCE_v2.html`, and run the consuming Rust/Python tests. Repeat that complete chain after the final edit. Before reporting or pushing, assert that `inputs.tar.gz`, `golden.tar.gz`, and each Dynamo release after folding its active overlays cover exactly the generator's case-ID set. Preserve the original sparse archives; do not rewrite them to satisfy the folded coverage check. Source tests against stale archives or stale HTML do not validate the change.
+For Unified corpus changes, regeneration is part of the edit, not a final cleanup step. After every change to a generator, taxonomy, golden specification, fixture manifest, capture label, or coverage documentation, immediately run the generator, explode the loose captures, update `conformance/fixtures-unified-v2/`, refresh the manifest pin, render `CONFORMANCE_v2.json` and `CONFORMANCE_v2.html`, and run the consuming Rust/Python tests. Repeat that complete chain after the final edit. Before reporting or pushing, assert that the seven `inputs_and_golden.yaml` family documents and each Dynamo capture chain after resolving its explicit parents cover exactly the generator's case-ID set. Source tests against stale YAML or stale HTML do not validate the change.
 
 ```bash
 # The authoring loop for a new family: the FAIL list is the fixture TODO list.

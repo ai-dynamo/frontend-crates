@@ -31,22 +31,16 @@ done
 [ "$fail" -eq 0 ] && note "request-mode symbols in diff" "none (${#SYMS[@]} checked)"
 
 # 2. Fixtures and the manifest must be untouched. Piece 1 owns no corpus data.
-if git diff --exit-code --quiet "$BASE" -- conformance/fixtures conformance/fixtures-manifest.json; then
-  note "conformance/fixtures + manifest" "byte-identical to $BASE"
+if git diff --exit-code --quiet "$BASE" -- \
+  conformance/fixtures \
+  conformance/fixtures-unified-v2 \
+  conformance/fixtures-manifest.json; then
+  note "conformance fixture stores + manifest" "byte-identical to $BASE"
 else
-  bad "conformance/fixtures + manifest" "MODIFIED — piece 1 must not touch corpus data"
+  bad "conformance fixture stores + manifest" "MODIFIED — piece 1 must not touch corpus data"
 fi
 
-# 3. The two LFS pointers that pin the corpus must still be main's.
-#    A pointer change is how a corpus transition leaks in without touching many files.
-for f in conformance/fixtures/unified/golden.tar.gz conformance/fixtures/unified/inputs.tar.gz; do
-  b=$(git show "$BASE:$f" 2>/dev/null | grep -oE 'oid sha256:[0-9a-f]+' | cut -d: -f2)
-  h=$(git show "HEAD:$f"  2>/dev/null | grep -oE 'oid sha256:[0-9a-f]+' | cut -d: -f2)
-  if [ -n "$b" ] && [ "$b" = "$h" ]; then note "$(basename "$f") pointer" "${b:0:16} (unchanged)"
-  else bad "$(basename "$f") pointer" "${b:0:16} -> ${h:0:16}"; fi
-done
-
-# 4. The emitted corpus must still be main's 33 scenarios x 3 = 99 cases.
+# 3. The emitted corpus must still be main's 33 scenarios x 3 = 99 cases.
 #    Counted from the GENERATOR, not the taxonomy map: the map reserves names the
 #    generator does not emit, which is how a false 156-case denominator arose before.
 if [ -f conformance/utils/src/gen_unified_golden.py ]; then
@@ -68,7 +62,7 @@ PYEOF
   else bad "generator scenarios" "$cnt, expected 33 — corpus expansion belongs to piece 2"; fi
 fi
 
-# 5. The peer surface must be present and complete, with peer-shaped defaults.
+# 4. The peer surface must be present and complete, with peer-shaped defaults.
 M=parsers/v2/src/unified/mod.rs
 if [ -f "$M" ]; then
   grep -q 'fn parse_into(&mut self, delta: &str, output: &mut UnifiedParserOutput) -> Result<()>;' "$M" \
