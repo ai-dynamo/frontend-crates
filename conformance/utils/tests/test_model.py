@@ -249,10 +249,8 @@ def test_unified_duplicate_notes_and_deepseek_prefilled_captures(model_v2):
         if row["family"] == "deepseek_v41":
             for scenario in ("prefilled_reasoning_with_tool", "prefilled_reasoning_then_text_then_tool", "prefilled_reasoning_then_text"):
                 cell = row["cells"][scenario]
-                assert cell["status"] != "na"
-                assert cell["tooltip"]["init"]["starting_state"] == "Reasoning"
-                assert cell["cmp"]["dynamo"].get("na", 0) == 0
-                assert cell["cmp"]["dynamo"]["sig"] == cell["cmp"]["golden"]["sig"]
+                assert cell["status"] == "na"
+                assert cell["tooltip"]["init"] is None
 
 
 def test_v2_exactly_one_active_tab(model_v2):
@@ -490,7 +488,13 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
     """Historical output without its original request cannot establish parity."""
     tab = _tab(model_v2, "tab-unified")
     peer_keys = {candidate["key"] for candidate in tab["candidates"] if candidate["impl"] == "vllm"}
-    assert peer_keys == {"vllm", "vllm_python@0.26.0", "vllm_rust", "vllm_rust@0.26.0"}
+    assert peer_keys == {
+        "vllm",
+        "vllm_python@0.26.0",
+        "vllm_python@0.27.1",
+        "vllm_rust",
+        "vllm_rust@0.26.0",
+    }
     for row in tab["rows"]:
         for key in peer_keys:
             unavailable = [cell["cmp"][key].get("na") == 1 for cell in row["cells"].values()]
@@ -520,7 +524,11 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
             cell = gemma["cells"][scenario]
             assert cell["cmp"][key].get("na") == 1
             peer = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == key)
-            assert "this case postdates that capture" in peer["block"]["unavailable"]
+            reason = peer["block"]["unavailable"]
+            assert (
+                "this case postdates that capture" in reason
+                or reason.startswith("Capture stimulus mismatch (")
+            )
 
 
 _IMPL_KEYS = ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python")

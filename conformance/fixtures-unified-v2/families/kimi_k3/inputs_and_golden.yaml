@@ -2630,13 +2630,13 @@ cases:
         arguments:
           city: a > b
   retired__30_14:
-    lifecycle: retired
-    scenario: null
-    description: null
-    policy: []
-    display_id: null
-    historical_ids:
-    - UNIFIED.30-14
+    lifecycle: active
+    scenario: guided_json_gt_in_argument_named_bare_opener
+    description: Guided JSON, payload is gt_in_argument, surrounded by an invoke HEADER containing a tool name but no terminator before the payload. Markers around a recoverable payload must not cost the call (`I3`).
+    policy:
+    - I3
+    display_id: UNIFIED.30-14
+    historical_ids: []
     request:
       input: '<|open|>call tool="get_weather"[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
       init:
@@ -2691,7 +2691,12 @@ cases:
       - delta_text: <|open|>
       - delta_text: 'call tool="get_weather"[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
       - delta_text: ‹finish›
-    golden: null
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: a > b
   guided_json_required_tool:
     lifecycle: active
     scenario: guided_json_required_tool
@@ -3311,13 +3316,14 @@ cases:
       - kind: text
         text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
   retired__31_33:
-    lifecycle: retired
-    scenario: null
-    description: null
-    policy: []
-    display_id: null
-    historical_ids:
-    - UNIFIED.31-33
+    lifecycle: active
+    scenario: guided_json_native_parameter_body_inside_reasoning
+    description: Guided reasoning contains a complete native invocation with arguments, followed by the actual guided call. The native invocation is suppressed as one control span; its argument body must not leak when the header and body arrive separately. Each family uses its own native argument framing, and the native call differs from the guided call so it cannot substitute for the payload.
+    policy:
+    - I3
+    - I5
+    display_id: UNIFIED.31-33
+    historical_ids: []
     request:
       input: '<|open|>think<|sep|>before <|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="string"<|sep|>é🙂<par{value}<|close|>argument<|sep|><|close|>call<|sep|> after<|close|>think<|sep|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -3392,7 +3398,14 @@ cases:
       - delta_text: <|sep|>
       - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       - delta_text: ‹finish›
-    golden: null
+    golden:
+      assembled:
+      - kind: reasoning
+        text: before  after
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
   guided_json_list_with_broken_element:
     lifecycle: active
     scenario: guided_json_list_with_broken_element
@@ -3459,13 +3472,14 @@ cases:
       - kind: text
         text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
   retired__31_40:
-    lifecycle: retired
-    scenario: null
-    description: null
-    policy: []
-    display_id: null
-    historical_ids:
-    - UNIFIED.31-40
+    lifecycle: active
+    scenario: guided_json_reasoning_markers_inside_native_parameter
+    description: 'Guided reasoning contains a complete native f(x) invocation whose parameter value quotes the family''s reasoning markers. The parameter owns those markers: they cannot close the surrounding thought or leak parameter tags into visible text. The native invocation is suppressed; only the following guided Paris call dispatches. Unlike 31-33''s Unicode and brace payload, this tests competing channel markers inside an argument.'
+    policy:
+    - I3
+    - I7
+    display_id: UNIFIED.31-40
+    historical_ids: []
     request:
       input: '<|open|>think<|sep|>before <|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="string"<|sep|><|open|>think<|sep|>quoted<|close|>think<|sep|><|close|>argument<|sep|><|close|>call<|sep|> after<|close|>think<|sep|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -3546,7 +3560,14 @@ cases:
       - delta_text: <|sep|>
       - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       - delta_text: ‹finish›
-    golden: null
+    golden:
+      assembled:
+      - kind: reasoning
+        text: before  after
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
   guided_json_tool_open_before_payload:
     lifecycle: active
     scenario: guided_json_tool_open_before_payload

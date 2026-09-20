@@ -2800,13 +2800,13 @@ cases:
         arguments:
           city: a > b
   retired__30_14:
-    lifecycle: retired
-    scenario: null
-    description: null
-    policy: []
-    display_id: null
-    historical_ids:
-    - UNIFIED.30-14
+    lifecycle: active
+    scenario: guided_json_gt_in_argument_named_bare_opener
+    description: Guided JSON, payload is gt_in_argument, surrounded by an invoke HEADER containing a tool name but no terminator before the payload. Markers around a recoverable payload must not cost the call (`I3`).
+    policy:
+    - I3
+    display_id: UNIFIED.30-14
+    historical_ids: []
     request:
       input: '<function=get_weather[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
       init:
@@ -2861,7 +2861,12 @@ cases:
       - delta_text: '<function=get_weather[{"name": "get_weather", "arguments": {"city": "a >'
       - delta_text: ' b"}}]'
       - delta_text: ‹finish›
-    golden: null
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: a > b
   guided_json_required_tool:
     lifecycle: active
     scenario: guided_json_required_tool
@@ -3478,13 +3483,14 @@ cases:
       - kind: text
         text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
   retired__31_31:
-    lifecycle: retired
-    scenario: null
-    description: null
-    policy: []
-    display_id: null
-    historical_ids:
-    - UNIFIED.31-31
+    lifecycle: active
+    scenario: qwen3_guided_non_ascii_header_in_truncated_reasoning
+    description: Guided Qwen reasoning ends inside an unfinished function header with a non-ASCII name. The control prefix is stripped at EOF, but the remaining reasoning bytes survive without a call or visible text.
+    policy:
+    - I3
+    - P2
+    display_id: UNIFIED.31-31
+    historical_ids: []
     request:
       input: <think><function=éaaaaaaaaax
       init:
@@ -3539,15 +3545,18 @@ cases:
       - delta_text: <think>
       - delta_text: <function=éaaaaaaaaax
       - delta_text: ‹finish›
-    golden: null
+    golden:
+      assembled:
+      - kind: reasoning
+        text: éaaaaaaaaax
   retired__31_32:
-    lifecycle: retired
-    scenario: null
-    description: null
-    policy: []
-    display_id: null
-    historical_ids:
-    - UNIFIED.31-32
+    lifecycle: active
+    scenario: qwen3_guided_non_ascii_header_in_closed_reasoning
+    description: Guided Qwen reasoning contains a malformed non-ASCII function header closed by its function terminator. That control span is stripped, the thought closes, and the following guided call dispatches.
+    policy:
+    - I3
+    display_id: UNIFIED.31-32
+    historical_ids: []
     request:
       input: '<think><function=éaaaaaaaaax</function></think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -3604,15 +3613,21 @@ cases:
       - delta_text: </think>
       - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       - delta_text: ‹finish›
-    golden: null
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
   retired__31_33:
-    lifecycle: retired
-    scenario: null
-    description: null
-    policy: []
-    display_id: null
-    historical_ids:
-    - UNIFIED.31-33
+    lifecycle: active
+    scenario: guided_json_native_parameter_body_inside_reasoning
+    description: Guided reasoning contains a complete native invocation with arguments, followed by the actual guided call. The native invocation is suppressed as one control span; its argument body must not leak when the header and body arrive separately. Each family uses its own native argument framing, and the native call differs from the guided call so it cannot substitute for the payload.
+    policy:
+    - I3
+    - I5
+    display_id: UNIFIED.31-33
+    historical_ids: []
     request:
       input: '<think>before <function=f>
 
@@ -3693,15 +3708,23 @@ cases:
       - delta_text: </think>
       - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       - delta_text: ‹finish›
-    golden: null
+    golden:
+      assembled:
+      - kind: reasoning
+        text: before  after
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
   retired__31_34:
-    lifecycle: retired
-    scenario: null
-    description: null
-    policy: []
-    display_id: null
-    historical_ids:
-    - UNIFIED.31-34
+    lifecycle: active
+    scenario: guided_json_native_parameter_object_before_payload
+    description: Qwen and Muse Response-prefilled guided output quotes a reasoning marker, then contains a valid JSON object inside a native parameter, followed by the actual guided call. Response keeps the quoted reasoning content visible; starting_state=None would route it to reasoning. The Response payload search must skip braces and brackets owned by the native invocation. Only the following Paris call dispatches; selecting the native Rome value is incorrect, and no native body reaches visible text.
+    policy:
+    - I3
+    - I7
+    display_id: UNIFIED.31-34
+    historical_ids: []
     request:
       input: '<think>literal</think><function=f><parameter=x>{"city":"Rome"}</parameter></function>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -3763,15 +3786,23 @@ cases:
       - delta_text: </function>
       - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       - delta_text: ‹finish›
-    golden: null
+    golden:
+      assembled:
+      - kind: text
+        text: <think>literal</think>
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
   retired__31_35:
-    lifecycle: retired
-    scenario: null
-    description: null
-    policy: []
-    display_id: null
-    historical_ids:
-    - UNIFIED.31-35
+    lifecycle: active
+    scenario: guided_json_native_parameter_array_before_payload
+    description: Qwen and Muse Response-prefilled guided output quotes a reasoning marker, then contains a valid JSON array inside a native parameter, followed by the actual guided call. Response keeps the quoted reasoning content visible; starting_state=None would route it to reasoning. The Response payload search must skip braces and brackets owned by the native invocation. Only the following Paris call dispatches; selecting the native Rome value is incorrect, and no native body reaches visible text.
+    policy:
+    - I3
+    - I7
+    display_id: UNIFIED.31-35
+    historical_ids: []
     request:
       input: '<think>literal</think><function=f><parameter=x>[{"name":"get_weather","arguments":{"city":"Rome"}}]</parameter></function>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -3833,15 +3864,23 @@ cases:
       - delta_text: </function>
       - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       - delta_text: ‹finish›
-    golden: null
+    golden:
+      assembled:
+      - kind: text
+        text: <think>literal</think>
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
   retired__31_36:
-    lifecycle: retired
-    scenario: null
-    description: null
-    policy: []
-    display_id: null
-    historical_ids:
-    - UNIFIED.31-36
+    lifecycle: active
+    scenario: qwen3_guided_reasoning_opener_inside_native_header
+    description: 'Qwen guided output with no prefilled channel has a reasoning opener inside an unfinished native function header. The reasoning opener wins: without a reasoning closer, the function terminator and following JSON remain reasoning, not a dispatched call.'
+    policy:
+    - I3
+    - I5
+    display_id: UNIFIED.31-36
+    historical_ids: []
     request:
       input: <function=<think>x</function>[{"name":"f","arguments":{}}]
       init:
@@ -3898,7 +3937,10 @@ cases:
       - delta_text: </function>
       - delta_text: '[{"name":"f","arguments":{}}]'
       - delta_text: ‹finish›
-    golden: null
+    golden:
+      assembled:
+      - kind: reasoning
+        text: x</function>[{"name":"f","arguments":{}}]
   guided_json_list_with_broken_element:
     lifecycle: active
     scenario: guided_json_list_with_broken_element
@@ -3966,13 +4008,14 @@ cases:
       - kind: text
         text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
   retired__31_40:
-    lifecycle: retired
-    scenario: null
-    description: null
-    policy: []
-    display_id: null
-    historical_ids:
-    - UNIFIED.31-40
+    lifecycle: active
+    scenario: guided_json_reasoning_markers_inside_native_parameter
+    description: 'Guided reasoning contains a complete native f(x) invocation whose parameter value quotes the family''s reasoning markers. The parameter owns those markers: they cannot close the surrounding thought or leak parameter tags into visible text. The native invocation is suppressed; only the following guided Paris call dispatches. Unlike 31-33''s Unicode and brace payload, this tests competing channel markers inside an argument.'
+    policy:
+    - I3
+    - I7
+    display_id: UNIFIED.31-40
+    historical_ids: []
     request:
       input: '<think>before <function=f>
 
@@ -4057,7 +4100,14 @@ cases:
       - delta_text: </think>
       - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       - delta_text: ‹finish›
-    golden: null
+    golden:
+      assembled:
+      - kind: reasoning
+        text: before  after
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
   guided_json_tool_open_before_payload:
     lifecycle: active
     scenario: guided_json_tool_open_before_payload

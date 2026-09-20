@@ -14,6 +14,7 @@ sys.path.insert(0, str(SRC))
 
 import gen_unified_golden as G
 from unified_tools import unified_tools
+from unified_taxonomy import numbered_id
 
 
 def _assert_value(value, schema):
@@ -114,3 +115,25 @@ def test_recovery_successor_respects_string_schema():
     assert case["golden"] == [{"kind": "tool_call", "name": "g", "arguments": {"y": "2"}}]
     assert G.k3_argument("y", "string", "2") in case["input"]
     assert G.k3_open("call", [("tool", "bad"), ("index", "1")]) + "not-an-argument" in case["input"]
+
+
+def test_optional_prefix_name_overlap_is_an_explicit_native_declared_tool_contract():
+    scenario = "kimi_k2_optional_prefix_name_overlap"
+    case = G.build_cases("kimi_k2")[f"UNIFIED.{scenario}.kimi_k2"]
+    assert numbered_id(scenario) == "UNIFIED.1-2"
+    assert G.scenario_families(scenario) == {"kimi_k2"}
+    assert case["input"] == (
+        "<|tool_calls_section_begin|><|tool_call_begin|>functions.:17"
+        "<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>"
+    )
+    assert case["golden"] == [{"kind": "tool_call", "name": "functions.", "arguments": {}}]
+    assert case["init"] == {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+    assert "functions." in {tool["name"] for tool in unified_tools()}
+
+
+def test_prefix_overlap_case_is_rejected_without_its_declared_schema():
+    case_id = "UNIFIED.kimi_k2_optional_prefix_name_overlap.kimi_k2"
+    case = G.build_cases("kimi_k2")[case_id]
+    tools = [tool for tool in unified_tools() if tool["name"] != "functions."]
+    with pytest.raises(KeyError, match="functions"):
+        _assert_golden_schemas({case_id: case}, tools)

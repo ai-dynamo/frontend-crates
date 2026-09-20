@@ -1094,7 +1094,15 @@ def materialize_store(
     *,
     include_current_inputs: bool = True,
     derived_release_versions: dict[str, str] | None = None,
+    current_capture_id: str | None = None,
 ) -> None:
+    """Materialize inputs and captures, filtering retired cases only from the current view.
+
+    Historical captures retain retired cases so their old columns remain reproducible. The
+    selected current capture is different: its record set must match today's active inputs or
+    the live-capture guard treats historical aliases as extra current requests. A current
+    release may be a derived view when the sparse history has no checkpoint for that version.
+    """
     store = load_store(root)
     destination = Path(destination)
     destination.mkdir(parents=True, exist_ok=True)
@@ -1187,7 +1195,14 @@ def materialize_store(
             history.captures
         )
         for capture_id, capture in history.captures.items():
-            add_capture_state(capture_id, history, history.resolve(capture_id))
+            state = history.resolve(capture_id)
+            if capture_id == current_capture_id:
+                state = {
+                    case_id: change
+                    for case_id, change in state.items()
+                    if history.family.cases[case_id]["lifecycle"] == "active"
+                }
+            add_capture_state(capture_id, history, state)
 
     # The YAML store remains sparse: a release with no changed family output has
     # no checkpoint file. Consumers still need a complete directory for the
@@ -1237,7 +1252,14 @@ def materialize_store(
                         history.captures[capture_id]["runtime_version"]
                     ),
                 )
-                add_capture_state(target_id, history, history.resolve(source_id))
+                state = history.resolve(source_id)
+                if target_id == current_capture_id:
+                    state = {
+                        case_id: change
+                        for case_id, change in state.items()
+                        if history.family.cases[case_id]["lifecycle"] == "active"
+                    }
+                add_capture_state(target_id, history, state)
 
     _write_materialized_documents(documents)
 
@@ -1716,6 +1738,12 @@ def _sync_current_corpus(
             for case_id, case in cases.items()
             if isinstance(case["scenario"], str)
         }
+        by_external_id = {
+            external_id: case_id
+            for case_id, case in cases.items()
+            for external_id in [case["display_id"], *case["historical_ids"]]
+            if isinstance(external_id, str)
+        }
         current_scenarios = set()
         scenario_owners = {}
         input_documents, golden_documents = family_documents[family_name]
@@ -1742,7 +1770,7 @@ def _sync_current_corpus(
                     )
                 scenario_owners[scenario] = f"{input_path}:{case_key}"
                 current_scenarios.add(scenario)
-                case_id = by_scenario.get(scenario)
+                case_id = by_scenario.get(scenario) or by_external_id.get(case_key)
                 if case_id is None:
                     case_id = _internal_case_id(case_key, scenario, set(cases))
                     cases[case_id] = {

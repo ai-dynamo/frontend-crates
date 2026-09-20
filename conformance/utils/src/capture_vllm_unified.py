@@ -29,10 +29,14 @@ from unified_tools import unified_tools
 from vllm.entrypoints.openai.chat_completion.protocol import ChatCompletionRequest
 from vllm.parser.parser_manager import ParserManager
 
-# family -> (reasoning_parser_name, tool_parser_name) shared by the released
-# 0.25.1 and 0.26.0 Python captures.
+# family -> (reasoning_parser_name, tool_parser_name) for the released Python
+# parser registrations used by the Unified corpus. DeepSeek V4.1 shares the
+# `deepseek_v4` registration in vLLM 0.27.1.
 FAMILY_PARSERS = {
+    "deepseek_v4": ("deepseek_v4", "deepseek_v4"),
+    "deepseek_v41": ("deepseek_v4", "deepseek_v4"),
     "gemma4": ("gemma4", "gemma4"),
+    "kimi_k3": ("kimi_k3", "kimi_k3"),
     "qwen3": ("qwen3", "qwen3_coder"),
     "glm47": ("glm47", "glm47"),
     "kimi_k2": ("kimi_k2", "kimi_k2"),
