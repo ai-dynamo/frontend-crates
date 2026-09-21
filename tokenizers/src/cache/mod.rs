@@ -356,10 +356,6 @@ mod tests {
         fn validate_prefix_cache(&self) -> Result<()> {
             Ok(())
         }
-
-        fn vocab_size(&self) -> Option<usize> {
-            None
-        }
     }
 
     impl Encoder for FailingTokenizer {
@@ -697,14 +693,9 @@ mod tests {
     }
 
     #[test]
-    fn unoverridden_vocab_methods_default_to_unsupported() {
-        // SegmentTokenizer only overrides `vocab_size`; `token_to_id`,
-        // `special_token_ids`, and `num_special_tokens_added` are left at
-        // the trait default. Guards against that default silently
-        // regressing to a trivial `Ok`/empty/zero value, which would make
-        // "unsupported" indistinguishable from a genuine miss/empty/zero
-        // answer.
+    fn unoverridden_introspection_methods_use_defaults() {
         let tokenizer = SegmentTokenizer;
+        assert_eq!(tokenizer.vocab_size(), None);
         assert!(tokenizer.token_to_id("anything").is_err());
         assert!(tokenizer.special_token_ids().is_err());
         assert!(tokenizer.num_special_tokens_added().is_err());

@@ -401,10 +401,6 @@ mod tests {
 
     #[test]
     fn num_special_tokens_added_reflects_bos_post_processor() {
-        // Same TemplateProcessing-prepends-<bos> fixture as
-        // segments_honor_add_special_tokens_option, which already proves
-        // encode()/add_special_tokens=true inserts one BOS id (23); this
-        // exercises num_special_tokens_added() against that same real path.
         let temp = tempfile::tempdir().unwrap();
         let path = temp.path().join("tokenizer.json");
         let mut json: serde_json::Value =
@@ -445,12 +441,6 @@ mod tests {
 
     #[test]
     fn num_special_tokens_added_is_length_independent_under_sequence_post_processor() {
-        // Proves the invariant num_special_tokens_added's doc comment
-        // relies on: a Sequence post-processor chaining two
-        // TemplateProcessing steps (one prepending <bos>, one appending
-        // <eos>) adds a fixed 2 tokens regardless of how many content
-        // tokens flow through it, so post_process(Vec::new(), true).len()
-        // is a safe stand-in for the real-content addition count.
         let temp = tempfile::tempdir().unwrap();
         let path = temp.path().join("tokenizer.json");
         let mut json: serde_json::Value =
@@ -514,9 +504,6 @@ mod tests {
         });
         let plain = BasetenTokenizer::from_file(path.to_str().unwrap()).unwrap();
 
-        // Two inputs of different real content length must each grow by
-        // exactly num_special_tokens_added() (2), not by some
-        // content-dependent amount.
         for text in ["h", "hello there world"] {
             let without = plain.encode(text).unwrap().token_ids().len();
             let with = with_specials.encode(text).unwrap().token_ids().len();

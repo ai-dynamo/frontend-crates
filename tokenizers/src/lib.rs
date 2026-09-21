@@ -203,12 +203,11 @@ pub mod traits {
             self
         }
         /// Vocabulary cardinality including added tokens, when the backend
-        /// can expose one. `None` for backends without a bounded id space.
-        ///
-        /// No default body: every implementor must state its answer
-        /// explicitly (`None` where genuinely unsupported) rather than risk
-        /// silently inheriting `None` for a backend that could report one.
-        fn vocab_size(&self) -> Option<usize>;
+        /// can expose one. `None` for backends without a bounded id space or
+        /// vocabulary introspection.
+        fn vocab_size(&self) -> Option<usize> {
+            None
+        }
 
         /// Resolve a token string to its vocabulary id, when the backend
         /// supports lookup. `Ok(None)` when the token is not in the
@@ -604,11 +603,7 @@ mod decode_stream_unicode_tests {
         }
     }
 
-    impl super::traits::Tokenizer for RewritingTokenizer {
-        fn vocab_size(&self) -> Option<usize> {
-            None
-        }
-    }
+    impl super::traits::Tokenizer for RewritingTokenizer {}
 
     #[test]
     fn allows_boundary_recovery_before_generated_text_is_emitted() {

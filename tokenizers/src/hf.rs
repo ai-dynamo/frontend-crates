@@ -409,11 +409,6 @@ mod tests {
 
     #[test]
     fn vocab_introspection_accessors() {
-        // `Encoder`/`Decoder` expose no vocab size, token->id lookup, or
-        // special-token accounting; these narrow accessors let a caller
-        // answer those questions directly against an already-loaded
-        // tokenizer, without backend-specific access to the underlying
-        // library.
         const TOKENIZER_JSON: &str = r#"{
             "version": "1.0",
             "truncation": null,
