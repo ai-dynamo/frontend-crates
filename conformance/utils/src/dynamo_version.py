@@ -218,7 +218,11 @@ def select_capture_label(repo_root: Path, captures: dict) -> str:
         for label in captures
         if isinstance(label, str) and (match := patch_pattern.fullmatch(label))
     ]
-    return max(patches)[1] if patches else version
+    if patches:
+        return max(patches)[1]
+    # An unpublished checkout without a semantic record cannot claim that a
+    # version-only directory was produced by its source.
+    return current["label"] if current["label"] != version else version
 
 
 def validate_capture_provenance(repo_root: Path, recorded: dict) -> dict:
