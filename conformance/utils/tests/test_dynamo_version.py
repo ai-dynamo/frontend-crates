@@ -139,3 +139,22 @@ def test_cli_select_capture_reports_only_the_semantic_version(release_repo):
     )
 
     assert result.stdout.strip() == "0.6.0"
+
+
+@pytest.mark.parametrize("override", [None, "current", "0.6.0"])
+def test_normal_version_lookup_ignores_tags_source_and_git_environment(release_repo, monkeypatch, override):
+    git(release_repo, "tag", "-d", "dynamo-parsers-v2-v0.6.0")
+    (release_repo / "parsers/v2/src/lib.rs").write_text("pub fn changed() {}\n", encoding="utf-8")
+    monkeypatch.setattr(identity, "source_fingerprint", lambda *args: pytest.fail("reader must not fingerprint source"))
+    assert identity.dynamo_v2_label(release_repo, override) == "0.6.0"
+    result = subprocess.run(
+        [sys.executable, identity.__file__, "--repo-root", str(release_repo), "--format", "label"],
+        text=True, check=True, capture_output=True, env=identity.git_subprocess_env(),
+    )
+    assert result.stdout.strip() == "0.6.0"
+
+
+@pytest.mark.parametrize("label", ["", "0.6.0.patch1", "0.6.0+source." + "a" * 64, "0.6.1"])
+def test_normal_version_lookup_rejects_noncanonical_labels(release_repo, label):
+    with pytest.raises(ValueError, match="capture version must be"):
+        identity.dynamo_v2_label(release_repo, label)

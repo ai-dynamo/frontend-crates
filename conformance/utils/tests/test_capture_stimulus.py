@@ -44,7 +44,7 @@ def test_old_fx_capture_is_not_scored_against_new_run_cmd_input(tmp_path, monkey
     capture = {"assembled": [event], "chunks": [{"expected": [event]}], "capture_input": capture_stimulus.capture_input(original)}
     path = _write(tmp_path, engine, capture)
     before = path.read_bytes()
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda captures: "0.5.3")
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.5.3")
     cases, _caps, _versions = table._load_unified_fixtures(tmp_path)
     if engine.startswith("dynamo_v2"):
         record = cases[0]["dynamo_by_ver"]["0.5.3"]

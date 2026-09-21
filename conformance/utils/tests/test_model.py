@@ -36,7 +36,7 @@ from fixture_snapshot import fixture_snapshot_root  # noqa: E402
 from capture_stimulus import capture_input  # noqa: E402
 import model as model_mod  # noqa: E402
 import generate_conformance_table as table  # noqa: E402
-from dynamo_version import dynamo_v2_label, select_capture_label  # noqa: E402
+from dynamo_version import dynamo_v2_label  # noqa: E402
 
 
 def _resolve_cache_root() -> Path:
@@ -308,20 +308,7 @@ def test_unified_default_dynamo_keeps_capture_identity_internal_and_release_hist
     dynamo = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
     release = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo@0.6.0")
 
-    captures = {}
-    for path in (_cache_root() / "unified").glob("dynamo_v2-*/*/*.yaml"):
-        version = path.parent.parent.name.removeprefix("dynamo_v2-")
-        doc = yaml.safe_load(path.read_text())
-        layer = captures.setdefault(version, {
-            "complete_snapshot": (path.parent.parent / "capture-snapshot.json").is_file(),
-            "records": {},
-        })
-        layer["records"].update({
-            f"{path.parent.name}/{key}": doc.get("capture_provenance") for key in doc["cases"]
-        })
-    requested = select_capture_label(REPO, captures)
-    if requested != "0.6.1":
-        pytest.skip("the history backfill has no capture produced by this checkout")
+    requested = dynamo_v2_label(REPO)
     assert requested == "0.6.1"
     assert dynamo["version"] == requested
     assert dynamo["label"] == "Dynamo v2 Rust 0.6.1 (stream, Combined & Unified)"
@@ -343,7 +330,7 @@ def test_unified_grammar_header_preserves_each_family_config(tmp_path, monkeypat
     generator = table.gen_unified_golden
     authored = {family: generator.build_cases(family) for family in ("deepseek_v4", "deepseek_v41")}
     monkeypatch.setattr(generator, "build_cases", authored.__getitem__)
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda _captures: "0.6.0")
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.6.0")
     monkeypatch.setattr(table, "_unified_base", lambda _root: tmp_path)
     scenarios = {scenario, "text_only"} if missing_family else {scenario}
     monkeypatch.setattr(generator, "CLEAN", [case for case in generator.CLEAN if case[0] in scenarios])
@@ -416,10 +403,10 @@ def test_unified_selector_uses_source_checkout_with_or_without_staging(tmp_path,
     monkeypatch.delenv("CONFORMANCE_DYNAMO_V2_LABEL", raising=False)
     monkeypatch.delenv("FRONTEND_CRATES_ROOT", raising=False)
     expected = dynamo_v2_label(REPO)
-    assert table._unified_dynamo_label({}) == expected
+    assert table._unified_dynamo_label() == expected
     monkeypatch.setenv("FRONTEND_CRATES_ROOT", str(REPO))
     monkeypatch.setattr(table, "__file__", str(tmp_path / "tests/parity/generate_conformance_table.py"))
-    assert table._unified_dynamo_label({}) == expected
+    assert table._unified_dynamo_label() == expected
 
 
 @pytest.mark.parametrize(
@@ -435,7 +422,7 @@ def test_unified_source_selection_inherits_previous_family_capture(
     generator = table.gen_unified_golden
     authored = generator.build_cases(family)[f"UNIFIED.{scenario}.{family}"]
     key = table.unified_taxonomy.numbered_id(scenario)
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda _captures: selected)
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: selected)
     monkeypatch.setattr(table, "_unified_base", lambda _root: tmp_path)
     monkeypatch.setattr(generator, "CLEAN", [case for case in generator.CLEAN if case[0] == scenario])
     monkeypatch.setattr(generator, "EDGE", [])
@@ -490,7 +477,7 @@ def test_unified_source_selection_inherits_previous_family_capture(
 
 
 @pytest.mark.parametrize("impl,version,mode,want", [
-    ("dynamo_v2", "0.6.0+source." + "a" * 64, "stream",
+    ("dynamo_v2", "0.6.0", "stream",
      "Dynamo v2 Rust 0.6.0 (stream)"),
     ("dynamo_v2", "0.6.1", "stream", "Dynamo v2 Rust 0.6.1 (stream)"),
     ("dynamo_v1", "8.2.2", "stream", "Dynamo v1 Rust 8.2.2 (jail+batch)"),

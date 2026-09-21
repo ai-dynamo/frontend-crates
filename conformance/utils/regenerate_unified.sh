@@ -4,10 +4,6 @@ set -euo pipefail
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
 
-# Freeze the label before generation; later consumers reject any source drift.
-CONFORMANCE_DYNAMO_V2_LABEL=$(python3 conformance/utils/src/dynamo_version.py --format label)
-export CONFORMANCE_DYNAMO_V2_LABEL
-
 run() {
   printf '\n==> %s\n' "$*"
   "$@"
@@ -62,7 +58,7 @@ import sys
 
 sys.path.insert(0, "conformance/utils/src")
 import gen_unified_golden as golden
-from dynamo_version import dynamo_v2_provenance
+from dynamo_version import dynamo_v2_label
 from fixtures import _version_sort_key
 from unified_history import load_store
 from unified_taxonomy import numbered_id
@@ -85,7 +81,7 @@ expected_red = {
     for family in golden.FAMILIES
 }
 
-current_version = dynamo_v2_provenance(Path.cwd())["crate_version"]
+current_version = dynamo_v2_label(Path.cwd())
 store = load_store(root)
 for family, case_ids in expected.items():
     canonical = {

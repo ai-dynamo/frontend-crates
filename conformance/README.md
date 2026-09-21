@@ -169,9 +169,11 @@ Use `bash conformance/utils/regenerate_unified.sh` to run this sequence as one g
 
 Do not substitute a loose harness feed for the package step. The v2 table reads the extracted packaged snapshot, so an un-packaged family cannot appear in its Unified tab.
 
-### 3. Version rule: fixture labels identify the source actually captured
+### 3. Version rule: one capture name per crate version
 
-For v2 captures, `dynamo_version.py` verifies the parser sources and build inputs against the release tag before accepting a plain version. The first capture retains its source SHA and Git commit as compact YAML origin metadata, while the capture directory remains `<implementation>-<crate-version>`. The digest covers source content independently of generated fixtures, so packaging does not change the producer identity. Capture producers validate this origin; readers select only the semantic version. A rendered release view carries unchanged families forward from their newest capture at or before that version. Crate publication and version bumps follow [`../RELEASING.md`](../RELEASING.md#manual-version-peg-fixture-synced-releases); changing `Cargo.toml` alone does not establish released provenance.
+Unified captures use plain crate versions, such as `dynamo_v2-0.6.1.yaml`. The first capture records its source SHA and Git commit as origin metadata. Later commits with the same version reuse that version; they do not create patch files or hash-qualified names. Readers select the version without inspecting source hashes or release tags, and carry unchanged family outputs forward from the latest capture at or before that version. Avoid changing existing test inputs; if an input must change, rerun and update every prior version affected by it. Crate publication follows [`../RELEASING.md`](../RELEASING.md#manual-version-peg-fixture-synced-releases).
+
+TODO (follow-up PR; Rust cleanup is deferred from #257): remove the deprecated `dynamo_version.py` JSON producer and `--select-capture` inventory protocol, `capture_stimulus.py --select-source-snapshot`, and their patch/source compatibility helpers after migrating `conformance/tests/common/mod.rs`, `capture_cross_version.rs`, and `unified_render.rs`. These Rust harnesses still require the old protocol and tests. Python report readers use only `--format label`; newly packaged Unified YAML uses only semantic versions. Shared-family tests remain deferred to #241, and recovery of the pre-existing missing vLLM captures remains in #256.
 
 ### 4. What CI actually checks (the regression gate)
 
