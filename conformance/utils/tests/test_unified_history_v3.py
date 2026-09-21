@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Coverage for canonical Unified capture checkpoints."""
+"""Schema-v3 coverage for canonical Unified capture checkpoints."""
 
 import sys
 from pathlib import Path

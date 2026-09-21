@@ -38,7 +38,7 @@ def _write_input_and_golden(root, key="UNIFIED.1-1"):
 
 
 def test_sparse_semantic_checkpoints_carry_a_family_forward_to_current_release(tmp_path, monkeypatch):
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.6.1")
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda _captures: "0.6.1")
     _write_input_and_golden(tmp_path)
     _write_case(
         tmp_path,
@@ -57,7 +57,7 @@ def test_sparse_semantic_checkpoints_carry_a_family_forward_to_current_release(t
 
 
 def test_explicit_current_error_is_not_replaced_by_an_older_success(tmp_path, monkeypatch):
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.6.1")
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda _captures: "0.6.1")
     _write_input_and_golden(tmp_path)
     _write_case(
         tmp_path,
@@ -75,7 +75,7 @@ def test_explicit_current_error_is_not_replaced_by_an_older_success(tmp_path, mo
 
 @pytest.mark.parametrize("directory", ["dynamo_v2-0.6.1.patch1", "dynamo_v2-0.6.1+source." + "a" * 64])
 def test_renderer_ignores_nonsemantic_capture_directories(tmp_path, monkeypatch, directory):
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.6.1")
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda _captures: "0.6.1")
     _write_input_and_golden(tmp_path)
     _write_case(tmp_path, directory, "UNIFIED.1-1", {"assembled": [], "chunks": []})
 

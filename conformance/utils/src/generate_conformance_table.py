@@ -982,6 +982,10 @@ def _full_label(impl: str, version: object, mode: str) -> str:
     # the stream tab its mode reads "(jail+batch)".
     if impl == BASELINE_BATCH_IMPL and mode == "stream":
         mode = "jail+batch"
+    # A source-qualified version is the immutable capture identity. Keep its digest
+    # internal; the reader-facing reference remains the release version.
+    if impl == "dynamo_v2" and isinstance(version, str) and "+source." in version:
+        version = version.split("+source.", 1)[0]
     ver = f" {version}" if version else ""
     return f"{base}{ver} ({mode})"
 
@@ -2208,13 +2212,13 @@ def _load_sglang_capture(artifact_root: Path) -> tuple[dict, str | None]:
     return _load_capture(artifact_root, "sglang_capture.yaml", "sglang_version")
 
 
-def _unified_dynamo_label() -> str:
+def _unified_dynamo_label(captures: dict) -> str:
     # The renderer is copied into /tmp; the checker must inspect the source checkout.
     source_root = Path(os.environ.get("FRONTEND_CRATES_ROOT", Path(__file__).resolve().parents[3]))
     return subprocess.run(
         [sys.executable, str(source_root / "conformance/utils/src/dynamo_version.py"),
-         "--repo-root", str(source_root), "--format", "label"],
-        check=True, capture_output=True, text=True,
+         "--repo-root", str(source_root), "--format", "label", "--select-capture"],
+        input=json.dumps(captures), check=True, capture_output=True, text=True,
     ).stdout.strip()
 
 
@@ -2330,7 +2334,7 @@ def _load_unified_fixtures(base: Path):
     for ver, dirname in engine_versions.get("dynamo_v2", []):
         dynamo_by_ver[ver] = _read_dir(dirname)
 
-    current_dynamo_ver = _unified_dynamo_label()
+    current_dynamo_ver = _unified_dynamo_label({})
     target_release = fixtures._version_sort_key(current_dynamo_ver)
     inherited_current_cases = {}
     for version in sorted(
