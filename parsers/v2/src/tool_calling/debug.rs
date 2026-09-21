@@ -58,6 +58,9 @@ pub(super) struct DebugToolParser {
 
 impl DebugToolParser {
     pub(super) fn wrap(family: &str, inner: Box<dyn ToolParser>) -> Box<dyn ToolParser> {
+        if !debug_enabled() {
+            return inner;
+        }
         emit(format_args!("family={family} created"));
         Box::new(Self {
             family: family.to_string(),
@@ -117,12 +120,17 @@ impl ToolParser for DebugToolParser {
         self.log("finish", &result);
         Ok(result)
     }
+
+    fn tool_call_id(&self, tool_index: usize) -> Option<&str> {
+        self.inner.tool_call_id(tool_index)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::super::traits::{Tool, ToolParser};
     use super::DebugToolParser;
+    use crate::tool_calling::kimi_k3::KimiK3ToolStreamParser;
     use crate::tool_calling::qwen3_coder::Qwen3CoderToolStreamParser;
 
     fn weather_tools() -> Vec<Tool> {
@@ -155,5 +163,24 @@ mod tests {
         assert_eq!(result.calls.len(), 1);
         assert_eq!(result.calls[0].name.as_deref(), Some("get_weather"));
         assert_eq!(result.calls[0].arguments, r#"{"location":"NYC"}"#);
+    }
+
+    #[test]
+    fn wrapper_forwards_tool_call_ids_and_unknown_indices() {
+        let input = concat!(
+            "<|open|>tools<|sep|>",
+            "<|open|>call tool=\"weather\" index=\"2\"<|sep|>",
+            "<|open|>argument key=\"city\" type=\"string\"<|sep|>Paris",
+            "<|close|>argument<|sep|><|close|>call<|sep|>",
+            "<|close|>tools<|sep|>"
+        );
+        let mut unwrapped = KimiK3ToolStreamParser::new(&[]);
+        unwrapped.parse_complete(input).expect("parse unwrapped");
+        let expected = unwrapped.tool_call_id(0).map(str::to_string);
+        let inner = KimiK3ToolStreamParser::create(&[]).expect("create parser");
+        let mut wrapped = DebugToolParser::wrap("kimi_k3", inner);
+        wrapped.parse_complete(input).expect("parse wrapped");
+        assert_eq!(wrapped.tool_call_id(0), expected.as_deref());
+        assert_eq!(wrapped.tool_call_id(1), None);
     }
 }

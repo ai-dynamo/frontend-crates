@@ -23,7 +23,7 @@
 //! Gemma 4 was the hardest family to move because its END MARKER IS DATA: a
 //! literal `<tool_call|>` inside a `<|"|>`-delimited string value is an argument
 //! value, so the plain `find` every other wrapped family uses would cut the value
-//! there (`I7`, case `7.b`). The scanner takes a grammar-aware
+//! there (`I7`, case `7-2`). The scanner takes a grammar-aware
 //! [`crate::tool_calling::scan::InvokeScan`] for exactly that; see
 //! `tool_calling/gemma4.rs`.
 //!
@@ -36,15 +36,16 @@
 //! What the unified path adds is ORDER: a thought between two calls is a second
 //! thought in its own position instead of being hoisted into the first. Nesting
 //! is asymmetric, exactly as for qwen3 — a call inside a thought is extracted and
-//! the thought splits around it (`I3`, case `12.b`), while a channel marker
+//! the thought splits around it (`I3`, case `12-2`), while a channel marker
 //! inside a quoted argument value is data and survives byte-exact (`I7`, case
-//! `12.a`).
+//! `12-1`).
 
 use crate::tool_calling::gemma4::{gemma4_scanner, is_gemma_call_prefix_boundary};
 use crate::tool_calling::scan::ReasoningSpec;
 use crate::tool_calling::traits::Tool;
 use crate::unified::{
-    GuidedPrefix, GuidedPrefixContext, GuidedRouted, ScannerUnified, UnifiedParser,
+    GuidedPrefix, GuidedPrefixContext, GuidedPrefixScanner, GuidedRouted, ScannerUnified,
+    UnifiedParser, count_guided_prefix_bytes,
 };
 
 const REASONING_START: &str = "<|channel>";
@@ -69,7 +70,7 @@ fn guided_call_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
         return GuidedPrefix::NoMatch;
     };
     if context.followed_by_competing_marker {
-        return GuidedPrefix::Strip;
+        return GuidedPrefix::Strip("call:".len());
     }
     if !context.outside_reasoning
         && after_prefix
@@ -77,7 +78,7 @@ fn guided_call_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
             .next()
             .is_some_and(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
     {
-        return GuidedPrefix::Strip;
+        return GuidedPrefix::Strip("call:".len());
     }
     if !context.outside_reasoning
         || !context.payload_is_empty
@@ -88,7 +89,84 @@ fn guided_call_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
     match after_prefix.as_bytes().first() {
         None => GuidedPrefix::Pending,
         Some(b'{') | Some(b'[') => GuidedPrefix::Match,
-        Some(_) => GuidedPrefix::NoMatch,
+        Some(_) => {
+            let name_len = after_prefix.char_indices().find_map(|(at, ch)| {
+                (!ch.is_ascii_alphanumeric() && !matches!(ch, '_' | '-' | '.')).then_some(at)
+            });
+            match name_len {
+                None => GuidedPrefix::Pending,
+                Some(at) if at > 0 && after_prefix.as_bytes()[at] == b'[' => GuidedPrefix::Match,
+                Some(_) => GuidedPrefix::NoMatch,
+            }
+        }
+    }
+}
+
+#[derive(Default)]
+struct GemmaGuidedPrefix {
+    scan_from: usize,
+    name_end: Option<usize>,
+}
+
+fn gemma_guided_prefix() -> Box<dyn GuidedPrefixScanner> {
+    Box::new(GemmaGuidedPrefix::default())
+}
+
+impl GuidedPrefixScanner for GemmaGuidedPrefix {
+    fn append(
+        &mut self,
+        candidate: &str,
+        append: &str,
+        context: GuidedPrefixContext<'_>,
+    ) -> GuidedPrefix {
+        if !is_gemma_call_prefix_boundary(context.text, context.at) {
+            return GuidedPrefix::NoMatch;
+        }
+        let Some(after_prefix) = candidate.strip_prefix("call:") else {
+            return guided_call_prefix(context);
+        };
+        if context.followed_by_competing_marker {
+            return GuidedPrefix::Strip("call:".len());
+        }
+        if !context.outside_reasoning
+            && after_prefix
+                .chars()
+                .next()
+                .is_some_and(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
+        {
+            return GuidedPrefix::Strip("call:".len());
+        }
+        if !context.outside_reasoning
+            || !context.payload_is_empty
+            || !context.text[..context.at].trim().is_empty()
+        {
+            return GuidedPrefix::NoMatch;
+        }
+        if after_prefix.starts_with(['{', '[']) {
+            return GuidedPrefix::Match;
+        }
+        if self.name_end.is_none() {
+            let append_start = candidate.len() - append.len();
+            let scan_from = self
+                .scan_from
+                .max(append_start.saturating_sub("call:".len()));
+            let scanned = &after_prefix[scan_from..];
+            count_guided_prefix_bytes(scanned.len());
+            self.name_end = scanned.char_indices().find_map(|(at, ch)| {
+                (!ch.is_ascii_alphanumeric() && !matches!(ch, '_' | '-' | '.'))
+                    .then_some(scan_from + at)
+            });
+            self.scan_from = after_prefix.len();
+        }
+        match self.name_end {
+            None => GuidedPrefix::Pending,
+            Some(at) if at > 0 && after_prefix.as_bytes()[at] == b'[' => GuidedPrefix::Match,
+            Some(_) => GuidedPrefix::NoMatch,
+        }
+    }
+
+    fn reset(&mut self) {
+        *self = Self::default();
     }
 }
 
@@ -108,7 +186,7 @@ pub(crate) fn gemma4_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
             forced_start: false,
             preserve_special_tokens: true,
         }))
-        .with_guided_prefix_policy(guided_call_prefix),
+        .with_guided_prefix_policy(guided_call_prefix, gemma_guided_prefix),
     ))
 }
 
@@ -121,7 +199,8 @@ mod tests {
     use crate::tool_calling::traits::ToolParser;
     use crate::unified::{
         InvalidGuidedPayloadPolicy, UnifiedEvent, UnifiedParserExt, UnifiedParserInit,
-        UnifiedParserStartingState, UnifiedToolOutputMode, assemble,
+        UnifiedParserStartingState, UnifiedToolOutputMode, assemble, guided_prefix_examined_bytes,
+        reset_guided_prefix_examined_bytes,
     };
 
     fn weather_tools() -> Vec<Tool> {
@@ -249,6 +328,36 @@ mod tests {
                 input.len()
             );
         }
+    }
+
+    /// A conformance event cannot expose retained-scan work, so this drives the production path byte by byte.
+    #[test]
+    fn guided_bare_call_header_scans_each_name_byte_once() {
+        let input = format!("<|tool_call>call:{}[", "a".repeat(4096));
+        let mut parser = gemma4_unified(&weather_tools());
+        parser
+            .initialize_request(UnifiedParserInit {
+                tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                ..UnifiedParserInit::default()
+            })
+            .expect("initialize");
+        reset_guided_prefix_examined_bytes();
+        for byte in input.bytes() {
+            parser
+                .push(std::str::from_utf8(std::slice::from_ref(&byte)).expect("ASCII input"))
+                .expect("push");
+        }
+        let examined = guided_prefix_examined_bytes();
+        assert!(
+            examined > input.len() / 2,
+            "the guided prefix was not exercised"
+        );
+        assert!(
+            examined <= input.len() * 2,
+            "guided prefix examined {examined} bytes for a {}-byte one-byte stream",
+            input.len()
+        );
     }
 
     #[test]
@@ -401,7 +510,7 @@ mod tests {
 
     #[test]
     fn an_argument_value_may_contain_the_block_close_marker() {
-        // 7.b / I7 — the case that made gemma4 Tier C. `<tool_call|>` inside a
+        // 7-2 / I7 — the case that made gemma4 Tier C. `<tool_call|>` inside a
         // `<|"|>` string is DATA, so a plain `find` of the end marker would cut
         // the value here. The invoke scan resolves the real end instead.
         let out = events(
@@ -419,7 +528,7 @@ mod tests {
 
     #[test]
     fn reasoning_marker_inside_an_argument_is_data() {
-        // 12.a / I7: once a tool block is open, `<|channel>` is a value, not a
+        // 12-1 / I7: once a tool block is open, `<|channel>` is a value, not a
         // control token, and must survive byte-exact — role label and all.
         let out = events(
             &[tool("log", "note")],
@@ -438,7 +547,7 @@ mod tests {
 
     #[test]
     fn reasoning_marker_inside_an_argument_is_data_at_every_split() {
-        // 12.a / I7 at every chunk boundary: once a tool block is open, a
+        // 12-1 / I7 at every chunk boundary: once a tool block is open, a
         // `<|channel>` marker inside the argument string is data, byte-exact,
         // regardless of where the stream happens to be cut.
         let input = "<|tool_call>call:log{note:<|\"|><|channel>thought\nreconsider<channel|><|\"|>}<tool_call|>";
@@ -461,7 +570,7 @@ mod tests {
 
     #[test]
     fn tool_call_inside_reasoning_is_extracted_and_splits_the_thought() {
-        // 12.b: tool structure dominates reasoning. A call the model emits inside
+        // 12-2: tool structure dominates reasoning. A call the model emits inside
         // a thought is still a real call, so it surfaces as its own event and the
         // thought splits around it. Burying it would both drop the call and leak
         // `<|tool_call>` markup into the reasoning payload (`I3`).
@@ -484,7 +593,7 @@ mod tests {
 
     #[test]
     fn tool_call_inside_reasoning_is_extracted_at_every_split() {
-        // 12.b at every chunk boundary: a call emitted inside a thought is
+        // 12-2 at every chunk boundary: a call emitted inside a thought is
         // extracted as its own event and the thought splits around it,
         // regardless of where the stream happens to be cut.
         let input = "<|channel>thought\nI should check. <|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}<tool_call|> now answer<channel|>Done.";
@@ -578,7 +687,7 @@ mod tests {
 
     #[test]
     fn a_complete_body_missing_its_close_marker_is_recovered_at_finish() {
-        // 5.b: the body balanced; only the close never streamed. v1 parity says
+        // 5-2: the body balanced; only the close never streamed. v1 parity says
         // recover it rather than drop it.
         let out = events(
             &weather_tools(),
@@ -592,7 +701,7 @@ mod tests {
 
     #[test]
     fn a_complete_body_missing_its_close_marker_is_recovered_at_every_split() {
-        // 5.b at every chunk boundary: the body balances but the close marker
+        // 5-2 at every chunk boundary: the body balances but the close marker
         // never streams, so `finish` must recover it regardless of split point.
         let input = "<|tool_call>call:get_weather{city:<|\"|>Paris<|\"|>}";
         let expected = vec![call("get_weather", serde_json::json!({"city": "Paris"}))];
@@ -811,7 +920,7 @@ mod tests {
 
     #[test]
     fn guided_json_named_choice_parses_a_bare_arguments_object() {
-        // 30.a: a named choice constrains output to that tool's arguments alone.
+        // 30-1: a named choice constrains output to that tool's arguments alone.
         let out = configured_events(
             &weather_tools(),
             UnifiedParserStartingState::None,
@@ -828,7 +937,7 @@ mod tests {
 
     #[test]
     fn guided_json_recovers_a_payload_that_is_not_a_call_as_text() {
-        // 31.a / P2: no `name`, so there is nothing to dispatch. Surface the bytes
+        // 31-1 / P2: no `name`, so there is nothing to dispatch. Surface the bytes
         // rather than dropping them or erroring.
         let out = configured_events(
             &weather_tools(),

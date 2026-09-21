@@ -43,10 +43,10 @@ def test_pr_dynamo_patch_selects_matching_shared_overlay(tmp_path, monkeypatch) 
     monkeypatch.setattr(explode, "BUILD", tmp_path)
     patch = tmp_path / "dynamo_v2-0.3.4+pr166.patch1" / "gemma4"
     patch.mkdir(parents=True)
-    (patch / "UNIFIED.31-29.yaml").write_text(
-        "family: gemma4\ncases:\n  UNIFIED.31-29: {}\n"
+    (patch / "UNIFIED.g4-1.yaml").write_text(
+        "family: gemma4\ncases:\n  UNIFIED.g4-1: {}\n"
     )
 
     assert explode._shared_overlay_dirs() == {
-        ("gemma4", "UNIFIED.31-29"): "+pr166.patch1"
+        ("gemma4", "UNIFIED.g4-1"): "+pr166.patch1"
     }

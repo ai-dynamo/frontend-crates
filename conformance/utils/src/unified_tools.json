@@ -1,0 +1,9 @@
+[
+  {"name": "get_weather", "parameters": {"type": "object", "properties": {"city": {"type": "string"}}}},
+  {"name": "f", "parameters": {"type": "object", "properties": {"x": {"type": "string"}}}},
+  {"name": "g", "parameters": {"type": "object", "properties": {"y": {"type": "string"}}}},
+  {"name": "run", "parameters": {"type": "object", "properties": {"cmd": {"type": "string"}}}},
+  {"name": "log", "parameters": {"type": "object", "properties": {"note": {"type": "string"}}}},
+  {"name": "sum_values", "parameters": {"type": "object", "properties": {"values": {"type": "array", "items": {"type": "number"}}}}},
+  {"name": "functions.", "parameters": {"type": "object", "properties": {}}}
+]

@@ -11,6 +11,7 @@ use super::gemma4::Gemma4ToolStreamParser;
 use super::glm47::Glm47ToolStreamParser;
 use super::harmony::HarmonyToolStreamParser;
 use super::kimi_k2::KimiK2ToolStreamParser;
+use super::kimi_k3::KimiK3ToolStreamParser;
 use super::minimax_m2::MiniMaxM2ToolStreamParser;
 use super::minimax_m3::MiniMaxM3ToolStreamParser;
 use super::muse_glimmer::MuseGlimmerToolStreamParser;
@@ -60,6 +61,7 @@ family_registry! {
         Some(&crate::structural_tag::builders::GLM47)
     ),
     "kimi_k2"      => (KimiK2ToolStreamParser::create, None),
+    "kimi_k3"      => (KimiK3ToolStreamParser::create, None),
 }
 
 fn family_spec(family: &str) -> Option<&'static FamilySpec> {

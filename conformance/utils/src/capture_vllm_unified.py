@@ -23,6 +23,9 @@ import json
 import sys
 import yaml
 
+from capture_stimulus import capture_peer_results
+from unified_tools import unified_tools
+
 from vllm.entrypoints.openai.chat_completion.protocol import ChatCompletionRequest
 from vllm.parser.parser_manager import ParserManager
 
@@ -34,14 +37,8 @@ FAMILY_PARSERS = {
     "kimi_k2": ("kimi_k2", "kimi_k2"),
 }
 
-# Tool schemas the seed cases reference (string params), so arg typing matches.
 TOOLS = [
-    {"type": "function", "function": {"name": n, "parameters": {
-        "type": "object", "properties": {k: {"type": "string"}}}}}
-    # Must match `tools()` in conformance/tests/unified_parity.rs, or the `log`
-    # cases (UNIFIED.12.a / 12.c) capture a harness-induced dropped call.
-    for n, k in (("get_weather", "city"), ("f", "x"), ("g", "y"), ("run", "cmd"),
-                 ("log", "note"))
+    {"type": "function", "function": tool} for tool in unified_tools()
 ]
 
 
@@ -115,13 +112,12 @@ def _delta_events(dm):
     return out
 
 
-def main():
-    job = json.load(sys.stdin)
+def _capture_cases(cases):
     mgr = ParserManager()
     req = ChatCompletionRequest(messages=[{"role": "user", "content": "x"}],
                                 tools=TOOLS, tool_choice="auto")
     results = {}
-    for case in job.get("cases", []):
+    for case in cases:
         fam = case["family"]
         if fam not in FAMILY_PARSERS:
             continue
@@ -129,6 +125,7 @@ def main():
         cls = mgr.get_parser(tool_parser_name=tn, reasoning_parser_name=rn,
                              enable_auto_tools=True, model_name=fam)
         if cls is None:
+            results[case["id"]] = {"unavailable": f"vLLM parser manager has no parser for {fam}"}
             continue
 
         # Batch: the real final-message fields, projected to an ordered list.
@@ -143,10 +140,20 @@ def main():
         chunks = case.get("chunks", [])
         per_chunk = []
         for i, ch in enumerate(chunks):
-            dm = p.parse_delta(ch, [], req, [], finished=(i == len(chunks) - 1))
+            dm = p.parse_delta(ch, [], req, [], finished=(not case["terminal_step"] and i == len(chunks) - 1))
             per_chunk.append(_delta_events(dm))
+        if case["terminal_step"]:
+            per_chunk.append(_delta_events(p.parse_delta("", [], req, [], finished=True)))
 
         results[case["id"]] = {"assembled": assembled, "chunks": per_chunk}
+
+    return results
+
+
+def main():
+    job = json.load(sys.stdin)
+    results = capture_peer_results(job.get("cases", []), FAMILY_PARSERS, _capture_cases,
+                                   tools=[tool["function"] for tool in TOOLS], supports_finish=True)
 
     # YAML to match the conformance fixture corpus. Container stdout is log-polluted,
     # so a recapture writes this to a file (or strips lines before the first top-level

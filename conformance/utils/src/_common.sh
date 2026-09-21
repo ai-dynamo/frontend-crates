@@ -39,7 +39,11 @@ fi
 export CONFORMANCE_FIXTURES_ROOT="$FIXTURES_ROOT"
 # Ephemeral build tree stays at conformance/utils/.stage (UTILS), not inside src/,
 # so CI and .gitignore find it where they always have.
-STAGE="${STAGE:-$UTILS/.stage}"
+if [ -z "${STAGE:-}" ]; then
+  STAGE=$(mktemp -d /tmp/frontend-crates-conformance-stage.XXXXXX)
+  export STAGE
+  trap 'rm -rf "$STAGE"' EXIT
+fi
 # Override when the default cargo can't build the workspace (edition 2024 /
 # resolver "3" needs >= 1.85): CARGO='cargo +1.96.1' conformance/utils/check.sh ...
 CARGO="${CARGO:-cargo}"
@@ -58,6 +62,7 @@ _build_stage_base() {
   # its registry at <stage-root>/src/parser_families.yaml, mirroring the repo layout.
   mkdir -p "$STAGE/src"
   \cp -f "$TOOLS/parser_families.yaml" "$STAGE/src/parser_families.yaml"
+  \cp -f "$TOOLS/parser_families.yaml" "$STAGE/parser_families.yaml"
   # Static CSS/JS inlined into the conformance page at render time (the renderer
   # reads tests/parity/assets/*). The compare-bar/coloring logic lives in one place.
   mkdir -p "$STAGE/tests/parity/assets"
@@ -76,6 +81,8 @@ _build_stage_base() {
   \cp -f "$TOOLS/impls.py" "$STAGE/tests/parity/impls.py"
   \cp -f "$TOOLS/markers.py" "$STAGE/tests/parity/markers.py"
   \cp -f "$TOOLS/unified_taxonomy.py" "$STAGE/tests/parity/unified_taxonomy.py"
+  \cp -f "$TOOLS/unified_tools.py" "$STAGE/tests/parity/unified_tools.py"
+  \cp -f "$TOOLS/unified_tools.json" "$STAGE/tests/parity/unified_tools.json"
   \cp -f "$TOOLS/gen_unified_golden.py" "$STAGE/tests/parity/gen_unified_golden.py"
   [ -f "$TOOLS/assets/conformance_view.js" ] && \
     \cp -f "$TOOLS/assets/conformance_view.js" "$STAGE/tests/parity/assets/conformance_view.js" || true
@@ -173,6 +180,8 @@ build_stage_conformance() {
   # impls.py + markers.py are staged in _build_stage_base.
   \cp -f "$TOOLS/fixtures.py" "$STAGE/tests/parity/fixtures.py"
   \cp -f "$TOOLS/fixture_snapshot.py" "$STAGE/tests/parity/fixture_snapshot.py"
+  \cp -f "$TOOLS/fixture_disposition.py" "$STAGE/tests/parity/fixture_disposition.py"
+  \cp -f "$TOOLS/capture_stimulus.py" "$STAGE/tests/parity/capture_stimulus.py"
   \cp -f "$TOOLS/conformance_table.html.j2" "$STAGE/tests/parity/conformance_table.html.j2"
   # Shared CSS/JS assets are staged in _build_stage_base.
   _copy_toolcalling_v2_fixtures

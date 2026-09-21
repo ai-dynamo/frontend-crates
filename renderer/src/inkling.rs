@@ -42,6 +42,8 @@ impl OAIPromptFormatter for InklingFormatter {
 
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String> {
         let mut messages = json_value(req.messages()).context("serialize Inkling messages")?;
+        crate::reject_unsupported_partial_assistant(&messages)?;
+        crate::reject_unsupported_message_tools(&messages, &["developer"])?;
         let messages = messages
             .as_array_mut()
             .context("Inkling messages must be an array")?;
@@ -544,6 +546,36 @@ mod tests {
         fn chat_template_args(&self) -> Option<&HashMap<String, JsonValue>> {
             self.args.as_ref()
         }
+    }
+
+    #[test]
+    fn rejects_unsupported_partial_assistant() {
+        let request = Request::new(json!([
+            {"role": "user", "content": "Continue"},
+            {"role": "assistant", "content": "prefix", "partial": true}
+        ]));
+        let error = InklingFormatter.render(&request).unwrap_err();
+
+        assert!(matches!(
+            error.downcast_ref::<crate::PromptRenderError>(),
+            Some(crate::PromptRenderError::InvalidRequest(message))
+                if message.contains("`partial: true` is not supported")
+        ));
+    }
+
+    #[test]
+    fn rejects_message_level_system_tools() {
+        let request = Request::new(json!([
+            {"role": "system", "tools": [{"name": "lookup"}]},
+            {"role": "user", "content": "Continue"}
+        ]));
+        let error = InklingFormatter.render(&request).unwrap_err();
+
+        assert!(matches!(
+            error.downcast_ref::<crate::PromptRenderError>(),
+            Some(crate::PromptRenderError::InvalidRequest(message))
+                if message.contains("message-level `tools`")
+        ));
     }
 
     #[test]

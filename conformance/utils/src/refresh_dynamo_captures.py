@@ -10,11 +10,11 @@ parser output changes — the parity tests compare the live parsers against them
 Modes (any subset; default all):
   batch            fixtures-batch-v1/dynamo_v1-<v1 crate ver>/    (expected.dynamo_v1,
                    via the record_dynamo_batch bin — the v1 batch parser).
-  stream           fixtures-stream-v2/dynamo_v2-<v2 crate ver>/   (per-chunk
+  stream           fixtures-stream-v2/dynamo_v2-<source identity>/ (per-chunk
                    expected, via record_dynamo_stream — the v2 stream parser).
-                   Both write the CURRENT crate version's dir and leave every
-                   other version dir in place: old captures are history the
-                   chart compares as candidates; readers resolve ascending.
+                   V1 uses its crate version; V2 verifies release source or uses
+                   an unpublished source-qualified label. Other version dirs
+                   remain as historical comparison candidates.
   batch-on-stream  fixtures-batch-on-stream-v2/<family>/*.yaml    (the dynamo_v2
                    case blocks + captured_with stamp, via record_batch_via_stream —
                    the v2 stream parser fed each batch sample as one chunk).
@@ -223,7 +223,18 @@ def refresh_stream(v2_ver: str) -> None:
                 run_bin("dynamo-parsers-v2", "record_dynamo_stream", [str(fp), *extra])
             )
             cases_out = {}
-            for cid, chunks in rec.items():
+            source_cases = src.get("cases") or {}
+            for cid, case in source_cases.items():
+                unavailable = (case.get("unavailable") or {}).get("dynamo_v2")
+                if unavailable:
+                    cases_out[cid] = {"unavailable": unavailable}
+                    continue
+                if cid not in rec:
+                    raise SystemExit(
+                        f"[stream] {family}: recorder omitted supported case {cid} "
+                        f"from {fp.name}"
+                    )
+                chunks = rec[cid]
                 out_chunks = []
                 for ch in chunks:
                     entry = {"expected": ch.get("deltas") or []}
@@ -327,9 +338,9 @@ def main() -> int:
     )
     ap.add_argument(
         "--label", default=None,
-        help="file the Dynamo v2 capture under this label instead of the crate "
-             "version (e.g. 0.1.24+pr163). Writes an ADDITIONAL version dir; it "
-             "never replaces an existing one.",
+        help="verified published version, 'current', or exact source-qualified "
+             "identity; defaults to the tagged release when source matches, "
+             "otherwise an unpublished source-qualified capture.",
     )
     args = ap.parse_args()
     modes = args.modes or ["batch", "stream", "batch-on-stream"]

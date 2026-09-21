@@ -160,6 +160,12 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
     }
 
     fn render(&self, req: &dyn crate::OAIChatLikeRequest) -> Result<String> {
+        let messages_value = req.messages();
+        let messages_json =
+            serde_json::to_value(&messages_value).context("Failed to convert messages to JSON")?;
+        crate::reject_unsupported_partial_assistant(&messages_json)?;
+        crate::reject_unsupported_message_tools(&messages_json, &["developer"])?;
+
         let args = req.chat_template_args();
         let effort = req
             .reasoning_effort()
@@ -188,8 +194,7 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
             None => true,
             Some(value) => value.as_bool().context("drop_thinking must be a boolean")?,
         };
-        let mut messages: Vec<Value> =
-            serde_json::from_value(serde_json::to_value(req.messages())?)?;
+        let mut messages: Vec<Value> = serde_json::from_value(messages_json)?;
         let tools_enabled =
             req.tool_choice().as_ref().and_then(|value| value.as_str()) != Some("none");
         let tools = req
@@ -202,13 +207,22 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
             .map(serde_json::to_value)
             .transpose()?;
         if tools.is_some() || response_format.is_some() {
-            if !matches!(
-                messages
-                    .first()
-                    .and_then(|m| m.get("role"))
-                    .and_then(Value::as_str),
-                Some("system" | "developer")
-            ) {
+            let developer_tools_would_be_overwritten = tools.is_some()
+                && messages.first().is_some_and(|message| {
+                    message.get("role").and_then(Value::as_str) == Some("developer")
+                        && message.get("tools").is_some_and(|tools| {
+                            !tools.is_null() && !tools.as_array().is_some_and(Vec::is_empty)
+                        })
+                });
+            if developer_tools_would_be_overwritten
+                || !matches!(
+                    messages
+                        .first()
+                        .and_then(|m| m.get("role"))
+                        .and_then(Value::as_str),
+                    Some("system" | "developer")
+                )
+            {
                 messages.insert(0, serde_json::json!({"role": "system", "content": ""}));
             }
             if let Some(tools) = tools {

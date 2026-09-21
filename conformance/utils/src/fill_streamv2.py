@@ -23,6 +23,7 @@ import argparse
 import glob
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -90,6 +91,7 @@ def build_sources(family, fixtures_root, srcdir):
     """Write one source fixture per batch case-number (every batch sub-case that
     has model_text) so the family's streamv2 tab mirrors the batch taxonomy.
     Returns {num: source_path}."""
+    os.makedirs(srcdir, exist_ok=True)
     by_num = {}
     label = family
     for f in sorted(glob.glob(os.path.join(fixtures_root, family, "TOOLCALLING.batch*.yaml"))):
@@ -100,12 +102,22 @@ def build_sources(family, fixtures_root, srcdir):
             if not m:
                 continue
             num, suffix = m.group(1), m.group(2)
-            if not isinstance(c.get("model_text"), str):  # skip na-stubs (no text)
+            scid = f"TOOLCALLING.streamv2.{num}{suffix}"
+            if not isinstance(c.get("model_text"), str):
+                unavailable = c.get("unavailable") or {}
+                by_num.setdefault(num, {})[scid] = {
+                    key: value
+                    for key, value in {
+                        "description": c.get("description", ""),
+                        "explanation": c.get("explanation"),
+                        "unavailable": unavailable or None,
+                    }.items()
+                    if value is not None
+                }
                 continue
             fr = "tool_calls" if _expects_calls(c) else "stop"
             chunks = [{"delta_text": ch} for ch in chunk_text(c["model_text"])]
             chunks.append({"delta_text": "", "finish_reason": fr})
-            scid = f"TOOLCALLING.streamv2.{num}{suffix}"
             by_num.setdefault(num, {})[scid] = {
                 "description": c.get("description", ""),
                 "ref": f"derived from {cid}",
@@ -121,6 +133,16 @@ def build_sources(family, fixtures_root, srcdir):
     return out
 
 
+def write_sources(family_sources, out_root):
+    inputs_root = os.path.join(out_root, "inputs")
+    for family, srcs in family_sources.items():
+        family_out = os.path.join(inputs_root, family)
+        os.makedirs(family_out, exist_ok=True)
+        for num, fp in srcs.items():
+            shutil.copyfile(fp, os.path.join(family_out, f"TOOLCALLING.streamv2.{num}.yaml"))
+    print(f"wrote shared stream inputs under {inputs_root}", file=sys.stderr)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -131,9 +153,14 @@ def main():
     ap.add_argument("--sglang-container", default="sglang-localdev")
     ap.add_argument("--vllm-rust-source", help="vLLM source checkout root; defaults to VLLM_RUST_SOURCE")
     ap.add_argument("--work", help="work dir (default: a fresh temp dir)")
+    ap.add_argument(
+        "--sources-only",
+        action="store_true",
+        help="regenerate shared stream inputs without running peer captures",
+    )
     args = ap.parse_args()
 
-    fixtures_root = os.path.join(args.root, "conformance/toolcalling/fixtures-batch-v1")
+    fixtures_root = os.path.join(args.root, "conformance/toolcalling/fixtures-batch-v1/inputs")
     out_root = os.path.join(args.root, "conformance/toolcalling/fixtures-stream-v2")
     work = args.work or tempfile.mkdtemp(prefix="streamv2_fill_")
     srcdir = os.path.join(work, "src")
@@ -157,6 +184,9 @@ def main():
     total = sum(len(s) for s in family_sources.values())
     print(f"built {total} source fixtures across {len(families)} families", file=sys.stderr)
     if total == 0:
+        return
+    if args.sources_only:
+        write_sources(family_sources, out_root)
         return
 
     # 2. capture (one engine import per container)
@@ -196,6 +226,7 @@ def main():
             txt = open(outfp).read().replace("\nmode: stream\n", "\nmode: streamv2\n", 1)
             open(outfp, "w").write(txt)
             print(f"  built {family}/{base}", file=sys.stderr)
+    write_sources(family_sources, out_root)
 
 
 if __name__ == "__main__":

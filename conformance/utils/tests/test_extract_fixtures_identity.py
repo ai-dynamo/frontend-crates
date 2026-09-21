@@ -57,7 +57,13 @@ def cache_root(tmp_path, monkeypatch):
     root = tmp_path / "cache"
     monkeypatch.setattr(extract_fixtures, "get_cache_root", lambda: root)
     monkeypatch.setattr(extract_fixtures, "shard_file", lambda s: Path(f"/fake/{s['path']}"))
-    monkeypatch.setattr(extract_fixtures, "extract_tarball", _fake_extract_tarball)
+    monkeypatch.setattr(
+        extract_fixtures,
+        "materialize_shard",
+        lambda _shard, source, destination, verbose=False: _fake_extract_tarball(
+            source, destination, verbose
+        ),
+    )
     return root
 
 
@@ -261,7 +267,13 @@ def test_interrupted_build_never_appears_at_the_published_name(cache_root, tmp_p
         dest_dir.mkdir(parents=True, exist_ok=True)
         raise RuntimeError("simulated crash mid-extraction")
 
-    monkeypatch.setattr(extract_fixtures, "extract_tarball", _boom)
+    monkeypatch.setattr(
+        extract_fixtures,
+        "materialize_shard",
+        lambda _shard, source, destination, verbose=False: _boom(
+            source, destination, verbose
+        ),
+    )
     manifest = {"snapshot": "20260101_000000", "shards": [_shard("toolcalling/a.tar.gz", "hash1")]}
     fid = extract_fixtures.fixtures_identity(manifest["shards"])
     published = cache_root / f"20260101_000000-{fid}"
@@ -284,7 +296,7 @@ def test_identical_identity_is_a_cache_hit_not_a_rebuild(cache_root, tmp_path, m
     def _fail_if_called(*a, **k):
         raise AssertionError("extract_tarball must not be called on a cache hit")
 
-    monkeypatch.setattr(extract_fixtures, "extract_tarball", _fail_if_called)
+    monkeypatch.setattr(extract_fixtures, "materialize_shard", _fail_if_called)
     _run_main(tmp_path, monkeypatch, manifest)
     out = capsys.readouterr()
     assert "Cache hit" in out.err
@@ -313,7 +325,13 @@ def test_full_refresh_builds_a_new_generation_without_touching_the_old_one(cache
         dest_dir.mkdir(parents=True, exist_ok=True)
         (dest_dir / "marker.txt").write_text(f"build #{call_count['n']}")
 
-    monkeypatch.setattr(extract_fixtures, "extract_tarball", _counting_extract_tarball)
+    monkeypatch.setattr(
+        extract_fixtures,
+        "materialize_shard",
+        lambda _shard, source, destination, verbose=False: _counting_extract_tarball(
+            source, destination, verbose
+        ),
+    )
     manifest = {"snapshot": "20260101_000000", "shards": [_shard("toolcalling/a.tar.gz", "hash1")]}
     _run_main(tmp_path, monkeypatch, manifest)
     out_v1 = capsys.readouterr().out.strip()
@@ -439,9 +457,9 @@ def test_refresh_publish_retries_past_a_colliding_generation_name(cache_root, tm
     real_write_state = extract_fixtures.write_state
     call_count = {"n": 0}
 
-    def _resolve_then_inject_competitor_after_the_second_call(cache_root_, pin_, fid_, pinned_shards_):
+    def _resolve_then_inject_competitor_after_the_second_call(cache_root_, pin_, fid_, pinned_shards_, inactive=()):
         call_count["n"] += 1
-        result = real_resolve(cache_root_, pin_, fid_, pinned_shards_)
+        result = real_resolve(cache_root_, pin_, fid_, pinned_shards_, inactive)
         if call_count["n"] == 2:
             # Call #1 selects the current generation for the publication
             # transition. Call #2 computes the refresh candidate, so an
@@ -484,9 +502,9 @@ def test_refresh_publish_collision_retry_negative_control(cache_root, tmp_path, 
     real_write_state = extract_fixtures.write_state
     call_count = {"n": 0}
 
-    def _resolve_then_inject_competitor_and_disable_retry_handling(cache_root_, pin_, fid_, pinned_shards_):
+    def _resolve_then_inject_competitor_and_disable_retry_handling(cache_root_, pin_, fid_, pinned_shards_, inactive=()):
         call_count["n"] += 1
-        result = real_resolve(cache_root_, pin_, fid_, pinned_shards_)
+        result = real_resolve(cache_root_, pin_, fid_, pinned_shards_, inactive)
         if call_count["n"] == 2:
             competitor = cache_root_ / f"{pin_}-{fid_}.refresh1"
             competitor.mkdir(parents=True)
@@ -520,15 +538,15 @@ def test_concurrent_double_publish_of_one_identity_is_a_safe_noop(cache_root, tm
 
     real_write_state = extract_fixtures.write_state
 
-    def _write_state_then_let_a_competitor_publish_first(snap_dir, snapshot, shards_):
-        real_write_state(snap_dir, snapshot, shards_)
+    def _write_state_then_let_a_competitor_publish_first(snap_dir, snapshot, shards_, inactive=()):
+        real_write_state(snap_dir, snapshot, shards_, inactive)
         # `snap_dir` here is THIS process's own tmp_dir, about to be renamed.
         # Publish the "other process's" identical-identity result at the real
         # published name right now, simulating it winning the race.
         published.mkdir(parents=True)
         (published / "toolcalling").mkdir()
         (published / "toolcalling" / "marker.txt").write_text("sentinel-from-the-other-publisher")
-        real_write_state(published, snapshot, shards_)
+        real_write_state(published, snapshot, shards_, inactive)
 
     monkeypatch.setattr(extract_fixtures, "write_state", _write_state_then_let_a_competitor_publish_first)
 

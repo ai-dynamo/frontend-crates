@@ -67,6 +67,8 @@ batch analog live in a separate band (e.g. partial-token chunking is
 
 Stream fixtures may include `delta_token_ids` on each chunk. Text-only chunks are enough for most parser families, but token-ID-dependent streaming parsers (currently vLLM's Harmony / `openai` parser) must record `delta_token_ids`; capture should mark those cases unavailable rather than inventing IDs.
 
+New sub-cases use numeric suffixes (`<num>-<num>` or `<letters/num>-<num>`) rather than letters. Existing lettered IDs remain historical identifiers.
+
 ## `TOOLCALLING.streamv2.50` — Partial-token chunking
 
 Streaming-only (no batch analog). Chunk boundary splits a grammar token

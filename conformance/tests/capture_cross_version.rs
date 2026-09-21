@@ -16,31 +16,372 @@
 //! cp conformance/tests/capture_cross_version.rs /tmp/old/conformance/tests/
 //! cd /tmp/old && \
 //!   XVER_INPUTS=<repo>/conformance/unified/inputs \
-//!   XVER_OUT=<repo>/conformance/unified/dynamo_v2-<label> \
-//!   XVER_LABEL=<label> \
+//!   XVER_OUT=<repo>/conformance/unified/dynamo_v2-<version> \
+//!   XVER_LABEL=<version> \
 //!   cargo test -p dynamo-conformance-fixtures-v2 --test capture_cross_version -- --nocapture
 //! ```
 //!
-//! Pick `<label>` as `<version>+<tag>` (e.g. `0.1.24+pre163`). The table sorts a `+tag`
-//! capture BEFORE the plain release it qualifies, so the released build stays the
-//! reference and the tagged one is the historical column.
+//! Plain versions require source equality with the release tag. `XVER_LABEL=current`
+//! records an unpublished source-qualified label and its fingerprint. Copy `common/`
+//! and `conformance/utils/src/unified_tools.json` to the same relative paths in the
+//! historical worktree: the common helper includes the shared schemas at compile time.
+//! Set `CONFORMANCE_DYNAMO_PROVENANCE_SCRIPT` to the current checker.
 //!
-//! It deliberately uses only `push`/`finish` — the smallest surface every build of the
-//! trait has had — so it compiles against old trees whose parser has no `initialize` or
-//! output-mode API. A build lacking those APIs runs every case in its only mode, and
-//! that IS the finding for a request-mode case.
+//! For old builds without request initialization, compile with
+//! `RUSTFLAGS='--cfg conformance_legacy_init --check-cfg=cfg(conformance_legacy_init)'`.
+//! Non-default requests are then recorded as unavailable, never as default-mode data.
+//! Builds predating UnifiedParser instead use `--cfg conformance_split_only`.
+//! Builds without ToolCallDelta::complete also require `--cfg conformance_legacy_terminal`.
 //!
 //! No-op unless `XVER_INPUTS` is set, so it costs nothing in a normal test run.
+
+#![allow(unexpected_cfgs)] // Historical runner cfg is intentionally not a crate feature.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use dynamo_parsers::{ReasoningParser, ReasoningParserType};
+use dynamo_parsers_v2::create_tool_parser_for_family;
+#[cfg(not(conformance_split_only))]
 use dynamo_parsers_v2::{
-    Tool, UnifiedEvent, UnifiedParserExt, assemble, create_tool_parser_for_family,
-    create_unified_parser_for_family,
+    UnifiedEvent, UnifiedParserExt, assemble, create_unified_parser_for_family,
 };
 use serde_json::{Value, json};
+
+mod common;
+use common::unified_tools as tools;
+
+type Captured = (Vec<Vec<serde_yaml::Value>>, Vec<serde_yaml::Value>);
+
+#[derive(Debug)]
+enum CaptureFailure {
+    Unavailable(String),
+    Error(String),
+}
+
+fn capture_step<T, E: std::fmt::Display>(
+    result: Result<T, E>,
+    stage: &str,
+) -> Result<T, CaptureFailure> {
+    result.map_err(|error| CaptureFailure::Error(format!("{stage}: {error:#}")))
+}
+
+fn capture_record(
+    result: Result<Captured, CaptureFailure>,
+    init: &common::Init,
+) -> serde_yaml::Value {
+    let mut record = serde_yaml::Mapping::new();
+    record.insert(
+        "init".into(),
+        serde_yaml::to_value(init).expect("case init"),
+    );
+    match result {
+        Ok((rows, assembled)) => {
+            record.insert("assembled".into(), serde_yaml::Value::Sequence(assembled));
+            let chunks = rows
+                .into_iter()
+                .map(|expected| {
+                    let mut row = serde_yaml::Mapping::new();
+                    row.insert("expected".into(), serde_yaml::Value::Sequence(expected));
+                    serde_yaml::Value::Mapping(row)
+                })
+                .collect();
+            record.insert("chunks".into(), serde_yaml::Value::Sequence(chunks));
+        }
+        Err(CaptureFailure::Unavailable(reason)) => {
+            record.insert("unavailable".into(), reason.into());
+        }
+        Err(CaptureFailure::Error(error)) => {
+            record.insert("error".into(), error.into());
+        }
+    }
+    serde_yaml::Value::Mapping(record)
+}
+
+fn requires_request_init(init: &common::Init) -> bool {
+    !matches!(init.starting_state.as_str(), "" | "None")
+        || !matches!(init.tool_output_mode.as_str(), "" | "Native")
+        || init.named_tool.is_some()
+}
+
+fn unavailable_init(init: &common::Init, native: bool) -> bool {
+    requires_request_init(init)
+        && (!native || cfg!(any(conformance_legacy_init, conformance_split_only)))
+}
+
+#[cfg(not(any(conformance_legacy_init, conformance_split_only)))]
+fn apply_init(
+    parser: &mut Box<dyn dynamo_parsers_v2::UnifiedParser>,
+    init: &common::Init,
+) -> Result<(), CaptureFailure> {
+    capture_step(init.try_apply(parser), "initialize_request")
+}
+
+#[cfg(all(conformance_legacy_init, not(conformance_split_only)))]
+fn apply_init(
+    _parser: &mut Box<dyn dynamo_parsers_v2::UnifiedParser>,
+    init: &common::Init,
+) -> Result<(), CaptureFailure> {
+    assert!(
+        !requires_request_init(init),
+        "unsupported request reached legacy parser"
+    );
+    Ok(())
+}
+
+#[test]
+fn capture_request_init_availability() {
+    for init in [
+        common::Init::default(),
+        common::Init {
+            starting_state: "None".into(),
+            tool_output_mode: "Native".into(),
+            named_tool: None,
+        },
+    ] {
+        assert!(!unavailable_init(&init, false));
+        assert!(!unavailable_init(&init, true));
+    }
+    for init in [
+        common::Init {
+            starting_state: "Reasoning".into(),
+            ..Default::default()
+        },
+        common::Init {
+            starting_state: "Response".into(),
+            ..Default::default()
+        },
+        common::Init {
+            tool_output_mode: "GuidedJson".into(),
+            ..Default::default()
+        },
+        common::Init {
+            named_tool: Some("get_weather".into()),
+            ..Default::default()
+        },
+    ] {
+        assert!(unavailable_init(&init, false));
+        assert_eq!(
+            unavailable_init(&init, true),
+            cfg!(any(conformance_legacy_init, conformance_split_only))
+        );
+    }
+}
+
+#[test]
+fn capture_producer_records_init_and_identity() {
+    // This exercises serialization and the producer loop, not just Init::apply:
+    // omitting the apply call still passes parser-level initialization tests.
+    let scratch =
+        std::env::temp_dir().join(format!("dynamo-capture-provenance-{}", std::process::id()));
+    let inputs = scratch.join("inputs/gemma4");
+    std::fs::create_dir_all(&inputs).unwrap();
+    let fixture = json!({"cases": {
+        "guided": {"input": "{\"city\":\"Paris\"}", "init": {
+            "tool_output_mode": "GuidedJson", "named_tool": "get_weather"
+        }},
+        "reasoning": {"input": "hidden<channel|>visible", "init": {"starting_state": "Reasoning"}},
+        "native": {"input": "plain response"}
+    }});
+    std::fs::write(
+        inputs.join("init.yaml"),
+        serde_yaml::to_string(&fixture).unwrap(),
+    )
+    .unwrap();
+    let missing = scratch.join("inputs/not_a_parser");
+    std::fs::create_dir_all(&missing).unwrap();
+    std::fs::write(
+        missing.join("missing.yaml"),
+        "cases:\n  absent:\n    input: test\n",
+    )
+    .unwrap();
+    let output = scratch.join("output");
+    let result = std::process::Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "capture_this_build_against_the_current_corpus",
+            "--nocapture",
+        ])
+        .env("XVER_INPUTS", scratch.join("inputs"))
+        .env("XVER_OUT", &output)
+        .env("XVER_LABEL", "current")
+        .env(
+            "XVER_FAMILIES",
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("utils/src/parser_families.yaml"),
+        )
+        .output()
+        .unwrap();
+    assert!(
+        result.status.success(),
+        "{}\n{}",
+        String::from_utf8_lossy(&result.stdout),
+        String::from_utf8_lossy(&result.stderr)
+    );
+    for key in ["guided", "reasoning", "native"] {
+        let doc: Value = serde_yaml::from_str(
+            &std::fs::read_to_string(output.join(format!("gemma4/{key}.yaml"))).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(doc["capture_provenance"]["kind"], "unpublished");
+        assert_eq!(
+            doc["captured_with"]["dynamo_v2"],
+            doc["capture_provenance"]["label"]
+        );
+        assert!(
+            doc["captured_with"]["dynamo_v2"]
+                .as_str()
+                .unwrap()
+                .ends_with(doc["capture_provenance"]["source_sha256"].as_str().unwrap())
+        );
+        let case = &doc["cases"][key];
+        assert_eq!(
+            case["capture_input"]["input"],
+            fixture["cases"][key]["input"]
+        );
+        assert_eq!(
+            case["capture_input"]["tools"],
+            common::unified_tool_schemas()
+        );
+        assert_eq!(
+            case["capture_input"]["chunks"]
+                .as_array()
+                .unwrap()
+                .last()
+                .unwrap(),
+            &json!({"delta_text":"‹finish›"})
+        );
+        if cfg!(any(conformance_legacy_init, conformance_split_only)) && key != "native" {
+            assert!(case["unavailable"].as_str().is_some());
+            assert!(case.get("assembled").is_none());
+        } else {
+            let expected = match key {
+                "guided" => {
+                    json!([{"kind":"tool_call", "name":"get_weather", "arguments":{"city":"Paris"}}])
+                }
+                "reasoning" => {
+                    json!([{"kind":"reasoning", "text":"hidden"}, {"kind":"text", "text":"visible"}])
+                }
+                _ => json!([{"kind":"text", "text":"plain response"}]),
+            };
+            assert_eq!(case["assembled"], expected, "{key}");
+        }
+    }
+    let missing_doc: Value = serde_yaml::from_str(
+        &std::fs::read_to_string(output.join("not_a_parser/absent.yaml")).unwrap(),
+    )
+    .unwrap();
+    assert!(
+        missing_doc["cases"]["absent"]["unavailable"]
+            .as_str()
+            .unwrap()
+            .contains("no parser")
+    );
+    assert!(missing_doc["cases"]["absent"].get("assembled").is_none());
+    std::fs::remove_dir_all(scratch).unwrap();
+}
+
+#[test]
+fn capture_failures_are_not_successful_empty_outputs() {
+    let init = common::Init::default();
+    for stage in [
+        "native push",
+        "native finish",
+        "split chunk push",
+        "split reasoning tail push",
+        "split chunk finish",
+        "split assembled push",
+        "split assembled finish",
+    ] {
+        let record = capture_record(
+            capture_step::<Captured, _>(Err("probe failure"), stage),
+            &init,
+        );
+        assert_eq!(
+            record["error"].as_str(),
+            Some(format!("{stage}: probe failure").as_str())
+        );
+        assert!(record.get("assembled").is_none());
+        assert!(record.get("chunks").is_none());
+    }
+    let unavailable = split_path_capture_with_parsers("gemma4", "not_a_parser", "text")
+        .map(|(rows, assembled)| (rows.into_iter().map(|_| Vec::new()).collect(), assembled));
+    assert!(
+        capture_record(unavailable, &init)["unavailable"]
+            .as_str()
+            .unwrap()
+            .contains("not_a_parser")
+    );
+    let empty = capture_record(Ok((Vec::new(), Vec::new())), &init);
+    assert!(empty["assembled"].as_sequence().unwrap().is_empty());
+    assert!(empty.get("error").is_none());
+}
+
+#[cfg(not(any(conformance_legacy_init, conformance_split_only)))]
+#[test]
+fn native_parser_errors_reach_capture_records() {
+    struct FailingParser {
+        on_finish: bool,
+    }
+    impl dynamo_parsers_v2::UnifiedParser for FailingParser {
+        fn parse_into(
+            &mut self,
+            _delta: &str,
+            _output: &mut dynamo_parsers_v2::UnifiedParserOutput,
+        ) -> anyhow::Result<()> {
+            if self.on_finish {
+                Ok(())
+            } else {
+                anyhow::bail!("push probe")
+            }
+        }
+        fn finish(&mut self) -> anyhow::Result<dynamo_parsers_v2::UnifiedParserOutput> {
+            anyhow::bail!("finish probe")
+        }
+    }
+    for on_finish in [false, true] {
+        let mut parser: Box<dyn dynamo_parsers_v2::UnifiedParser> =
+            Box::new(FailingParser { on_finish });
+        let init = common::Init::default();
+        let record = capture_record(native_capture(&mut parser, "text", &init), &init);
+        assert_eq!(
+            record["error"].as_str().unwrap(),
+            if on_finish {
+                "native finish: finish probe"
+            } else {
+                "native push: push probe"
+            }
+        );
+        assert!(record.get("assembled").is_none());
+    }
+}
+
+#[test]
+fn current_capture_selector_requires_the_verified_identity() {
+    let provenance = common::dynamo_capture_provenance(None);
+    let root = std::env::temp_dir().join(format!("dynamo-current-selector-{}", std::process::id()));
+    let selected = root.join(format!(
+        "dynamo_v2-{}",
+        provenance["label"].as_str().unwrap()
+    ));
+    let historical = root.join("dynamo_v2-0.0.1");
+    std::fs::create_dir_all(&historical).unwrap();
+    assert!(
+        std::panic::catch_unwind(|| common::version_dirs_ascending_with_current(
+            &root,
+            "dynamo_v2-",
+            common::UNIFIED_DYNAMO_V2_CURRENT_CAPTURE,
+        ))
+        .is_err()
+    );
+    std::fs::create_dir_all(&selected).unwrap();
+    let dirs = common::version_dirs_ascending_with_current(
+        &root,
+        "dynamo_v2-",
+        common::UNIFIED_DYNAMO_V2_CURRENT_CAPTURE,
+    );
+    assert_eq!(dirs, vec![historical, selected]);
+    std::fs::remove_dir_all(root).unwrap();
+}
 
 /// Corpus family -> (v1 reasoning parser, v2 tool parser) for the SPLIT path, read from
 /// the `unified:` block of `parser_families.yaml`.
@@ -80,7 +421,56 @@ fn tool_deltas(res: &dynamo_parsers_v2::ToolParseResult, out: &mut Vec<Value>) {
         out.push(json!({"kind": "text", "text": res.normal_text}));
     }
     for c in &res.calls {
-        out.push(json!({"kind": "tool_call", "name": c.name, "arguments": c.arguments}));
+        out.push(tool_delta_json(c));
+    }
+}
+
+fn tool_delta_json(c: &dynamo_parsers_v2::ToolCallDelta) -> Value {
+    let mut value = json!({"kind": "tool_call", "name": c.name, "arguments": c.arguments});
+    #[cfg(not(conformance_legacy_terminal))]
+    {
+        value["complete"] = json!(c.complete);
+    }
+    #[cfg(conformance_legacy_terminal)]
+    {
+        value["terminal_metadata_unavailable"] = json!("this build has no ToolCallDelta::complete");
+    }
+    value
+}
+
+#[cfg(not(conformance_legacy_terminal))]
+#[test]
+fn capture_preserves_tool_terminal_metadata() {
+    for complete in [false, true] {
+        let delta = dynamo_parsers_v2::ToolCallDelta {
+            tool_index: 0,
+            name: Some("f".into()),
+            arguments: "{}".into(),
+            complete,
+        };
+        assert_eq!(tool_delta_json(&delta)["complete"], json!(complete));
+        #[cfg(not(conformance_split_only))]
+        assert_eq!(
+            delta_to_yaml(&dynamo_parsers_v2::UnifiedParserEvent::ToolCall(delta))["complete"],
+            serde_yaml::Value::Bool(complete)
+        );
+    }
+}
+
+#[cfg(conformance_legacy_terminal)]
+#[test]
+fn capture_marks_legacy_terminal_metadata_unavailable() {
+    let mut parser =
+        create_tool_parser_for_family("qwen3_coder", &tools()).expect("qwen3 tool parser");
+    let mut result = parser
+        .push("<tool_call><function=f><parameter=x>ok</parameter></function></tool_call>")
+        .expect("push");
+    result.calls.extend(parser.finish().expect("finish").calls);
+    assert!(!result.calls.is_empty());
+    for delta in &result.calls {
+        let record = tool_delta_json(delta);
+        assert!(record.get("complete").is_none());
+        assert!(record["terminal_metadata_unavailable"].as_str().is_some());
     }
 }
 
@@ -93,9 +483,11 @@ fn split_path_chunks_with_parsers(
     reasoning_name: &str,
     tool_family: &str,
     input: &str,
-) -> Option<Vec<Vec<Value>>> {
+) -> Result<Vec<Vec<Value>>, CaptureFailure> {
     let mut rp = ReasoningParserType::get_reasoning_parser_from_name(reasoning_name);
-    let mut tp = create_tool_parser_for_family(tool_family, &tools()).ok()?;
+    let mut tp = create_tool_parser_for_family(tool_family, &tools()).map_err(|error| {
+        CaptureFailure::Unavailable(format!("split parser {tool_family}: {error:#}"))
+    })?;
 
     let mut rows = Vec::new();
     for chunk in chunk_input(input) {
@@ -105,7 +497,7 @@ fn split_path_chunks_with_parsers(
             deltas.push(json!({"kind": "reasoning", "text": rr.reasoning_text}));
         }
         if !rr.normal_text.is_empty() {
-            let tr = tp.push(&rr.normal_text).unwrap_or_default();
+            let tr = capture_step(tp.push(&rr.normal_text), "split chunk push")?;
             tool_deltas(&tr, &mut deltas);
         }
         rows.push(deltas);
@@ -117,14 +509,14 @@ fn split_path_chunks_with_parsers(
         tail.push(json!({"kind": "reasoning", "text": rf.reasoning_text}));
     }
     if !rf.normal_text.is_empty() {
-        let tr = tp.push(&rf.normal_text).unwrap_or_default();
+        let tr = capture_step(tp.push(&rf.normal_text), "split reasoning tail push")?;
         tool_deltas(&tr, &mut tail);
     }
-    tool_deltas(&tp.finish().unwrap_or_default(), &mut tail);
+    tool_deltas(&capture_step(tp.finish(), "split chunk finish")?, &mut tail);
     if !tail.is_empty() {
         rows.push(tail);
     }
-    Some(rows)
+    Ok(rows)
 }
 
 /// Marker-aligned chunking, byte-for-byte `unified_render::chunk_input`. The per-chunk
@@ -158,24 +550,7 @@ fn chunk_input(input: &str) -> Vec<String> {
     chunks
 }
 
-/// Identical to `unified_render::tools()`. The tool list is a parser INPUT — it is baked
-/// into the emitter at construction — so a different list here would read as a version
-/// difference.
-fn tools() -> Vec<Tool> {
-    let mk = |name: &str, key: &str| Tool {
-        name: name.to_string(),
-        description: None,
-        parameters: serde_json::json!({"type":"object","properties":{key:{"type":"string"}}}),
-        strict: None,
-    };
-    vec![
-        mk("get_weather", "city"),
-        mk("f", "x"),
-        mk("g", "y"),
-        mk("run", "cmd"),
-    ]
-}
-
+#[cfg(not(conformance_split_only))]
 fn ev_to_yaml(ev: &UnifiedEvent) -> serde_yaml::Value {
     serde_yaml::to_value(ev).expect("event serializes")
 }
@@ -248,7 +623,7 @@ fn split_path_capture_with_parsers(
     reasoning_name: &str,
     tool_family: &str,
     input: &str,
-) -> Option<(Vec<Vec<Value>>, Vec<serde_yaml::Value>)> {
+) -> Result<(Vec<Vec<Value>>, Vec<serde_yaml::Value>), CaptureFailure> {
     let rows = split_path_chunks_with_parsers(reasoning_name, tool_family, input)?;
 
     // The split serving path assembles reasoning over the WHOLE input before it
@@ -264,12 +639,14 @@ fn split_path_capture_with_parsers(
             "text": split.reasoning_text,
         })]);
     }
-    let mut tp = create_tool_parser_for_family(tool_family, &tools()).ok()?;
+    let mut tp = create_tool_parser_for_family(tool_family, &tools()).map_err(|error| {
+        CaptureFailure::Unavailable(format!("split parser {tool_family}: {error:#}"))
+    })?;
     for ch in split.normal_text.chars() {
         let mut buf = [0u8; 4];
         let mut deltas = Vec::new();
         tool_deltas(
-            &tp.push(ch.encode_utf8(&mut buf)).unwrap_or_default(),
+            &capture_step(tp.push(ch.encode_utf8(&mut buf)), "split assembled push")?,
             &mut deltas,
         );
         if !deltas.is_empty() {
@@ -277,20 +654,76 @@ fn split_path_capture_with_parsers(
         }
     }
     let mut tail = Vec::new();
-    tool_deltas(&tp.finish().unwrap_or_default(), &mut tail);
+    tool_deltas(
+        &capture_step(tp.finish(), "split assembled finish")?,
+        &mut tail,
+    );
     if !tail.is_empty() {
         assembled_rows.push(tail);
     }
     let assembled = fold_chunks(&assembled_rows);
-    Some((rows, assembled))
+    Ok((rows, assembled))
 }
 
-fn split_path_capture(
+#[cfg(not(conformance_split_only))]
+fn native_capture(
+    parser: &mut Box<dyn dynamo_parsers_v2::UnifiedParser>,
+    input: &str,
+    init: &common::Init,
+) -> Result<Captured, CaptureFailure> {
+    apply_init(parser, init)?;
+    let mut deltas = Vec::new();
+    let mut rows = Vec::new();
+    for ch in chunk_input(input) {
+        let chunk = capture_step(parser.push(&ch), "native push")?;
+        rows.push(chunk.iter().map(delta_to_yaml).collect());
+        deltas.extend(chunk);
+    }
+    let tail = capture_step(parser.finish(), "native finish")?;
+    if !tail.is_empty() {
+        rows.push(tail.iter().map(delta_to_yaml).collect());
+        deltas.extend(tail);
+    }
+    Ok((rows, assemble(&deltas).iter().map(ev_to_yaml).collect()))
+}
+
+fn capture_case(
     family: &str,
     input: &str,
-) -> Option<(Vec<Vec<Value>>, Vec<serde_yaml::Value>)> {
-    let (reasoning_name, tool_family) = parsers_for(family)?;
-    split_path_capture_with_parsers(&reasoning_name, &tool_family, input)
+    init: &common::Init,
+) -> Result<Captured, CaptureFailure> {
+    #[cfg(not(conformance_split_only))]
+    let native_error = match create_unified_parser_for_family(family, &tools()) {
+        Ok(mut parser) => {
+            if unavailable_init(init, true) {
+                return Err(CaptureFailure::Unavailable(
+                    "this build has no request initialization API".into(),
+                ));
+            }
+            return native_capture(&mut parser, input, init);
+        }
+        Err(error) => format!("{error:#}"),
+    };
+    #[cfg(conformance_split_only)]
+    let native_error = "this build predates UnifiedParser";
+    let (reasoning, tool) = parsers_for(family).ok_or_else(|| {
+        CaptureFailure::Unavailable(format!("no parser for {family}: {native_error}"))
+    })?;
+    if unavailable_init(init, false) {
+        return Err(CaptureFailure::Unavailable(
+            "split capture cannot apply the requested initialization".into(),
+        ));
+    }
+    let (rows, assembled) = split_path_capture_with_parsers(&reasoning, &tool, input)?;
+    let rows = rows
+        .into_iter()
+        .map(|row| {
+            row.into_iter()
+                .map(|value| serde_yaml::to_value(value).expect("delta"))
+                .collect()
+        })
+        .collect();
+    Ok((rows, assembled))
 }
 
 #[test]
@@ -313,6 +746,7 @@ fn split_capture_assembles_reasoning_over_the_whole_input() {
 /// Per-chunk rows record RAW deltas, not assembled events — `arguments` stays the
 /// literal fragment the parser emitted. Mirrors `unified_render::unified_delta_json`.
 /// (Assembling per chunk instead produces a mapping and makes every case look changed.)
+#[cfg(not(conformance_split_only))]
 fn delta_to_yaml(d: &dynamo_parsers_v2::UnifiedParserEvent) -> serde_yaml::Value {
     let v = match d {
         dynamo_parsers_v2::UnifiedParserEvent::Reasoning(text) => {
@@ -321,11 +755,60 @@ fn delta_to_yaml(d: &dynamo_parsers_v2::UnifiedParserEvent) -> serde_yaml::Value
         dynamo_parsers_v2::UnifiedParserEvent::Text(text) => {
             serde_json::json!({"kind": "text", "text": text})
         }
-        dynamo_parsers_v2::UnifiedParserEvent::ToolCall(c) => {
-            serde_json::json!({"kind": "tool_call", "name": c.name, "arguments": c.arguments, "complete": c.complete})
-        }
+        dynamo_parsers_v2::UnifiedParserEvent::ToolCall(c) => tool_delta_json(c),
     };
     serde_yaml::to_value(v).expect("delta serializes")
+}
+
+#[test]
+fn capture_rejects_missing_or_malformed_input_fields() {
+    let scratch =
+        std::env::temp_dir().join(format!("dynamo-capture-invalid-{}", std::process::id()));
+    for (index, fixture, reason) in [
+        (0, "{}", "cases mapping"),
+        (1, "cases: {1: {input: text}}", "case ID"),
+        (2, "cases: {'': {input: text}}", "case ID"),
+        (3, "cases: {probe: {}}", "string input"),
+        (4, "cases: {probe: {input: 123}}", "string input"),
+        (
+            5,
+            "cases: {probe: {input: text, tools: []}}",
+            "requested tools",
+        ),
+        (
+            6,
+            "cases: {probe: {input: text, chunks: []}}",
+            "requested chunks",
+        ),
+        (
+            7,
+            "cases: {probe: {input: text, finish_reason: 123}}",
+            "string finish_reason",
+        ),
+    ] {
+        let root = scratch.join(index.to_string());
+        let inputs = root.join("inputs/gemma4");
+        std::fs::create_dir_all(&inputs).unwrap();
+        std::fs::write(inputs.join("invalid.yaml"), fixture).unwrap();
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "capture_this_build_against_the_current_corpus",
+                "--nocapture",
+            ])
+            .env("XVER_INPUTS", root.join("inputs"))
+            .env("XVER_OUT", root.join("output"))
+            .env("XVER_LABEL", "current")
+            .output()
+            .unwrap();
+        assert!(!output.status.success());
+        assert!(
+            String::from_utf8_lossy(&output.stderr).contains(reason),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(!root.join("output").exists());
+    }
 }
 
 #[test]
@@ -334,112 +817,105 @@ fn capture_this_build_against_the_current_corpus() {
         return; // not a cross-version run
     };
     let out_root = PathBuf::from(std::env::var("XVER_OUT").expect("XVER_OUT"));
-    let label = std::env::var("XVER_LABEL").expect("XVER_LABEL");
+    let requested_label = std::env::var("XVER_LABEL").expect("XVER_LABEL");
+    let provenance = common::dynamo_capture_provenance(Some(&requested_label));
+    let label = provenance["label"].as_str().expect("capture label");
 
     let mut families: Vec<PathBuf> = std::fs::read_dir(Path::new(&inputs_root))
         .expect("inputs dir")
-        .filter_map(|e| e.ok().map(|e| e.path()))
+        .map(|e| e.expect("read inputs directory entry").path())
         .filter(|p| p.is_dir())
         .collect();
     families.sort();
 
     let mut total = 0usize;
-    let mut skipped_families = Vec::new();
     for fam_dir in families {
         let family = fam_dir.file_name().unwrap().to_string_lossy().to_string();
-        // Native unified parser if this build has one, else the SPLIT path — the same
-        // per-family mixture the live harness records. A family with neither is
-        // reported, not written as an empty dir: "no parser here" and "parser emitted
-        // nothing" must not look alike on the page.
-        let native = create_unified_parser_for_family(&family, &tools()).is_ok();
-        // Availability is whether THIS BUILD can construct the parsers, not whether the
-        // current registry names them. `XVER_FAMILIES` travels with the corpus and lists
-        // families a historical build never shipped, so a name-only check let such a
-        // family reach the capture and panic inside `split_path_capture` — taking down
-        // the whole run and discarding every family already captured before it.
-        let split_available = parsers_for(&family).is_some_and(|(_reasoning, tool)| {
-            create_tool_parser_for_family(&tool, &tools()).is_ok()
-        });
-        if !native && !split_available {
-            skipped_families.push(family);
-            continue;
-        }
         let mut cases: BTreeMap<String, serde_yaml::Value> = BTreeMap::new();
         let mut files: Vec<PathBuf> = std::fs::read_dir(&fam_dir)
             .expect("family dir")
-            .filter_map(|e| e.ok().map(|e| e.path()))
+            .map(|e| e.expect("read family directory entry").path())
             .filter(|p| p.extension().is_some_and(|x| x == "yaml"))
             .collect();
         files.sort();
         for fp in files {
             let doc: serde_yaml::Value =
                 serde_yaml::from_str(&std::fs::read_to_string(&fp).expect("read")).expect("yaml");
-            let Some(case_map) = doc.get("cases").and_then(|c| c.as_mapping()) else {
-                continue;
-            };
+            let case_map = doc
+                .get("cases")
+                .and_then(|c| c.as_mapping())
+                .expect("input document requires a cases mapping");
             for (cid, cdoc) in case_map {
-                let cid = cid.as_str().unwrap_or_default().to_string();
-                let input = cdoc.get("input").and_then(|v| v.as_str()).unwrap_or("");
-
-                let (per_chunk, assembled): (Vec<Vec<serde_yaml::Value>>, Vec<serde_yaml::Value>) =
-                    if native {
-                        let mut parser = create_unified_parser_for_family(&family, &tools())
-                            .expect("registered");
-                        let mut deltas = Vec::new();
-                        let mut rows = Vec::new();
-                        for ch in chunk_input(input) {
-                            // A push error is this build's honest answer for that chunk;
-                            // record no deltas rather than aborting the whole capture.
-                            let d = parser.push(&ch).unwrap_or_default();
-                            rows.push(d.iter().map(delta_to_yaml).collect::<Vec<_>>());
-                            deltas.extend(d);
-                        }
-                        let tail = parser.finish().unwrap_or_default();
-                        if !tail.is_empty() {
-                            // Its own row, as `dynamo_chunks` records it.
-                            rows.push(tail.iter().map(delta_to_yaml).collect::<Vec<_>>());
-                            deltas.extend(tail);
-                        }
-                        (rows, assemble(&deltas).iter().map(ev_to_yaml).collect())
-                    } else {
-                        let (rows, assembled) =
-                            split_path_capture(&family, input).expect("split path");
-                        let rows = rows
-                            .into_iter()
-                            .map(|r| {
-                                r.into_iter()
-                                    .map(|v| serde_yaml::to_value(v).expect("delta"))
-                                    .collect::<Vec<_>>()
-                            })
-                            .collect();
-                        (rows, assembled)
-                    };
-
-                let chunk_rows: Vec<serde_yaml::Value> = per_chunk
-                    .into_iter()
-                    .map(|expected| {
-                        let mut m = serde_yaml::Mapping::new();
-                        m.insert("expected".into(), serde_yaml::Value::Sequence(expected));
-                        serde_yaml::Value::Mapping(m)
+                let cid = cid
+                    .as_str()
+                    .filter(|s| !s.is_empty())
+                    .expect("case ID must be a nonempty string")
+                    .to_string();
+                let input = cdoc
+                    .get("input")
+                    .and_then(|v| v.as_str())
+                    .expect("case requires a string input");
+                let init: common::Init = cdoc
+                    .get("init")
+                    .map(|value| serde_yaml::from_value(value.clone()).expect("case init"))
+                    .unwrap_or_default();
+                let finish_reason = cdoc
+                    .get("finish_reason")
+                    .map(|value| {
+                        value
+                            .as_str()
+                            .expect("case requires a string finish_reason")
                     })
+                    .unwrap_or("stop");
+                let mut record = capture_record(capture_case(&family, input, &init), &init);
+                let chunks: Vec<_> = chunk_input(input)
+                    .into_iter()
+                    .chain(std::iter::once("‹finish›".to_string()))
+                    .map(|text| serde_json::json!({"delta_text":text}))
                     .collect();
-                let mut cm = serde_yaml::Mapping::new();
-                cm.insert("assembled".into(), serde_yaml::Value::Sequence(assembled));
-                cm.insert("chunks".into(), serde_yaml::Value::Sequence(chunk_rows));
-                cases.insert(cid, serde_yaml::Value::Mapping(cm));
+                let stimulus = serde_json::json!({
+                    "input":input,
+                    "init": {
+                        "starting_state": if init.starting_state.is_empty() { "None" } else { &init.starting_state },
+                        "tool_output_mode": if init.tool_output_mode.is_empty() { "Native" } else { &init.tool_output_mode },
+                        "named_tool":init.named_tool,
+                    },
+                    "finish_reason":finish_reason, "tools":common::unified_tool_schemas(), "chunks":chunks,
+                });
+                // This driver computes its delivery schedule. Refuse metadata that
+                // would claim it executed different tools or chunks. The completion
+                // reason is request metadata: this API's finish() takes no reason.
+                for field in ["tools", "chunks"] {
+                    if let Some(requested) = cdoc.get(field) {
+                        assert_eq!(
+                            serde_json::to_value(requested).unwrap(),
+                            stimulus[field],
+                            "capture driver cannot apply requested {field}"
+                        );
+                    }
+                }
+                record.as_mapping_mut().unwrap().insert(
+                    "capture_input".into(),
+                    serde_yaml::to_value(stimulus).unwrap(),
+                );
+                cases.insert(cid, record);
             }
         }
         let fam_out = out_root.join(&family);
         std::fs::create_dir_all(&fam_out).expect("mkdir");
         for (cid, case) in &cases {
             let mut cw = serde_yaml::Mapping::new();
-            cw.insert("dynamo_v2".into(), label.clone().into());
+            cw.insert("dynamo_v2".into(), label.into());
             let mut one = serde_yaml::Mapping::new();
             one.insert(cid.clone().into(), case.clone());
             let mut doc = serde_yaml::Mapping::new();
             doc.insert("family".into(), family.clone().into());
             doc.insert("mode".into(), "unified".into());
             doc.insert("captured_with".into(), serde_yaml::Value::Mapping(cw));
+            doc.insert(
+                "capture_provenance".into(),
+                serde_yaml::to_value(&provenance).expect("provenance"),
+            );
             doc.insert("cases".into(), serde_yaml::Value::Mapping(one));
             std::fs::write(
                 fam_out.join(format!("{cid}.yaml")),
@@ -451,8 +927,10 @@ fn capture_this_build_against_the_current_corpus() {
         println!("[xver] {family}: {} cases", cases.len());
     }
     println!("[xver] wrote {total} case files to {}", out_root.display());
-    if !skipped_families.is_empty() {
-        println!("[xver] no unified parser in this build for: {skipped_families:?}");
-    }
     assert!(total > 0, "captured nothing — check XVER_INPUTS layout");
+    assert_eq!(
+        common::dynamo_capture_provenance(Some(label)),
+        provenance,
+        "capture source changed during the run"
+    );
 }
