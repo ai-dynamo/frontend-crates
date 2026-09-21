@@ -1631,7 +1631,7 @@ EDGE += [
     ("guided_json_reasoning_markers_inside_native_parameter",
      "Guided reasoning contains a complete native f(x) invocation whose parameter value quotes the family's reasoning markers. "
      "The parameter owns those markers: they cannot close the surrounding thought or leak parameter tags into visible text. "
-     "The native invocation is suppressed; only the following guided Paris call dispatches. Unlike 31-33's Unicode and brace payload, this tests competing channel markers inside an argument.",
+     "The native invocation is suppressed; only the following guided Paris call dispatches. Unlike 34-8's Unicode and brace payload, this tests competing channel markers inside an argument.",
      ["I3", "I7"],
      [{"kind": "reasoning", "text": "before  after"},
       {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],

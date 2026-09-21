@@ -120,7 +120,7 @@ def test_recovery_successor_respects_string_schema():
 def test_optional_prefix_name_overlap_is_an_explicit_native_declared_tool_contract():
     scenario = "kimi_k2_optional_prefix_name_overlap"
     case = G.build_cases("kimi_k2")[f"UNIFIED.{scenario}.kimi_k2"]
-    assert numbered_id(scenario) == "UNIFIED.1-2"
+    assert numbered_id(scenario) == "UNIFIED.kimi_k2-1"
     assert G.scenario_families(scenario) == {"kimi_k2"}
     assert case["input"] == (
         "<|tool_calls_section_begin|><|tool_call_begin|>functions.:17"

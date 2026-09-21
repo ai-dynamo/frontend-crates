@@ -3322,8 +3322,9 @@ cases:
     policy:
     - I3
     - I5
-    display_id: UNIFIED.31-33
-    historical_ids: []
+    display_id: UNIFIED.34-8
+    historical_ids:
+    - UNIFIED.31-33
     request:
       input: '<|open|>think<|sep|>before <|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="string"<|sep|>é🙂<par{value}<|close|>argument<|sep|><|close|>call<|sep|> after<|close|>think<|sep|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -3474,12 +3475,13 @@ cases:
   retired__31_40:
     lifecycle: active
     scenario: guided_json_reasoning_markers_inside_native_parameter
-    description: 'Guided reasoning contains a complete native f(x) invocation whose parameter value quotes the family''s reasoning markers. The parameter owns those markers: they cannot close the surrounding thought or leak parameter tags into visible text. The native invocation is suppressed; only the following guided Paris call dispatches. Unlike 31-33''s Unicode and brace payload, this tests competing channel markers inside an argument.'
+    description: 'Guided reasoning contains a complete native f(x) invocation whose parameter value quotes the family''s reasoning markers. The parameter owns those markers: they cannot close the surrounding thought or leak parameter tags into visible text. The native invocation is suppressed; only the following guided Paris call dispatches. Unlike 34-8''s Unicode and brace payload, this tests competing channel markers inside an argument.'
     policy:
     - I3
     - I7
-    display_id: UNIFIED.31-40
-    historical_ids: []
+    display_id: UNIFIED.34-9
+    historical_ids:
+    - UNIFIED.31-40
     request:
       input: '<|open|>think<|sep|>before <|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="string"<|sep|><|open|>think<|sep|>quoted<|close|>think<|sep|><|close|>argument<|sep|><|close|>call<|sep|> after<|close|>think<|sep|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:

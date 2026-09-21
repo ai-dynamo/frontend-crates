@@ -1081,6 +1081,11 @@ def _materialized_record(case: dict, change: dict) -> tuple[dict, dict]:
     return record, change["document"]
 
 
+def materialized_record(case: dict, change: dict) -> tuple[dict, dict]:
+    """Return one history change in the loose-fixture record shape."""
+    return _materialized_record(case, change)
+
+
 def _capture_release_sort_key(runtime_version: str) -> tuple:
     release_version = runtime_version
     release, separator, prerelease = release_version.partition("-")

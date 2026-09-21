@@ -3514,8 +3514,9 @@ cases:
     policy:
     - I3
     - I5
-    display_id: UNIFIED.31-33
-    historical_ids: []
+    display_id: UNIFIED.34-8
+    historical_ids:
+    - UNIFIED.31-33
     request:
       input: '<|start|>assistant to=self<|message|>before <atem:invoke name="f">
 
@@ -3605,8 +3606,9 @@ cases:
     policy:
     - I3
     - I7
-    display_id: UNIFIED.31-34
-    historical_ids: []
+    display_id: UNIFIED.35-3
+    historical_ids:
+    - UNIFIED.31-34
     request:
       input: 'to=self<|message|>literal<|eom|><atem:invoke name="f"><atem:parameter name="x">{"city":"Rome"}</atem:parameter></atem:invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -3684,8 +3686,9 @@ cases:
     policy:
     - I3
     - I7
-    display_id: UNIFIED.31-35
-    historical_ids: []
+    display_id: UNIFIED.35-4
+    historical_ids:
+    - UNIFIED.31-35
     request:
       input: 'to=self<|message|>literal<|eom|><atem:invoke name="f"><atem:parameter name="x">[{"name":"get_weather","arguments":{"city":"Rome"}}]</atem:parameter></atem:invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -3763,8 +3766,9 @@ cases:
     policy:
     - I3
     - I5
-    display_id: UNIFIED.31-37
-    historical_ids: []
+    display_id: UNIFIED.muse-2
+    historical_ids:
+    - UNIFIED.31-37
     request:
       input: <atem:invoke name="x<|eom|>[{"name":"f","arguments":{}}]
       init:
@@ -3895,12 +3899,13 @@ cases:
   retired__31_40:
     lifecycle: active
     scenario: guided_json_reasoning_markers_inside_native_parameter
-    description: 'Guided reasoning contains a complete native f(x) invocation whose parameter value quotes the family''s reasoning markers. The parameter owns those markers: they cannot close the surrounding thought or leak parameter tags into visible text. The native invocation is suppressed; only the following guided Paris call dispatches. Unlike 31-33''s Unicode and brace payload, this tests competing channel markers inside an argument.'
+    description: 'Guided reasoning contains a complete native f(x) invocation whose parameter value quotes the family''s reasoning markers. The parameter owns those markers: they cannot close the surrounding thought or leak parameter tags into visible text. The native invocation is suppressed; only the following guided Paris call dispatches. Unlike 34-8''s Unicode and brace payload, this tests competing channel markers inside an argument.'
     policy:
     - I3
     - I7
-    display_id: UNIFIED.31-40
-    historical_ids: []
+    display_id: UNIFIED.34-9
+    historical_ids:
+    - UNIFIED.31-40
     request:
       input: '<|start|>assistant to=self<|message|>before <atem:invoke name="f">
 
@@ -6610,8 +6615,9 @@ cases:
     policy:
     - I3
     - I5
-    display_id: UNIFIED.50-2
-    historical_ids: []
+    display_id: UNIFIED.muse-3
+    historical_ids:
+    - UNIFIED.50-2
     request:
       input: 'I mean to=self<|message|>literal<|eom|><atem:invoke name="</atem:invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
