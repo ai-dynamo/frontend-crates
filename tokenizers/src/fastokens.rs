@@ -250,10 +250,6 @@ mod tests {
 
     #[test]
     fn vocabulary_metadata_forwards_to_hf_decoder() {
-        // Guards against the same class of bug CachedTokenizer's
-        // delegating overrides are exposed to: one-line forwarding methods
-        // silently reverting to trait defaults, or delegating to the
-        // wrong field.
         let fast = FastTokenizer::from_file(TOKENIZER_PATH).unwrap();
         let hf = HuggingFaceTokenizer::from_file(TOKENIZER_PATH).unwrap();
         assert_eq!(fast.vocab_size(), hf.vocab_size());

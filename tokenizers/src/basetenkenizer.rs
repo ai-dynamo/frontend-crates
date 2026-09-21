@@ -548,9 +548,6 @@ mod tests {
     #[test]
     fn vocab_introspection_accessors() {
         let plain = BasetenTokenizer::from_file(TOKENIZER_PATH).unwrap();
-        // `minimal-bpe/tokenizer.json` has 23 model-vocab entries and no
-        // added tokens: vocab_size is the model vocab, and there are no
-        // special-token ids to report.
         assert_eq!(plain.vocab_size(), Some(23));
         assert_eq!(plain.token_to_id("hello").unwrap(), None);
         assert_eq!(plain.token_to_id("h").unwrap(), Some(10));
@@ -573,18 +570,10 @@ mod tests {
         std::fs::write(&path, serde_json::to_vec(&json).unwrap()).unwrap();
 
         let with_added = BasetenTokenizer::from_file(path.to_str().unwrap()).unwrap();
-        // "<bos>" (id 23) is listed in both `model.vocab` and `added_tokens`,
-        // which is the layout real tokenizer.json files use for special
-        // tokens: the model vocab already covers it, so vocab_size must not
-        // double-count it -- 24, not 25.
         assert_eq!(with_added.vocab_size(), Some(24));
         assert_eq!(with_added.token_to_id("<bos>").unwrap(), Some(23));
         assert_eq!(with_added.special_token_ids().unwrap(), vec![23]);
 
-        // A second fixture where the added token is genuinely absent from
-        // the model vocab (as opposed to documenting an existing entry)
-        // confirms vocab_size still counts real additions, not just always
-        // falling back to the model size.
         let path2 = temp.path().join("tokenizer2.json");
         let mut json2: serde_json::Value =
             serde_json::from_str(&std::fs::read_to_string(TOKENIZER_PATH).unwrap()).unwrap();

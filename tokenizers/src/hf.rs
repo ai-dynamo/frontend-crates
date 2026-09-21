@@ -440,9 +440,6 @@ mod tests {
 
     #[test]
     fn num_special_tokens_added_reflects_post_processor_additions() {
-        // The `post_processor: null` case above only proves the `None` arm
-        // of `map_or`; this exercises the actual `added_tokens(false)` count
-        // against a TemplateProcessing post-processor that prepends <bos>.
         const TOKENIZER_JSON: &str = r#"{
             "version": "1.0",
             "truncation": null,

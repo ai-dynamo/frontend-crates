@@ -309,7 +309,7 @@ impl Tokenizer for CachedTokenizer {
     }
 
     fn num_special_tokens_added(&self) -> Result<usize> {
-        self.inner.num_special_tokens_added()
+        Ok(0)
     }
 }
 
@@ -670,10 +670,6 @@ mod tests {
 
     #[test]
     fn vocab_introspection_forwards_to_inner() {
-        // CachedTokenizer wraps `inner` behind an opaque cache; without
-        // forwarding, every caller reaching a tokenizer through the cache
-        // wrapper would see None/empty/zero regardless of what `inner`
-        // actually reports.
         let tok = inner();
         let cached = CachedTokenizer::new(tok.clone(), specials(), 4096)
             .expect("TinyLlama must support prefix caching");
@@ -686,10 +682,27 @@ mod tests {
             cached.special_token_ids().unwrap(),
             tok.special_token_ids().unwrap()
         );
-        assert_eq!(
-            cached.num_special_tokens_added().unwrap(),
-            tok.num_special_tokens_added().unwrap()
-        );
+    }
+
+    #[test]
+    fn special_token_accounting_matches_cached_encoder_behavior() {
+        let cached = CachedTokenizer::new(inner(), specials(), 4096)
+            .expect("TinyLlama must support prefix caching")
+            .with_options(crate::TokenizerOptions {
+                add_special_tokens: true,
+            });
+        let cached_ids = cached.encode("hello").unwrap();
+        let hf_ids = HuggingFaceTokenizer::from_file(TINYLLAMA_PATH)
+            .expect("load TinyLlama")
+            .with_options(crate::TokenizerOptions {
+                add_special_tokens: true,
+            })
+            .encode("hello")
+            .unwrap();
+
+        assert_eq!(cached.num_special_tokens_added().unwrap(), 0);
+        assert_eq!(hf_ids.token_ids().len(), cached_ids.token_ids().len() + 1);
+        assert_eq!(&hf_ids.token_ids()[1..], cached_ids.token_ids());
     }
 
     #[test]

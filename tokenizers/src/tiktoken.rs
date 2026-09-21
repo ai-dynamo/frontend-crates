@@ -494,12 +494,6 @@ mod tests {
 
     #[test]
     fn test_vocab_size_and_token_to_id_are_unsupported() {
-        // `tiktoken_rs::CoreBPE`'s `encoder` field is `pub(crate)`, so
-        // neither method can be implemented; `token_to_id` inherits the
-        // trait default (`Err`) rather than a hand-rolled `None` override.
-        // Guards against that default silently regressing to `Ok(None)`,
-        // which would make "unsupported" indistinguishable from "not
-        // found" again -- the exact bug this default exists to prevent.
         let dir = tempfile::tempdir().unwrap();
         let file_path = create_test_tiktoken_file(dir.path());
         let pattern = r"[\w]+|[^\w\s]+|\s+";
