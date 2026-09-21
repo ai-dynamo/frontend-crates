@@ -32,7 +32,7 @@ def _write(base, directory, record, key="UNIFIED.7-2"):
     return path
 
 
-@pytest.mark.parametrize("engine", ["dynamo_v2-0.5.3+pr213", "vllm_python-0.25.1", "vllm_rust-0.25.1", "sglang_python-0.5.16"])
+@pytest.mark.parametrize("engine", ["dynamo_v2-0.5.3", "vllm_python-0.25.1", "vllm_rust-0.25.1", "sglang_python-0.5.16"])
 def test_old_fx_capture_is_not_scored_against_new_run_cmd_input(tmp_path, monkeypatch, engine):
     old_text = '<｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true"> <think>quoted</think> <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; "x"\\\n </｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>'
     new_text = '<｜DSML｜ calls><｜DSML｜ invoke name="run"><｜DSML｜ parameter name="cmd" string="true">git log </｜DSML｜ invoke> --oneline</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>'
@@ -44,10 +44,10 @@ def test_old_fx_capture_is_not_scored_against_new_run_cmd_input(tmp_path, monkey
     capture = {"assembled": [event], "chunks": [{"expected": [event]}], "capture_input": capture_stimulus.capture_input(original)}
     path = _write(tmp_path, engine, capture)
     before = path.read_bytes()
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda captures: "0.5.3+pr213")
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda captures: "0.5.3")
     cases, _caps, _versions = table._load_unified_fixtures(tmp_path)
     if engine.startswith("dynamo_v2"):
-        record = cases[0]["dynamo_by_ver"]["0.5.3+pr213"]
+        record = cases[0]["dynamo_by_ver"]["0.5.3"]
     else:
         impl, version = engine.split("-", 1)
         record = cases[0]["peer_by_ver"][impl][version]
@@ -71,7 +71,7 @@ def test_old_fx_capture_is_not_scored_against_new_run_cmd_input(tmp_path, monkey
         assert engine.startswith("sglang_python-")
     _write(tmp_path, "inputs", original | {"scenario": "arg_marker_in_string"})
     cases, _caps, _versions = table._load_unified_fixtures(tmp_path)
-    record = (cases[0]["dynamo_by_ver"]["0.5.3+pr213"] if engine.startswith("dynamo_v2")
+    record = (cases[0]["dynamo_by_ver"]["0.5.3"] if engine.startswith("dynamo_v2")
               else cases[0]["peer_by_ver"][impl][version])
     assert "unavailable" not in record
     assert table._unified_classify("deepseek_v41", [event], record["assembled"]) == "MATCH"

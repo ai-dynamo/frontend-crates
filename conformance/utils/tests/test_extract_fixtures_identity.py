@@ -60,7 +60,7 @@ def cache_root(tmp_path, monkeypatch):
     monkeypatch.setattr(
         extract_fixtures,
         "materialize_shard",
-        lambda _shard, source, destination, verbose=False: _fake_extract_tarball(
+        lambda _shard, source, destination, *, derived_release_versions=None, verbose=False: _fake_extract_tarball(
             source, destination, verbose
         ),
     )
@@ -270,7 +270,7 @@ def test_interrupted_build_never_appears_at_the_published_name(cache_root, tmp_p
     monkeypatch.setattr(
         extract_fixtures,
         "materialize_shard",
-        lambda _shard, source, destination, verbose=False: _boom(
+        lambda _shard, source, destination, *, derived_release_versions=None, verbose=False: _boom(
             source, destination, verbose
         ),
     )
@@ -328,7 +328,7 @@ def test_full_refresh_builds_a_new_generation_without_touching_the_old_one(cache
     monkeypatch.setattr(
         extract_fixtures,
         "materialize_shard",
-        lambda _shard, source, destination, verbose=False: _counting_extract_tarball(
+        lambda _shard, source, destination, *, derived_release_versions=None, verbose=False: _counting_extract_tarball(
             source, destination, verbose
         ),
     )
