@@ -609,7 +609,7 @@ def test_renderer_uses_semantic_capture_directories(evidence, monkeypatch):
         "capture_input": capture_stimulus.capture_input(stimulus),
         "assembled": [{"kind": "text", "text": "captured"}],
     })
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda _captures: label)
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: label)
     cases, _caps, _versions = table._load_unified_fixtures(conf / "unified")
     assert cases[0]["dynamo"][0]["text"] == "captured"
 
@@ -620,7 +620,7 @@ def test_loose_reader_carries_a_prior_semantic_capture_to_current_release(tmp_pa
     _case(base, "inputs", key, {"scenario": "gemma4_guided_json_visible_call_prose_before_reasoning", "chunks": []})
     _case(base, "golden", key, {"assembled": []})
     _case(base, "dynamo_v2-0.6.0", key, {"assembled": [{"kind": "text", "text": "captured"}]})
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda _captures: "0.6.1")
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.6.1")
     cases, _caps, versions = table._load_unified_fixtures(base)
     assert versions["dynamo_v2_all"] == ["0.6.0", "0.6.1"]
     assert cases[0]["dynamo"][0]["text"] == "captured"
@@ -647,7 +647,7 @@ def test_conflicting_capture_aliases_fail_without_touching_files(tmp_path, monke
     _case(tmp_path, "dynamo_v2-0.3.4", "UNIFIED.31-29", {"assembled": []})
     _case(tmp_path, "dynamo_v2-0.3.4", "UNIFIED.g4-1", {"assembled": [{"kind": "text", "text": "conflict"}]})
     before = {p: p.read_bytes() for p in tmp_path.rglob("*.yaml")}
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda captures: "0.3.4")
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.3.4")
     with pytest.raises(ValueError, match="conflicting historical aliases"):
         table._load_unified_fixtures(tmp_path)
     assert {p: p.read_bytes() for p in tmp_path.rglob("*.yaml")} == before
@@ -658,7 +658,7 @@ def test_identical_capture_aliases_are_accepted_with_cached_records(tmp_path, mo
     record = {"assembled": [{"kind": "text", "text": "same"}]}
     _case(tmp_path, "dynamo_v2-0.3.4", "UNIFIED.31-29", record)
     _case(tmp_path, "dynamo_v2-0.3.4", "UNIFIED.g4-1", record)
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda captures: "0.3.4")
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.3.4")
 
     cases, _captures, _versions = table._load_unified_fixtures(tmp_path)
 

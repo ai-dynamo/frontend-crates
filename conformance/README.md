@@ -195,7 +195,7 @@ Do not substitute a loose harness feed for the package step. The v2 table reads 
 
 ### 3. Version rule: one capture name per crate version
 
-The Unified storage contract at the top of this document owns naming, carry-forward, source-origin metadata, and input-change rules for Unified. Crate publication follows [`../RELEASING.md`](../RELEASING.md#manual-version-peg-fixture-synced-releases); it does not introduce another capture naming scheme.
+Unified captures use plain crate versions, such as `dynamo_v2-0.6.1.yaml`. The first capture records its source SHA and Git commit as origin metadata. Later commits with the same version reuse that version; they do not create patch files or hash-qualified names. Readers select the version without inspecting source hashes or release tags, and carry unchanged family outputs forward from the latest capture at or before that version. Avoid changing existing test inputs; if an input must change, rerun and update every prior version affected by it. Crate publication follows [`../RELEASING.md`](../RELEASING.md#manual-version-peg-fixture-synced-releases).
 
 TODO (follow-up PR; Rust cleanup is deferred from #257): remove the deprecated `dynamo_version.py` JSON producer and `--select-capture` inventory protocol, `capture_stimulus.py --select-source-snapshot`, and their patch/source compatibility helpers after migrating `conformance/tests/common/mod.rs`, `capture_cross_version.rs`, and `unified_render.rs`. These Rust harnesses still require the old protocol and tests. Python report readers use only `--format label`; newly packaged Unified YAML uses only semantic versions. Shared-family tests remain deferred to #241, and recovery of the pre-existing missing vLLM captures remains in #256.
 
