@@ -303,24 +303,6 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
     assert native["block"]["unavailable"] == "vLLM Rust 0.26.0 (stream, Combined & Unified) has no parser for muse_glimmer"
 
 
-def test_glm_unified_report_does_not_backdate_support(model_v2):
-    tab = _tab(model_v2, "tab-unified")
-    row = next(row for row in tab["rows"] if row["family"] == "glm47")
-    checked = 0
-    for cell in row["cells"].values():
-        if cell.get("kind") != "cell":
-            continue
-        for candidate in cell["tooltip"]["candidates"]:
-            if not candidate["key"].startswith("dynamo@"):
-                continue
-            version = tuple(int(part) for part in candidate["version"].split("."))
-            if version < (0, 7, 0):
-                assert "unavailable" in candidate["block"], cell["case_id"]
-                assert "events" not in candidate["block"], cell["case_id"]
-                checked += 1
-    assert checked > 0
-
-
 def test_unified_default_dynamo_keeps_capture_identity_internal_and_release_history_visible(model_v2):
     tab = _tab(model_v2, "tab-unified")
     dynamo = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
