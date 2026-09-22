@@ -116,7 +116,7 @@ def test_fresh_peer_capture_binds_actual_input_and_remains_comparable(producer, 
         path.parent.mkdir(parents=True)
         path.write_text(yaml.safe_dump({"family": "gemma4", "cases": {"UNIFIED.3-1": value}}))
     monkeypatch.setattr(table, "_unified_base", lambda _root: tmp_path)
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda _captures: "missing-source")
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "missing-source")
     monkeypatch.setattr(generator, "CLEAN", [row for row in generator.CLEAN if row[0] == "text_only"])
     monkeypatch.setattr(generator, "EDGE", [])
     model = table._unified_tab_model(tmp_path, {})

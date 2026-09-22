@@ -786,7 +786,7 @@ def test_retained_unified_captures_cover_the_current_corpus():
     for (family, implementation), history in store.histories.items():
         if implementation != "dynamo_v2":
             continue
-        capture_id = unified_history._unique_capture_leaf(history.captures, str(history.path))
+        capture_id = history.ordered_capture_ids()[-1]
         for case_id in history.resolve(capture_id):
             case = history.family.cases[case_id]
             case_key = case["display_id"] or case["historical_ids"][0]

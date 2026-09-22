@@ -121,12 +121,26 @@ def _case(base, directory, key, record):
     path.write_text(yaml.safe_dump({"family": "gemma4", "mode": "unified", "cases": {key: record}}))
 
 
+@pytest.mark.parametrize("name", ["golden_spec", "golden_spec-1271640-0"])
+def test_merge_shards_discards_generated_unified_oracle_artifacts(evidence, name):
+    _conf, store, manifest, manifest_path = evidence
+    shard_path = f"unified/{name}.tar.gz"
+    path = store / shard_path
+    path.write_bytes(b"generated oracle")
+    manifest["shards"] = [
+        {"path": shard_path, "sha256": hashlib.sha256(path.read_bytes()).hexdigest(), "size": path.stat().st_size}
+    ]
+    manifest_path.write_text(json.dumps(manifest))
+
+    assert package_fixtures.merge_shards(
+        [], prune=False, fixtures_dir=store, manifest_path=manifest_path
+    ) == []
+
+
 def test_package_pins_unified_history_without_writing_an_archive(evidence, tmp_path, monkeypatch):
     _conf, _store, _manifest, _manifest_path = evidence
     history_root = tmp_path / "fixtures-unified-v2"
     family = {
-        "schema_version": 2,
-        "family": "gemma4",
         "input_document": {"family": "gemma4", "mode": "unified"},
         "golden_document": {"family": "gemma4", "mode": "unified"},
         "cases": {
@@ -149,15 +163,8 @@ def test_package_pins_unified_history_without_writing_an_archive(evidence, tmp_p
         },
     }
     capture = {
-        "schema_version": 2,
-        "family": "gemma4",
-        "implementation": "dynamo_v2",
-        "parent": None,
-        "runtime_version": "0.1.0",
         "provenance": {"status": "legacy", "captured_with": {"dynamo_v2": "0.1.0"}},
-        "completeness": "snapshot",
         "document": {},
-        "import_lineage": [],
         "changes": {},
         "metadata_changes": {},
         "document_overrides": {},
@@ -171,7 +178,6 @@ def test_package_pins_unified_history_without_writing_an_archive(evidence, tmp_p
     )
     monkeypatch.setattr(package_fixtures, "UNIFIED_HISTORY_DIR", history_root)
     monkeypatch.setattr(package_fixtures, "PER_SUBDIR_TREES", ("unified",))
-    monkeypatch.setattr(package_fixtures.dynamo_version, "dynamo_v2_label", lambda _root: "0.1.0")
 
     stage = tmp_path / "stage"
     _case(
@@ -209,11 +215,9 @@ def test_package_dry_run_does_not_update_unified_history(evidence, tmp_path, mon
         _capture_root,
         *,
         complete_snapshot,
-        excluded_capture_dirs,
-        required_capture_dirs,
+            required_capture_dirs,
     ):
         assert complete_snapshot is False
-        assert "dynamo_v2-0.6.0" in excluded_capture_dirs
         assert required_capture_dirs == frozenset()
         path = store_root / "families/gemma4/dynamo_v2-0.1.0.yaml"
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -264,17 +268,14 @@ def test_build_shards_passes_exact_inactive_unified_capture_directories(
         _loose,
         *,
         complete_snapshot,
-        excluded_capture_dirs,
         required_capture_dirs,
     ):
         observed["complete_snapshot"] = complete_snapshot
-        observed["excluded_capture_dirs"] = excluded_capture_dirs
         observed["required_capture_dirs"] = required_capture_dirs
         return []
 
     monkeypatch.setattr(package_fixtures, "PER_SUBDIR_TREES", ("unified",))
     monkeypatch.setattr(package_fixtures, "preserved_evidence", lambda: inactive)
-    monkeypatch.setattr(package_fixtures.dynamo_version, "dynamo_v2_label", lambda _root: "0.7.0")
     monkeypatch.setattr(unified_history, "update_store_from_loose", update_store)
     monkeypatch.setattr(unified_history, "store_digest", lambda _root: ("0" * 64, 0))
 
@@ -282,11 +283,7 @@ def test_build_shards_passes_exact_inactive_unified_capture_directories(
 
     assert observed == {
         "complete_snapshot": complete_snapshot,
-        "excluded_capture_dirs": {
-            "dynamo_v2-0.6.0",
-            "dynamo_v2-0.6.0.patch1",
-        },
-        "required_capture_dirs": {"dynamo_v2-0.7.0"} if complete_snapshot else frozenset(),
+        "required_capture_dirs": frozenset(),
     }
 
 
@@ -451,7 +448,14 @@ def test_extract_holds_generation_lock_through_shard_materialization(tmp_path, m
         assert release_reader.wait(timeout=5)
         return fixtures / "toolcalling/a.tar.gz"
 
-    def materialize_shard(_shard, _source, destination, verbose=False):
+    def materialize_shard(
+        _shard,
+        _source,
+        destination,
+        *,
+        derived_release_versions=None,
+        verbose=False,
+    ):
         destination.mkdir(parents=True, exist_ok=True)
         (destination / "materialized").write_text("old")
 
@@ -595,52 +599,32 @@ def test_complete_snapshot_rejects_corrupt_member_index(records):
         )
 
 
-def test_source_capture_patch_order_is_numeric_in_archives_and_renderer(evidence, monkeypatch):
-    conf, store, _manifest, _manifest_path = evidence
-    label = "0.6.0+source." + "b" * 64
+def test_renderer_uses_semantic_capture_directories(evidence, monkeypatch):
+    conf, _store, _manifest, _manifest_path = evidence
+    label = "0.6.1"
     base = f"dynamo_v2-{label}"
     stimulus = {"input": "latest", "tools": [], "chunks": [{"delta_text": "latest"}]}
     _case(conf / "unified", "inputs", "UNIFIED.1-1", stimulus)
-    names = [base, base + ".patch1", base + ".patch2", base + ".patch10"]
-    for name in names:
-        _case(conf / "unified", name, "UNIFIED.1-1", {
-            "capture_input": capture_stimulus.capture_input(stimulus),
-            "assembled": [{"kind": "text", "text": name}],
-        })
-        package_fixtures._tar_dir(conf / "unified" / name, f"unified/{name}", store / "unified" / f"{name}.tar.gz")
-    assert [path.name.removesuffix(".tar.gz") for path in fixture_disposition.capture_archive_layers(store, f"unified/{base}")] == names
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda _captures: label)
+    _case(conf / "unified", base, "UNIFIED.1-1", {
+        "capture_input": capture_stimulus.capture_input(stimulus),
+        "assembled": [{"kind": "text", "text": "captured"}],
+    })
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: label)
     cases, _caps, _versions = table._load_unified_fixtures(conf / "unified")
-    assert cases[0]["dynamo"][0]["text"] == names[-1]
+    assert cases[0]["dynamo"][0]["text"] == "captured"
 
 
-def test_loose_reader_excludes_only_quarantined_shard_and_preserves_pr_history(evidence, monkeypatch):
-    conf, _store, _manifest, _path = evidence
-    base = conf / "unified"
+def test_loose_reader_carries_a_prior_semantic_capture_to_current_release(tmp_path, monkeypatch):
+    base = tmp_path / "unified"
     key = "UNIFIED.gemma-1"
     _case(base, "inputs", key, {"scenario": "gemma4_guided_json_visible_call_prose_before_reasoning", "chunks": []})
     _case(base, "golden", key, {"assembled": []})
-    for directory, text, cid in [
-        ("dynamo_v2-0.6.0", "false", key),
-        ("dynamo_v2-0.6.0.patch3", "released", key),
-        ("dynamo_v2-0.3.4+pr166", "historical", "UNIFIED.31-29"),
-    ]:
-        _case(base, directory, cid, {"assembled": [{"kind": "text", "text": text}]})
-    observed = {}
-
-    def select(captures):
-        observed.update(captures)
-        return "0.6.0"
-
-    monkeypatch.setattr(table, "_unified_dynamo_label", select)
+    _case(base, "dynamo_v2-0.6.0", key, {"assembled": [{"kind": "text", "text": "captured"}]})
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.6.1")
     cases, _caps, versions = table._load_unified_fixtures(base)
-    assert versions["dynamo_v2_all"] == ["0.3.4+pr166", "0.6.0"]
-    assert cases[0]["dynamo"][0]["text"] == "released"
-    assert cases[0]["dynamo_by_ver"]["0.3.4+pr166"]["assembled"][0]["text"] == "historical"
-    assert "0.6.0" not in observed
-    assert len(observed["0.6.0.patch3"]["records"]) == 1
-    assert list(observed["0.3.4+pr166"]["records"].values()) == [None]
-    assert not observed["0.3.4+pr166"]["complete_snapshot"]
+    assert versions["dynamo_v2_all"] == ["0.6.0", "0.6.1"]
+    assert cases[0]["dynamo"][0]["text"] == "captured"
+    assert cases[0]["dynamo_by_ver"]["0.6.1"]["inherited_from"] == "0.6.0"
 
 
 @pytest.mark.parametrize(("family", "old", "new"), [
@@ -660,10 +644,10 @@ def test_historical_aliases_do_not_reassign_other_ids(family, old, new):
 
 def test_conflicting_capture_aliases_fail_without_touching_files(tmp_path, monkeypatch):
     _case(tmp_path, "inputs", "UNIFIED.gemma-1", {"scenario": "alias", "chunks": []})
-    _case(tmp_path, "dynamo_v2-0.3.4.patch2", "UNIFIED.31-29", {"assembled": []})
-    _case(tmp_path, "dynamo_v2-0.3.4.patch2", "UNIFIED.g4-1", {"assembled": [{"kind": "text", "text": "conflict"}]})
+    _case(tmp_path, "dynamo_v2-0.3.4", "UNIFIED.31-29", {"assembled": []})
+    _case(tmp_path, "dynamo_v2-0.3.4", "UNIFIED.g4-1", {"assembled": [{"kind": "text", "text": "conflict"}]})
     before = {p: p.read_bytes() for p in tmp_path.rglob("*.yaml")}
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda captures: "0.3.4")
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.3.4")
     with pytest.raises(ValueError, match="conflicting historical aliases"):
         table._load_unified_fixtures(tmp_path)
     assert {p: p.read_bytes() for p in tmp_path.rglob("*.yaml")} == before
@@ -672,9 +656,9 @@ def test_conflicting_capture_aliases_fail_without_touching_files(tmp_path, monke
 def test_identical_capture_aliases_are_accepted_with_cached_records(tmp_path, monkeypatch):
     _case(tmp_path, "inputs", "UNIFIED.gemma-1", {"scenario": "alias", "chunks": []})
     record = {"assembled": [{"kind": "text", "text": "same"}]}
-    _case(tmp_path, "dynamo_v2-0.3.4.patch2", "UNIFIED.31-29", record)
-    _case(tmp_path, "dynamo_v2-0.3.4.patch2", "UNIFIED.g4-1", record)
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda captures: "0.3.4")
+    _case(tmp_path, "dynamo_v2-0.3.4", "UNIFIED.31-29", record)
+    _case(tmp_path, "dynamo_v2-0.3.4", "UNIFIED.g4-1", record)
+    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.3.4")
 
     cases, _captures, _versions = table._load_unified_fixtures(tmp_path)
 
