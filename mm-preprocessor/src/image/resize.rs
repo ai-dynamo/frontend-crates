@@ -39,6 +39,14 @@ impl Resample {
         }
     }
 
+    /// Whether a two-axis resize runs the vertical pass first. Each pass
+    /// rounds to u8, so the order is visible in the output. ATen always goes
+    /// horizontal first; Pillow's `Image.resize` (12.3) shrinks an image
+    /// taller than 100× its width vertically first.
+    fn vertical_first(self, h: usize, w: usize, out_h: usize) -> bool {
+        matches!(self, Resample::Pil(_)) && h > w * 100 && out_h < h
+    }
+
     /// Fixed-point precision for one axis's already-normalized weights. ATen
     /// (`_compute_weights_precision`) takes the widest that stays inside i16.
     fn precision(self, weights: &[f64]) -> u32 {
@@ -240,6 +248,10 @@ fn resize_passes(
 ) -> Vec<u8> {
     let coeffs = |in_size, out_size| precompute_coeffs(in_size, out_size, resample);
     match (out_w != w, out_h != h) {
+        (true, true) if resample.vertical_first(h, w, out_h) => {
+            let tmp = resample_vertical(src, w, out_h, &coeffs(h, out_h));
+            resample_horizontal(&tmp, out_h, w, out_w, &coeffs(w, out_w))
+        }
         (true, true) => {
             let tmp = resample_horizontal(src, h, w, out_w, &coeffs(w, out_w));
             resample_vertical(&tmp, out_w, out_h, &coeffs(h, out_h))
@@ -280,6 +292,46 @@ pub fn scaled_dims(w: usize, h: usize, frac: Option<f64>, cap: Option<i64>) -> (
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Pillow resizes an image taller than 100× its width in two separate
+    /// calls, vertical first; ATen keeps horizontal first. Both orders round
+    /// to u8 in between, so on noise they disagree and the fused result must
+    /// equal the matching two-step composition.
+    #[test]
+    fn pass_order_follows_the_mirrored_library() {
+        let (h, w, oh, ow) = (303, 3, 150, 7);
+        let src: Vec<u8> = (0..h * w * 3)
+            .map(|i| (i as u32).wrapping_mul(2654435761).to_le_bytes()[3])
+            .collect();
+        let two_step = |first_vertical: bool, resample| {
+            if first_vertical {
+                let tmp = resize_rgb(&src, h, w, oh, w, resample);
+                resize_rgb(&tmp, oh, w, oh, ow, resample)
+            } else {
+                let tmp = resize_rgb(&src, h, w, h, ow, resample);
+                resize_rgb(&tmp, h, ow, oh, ow, resample)
+            }
+        };
+        for resample in [Resample::Pil(Filter::Bicubic), Resample::AtenU8] {
+            let vertical_first = matches!(resample, Resample::Pil(_));
+            assert_ne!(two_step(true, resample), two_step(false, resample));
+            assert_eq!(
+                resize_rgb(&src, h, w, oh, ow, resample),
+                two_step(vertical_first, resample),
+                "{resample:?}"
+            );
+        }
+        // Not shrinking, or not tall enough: horizontal first for both.
+        for (h2, oh2) in [(303, 400), (299, 150)] {
+            let src2 = &src[..h2.min(h) * w * 3];
+            let h2 = h2.min(h);
+            let tmp = resize_rgb(src2, h2, w, h2, ow, Resample::Pil(Filter::Bicubic));
+            assert_eq!(
+                resize_rgb(src2, h2, w, oh2, ow, Resample::Pil(Filter::Bicubic)),
+                resize_rgb(&tmp, h2, ow, oh2, ow, Resample::Pil(Filter::Bicubic))
+            );
+        }
+    }
 
     // A 6x8 RGB noise source and the outputs PIL and torchvision produce for
     // it, captured from the Python implementations this module mirrors. Noise
