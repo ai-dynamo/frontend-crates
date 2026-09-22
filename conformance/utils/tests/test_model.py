@@ -309,9 +309,8 @@ def test_unified_default_dynamo_keeps_capture_identity_internal_and_release_hist
     release = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo@0.6.0")
 
     requested = dynamo_v2_label(REPO)
-    assert requested == "0.6.1"
     assert dynamo["version"] == requested
-    assert dynamo["label"] == "Dynamo v2 Rust 0.6.1 (stream, Combined & Unified)"
+    assert dynamo["label"] == f"Dynamo v2 Rust {requested} (stream, Combined & Unified)"
     assert "+source." not in dynamo["label"]
     assert all("+source." not in candidate["key"] for candidate in tab["candidates"])
     assert dynamo["default_bucket"] == "A"
