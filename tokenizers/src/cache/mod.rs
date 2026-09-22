@@ -92,8 +92,6 @@ pub struct CachedTokenizer {
     inner: Arc<dyn Tokenizer>,
     l1: L1Cache,
     l1_enabled: bool,
-    /// When true, cache the newly-tokenized suffix on a partial hit so the next turn
-    /// of a growing conversation hits deeper (see [`L1Cache::extend_after_match_with_hash`]).
     extend_on_hit: bool,
     /// Called once after every successful encode while L1 is active.
     token_observer: Option<CacheTokenUsageFn>,
@@ -213,10 +211,6 @@ impl CachedTokenizer {
 
 impl Encoder for CachedTokenizer {
     fn encode(&self, input: &str) -> Result<Encoding> {
-        // No specials => no boundaries are ever produced. Skip the lookup, miss-counter
-        // bump, and insert attempt entirely — otherwise the tiktoken wrapping path (which
-        // deliberately passes an empty list) pays the cost on every call with no chance
-        // of a hit.
         if !self.l1_enabled {
             return self.inner.encode(input);
         }
@@ -243,8 +237,7 @@ impl Encoder for CachedTokenizer {
             )?)
         } else {
             let suffix_enc = self.inner.encode(&input[matched.prefix_len..])?;
-            // Reserve exact capacity so appending the suffix doesn't grow-realloc and
-            // re-copy the (large) cached prefix.
+            // Reserve once to avoid copying the cached prefix during vector growth.
             let mut merged: Vec<TokenIdType> =
                 Vec::with_capacity(matched.tokens.len() + suffix_enc.token_ids().len());
             merged.extend_from_slice(&matched.tokens);

@@ -53,7 +53,6 @@ pub(super) struct PrefixMatch {
     pub(super) tokens: Arc<[TokenIdType]>,
     pub(super) prefix_len: usize,
     deepest_boundary: usize,
-    // Absent only for callers of the existing public extension method.
     deepest_hash: Option<Blake3Hash>,
 }
 
@@ -63,7 +62,7 @@ pub(super) enum PrefixLookup {
     Miss(Vec<(usize, Blake3Hash)>),
 }
 
-/// Hash sorted boundary prefixes incrementally, without allocating a second collection.
+/// Hash sorted boundary prefixes incrementally.
 fn hash_prefixes<'a>(
     input: &'a str,
     boundaries: &'a [usize],
@@ -235,8 +234,7 @@ impl L1Cache {
     }
 
     /// Look up the longest cached prefix, retaining hashes for extension or population.
-    /// The returned offsets and digests must be used with this same input. On a hit,
-    /// the deepest digest can differ from the key that supplied the cached tokens.
+    /// The returned offsets and digests must be used with this same input.
     pub(super) fn lookup_prefix(&self, input: &str) -> PrefixLookup {
         let boundaries = self.boundaries(input);
 
@@ -248,20 +246,15 @@ impl L1Cache {
             return PrefixLookup::Miss(Vec::new());
         }
 
-        // Build all prefix hashes incrementally — O(N).
         let prefix_hashes: Vec<_> = hash_prefixes(input, &boundaries).collect();
 
-        // Search from the longest boundary down — return first hit. moka updates recency
-        // and frequency on `get`, so no manual timestamp bookkeeping is needed.
         for &(boundary_pos, hash_bytes) in prefix_hashes.iter().rev() {
             if let Some(tokens) = self.cache.get(&hash_bytes) {
                 self.hits.fetch_add(1, Ordering::Relaxed);
                 if let Some(cb) = &self.on_hit {
                     cb();
                 }
-                // Return the shared `Arc` directly — the caller decides whether to
-                // materialize a `Vec` (and reserves exact capacity when it does),
-                // avoiding a clone of the (large) cached prefix on every hit.
+                // Share cached tokens to avoid copying the prefix during lookup.
                 let &(deepest_boundary, deepest_hash) =
                     prefix_hashes.last().expect("prefix hashes is non-empty");
                 return PrefixLookup::Hit(PrefixMatch {
@@ -329,20 +322,16 @@ impl L1Cache {
         let (mut running, tail_start) =
             self.populate_boundaries(input, prefix_hashes, tokenizer)?;
         if tail_start == 0 {
-            // No special tokens present — nothing cacheable; a single plain encode.
             return Ok(tokenizer.encode(input)?.token_ids().to_vec());
         }
 
-        // The trailing segment after the last boundary is not a cache key (boundaries
-        // exclude input.len()); encoding it completes the full tokenization.
         let tail = tokenizer.encode(&input[tail_start..])?;
         running.extend_from_slice(tail.token_ids());
         Ok(running)
     }
 
     /// Tokenize each segment and cache its cumulative prefix with the supplied digest.
-    /// Return the running tokens and last boundary. Earlier entries survive a later
-    /// encode failure, as they do for public callers that compute hashes lazily.
+    /// Return the running tokens and last boundary. Earlier entries survive later encode failures.
     fn populate_boundaries<E: Encoder + ?Sized>(
         &self,
         input: &str,
@@ -367,8 +356,6 @@ impl L1Cache {
             let seg = tokenizer.encode(&input[last_pos..boundary_pos])?;
             running_tokens.extend_from_slice(seg.token_ids());
 
-            // Snapshot the cumulative prefix as Arc<[T]> and hand it to moka (the weigher
-            // charges its token bytes against the budget; eviction is moka's job).
             let prefix_tokens: Arc<[TokenIdType]> = running_tokens.as_slice().into();
             self.cache.insert(hash_bytes, prefix_tokens);
 
@@ -429,30 +416,19 @@ impl L1Cache {
             deepest_boundary,
             deepest_hash,
         } = matched;
-        // `deepest_boundary` (from `longest_prefix_match`) is the deepest special-token
-        // boundary in `input`; split there only if it lies strictly past the matched
-        // prefix. Strict `>` avoids re-inserting the entry we just matched. Boundaries
-        // exclude any position == input.len(), so `deepest < input.len()` and the trailing
-        // segment below is always non-empty.
+        // Boundaries exclude input.len(), so the trailing segment is nonempty.
         let deepest = (deepest_boundary > prefix_len).then_some(deepest_boundary);
 
         let Some(deepest) = deepest else {
-            // No new boundary in the suffix — nothing worth caching. Encode the suffix
-            // once and merge, identical to the non-extend hit path. Reserve exact capacity
-            // so the prefix isn't re-copied by a Vec grow-realloc.
             let suffix_enc = tokenizer.encode(&input[prefix_len..])?;
+            // Reserve once to avoid copying the cached prefix during vector growth.
             let mut merged = Vec::with_capacity(prefix_tokens.len() + suffix_enc.token_ids().len());
             merged.extend_from_slice(&prefix_tokens);
             merged.extend_from_slice(suffix_enc.token_ids());
             return Ok(merged);
         };
 
-        // Cumulative tokens up to `deepest` = matched prefix + the spanning segment.
-        // Both `prefix_len` and `deepest` are special-token boundaries, so encoding the
-        // span as one chunk and concatenating preserves the merge invariant.
-        // Encode both segments up front so `cumulative` can be reserved to its final
-        // size (prefix + seg_a + seg_b) — this eliminates the two grow-reallocs (each of
-        // which re-copied the whole large prefix) the previous Vec-append path incurred.
+        // Encode both segments first to reserve capacity without recopying the prefix.
         let seg_a = tokenizer.encode(&input[prefix_len..deepest])?;
         let seg_b = tokenizer.encode(&input[deepest..])?;
         let mut cumulative = Vec::with_capacity(
@@ -471,13 +447,10 @@ impl L1Cache {
             *blake3::hash(&input.as_bytes()[..deepest]).as_bytes()
         );
 
-        // Snapshot prefix+seg_a (`as_slice().into()` copies only the populated len, not the
-        // reserved capacity) and cache it.
+        // Copy only the populated prefix, excluding capacity reserved for the tail.
         let tokens: Arc<[TokenIdType]> = cumulative.as_slice().into();
         self.cache.insert(hash_bytes, tokens);
 
-        // Append the trailing segment for the returned result — no realloc, capacity was
-        // reserved above.
         cumulative.extend_from_slice(seg_b.token_ids());
         Ok(cumulative)
     }
@@ -868,11 +841,6 @@ mod tests {
 
     #[test]
     fn extend_after_match_persists_correct_deepest_entry() {
-        // The *saved* entry on a partial hit — not just the returned merge — must be
-        // byte-exact and retrievable: a fresh lookup hits at the just-cached deepest
-        // boundary and returns exactly `encode(input[0..deepest])`, so the next turn
-        // reuses a correct prefix. Also proves the deepest-only invariant: extend
-        // persists exactly one new entry.
         let tok = load_tokenizer();
         for unicode in [false, true] {
             let turns: Vec<_> = growing_chat_turns(3)
@@ -915,8 +883,6 @@ mod tests {
                 "extend must persist exactly one (deepest) entry"
             );
 
-            // The deepest boundary strictly past the matched prefix is what extend cached, and
-            // `longest_prefix_match` must have handed back exactly that boundary (no rescan).
             let deepest = find_special_token_boundaries(&turns[1], SPECIALS)
                 .into_iter()
                 .rev()
@@ -927,8 +893,6 @@ mod tests {
                 "longest_prefix_match must return the deepest boundary used by extend"
             );
 
-            // A fresh lookup must now hit AT that deepest boundary, and the stored tokens must
-            // equal the uncached encode of exactly that prefix.
             let (saved_tokens, saved_offset, _deepest) = cache
                 .longest_prefix_match(&turns[1])
                 .expect("hit after extend");
@@ -1083,8 +1047,6 @@ mod tests {
 
     #[test]
     fn populate_and_encode_matches_uncached_and_seeds_cache() {
-        // The fused miss path must (a) return ids byte-exact to an uncached encode and
-        // (b) leave the cache populated at the boundaries, so a follow-up lookup hits.
         let tok = load_tokenizer();
         for input in [
             "<s>system\nYou are helpful.</s><s>user\nHello there, friend.</s>",
@@ -1125,8 +1087,6 @@ mod tests {
 
     #[test]
     fn populate_and_encode_handles_inputs_without_special_tokens() {
-        // No registered special appears in the input → no boundaries → one plain encode,
-        // nothing cached, still byte-exact.
         let tok = load_tokenizer();
         for input in ["", "plain text with no special tokens at all", "<s>"] {
             for reuse_hashes in [false, true] {
@@ -1142,9 +1102,7 @@ mod tests {
 
     #[test]
     fn populate_and_encode_handles_trailing_special_token() {
-        // Input ending in a special token: the final boundary == input.len() is excluded,
-        // so the trailing `</s>` lands in the tail segment. The assembled ids must still
-        // equal an uncached encode.
+        // The boundary at input.len() is excluded, leaving the final `</s>` in the tail.
         let tok = load_tokenizer();
         let input = "<s>system\nDone.</s>";
         for reuse_hashes in [false, true] {
