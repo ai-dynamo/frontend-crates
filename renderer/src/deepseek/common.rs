@@ -242,10 +242,11 @@ pub(crate) fn normalize_message_contents(messages: &mut [JsonValue], non_text: N
         let Some(content) = msg.get("content") else {
             continue;
         };
-        if !content.is_string()
-            && !content.is_array()
-            && non_text == NormalizeNonText::LeaveUntouched
-        {
+        // Text content is already normalized. Keep its allocation in place.
+        if content.is_string() {
+            continue;
+        }
+        if !content.is_array() && non_text == NormalizeNonText::LeaveUntouched {
             continue;
         }
         let normalized = extract_visible_text(content);
@@ -317,17 +318,20 @@ fn preserve_user_fields(target: &mut JsonValue, source: &JsonValue) {
 
 // Merge `tool` role messages into preceding user `content_blocks` and collapse
 // consecutive user turns, matching Python's `merge_tool_messages`.
-pub(crate) fn merge_tool_messages(messages: &[JsonValue]) -> Vec<JsonValue> {
+pub(crate) fn merge_tool_messages(messages: Vec<JsonValue>) -> Vec<JsonValue> {
     let mut merged: Vec<JsonValue> = Vec::with_capacity(messages.len());
 
-    for msg in messages {
+    for mut msg in messages {
         let role = msg.get("role").and_then(|r| r.as_str()).unwrap_or("");
 
         if role == "tool" {
+            let obj = msg
+                .as_object_mut()
+                .expect("a message with a role is an object");
             let tool_block = serde_json::json!({
                 "type": "tool_result",
-                "tool_use_id": msg.get("tool_call_id").cloned().unwrap_or_else(|| JsonValue::String(String::new())),
-                "content": msg.get("content").cloned().unwrap_or_else(|| JsonValue::String(String::new())),
+                "tool_use_id": obj.remove("tool_call_id").unwrap_or_else(|| JsonValue::String(String::new())),
+                "content": obj.remove("content").unwrap_or_else(|| JsonValue::String(String::new())),
             });
 
             let can_merge = merged
@@ -381,7 +385,7 @@ pub(crate) fn merge_tool_messages(messages: &[JsonValue]) -> Vec<JsonValue> {
                     })
                     .is_some();
                 if appended {
-                    preserve_user_fields(last, msg);
+                    preserve_user_fields(last, &msg);
                 }
             } else {
                 let mut new_msg = serde_json::json!({
@@ -389,11 +393,11 @@ pub(crate) fn merge_tool_messages(messages: &[JsonValue]) -> Vec<JsonValue> {
                     "content": text,
                     "content_blocks": [text_block],
                 });
-                preserve_user_fields(&mut new_msg, msg);
+                preserve_user_fields(&mut new_msg, &msg);
                 merged.push(new_msg);
             }
         } else {
-            merged.push(msg.clone());
+            merged.push(msg);
         }
     }
 
