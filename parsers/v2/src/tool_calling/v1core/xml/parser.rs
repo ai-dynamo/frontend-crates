@@ -475,9 +475,6 @@ fn get_arguments_config(
 ///
 /// **Special cases:**
 /// ```text
-/// Input:  param_value="null", param_type="null"
-/// Output: Value::Null
-///
 /// Input:  param_value="&lt;tag&gt;", param_type="string"
 /// Output: Value::String("<tag>")  // HTML entities are unescaped
 ///

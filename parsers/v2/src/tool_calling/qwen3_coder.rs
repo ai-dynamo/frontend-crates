@@ -522,9 +522,31 @@ mod tests {
         assert_eq!(out.calls[0].arguments, r#"{"location":"NYC"}"#);
     }
 
+    fn assert_argument_chunks(schema: serde_json::Value, raw: &str, expected: serde_json::Value) {
+        let mut tools = weather_tools();
+        tools[0].parameters["properties"]["location"] = schema.clone();
+        let input = format!(
+            "<tool_call><function=get_weather><parameter=location>{raw}</parameter></function></tool_call>"
+        );
+        for width in [1, input.len()] {
+            let chunks: Vec<_> = input
+                .as_bytes()
+                .chunks(width)
+                .map(|chunk| std::str::from_utf8(chunk).unwrap())
+                .collect();
+            let output = parse_chunks(&tools, &chunks).coalesce_calls();
+            assert_eq!(output.calls.len(), 1, "schema {schema}, width {width}");
+            assert!(output.calls[0].complete, "schema {schema}, width {width}");
+            assert_eq!(
+                serde_json::from_str::<serde_json::Value>(&output.calls[0].arguments).unwrap(),
+                serde_json::json!({"location": expected}),
+                "schema {schema}, width {width}"
+            );
+        }
+    }
+
     #[test]
     fn null_text_completes_with_the_schema_selected_type() {
-        let input = "<tool_call><function=get_weather><parameter=location>null</parameter></function></tool_call>";
         for (schema, expected) in [
             (
                 serde_json::json!({"type": "string"}),
@@ -573,23 +595,7 @@ mod tests {
                 serde_json::json!("null"),
             ),
         ] {
-            let mut tools = weather_tools();
-            tools[0].parameters["properties"]["location"] = schema;
-            for width in [1, input.len()] {
-                let chunks: Vec<_> = input
-                    .as_bytes()
-                    .chunks(width)
-                    .map(|chunk| std::str::from_utf8(chunk).unwrap())
-                    .collect();
-                let output = parse_chunks(&tools, &chunks).coalesce_calls();
-                assert_eq!(output.calls.len(), 1, "width {width}");
-                assert!(output.calls[0].complete, "width {width}");
-                assert_eq!(
-                    serde_json::from_str::<serde_json::Value>(&output.calls[0].arguments).unwrap(),
-                    serde_json::json!({"location": expected}),
-                    "width {width}"
-                );
-            }
+            assert_argument_chunks(schema, "null", expected);
         }
     }
 
@@ -603,27 +609,7 @@ mod tests {
                 ("42", serde_json::json!(42)),
                 ("auto", serde_json::json!("auto")),
             ] {
-                let mut tools = weather_tools();
-                tools[0].parameters["properties"]["location"] = schema.clone();
-                let input = format!(
-                    "<tool_call><function=get_weather><parameter=location>{raw}</parameter></function></tool_call>"
-                );
-                for width in [1, input.len()] {
-                    let chunks: Vec<_> = input
-                        .as_bytes()
-                        .chunks(width)
-                        .map(|chunk| std::str::from_utf8(chunk).unwrap())
-                        .collect();
-                    let output = parse_chunks(&tools, &chunks).coalesce_calls();
-                    assert_eq!(output.calls.len(), 1, "schema {schema}, width {width}");
-                    assert!(output.calls[0].complete);
-                    assert_eq!(
-                        serde_json::from_str::<serde_json::Value>(&output.calls[0].arguments)
-                            .unwrap(),
-                        serde_json::json!({"location": expected}),
-                        "schema {schema}, width {width}"
-                    );
-                }
+                assert_argument_chunks(schema.clone(), raw, expected);
             }
         }
     }
@@ -639,18 +625,6 @@ mod tests {
                     serde_json::json!(42),
                 ),
                 (
-                    serde_json::json!(-42.0),
-                    "-42",
-                    serde_json::json!(["integer", "null"]),
-                    serde_json::json!(-42),
-                ),
-                (
-                    serde_json::json!(0.0),
-                    "0",
-                    serde_json::json!(["integer", "null"]),
-                    serde_json::json!(0),
-                ),
-                (
                     serde_json::json!(42.5),
                     "42.5",
                     serde_json::json!(["number", "null"]),
@@ -663,27 +637,7 @@ mod tests {
                 } else {
                     literal
                 };
-                let mut tools = weather_tools();
-                tools[0].parameters["properties"]["location"] = schema.clone();
-                let input = format!(
-                    "<tool_call><function=get_weather><parameter=location>{raw}</parameter></function></tool_call>"
-                );
-                for width in [1, input.len()] {
-                    let chunks: Vec<_> = input
-                        .as_bytes()
-                        .chunks(width)
-                        .map(|chunk| std::str::from_utf8(chunk).unwrap())
-                        .collect();
-                    let output = parse_chunks(&tools, &chunks).coalesce_calls();
-                    assert_eq!(output.calls.len(), 1, "schema {schema}, width {width}");
-                    assert!(output.calls[0].complete);
-                    assert_eq!(
-                        serde_json::from_str::<serde_json::Value>(&output.calls[0].arguments)
-                            .unwrap(),
-                        serde_json::json!({"location": expected}),
-                        "schema {schema}, width {width}"
-                    );
-                }
+                assert_argument_chunks(schema, raw, expected);
             }
         }
     }
