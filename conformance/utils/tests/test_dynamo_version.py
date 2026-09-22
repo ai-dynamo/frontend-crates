@@ -89,6 +89,21 @@ def test_reader_keeps_legacy_capture_directories_readable(release_repo):
     assert identity.select_capture_label(release_repo, {source_label: []}) == source_label
 
 
+def test_reader_carries_forward_latest_semantic_checkpoint(release_repo, monkeypatch):
+    (release_repo / "parsers/v2/Cargo.toml").write_text(
+        '[package]\nname="dynamo-parsers-v2"\nversion="0.6.1"\n',
+        encoding="utf-8",
+    )
+    captures = {
+        "0.6.0": {"records": {"gemma4/UNIFIED.1-1": {"format": "schema_v3"}}},
+    }
+    assert identity.select_capture_label(release_repo, captures) == "0.6.0"
+
+    monkeypatch.setenv(identity.ENV_OVERRIDE, "current")
+    current = identity.dynamo_v2_provenance(release_repo, "current")
+    assert identity.select_capture_label(release_repo, captures) == current["label"]
+
+
 def test_reader_rejects_an_unverified_legacy_release_in_a_tagless_checkout(release_repo, monkeypatch):
     recorded = identity.dynamo_v2_provenance(release_repo)
     git(release_repo, "tag", "-d", "dynamo-parsers-v2-v0.6.0")

@@ -224,6 +224,30 @@ def select_capture_label(repo_root: Path, captures: dict) -> str:
     ]
     if patches:
         return max(patches)[1]
+    # A released crate can advance without a new capture when its behavior is
+    # unchanged. Carry forward the latest earlier semantic checkpoint; the
+    # report records that it was inherited instead of inventing a new source
+    # or patch identity. An explicit `current` override still reaches the
+    # fail-closed path below.
+    if os.environ.get(ENV_OVERRIDE) is None:
+        current_parts = tuple(int(part) for part in version.split(".")[:3])
+        earlier = sorted(
+            (
+                tuple(int(part) for part in label.split(".")),
+                label,
+            )
+            for label in captures
+            if isinstance(label, str)
+            and re.fullmatch(r"\d+\.\d+\.\d+", label)
+            and _capture_records(captures, label)
+            and all(
+                isinstance(record, dict) and record.get("format") == "schema_v3"
+                for record in _capture_records(captures, label)
+            )
+            and tuple(int(part) for part in label.split(".")) <= current_parts
+        )
+        if earlier:
+            return earlier[-1][1]
     # An unpublished checkout without a semantic record cannot claim that a
     # version-only directory was produced by its source.
     return current["label"] if current["label"] != version else version
