@@ -202,7 +202,58 @@ pub mod traits {
             let _ = options;
             self
         }
-        // fn get_vocab_size(&self) -> usize;
+        /// Vocabulary cardinality including added tokens, when the backend
+        /// can expose one. `None` for backends without a bounded id space or
+        /// vocabulary introspection.
+        fn vocab_size(&self) -> Option<usize> {
+            None
+        }
+
+        /// Resolve a token string to its vocabulary id, when the backend
+        /// supports lookup. `Ok(None)` when the token is not in the
+        /// vocabulary. `Err` when this backend cannot do id lookup at all —
+        /// kept distinct from a genuine vocabulary miss so callers can tell
+        /// "unsupported" from "looked up, not found".
+        ///
+        /// Defaults to unsupported, matching `encode_segments` and
+        /// `validate_prefix_cache`: only backends that can perform lookup
+        /// need to override it.
+        fn token_to_id(&self, _token: &str) -> Result<Option<TokenIdType>> {
+            Err(Error::msg(
+                "tokenizer backend does not support token lookup",
+            ))
+        }
+
+        /// Ids of added tokens marked special (e.g. BOS/EOS/PAD/control
+        /// tokens), as distinct from ordinary vocabulary tokens. `Ok(vec![])`
+        /// for backends that genuinely have none, or that do not distinguish
+        /// special from ordinary vocabulary ids. `Err` when the backend
+        /// cannot enumerate added tokens at all — an empty `Vec` alone
+        /// cannot carry that distinction.
+        ///
+        /// Defaults to unsupported, matching `token_to_id`: only backends
+        /// that can enumerate special ids need to override it.
+        fn special_token_ids(&self) -> Result<Vec<TokenIdType>> {
+            Err(Error::msg(
+                "tokenizer backend does not support special token enumeration",
+            ))
+        }
+
+        /// Count of special tokens `encode`'s `add_special_tokens: true`
+        /// path would add to a bare encoding (e.g. BOS/EOS), available
+        /// without performing an encode. `Ok(0)` for backends that
+        /// genuinely add none. `Err` when the backend cannot determine this
+        /// at all — a plain `0` alone cannot carry that distinction, and
+        /// this value feeds token-budget accounting where a silent `0`
+        /// would under-count rather than fail loudly.
+        ///
+        /// Defaults to unsupported, matching `token_to_id`: only backends
+        /// that can determine this count need to override it.
+        fn num_special_tokens_added(&self) -> Result<usize> {
+            Err(Error::msg(
+                "tokenizer backend does not support special token accounting",
+            ))
+        }
         // fn make_unique_clone(&self) -> Box<dyn Tokenizer>;
     }
 }

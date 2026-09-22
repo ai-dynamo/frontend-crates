@@ -38,8 +38,8 @@ clap = "4"
 derive_builder = "0.20"
 dynamo-parsers = { path = "parsers/v1", version = "9.0.1" }
 dynamo-protocols = { path = "protocols", version = "6.1.0" }
-dynamo-renderer = { path = "renderer", version = "5.3.1" }
-dynamo-tokenizers = { path = "tokenizers", version = "1.8.2" }
+dynamo-renderer = { path = "renderer", version = "5.3.2" }
+dynamo-tokenizers = { path = "tokenizers", version = "1.9.0" }
 either = { version = "1.13", features = ["serde"] }
 fastokens = "0.3.1"
 futures = "0.3"

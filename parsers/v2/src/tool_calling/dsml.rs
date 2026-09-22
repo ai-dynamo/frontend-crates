@@ -14,7 +14,9 @@ use crate::tool_calling::scan::{
     InvokeBoundaryFactory, InvokeEmitter, InvokeLatch, WrappedBlockScanner, WrappedBlockSpec,
 };
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
-use crate::unified::{UnifiedParser, UnifiedParserExt};
+use crate::unified::{
+    UnifiedParser, UnifiedParserExt, UnifiedParserInit, UnifiedParserStartingState,
+};
 
 pub(crate) const BLOCK_START: &str = "<｜DSML｜tool_calls>";
 pub(crate) const BLOCK_END: &str = "</｜DSML｜tool_calls>";
@@ -420,9 +422,15 @@ impl DeepSeekV4ToolStreamParser {
     }
 
     pub fn new_with_tools(tools: &[Tool]) -> Self {
-        Self {
-            parser: crate::unified::deepseek_v4::deepseek_v4_unified(tools),
-        }
+        let mut parser = crate::unified::deepseek_v4::deepseek_v4_unified(tools);
+        // Tool-only callers own reasoning extraction and need its delimiters intact.
+        parser
+            .initialize_request(UnifiedParserInit {
+                starting_state: UnifiedParserStartingState::Response,
+                ..Default::default()
+            })
+            .expect("native response-mode initialization is valid");
+        Self { parser }
     }
 }
 
@@ -485,10 +493,11 @@ fn parse_parameters(body: &str) -> anyhow::Result<Map<String, Value>> {
         let Some(value_end_rel) = body[value_start..].find(PARAMETER_END) else {
             break;
         };
-        let raw_value = body[value_start..value_start + value_end_rel].trim();
+        let raw_value = &body[value_start..value_start + value_end_rel];
         let value = if attrs.contains(r#"string="true""#) {
             Value::String(raw_value.to_string())
         } else {
+            let raw_value = raw_value.trim();
             serde_json::from_str(raw_value).unwrap_or_else(|_| Value::String(raw_value.to_string()))
         };
         params.insert(name.to_string(), value);
@@ -621,23 +630,28 @@ mod tests {
     }
 
     #[test]
-    fn legacy_parser_projects_the_unified_dsml_events() {
-        let input = "before<think>reason</think><｜DSML｜tool_calls><｜DSML｜invoke name=\"get_weather\"><｜DSML｜parameter name=\"city\" string=\"true\">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>after";
-        let split = input.find("<｜DSML｜tool_calls>").expect("DSML block");
-        let mut legacy = DeepSeekV4ToolStreamParser::default();
-        let mut legacy_result = legacy.push(&input[..split]).expect("legacy prefix");
-        legacy_result.append(legacy.push(&input[split..]).expect("legacy suffix"));
-        legacy_result.append(legacy.finish().expect("legacy finish"));
-
-        let mut unified = crate::unified::deepseek_v4::deepseek_v4_unified(&[]);
-        unified
-            .initialize_request(UnifiedParserInit::native(&[]))
-            .expect("initialize unified");
-        let mut unified_events = unified.push(&input[..split]).expect("unified prefix");
-        unified_events.extend(unified.push(&input[split..]).expect("unified suffix"));
-        unified_events.extend(unified.finish().expect("unified finish").events);
-
-        assert_eq!(ToolParseResult::from_deltas(unified_events), legacy_result);
+    fn tool_parser_preserves_reasoning_markers_for_the_caller() {
+        for prefix in ["before<think>reason</think>", "reason</think>\n\n"] {
+            let input = format!(
+                "{prefix}<｜DSML｜tool_calls><｜DSML｜invoke name=\"get_weather\"><｜DSML｜parameter name=\"city\" string=\"true\">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>after"
+            );
+            for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                let mut parser = DeepSeekV4ToolStreamParser::default();
+                let mut result = parser.push(&input[..split]).expect("prefix");
+                result.append(parser.push(&input[split..]).expect("suffix"));
+                result.append(parser.finish().expect("finish"));
+                let result = result.coalesce_calls();
+                assert_eq!(
+                    result.normal_text,
+                    format!("{prefix}after"),
+                    "split {split}"
+                );
+                assert_eq!(result.calls.len(), 1);
+                assert_eq!(result.calls[0].name.as_deref(), Some("get_weather"));
+                assert_eq!(result.calls[0].arguments, r#"{"city":"Paris"}"#);
+                assert!(result.calls[0].complete);
+            }
+        }
     }
 
     #[test]
@@ -669,6 +683,26 @@ mod tests {
             result.append(parser.push(&input[split..]).expect("suffix"));
             result.append(parser.finish().expect("finish"));
             assert_eq!(result.coalesce_calls(), expected, "split at {split}");
+        }
+    }
+
+    #[test]
+    fn string_parameters_preserve_whitespace() {
+        for value in ["  café\n", "\t\r\n ", "", "null"] {
+            let input = format!(
+                "<｜DSML｜tool_calls><｜DSML｜invoke name=\"edit\">\
+                 <｜DSML｜parameter name=\"text\" string=\"true\">{value}</｜DSML｜parameter>\
+                 <｜DSML｜parameter name=\"count\" string=\"false\"> 42 </｜DSML｜parameter>\
+                 </｜DSML｜invoke></｜DSML｜tool_calls>"
+            );
+            let mut parser = DeepSeekV4ToolStreamParser::new();
+            let mut result = parser.push(&input).expect("push");
+            result.append(parser.finish().expect("finish"));
+            let result = result.coalesce_calls();
+            assert!(result.normal_text.is_empty());
+            assert_eq!(result.calls.len(), 1);
+            let arguments: Value = serde_json::from_str(&result.calls[0].arguments).unwrap();
+            assert_eq!(arguments, serde_json::json!({"text": value, "count": 42}));
         }
     }
 

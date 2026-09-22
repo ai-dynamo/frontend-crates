@@ -295,7 +295,23 @@ impl Decoder for CachedTokenizer {
     }
 }
 
-impl Tokenizer for CachedTokenizer {}
+impl Tokenizer for CachedTokenizer {
+    fn vocab_size(&self) -> Option<usize> {
+        self.inner.vocab_size()
+    }
+
+    fn token_to_id(&self, token: &str) -> Result<Option<TokenIdType>> {
+        self.inner.token_to_id(token)
+    }
+
+    fn special_token_ids(&self) -> Result<Vec<TokenIdType>> {
+        self.inner.special_token_ids()
+    }
+
+    fn num_special_tokens_added(&self) -> Result<usize> {
+        Ok(0)
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -365,6 +381,10 @@ mod tests {
     impl Tokenizer for FailingTokenizer {
         fn validate_prefix_cache(&self) -> Result<()> {
             Ok(())
+        }
+
+        fn vocab_size(&self) -> Option<usize> {
+            None
         }
     }
 
@@ -646,5 +666,51 @@ mod tests {
         assert!(events[1..].iter().all(|event| event.cached_tokens > 0));
         // First call populates, second/third hit.
         assert!(cached.cache_stats().hits >= 2, "expected hits on q2 and q3");
+    }
+
+    #[test]
+    fn vocab_introspection_forwards_to_inner() {
+        let tok = inner();
+        let cached = CachedTokenizer::new(tok.clone(), specials(), 4096)
+            .expect("TinyLlama must support prefix caching");
+        assert_eq!(cached.vocab_size(), tok.vocab_size());
+        assert_eq!(
+            cached.token_to_id("<s>").unwrap(),
+            tok.token_to_id("<s>").unwrap()
+        );
+        assert_eq!(
+            cached.special_token_ids().unwrap(),
+            tok.special_token_ids().unwrap()
+        );
+    }
+
+    #[test]
+    fn special_token_accounting_matches_cached_encoder_behavior() {
+        let cached = CachedTokenizer::new(inner(), specials(), 4096)
+            .expect("TinyLlama must support prefix caching")
+            .with_options(crate::TokenizerOptions {
+                add_special_tokens: true,
+            });
+        let cached_ids = cached.encode("hello").unwrap();
+        let hf_ids = HuggingFaceTokenizer::from_file(TINYLLAMA_PATH)
+            .expect("load TinyLlama")
+            .with_options(crate::TokenizerOptions {
+                add_special_tokens: true,
+            })
+            .encode("hello")
+            .unwrap();
+
+        assert_eq!(cached.num_special_tokens_added().unwrap(), 0);
+        assert_eq!(hf_ids.token_ids().len(), cached_ids.token_ids().len() + 1);
+        assert_eq!(&hf_ids.token_ids()[1..], cached_ids.token_ids());
+    }
+
+    #[test]
+    fn unoverridden_introspection_methods_use_defaults() {
+        let tokenizer = SegmentTokenizer;
+        assert_eq!(tokenizer.vocab_size(), None);
+        assert!(tokenizer.token_to_id("anything").is_err());
+        assert!(tokenizer.special_token_ids().is_err());
+        assert!(tokenizer.num_special_tokens_added().is_err());
     }
 }
