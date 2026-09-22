@@ -613,6 +613,45 @@ pub(crate) struct MuseInvokeEmitter {
     tools: Vec<ToolDefinition>,
 }
 
+impl MuseInvokeEmitter {
+    fn recover_at_terminator(
+        &mut self,
+        text: &str,
+        tool_index: usize,
+    ) -> anyhow::Result<Option<ToolCallDelta>> {
+        let parameter_count = text.matches("<atem:parameter").count();
+        let parameter_close_count = text.matches("</atem:parameter>").count();
+        if parameter_count > 0 && parameter_close_count >= parameter_count {
+            return Ok(None);
+        }
+        let Some(open) = invoke_open_re().captures(text) else {
+            return Ok(None);
+        };
+        let whole = open.get(0).expect("regex match has group 0");
+        let name = open.name("name").expect("regex requires name").as_str();
+        if !self.tools.iter().any(|tool| tool.name == name) {
+            return Ok(None);
+        }
+        let body = &text[whole.end()..];
+        let repaired = if let Some(close) = body.find(INVOKE_CLOSE) {
+            text[..whole.end() + close + INVOKE_CLOSE.len()].to_string()
+        } else {
+            let Some(parameter) = body.rfind("<atem:parameter") else {
+                return Ok(None);
+            };
+            let Some(header_end) = body[parameter..].find('>') else {
+                return Ok(None);
+            };
+            let value = &body[parameter + header_end + 1..];
+            if value.contains("</atem:parameter>") || value.contains('<') {
+                return Ok(None);
+            }
+            format!("{text}</atem:parameter>{INVOKE_CLOSE}")
+        };
+        self.parse_invoke(&repaired, tool_index)
+    }
+}
+
 impl InvokeEmitter for MuseInvokeEmitter {
     fn parse_invoke(
         &mut self,
@@ -714,6 +753,7 @@ pub(crate) struct MuseChannelScanner {
     /// closer yet. This distinguishes a quoted complete invoke from an orphan
     /// closer without making ATEM markup structural outside tool channels.
     prose_invoke_depth: usize,
+    pending_terminated_invokes: Vec<(usize, String)>,
     /// Any byte has been fed. `initialize_request` is a BEFORE-parsing hook, so it
     /// must reject a late call rather than silently reinterpret a live stream.
     started: bool,
@@ -738,6 +778,7 @@ pub(crate) fn muse_scanner(tools: &[Tool]) -> MuseChannelScanner {
         reasoning_join_armed: false,
         reasoning_body_emitted: false,
         prose_invoke_depth: 0,
+        pending_terminated_invokes: Vec::new(),
         started: false,
         next_index: 0,
     }
@@ -886,7 +927,9 @@ impl MuseChannelScanner {
                 if self.resolve_next_header(out) {
                     continue;
                 }
-                self.drain_idle_prose(out);
+                if self.drain_idle_prose(out)? {
+                    continue;
+                }
                 return Ok(());
             }
 
@@ -953,7 +996,12 @@ impl MuseChannelScanner {
                     State::InContent => self.emit_text(out, &body),
                     // Residual markup around the invokes already emitted above is
                     // never text; dropping it is what keeps ATEM out of content.
-                    State::InToolChannel => {}
+                    State::InToolChannel => {
+                        let candidate = body.trim_start_matches(BLOCK_OPEN).trim_start();
+                        let index = self.next_index + self.pending_terminated_invokes.len();
+                        self.pending_terminated_invokes
+                            .push((index, candidate.to_string()));
+                    }
                     State::Idle => unreachable!("Idle is handled above"),
                 }
                 self.prose_invoke_depth = 0;
@@ -1026,7 +1074,27 @@ impl MuseChannelScanner {
     /// Surface prose between messages, holding back anything that could still
     /// become framing. Idle scans start at a real boundary (turn start or a
     /// consumed terminator), so offset zero is anchored.
-    fn drain_idle_prose(&mut self, out: &mut Vec<UnifiedParserEvent>) {
+    fn drain_idle_prose(&mut self, out: &mut Vec<UnifiedParserEvent>) -> anyhow::Result<bool> {
+        if self.allow_bare_header
+            && self.buffer.starts_with(INVOKE_OPEN_PREFIX)
+            && ![EOM, EOT].iter().any(|marker| self.buffer.contains(marker))
+        {
+            return Ok(false);
+        }
+        if self.allow_bare_header
+            && self.buffer.starts_with(INVOKE_OPEN_PREFIX)
+            && let Some((end, term_len)) = [EOM, EOT]
+                .iter()
+                .filter_map(|marker| self.buffer.find(marker).map(|at| (at, marker.len())))
+                .min_by_key(|(at, _)| *at)
+        {
+            let candidate = self.buffer[..end].to_string();
+            self.buffer.drain(..end + term_len);
+            let index = self.next_index + self.pending_terminated_invokes.len();
+            self.pending_terminated_invokes.push((index, candidate));
+            self.allow_bare_header = false;
+            return Ok(true);
+        }
         let bare_candidate = if self.allow_bare_header {
             bare_header_pos(&self.buffer, None)
         } else {
@@ -1046,8 +1114,14 @@ impl MuseChannelScanner {
             });
         if hold_from > 0 {
             let emitted: String = self.buffer.drain(..hold_from).collect();
+            if !self.pending_terminated_invokes.is_empty()
+                && (emitted.contains('<') || emitted.contains('>'))
+            {
+                self.pending_terminated_invokes.clear();
+            }
             self.emit_text(out, &emitted);
         }
+        Ok(false)
     }
 
     /// Return every field carrying stream position to its fresh-stream value, handing
@@ -1065,6 +1139,7 @@ impl MuseChannelScanner {
         self.reasoning_join_armed = false;
         self.reasoning_body_emitted = false;
         self.prose_invoke_depth = 0;
+        self.pending_terminated_invokes.clear();
         self.next_index = 0;
         (
             std::mem::take(&mut self.buffer),
@@ -1083,8 +1158,23 @@ impl MuseChannelScanner {
     /// End of stream: promote what is provably complete, drop parser-owned
     /// markup, and never leak an unfinished tool call.
     fn flush(&mut self, out: &mut Vec<UnifiedParserEvent>) {
+        let pending = std::mem::take(&mut self.pending_terminated_invokes);
         // Taken before the empty-buffer return so a drainless finish still resets.
         let (buffered, state) = self.take_stream_state();
+        let suffix = flush_open_text(&buffered);
+        if suffix.is_empty() || matches!(suffix.as_str(), "<" | "<|") {
+            let mut recovered = false;
+            for (index, candidate) in pending {
+                if let Ok(Some(delta)) = self.emitter.recover_at_terminator(&candidate, index) {
+                    emit_call(out, delta);
+                    recovered = true;
+                }
+            }
+            if recovered {
+                self.emit_text(out, &suffix);
+                return;
+            }
+        }
         if buffered.is_empty() {
             return;
         }
@@ -1094,8 +1184,20 @@ impl MuseChannelScanner {
             // special token (`<|sta`) is parser-owned markup and dropped; the
             // ambiguous `<` / `<|` and any `to=`-shaped prose stay visible.
             State::Idle | State::InContent => {
-                let text = flush_open_text(&buffered);
-                self.emit_text(out, &text);
+                if let Some((end, _)) = [EOM, EOT]
+                    .iter()
+                    .filter_map(|marker| buffered.find(marker).map(|at| (at, marker.len())))
+                    .min_by_key(|(at, _)| *at)
+                    && buffered.starts_with(INVOKE_OPEN_PREFIX)
+                    && let Ok(Some(delta)) = self
+                        .emitter
+                        .recover_at_terminator(&buffered[..end], self.next_index)
+                {
+                    emit_call(out, delta);
+                } else {
+                    let text = flush_open_text(&buffered);
+                    self.emit_text(out, &text);
+                }
             }
             State::InReasoning => {
                 self.emit_reasoning(out, &flush_open_text(&buffered));
@@ -1203,6 +1305,54 @@ mod tests {
         let mut out = parser.push(text).expect("push");
         out.append(parser.finish().expect("finish"));
         out.coalesce_calls()
+    }
+
+    #[test]
+    fn bare_saved_closer_recovery_is_split_invariant() {
+        let defs = tools(&["run", "get_weather"]);
+        for (input, name, arguments) in [
+            (
+                "<atem:invoke name=\"get_weather\">\n</atem:invoke>\n</atem:function_calls><|eom|>",
+                "get_weather",
+                "{}",
+            ),
+            (
+                "<atem:invoke name=\"run\">\n<atem:parameter name=\"cmd\">first<|eom|>",
+                "run",
+                r#"{"cmd":"first"}"#,
+            ),
+        ] {
+            for split in (0..=input.len()).filter(|at| input.is_char_boundary(*at)) {
+                let mut parser = MuseGlimmerToolStreamParser::new(&defs);
+                let mut got = parser.push(&input[..split]).unwrap();
+                got.append(parser.push(&input[split..]).unwrap());
+                got.append(parser.finish().unwrap());
+                let got = got.coalesce_calls();
+                assert!(got.normal_text.is_empty(), "split {split}");
+                assert_eq!(got.calls.len(), 1, "split {split}");
+                assert_eq!(got.calls[0].name.as_deref(), Some(name), "split {split}");
+                assert_eq!(got.calls[0].arguments, arguments, "split {split}");
+            }
+        }
+    }
+
+    #[test]
+    fn saved_closer_recovery_preserves_following_text() {
+        let defs = tools(&["run"]);
+        let input = "<atem:invoke name=\"run\"><atem:parameter name=\"cmd\">first<|eom|>after";
+        for split in (0..=input.len()).filter(|at| input.is_char_boundary(*at)) {
+            let mut parser = MuseGlimmerToolStreamParser::new(&defs);
+            let mut got = parser.push(&input[..split]).unwrap();
+            got.append(parser.push(&input[split..]).unwrap());
+            got.append(parser.finish().unwrap());
+            let got = got.coalesce_calls();
+            assert_eq!(got.normal_text, "after", "split {split}");
+            assert_eq!(got.calls.len(), 1, "split {split}");
+            assert_eq!(
+                got.calls[0].arguments, r#"{"cmd":"first"}"#,
+                "split {split}"
+            );
+        }
     }
 
     #[test]

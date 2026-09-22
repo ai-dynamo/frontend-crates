@@ -47,10 +47,23 @@ pub(crate) fn deepseek_v4_scanner(_tools: &[Tool]) -> WrappedBlockScanner<DsmlEm
             // A DSML block may omit its outer close after a complete invoke.
             drop_invoke_crossing_block_end: false,
             invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(dsml_invoke_boundary)),
+            recover_saved_outer_close: Some(recover_saved_outer_close),
             preserve_special_tokens: true,
         },
         DsmlEmitter,
     )
+}
+
+fn recover_saved_outer_close(text: &str) -> Option<(usize, String)> {
+    let close = text.find(BLOCK_END)?;
+    let body = &text[..close];
+    let parameter = body.rfind(PARAMETER_PREFIX)?;
+    (body[parameter..].contains('>') && !body[parameter..].contains(PARAMETER_END)).then(|| {
+        (
+            close + BLOCK_END.len(),
+            format!("{body}{PARAMETER_END}{INVOKE_END}"),
+        )
+    })
 }
 
 pub(crate) struct DsmlEmitter;

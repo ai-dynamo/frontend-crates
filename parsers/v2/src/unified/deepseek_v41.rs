@@ -31,6 +31,7 @@ pub(crate) fn deepseek_v41_unified(_tools: &[Tool]) -> Box<dyn UnifiedParser> {
         holdback_markers: vec![BLOCK_START.into(), BLOCK_END.into(), INVOKE_START.into()],
         bare_recovery_latch: BareRecoveryLatch::Set,
         invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(invocation_boundary)),
+        recover_saved_outer_close: Some(recover_saved_outer_close),
         preserve_special_tokens: true,
         ..Default::default()
     };
@@ -41,6 +42,18 @@ pub(crate) fn deepseek_v41_unified(_tools: &[Tool]) -> Box<dyn UnifiedParser> {
         ..Default::default()
     });
     Box::new(GuidedRouted::new(ScannerUnified::new(scanner)))
+}
+
+fn recover_saved_outer_close(text: &str) -> Option<(usize, String)> {
+    let close = text.find(BLOCK_END)?;
+    let body = &text[..close];
+    let parameter = body.rfind(PARAMETER_START)?;
+    (body[parameter..].contains('>') && !body[parameter..].contains(PARAMETER_END)).then(|| {
+        (
+            close + BLOCK_END.len(),
+            format!("{body}{PARAMETER_END}{INVOKE_END}"),
+        )
+    })
 }
 
 fn parameter_header(text: &str) -> Option<(&str, bool, &str)> {

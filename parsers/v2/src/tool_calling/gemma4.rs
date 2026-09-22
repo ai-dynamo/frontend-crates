@@ -307,12 +307,25 @@ pub(crate) fn gemma4_scanner(tools: &[Tool]) -> WrappedBlockScanner<Gemma4Invoke
             invoke_latch: InvokeLatch::IfEmitted,
             drop_invoke_crossing_block_end: false,
             invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(gemma4_invoke_boundary)),
+            recover_saved_outer_close: Some(recover_saved_outer_close),
             preserve_special_tokens: true,
         },
         Gemma4InvokeEmitter {
             tools: tools.iter().map(ToolDefinition::from).collect(),
         },
     )
+}
+
+fn recover_saved_outer_close(text: &str) -> Option<(usize, String)> {
+    let close = text.find(TOOL_CALL_END)?;
+    let body = &text[..close];
+    let delimiter = body.rfind(STRING_DELIM)?;
+    (!body[delimiter + STRING_DELIM.len()..].contains(STRING_DELIM)).then(|| {
+        (
+            close + TOOL_CALL_END.len(),
+            format!("{body}{STRING_DELIM}}}{TOOL_CALL_END}"),
+        )
+    })
 }
 
 /// Whether the `call:` at `at` opens a real call rather than being the English

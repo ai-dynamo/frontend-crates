@@ -52,9 +52,87 @@ fn spec() -> WrappedBlockSpec {
         bare_recovery_latch: BareRecoveryLatch::Set,
         invoke_latch: InvokeLatch::IfEmitted,
         drop_invoke_crossing_block_end: false,
+        recover_saved_outer_close: Some(recover_saved_outer_close),
         // Every wrapped family's markers are special tokens today.
         preserve_special_tokens: true,
         ..Default::default()
+    }
+}
+
+fn recover_saved_outer_close(text: &str) -> Option<(usize, String)> {
+    let close = text.find(BLOCK_END)?;
+    let body = &text[..close];
+    let parameter = body.rfind(PARAMETER_START)?;
+    if !body[parameter..].contains('>') || body[parameter..].contains("</parameter>") {
+        return None;
+    }
+    let (header, value) = body[parameter + PARAMETER_START.len()..].split_once('>')?;
+    let name = header.trim().trim_matches('"');
+    let function = body[..parameter].to_string();
+    Some((
+        close + BLOCK_END.len(),
+        format!(
+            "{function}<parameter={name}>{}</parameter>{FUNCTION_END}",
+            value.trim()
+        ),
+    ))
+}
+
+#[cfg(test)]
+mod saved_closer_tests {
+    use super::*;
+
+    #[test]
+    fn saved_outer_close_recovers_argument() {
+        let input = "<function=run>\n<parameter=cmd>\nfirst</tool_call>";
+        let (consumed, repaired) = recover_saved_outer_close(input).unwrap();
+        assert_eq!(consumed, input.len());
+        let mut emitter = Qwen3Emitter {
+            config: XmlParserConfig::default(),
+            tools: vec![ToolDefinition {
+                name: "run".into(),
+                parameters: Some(
+                    serde_json::json!({"type":"object","properties":{"cmd":{"type":"string"}}}),
+                ),
+            }],
+            partial: None,
+        };
+        let call = emitter.parse_invoke(&repaired, 0).unwrap().unwrap();
+        assert_eq!(call.arguments, r#"{"cmd":"first"}"#);
+
+        let tools = vec![Tool {
+            name: "run".into(),
+            description: None,
+            parameters: serde_json::json!({"type":"object","properties":{"cmd":{"type":"string"}}}),
+            strict: None,
+        }];
+        let mut scanner = qwen3_scanner(&tools);
+        let mut result = scanner.push(input).unwrap();
+        result.append(scanner.finish().unwrap());
+        assert_eq!(
+            result.coalesce_calls().calls[0].arguments,
+            r#"{"cmd":"first"}"#
+        );
+    }
+
+    #[test]
+    fn saved_outer_close_preserves_pending_entity_bytes() {
+        let input = "<function=run>\n<parameter=cmd>\n&amp</tool_call>";
+        let tools = vec![Tool {
+            name: "run".into(),
+            description: None,
+            parameters: serde_json::json!({"type":"object","properties":{"cmd":{"type":"string"}}}),
+            strict: None,
+        }];
+        for split in (0..=input.len()).filter(|at| input.is_char_boundary(*at)) {
+            let mut scanner = qwen3_scanner(&tools);
+            let mut result = scanner.push(&input[..split]).unwrap();
+            result.append(scanner.push(&input[split..]).unwrap());
+            result.append(scanner.finish().unwrap());
+            let calls = result.coalesce_calls().calls;
+            assert_eq!(calls.len(), 1, "split {split}");
+            assert_eq!(calls[0].arguments, r#"{"cmd":"&amp"}"#, "split {split}");
+        }
     }
 }
 
@@ -88,6 +166,32 @@ struct ActiveStringParameter {
 }
 
 impl InvokeEmitter for Qwen3Emitter {
+    fn complete_partial_recovery(&self) -> Option<ToolCallDelta> {
+        let partial = self.partial.as_ref()?;
+        if partial.blocked || partial.active.is_none() {
+            return None;
+        }
+        let mut arguments = partial.emitted_json.clone();
+        if let Some(active) = &partial.active {
+            arguments.push_str(&active.opener_pending);
+            if !active.pending_entity.is_empty() {
+                let encoded = serde_json::to_string(&active.pending_entity).ok()?;
+                arguments.push_str(&encoded[1..encoded.len() - 1]);
+            }
+            arguments.push_str(&active.trailing_whitespace);
+        }
+        arguments.push_str("\"}");
+        serde_json::from_str::<serde_json::Value>(&arguments).ok()?;
+        let emitted = &partial.emitted_json;
+        let remaining = arguments.strip_prefix(emitted).unwrap_or(&arguments);
+        Some(ToolCallDelta {
+            tool_index: partial.tool_index,
+            name: emitted.is_empty().then(|| partial.name.clone()),
+            arguments: remaining.to_string(),
+            complete: true,
+        })
+    }
+
     fn parse_partial_invoke(
         &mut self,
         invoke: &str,
@@ -119,13 +223,24 @@ impl InvokeEmitter for Qwen3Emitter {
         if partial.tool_index != tool_index || partial.blocked {
             return Ok(None);
         }
+        if partial.scan_cursor > invoke.len() {
+            return Ok(None);
+        }
         let mut arguments = String::new();
         loop {
             if let Some(active) = partial.active.as_mut() {
+                if active.value_cursor > invoke.len() {
+                    return Ok(None);
+                }
                 let value = &invoke[active.value_cursor..];
-                let close = value.find("</parameter>");
-                let safe_end =
-                    close.unwrap_or_else(|| value.len() - qwen_partial_suffix_len(value));
+                let block_close = value.find(BLOCK_END);
+                let block_prefix = qwen_marker_prefix(value, BLOCK_END);
+                let close = value
+                    .find("</parameter>")
+                    .filter(|close| block_close.is_none_or(|block_close| *close < block_close));
+                let safe_end = close.or(block_close).unwrap_or_else(|| {
+                    value.len() - block_prefix.max(qwen_partial_suffix_len(value))
+                });
                 let decoded = decode_streamable_xml_text(
                     &value[..safe_end],
                     &mut active.pending_entity,
@@ -152,6 +267,9 @@ impl InvokeEmitter for Qwen3Emitter {
                     partial.scan_cursor = active.value_cursor;
                     partial.active = None;
                     continue;
+                }
+                if block_close.is_some() {
+                    break;
                 }
                 break;
             }
@@ -245,12 +363,23 @@ impl InvokeEmitter for Qwen3Emitter {
         let Some(call) = calls.into_iter().next() else {
             return Ok(None);
         };
-        let arguments =
+        let mut arguments =
             reorder_arguments(&call.function.arguments, &source_parameter_order(invoke));
+        if arguments == "{}"
+            && let Some(parameter) = invoke.rfind(PARAMETER_START)
+            && let Some((header, value)) =
+                invoke[parameter + PARAMETER_START.len()..].split_once('>')
+            && let Some(value_end) = value.rfind("</parameter>")
+        {
+            let name = header.trim().trim_matches('"');
+            arguments = serde_json::to_string(&serde_json::json!({
+                name: value[..value_end].trim()
+            }))?;
+        }
         let partial = self.partial.take();
-        let streamed = partial
-            .as_ref()
-            .is_some_and(|partial| !partial.emitted_json.is_empty());
+        let streamed = partial.as_ref().is_some_and(|partial| {
+            !partial.emitted_json.is_empty() && partial.emitted_json != arguments
+        });
         if streamed
             && partial
                 .as_ref()
@@ -297,6 +426,13 @@ impl InvokeEmitter for Qwen3Emitter {
     fn reset(&mut self) {
         self.partial = None;
     }
+}
+
+fn qwen_marker_prefix(text: &str, marker: &str) -> usize {
+    (1..marker.len())
+        .rev()
+        .find(|len| text.ends_with(&marker[..*len]))
+        .unwrap_or(0)
 }
 
 /// Build the scan core for the Qwen3 tool grammar.

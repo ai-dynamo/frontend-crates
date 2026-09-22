@@ -210,6 +210,7 @@ impl KimiK3HeaderScan {
 enum CallBoundary {
     Complete { body_end: usize, consumed: usize },
     Recover { body_end: usize },
+    RecoverOuter { body_end: usize, consumed: usize },
     Resync { at: usize },
     Pending,
     Malformed,
@@ -347,6 +348,54 @@ impl KimiK3CallBoundary {
 
         if !flush {
             return CallBoundary::Pending;
+        }
+        if let Some(outer) = self
+            .outer_closes
+            .iter()
+            .copied()
+            .find(|outer| outer.at >= header_len)
+            && self.body_kind == CallBodyKind::Arguments
+            && let Some(open) = self
+                .arg_opens
+                .iter()
+                .copied()
+                .rev()
+                .find(|open| open.at < outer.at)
+            && !self
+                .arg_closes
+                .iter()
+                .any(|close| close.at > open.at && close.end() <= outer.at)
+            && let Some((attrs, value_start)) = parse_tag_header(&text[open.at..], ARG_OPEN)
+            && let Some(key) = attr_value(&attrs, "key")
+        {
+            let arg_type = attr_value(&attrs, "type").unwrap_or("string");
+            let prefix = &text[header_len..open.at];
+            let mut arguments = serde_json::Map::new();
+            if !prefix.trim().is_empty() {
+                let Some(parsed) = parse_call_body(prefix) else {
+                    return CallBoundary::Malformed;
+                };
+                let Ok(serde_json::Value::Object(existing)) = serde_json::from_str(&parsed) else {
+                    return CallBoundary::Malformed;
+                };
+                arguments.extend(existing);
+            }
+            let raw = text[open.at + value_start..outer.at]
+                .strip_suffix(ARG_CLOSE.canonical)
+                .or_else(|| {
+                    text[open.at + value_start..outer.at]
+                        .strip_suffix(ARG_CLOSE.spaced.expect("paired marker"))
+                })
+                .unwrap_or(&text[open.at + value_start..outer.at]);
+            let Ok(value) = serde_json::from_str(&encode_argument_value(arg_type, raw)) else {
+                return CallBoundary::Malformed;
+            };
+            arguments.insert(key.to_string(), value);
+            self.completed_arguments = serde_json::to_string(&arguments).ok();
+            return CallBoundary::RecoverOuter {
+                body_end: outer.at,
+                consumed: outer.end(),
+            };
         }
         let recovery_limit = self
             .outer_closes
@@ -814,6 +863,7 @@ impl InvokeBoundary for KimiK3CallBoundary {
         match self.advance(candidate, flush) {
             CallBoundary::Complete { consumed, .. } => Some(consumed),
             CallBoundary::Recover { body_end } => Some(body_end),
+            CallBoundary::RecoverOuter { consumed, .. } => Some(consumed),
             CallBoundary::Resync { .. } => None,
             CallBoundary::Pending | CallBoundary::Malformed => None,
         }
@@ -845,6 +895,7 @@ impl InvokeBoundary for KimiK3CallBoundary {
             CallBoundary::Resync { at } => Some(at),
             CallBoundary::Complete { .. }
             | CallBoundary::Recover { .. }
+            | CallBoundary::RecoverOuter { .. }
             | CallBoundary::Pending
             | CallBoundary::Malformed => None,
         }
@@ -1068,6 +1119,15 @@ impl KimiK3Native {
                 self.complete_call(body_end, body_end, output);
                 true
             }
+            CallBoundary::RecoverOuter { body_end, consumed } => {
+                tracing::warn!(
+                    why = "kimi_k3_recovered_outer_close",
+                    recovered_bytes = body_end,
+                    "recovering Kimi K3 call from its real outer close"
+                );
+                self.complete_call(body_end, consumed, output);
+                true
+            }
             CallBoundary::Resync { at } => {
                 tracing::warn!(
                     why = "kimi_k3_resynchronized_after_incomplete_call",
@@ -1104,9 +1164,15 @@ impl KimiK3Native {
         output: &mut UnifiedParserOutput,
     ) {
         let arguments = self.call_boundary.take_arguments();
+        let outer_close = self.buffer[..consumed].ends_with(TOOLS_CLOSE.canonical)
+            || self.buffer[..consumed].ends_with(TOOLS_CLOSE.spaced.expect("paired marker"));
         self.buffer.drain(..consumed);
         self.call_boundary.reset();
         self.finish_call(arguments, output);
+        if outer_close {
+            self.tools_open.clear();
+            self.mode = self.tools_return_mode.take().unwrap_or(Mode::Idle);
+        }
     }
 
     fn finish_call(&mut self, arguments: Option<String>, output: &mut UnifiedParserOutput) {
@@ -2920,6 +2986,23 @@ mod tests {
                 }],
             );
         }
+    }
+
+    #[test]
+    fn outer_close_recovery_preserves_completed_arguments() {
+        let input = format!(
+            "{}<|open|>call tool=\"run\" index=\"1\"<|sep|>{}<|open|>argument key=\"note\" type=\"string\"<|sep|>second{}",
+            TOOLS_OPEN.canonical,
+            arg("cmd", "string", "first"),
+            TOOLS_CLOSE.canonical,
+        );
+        assert_native_fragmentations(
+            &input,
+            &[UnifiedEvent::ToolCall {
+                name: "run".into(),
+                arguments: serde_json::json!({"cmd":"first","note":"second"}),
+            }],
+        );
     }
 
     #[test]
