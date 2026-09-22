@@ -1,13 +1,23 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Text prompt encoding for DeepSeek V4.1.
+//! Text and image prompt encoding for DeepSeek V4.1.
 
 use anyhow::{Context, Result, ensure};
 use serde_json::Value;
 
 use super::common::{ThinkingMode, resolve_thinking_mode, to_json};
 use super::v4::{Encoding, encode_messages_with_encoding};
+
+const IMAGE_PLACEHOLDER: &str = "<｜deepseek_image｜>";
+
+fn validate_text(text: &str) -> Result<&str> {
+    ensure!(
+        !text.contains(IMAGE_PLACEHOLDER),
+        "Images must be supplied as image content blocks, not literal image placeholders"
+    );
+    Ok(text)
+}
 
 pub(super) fn find_last_user_index(messages: &[Value]) -> Option<usize> {
     messages.iter().enumerate().rposition(|(index, message)| {
@@ -62,7 +72,7 @@ pub(super) fn encode_arguments(tool_call: &Value) -> Result<String> {
     Ok(parameters.join("\n"))
 }
 
-fn normalize_text(messages: &mut [Value]) -> Result<()> {
+fn normalize_content(messages: &mut [Value]) -> Result<()> {
     for message in messages {
         for field in ["tools", "tool_calls"] {
             for tool in message
@@ -83,14 +93,14 @@ fn normalize_text(messages: &mut [Value]) -> Result<()> {
         }
         ensure!(
             message.get("content_blocks").is_none(),
-            "DeepSeek V4.1 expects OpenAI text content blocks in content"
+            "DeepSeek V4.1 expects OpenAI content blocks in content"
         );
         ensure!(
             !message
                 .get("reasoning_content")
                 .and_then(Value::as_str)
-                .is_some_and(|text| text.contains("<｜deepseek_image｜>")),
-            "DeepSeek V4.1 native formatter supports text content only"
+                .is_some_and(|text| text.contains(IMAGE_PLACEHOLDER)),
+            "Images must be supplied as image content blocks, not literal image placeholders"
         );
         if message.get("role").and_then(Value::as_str) == Some("developer") {
             message["role"] = Value::String("system".into());
@@ -98,36 +108,48 @@ fn normalize_text(messages: &mut [Value]) -> Result<()> {
         if let Some(content) = message.get("content") {
             let text = match content {
                 Value::Null => String::new(),
-                Value::String(text) => text.clone(),
+                Value::String(text) => validate_text(text)?.to_owned(),
                 Value::Array(blocks) => {
                     let mut texts = Vec::with_capacity(blocks.len());
                     for block in blocks {
-                        ensure!(
-                            block.get("type").and_then(Value::as_str) == Some("text"),
-                            "DeepSeek V4.1 native formatter supports text content only"
-                        );
-                        texts.push(
-                            block
-                                .get("text")
-                                .and_then(Value::as_str)
-                                .context("Text block requires text")?,
-                        );
+                        match block.get("type").and_then(Value::as_str) {
+                            Some("text") => texts.push(validate_text(
+                                block
+                                    .get("text")
+                                    .and_then(Value::as_str)
+                                    .context("Text block requires text")?,
+                            )?),
+                            Some("image_url") => {
+                                let source = &block["image_url"];
+                                let url = source.as_str().or_else(|| source["url"].as_str());
+                                ensure!(
+                                    url.is_some_and(|url| !url.is_empty())
+                                        || block["uuid"]
+                                            .as_str()
+                                            .is_some_and(|uuid| !uuid.is_empty()),
+                                    "Image block does not contain a valid source"
+                                );
+                                // The official encoder replaces each image in order.
+                                // Normalize only this rendering copy: Dynamo's media
+                                // collector still needs the original URLs/data URLs.
+                                texts.push(IMAGE_PLACEHOLDER);
+                            }
+                            _ => anyhow::bail!(
+                                "DeepSeek V4.1 native formatter supports text and image_url content only"
+                            ),
+                        }
                     }
                     texts.join("\n\n")
                 }
-                _ => anyhow::bail!("DeepSeek V4.1 message content must be text"),
+                _ => anyhow::bail!("DeepSeek V4.1 message content must be text or content blocks"),
             };
-            ensure!(
-                !text.contains("<｜deepseek_image｜>"),
-                "DeepSeek V4.1 native formatter supports text content only"
-            );
             message["content"] = Value::String(text);
         }
     }
     Ok(())
 }
 
-/// Encode text messages with the model's numeric reasoning effort (1–100).
+/// Encode text/image messages with the model's numeric reasoning effort (1–100).
 pub fn encode_messages(
     messages: &[Value],
     thinking_mode: ThinkingMode,
@@ -139,7 +161,7 @@ pub fn encode_messages(
         "DeepSeek V4.1 reasoning effort must be within 1–100"
     );
     let mut messages = messages.to_vec();
-    normalize_text(&mut messages)?;
+    normalize_content(&mut messages)?;
     encode_messages_with_encoding(
         &messages,
         thinking_mode,
@@ -149,7 +171,7 @@ pub fn encode_messages(
     )
 }
 
-/// Native text formatter with OpenAI reasoning-effort names mapped as in the
+/// Native text/image formatter with OpenAI reasoning-effort names mapped as in the
 /// DeepSeek V4.1 reference encoder.
 #[derive(Debug, Default)]
 pub struct DeepSeekV41Formatter;

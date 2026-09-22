@@ -1,6 +1,6 @@
 {
-  "snapshot": "20260917_223441",
-  "created_pt": "2026-09-17 22:34:41 America/Los_Angeles",
+  "snapshot": "20260921_101610",
+  "created_pt": "2026-09-21 10:16:10 America/Los_Angeles",
   "crates": {
     "dynamo-parsers": "9.0.0",
     "dynamo-parsers-v2": "0.6.1"
@@ -196,269 +196,10 @@
       "size": 4308
     },
     {
-      "path": "unified/dynamo_v2-0.1.23.patch2.tar.gz",
-      "sha256": "eef07b345f0b7cbcdf12352cbb119d0d022ebfad0e14e69c9114a176e05f47fd",
-      "size": 2468
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.23.patch3.tar.gz",
-      "sha256": "de5824f9ff9e4143bcd6ae1d5745bf10f392e8ca6b1655d1eecdbb5bb5ac241a",
-      "size": 67524
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.23.patch4.tar.gz",
-      "sha256": "feeb58c36bc927a13600253995fc1f111988d60c7b4879fefceb871a58fb4a65",
-      "size": 45199
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.23.patch5.tar.gz",
-      "sha256": "68ab464c4b7ba7d06a2cc739eb76fedc6139bce10f1fd9dbfccedcff205f92fd",
-      "size": 46028
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.23.patch6.tar.gz",
-      "sha256": "8ab0670f56e5fcddc898ab1e9e856eaad4676047b92806dcbf3c92d0f1a4622d",
-      "size": 1184
-    },
-    {
-      "path": "unified/dynamo_v2-0.1.23.tar.gz",
-      "sha256": "69dd3be5a0f3a108e513c34a8b3669b405b521061872bfab5b1fb9885ac76880",
-      "size": 10164
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.2.patch1.tar.gz",
-      "sha256": "cde85bfb976f6d75c112d4289803c72b729e6c26d12fbf88bf297cf218fdcec6",
-      "size": 608
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.2.patch2.tar.gz",
-      "sha256": "d00ad8e0b3addd999dc9e72707038c9f3b8f904769c851081ab70e7ee2cdd314",
-      "size": 7652
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.2.patch3.tar.gz",
-      "sha256": "1a9e01a9bb0a7a2315a63c08ed233c51cb436e327989c4e31876080ad60f4b8a",
-      "size": 70457
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.2.patch4.tar.gz",
-      "sha256": "f9848e81e897345ed6033b98d7ef512e10c3321ef28cb7e7cb2f16046ef8970d",
-      "size": 47275
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.2.patch5.tar.gz",
-      "sha256": "6076beb11be11793d311d0c125b176be2a0952d463a1d9c24986fa54c771c534",
-      "size": 48069
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.2.patch6.tar.gz",
-      "sha256": "4f111c7e14e4567a61b47a9ab80741f3711640158bde53f2bcbbddd7d784a594",
-      "size": 1183
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.2.tar.gz",
-      "sha256": "9a6ba4a5553408fdb2c881a41db3097640f48c95ee496e055825620fb3dc2145",
-      "size": 12234
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.3.patch2.tar.gz",
-      "sha256": "cac44636229a93f908560a87a14a640d998411e8f5aa43d8789a6d5d8e89d79c",
-      "size": 6675
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.3.patch3.tar.gz",
-      "sha256": "a51db8bc043bf87be923100a367e603331ee712a1cf91b813ca0960529476ba6",
-      "size": 71281
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.3.patch4.tar.gz",
-      "sha256": "bf4d44f54535b7eefa709331287b00c6660e435c84c8ff71172d733ca0c00249",
-      "size": 48006
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.3.patch5.tar.gz",
-      "sha256": "24fe469b5c482e6698c35a39b45a609f2e79e85e088b3833f4970c0017ab7125",
-      "size": 48807
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.3.patch6.tar.gz",
-      "sha256": "732046f5b41629644e32392b7496884e7d8f839003593936000d4286767c45f1",
-      "size": 1178
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.3.tar.gz",
-      "sha256": "ab6021d70826d91174a05a6bf143d7661502991440aace22983ba014b9475f4d",
-      "size": 13798
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.4.patch2.tar.gz",
-      "sha256": "38544bb6a677c694a8680d306c7a729e452e9b67d4494e9c5aa6210551a402d1",
-      "size": 6671
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.4.patch3.tar.gz",
-      "sha256": "5a917bff8e2456388e2e2f441544ae19304b4f8aa07dc813496fe06aeaea1c55",
-      "size": 72001
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.4.patch4.tar.gz",
-      "sha256": "8a93c4db9100c4e7a75151ef4fe6d166ca6de42f41d0b9f7e2d61346a2cf69aa",
-      "size": 48586
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.4.patch5.tar.gz",
-      "sha256": "e3717a9d8918987655014a4d7f00da7ee6ee31e889894fa88a2f6dba54ff370b",
-      "size": 49415
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.4.patch6.tar.gz",
-      "sha256": "969978f888e928dfaa0c488cb72ac5614c3406810b112e7a4c79316d86ad4dc9",
-      "size": 1180
-    },
-    {
-      "path": "unified/dynamo_v2-0.3.4.tar.gz",
-      "sha256": "19b6f45dc869378a86af35a4a06395cbb6fb3f8976705ded2738405a536bca25",
-      "size": 13715
-    },
-    {
-      "path": "unified/dynamo_v2-0.4.0.patch2.tar.gz",
-      "sha256": "5d66e6b49dc0dcfcfab38a7b3646441bea436c74caaa8949b3d5b88ddf67c003",
-      "size": 3687
-    },
-    {
-      "path": "unified/dynamo_v2-0.4.0.patch3.tar.gz",
-      "sha256": "61a226f0714c08beb678f10bc9dcb660c3e174f2b2efef55241ff226ab604a50",
-      "size": 73112
-    },
-    {
-      "path": "unified/dynamo_v2-0.4.0.patch4.tar.gz",
-      "sha256": "562518a8796d37d47d8a2ee62114a41dd1b867d7a4e34c4bc892163a877674a8",
-      "size": 49313
-    },
-    {
-      "path": "unified/dynamo_v2-0.4.0.patch5.tar.gz",
-      "sha256": "e0276359ae9d1f0bbf4d4b5e849be47273030add8a9dc4e9bf2f705f18569f4e",
-      "size": 50150
-    },
-    {
-      "path": "unified/dynamo_v2-0.4.0.patch6.tar.gz",
-      "sha256": "fc44f9f667536a16585ffec6efbcda446d7801f8199ea39985a5fdca46d52193",
-      "size": 1182
-    },
-    {
-      "path": "unified/dynamo_v2-0.4.0.tar.gz",
-      "sha256": "c2d0c749ab3439fa9f7b43c5ffe621ce8e207ae6905e1fdee8fc4a2ba4486f17",
-      "size": 13751
-    },
-    {
-      "path": "unified/dynamo_v2-0.5.3.patch3.tar.gz",
-      "sha256": "4d2cb166cda1ae17797d198909d4ddbd1b2faf0af0e98c6d104b0eb1762dc884",
-      "size": 75148
-    },
-    {
-      "path": "unified/dynamo_v2-0.5.3.patch4.tar.gz",
-      "sha256": "00505f2f17b183a71d370f35c14ec6b83a3786952e834400f91cfb407e82b16d",
-      "size": 50470
-    },
-    {
-      "path": "unified/dynamo_v2-0.5.3.patch5.tar.gz",
-      "sha256": "828eed75f6fcbdd6532179606c00dc179a6a20d04c1397fa3e75c6582d9e6200",
-      "size": 51261
-    },
-    {
-      "path": "unified/dynamo_v2-0.5.3.patch6.tar.gz",
-      "sha256": "50c818f00fcf7ae8ecf4b52c40bdfd28705f454db944a90e5dc218efcb0b9465",
-      "size": 1297
-    },
-    {
-      "path": "unified/dynamo_v2-0.6.0+source.06847bad0fee2c369c44d7fef7a16ac976af4e1ea606882fcc3cbe5a3a402518.patch1.tar.gz",
-      "sha256": "9a239c8d70f89dd183744a05927e1aad06d2ff2a3a5b0a585fe6528828b8f76b",
-      "size": 57145
-    },
-    {
-      "path": "unified/dynamo_v2-0.6.0+source.06847bad0fee2c369c44d7fef7a16ac976af4e1ea606882fcc3cbe5a3a402518.patch2.tar.gz",
-      "sha256": "104ac7a93188da535575d0341fab226478bd37d6739d25111ee7622799b7033e",
-      "size": 57417
-    },
-    {
-      "path": "unified/dynamo_v2-0.6.0+source.06847bad0fee2c369c44d7fef7a16ac976af4e1ea606882fcc3cbe5a3a402518.tar.gz",
-      "sha256": "43e06aa1da0f49bf3881b248356c709ffc6f1e00a85e76f6c89bd5d984f3c460",
-      "size": 61233
-    },
-    {
-      "path": "unified/dynamo_v2-0.6.0.patch3.tar.gz",
-      "sha256": "f5944611872777a9ad9039aadfa0ff3e8287593241e406d5803c692f88b1af20",
-      "size": 78679
-    },
-    {
-      "path": "unified/dynamo_v2-0.6.0.patch4.tar.gz",
-      "sha256": "0706dd8c12b6504386708e0a6cd6ca1dbe863d46d8f0ca65b73475e77f7addeb",
-      "size": 53072
-    },
-    {
-      "path": "unified/dynamo_v2-0.6.0.patch5.tar.gz",
-      "sha256": "1d652eddc10eeb42dae7a27ac7ea7a0ba4ef177698455c8e61fd72749e666787",
-      "size": 53878
-    },
-    {
-      "path": "unified/dynamo_v2-0.6.0.patch6.tar.gz",
-      "sha256": "76e5d61e4fe07cd450e6a1a5e65f80362a51552df8bbb40ad390e304d1ef838e",
-      "size": 1295
-    },
-    {
-      "path": "unified/dynamo_v2-0.6.1+source.65b6e028637ed1b7dbd47d4ff52b989be343ba94d44becca626d5292de62078d.tar.gz",
-      "sha256": "d3726267a34ec59585a02b69a5b51ac28ae843629ce5a72ecd52dd48e7a63859",
-      "size": 57523
-    },
-    {
-      "path": "unified/golden.tar.gz",
-      "sha256": "21570759dbcc707eb7595d18e1572a4029e93a55d642020169d7841b2e7631d6",
-      "size": 16404
-    },
-    {
-      "path": "unified/inputs.tar.gz",
-      "sha256": "c004870a1e6efec8c22dc703ed698d2296abf6131195316ccfef0a4ca5d07aaf",
-      "size": 95027
-    },
-    {
-      "path": "unified/sglang_python-0.5.14.tar.gz",
-      "sha256": "93d2101ea78c4c1022bb95ed1f3f57fb2bec984d75004e6a2921b50e85609f15",
-      "size": 4363
-    },
-    {
-      "path": "unified/sglang_python-0.5.16.tar.gz",
-      "sha256": "68b20e272da148503f2626342fbe7977ac259a0a391c5fc4b902ce59c9584d35",
-      "size": 8409
-    },
-    {
-      "path": "unified/vllm_python-0.25.1.patch1.tar.gz",
-      "sha256": "903c3e2d8adeef993d35d17b2fb2e662092fdea701a243dc89d79cc2c943686c",
-      "size": 869
-    },
-    {
-      "path": "unified/vllm_python-0.25.1.tar.gz",
-      "sha256": "d287f1e61bd15096c9ae12e9b082461da51b0694b68127684eb429e47e49bf12",
-      "size": 9659
-    },
-    {
-      "path": "unified/vllm_python-0.26.0.tar.gz",
-      "sha256": "2955bb6b931511ac052d673b1166649efe7e4da52ae35dd7361ec8a5923090dc",
-      "size": 9714
-    },
-    {
-      "path": "unified/vllm_rust-0.25.1.patch1.tar.gz",
-      "sha256": "ef7fec41a434bbfd2bcfb1105504ca80c43a9f43d635f106301e8e1816210a05",
-      "size": 925
-    },
-    {
-      "path": "unified/vllm_rust-0.25.1.tar.gz",
-      "sha256": "ef8038fca3843984094b1421382ff9dc0ae0563832084c1ddcf7341d27ff2ba9",
-      "size": 10838
-    },
-    {
-      "path": "unified/vllm_rust-0.26.0.tar.gz",
-      "sha256": "d34266871fe548c9c90a0b8b4f095fd058c68abaec377e24df8b652a6b530ba2",
-      "size": 10961
+      "path": "unified-history",
+      "format": "unified-history",
+      "sha256": "03aa66b85b740e61fd10bf1685dce5c44ac6234bc5004132a90c003dc577a06d",
+      "size": 3353660
     }
   ],
   "inactive_shards": [
@@ -510,6 +251,48 @@
       "size": 10008,
       "disposition": "superseded",
       "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.23.patch2.tar.gz",
+      "sha256": "eef07b345f0b7cbcdf12352cbb119d0d022ebfad0e14e69c9114a176e05f47fd",
+      "size": 2468,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.23.patch3.tar.gz",
+      "sha256": "de5824f9ff9e4143bcd6ae1d5745bf10f392e8ca6b1655d1eecdbb5bb5ac241a",
+      "size": 67524,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.23.patch4.tar.gz",
+      "sha256": "feeb58c36bc927a13600253995fc1f111988d60c7b4879fefceb871a58fb4a65",
+      "size": 45199,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.23.patch5.tar.gz",
+      "sha256": "68ab464c4b7ba7d06a2cc739eb76fedc6139bce10f1fd9dbfccedcff205f92fd",
+      "size": 46028,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.23.patch6.tar.gz",
+      "sha256": "8ab0670f56e5fcddc898ab1e9e856eaad4676047b92806dcbf3c92d0f1a4622d",
+      "size": 1184,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.1.23.tar.gz",
+      "sha256": "69dd3be5a0f3a108e513c34a8b3669b405b521061872bfab5b1fb9885ac76880",
+      "size": 10164,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
     },
     {
       "path": "unified/dynamo_v2-0.1.25.patch1.tar.gz",
@@ -792,11 +575,102 @@
       "reason": "Superseded historical Unified capture retained byte-for-byte; excluded from the active comparison table because its scoreable outcomes are exactly covered by later active release captures."
     },
     {
+      "path": "unified/dynamo_v2-0.3.2.patch1.tar.gz",
+      "sha256": "cde85bfb976f6d75c112d4289803c72b729e6c26d12fbf88bf297cf218fdcec6",
+      "size": 608,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.2.patch2.tar.gz",
+      "sha256": "d00ad8e0b3addd999dc9e72707038c9f3b8f904769c851081ab70e7ee2cdd314",
+      "size": 7652,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.2.patch3.tar.gz",
+      "sha256": "1a9e01a9bb0a7a2315a63c08ed233c51cb436e327989c4e31876080ad60f4b8a",
+      "size": 70457,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.2.patch4.tar.gz",
+      "sha256": "f9848e81e897345ed6033b98d7ef512e10c3321ef28cb7e7cb2f16046ef8970d",
+      "size": 47275,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.2.patch5.tar.gz",
+      "sha256": "6076beb11be11793d311d0c125b176be2a0952d463a1d9c24986fa54c771c534",
+      "size": 48069,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.2.patch6.tar.gz",
+      "sha256": "4f111c7e14e4567a61b47a9ab80741f3711640158bde53f2bcbbddd7d784a594",
+      "size": 1183,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.2.tar.gz",
+      "sha256": "9a6ba4a5553408fdb2c881a41db3097640f48c95ee496e055825620fb3dc2145",
+      "size": 12234,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
       "path": "unified/dynamo_v2-0.3.3+pr166.tar.gz",
       "sha256": "bb080ce2244ec6708bbe5c94171777066dd58de234511c7f540adf82906a1e0f",
       "size": 12375,
       "disposition": "superseded",
       "reason": "Superseded change-scoped Unified capture retained byte-for-byte; excluded from the active comparison table because it is not a published release and contributes no distinct scoreable outcome after request-bound canonicalization."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.3.patch2.tar.gz",
+      "sha256": "cac44636229a93f908560a87a14a640d998411e8f5aa43d8789a6d5d8e89d79c",
+      "size": 6675,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.3.patch3.tar.gz",
+      "sha256": "a51db8bc043bf87be923100a367e603331ee712a1cf91b813ca0960529476ba6",
+      "size": 71281,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.3.patch4.tar.gz",
+      "sha256": "bf4d44f54535b7eefa709331287b00c6660e435c84c8ff71172d733ca0c00249",
+      "size": 48006,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.3.patch5.tar.gz",
+      "sha256": "24fe469b5c482e6698c35a39b45a609f2e79e85e088b3833f4970c0017ab7125",
+      "size": 48807,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.3.patch6.tar.gz",
+      "sha256": "732046f5b41629644e32392b7496884e7d8f839003593936000d4286767c45f1",
+      "size": 1178,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.3.tar.gz",
+      "sha256": "ab6021d70826d91174a05a6bf143d7661502991440aace22983ba014b9475f4d",
+      "size": 13798,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
     },
     {
       "path": "unified/dynamo_v2-0.3.4+pr166.patch1.tar.gz",
@@ -818,6 +692,90 @@
       "size": 17451,
       "disposition": "superseded",
       "reason": "Superseded change-scoped Unified capture retained byte-for-byte; excluded from the active comparison table because it is not a published release and contributes no distinct scoreable outcome after request-bound canonicalization."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.4.patch2.tar.gz",
+      "sha256": "38544bb6a677c694a8680d306c7a729e452e9b67d4494e9c5aa6210551a402d1",
+      "size": 6671,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.4.patch3.tar.gz",
+      "sha256": "5a917bff8e2456388e2e2f441544ae19304b4f8aa07dc813496fe06aeaea1c55",
+      "size": 72001,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.4.patch4.tar.gz",
+      "sha256": "8a93c4db9100c4e7a75151ef4fe6d166ca6de42f41d0b9f7e2d61346a2cf69aa",
+      "size": 48586,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.4.patch5.tar.gz",
+      "sha256": "e3717a9d8918987655014a4d7f00da7ee6ee31e889894fa88a2f6dba54ff370b",
+      "size": 49415,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.4.patch6.tar.gz",
+      "sha256": "969978f888e928dfaa0c488cb72ac5614c3406810b112e7a4c79316d86ad4dc9",
+      "size": 1180,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.3.4.tar.gz",
+      "sha256": "19b6f45dc869378a86af35a4a06395cbb6fb3f8976705ded2738405a536bca25",
+      "size": 13715,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.4.0.patch2.tar.gz",
+      "sha256": "5d66e6b49dc0dcfcfab38a7b3646441bea436c74caaa8949b3d5b88ddf67c003",
+      "size": 3687,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.4.0.patch3.tar.gz",
+      "sha256": "61a226f0714c08beb678f10bc9dcb660c3e174f2b2efef55241ff226ab604a50",
+      "size": 73112,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.4.0.patch4.tar.gz",
+      "sha256": "562518a8796d37d47d8a2ee62114a41dd1b867d7a4e34c4bc892163a877674a8",
+      "size": 49313,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.4.0.patch5.tar.gz",
+      "sha256": "e0276359ae9d1f0bbf4d4b5e849be47273030add8a9dc4e9bf2f705f18569f4e",
+      "size": 50150,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.4.0.patch6.tar.gz",
+      "sha256": "fc44f9f667536a16585ffec6efbcda446d7801f8199ea39985a5fdca46d52193",
+      "size": 1182,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.4.0.tar.gz",
+      "sha256": "c2d0c749ab3439fa9f7b43c5ffe621ce8e207ae6905e1fdee8fc4a2ba4486f17",
+      "size": 13751,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
     },
     {
       "path": "unified/dynamo_v2-0.4.1.patch2.tar.gz",
@@ -946,6 +904,55 @@
       "reason": "Superseded change-scoped Unified capture retained byte-for-byte; excluded from the active comparison table because it is not a published release and contributes no distinct scoreable outcome after request-bound canonicalization."
     },
     {
+      "path": "unified/dynamo_v2-0.5.3.patch3.tar.gz",
+      "sha256": "4d2cb166cda1ae17797d198909d4ddbd1b2faf0af0e98c6d104b0eb1762dc884",
+      "size": 75148,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.5.3.patch4.tar.gz",
+      "sha256": "00505f2f17b183a71d370f35c14ec6b83a3786952e834400f91cfb407e82b16d",
+      "size": 50470,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.5.3.patch5.tar.gz",
+      "sha256": "828eed75f6fcbdd6532179606c00dc179a6a20d04c1397fa3e75c6582d9e6200",
+      "size": 51261,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.5.3.patch6.tar.gz",
+      "sha256": "50c818f00fcf7ae8ecf4b52c40bdfd28705f454db944a90e5dc218efcb0b9465",
+      "size": 1297,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.6.0+source.06847bad0fee2c369c44d7fef7a16ac976af4e1ea606882fcc3cbe5a3a402518.patch1.tar.gz",
+      "sha256": "9a239c8d70f89dd183744a05927e1aad06d2ff2a3a5b0a585fe6528828b8f76b",
+      "size": 57145,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.6.0+source.06847bad0fee2c369c44d7fef7a16ac976af4e1ea606882fcc3cbe5a3a402518.patch2.tar.gz",
+      "sha256": "104ac7a93188da535575d0341fab226478bd37d6739d25111ee7622799b7033e",
+      "size": 57417,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.6.0+source.06847bad0fee2c369c44d7fef7a16ac976af4e1ea606882fcc3cbe5a3a402518.tar.gz",
+      "sha256": "43e06aa1da0f49bf3881b248356c709ffc6f1e00a85e76f6c89bd5d984f3c460",
+      "size": 61233,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
       "path": "unified/dynamo_v2-0.6.0+source.91c3112d21c1fa5dea5445ff42e1f3d91884421e7e8362b54e0c6328e8b58988.tar.gz",
       "sha256": "08de29e1f54d5076fa1231e9003cd873cd51fe155c7018641f2377524c532ef4",
       "size": 57736,
@@ -960,11 +967,46 @@
       "reason": "Superseded change-scoped Unified capture retained byte-for-byte; excluded from the active comparison table because it is not a published release and contributes no distinct scoreable outcome after request-bound canonicalization."
     },
     {
+      "path": "unified/dynamo_v2-0.6.0.patch3.tar.gz",
+      "sha256": "f5944611872777a9ad9039aadfa0ff3e8287593241e406d5803c692f88b1af20",
+      "size": 78679,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.6.0.patch4.tar.gz",
+      "sha256": "0706dd8c12b6504386708e0a6cd6ca1dbe863d46d8f0ca65b73475e77f7addeb",
+      "size": 53072,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.6.0.patch5.tar.gz",
+      "sha256": "1d652eddc10eeb42dae7a27ac7ea7a0ba4ef177698455c8e61fd72749e666787",
+      "size": 53878,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/dynamo_v2-0.6.0.patch6.tar.gz",
+      "sha256": "76e5d61e4fe07cd450e6a1a5e65f80362a51552df8bbb40ad390e304d1ef838e",
+      "size": 1295,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
       "path": "unified/dynamo_v2-0.6.0.tar.gz",
       "sha256": "c0ffe5946e1fc4758f5031b13f04f2ee9cd9bdf1a5014ff51272f36cc24b5b7c",
       "size": 24052,
       "disposition": "quarantined",
       "reason": "Recorded as published 0.6.0 without producer provenance; six identical-stimulus DeepSeek V4.1 captures disagree with the verified release. Retained as evidence, not an active release capture. Verified release corrections are in dynamo_v2-0.6.0.patch3.tar.gz."
+    },
+    {
+      "path": "unified/dynamo_v2-0.6.1+source.65b6e028637ed1b7dbd47d4ff52b989be343ba94d44becca626d5292de62078d.tar.gz",
+      "sha256": "d3726267a34ec59585a02b69a5b51ac28ae843629ce5a72ecd52dd48e7a63859",
+      "size": 57523,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
     },
     {
       "path": "unified/golden+pr166.patch1.tar.gz",
@@ -995,6 +1037,13 @@
       "reason": "Historical shared corpus overlay retained unchanged; current shared corpus owns the active scenarios and input configuration."
     },
     {
+      "path": "unified/golden.tar.gz",
+      "sha256": "21570759dbcc707eb7595d18e1572a4029e93a55d642020169d7841b2e7631d6",
+      "size": 16404,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
       "path": "unified/inputs+pr166.patch1.tar.gz",
       "sha256": "f6722edf1539874813d50598a3a0040c7c314e7ed95295be5b4e1c56ec10a0f4",
       "size": 997,
@@ -1021,6 +1070,69 @@
       "size": 28965,
       "disposition": "superseded",
       "reason": "Historical shared corpus overlay retained unchanged; current shared corpus owns the active scenarios and input configuration."
+    },
+    {
+      "path": "unified/inputs.tar.gz",
+      "sha256": "c004870a1e6efec8c22dc703ed698d2296abf6131195316ccfef0a4ca5d07aaf",
+      "size": 95027,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/sglang_python-0.5.14.tar.gz",
+      "sha256": "93d2101ea78c4c1022bb95ed1f3f57fb2bec984d75004e6a2921b50e85609f15",
+      "size": 4363,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/sglang_python-0.5.16.tar.gz",
+      "sha256": "68b20e272da148503f2626342fbe7977ac259a0a391c5fc4b902ce59c9584d35",
+      "size": 8409,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/vllm_python-0.25.1.patch1.tar.gz",
+      "sha256": "903c3e2d8adeef993d35d17b2fb2e662092fdea701a243dc89d79cc2c943686c",
+      "size": 869,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/vllm_python-0.25.1.tar.gz",
+      "sha256": "d287f1e61bd15096c9ae12e9b082461da51b0694b68127684eb429e47e49bf12",
+      "size": 9659,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/vllm_python-0.26.0.tar.gz",
+      "sha256": "2955bb6b931511ac052d673b1166649efe7e4da52ae35dd7361ec8a5923090dc",
+      "size": 9714,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/vllm_rust-0.25.1.patch1.tar.gz",
+      "sha256": "ef7fec41a434bbfd2bcfb1105504ca80c43a9f43d635f106301e8e1816210a05",
+      "size": 925,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/vllm_rust-0.25.1.tar.gz",
+      "sha256": "ef8038fca3843984094b1421382ff9dc0ae0563832084c1ddcf7341d27ff2ba9",
+      "size": 10838,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
+    },
+    {
+      "path": "unified/vllm_rust-0.26.0.tar.gz",
+      "sha256": "d34266871fe548c9c90a0b8b4f095fd058c68abaec377e24df8b652a6b530ba2",
+      "size": 10961,
+      "disposition": "superseded",
+      "reason": "Superseded by canonical Unified YAML family and capture history; retained as immutable migration evidence."
     }
   ]
 }

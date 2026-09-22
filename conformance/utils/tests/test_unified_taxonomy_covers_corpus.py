@@ -19,7 +19,6 @@ from collections import defaultdict
 import json
 import re
 import sys
-import tarfile
 from pathlib import Path
 
 UTILS = Path(__file__).resolve().parents[1]
@@ -31,8 +30,8 @@ import pytest  # noqa: E402
 import yaml  # noqa: E402
 
 import gen_unified_golden as G  # noqa: E402
+import unified_history  # noqa: E402
 from fixture_disposition import historical_unified_case_key  # noqa: E402
-from generate_conformance_table import _base_stream_version  # noqa: E402
 from gen_unified_golden import (  # noqa: E402
     CLEAN,
     OnlyFamilies,
@@ -677,32 +676,32 @@ def _scenario_of(cid: str, fam: str) -> str:
     return cid
 
 
-def _packed_layer(shard: str, fam: str, field_map):
+def _packed_layer(root: Path, directory: str, fam: str, field_map):
     """Case records from a PACKAGED shard, keyed by scenario.
 
     The shards are tracked LFS artifacts, so this layer exists in a clean checkout. They
     are the committed form of the exploded loose tree, which means comparing against them
     checks the bytes that actually ship.
     """
-    import tarfile
-
     import yaml
 
     out = {}
-    path = UTILS.parent / "fixtures" / "unified" / shard
-    with tarfile.open(path) as tar:
-        for member in tar.getmembers():
-            if not member.name.endswith(".yaml") or f"/{fam}/" not in member.name:
+    for path in sorted((root / directory / fam).glob("*.yaml")):
+        doc = yaml.safe_load(path.read_bytes()) or {}
+        for cid, case in (doc.get("cases") or {}).items():
+            scenario = case.get("scenario") or _taxonomy_scenarios(fam).get(cid)
+            if scenario is None:
                 continue
-            doc = yaml.safe_load(tar.extractfile(member).read()) or {}
-            for cid, case in (doc.get("cases") or {}).items():
-                scenario = case.get("scenario") or _taxonomy_scenarios(fam).get(cid)
-                if scenario is None:
-                    continue
-                out.setdefault(scenario, {}).update(
-                    {want: case[have] for want, have in field_map.items() if have in case}
-                )
+            out.setdefault(scenario, {}).update(
+                {want: case[have] for want, have in field_map.items() if have in case}
+            )
     return out
+
+
+def _materialized_unified_root(tmp_path: Path) -> Path:
+    root = tmp_path / "unified"
+    unified_history.materialize_store(UTILS.parent / "fixtures-unified-v2", root)
+    return root
 
 
 def _taxonomy_scenarios(fam: str):
@@ -711,24 +710,14 @@ def _taxonomy_scenarios(fam: str):
     The golden shard keys by taxonomy id and carries no scenario field, so the mapping
     comes from the one shard holding both. A key JOIN, not a value normalization.
     """
-    import tarfile
-
-    import yaml
-
     cached = _taxonomy_scenarios._cache.get(fam)
     if cached is not None:
         return cached
     out = {}
-    fixtures = UTILS.parent / "fixtures" / "unified"
-    for path in sorted(fixtures.glob("inputs*.tar.gz")):
-        with tarfile.open(path) as tar:
-            for member in tar.getmembers():
-                if not member.name.endswith(".yaml") or f"/{fam}/" not in member.name:
-                    continue
-                doc = yaml.safe_load(tar.extractfile(member).read()) or {}
-                for cid, case in (doc.get("cases") or {}).items():
-                    if case.get("scenario"):
-                        out[cid] = case["scenario"]
+    store = unified_history.load_store(UTILS.parent / "fixtures-unified-v2")
+    for case in store.families[fam].cases.values():
+        if case["scenario"] and case["display_id"]:
+            out[case["display_id"]] = case["scenario"]
     _taxonomy_scenarios._cache[fam] = out
     return out
 
@@ -736,12 +725,12 @@ def _taxonomy_scenarios(fam: str):
 _taxonomy_scenarios._cache = {}
 
 
-def test_every_case_triple_is_identical_at_every_layer():
+def test_every_case_triple_is_identical_at_every_layer(tmp_path):
     """One corpus, every tracked representation, zero drift, across all three fields.
 
     Compares `(input, init, golden)` for every case of every family across the generator's
     constructed cases, the emitted-and-reloaded golden spec, and the packaged
-    `inputs.tar.gz` / `golden.tar.gz` shards. Only key NAMES are normalized — `assembled`
+    canonical family YAML. Only key NAMES are normalized — `assembled`
     -> `golden`, taxonomy id -> scenario slug. No byte, missing field, value, ordering or
     type is normalized away; a missing field fails by name rather than being skipped.
 
@@ -756,14 +745,11 @@ def test_every_case_triple_is_identical_at_every_layer():
     wrong.
     """
     checked = 0
+    materialized = _materialized_unified_root(tmp_path)
     for fam in FAMILIES:
         spec = _emitted_spec(fam)
-        packed_in = {}
-        packed_gold = {}
-        for path in sorted((UTILS.parent / "fixtures" / "unified").glob("inputs*.tar.gz")):
-            packed_in.update(_packed_layer(path.name, fam, {"input": "input", "init": "init"}))
-        for path in sorted((UTILS.parent / "fixtures" / "unified").glob("golden*.tar.gz")):
-            packed_gold.update(_packed_layer(path.name, fam, {"golden": "assembled"}))
+        packed_in = _packed_layer(materialized, "inputs", fam, {"input": "input", "init": "init"})
+        packed_gold = _packed_layer(materialized, "golden", fam, {"golden": "assembled"})
 
         for cid, case in build_cases(fam).items():
             scenario = _scenario_of(cid, fam)
@@ -789,43 +775,33 @@ def test_every_case_triple_is_identical_at_every_layer():
     )
 
 
-def _assert_release_coverage(releases, expected):
-    assert releases, "no released Dynamo Unified captures in manifest"
-    for version, captured in releases.items():
-        assert expected <= captured, f"{version}: missing historical captures {sorted(expected - captured)}"
+def _assert_retained_capture_coverage(captured, expected):
+    assert captured, "no retained Dynamo Unified captures in history"
+    assert expected <= captured, f"missing retained captures {sorted(expected - captured)}"
 
 
-def test_every_released_unified_column_covers_the_current_corpus():
-    # Fold append-only overlays without treating an unpublished branch as a release.
-    manifest = json.loads((UTILS.parent / "fixtures-manifest.json").read_text())
-    releases = defaultdict(set)
-    for shard in manifest["shards"]:
-        path = Path(shard["path"])
-        if path.parent != Path("unified") or not path.name.startswith("dynamo_v2-"):
+def test_retained_unified_captures_cover_the_current_corpus():
+    store = unified_history.load_store(UTILS.parent / "fixtures-unified-v2")
+    captured = set()
+    for (family, implementation), history in store.histories.items():
+        if implementation != "dynamo_v2":
             continue
-        version = _base_stream_version(path.name.removeprefix("dynamo_v2-").removesuffix(".tar.gz"))
-        if not re.fullmatch(r"\d+\.\d+\.\d+", version):
-            continue
-        with tarfile.open(UTILS.parent / "fixtures" / path) as archive:
-            for member in archive.getmembers():
-                parts = Path(member.name).parts
-                if member.isfile() and len(parts) == 4 and parts[-1].endswith(".yaml"):
-                    family = parts[-2]
-                    releases[version].add((
-                        family,
-                        historical_unified_case_key(family, parts[-1].removesuffix(".yaml")),
-                    ))
+        capture_id = history.ordered_capture_ids()[-1]
+        for case_id in history.resolve(capture_id):
+            case = history.family.cases[case_id]
+            case_key = case["display_id"] or case["historical_ids"][0]
+            captured.add((family, historical_unified_case_key(family, case_key)))
     expected = {
         (family, numbered_id(_scenario_of(case_id, family)))
         for family in FAMILIES for case_id in build_cases(family)
     }
-    _assert_release_coverage(releases, expected)
+    _assert_retained_capture_coverage(captured, expected)
 
 
-def test_release_coverage_rejects_one_missing_historical_case():
+def test_retained_capture_coverage_rejects_one_missing_case():
     expected = {("qwen3", "UNIFIED.1-1"), ("qwen3", "UNIFIED.32-5")}
-    with pytest.raises(AssertionError, match="missing historical captures"):
-        _assert_release_coverage({"0.6.0": expected - {("qwen3", "UNIFIED.32-5")}}, expected)
+    with pytest.raises(AssertionError, match="missing retained captures"):
+        _assert_retained_capture_coverage(expected - {("qwen3", "UNIFIED.32-5")}, expected)
 
 
 def _family_value(scenario, family):

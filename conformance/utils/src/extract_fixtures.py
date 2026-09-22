@@ -4,10 +4,9 @@
 """
 Extract conformance fixtures from the in-repo LFS shard store into the local cache.
 
-Shard tarballs live in git at conformance/fixtures/ (tracked via git-lfs; see
-.gitattributes). The manifest (conformance/fixtures-manifest.json) pins the
-active snapshot and the sha256 of every shard. No network access: extraction
-reads the checked-out shard files directly.
+Archived v1 fixtures live at conformance/fixtures/. Unified fixtures live as YAML
+under conformance/fixtures-unified-v2/. The manifest pins both sources. Extraction
+materializes them into one compatibility tree without network access.
 
 Cache location (fixed, same contract as the old HF downloader):
   ${XDG_CACHE_HOME:-~/.cache}/dynamo/conformance-fixtures/
@@ -40,6 +39,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import fixture_disposition
+import unified_history
 
 # The only errnos `Path.rename()` onto an existing directory is expected to
 # raise for "the destination is already occupied" -- confirmed ENOTEMPTY on
@@ -60,6 +60,7 @@ CACHE_PUBLISH_LOCK = ".publish.lock"
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
 MANIFEST_PATH = ROOT / "conformance" / "fixtures-manifest.json"
 FIXTURES_DIR = ROOT / "conformance" / "fixtures"
+HISTORY_DIR = ROOT / "conformance" / "fixtures-unified-v2"
 
 LFS_POINTER_PREFIX = b"version https://git-lfs.github.com/spec/v1"
 
@@ -292,6 +293,18 @@ def shard_file(shard):
     failure: the file exists but holds ~130 bytes of pointer text, not the
     tarball.
     """
+    if shard.get("format") == "unified-history":
+        path = HISTORY_DIR
+        if not path.is_dir():
+            sys.exit(f"Unified history missing: {path}")
+        actual, size = unified_history.store_digest(path)
+        if actual != shard["sha256"] or size != shard["size"]:
+            sys.exit(
+                f"Unified history differs from the manifest pin: expected "
+                f"{shard['sha256'][:12]}…/{shard['size']} B, got "
+                f"{actual[:12]}…/{size} B\nRun package_fixtures.py to refresh the pin."
+            )
+        return path
     path = FIXTURES_DIR / shard["path"]
     if not path.exists():
         sys.exit(
@@ -351,6 +364,26 @@ def extract_tarball(tarball_path, dest_dir, verbose=False):
         tf.extractall(str(dest_dir), filter="data")
 
 
+def materialize_shard(
+    shard,
+    source,
+    dest_dir,
+    *,
+    derived_release_versions=None,
+    verbose=False,
+):
+    if shard.get("format") == "unified-history":
+        if verbose:
+            print(f"  [materialize] {source.name} -> {dest_dir / 'unified'}", file=sys.stderr)
+        unified_history.materialize_store(
+            source,
+            dest_dir / "unified",
+            derived_release_versions=derived_release_versions,
+        )
+    else:
+        extract_tarball(source, dest_dir, verbose=verbose)
+
+
 def show_info(manifest, cache_root):
     pin = manifest["snapshot"]
     print(f"Snapshot: {pin}")
@@ -390,16 +423,7 @@ def show_info(manifest, cache_root):
         print(f"\nNo cached snapshots in {cache_root}")
 
 
-def main():
-    ap = argparse.ArgumentParser(
-        description="Extract conformance fixtures from the in-repo LFS shard store"
-    )
-    ap.add_argument("--full-refresh", action="store_true", help="Ignore existing cache, re-extract all")
-    ap.add_argument("--dry-run", action="store_true", help="Show plan without extracting")
-    ap.add_argument("--info", action="store_true", help="Show manifest info and cache state, then exit")
-    ap.add_argument("-v", "--verbose", action="store_true", help="Print per-shard details")
-    args = ap.parse_args()
-
+def _extract(args):
     if not MANIFEST_PATH.exists():
         sys.exit(
             f"Manifest not found: {MANIFEST_PATH}\n"
@@ -474,8 +498,21 @@ def main():
     if tmp_dir.exists():
         shutil.rmtree(str(tmp_dir))
     print(f"Extracting {len(shards)} shard(s) into {tmp_dir}", file=sys.stderr)
+    crates = manifest.get("crates", {})
+    dynamo_v2_version = crates.get("dynamo-parsers-v2") if isinstance(crates, dict) else None
+    derived_release_versions = (
+        {"dynamo_v2": dynamo_v2_version}
+        if isinstance(dynamo_v2_version, str)
+        else None
+    )
     for s in shards:
-        extract_tarball(shard_file(s), tmp_dir, verbose=args.verbose)
+        materialize_shard(
+            s,
+            shard_file(s),
+            tmp_dir,
+            derived_release_versions=derived_release_versions,
+            verbose=args.verbose,
+        )
     write_state(tmp_dir, pin, shards, inactive.values())
 
     snap_dir = publish_extracted_snapshot(
@@ -490,6 +527,24 @@ def main():
     )
 
     print(snap_dir)
+
+
+def extract_snapshot(args):
+    with unified_history._store_read_lock(HISTORY_DIR):
+        _extract(args)
+
+
+def main():
+    ap = argparse.ArgumentParser(
+        description="Extract conformance fixtures from the in-repo LFS shard store"
+    )
+    ap.add_argument("--full-refresh", action="store_true", help="Ignore existing cache, re-extract all")
+    ap.add_argument("--dry-run", action="store_true", help="Show plan without extracting")
+    ap.add_argument("--info", action="store_true", help="Show manifest info and cache state, then exit")
+    ap.add_argument("-v", "--verbose", action="store_true", help="Print per-shard details")
+    args = ap.parse_args()
+
+    extract_snapshot(args)
 
 
 if __name__ == "__main__":

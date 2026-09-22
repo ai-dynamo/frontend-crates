@@ -1,0 +1,224 @@
+provenance:
+  status: legacy
+  captured_with:
+    vllm_python: 0.26.0
+document:
+  mode: unified
+changes:
+  arg_marker_in_string:
+    case_key: UNIFIED.7.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: git log </tool_call> --oneline
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: null
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"cmd": "'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: 'git log '
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: </tool_call>
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' --oneline'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+  guided_json_gt_in_argument_bare_opener:
+    case_key: UNIFIED.30.m
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '<function=[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+        chunks:
+        - expected: []
+        - expected: []
+  guided_json_narrated_prefix_inside_reasoning:
+    case_key: UNIFIED.31-22
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I'll call <function=get_weather
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+  guided_json_native_markup_only:
+    case_key: UNIFIED.31-23
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: null
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+        - expected: []
+        - expected: []
+  guided_json_schema_error_nameless_element_bare_opener:
+    case_key: UNIFIED.31-20
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '<function=[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        chunks:
+        - expected: []
+  guided_json_schema_error_not_a_call_bare_opener:
+    case_key: UNIFIED.31-17
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '<function={"unexpected": "shape"}'
+        chunks:
+        - expected: []
+  guided_json_stray_prefix_before_reasoning:
+    case_key: UNIFIED.31-21
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <function=secret
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+  guided_json_syntax_error_bare_opener:
+    case_key: UNIFIED.31-14
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '<function=[{"name": "get_weather", "arguments": {"city": '
+        chunks:
+        - expected: []
+  guided_json_unterminated_reasoning_then_wrapped_payload:
+    case_key: UNIFIED.31-24
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: thinking
+        - kind: text
+          text: '<tool_call>[{"name": "get_weather", "arguments": {"city": "Paris"}}]</tool_call>'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  two_adjacent_reason_spans:
+    case_key: UNIFIED.10.e
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: first
+        - kind: text
+          text: '<think>
+
+            seconddone'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: '
+
+              second'
+        - expected: []
+        - expected:
+          - kind: text
+            text: done
+metadata_changes: {}
+document_overrides: {}
