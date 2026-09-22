@@ -93,11 +93,6 @@ Here are the functions available in JSONSchema format:
 </functions>
 "#;
 
-pub(crate) const TOOL_CALL_TEMPLATE: &str =
-    "<{dsml_token}invoke name=\"{name}\">\n{arguments}\n</{dsml_token}invoke>";
-
-pub(crate) const TOOL_OUTPUT_TEMPLATE: &str = "\n<result>{content}</result>";
-
 pub(crate) const REASONING_EFFORT_HIGH: &str = "Reasoning Effort: Absolute maximum with no shortcuts permitted.\nYou MUST be very thorough in your thinking and comprehensively decompose the problem to resolve the root cause, rigorously stress-testing your logic against all potential paths, edge cases, and adversarial scenarios.\nExplicitly write out your entire deliberation process, documenting every intermediate step, considered alternative, and rejected hypothesis to ensure absolutely no assumption is left unchecked.\n\n";
 
 pub(crate) const REASONING_EFFORT_MAX: &str = "Reasoning Effort: Beyond maximum — exhaustive, relentless, and uncompromising.\nYou MUST reason with the utmost depth and rigor, leaving absolutely nothing to chance: exhaustively decompose the problem into its most fundamental components, trace every causal chain to its root, and resolve the underlying cause rather than any surface symptom.\nDo not stop reasoning until you have independently verified the solution from multiple angles and are certain that no assumption remains unchecked and no error remains undiscovered.\n\n";
@@ -328,11 +323,19 @@ pub(crate) fn merge_tool_messages(messages: Vec<JsonValue>) -> Vec<JsonValue> {
             let obj = msg
                 .as_object_mut()
                 .expect("a message with a role is an object");
-            let tool_block = serde_json::json!({
-                "type": "tool_result",
-                "tool_use_id": obj.remove("tool_call_id").unwrap_or_else(|| JsonValue::String(String::new())),
-                "content": obj.remove("content").unwrap_or_else(|| JsonValue::String(String::new())),
-            });
+            let tool_block = JsonValue::Object(serde_json::Map::from_iter([
+                ("type".into(), JsonValue::String("tool_result".into())),
+                (
+                    "tool_use_id".into(),
+                    obj.remove("tool_call_id")
+                        .unwrap_or_else(|| JsonValue::String(String::new())),
+                ),
+                (
+                    "content".into(),
+                    obj.remove("content")
+                        .unwrap_or_else(|| JsonValue::String(String::new())),
+                ),
+            ]));
 
             let can_merge = merged
                 .last()
@@ -352,18 +355,22 @@ pub(crate) fn merge_tool_messages(messages: Vec<JsonValue>) -> Vec<JsonValue> {
                     blocks.push(tool_block);
                 }
             } else {
-                merged.push(serde_json::json!({
-                    "role": "user",
-                    "content_blocks": [tool_block],
-                }));
+                merged.push(JsonValue::Object(serde_json::Map::from_iter([
+                    ("role".into(), JsonValue::String("user".into())),
+                    ("content_blocks".into(), JsonValue::Array(vec![tool_block])),
+                ])));
             }
         } else if role == "user" {
             let text = msg
-                .get("content")
-                .and_then(|c| c.as_str())
-                .unwrap_or("")
-                .to_string();
-            let text_block = serde_json::json!({ "type": "text", "text": text });
+                .as_object_mut()
+                .expect("a message with a role is an object")
+                .remove("content")
+                .filter(JsonValue::is_string)
+                .unwrap_or_else(|| JsonValue::String(String::new()));
+            let text_block = JsonValue::Object(serde_json::Map::from_iter([
+                ("type".into(), JsonValue::String("text".into())),
+                ("text".into(), text),
+            ]));
 
             let can_merge = merged
                 .last()
@@ -388,11 +395,12 @@ pub(crate) fn merge_tool_messages(messages: Vec<JsonValue>) -> Vec<JsonValue> {
                     preserve_user_fields(last, &msg);
                 }
             } else {
-                let mut new_msg = serde_json::json!({
-                    "role": "user",
-                    "content": text,
-                    "content_blocks": [text_block],
-                });
+                // Rendering reads content_blocks; retaining content would copy
+                // the entire user message for an unused second representation.
+                let mut new_msg = JsonValue::Object(serde_json::Map::from_iter([
+                    ("role".into(), JsonValue::String("user".into())),
+                    ("content_blocks".into(), JsonValue::Array(vec![text_block])),
+                ]));
                 preserve_user_fields(&mut new_msg, &msg);
                 merged.push(new_msg);
             }
@@ -600,6 +608,29 @@ pub(crate) fn inject_tools_and_response_format(
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn merged_user_blocks_preserve_metadata_and_order() {
+        let merged = merge_tool_messages(vec![
+            serde_json::json!({"role": "tool", "tool_call_id": "c1", "content": "result"}),
+            serde_json::json!({"role": "user", "content": "one", "wo_eos": true, "mask": [1, 0]}),
+            serde_json::json!({"role": "user", "content": "two", "task": "action"}),
+            serde_json::json!({"role": "user", "content": "separate"}),
+        ]);
+        assert_eq!(merged.len(), 2);
+        assert_eq!(
+            merged[0]["content_blocks"],
+            serde_json::json!([
+                {"type": "tool_result", "tool_use_id": "c1", "content": "result"},
+                {"type": "text", "text": "one"},
+                {"type": "text", "text": "two"}
+            ])
+        );
+        assert_eq!(merged[0]["task"], "action");
+        assert_eq!(merged[0]["wo_eos"], true);
+        assert_eq!(merged[0]["mask"], serde_json::json!([1, 0]));
+        assert_eq!(merged[1]["content_blocks"][0]["text"], "separate");
+    }
 
     #[test]
     fn test_extract_visible_text_from_content_array() {

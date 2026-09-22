@@ -95,123 +95,69 @@ const DEFAULT_MEDIA_TYPE_CONVERSIONS: &[(&str, &str)] = &[
 
 /// Convert media URL content parts to empty placeholder types.
 fn convert_media_url_to_placeholder(
-    content_array: &[serde_json::Value],
+    mut content_array: Vec<serde_json::Value>,
     conversions: &[(&str, &str)],
 ) -> Vec<serde_json::Value> {
+    for part in &mut content_array {
+        let part_type = part.get("type").and_then(|t| t.as_str()).unwrap_or("");
+        if let Some((_, target_type)) = conversions.iter().find(|(src, _)| *src == part_type) {
+            *part = serde_json::json!({"type": target_type});
+        }
+    }
     content_array
-        .iter()
-        .map(|part| {
-            let part_type = part.get("type").and_then(|t| t.as_str()).unwrap_or("");
-
-            if let Some((_, target_type)) = conversions.iter().find(|(src, _)| *src == part_type) {
-                serde_json::json!({"type": target_type})
-            } else {
-                part.clone()
-            }
-        })
-        .collect()
 }
 
 fn may_be_fix_msg_content(
-    messages: serde_json::Value,
+    mut messages: serde_json::Value,
     preserve_arrays: bool,
     image_placeholder_template: Option<&str>,
-) -> Value {
-    // preserve_arrays=true: strings → arrays (multimodal)
-    // preserve_arrays=false: text-only arrays → strings (standard)
-    // image_placeholder_template: when `preserve_arrays=false` and the array
-    // mixes text + image parts, this template (e.g. `<|image_{n}|>`) lets us
-    // flatten by substituting image parts with model-family placeholders
-    // instead of leaving the raw array for the template, which would crash
-    // string-content templates like Phi-3-vision's `'+' message.content`.
-
-    let Some(arr) = messages.as_array() else {
-        return Value::from_serialize(&messages);
+) -> serde_json::Value {
+    let Some(arr) = messages.as_array_mut() else {
+        return messages;
     };
-
-    let updated_messages: Vec<_> = arr
-        .iter()
-        .map(|msg| {
-            match msg.get("content") {
-                // Case 1: String to Array (for multimodal templates)
-                Some(serde_json::Value::String(text)) if preserve_arrays => {
-                    let mut modified_msg = msg.clone();
-                    if let Some(msg_object) = modified_msg.as_object_mut() {
-                        let content_array = serde_json::json!([{
-                            "type": "text",
-                            "text": text
-                        }]);
-                        msg_object.insert("content".to_string(), content_array);
-                    }
-                    modified_msg
-                }
-                // Case 2: Array processing
-                Some(serde_json::Value::Array(content_array)) => {
-                    // First, convert any media URL parts to placeholders (e.g., image_url → image)
-                    let content_array = convert_media_url_to_placeholder(
-                        content_array,
-                        DEFAULT_MEDIA_TYPE_CONVERSIONS,
-                    );
-
-                    // Check if it's text-only (after media URL conversion)
-                    let is_text_only_array = !content_array.is_empty()
-                        && content_array.iter().all(|part| {
-                            part.get("type")
-                                .and_then(|type_field| type_field.as_str())
-                                .map(|type_str| type_str == "text")
-                                .unwrap_or(false)
-                        });
-
-                    let mut modified_msg = msg.clone();
-                    if let Some(msg_object) = modified_msg.as_object_mut() {
-                        if is_text_only_array && !preserve_arrays {
-                            // Flatten text-only arrays to string for standard templates
-                            let text_parts: Vec<&str> = content_array
-                                .iter()
-                                .filter_map(|part| part.get("text")?.as_str())
-                                .collect();
-                            let concatenated_text = text_parts.join("\n");
-                            msg_object.insert(
-                                "content".to_string(),
-                                serde_json::Value::String(concatenated_text),
-                            );
-                        } else if !preserve_arrays
-                            && !content_array.is_empty()
-                            && let Some(placeholder_tpl) = image_placeholder_template
-                        {
-                            // Mixed text+image array for a string-content
-                            // template — flatten with model-family image
-                            // placeholders inlined where the image parts were.
-                            // An empty `placeholder_tpl` ("") drops the image
-                            // parts entirely while keeping the text — used by
-                            // pure pass-through / encoder-decoder templates
-                            // (Nemotron-Parse) whose vision encoder consumes the
-                            // image out-of-band, so no text token represents it.
-                            // The `is_empty` guard preserves a literal `[]`
-                            // content (matches pre-PR behavior); flattening
-                            // an empty array to `""` would silently change
-                            // what the template renders.
-                            let flattened = flatten_mixed_content(&content_array, placeholder_tpl);
-                            msg_object.insert(
-                                "content".to_string(),
-                                serde_json::Value::String(flattened),
-                            );
-                        } else {
-                            // Keep as array (with media_url → media placeholder conversion applied)
-                            msg_object.insert(
-                                "content".to_string(),
-                                serde_json::Value::Array(content_array),
-                            );
-                        }
-                    }
-                    modified_msg
-                }
-                _ => msg.clone(), // No conversion needed
+    for msg in arr {
+        let Some(content) = msg.get_mut("content") else {
+            continue;
+        };
+        match content {
+            serde_json::Value::String(_) if preserve_arrays => {
+                let text = content.take();
+                *content = serde_json::Value::Array(vec![serde_json::Value::Object(
+                    serde_json::Map::from_iter([
+                        ("type".into(), serde_json::Value::String("text".into())),
+                        ("text".into(), text),
+                    ]),
+                )]);
             }
-        })
-        .collect();
-
-    Value::from_serialize(&updated_messages)
+            serde_json::Value::Array(parts) => {
+                *parts = convert_media_url_to_placeholder(
+                    std::mem::take(parts),
+                    DEFAULT_MEDIA_TYPE_CONVERSIONS,
+                );
+                // An empty array must remain an array. Templates distinguish it
+                // from an empty string, including when the placeholder is "".
+                let text_only = !parts.is_empty()
+                    && parts
+                        .iter()
+                        .all(|part| part.get("type").and_then(|v| v.as_str()) == Some("text"));
+                if text_only && !preserve_arrays {
+                    let text = parts
+                        .iter()
+                        .filter_map(|part| part.get("text")?.as_str())
+                        .collect::<Vec<_>>()
+                        .join("\n");
+                    *content = serde_json::Value::String(text);
+                } else if !preserve_arrays
+                    && !parts.is_empty()
+                    && let Some(template) = image_placeholder_template
+                {
+                    *content = serde_json::Value::String(flatten_mixed_content(parts, template));
+                }
+            }
+            _ => {}
+        }
+    }
+    messages
 }
 
 /// Concatenate a mixed-content array (text parts + image placeholders) into a
@@ -592,9 +538,7 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
             )
         };
 
-        let messages_canonical = req.messages();
-        let mut messages_for_template: serde_json::Value =
-            serde_json::to_value(&messages_canonical).unwrap();
+        let mut messages_for_template = crate::messages_to_json(req)?;
 
         crate::reject_unsupported_partial_assistant(&messages_for_template)?;
         crate::reject_unsupported_message_tools(&messages_for_template, &[])?;
@@ -603,12 +547,11 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
             normalize_system_messages(&mut messages_for_template, system_normalization);
         }
 
-        messages_for_template = serde_json::to_value(may_be_fix_msg_content(
+        messages_for_template = may_be_fix_msg_content(
             messages_for_template,
             self.requires_content_arrays,
             self.image_placeholder_template,
-        ))
-        .unwrap();
+        );
 
         // Pre-parse JSON-string `arguments` into objects — but only for templates
         // that unconditionally `| tojson` them. Templates that branch on
@@ -658,6 +601,7 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     use dynamo_protocols::types::ChatCompletionRequestMessage as Msg;
     // The crate's renderer tests exercise the bare-protocol request type via the
     // default `OAIChatLikeRequest` impl above; Dynamo's `Nv*` wrapper lives in lib/llm.
@@ -745,6 +689,20 @@ mod tests {
 
     fn render_raw_shape(f: &SysFormatter, messages: serde_json::Value) -> Result<String> {
         f.render(&RawMessagesRequest(Value::from_serialize(&messages)))
+    }
+
+    #[test]
+    fn content_normalization_preserves_unchanged_values() {
+        let messages = json!([
+            {"role": "user", "content": "  中文 <special>\n", "name": "user"},
+            {"role": "assistant", "content": null},
+            {"role": "user", "content": []},
+            {"role": "assistant", "tool_calls": []}
+        ]);
+        assert_eq!(
+            may_be_fix_msg_content(messages.clone(), false, Some("")),
+            messages
+        );
     }
 
     const PERMISSIVE_TMPL: &str = concat!(
@@ -1411,7 +1369,7 @@ mod tests {
         ];
 
         let conversions = &[("image_url", "image")];
-        let result = convert_media_url_to_placeholder(&content_array, conversions);
+        let result = convert_media_url_to_placeholder(content_array, conversions);
 
         assert_eq!(result.len(), 3);
         // Text parts should be unchanged
@@ -1435,7 +1393,7 @@ mod tests {
         ];
 
         let conversions = &[("image_url", "image")];
-        let result = convert_media_url_to_placeholder(&content_array, conversions);
+        let result = convert_media_url_to_placeholder(content_array, conversions);
 
         assert_eq!(result.len(), 3);
         assert_eq!(result[0]["type"], "image");
@@ -1454,7 +1412,7 @@ mod tests {
 
         // Only convert image_url
         let conversions = &[("image_url", "image")];
-        let result = convert_media_url_to_placeholder(&content_array, conversions);
+        let result = convert_media_url_to_placeholder(content_array, conversions);
 
         assert_eq!(result.len(), 3);
         // audio_url and video_url should be preserved as-is
@@ -1484,7 +1442,7 @@ mod tests {
             ("audio_url", "audio"),
             ("video_url", "video"),
         ];
-        let result = convert_media_url_to_placeholder(&content_array, conversions);
+        let result = convert_media_url_to_placeholder(content_array, conversions);
 
         assert_eq!(result.len(), 5);
         assert_eq!(result[0]["type"], "image");
@@ -1506,7 +1464,7 @@ mod tests {
         ];
 
         let conversions: &[(&str, &str)] = &[];
-        let result = convert_media_url_to_placeholder(&content_array, conversions);
+        let result = convert_media_url_to_placeholder(content_array, conversions);
 
         assert_eq!(result.len(), 2);
         // Everything should be preserved as-is
@@ -1528,7 +1486,7 @@ mod tests {
 
         // Use the actual DEFAULT_MEDIA_TYPE_CONVERSIONS
         let result =
-            convert_media_url_to_placeholder(&content_array, DEFAULT_MEDIA_TYPE_CONVERSIONS);
+            convert_media_url_to_placeholder(content_array, DEFAULT_MEDIA_TYPE_CONVERSIONS);
 
         assert_eq!(result.len(), 4);
 

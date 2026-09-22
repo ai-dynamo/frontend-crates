@@ -7,7 +7,7 @@ use anyhow::{Context, Result, ensure};
 use serde_json::Value;
 
 use super::common::{ThinkingMode, resolve_thinking_mode, to_json};
-use super::v4::{Encoding, encode_messages_with_encoding};
+use super::v4::{Encoding, encode_owned_messages as encode_v4_messages};
 
 const IMAGE_PLACEHOLDER: &str = "<｜deepseek_image｜>";
 
@@ -108,7 +108,10 @@ fn normalize_content(messages: &mut [Value]) -> Result<()> {
         if let Some(content) = message.get("content") {
             let text = match content {
                 Value::Null => String::new(),
-                Value::String(text) => validate_text(text)?.to_owned(),
+                Value::String(text) => {
+                    validate_text(text)?;
+                    continue;
+                }
                 Value::Array(blocks) => {
                     let mut texts = Vec::with_capacity(blocks.len());
                     for block in blocks {
@@ -156,14 +159,27 @@ pub fn encode_messages(
     drop_thinking: bool,
     reasoning_effort: u8,
 ) -> Result<String> {
+    encode_owned_messages(
+        messages.to_vec(),
+        thinking_mode,
+        drop_thinking,
+        reasoning_effort,
+    )
+}
+
+fn encode_owned_messages(
+    mut messages: Vec<Value>,
+    thinking_mode: ThinkingMode,
+    drop_thinking: bool,
+    reasoning_effort: u8,
+) -> Result<String> {
     ensure!(
         (1..=100).contains(&reasoning_effort),
         "DeepSeek V4.1 reasoning effort must be within 1–100"
     );
-    let mut messages = messages.to_vec();
     normalize_content(&mut messages)?;
-    encode_messages_with_encoding(
-        &messages,
+    encode_v4_messages(
+        messages,
         thinking_mode,
         true,
         drop_thinking,
@@ -182,9 +198,7 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
     }
 
     fn render(&self, req: &dyn crate::OAIChatLikeRequest) -> Result<String> {
-        let messages_value = req.messages();
-        let messages_json =
-            serde_json::to_value(&messages_value).context("Failed to convert messages to JSON")?;
+        let messages_json = crate::messages_to_json(req)?;
         crate::reject_unsupported_partial_assistant(&messages_json)?;
         crate::reject_unsupported_message_tools(&messages_json, &["developer"])?;
 
@@ -216,7 +230,9 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
             None => true,
             Some(value) => value.as_bool().context("drop_thinking must be a boolean")?,
         };
-        let mut messages: Vec<Value> = serde_json::from_value(messages_json)?;
+        let Value::Array(mut messages) = messages_json else {
+            anyhow::bail!("Messages is not an array");
+        };
         let tools_enabled =
             req.tool_choice().as_ref().and_then(|value| value.as_str()) != Some("none");
         let tools = req
@@ -254,6 +270,6 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
                 messages[0]["response_format"] = response_format;
             }
         }
-        encode_messages(&messages, thinking_mode, drop_thinking, budget)
+        encode_owned_messages(messages, thinking_mode, drop_thinking, budget)
     }
 }

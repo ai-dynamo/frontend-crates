@@ -10,29 +10,28 @@
 
 use anyhow::{Context, Result};
 use serde_json::Value as JsonValue;
+use std::fmt::Write;
 
 use super::common::{
-    NormalizeNonText, RESPONSE_FORMAT_TEMPLATE, TOOL_CALL_TEMPLATE, TOOL_OUTPUT_TEMPLATE,
-    TOOLS_SYSTEM_TEMPLATE, encode_arguments_to_dsml, find_last_user_index,
-    normalize_message_contents, render_tools, to_json,
+    NormalizeNonText, RESPONSE_FORMAT_TEMPLATE, TOOLS_SYSTEM_TEMPLATE, encode_arguments_to_dsml,
+    find_last_user_index, normalize_message_contents, render_tools, to_json,
 };
 
 pub use super::common::{ThinkingMode, tokens};
 
 /// Render a single message
 fn render_message(
+    prompt: &mut String,
     index: usize,
     messages: &[JsonValue],
     thinking_mode: ThinkingMode,
     last_user_idx: Option<usize>,
-) -> Result<String> {
+) -> Result<()> {
     let msg = &messages[index];
     let role = msg
         .get("role")
         .and_then(|r| r.as_str())
         .context("Missing 'role' field")?;
-
-    let mut prompt = String::new();
 
     match role {
         "system" => {
@@ -71,24 +70,21 @@ fn render_message(
                 .and_then(|c| c.as_str())
                 .context("Developer role requires content")?;
 
-            let mut content_developer = String::new();
+            prompt.push_str(tokens::USER_START);
 
             if let Some(tools) = msg.get("tools").and_then(|t| t.as_array()) {
-                content_developer.push_str("\n\n");
-                content_developer.push_str(&render_tools(TOOLS_SYSTEM_TEMPLATE, tools));
+                prompt.push_str("\n\n");
+                prompt.push_str(&render_tools(TOOLS_SYSTEM_TEMPLATE, tools));
             }
 
             if let Some(response_format) = msg.get("response_format") {
-                content_developer.push_str("\n\n");
-                content_developer.push_str(
+                prompt.push_str("\n\n");
+                prompt.push_str(
                     &RESPONSE_FORMAT_TEMPLATE.replace("{schema}", &to_json(response_format)),
                 );
             }
 
-            content_developer.push_str(&format!("\n\n# The user's message is: {}", content));
-
-            prompt.push_str(tokens::USER_START);
-            prompt.push_str(&content_developer);
+            write!(prompt, "\n\n# The user's message is: {}", content)?;
             prompt.push_str(tokens::ASSISTANT_START);
 
             if Some(index) == last_user_idx && thinking_mode == ThinkingMode::Thinking {
@@ -109,33 +105,28 @@ fn render_message(
             if thinking_mode == ThinkingMode::Thinking
                 && last_user_idx.is_some_and(|idx| index > idx)
             {
-                let reasoning = msg.get("reasoning_content").and_then(|v| match v {
-                    serde_json::Value::String(s) => {
-                        if s.is_empty() {
-                            None
-                        } else {
-                            Some(s.clone())
-                        }
+                let mut has_reasoning = false;
+                match msg.get("reasoning_content") {
+                    Some(JsonValue::String(text)) if !text.is_empty() => {
+                        prompt.push_str(text);
+                        has_reasoning = true;
                     }
-                    serde_json::Value::Array(arr) => {
-                        let joined = arr
+                    Some(JsonValue::Array(parts)) => {
+                        for text in parts
                             .iter()
-                            .filter_map(|v| v.as_str())
+                            .filter_map(JsonValue::as_str)
                             .filter(|s| !s.is_empty())
-                            .collect::<Vec<_>>()
-                            .join("\n");
-                        if joined.is_empty() {
-                            None
-                        } else {
-                            Some(joined)
+                        {
+                            if has_reasoning {
+                                prompt.push('\n');
+                            }
+                            prompt.push_str(text);
+                            has_reasoning = true;
                         }
                     }
-                    _ => None,
-                });
-
-                if let Some(reasoning) = reasoning {
-                    // DON'T add THINKING_START - it was already added in user message
-                    prompt.push_str(&reasoning);
+                    _ => {}
+                }
+                if has_reasoning {
                     prompt.push_str(tokens::THINKING_END);
                 }
             }
@@ -163,13 +154,14 @@ fn render_message(
                         tool_call.get("function").context("Missing function")?,
                     )?;
 
-                    let invoke = TOOL_CALL_TEMPLATE
-                        .replace("{dsml_token}", tokens::DSML_TOKEN)
-                        .replace("{name}", name)
-                        .replace("{arguments}", &arguments);
-
-                    prompt.push_str(&invoke);
-                    prompt.push('\n');
+                    writeln!(
+                        prompt,
+                        "<{}invoke name=\"{}\">\n{}\n</{}invoke>",
+                        tokens::DSML_TOKEN,
+                        name,
+                        arguments,
+                        tokens::DSML_TOKEN
+                    )?;
                 }
 
                 prompt.push_str(&format!("</{}function_calls>", tokens::DSML_TOKEN));
@@ -202,7 +194,7 @@ fn render_message(
 
             // Add result
             let content = msg.get("content").and_then(|c| c.as_str()).unwrap_or("");
-            prompt.push_str(&TOOL_OUTPUT_TEMPLATE.replace("{content}", content));
+            write!(prompt, "\n<result>{}</result>", content)?;
 
             // Check if this is the last tool result
             if let Some(prev_idx) = prev_assistant_idx {
@@ -231,7 +223,7 @@ fn render_message(
         _ => anyhow::bail!("Unknown role: {}", role),
     }
 
-    Ok(prompt)
+    Ok(())
 }
 
 /// Encode messages to prompt string
@@ -257,8 +249,7 @@ pub fn encode_messages(
     let last_user_idx = find_last_user_index(messages);
 
     for (index, _) in messages.iter().enumerate() {
-        let msg_prompt = render_message(index, messages, thinking_mode, last_user_idx)?;
-        prompt.push_str(&msg_prompt);
+        render_message(&mut prompt, index, messages, thinking_mode, last_user_idx)?;
     }
 
     Ok(prompt)
@@ -297,19 +288,12 @@ impl crate::OAIPromptFormatter for DeepSeekV32Formatter {
         let thinking_mode =
             super::common::resolve_thinking_mode(req.chat_template_args(), self.thinking_mode);
 
-        // Get messages from request
-        let messages_value = req.messages();
-
-        // Convert minijinja Value to serde_json Value
-        let messages_json =
-            serde_json::to_value(&messages_value).context("Failed to convert messages to JSON")?;
+        let messages_json = crate::messages_to_json(req)?;
         crate::reject_unsupported_partial_assistant(&messages_json)?;
         crate::reject_unsupported_message_tools(&messages_json, &["developer"])?;
-
-        let mut messages_array = messages_json
-            .as_array()
-            .context("Messages is not an array")?
-            .clone();
+        let JsonValue::Array(mut messages_array) = messages_json else {
+            anyhow::bail!("Messages is not an array");
+        };
 
         // DeepSeek V3.2 native formatter expects text content in each message.
         // Normalize OpenAI content arrays (e.g. [{type: "text", text: "..."}]) to strings.

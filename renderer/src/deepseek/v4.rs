@@ -355,7 +355,7 @@ pub(super) fn encode_messages_with_encoding(
     )
 }
 
-fn encode_owned_messages(
+pub(super) fn encode_owned_messages(
     messages: Vec<JsonValue>,
     thinking_mode: ThinkingMode,
     add_bos_token: bool,
@@ -486,14 +486,7 @@ impl crate::OAIPromptFormatter for DeepSeekV4Formatter {
         }
         let drop_thinking = Self::resolve_drop_thinking(args);
 
-        // Native rendering can serialize the typed messages directly, without
-        // constructing a MiniJinja value and converting it back to JSON.
-        let messages_json = if let Some(messages) = req.typed_messages() {
-            serde_json::to_value(messages)
-        } else {
-            serde_json::to_value(req.messages())
-        }
-        .context("Failed to convert messages to JSON")?;
+        let messages_json = crate::messages_to_json(req)?;
         crate::reject_unsupported_partial_assistant(&messages_json)?;
         crate::reject_unsupported_message_tools(&messages_json, &["developer"])?;
 
