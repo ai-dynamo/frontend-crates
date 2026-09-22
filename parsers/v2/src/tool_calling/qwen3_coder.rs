@@ -629,6 +629,66 @@ mod tests {
     }
 
     #[test]
+    fn numeric_literal_constraints_preserve_argument_types() {
+        for keyword in ["const", "enum"] {
+            for (literal, raw, types, expected) in [
+                (
+                    serde_json::json!(42.0),
+                    "42",
+                    serde_json::json!(["integer", "null"]),
+                    serde_json::json!(42),
+                ),
+                (
+                    serde_json::json!(-42.0),
+                    "-42",
+                    serde_json::json!(["integer", "null"]),
+                    serde_json::json!(-42),
+                ),
+                (
+                    serde_json::json!(0.0),
+                    "0",
+                    serde_json::json!(["integer", "null"]),
+                    serde_json::json!(0),
+                ),
+                (
+                    serde_json::json!(42.5),
+                    "42.5",
+                    serde_json::json!(["number", "null"]),
+                    serde_json::json!(42.5),
+                ),
+            ] {
+                let mut schema = serde_json::json!({"type": types});
+                schema[keyword] = if keyword == "enum" {
+                    serde_json::json!([literal])
+                } else {
+                    literal
+                };
+                let mut tools = weather_tools();
+                tools[0].parameters["properties"]["location"] = schema.clone();
+                let input = format!(
+                    "<tool_call><function=get_weather><parameter=location>{raw}</parameter></function></tool_call>"
+                );
+                for width in [1, input.len()] {
+                    let chunks: Vec<_> = input
+                        .as_bytes()
+                        .chunks(width)
+                        .map(|chunk| std::str::from_utf8(chunk).unwrap())
+                        .collect();
+                    let output = parse_chunks(&tools, &chunks).coalesce_calls();
+                    assert_eq!(output.calls.len(), 1, "schema {schema}, width {width}");
+                    assert!(output.calls[0].complete);
+                    assert_eq!(
+                        serde_json::from_str::<serde_json::Value>(&output.calls[0].arguments)
+                            .unwrap(),
+                        serde_json::json!({"location": expected}),
+                        "schema {schema}, width {width}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
     fn preserves_prefix_text_before_block() {
         let out = parse_chunks(
             &weather_tools(),

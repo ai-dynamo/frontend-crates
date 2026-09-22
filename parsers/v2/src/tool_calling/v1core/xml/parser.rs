@@ -809,13 +809,13 @@ fn collect_type_constraints(schema: &Value) -> Option<HashSet<SchemaType>> {
     })
 }
 
-/// The category a parsed JSON value belongs to (integers report as `Integer`).
+/// JSON Schema treats numbers with no fractional part as integers, including `42.0`.
 fn value_category(v: &Value) -> SchemaType {
     match v {
         Value::String(_) => SchemaType::String,
         Value::Bool(_) => SchemaType::Boolean,
         Value::Number(n) => {
-            if n.is_i64() || n.is_u64() {
+            if n.is_i64() || n.is_u64() || n.as_f64().is_some_and(|n| n.fract() == 0.0) {
                 SchemaType::Integer
             } else {
                 SchemaType::Number
