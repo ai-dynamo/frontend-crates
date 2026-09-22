@@ -1,20 +1,9 @@
-schema_version: 2
-family: gemma4
-implementation: sglang_python
-parent: null
-runtime_version: 0.5.14
 provenance:
-  status: captured
+  status: legacy
   captured_with:
     sglang_python: 0.5.14
-completeness: snapshot
-import_lineage:
-- archive: sglang_python-0.5.14.tar.gz
-  sha256: 93d2101ea78c4c1022bb95ed1f3f57fb2bec984d75004e6a2921b50e85609f15
-  mode: overlay
 document:
   mode: unified
-document_overrides: {}
 changes:
   arg_marker_in_string:
     case_key: UNIFIED.7.b
@@ -1026,3 +1015,4 @@ changes:
           - kind: text
             text: done
 metadata_changes: {}
+document_overrides: {}

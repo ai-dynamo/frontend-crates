@@ -86,11 +86,11 @@ Unified work is complete only when the affected family's selected current Dynamo
 
 ## Required conversion collection
 
-For every family converted to `UnifiedParser`, collect the current source in the same change. Unpublished source uses `<crate-version>+source.<sha256>`; a plain version requires source equality with its release tag. The collection is: generate the authored Unified golden inputs, run `unified_render` to capture live Dynamo output, run `explode_unified_fixtures.py`, run `package_fixtures.py`, run `extract_fixtures.py --full-refresh`, then render `conformance/CONFORMANCE_v2.html`. Commit `conformance/fixtures/`, `conformance/fixtures-unified-v2/`, and `conformance/fixtures-manifest.json` together; the self-contained family and capture YAML files plus the manifest pin are the evidence that the family is collected. Files under the gitignored `conformance/unified/` build tree are not.
+For every family converted to `UnifiedParser`, collect the current output in the same change under [the v2 plain-version YAML contract](../../README.md#v2-storage-contract-plain-versioned-yaml-only). Generate the authored inputs and GOLDEN, capture live Dynamo output, publish the affected family YAML and required manifest changes, extract the snapshot, and render `conformance/CONFORMANCE_v2.html`. Do not publish archives, patch files, or source-qualified names. Files under the gitignored `conformance/unified/` build tree alone do not prove the capture is committed.
 
 Use only `conformance/utils/render_table_v2.sh --output conformance/CONFORMANCE_v2.html` for the report. Do not generate `CONFORMANCE_unified.html`. The required final gate is `conformance/utils/check.sh status --model <family> --tab unified`, which must show zero current Dynamo red cells and zero current Dynamo empty cells.
 
-- **Empty current cell:** the current capture is missing the case. Repair the capture pipeline and regenerate the qualified current shard.
+- **Empty current cell:** the current capture is missing the case. Repair the capture pipeline and publish the missing result in plain-version YAML.
 - **Red current cell:** current Dynamo output differs from GOLDEN. Reproduce the popup's exact input, initialization, and chunks, then fix the parser unless the authored GOLDEN is demonstrably wrong.
 - **Not a fix:** adding `reason:`, marking the current parser unavailable, selecting a historical column, serving stale HTML, or editing GOLDEN only to match current output.
 
@@ -99,7 +99,7 @@ Follow this sequence until the rendered counts are both zero:
 1. Write the parser or capture change.
 2. Read every affected popup: input, initialization, chunks, GOLDEN events, and current Dynamo events.
 3. Fix the owning parser or capture path.
-4. Regenerate the qualified current capture, run `package_fixtures.py`, and keep all three published fixture paths in the same commit.
+4. Publish the current plain-version family YAML and required manifest changes in the same commit.
 5. Render `conformance/CONFORMANCE_v2.html` from the same worktree and read the current Unified column again.
 6. Run `conformance/utils/check.sh status --model <family> --tab unified`. This standard gate renders first, prints every empty/red case, and exits nonzero until the selected row is clear. Every render also writes the complete machine-readable report to `conformance/CONFORMANCE_v2.json`.
 7. Run `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --nocapture` and `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- --nocapture`.
