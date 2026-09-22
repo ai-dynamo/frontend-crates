@@ -10,64 +10,86 @@ changes:
     observation:
       value:
         assembled:
-        - kind: tool_call
-          name: run
-          arguments: '{"cmd": "git log'
+        - kind: text
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="run"><｜DSML｜ parameter name="cmd" string="true">git log </｜DSML｜ invoke> --oneline</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
         chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
         - expected:
-          - kind: tool_call
-            name: run
-            arguments: '{"cmd": "git log '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: <｜DSML｜ invoke name="run">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="cmd" string="true">
+        - expected:
+          - kind: text
+            text: 'git log '
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: ' --oneline'
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: 9995000ae114cbc20557862214c42688797c373e078f6aad8551a4bd80ec8bcb
+      semantic_sha256: cf9617c3d8fec2fc404fd3dc9cd0bfb4418592ccac9f473cdd10b7dee3a0ba96
   arg_unicode:
     case_key: UNIFIED.7-1
     observation:
       value:
         assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: São Paulo 東京
+        - kind: text
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">São Paulo 東京</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
         chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
         - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "São Paulo 東京"'
+          - kind: text
+            text: <｜DSML｜ calls>
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
+          - kind: text
+            text: <｜DSML｜ invoke name="get_weather">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="city" string="true">
+        - expected:
+          - kind: text
+            text: São Paulo 東京
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: ee45b41d8ccbc3e610debc8a4c1f1cd395dfeba63858642a4f158c712442ad79
+      semantic_sha256: 17e78d882c0a4fba2eb3222670366f03f5780dcdd965c6ad01892564c3f918cf
   content_then_reason:
     case_key: UNIFIED.11-7
     observation:
       value:
         assembled:
         - kind: reasoning
-          text: Hello there. let me recall
+          text: let me recall
         - kind: text
-          text: The capital is Paris.
+          text: Hello there. The capital is Paris.
         chunks:
-        - expected: []
+        - expected:
+          - kind: text
+            text: 'Hello there. '
         - expected: []
         - expected: []
         - expected: []
@@ -84,59 +106,65 @@ changes:
       value:
         assembled:
         - kind: reasoning
-          text: Sure, one sec. checking the forecast
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
+          text: checking the forecast
+        - kind: text
+          text: Sure, one sec. <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
         chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+        - expected:
+          - kind: text
+            text: 'Sure, one sec. '
         - expected: []
         - expected: []
         - expected: []
         - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"'
+          - kind: text
+            text: <｜DSML｜ calls>
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
+          - kind: text
+            text: <｜DSML｜ invoke name="get_weather">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="city" string="true">
+        - expected:
+          - kind: text
+            text: Paris
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: 0e77d189eb5ad4a70d82ae8336390044042ffafed2adcf70e6e318cf0e6c59da
+      semantic_sha256: 1c8388e13de6ac5b1f54faa287b9b790ce7275a6a2fa4f29690b22a1b8769754
   empty_args:
     case_key: UNIFIED.6-1
     observation:
       value:
         assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments: {}
+        - kind: text
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"></｜DSML｜ invoke></｜DSML｜ calls>
         chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
         - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{'
+          - kind: text
+            text: <｜DSML｜ calls>
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
+          - kind: text
+            text: <｜DSML｜ invoke name="get_weather">
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: d2761c739bde9eaab650fd411ae41a6a3c4262f25cc330ca378b463777b2003c
+      semantic_sha256: 0a5395d446fa7eda2c63e415bf142b49c76737dabc24f049bbe0b08072155879
   guided_json_after_reasoning:
     case_key: UNIFIED.30-6
     observation:
@@ -510,139 +538,114 @@ changes:
   interstitial_text:
     case_key: UNIFIED.11-5
     observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: a
-        - kind: text
-          text: 'Here you go: '
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: 'Here you go: '
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
     stimulus:
-      ref: current
-      semantic_sha256: 579c6803df0644e679cad4713051378c60a1a0945d5f82f4623cd71f77297b20
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
   narrated_calls:
     case_key: UNIFIED.8-5
     observation:
       value:
         assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
+        - kind: text
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> then I'll run <｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> and <｜DSML｜ calls><｜DSML｜ invoke name="g"><｜DSML｜ parameter name="y" string="true">2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
         chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
         - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"'
+          - kind: text
+            text: <｜DSML｜ calls>
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+          - kind: text
+            text: <｜DSML｜ invoke name="get_weather">
         - expected:
-          - kind: tool_call
-            name: f
-            arguments: '{"x": "1"'
+          - kind: text
+            text: <｜DSML｜ parameter name="city" string="true">
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+          - kind: text
+            text: Paris
         - expected:
-          - kind: tool_call
-            name: g
-            arguments: '{"y": "2"'
+          - kind: text
+            text: </｜DSML｜ parameter>
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: ' then I''ll run '
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: <｜DSML｜ invoke name="f">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="x" string="true">
+        - expected:
+          - kind: text
+            text: '1'
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: ' and '
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: <｜DSML｜ invoke name="g">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="y" string="true">
+        - expected:
+          - kind: text
+            text: '2'
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: 692be312b95c20a4b3ddb76d0e04c1eed2b19589c0168902ab090586747e6c31
+      semantic_sha256: 6dd3e851df2fe812f8fe29a9480694a79f9989020a030aca428c421b0abf4896
   orphan_close_after_prose:
     case_key: UNIFIED.5-3
     observation:
       value:
         assembled:
-        - kind: reasoning
-          text: I will check that. <|tool_call_end|>
+        - kind: text
+          text: I will check that. </｜DSML｜ calls>
         chunks:
-        - expected: []
-        - expected: []
+        - expected:
+          - kind: text
+            text: 'I will check that. '
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: ae48231edad7d7b785c97b98eed4fc1c15c20121968458ec49bb8d9be357421c
+      semantic_sha256: 6e05936e46cde21cee3ee15334f21196530978229f0f383a71d81cdd9628f328
   prefilled_reasoning_redundant_opener:
     case_key: UNIFIED.41-1
-    observation:
-      unavailable:
-        code: vllm_starting_state_unsupported
-        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
-    stimulus:
-      unavailable:
-        code: vllm_starting_state_unsupported
-        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
-  prefilled_reasoning_then_text:
-    case_key: UNIFIED.40-4
-    observation:
-      unavailable:
-        code: vllm_starting_state_unsupported
-        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
-    stimulus:
-      unavailable:
-        code: vllm_starting_state_unsupported
-        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
-  prefilled_reasoning_then_text_then_tool:
-    case_key: UNIFIED.40-3
     observation:
       unavailable:
         code: vllm_starting_state_unsupported
@@ -671,16 +674,6 @@ changes:
       unavailable:
         code: vllm_starting_state_unsupported
         detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
-  prefilled_reasoning_with_tool:
-    case_key: UNIFIED.40-1
-    observation:
-      unavailable:
-        code: vllm_starting_state_unsupported
-        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
-    stimulus:
-      unavailable:
-        code: vllm_starting_state_unsupported
-        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
   prefilled_response_reasoning_markers_literal:
     case_key: UNIFIED.50-4
     observation:
@@ -694,436 +687,218 @@ changes:
   reason_after_tool:
     case_key: UNIFIED.11-2
     observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: Look it up.
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
     stimulus:
-      ref: current
-      semantic_sha256: 89c8ebf04631e4af7ce9e569cb79b2c57c080dcb6c6f7b5a1a76b632ecf65b86
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
   reason_between_calls:
     case_key: UNIFIED.11-9
     observation:
       value:
         assembled:
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
+        - kind: reasoning
+          text: mid
+        - kind: text
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls><｜DSML｜ calls><｜DSML｜ invoke name="g"><｜DSML｜ parameter name="y" string="true">2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
         chunks:
-        - expected: []
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: <｜DSML｜ invoke name="f">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="x" string="true">
+        - expected:
+          - kind: text
+            text: '1'
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
         - expected: []
         - expected: []
         - expected: []
         - expected:
-          - kind: tool_call
-            name: f
-            arguments: '{"x": "1"'
+          - kind: text
+            text: <｜DSML｜ calls>
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+          - kind: text
+            text: <｜DSML｜ invoke name="g">
         - expected:
-          - kind: tool_call
-            name: g
-            arguments: '{"y": "2"'
+          - kind: text
+            text: <｜DSML｜ parameter name="y" string="true">
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
+          - kind: text
+            text: '2'
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: dc5d9c2bc8408a7a24c00a67e18c23cdd7b5187372a88422323282b54452be29
+      semantic_sha256: ac6b8cb5262ff2985b67a7aec8c6bf1edf2c8d2dab43a474083121eb47f01018
   reason_interleaved:
     case_key: UNIFIED.11-3
     observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: A
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: '{"x": "1"'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: '{"y": "2"'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
     stimulus:
-      ref: current
-      semantic_sha256: 131c41167248835ef876a5ffde416bfa00d81ddbaa8e736f62f5eedc13916133
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
   reason_markup_in_arg:
     case_key: UNIFIED.12-1
     observation:
       value:
         assembled:
-        - kind: tool_call
-          name: log
-          arguments:
-            note: <think>reconsider
+        - kind: reasoning
+          text: reconsider
+        - kind: text
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="log"><｜DSML｜ parameter name="note" string="true"></｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
         chunks:
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: <｜DSML｜ invoke name="log">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="note" string="true">
         - expected: []
         - expected: []
         - expected: []
-        - expected: []
         - expected:
-          - kind: tool_call
-            name: log
-            arguments: '{"note": "'
+          - kind: text
+            text: </｜DSML｜ parameter>
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: <think>
+          - kind: text
+            text: </｜DSML｜ invoke>
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: reconsider
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: </think>
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '"'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
+          - kind: text
+            text: </｜DSML｜ calls>
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: 86092167bc0afc2ed79dee9a19ed62e613b032fd1b16c4cc10e0bbc104b6df26
+      semantic_sha256: dc5c7fcc70370eb50211ced738f6a5a66c634251c55cce7d6b66b73bab399121
   reason_markup_in_arg_with_text:
     case_key: UNIFIED.12-3
     observation:
       value:
         assembled:
         - kind: reasoning
-          text: 'Logging now:'
-        - kind: tool_call
-          name: log
-          arguments:
-            note: <think>reconsider
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: log
-            arguments: '{"note": "'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: <think>
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: reconsider
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: </think>
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '"'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
-        - expected: []
-    stimulus:
-      ref: current
-      semantic_sha256: 546a5e26a91ce2a4678638dfb29053d6894c0fe7645948ca40be6656e84212a6
-  reason_only:
-    case_key: UNIFIED.10-1
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: just thinking, no answer
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-    stimulus:
-      ref: current
-      semantic_sha256: b8a7739742b7042d11c8d44d9d48829dadd1d6d4a88714c62d4ca58570e45ed5
-  reason_then_content:
-    case_key: UNIFIED.10-2
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: let me think
+          text: reconsider
         - kind: text
-          text: The answer is 42.
+          text: 'Logging now: <｜DSML｜ calls><｜DSML｜ invoke name="log"><｜DSML｜ parameter name="note" string="true"></｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> done.'
         chunks:
+        - expected:
+          - kind: text
+            text: 'Logging now: '
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: <｜DSML｜ invoke name="log">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="note" string="true">
         - expected: []
         - expected: []
         - expected: []
         - expected:
           - kind: text
-            text: The answer is 42.
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: ' done.'
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: 1d265326d010d8b480499269e4a6c9d37589d7b90f257fecbe845e9f9ae9a947
+      semantic_sha256: 5380eccaf3bf4785c195e14014278b78cea52b663df1b6e39304cd800f2de331
+  reason_only:
+    case_key: UNIFIED.10-1
+    observation:
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
+    stimulus:
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
+  reason_then_content:
+    case_key: UNIFIED.10-2
+    observation:
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
+    stimulus:
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
   reason_then_tool:
     case_key: UNIFIED.11-1
     observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: Check weather.
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
     stimulus:
-      ref: current
-      semantic_sha256: 1b1f7686f66b3ab75367c952fef9b11037e82d337ceef3228fab1b87758217bf
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
   reason_tool_reason_tool_reason:
     case_key: UNIFIED.11-8
     observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: A
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: '{"x": "1"'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: '{"y": "2"'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
     stimulus:
-      ref: current
-      semantic_sha256: 0665a15855c21c14b320df29af2c14e5728c8c1d81a3fb8a5419448123091901
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
   reason_tool_text_reason_tool:
     case_key: UNIFIED.11-4
     observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: A
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: '{"x": "1"'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: '{"y": "2"'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
     stimulus:
-      ref: current
-      semantic_sha256: 8d6e921ece5ccd14242dfd58d05d8954a26e503239c2051d3128b97d8c38374b
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
   reason_unterminated:
     case_key: UNIFIED.10-4
     observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: thinking but stream ends
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
     stimulus:
-      ref: current
-      semantic_sha256: 6681944af0bc996378ee85b771af8f34380668a46a7e49aa2f35612175318c08
-  retired__1_2:
-    case_key: UNIFIED.kimi_k2-1
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: <|tool_calls_section_begin|><|tool_call_begin|>functions.:17<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-    stimulus:
-      ref: current
-      semantic_sha256: 5e4d9afd9d6c3f1d36affc9a1fcd89672ad7278af0c4283cf1db10b7ce93b30d
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
   retired__30_14:
     case_key: UNIFIED.30-14
     observation:
@@ -1154,198 +929,177 @@ changes:
       unavailable:
         code: vllm_guided_json_unsupported
         detail: this vLLM release does not expose required/named GuidedJson parsing for the selected parser
-  retired__50_a:
-    case_key: UNIFIED.50.a
+  retired__50_1:
+    case_key: UNIFIED.deepseek_v41-2
     observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: output
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Response starting-state input.
     stimulus:
       unavailable:
-        code: original_request_not_retained
-  retired__50_b:
-    case_key: UNIFIED.50.b
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Response starting-state input.
+  retired__7_3:
+    case_key: UNIFIED.deepseek_v41-1
     observation:
       value:
         assembled:
         - kind: reasoning
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        chunks:
-        - expected: []
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-  retired__50_c:
-    case_key: UNIFIED.50.c
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
-        chunks:
-        - expected: []
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-  retired__51_a:
-    case_key: UNIFIED.51.a
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: Working on it...
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Par'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Par'
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-  retired__51_b:
-    case_key: UNIFIED.51.b
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
-        chunks:
-        - expected: []
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
-  retired__muse_1:
-    case_key: UNIFIED.31-26
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: I mean get_weather literal
+          text: quoted
         - kind: text
-          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+          text: "<｜DSML｜ calls><｜DSML｜ invoke name=\"f\"><｜DSML｜ parameter name=\"x\" string=\"true\">  <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; \"x\"\\\n </｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>"
         chunks:
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: <｜DSML｜ invoke name="f">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="x" string="true">
+        - expected:
+          - kind: text
+            text: ' '
         - expected: []
         - expected: []
         - expected: []
         - expected: []
         - expected:
           - kind: text
-            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+            text: ' <｜DSML｜ calls>'
+        - expected:
+          - kind: text
+            text: ' '
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: ' '
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: " &amp; \"x\"\\\n "
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
+        - expected: []
     stimulus:
-      unavailable:
-        code: original_request_not_retained
+      ref: current
+      semantic_sha256: a65bfb3467013e75c26a53ab1ca362ab1cff6a85f8b05208d6c5cf9d6369e3ae
   text_before_tool:
     case_key: UNIFIED.8-1
     observation:
       value:
         assembled:
-        - kind: reasoning
-          text: 'On it:'
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
+        - kind: text
+          text: 'On it: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>'
         chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
         - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"'
+          - kind: text
+            text: 'On it: '
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: <｜DSML｜ invoke name="get_weather">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="city" string="true">
+        - expected:
+          - kind: text
+            text: Paris
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: c4512cac1954019e598de1821fd0069d25bbbd5f8c6424f673462e40d4d405e8
+      semantic_sha256: 5a11912817e28a668b47155df29ba8a23e6c23e19b0a70edc1747557843b514d
   text_between_calls:
     case_key: UNIFIED.8-4
     observation:
       value:
         assembled:
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
+        - kind: text
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> then <｜DSML｜ calls><｜DSML｜ invoke name="g"><｜DSML｜ parameter name="y" string="true">2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
         chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
         - expected:
-          - kind: tool_call
-            name: f
-            arguments: '{"x": "1"'
+          - kind: text
+            text: <｜DSML｜ calls>
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+          - kind: text
+            text: <｜DSML｜ invoke name="f">
         - expected:
-          - kind: tool_call
-            name: g
-            arguments: '{"y": "2"'
+          - kind: text
+            text: <｜DSML｜ parameter name="x" string="true">
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
+          - kind: text
+            text: '1'
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: ' then '
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: <｜DSML｜ invoke name="g">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="y" string="true">
+        - expected:
+          - kind: text
+            text: '2'
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: 700e8ec57bd49dfc3722514e58cb33afbe59f9fbca51d03d45053a135cf84859
+      semantic_sha256: 32c66bfafa3d8bec534ccc4a82d67c71b62d1b08158d4584ddf51a650d443278
   text_only:
     case_key: UNIFIED.3-1
     observation:
       value:
         assembled:
-        - kind: reasoning
+        - kind: text
           text: The answer is 42, no tools needed.
         chunks:
-        - expected: []
+        - expected:
+          - kind: text
+            text: The answer is 42, no tools needed.
         - expected: []
     stimulus:
       ref: current
@@ -1356,110 +1110,132 @@ changes:
       value:
         assembled:
         - kind: reasoning
-          text: Sure. check A
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
+          text: check Acheck B
+        - kind: text
+          text: Sure. <｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> and <｜DSML｜ calls><｜DSML｜ invoke name="g"><｜DSML｜ parameter name="y" string="true">2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
         chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+        - expected:
+          - kind: text
+            text: 'Sure. '
         - expected: []
         - expected: []
         - expected: []
         - expected:
-          - kind: tool_call
-            name: f
-            arguments: '{"x": "1"'
+          - kind: text
+            text: <｜DSML｜ calls>
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+          - kind: text
+            text: <｜DSML｜ invoke name="f">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="x" string="true">
+        - expected:
+          - kind: text
+            text: '1'
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: ' and '
         - expected: []
         - expected: []
         - expected: []
         - expected:
-          - kind: tool_call
-            name: g
-            arguments: '{"y": "2"'
+          - kind: text
+            text: <｜DSML｜ calls>
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
+          - kind: text
+            text: <｜DSML｜ invoke name="g">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="y" string="true">
+        - expected:
+          - kind: text
+            text: '2'
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: 7de8d8cba1570c9e50dd062fa7bdc658d8653d7ed335e2a46320b1df2f487dc7
+      semantic_sha256: 2ba99f0ed9c85344b6f90f198de9bb67cb6f34f892a1caecf5ea26ac0f54e8d2
   text_sandwich:
     case_key: UNIFIED.8-3
     observation:
       value:
         assembled:
-        - kind: reasoning
-          text: Before.
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
+        - kind: text
+          text: Before. <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> After.
         chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
         - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"'
+          - kind: text
+            text: 'Before. '
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: <｜DSML｜ invoke name="get_weather">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="city" string="true">
+        - expected:
+          - kind: text
+            text: Paris
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: ' After.'
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: 44fff81211c2b2951a37082a6bfdc0d9204a4cbf66427c99111c6d0ebfbe30ee
+      semantic_sha256: e5fbefbc02125f13d571a3e118760dae0ca7e73aa6d6272f6d1821c3fc4532c6
   tool_block_never_closed_then_text:
     case_key: UNIFIED.4-1
     observation:
       value:
         assembled:
         - kind: text
-          text: <|tool_calls_section_begin|>still thinking about it
+          text: <｜DSML｜ calls>still thinking about it
         chunks:
-        - expected: []
-        - expected: []
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: still thinking about it
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: dc25342f14680ef2331b9285e1543b4364644009f89781115c25e0099f86bcff
+      semantic_sha256: 35df90b6df284148cb873ddfe0d52ae1544f762c301219252f019a81b7f9d87c
   tool_in_reason:
     case_key: UNIFIED.12-2
     observation:
       value:
         assembled:
         - kind: reasoning
-          text: I should check.
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
+          text: I should check. <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> now answer
         chunks:
         - expected: []
         - expected: []
@@ -1467,33 +1243,32 @@ changes:
         - expected: []
         - expected: []
         - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
+        - expected: []
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: f784b9faba0feefc5060d750e490cab999c80f02b0db8e38f8813a8c0f12e839
+      semantic_sha256: fcac8fb3f5bc7bf35b549621bb59c61447556e56d65f12cf76ff9c3c60047e06
   tool_in_reason_with_text:
     case_key: UNIFIED.12-4
     observation:
       value:
         assembled:
         - kind: reasoning
-          text: Sure. I should check.
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
+          text: I should check. <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> now answer
+        - kind: text
+          text: Sure.  Here you go.
         chunks:
+        - expected:
+          - kind: text
+            text: 'Sure. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -1502,114 +1277,126 @@ changes:
         - expected: []
         - expected: []
         - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"'
-        - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+          - kind: text
+            text: ' Here you go.'
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: ce739746bf940b3ed7a2d20e11c8ee3736facea7029f09d1a31227fa9d5f784c
+      semantic_sha256: b5a753f2b2f0db7cbd7255dfa572abe268ec6686f6606e9bde562dabfe8f3041
   tool_markup_only_emits_nothing:
     case_key: UNIFIED.4-2
     observation:
       value:
         assembled:
-        - kind: reasoning
-          text: <|tool_calls_section_end|>
+        - kind: text
+          text: <｜DSML｜ calls></｜DSML｜ calls>
         chunks:
-        - expected: []
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: c208f212d4e9af751d43b668461c16f7a01c53b6de6671e3ae013a7af4f54afd
+      semantic_sha256: 0e804bef4c0c617972d093d5758ded5b50a7ae22c45e89512ad12a5913d4b3ad
   tool_no_close:
     case_key: UNIFIED.5-2
     observation:
       value:
         assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
+        - kind: text
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter>
         chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
         - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"'
+          - kind: text
+            text: <｜DSML｜ calls>
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
+          - kind: text
+            text: <｜DSML｜ invoke name="get_weather">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="city" string="true">
+        - expected:
+          - kind: text
+            text: Paris
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected: []
     stimulus:
       ref: current
-      semantic_sha256: 640462e15b52c18446fc42a149a1d809a12b7cf55400afac83bf365783efbf65
+      semantic_sha256: 70ad63e00ebedd607e4d4354739b861a4ed175cd2f48cf85612b9faf0d267332
   tool_only:
     case_key: UNIFIED.1-1
     observation:
       value:
         assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
+        - kind: text
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
         chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
         - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"'
+          - kind: text
+            text: <｜DSML｜ calls>
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
+          - kind: text
+            text: <｜DSML｜ invoke name="get_weather">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="city" string="true">
+        - expected:
+          - kind: text
+            text: Paris
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: d3eb0373fcab5690b0e58dc3a1ea632504ae409bd77c2facb162cfcf74dd41a5
+      semantic_sha256: 35f8d2e4e6f2c13fcaa7461ce57e39fe0b3e3993cc28636e89353ab04cdb6be4
   trailing_text_after_tool:
     case_key: UNIFIED.8-2
     observation:
       value:
         assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
+        - kind: text
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>The forecast shows clear skies for the rest of the week.
         chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
         - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"'
+          - kind: text
+            text: <｜DSML｜ calls>
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
+          - kind: text
+            text: <｜DSML｜ invoke name="get_weather">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="city" string="true">
+        - expected:
+          - kind: text
+            text: Paris
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: The forecast shows clear skies for the rest of the week.
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: 1c948928376e477a85a2cc447fa8fc8a2666feed4b7e4a676984a17f98c96553
+      semantic_sha256: fbb2aa6fcd6bf57cf6f41ae0ce4e757b637dd40b2c4849b3494ecd7b9f7d3d31
   truncated_tool_eof:
     case_key: UNIFIED.5-1
     observation:
@@ -1617,48 +1404,45 @@ changes:
         assembled:
         - kind: reasoning
           text: ok
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Par'
+        - kind: text
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Par
         chunks:
         - expected: []
         - expected: []
         - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
         - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Par'
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: <｜DSML｜ invoke name="get_weather">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="city" string="true">
+        - expected:
+          - kind: text
+            text: Par
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: 2b3b01aaf775f7f68879e1563d597ebb195f207599e873bf452a031ecb26bf9f
+      semantic_sha256: 82a8f3845b4fd2602510aa65063eb7bc58c1de789a1249b5badbfc53a4e470ac
   two_adjacent_reason_spans:
     case_key: UNIFIED.10-5
     observation:
       value:
         assembled:
         - kind: reasoning
-          text: first
-        - kind: text
-          text: '<think>
+          text: 'first
 
-            seconddone'
+            second'
+        - kind: text
+          text: done
         chunks:
         - expected: []
         - expected: []
         - expected: []
-        - expected:
-          - kind: text
-            text: <think>
-        - expected:
-          - kind: text
-            text: '
-
-              second'
+        - expected: []
+        - expected: []
         - expected: []
         - expected:
           - kind: text
@@ -1672,118 +1456,106 @@ changes:
     observation:
       value:
         assembled:
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: tool_call
-          name: g
-          arguments:
-            y: '2'
+        - kind: text
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">1</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke name="g"><｜DSML｜ parameter name="y" string="true">2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
         chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
         - expected:
-          - kind: tool_call
-            name: f
-            arguments: '{"x": "1"'
+          - kind: text
+            text: <｜DSML｜ calls>
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+          - kind: text
+            text: <｜DSML｜ invoke name="f">
         - expected:
-          - kind: tool_call
-            name: g
-            arguments: '{"y": "2"'
+          - kind: text
+            text: <｜DSML｜ parameter name="x" string="true">
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
+          - kind: text
+            text: '1'
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: <｜DSML｜ invoke name="g">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="y" string="true">
+        - expected:
+          - kind: text
+            text: '2'
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: cedae3e2633fefcad0017d9e79a7934da90df4b83c60248f8426c30678631565
+      semantic_sha256: 089d1b2e8588f4d437519dc6c3ee190fd010835e537148174312966d72012e7f
   two_calls_same_name:
     case_key: UNIFIED.2-2
     observation:
       value:
         assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Tokyo
+        - kind: text
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Tokyo</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
         chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
         - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"'
+          - kind: text
+            text: <｜DSML｜ calls>
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
+          - kind: text
+            text: <｜DSML｜ invoke name="get_weather">
         - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Tokyo"'
+          - kind: text
+            text: <｜DSML｜ parameter name="city" string="true">
         - expected:
-          - kind: tool_call
-            name: null
-            arguments: '}'
-        - expected: []
+          - kind: text
+            text: Paris
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: <｜DSML｜ invoke name="get_weather">
+        - expected:
+          - kind: text
+            text: <｜DSML｜ parameter name="city" string="true">
+        - expected:
+          - kind: text
+            text: Tokyo
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ calls>
         - expected: []
     stimulus:
       ref: current
-      semantic_sha256: b9eef05d6760bbde3814d00bd130d448373b60d0b16c45958f8270b15a7fc8de
+      semantic_sha256: f40a5def681f68a862faac0f054f2365f3d0d9a0ceb5cbadda760dd2b61845d0
   two_reason_spans:
     case_key: UNIFIED.10-3
     observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: first thought
-        - kind: text
-          text: interlude <think>second thoughtdone
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: text
-            text: 'interlude '
-        - expected:
-          - kind: text
-            text: <think>
-        - expected:
-          - kind: text
-            text: second thought
-        - expected: []
-        - expected:
-          - kind: text
-            text: done
-        - expected: []
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
     stimulus:
-      ref: current
-      semantic_sha256: 146922888215906a77df4f335b4b49c0d2e34e8f9e062482be0182882ddbcc35
+      unavailable:
+        code: vllm_starting_state_unsupported
+        detail: vLLM Python parser API has no request-prefilled Reasoning starting-state input.
 metadata_changes: {}
 document_overrides: {}

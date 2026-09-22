@@ -98,7 +98,14 @@ def producer(request, monkeypatch, tmp_path):
 
 
 def _case(text="hi", **extra):
-    return {"id": "UNIFIED.text_only.gemma4", "family": "gemma4", "input": text, "chunks": [text], **extra}
+    return {
+        "id": "UNIFIED.text_only.gemma4",
+        "family": "gemma4",
+        "input": text,
+        "chunks": [text],
+        "tools": unified_tools(),
+        **extra,
+    }
 
 
 def test_fresh_peer_capture_binds_actual_input_and_remains_comparable(producer, tmp_path, monkeypatch):
@@ -138,8 +145,9 @@ def test_fresh_peer_capture_binds_actual_input_and_remains_comparable(producer, 
 def test_unsupported_requested_init_does_not_run_or_get_stamped_as_applied(producer, init):
     _engine, run, calls = producer
     result = run(_case(init=init))
-    assert "unsupported request: init" in result["unavailable"]
-    assert result["capture_input"]["init"] == capture_stimulus.capture_input({})["init"]
+    assert "unavailable" in result
+    assert result["capture_stimulus"]["unavailable"]["code"].endswith("_unsupported")
+    assert "capture_input" not in result
     assert not calls
 
 
@@ -167,7 +175,9 @@ def test_real_authored_native_case_executes_its_explicit_finish_step(producer):
 @pytest.mark.parametrize("returned", [{}, {"unexpected": {}}])
 def test_peer_result_cardinality_is_fail_closed(returned):
     with pytest.raises(ValueError, match="executed request"):
-        capture_stimulus.capture_peer_results([_case()], {"gemma4"}, lambda _cases: returned, tools=[])
+        capture_stimulus.capture_peer_results(
+            [_case()], {"gemma4"}, lambda _cases: returned, tools=unified_tools()
+        )
 
 
 def test_literal_finish_marker_is_not_an_unexecuted_terminal_operation(producer):
@@ -186,5 +196,6 @@ def test_peer_rejects_unapplied_tool_schema(producer):
     _engine, run, calls = producer
     result = run(_case(tools=[]))
     assert "tools" in result["unavailable"]
-    assert result["capture_input"]["tools"] == unified_tools()
+    assert result["capture_stimulus"]["unavailable"]["code"].endswith("_unsupported")
+    assert "capture_input" not in result
     assert not calls

@@ -450,10 +450,16 @@ def test_historical_bare_header_stimulus_keeps_30m(family, prefix):
 def test_named_header_has_a_distinct_numeric_identity(family):
     scenario = "guided_json_gt_in_argument_named_bare_opener"
     cases = build_cases(family)
+    if family == "glm47":
+        assert scenario not in G.scenario_families(scenario)
+        assert f"UNIFIED.{scenario}.{family}" not in cases
+        return
     named = cases[f"UNIFIED.{scenario}.{family}"]
     bare = cases[f"UNIFIED.guided_json_gt_in_argument_bare_opener.{family}"]
     assert numbered_id(scenario) == "UNIFIED.30-14"
-    assert G.scenario_families(scenario) == frozenset(FAMILIES)
+    assert G.scenario_families(scenario) == frozenset(
+        family for family in FAMILIES if family != "glm47"
+    )
     assert named["input"] != bare["input"]
     assert named["input"].split("[", 1)[0].count("get_weather") == 1
     assert bare["input"].split("[", 1)[0].count("get_weather") == 0
@@ -484,7 +490,13 @@ def test_non_ascii_header_reasoning_contract(ending, case_id, suffix, golden):
 def test_guided_native_body_case_keeps_the_parameter_stimulus(family):
     scenario = "guided_json_native_parameter_body_inside_reasoning"
     assert numbered_id(scenario) == "UNIFIED.34-8"
-    assert G.scenario_families(scenario) == frozenset(FAMILIES)
+    if family == "glm47":
+        assert scenario not in G.scenario_families(scenario)
+        assert f"UNIFIED.{scenario}.{family}" not in build_cases(family)
+        return
+    assert G.scenario_families(scenario) == frozenset(
+        family for family in FAMILIES if family != "glm47"
+    )
     case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
     assert case["input"].endswith(G.GUIDED_ONE_CALL)
     assert _native_input_calls(family, case["input"]) == [
@@ -741,14 +753,14 @@ def test_unified_case_counts_match_the_generator():
             "deepseek_v4": 84,
             "deepseek_v41": 82,
             "gemma4": 86,
-            "glm47": 83,
+            "glm47": 80,
             "kimi_k2": 84,
             "kimi_k3": 91,
             "muse_glimmer": 88,
             "qwen3": 88,
         }[fam]
         assert per_family[fam] == family_specific, f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 686
+    assert sum(per_family.values()) == 683
 
 
 def test_restored_case_ids_resolve_as_current_or_historical_labels():
@@ -769,7 +781,7 @@ def test_restored_case_ids_resolve_as_current_or_historical_labels():
         ("deepseek_v41", "50-1"): "deepseek_v41-2",
         ("muse_glimmer", "50-2"): "muse-3",
     }
-    assert len(UNIFIED_TAX) == 106
+    assert len(UNIFIED_TAX) == 107
     assert len(restored) == 15
     assert {
         (family, historical_case_label(case_id, family))

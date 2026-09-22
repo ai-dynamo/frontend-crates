@@ -542,6 +542,8 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
                 assert (
                     "not captured at" in reason
                     or "has no parser" in reason
+                    or "not registered" in reason
+                    or "request-prefilled" in reason
                     or reason.startswith(("Capture stimulus unavailable:", "Capture stimulus mismatch ("))
                 ), reason
                 assert "events" not in peer["block"]
@@ -555,13 +557,17 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
     ):
         for key in peer_keys:
             cell = gemma["cells"][scenario]
-            assert cell["cmp"][key].get("na") == 1
-            peer = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == key)
-            reason = peer["block"]["unavailable"]
-            assert (
-                "this case postdates that capture" in reason
-                or reason.startswith("Capture stimulus mismatch (")
-            )
+            # These rows require a required/named GuidedJson request. The
+            # released vLLM Python and Rust capture APIs cannot express that
+            # request, so every peer column must remain explicitly unavailable.
+            expected_na = True
+            assert cell["cmp"][key].get("na") == int(expected_na)
+            if expected_na:
+                peer = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == key)
+                reason = peer["block"]["unavailable"]
+                assert "this case postdates that capture" in reason or reason.startswith(
+                    ("Capture stimulus mismatch (", "Capture stimulus unavailable:")
+                )
 
 
 _IMPL_KEYS = ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python")

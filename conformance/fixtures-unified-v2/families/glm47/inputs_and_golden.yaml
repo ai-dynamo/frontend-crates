@@ -5966,7 +5966,7 @@ cases:
   glm47_parameterless_call_shape_inside_argument:
     lifecycle: active
     scenario: glm47_parameterless_call_shape_inside_argument
-    description: 'GLM 5 only: an offered parameterless-call shape appears inside an open argument value. The close/open markers are argument data until `</arg_value>`; treating the embedded tool name as structure would dispatch an unintended second call.'
+    description: 'GLM 5 only: an offered parameterless-call shape appears inside an open argument value. The embedded close/open markers remain argument data and must not dispatch a second call.'
     policy:
     - I7
     display_id: UNIFIED.glm5-1

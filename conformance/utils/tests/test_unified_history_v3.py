@@ -192,6 +192,98 @@ def test_schema_v3_keeps_the_first_origin_when_an_unchanged_capture_is_rerun(tmp
         unified_history.update_store_from_loose(root, loose, complete_snapshot=True)
 
 
+def test_schema_v3_replaces_only_an_unbound_legacy_capture_and_rebases_later_results(tmp_path):
+    root = _store(tmp_path / "store")
+    first = unified_history.load_yaml(root / "families/gemma4/dynamo_v2-0.5.0.yaml")
+    first["changes"]["text_only"]["stimulus"] = {
+        "unavailable": {"code": "request_not_retained"},
+    }
+    first["changes"]["text_only"]["observation"]["value"]["assembled"] = [
+        {"kind": "text", "text": "old"}
+    ]
+    (root / "families/gemma4/dynamo_v2-0.5.0.yaml").write_text(
+        unified_history.dump_yaml(first), encoding="utf-8"
+    )
+    later = unified_history.load_yaml(root / "families/gemma4/dynamo_v2-0.5.2.yaml")
+    later["changes"] = {"text_only": _change("later")}
+    (root / "families/gemma4/dynamo_v2-0.5.2.yaml").write_text(
+        unified_history.dump_yaml(later), encoding="utf-8"
+    )
+    before_later = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")].resolve(
+        "dynamo_v2-0.5.2"
+    )["text_only"]["observation"]
+
+    loose = tmp_path / "loose"
+    unified_history.materialize_store(root, loose)
+    path = loose / "dynamo_v2-0.5.0/gemma4/UNIFIED.1-1.yaml"
+    document = unified_history.load_yaml(path)
+    record = document["cases"]["UNIFIED.1-1"]
+    record["assembled"] = [{"kind": "text", "text": "recaptured"}]
+    record["capture_input"] = _request()
+    path.write_text(unified_history.dump_yaml(document), encoding="utf-8")
+
+    unified_history.update_store_from_loose(root, loose, complete_snapshot=True)
+    history = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")]
+    assert "unavailable" not in history.resolve("dynamo_v2-0.5.0")["text_only"]["stimulus"]
+    assert history.resolve("dynamo_v2-0.5.2")["text_only"]["observation"] == before_later
+
+
+def test_schema_v3_inserts_an_older_live_capture_without_changing_newer_results(tmp_path):
+    root = _store(tmp_path / "store")
+    before_later = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")].resolve(
+        "dynamo_v2-0.5.2"
+    )["text_only"]["observation"]
+    loose = tmp_path / "loose"
+    unified_history.materialize_store(root, loose)
+    path = loose / "dynamo_v2-0.4.0/gemma4/UNIFIED.1-1.yaml"
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        unified_history.dump_yaml(
+            {
+                "family": "gemma4",
+                "mode": "unified",
+                "captured_with": {"dynamo_v2": "0.4.0"},
+                "cases": {
+                    "UNIFIED.1-1": {
+                        "capture_input": _request(),
+                        "assembled": [{"kind": "text", "text": "historical"}],
+                        "chunks": [],
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    unified_history.update_store_from_loose(root, loose, complete_snapshot=True)
+    history = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")]
+    assert history.ordered_capture_ids() == ["dynamo_v2-0.4.0", "dynamo_v2-0.5.0", "dynamo_v2-0.5.2"]
+    assert history.resolve("dynamo_v2-0.5.2")["text_only"]["observation"] == before_later
+
+
+def test_schema_v3_preserves_typed_peer_unavailable_state():
+    marker = {
+        "unavailable": {
+            "code": "vllm_rust_guided_json_unsupported",
+            "detail": "request mode is not exposed by the Rust API",
+        }
+    }
+    stimulus, observation, metadata = unified_history._legacy_state(
+        {
+            "unavailable": marker["unavailable"]["detail"],
+            "capture_stimulus": marker,
+        },
+        b"capture",
+        "vllm_rust-0.26.0/gemma4/UNIFIED.30-1.yaml",
+        {},
+        _request(),
+    )
+
+    assert stimulus == marker
+    assert observation == marker
+    assert metadata == {}
+
+
 @pytest.mark.parametrize("version", ["0.5.1.patch1", "0.5.1+source." + "a" * 64])
 def test_schema_v3_rejects_patch_and_source_qualified_filenames(tmp_path, version):
     _write_family(tmp_path)

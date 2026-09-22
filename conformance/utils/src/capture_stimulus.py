@@ -24,7 +24,23 @@ def capture_input(record: dict) -> dict:
     }
 
 
-def capture_peer_results(cases: list[dict], families, capture, *, tools, supports_finish=False) -> dict:
+def unavailable_result(code: str, detail: str) -> dict:
+    """Describe a peer limitation without binding it to an executed request."""
+    return {
+        "unavailable": detail,
+        "capture_stimulus": {"unavailable": {"code": code, "detail": detail}},
+    }
+
+
+def capture_peer_results(
+    cases: list[dict],
+    families,
+    capture,
+    *,
+    tools,
+    supports_finish=False,
+    unsupported_reason=None,
+) -> dict:
     """Bind only native/default peer executions; unsupported requests never run."""
     ready, results, bindings = [], {}, {}
     for case in cases:
@@ -39,28 +55,51 @@ def capture_peer_results(cases: list[dict], families, capture, *, tools, support
         actual = capture_input({"input": case["input"], "tools": tools, "chunks": [{"delta_text": chunk} for chunk in chunks]})
         terminal_step = bool(chunks and chunks[-1] == "‹finish›" and "".join(chunks[:-1]) == case["input"])
         requested = capture_input({**case, "chunks": actual["chunks"]})
-        bindings[key] = actual
+        reason = unsupported_reason(case) if unsupported_reason is not None else None
+        if reason is not None:
+            code, detail = reason
+            results[key] = unavailable_result(code, detail)
+            continue
         unsupported = [field for field in ("init", "finish_reason") if requested[field] != actual[field]]
         if "tools" in case and case["tools"] != tools:
             unsupported.append("tools")
         if unsupported:
-            results[key] = {"unavailable": "Peer harness supports only native/default initialization and stop termination; unsupported request: " + ", ".join(unsupported)}
+            detail = "Peer harness supports only native/default initialization and stop termination; unsupported request: " + ", ".join(unsupported)
+            results[key] = unavailable_result("peer_request_unsupported", detail)
         elif terminal_step and not supports_finish:
             actual["chunks"] = actual["chunks"][:-1]
-            results[key] = {"unavailable": "Peer detector harness has no explicit finish operation; authored terminal-step schedules cannot be captured by this harness."}
+            results[key] = unavailable_result(
+                "peer_finish_unsupported",
+                "Peer detector harness has no explicit finish operation; authored terminal-step schedules cannot be captured by this harness.",
+            )
         elif not terminal_step and "".join(chunks) != case["input"]:
             # A display-only finish row is not text delivered to the parser. Do not
             # invent a finish call or silently drop that row to manufacture parity.
-            results[key] = {"unavailable": "Peer chunk text differs from input; synthetic finish rows require an explicit engine finish operation and are not literal input."}
+            results[key] = unavailable_result(
+                "peer_chunk_schedule_unsupported",
+                "Peer chunk text differs from input; synthetic finish rows require an explicit engine finish operation and are not literal input.",
+            )
         else:
+            bindings[key] = actual
             ready.append({**case, "chunks": chunks[:-1] if terminal_step else chunks, "terminal_step": terminal_step})
     if ready:
         captured = capture(ready)
         expected = {case["id"] for case in ready}
         if captured.keys() != expected:
             raise ValueError(f"peer capture results differ from executed request: missing={sorted(expected - captured.keys())}, extra={sorted(captured.keys() - expected)}")
+        for result in captured.values():
+            if "error" in result and "capture_observation" not in result:
+                result["capture_observation"] = {
+                    "error": {
+                        "code": "peer_parser_error",
+                        "detail": result["error"],
+                    }
+                }
         results.update(captured)
-    return {key: {**result, "capture_input": bindings[key]} for key, result in results.items()}
+    return {
+        key: ({**result, "capture_input": bindings[key]} if key in bindings else result)
+        for key, result in results.items()
+    }
 
 
 def read_bindings(directory: Path) -> dict:

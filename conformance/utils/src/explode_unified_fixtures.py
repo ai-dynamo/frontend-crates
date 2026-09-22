@@ -66,6 +66,10 @@ def _peer_cell(result):
         }
     if "capture_input" in result:
         record["capture_input"] = result["capture_input"]
+    if "capture_stimulus" in result:
+        record["capture_stimulus"] = result["capture_stimulus"]
+    if "capture_observation" in result:
+        record["capture_observation"] = result["capture_observation"]
     return record
 
 
