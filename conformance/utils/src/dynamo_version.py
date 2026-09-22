@@ -259,6 +259,17 @@ def validate_capture_provenance(repo_root: Path, recorded: dict) -> dict:
     current = dynamo_v2_provenance(repo_root, recorded["label"])
     _validate_provenance_identity(recorded, current)
     _validate_provenance_origin(repo_root, recorded)
+    version = current["crate_version"]
+    tag = f"dynamo-parsers-v2-v{version}"
+    # A legacy producer's "current" label must not backdate new behavior when
+    # the Unified publisher converts it to a plain semantic-version filename.
+    if _git(repo_root, "tag", "--list", tag).strip():
+        released_source = source_fingerprint(repo_root, f"refs/tags/{tag}")
+        if released_source != current["source_sha256"]:
+            raise ValueError(
+                f"Parser version {version} is already released with different source; "
+                "set a new unpublished crate version before recording Unified output"
+            )
     supplied = os.environ.get(ENV_OVERRIDE)
     origin = {
         key: recorded[key]
