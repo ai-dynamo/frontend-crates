@@ -76,12 +76,30 @@ impl Tokenizer for FastTokenizer {
     fn validate_prefix_cache(&self) -> Result<()> {
         Ok(())
     }
+
+    // `fast_encoder` and `hf_decoder` are loaded from the same tokenizer.json,
+    // so the HF side's vocabulary introspection applies to both.
+    fn vocab_size(&self) -> Option<usize> {
+        self.hf_decoder.vocab_size()
+    }
+
+    fn token_to_id(&self, token: &str) -> Result<Option<TokenIdType>> {
+        self.hf_decoder.token_to_id(token)
+    }
+
+    fn special_token_ids(&self) -> Result<Vec<TokenIdType>> {
+        self.hf_decoder.special_token_ids()
+    }
+
+    fn num_special_tokens_added(&self) -> Result<usize> {
+        Ok(0)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::HuggingFaceTokenizer;
+    use crate::{HuggingFaceTokenizer, TokenizerOptions};
 
     // Minimal synthetic BPE tokenizer with no normalizer or post-processor --
     // compatible with fastokens. Vocab covers: H,T,a,d,e,h,i,l,o,r,s,t,w + punctuation.
@@ -228,5 +246,53 @@ mod tests {
             accumulated, expected,
             "streamed chunks must equal context-aware decoded continuation"
         );
+    }
+
+    #[test]
+    fn vocabulary_metadata_forwards_to_hf_decoder() {
+        let fast = FastTokenizer::from_file(TOKENIZER_PATH).unwrap();
+        let hf = HuggingFaceTokenizer::from_file(TOKENIZER_PATH).unwrap();
+        assert_eq!(fast.vocab_size(), hf.vocab_size());
+        assert_eq!(
+            fast.token_to_id("Hello").unwrap(),
+            hf.token_to_id("Hello").unwrap()
+        );
+        assert_eq!(
+            fast.special_token_ids().unwrap(),
+            hf.special_token_ids().unwrap()
+        );
+    }
+
+    #[test]
+    fn special_token_accounting_matches_fast_encoder() {
+        let fast = FastTokenizer::from_file(SEGMENTED_TOKENIZER_PATH).unwrap();
+        let upstream =
+            fastokens::Tokenizer::from_file(std::path::Path::new(SEGMENTED_TOKENIZER_PATH))
+                .unwrap();
+        let hf = HuggingFaceTokenizer::from_file(SEGMENTED_TOKENIZER_PATH).unwrap();
+
+        assert_eq!(hf.num_special_tokens_added().unwrap(), 1);
+        assert_eq!(fast.num_special_tokens_added().unwrap(), 0);
+        let hf_with_special_tokens = hf.with_options(TokenizerOptions {
+            add_special_tokens: true,
+        });
+
+        for text in ["hello", "hello there"] {
+            let fast_ids = fast.encode(text).unwrap();
+            assert_eq!(
+                fast_ids.token_ids(),
+                upstream.encode(text).unwrap(),
+                "FastTokenizer must match the encoder that omits the HF post-processor"
+            );
+            assert_eq!(
+                hf_with_special_tokens
+                    .encode(text)
+                    .unwrap()
+                    .token_ids()
+                    .len(),
+                fast_ids.token_ids().len() + 1,
+                "the HF post-processor must add the BOS token FastTokenizer omits"
+            );
+        }
     }
 }
