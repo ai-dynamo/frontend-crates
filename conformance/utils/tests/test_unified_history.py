@@ -12,6 +12,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import unified_history
 
 
+def test_glm_unified_history_starts_at_its_introduction():
+    root = Path(__file__).resolve().parents[2] / "fixtures-unified-v2"
+    history = unified_history.load_store(root).histories[("glm47", "dynamo_v2")]
+    # A branch built with an old crate version must not backdate this feature.
+    assert history.ordered_capture_ids()[0] == "dynamo_v2-0.7.0"
+    capture = history.captures["dynamo_v2-0.7.0"]
+    assert capture["provenance"]["origin"]["crate_version"] == "0.7.0"
+    active_cases = {
+        key for key, case in history.family.cases.items() if case["lifecycle"] == "active"
+    }
+    assert set(history.resolve("dynamo_v2-0.7.0")) == active_cases
+
+
 def _request(text: str = "hello") -> dict:
     return {
         "input": text,
