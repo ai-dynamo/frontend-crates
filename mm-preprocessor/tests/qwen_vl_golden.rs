@@ -3,15 +3,30 @@
 
 //! End-to-end golden replay: every output field of the README §2.2 composition
 //! must be byte-identical to fixtures produced from the mirrored HF processor
-//! (and `get_rope_index`) by SGLang's `generate_dynamo_golden.py`. A
-//! systematic skew — wrong resample filter, fused-vs-unfused normalize
-//! rounding, patch order — still yields plausible-looking tensors; only
-//! bitwise comparison catches it without a model in the loop.
+//! (and `get_rope_index`) by `tests/fixtures/qwen_vl/generate.py`, which also
+//! records the library versions it ran under. A systematic skew — wrong
+//! resample filter, pass order, fused-vs-unfused normalize rounding, patch
+//! order — still yields plausible-looking tensors; only bitwise comparison
+//! catches it without a model in the loop.
+//!
+//! The resampler stage is pinned on its own (`resized_<i>.u8`) so a mismatch
+//! names the stage instead of surfacing as an opaque `pixel_values` diff.
 
 use dynamo_mm_preprocessor::image::decode::{DecodeLimits, decode_rgb};
+use dynamo_mm_preprocessor::image::resize;
+use dynamo_mm_preprocessor::models::qwen_vl::{QwenVlSpec, smart_resize};
 use dynamo_mm_preprocessor::processor::{DecodedMedia, PositionOutput, TensorData};
 use dynamo_mm_preprocessor::registry::processor_from_spec;
 use dynamo_mm_preprocessor::{content_hash_bytes, token_layout};
+
+/// Every fixture directory; a dropped or misnamed case fails by name.
+const CASES: [&str; 5] = [
+    "aten_downscale",
+    "aten_multi",
+    "aten_upscale",
+    "pil_round",
+    "pil_tall",
+];
 
 #[derive(serde::Deserialize)]
 struct Case {
@@ -32,16 +47,16 @@ fn read(dir: &std::path::Path, name: &str) -> Vec<u8> {
 #[test]
 fn pipeline_output_matches_golden_fixtures() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/qwen_vl");
-    let mut cases = 0;
-    for entry in std::fs::read_dir(&root).expect("fixtures dir") {
-        let dir = entry.unwrap().path();
+    for name in CASES {
+        let dir = root.join(name);
         let case: Case = serde_json::from_slice(&read(&dir, "case.json")).unwrap();
-        let name = dir.file_name().unwrap().to_string_lossy().into_owned();
 
         let images = (0..)
             .map_while(|i| std::fs::read(dir.join(format!("input_{i}.png"))).ok())
             .collect::<Vec<_>>();
         let family = processor_from_spec(&case.spec.to_string()).unwrap();
+        // The same knobs, typed, for replaying the resampler stage alone.
+        let spec: QwenVlSpec = serde_json::from_value(case.spec.clone()).unwrap();
 
         let mut feature_bytes = Vec::new();
         let items = images
@@ -54,6 +69,20 @@ fn pipeline_output_matches_golden_fixtures() {
                     "{name}: hash[{i}]"
                 );
                 let (rgb, height, width) = decode_rgb(bytes, &DecodeLimits::default()).unwrap();
+                let (th, tw) = smart_resize(
+                    height,
+                    width,
+                    spec.patch_size * spec.merge_size,
+                    spec.min_pixels,
+                    spec.max_pixels,
+                )
+                .unwrap();
+                let resized = resize::resize_rgb(&rgb, height, width, th, tw, spec.resample.into());
+                assert_eq!(
+                    resized,
+                    read(&dir, &format!("resized_{i}.u8")),
+                    "{name}: resized[{i}] ({height}x{width} -> {th}x{tw})"
+                );
                 let item = family
                     .process_item(&DecodedMedia::Image { rgb, height, width })
                     .unwrap_or_else(|e| panic!("{name}: {e}"));
@@ -110,7 +139,5 @@ fn pipeline_output_matches_golden_fixtures() {
             "{name}: mrope bytes"
         );
         assert_eq!(delta, case.mrope_delta, "{name}: mrope delta");
-        cases += 1;
     }
-    assert!(cases >= 4, "expected fixtures under {}", root.display());
 }

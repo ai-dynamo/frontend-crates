@@ -71,5 +71,12 @@
   "11546768171972510105",
   "18370475476986316740"
  ],
- "mrope_delta": -4
+ "mrope_delta": -4,
+ "provenance": {
+  "generator": "mm-preprocessor/tests/fixtures/qwen_vl/generate.py",
+  "transformers": "5.12.1",
+  "torch": "2.13.0+cu130",
+  "torchvision": "0.28.0+cu130",
+  "pillow": "12.3.0"
+ }
 }

@@ -41,26 +41,35 @@
   900,
   900,
   900,
+  900,
+  900,
+  900,
+  900,
+  900,
+  900,
+  900,
+  900,
+  900,
   902,
   8
  ],
  "grids": [
   [
    1,
-   6,
-   8
+   42,
+   2
   ]
  ],
  "offsets": [
   [
    2,
-   13
+   22
   ]
  ],
  "hashes": [
-  "1533385766490644078"
+  "9151906754831115069"
  ],
- "mrope_delta": -8,
+ "mrope_delta": 0,
  "provenance": {
   "generator": "mm-preprocessor/tests/fixtures/qwen_vl/generate.py",
   "transformers": "5.12.1",

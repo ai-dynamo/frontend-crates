@@ -60,5 +60,12 @@
  "hashes": [
   "9167762588405738064"
  ],
- "mrope_delta": -8
+ "mrope_delta": -8,
+ "provenance": {
+  "generator": "mm-preprocessor/tests/fixtures/qwen_vl/generate.py",
+  "transformers": "5.12.1",
+  "torch": "2.13.0+cu130",
+  "torchvision": "0.28.0+cu130",
+  "pillow": "12.3.0"
+ }
 }
