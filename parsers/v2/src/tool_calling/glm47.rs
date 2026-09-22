@@ -528,6 +528,7 @@ mod tests {
         }
     }
 
+    #[test]
     fn native_legacy_projection_parses_glm_xml() {
         let output = legacy(
             &tools(),
