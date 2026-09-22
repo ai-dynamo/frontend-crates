@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.6.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.6.1...dynamo-parsers-v2-v0.6.2) - 2026-09-22
+
+### Bug fixes
+
+- *(parsers)* Preserve DeepSeek V4 string whitespace ([#247](https://github.com/ai-dynamo/frontend-crates/pull/247))
+
+### Chore
+
+- *(conformance)* Simplify Unified YAML history ([#257](https://github.com/ai-dynamo/frontend-crates/pull/257))
+- *(conformance)* Reorganize Unified cases ([#242](https://github.com/ai-dynamo/frontend-crates/pull/242))
+
 ## [0.6.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.6.0...dynamo-parsers-v2-v0.6.1) - 2026-09-17
 
 ### Bug fixes

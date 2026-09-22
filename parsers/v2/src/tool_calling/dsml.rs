@@ -485,10 +485,11 @@ fn parse_parameters(body: &str) -> anyhow::Result<Map<String, Value>> {
         let Some(value_end_rel) = body[value_start..].find(PARAMETER_END) else {
             break;
         };
-        let raw_value = body[value_start..value_start + value_end_rel].trim();
+        let raw_value = &body[value_start..value_start + value_end_rel];
         let value = if attrs.contains(r#"string="true""#) {
             Value::String(raw_value.to_string())
         } else {
+            let raw_value = raw_value.trim();
             serde_json::from_str(raw_value).unwrap_or_else(|_| Value::String(raw_value.to_string()))
         };
         params.insert(name.to_string(), value);
@@ -669,6 +670,26 @@ mod tests {
             result.append(parser.push(&input[split..]).expect("suffix"));
             result.append(parser.finish().expect("finish"));
             assert_eq!(result.coalesce_calls(), expected, "split at {split}");
+        }
+    }
+
+    #[test]
+    fn string_parameters_preserve_whitespace() {
+        for value in ["  café\n", "\t\r\n ", "", "null"] {
+            let input = format!(
+                "<｜DSML｜tool_calls><｜DSML｜invoke name=\"edit\">\
+                 <｜DSML｜parameter name=\"text\" string=\"true\">{value}</｜DSML｜parameter>\
+                 <｜DSML｜parameter name=\"count\" string=\"false\"> 42 </｜DSML｜parameter>\
+                 </｜DSML｜invoke></｜DSML｜tool_calls>"
+            );
+            let mut parser = DeepSeekV4ToolStreamParser::new();
+            let mut result = parser.push(&input).expect("push");
+            result.append(parser.finish().expect("finish"));
+            let result = result.coalesce_calls();
+            assert!(result.normal_text.is_empty());
+            assert_eq!(result.calls.len(), 1);
+            let arguments: Value = serde_json::from_str(&result.calls[0].arguments).unwrap();
+            assert_eq!(arguments, serde_json::json!({"text": value, "count": 42}));
         }
     }
 
