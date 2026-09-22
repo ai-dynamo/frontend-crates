@@ -1155,7 +1155,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers"
-version = "9.0.1"
+version = "9.1.0"
 dependencies = [
  "aho-corasick",
  "anyhow",
